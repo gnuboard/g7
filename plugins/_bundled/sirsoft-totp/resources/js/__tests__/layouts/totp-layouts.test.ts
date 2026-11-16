@@ -442,7 +442,7 @@ describe('회원 상세 인증 앱 카드 (layout_extension)', () => {
         const unavailable = findByRef(adminUserCardExtension, 'admin_user_totp_status_unavailable');
 
         expect(status?.if).toBe('{{!!user?.data?.totp_enrollment}}');
-        expect(unavailable?.if).toBe('{{!user?.data?.totp_enrollment}}');
+        expect(unavailable?.if).toBe('{{user !== undefined && (!user?.data?.totp_enrollment)}}');
         expect(flatten(unavailable)).toContain('$t:sirsoft-totp.admin.user_card.status_unavailable');
     });
 

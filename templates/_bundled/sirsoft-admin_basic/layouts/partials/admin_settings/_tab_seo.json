@@ -1010,7 +1010,7 @@
                             "id": "field_sitemap_schedule_time",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{(_local.form?.['seo.sitemap_schedule'] ?? _local.form?.seo?.sitemap_schedule ?? 'daily') !== 'hourly'}}",
+                            "if": "{{settings !== undefined && ((_local.form?.['seo.sitemap_schedule'] ?? _local.form?.seo?.sitemap_schedule ?? 'daily') !== 'hourly')}}",
                             "children": [
                                 {
                                     "type": "basic",

@@ -55,6 +55,10 @@
                 {
                     "type": "basic",
                     "name": "Span",
+                    "blur_until_loaded": {
+                        "enabled": true,
+                        "data_sources": "koreaeximStatus"
+                    },
                     "text": "$t:sirsoft-koreaexim.calls {{koreaeximStatus?.data?.today_request_count ?? 0}}/{{koreaeximStatus?.data?.quota_limit ?? 1000}}"
                 },
                 {

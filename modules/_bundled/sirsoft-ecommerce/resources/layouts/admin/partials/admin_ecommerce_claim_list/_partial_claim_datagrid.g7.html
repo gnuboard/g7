@@ -4,7 +4,7 @@
     <div data-ref="claim_table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
       <!-- 좌측: 총 건수 -->
       <div class="flex-center gap-3">
-        <span data-ref="d_001_total_count" class="text-label">$t:sirsoft-ecommerce.admin.claim.datagrid.total_count|count={{claims?.data?.pagination?.total ?? 0}}</span>
+        <span data-ref="d_001_total_count" class="text-label"><blur-until-loaded sources="claims"/>$t:sirsoft-ecommerce.admin.claim.datagrid.total_count|count={{claims?.data?.pagination?.total ?? 0}}</span>
       </div>
       <!-- 우측: 페이지당 건수. 정렬 셀렉트는 두지 않는다 — 목록 게이트(`Admin\ClaimListRequest`)에 정렬 파라미터가 없어, 옵션을 만들면 화면에만 있고 저장소가 모르는 축이 된다. -->
       <div class="flex-center gap-2">

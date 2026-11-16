@@ -156,6 +156,8 @@ async function renderCard(state: CardState = {}) {
     {
       translations: { admin: locale === 'ko' ? koAdmin : enAdmin },
       locale,
+      // settings 는 폼(_local.form)을 채우는 소스 — 받은 뒤 상태를 재현한다(받는 중이면 빈 상태 문구를 그리지 않는다, #915)
+      initialData: { settings: { data: {} } },
       initialState: {
         _local: {
           errors: state.errors ?? null,

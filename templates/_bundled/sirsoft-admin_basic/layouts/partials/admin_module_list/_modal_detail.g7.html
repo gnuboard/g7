@@ -7,7 +7,9 @@
 <partial description="모듈 상세 정보 모달" editor_label="$t:admin.modal_label.admin_module_list.module_detail_modal">
   <modal data-type="composite" data-ref="module_detail_modal" title="$t:admin.modules.modals.detail_title" size="medium">
     <!-- 상세 재조회 — 응답을 **같은 전역(`selectedModule`)에 덮어쓴다**. 목록이 담아 준 얕은 값 위에
-         전체 정보를 얹는 것이라, 창이 열리는 순간에는 목록 값으로 먼저 그려지고 곧 채워진다. -->
+         전체 정보를 얹는 것이라, 창이 열리는 순간에는 목록 값으로 먼저 그려지고 곧 채워진다.
+         그래서 목록 응답에 없는 항목(코어 요구·언어·메뉴·권한·역할·레이아웃)의 「없음」은 상세 응답에만 있는
+         `metadata` 가 온 뒤에만 보인다 — 받기 전에 「권한 없음」이 먼저 보였다가 바뀌지 않게(#915). -->
     <data-source id="moduleDetail" label_key="$t:editor.data_source.moduleDetail" type="api" endpoint="/api/admin/modules/{{_global.selectedModule.identifier}}" :auth_required="true" initGlobal="selectedModule"/>
     <div class="flex flex-col max-h-[70vh]">
       <div class="flex-1 overflow-y-auto min-h-0 pr-2">
@@ -92,9 +94,9 @@
               <div class="flex-center gap-2">
                 <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:admin.modules.modals.required_core_version</span>
                 <span data-if="{{_global.selectedModule.requires_core}}" class="text-info-soft px-2 py-0.5 bg-blue-100 dark:bg-blue-900 rounded font-mono">{{_global.selectedModule.requires_core}}</span>
-                <span data-if="{{!_global.selectedModule.requires_core}}" class="text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 rounded">$t:admin.modules.modals.no_required_core_version</span>
+                <span data-if="{{_global.selectedModule?.metadata !== undefined &amp;&amp; (!_global.selectedModule.requires_core)}}" class="text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 rounded">$t:admin.modules.modals.no_required_core_version</span>
               </div>
-              <p data-if="{{!_global.selectedModule.dependencies || _global.selectedModule.dependencies.length === 0}}" class="text-label-subtle">$t:admin.modules.modals.no_dependencies_required</p>
+              <p data-if="{{_global.selectedModule?.metadata !== undefined &amp;&amp; (!_global.selectedModule.dependencies || _global.selectedModule.dependencies.length === 0)}}" class="text-label-subtle">$t:admin.modules.modals.no_dependencies_required</p>
               <div data-if="{{_global.selectedModule.dependencies &amp;&amp; _global.selectedModule.dependencies.length > 0}}" class="row-stack">
                 <div data-each="dep in _global.selectedModule.dependencies" class="flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
                   <icon data-if="{{dep.type === 'module'}}" name="cube" class="text-base text-gray-500 dark:text-gray-400"/>
@@ -162,7 +164,7 @@
               <icon name="language" class="text-xl text-gray-500"/>
               <span class="text-primary font-semibold">$t:admin.modules.modals.supported_languages</span>
             </div>
-            <p data-if="{{!_global.selectedModule.language_packs || _global.selectedModule.language_packs.length === 0}}" class="text-label-subtle">$t:admin.modules.modals.no_supported_languages</p>
+            <p data-if="{{_global.selectedModule?.metadata !== undefined &amp;&amp; (!_global.selectedModule.language_packs || _global.selectedModule.language_packs.length === 0)}}" class="text-label-subtle">$t:admin.modules.modals.no_supported_languages</p>
             <div data-if="{{_global.selectedModule.language_packs &amp;&amp; _global.selectedModule.language_packs.length > 0}}" class="row-stack">
               <div data-each="lp in _global.selectedModule.language_packs" class="flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
                 <span class="text-heading">{{lp.locale_native_name}} ({{lp.locale}})</span>
@@ -181,7 +183,7 @@
               <icon name="list" class="text-xl text-gray-500"/>
               <span class="text-primary font-semibold">$t:admin.modules.modals.admin_menus</span>
             </div>
-            <p data-if="{{!_global.selectedModule.admin_menus || _global.selectedModule.admin_menus.length === 0}}" class="text-label-subtle">$t:admin.modules.modals.no_admin_menus</p>
+            <p data-if="{{_global.selectedModule?.metadata !== undefined &amp;&amp; (!_global.selectedModule.admin_menus || _global.selectedModule.admin_menus.length === 0)}}" class="text-label-subtle">$t:admin.modules.modals.no_admin_menus</p>
             <ul data-if="{{_global.selectedModule.admin_menus &amp;&amp; _global.selectedModule.admin_menus.length > 0}}" class="list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300">
               <li data-each="menu in _global.selectedModule.admin_menus">{{$localized(menu.name)}}</li>
             </ul>
@@ -191,7 +193,7 @@
               <icon name="key" class="text-xl text-gray-500"/>
               <span class="text-primary font-semibold">$t:admin.modules.modals.permissions</span>
             </div>
-            <p data-if="{{!_global.selectedModule.permissions || _global.selectedModule.permissions.length === 0}}" class="text-label-subtle">$t:admin.modules.modals.no_permissions</p>
+            <p data-if="{{_global.selectedModule?.metadata !== undefined &amp;&amp; (!_global.selectedModule.permissions || _global.selectedModule.permissions.length === 0)}}" class="text-label-subtle">$t:admin.modules.modals.no_permissions</p>
             <div data-if="{{_global.selectedModule.permissions &amp;&amp; _global.selectedModule.permissions.length > 0}}" class="row-stack">
               <div data-each="category in _global.selectedModule.permissions">
                 <span class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">{{$localized(category.name)}}</span>
@@ -206,7 +208,7 @@
               <icon name="user-group" class="text-xl text-gray-500"/>
               <span class="text-primary font-semibold">$t:admin.modules.modals.roles</span>
             </div>
-            <p data-if="{{!_global.selectedModule.roles || _global.selectedModule.roles.length === 0}}" class="text-label-subtle">$t:admin.modules.modals.no_roles</p>
+            <p data-if="{{_global.selectedModule?.metadata !== undefined &amp;&amp; (!_global.selectedModule.roles || _global.selectedModule.roles.length === 0)}}" class="text-label-subtle">$t:admin.modules.modals.no_roles</p>
             <div data-if="{{_global.selectedModule.roles &amp;&amp; _global.selectedModule.roles.length > 0}}" class="flex flex-wrap gap-2">
               <span data-each="role in _global.selectedModule.roles" class="px-2 py-1 text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded">{{$localized(role.name) + ' (' + role.identifier + ')'}}</span>
             </div>
@@ -216,7 +218,7 @@
               <icon name="file-code" class="text-xl text-gray-500"/>
               <span class="text-primary font-semibold">$t:admin.modules.modals.layouts</span>
             </div>
-            <p data-if="{{!_global.selectedModule.layouts_count || _global.selectedModule.layouts_count === 0}}" class="text-label-subtle">$t:admin.modules.modals.no_layouts</p>
+            <p data-if="{{_global.selectedModule?.metadata !== undefined &amp;&amp; (!_global.selectedModule.layouts_count || _global.selectedModule.layouts_count === 0)}}" class="text-label-subtle">$t:admin.modules.modals.no_layouts</p>
             <p data-if="{{_global.selectedModule.layouts_count &amp;&amp; _global.selectedModule.layouts_count > 0}}" class="text-body">$t:admin.modules.modals.layouts_count|count={{_global.selectedModule.layouts_count}}</p>
           </div>
           <div data-ref="changelog_section">

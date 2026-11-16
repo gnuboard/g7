@@ -738,7 +738,7 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "if": "{{(gdprMeConsents?.data?.consents ?? []).length === 0}}",
+                                    "if": "{{gdprMeConsents !== undefined && (gdprMeConsents?.data?.consents ?? []).length === 0}}",
                                     "props": {
                                         "className": "py-10 text-center text-sm text-gray-500 dark:text-gray-400"
                                     },

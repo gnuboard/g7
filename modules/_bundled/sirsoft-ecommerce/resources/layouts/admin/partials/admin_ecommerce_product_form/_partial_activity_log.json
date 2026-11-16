@@ -93,6 +93,10 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "blur_until_loaded": {
+                                "enabled": true,
+                                "data_sources": "activity_logs"
+                            },
                             "props": {
                                 "className": "text-label-subtle"
                             },

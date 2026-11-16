@@ -444,6 +444,10 @@
                                 "id": "total_count",
                                 "type": "basic",
                                 "name": "Span",
+                                "blur_until_loaded": {
+                                    "enabled": true,
+                                    "data_sources": "pages"
+                                },
                                 "props": {
                                     "className": "text-secondary text-sm"
                                 },

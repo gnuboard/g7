@@ -250,7 +250,7 @@
                         {
                             "type": "basic",
                             "name": "Span",
-                            "if": "{{!_global.currentUser?.uuid}}",
+                            "if": "{{_global.currentUser !== undefined && !_global.currentUser?.uuid}}",
                             "props": {
                                 "className": "text-red-600 dark:text-red-400 ml-1"
                             },
@@ -303,7 +303,7 @@
             "comment": "비회원 조회 비밀번호 — 비로그인 사용자만 노출. CreateOrderRequest 가 비회원 시 guest_lookup_password(min:8|confirmed) + _confirmation(required) 검증",
             "type": "basic",
             "name": "Div",
-            "if": "{{!_global.currentUser?.uuid}}",
+            "if": "{{_global.currentUser !== undefined && !_global.currentUser?.uuid}}",
             "responsive": {
                 "portable": {
                     "props": {

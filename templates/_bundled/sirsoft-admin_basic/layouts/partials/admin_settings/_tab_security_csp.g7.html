@@ -27,7 +27,7 @@
       <div data-ref="field_csp_auto_hosts" class="">
         <label class="form-label">$t:admin.settings.security.csp.auto_hosts</label>
         <p data-ref="csp_auto_hosts" data-if="{{(_local.form?._meta?.csp?.auto_hosts ?? []).length > 0}}" class="text-sm font-mono text-gray-700 dark:text-gray-300 break-all">{{(_local.form?._meta?.csp?.auto_hosts ?? []).join(' · ')}}</p>
-        <p data-if="{{(_local.form?._meta?.csp?.auto_hosts ?? []).length === 0}}" class="text-hint">$t:admin.settings.security.csp.auto_hosts_empty</p>
+        <p data-if="{{settings !== undefined &amp;&amp; ((_local.form?._meta?.csp?.auto_hosts ?? []).length === 0)}}" class="text-hint">$t:admin.settings.security.csp.auto_hosts_empty</p>
       </div>
       <div data-ref="field_csp_preview" class="">
         <label class="form-label">$t:admin.settings.security.csp.preview</label>
@@ -66,7 +66,7 @@
       <div data-ref="field_csp_style_auto_hosts" class="">
         <label class="form-label">$t:admin.settings.security.csp.style.auto_hosts</label>
         <p data-ref="csp_style_auto_hosts" data-if="{{(_local.form?._meta?.csp?.style_auto_hosts ?? []).length > 0}}" class="text-sm font-mono text-gray-700 dark:text-gray-300 break-all">{{(_local.form?._meta?.csp?.style_auto_hosts ?? []).join(' · ')}}</p>
-        <p data-if="{{(_local.form?._meta?.csp?.style_auto_hosts ?? []).length === 0}}" class="text-hint">$t:admin.settings.security.csp.style.auto_hosts_empty</p>
+        <p data-if="{{settings !== undefined &amp;&amp; ((_local.form?._meta?.csp?.style_auto_hosts ?? []).length === 0)}}" class="text-hint">$t:admin.settings.security.csp.style.auto_hosts_empty</p>
       </div>
       <div data-ref="field_csp_style_preview" class="">
         <label class="form-label">$t:admin.settings.security.csp.style.preview</label>

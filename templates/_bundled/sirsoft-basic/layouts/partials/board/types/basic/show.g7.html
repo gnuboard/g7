@@ -153,7 +153,7 @@
           </extension-point>
         </div>
         <!-- 회원 비밀글 - 비로그인 시 로그인 안내 -->
-        <div data-if="{{post?.data?.content === null &amp;&amp; !post?.data?.is_guest_post &amp;&amp; !_global.currentUser?.uuid &amp;&amp; post?.data?.status !== 'blinded'}}" class="text-center py-12">
+        <div data-if="{{post?.data?.content === null &amp;&amp; !post?.data?.is_guest_post &amp;&amp; _global.currentUser !== undefined &amp;&amp; !_global.currentUser?.uuid &amp;&amp; post?.data?.status !== 'blinded'}}" class="text-center py-12">
           <icon name="lock" size="3x" class="mx-auto text-gray-500 dark:text-gray-500 mb-4"/>
           <p class="text-gray-600 dark:text-gray-400 mb-6">$t:board.secret_post_login_required</p>
           <button type="button" class="px-6 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-gray-100 cursor-pointer">

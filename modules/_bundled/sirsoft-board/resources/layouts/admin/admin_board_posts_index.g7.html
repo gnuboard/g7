@@ -333,7 +333,7 @@
         </on>
       </data-grid>
       <div data-ref="pagination_info" class="mt-4 text-label text-center">
-        <span>$t:sirsoft-board.admin.posts.pagination_info|total={{posts?.data?.pagination?.total ?? 0}}|from={{posts?.data?.pagination?.from ?? 0}}|to={{posts?.data?.pagination?.to ?? 0}}</span>
+        <span><blur-until-loaded sources="posts"/>$t:sirsoft-board.admin.posts.pagination_info|total={{posts?.data?.pagination?.total ?? 0}}|from={{posts?.data?.pagination?.from ?? 0}}|to={{posts?.data?.pagination?.to ?? 0}}</span>
       </div>
     </div>
   </slot>

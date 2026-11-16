@@ -29,3 +29,5 @@ effects:
   - error_hides_negative_state   # 받기에 실패하면(null — 처음 받기·다른 요청으로 다시 받기) 「없음」 안내가 없다
   - error_shows_load_failed_notice   # 받기에 실패하면 실패 안내가 보인다
   - every_negative_state_gated   # 이 확장에서 받는 중에 참이 되는 「없음」류 안내·빈 문구가 없다(전수)
+  - loading_hides_post_load_only_state   # 받는 중에는 받은 뒤에만 뜻이 있는 노출·안내가 없다(일부 소스만 도착한 순간·회원 분기 포함, 흐림 아래는 허용) — 노출 전수(#915)
+  - loading_blurs_zero_counts   # 받는 데이터를 `?? 0` 으로 메운 숫자는 그 소스를 기다리는 흐림 아래에 있다 — 노출 전수(#915)

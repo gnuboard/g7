@@ -154,7 +154,7 @@
       <!-- 개인정보로 표시된 분류 기준은 집계하지 않는다(#682 S4 라운드 4) — 표가 늘 비어 「수집 진단」으로
            보내면 수집 고장으로 읽힌다. 고르면 표 대신 이유를 보인다(#682 S4 라운드 8). -->
       <empty-state data-type="composite" data-ref="dimensions_pii" data-if="{{(query.tab || 'search') === 'dimensions' &amp;&amp; !!query.dimension &amp;&amp; (analytics_registered?.data?.dimensions ?? []).some(d =&gt; d.key === query.dimension &amp;&amp; d.pii)}}" iconName="user-shield" title="$t:admin.analytics.actions.dimension_pii_title" description="$t:admin.analytics.actions.dimension_pii_description" class="py-10"/>
-      <div data-ref="report_grid_wrap" data-if="{{(query.tab || 'search') !== 'dimensions' || (!!query.dimension &amp;&amp; !(analytics_registered?.data?.dimensions ?? []).some(d =&gt; d.key === query.dimension &amp;&amp; d.pii))}}">
+      <div data-ref="report_grid_wrap" data-if="{{(query.tab || 'search') !== 'dimensions' || (analytics_registered !== undefined &amp;&amp; !!query.dimension &amp;&amp; !(analytics_registered?.data?.dimensions ?? []).some(d =&gt; d.key === query.dimension &amp;&amp; d.pii))}}">
         <include src="partials/admin_analytics/_partial_report_grid.g7.html"/>
       </div>
       <!-- 확장이 이 화면에 자기 리포트 조각을 붙이는 자리(데이터는 확장 자기 API). -->

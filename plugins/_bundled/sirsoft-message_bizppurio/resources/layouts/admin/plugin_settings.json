@@ -1899,6 +1899,10 @@
                                     {
                                         "type": "basic",
                                         "name": "P",
+                                        "blur_until_loaded": {
+                                            "enabled": true,
+                                            "data_sources": "bizppurio_templates_list"
+                                        },
                                         "props": {
                                             "className": "text-label-subtle mb-2"
                                         },
@@ -2700,7 +2704,7 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "if": "{{(bizppurio_templates_list?.data?.templates ?? []).length === 0}}",
+                                                "if": "{{bizppurio_templates_list !== undefined && ((bizppurio_templates_list?.data?.templates ?? []).length === 0)}}",
                                                 "props": {
                                                     "className": "py-10 text-center text-gray-500 dark:text-gray-400"
                                                 },

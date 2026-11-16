@@ -164,16 +164,16 @@
           </div>
           <div data-ref="static_cache_version_row" class="flex items-center gap-2">
             <span class="text-label">$t:admin.settings.general.static_cache_version</span>
-            <span class="text-heading">{{Number(staticCacheStatus?.data?.version ?? 0) > 0 ? staticCacheStatus?.data?.version : '-'}}</span>
+            <span class="text-heading"><blur-until-loaded sources="staticCacheStatus"/>{{Number(staticCacheStatus?.data?.version ?? 0) > 0 ? staticCacheStatus?.data?.version : '-'}}</span>
           </div>
           <div data-ref="static_cache_files_row" class="flex items-center gap-2">
             <span class="text-label">$t:admin.settings.general.static_cache_files</span>
-            <span class="text-heading">{{staticCacheStatus?.data?.published ? Number(staticCacheStatus?.data?.files ?? 0).toLocaleString() : '-'}}</span>
+            <span class="text-heading"><blur-until-loaded sources="staticCacheStatus"/>{{staticCacheStatus?.data?.published ? Number(staticCacheStatus?.data?.files ?? 0).toLocaleString() : '-'}}</span>
           </div>
           <div data-ref="static_cache_published_at_row" class="flex items-center gap-2">
             <span class="text-label">$t:admin.settings.general.static_cache_published_at</span>
             <span data-ref="static_cache_published_at_value" data-if="{{!!staticCacheStatus?.data?.published_at}}" class="text-heading">{{staticCacheStatus.data.published_at | datetime('YYYY-MM-DD HH:mm:ss')}}</span>
-            <span data-ref="static_cache_published_at_never" data-if="{{!staticCacheStatus?.data?.published_at}}" class="text-heading">$t:admin.settings.general.static_cache_never</span>
+            <span data-ref="static_cache_published_at_never" data-if="{{staticCacheStatus !== undefined &amp;&amp; (!staticCacheStatus?.data?.published_at)}}" class="text-heading">$t:admin.settings.general.static_cache_never</span>
           </div>
           <div data-ref="static_cache_process_user_row" class="flex items-center gap-2">
             <span class="text-label">$t:admin.settings.general.static_cache_process_user</span>

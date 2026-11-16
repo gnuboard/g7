@@ -2309,7 +2309,7 @@
                                 {
                                     "type": "basic",
                                     "name": "P",
-                                    "if": "{{(_local.form?.drivers?.queue_driver ?? 'sync') === 'sync'}}",
+                                    "if": "{{settings !== undefined && ((_local.form?.drivers?.queue_driver ?? 'sync') === 'sync')}}",
                                     "props": {
                                         "data-testid": "queue-worker-not-required",
                                         "className": "text-label-subtle"

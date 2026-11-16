@@ -249,7 +249,8 @@ describe('비회원 조회 비밀번호 입력 섹션 - _checkout_orderer (Issue
   // @effects checkout_orderer_shows_guest_lookup_password_fields_only_when_no_currentUser
   it('비로그인(_global.currentUser?.uuid 없음)일 때만 노출되는 컨테이너가 존재해야 한다', () => {
     expect(guestSection).toBeDefined();
-    expect(guestSection.if).toBe('{{!_global.currentUser?.uuid}}');
+    // 사용자 정보를 받는 중(undefined)을 비회원으로 읽지 않는다 — 회원에게 비회원 입력란이 잠깐 보였다(#915)
+    expect(guestSection.if).toBe('{{_global.currentUser !== undefined && !_global.currentUser?.uuid}}');
   });
 
   // @scenario actor=guest
@@ -342,7 +343,7 @@ describe('주문자 이메일 필수 표시 - _checkout_orderer (Issue #55)', ()
       (c: any) => c.name === 'Span' && c.text === '*'
     );
     expect(requiredMark).toBeDefined();
-    expect(requiredMark.if).toBe('{{!_global.currentUser?.uuid}}');
+    expect(requiredMark.if).toBe('{{_global.currentUser !== undefined && !_global.currentUser?.uuid}}');
   });
 
   // @scenario actor=guest

@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.1.4] - 2026-11-15
+
+### Fixed
+
+- 비즈뿌리오 설정의 템플릿 탭에서 목록을 받는 동안 「등록된 템플릿이 없습니다」와 「총 0개」가 먼저 보이던 문제를 고쳤습니다.
+
 ## [1.1.3] - 2026-11-10
 
 ### Changed

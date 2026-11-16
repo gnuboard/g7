@@ -262,7 +262,7 @@
                                     "comment": "회원 계정이 남지 않은 작성자(uuid 없음): 갈 곳이 없어 이름만",
                                     "type": "basic",
                                     "name": "Span",
-                                    "if": "{{!(report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.is_guest : report_detail?.data?.comment?.author?.is_guest) && !(report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.uuid : report_detail?.data?.comment?.author?.uuid)}}",
+                                    "if": "{{report_detail !== undefined && (!(report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.is_guest : report_detail?.data?.comment?.author?.is_guest) && !(report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.uuid : report_detail?.data?.comment?.author?.uuid))}}",
                                     "props": {
                                         "className": "text-heading"
                                     },
@@ -611,6 +611,10 @@
                             "type": "basic",
                             "name": "Span",
                             "if": "{{report_detail?.data}}",
+                            "blur_until_loaded": {
+                                "enabled": true,
+                                "data_sources": "reporters_list"
+                            },
                             "props": {
                                 "className": "inline-flex items-center px-3 py-1.5 rounded text-xs font-bold bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
                             },

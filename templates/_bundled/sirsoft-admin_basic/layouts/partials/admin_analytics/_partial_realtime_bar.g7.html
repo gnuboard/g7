@@ -4,7 +4,7 @@
 <partial description="방문자 통계 개요 — 실시간 요약 한 줄">
   <div data-ref="analytics_realtime_bar" class="flex flex-wrap items-center gap-3 px-4 py-3 mb-4 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
     <span data-ref="realtime_dot" class="w-2.5 h-2.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse"/>
-    <span data-ref="realtime_count" class="text-heading">$t:admin.analytics.overview.realtime_now|count={{(analytics_realtime?.data?.count ?? 0) | number}}</span>
+    <span data-ref="realtime_count" class="text-heading"><blur-until-loaded sources="analytics_realtime"/>$t:admin.analytics.overview.realtime_now|count={{(analytics_realtime?.data?.count ?? 0) | number}}</span>
     <span data-ref="realtime_pages" data-if="{{(analytics_realtime?.data?.visitors ?? []).length > 0}}" class="text-label-subtle truncate">
       {{Object.entries((analytics_realtime?.data?.visitors ?? []).reduce((acc, v) => (v.page ? { ...acc, [v.page]: (acc[v.page] || 0) + 1 } : acc), {})).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([page, n]) => page + ' (' + n + ')').join(' · ')}}
     </span>

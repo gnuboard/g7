@@ -606,7 +606,7 @@
                             "id": "pending_inquiries_card",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{(_global.activeModules?.includes('sirsoft-board') ?? true) && commerce_pending_inquiries?.data?.board_active !== false}}",
+                            "if": "{{(_global.activeModules?.includes('sirsoft-board') ?? true) && commerce_pending_inquiries !== undefined && commerce_pending_inquiries?.data?.board_active !== false}}",
                             "blur_until_loaded": {
                                 "enabled": true,
                                 "data_sources": "commerce_pending_inquiries"

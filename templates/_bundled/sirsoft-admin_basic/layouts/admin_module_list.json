@@ -1530,6 +1530,10 @@
                                     {
                                         "type": "basic",
                                         "name": "Span",
+                                        "blur_until_loaded": {
+                                            "enabled": true,
+                                            "data_sources": "modules"
+                                        },
                                         "text": "$t:admin.modules.pagination_info|total={{modules?.data?.pagination?.total ?? 0}}|from={{((modules?.data?.pagination?.current_page ?? 1) - 1) * (modules?.data?.pagination?.per_page ?? 12) + 1}}|to={{Math.min((modules?.data?.pagination?.current_page ?? 1) * (modules?.data?.pagination?.per_page ?? 12), modules?.data?.pagination?.total ?? 0)}}"
                                     }
                                 ]

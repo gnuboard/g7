@@ -911,6 +911,10 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "if": "{{users?.data?.pagination?.total_is_exact !== false}}",
+                                "blur_until_loaded": {
+                                    "enabled": true,
+                                    "data_sources": "users"
+                                },
                                 "props": {
                                     "className": "text-label"
                                 },

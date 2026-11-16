@@ -256,7 +256,8 @@ describe('order_complete.json — endpoint 표현식 분기 ( 그룹 C)', () => 
     const noticeBlock = findNode(
       orderCompleteJson,
       (n) =>
-        n.if === '{{!_global.currentUser?.uuid}}' &&
+        // 받는 중(undefined)을 비회원으로 읽지 않는다(#915)
+        n.if === '{{_global.currentUser !== undefined && !_global.currentUser?.uuid}}' &&
         findNode(n, (m: any) => m.text === '$t:shop.order_complete.guest_notice_title')
     );
     expect(noticeBlock).toBeDefined();
@@ -387,7 +388,8 @@ describe('guest_order_form.json — 비회원 조회 폼 ( 그룹 C)', () => {
     const formContainer = findNode(
       guestFormJson,
       (n) =>
-        n.if === '{{!_global?.currentUser?.uuid}}' &&
+        // 받는 중(undefined)에도 그리지 않는다 — 회원이 새로고침할 때 폼이 깜빡 보였다(#915)
+        n.if === '{{_global?.currentUser !== undefined && !_global?.currentUser?.uuid}}' &&
         findNode(n, (m: any) => (m.name === 'Input' || m.name === 'PasswordInput') && m.props?.name === 'order_number')
     );
     expect(formContainer, '비회원 전용 가드 누락 — 회원에게도 조회 폼이 노출될 수 있음').toBeDefined();
