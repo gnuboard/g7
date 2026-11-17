@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
  * 업데이트 미리보기가 GitHub 에서 내려받은 새 판(`_pending` 스테이징)을 이어지는 업데이트가 다시 쓰게 하는 표.
  *
  * 미리보기는 새 판을 내려받아 화면별 판정을 계산하고 `pending_token` 을 돌려준다. 업데이트 요청이 그 토큰을 넘기면
- * ({@see useToken()}) 다운로드 단계가 같은 확장·같은 판의 준비본을 먼저 찾아({@see claim()}) 다시 내려받지 않는다.
+ * ({@see useToken()}) 다운로드 단계가 같은 확장·같은 판의 준비본을 먼저 찾아({@see claimAcquired()}) 다시 내려받지 않는다.
  * 미리보기로 본 파일과 실제로 적용하는 파일이 같아진다.
  *
  * 준비본에는 미리보기가 받은 패키지의 서명 검증 결과가 함께 적힌다. 업데이트는 {@see claimAcquired()} 로 꺼내며, 그 요청의
@@ -68,39 +68,6 @@ final class ExtensionUpdatePreviewStore
     public static function useToken(?string $token): void
     {
         self::$activeToken = ($token === null || $token === '') ? null : $token;
-    }
-
-    /**
-     * 다운로드 단계가 부릅니다 — 이번 요청의 토큰이 같은 확장·같은 판의 준비본을 가리키면 그 경로를 넘기고 표에서 지웁니다.
-     *
-     * @param  string  $type  확장 종류
-     * @param  string  $identifier  확장 식별자
-     * @param  string  $version  내려받을 판 번호
-     * @return string|null 준비본 경로 (없거나 맞지 않으면 null — 평소대로 내려받는다)
-     */
-    public function claim(string $type, string $identifier, string $version): ?string
-    {
-        $token = self::$activeToken;
-
-        if ($token === null || ! preg_match('/^[A-Za-z0-9]{40}$/', $token) || ! File::exists($this->file($token))) {
-            return null;
-        }
-
-        $entry = json_decode((string) File::get($this->file($token)), true);
-        File::delete($this->file($token));
-        self::$activeToken = null;
-
-        if (! is_array($entry)
-            || ($entry['type'] ?? null) !== $type
-            || ($entry['identifier'] ?? null) !== $identifier
-            || ($entry['version'] ?? null) !== $version
-            || time() - (int) ($entry['created_at'] ?? 0) > self::TTL_SECONDS
-            || ! is_string($entry['path'] ?? null)
-            || ! File::isDirectory($entry['path'])) {
-            return null;
-        }
-
-        return $entry['path'];
     }
 
     /**

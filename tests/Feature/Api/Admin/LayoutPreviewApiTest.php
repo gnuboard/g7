@@ -227,22 +227,22 @@ class LayoutPreviewApiTest extends TestCase
         $token = $response->json('data.pending_token');
         $this->assertMatchesRegularExpression('/^[A-Za-z0-9]{40}$/', (string) $token);
 
-        $store = app(ExtensionUpdatePreviewStore::class);
-        ExtensionUpdatePreviewStore::useToken($token);
-        $this->assertNull($store->claim('module', $this->fixtureModule, '9.9.9'), '판이 다르면 준비본을 쓰지 않는다');
-
-        // 판이 맞지 않으면 토큰이 소모되므로 새로 등록해 같은 판으로 다시 확인한다.
-        $token = $store->put('module', $this->fixtureModule, '1.0.2', $staged);
-        ExtensionUpdatePreviewStore::useToken($token);
-        $this->assertSame($staged, $store->claim('module', $this->fixtureModule, '1.0.2'));
-        $this->assertNull($store->claim('module', $this->fixtureModule, '1.0.2'), '토큰은 한 번만 쓴다');
-
         // 업데이트 다운로드 단계는 미리보기가 적어 둔 검증 결과와 함께 받은 소스를 꺼낸다
-        $token = $store->put('module', $this->fixtureModule, '1.0.2', $staged, (new PackageVerification(PackageVerificationStatus::Verified))->toArray());
+        $store = app(ExtensionUpdatePreviewStore::class);
+        $none = PackageIntegrityOptions::none();
         ExtensionUpdatePreviewStore::useToken($token);
-        $acquired = $store->claimAcquired('module', $this->fixtureModule, '1.0.2', PackageIntegrityOptions::none());
+        $acquired = $store->claimAcquired('module', $this->fixtureModule, '1.0.2', $none);
+        $this->assertNotNull($acquired, '미리보기가 등록한 준비본을 같은 판의 업데이트가 쓴다');
         $this->assertSame($staged, $acquired['extracted_dir']);
         $this->assertSame(PackageVerificationStatus::Verified, $acquired['verification']->status);
+        $this->assertNull($store->claimAcquired('module', $this->fixtureModule, '1.0.2', $none), '토큰은 한 번만 쓴다');
+
+        // 판이 다르면 준비본을 쓰지 않는다(토큰은 소모된다)
+        $token = $store->put('module', $this->fixtureModule, '1.0.2', $staged, (new PackageVerification(PackageVerificationStatus::Verified))->toArray());
+        ExtensionUpdatePreviewStore::useToken($token);
+        $this->assertNull($store->claimAcquired('module', $this->fixtureModule, '9.9.9', $none), '판이 다르면 준비본을 쓰지 않는다');
+        ExtensionUpdatePreviewStore::useToken($token);
+        $this->assertNull($store->claimAcquired('module', $this->fixtureModule, '1.0.2', $none), '맞지 않은 토큰은 소모된다');
     }
 
     /**
