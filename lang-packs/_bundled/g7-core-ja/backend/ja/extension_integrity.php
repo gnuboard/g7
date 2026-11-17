@@ -95,7 +95,7 @@ return [
         'status_line' => 'パッケージ署名: :status',
         'verified_line' => 'パッケージ署名を確認しました — 署名者 :label (:key)',
         'unsigned_confirm' => 'このパッケージは署名されていません(:reason)。それでも続行しますか？',
-        'unsigned_noninteractive_hint' => '内容を確認した場合は --allow-unsigned を付けて再実行してください。--force は未署名の確認の代わりにはなりません。',
+        'unsigned_noninteractive_hint' => '内容を確認した場合は --allow-unsigned を付けて再実行してください。--force・--yes は未署名の確認の代わりにはなりません。',
         'unsigned_blocked_hint' => '環境設定 > セキュリティの「未署名パッケージのブロック」をオフにするまでは、--allow-unsigned を付けても続行できません。',
         'signature_not_found' => '署名ファイルが見つかりません: :path',
     ],

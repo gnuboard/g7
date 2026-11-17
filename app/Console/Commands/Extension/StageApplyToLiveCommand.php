@@ -41,7 +41,7 @@ class StageApplyToLiveCommand extends Command
     protected $signature = 'stage:apply-to-live
         {--dry-run : 각 단계를 미리보기로만 실행 (파일·DB 를 바꾸지 않음)}
         {--json : 결과를 JSON 으로 출력}
-        {--yes : 확인 질문에 「예」로 답하고 진행 (번들 파일 → 이 서버 활성 폴더·레이아웃 표. 검수 서버 데이터는 옮기지 않음)}';
+        {--y|yes : 확인 질문에 「예」로 답하고 진행 (번들 파일 → 이 서버 활성 폴더·레이아웃 표. 검수 서버 데이터는 옮기지 않음)}';
 
     /**
      * @var string 명령 설명 (LocalizesDescription 이 다국어로 바꾼다)

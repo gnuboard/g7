@@ -13,8 +13,10 @@ use Illuminate\Console\Command;
  * 쌓인 방문 기록과 집계를 모두 지웁니다. 되돌릴 수 없으므로 --confirm 을 반드시
  * 붙여야 하고, 지우기 전에 터미널에서 한 번 더 묻습니다. 그 확인에 답할 수 없는 실행(cron, CI,
  * 원격 명령, --no-interaction)은 지우지 않고 실패로 끝납니다 — --confirm 은 비대화형 동의가 아닙니다.
+ * 확인 없이 지워야 하면 --yes 를 함께 붙입니다(7.1.6 과 같은 형태, #918).
  *
  * @example php artisan analytics:purge --confirm
+ * @example php artisan analytics:purge --confirm --yes
  */
 class PurgeCommand extends Command
 {
@@ -26,7 +28,9 @@ class PurgeCommand extends Command
      *
      * @var string
      */
-    protected $signature = 'analytics:purge {--confirm : 되돌릴 수 없음을 확인}';
+    protected $signature = 'analytics:purge
+        {--confirm : 되돌릴 수 없음을 확인}
+        {--y|yes : 확인 질문에 「예」로 답하고 진행 (터미널 없는 실행의 비대화형 동의, --confirm 과 함께)}';
 
     /**
      * 커맨드 실행
@@ -45,7 +49,7 @@ class PurgeCommand extends Command
         // 확인에 답할 수 없는 실행(cron, CI, 원격 명령, --no-interaction)은 종전에 기본값 「아니오」로 취소 문구만 내고
         // 종료 코드 0 으로 끝나 자동화가 성공으로 읽었다. 그런 실행은 사유와 터미널 확인 안내를 남기고 실패로 끝낸다.
         // 대화형에서 운영자가 직접 「아니오」를 답한 취소는 의도이므로 종전대로 0 이다.
-        // --confirm 은 필수 동의 표식일 뿐 비대화형 동의로 보지 않는다(되돌릴 수 없는 삭제라 대화형 확인을 유지).
+        // --confirm 은 필수 동의 표식일 뿐 비대화형 동의로 보지 않는다. 비대화형 동의는 --yes 하나다(7.1.6 과 같은 형태).
         if (! $this->canAnswerConfirmation()) {
             return $this->refuseUnanswerableConfirmation(
                 __('analytics.console.purge.confirm_unavailable'),

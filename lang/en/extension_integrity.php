@@ -95,7 +95,7 @@ return [
         'status_line' => 'Package signature: :status',
         'verified_line' => 'Package signature verified — signer :label (:key)',
         'unsigned_confirm' => 'This package is not signed (:reason). Continue anyway?',
-        'unsigned_noninteractive_hint' => 'If you have reviewed it, run again with --allow-unsigned. --force does not replace the unsigned confirmation.',
+        'unsigned_noninteractive_hint' => 'If you have reviewed it, run again with --allow-unsigned. --force and --yes do not replace the unsigned confirmation.',
         'unsigned_blocked_hint' => 'Even --allow-unsigned cannot proceed until Settings > Security "Block unsigned packages" is turned off.',
         'signature_not_found' => 'Signature file not found: :path',
     ],

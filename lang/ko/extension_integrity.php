@@ -95,7 +95,7 @@ return [
         'status_line' => '패키지 서명: :status',
         'verified_line' => '패키지 서명 확인됨 — 서명자 :label (:key)',
         'unsigned_confirm' => '이 패키지는 서명되지 않았습니다(:reason). 그래도 계속할까요?',
-        'unsigned_noninteractive_hint' => '내용을 확인했다면 --allow-unsigned 를 붙여 다시 실행하세요. --force 는 미서명 확인을 대신하지 않습니다.',
+        'unsigned_noninteractive_hint' => '내용을 확인했다면 --allow-unsigned 를 붙여 다시 실행하세요. --force·--yes 는 미서명 확인을 대신하지 않습니다.',
         'unsigned_blocked_hint' => '환경설정 > 보안 「미서명 패키지 차단」을 끄기 전에는 --allow-unsigned 로도 진행할 수 없습니다.',
         'signature_not_found' => '서명 파일을 찾을 수 없습니다: :path',
     ],

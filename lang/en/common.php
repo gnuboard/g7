@@ -520,7 +520,7 @@ return [
             'confirm_prune' => 'Clean up the candidates above from the active directory?',
             'cancelled' => 'Cancelled.',
             'confirm_unavailable' => 'The leftover files were not cleaned up because this run cannot answer the confirmation prompt (no terminal, or --no-interaction). (No files were deleted.)',
-            'confirm_unavailable_hint' => 'This command has no option to clean up without confirmation. Run php artisan hotfix:rollback-stale-files --prune in a server terminal and answer the prompt. Without --prune it only reports.',
+            'confirm_unavailable_hint' => 'Run php artisan hotfix:rollback-stale-files --prune in a server terminal and answer the prompt, or, when it must clean up without confirmation (cron, CI, remote commands), run it again with --yes as well. Example: php artisan hotfix:rollback-stale-files --prune --yes. Without --prune it only reports.',
             'done' => 'Cleanup complete: removed :files files and :dirs directories. Protected :protected, symlinks skipped :symlinks, failed :failed.',
             'log_path' => 'Log: :path',
         ],

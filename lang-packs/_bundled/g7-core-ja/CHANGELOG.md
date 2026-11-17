@@ -94,6 +94,8 @@
 - 코어 업데이트가 루트 보호 파일의 관리 블록 마커를 찾지 못했을 때의 안내를 「마커를 찾지 못했다(지워졌거나 형태가 바뀌었다)」로 정정한 코어 문구에 맞춰 일본어 번역을 갱신했습니다 (`settings.core_update.root_htaccess_preserved`).
 - 코어 업데이트의 압축 해제 실패 안내에서 명령줄 옵션 언급을 걷어낸 코어 문구에 맞춰 일본어 번역을 갱신했습니다 (`settings.core_update.all_extract_methods_failed`) — 이 안내는 관리자 화면에도 그대로 나가므로 명령줄을 쓸 수 없는 호스팅에서는 따를 수 없는 지시였습니다.
 - 코어 업데이트의 zip 확장 없음 안내(`settings.core_update.no_extract_method_available`) 일본어 문구에 공유 호스팅(호스팅 업체에 활성화 요청) 안내를 더했습니다.
+- 답할 수 없는 실행에서 미서명 패키지로 멈췄을 때의 안내(`extension_integrity.commands.unsigned_noninteractive_hint`)에 「`--yes` 도 미서명 확인을 대신하지 않는다」를 더한 코어 문구에 맞춰 일본어 번역을 갱신했습니다.
+- 방문자 통계 삭제·잔존 파일 정리 명령의 답할 수 없는 실행 안내(`analytics.console.purge.confirm_unavailable_hint`, `analytics.console.purge_extension.confirm_unavailable_hint`, `common.console.hotfix_rollback_stale_files.confirm_unavailable_hint`)가 「확인 없이 진행하는 방법 없음」에서 「`--yes` 를 함께 붙여 다시 실행」으로 바뀐 코어 문구에 맞춰 일본어 번역을 갱신했습니다.
 
 ### Removed
 

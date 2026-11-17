@@ -247,6 +247,45 @@ class ExtensionUpdateSignatureTest extends TestCase
     }
 
     /**
+     * Artisan `module:update` — `--yes`(`-y`) 는 진행 확인에만 답한다. 미서명 패키지 확인은 대신하지 않아 비대화형은 exit 1,
+     * 대화형은 `-y` 가 있어도 미서명 확인을 묻는다 (#918). 종전에는 `-y` 만 준 비대화형 실행이 미서명을 묻지 않고 받아들였다.
+     *
+     * @scenario case=update_command_unsigned_noninteractive
+     *
+     * @effects yes_option_does_not_answer_unsigned_confirmation
+     *
+     * @return void 반환값 없음
+     */
+    public function test_update_command_yes_does_not_answer_unsigned_confirmation(): void
+    {
+        Module::factory()->create(['identifier' => 'glitter-upd', 'version' => '1.0.0', 'status' => 'active']);
+        $zip = $this->makePackageZip('module', 'glitter-upd', '1.1.0');
+        $calls = [];
+
+        $manager = Mockery::mock(ModuleManager::class)->shouldIgnoreMissing();
+        $manager->shouldReceive('updateModule')->andReturnUsing(function (...$args) use (&$calls) {
+            /** @var PackageIntegrityOptions $integrity */
+            $integrity = $args[8];
+            $calls[] = $integrity->allowUnsigned;
+            app(UnsignedPackagePolicy::class)->decide(PackageVerification::unsigned(), $integrity->allowUnsigned);
+
+            return ['success' => true, 'from_version' => '1.0.0', 'to_version' => '1.1.0', 'integrity' => PackageVerification::unsigned()->toArray()];
+        });
+        $this->app->instance(ModuleManager::class, $manager);
+
+        $this->artisan('module:update', ['identifier' => 'glitter-upd', '--zip' => $zip, '--force' => true, '-y' => true, '--no-interaction' => true])
+            ->expectsOutputToContain('--allow-unsigned')
+            ->assertExitCode(1);
+        $this->assertSame([false], $calls, '--yes 가 미서명 확인을 대신했다');
+
+        $calls = [];
+        $this->artisan('module:update', ['identifier' => 'glitter-upd', '--zip' => $zip, '--force' => true, '--yes' => true])
+            ->expectsQuestion(__('extension_integrity.commands.unsigned_confirm', ['reason' => __('extension_integrity.reasons.unsigned')]).' (yes/no) [no]', 'no')
+            ->assertExitCode(1);
+        $this->assertSame([false], $calls, '대화형 「아니오」 뒤에 다시 실행했다');
+    }
+
+    /**
      * 가짜 GitHub 릴리스를 등록합니다 (glitter/upd v1.1.0).
      *
      * @param  bool  $signed  서명 자산을 올릴지
