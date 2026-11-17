@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Console\Commands\Traits\LocalizesDescription;
+use App\Console\RuntimeRoleCommandGuard;
 use App\Scheduling\ScheduleRunner;
 use App\Scheduling\ScheduleRunState;
 use Carbon\CarbonImmutable;
@@ -44,6 +45,13 @@ class ScheduleRunInProcessCommand extends Command
      */
     public function handle(ScheduleRunner $runner, ScheduleRunState $state): int
     {
+        // 이 서버의 스케줄이 꺼져 있으면(stage 역할·G7_SCHEDULER=off) 안내만 하고 0 으로 끝낸다 — 웹에서 부를 때도 같은 판정
+        if ($verdict = RuntimeRoleCommandGuard::verdict('g7:schedule-run')) {
+            $this->comment($verdict['message']);
+
+            return self::SUCCESS;
+        }
+
         $now = CarbonImmutable::now();
 
         // 최소 호출 간격은 적용하지 않는다 — 그 제한은 외부의 과다 호출을 막기 위한

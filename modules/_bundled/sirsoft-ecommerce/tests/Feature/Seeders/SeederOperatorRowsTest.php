@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Feature\Seeders;
 
+use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
 use Modules\Sirsoft\Ecommerce\Database\Seeders\ClaimReasonSeeder;
@@ -82,6 +83,42 @@ class SeederOperatorRowsTest extends ModuleTestCase
 
         $this->assertTrue(ShippingCarrier::where('code', 'probe_operator')->exists(), '운영자가 만든 택배사가 삭제되었다');
         $this->assertFalse(ShippingCarrier::where('code', 'probe_stale_seed')->exists());
+    }
+
+    /**
+     * 운영자가 고친 시드 행을 선언 정리로 지울 때 남는 활동 로그는 클래스 이름이 아니라 사람이 읽는 항목 이름으로 설명된다 (#888).
+     *
+     * @scenario seeder=claim_reason
+     *
+     * @effects sync_deletion_log_names_entity_for_people
+     *
+     * @return void 반환값 없음
+     */
+    public function test_sync_deletion_log_describes_entity_with_readable_label(): void
+    {
+        ClaimReason::create(['type' => 'refund', 'code' => 'probe_stale_edited', 'name' => ['ko' => '고친 시드'], 'fault_type' => 'customer', 'is_user_selectable' => true, 'is_active' => true, 'sort_order' => 97, 'created_by' => null, 'user_overrides' => ['name']]);
+        ShippingType::create(['code' => 'probe_stale_edited', 'name' => ['ko' => '고친 시드'], 'category' => 'domestic', 'is_active' => true, 'sort_order' => 97, 'created_by' => null, 'user_overrides' => ['name']]);
+        ShippingCarrier::create(['code' => 'probe_stale_edited', 'name' => ['ko' => '고친 시드'], 'type' => 'domestic', 'is_active' => true, 'sort_order' => 97, 'created_by' => null, 'user_overrides' => ['name']]);
+
+        foreach ([ClaimReasonSeeder::class, ShippingTypeSeeder::class, ShippingCarrierSeeder::class] as $seeder) {
+            Artisan::call('db:seed', ['--class' => $seeder, '--force' => true]);
+        }
+
+        $logs = ActivityLog::where('action', 'entity.sync_deleted')->where('properties->key', 'probe_stale_edited')->orderBy('id')->get();
+        $this->assertCount(3, $logs, '운영자가 고친 시드 행 세 개를 지우기 직전 기록이 남아야 한다');
+
+        $expected = [
+            'ko' => ['클레임 사유', '배송유형', '택배사'],
+            'en' => ['Claim reason', 'Shipping type', 'Shipping carrier'],
+        ];
+        foreach ($expected as $locale => $labels) {
+            app()->setLocale($locale);
+            foreach ($logs as $i => $log) {
+                $description = $log->localized_description;
+                $this->assertStringContainsString($labels[$i], $description, "{$locale} 설명에 항목 이름이 나와야 한다");
+                $this->assertDoesNotMatchRegularExpression('/ClaimReason|ShippingType|ShippingCarrier/', $description, '설명에 클래스 이름이 나오면 안 된다');
+            }
+        }
     }
 
     /**

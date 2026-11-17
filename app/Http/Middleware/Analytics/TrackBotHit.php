@@ -5,6 +5,7 @@ namespace App\Http\Middleware\Analytics;
 use App\Analytics\AnalyticsBotClassifier;
 use App\Analytics\AnalyticsConfig;
 use App\Services\Analytics\BotHitRecorder;
+use App\Support\RuntimeRole;
 use App\Support\SiteUrl;
 use Closure;
 use Illuminate\Http\Request;
@@ -54,6 +55,11 @@ class TrackBotHit
      */
     public function terminate(Request $request, Response $response): void
     {
+        // 검수 서버의 봇 방문은 운영 통계에 넣지 않는다
+        if (RuntimeRole::isStage()) {
+            return;
+        }
+
         try {
             $config = AnalyticsConfig::fromSettings();
 

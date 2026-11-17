@@ -66,6 +66,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - 제공자 변경과 정책 저장 활동 기록, 확장 훅 `provider.after_create` `provider.after_update` `provider.after_delete` `provider.failing` `account.unlinked_by_admin` `account.unlinked_last_method` `webhook.after_receive` `webhook.failed`(인자에 비밀값 없음)
 - 공개 API 와 마이페이지 API 13종, 관리자 API 16종([docs/api/social-login.md](docs/api/social-login.md)). 요청 제한은 라우트마다 따로 센다
 - 화면 스타일은 플러그인 자체 CSS 로 싣는다 — 템플릿의 CSS 라이브러리와 무관하게 표시되고, 다크 모드는 템플릿이 선언한 다크 방식을 따른다
+- 알림 템플릿 편집 창의 받는 사람에 「사이트 관리자 이메일」(코어 환경설정 > 일반의 관리자 이메일, 메일만)을 고를 수 있습니다(코어 7.2.0).
 
 ### Changed
 

@@ -147,4 +147,12 @@ interface UserAddressRepositoryInterface
      * @return Builder user_id 한 열을 고르는 서브쿼리
      */
     public function userIdsWithAddressQuery(?string $countryCode = null): Builder;
+
+    /**
+     * 회원의 배송지를 모두 삭제합니다 (회원 삭제 정리용).
+     *
+     * @param  int  $userId  회원 ID
+     * @return int 삭제된 행 수
+     */
+    public function deleteByUserId(int $userId): int;
 }

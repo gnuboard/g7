@@ -72,11 +72,9 @@ return [
         'vendor_dir_not_found' => 'vendor/ディレクトリが存在しません。最初にcomposer installを実行してください: :path',
         'composer_binary_not_found' => 'Composerバイナリが見つかりません。COMPOSER_BINARY環境変数を設定するか、composerをPATHに追加してください。',
     ],
-    // 파일 서빙 헬퍼 — 호출부 계약 위반 (개발자 대상)
     'file_serving' => [
         'meta_key_missing' => 'ファイル配信メタに必須キーがありません: :key',
     ],
-
     'seo' => [
         'sitemap_write_failed' => 'Sitemapファイルの記録に失敗しました: :path',
         'sitemap_gzip_failed' => 'Sitemap子ファイルの圧縮に失敗しました: :file',
@@ -227,4 +225,10 @@ return [
     ],
     'privacy_manual_run_conflict' => '同じ対象に対して処理待機中または処理中の職権実行がすでに存在します。終了後に再度実行してください。',
     'privacy_manual_run_disabled' => 'この機能がオフになっているため、今すぐ実行できません。設定で機能をオンにして保存してから、もう一度実行してください。',
+    'upgrade_step_already_running' => '同じアップグレードステップを別の実行が進行中です(:target :version :step) — 同じ DB を使う別のサーバーのアップデートが終わってから再実行してください。その実行が異常終了した場合は、アップデートを --force で再実行してください(開始から :hours時間が過ぎた実行中の表示は、次の実行が自動で回収します)。',
+    'deferred_cleanup_helper_not_allowed' => '許可リストにない整理メソッドのため実行しませんでした: :helper',
+    'stage_layout_write' => '実行役割と一致しないレイアウトテーブルに書き込もうとしました: :table',
+    'deferred_cleanup_target_not_allowed' => '実行できない整理対象のため実行しませんでした(拡張が宣言していないシーダー、または不明な範囲): :target',
+    'deferred_cleanup_core_resync_failed' => 'コア宣言の再同期の一部の手順が失敗したため、整理を完了しませんでした(行を残します): :message',
+    'deferred_cleanup_seeder_failed' => 'シード整理のシーダーが失敗しました: :seeder (終了コード :code)',
 ];

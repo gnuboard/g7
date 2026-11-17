@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\LayoutSourceType;
+use App\Models\Concerns\UsesRuntimeRoleLayoutTable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -23,6 +24,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class TemplateLayout extends Model
 {
     use HasFactory, SoftDeletes;
+    use UsesRuntimeRoleLayoutTable;
 
     /**
      * 대량 할당 가능한 속성

@@ -39,7 +39,8 @@ class UpdateNotificationTemplateRequest extends FormRequest
                 : ['required', 'array', new LocaleRequiredTranslatable(maxLength: 65535)],
             'click_url' => ['nullable', 'string', 'max:500'],
             'recipients' => ['sometimes', 'nullable', 'array'],
-            'recipients.*.type' => ['required', 'string', 'in:trigger_user,related_user,role,specific_users'],
+            // site_admin_email(#888): 환경설정 > 일반의 관리자 이메일 한 곳 — 값 칸이 없다.
+            'recipients.*.type' => ['required', 'string', 'in:trigger_user,related_user,role,specific_users,site_admin_email'],
             // 값의 모양은 타입이 정한다. `nullable` 하나만 두면 역할 칸에 객체가, 사용자 칸에
             // 문자열이 들어와도 그대로 저장되고 **발송 시점에 수신자 0명**으로만 드러난다 —
             // 예외도 로그도 화면에 남지 않는다.
@@ -126,7 +127,7 @@ class UpdateNotificationTemplateRequest extends FormRequest
      * - `role`: 식별자 문자열 **또는** 문자열 배열(다중 선택). 기존 저장값이 문자열이라
      *   둘 다 받는다 — 배열만 받으면 손대지 않은 8행이 저장 시점에 422 가 된다.
      * - `specific_users`: UUID 배열.
-     * - 그 외(`trigger_user`·`related_user`): 값 축이 없다.
+     * - 그 외(`trigger_user`·`related_user`·`site_admin_email`): 값 축이 없다.
      *
      * @param  mixed  $type  수신자 타입
      * @return array<int, mixed> 검증 규칙

@@ -3,6 +3,7 @@
 namespace App\Seo;
 
 use App\Extension\HookManager;
+use App\Support\RuntimeRole;
 use Illuminate\Http\Request;
 
 /**
@@ -54,6 +55,11 @@ class BotDetector
      */
     public function isBot(Request $request): bool
     {
+        // 검수 서버는 봇 렌더를 하지 않는다
+        if (RuntimeRole::isStage()) {
+            return false;
+        }
+
         if (! g7_core_settings('seo.bot_detection_enabled', true)) {
             return false;
         }

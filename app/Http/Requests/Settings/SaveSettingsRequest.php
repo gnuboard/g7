@@ -675,7 +675,6 @@ class SaveSettingsRequest extends FormRequest
             'general.timezone' => $this->getTabRules($tab, 'general', ['timezone']),
             'general.language' => $this->getTabRules($tab, 'general', [Rule::in(config('app.supported_locales', ['ko', 'en']))]),
             'general.currency' => ['nullable', 'string', 'max:10'],
-            'general.maintenance_mode' => ['nullable', 'boolean'],
             // 자산 URL 방식 — 정적 최적화 서버 대응 (이슈 #486).
             // 임의 문자열이 들어오면 AssetUrl::mode() 가 기본값으로 폴백하지만,
             // 저장 단계에서 막아 설정 파일에 뜻 모를 값이 남지 않게 한다.
@@ -1827,7 +1826,6 @@ class SaveSettingsRequest extends FormRequest
             'general.language.required' => __('validation.settings.language_required'),
             'general.language.in' => __('validation.settings.language_invalid'),
             'general.currency.max' => __('validation.settings.currency_max'),
-            'general.maintenance_mode.boolean' => __('validation.settings.maintenance_mode_boolean'),
 
             // 메일 설정
             'mail.mailer.required' => __('validation.settings.mailer_required'),
@@ -2285,7 +2283,6 @@ class SaveSettingsRequest extends FormRequest
             'notifications.channels.*.sort_order' => __('validation.attributes.notification_channel_sort_order'),
             // general
             'general.currency' => __('validation.attributes.default_currency'),
-            'general.maintenance_mode' => __('validation.attributes.maintenance_mode'),
             'general.asset_url_mode' => __('validation.attributes.asset_url_mode'),
             'general.site_logo' => __('validation.attributes.site_logo'),
             'general.site_favicon' => __('validation.attributes.site_favicon'),

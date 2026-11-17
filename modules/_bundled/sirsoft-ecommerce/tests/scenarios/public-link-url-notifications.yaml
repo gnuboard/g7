@@ -1,0 +1,19 @@
+feature: 이커머스 알림 링크 — 밖으로 나가는 링크의 주소(G7_PUBLIC_LINK_URL) (#888)
+
+description: |
+  주문·클레임 알림의 회원용 링크는 코어 ScreenUrl 링크 변형(toAbsoluteForLinks()·userLinkBase())의 회원 범위
+  (「사용자 화면 URL」 → 공개 링크 주소 → 사이트 주소),
+  운영자용 링크와 사이트 링크({site_url})는 SiteUrl::forOutboundLinks()(공개 링크 주소, 비면 사이트 주소)를 쓴다.
+  공개 링크 주소를 비워 두면 지금처럼 사이트 주소다.
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Notifications/PublicLinkUrlNotificationTest.php
+
+axes:
+  case:
+    - configured
+    - unset
+
+effects:
+  - order_and_claim_links_use_public_link_url
+  - order_and_claim_links_keep_site_url

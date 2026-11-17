@@ -333,4 +333,5 @@ return [
         'updated' => 'プラグイン設定が正常にアップデートされました。',
     ],
     'dependency_version_unmet' => '依存する「:dependency」のインストール済みバージョン(:installed)が要求バージョン(:required)を満たしていません。先に依存する拡張を更新してください。',
+    'refresh_layouts_preview_success' => 'レイアウト更新プレビューを作成しました。',
 ];

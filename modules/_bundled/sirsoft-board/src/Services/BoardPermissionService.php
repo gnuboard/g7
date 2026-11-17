@@ -13,6 +13,7 @@ use App\Support\PermissionEscalationGuard;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Board\Models\Board;
+use Modules\Sirsoft\Board\Repositories\Contracts\BoardPermissionRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 
@@ -49,6 +50,11 @@ class BoardPermissionService
     private BoardRepositoryInterface $boardRepository;
 
     /**
+     * 게시판 동적 권한 저장소
+     */
+    private BoardPermissionRepositoryInterface $boardPermissionRepository;
+
+    /**
      * 생성자
      *
      * 인자 없이 만드는 호출처(API 문서 표본 생성 등)가 있어 저장소는 컨테이너에서 기본값을 받는다.
@@ -56,15 +62,18 @@ class BoardPermissionService
      * @param  PermissionRepositoryInterface|null  $permissionRepository  권한 저장소
      * @param  RoleRepositoryInterface|null  $roleRepository  역할 저장소
      * @param  BoardRepositoryInterface|null  $boardRepository  게시판 저장소
+     * @param  BoardPermissionRepositoryInterface|null  $boardPermissionRepository  게시판 동적 권한 저장소
      */
     public function __construct(
         ?PermissionRepositoryInterface $permissionRepository = null,
         ?RoleRepositoryInterface $roleRepository = null,
-        ?BoardRepositoryInterface $boardRepository = null
+        ?BoardRepositoryInterface $boardRepository = null,
+        ?BoardPermissionRepositoryInterface $boardPermissionRepository = null
     ) {
         $this->permissionRepository = $permissionRepository ?? app(PermissionRepositoryInterface::class);
         $this->roleRepository = $roleRepository ?? app(RoleRepositoryInterface::class);
         $this->boardRepository = $boardRepository ?? app(BoardRepositoryInterface::class);
+        $this->boardPermissionRepository = $boardPermissionRepository ?? app(BoardPermissionRepositoryInterface::class);
     }
 
     /**
@@ -335,23 +344,56 @@ class BoardPermissionService
     /**
      * 게시판의 모든 권한을 삭제합니다.
      *
-     * 그누보드7 규정: detach 후 삭제 순서를 따릅니다.
-     * 카테고리 권한 삭제 시 CASCADE로 자식 권한도 함께 삭제됩니다.
+     * 카테고리 권한(`sirsoft-board.{slug}`)과 그 하위 권한을 깊은 자식부터 명시적으로 지운다(DB CASCADE 비의존, #888).
+     * 권한마다 역할 부여(`role_permissions`)를 떼고 훅 매핑(`permission_hooks`)을 지운 뒤 권한 행을 지운다.
+     *
+     * 지울 대상은 두 갈래로 모은다 — 카테고리의 `parent_id` 사슬로 이어진 하위 트리, 그리고 사슬에서 떨어져
+     * `parent_id` 가 비어 있어도 식별자가 이 게시판의 액션 권한(`sirsoft-board.{slug}.{action}`, 권한 정의 키 기준)인 행.
+     * 식별자 접두로 넓게 훑지 않는 것은 다른 게시판·모듈 고정 권한을 건드리지 않기 위해서다.
      *
      * @param  Board  $board  대상 게시판
      * @return void 반환값 없음
      */
     public function removeBoardPermissions(Board $board): void
     {
-        // 카테고리 권한 찾기
-        $categoryPermission = $this->permissionRepository->findByIdentifier(self::MODULE_IDENTIFIER.".{$board->slug}");
+        $categoryIdentifier = self::MODULE_IDENTIFIER.".{$board->slug}";
+
+        /** @var array<int, array{permission: Permission, depth: int}> $nodes 권한 ID → 권한·깊이 */
+        $nodes = [];
+
+        $categoryPermission = $this->permissionRepository->findByIdentifier($categoryIdentifier);
 
         if ($categoryPermission) {
-            // 그누보드7 규정: detach 후 삭제
-            // CASCADE로 자식 권한도 함께 삭제됨
-            $categoryPermission->roles()->detach();
-            $categoryPermission->delete();
+            $queue = [[$categoryPermission, 0]];
+
+            while ($queue !== []) {
+                [$node, $depth] = array_shift($queue);
+
+                if (isset($nodes[$node->id])) {
+                    continue;
+                }
+
+                $nodes[$node->id] = ['permission' => $node, 'depth' => $depth];
+
+                foreach ($this->boardPermissionRepository->getChildren($node) as $child) {
+                    $queue[] = [$child, $depth + 1];
+                }
+            }
         }
+
+        // parent_id 사슬에서 떨어진 이 게시판의 액션 권한
+        foreach (array_keys(config('sirsoft-board.board_permission_definitions', [])) as $key) {
+            $permission = $this->permissionRepository->findByIdentifier("{$categoryIdentifier}.{$key}");
+
+            if ($permission && ! isset($nodes[$permission->id])) {
+                $nodes[$permission->id] = ['permission' => $permission, 'depth' => PHP_INT_MAX];
+            }
+        }
+
+        // 깊은 자식부터 지운다 — 부모가 먼저 지워지면 외래키 연쇄가 자식을 지워 역할·훅 정리를 건너뛴다
+        uasort($nodes, fn (array $a, array $b) => $b['depth'] <=> $a['depth']);
+
+        $this->boardPermissionRepository->deleteWithRelations(array_column($nodes, 'permission'));
     }
 
     /**

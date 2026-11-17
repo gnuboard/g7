@@ -146,8 +146,8 @@
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 169개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 103개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 25개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 구독 훅 | 104개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 26개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 6개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 1개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |

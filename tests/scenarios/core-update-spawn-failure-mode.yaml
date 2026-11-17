@@ -93,6 +93,7 @@ effects:
   - handleSpawnExit_zero_executed_zero_discovered_returns_true          # 케이스 B: 스텝 파일 부재 정상 통과
   - handleSpawnExit_zero_executed_positive_discovered_dispatches_to_failSpawnWithMode  # 케이스 A: gnuboard/g7#28 silent skip
   - handleSpawnExit_zero_executed_null_discovered_from_lt_to_dispatches_to_failSpawnWithMode  # 구버전 자식 레거시 판정
+  - handleSpawnExit_zero_executed_all_skipped_by_ledger_returns_true  # 같은 DB 의 다른 서버가 이미 끝낸 스텝만 있음 (실행 대장 건너뜀)
   - spawnUpgradeStepsProcess_no_step_files_returns_true_even_when_from_lt_to  # 7.0.0→7.0.1 실증
   - runUpgradeSteps_notifies_discovered_zero_when_no_step_in_range
   - spawnUpgradeStepsProcess_zero_steps_with_from_eq_to_forced_returns_true
@@ -123,6 +124,7 @@ effects:
   - upgrade_step_vone_safety_skips_when_audit_allow_inline_present
   # §8 핸드오프 재실행 권한 안내 (sudo/root × 웹서버 계정 식별성 4분기)
   - renderResumeGuidance_non_root_prints_command_verbatim_without_permission_warning
+  - renderResumeGuidance_app_version_prefix_adds_powershell_form  # APP_VERSION 접두 명령은 PowerShell 형식도 함께
   - renderResumeGuidance_root_web_known_prefixes_sudo_u_and_warns_with_account_name
   - renderResumeGuidance_root_web_symmetric_prints_command_verbatim
   - renderResumeGuidance_root_web_unknown_uses_placeholder_and_generic_warning

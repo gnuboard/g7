@@ -634,7 +634,7 @@ if (isset($_GET['ajax_action'])) {
                                         <span>빌드</span>
                                         <span class="text-[10px] opacity-60">(build)</span>
                                     </button>
-                                    <button onclick="runModuleCommand('refresh-layout')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded transition-colors">
+                                    <button onclick="runModuleCommand('refresh-layout', '--layout-strategy=overwrite')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded transition-colors">
                                         <span>레이아웃 갱신</span>
                                         <span class="text-[10px] opacity-60">(refresh-layout)</span>
                                     </button>
@@ -716,7 +716,7 @@ if (isset($_GET['ajax_action'])) {
                                         <span>빌드</span>
                                         <span class="text-[10px] opacity-60">(build)</span>
                                     </button>
-                                    <button onclick="runTemplateCommand('refresh-layout')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded transition-colors">
+                                    <button onclick="runTemplateCommand('refresh-layout', '--layout-strategy=overwrite')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded transition-colors">
                                         <span>레이아웃 갱신</span>
                                         <span class="text-[10px] opacity-60">(refresh-layout)</span>
                                     </button>
@@ -786,7 +786,7 @@ if (isset($_GET['ajax_action'])) {
                                         <span>빌드</span>
                                         <span class="text-[10px] opacity-60">(build)</span>
                                     </button>
-                                    <button onclick="runPluginCommand('refresh-layout')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded transition-colors">
+                                    <button onclick="runPluginCommand('refresh-layout', '--layout-strategy=overwrite')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded transition-colors">
                                         <span>레이아웃 갱신</span>
                                         <span class="text-[10px] opacity-60">(refresh-layout)</span>
                                     </button>
@@ -922,6 +922,30 @@ if (isset($_GET['ajax_action'])) {
                                 <button onclick="runCommand('extension:update-autoload')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>오토로드 갱신</span>
                                     <span class="text-[10px] opacity-60">(extension:update-autoload)</span>
+                                </button>
+                                <button onclick="runCommand('extension:list')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>확장 상태 목록</span>
+                                    <span class="text-[10px] opacity-60">(extension:list)</span>
+                                </button>
+                                <button onclick="runCommand('extension:reset-files-from-bundled --dry-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>파일 동기화 판정</span>
+                                    <span class="text-[10px] opacity-60">(extension:reset-files-from-bundled --dry-run)</span>
+                                </button>
+                                <button onclick="runCommand('g7:migrate-plan')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>마이그레이션 계획</span>
+                                    <span class="text-[10px] opacity-60">(g7:migrate-plan)</span>
+                                </button>
+                                <button onclick="runCommand('extension:apply-deferred-cleanup --dry-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>미뤄 둔 정리 판정</span>
+                                    <span class="text-[10px] opacity-60">(extension:apply-deferred-cleanup --dry-run)</span>
+                                </button>
+                                <button onclick="runCommand('stage:apply-to-live --dry-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>운영 서버 마무리 판정</span>
+                                    <span class="text-[10px] opacity-60">(stage:apply-to-live --dry-run)</span>
+                                </button>
+                                <button onclick="runCommand('core:resync-declarations')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>코어 선언 다시 맞추기</span>
+                                    <span class="text-[10px] opacity-60">(core:resync-declarations)</span>
                                 </button>
                                 <button onclick="runCommand('extension:clear-version-cache')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>버전 캐시 초기화</span>
@@ -1142,6 +1166,10 @@ if (isset($_GET['ajax_action'])) {
                                 <button onclick="runCommand('trusted-proxy:status')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>신뢰 프록시 점검</span>
                                     <span class="text-[10px] opacity-60">(trusted-proxy:status)</span>
+                                </button>
+                                <button onclick="runCommand('storage:paths')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>저장 경로 분류</span>
+                                    <span class="text-[10px] opacity-60">(storage:paths)</span>
                                 </button>
                                 <button onclick="runCommand('security:audit-dependencies')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>의존성 취약점 점검</span>
@@ -2398,7 +2426,8 @@ if (isset($_GET['ajax_action'])) {
         // ==========================================
         // 모듈 커맨드 실행
         // ==========================================
-        async function runModuleCommand(action) {
+        // extra: 식별자 뒤에 붙일 옵션 — 레이아웃 갱신 버튼은 개발 중 파일 판을 바로 보려고 덮어쓰기(overwrite)를 명시한다(기본은 keep).
+        async function runModuleCommand(action, extra = '') {
             const select = document.getElementById('moduleSelect');
             const identifier = select.value;
 
@@ -2407,14 +2436,15 @@ if (isset($_GET['ajax_action'])) {
                 return;
             }
 
-            const command = `module:${action} ${identifier}`;
+            const command = `module:${action} ${identifier}`+(extra ? ' ' + extra : '');
             await runCommand(command);
         }
 
         // ==========================================
         // 템플릿 커맨드 실행
         // ==========================================
-        async function runTemplateCommand(action) {
+        // extra: 식별자 뒤에 붙일 옵션 — 레이아웃 갱신 버튼은 개발 중 파일 판을 바로 보려고 덮어쓰기(overwrite)를 명시한다(기본은 keep).
+        async function runTemplateCommand(action, extra = '') {
             const select = document.getElementById('templateSelect');
             const identifier = select.value;
 
@@ -2423,14 +2453,15 @@ if (isset($_GET['ajax_action'])) {
                 return;
             }
 
-            const command = `template:${action} ${identifier}`;
+            const command = `template:${action} ${identifier}`+(extra ? ' ' + extra : '');
             await runCommand(command);
         }
 
         // ==========================================
         // 플러그인 커맨드 실행
         // ==========================================
-        async function runPluginCommand(action) {
+        // extra: 식별자 뒤에 붙일 옵션 — 레이아웃 갱신 버튼은 개발 중 파일 판을 바로 보려고 덮어쓰기(overwrite)를 명시한다(기본은 keep).
+        async function runPluginCommand(action, extra = '') {
             const select = document.getElementById('pluginSelect');
             const identifier = select.value;
 
@@ -2439,7 +2470,7 @@ if (isset($_GET['ajax_action'])) {
                 return;
             }
 
-            const command = `plugin:${action} ${identifier}`;
+            const command = `plugin:${action} ${identifier}`+(extra ? ' ' + extra : '');
             await runCommand(command);
         }
 

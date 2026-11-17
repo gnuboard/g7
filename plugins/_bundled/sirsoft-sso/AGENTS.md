@@ -86,6 +86,8 @@
 **정책 저장과 판정** — `PolicyController@update`(`PolicyUpdateRequest`) → `PolicyService::update`(최고관리자 전용 칸, 비상 계정 0명, 활성 IdP 없는 사이트 강제를 거절) → `SitePolicyRepository::save` → 새 강제 대상의 비밀번호 토큰 회수. 판정은 코어 필터 `core.auth.password_auth_decision` → `EnforcePasswordPolicyListener` → `EnforcementPolicy::decide`.
 
 **관리자 IdP 설정** — `IdpController`(`IdpStoreRequest`, `IdpUpdateRequest`, `IdpTestRequest`) → `IdpAdminService`(비밀값 마스크 규칙, 드라이버 `validateConfig`, `isAvailable` 확인 뒤 활성화) → `AdminIdpRepository`, `IdentityProviderRepository` → `IdentityProvider` 모델(`driver()`). 앱 키가 바뀌어 `secrets` 를 풀 수 없으면 관리 경로는 `readableSecrets()`(빈 배열)로 읽어 편집 화면이 비밀값 미설정으로 열리고, 다시 입력한 값이 옛 암호문을 덮는다(새 값 없이 저장하면 옛 암호문은 그대로 둔다). 두 모델(`IdentityProvider`, `SsoAccount`)은 `Concerns\SavesOverUnreadableEncryptedValues` 로 풀 수 없는 원본을 「바뀐 값」으로 본다 — 저장 때 Eloquent 가 옛 암호문을 풀다 멈추지 않게.
+**제거와 데이터(코어 7.2.0)**: `uninstall()` 은 데이터 보존 제거에서도 불린다 — 메뉴는 지우지 않는다. 메뉴·권한·역할·알림 정의·본인확인 정책·스케줄은 「데이터도 함께 삭제」를 고른 제거에서 코어가 지운다(운영자가 만든 자식 메뉴는 최상위로 올리고, 운영자가 고친 항목은 지우기 직전 활동 로그에 남긴다). 플러그인이 코어 행에 더한 데이터는 `uninstallData()` 에서 지운다.
+
 <!-- @intent END -->
 
 ## 4. 확장점

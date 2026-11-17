@@ -327,6 +327,8 @@ null 아님으로 가정하지 마세요 — 작성자 표시는 `ProductReview:
 지정하면 그 회원의 적립건만 연장합니다(`MileageTransactionRepositoryInterface::getRemainingLotsByIds(?int $userId, …)`).
 관리자 마일리지 내역 화면은 적립건만 보내고 회원을 지정하지 않습니다 — 고른 것 중 첫 건의 회원을 뽑아
 보내던 때는 나머지 회원의 적립건이 조용히 빠졌습니다.
+**기본 데이터 시더의 선언 정리(코어 7.2.0)**: 클레임 사유·배송사·배송 유형 시더는 선언에서 빠진 기본 행을 `GenericEntitySyncHelper::cleanupStale(..., ownerIdentifier: 'sirsoft-ecommerce')` 로 지운다 — 운영자가 고친 행(`user_overrides`)이면 지우기 직전 활동 로그 `entity.sync_deleted` 에 남는다.
+
 <!-- @intent END -->
 
 ## 4. 확장점

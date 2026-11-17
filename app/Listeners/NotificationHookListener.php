@@ -849,6 +849,7 @@ class NotificationHookListener implements HookListenerInterface
                 'specific_users' => __('notification.recipient_rules.specific_users', [
                     'count' => is_array($value) ? count($value) : 0,
                 ]),
+                'site_admin_email' => __('notification.recipient_rules.site_admin_email'),
                 default => $type,
             };
 

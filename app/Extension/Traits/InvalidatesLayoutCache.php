@@ -5,7 +5,9 @@ namespace App\Extension\Traits;
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Enums\LayoutSourceType;
+use App\Extension\Cache\CacheDriverFactory;
 use App\Extension\Cache\CoreCacheDriver;
+use App\Extension\Layout\LayoutSyncOptions;
 use App\Services\ExtensionStaticCacheService;
 use Illuminate\Support\Facades\Log;
 
@@ -34,9 +36,15 @@ trait InvalidatesLayoutCache
      *
      * @param  string  $extensionIdentifier  확장 식별자 (모듈 또는 플러그인)
      * @param  string  $extensionType  확장 타입 ('module' 또는 'plugin')
+     * @return void 반환값 없음
      */
     protected function invalidateExtensionLayoutCache(string $extensionIdentifier, string $extensionType = 'module'): void
     {
+        // 레이아웃 동기화 미리보기(dry-run)는 판정만 한다 — 캐시를 지우지 않는다.
+        if (! LayoutSyncOptions::writes()) {
+            return;
+        }
+
         try {
             // 확장 타입에 따라 올바른 소스 타입으로 레이아웃 조회
             $sourceType = $extensionType === 'plugin' ? LayoutSourceType::Plugin : LayoutSourceType::Module;
@@ -62,6 +70,7 @@ trait InvalidatesLayoutCache
      *
      * @param  int  $templateId  템플릿 ID
      * @param  string  $templateIdentifier  템플릿 식별자 (PublicLayoutController 캐시 삭제에 필요)
+     * @return void 반환값 없음
      */
     protected function invalidateTemplateLayoutCache(int $templateId, string $templateIdentifier = ''): void
     {
@@ -94,9 +103,14 @@ trait InvalidatesLayoutCache
      *
      * @param  object  $layout  레이아웃 모델 (template_id, name, source_type, source_identifier 필드 필요)
      * @param  string  $templateIdentifier  템플릿 식별자 (PublicLayoutController 캐시 삭제에 필요)
+     * @return void 반환값 없음
      */
     protected function forgetLayoutCacheKeys(object $layout, string $templateIdentifier = ''): void
     {
+        if (! LayoutSyncOptions::writes()) {
+            return;
+        }
+
         $cache = $this->resolveLayoutCache();
 
         // 1. LayoutService 내부 캐시 (버전 없음 → 능동 삭제)
@@ -139,10 +153,12 @@ trait InvalidatesLayoutCache
      * `PluginCacheDriver` 등으로 재바인딩할 수 있음)에 의존하지 않고 항상
      * CoreCacheDriver 를 직접 생성한다. 의존 시 누수된 바인딩 때문에
      * `g7:plugin.*` 네임스페이스로 forget 이 빗나가 캐시가 실제로 삭제되지 않는다.
+     *
+     * @return CacheInterface 코어 캐시 드라이버
      */
     private function resolveLayoutCache(): CacheInterface
     {
-        return new CoreCacheDriver(config('cache.default', 'array'));
+        return CacheDriverFactory::core();
     }
 
     /**

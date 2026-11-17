@@ -84,8 +84,8 @@ class CorePrivacyNotificationDataListener implements HookListenerInterface
                 // 받는 사람 이름은 발송 직전에 채널의 표시 이름으로 바뀐다.
                 'name' => NotificationHookListener::RECIPIENT_NAME_PLACEHOLDER,
                 'app_name' => config('app.name'),
-                'action_url' => ScreenUrl::absolute('auth.login', '/login'),
-                'site_url' => ScreenUrl::userBase(),
+                'action_url' => ScreenUrl::absoluteForLinks('auth.login', '/login'),
+                'site_url' => ScreenUrl::userLinkBase(),
                 // 커맨드가 계산한 값을 그대로 쓴다 — 없으면 빈 문자열로 두고 문구가 날짜 없이
                 // 읽히게 한다. 여기서 임의로 오늘 날짜를 넣으면 사실과 다른 고지가 나간다.
                 'dormant_days' => (string) ($extra['dormant_days'] ?? ''),

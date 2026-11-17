@@ -2,6 +2,8 @@
  * @file admin-extension-update-modal-order.test.tsx
  * @description 업데이트 창의 「검색 인덱스」 상자가 「레이아웃 처리 방식」 묶음 밖에 있다 (7.1.0 전수 실측, #736)
  *
+ * 처리 방식은 7.2.0(#888)부터 공통 미리보기 조각(`_shared/_layout_sync_preview`)이 그린다 — 그 조각 노드를 묶음으로 본다.
+ *
  * 모듈·플러그인 업데이트 창에서 검색 인덱스 재생성 상자가 「레이아웃 처리 방식」 제목과 그 선택지(덮어쓰기·남기기)
  * 사이에 끼어 있어, 제목 바로 아래에 엉뚱한 상자가 오고 선택지가 그 아래로 밀렸다. 두 묶음은 서로 다른 결정이므로
  * 검색 인덱스 상자는 레이아웃 처리 방식 묶음 다음의 형제로 둔다.
@@ -39,9 +41,10 @@ function expectSiblingBlocks(layout: unknown, type: 'modules' | 'plugins', index
   expect(indexPath, `${indexId} 상자가 있어야 합니다`).not.toBeNull();
   const indexAncestors = indexPath!.slice(0, -1);
 
-  const titlePath = findWithAncestors(layout, (n) => n.text === `$t:admin.${type}.modals.layout_strategy_title`);
-  expect(titlePath, '레이아웃 처리 방식 제목이 있어야 합니다').not.toBeNull();
-  const strategyBox = titlePath![titlePath!.length - 2];
+  void type;
+  const previewPath = findWithAncestors(layout, (n) => n.partial === 'partials/_shared/_layout_sync_preview.json');
+  expect(previewPath, '레이아웃 처리 방식(공통 미리보기 조각)이 있어야 합니다').not.toBeNull();
+  const strategyBox = previewPath![previewPath!.length - 1];
 
   // 레이아웃 처리 방식 묶음(제목의 부모) 안에 검색 인덱스 상자가 들어 있으면 안 된다
   expect(indexAncestors.includes(strategyBox)).toBe(false);

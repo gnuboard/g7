@@ -35,6 +35,7 @@ use App\Support\PhpExtensionRequirements;
 use App\Support\PrivateAttachmentDisk;
 use App\Support\ProcessOutputEncoding;
 use App\Support\RouteCacheHelper;
+use App\Support\RuntimeRole;
 use App\Support\SearchScopes;
 use App\Support\Settings\ComputedSettingFields;
 use App\Support\SettingsVersion;
@@ -122,6 +123,11 @@ class SettingsService
      */
     private function restartQueueWorkers(): void
     {
+        // 검수 서버의 재시작 신호는 공유 캐시를 거쳐 운영 서버 워커까지 재시작시킨다
+        if (RuntimeRole::isStage()) {
+            return;
+        }
+
         try {
             Artisan::call('queue:restart');
         } catch (\Throwable $e) {
@@ -1833,6 +1839,10 @@ class SettingsService
      * 하드웨어/환경 정보는 1시간 캐시하며, 실시간성이 요구되는
      * server_time 은 매 호출마다 갱신합니다.
      *
+     * 확장이 필터 훅 `core.settings.filter_system_info_sections` 로 더한 카드(`extra_sections`)도 캐시 밖에서 매 요청
+     * 새로 모읍니다 — 확장 정보는 캐시 수명과 무관하게 최신이어야 합니다. 검증·리스너 예외 격리는
+     * {@see SystemInfoSectionService} 가 맡습니다 (#888).
+     *
      * @return array 시스템 정보 배열
      */
     public function getSystemInfo(): array
@@ -1848,6 +1858,9 @@ class SettingsService
 
         // audit:allow datetime-display-user-timezone reason: 서버 시각 진단값 — 의도된 서버 기준
         $info['server_time'] = now()->format('Y-m-d H:i:s');
+
+        // 확장 카드 — 캐시된 응답에서도 매 요청 새로 계산한다. 리스너 하나가 던져도 이 응답은 계속 200 이다.
+        $info['extra_sections'] = app(SystemInfoSectionService::class)->collect();
 
         return $info;
     }

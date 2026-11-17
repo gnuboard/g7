@@ -27,7 +27,9 @@ use App\Extension\Concerns\ChecksDependencyVersions;
 use App\Extension\Concerns\ResolvesExtensionIcons;
 use App\Extension\Concerns\ResolvesExtensionSharedRecords;
 use App\Extension\Concerns\ResolvesUpdateCoreCompatibility;
+use App\Extension\Concerns\TracksGithubVersionCheckError;
 use App\Extension\Exceptions\ExtensionSeederFailedException;
+use App\Extension\Helpers\DeclaredExtensionKeys;
 use App\Extension\Helpers\DependencyEnricher;
 use App\Extension\Helpers\DependencyVersionWarnings;
 use App\Extension\Helpers\ExtensionBackupHelper;
@@ -56,6 +58,7 @@ use App\Extension\Integrity\PackageIntegrityOptions;
 use App\Extension\Integrity\PackageVerification;
 use App\Extension\Layout\DTO\LayoutSyncEntry;
 use App\Extension\Layout\LayoutRowSynchronizer;
+use App\Extension\Layout\LayoutSyncOptions;
 use App\Extension\Layout\LayoutSyncReport;
 use App\Extension\Support\ComputedSettingKeys;
 use App\Extension\Support\ExtensionRemoteStorageCleanup;
@@ -63,6 +66,8 @@ use App\Extension\Support\LifecycleWarnings;
 use App\Extension\Support\UnusableUpgradeStep;
 use App\Extension\Testing\ExtensionTestAllowlist;
 use App\Extension\Traits\CollectsFragmentSources;
+use App\Extension\Update\ExtensionUpdatePreviewStore;
+use App\Extension\Upgrade\UpgradeStepRunLedger;
 use App\Extension\Vendor\Exceptions\VendorInstallException;
 use App\Extension\Vendor\VendorInstallContext;
 use App\Extension\Vendor\VendorInstallResult;
@@ -77,12 +82,14 @@ use App\Models\Plugin;
 use App\Models\Schedule;
 use App\Models\Template;
 use App\Providers\CoreServiceProvider;
+use App\Services\Layout\LayoutDeletionService;
 use App\Services\LayoutExtensionService;
 use App\Support\AssetUrl;
 use App\Support\ExtensionStoragePath;
 use App\Support\LocalizedValue;
 use App\Support\PublicApiManifest;
 use App\Support\RouteCacheHelper;
+use App\Support\RuntimeRole;
 use App\Thumbnails\ThumbnailStore;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -100,6 +107,7 @@ class ModuleManager implements ModuleManagerInterface
     use ResolvesExtensionIcons;
     use ResolvesExtensionSharedRecords;
     use ResolvesUpdateCoreCompatibility;
+    use TracksGithubVersionCheckError;
     use Traits\CachesModuleStatus;
     use Traits\ClearsTemplateCaches;
     use Traits\ComputesLayoutContentHash;
@@ -1315,7 +1323,7 @@ class ModuleManager implements ModuleManagerInterface
                         LifecycleWarnings::current()->add('cleanup', $module->getIdentifier(), $e->getMessage());
                     }
 
-                    // 알림 정의/템플릿도 data 옵션 선택 시 제거 (FK cascade 로 templates 자동 정리)
+                    // 알림 정의/템플릿도 data 옵션 선택 시 제거 — 헬퍼가 정의의 템플릿을 명시적으로 지운다(DB CASCADE 비의존)
                     if (Schema::hasTable('notification_definitions')) {
                         try {
                             app(NotificationSyncHelper::class)
@@ -3315,24 +3323,9 @@ class ModuleManager implements ModuleManagerInterface
         //
         // 동적 권한(예: BoardPermissionService 가 게시판 생성 시 runtime 삽입) 은
         // AbstractModule::getDynamicPermissionIdentifiers() 를 통해 수집 → 보존.
-        $permissionConfig = $module->getPermissions();
-        if (isset($permissionConfig['categories'])) {
-            $moduleIdentifier = $module->getIdentifier();
-            $expectedPermIds = [$moduleIdentifier];
-            foreach ($permissionConfig['categories'] as $cat) {
-                $categoryIdentifier = $moduleIdentifier.'.'.($cat['identifier'] ?? '');
-                if (! empty($cat['identifier'])) {
-                    $expectedPermIds[] = $categoryIdentifier;
-                }
-                foreach ($cat['permissions'] ?? [] as $p) {
-                    if (isset($p['action'])) {
-                        $expectedPermIds[] = $categoryIdentifier.'.'.$p['action'];
-                    }
-                }
-            }
-            if (method_exists($module, 'getDynamicPermissionIdentifiers')) {
-                $expectedPermIds = array_merge($expectedPermIds, $module->getDynamicPermissionIdentifiers());
-            }
+        // 선언 키는 미리보기(planCleanup)와 같은 함수로 뽑는다 — 판정식 한 벌.
+        $expectedPermIds = DeclaredExtensionKeys::permissions($module);
+        if ($expectedPermIds !== null) {
             $roleSyncHelper->cleanupStalePermissions(
                 ExtensionOwnerType::Module,
                 $module->getIdentifier(),
@@ -3365,19 +3358,13 @@ class ModuleManager implements ModuleManagerInterface
 
         // 3. 역할 stale 정리 (정적 getRoles + 동적 역할 병합)
         // 정적·동적 어느 쪽이든 존재하면 cleanup 실행. 둘 다 비어있으면 skip (모든 역할 삭제 방지).
-        if (method_exists($module, 'getRoles')) {
-            $roles = $module->getRoles();
-            $staticRoleIds = array_column($roles, 'identifier');
-            $dynamicRoleIds = method_exists($module, 'getDynamicRoleIdentifiers')
-                ? $module->getDynamicRoleIdentifiers()
-                : [];
-            if (! empty($staticRoleIds) || ! empty($dynamicRoleIds)) {
-                $roleSyncHelper->cleanupStaleRoles(
-                    ExtensionOwnerType::Module,
-                    $module->getIdentifier(),
-                    array_merge($staticRoleIds, $dynamicRoleIds),
-                );
-            }
+        $declaredRoleIds = DeclaredExtensionKeys::roles($module);
+        if ($declaredRoleIds !== null) {
+            $roleSyncHelper->cleanupStaleRoles(
+                ExtensionOwnerType::Module,
+                $module->getIdentifier(),
+                $declaredRoleIds,
+            );
         }
     }
 
@@ -3632,7 +3619,8 @@ class ModuleManager implements ModuleManagerInterface
     {
         try {
             // soft deleted 포함 모든 모듈 레이아웃 영구 삭제
-            $deletedCount = $this->layoutRepository->forceDeleteByModule($moduleIdentifier);
+            // 운영자 데이터(고친 화면)는 지우기 직전 활동 로그에 스냅샷, 버전 이력은 명시 삭제
+            $deletedCount = app(LayoutDeletionService::class)->forceDeleteLayoutsBySource($moduleIdentifier, LayoutSourceType::Module, 'uninstall');
 
             // 레이아웃 캐시 무효화
             $this->invalidateLayoutCache($moduleIdentifier);
@@ -3662,18 +3650,12 @@ class ModuleManager implements ModuleManagerInterface
     {
         $identifier = $module->getIdentifier();
 
-        // 모듈 관련 권한에서 role 연결 해제 후 삭제
-        $permissions = $this->permissionRepository->getByExtension(ExtensionOwnerType::Module, $identifier);
-        foreach ($permissions as $permission) {
-            // 먼저 role_permissions 테이블에서 연결 해제
-            $permission->roles()->detach();
-        }
+        // 권한 하위 트리·역할 부여(role_permissions)·훅 매핑(permission_hooks)을 명시적으로 지운다 — DB CASCADE 에 기대지 않는다.
+        app(ExtensionRoleSyncHelper::class)->cleanupStalePermissions(ExtensionOwnerType::Module, $identifier, []);
 
-        // 권한 삭제
-        $this->permissionRepository->deleteByExtension(ExtensionOwnerType::Module, $identifier);
-
-        // 모듈 관련 메뉴 삭제
-        $this->menuRepository->deleteByExtension(ExtensionOwnerType::Module, $identifier);
+        // 메뉴 하위 트리·역할 배정(role_menus)·메뉴 권한(menu_permissions)을 명시적으로 지운다.
+        // 운영자가 만든 자식 메뉴(다른 출처)는 지우지 않고 최상위로 올리고, 운영자 데이터는 지우기 직전 기록한다.
+        app(ExtensionMenuSyncHelper::class)->cleanupStaleMenus(ExtensionOwnerType::Module, $identifier, []);
 
         // 모듈 역할 삭제
         $this->removeModuleRoles($module);
@@ -3843,6 +3825,9 @@ class ModuleManager implements ModuleManagerInterface
     /**
      * GitHub에서 모듈의 최신 버전을 가져옵니다.
      *
+     * 조회에 실패하면(주소 해석 실패·연결 실패·404 가 아닌 실패 응답·예외) null 을 돌려주고 사유를 기록한다 —
+     * {@see checkModuleUpdate()} 가 응답의 `check_error` 로 싣는다. 릴리스가 아직 없으면(404) 사유 없이 null 이다.
+     *
      * @param  ModuleInterface  $module  모듈 인스턴스
      * @return string|null 최신 버전 또는 null
      */
@@ -3857,12 +3842,15 @@ class ModuleManager implements ModuleManagerInterface
         try {
             [$owner, $repo] = GithubHelper::parseUrl($githubUrl);
         } catch (\RuntimeException $e) {
+            $this->recordGithubVersionCheckError($e->getMessage());
+
             return null;
         }
 
         try {
             $token = (string) (config('app.update.github_token') ?? '');
             $result = GithubHelper::fetchLatestRelease($owner, $repo, $token);
+            $this->recordGithubVersionCheckError($this->githubReleaseCheckError($result));
 
             return $result['version'];
         } catch (\Exception $e) {
@@ -3870,6 +3858,7 @@ class ModuleManager implements ModuleManagerInterface
                 'module' => $module->getName(),
                 'error' => $e->getMessage(),
             ]);
+            $this->recordGithubVersionCheckError($e->getMessage());
 
             return null;
         }
@@ -4128,15 +4117,20 @@ class ModuleManager implements ModuleManagerInterface
      * 이름뿐이다(W15). overwrite 면 새 판으로 덮는다(수동 「레이아웃 갱신」).
      *
      * @param  string  $moduleName  모듈명
-     * @param  bool  $preserveModified  운영자가 고친 화면을 보존(병합)할지 여부 (keep)
+     * @param  bool|LayoutSyncMode  $preserveModified  동기화 모드 (keep 이 기본 — 운영자가 고친 화면을 병합해 보존, overwrite 면 새 판으로 덮음). bool 은 호환용(true = keep)
      * @param  string|null  $backupPath  업데이트 백업 디렉토리 — 원본 본문이 없는 행의 비교 기준을 만든다
      * @param  LayoutSyncReport|null  $report  결과를 모을 보고 (업데이트 경로가 조각 사전 재등록 결과와 합칠 때)
      * @return array{success: bool, layouts_refreshed: int, created: int, updated: int, deleted: int, unchanged: int, skipped: int, extensions_refreshed?: int, layout_sync: array<string, mixed>, layout_warnings: array<int, array<string, string>>} 갱신 결과 (빈 자리로 등록한 조각 참조 경고 포함)
      *
      * @throws \Exception 모듈을 찾을 수 없거나 레이아웃 갱신 실패 시
      */
-    public function refreshModuleLayouts(string $moduleName, bool $preserveModified = false, ?string $backupPath = null, ?LayoutSyncReport $report = null): array
+    public function refreshModuleLayouts(string $moduleName, bool|LayoutSyncMode $preserveModified = LayoutSyncMode::Keep, ?string $backupPath = null, ?LayoutSyncReport $report = null): array
     {
+        // 업데이트 미리보기는 새 판 디렉토리를 읽는다 — 그 동안 마크업 컴파일의 소유 확장을 이 모듈로 고정한다.
+        if (LayoutSyncOptions::current()->sourceRoot !== null && $this->compileContextOverride === null) {
+            return $this->withLayoutSourceContext($moduleName, fn () => $this->refreshModuleLayouts($moduleName, $preserveModified, $backupPath, $report));
+        }
+
         $module = $this->getModule($moduleName);
 
         if (! $module) {
@@ -4150,8 +4144,9 @@ class ModuleManager implements ModuleManagerInterface
         }
 
         $identifier = $module->getIdentifier();
-        $layoutsPath = base_path("modules/{$moduleName}/resources/layouts");
-        $mode = LayoutSyncMode::fromPreserve($preserveModified);
+        $layoutsPath = $this->layoutSourceRoot('modules', $moduleName).'/resources/layouts';
+        $mode = $preserveModified instanceof LayoutSyncMode ? $preserveModified : LayoutSyncMode::fromPreserve($preserveModified);
+        $preserveModified = $mode === LayoutSyncMode::Keep;
         $report ??= new LayoutSyncReport($mode);
 
         // 활성화된 admin/user 타입 템플릿 조회
@@ -4161,7 +4156,7 @@ class ModuleManager implements ModuleManagerInterface
         if ($adminTemplates->isEmpty() && $userTemplates->isEmpty()) {
             Log::warning("활성화된 admin/user 템플릿이 없어 모듈 레이아웃을 갱신할 수 없습니다: {$moduleName}");
 
-            return ['success' => true, 'layouts_refreshed' => 0, 'created' => 0, 'updated' => 0, 'deleted' => 0, 'unchanged' => 0, 'skipped' => 0, 'layout_sync' => $report->toArray(), 'layout_warnings' => [], 'warnings' => LifecycleWarnings::current()->all()];
+            return ['success' => true, 'layouts_refreshed' => 0, 'created' => 0, 'updated' => 0, 'deleted' => 0, 'unchanged' => 0, 'skipped' => 0, 'layout_sync' => $report->toArray(), 'layout_preview' => $report->toPreviewArray(), 'layout_warnings' => [], 'warnings' => LifecycleWarnings::current()->all()];
         }
 
         $stats = ['created' => 0, 'updated' => 0, 'deleted' => 0, 'unchanged' => 0, 'skipped' => 0];
@@ -4276,7 +4271,7 @@ class ModuleManager implements ModuleManagerInterface
             'unchanged' => $stats['unchanged'],
             'skipped' => $stats['skipped'] + ($extensionStats['skipped'] ?? 0),
             'extensions_refreshed' => $extensionStats['refreshed'] ?? 0,
-            'layout_sync' => $report->toArray(),
+            'layout_sync' => $report->toArray(), 'layout_preview' => $report->toPreviewArray(),
             'layout_warnings' => $layoutWarnings,
             'warnings' => LifecycleWarnings::current()->all(),
         ];
@@ -4468,9 +4463,10 @@ class ModuleManager implements ModuleManagerInterface
     protected function deleteLayoutExtensions(ModuleInterface $module): void
     {
         try {
-            $deletedCount = $this->layoutExtensionService->forceDeleteBySource(
+            $deletedCount = app(LayoutDeletionService::class)->forceDeleteExtensionsBySource(
                 LayoutSourceType::Module,
-                $module->getIdentifier()
+                $module->getIdentifier(),
+                'uninstall'
             );
 
             if ($deletedCount > 0) {
@@ -4681,9 +4677,12 @@ class ModuleManager implements ModuleManagerInterface
      *
      * 참고: _pending 디렉토리는 install 경로에서만 사용되며 update 에서는 참조하지 않음.
      *
+     * GitHub 조회에 실패하면 응답에 `check_error`(사유)를 더한다 — 번들 대체·「업데이트 없음」 답과 「확인하지 못함」을
+     * 가르기 위해서다. 조회에 성공했거나 릴리스가 아직 없으면 키가 없다.
+     *
      * @param  string  $identifier  모듈 식별자
      * @param  string|null  $source  소스 지정 (`bundled`·`github`, null 이면 자동 — GitHub·번들 중 높은 버전)
-     * @return array{update_available: bool, update_source: string|null, latest_version: string|null, current_version: string|null} 업데이트 확인 결과
+     * @return array{update_available: bool, update_source: string|null, latest_version: string|null, current_version: string|null, check_error?: string} 업데이트 확인 결과
      */
     public function checkModuleUpdate(string $identifier, ?string $source = null): array
     {
@@ -4698,8 +4697,12 @@ class ModuleManager implements ModuleManagerInterface
         $module = $this->getModule($identifier);
         $activeRequiredCoreVersion = $module ? $module->getRequiredCoreVersion() : null;
 
+        // GitHub 조회에 실패했으면 그 사유 — 아래 모든 응답에 `check_error` 로 싣는다(번들 대체·「없음」과 구분)
+        $checkError = null;
+
         // 1. GitHub URL이 있으면 GitHub에서 최신 버전 확인 (번들 지정이면 건너뜀)
         if ($source !== 'bundled' && $module && $module->getGithubUrl()) {
+            $this->resetGithubVersionCheckError();
             try {
                 $latestVersion = $this->fetchLatestVersion($module);
             } catch (\Throwable $e) {
@@ -4709,7 +4712,9 @@ class ModuleManager implements ModuleManagerInterface
                     'error' => $e->getMessage(),
                 ]);
                 $latestVersion = null;
+                $this->recordGithubVersionCheckError($e->getMessage());
             }
+            $checkError = $latestVersion === null ? $this->githubVersionCheckError() : null;
 
             if ($latestVersion !== null) {
                 // 소스를 지정하지 않았으면 코어와 함께 배포된 번들이 공개 최신보다 새 판일 때 번들을 후보로 본다 — 확장 공개
@@ -4739,7 +4744,10 @@ class ModuleManager implements ModuleManagerInterface
 
         // github 지정 — 번들로 폴백하지 않는다(문서: GitHub 단독).
         if ($source === 'github') {
-            return $this->buildModuleUpdateResponse(false, null, $currentVersion, $currentVersion, $activeRequiredCoreVersion);
+            return $this->withUpdateCheckError(
+                $this->buildModuleUpdateResponse(false, null, $currentVersion, $currentVersion, $activeRequiredCoreVersion),
+                $checkError,
+            );
         }
 
         // 2. _bundled에서 업데이트 확인
@@ -4747,9 +4755,9 @@ class ModuleManager implements ModuleManagerInterface
             $bundledVersion = $this->bundledModules[$identifier]['version'] ?? null;
             $bundledRequired = $this->resolveUpdateTargetRequiredCoreVersion('bundled', $this->bundledModules[$identifier], $activeRequiredCoreVersion);
             if ($bundledVersion && version_compare($bundledVersion, $currentVersion, '>')) {
-                return $this->buildModuleUpdateResponse(
+                return $this->withUpdateCheckError($this->buildModuleUpdateResponse(
                     true, 'bundled', $bundledVersion, $currentVersion, $bundledRequired
-                );
+                ), $checkError);
             }
         } else {
             $bundledMeta = ExtensionPendingHelper::loadBundledExtensions($this->modulesPath, 'module.json');
@@ -4757,17 +4765,17 @@ class ModuleManager implements ModuleManagerInterface
                 $bundledVersion = $bundledMeta[$identifier]['version'] ?? null;
                 $bundledRequired = $this->resolveUpdateTargetRequiredCoreVersion('bundled', $bundledMeta[$identifier], $activeRequiredCoreVersion);
                 if ($bundledVersion && version_compare($bundledVersion, $currentVersion, '>')) {
-                    return $this->buildModuleUpdateResponse(
+                    return $this->withUpdateCheckError($this->buildModuleUpdateResponse(
                         true, 'bundled', $bundledVersion, $currentVersion, $bundledRequired
-                    );
+                    ), $checkError);
                 }
             }
         }
 
         // 4. 업데이트 없음
-        return $this->buildModuleUpdateResponse(
+        return $this->withUpdateCheckError($this->buildModuleUpdateResponse(
             false, null, $currentVersion, $currentVersion, $activeRequiredCoreVersion
-        );
+        ), $checkError);
     }
 
     /**
@@ -4821,18 +4829,35 @@ class ModuleManager implements ModuleManagerInterface
     /**
      * 설치된 모든 모듈의 업데이트를 확인하고 DB를 갱신합니다.
      *
-     * @return array{updated_count: int, details: array} 갱신 건수와 모듈별 결과
+     * GitHub 조회에 실패한 모듈(`check_error`)은 `failures` 에 사유와 함께 담는다. 그 모듈의 DB 값(`update_available`·
+     * `latest_version`·`update_source`)은 갱신하지 않는다 — 번들 대체 판정이 「업데이트 있음」이어도 결과(`details`)에만 싣는다.
+     * 덮으면 지난 확인에서 알아 둔 판 정보가 조회 실패 한 번으로 지워지거나 번들 판으로 바뀐다. 검수 서버(stage)에서는 확인 결과만 돌려주고 DB 는 갱신하지 않는다 —
+     * 같은 DB 를 쓰는 운영 서버 관리자 화면의 「업데이트 있음」 표시를 검수 서버의 번들·코드 기준 판정으로 덮지 않게.
+     *
+     * @return array{updated_count: int, checked_count: int, details: array, failures: list<array{identifier: string, reason: string}>} 갱신 건수와 모듈별 결과·조회 실패 목록
      */
     public function checkAllModulesForUpdates(): array
     {
         $moduleRecords = $this->moduleRepository->getAllKeyedByIdentifier();
         $details = [];
+        $failures = [];
         $updatedCount = 0;
         $checkedCount = 0;
+
+        // 검수 서버는 공유 DB 의 업데이트 표시를 바꾸지 않는다(결과는 그대로 돌려준다)
+        $persist = ! RuntimeRole::isStage();
 
         foreach ($moduleRecords as $identifier => $record) {
             $result = $this->checkModuleUpdate($identifier);
             $checkedCount++;
+
+            if (isset($result['check_error'])) {
+                $failures[] = ['identifier' => (string) $identifier, 'reason' => (string) $result['check_error']];
+
+                if (! $result['update_available']) {
+                    continue;
+                }
+            }
 
             // DB 갱신
             $updateData = [
@@ -4850,7 +4875,10 @@ class ModuleManager implements ModuleManagerInterface
                 }
             }
 
-            $this->moduleRepository->updateByIdentifier($identifier, $updateData);
+            // 조회에 실패한 확장은 DB 를 덮지 않는다(번들 판은 결과에만 보인다)
+            if ($persist && ! isset($result['check_error'])) {
+                $this->moduleRepository->updateByIdentifier($identifier, $updateData);
+            }
 
             if ($result['update_available']) {
                 $updatedCount++;
@@ -4868,11 +4896,36 @@ class ModuleManager implements ModuleManagerInterface
             'updated_count' => $updatedCount,
             'checked_count' => $checkedCount,
             'details' => $details,
+            'failures' => $failures,
         ];
     }
 
     /**
-     * GitHub 태그 릴리스에서 모듈 업데이트를 받아 서명을 검증하고 임시 디렉토리에 풀어 둡니다.
+     * 업데이트 미리보기용으로 GitHub 새 판을 내려받아 서명을 검증하고 임시 디렉토리에 풀어 둡니다 — 이어지는 업데이트가 토큰으로 다시 씁니다.
+     *
+     * 미리보기는 아무것도 바꾸지 않으므로 미서명 패키지도 받아 둔다(「미서명 패키지 차단」이 켜져 있거나 서명 불일치·미신뢰 키면
+     * 실패). 미서명 확인은 업데이트가 준비본을 꺼낼 때 그 요청의 선택으로 다시 받는다({@see ExtensionUpdatePreviewStore::claimAcquired()}).
+     *
+     * @param  string  $identifier  모듈 식별자
+     * @param  string  $version  내려받을 판 번호
+     * @return array{temp_dir: string, extracted_dir: string, verification: PackageVerification} 받은 소스 (미리보기가 준비본 표에 등록)
+     *
+     * @throws PackageIntegrityException 서명 불일치·미신뢰 키·미서명 차단 시
+     * @throws \RuntimeException 모듈이 없거나 다운로드 실패 시
+     */
+    public function prepareUpdatePreviewSource(string $identifier, string $version): array
+    {
+        $module = $this->getModule($identifier);
+
+        if (! $module) {
+            throw new \RuntimeException(__('modules.errors.module_not_found', ['name' => $identifier]));
+        }
+
+        return $this->downloadModuleUpdate($module, $version, PackageIntegrityOptions::none()->allowingUnsigned(), false);
+    }
+
+    /**
+     * GitHub 태그 릴리스에서 모듈 업데이트를 받아 서명을 검증하고 임시 디렉토리에 풀어 둡니다 (미리보기 준비본이 있으면 그것을 씁니다).
      *
      * 서명 자산(`{identifier}-{version}.zip` + `.sig.json`)이 있으면 그것을, 없으면 미서명 정책이 허락할 때만 태그
      * zipball 을 받는다(7.2.0). 스테이징은 호출부(updateModule)가 풀어 둔 디렉토리에서 한다.
@@ -4880,13 +4933,23 @@ class ModuleManager implements ModuleManagerInterface
      * @param  ModuleInterface  $module  모듈 인스턴스
      * @param  string  $version  다운로드할 버전
      * @param  PackageIntegrityOptions  $integrity  패키지 무결성 선택
+     * @param  bool  $usePrepared  미리보기 준비본을 먼저 찾을지 (미리보기 자신이 내려받을 때는 false)
      * @return array{temp_dir: string, extracted_dir: string, verification: PackageVerification} 받은 소스 (호출부가 temp_dir 정리)
      *
      * @throws PackageIntegrityException 서명 불일치·미신뢰 키·미서명 확인 필요 시
      * @throws \RuntimeException 다운로드 실패 시
      */
-    protected function downloadModuleUpdate(ModuleInterface $module, string $version, PackageIntegrityOptions $integrity): array
+    protected function downloadModuleUpdate(ModuleInterface $module, string $version, PackageIntegrityOptions $integrity, bool $usePrepared = true): array
     {
+        // 업데이트 미리보기가 내려받아 둔 같은 판이 있으면 그것을 쓴다 — 미리보기로 본 파일을 그대로 적용한다.
+        // 미서명 확인은 이 요청의 선택으로 다시 판정하고, 확인이 필요하면 준비본을 남겨 둔 채 예외를 던진다(확인 후 재요청이 같은 준비본을 쓴다).
+        if ($usePrepared) {
+            $prepared = app(ExtensionUpdatePreviewStore::class)->claimAcquired('module', $module->getIdentifier(), $version, $integrity);
+            if ($prepared !== null) {
+                return $prepared;
+            }
+        }
+
         $githubUrl = $module->getGithubUrl();
         if (! $githubUrl) {
             throw new \RuntimeException(__('modules.errors.github_url_invalid', ['module' => $module->getIdentifier()]));
@@ -4976,36 +5039,42 @@ class ModuleManager implements ModuleManagerInterface
             logChannel: 'extension-upgrade',
         );
 
+        $ledger = app(UpgradeStepRunLedger::class);
+
         foreach ($filteredSteps as $stepVersion => $step) {
-            $stepContext = $context->withCurrentStep($stepVersion);
+            // 실행 대장 — DB 를 함께 쓰는 다른 서버가 이미 끝낸 스텝은 건너뛰고, 선점은 유니크 삽입으로 한다(7.2.0)
+            $ledger->run('module', $module->getIdentifier(), (string) $stepVersion, UpgradeStepRunLedger::stepKey($step, (string) $stepVersion), $force, function () use ($context, $stepVersion, $step, $onStep, $module): void {
+                $stepContext = $context->withCurrentStep($stepVersion);
 
-            $onStep?->__invoke((string) $stepVersion);
+                $onStep?->__invoke((string) $stepVersion);
 
-            $stepContext->logger->info("Upgrading {$module->getIdentifier()} step {$stepVersion}...");
+                $stepContext->logger->info("Upgrading {$module->getIdentifier()} step {$stepVersion}...");
 
-            if ($step instanceof UpgradeStepInterface) {
-                $sinceVersion = ExtensionUpgradeGuardHelper::resolveSinceVersion(
-                    $module->getRequiredCoreVersion(),
-                    $module->getVersion(),
-                );
-                if ($sinceVersion !== null) {
-                    ExtensionUpgradeGuardHelper::assertAbstractInheritance(
-                        (string) $stepVersion,
-                        $sinceVersion,
-                        $step,
-                        'module',
-                        $module->getIdentifier(),
+                if ($step instanceof UpgradeStepInterface) {
+                    $sinceVersion = ExtensionUpgradeGuardHelper::resolveSinceVersion(
+                        $module->getRequiredCoreVersion(),
+                        $module->getVersion(),
                     );
+                    if ($sinceVersion !== null) {
+                        ExtensionUpgradeGuardHelper::assertAbstractInheritance(
+                            (string) $stepVersion,
+                            $sinceVersion,
+                            $step,
+                            'module',
+                            $module->getIdentifier(),
+                        );
+                    }
+
+                    $step->run($stepContext);
+                } elseif (is_callable($step)) {
+                    $step($stepContext);
                 }
 
-                $step->run($stepContext);
-            } elseif (is_callable($step)) {
-                $step($stepContext);
-            }
+                $stepContext->logger->info("Completed {$module->getIdentifier()} step {$stepVersion}");
+            }, 'extension-upgrade', UpgradeStepRunLedger::fingerprint($step, (string) $stepVersion));
 
+            // 이미 다른 실행이 끝낸 스텝(대장 done)도 이 업데이트 기록에서는 끝난 것으로 본다
             $journal?->markStepCompleted((string) $stepVersion);
-
-            $stepContext->logger->info("Completed {$module->getIdentifier()} step {$stepVersion}");
         }
     }
 
@@ -5226,11 +5295,15 @@ class ModuleManager implements ModuleManagerInterface
 
             // 2. 상태 → updating
             $onProgress?->__invoke('status', __('extensions.progress.status_change'));
-            $this->moduleRepository->updateByIdentifier($identifier, [
-                'status' => ExtensionStatus::Updating->value,
-                'updated_at' => now(),
-            ]);
-            $statusUpdating = true;
+            // 검수 서버(stage)는 공유 상태 칸에 updating 을 쓰지 않는다 — 운영 서버 화면에서 그 확장이 업데이트 중으로 사라진다.
+            // 진행 표식은 서버 로컬 진행 기록(journal)과 작업 잠금만 쓴다
+            if (! RuntimeRole::isStage()) {
+                $this->moduleRepository->updateByIdentifier($identifier, [
+                    'status' => ExtensionStatus::Updating->value,
+                    'updated_at' => now(),
+                ]);
+                $statusUpdating = true;
+            }
 
             // 3. 스테이징 (소스에 따라 분기)
             $onProgress?->__invoke('staging', __('extensions.progress.staging'));

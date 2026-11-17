@@ -15,18 +15,29 @@ use Tests\TestCase;
  * 하루 동안 404 가 된다 — 운영자가 원인을 짐작하기 어렵고 스스로 회복되지도 않는다.
  *
  * 상태를 되돌리는 지점마다 캐시 무효화가 따라붙는지 구조로 고정한다.
+ *
+ * @scenario-manifest tests/scenarios/extension-update-status-cache-symmetry.yaml
  */
 class ExtensionUpdateStatusCacheSymmetryTest extends TestCase
 {
     /**
      * 상태 복원 횟수만큼 캐시 무효화가 존재하는지 검증합니다.
      *
+     * @scenario manager=module
+     *
+     * @effects status_restore_followed_by_cache_invalidation
+     *
      * @param  string  $relativePath  검사 대상 매니저 파일 경로
+     * @param  string  $method  대상 업데이트 메서드 이름
      * @param  string  $invalidateCall  해당 매니저의 캐시 무효화 호출 문자열
+     * @return void 반환값 없음
      */
     #[Test]
     #[TestWith(['app/Extension/ModuleManager.php', 'updateModule', 'invalidateModuleStatusCache()'])]
+    // @scenario manager=plugin
     #[TestWith(['app/Extension/PluginManager.php', 'updatePlugin', 'invalidatePluginStatusCache()'])]
+    // @scenario manager=template
+    #[TestWith(['app/Extension/TemplateManager.php', 'updateTemplate', 'invalidateTemplateStatusCache()'])]
     public function every_status_restore_is_followed_by_cache_invalidation(string $relativePath, string $method, string $invalidateCall): void
     {
         $body = $this->updateMethodSource(base_path($relativePath), $method);

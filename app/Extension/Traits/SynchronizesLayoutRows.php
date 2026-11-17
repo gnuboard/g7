@@ -4,6 +4,7 @@ namespace App\Extension\Traits;
 
 use App\Extension\Layout\DTO\LayoutSyncEntry;
 use App\Extension\Layout\LayoutRowSynchronizer;
+use App\Extension\Layout\LayoutSyncOptions;
 use App\Extension\TemplateManager;
 use App\Helpers\TimezoneHelper;
 use App\Models\LayoutExtension;
@@ -28,6 +29,43 @@ trait SynchronizesLayoutRows
     protected function layoutSynchronizer(): LayoutRowSynchronizer
     {
         return $this->layoutRowSynchronizer;
+    }
+
+    /**
+     * 레이아웃 파일을 읽을 확장 루트 — 업데이트 미리보기는 새 판 디렉토리(번들·내려받은 `_pending`), 그 밖엔 활성 디렉토리.
+     *
+     * @param  string  $type  확장 디렉토리 종류 (`templates`·`modules`·`plugins`)
+     * @param  string  $identifier  확장 식별자
+     * @return string 확장 루트 절대 경로
+     */
+    protected function layoutSourceRoot(string $type, string $identifier): string
+    {
+        $root = LayoutSyncOptions::current()->sourceRoot;
+
+        return $root !== null ? rtrim($root, '/\\') : base_path($type.DIRECTORY_SEPARATOR.$identifier);
+    }
+
+    /**
+     * 새 판 디렉토리를 읽는 동안 마크업 컴파일의 소유 확장을 강제 지정합니다 — 경로(`_bundled`·`_pending`)로는 소유 확장을
+     * 확정할 수 없어서다({@see ValidatesLayoutFiles::$compileContextOverride}).
+     *
+     * @param  string  $identifier  확장 식별자
+     * @param  \Closure  $callback  작업
+     * @return mixed 작업 반환값
+     */
+    protected function withLayoutSourceContext(string $identifier, \Closure $callback): mixed
+    {
+        if (LayoutSyncOptions::current()->sourceRoot === null || $this->compileContextOverride !== null) {
+            return $callback();
+        }
+
+        $this->compileContextOverride = ['template' => null, 'extension' => $identifier];
+
+        try {
+            return $callback();
+        } finally {
+            $this->compileContextOverride = null;
+        }
     }
 
     /**

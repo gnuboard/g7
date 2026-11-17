@@ -105,10 +105,10 @@ const translations = {
 };
 
 /** 종류별 전역 상태 이름. */
-const STATE: Record<'module' | 'plugin' | 'template', { selected: string; force: string; updating: string; strategy: string }> = {
-  module: { selected: 'selectedModule', force: 'moduleForceUpdate', updating: 'isModuleUpdating', strategy: 'moduleLayoutStrategy' },
-  plugin: { selected: 'selectedPlugin', force: 'pluginForceUpdate', updating: 'isPluginUpdating', strategy: 'pluginLayoutStrategy' },
-  template: { selected: 'selectedTemplate', force: 'templateForceUpdate', updating: 'isTemplateUpdating', strategy: 'templateLayoutStrategy' },
+const STATE: Record<'module' | 'plugin' | 'template', { selected: string; force: string; updating: string }> = {
+  module: { selected: 'selectedModule', force: 'moduleForceUpdate', updating: 'isModuleUpdating' },
+  plugin: { selected: 'selectedPlugin', force: 'pluginForceUpdate', updating: 'isPluginUpdating' },
+  template: { selected: 'selectedTemplate', force: 'templateForceUpdate', updating: 'isTemplateUpdating' },
 };
 
 /** 목록 API 가 업데이트가 있는 행에 실어 주는 모양(새 판이 연동 둘의 요구 버전을 올리고 필수 의존 하나를 새로 요구). */
@@ -140,7 +140,9 @@ function buildLayout(kind: 'module' | 'plugin' | 'template', row: Json): Json {
       [s.selected]: row,
       [s.force]: false,
       [s.updating]: false,
-      [s.strategy]: 'overwrite',
+      layoutSyncStrategy: 'keep',
+      // 실행 버튼은 화면별 처리 미리보기가 준비(ready)된 뒤에만 풀린다(#888)
+      layoutPreviewState: 'ready',
       updateChangelog: [],
     },
     components: [{ id: 'host', type: 'basic', name: 'Div', children: [loadPartial(kind)] }],

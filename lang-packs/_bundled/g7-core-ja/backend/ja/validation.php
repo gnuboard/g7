@@ -737,7 +737,6 @@ return [
             'challenge_invalid' => '認証リクエスト情報が正しくありません。',
             'code_required' => '認証番号を入力してください。',
         ],
-        // ログイン引き継ぎ (#40)
         'login_handoff' => [
             'code_required' => 'ログイン引き継ぎコードがありません。もう一度ログインしてください。',
         ],
@@ -823,7 +822,6 @@ return [
     'not_self_parent' => '自分自身を親として設定することはできません。',
     'not_circular_parent' => '自分自身のサブメニューに移動することはできません。',
     'settings' => [
-        // 본문 콘텐츠 (#883)
         'embed_provider_invalid' => ':index番目の外部動画サービスの形式が正しくありません。',
         'embed_provider_too_many' => '外部動画サービスは最大:max件まで追加できます。',
         'embed_provider_id_duplicate' => ':index番目のサービス識別子(:id)が既定のサービスまたは他の項目と重複しています。',
@@ -861,7 +859,6 @@ return [
         'language_required' => 'デフォルト言語を選択してください。',
         'language_invalid' => '正しい言語を選択してください。',
         'currency_max' => '通貨コードは 10 文字を超えることはできません。',
-        'maintenance_mode_boolean' => 'メンテナンスモードは true または false である必要があります。',
         'mailer_required' => 'メーラーを選択してください。',
         'mailer_invalid' => '正しいメーラーを選択してください。',
         'host_required' => 'SMTP ホストを入力してください。',
@@ -1072,11 +1069,11 @@ return [
         'thumbnail_presets_max' => 'サムネイル規格は最大 :max 個まで設定できます(固定規格と拡張機能の規格を含む)。',
         'thumbnail_preset_name_required' => '規格名を入力してください。',
         'thumbnail_preset_name_distinct' => '同じ名前の規格がすでにあります。',
-        'thumbnail_preset_name_reserved' => "':name' は基本規格の名前のため使用できません。",
-        'thumbnail_preset_name_literal' => "':name' はレイアウトのパイプで文字列として読まれない語のため、規格名に使用できません。",
+        'thumbnail_preset_name_reserved' => '\':name\' は基本規格の名前のため使用できません。',
+        'thumbnail_preset_name_literal' => '\':name\' はレイアウトのパイプで文字列として読まれない語のため、規格名に使用できません。',
         'thumbnail_preset_name_format' => '規格名は英小文字で始め、英小文字、数字、アンダースコア(_)のみで2~32文字で入力してください。',
         'thumbnail_preset_name_locked' => '基本規格と拡張機能の規格は名前を変更できません。',
-        'thumbnail_preset_extension_unknown' => "':name' 規格を登録した拡張機能が有効になっていません。",
+        'thumbnail_preset_extension_unknown' => '\':name\' 規格を登録した拡張機能が有効になっていません。',
         'thumbnail_preset_width_required' => '幅を入力してください。',
         'thumbnail_preset_height_required' => '切り抜きや全体を収める方式には高さが必要です。',
         'thumbnail_preset_size_integer' => 'サイズは整数(px)で入力してください。',
@@ -1215,7 +1212,6 @@ return [
         'system.cron_allowed_ips' => 'スケジュール許可アドレス',
         'system.cron_min_interval' => 'スケジュール最小呼び出し間隔',
         'system.cron_visit_fallback' => '訪問時のスケジュール実行',
-        // 환경설정 「본문 콘텐츠」 저장 항목 (#883)
         'content_settings' => '本文コンテンツ設定',
         'content_allow_figure_caption' => '画像キャプションの許可',
         'content_allow_uploaded_video' => '動画アップロードの許可',
@@ -1225,7 +1221,6 @@ return [
         'content_embed_custom_providers' => '直接追加した外部動画サービス',
         'content_custom_tags' => '追加許可タグ',
         'content_media_url_ttl_minutes' => '本文メディア URL の有効時間',
-        // 외부 영상 서비스 예시 주소 확인 (#883)
         'embed_provider' => '外部動画サービス',
         'embed_provider_url_patterns' => 'URL 形式',
         'embed_provider_player_url' => 'プレーヤー URL',
@@ -1343,7 +1338,6 @@ return [
         'notification_channels' => '通知チャンネル',
         'currency' => '通貨',
         'default_currency' => 'デフォルト通貨',
-        'maintenance_mode' => 'メンテナンスモード',
         'asset_url_mode' => 'アセットURL方式',
         'site_logo' => 'サイトロゴ',
         'site_favicon' => 'サイトファビコン',
@@ -1525,6 +1519,10 @@ return [
         'role_ids' => 'ロール一覧',
         'mode' => '操作',
         'uuids' => '会員一覧',
+        'layout_strategy' => 'レイアウト処理方式',
+        'decisions' => '画面ごとの決定',
+        'decisions.*' => '画面ごとの決定値',
+        'pending_token' => 'レイアウトプレビュートークン',
     ],
     'layout_version' => [
         'limit' => [

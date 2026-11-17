@@ -224,6 +224,9 @@ abstract class TestCase extends BaseTestCase
             'g7_settings.core.security.ip_restriction_enabled' => false,
             'g7_settings.core.security.admin_allowed_ips' => [],
             'g7_settings.core.security.ip_restriction_rules' => [],
+            // HTTPS 강제 이동(#888)도 꺼 둔다. 개발 사이트에서 켜 두면 web·api 그룹의 http 테스트 요청이 전부 301·308 로
+            // 이동해 원인을 가리키지 않는 실패가 무더기로 난다. 이동을 검증하는 테스트(ForceHttpsTest)는 자기 테스트에서 켠다.
+            'g7_settings.core.security.force_https' => false,
             // 닉네임 정책(#490)도 꺼 둔다. 개발 사이트에서 중복 금지나 금지어를 켜 두면 회원을 만드는 테스트가
             // 그 환경에서만 닉네임 검증 오류로 깨진다. 정책을 검증하는 테스트는 이 세 키를 자기 테스트에서 명시한다.
             'g7_settings.core.member.nickname_unique' => false,

@@ -59,6 +59,12 @@
     <div data-ref="card_scheduled_tasks" class="admin-card">
       <h3 class="card-title">$t:admin.settings.system.cron_title</h3>
       <div class="card-description">$t:admin.settings.system.cron_desc</div>
+      <!-- 서버별 스케줄 실행 스위치(#888) — 설정 응답의 `scheduler_enabled_on_this_server` 는 공유 설정이 아니라 **이 요청을 처리한 서버**의
+           값(`G7_SCHEDULER`)이다. 꺼져 있으면 이 서버에서는 예약 작업이 돌지 않으므로, 여러 서버 구성에서 실행 서버를 확인하라고 알린다. -->
+      <div data-ref="scheduler_off_notice" data-if="{{settings?.data?.scheduler_enabled_on_this_server === false}}" role="status" class="alert-warning">
+        <icon name="triangle-exclamation" class="text-amber-700 dark:text-amber-300 flex-shrink-0"/>
+        <p class="text-warning-soft">$t:admin.settings.system.scheduler_off_on_this_server</p>
+      </div>
       <div class="row-stack">
         <div data-ref="field_cron_mode">
           <label class="form-label">$t:admin.settings.system.cron_mode</label>

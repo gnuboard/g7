@@ -1957,6 +1957,7 @@
       "site_description": "사이트 설명",
       "site_description_placeholder": "사이트에 대한 간단한 설명을 입력하세요.",
       "admin_email": "관리자 이메일",
+      "admin_email_desc": "알림 템플릿의 받는 사람을 「사이트 관리자 이메일」로 정하면 이 주소로 메일을 보냅니다. 비워 두면 그 규칙으로는 아무에게도 보내지 않습니다.",
       "site_logo": "사이트 타이틀 이미지",
       "site_logo_desc": "헤더에 표시될 로고 이미지입니다.",
       "site_favicon": "파비콘",
@@ -2293,6 +2294,7 @@
       "desc": "사이트 보안 관련 설정을 관리합니다.",
       "force_https": "HTTPS 강제 적용",
       "force_https_desc": "모든 연결을 HTTPS로 강제합니다.",
+      "force_https_notice": "HTTPS 인증서가 준비된 뒤 켜세요. 잠겼을 때: php artisan settings:set security.force_https false",
       "allow_internal_outbound_urls": "내부 네트워크 주소 호출 허용",
       "allow_internal_outbound_urls_desc": "외부 API 연동·스케줄 URL 호출 등에서 사설 IP나 localhost 같은 내부 주소를 사용할 수 있게 합니다. 사내 서버를 호출해야 할 때만 켜세요. 켜면 서버가 내부망으로 요청을 보낼 수 있게 되므로 기본값은 꺼짐입니다.",
       "login_attempt_limit": "로그인 시도 제한",
@@ -3279,7 +3281,8 @@
           "trigger_user": "이벤트 유발자",
           "related_user": "관련 사용자",
           "role": "역할 기반",
-          "specific_users": "특정 사용자"
+          "specific_users": "특정 사용자",
+          "site_admin_email": "사이트 관리자 이메일"
         },
         "badge": {
           "trigger_user": "이벤트 유발자",
@@ -3295,6 +3298,7 @@
         "role_no_options": "일치하는 역할이 없습니다",
         "relation_placeholder": "관계를 선택하세요",
         "relation_undeclared": "이 알림은 '{{relation}}' 관계를 지원하지 않습니다. 목록에서 다시 선택하세요 — 그대로 두면 저장되지 않습니다.",
+        "site_admin_email_hint": "환경설정 > 일반의 관리자 이메일로 메일만 보냅니다(사이트 알림 등 다른 수단은 받지 않습니다). 비워 두면 보내지 않습니다.",
         "roles_selected_count": "역할 {count}개 선택됨",
         "users_selected_count": "{count}명 선택됨",
         "remove_selected": "선택 해제: {{name}}",
@@ -3447,6 +3451,7 @@
       "detect_done": "실행 환경을 다시 감지했습니다.",
       "detect_failed": "실행 환경 감지에 실패했습니다.",
       "cron_title": "예약 작업",
+      "scheduler_off_on_this_server": "이 화면을 처리한 서버는 스케줄 실행이 꺼져 있습니다(G7_SCHEDULER=off). 여러 서버라면 스케줄을 실행하는 서버를 확인하세요.",
       "cron_desc": "오래된 데이터 정리, 사이트맵 생성처럼 정해진 시각에 도는 작업입니다. 서버에 예약 실행을 걸 수 없는 호스팅에서는 아래 주소를 호출해 대신 돌릴 수 있습니다.",
       "cron_mode": "실행 방식",
       "cron_mode_auto": "자동으로 판단",
@@ -3964,11 +3969,22 @@
         "restore_success": "버전이 성공적으로 복원되었습니다.",
         "restore_note": "복구 후에는 반드시 저장 버튼을 눌러야 변경사항이 적용됩니다.",
         "saved_by": "저장자: {{name}}",
+        "saved_by_system": "저장자: 시스템",
         "lines": "라인",
         "modified": "수정",
         "chars": "자",
         "load_more": "이전 버전 더 보기",
-        "limit_reached": "표시할 수 있는 최대 개수에 도달했습니다."
+        "limit_reached": "표시할 수 있는 최대 개수에 도달했습니다.",
+        "source_labels": {
+          "before_extension_update": "확장 업데이트로 덮기 전 운영자 판",
+          "before_refresh": "레이아웃 갱신으로 덮기 전 운영자 판",
+          "before_decision_take_theirs": "「새 판 적용」으로 덮기 전 운영자 판",
+          "before_upgrade_step": "업그레이드로 바꾸기 전 운영자 판",
+          "before_other": "덮기 전 운영자 판",
+          "merge_refresh": "레이아웃 갱신 병합 결과",
+          "merge_extension_update": "확장 업데이트 병합 결과",
+          "merge_other": "병합 결과"
+        }
       },
       "extension_version_history": {
         "title": "확장 버전 히스토리",
@@ -4195,6 +4211,9 @@
       "actor_select": "행위자 선택",
       "actor_search_placeholder": "이름 또는 이메일로 검색",
       "actor_search_initial": "행위자를 검색하세요",
+      "deletion_snapshot_label": "삭제 기록",
+      "deletion_snapshot_only": "삭제 직전 기록만 보기",
+      "deletion_snapshot_hint": "영구 삭제·선언 정리·커스텀 번역 삭제 직전에 남긴 기록만 보입니다. 펼치면 지운 본문과 버전을 볼 수 있습니다.",
       "date_range_label": "기간",
       "date_from_label": "시작일",
       "date_to_label": "종료일",
@@ -4231,7 +4250,15 @@
       "column_field": "항목명",
       "column_old": "변경 전",
       "column_new": "변경 후",
-      "no_value": "-"
+      "no_value": "-",
+      "snapshot_title": "삭제 직전 기록",
+      "snapshot_target": "대상: {{target}}",
+      "snapshot_reason": "사유: {{reason}}",
+      "snapshot_versions": "남긴 버전 {{count}}개",
+      "snapshot_versions_truncated": "최근 50개만 남김",
+      "snapshot_show": "지우기 전 본문 보기",
+      "snapshot_hide": "본문 접기",
+      "snapshot_content_truncated": "본문이 길어 앞부분만 보입니다."
     },
     "pagination": {
       "total": "총 {{count}}건",
@@ -5525,6 +5552,11 @@
   },
   "brand_name": "그누보드7",
   "default_user_name": "관리자",
+  "stage_role": {
+    "banner": "검수 서버 — 운영 데이터를 공유합니다. 확장·코어 변경은 배포 절차로만 합니다.",
+    "locked_hint": "검수 서버에서는 바꿀 수 없습니다. 배포 절차로 반영하세요.",
+    "editor_banner": "검수용 저장 — 운영 사이트에는 반영되지 않으며 다음 배포 때 사라집니다."
+  },
   "template_partial_test": {
     "title": "템플릿 Partial 시스템 테스트",
     "meta_description": "sirsoft-admin_basic 템플릿의 Partial 시스템 동작 확인",
@@ -5587,6 +5619,60 @@
         "search_scopes": "최근 검색어 범위 선언",
         "seeder": "기본 데이터 생성"
       }
+    }
+  },
+  "layout_sync_preview": {
+    "title": "화면별 처리 미리보기",
+    "refresh_description": "파일의 레이아웃을 다시 읽습니다. 아래에서 화면마다 어떻게 바뀌는지 확인한 뒤 적용하세요. 미리보기는 아무것도 바꾸지 않습니다.",
+    "strategy_title": "레이아웃 처리 방식",
+    "strategy_keep": "수정 유지 (권장)",
+    "strategy_keep_desc": "편집기로 고친 부분은 그대로 두고, 손대지 않은 부분만 새 판으로 바꿉니다.",
+    "strategy_overwrite": "모두 교체",
+    "strategy_overwrite_desc": "모든 화면을 새 판으로 덮습니다. 덮기 전 운영자 판은 편집기 [버전 기록]에 남습니다.",
+    "overwrite_warning": "편집기로 고친 화면도 모두 새 판으로 바뀝니다. 되돌리려면 편집기 [버전 기록]에서 복원하세요.",
+    "loading": "새 판과 비교하는 중입니다…",
+    "error": "미리보기를 불러오지 못했습니다. 미리보기를 확인해야 적용할 수 있습니다.",
+    "retry": "다시 시도",
+    "summary_changed": "바뀌는 화면 {{count}}개",
+    "summary_conflicts": "운영자 수정과 겹친 화면 {{count}}개",
+    "summary_deleted": "삭제 예정 {{count}}개",
+    "skipped_inactive": "꺼 둔 확장은 업데이트 때 레이아웃을 갱신하지 않습니다 — 켤 때 수정 유지로 병합합니다.",
+    "skipped_files_missing": "활성 디렉토리에 이 확장의 파일이 없어 화면 판정을 건너뜁니다 — 업데이트하면 새 판 파일을 복사한 뒤 화면을 맞춥니다.",
+    "empty": "바뀌는 화면이 없습니다.",
+    "kind_extension": "확장 조각",
+    "conflict_units": "겹침 {{count}}곳",
+    "decision_merge": "겹치지 않는 곳만 반영 (권장)",
+    "decision_merge_hint": "운영자가 고친 곳과 겹치는 부분은 운영자 판을 두고, 나머지는 새 판으로 바꿉니다.",
+    "decision_keep_ours": "운영자 판 유지",
+    "decision_take_theirs": "새 판 적용",
+    "decision_keep_ours_hint": "이 화면은 새 판을 하나도 받지 않고 운영자 판을 통째로 둡니다.",
+    "decision_take_theirs_hint": "이 화면만 새 판으로 덮습니다. 덮기 전 운영자 판은 편집기 [버전 기록]에 남습니다.",
+    "deletions_title": "이 업데이트로 지워질 항목 {{count}}개",
+    "deletion_operator": "운영자 수정본 — 지우기 직전 활동 로그에 기록",
+    "verdict": {
+      "created": "새로 추가",
+      "updated": "새 판으로 교체",
+      "unchanged": "바뀐 것 없음",
+      "took_theirs": "새 판 반영",
+      "merged": "새 판 일부 반영",
+      "conflict": "겹쳐서 운영자 판 유지",
+      "kept": "운영자 판 유지",
+      "kept_no_base": "비교 기준 없음 — 운영자 판 유지",
+      "kept_invalid": "병합 검증 실패 — 운영자 판 유지",
+      "kept_removed": "새 판에서 빠졌지만 수정본이라 남김",
+      "kept_deleted_by_operator": "운영자가 지운 화면 — 건너뜀",
+      "kept_name_collision": "운영자가 만든 같은 이름 화면 — 건너뜀",
+      "deleted": "삭제 예정"
+    },
+    "deletion_type": {
+      "notification_definition": "알림 정의",
+      "notification_template": "알림 템플릿",
+      "menu": "관리자 메뉴",
+      "permission": "권한",
+      "role": "역할",
+      "identity_policy": "본인확인 정책",
+      "schedule": "스케줄",
+      "entity": "기본 데이터"
     }
   }
 }

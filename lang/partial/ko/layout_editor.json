@@ -165,6 +165,7 @@
     "chars": "({diff} 자)",
     "saved_by": "저장자: {name}",
     "unknown_author": "알 수 없음",
+    "system_author": "시스템",
     "compare": "비교",
     "comparing": "비교 중…",
     "diff_title": "v{old} → v{new} 변경 내용",

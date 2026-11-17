@@ -239,6 +239,9 @@ class ScheduleService
         HookManager::doAction('core.schedule.before_bulk_delete', $ids);
 
         $deletedCount = DB::transaction(function () use ($ids) {
+            // 실행 이력 삭제 (명시적 삭제 - CASCADE 의존 금지) — 단건 delete() 와 같은 순서
+            $this->historyRepository->deleteByScheduleIds($ids);
+
             return $this->scheduleRepository->bulkDelete($ids);
         });
 

@@ -467,31 +467,77 @@ class ProductReviewService
     }
 
     /**
-     * 주문 옵션들에 연결된 리뷰를 이미지 파일째 영구 삭제합니다 (개인정보 보유기간 삭제 모드, 이슈 #636).
+     * 주문 옵션들에 연결된 리뷰를 이미지 파일째 영구 삭제합니다 (개인정보 보유기간 삭제 모드·관리자 주문 삭제, 이슈 #636).
      *
      * 회원 후기는 주문 옵션에 묶여 있어 주문을 삭제하면 남을 수 없다. DB CASCADE 에
      * 기대지 않고 명시 삭제하며, 이미지 파일도 함께 지운다(행만 지우면 파일이 고아로 남는다).
      * 주문 없이 등록한 후기(`order_option_id` NULL — 다른 쇼핑몰에서 이관)는 대상이 아니다.
-     * 무인 배치가 부르는 시스템 삭제라 관리자 스코프 판정을 두지 않는다.
+     * 무인 배치·주문 삭제가 부르는 시스템 삭제라 관리자 스코프 판정을 두지 않는다.
      *
      * @param  array<int, int>  $orderOptionIds  주문 옵션 ID 목록
      * @return int 삭제한 리뷰 수
      */
     public function purgeForOrderOptions(array $orderOptionIds): int
     {
+        return $this->purgeReviews($this->repository->getWithTrashedByOrderOptionIds($orderOptionIds));
+    }
+
+    /**
+     * 회원이 쓴 리뷰를 이미지 파일째 영구 삭제합니다 (회원 삭제 정리, #888).
+     *
+     * 회원 행을 지우기 전에 부른다 — 리뷰는 작성 회원에 묶여 있어 회원이 사라지면 남을 수 없다.
+     * 휴지통에 든 리뷰도 함께 지운다. 시스템 삭제라 관리자 스코프 판정을 두지 않는다.
+     *
+     * @param  int  $userId  회원 ID
+     * @return int 삭제한 리뷰 수
+     */
+    public function purgeForUser(int $userId): int
+    {
+        return $this->purgeReviews($this->repository->getWithTrashedByUserId($userId));
+    }
+
+    /**
+     * 상품에 달린 리뷰를 이미지 파일째 영구 삭제합니다 (상품 삭제 정리, #888).
+     *
+     * 주문 이력이 있는 상품은 삭제가 막히므로 실제 대상은 주문 없이 등록한 후기(이관)다.
+     * 휴지통에 든 리뷰도 함께 지운다. 상품 삭제 권한 판정은 호출부(상품 서비스)가 이미 했다.
+     *
+     * @param  int  $productId  상품 ID
+     * @return int 삭제한 리뷰 수
+     */
+    public function purgeForProduct(int $productId): int
+    {
+        return $this->purgeReviews($this->repository->getWithTrashedByProductId($productId));
+    }
+
+    /**
+     * 리뷰 묶음을 이미지 행·파일과 함께 영구 삭제합니다.
+     *
+     * 이미지 파일은 커밋된 뒤에 지운다(StorageTransaction) — 호출부 트랜잭션이 되돌아가면 행과 파일이 함께 남는다.
+     * 트랜잭션 밖이면 바로 지운다. 파일은 행의 disk 기준으로 찾는다.
+     *
+     * @param  iterable<ProductReview>  $reviews  삭제할 리뷰 (images 관계 로드됨, 휴지통 포함)
+     * @return int 삭제한 리뷰 수
+     */
+    private function purgeReviews(iterable $reviews): int
+    {
         $deleted = 0;
 
-        foreach ($this->repository->getWithTrashedByOrderOptionIds($orderOptionIds) as $review) {
+        foreach ($reviews as $review) {
             foreach ($review->images as $image) {
                 $rowStorage = $this->storageForRow($image->disk);
                 if ($rowStorage->exists('images', $image->path)) {
-                    $rowStorage->delete('images', $image->path);
+                    StorageTransaction::deleteAfterCommit($rowStorage, 'images', $image->path);
                 }
             }
 
             if ($this->repository->forceDeleteWithImages($review)) {
                 $deleted++;
             }
+        }
+
+        if ($deleted > 0) {
+            Log::info('상품 리뷰 영구 삭제 (상위 데이터 삭제 정리)', ['count' => $deleted]);
         }
 
         return $deleted;

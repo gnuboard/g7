@@ -1,0 +1,27 @@
+feature: 이 서버가 불러오지 못한 확장의 메뉴 숨기기
+
+description: |
+  같은 DB 를 쓰는 다른 서버(검수 서버)에 새 확장을 설치하면 공유 DB 에는 그 확장이 활성으로, 메뉴가 그 확장 소유로 들어간다.
+  이 서버에는 그 확장의 파일이 없어 라우트·화면이 없는데 메뉴 활성 판정이 DB 상태만 봐서 관리자 사이드바에 메뉴가 보이고 누르면
+  404 였다. 사이드바(`GET /api/admin/menus/active`)와 메뉴 관리 목록(`GET /api/admin/menus`)은 DB 활성 확장 가운데 이 서버가
+  불러온 확장의 메뉴만 보인다(교집합). 코어 부모 밑에 자식으로 붙은 확장 메뉴에도 같은 판정을 적용하고, 모듈·플러그인 소유가 아닌
+  메뉴(코어·사용자 정의)는 그대로 둔다. 실행 역할과 무관하다. 이미 있는 확장에 새 판이 추가한 메뉴는 대상이 아니다(확장은 불러와져 있다).
+
+# 축 의미:
+#   surface — 메뉴가 보이는 화면.
+#   owner — 메뉴 소유자와 이 서버의 확장 로드 여부.
+#     unloaded_module_child_of_core — 코어 부모 메뉴 밑의 자식으로 붙은, 이 서버가 불러오지 못한 모듈의 메뉴.
+#     user_defined — 운영자가 만든 메뉴(소유 타입 없음).
+axes:
+  surface: [sidebar, management]
+  owner: [core, unloaded_module, unloaded_plugin, loaded_module, unloaded_module_child_of_core, user_defined]
+
+effects:
+  - unloaded_extension_menu_hidden_from_sidebar
+  - unloaded_extension_menu_hidden_from_management
+  - loaded_extension_menu_still_visible
+  - unloaded_extension_child_menu_hidden_under_core_parent
+  - non_extension_menu_unaffected
+
+test_files:
+  - tests/Feature/Api/Admin/UnloadedExtensionMenuVisibilityTest.php

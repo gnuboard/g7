@@ -1,0 +1,22 @@
+feature: core:update 의 --yes 는 번들 일괄 업데이트의 확인 질문에만 답한다
+
+description: |
+  `--yes` 는 확인 질문(번들 확장 일괄 업데이트 진행)에만 「예」로 답한다. 종전에는 「답할 수 있는 실행」 판정이 `--yes` 를
+  보고 참이 되어, 콘솔 없는 `core:update --yes` 실행이 레이아웃 전략 선택(`choice()`)·확장별 덮어쓰기 대상 입력(`ask()`)을
+  띄워 오지 않을 응답을 기다렸다. 선택 질문(확장별 덮어쓰기 변경 여부, 검색 인덱스 재생성 여부 — 기본값 「아니오」)도
+  `--yes` 가 「예」로 답해 검색 인덱스를 묻지 않고 재생성했다. 지금은 질문을 띄울 수 있는지(`--yes` 무관)를 따로 판정한다.
+  띄울 수 없으면 기본값(전역 전략 overwrite, 덮어쓰기 변경 없음, 재생성 안 함)을 쓰고, 띄울 수 있으면 선택 질문을 그대로 묻는다.
+  「콘솔 없는 실행」은 `App\Console\Helpers\PromptCapability::fake(false)` 로 잰다.
+
+# 축 의미:
+#   case — {실행 환경}__{옵션}.
+axes:
+  case: [no_terminal__yes, interactive__yes]
+
+effects:
+  - yes_option_still_answers_the_confirmation
+  - prompts_use_defaults_without_console_even_with_yes
+  - yes_option_does_not_approve_optional_questions
+
+test_files:
+  - tests/Feature/Console/BundledPromptYesFlagTest.php

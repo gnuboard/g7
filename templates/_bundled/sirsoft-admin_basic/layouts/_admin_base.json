@@ -557,6 +557,35 @@
                     },
                     "children": [
                         {
+                            "comment": "검수 서버 띠(#888) — 실행 역할이 stage 인 서버(운영 DB 를 공유하는 검수 사이트)에서만 그린다. 셸 설정 `appConfig.runtime_role` 을 읽는다.\n           그 서버에서는 확장·코어·언어팩 변경 API 가 409 로 막히므로, 왜 버튼이 잠겼는지 모든 관리자 화면 맨 위에서 알린다.",
+                            "id": "stage_role_banner",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_global.appConfig?.runtime_role === 'stage'}}",
+                            "props": {
+                                "role": "status",
+                                "className": "flex-center gap-2 px-4 py-2 text-sm font-medium bg-amber-100 dark:bg-amber-900/40 text-amber-900 dark:text-amber-100 border-b border-amber-300 dark:border-amber-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "flask",
+                                        "className": "flex-shrink-0"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "min-w-0 break-words"
+                                    },
+                                    "text": "$t:admin.stage_role.banner"
+                                }
+                            ]
+                        },
+                        {
                             "id": "main_header",
                             "type": "basic",
                             "name": "Div",

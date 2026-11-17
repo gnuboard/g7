@@ -10,6 +10,7 @@ use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Exceptions\PostNotFoundException;
 use Modules\Sirsoft\Board\Exceptions\ReactionNotAllowedException;
@@ -336,6 +337,51 @@ class ReactionService
         }
 
         return $removed->count();
+    }
+
+    /**
+     * 삭제되는 회원의 반응을 모두 지우고, 영향받은 게시글·댓글의 reaction_counts 를 남은 행 기준으로 다시 집계합니다 (#888).
+     *
+     * 회원 행이 지워지기 전에 코어 회원 삭제 트랜잭션 안에서 불린다 — DB CASCADE 에 기대지 않고 명시적으로 지운다.
+     * 대상마다 한 번만 재집계하며, 대상이 이미 하드 삭제됐으면 건너뛴다.
+     *
+     * 반응 해제 훅(`sirsoft-board.reaction.after_react` remove)은 발화하지 않는다 — 회원 본인의 해제 행위가 아니라서
+     * 활동 로그에 사라질 회원 이름으로 「반응 해제」 기록이 쌓이게 된다. 정리 결과는 운영 로그에 한 줄로 남긴다.
+     *
+     * @param  int  $userId  삭제되는 회원 ID
+     * @return int 지운 반응 건수
+     */
+    public function purgeForUser(int $userId): int
+    {
+        return DB::transaction(function () use ($userId) {
+            $reactions = $this->reactionRepository->deleteByUser($userId);
+
+            if ($reactions->isEmpty()) {
+                return 0;
+            }
+
+            // 대상 종류(게시글·댓글)별로 묶어 재집계한다 — 저장소가 대상을 묶음으로 잠그고 GROUP BY 한 번으로 센다.
+            // 대상이 하드 삭제된 반응은 저장소가 건너뛴다.
+            $targetIdsByType = $reactions
+                ->groupBy(fn (Reaction $reaction) => (string) $reaction->target_type)
+                ->map(fn ($group) => $group->map(fn (Reaction $reaction) => (int) $reaction->target_id)->unique()->values()->all());
+
+            foreach ($targetIdsByType as $targetType => $targetIds) {
+                $this->reactionRepository->recalculateReactionCountsForTargets((string) $targetType, $targetIds);
+            }
+
+            if ($targetIdsByType->has(self::TARGET_POST)) {
+                $this->forgetPostListCaches();
+            }
+
+            Log::info('회원 삭제: 게시판 반응 정리', [
+                'user_id' => $userId,
+                'deleted' => $reactions->count(),
+                'recalculated_targets' => $targetIdsByType->sum(fn (array $targetIds) => count($targetIds)),
+            ]);
+
+            return $reactions->count();
+        });
     }
 
     /**

@@ -352,6 +352,58 @@ class LayoutExtensionControllerTest extends TestCase
     }
 
     /**
+     * 확장 버전 목록도 그 판의 동기화 출처를 싣는다 — 레이아웃 본체 버전 목록과 같은 모양.
+     *
+     * 덮기 직전에 남긴 운영자 판·병합 결과 판을 [버전 기록] 창이 가려 보여 주는 근거다. 출처가 없던 옛 행은 null/false/0 이다.
+     *
+     * @scenario endpoint=extension_versions
+     *
+     * @effects extension_versions_listed_and_restored
+     *
+     * @return void 반환값 없음
+     */
+    public function test_extension_version_list_exposes_sync_source(): void
+    {
+        $extension = $this->makeExtensionPoint();
+
+        TemplateLayoutExtensionVersion::factory()->create([
+            'extension_id' => $extension->id,
+            'version' => 1,
+            'changes_summary' => ['added' => 0, 'removed' => 0, 'char_diff' => 0],
+        ]);
+        TemplateLayoutExtensionVersion::factory()->create([
+            'extension_id' => $extension->id,
+            'version' => 2,
+            'changes_summary' => ['added' => 4, 'removed' => 2, 'char_diff' => -7, 'source' => 'decision_take_theirs', 'before_overwrite' => true],
+        ]);
+        TemplateLayoutExtensionVersion::factory()->create([
+            'extension_id' => $extension->id,
+            'version' => 3,
+            'changes_summary' => ['added' => 1, 'removed' => 1, 'char_diff' => 0, 'source' => 'refresh', 'applied' => [], 'conflicts' => [['path' => 'components.0']]],
+        ]);
+
+        $response = $this->authRequest()
+            ->getJson("/api/admin/templates/{$this->template->identifier}/layout-extensions/{$extension->id}/versions");
+
+        $response->assertStatus(200);
+        $byVersion = collect($response->json('data'))->keyBy('version');
+
+        $this->assertSame(
+            ['added_count' => 1, 'removed_count' => 1, 'char_diff' => 0, 'source' => 'refresh', 'before_overwrite' => false, 'conflict_count' => 1],
+            $byVersion[3]['changes_summary'],
+        );
+        $this->assertSame(
+            ['added_count' => 4, 'removed_count' => 2, 'char_diff' => -7, 'source' => 'decision_take_theirs', 'before_overwrite' => true, 'conflict_count' => 0],
+            $byVersion[2]['changes_summary'],
+        );
+        // 출처를 적지 않던 옛 행 — 출처 없음·덮기 전 아님·충돌 0
+        $this->assertSame(
+            ['added_count' => 0, 'removed_count' => 0, 'char_diff' => 0, 'source' => null, 'before_overwrite' => false, 'conflict_count' => 0],
+            $byVersion[1]['changes_summary'],
+        );
+    }
+
+    /**
      * index - 확장 목록에는 편집 본문이 실리지 않는다.
      *
      * 목록은 라우트 트리에 "어느 화면에 어떤 확장이 붙어 있는가" 를 그리는 화면이다. 본문까지

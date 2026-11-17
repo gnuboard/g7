@@ -1717,15 +1717,16 @@ class AuthService
             'created_at' => now(),
         ]);
 
-        // 리셋 URL 생성 (extract_data 필터에서 사용) — 화면 주소 헬퍼를 거친다(#792). 관리자 재설정 화면은 관리자 범위라
-        // 늘 사이트 주소, 사용자 재설정 화면은 「사용자 화면 URL」(비면 사이트 주소)과 주소 필터를 따른다.
+        // 리셋 URL 생성 (extract_data 필터에서 사용) — 메일에 싣는 링크라 화면 주소 헬퍼의 링크 변형을 거친다(#792·#888).
+        // 관리자 재설정 화면은 관리자 범위라 밖으로 나가는 링크의 주소(G7_PUBLIC_LINK_URL, 비면 사이트 주소), 사용자 재설정
+        // 화면은 「사용자 화면 URL」(비면 그 링크 주소)과 주소 필터를 따른다.
         $resetQuery = [
             'token' => $token,
             'email' => $user->email, // audit:allow resource-member-email-ungated 재설정 메일 URL 쿼리(응답 아님)
         ];
         $resetUrl = $redirectPrefix
-            ? ScreenUrl::absolute('admin.reset_password', '/'.$redirectPrefix.'/reset-password', [], ScreenUrl::SCOPE_ADMIN)
-            : ScreenUrl::absolute('auth.reset_password', '/reset-password', $resetQuery);
+            ? ScreenUrl::absoluteForLinks('admin.reset_password', '/'.$redirectPrefix.'/reset-password', [], ScreenUrl::SCOPE_ADMIN)
+            : ScreenUrl::absoluteForLinks('auth.reset_password', '/reset-password', $resetQuery);
         if ($redirectPrefix) {
             $resetUrl .= (str_contains($resetUrl, '?') ? '&' : '?').http_build_query($resetQuery);
         } elseif (! str_contains($resetUrl, 'token=')) {

@@ -123,9 +123,10 @@ interface IdentityVerificationLogRepositoryInterface
      * 보관주기 경과 로그를 일괄 삭제합니다.
      *
      * @param  int  $days  보관 일수 (이보다 오래된 로그가 삭제됨)
+     * @param  \Closure(array<int, string>): void|null  $beforeEachBatch  배치마다 지우기 직전에 그 배치의 로그 ID 목록으로 부를 콜백
      * @return int 삭제된 행 수
      */
-    public function purgeOlderThan(int $days): int;
+    public function purgeOlderThan(int $days, ?\Closure $beforeEachBatch = null): int;
 
     /**
      * 목록 조회 (관리자 인증 이력 화면).

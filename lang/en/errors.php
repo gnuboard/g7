@@ -7,6 +7,8 @@ return [
     |--------------------------------------------------------------------------
     */
 
+    'stage_role_locked' => 'This action is not available on a review server (runtime role stage) — change extensions, the core and language packs on the production server or through your deployment procedure.',
+    'stage_role_locked_sitemap' => 'Sitemaps are not regenerated on a review server (runtime role stage) — regenerate the sitemap on the production server.',
     'back_home' => 'Back to Home',
 
     '401' => [

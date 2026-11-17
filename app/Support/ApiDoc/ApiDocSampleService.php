@@ -221,6 +221,7 @@ class ApiDocSampleService implements ApiDocSampleSeeder
 
         foreach ($samples as $permission) {
             $permission->roles()->detach();
+            $permission->hooks()->delete();
         }
 
         // 하위(parent_id 있음)부터 지운다

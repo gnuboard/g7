@@ -183,7 +183,8 @@ function buildLayout(initGlobal: Record<string, any>) {
   return {
     version: '1.0.0',
     layout_name: 'plugin_modal_force_test',
-    initGlobal,
+    // 진행 단추는 화면별 처리 미리보기가 준비(ready)된 뒤에만 풀린다(#888) — 이 시험은 force 축만 본다.
+    initGlobal: { layoutPreviewState: 'ready', ...initGlobal },
     components: [
       {
         id: 'host',
@@ -229,10 +230,6 @@ describe('플러그인 업데이트 모달 - force 체크박스', () => {
         pluginForceUpdate: false,
         pluginUpdateError: null,
         isPluginUpdating: false,
-        pluginLayoutStrategy: 'overwrite',
-        hasModifiedPluginLayouts: false,
-        modifiedPluginLayoutsCount: 0,
-        modifiedPluginLayouts: [],
         updateChangelog: [],
       }),
       { translations, locale: 'ko', componentRegistry: registry },
@@ -274,7 +271,6 @@ describe('플러그인 업데이트 모달 - force 체크박스', () => {
         },
         pluginForceUpdate: false,
         isPluginUpdating: false,
-        pluginLayoutStrategy: 'overwrite',
       }),
       { translations, locale: 'ko', componentRegistry: registry },
     );
@@ -301,7 +297,6 @@ describe('플러그인 업데이트 모달 - force 체크박스', () => {
         },
         pluginForceUpdate: true,
         isPluginUpdating: false,
-        pluginLayoutStrategy: 'overwrite',
       }),
       { translations, locale: 'ko', componentRegistry: registry },
     );
@@ -334,7 +329,6 @@ describe('플러그인 업데이트 모달 - force 체크박스', () => {
         },
         pluginForceUpdate: false,
         isPluginUpdating: false,
-        pluginLayoutStrategy: 'overwrite',
       }),
       { translations, locale: 'ko', componentRegistry: registry },
     );
@@ -364,7 +358,6 @@ describe('플러그인 업데이트 모달 - force 체크박스', () => {
         },
         pluginForceUpdate: false,
         isPluginUpdating: false,
-        pluginLayoutStrategy: 'overwrite',
       }),
       { translations, locale: 'ko', componentRegistry: registry },
     );

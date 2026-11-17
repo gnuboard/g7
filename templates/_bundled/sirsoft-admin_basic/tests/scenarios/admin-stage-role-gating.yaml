@@ -1,0 +1,27 @@
+feature: 검수 서버(실행 역할 stage) 관리자 화면 잠금과 서버별 스케줄 꺼짐 안내 (#888)
+
+description: |
+  운영 DB 를 공유하는 검수 서버(셸 설정 `appConfig.runtime_role === 'stage'`)에서는 확장·코어·언어팩 변경 API 가 409
+  (`errors.stage_role_locked`)로 막힌다. 화면은 누르기 전에 그 사실을 보인다.
+  - 관리자 기본 레이아웃 상단 띠(`stage_role_banner`)·레이아웃 편집기 띠(`stage_editor_banner`)는 stage 에서만 그린다.
+  - 모듈·플러그인·템플릿·언어팩 카드의 스위치·설치·업데이트·삭제는 stage 면 잠기고 안내(`title`·`disabledReason`)가 붙는다.
+  - 수동 설치·언어팩 설치·코어 업데이트 시작·대시보드 호환성 [복구] 단추는 stage 면 disabled + title 이고, 시각 비활성 꾸밈(opacity·cursor)을 갖는다.
+  - 환경설정 > 시스템의 스케줄 꺼짐 안내(`scheduler_off_notice`)는 설정 응답 `scheduler_enabled_on_this_server` 가 false 일 때만 그린다
+    (이 요청을 처리한 서버의 `G7_SCHEDULER` 값).
+
+axes:
+  case: [base_banner, editor_banner, extension_cards, entry_buttons, scheduler_notice]
+
+effects:
+  - stage_banner_only_on_stage
+  - stage_editor_banner_only_on_stage
+  - stage_locks_extension_lifecycle_controls
+  - stage_disables_entry_buttons_with_tooltip
+  - scheduler_off_notice_only_when_off_on_this_server
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-stage-role-gating.test.tsx
+
+notes: |
+  레이아웃 테스트는 굽기 산출물의 실제 노드를 렌더하고, 카드 그리드는 받은 items prop 계약(잠금·안내)을 잰다.
+  서버 쪽 409 차단은 코어 미들웨어 `DenyOnStageRole` 테스트가 잠근다. 카드 스위치 자체에는 툴팁 prop 이 없어 상단 띠가 이유를 알린다.

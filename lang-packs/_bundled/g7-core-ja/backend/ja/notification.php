@@ -75,7 +75,6 @@ return [
             'description' => 'サイト内通知センターに表示',
         ],
     ],
-    // 発送スキップ理由に記載する受信者ルール名
     'recipient_rules' => [
         'trigger_user' => 'イベント発生者',
         'related_user' => '関連ユーザー(:relation)',
@@ -83,6 +82,7 @@ return [
         'specific_users' => '特定ユーザー :count人',
         'exclude_trigger_user' => ':rule — イベント発生者を除外',
         'legacy' => '定義の既定受信者',
+        'site_admin_email' => 'サイト管理者メールアドレス',
     ],
     'skipped' => [
         'no_recipient_resolved' => '受信者ルールで受取人が見つからなかったため、発送しませんでした。適用ルール: :rule_names (ルールコード: :rules)',
@@ -104,13 +104,10 @@ return [
             'body' => '通知の本文',
         ],
     ],
-    // 通知テンプレート編集ウィンドウ「使用可能な変数」の説明 — common は変数キーごとの既定、by_type はその通知でのみ意味が異なる変数、identity は本人認証通知の共通変数。キーがない場合は宣言文字列をそのまま使う。
-    // テンプレート編集ウィンドウの会員共通変数の説明 ({member.display_name}, {member.<キー>}, {member.custom.<キー>})
     'member_variables' => [
         'display_name' => '受信する会員に表示される名前',
         'field' => '会員項目: :name',
     ],
-    // テンプレート保存レスポンスの警告 (data.warnings)
     'warnings' => [
         'unknown_variable' => '現在存在しない変数です: :variable (会員項目が削除されているかオフになっている場合は空文字で送信されます)',
     ],
@@ -192,7 +189,6 @@ return [
             'recipient_email' => '受信者メールアドレス',
         ],
     ],
-    // `notification:cleanup` コマンド出力
     'console' => [
         'cleanup' => [
             'start' => '通知のクリーンアップを開始...',

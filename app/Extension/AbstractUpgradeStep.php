@@ -33,6 +33,19 @@ use ReflectionClass;
 abstract class AbstractUpgradeStep implements UpgradeStepInterface
 {
     /**
+     * 이 스텝이 하는 일을 사람이 읽을 한 줄로 설명합니다 — `g7:migrate-plan` 이 실행 전에 보여 준다 (7.2.0, 선택 구현).
+     *
+     * 구현하지 않으면 null 이고 계획에는 「설명 없음」으로 나온다. `destructive` 는 데이터를 지우거나 되돌릴 수 없게 바꾸면 true.
+     * 실행 없이 불리므로 DB·파일을 읽거나 바꾸지 않는다.
+     *
+     * @return array{summary: string, destructive: bool}|null 설명 (없으면 null)
+     */
+    public function describe(): ?array
+    {
+        return null;
+    }
+
+    /**
      * data/{currentStep}/manifest.json 을 로드 + Applier 동적 로드.
      *
      * 카탈로그 변동이 없는 스텝은 manifest 파일 없이 자동 빈 스냅샷 반환.

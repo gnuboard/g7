@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Plugins\Sirsoft\VerificationKginicis\Listeners\AssertNoDuplicateInicisIdentity;
+use Plugins\Sirsoft\VerificationKginicis\Listeners\CleanInicisChallengeMappingsOnLogPurge;
 use Plugins\Sirsoft\VerificationKginicis\Listeners\CleanInicisRecordOnUserDelete;
 use Plugins\Sirsoft\VerificationKginicis\Listeners\CleanInicisRecordOnUserWithdraw;
 use Plugins\Sirsoft\VerificationKginicis\Listeners\CompleteInicisRecordAfterRegister;
@@ -190,6 +191,10 @@ abstract class PluginTestCase extends TestCase
         );
         HookListenerRegistrar::register(
             CleanInicisRecordOnUserDelete::class,
+            'plugin:sirsoft-verification_kginicis',
+        );
+        HookListenerRegistrar::register(
+            CleanInicisChallengeMappingsOnLogPurge::class,
             'plugin:sirsoft-verification_kginicis',
         );
         HookListenerRegistrar::register(

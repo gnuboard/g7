@@ -251,7 +251,8 @@ class Plugin implements PluginInterface
 | 메서드 | 기본값 | 설명 |
 |--------|--------|------|
 | `install()` | `true` | 설치 로직 |
-| `uninstall()` | `true` | 제거 로직 |
+| `uninstall()` | `true` | 제거 로직 — 데이터 보존 제거에서도 매번 불린다 ([제거 훅](#제거-훅-uninstall-과-uninstalldata-720)) |
+| `uninstallData()` | 빈 동작 | 「데이터도 함께 삭제」를 고른 제거에서만 부르는 데이터 정리 (7.2.0+, [제거 훅](#제거-훅-uninstall-과-uninstalldata-720)) |
 | `activate()` | `true` | 활성화 로직 |
 | `deactivate()` | `true` | 비활성화 로직 |
 | `getDynamicTables()` | `[]` | 런타임 동적 생성 테이블 목록 (언인스톨 시 Manager가 삭제) |
@@ -267,6 +268,36 @@ class Plugin implements PluginInterface
 | `upgrades()` | `[]` | 업그레이드 스텝 (`upgrades/` 디렉토리 자동 발견). **`g7_version >= 7.0.0-beta.5` 인 플러그인은 신규 step 이 `AbstractUpgradeStep` 상속 의무** ([upgrade-step-guide §13](upgrade-step-guide.md)) — 미상속 시 `PluginManager::runUpgradeSteps` 가 `RuntimeException` throw |
 
 > **동적 식별자 보존 규칙**: `Permission::updateOrCreate()` / `Role::firstOrCreate()` 등으로 런타임에 생성한 엔티티는 업데이트 시 `cleanupStalePluginEntries` 에 의해 "정적 정의에 없는 고아 레코드" 로 판정되어 삭제될 위험이 있습니다. 이를 방지하려면 동적 식별자 목록을 위 3개 훅에서 반환하세요 — 정적 정의 + 동적 식별자가 병합된 expected 목록을 기준으로 판정되어 보존됩니다. 상세는 [extension-update-system.md](extension-update-system.md) 참조.
+
+### 제거 훅: uninstall() 과 uninstallData() (7.2.0+)
+
+제거는 운영자가 「데이터도 함께 삭제」를 골랐는지(`plugin:uninstall --delete-data`, 화면의 같은 옵션)에 따라 두 갈래로 나뉜다. `PluginManager` 가 부르는 순서는 다음과 같다.
+
+| 단계 | 데이터 보존 제거 | 데이터도 함께 삭제 |
+|------|------------------|--------------------|
+| 1. 동적 테이블 삭제·마이그레이션 롤백 | — | ✅ (트랜잭션 밖) |
+| 2. `uninstall()` | ✅ | ✅ |
+| 3. 권한·역할 삭제 | — | ✅ 코어 |
+| 4. 메뉴 삭제 | — | ✅ 코어 (운영자가 만든 자식 메뉴는 남긴다) |
+| 5. `uninstallData()` | — | ✅ |
+| 6. 본인확인 정책·항목 선언·알림 정의/템플릿·스케줄 삭제 | — | ✅ 코어 |
+| 7. 레이아웃·플러그인 행 삭제 | ✅ | ✅ |
+
+- `uninstall()` 은 **모든 제거에서** 불린다. 데이터를 남기는 제거에서도 돌기 때문에, 운영자가 다시 설치했을 때 이어 써야 할 것(메뉴, 운영자가 고친 템플릿, 코어 행에 적재한 값)을 여기서 지우면 안 된다. 다시 설치하면 되살아나는 것(캐시, 임시 파일 등)만 정리한다.
+- 플러그인이 **코어 행에 더한 데이터**(예: 코어 알림 정의에 붙인 자기 채널 템플릿)와, 운영자가 「데이터도 함께 삭제」를 골랐을 때만 사라져야 하는 것은 `uninstallData()` 에서 지운다.
+- 메뉴·권한·역할·본인확인 정책·항목 선언·알림 정의·스케줄은 코어가 데이터 삭제 경로에서만 지우므로 플러그인이 다시 지우지 않는다. 특히 **메뉴를 `uninstall()` 에서 지우지 않는다** — 데이터 보존 제거에서도 메뉴가 사라진다.
+- `uninstallData()` 가 불릴 때는 1단계에서 플러그인 자체 테이블이 이미 롤백돼 있다. 자기 테이블을 읽어야 하는 정리는 `getDynamicTables()`·마이그레이션 `down()` 으로 옮긴다.
+
+```php
+public function uninstallData(): void
+{
+    // 코어 알림 정의에 더한 이 플러그인 채널(sms·alimtalk)의 템플릿과 definitions.channels 항목을 걷어낸다 —
+    // 코어 행이라 마이그레이션 롤백으로 지워지지 않는다
+    $this->cleanupChannelContributions();
+}
+```
+
+실제 구현은 `plugins/_bundled/sirsoft-message_bizppurio/plugin.php` 의 `uninstallData()` 를 참고한다 (템플릿 삭제는 코어 `NotificationSyncHelper::cleanupStaleTemplates()` 를 쓴다).
 
 ---
 

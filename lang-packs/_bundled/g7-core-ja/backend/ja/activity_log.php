@@ -102,6 +102,8 @@ return [
             'extension_purged' => '拡張統計データ整理',
         ],
         'bulk_roles' => 'ロール一括変更',
+        'force_deleted' => '完全削除 (直前の記録)',
+        'sync_deleted' => '宣言の整理による削除 (直前の記録)',
     ],
     'description' => [
         'user_index' => 'ユーザーリスト閲覧',
@@ -279,6 +281,17 @@ return [
         'user_bulk_roles' => 'ユーザーのロール一括変更 (ID: :user_id)',
         'user_roles_update' => 'ユーザーのロール変更 (ID: :user_id, 追加: :added, 解除: :removed)',
         'auth_reset_password_by_console' => 'システム(CLI)が会員のパスワードを再設定 (ID: :user_id)',
+        'layout_force_deleted' => 'レイアウト完全削除の直前記録: :name (:template, :reason)',
+        'layout_extension_force_deleted' => 'レイアウト拡張フラグメント完全削除の直前記録: :name (:template, :reason)',
+        'template_custom_translation_deleted' => 'テンプレートのカスタム翻訳削除の直前記録: :key',
+        'notification_definition_sync_deleted' => '通知定義の宣言整理の直前記録: :key (:extension)',
+        'notification_template_sync_deleted' => '通知テンプレートの宣言整理の直前記録: :key (:channel)',
+        'menu_sync_deleted' => '管理者メニューの宣言整理の直前記録: :key (:extension)',
+        'permission_sync_deleted' => '権限の宣言整理の直前記録: :key (:extension)',
+        'role_sync_deleted' => 'ロールの宣言整理の直前記録: :key (:extension)',
+        'identity_policy_sync_deleted' => '本人確認ポリシーの宣言整理の直前記録: :key (:extension)',
+        'entity_sync_deleted' => ':entity 基本データの宣言整理の直前記録: :key (:extension)',
+        'schedule_sync_deleted' => 'スケジュールの宣言整理の直前記録: :key (:extension)',
     ],
     'fields' => [
         'name' => '名前',
@@ -325,5 +338,13 @@ return [
     ],
     'layout_sync' => [
         'operator_modified' => '運営者の修正版',
+    ],
+    'deletion_reason' => [
+        'uninstall' => '拡張のアンインストール',
+        'refresh_overwrite_removed' => '上書き更新で新バージョンに存在しない',
+        'orphan_override' => '孤立したオーバーライドの整理',
+        'settings_layout_removed' => '設定画面ファイルが欠落',
+        'template_uninstall' => 'テンプレートのアンインストール',
+        'declaration_removed' => '新バージョンの宣言から外れた',
     ],
 ];

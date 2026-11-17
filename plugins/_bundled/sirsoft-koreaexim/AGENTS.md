@@ -71,7 +71,7 @@
 <!-- @generated:extension-points-summary END -->
 
 <!-- @intent START -->
-실패 후 처리를 추가하려면 `sirsoft-koreaexim.update.failed`를 구독합니다. 알림 변수를 보강하려면 `sirsoft-koreaexim.notification.extract_data` 필터를 사용합니다. 다른 은행을 붙일 때는 이커머스의 `currency.registered_rate_providers` 계약으로 별도 제공자를 등록합니다.
+실패 후 처리를 추가하려면 `sirsoft-koreaexim.update.failed`를 구독합니다. 알림 변수를 보강하려면 `sirsoft-koreaexim.notification.extract_data` 필터를 사용합니다. 실패 알림의 설정 화면 링크(`settings_url`)는 관리자 화면 링크라 코어 `ScreenUrl::toAbsolute($path, ScreenUrl::SCOPE_ADMIN)` 으로 만듭니다 — `.env` 의 `G7_PUBLIC_LINK_URL` 을 정하면 그 주소, 비면 사이트 주소입니다. 다른 은행을 붙일 때는 이커머스의 `currency.registered_rate_providers` 계약으로 별도 제공자를 등록합니다.
 <!-- @intent END -->
 
 ## 5. 수정 시 동반 의무
@@ -103,9 +103,9 @@
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 14개 | `plugins/_bundled/sirsoft-koreaexim/tests` |
-| Vitest | 18개 | `vitest.config.ts` |
+| Vitest | 19개 | `vitest.config.ts` |
 | Playwright | 2개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 27개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 28개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

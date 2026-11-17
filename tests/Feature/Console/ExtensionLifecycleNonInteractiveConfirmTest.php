@@ -9,6 +9,7 @@ use App\Console\Commands\Plugin\UninstallPluginCommand;
 use App\Console\Commands\Plugin\UpdatePluginCommand;
 use App\Console\Commands\Template\UninstallTemplateCommand;
 use App\Console\Commands\Template\UpdateTemplateCommand;
+use App\Console\Helpers\PromptCapability;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
@@ -187,6 +188,27 @@ class ExtensionLifecycleNonInteractiveConfirmTest extends TestCase
     }
 
     /**
+     * 대화형에서 `--yes` 를 붙여도 묻지 않는다 (질문이 나오면 테스트가 예기치 않은 질문으로 실패한다).
+     *
+     * @scenario input=interactive, force_option=yes_only
+     *
+     * @effects yes_option_skips_only_the_confirmation
+     *
+     * @param  string  $command  명령 이름
+     * @return void 반환값 없음
+     */
+    #[DataProvider('commandProvider')]
+    public function test_interactive_run_with_yes_does_not_ask(string $command): void
+    {
+        $this->prepare($command, workExpected: true);
+
+        $this->artisan($command, $this->arguments($command, ['--yes' => true]))
+            ->doesntExpectOutputToContain($this->unavailableMessage($command))
+            ->expectsOutputToContain(self::REACHED_WORK)
+            ->assertExitCode(Command::FAILURE);
+    }
+
+    /**
      * 대화형에서 운영자가 직접 「아니오」를 답한 취소는 종전처럼 「취소」 문구와 종료 코드 0 이고 사유 안내를 내지 않는다.
      *
      * @scenario input=interactive, force_option=absent
@@ -206,6 +228,99 @@ class ExtensionLifecycleNonInteractiveConfirmTest extends TestCase
             ->expectsOutput($this->abortedMessage($command))
             ->doesntExpectOutputToContain($this->unavailableMessage($command))
             ->assertExitCode(Command::SUCCESS);
+    }
+
+    /**
+     * `--no-interaction` 실행에 `--yes` 를 붙이면 확인만 건너뛰고 작업 단계에 닿는다.
+     *
+     * @scenario input=no_interaction_option, force_option=yes_only
+     *
+     * @effects yes_option_skips_only_the_confirmation
+     *
+     * @param  string  $command  명령 이름
+     * @return void 반환값 없음
+     */
+    #[DataProvider('commandProvider')]
+    public function test_no_interaction_run_with_yes_passes_the_confirmation(string $command): void
+    {
+        $this->prepare($command, workExpected: true);
+
+        $this->artisan($command, $this->arguments($command, ['--no-interaction' => true, '--yes' => true]))
+            ->doesntExpectOutputToContain($this->unavailableMessage($command))
+            ->expectsOutputToContain(self::REACHED_WORK)
+            ->assertExitCode(Command::FAILURE);
+    }
+
+    /**
+     * 콘솔 없는 실행(주입 판정기로 고정)에서도 `--yes` 는 확인을 건너뛰고, 없으면 거절한다.
+     *
+     * @scenario input=no_terminal, force_option=yes_only
+     *
+     * @effects yes_option_skips_only_the_confirmation, unanswerable_confirmation_fails_with_reason_and_force_hint
+     *
+     * @param  string  $command  명령 이름
+     * @return void 반환값 없음
+     */
+    #[DataProvider('commandProvider')]
+    public function test_run_without_console_via_prompt_capability_seam(string $command): void
+    {
+        PromptCapability::fake(false);
+
+        try {
+            $this->prepare($command, workExpected: true);
+
+            $this->artisan($command, $this->arguments($command, ['--yes' => true]))
+                ->expectsOutputToContain(self::REACHED_WORK)
+                ->assertExitCode(Command::FAILURE)
+                ->run();
+
+            $this->artisan($command, $this->arguments($command))
+                ->expectsOutputToContain($this->unavailableMessage($command))
+                ->assertExitCode(Command::FAILURE)
+                ->run();
+        } finally {
+            PromptCapability::reset();
+        }
+    }
+
+    /**
+     * `--yes` 는 확인만 생략한다 — 업데이트 명령이 매니저에 넘기는 강제 표시(같은 판 재적용·다운그레이드·호환 검사 생략)는 꺼져 있다.
+     *
+     * @scenario input=no_interaction_option, force_option=yes_only
+     *
+     * @effects yes_option_does_not_carry_force_effects
+     *
+     * @param  string  $command  명령 이름
+     * @return void 반환값 없음
+     */
+    #[DataProvider('updateCommandProvider')]
+    public function test_yes_option_does_not_pass_force_to_manager(string $command): void
+    {
+        [$owner, $method] = match ($command) {
+            'module:update' => [$this->moduleManager(), 'updateModule'],
+            'plugin:update' => [$this->pluginManager(), 'updatePlugin'],
+            'template:update' => [$this->templateManager(), 'updateTemplate'],
+        };
+        $owner->shouldReceive($method)->once()->withArgs(fn (string $id, bool $force) => $id === self::IDENTIFIER && $force === false)
+            ->andThrow(new \RuntimeException(self::REACHED_WORK));
+
+        $this->artisan($command, $this->arguments($command, ['--no-interaction' => true, '--yes' => true]))
+            ->expectsOutputToContain(self::REACHED_WORK)
+            ->assertExitCode(Command::FAILURE);
+    }
+
+    /**
+     * 업데이트 명령 목록.
+     *
+     * @return array<string, array{0: string}> 명령 이름
+     */
+    public static function updateCommandProvider(): array
+    {
+        return [
+            'module:update' => ['module:update'],
+            'plugin:update' => ['plugin:update'],
+            'template:update' => ['template:update'],
+        ];
     }
 
     /**

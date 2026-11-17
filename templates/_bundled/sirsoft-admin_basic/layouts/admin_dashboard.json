@@ -506,7 +506,7 @@
                                                         "if": "{{!!alert.recover_endpoint}}",
                                                         "actions": [
                                                             {
-                                                                "comment": "복구 주소는 알림 자체가 싣고 온다(alert.recover_endpoint) — 확장 종류마다 복구 경로가 달라 화면이 주소를 조립하지 않는다. 끝나면 알림 목록을 다시 받아 처리된 알림이 사라지게 한다.\n                       버튼이 뜨는 조건도 알림 종류(subtype)가 아니라 **복구 주소를 실어 왔는가**다 — 종류를 열거하면 새 알림이 복구를 붙일 때마다 이 화면을 고쳐야 한다.\n                       버튼 글자와 성공 안내도 알림이 실어 오면 그것을 쓰고, 없으면 공통 문구로 떨어진다.",
+                                                                "comment": "복구 주소는 알림 자체가 싣고 온다(alert.recover_endpoint) — 확장 종류마다 복구 경로가 달라 화면이 주소를 조립하지 않는다. 끝나면 알림 목록을 다시 받아 처리된 알림이 사라지게 한다.\n                       버튼이 뜨는 조건도 알림 종류(subtype)가 아니라 **복구 주소를 실어 왔는가**다 — 종류를 열거하면 새 알림이 복구를 붙일 때마다 이 화면을 고쳐야 한다.\n                       버튼 글자와 성공 안내도 알림이 실어 오면 그것을 쓰고, 없으면 공통 문구로 떨어진다.\n                       복구는 확장을 다시 켜는 수명주기 동작이라 검수 서버(runtime_role stage)에서는 서버가 409 로 막는다 — 단추도 미리 잠그고 안내를 단다.",
                                                                 "type": "click",
                                                                 "handler": "apiCall",
                                                                 "target": "{{alert.recover_endpoint}}",
@@ -555,7 +555,8 @@
                                                         "props": {
                                                             "type": "button",
                                                             "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed",
-                                                            "disabled": "{{alert.abilities?.can_recover !== true}}"
+                                                            "disabled": "{{alert.abilities?.can_recover !== true || _global.appConfig?.runtime_role === 'stage'}}",
+                                                            "title": "{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}"
                                                         },
                                                         "children": [
                                                             {
@@ -2253,7 +2254,8 @@
                                                                         "props": {
                                                                             "type": "button",
                                                                             "className": "inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed",
-                                                                            "disabled": "{{alert.abilities?.can_recover !== true}}"
+                                                                            "disabled": "{{alert.abilities?.can_recover !== true || _global.appConfig?.runtime_role === 'stage'}}",
+                                                                            "title": "{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}"
                                                                         },
                                                                         "children": [
                                                                             {

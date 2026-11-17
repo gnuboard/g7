@@ -26,10 +26,12 @@ use Modules\Sirsoft\Ecommerce\Exceptions\ProductPriceRelationException;
 use Modules\Sirsoft\Ecommerce\Exceptions\StockMismatchException;
 use Modules\Sirsoft\Ecommerce\Models\Product;
 use Modules\Sirsoft\Ecommerce\Models\ProductAdditionalOption;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CouponRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductAdditionalOptionValueRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductLabelRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductWishlistRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\PurifiesHtml;
 use Modules\Sirsoft\Ecommerce\Support\VatCalculator;
 use Modules\Sirsoft\Ecommerce\Traits\ReappliesPermissionScope;
@@ -88,6 +90,10 @@ class ProductService
      * @param  ProductLabelRepositoryInterface  $productLabelRepository  상품 라벨 저장소
      * @param  ProductAdditionalOptionValueRepositoryInterface  $additionalOptionValueRepository  추가옵션 선택지 저장소
      * @param  ProductInquiryService  $inquiryService  상품 문의 서비스
+     * @param  CartService|null  $cartService  장바구니 서비스 (상품·옵션 삭제 시 담긴 행 정리, null 이면 늦게 해석)
+     * @param  ProductWishlistRepositoryInterface|null  $wishlistRepository  찜 저장소 (null 이면 늦게 해석)
+     * @param  CouponRepositoryInterface|null  $couponRepository  쿠폰 저장소 (적용 상품 연결 정리, null 이면 늦게 해석)
+     * @param  ProductReviewService|null  $reviewService  리뷰 서비스 (리뷰·이미지 파일 정리, null 이면 늦게 해석)
      */
     public function __construct(
         protected ProductRepositoryInterface $repository,
@@ -96,8 +102,52 @@ class ProductService
         protected OrderOptionRepositoryInterface $orderOptionRepository,
         protected ProductLabelRepositoryInterface $productLabelRepository,
         protected ProductAdditionalOptionValueRepositoryInterface $additionalOptionValueRepository,
-        protected ProductInquiryService $inquiryService
+        protected ProductInquiryService $inquiryService,
+        protected ?CartService $cartService = null,
+        protected ?ProductWishlistRepositoryInterface $wishlistRepository = null,
+        protected ?CouponRepositoryInterface $couponRepository = null,
+        protected ?ProductReviewService $reviewService = null,
     ) {}
+
+    /**
+     * 장바구니 서비스를 늦게 해석합니다. (기존 7인수 생성 호출부 호환)
+     *
+     * @return CartService 장바구니 서비스
+     */
+    private function carts(): CartService
+    {
+        return $this->cartService ??= app(CartService::class);
+    }
+
+    /**
+     * 찜 저장소를 늦게 해석합니다. (기존 7인수 생성 호출부 호환)
+     *
+     * @return ProductWishlistRepositoryInterface 찜 저장소
+     */
+    private function wishlists(): ProductWishlistRepositoryInterface
+    {
+        return $this->wishlistRepository ??= app(ProductWishlistRepositoryInterface::class);
+    }
+
+    /**
+     * 쿠폰 저장소를 늦게 해석합니다. (기존 7인수 생성 호출부 호환)
+     *
+     * @return CouponRepositoryInterface 쿠폰 저장소
+     */
+    private function coupons(): CouponRepositoryInterface
+    {
+        return $this->couponRepository ??= app(CouponRepositoryInterface::class);
+    }
+
+    /**
+     * 리뷰 서비스를 늦게 해석합니다. (기존 7인수 생성 호출부 호환)
+     *
+     * @return ProductReviewService 리뷰 서비스
+     */
+    private function reviews(): ProductReviewService
+    {
+        return $this->reviewService ??= app(ProductReviewService::class);
+    }
 
     /**
      * 관리자 상품 목록을 페이지네이션으로 조회합니다 (filter_list_params 훅 적용).
@@ -509,6 +559,18 @@ class ProductService
             // 2. 이미지 레코드 삭제
             $product->images()->delete();
 
+            // 2-1. 이 상품을 담은 장바구니 행 삭제 (소유자 무관, 장바구니 선택 삭제 훅 발화) — 옵션보다 먼저
+            $this->carts()->purgeForProduct($product->id);
+
+            // 2-2. 찜 삭제
+            $this->wishlists()->deleteByProductId($product->id);
+
+            // 2-3. 쿠폰 적용·제외 상품 목록에서 이 상품 연결 삭제
+            $this->coupons()->detachProductFromAll($product->id);
+
+            // 2-4. 리뷰 삭제 — 이미지 행·파일 포함, 파일은 커밋 뒤 (주문 이력이 있으면 위 가드가 막으므로 이관 후기만 대상)
+            $this->reviews()->purgeForProduct($product->id);
+
             // 3. 옵션 삭제
             $product->options()->delete();
 
@@ -529,17 +591,6 @@ class ProductService
 
             // 7-1. 상품 설명 본문 미디어 영구 삭제 — 본문에서 빠져 소프트 삭제된 것 포함, 파일은 커밋 뒤 (#887)
             app(ContentMediaPurger::class)->purgeForOwner(ContentMediaOwnerType::Product, $product->id);
-
-            // === 미구현 연관 데이터 (테이블 생성 후 활성화) ===
-
-            // TODO: 장바구니 삭제 (테이블: ecommerce_cart_items)
-            // CartItem::where('product_id', $product->id)->delete();
-
-            // TODO: 위시리스트 삭제 (테이블: ecommerce_wishlists)
-            // Wishlist::where('product_id', $product->id)->delete();
-
-            // TODO: 리뷰 삭제 (테이블: ecommerce_reviews)
-            // Review::where('product_id', $product->id)->delete();
 
             // 8. 상품 레코드 완전 삭제 (SoftDeletes 무시)
             // 모든 연관 데이터가 완전 삭제되었으므로 상품도 완전 삭제합니다.
@@ -912,6 +963,8 @@ class ProductService
             // 주문 이력이 있는 옵션은 삭제 불가
             $this->validateOptionsDeletion($deleteIds);
             $deletedCount = count($deleteIds);
+            // 사라질 옵션을 담은 장바구니 행을 먼저 명시적으로 지운다 (DB CASCADE 비의존, 장바구니 선택 삭제 훅 발화)
+            $this->carts()->purgeForProductOptions(array_values($deleteIds));
             $product->options()->whereIn('id', $deleteIds)->delete();
         }
 
@@ -1193,8 +1246,9 @@ class ProductService
         //     $this->validateAdditionalOptionsDeletion($deleteIds);
         // }
 
-        // 삭제 대상 옵션 제거
+        // 삭제 대상 옵션 제거 — 선택지 → 그룹 순서로 명시적으로 지운다 (DB CASCADE 비의존)
         if (! empty($deleteIds)) {
+            $this->additionalOptionValueRepository->deleteByAdditionalOptionIds(array_values($deleteIds));
             $product->additionalOptions()->whereIn('id', $deleteIds)->delete();
         }
 
@@ -1227,7 +1281,7 @@ class ProductService
      * 추가옵션 그룹의 선택지 동기화
      *
      * 기존 선택지와 새 선택지를 비교하여 추가/수정/삭제합니다.
-     * 삭제되는 선택지는 cascade 로 정리되며, 과거 주문은 스냅샷으로 보존됩니다.
+     * 정의에서 빠진 선택지는 명시적으로 지우며(DB CASCADE 비의존), 과거 주문은 스냅샷으로 보존됩니다.
      *
      * @param  ProductAdditionalOption  $group  추가옵션 그룹 모델
      * @param  array  $values  선택지 데이터 배열

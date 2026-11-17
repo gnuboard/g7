@@ -285,4 +285,12 @@ class UserAddressRepository implements UserAddressRepositoryInterface
 
         return $query->toBase();
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function deleteByUserId(int $userId): int
+    {
+        return (int) $this->model->newQuery()->where('user_id', $userId)->delete();
+    }
 }

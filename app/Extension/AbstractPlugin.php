@@ -8,7 +8,7 @@ use App\Contracts\Extension\PluginInterface;
 use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Extension\UpgradeStepInterface;
 use App\DisplayName\Contracts\DisplayNameKindInterface;
-use App\Extension\Cache\PluginCacheDriver;
+use App\Extension\Cache\CacheDriverFactory;
 use App\Extension\Exceptions\UpgradeStepClassMissingException;
 use App\Extension\Helpers\ExtensionScheduleSyncHelper;
 use App\Extension\Helpers\FieldDefinitionSyncHelper;
@@ -201,6 +201,16 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     {
         return true;
     }
+
+    /**
+     * 「데이터도 함께 삭제」를 고른 제거에서만 부르는 데이터 정리 (7.2.0+).
+     *
+     * `uninstall()` 은 데이터 보존 제거에서도 불린다 — 메뉴·운영자가 고친 템플릿처럼 데이터에 해당하는 것은 여기서 지운다.
+     * 메뉴·권한·역할·알림 정의·본인확인 정책·스케줄은 코어가 지우므로 다시 지우지 않는다.
+     *
+     * @return void 반환값 없음
+     */
+    public function uninstallData(): void {}
 
     /**
      * 플러그인이 런타임에 동적으로 생성한 테이블 목록을 반환합니다.
@@ -1723,10 +1733,7 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     public function getCache(): CacheInterface
     {
         if ($this->cache === null) {
-            $this->cache = new PluginCacheDriver(
-                $this->getIdentifier(),
-                $this->getCacheStore()
-            );
+            $this->cache = CacheDriverFactory::extension('plugin', $this->getIdentifier(), null, $this->getCacheStore());
         }
 
         return $this->cache;

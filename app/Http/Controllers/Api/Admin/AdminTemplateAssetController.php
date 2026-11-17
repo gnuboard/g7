@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Extension\Cache\CacheDriverFactory;
 use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\Helpers\EditorSpecAssembler;
 use App\Http\Controllers\Api\Base\AdminBaseController;
@@ -217,7 +218,7 @@ class AdminTemplateAssetController extends AdminBaseController
         // 코어 소유 키(`template.*`)는 CoreCacheDriver 직접 생성으로 다룬다 — `app(CacheInterface)`
         // 바인딩은 확장 컨텍스트로 누수될 수 있어(메모리 feedback_core_cache_no_container_binding)
         // 코어 캐시 store 를 빗나갈 수 있다.
-        $cache = new CoreCacheDriver;
+        $cache = CacheDriverFactory::core();
         $cacheVersion = ExtensionStaticCacheService::getExtensionCacheVersion();
         // 캐시 키 — 템플릿 + 확장 캐시 버전 + 파일 mtime(빌드 변경 즉시 무효화).
         // mtime 을 읽지 못하면 키를 만들지 않고 캐시를 **거치지 않는다** (아래 헬퍼 참조).

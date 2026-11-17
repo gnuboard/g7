@@ -2941,9 +2941,13 @@ export class ActionDispatcher {
         devToolsResolvedParams = this.sanitizeForDevTools(resolvedParams);
       }
 
-      // 타겟 바인딩
+      // 타겟 바인딩 — `_global` 은 params 와 같이 저장소의 지금 값으로 푼다 (engine-v1.95.2, withLatestGlobalForTarget)
       const resolvedTarget = action.target
-        ? this.resolveValue(action.target, context.data, action.handler !== undefined && TRANSLATED_TARGET_HANDLERS.has(action.handler))
+        ? this.resolveValue(
+            action.target,
+            this.withLatestGlobalForTarget(action.target, context.data),
+            action.handler !== undefined && TRANSLATED_TARGET_HANDLERS.has(action.handler)
+          )
         : undefined;
 
       // API 호출 시 로딩 상태 시작 (컴포넌트별 개별 관리)
@@ -8453,6 +8457,33 @@ export class ActionDispatcher {
     }
 
     return resolved;
+  }
+
+  /**
+   * 액션 `target` 을 풀 데이터 문맥 — `_global` 을 저장소(`G7Core.state.get()`)의 지금 값으로 바꿔 끼운다 (engine-v1.95.2).
+   *
+   * 컴포넌트 이벤트 핸들러의 `context.data._global` 은 렌더 때 잡은 사본이다. params 는 {@link evaluateExpression} 이
+   * 이미 저장소 값으로 바꿔 끼워 읽는데 target 만 사본을 읽어, 같은 sequence 안에서 `{{_global.x}}` 가 body 에서는 새 값·
+   * target 에서는 빈 값으로 갈렸다 — 관리자 템플릿 목록 「레이아웃 갱신」 첫 열기에서 앞 단계 `setState target=global` 이 쓴
+   * `layoutPreviewRequest.url` 을 apiCall target 이 못 읽어 요청이 현재 페이지 주소로 나갔다(405). 저장소는
+   * `setGlobalState` 가 동기로 갱신하므로 params 와 같은 값을 쓴다.
+   *
+   * 단계 `if`·`conditions` 분기 판정은 바꾸지 않는다 — 번들 레이아웃이 「한 동작 안의 판정은 이벤트 때 값」 에 기대어 짜여
+   * 있다(로그인 폼의 1·2단계 상호배타, 게시판 삭제 onSuccess 의 「상태 비우기 → 댓글/글 분기」, 문의 삭제의 출처 분기).
+   *
+   * @param target 액션 target 원문
+   * @param dataContext 액션 문맥의 data
+   * @returns `_global` 을 지금 값으로 바꾼 사본 — target 이 `_global` 을 읽지 않거나 저장소를 읽을 수 없으면 원본
+   */
+  private withLatestGlobalForTarget(target: string, dataContext: any): any {
+    if (!dataContext || typeof dataContext !== 'object' || !target.includes('_global')) {
+      return dataContext;
+    }
+    const latest = (window as any).G7Core?.state?.get?.();
+    if (!latest || typeof latest !== 'object' || Array.isArray(latest)) {
+      return dataContext;
+    }
+    return { ...dataContext, _global: latest };
   }
 
   /**

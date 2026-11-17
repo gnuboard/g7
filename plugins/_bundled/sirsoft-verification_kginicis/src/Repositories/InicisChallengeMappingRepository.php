@@ -53,4 +53,21 @@ class InicisChallengeMappingRepository implements InicisChallengeMappingReposito
             ->where('challenge_id', $challengeId)
             ->first();
     }
+
+    /**
+     * 주어진 challenge_id 들에 이어진 매핑 행을 모두 삭제한다.
+     *
+     * @param  array<int, string>  $challengeIds  코어 IdentityVerificationLog UUID 목록
+     * @return int 삭제된 행 수
+     */
+    public function deleteByChallengeIds(array $challengeIds): int
+    {
+        if ($challengeIds === []) {
+            return 0;
+        }
+
+        return InicisChallengeMapping::query()
+            ->whereIn('challenge_id', $challengeIds)
+            ->delete();
+    }
 }

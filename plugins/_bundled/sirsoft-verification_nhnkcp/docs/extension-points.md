@@ -23,6 +23,7 @@ _이 확장은 훅을 발행하지 않습니다._
 | `core.auth.after_register` | action (미선언) | `CompleteKcpRecordAfterRegister` | `handle` | 50 |
 | `core.auth.before_register` | action (미선언) | `AssertNoDuplicateKcpIdentity` | `handle` | 20 |
 | `core.identity.registered_providers` | filter | `RegisterKcpProviderListener` | `register` | 20 |
+| `core.identity_logs.before_purge` | action (미선언) | `CleanKcpCertTransactionsOnLogPurge` | `handle` | 10 |
 | `core.plugin_settings.filter_save_data` | filter | `ValidateKcpSettingsListener` | `normalizeLiveSiteCd` | 10 |
 | `core.plugin_settings.update_validation_rules` | filter | `ValidateKcpSettingsListener` | `addLiveModeRules` | 10 |
 | `core.user.after_withdraw` | action (미선언) | `CleanKcpRecordOnUserWithdraw` | `handle` | 50 |
@@ -38,6 +39,12 @@ _이 확장은 훅을 발행하지 않습니다._
 남깁니다(§AGENTS.md "핵심 흐름"). `AssertNoDuplicateKcpIdentity`가
 `core.auth.before_register`(가입 **전**)을 구독하는 이유와 `core.user.before_delete`가
 `sync: true`인 이유는 kginicis 쪽과 동일합니다.
+`core.identity_logs.before_purge`(코어 7.2.0)는 코어가 보관주기 경과 본인확인 로그를 배치로
+지우기 **직전에** 그 배치의 로그 ID(UUID) 배열 하나로 발화합니다. `CleanKcpCertTransactionsOnLogPurge`가
+이 훅을 `sync: true`로 구독해 그 로그를 참조하는 `nhnkcp_cert_transactions` 행을
+`KcpCertTransactionRepositoryInterface::deleteByChallengeIds()`로 명시 삭제합니다 — 거래
+테이블 외래키의 `cascadeOnDelete()`는 안전망일 뿐 삭제 경로가 아닙니다. 큐로 미뤄지면 로그가
+먼저 지워져 리스너가 할 일이 사라지므로 동기로 둡니다.
 <!-- @intent END -->
 
 ## 훅 리스너
@@ -46,6 +53,7 @@ _이 확장은 훅을 발행하지 않습니다._
 | 리스너 | 구독 훅 | 등록 방식 | HookListenerInterface | 파일 |
 |---|---|---|---|---|
 | `AssertNoDuplicateKcpIdentity` | 1개 | 명시 등록 | ✅ | `src/Listeners/AssertNoDuplicateKcpIdentity.php` |
+| `CleanKcpCertTransactionsOnLogPurge` | 1개 | 명시 등록 | ✅ | `src/Listeners/CleanKcpCertTransactionsOnLogPurge.php` |
 | `CleanKcpRecordOnUserDelete` | 1개 | 명시 등록 | ✅ | `src/Listeners/CleanKcpRecordOnUserDelete.php` |
 | `CleanKcpRecordOnUserWithdraw` | 1개 | 명시 등록 | ✅ | `src/Listeners/CleanKcpRecordOnUserWithdraw.php` |
 | `CompleteKcpRecordAfterRegister` | 1개 | 명시 등록 | ✅ | `src/Listeners/CompleteKcpRecordAfterRegister.php` |
@@ -55,10 +63,11 @@ _이 확장은 훅을 발행하지 않습니다._
 <!-- @generated:listeners END -->
 
 <!-- @intent START -->
-6개 리스너 중 3개(`CompleteKcpRecordAfterRegister`, `CleanKcpRecordOnUserWithdraw`,
+리스너 중 3개(`CompleteKcpRecordAfterRegister`, `CleanKcpRecordOnUserWithdraw`,
 `CleanKcpRecordOnUserDelete`)는 `sirsoft-verification_kginicis`와 동일하게 사용자
 생명주기 각 단계에 맞춰 PII 레코드를 흡수하거나 정리하는 대칭 구조입니다 — 하나를 고칠
-때 나머지 둘도 같은 PII 필드를 다루고 있는지 확인해야 합니다.
+때 나머지 둘도 같은 PII 필드를 다루고 있는지 확인해야 합니다. `CleanKcpCertTransactionsOnLogPurge`는
+사용자 생명주기가 아니라 코어 로그 보관주기 파기에 맞춰 인증 거래 행을 지웁니다(§구독 훅).
 <!-- @intent END -->
 
 ## 레이아웃 확장
@@ -109,8 +118,9 @@ _등록하는 스케줄이 없습니다._
 
 <!-- @intent START -->
 `nhnkcp_cert_transactions`의 만료된 인증 거래나 `redirectStash`의 잔존 세션 데이터를
-별도 배치로 청소하지 않습니다 — `sessionStorage`는 브라우저 세션 종료로 자연 소멸하고,
-서버측 거래 레코드 정리는 사용자 삭제/탈퇴 시점 리스너가 담당합니다(§훅 리스너).
+이 플러그인이 별도 스케줄로 청소하지 않습니다 — `sessionStorage`는 브라우저 세션 종료로 자연
+소멸하고, 서버측 거래 행은 코어의 본인확인 로그 보관주기 파기가 그 로그를 지우기 직전
+`core.identity_logs.before_purge` 리스너(`CleanKcpCertTransactionsOnLogPurge`)가 명시 삭제합니다(§구독 훅).
 <!-- @intent END -->
 
 ## 알림 정의

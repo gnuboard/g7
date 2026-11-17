@@ -118,6 +118,14 @@ interface ScheduleHistoryRepositoryInterface
     public function deleteByScheduleId(int $scheduleId): int;
 
     /**
+     * 여러 스케줄의 모든 이력을 삭제합니다.
+     *
+     * @param  array<int, int>  $scheduleIds  스케줄 ID 목록
+     * @return int 삭제된 레코드 수
+     */
+    public function deleteByScheduleIds(array $scheduleIds): int;
+
+    /**
      * 특정 기간 이전의 이력을 삭제합니다.
      *
      * @param  int  $days  보관 기간 (일)

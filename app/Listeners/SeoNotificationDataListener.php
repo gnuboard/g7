@@ -83,8 +83,8 @@ class SeoNotificationDataListener implements HookListenerInterface
                 'app_name' => config('app.name'),
                 'url_count' => (string) ($data['url_count'] ?? 0),
                 'child_count' => (string) ($data['child_count'] ?? 1),
-                'action_url' => ScreenUrl::absolute('admin.settings.seo', '/admin/settings?tab=seo', [], ScreenUrl::SCOPE_ADMIN),
-                'site_url' => SiteUrl::base(),
+                'action_url' => ScreenUrl::absoluteForLinks('admin.settings.seo', '/admin/settings?tab=seo', [], ScreenUrl::SCOPE_ADMIN),
+                'site_url' => SiteUrl::forOutboundLinks(),
             ],
             'context' => [
                 'trigger_user_id' => $triggeredBy,
@@ -113,8 +113,8 @@ class SeoNotificationDataListener implements HookListenerInterface
             'data' => [
                 'app_name' => config('app.name'),
                 'error' => (string) ($result['message'] ?? ''),
-                'action_url' => ScreenUrl::absolute('admin.settings.seo', '/admin/settings?tab=seo', [], ScreenUrl::SCOPE_ADMIN),
-                'site_url' => SiteUrl::base(),
+                'action_url' => ScreenUrl::absoluteForLinks('admin.settings.seo', '/admin/settings?tab=seo', [], ScreenUrl::SCOPE_ADMIN),
+                'site_url' => SiteUrl::forOutboundLinks(),
             ],
             'context' => [
                 'trigger_user_id' => $triggeredBy,

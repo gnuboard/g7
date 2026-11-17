@@ -1,0 +1,22 @@
+feature: 확장 역할·권한 선언 동기화 헬퍼 — 생성·갱신·정리·역할 부여
+
+description: |
+  확장이 선언한 역할·권한을 DB 에 맞추는 `ExtensionRoleSyncHelper` 의 단위 계약.
+  역할 생성·갱신은 운영자가 고친 필드를 덮지 않고, 권한은 선언값으로 덮는다. 새 판 선언에서 빠진 권한은 같은 확장이
+  소유한 하위 트리째 역할 연결·훅 매핑을 먼저 떼고 지우며(DB 연쇄 비의존), 역할별 권한 부여는 DB 기준 차이로 맞추되
+  운영자가 바꾼 부여는 건너뛴다.
+
+# 축 의미:
+#   case — sync_role = 역할 생성·갱신, sync_permission = 권한 갱신, cleanup_stale = 빠진 권한 정리,
+#          role_assignments = 역할별 권한 부여 동기화.
+axes:
+  case: [sync_role, sync_permission, cleanup_stale, role_assignments]
+
+effects:
+  - role_sync_keeps_operator_edited_fields
+  - permission_sync_overwrites_declaration
+  - stale_permission_subtree_deleted_explicitly
+  - role_assignments_follow_db_diff_except_overrides
+
+test_files:
+  - tests/Unit/Extension/ExtensionRoleSyncHelperTest.php

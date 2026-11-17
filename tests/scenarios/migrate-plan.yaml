@@ -1,0 +1,24 @@
+feature: 마이그레이션·업그레이드 스텝 실행 계획 미리보기 (g7:migrate-plan)
+
+description: |
+  실행 대기 마이그레이션의 SQL 을 연결의 pretend 로 모으고(DB·파일 무변경), 파괴적 종류(테이블·컬럼 삭제, 이름 변경,
+  타입 변경, NOT NULL 전환)를 가른다. 컬럼 삭제·이름 변경·타입 변경·NOT NULL 전환은 스테이지 기간(옛 코드와 새 스키마가
+  함께 도는 동안) 미루기 권장(`defer_recommended`). core 범위는 마이그레이터에 등록된 모든 비확장 경로라
+  `database/migrations/custom` 도 `source=custom` 으로 들어가고, 없으면 오류 없이 넘어간다. 확장(설치된 모듈·플러그인)은 번들(새 판)
+  경로를 우선하고 번들이 없으면 활성 경로를 보며 출처는 `module:{id}`·`plugin:{id}` 다. 확장 경로는 core 범위에 섞이지 않는다.
+  업그레이드 스텝은 `AbstractUpgradeStep::describe()`(선택 구현, 없으면 「설명 없음」)로 설명한다.
+
+# 축 의미:
+#   case — 분류·출처 상황. step_describe_error = 스텝의 describe() 가 예외를 던짐.
+axes:
+  case: [classification, custom_path, no_custom_path, extension_path, step_describe_error]
+
+effects:
+  - migrate_plan_classifies_destructive_sql
+  - migrate_plan_includes_custom_migrations_with_source
+  - migrate_plan_includes_extension_migrations_with_source
+  - migrate_plan_changes_nothing
+  - migrate_plan_survives_step_describe_error
+
+test_files:
+  - tests/Feature/Console/Commands/Core/MigratePlanCommandTest.php

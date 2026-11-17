@@ -53,4 +53,12 @@ interface SearchPresetRepositoryInterface
      * @return bool
      */
     public function delete(SearchPreset $preset): bool;
+
+    /**
+     * 회원의 검색 프리셋을 모두 삭제합니다 (회원 삭제 정리용).
+     *
+     * @param  int  $userId  회원 ID
+     * @return int 삭제된 행 수
+     */
+    public function deleteByUserId(int $userId): int;
 }

@@ -77,6 +77,13 @@
 - 회원 항목 설정과 닉네임 정책에 쓰는 문구의 일본어 번역을 추가했습니다 — 닉네임 금지어, 중복, 변경 주기 안내(`user.validation.nickname_*`, `validation.forbidden_word`), 회원 설정 항목 이름(`validation.attributes.settings_tab_member`, `member_nickname_*`, `member_display_name_*`), 회원 추가 항목 수정 활동 로그, 코어 회원 항목 시딩 명령 출력, 항목 유형 이름과 항목 검증 문구와 파일 항목 안내(`fields.*`), 회원 목록 필터 항목 이름 2건(`user.list_filter_attributes.nickname_duplicate`, `required_missing`) (#490)
 - 표시 이름 설정 문구의 일본어 번역을 추가했습니다 — 표시 이름 종류, 영역, 방식 이름과 미리보기 표본, 닉네임 항목 잠금 사유, 항목이 표시 이름으로 쓰이는 곳, 검증 문구(`display_name.*`), 본인인증으로 확인한 항목 잠금 안내와 본인인증 목적 항목 이름(`fields.validation.locked_identity`, `fields.attributes.purpose`), 알림 템플릿의 회원 공통 변수 설명과 없는 변수 경고(`notification.member_variables.*`, `notification.warnings.unknown_variable`), 추가 정보 입력 안내 3건(`user.required_fields_*`), 검증 항목 이름 2건(`validation.attributes.member_nickname_require_existing_members`, `display_name_kind`) (#490)
 - 코어 회원 항목(이름, 닉네임, 휴대폰, 전화번호, 언어, 국가, 시간대, 홈페이지, 주소, 서명, 자기소개)의 이름과 예시 글의 일본어 번역을 추가했습니다. 가입 화면, 내 정보, 관리자 회원 폼, 환경설정의 가입 항목 표에서 일본어로 보입니다 (#490)
+- 레이아웃 갱신·확장 업데이트 미리보기와 화면별 결정, 덮어쓰기·영구 삭제 직전 기록(활동 로그 `layout.force_deleted`·삭제 사유 등) 문구의 일본어 번역을 추가했습니다.
+- 새 명령(`extension:reset-files-from-bundled`·`g7:migrate-plan`·`extension:list`·`storage:paths`·`extension:apply-deferred-cleanup`·`stage-layouts:reset-from-live`)의 설명·출력과 `--yes` 안내, 실행 전 방향·대상 건수 안내(`sync_files.direction`·`targets`·`legacy_name`, `stage_layouts.direction`·`discard_summary`, `apply_deferred_cleanup.about_to_apply`), 업데이트 확인 명령 설명(결과를 업데이트 표시로 저장), 업그레이드 스텝 실행 대장·단독 실행 잠금, 업데이트 확인 실패 사유·종료 코드 75 안내, 다른 서버가 이미 실행한 스텝의 「건너뜀」 안내(`core_execute_upgrade_steps.step_already_run`·`spawn.steps_already_run`), 재개 명령의 PowerShell 형식 안내(`resume_command_powershell`)의 일본어 번역을 추가했습니다.
+- 검수 서버(실행 역할 stage) 거절 안내(`errors.stage_role_locked`·사이트맵 전용 `errors.stage_role_locked_sitemap`), 레이아웃 편집기 버전 기록의 저장자 「시스템」(`layout_editor.version_history.system_author`), 알림 받는 사람 「사이트 관리자 이메일」, 레이아웃 갱신 요청 항목 이름(`validation.attributes.layout_strategy`·`decisions`·`pending_token`)의 일본어 번역을 추가했습니다.
+- 「표시 이름 직접 선택」 권한(`core.profile.display_name.choose`)의 이름과 설명 일본어 번역을 추가했습니다.
+- 확장 목록·미뤄 둔 정리 명령의 표 머리글과 상태 이름, 검수 서버 레이아웃 테이블의 DB 드라이버 안내, 업데이트 미리보기의 「활성 파일 없음」 안내, 예외 문구(검수 서버 테이블 쓰기·실행 중인 업그레이드 스텝·허용되지 않은 정리 메서드)의 일본어 번역을 추가했습니다.
+- 이 서버에서 끝나지 않은 확장 업데이트를 `--force` 로 이어받으라는 안내(`extensions.commands.update.unfinished_update_needs_force`)의 일본어 번역을 추가했습니다.
+- 운영 서버 마무리 명령 `stage:apply-to-live` 의 설명·방향·단계·확인·결과 문구(`common.console.stage_apply.*`, `commands.descriptions.stage:apply-to-live`), 검수 서버의 확장 수명주기 명령 거절 안내(`common.console.runtime_role.lifecycle_stage`), 미뤄 둔 정리의 「기다림」 상태·안내와 정리 종류 이름(`apply_deferred_cleanup.status_labels.waiting`·`waiting_hint`·`waiting_reasons`·`kind_labels`), 코어 선언 재동기화 명령(`commands.descriptions.core:resync-declarations`, `common.console.core_resync_declarations.*`)과 「파일 내용이 다름」 기다림 사유(`waiting_reasons.code_differs`), 정리 실패 예외(`exceptions.deferred_cleanup_target_not_allowed`·`deferred_cleanup_core_resync_failed`·`deferred_cleanup_seeder_failed`)의 일본어 번역을 추가했습니다. 미뤄 둔 정리 명령의 설명·실행 전 안내·결과 요약(「기다림」 건수)·표 머리글은 지울 대상을 운영 서버의 지금 선언으로 다시 정하는 동작에, 파일 맞추기 명령의 설명·종류 안내는 언어팩까지 다루는 동작에 맞춘 번역입니다 (`commands.descriptions.extension:apply-deferred-cleanup`·`extension:reset-files-from-bundled`, `apply_deferred_cleanup.description`·`about_to_apply`·`summary`·`columns`, `sync_files.description`·`invalid_type`).
 
 ### Changed
 
@@ -91,6 +98,7 @@
 ### Removed
 
 - 스케줄 관리로 옮겨져 쓰이지 않게 된 사이트맵 생성 주기·시각 설정의 검증 문구 4건을 정리했습니다.
+- 코어에서 없앤 점검 모드 저장값의 문구(`settings.core_update.maintenance_mode_active`·`validation.settings.maintenance_mode_boolean`·`validation.attributes.maintenance_mode`)를 뺐습니다.
 
 ## [1.1.4] - 2026-11-10
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Enums\LanguagePackScope;
+use App\Enums\LayoutSyncMode;
 use App\Exceptions\ExtensionOperationLockException;
 use App\Exceptions\ModuleOperationException;
 use App\Exceptions\PackageIntegrityException;
@@ -12,6 +13,7 @@ use App\Extension\Layout\LayoutSyncSummary;
 use App\Extension\Vendor\VendorMode;
 use App\Helpers\PermissionHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
+use App\Http\Controllers\Concerns\HandlesExtensionUpdatePreview;
 use App\Http\Controllers\Concerns\InjectsExtensionLanguagePacks;
 use App\Http\Controllers\Concerns\OrchestratesCascadeInstall;
 use App\Http\Controllers\Concerns\RebuildsSearchIndexOnDemand;
@@ -47,6 +49,7 @@ use Illuminate\Validation\ValidationException;
  */
 class ModuleController extends AdminBaseController
 {
+    use HandlesExtensionUpdatePreview;
     use InjectsExtensionLanguagePacks;
     use OrchestratesCascadeInstall;
     use RebuildsSearchIndexOnDemand;
@@ -630,6 +633,21 @@ class ModuleController extends AdminBaseController
     }
 
     /**
+     * 업데이트를 미리 봅니다 — 업데이트하지 않고 화면별 레이아웃 판정과 지워질 선언 항목을 계산합니다.
+     *
+     * GitHub 소스면 새 판을 `_pending` 에 내려받고 `pending_token` 을 돌려준다 — 이어지는 업데이트 요청이 그 토큰을 넘기면
+     * 같은 파일을 다시 쓴다.
+     *
+     * @param  PerformModuleUpdateRequest  $request  업데이트 요청 (layout_strategy·decisions·layout_source)
+     * @param  string  $moduleName  식별자
+     * @return JsonResponse 미리보기 응답
+     */
+    public function performUpdatePreview(PerformModuleUpdateRequest $request, string $moduleName): JsonResponse
+    {
+        return $this->respondUpdatePreview($request, 'module', $moduleName);
+    }
+
+    /**
      * 특정 모듈을 업데이트합니다.
      *
      * layout_strategy 파라미터로 레이아웃 처리 방식을 결정합니다:
@@ -652,7 +670,7 @@ class ModuleController extends AdminBaseController
             // 관리자 창 '고급 설정'의 레이아웃 설치 소스 — 이 요청 동안만 설정을 덮고 끝나면 되돌린다(CLI --layout-source 와 같은 자리).
             $result = LayoutInstallSourceScope::run(
                 $validated['layout_source'] ?? null,
-                fn () => $this->moduleService->updateModule($moduleName, $vendorMode, $layoutStrategy, $force, $request->packageIntegrityOptions())
+                fn () => $this->withUpdatePreviewContext($validated, fn () => $this->moduleService->updateModule($moduleName, $vendorMode, $layoutStrategy, $force, $request->packageIntegrityOptions()))
             );
 
             // 검색 인덱스 재생성은 운영자가 체크했을 때만 수행한다 — 인덱스 잠금·재색인 비용이
@@ -722,7 +740,36 @@ class ModuleController extends AdminBaseController
     }
 
     /**
+     * 레이아웃 갱신을 미리 봅니다 — 화면별 판정만 계산하고 DB 는 그대로 둡니다.
+     *
+     * @param  RefreshModuleLayoutsRequest  $request  레이아웃 갱신 요청 (module_name·layout_strategy·decisions·layout_source)
+     * @return JsonResponse `{entries, summary, has_conflicts, conflict_screens, strategy}` 응답
+     */
+    public function refreshLayoutsPreview(RefreshModuleLayoutsRequest $request): JsonResponse
+    {
+        try {
+            $moduleName = $request->validated()['module_name'];
+            $mode = LayoutSyncMode::from($request->validated('layout_strategy') ?? LayoutSyncMode::Keep->value);
+            $preview = LayoutInstallSourceScope::run(
+                $request->validated('layout_source'),
+                fn () => $this->moduleService->previewModuleLayoutRefresh($moduleName, $mode, (array) ($request->validated('decisions') ?? []))
+            );
+
+            return $this->success('module.refresh_layouts_preview_success', $preview);
+        } catch (ValidationException $e) {
+            return $this->validationError(
+                $e->errors(),
+                collect($e->errors())->flatten()->first() ?? __('module.refresh_layouts_failed', ['error' => SafeExceptionMessage::for($e)])
+            );
+        } catch (\Exception $e) {
+            return $this->error('module.refresh_layouts_failed', 500, $e->getMessage(), ['error' => SafeExceptionMessage::for($e)]);
+        }
+    }
+
+    /**
      * 모듈의 레이아웃을 파일에서 다시 읽어 갱신합니다.
+     *
+     * 기본은 keep(운영자가 고친 화면 보존), `layout_strategy=overwrite` 면 파일 판으로 덮는다. `decisions` 로 화면별로 고른다.
      *
      * @param  RefreshModuleLayoutsRequest  $request  레이아웃 갱신 요청 데이터
      * @return JsonResponse 갱신된 모듈 정보를 포함한 JSON 응답
@@ -731,10 +778,12 @@ class ModuleController extends AdminBaseController
     {
         try {
             $moduleName = $request->validated()['module_name'];
+            $mode = LayoutSyncMode::from($request->validated('layout_strategy') ?? LayoutSyncMode::Keep->value);
+            $decisions = (array) ($request->validated('decisions') ?? []);
             // 관리자 창 '고급 설정'의 레이아웃 설치 소스 — 이 요청 동안만 설정을 덮고 끝나면 되돌린다(CLI --layout-source 와 같은 자리).
             $module = LayoutInstallSourceScope::run(
                 $request->validated('layout_source'),
-                fn () => $this->moduleService->refreshModuleLayouts($moduleName)
+                fn () => $this->moduleService->refreshModuleLayouts($moduleName, $mode, $decisions)
             );
 
             if ($module) {

@@ -484,4 +484,21 @@ interface LayoutRepositoryInterface
      * @return int 삭제된 레코드 수
      */
     public function deleteBySourceIdentifier(string $sourceIdentifier): int;
+
+    /**
+     * 출처의 레이아웃 행을 지운 행까지 모두 조회합니다 (영구 삭제 직전 기록용).
+     *
+     * @param  string  $identifier  출처 식별자
+     * @param  LayoutSourceType  $sourceType  출처 타입
+     * @return Collection<int, TemplateLayout> 행 목록
+     */
+    public function getWithTrashedBySource(string $identifier, LayoutSourceType $sourceType): Collection;
+
+    /**
+     * 템플릿의 레이아웃 행을 지운 행까지 모두 조회합니다 (영구 삭제 직전 기록용).
+     *
+     * @param  int  $templateId  템플릿 ID
+     * @return Collection<int, TemplateLayout> 행 목록
+     */
+    public function getWithTrashedByTemplateId(int $templateId): Collection;
 }

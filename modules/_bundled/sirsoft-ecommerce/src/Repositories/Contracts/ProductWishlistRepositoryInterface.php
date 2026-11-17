@@ -99,4 +99,20 @@ interface ProductWishlistRepositoryInterface
      * @return int 건수
      */
     public function countByUser(int $userId): int;
+
+    /**
+     * 회원의 찜을 모두 삭제합니다 (회원 삭제 정리용).
+     *
+     * @param  int  $userId  회원 ID
+     * @return int 삭제된 행 수
+     */
+    public function deleteByUserId(int $userId): int;
+
+    /**
+     * 상품에 걸린 찜을 모두 삭제합니다 (상품 삭제 정리용).
+     *
+     * @param  int  $productId  상품 ID
+     * @return int 삭제된 행 수
+     */
+    public function deleteByProductId(int $productId): int;
 }

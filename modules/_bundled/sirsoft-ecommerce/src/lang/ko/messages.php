@@ -1651,11 +1651,13 @@ return [
             ],
         ],
         'shipping_carrier' => [
+            'entity_label' => '택배사',
             'sync_start' => '배송사 초기 데이터 동기화를 시작합니다.',
             'created' => '배송사 생성: :name (:code)',
             'sync_done' => '배송사 동기화 완료: :created건 생성, :synced건 동기화, stale :deleted건 삭제, 사용 중 :preserved건 보존 (전체 :total건)',
         ],
         'shipping_type' => [
+            'entity_label' => '배송유형',
             'sync_start' => '배송유형 초기 데이터 동기화를 시작합니다.',
             'sync_done' => '배송유형 동기화 완료: 정의 :defined건 / DB :count건 / stale 삭제 :deleted건 / 사용 중 :preserved건 보존',
         ],
@@ -1806,6 +1808,7 @@ return [
             'created' => '카테고리 생성: :name (depth: :depth)',
         ],
         'claim_reason' => [
+            'entity_label' => '클레임 사유',
             'sync_start' => '클레임 사유 초기 데이터 동기화를 시작합니다.',
             'created' => '클레임 사유 생성: :name (:code)',
             'preserved' => '사용 중이라 보존한 사유: :count건',

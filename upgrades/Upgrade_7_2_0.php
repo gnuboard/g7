@@ -36,6 +36,19 @@ use App\Extension\AbstractUpgradeStep;
  *       06_RegisterTemplateSettingsLayouts.php
  *         설치된 템플릿의 환경설정 화면(`{템플릿}.template_settings`, #434)을 켜진 관리자 템플릿에 등록한다.
  *         코어만 올리고 템플릿 갱신·관리자 템플릿 활성화를 하지 않은 사이트에서 템플릿 「설정」 화면이 비지 않게 한다.
+ *       07_BackfillNicknameNormalized.php
+ *         기존 회원의 닉네임 정규화 값(`users.nickname_normalized`)을 동결한 정규화 규칙으로 채운다. 7.2.0 의 닉네임 중복
+ *         판정·금지어 비교·「닉네임 중복」 필터가 이 값을 쓰므로, 비워 두면 기존 회원과 같은 닉네임이 중복으로 잡히지 않는다.
+ *         닉네임이 있고 값이 빈 행만 고르며 수정 시각은 바꾸지 않는다(멱등).
+ *       08_SeedCoreFieldDefinitions.php
+ *         코어 회원 항목 행(`field_definitions`, 집합 `core.user`)이 하나도 없을 때만 종전 동작과 같은 기본값으로 넣는다.
+ *         `00_` 재동기화가 실패했거나 건너뛰어진 경우의 보정이다. 운영자가 만든 항목·확장 항목과 이미 있는 키는 건드리지 않는다.
+ *       09_BackfillMemberSettingsAreas.php
+ *         저장된 회원 설정(`member.json`)의 표시 이름 영역 묶음(`display_name_areas`)이 있을 때, 빠진 기본 영역만 기본값으로
+ *         더한다. 이미 있는 영역의 값과 파일의 다른 키는 그대로 두고, 파일이나 묶음이 없으면 로그만 남긴다(멱등).
+ *       10_RemoveMaintenanceModeSetting.php
+ *         저장된 일반 설정에서 읽히지 않던 점검 모드 키(`general.maintenance_mode`)를 지운다(#888). 점검 모드는
+ *         `php artisan down` / `php artisan up` 이 맡는다. 키가 없으면 아무것도 쓰지 않는다(멱등).
  *
  * 직접 등록 스케줄(화면에서 운영자가 만든 행)은 손대지 않는다. 신규 테이블(`queue_job_logs`)·컬럼은 일반 마이그레이션이
  * 만들고, 설정 기본값(큐 처리 기록 보관 기간 등)은 코어 업데이트 흐름의 비파괴 동기화가 반영한다.

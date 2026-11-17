@@ -22,7 +22,7 @@
             <span class="text-primary font-medium">{{version.created_at}}</span>
             <span data-if="{{idx === 0}}" class="px-2 py-0.5 text-xs bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded">$t:admin.templates.modals.version_history.latest</span>
           </div>
-          <button type="button" data-if="{{idx !== 0}}" class="flex-center gap-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isRestoring || current_layout?.data?.abilities?.can_update !== true}}">
+          <button type="button" data-if="{{idx !== 0 || version.changes_summary?.before_overwrite === true}}" class="flex-center gap-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isRestoring || current_layout?.data?.abilities?.can_update !== true}}">
             <on type="click">
               <!-- 되돌린 뒤 **편집기 내용까지 갈아 끼운다** — 서버만 바꾸고 두면 화면의 편집기에는 되돌리기 전 글이 남아, 다음 저장이 방금 되돌린 것을 도로 덮는다. 판본 목록도 다시 받는다(되돌리기 자체가 새 판본을 만든다). -->
               <sequence>
@@ -57,7 +57,13 @@
           <span class="text-red-600 dark:text-red-400">- {{version.changes_summary?.removed_count ?? 0}} $t:admin.templates.modals.version_history.lines</span>
           <span class="text-gray-500 dark:text-gray-400">({{version.changes_summary?.char_diff >= 0 ? '+' : ''}}{{version.changes_summary?.char_diff ?? 0}} $t:admin.templates.modals.version_history.chars)</span>
         </div>
-        <div class="mt-2 text-label-subtle">$t:admin.templates.modals.version_history.saved_by|name={{version.created_by_name ?? 'admin'}}</div>
+        <!-- 동기화가 남긴 판이면 어디서 왔는지 한 줄 — 확장 업데이트·레이아웃 갱신 등이 덮기 직전에 남긴 운영자 판인지, 병합 결과인지.
+             운영자가 저장한 판·옛 판은 출처가 없어 줄을 그리지 않는다. 모르는 출처는 「덮기 전 운영자 판」·「병합 결과」로 뭉뚱그린다. -->
+        <div data-ref="version_sync_source_{{idx}}" data-testid="layout-version-source-{{idx}}" data-if="{{!!version.changes_summary?.source}}" class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{version.changes_summary?.before_overwrite ? (version.changes_summary?.source === 'extension_update' ? '$t:admin.templates.modals.version_history.source_labels.before_extension_update' : version.changes_summary?.source === 'refresh' ? '$t:admin.templates.modals.version_history.source_labels.before_refresh' : version.changes_summary?.source === 'decision_take_theirs' ? '$t:admin.templates.modals.version_history.source_labels.before_decision_take_theirs' : version.changes_summary?.source === 'upgrade_step' ? '$t:admin.templates.modals.version_history.source_labels.before_upgrade_step' : '$t:admin.templates.modals.version_history.source_labels.before_other') : (version.changes_summary?.source === 'refresh' ? '$t:admin.templates.modals.version_history.source_labels.merge_refresh' : version.changes_summary?.source === 'extension_update' ? '$t:admin.templates.modals.version_history.source_labels.merge_extension_update' : '$t:admin.templates.modals.version_history.source_labels.merge_other')}}</div>
+        <!-- 저장한 사람. 사람 없이 동기화(명령줄·확장 업데이트·레이아웃 갱신)가 남긴 판은 출처가 있으므로 「시스템」,
+             출처도 없는 옛 판·탈퇴 회원 판은 줄을 그리지 않는다(확장 버전 창과 같은 규칙). -->
+        <div data-ref="version_saved_by_{{idx}}" data-testid="layout-version-saved-by-{{idx}}" data-if="{{!!version.created_by_name}}" class="mt-2 text-label-subtle">$t:admin.templates.modals.version_history.saved_by|name={{version.created_by_name}}</div>
+        <div data-ref="version_saved_by_system_{{idx}}" data-testid="layout-version-saved-by-system-{{idx}}" data-if="{{!version.created_by_name &amp;&amp; !!version.changes_summary?.source}}" class="mt-2 text-label-subtle">$t:admin.templates.modals.version_history.saved_by_system</div>
         <!-- 실명 보조 줄. 서버는 회원 조회 권한이 있는 관리자에게, 실명이 표시 이름과 다를 때만 created_by_real_name 을 싣는다. -->
         <div data-ref="version_saved_by_real_name_{{idx}}" data-if="{{!!version.created_by_real_name}}" class="text-tertiary">$t:admin.common.real_name.with_label|name={{version.created_by_real_name}}</div>
       </div>

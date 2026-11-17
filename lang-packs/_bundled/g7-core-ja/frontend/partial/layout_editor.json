@@ -137,6 +137,7 @@
     "chars": "({diff} 文字)",
     "saved_by": "保存者: {name}",
     "unknown_author": "不明",
+    "system_author": "システム",
     "compare": "比較",
     "comparing": "比較中…",
     "diff_title": "v{old} → v{new} 変更内容",

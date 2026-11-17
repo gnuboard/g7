@@ -2519,7 +2519,7 @@
       ]
     },
     {
-      "comment": "모달 본문이 읽는 전역 상태(hasModifiedModuleLayouts, isModuleUpdating, modifiedModuleLayouts, modifiedModuleLayoutsCheckFailed, modifiedModuleLayoutsCount, moduleForceUpdate, moduleLayoutSource, moduleLayoutSourceOpen, moduleLayoutStrategy, moduleRebuildSearchIndex, moduleUpdateError, selectedModule, updateChangelog) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "comment": "모달 본문이 읽는 전역 상태(isModuleUpdating, moduleForceUpdate, moduleLayoutSource, moduleLayoutSourceOpen, moduleRebuildSearchIndex, moduleUpdateError, selectedModule, updateChangelog) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",
         "match": "module_update_modal"
@@ -2563,16 +2563,6 @@
                 }
               ],
               "moduleRebuildSearchIndex": false,
-              "hasModifiedModuleLayouts": true,
-              "modifiedModuleLayoutsCount": 1,
-              "modifiedModuleLayoutsCheckFailed": false,
-              "moduleLayoutStrategy": "keep",
-              "modifiedModuleLayouts": [
-                {
-                  "name": "admin_ecommerce_product_list",
-                  "updated_at": "2026-09-30 14:20:00"
-                }
-              ],
               "isModuleUpdating": false
             }
           }
@@ -3216,7 +3206,7 @@
       ]
     },
     {
-      "comment": "모달 본문이 읽는 전역 상태(hasModifiedPluginLayouts, isPluginUpdating, modifiedPluginLayouts, modifiedPluginLayoutsCheckFailed, modifiedPluginLayoutsCount, pluginForceUpdate, pluginLayoutSource, pluginLayoutSourceOpen, pluginLayoutStrategy, pluginRebuildSearchIndex, pluginUpdateError, selectedPlugin, updateChangelog) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "comment": "모달 본문이 읽는 전역 상태(isPluginUpdating, pluginForceUpdate, pluginLayoutSource, pluginLayoutSourceOpen, pluginRebuildSearchIndex, pluginUpdateError, selectedPlugin, updateChangelog) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",
         "match": "plugin_update_modal"
@@ -3260,16 +3250,6 @@
               "pluginForceUpdate": false,
               "pluginUpdateError": null,
               "pluginRebuildSearchIndex": false,
-              "hasModifiedPluginLayouts": true,
-              "modifiedPluginLayoutsCount": 1,
-              "modifiedPluginLayoutsCheckFailed": false,
-              "pluginLayoutStrategy": "keep",
-              "modifiedPluginLayouts": [
-                {
-                  "name": "gdpr_consent_log",
-                  "updated_at": "2026-09-30 14:20:00"
-                }
-              ],
               "isPluginUpdating": false
             }
           }
@@ -4380,7 +4360,7 @@
       ]
     },
     {
-      "comment": "모달 본문이 읽는 전역 상태(hasModifiedTemplateLayouts, isTemplateUpdating, modifiedTemplateLayouts, modifiedTemplateLayoutsCheckFailed, modifiedTemplateLayoutsCount, selectedTemplate, templateForceUpdate, templateLayoutSource, templateLayoutSourceOpen, templateLayoutStrategy, templateUpdateError, updateChangelog) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "comment": "모달 본문이 읽는 전역 상태(isTemplateUpdating, selectedTemplate, templateForceUpdate, templateLayoutSource, templateLayoutSourceOpen, templateUpdateError, updateChangelog) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",
         "match": "template_update_modal"
@@ -4424,19 +4404,6 @@
               },
               "templateForceUpdate": false,
               "templateUpdateError": null,
-              "hasModifiedTemplateLayouts": true,
-              "modifiedTemplateLayoutsCount": 1,
-              "modifiedTemplateLayoutsCheckFailed": false,
-              "templateLayoutStrategy": "keep",
-              "modifiedTemplateLayouts": [
-                {
-                  "id": 1,
-                  "name": "home",
-                  "updated_at": "2026-09-30 14:20:00",
-                  "size_diff": 512,
-                  "kind": "layout"
-                }
-              ],
               "isTemplateUpdating": false
             }
           }

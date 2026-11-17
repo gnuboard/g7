@@ -78,7 +78,7 @@ class ExportNotificationDataListener implements HookListenerInterface
             return $default;
         }
 
-        $baseUrl = SiteUrl::base();
+        $baseUrl = SiteUrl::forOutboundLinks();
         $exportsPath = '/admin/ecommerce/exports';
         $exportType = $this->types->find($export->type);
         $code = $export->error_code;

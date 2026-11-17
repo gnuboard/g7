@@ -109,7 +109,8 @@ final class PrivacyPolicyUrl
     /**
      * 메일처럼 사이트 밖에서 열리는 자리에 쓸 절대 주소로 바꿉니다.
      *
-     * 사이트 내부 경로는 사용자 화면 베이스(`ScreenUrl::toAbsolute()` — 「사용자 화면 URL」, 비면 사이트 주소)를 앞에 붙이고,
+     * 사이트 내부 경로는 메일 링크의 사용자 화면 베이스(`ScreenUrl::toAbsoluteForLinks()` — 「사용자 화면 URL」, 비면
+     * 밖으로 나가는 링크의 주소 `G7_PUBLIC_LINK_URL`, 그것도 비면 사이트 주소)를 앞에 붙이고,
      * https 절대 주소는 그대로 둡니다.
      * 요청 Host 를 쓰지 않는다 — 결과가 전 회원 통지 스냅샷에 동결된다.
      *
@@ -125,7 +126,7 @@ final class PrivacyPolicyUrl
         }
 
         // 메일을 받는 사람이 여는 화면이라 「사용자 화면 URL」(비면 사이트 주소)을 베이스로 쓴다(#792)
-        return str_starts_with($url, '/') ? ScreenUrl::toAbsolute($url) : $url;
+        return str_starts_with($url, '/') ? ScreenUrl::toAbsoluteForLinks($url) : $url;
     }
 
     /**

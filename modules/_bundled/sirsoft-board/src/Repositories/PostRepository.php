@@ -2443,6 +2443,56 @@ class PostRepository implements PostRepositoryInterface
     }
 
     /**
+     * {@inheritDoc}
+     */
+    public function recalculateScrapCount(int $postId): int
+    {
+        $count = PostScrap::query()->where('post_id', $postId)->count();
+
+        // 스크랩은 읽는 사람의 행동이라 글의 수정 시각을 올리지 않는다(toBase — incrementScrapCount 와 같은 이유)
+        Post::withTrashed()->whereKey($postId)->toBase()->update(['scrap_count' => $count]);
+
+        return $count;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function recalculateScrapCounts(array $postIds): void
+    {
+        $postIds = array_values(array_unique(array_map('intval', $postIds)));
+
+        // 한 회원이 스크랩한 글은 그 회원의 스크랩 행위 수에 묶이지만 수천 건이 될 수 있다 —
+        // 집계·갱신 쿼리의 바인딩 수를 1000건 묶음으로 제한한다.
+        foreach (array_chunk($postIds, 1000) as $chunkIds) {
+            /** @var array<int, int> $counts 게시글 ID → 남은 스크랩 수 (0건인 글은 없음) */
+            $counts = PostScrap::query()
+                ->whereIn('post_id', $chunkIds)
+                ->groupBy('post_id')
+                ->selectRaw('post_id, COUNT(*) as total')
+                ->toBase()
+                ->pluck('total', 'post_id')
+                ->mapWithKeys(fn ($total, $postId) => [(int) $postId => (int) $total])
+                ->all();
+
+            // 같은 건수인 글끼리 묶어 한 번에 갱신한다 — 스크랩이 하나도 남지 않은 글은 0 으로 맞춘다
+            $postIdsByCount = [0 => array_values(array_diff($chunkIds, array_keys($counts)))];
+            foreach ($counts as $postId => $total) {
+                $postIdsByCount[$total][] = $postId;
+            }
+
+            foreach ($postIdsByCount as $total => $ids) {
+                if ($ids === []) {
+                    continue;
+                }
+
+                // 스크랩은 읽는 사람의 행동이라 글의 수정 시각을 올리지 않는다(recalculateScrapCount 와 같은 이유)
+                Post::withTrashed()->whereKey($ids)->toBase()->update(['scrap_count' => $total]);
+            }
+        }
+    }
+
+    /**
      * 게시글의 attachments_count 컬럼을 활성 첨부파일 수로 재계산해 갱신합니다.
      *
      * @param  int  $postId  게시글 ID

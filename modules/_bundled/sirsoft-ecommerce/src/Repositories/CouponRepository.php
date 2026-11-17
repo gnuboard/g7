@@ -14,6 +14,7 @@ use App\Support\Query\PaginationLimits;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueCondition;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueMethod;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueStatus;
@@ -378,5 +379,44 @@ class CouponRepository implements CouponRepositoryInterface
         }
 
         return Coupon::whereIn('id', $ids)->get()->keyBy('id');
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function releaseIssuedCounts(array $countsByCouponId): void
+    {
+        foreach ($countsByCouponId as $couponId => $count) {
+            $count = (int) $count;
+            if ($count <= 0) {
+                continue;
+            }
+
+            // 한 줄 UPDATE 라 동시 발급의 증가와 섞여도 값이 엇갈리지 않는다. 기존 수량이 더 작으면(이전 오차) 0 에서 멈춘다
+            $this->model->newQuery()
+                ->withTrashed()
+                ->whereKey((int) $couponId)
+                ->update([
+                    'issued_count' => DB::raw('CASE WHEN issued_count > '.$count.' THEN issued_count - '.$count.' ELSE 0 END'),
+                ]);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function detachProductFromAll(int $productId): int
+    {
+        // audit:allow repository-raw-hardcoded-table reason: 모델이 없는 피벗(쿠폰 적용·제외 상품) — Coupon::products() 관계 선언과 같은 이름
+        return (int) DB::table('ecommerce_promotion_coupon_products')->where('product_id', $productId)->delete();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function detachCategoryFromAll(int $categoryId): int
+    {
+        // audit:allow repository-raw-hardcoded-table reason: 모델이 없는 피벗(쿠폰 적용·제외 카테고리) — Coupon::categories() 관계 선언과 같은 이름
+        return (int) DB::table('ecommerce_promotion_coupon_categories')->where('category_id', $categoryId)->delete();
     }
 }

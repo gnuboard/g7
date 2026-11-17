@@ -112,7 +112,7 @@ class ScheduleNotificationDataListener implements HookListenerInterface
             'error' => mb_substr($message, 0, 500),
             'failed_at' => $failedAt,
             // 운영자가 여는 화면 주소 — 화면 키를 거쳐 주소 필터(core.screen_url.filter_path)를 받는다(#792 계약).
-            'schedule_url' => ScreenUrl::absolute(
+            'schedule_url' => ScreenUrl::absoluteForLinks(
                 'admin.schedules',
                 '/admin/schedules?search_field=identifier&search_keyword={name}',
                 ['name' => (string) $schedule->name],
@@ -145,7 +145,7 @@ class ScheduleNotificationDataListener implements HookListenerInterface
             'data' => array_merge([
                 'app_name' => (string) config('app.name'),
                 'name' => '{recipient_name}',
-                'site_url' => SiteUrl::base(),
+                'site_url' => SiteUrl::forOutboundLinks(),
             ], $data),
             'context' => [],
         ];

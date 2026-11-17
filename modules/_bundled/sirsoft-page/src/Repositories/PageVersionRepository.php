@@ -103,4 +103,15 @@ class PageVersionRepository implements PageVersionRepositoryInterface
             ->where('content', 'like', '%'.addcslashes($hash, '\%_').'%')
             ->exists();
     }
+
+    /**
+     * 페이지의 버전 이력을 모두 영구 삭제합니다 (페이지 삭제 정리, #888).
+     *
+     * @param  int  $pageId  페이지 ID
+     * @return int 삭제된 버전 수
+     */
+    public function deleteByPageId(int $pageId): int
+    {
+        return PageVersion::query()->where('page_id', $pageId)->delete();
+    }
 }

@@ -266,7 +266,6 @@ class ParameterDescriber
         'sql_query_log' => 'SQL 쿼리 로그 기록 여부',
         'outbound_proxy' => '외부 HTTP 호출이 경유할 프록시 주소 (디버그 모드에서만 적용)',
         'outbound_proxy_bypass' => '프록시를 경유하지 않을 호스트 목록',
-        'maintenance_mode' => '점검 모드 사용 여부 (사이트 접근 차단)',
         'force_https' => 'HTTPS 강제 리다이렉트 여부',
         'max_login_attempts' => '로그인 실패 허용 횟수 (초과 시 잠금)',
         'login_lockout_time' => '로그인 잠금 지속 시간 (분)',

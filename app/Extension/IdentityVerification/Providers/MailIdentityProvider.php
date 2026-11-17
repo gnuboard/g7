@@ -512,7 +512,8 @@ class MailIdentityProvider implements IdentityVerificationInterface, UserScopedI
      * link 흐름용 검증 링크를 생성합니다.
      *
      * 보안: 메일 링크는 다른 사람(수신자)에게 가는 절대 URL 이다 — 요청 Host 로 만들어지는 서명 라우트
-     * URL 대신 언제나 사이트 주소로 만든다. 링크 토큰 자체가 검증 수단이고 만료는 challenge 가 소유한다.
+     * URL 대신 언제나 사이트 주소(밖으로 나가는 링크의 주소 `G7_PUBLIC_LINK_URL`, 비면 `app.url`)로 만든다. 링크 토큰
+     * 자체가 검증 수단이고 만료는 challenge 가 소유한다.
      *
      * @param  string  $challengeId  challenge ID
      * @param  string  $linkToken  링크 검증 토큰
@@ -525,7 +526,7 @@ class MailIdentityProvider implements IdentityVerificationInterface, UserScopedI
         // 사람이 여는 확인 화면이므로 화면 주소 헬퍼를 거친다(#792) — 주소 필터를 따른다. 회원 화면에서 시작했으면
         // 「사용자 화면 URL」 기준, 관리자 화면에서 시작했으면 사이트 주소 기준(사이트 자체의 확인 화면 — 관리자 화면은
         // 「사용자 화면 URL」 쪽에 없다).
-        return ScreenUrl::absolute('identity.verify', '/identity/verify?challenge={challenge}&token={token}', [
+        return ScreenUrl::absoluteForLinks('identity.verify', '/identity/verify?challenge={challenge}&token={token}', [
             'challenge' => $challengeId,
             'token' => $linkToken,
         ], $screenScope === ScreenUrl::SCOPE_ADMIN ? ScreenUrl::SCOPE_ADMIN : ScreenUrl::SCOPE_USER);
@@ -536,7 +537,8 @@ class MailIdentityProvider implements IdentityVerificationInterface, UserScopedI
      *
      * 관리자 화면에서 시작한 인증(`screen_scope=admin`)과 관리자에게만 적용되는 정책(`applies_to=admin`, 예: 관리자 화면의
      * 민감 작업)이 낸 인증 메일은 사이트 주소다. 그 밖(회원 화면에서 시작한 회원 전용·공통 정책, 정책 없는 인증)은
-     * 「사용자 화면 URL」(비우면 사이트 주소) — 확인 링크(`identity.verify`)와 같은 쪽이다.
+     * 「사용자 화면 URL」(비우면 사이트 주소) — 확인 링크(`identity.verify`)와 같은 쪽이다. 어느 쪽이든 「사이트 주소」는
+     * 밖으로 나가는 링크의 주소(`G7_PUBLIC_LINK_URL`, 비면 `app.url` — `SiteUrl::forOutboundLinks()`)다.
      *
      * @param  string|null  $policyKey  challenge 를 발생시킨 정책 키 (없으면 null)
      * @param  string  $screenScope  인증을 시작한 화면의 범위 (`user`|`admin`)
@@ -545,11 +547,11 @@ class MailIdentityProvider implements IdentityVerificationInterface, UserScopedI
     protected function resolveSiteUrl(?string $policyKey, string $screenScope = ScreenUrl::SCOPE_USER): string
     {
         if ($screenScope === ScreenUrl::SCOPE_ADMIN) {
-            return SiteUrl::base();
+            return SiteUrl::forOutboundLinks();
         }
 
         if ($policyKey === null || $policyKey === '') {
-            return ScreenUrl::userBase();
+            return ScreenUrl::userLinkBase();
         }
 
         try {
@@ -560,8 +562,8 @@ class MailIdentityProvider implements IdentityVerificationInterface, UserScopedI
         }
 
         return $policy?->applies_to === IdentityPolicyAppliesTo::Admin
-            ? SiteUrl::base()
-            : ScreenUrl::userBase();
+            ? SiteUrl::forOutboundLinks()
+            : ScreenUrl::userLinkBase();
     }
 
     /**

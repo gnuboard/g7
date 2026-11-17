@@ -4,6 +4,7 @@ namespace App\Extension;
 
 use App\Contracts\Extension\CacheInterface;
 use App\Exceptions\CoreVersionMismatchException;
+use App\Extension\Cache\CacheDriverFactory;
 use App\Extension\Cache\CoreCacheDriver;
 use App\Support\BootDeferredLog;
 use App\Support\CoreUpdateContext;
@@ -181,7 +182,7 @@ class CoreVersionChecker
         try {
             return app(CacheInterface::class);
         } catch (\Throwable $e) {
-            return new CoreCacheDriver(config('cache.default', 'array'));
+            return CacheDriverFactory::core();
         }
     }
 

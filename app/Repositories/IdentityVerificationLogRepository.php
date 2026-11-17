@@ -201,13 +201,16 @@ class IdentityVerificationLogRepository implements IdentityVerificationLogReposi
      * 지정된 일수 이전의 로그를 일괄 삭제합니다.
      *
      * @param  int  $days  보존 일수
+     * @param  \Closure(array<int, string>): void|null  $beforeEachBatch  배치마다 지우기 직전에 그 배치의 로그 ID 목록으로 부를 콜백
      * @return int 삭제된 행 수
      */
-    public function purgeOlderThan(int $days): int
+    public function purgeOlderThan(int $days, ?\Closure $beforeEachBatch = null): int
     {
         return $this->deleteInBatches(
             IdentityVerificationLog::query()
-                ->where('created_at', '<', Carbon::now()->subDays(max(1, $days)))
+                ->where('created_at', '<', Carbon::now()->subDays(max(1, $days))),
+            null,
+            $beforeEachBatch
         );
     }
 

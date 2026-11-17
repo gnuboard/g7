@@ -1,4 +1,3 @@
-// e2e:allow 이 파일의 변경은 한 케이스의 시간 예산 명시뿐이다 — 단언·대상 코드·화면 동작은 그대로라 브라우저에서 관측할 새 표면이 없다.
 /**
  * VersionHistoryModal.test.tsx —
  *
@@ -131,6 +130,45 @@ describe('VersionHistoryModal — 목록/상태', () => {
     // 비최신(v2) — latest 배지 X, 복원 버튼 O
     expect(screen.queryByTestId('g7le-version-latest-10')).not.toBeInTheDocument();
     expect(screen.getByTestId('g7le-version-restore-10')).toBeInTheDocument();
+  });
+
+  // @scenario area=version_list
+  // @effects version_latest_before_overwrite_row_keeps_restore
+  it('맨 위 판이 덮기 전 운영자 판(before_overwrite)이면 최신이어도 복원 버튼을 보인다 (#888)', async () => {
+    // 동기화가 운영자 판을 새 판으로 덮기 직전에 남긴 판이 맨 위 — 지금 본문은 새 판이라 이 판으로 되돌릴 수 있어야 한다
+    mockFetch(() =>
+      listOk([
+        {
+          ...sampleVersions[0],
+          changes_summary: { added_count: 0, removed_count: 0, char_diff: 0, source: 'refresh', before_overwrite: true },
+          created_by_name: null,
+        },
+        sampleVersions[1],
+      ] as typeof sampleVersions),
+    );
+    renderModal();
+    await screen.findByTestId('g7le-version-row-11');
+    expect(screen.getByTestId('g7le-version-latest-11')).toBeInTheDocument();
+    expect(screen.getByTestId('g7le-version-restore-11')).toBeInTheDocument();
+  });
+
+  // @scenario area=version_list
+  // @effects version_row_sync_author_shows_system
+  it('저장자 없이 동기화가 남긴 판(출처 있음)은 「시스템」, 출처 없는 옛 판은 「알 수 없음」 (#888)', async () => {
+    mockFetch(() =>
+      listOk([
+        {
+          ...sampleVersions[0],
+          changes_summary: { added_count: 0, removed_count: 0, char_diff: 0, source: 'extension_update', before_overwrite: true },
+          created_by_name: null,
+        },
+        sampleVersions[1],
+      ] as typeof sampleVersions),
+    );
+    renderModal();
+    await screen.findByTestId('g7le-version-row-11');
+    expect(screen.getByTestId('g7le-version-author-11').textContent).toContain('layout_editor.version_history.system_author');
+    expect(screen.getByTestId('g7le-version-author-10').textContent).toContain('layout_editor.version_history.unknown_author');
   });
 
   // @scenario area=version_list

@@ -6,6 +6,7 @@ use App\Console\Commands\Traits\HasProgressBar;
 use App\Enums\LanguagePackScope;
 use App\Enums\LanguagePackSourceType;
 use App\Enums\LanguagePackStatus;
+use App\Enums\LayoutSyncMode;
 use App\Extension\HookCacheManager;
 use App\Models\LanguagePack;
 use App\Models\Module;
@@ -157,16 +158,17 @@ class ConsoleOutputJaLocaleTest extends TestCase
     {
         $this->useJaLocale();
 
+        // 전략을 생략한 갱신은 keep·결정 없음으로 서비스에 넘어간다.
         $modules = Mockery::mock(ModuleService::class);
-        $modules->shouldReceive('refreshModuleLayouts')->with('probe-module')->andReturn(['layout_warnings' => []]);
+        $modules->shouldReceive('refreshModuleLayouts')->with('probe-module', LayoutSyncMode::Keep, [])->andReturn(['layout_warnings' => []]);
         $this->app->instance(ModuleService::class, $modules);
 
         $plugins = Mockery::mock(PluginService::class);
-        $plugins->shouldReceive('refreshPluginLayouts')->with('probe-plugin')->andReturn(['success' => true, 'created' => 1, 'updated' => 2, 'deleted' => 0]);
+        $plugins->shouldReceive('refreshPluginLayouts')->with('probe-plugin', LayoutSyncMode::Keep, [])->andReturn(['success' => true, 'created' => 1, 'updated' => 2, 'deleted' => 0]);
         $this->app->instance(PluginService::class, $plugins);
 
         $templates = Mockery::mock(TemplateService::class);
-        $templates->shouldReceive('refreshTemplateLayouts')->with('probe-template')->andReturn(['layout_warnings' => []]);
+        $templates->shouldReceive('refreshTemplateLayouts')->with('probe-template', LayoutSyncMode::Keep, [])->andReturn(['layout_warnings' => []]);
         $this->app->instance(TemplateService::class, $templates);
 
         $this->artisan('module:refresh-layout', ['identifier' => 'probe-module'])

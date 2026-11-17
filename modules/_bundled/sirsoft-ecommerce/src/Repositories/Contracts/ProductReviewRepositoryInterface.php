@@ -180,4 +180,20 @@ interface ProductReviewRepositoryInterface
      * @return ProductReview 저장된 후기 모델
      */
     public function saveImported(ProductReview $review, array $attributes): ProductReview;
+
+    /**
+     * 회원이 쓴 리뷰를 삭제 여부와 무관하게 이미지와 함께 조회합니다 (회원 삭제 정리용).
+     *
+     * @param  int  $userId  회원 ID
+     * @return Collection 리뷰 컬렉션 (images 관계 로드됨, 휴지통 포함)
+     */
+    public function getWithTrashedByUserId(int $userId): Collection;
+
+    /**
+     * 상품에 달린 리뷰를 삭제 여부와 무관하게 이미지와 함께 조회합니다 (상품 삭제 정리용).
+     *
+     * @param  int  $productId  상품 ID
+     * @return Collection 리뷰 컬렉션 (images 관계 로드됨, 휴지통 포함)
+     */
+    public function getWithTrashedByProductId(int $productId): Collection;
 }

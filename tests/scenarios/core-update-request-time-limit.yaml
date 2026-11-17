@@ -65,6 +65,7 @@ effects:
 
   # 비밀값
   - the_bypass_secret_never_reaches_a_log_file
+  - the_announced_bypass_address_opens_the_site
 
   # 나머지 긴 단계 나누기 (ZIP 추출 · 백업 · vendor 반영 · 번들 확장 · 되돌리기 · 마무리 정리)
   - the_archive_extraction_fits_within_a_short_request_limit

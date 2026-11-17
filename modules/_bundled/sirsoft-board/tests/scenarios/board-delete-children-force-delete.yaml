@@ -31,7 +31,7 @@ description: |
 #   하위 데이터 종류별로 삭제/보존 효과가 갈리므로 child_type 을 핵심 축으로 둔다.
 #   존재 여부(있음/없음)는 effects 와 개별 테스트 메서드로 커버한다.
 axes:
-  child_type: [post, comment, attachment, report]
+  child_type: [post, comment, attachment, report, board_role]
 
 effects:
   # DB 영구 삭제 (force)
@@ -46,6 +46,8 @@ effects:
   - reports_preserved_with_null_board_id
   # 연동 통지 — 삭제될 글 ID 전량 + 글 모델 타입(셋째 인자)
   - force_delete_hook_notifies_all_post_ids_with_post_type
+  # 게시판별 관리자·스텝 역할 — 메뉴 연결·메뉴 권한을 외래키 연쇄 없이 명시 삭제 (#888)
+  - board_roles_menu_links_explicitly_deleted
 
 test_files:
   # 77 — 백엔드 삭제 정책 (DB force + 물리파일 + 신고 보존)

@@ -8,6 +8,7 @@ use App\Scheduling\ScheduleRunner;
 use App\Scheduling\ScheduleRunState;
 use App\Scheduling\WebCronPolicy;
 use App\Scheduling\WebCronTokenStore;
+use App\Support\RuntimeRole;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -72,7 +73,7 @@ class WebCronController extends PublicBaseController
         if (! $this->policy->webCallAllowed()) {
             return $this->success('schedule.cron.disabled', [
                 'ran' => false,
-                'reason' => 'web_call_disabled',
+                'reason' => RuntimeRole::schedulerEnabled() ? 'web_call_disabled' : 'scheduler_disabled_on_server',
                 'mode' => $this->policy->mode(),
             ]);
         }

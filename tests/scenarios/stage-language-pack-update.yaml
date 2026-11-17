@@ -1,0 +1,19 @@
+feature: 검수 서버(stage)의 언어팩 업데이트는 공유 상태를 바꾸지 않는다
+
+description: |
+  언어팩 업데이트(`language-pack:update`·관리자 업데이트)는 상태를 `updating` 으로 바꾸고, 재설치가 `installed` 를 기록한 뒤 다시 켜는
+  순서를 거친다. 검수 서버가 이 순서를 공유 DB 에 쓰면 그동안 운영 서버에서 그 로케일이 빠진다. 확장 업데이트가 검수 서버에서 공유
+  상태 칸을 쓰지 않는 것과 같은 원칙으로, stage 의 언어팩 업데이트는 진행 내내 이전 상태(켜짐·꺼짐)를 유지하고 판·파일만 새로 한다.
+  live 는 종전과 같다(동시성 가드용 updating 기록 포함).
+
+# 축 의미:
+#   case — 역할과 업데이트 대상 팩의 이전 상태.
+axes:
+  case: [stage_active_pack, stage_inactive_pack, live_regression]
+
+effects:
+  - stage_lang_pack_update_keeps_shared_status
+  - live_lang_pack_update_unchanged
+
+test_files:
+  - tests/Feature/RuntimeRole/StageLanguagePackUpdateTest.php

@@ -11,6 +11,11 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\TempOrderRepositoryInterfac
  */
 class TempOrderRepository implements TempOrderRepositoryInterface
 {
+    /**
+     * TempOrderRepository 생성자
+     *
+     * @param  TempOrder  $model  임시 주문 모델
+     */
     public function __construct(
         protected TempOrder $model
     ) {}
@@ -164,5 +169,13 @@ class TempOrderRepository implements TempOrderRepositoryInterface
         }
 
         return $tempOrder;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getIdsByUserId(int $userId): array
+    {
+        return array_map('intval', $this->model->newQuery()->where('user_id', $userId)->pluck('id')->all());
     }
 }

@@ -11,6 +11,7 @@
 - 확장 설치와 업데이트의 패키지 무결성 안내 패널(`package_integrity.*`), 환경설정 > 보안 탭 「신뢰 키」 구획과 키 추가 및 삭제 창(`settings.security.extension_trust.*`, `settings.extension_trust_key_modal.*`, `modal_label.admin_settings.extension_trust_key_*`), 언어팩 설치 창의 URL 탭(`language_packs.install_modal.*`), 스케줄 편집 창의 `--allow-unsigned` 도움말(`schedules.form.allow_unsigned_hint`), 편집기 데이터 소스 이름(`data_source.extensionTrustKeys`)의 일본어 번역을 추가했습니다.
 - 확장 상세 창 「공개 API」 칸(`extension_public_api.*`)과 환경설정 > 드라이버 「비공개 첨부 저장소」 카드(`settings.drivers.private_attachment.*`)의 일본어 번역을 추가했습니다.
 - 환경설정 > 업로드 「저장 위치」에서 권한이 걸린 이미지 썸네일과 공개 자산 디스크가 둘 다 Amazon S3 일 때 나오는 같은 버킷 경고(`admin.settings.upload.thumbnail.storage.same_bucket_warning`)의 일본어 번역을 추가했습니다.
+- 레이아웃 갱신·업데이트 창 화면별 결정의 「겹치지 않는 곳만 반영 (권장)」 선택지와 세 선택지의 설명(`admin.layout_sync_preview.decision_merge`·`decision_merge_hint`·`decision_keep_ours_hint`·`decision_take_theirs_hint`), 활동 로그 필터 「삭제 직전 기록만 보기」(`admin.activity_log.filter.deletion_snapshot_*`), 버전 이력의 동기화 판 저장자 「시스템」(`admin.templates.modals.version_history.saved_by_system`) 일본어 번역을 추가했습니다.
 - 환경설정 > 드라이버 「웹서버 파일 위임」 카드(위임 방식·내부 위치 접두사·Apache/nginx 설정 안내·설정 점검(nginx 매핑 표시 포함)·실제 전송 확인·복구 안내, `admin.settings.drivers.file_delegation.*`)의 일본어 번역을 추가했습니다 (#878).
 - 태그 입력 칸의 기본 안내(「検索または入力...」), 결과 없음, 새 항목 추가 문장(「{값}を追加」) 문구를 일본어로 추가했습니다.
 - 이 템플릿 설정 화면의 목록 칸 문구를 설정 화면 묶음(`settings.screen.fields`)으로 옮겼습니다.
@@ -51,6 +52,10 @@
 - 공통 오류 화면(전용 오류 화면이 없는 400·422·429·502·504 등)의 제목·안내·새로고침 단추 일본어 번역을 추가했습니다(`errors.default.*`).
 - 환경설정 「회원」 탭의 일본어 번역을 추가했습니다 — 가입 항목 표와 항목 추가, 수정, 삭제, 필수 전환 확인 창(`admin.settings.member.fields.*`), 닉네임 정책(`admin.settings.member.nickname.*`), 창 이름 3건과 편집기 데이터 소스 이름 2건, 회원 폼과 회원 상세의 회원 항목 문구(`admin.users.member_fields.*` — 범위와 잠금 안내, 파일 추가와 삭제, 「추가 항목」과 「확장 항목」 구획, 닉네임 변경 정보, 비어 있는 필수 항목), 회원 목록의 「미입력」 열과 「필수 항목 미입력」, 「닉네임 중복」 필터(`admin.users.list_member_fields.*`), 편집기의 「회원 항목 입력칸」 이름 (#490)
 - 환경설정 「회원」 탭 「표시 이름」 설정의 일본어 번역을 추가했습니다 — 회원이 고를 수 있는 종류와 회원 기본 종류, 영역별 방식 표, 닉네임 고정 안내와 「로그인 시 닉네임 입력 요구」, 항목 삭제를 막는 사용처 안내(`admin.settings.member.display_name.*`), 회원 상세의 표시 이름 정보 7건(`admin.users.member_fields.status.display_name_*`), 회원 목록 「보이는 이름」 열, 「실명」 표기 2건(`admin.common.real_name.*`), 알림 템플릿 편집 창의 회원 항목 변수 안내와 없는 변수 경고 5건(`admin.settings.notification_definitions.edit_modal.*`) (#490)
+- 레이아웃 갱신·확장 업데이트 창의 미리보기·화면별 결정, 활동 로그의 삭제 직전 기록 펼쳐 보기, 정보 탭 확장 카드, 알림 받는 사람 「사이트 관리자 이메일」, HTTPS 강제 적용 주의 문구의 일본어 번역을 추가했습니다.
+- 검수 서버 안내 띠·편집기 「검수용 저장」 안내·잠긴 단추 안내(`stage_role.*`)와 예약 작업 카드의 스케줄 꺼짐 안내(`settings.system.scheduler_off_on_this_server`) 일본어 번역을 추가했습니다.
+- 업데이트 창의 판정 건너뜀 안내(꺼 둔 확장·활성 파일 없음)와 판정 요약 항목별 문구의 일본어 번역을 추가했습니다(옛 한 줄 요약 문구는 뺐습니다).
+- 레이아웃 편집 화면 버전 이력 창의 판 출처 문구 8건(덮기 전 운영자 판·병합 결과, `admin.templates.modals.version_history.source_labels.*`)의 일본어 번역을 추가했습니다.
 
 ### Changed
 

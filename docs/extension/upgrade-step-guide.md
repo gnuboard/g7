@@ -139,6 +139,30 @@ upgrade step 은 동일 버전으로 재실행될 수 있다(`--force` 옵션). 
 - 테이블/컬럼 조작 전 `Schema::hasTable/hasColumn` 체크
 - 데이터 이관은 "이미 이관됨" 플래그로 skip 가능하게 설계
 
+**실행 대장 (7.2.0+)**: 코어·모듈·플러그인 스텝은 실행 전에 대장 `upgrade_step_runs`(범위·식별자·판·스텝 클래스 유니크)를 본다.
+DB 를 함께 쓰는 다른 서버가 이미 끝낸(`done`) 스텝은 「이미 실행됨」 로그만 남기고 건너뛰고, `--force` 재실행은 대장을 무시하고 다시 돈다. 관리자 화면(웹) 코어 업데이트는 `--force` 없이 스텝을 돌려 같은 규칙을 따른다.
+건너뛴 스텝은 실행 수와 따로 세므로, 범위 안 스텝을 모두 다른 서버가 끝냈으면 두 번째 서버의 `core:update` 는 「스텝을 하나도 실행하지 못함」으로 중단되지 않고 건너뛴 수를 알린 뒤 계속한다.
+선점은 유니크 삽입(새 스텝)·조건부 갱신(`failed` 행)으로 하며, 다른 실행이 `running` 으로 쥐고 있으면 업데이트가 실패한다. 비정상 종료로 남은
+`running` 행은 시작한 지 6시간(`UpgradeStepRunLedger::STALE_RUNNING_HOURS`)이 지나면 다음 실행이 다시 선점하고, 그 전에 풀어야 하면 업데이트를
+`--force` 로 다시 실행한다(경과 시간과 무관하게 다시 선점 — DB 를 직접 고치지 않는다). 대장은 서버 간 중복을 줄일 뿐이다 — `--force` 와 수동 재실행이 있으므로
+멱등성은 여전히 스텝이 지킨다. 대장 테이블이 아직 없는 첫 업데이트(마이그레이션 전)는 대장 없이 종전처럼 돈다.
+
+**내용 지문 (7.2.0+)**: 끝낸 스텝은 대장 `fingerprint` 에 내용 지문(sha256)을 남긴다. 재는 범위는 스텝 클래스 파일과, `AbstractUpgradeStep` 을
+상속한 스텝이면 그 스텝이 실행하는 데이터 디렉터리(`스텝 파일 위치/data/<판>/` 아래 모든 파일 — manifest·appliers·migrations)다. 코어와 확장이
+같은 규칙이며, 파일은 데이터 디렉터리 기준 상대경로로 정렬하고 줄바꿈은 LF 로 맞춰 잰다. 클로저 스텝(`callable@판`)은 지문이 없다(NULL).
+
+| 실행 | 대장이 `done` 일 때 |
+| --- | --- |
+| `--force` 없음 (운영·검수 서버) | 건너뜀 — 「이미 실행됨」 |
+| 운영 서버 `--force` | 다시 돈다 (운영자의 명시 재실행) |
+| 검수 서버(`G7_RUNTIME_ROLE=stage`) `--force`, 지문 같음 | 건너뜀 — 「같은 내용 이미 실행됨」 |
+| 검수 서버 `--force`, 지문 다름(같은 판 번호로 스텝·데이터 파일을 고침) | 다시 돌고 지문을 갱신 |
+| 검수 서버 `--force`, 지문 없음(클로저 스텝·지문 도입 전 행) | 다시 돈다 (같은 내용인지 알 수 없음) |
+
+검수 서버는 운영 서버와 DB 를 함께 쓴다. 검수에서 결함을 고쳐 같은 판 번호로 다시 배포하면 같은 변환이 공유 DB 에서 두 번 돌면 안 되고,
+고친 스텝은 다시 돌아야 한다. 그래서 같은 판 번호로 스텝을 고칠 때도 지문이 바뀌도록 스텝 파일이나 그 판의 데이터 파일을 고친다 — 스텝이
+`data/<판>/` 밖의 코드(다른 클래스·헬퍼)만 불러 그 코드만 고쳤으면 지문은 같아 검수 서버의 `--force` 가 건너뛴다.
+
 ### 원칙 5 — 확장 자신의 새 저장소·서비스를 해석하지 않는다
 
 모듈·플러그인 업데이트(경로 A)를 실행하는 프로세스에는 **부팅 때 등록된 옛 버전의 서비스 프로바이더** 만 있다. 새 버전 파일로 교체한 뒤에도 PHP 는 이미 로드한 프로바이더 클래스를 다시 읽을 수 없으므로, 새 버전 프로바이더가 추가한 바인딩(새 Repository 인터페이스 → 구현체, 새 Service 싱글턴 등)은 업그레이드 단계 실행 시점에 존재하지 않는다.
@@ -165,6 +189,37 @@ upgrade step 은 동일 버전으로 재실행될 수 있다(`--force` 옵션). 
 실패 메시지에 파일명과 기대한 클래스(FQCN)가 들어 있다. 파일명 접두 번호(`01_`)는 클래스명에서 빠지므로 클래스는 접두 없이 선언한다.
 
 위 표 밖의 클래스 누락은 업데이트를 막지 않고 **경고 로그** 만 남긴다 — 확장의 서비스 프로바이더·라우트 파일 누락, 업데이트가 아닌 경로(부팅·설치·번들 목록)의 확장 진입 클래스 누락, 훅 리스너의 인터페이스 미구현.
+
+### 원칙 7 — 레이아웃 본문을 바꾸기 직전 운영자 판을 기록한다 (7.2.0+)
+
+레이아웃·확장 조각 행의 `content` 를 직접 바꾸는 스텝은 바꾸기 **직전** 그 행의 판을 편집기 버전 이력에 남긴다. 운영자가 편집기로 고친 화면이 스텝으로 덮이면, 운영자는 [버전 기록]에서 그 판으로 되돌릴 수 있어야 한다.
+
+```php
+use App\Extension\Layout\LayoutVersionRecorder;
+
+// 행을 바꾸기 전에 — 요약 출처(source)는 upgrade_step
+app(LayoutVersionRecorder::class)->recordBeforeMutation($row, 'upgrade_step');
+$row->content = $patched;
+$row->save();
+```
+
+- `LayoutVersionRecorder` 는 7.2.0 에 처음 들어온 클래스다 — 7.2.0 이상을 대상으로 하는 스텝에서만 쓴다(원칙 2·「새 버전에서 처음 도입된 클래스」).
+- 이미 출시된 스텝은 고치지 않는다. 새로 쓰는 스텝에만 적용한다.
+- 운영자가 고치지 않은 행(원본과 같은 행)은 기록하지 않아도 된다 — 버전 이력이 불필요하게 늘지 않게 한다.
+
+### 원칙 8 — 레이아웃 테이블 이름을 직접 적지 않는다 (7.2.0+)
+
+레이아웃 테이블은 실행 역할(`G7_RUNTIME_ROLE`)에 따라 갈린다 — 검수 서버(stage)는 `stage_` 접두 테이블을 쓴다([실행 역할](../backend/runtime-role.md) 「검수 서버의 레이아웃 테이블」). 스텝에서 `DB::table('template_layouts')` 처럼 이름을 적으면 검수 서버에서 돌 때 운영 테이블을 고친다.
+
+```php
+use App\Support\LayoutTable;
+
+DB::table(LayoutTable::name('template_layouts'))->where('template_id', $templateId)->get();
+```
+
+- 대상 테이블: `template_layouts`·`template_layout_extensions`·`template_layout_versions`·`template_layout_extension_versions`. 모델(`TemplateLayout` 등)을 거치면 역할에 맞는 테이블을 자동으로 쓴다.
+- `LayoutTable` 은 7.2.0 에 처음 들어온 클래스다 — 7.2.0 이상을 대상으로 하는 스텝에서만 쓴다(원칙 2). 이미 출시된 스텝은 고치지 않는다 — 검수 서버는 스텝 뒤 `stage-layouts:reset-from-live` 로 운영 행을 다시 복사한다.
+- 테이블 이름을 직접 적으면 정적 검사가 막는다.
 
 ## 4. 허용/금지 패턴
 
@@ -283,6 +338,7 @@ upgrade step PR 검토 시 아래 항목을 모두 확인:
 - [ ] `--force` 재실행 시 안전한 멱등 동작인가?
 - [ ] (확장) 이번 버전에서 확장이 새로 바인딩한 저장소·서비스를 `app()` 으로 해석하지 않는가? (원칙 5)
 - [ ] step·데이터 마이그레이션 파일의 네임스페이스·클래스명이 파일과 일치하고 요구 인터페이스를 구현하는가? (원칙 6 — 어긋나면 업데이트 실패)
+- [ ] 레이아웃 테이블을 `DB::table('template_layouts')` 처럼 이름으로 적지 않고 `LayoutTable::name()` 또는 모델을 쓰는가? (원칙 8)
 - [ ] sudo 실행 환경에서 root 오염이 발생할 수 있는 파일 조작이 있다면 소유권 복원 로직이 포함되었는가?
 - [ ] 테스트 환경(`beta.N fresh` → `beta.N+1 update`) 에서 수동 검증을 통과했는가?
 
@@ -794,6 +850,32 @@ final public function run(UpgradeContext $context): void
 ```
 
 `dataSnapshot()` / `dataMigrations()` 모두 default impl 이 `data/{version}/` 을 스캔 + `require_once` + 버전 namespace 클래스 인스턴스화. 일반 케이스는 override 불필요.
+
+### 실행 전 설명 — `describe(): ?array` (7.2.0+, 선택 구현)
+
+`php artisan g7:migrate-plan` 은 현재 판보다 새로운 업그레이드 스텝(코어 `upgrades/Upgrade_*.php`, 활성 확장의 `upgrades()`)을 실행 없이 나열하고, 스텝마다 `describe()` 가 돌려준 설명을 보여 준다([core-update-system.md](../backend/core-update-system.md) 「실행 전 계획 보기」).
+
+```php
+class Upgrade_1_4_0 extends AbstractUpgradeStep
+{
+    public function describe(): ?array
+    {
+        return [
+            'summary' => '옛 알림 설정 키를 새 채널 설정으로 옮기고 옛 키를 지운다',
+            'destructive' => true,
+        ];
+    }
+}
+```
+
+| 키 | 타입 | 의미 |
+|----|------|------|
+| `summary` | `string` | 이 스텝이 하는 일 한 줄. 계획 표의 「설명」 칸에 그대로 나온다 |
+| `destructive` | `bool` | 데이터를 지우거나 되돌릴 수 없게 바꾸면 `true` — 표에서 설명 뒤에 `⚠` 가 붙는다. 빠지면 `false` |
+
+- 구현하지 않으면 기본값 `null` 이고 계획에는 「설명 없음」으로 나온다. `--json` 출력에서는 `summary`·`destructive` 가 `null` 이다.
+- 계획 단계에서 스텝을 인스턴스화해 부르므로 **DB·파일을 읽거나 바꾸지 않는다**. 고정된 문장만 돌려준다 — 실제로 바꿀 행이 있는지는 실행 때 `$context->logger` 로 남긴다.
+- `describe()` 는 예외를 던지지 않게 쓴다. 코어 스텝은 파일을 읽지 못하거나 예외가 나면 「설명 없음」으로 넘어가지만, 확장 스텝의 `describe()` 예외는 걸러지지 않아 계획 출력 전체가 멈춘다.
 
 ### 실행 순서 제어
 

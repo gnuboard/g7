@@ -269,9 +269,9 @@ describe('버전 히스토리 모달 구조', () => {
   });
 
   /** @effects non_newest_layout_versions_carry_a_restore_button */
-  it('첫 번째가 아닌 버전(idx !== 0)에 복원 버튼이 있다', () => {
+  it('첫 번째가 아닌 버전(idx !== 0)과 덮기 직전 운영자 판에 복원 버튼이 있다', () => {
     const restoreButton = findComponent(versionHistoryModalJson, (n) =>
-      n.if === '{{idx !== 0}}' &&
+      n.if === '{{idx !== 0 || version.changes_summary?.before_overwrite === true}}' &&
       n.name === 'Button' &&
       asArray(n?.actions).length > 0 &&
       asArray(n?.actions).some((a: any) =>
@@ -574,7 +574,7 @@ describe('확장 버전 히스토리 모달 구조', () => {
   /** @effects extension_version_restore_calls_the_extension_restore_endpoint */
   it('복원 버튼이 확장 버전 restore 엔드포인트를 호출한다', () => {
     const restoreButton = findComponent(extensionVersionHistoryModalJson, (n) =>
-      n.if === '{{idx !== 0}}' &&
+      n.if === '{{idx !== 0 || version.changes_summary?.before_overwrite === true}}' &&
       n.name === 'Button' &&
       asArray(n?.actions).length > 0 &&
       asArray(n?.actions).some((a: any) => JSON.stringify(a).includes('/layout-extensions/'))

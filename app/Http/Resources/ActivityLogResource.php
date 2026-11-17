@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\ActivityLog;
 use App\Support\LocalizedValue;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
@@ -36,6 +37,9 @@ class ActivityLogResource extends BaseApiResource
             'properties' => $this->properties,
             ...$this->formatChangesOutput($this->changes),
             'has_changes' => ! empty($this->changes),
+            // 삭제 직전 기록(영구 삭제·선언 정리) — 펼친 자리에 대상·사유·본문 미리보기를 보인다(#888)
+            'snapshot' => $snapshot = $this->deletionSnapshot(),
+            'has_details' => ! empty($this->changes) || $snapshot !== null,
             'actor_name' => $this->actor_name,
             'user' => $this->user ? [
                 'uuid' => $this->user->uuid,
@@ -52,6 +56,43 @@ class ActivityLogResource extends BaseApiResource
             'ip_address' => $this->ip_address,
             'created_at' => $this->formatDateTimeStringForUser($this->created_at),
             ...$this->resourceMeta($request),
+        ];
+    }
+
+    /** 본문 미리보기 길이 상한 (문자) */
+    private const SNAPSHOT_PREVIEW_LIMIT = 2000;
+
+    /**
+     * 삭제 직전 기록이면 화면용 요약을 만듭니다 — 아니면 null.
+     *
+     * 대상(화면·조각·키), 사유, 본문 미리보기(앞 2000자), 남긴 버전 수, 버전 상한을 넘었는지.
+     *
+     * @return array{target: string, reason: string|null, reason_label: string|null, content_preview: string, content_truncated: bool, version_count: int, versions_truncated: bool, has_operator_overrides: bool}|null 요약
+     */
+    private function deletionSnapshot(): ?array
+    {
+        $action = (string) $this->action;
+
+        // 판정은 「삭제 직전 기록만 보기」 필터(ActivityLog::scopeDeletionSnapshots)와 한 벌이다
+        if (! ActivityLog::isDeletionSnapshotAction($action)) {
+            return null;
+        }
+
+        $p = is_array($this->properties) ? $this->properties : [];
+        $target = (string) ($p['name'] ?? (isset($p['fragment_key']) ? ($p['target_name'] ?? '').':'.$p['fragment_key'] : ($p['key'] ?? $p['translation_key'] ?? '')));
+        $body = $p['content'] ?? $p['snapshot'] ?? $p['values'] ?? null;
+        $json = $body === null ? '' : (string) json_encode($body, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $reason = isset($p['reason']) ? (string) $p['reason'] : null;
+
+        return [
+            'target' => $target,
+            'reason' => $reason,
+            'reason_label' => $reason !== null ? __('activity_log.deletion_reason.'.$reason) : null,
+            'content_preview' => mb_substr($json, 0, self::SNAPSHOT_PREVIEW_LIMIT),
+            'content_truncated' => mb_strlen($json) > self::SNAPSHOT_PREVIEW_LIMIT,
+            'version_count' => is_array($p['versions'] ?? null) ? count($p['versions']) : 0,
+            'versions_truncated' => (bool) ($p['versions_truncated'] ?? false),
+            'has_operator_overrides' => (bool) ($p['has_operator_overrides'] ?? true),
         ];
     }
 

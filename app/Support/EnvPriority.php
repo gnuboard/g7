@@ -143,7 +143,6 @@ final class EnvPriority
         'general.site_description' => 'env 대응 없음 (설정 전용 값)',
         'general.admin_email' => 'env 대응 없음 (설정 전용 값)',
         'general.currency' => 'env 대응 없음 (설정 전용 값)',
-        'general.maintenance_mode' => 'env 대응 없음 — APP_MAINTENANCE_DRIVER 는 저장소 종류이고 점검 모드 on/off 가 아니다',
         'general.site_logo' => 'env 대응 없음 (첨부 id 배열)',
         'general.site_favicon' => 'env 대응 없음 (첨부 id 배열)',
         'general.asset_url_mode' => 'env 대응 없음 (설정 전용 값)',

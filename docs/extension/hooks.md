@@ -581,6 +581,54 @@ public function exemptRoutes(array $routes, Request $request): array
 
 본인인증 값을 회원 항목에 채우는 계약(`ProvidesVerifiedClaimsInterface`)은 [본인인증 정책](../backend/identity-policies.md#53-본인인증-값을-회원-항목에-채우기-720) 문서에 있습니다.
 
+### 시스템 정보 카드 훅 (7.2.0)
+
+관리자 환경설정 > 정보 탭의 「시스템 정보」 카드 옆에 확장이 카드를 더합니다(#888). 코어는 카드를 그리는 일반 렌더러(배지·항목·접는 목록·알림)만
+갖고, 무엇을 싣는지는 확장이 정합니다 — 예: 서버 상태를 보여 주는 플러그인이 큐 적체·디스크 경고를 한 카드로 냅니다.
+
+| 훅 | 종류 | 인자 | 쓰임 |
+| --- | --- | --- | --- |
+| `core.settings.filter_system_info_sections` | filter | `(array $sections = [])` | 시스템 정보 응답(`GET /api/admin/settings/system-info`)의 `extra_sections`. 받은 배열에 자기 섹션을 더해 돌려준다 |
+
+섹션 형식(서버가 검증한 뒤 화면에 넘긴다):
+
+| 키 | 형식 | 필수 | 뜻 |
+| --- | --- | --- | --- |
+| `id` | 문자열 | 예 | 확장 식별자로 시작(`vendor-name`, 뒤에 `.`·`:` 로 이은 이름 가능, 100자 이하). 겹치면 뒤 섹션을 버린다 |
+| `title` | 문자열 | 예 | 카드 제목 — 다국어는 확장이 풀어서 넘긴다(`__()`) |
+| `badge` | `{text, tone}` | 아니오 | 제목 옆 배지. `tone`: `neutral`·`success`·`warning`·`danger` |
+| `rows` | `[{label, value, mono?}]` | 예(빈 목록 가능) | 라벨/값 행. `value` 는 문자열·숫자(문자열로 바뀐다), `mono: true` 면 고정폭 글꼴 |
+| `list` | `{title, items: [문자열], collapsible}` | 아니오 | 항목 목록. `collapsible: true` 면 단추로 열고 닫는다 |
+| `notice` | `{tone, text}` | 아니오 | 카드 안 알림 상자(색조는 배지와 같다) |
+
+```php
+// 서버 상태 플러그인의 리스너 — getSubscribedHooks() 에 'core.settings.filter_system_info_sections' => ['method' => 'addCard', 'type' => 'filter']
+public function addCard(array $sections): array
+{
+    $pending = $this->queueStats->pendingCount();
+
+    $sections[] = [
+        'id' => 'acme-server_status.overview',
+        'title' => __('acme-server_status::admin.card_title'),
+        'badge' => ['text' => $pending > 100 ? __('acme-server_status::admin.busy') : __('acme-server_status::admin.ok'),
+            'tone' => $pending > 100 ? 'warning' : 'success'],
+        'rows' => [
+            ['label' => __('acme-server_status::admin.queue_pending'), 'value' => $pending],
+            ['label' => __('acme-server_status::admin.host'), 'value' => gethostname() ?: '-', 'mono' => true],
+        ],
+    ];
+
+    return $sections;
+}
+```
+
+- **매 요청 새로 계산한다** — 코어 정보는 1시간 캐시지만 이 훅은 캐시 밖에서 돈다. 무거운 조회는 확장이 스스로 캐시한다.
+- 형식이 틀린 섹션은 통째로 버리고 경고 로그를 남긴다. 알 수 없는 키는 지운다.
+- 리스너가 던지면 `report()` 로 남기고 **그 리스너의 섹션만** 뺀다 — 응답은 계속 200 이다. 이때 다른 리스너가 한 번 더 불릴 수 있으므로
+  리스너는 섹션을 만들기만 하고 상태를 바꾸지 않는다.
+- 화면은 모든 값을 글자로 그린다(HTML 해석 없음). 응답 권한은 시스템 정보 API 그대로 `core.settings.read` 다 — 그 권한의 관리자에게
+  보여도 되는 정보만 싣는다(비밀번호·토큰 금지).
+
 ### 1. Action Hooks (액션 훅)
 
 **목적**: 특정 시점에 부가 작업 실행

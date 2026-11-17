@@ -47,7 +47,7 @@ _단건 응답: `data` 객체의 필드._
 | modules | object | `{"sirsoft-ecommerce":{"basic_info":{…}}}` | 활성 모듈의 공개 설정 (식별자별). 셸 `G7Config.modules` 와 같다 |
 | plugins | object | `{"sirsoft-ckeditor5":{…}}` | 활성 플러그인의 공개 설정 (식별자별). 셸 `G7Config.plugins` 와 같다 |
 | template_settings | object | `{"branding":{"favicon_url":null,"accent":"blue",…},"header":{…},"footer":{…},"home":{…}}` | 활성 사용자 템플릿 하나의 공개 설정 — 템플릿 `defaults.json` 의 `frontend_schema` 가 노출한 칸을 섹션별로(모듈 설정과 같은 섹션 중첩). 첨부·이미지 칸은 계산 키 `{칸}_url` 만, 비밀값(`sensitive`)은 싣지 않는다. 셸 `G7Config.templateSettings` 와 같다 (#434) |
-| app_config | object | `{"supportedTimezones":[…]}` | 앱 상수 (지원 타임존·로케일 등). 셸 `G7Config.appConfig` 와 같다 |
+| app_config | object | `{"supportedTimezones":[…]}` | 앱 상수 (지원 타임존·로케일 등). 셸 `G7Config.appConfig` 와 같다. `runtime_role`(`live`·`stage`, 7.2.0) 도 싣는다 — 관리자 화면이 검수 서버 띠·수명주기 버튼 잠금에 쓴다 |
 | websocket | object\|null | `null` | 실시간 연결 설정 (방송이 꺼져 있으면 null) |
 | custom_routes | object | `{"user":[],"admin":[]}` | `routes/custom.php` 의 GET 주소 패턴 (범위별, `*` = 제약 없는 한 구간, `{정규식}` = 라우트 where 제약이 걸린 구간). 엔진은 이 주소로 갈 때 전체 페이지 이동 |
 | consent_initial | object | `{"contract_version":1,"status":"unknown",…}` | 쿠키 동의 초기 상태 (사용자 범위에만) |

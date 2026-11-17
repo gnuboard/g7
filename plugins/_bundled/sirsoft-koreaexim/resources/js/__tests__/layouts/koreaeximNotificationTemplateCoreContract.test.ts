@@ -243,8 +243,8 @@ describe('환율 알림 템플릿 편집 창 — 코어 모달 계약 정합', (
         (o) => o.value,
       );
 
-    expect(values([])).toEqual(['trigger_user', 'role', 'specific_users']);
-    expect(values(['post_author'])).toEqual(['trigger_user', 'related_user', 'role', 'specific_users']);
+    expect(values([])).toEqual(['trigger_user', 'role', 'specific_users', 'site_admin_email']);
+    expect(values(['post_author'])).toEqual(['trigger_user', 'related_user', 'role', 'specific_users', 'site_admin_email']);
   });
 
   /**

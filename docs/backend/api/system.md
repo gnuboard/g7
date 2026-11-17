@@ -182,10 +182,10 @@ Accept: application/json
 
 | 이름 | 타입 | 예시값 | 설명 |
 | --- | --- | --- | --- |
-| ran | boolean | `true` | 이번 호출이 실제로 러너를 돌렸는지. 최소 간격 미도달이거나 실행 방식이 서버 크론 전용이면 `false`. 최소 간격 판정과 호출 기록은 한 잠금 안에서 하므로, 같은 순간에 도착한 두 호출 중 하나만 `true` 다(다른 하나는 `min_interval`) |
-| reason | string | `min_interval` | `ran=false` 일 때의 사유 — `min_interval` / `web_call_disabled` |
+| ran | boolean | `true` | 이번 호출이 실제로 러너를 돌렸는지. 최소 간격 미도달이거나 실행 방식이 서버 크론 전용이거나 이 서버의 스케줄이 꺼져 있으면(`G7_SCHEDULER=off`·검수 서버) `false`. 최소 간격 판정과 호출 기록은 한 잠금 안에서 하므로, 같은 순간에 도착한 두 호출 중 하나만 `true` 다(다른 하나는 `min_interval`) |
+| reason | string | `min_interval` | `ran=false` 일 때의 사유 — `min_interval` / `web_call_disabled` / `scheduler_disabled_on_server`(요청을 처리한 서버의 스케줄이 꺼짐 — `G7_SCHEDULER=off` 또는 검수 서버) |
 | retry_after_seconds | integer | `240` | 최소 간격까지 남은 초 (`reason=min_interval` 일 때만) |
-| mode | string | `cron` | 저장된 예약 작업 실행 방식 (`reason=web_call_disabled` 일 때만) |
+| mode | string | `cron` | 저장된 예약 작업 실행 방식 (`reason=web_call_disabled`·`scheduler_disabled_on_server` 일 때만) |
 | started_at | string | `2026-08-31T05:00:00+00:00` | 실행 시작 시각 (ISO 8601) |
 | finished_at | string | `2026-08-31T05:00:03+00:00` | 실행 종료 시각 (ISO 8601) |
 | duration_ms | integer | `3179` | 소요 시간(밀리초) |
@@ -257,8 +257,8 @@ HTTP/1.1 200
 
 | `data` 필드 | 타입 | 설명 |
 | --- | --- | --- |
-| ran | boolean | 이번 호출이 실제로 러너를 돌렸는지. 최소 간격 미만 호출이거나 실행 방식이 "서버 크론만" 이면 `false` |
-| reason | string | `ran=false` 일 때의 사유 — `min_interval`(최소 간격 미도달) · `web_call_disabled`(주소 호출 미허용) |
+| ran | boolean | 이번 호출이 실제로 러너를 돌렸는지. 최소 간격 미만 호출이거나 실행 방식이 "서버 크론만" 이거나 이 서버의 스케줄이 꺼져 있으면 `false` |
+| reason | string | `ran=false` 일 때의 사유 — `min_interval`(최소 간격 미도달) · `web_call_disabled`(주소 호출 미허용) · `scheduler_disabled_on_server`(요청을 처리한 서버의 스케줄이 꺼짐 — `G7_SCHEDULER=off` 또는 검수 서버) |
 | retry_after_seconds | integer | 최소 간격까지 남은 초 (`reason=min_interval` 일 때만) |
 | due | integer | 소급 창 안에서 실행 대상으로 뽑힌 예약 수 |
 | executed | integer | 실제로 실행한 예약 수 |

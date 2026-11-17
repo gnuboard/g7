@@ -2009,7 +2009,8 @@
       "static_cache_republish_not_publishable": "現在の環境では静的ファイルを作成しません(運用モードではないか、オフになっています)。",
       "static_cache_republish_failed": "初期画面静的ファイルを再作成できませんでした。下記の失敗理由を確認してください。サイトは正常に動作しています。",
       "user_screen_url": "ユーザー画面 URL",
-      "user_screen_url_help": "空欄の場合はサイト URL と同じです。別のアドレスで運用する外部画面(例: Next.js)を使う場合のみ入力してください。パスワード再設定・通知メールのリンクと決済後に戻るアドレスに使われ、管理者画面のアドレスは変わりません。"
+      "user_screen_url_help": "空欄の場合はサイト URL と同じです。別のアドレスで運用する外部画面(例: Next.js)を使う場合のみ入力してください。パスワード再設定・通知メールのリンクと決済後に戻るアドレスに使われ、管理者画面のアドレスは変わりません。",
+      "admin_email_desc": "通知テンプレートの受信者を「サイト管理者メールアドレス」に設定すると、このアドレスにメールを送信します。空欄にすると、そのルールでは誰にも送信しません。"
     },
     "mail": {
       "smtp_settings": "SMTP設定",
@@ -2472,6 +2473,7 @@
         "preview": "適用されるポリシーのプレビュー",
         "preview_hint": "保存済みの値に基づきます。モードやホストを変更した場合は保存してから確認してください。"
       },
+      "force_https_notice": "HTTPS 証明書の準備ができてからオンにしてください。ロックされた場合: php artisan settings:set security.force_https false",
       "extension_trust": {
         "title": "拡張信頼鍵",
         "desc": "拡張・言語パック・コアのパッケージ署名を確認するときに信頼する公開鍵です。コア内蔵鍵はコアと一緒に配布され、制作者の鍵はここで追加します。鍵の追加と削除は保存ボタンとは別にすぐ反映されます。",
@@ -3279,7 +3281,8 @@
           "trigger_user": "イベント発生者",
           "related_user": "関連ユーザー",
           "role": "ロールベース",
-          "specific_users": "特定ユーザー"
+          "specific_users": "特定ユーザー",
+          "site_admin_email": "サイト管理者メールアドレス"
         },
         "badge": {
           "trigger_user": "イベント発生者",
@@ -3298,7 +3301,8 @@
         "roles_selected_count": "{count}件のロールを選択",
         "users_selected_count": "{count}名選択",
         "remove_selected": "選択解除: {{name}}",
-        "remove_rule": "受信者ルール{{index}}を削除"
+        "remove_rule": "受信者ルール{{index}}を削除",
+        "site_admin_email_hint": "環境設定 > 一般の管理者メールアドレスにメールのみ送信します(サイト通知など他の手段では受け取りません)。空欄にすると送信しません。"
       },
       "preview_modal": {
         "title": "通知プレビュー",
@@ -3482,7 +3486,8 @@
       "cron_state_persist_failed": "実行記録を保存できませんでした。保存フォルダの書き込み権限を確認してください — 記録が残らないと、すでに処理した作業を呼び出しのたびに再実行します。",
       "cron_run_now": "今すぐ実行",
       "cron_run_done": "スケジュールを実行しました。",
-      "cron_run_failed": "スケジュールの実行に失敗しました。"
+      "cron_run_failed": "スケジュールの実行に失敗しました。",
+      "scheduler_off_on_this_server": "この画面を処理したサーバーはスケジュール実行がオフになっています(G7_SCHEDULER=off)。複数のサーバーがある場合は、スケジュールを実行するサーバーを確認してください。"
     },
     "core_update": {
       "title": "コアアップデート",
@@ -3960,11 +3965,22 @@
         "restore_success": "バージョンが正常に復元されました。",
         "restore_note": "復元後は、必ず保存ボタンをクリックして変更を適用してください。",
         "saved_by": "保存者：{{name}}",
+        "saved_by_system": "保存者：システム",
         "lines": "行",
         "modified": "編集",
         "chars": "個",
         "load_more": "以前のバージョンをもっと見る",
-        "limit_reached": "表示できる最大件数に達しました。"
+        "limit_reached": "表示できる最大件数に達しました。",
+        "source_labels": {
+          "before_extension_update": "拡張機能の更新で上書きされる前の運営者のバージョン",
+          "before_refresh": "レイアウト更新で上書きされる前の運営者のバージョン",
+          "before_decision_take_theirs": "「新バージョンを適用」で上書きされる前の運営者のバージョン",
+          "before_upgrade_step": "アップグレードで変更される前の運営者のバージョン",
+          "before_other": "上書きされる前の運営者のバージョン",
+          "merge_refresh": "レイアウト更新によるマージ結果",
+          "merge_extension_update": "拡張機能の更新によるマージ結果",
+          "merge_other": "マージ結果"
+        }
       },
       "wysiwyg_select_layout_title": "ウィジウィグ編集 - レイアウト選択",
       "wysiwyg_select_layout_description": "編集するレイアウトを選択してください。選択したレイアウトが新しいタブでウィジウィグ編集モードで開きます。",
@@ -4195,6 +4211,9 @@
       "actor_select": "実行者を選択",
       "actor_search_placeholder": "名前またはメールアドレスで検索",
       "actor_search_initial": "実行者を検索してください",
+      "deletion_snapshot_label": "削除記録",
+      "deletion_snapshot_only": "削除直前の記録のみ表示",
+      "deletion_snapshot_hint": "完全削除・宣言整理・カスタム翻訳削除の直前に残した記録のみを表示します。展開すると削除した本文とバージョンを確認できます。",
       "date_range_label": "期間",
       "date_from_label": "開始日",
       "date_to_label": "終了日",
@@ -4231,7 +4250,15 @@
       "column_field": "項目名",
       "column_old": "変更前",
       "column_new": "変更後",
-      "no_value": "-"
+      "no_value": "-",
+      "snapshot_title": "削除直前の記録",
+      "snapshot_target": "対象: {{target}}",
+      "snapshot_reason": "理由: {{reason}}",
+      "snapshot_versions": "残したバージョン {{count}}個",
+      "snapshot_versions_truncated": "最新50個のみ保持",
+      "snapshot_show": "削除前の本文を見る",
+      "snapshot_hide": "本文を折りたたむ",
+      "snapshot_content_truncated": "本文が長いため、先頭部分のみ表示しています。"
     },
     "pagination": {
       "total": "合計{{count}}件",
@@ -5588,5 +5615,64 @@
         "seeder": "初期データ作成"
       }
     }
+  },
+  "stage_role": {
+    "banner": "検証サーバー — 本番データを共有しています。拡張・コアの変更はデプロイ手順でのみ行います。",
+    "locked_hint": "検証サーバーでは変更できません。デプロイ手順で反映してください。",
+    "editor_banner": "検証用の保存 — 本番サイトには反映されず、次回のデプロイ時に消えます。"
+  },
+  "layout_sync_preview": {
+    "title": "画面ごとの処理プレビュー",
+    "refresh_description": "ファイルのレイアウトを再読み込みします。下で画面ごとの変化を確認してから適用してください。プレビューでは何も変更しません。",
+    "strategy_title": "レイアウト処理方式",
+    "strategy_keep": "修正を維持 (推奨)",
+    "strategy_keep_desc": "エディターで修正した部分はそのまま残し、手を加えていない部分だけを新バージョンに置き換えます。",
+    "strategy_overwrite": "すべて置換",
+    "strategy_overwrite_desc": "すべての画面を新バージョンで上書きします。上書き前の運営者のバージョンはエディターの[バージョン履歴]に残ります。",
+    "overwrite_warning": "エディターで修正した画面もすべて新バージョンに置き換わります。元に戻すにはエディターの[バージョン履歴]から復元してください。",
+    "loading": "新バージョンと比較しています…",
+    "error": "プレビューを読み込めませんでした。プレビューを確認しないと適用できません。",
+    "retry": "再試行",
+    "empty": "変更される画面はありません。",
+    "kind_extension": "拡張フラグメント",
+    "conflict_units": "重なり {{count}}箇所",
+    "decision_merge": "重ならない部分のみ反映 (推奨)",
+    "decision_merge_hint": "運営者が修正した箇所と重なる部分は運営者のバージョンを残し、それ以外は新バージョンに置き換えます。",
+    "decision_keep_ours": "運営者のバージョンを維持",
+    "decision_take_theirs": "新バージョンを適用",
+    "decision_keep_ours_hint": "この画面は新バージョンを一切受け取らず、運営者のバージョンをそのまま残します。",
+    "decision_take_theirs_hint": "この画面だけを新バージョンで上書きします。上書き前の運営者のバージョンはエディターの[バージョン履歴]に残ります。",
+    "deletions_title": "この更新で削除される項目 {{count}}個",
+    "deletion_operator": "運営者の修正版 — 削除直前にアクティビティログへ記録",
+    "verdict": {
+      "created": "新規追加",
+      "updated": "新バージョンに置換",
+      "unchanged": "変更なし",
+      "took_theirs": "新バージョンを反映",
+      "merged": "新バージョンを一部反映",
+      "conflict": "重なったため運営者のバージョンを維持",
+      "kept": "運営者のバージョンを維持",
+      "kept_no_base": "比較基準なし — 運営者のバージョンを維持",
+      "kept_invalid": "マージ検証失敗 — 運営者のバージョンを維持",
+      "kept_removed": "新バージョンから外れたが修正版のため残す",
+      "kept_deleted_by_operator": "運営者が削除した画面 — スキップ",
+      "kept_name_collision": "運営者が作成した同名の画面 — スキップ",
+      "deleted": "削除予定"
+    },
+    "deletion_type": {
+      "notification_definition": "通知定義",
+      "notification_template": "通知テンプレート",
+      "menu": "管理者メニュー",
+      "permission": "権限",
+      "role": "ロール",
+      "identity_policy": "本人確認ポリシー",
+      "schedule": "スケジュール",
+      "entity": "基本データ"
+    },
+    "summary_changed": "変更される画面 {{count}}個",
+    "summary_conflicts": "運営者の修正と重なった画面 {{count}}個",
+    "summary_deleted": "削除予定 {{count}}個",
+    "skipped_inactive": "無効にした拡張はアップデート時にレイアウトを更新しません — 有効化するときに修正を維持してマージします。",
+    "skipped_files_missing": "有効ディレクトリにこの拡張のファイルがないため、画面判定をスキップします — アップデートすると新バージョンのファイルをコピーしてから画面を合わせます。"
   }
 }

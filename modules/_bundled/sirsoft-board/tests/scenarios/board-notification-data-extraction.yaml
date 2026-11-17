@@ -55,6 +55,7 @@ effects:
   - new_post_admin_honours_skip_notification
   - new_post_admin_skips_reply_post
   - report_received_admin_extracts_data_and_context
+  - report_received_admin_links_use_public_link_url
   - report_received_admin_skips_when_setting_off
 
 test_files:

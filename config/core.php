@@ -344,6 +344,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | 밖으로 나가는 링크의 주소 (G7_PUBLIC_LINK_URL)
+    |--------------------------------------------------------------------------
+    | 메일·알림·문자에 싣는 화면 링크(회원용·관리자용)의 베이스 주소입니다. 비우면(기본) 사이트
+    | 주소(`app.url`)를 씁니다. 같은 DB 를 쓰는 서버를 공개 주소와 다른 주소로 띄울 때(예: 검수용
+    | 사이트) 그 서버가 보내는 메일의 링크가 공개 주소를 가리키게 하려고 정합니다.
+    |
+    | 결제·본인인증·소셜 로그인 제공자에 넘기는 콜백·웹훅 주소와 정식 주소 이동·분석, 결제·본인인증
+    | 뒤 브라우저가 돌아가는 화면 주소는 이 값을 따르지 않고 사이트 주소를 씁니다 — 그 주소는 요청을
+    | 받은 서버가 직접 받아야 합니다.
+    | 읽는 곳: `App\Support\SiteUrl::forOutboundLinks()` · `App\Support\ScreenUrl` 의 링크 변형
+    | (`absoluteForLinks()`·`toAbsoluteForLinks()`·`userLinkBase()`).
+    */
+    'public_link_url' => rtrim(trim((string) env('G7_PUBLIC_LINK_URL', '')), '/') ?: null,
+
+    /*
+    |--------------------------------------------------------------------------
     | 검색 — DBMS 별 부분일치 연산자
     |--------------------------------------------------------------------------
     | 전문검색을 제공하지 않는 DBMS 로 설치된 사이트에서는 부분일치(LIKE)가 정상 검색
@@ -378,6 +394,35 @@ return [
         // 비공개 첨부 저장소(#916) — 권한 확인 뒤 서버가 내려주는 원본(첨부·클레임 이미지·본문 미디어·내보내기)의 디스크.
         // 빈 문자열이면 「기본」(사이트 스토리지 드라이버를 따름). 관리자 환경설정(drivers.private_attachment_disk)에서 주입한다.
         'private_attachment_disk' => '',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 실행 역할·서버별 스케줄 스위치 (서버 로컬 .env — 공유 설정보다 우선)
+    |--------------------------------------------------------------------------
+    | runtime_role: live(기본) | stage — stage 는 같은 DB·캐시를 쓰는 검수 서버. 스케줄·큐 워커·사이트맵·SEO 캐시·방문 분석을
+    |   돌리지 않고, 관리자 화면의 확장·코어·언어팩 수명주기 변경을 막는다(App\Support\RuntimeRole).
+    | scheduler.enabled: G7_SCHEDULER=on|off (기본 on) — 여러 서버 중 한 대만 스케줄을 돌릴 때 끈다.
+    */
+    'runtime_role' => env('G7_RUNTIME_ROLE', 'live'),
+
+    'scheduler' => [
+        // on|off|true|false|1|0 — 알아볼 수 없는 값은 켜 둔다(스케줄이 조용히 멈추지 않게)
+        'enabled' => filter_var(env('G7_SCHEDULER', 'on'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 점검 모드 (php artisan down)
+    |--------------------------------------------------------------------------
+    | allow_ips: 점검 중에도 들어올 수 있는 클라이언트 IP (쉼표 구분, CIDR 허용 — 예: 203.0.113.10,10.0.0.0/8).
+    | 판정은 신뢰 프록시 설정을 거친 요청 IP 기준이다. 비밀 주소(`down --secret`)·except 경로와 함께 쓴다.
+    | except: 점검 중에도 통과시키는 경로 (쉼표 구분, `*` 와일드카드 — 예: api/health,webhooks/*). `php artisan down` 에는
+    |   경로 예외 옵션이 없어 서버 로컬 설정으로 둔다. 판정은 Laravel 점검 미들웨어의 except 와 같은 비교다.
+    */
+    'maintenance' => [
+        'allow_ips' => array_values(array_filter(array_map('trim', explode(',', (string) env('G7_MAINTENANCE_ALLOW_IPS', ''))))),
+        'except' => array_values(array_filter(array_map('trim', explode(',', (string) env('G7_MAINTENANCE_EXCEPT', ''))))),
     ],
 
     /*

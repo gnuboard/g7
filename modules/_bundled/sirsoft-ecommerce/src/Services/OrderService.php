@@ -29,6 +29,7 @@ use Modules\Sirsoft\Ecommerce\Exceptions\ReactivationCouponConflictException;
 use Modules\Sirsoft\Ecommerce\Fields\OrderContactFields;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
+use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderOptionRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderShippingRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\UserAddressRepositoryInterface;
@@ -47,6 +48,8 @@ class OrderService
      * @param  StockService  $stockService  재고 서비스 (취소 복원 · 재활성 재차감)
      * @param  ClaimAttachmentService  $claimAttachmentService  클레임 첨부 서비스
      * @param  OrderProcessingService|null  $orderProcessingService  결제 처리 서비스 (수동 결제 처리 세 항목 — 비우면 늦게 해석)
+     * @param  ProductReviewService|null  $productReviewService  리뷰 서비스 (주문 삭제 시 주문옵션 리뷰 정리 — 비우면 늦게 해석)
+     * @param  OrderOptionRepositoryInterface|null  $orderOptionRepository  주문옵션 Repository (주문 삭제 시 주문옵션 ID 조회 — 비우면 늦게 해석)
      */
     public function __construct(
         protected OrderRepositoryInterface $repository,
@@ -54,6 +57,8 @@ class OrderService
         protected StockService $stockService,
         protected ClaimAttachmentService $claimAttachmentService,
         protected ?OrderProcessingService $orderProcessingService = null,
+        protected ?ProductReviewService $productReviewService = null,
+        protected ?OrderOptionRepositoryInterface $orderOptionRepository = null,
     ) {}
 
     /**
@@ -64,6 +69,26 @@ class OrderService
     private function processing(): OrderProcessingService
     {
         return $this->orderProcessingService ??= app(OrderProcessingService::class);
+    }
+
+    /**
+     * 리뷰 서비스를 늦게 해석합니다. (주문 삭제 시 주문옵션 리뷰 정리용 — 기존 생성 호출부 호환)
+     *
+     * @return ProductReviewService 리뷰 서비스
+     */
+    private function reviewService(): ProductReviewService
+    {
+        return $this->productReviewService ??= app(ProductReviewService::class);
+    }
+
+    /**
+     * 주문옵션 Repository 를 늦게 해석합니다. (주문 삭제 시 주문옵션 ID 조회용 — 기존 생성 호출부 호환)
+     *
+     * @return OrderOptionRepositoryInterface 주문옵션 Repository
+     */
+    private function orderOptions(): OrderOptionRepositoryInterface
+    {
+        return $this->orderOptionRepository ??= app(OrderOptionRepositoryInterface::class);
     }
 
     /**
@@ -508,8 +533,8 @@ class OrderService
         $order->payment()->delete();
 
         // 클레임 계열도 명시적으로 지운다. 주문옵션을 먼저 지우면 교환·반품·환불의 **상품 행만**
-        // FK CASCADE 로 사라지고 금액을 든 신청서 헤더가 상품 0개로 남는다(주문은 soft-delete 라
-        // 헤더까지 내려가는 CASCADE 는 발화하지 않는다). 첨부는 주문 FK 가 없어 신청서를 지워도
+        // 외래키 연쇄 삭제에 휩쓸려 사라지고 금액을 든 신청서 헤더가 상품 0개로 남는다(주문은 soft-delete 라
+        // 헤더까지 내려가는 연쇄 삭제는 일어나지 않는다). 첨부는 주문 FK 가 없어 신청서를 지워도
         // 파일과 행이 남으므로 먼저 정리하고, 평문으로 저장되는 환불 계좌도 이때 함께 사라진다.
         // 첨부 대상은 신청서가 사라지기 **전에** 모아 두고(호출부), 파일 삭제는 DB 정리가 끝난 뒤에
         // 한다 — 파일 삭제는 되돌릴 수 없어, 중간 단계가 실패하면 주문은 살아 있는데 그 주문의
@@ -523,6 +548,12 @@ class OrderService
         $order->returns()->delete();
         $order->cancels()->delete();
         $order->refunds()->delete();
+
+        // 주문옵션에 묶인 리뷰를 이미지 행·파일째 먼저 지운다 — 옵션 행을 지우면 리뷰가 남을 자리가 없고, DB 연쇄 삭제에
+        // 맡기면 이미지 파일이 저장소에 고아로 남는다. 파일은 커밋된 뒤에 지운다(개인정보 보유기간 삭제와 같은 경로).
+        $this->reviewService()->purgeForOrderOptions(
+            $this->orderOptions()->getIdsByOrderId((int) $order->id)
+        );
 
         $order->options()->delete();
 
@@ -1027,7 +1058,7 @@ class OrderService
                 'order_number' => $order->order_number,
                 'customer_name' => (string) ($order->getOrdererName() ?? ''),
                 'app_name' => $appName,
-                'site_url' => ScreenUrl::userBase(),
+                'site_url' => ScreenUrl::userLinkBase(),
             ],
             extensionType: 'module',
             extensionIdentifier: 'sirsoft-ecommerce',

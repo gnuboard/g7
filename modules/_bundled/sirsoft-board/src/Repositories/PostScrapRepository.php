@@ -353,6 +353,28 @@ class PostScrapRepository implements PostScrapRepositoryInterface
     /**
      * {@inheritDoc}
      */
+    public function deleteByUser(int $userId): Collection
+    {
+        // audit:allow query-unbounded-get reason: 삭제되는 회원 한 명의 스크랩만 고른다 — 행 수가 그 회원의 스크랩 행위에 묶이고 네 열만 읽는다
+        $scraps = $this->model
+            ->where('user_id', $userId)
+            ->get(['id', 'user_id', 'post_id', 'board_id']);
+
+        if ($scraps->isEmpty()) {
+            return $scraps;
+        }
+
+        // 읽은 행만 지운다 — 조회 뒤에 생긴 행까지 지우면 반환 목록에 없어 scrap_count 재계산에서 빠진다
+        foreach ($scraps->pluck('id')->chunk(1000) as $ids) {
+            $this->model->whereIn('id', $ids->all())->delete();
+        }
+
+        return $scraps;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function summaryByUser(int $userId): array
     {
         $row = $this->model

@@ -34,6 +34,11 @@ class CartService
     use ReappliesPermissionScope;
 
     /**
+     * 상위 데이터 삭제 정리에서 한 번에 지우는 장바구니 행 ID 수
+     */
+    private const PURGE_CHUNK_SIZE = 1000;
+
+    /**
      * CartService 생성자
      *
      * @param  CartRepositoryInterface  $cartRepository  장바구니 리포지토리
@@ -551,6 +556,69 @@ class CartService
         });
 
         HookManager::doAction('sirsoft-ecommerce.cart.after_delete_multiple', $ids, $deletedCount);
+
+        return $deletedCount;
+    }
+
+    /**
+     * 회원의 장바구니를 모두 지웁니다 (회원 삭제 정리 — 소유자 판정 없음, #888).
+     *
+     * @param  int  $userId  회원 ID
+     * @return int 삭제된 개수
+     */
+    public function purgeForUser(int $userId): int
+    {
+        return $this->purgeItems($this->cartRepository->getIdsByUserId($userId));
+    }
+
+    /**
+     * 상품을 담은 장바구니 행을 소유자와 무관하게 모두 지웁니다 (상품 삭제 정리, #888).
+     *
+     * @param  int  $productId  상품 ID
+     * @return int 삭제된 개수
+     */
+    public function purgeForProduct(int $productId): int
+    {
+        return $this->purgeItems($this->cartRepository->getIdsByProductId($productId));
+    }
+
+    /**
+     * 상품 옵션들을 담은 장바구니 행을 소유자와 무관하게 모두 지웁니다 (옵션 삭제 정리, #888).
+     *
+     * @param  array<int, int>  $productOptionIds  지워질 상품 옵션 ID 목록
+     * @return int 삭제된 개수
+     */
+    public function purgeForProductOptions(array $productOptionIds): int
+    {
+        return $this->purgeItems($this->cartRepository->getIdsByProductOptionIds($productOptionIds));
+    }
+
+    /**
+     * 상위 데이터(회원·상품·옵션) 삭제에 딸린 장바구니 행을 지웁니다.
+     *
+     * 선택 삭제와 같은 `before_delete_multiple` / `after_delete_multiple` 훅을 낸다 — 사용자 활동 로그를 남기는
+     * 단건·전체 삭제 훅은 쓰지 않는다(삭제 주체가 장바구니 주인이 아니다). 대상이 없으면 훅도 내지 않는다.
+     *
+     * 인기 상품 하나를 수많은 회원이 담아 둘 수 있어 ID 를 {@see self::PURGE_CHUNK_SIZE} 건씩 나눠 지운다 —
+     * 한 번의 `whereIn` 이 바인딩 한도를 넘지 않게 하고, 훅 리스너도 청크마다 한정된 ID 목록만 받는다.
+     * 훅 한 쌍은 청크마다 한 번씩 난다.
+     *
+     * @param  array<int, int>  $ids  장바구니 행 ID 목록
+     * @return int 삭제된 개수
+     */
+    private function purgeItems(array $ids): int
+    {
+        $deletedCount = 0;
+
+        foreach (array_chunk($ids, self::PURGE_CHUNK_SIZE) as $chunkIds) {
+            HookManager::doAction('sirsoft-ecommerce.cart.before_delete_multiple', $chunkIds);
+
+            $chunkDeleted = DB::transaction(fn () => $this->cartRepository->deleteByIds($chunkIds));
+
+            HookManager::doAction('sirsoft-ecommerce.cart.after_delete_multiple', $chunkIds, $chunkDeleted);
+
+            $deletedCount += $chunkDeleted;
+        }
 
         return $deletedCount;
     }

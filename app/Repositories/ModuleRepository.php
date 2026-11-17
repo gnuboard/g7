@@ -62,7 +62,8 @@ class ModuleRepository implements ModuleRepositoryInterface
      */
     public function getActive(): Collection
     {
-        return Module::where('is_active', true)->get();
+        // 모듈 표에는 is_active 칸이 없다 — 활성 여부는 status 칸이다(플러그인 저장소와 같은 기준)
+        return Module::where('status', ExtensionStatus::Active->value)->get();
     }
 
     /**

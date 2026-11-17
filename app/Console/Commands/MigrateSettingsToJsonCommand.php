@@ -39,7 +39,6 @@ class MigrateSettingsToJsonCommand extends Command
         'timezone' => 'general',
         'language' => 'general',
         'currency' => 'general',
-        'maintenance_mode' => 'general',
         'description' => 'general',
         'keywords' => 'general',
 
@@ -107,6 +106,18 @@ class MigrateSettingsToJsonCommand extends Command
         'log_level' => 'debug',
         'outbound_proxy' => 'debug',
         'outbound_proxy_bypass' => 'debug',
+    ];
+
+    /**
+     * 옮기지 않고 버리는 옛 키 (어디서도 읽지 않는 키)
+     *
+     * 매핑에 없는 키는 general 로 들어가므로, 지운 설정은 여기 적어야 옮겨 오지 않는다.
+     * `maintenance_mode`: 점검 모드는 `php artisan down` / `php artisan up` 이 맡는다 (#888).
+     *
+     * @var array<int, string>
+     */
+    private array $droppedKeys = [
+        'maintenance_mode',
     ];
 
     /**
@@ -193,6 +204,10 @@ class MigrateSettingsToJsonCommand extends Command
         // 카테고리별로 그룹화
         $grouped = [];
         foreach ($configs as $config) {
+            if (in_array($config->key, $this->droppedKeys, true)) {
+                continue;
+            }
+
             $category = $this->categoryMap[$config->key] ?? 'general';
             $jsonKey = $this->keyMapping[$config->key] ?? $config->key;
             $grouped[$category][$jsonKey] = $this->parseValue($config->value, $config->type);

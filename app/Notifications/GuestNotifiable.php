@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Contracts\Notifications\GuestRecipientInterface;
+use App\Services\NotificationRecipientCapability;
 use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Notifications\Notifiable;
 
@@ -60,6 +61,21 @@ final class GuestNotifiable implements GuestRecipientInterface, HasLocalePrefere
             name: ($name === '' ? null : $name),
             locale: ($locale === '' ? null : $locale),
         );
+    }
+
+    /**
+     * 사이트 관리자 이메일(환경설정 > 일반 `general.admin_email`) 수신자를 만듭니다 (#888).
+     *
+     * 수신자 규칙 `site_admin_email` 이 쓴다. 회원 계정이 아니라 주소 하나뿐이므로 다른 비회원 수신자와 같이
+     * **메일만** 받는다 — 사이트 알림(database) 등 비회원을 허용하지 않는 채널은 발송 단계에서 건너뛰고,
+     * 관리자 화면 주소처럼 권한을 묻는 치환은 {@see NotificationRecipientCapability} 가 거짓으로 판정한다.
+     *
+     * @param  mixed  $email  설정에 저장된 관리자 이메일
+     * @return self|null 유효한 주소면 수신자, 비었거나 형식이 틀리면 null
+     */
+    public static function fromSiteAdminEmail(mixed $email): ?self
+    {
+        return is_string($email) ? self::fromContext(['email' => $email]) : null;
     }
 
     /**

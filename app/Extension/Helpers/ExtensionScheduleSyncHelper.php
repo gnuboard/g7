@@ -5,6 +5,7 @@ namespace App\Extension\Helpers;
 use App\Contracts\Repositories\ScheduleRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Enums\ScheduleFrequency;
+use App\Extension\Helpers\Concerns\RecordsSyncDeletion;
 use App\Extension\Validators\ScheduleManifestValidator;
 use App\Models\Schedule;
 use Illuminate\Console\Scheduling\ManagesFrequencies;
@@ -30,6 +31,8 @@ use Throwable;
  */
 class ExtensionScheduleSyncHelper
 {
+    use RecordsSyncDeletion;
+
     /** @var array<string, mixed> 선언에 없을 때 쓰는 기본값 */
     public const DEFAULTS = [
         'type' => 'artisan',
@@ -223,25 +226,14 @@ class ExtensionScheduleSyncHelper
         // 확장은 옛 형식이 만들던 자동 이름 행을 새 name 으로 이어받는다 — 코어를 먼저 7.2.0 으로 올린 사이트에서
         // 옛 버전 확장이 자동 이름으로 만든 행(운영자 수정·실행 이력 포함)이 새 형식 업데이트 때 지워지지 않게 한다.
         $autoNames = $ownerType === ExtensionOwnerType::Core ? [] : $this->legacyAutoNames($definitions);
-        $declaredNames = array_values(array_filter(array_map(
-            fn ($definition) => is_array($definition) && is_string($definition['name'] ?? null) ? $definition['name'] : null,
-            $definitions,
-        )));
+        $declaredNames = $this->declaredNames($definitions);
 
-        $keepNames = [];
         foreach ($definitions as $key => $definition) {
-            if (! is_array($definition)) {
+            $attributes = $this->declaredAttributes($key, $definition);
+            if ($attributes === null) {
                 continue;
             }
-            if (! isset($definition['name']) && is_string($key)) {
-                $definition['name'] = $key;
-            }
-
-            $attributes = $this->normalizeDefinition($definition);
             $name = is_string($attributes['name'] ?? null) ? $attributes['name'] : null;
-            if ($name !== null) {
-                $keepNames[] = $name;
-            }
 
             $errors = $this->validator->errors($attributes, $ownerType);
             if ($errors !== []) {
@@ -268,9 +260,108 @@ class ExtensionScheduleSyncHelper
             $result['synced'][] = $name;
         }
 
-        $result['removed'] = $this->removeStale($ownerType, $identifier, array_values(array_unique($keepNames)));
+        $result['removed'] = $this->removeStale($ownerType, $identifier, $this->keepNames($definitions));
 
         return $result;
+    }
+
+    /**
+     * 지워질 스케줄 행을 미리 계산합니다 — 쓰기 없음, 동기화(`syncSchedules()`)의 정리와 같은 판정.
+     *
+     * 남길 이름은 동기화와 같은 함수(`keepNames()`)로 뽑고, 옛 자동 이름 행 가운데 동기화가 새 name 으로 이어받을(이름만
+     * 바꿀) 행은 지워지지 않으므로 뺀다. 이어받기는 검증을 통과한 선언만 한다 — 동기화와 같다.
+     *
+     * @param  ExtensionOwnerType  $ownerType  소유 타입
+     * @param  string  $identifier  소유 식별자
+     * @param  array<int|string, mixed>  $definitions  새 판 선언 목록
+     * @return list<array{type: string, key: string, has_operator_overrides: bool}> 삭제 예정
+     */
+    public function planCleanup(ExtensionOwnerType $ownerType, string $identifier, array $definitions): array
+    {
+        if (! $this->isSchemaReady()) {
+            return [];
+        }
+
+        if ($ownerType !== ExtensionOwnerType::Core) {
+            $definitions = $this->normalizeLegacySchedules($definitions, $ownerType, $identifier);
+        }
+
+        $autoNames = $ownerType === ExtensionOwnerType::Core ? [] : $this->legacyAutoNames($definitions);
+        $declaredNames = $this->declaredNames($definitions);
+        $adopted = [];
+
+        foreach ($definitions as $key => $definition) {
+            $attributes = $this->declaredAttributes($key, $definition);
+            $name = is_string($attributes['name'] ?? null) ? $attributes['name'] : null;
+            if ($attributes === null || $name === null || $this->validator->errors($attributes, $ownerType) !== []) {
+                continue;
+            }
+
+            $legacy = $this->adoptableAutoNamedRow($ownerType, $identifier, $name, $autoNames[$key] ?? null, $declaredNames);
+            if ($legacy !== null) {
+                $adopted[] = (string) $legacy->name;
+            }
+        }
+
+        return Schedule::ownedBy($ownerType, $identifier)
+            ->whereNotIn('name', $this->keepNames($definitions))
+            ->get()
+            ->reject(fn (Schedule $row) => in_array((string) $row->name, $adopted, true))
+            ->map(fn (Schedule $row) => ['type' => 'schedule', 'key' => (string) $row->name, 'has_operator_overrides' => $this->hasOperatorOverrides($row)])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * 선언 하나를 DB 속성 모양으로 바꿉니다 (배열이 아니면 null, 문자열 키는 name 으로 쓴다 — 코어 카탈로그 형식).
+     *
+     * @param  int|string  $key  선언 키
+     * @param  mixed  $definition  선언
+     * @return array<string, mixed>|null 정규화한 속성
+     */
+    private function declaredAttributes(int|string $key, mixed $definition): ?array
+    {
+        if (! is_array($definition)) {
+            return null;
+        }
+        if (! isset($definition['name']) && is_string($key)) {
+            $definition['name'] = $key;
+        }
+
+        return $this->normalizeDefinition($definition);
+    }
+
+    /**
+     * 동기화가 남길 name 목록 — 검증 결과와 무관하게 선언된 이름은 모두 남긴다(위반 선언의 기존 행을 지우지 않는다).
+     *
+     * @param  array<int|string, mixed>  $definitions  정규화된 선언 목록
+     * @return array<int, string> 남길 name
+     */
+    private function keepNames(array $definitions): array
+    {
+        $names = [];
+        foreach ($definitions as $key => $definition) {
+            $name = $this->declaredAttributes($key, $definition)['name'] ?? null;
+            if (is_string($name)) {
+                $names[] = $name;
+            }
+        }
+
+        return array_values(array_unique($names));
+    }
+
+    /**
+     * 선언에 명시된 name 목록 (옛 자동 이름 이어받기 판정용).
+     *
+     * @param  array<int|string, mixed>  $definitions  정규화된 선언 목록
+     * @return array<int, string> name 목록
+     */
+    private function declaredNames(array $definitions): array
+    {
+        return array_values(array_filter(array_map(
+            fn ($definition) => is_array($definition) && is_string($definition['name'] ?? null) ? $definition['name'] : null,
+            $definitions,
+        )));
     }
 
     /**
@@ -282,11 +373,16 @@ class ExtensionScheduleSyncHelper
      */
     public function cleanupSchedulesForExtension(ExtensionOwnerType $ownerType, string $identifier): int
     {
+        // 검수 서버(stage)는 공유 DB 의 선언 항목을 지우지 않고 대장에 미룬다 — 운영 서버가 extension:apply-deferred-cleanup 으로 같은 규칙대로 지운다
+        if (DeferredDeclarativeCleanup::shouldDefer()) {
+            return DeferredDeclarativeCleanup::defer($this, __FUNCTION__, func_get_args());
+        }
+
         if (! Schema::hasTable('schedules')) {
             return 0;
         }
 
-        return $this->deleteRows(Schedule::ownedBy($ownerType, $identifier)->get(['id', 'name']), $ownerType, $identifier);
+        return $this->deleteRows(Schedule::ownedBy($ownerType, $identifier)->get(), $ownerType, $identifier);
     }
 
     /**
@@ -343,14 +439,7 @@ class ExtensionScheduleSyncHelper
      */
     private function adoptAutoNamedRow(ExtensionOwnerType $ownerType, string $identifier, string $name, ?string $autoName, array $declaredNames): void
     {
-        if ($autoName === null || $autoName === $name || in_array($autoName, $declaredNames, true)) {
-            return;
-        }
-        if (Schedule::ownedBy($ownerType, $identifier)->where('name', $name)->exists()) {
-            return;
-        }
-
-        $legacy = $this->schedules->findOwned($ownerType, $identifier, $autoName);
+        $legacy = $this->adoptableAutoNamedRow($ownerType, $identifier, $name, $autoName, $declaredNames);
         if ($legacy === null) {
             return;
         }
@@ -366,6 +455,28 @@ class ExtensionScheduleSyncHelper
     }
 
     /**
+     * 새 name 으로 이어받을 옛 자동 이름 행을 찾습니다 — 쓰기 없음(이어받기와 그 미리보기가 같은 판정을 쓴다).
+     *
+     * @param  ExtensionOwnerType  $ownerType  소유 타입
+     * @param  string  $identifier  소유 식별자
+     * @param  string  $name  새 형식 선언의 name
+     * @param  string|null  $autoName  같은 선언의 옛 자동 이름 (명령이 없으면 null)
+     * @param  array<int, string>  $declaredNames  이번 선언에 쓰인 name 전체
+     * @return Schedule|null 이어받을 행 (없으면 null)
+     */
+    private function adoptableAutoNamedRow(ExtensionOwnerType $ownerType, string $identifier, string $name, ?string $autoName, array $declaredNames): ?Schedule
+    {
+        if ($autoName === null || $autoName === $name || in_array($autoName, $declaredNames, true)) {
+            return null;
+        }
+        if (Schedule::ownedBy($ownerType, $identifier)->where('name', $name)->exists()) {
+            return null;
+        }
+
+        return $this->schedules->findOwned($ownerType, $identifier, $autoName);
+    }
+
+    /**
      * 같은 소유 범위에서 선언에 없는 행을 지웁니다.
      *
      * @param  ExtensionOwnerType  $ownerType  소유 타입
@@ -375,7 +486,12 @@ class ExtensionScheduleSyncHelper
      */
     private function removeStale(ExtensionOwnerType $ownerType, string $identifier, array $keepNames): int
     {
-        $stale = Schedule::ownedBy($ownerType, $identifier)->whereNotIn('name', $keepNames)->get(['id', 'name']);
+        // 검수 서버(stage)는 공유 DB 의 선언 항목을 지우지 않고 대장에 미룬다 — 운영 서버가 extension:apply-deferred-cleanup 으로 같은 규칙대로 지운다
+        if (DeferredDeclarativeCleanup::shouldDefer()) {
+            return DeferredDeclarativeCleanup::defer($this, __FUNCTION__, func_get_args());
+        }
+
+        $stale = Schedule::ownedBy($ownerType, $identifier)->whereNotIn('name', $keepNames)->get();
 
         return $this->deleteRows($stale, $ownerType, $identifier);
     }
@@ -392,6 +508,11 @@ class ExtensionScheduleSyncHelper
     {
         $names = [];
         foreach ($rows as $row) {
+            // 운영자가 고친 스케줄(주기·켜짐 등)이면 지우기 직전 기록 — 이력은 이미 명시적으로 지운다
+            if ($this->hasOperatorOverrides($row)) {
+                $this->recordSyncDeletion('schedule', (string) $row->name, $ownerType->value, $identifier, ['schedule' => $row->toArray()]);
+            }
+
             $row->histories()->delete();
             $row->delete();
             $names[] = $row->name;

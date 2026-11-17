@@ -171,7 +171,7 @@ _단건 응답: `data` 객체의 필드._
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| general | object | `{"site_name":"그누보드7","site_url":"https:\/\/api.example.com","sit…` | 일반 탭 설정 그룹 (사이트명·사이트 URL·설명·관리자 이메일·타임존·기본 언어·통화·점검 모드·사이트 로고·사이트 파비콘 첨부). site_logo·site_favicon 은 SettingsService 가 별도 주입한 첨부 정보(업로더 초기 파일). 공개 계산 필드 `site_logo_url`·`site_favicon_url` 은 이 관리자 응답에는 없고 저장 응답 `frontend_settings`·셸 `G7Config.settings` 에 있다 |
+| general | object | `{"site_name":"그누보드7","site_url":"https:\/\/api.example.com","sit…` | 일반 탭 설정 그룹 (사이트명·사이트 URL·설명·관리자 이메일·타임존·기본 언어·통화·사이트 로고·사이트 파비콘 첨부). site_logo·site_favicon 은 SettingsService 가 별도 주입한 첨부 정보(업로더 초기 파일). 공개 계산 필드 `site_logo_url`·`site_favicon_url` 은 이 관리자 응답에는 없고 저장 응답 `frontend_settings`·셸 `G7Config.settings` 에 있다 |
 | security | object | `{"force_https":false,"login_attempt_enabled":true,"auth_t…` | 보안 탭 설정 그룹 (HTTPS 강제·로그인 시도 제한 사용·인증 토큰 유지시간(분, 0=무한)·최대 로그인 시도 횟수·잠금 시간·내부 네트워크 주소 호출 허용). `allow_internal_outbound_urls`(boolean, 기본 false): 서버가 대신 호출하는 outbound 요청(예약 작업 URL 호출, 외부 API 연동)에서 사설 IP·`localhost` 등 내부 주소를 허용할지 여부 — 켜면 사내 서버 호출이 가능해지지만 서버가 내부망으로 요청을 보낼 수 있게 되므로 기본은 차단입니다. 언어팩 URL 설치는 원격 코드를 내려받으므로 이 설정과 무관하게 항상 내부 주소를 거부합니다. IP 접근 제한 3키(`ip_restriction_enabled`·`admin_allowed_ips`·`ip_restriction_rules`)도 이 그룹에 실린다 — 의미는 아래 「IP 접근 제한」 절. 비밀번호 정책 키(`password_min_length`·`require_password_special_char` 와 `password_*` 16키 — 작성 규칙·재사용 금지·만료, 서버가 기록하는 만료 기준 시작일 `password_expiry_started_at` 포함 — #736)도 이 그룹에 실린다 — 범위·기본값은 `POST /api/admin/settings` 의 `security.password_*` 행. 활동 로그(접속기록) 보관 기간 `activity_log_retention_days`(정수 일, 기본 365)도 이 그룹이다. 콘텐츠 보안 정책 2키(`csp_mode` 기본 `off`·`csp_extra_script_hosts` 기본 `[]`, #158)도 이 그룹이다 — 의미는 `POST /api/admin/settings` 의 `security.csp_*` 행. 미서명 패키지 차단 `extension_block_unsigned`(boolean, 기본 false, 7.2.0)도 이 그룹이다 — 의미는 `POST /api/admin/settings` 의 `security.extension_block_unsigned` 행 |
 | mail | object | `{"mailer":"smtp","host":"","port":587,"username":"","pass…` | 메일 탭 설정 그룹 (메일러 종류(smtp/mailgun/ses)·SMTP 호스트/포트/인증 정보·암호화 방식·발신자 주소/이름·Mailgun/SES 자격 정보) |
 | upload | object | `{"max_file_size":10,"allowed_extensions":["jpg","jpeg","p…` | 업로드 탭 설정 그룹 (최대 파일 크기(MB)·허용 확장자 목록·이미지 최대 가로/세로·이미지 품질). `thumbnail_presets` 와 `thumbnail_presets_rows` 는 저장 행이 아니라 레지스트리가 합친 썸네일 규격 표(고정 5행, og, 켜진 확장 규격, 운영자 규격 — 행마다 `kind` fixed/og/extension/custom, 확장 행 `defaults`, og 행 `size_readonly`)다 (#869). 행마다 `label` 은 확장이 등록한 표시 이름의 로케일 맵(`{"ko":"배너 목록","en":"Banner list"}`)이고, 이름을 등록하지 않은 확장 행과 고정·og·운영자 행은 null 이다(화면은 null 이면 `name` 을 보인다). 표시 전용이라 저장하지 않는다. `thumbnail_presets_rows` 는 응답 전용이라 저장 요청에 실려 와도 버린다 |
@@ -188,6 +188,7 @@ _단건 응답: `data` 객체의 필드._
 | system | object | `{"execution_mode":"auto","cron_mode":"auto","cron_allowed…` | 실행 방식·예약 작업 카테고리 — 커맨드 실행 모드와 웹 크론 설정. 호출 번호(토큰)는 이 응답에 실리지 않는다 |
 | privacy | object | `{"withdrawn_retention_enabled":false,"withdrawn_retention_…` | 개인정보 탭 설정 그룹 (탈퇴 회원 잔여정보 2차 파기 사용 여부·보유일, 휴면 전환 사용 여부·전환 기준일·사전 통지 선행일, 휴면 후 자동 탈퇴 사용 여부·기준일). 전 항목 기본 꺼짐 |
 | available_drivers | object | `{"storage":[{"id":"local","label":{"ko":"로컬","en":"Local"…` | 드라이버 선택지 카탈로그 (DriverRegistryService 산물). 종류별(storage/public_asset/cache/session/queue 등) 선택 가능한 드라이버 목록을 id/다국어 label 형태로 제공. `public_asset` 은 공개 자산 직접 URL 서빙 디스크 선택지 (코어 none/public/s3 + 플러그인 훅 등록분), `file_delegation` 은 웹서버 파일 위임 방식 선택지 (none/x-sendfile/x-accel-redirect, #878) |
+| scheduler_enabled_on_this_server | boolean | `true` | 이 요청을 처리한 서버가 스케줄을 실행하는지(`RuntimeRole::schedulerEnabled()` — `G7_SCHEDULER=off` 이거나 검수 서버면 false). 서버마다 다를 수 있다 — 환경설정 화면은 false 일 때 「이 서버는 스케줄 실행이 꺼져 있다」 안내 띠를 띄운다. 공유 설정 `system.cron_mode` 와의 차이는 [스케줄 문서](../scheduling.md) 「5. 중복 방지·다중 서버·점검 모드」 참조 |
 | _meta | object | `{"limits":{"upload_max_file_size_min":1,"upload_max_file_…` | 설정값이 아니라 화면이 쓰는 메타. 조회(GET)와 저장(POST) 응답이 같은 모양으로 동봉한다. 아래 필드로 구성 |
 | _meta.limits | object | `{"upload_max_file_size_min":1,"upload_max_file_size_max":1024,…}` | 각 설정 항목의 min/max 경계값 맵 (`config/core.php` 의 `settings_limits` 가 SSoT, 화면 입력 힌트와 FormRequest 검증이 같은 값을 공유) |
 | _meta.env_priority_enabled | boolean | `false` | `.env` 키 단위 우선 모드(`G7_ENV_PRIORITY`) 활성 여부. 화면은 이 값으로 안내 배너 표시를 판정한다. 기본값 false (스위치 미설정 시 종전 동작) |
@@ -296,7 +297,7 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | _tab | body | string | 아니오 | — | 활성 탭 식별자 (general/mail/upload/seo/security/drivers/advanced/notifications/identity/analytics/privacy/system/content/member). 지정 시 해당 탭 필드만 필수 검증되고 나머지 탭은 nullable 처리되어 탭 단위 부분 저장을 가능케 함 |
-| general | body | array | 아니오 | — | 일반 탭 설정 묶음 (사이트명·URL·설명·관리자 이메일·타임존·기본 언어·통화·점검 모드·사이트 로고) |
+| general | body | array | 아니오 | — | 일반 탭 설정 묶음 (사이트명·URL·설명·관리자 이메일·타임존·기본 언어·통화·사이트 로고) |
 | mail | body | array | 아니오 | — | 메일 탭 설정 묶음 (메일러 종류·SMTP 호스트/포트/인증·암호화·발신자 정보·Mailgun/SES 자격 정보) |
 | upload | body | array | 아니오 | — | 업로드 탭 설정 묶음 (최대 파일 크기·허용 확장자·이미지 최대 크기 및 품질) |
 | seo | body | array | 아니오 | — | SEO 탭 설정 묶음 (메타 태그·검색엔진 인증·봇 감지·OG/Twitter 기본값·SEO 캐시·사이트맵·생성기) |
@@ -317,7 +318,6 @@ HTTP/1.1 200
 | general.timezone | body | string | 예 | — | 타임존 식별자 |
 | general.language | body | string | 예 | — | 언어 코드 |
 | general.currency | body | string | 아니오 | max 10 | 통화 코드 (ISO 4217 — 예: KRW) |
-| general.maintenance_mode | body | boolean | 아니오 | — | 점검 모드 사용 여부 (사이트 접근 차단) |
 | general.asset_url_mode | body | string | 아니오 | — | 자산 URL 형태 — `auto` / `extension`(확장자 형태) / `extensionless`(확장자 없는 형태). 확장자로 끝나는 동적 응답을 서버의 정적 최적화 블록이 가로채는 환경에서 후자를 쓴다 |
 | system.execution_mode | body | string | 아니오 | — | 웹 요청 안의 커맨드 실행 방식 — `auto`(환경 감지) / `subprocess`(별도 프로세스) / `inprocess`(같은 요청 안) |
 | system.cron_mode | body | string | 아니오 | — | 예약 작업 실행 방식 — `auto` / `web`(주소 호출만) / `cron`(서버 크론만) / `both` |
@@ -573,7 +573,6 @@ Content-Type: application/json
     "general.timezone": "Asia/Seoul",
     "general.language": "예시값",
     "general.currency": "예시값",
-    "general.maintenance_mode": true,
     "general.asset_url_mode": "https://example.com",
     "system.execution_mode": "예시값",
     "system.cron_mode": "예시값",
@@ -762,7 +761,6 @@ _단건 응답: `data` 객체의 필드._
                 "timezone": "Asia/Seoul",
                 "language": "ko",
                 "currency": "KRW",
-                "maintenance_mode": false,
                 "site_logo": []
             },
             "security": {
@@ -1501,6 +1499,7 @@ _단건 응답: `data` 객체의 필드._
 | database_config | object | `{"has_read_write_split":false,"write":{"host":"localhost"…` | DB 연결 구성 요약. has_read_write_split(읽기/쓰기 분리 여부)·write(쓰기 연결 정보)·read(읽기 replica 목록, write 와 동일하면 제외) |
 | timezone | string | `UTC` | 애플리케이션 기본 타임존 (`config('app.timezone')`) |
 | server_time | string | `2026-08-04 12:53:55` | 서버 현재 시각 (Y-m-d H:i:s) |
+| extra_sections | array | `[]` | 확장이 필터 훅 `core.settings.filter_system_info_sections` 로 더한 정보 카드 목록(7.2.0, #888). 각 원소 `{id, title, badge, rows, list, notice}` — `id`(확장 식별자로 시작하는 문자열)·`title`(문자열)·`rows`(`[{label, value, mono}]`, 값은 문자열)는 늘 있고, `badge`(`{text, tone}`)·`list`(`{title, items, collapsible}`)·`notice`(`{tone, text}`)는 없으면 `null`. `tone` 은 `neutral`·`success`·`warning`·`danger`. 서버가 형식을 검증해 틀린 섹션은 버리고(경고 로그), 리스너가 던지면 그 리스너 섹션만 빠진다(응답은 200). 코어 정보의 1시간 캐시와 무관하게 매 요청 새로 계산한다. 리스너가 없으면 빈 배열 |
 
 **응답 예시**
 
@@ -1583,7 +1582,8 @@ HTTP/1.1 200
             "read": []
         },
         "timezone": "UTC",
-        "server_time": "2026-08-13 05:00:24"
+        "server_time": "2026-08-13 05:00:24",
+        "extra_sections": []
     }
 }
 ```

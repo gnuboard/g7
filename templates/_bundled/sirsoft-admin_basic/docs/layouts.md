@@ -838,6 +838,7 @@ _admin_base.g7.html (베이스 레이아웃)
 │   ├── partials/_identity_challenge_modal.g7.html (2단계 인증 재확인 모달)
 │   ├── partials/_package_integrity_notice.g7.html (패키지 서명 확인 결과·미서명 경고 패널 — 모듈·플러그인·템플릿 설치·업데이트 창과 언어팩 설치·업데이트 창이 공유, 닫히면 결과 전역값을 지움)
 │   ├── partials/_modal_lifecycle_warnings.g7.html (확장 설치·활성화·업데이트 부분 실패 경고 결과 창 — 대시보드·모듈·플러그인·언어팩·환경설정 공유)
+│   ├── partials/_shared/_layout_sync_preview.g7.html (화면별 처리 미리보기 — 모듈·플러그인·템플릿 목록의 레이아웃 갱신·업데이트 창 공용. 처리 방식(수정 유지·모두 교체)과 화면별 결정을 고르고, 판정은 서버 미리보기 API 결과를 그대로 그린다)
 │   └── partials/_modal_notification_delete_all_confirm.g7.html
 │
 ├── 에러 페이지

@@ -1,0 +1,16 @@
+feature: 이커머스 알림 템플릿 편집 창 사본의 「사이트 관리자 이메일」 수신자 (#888)
+
+description: |
+  코어 알림 템플릿 편집 창과 같은 코어 저장 API 를 쓰는 이 확장의 사본도 수신자 유형 `site_admin_email`(환경설정 > 일반의
+  관리자 이메일 한 곳, 메일만)을 고를 수 있고, 고르면 메일만 간다는 안내를 보인다. 정의 탭의 받는 사람 요약은 유형 코드 대신 규칙 이름을 보인다.
+
+axes:
+  case: [ecommerce_modal_option, ecommerce_definitions_summary]
+
+effects:
+  - site_admin_email_option_offered
+  - site_admin_email_hint_shown
+  - site_admin_email_summary_label
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/notification-template-site-admin-email.test.ts

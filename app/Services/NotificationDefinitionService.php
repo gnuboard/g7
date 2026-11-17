@@ -283,6 +283,11 @@ class NotificationDefinitionService
         // 7.0.x 본인인증 메시지 관리 훅 — 공개 훅은 메이저에서만 지우므로 본인인증 분류에서는 옛 이름도 같은 인자로 함께 발화한다(@deprecated 7.1.0, 8.0 제거).
         HookManager::doAction('core.identity.message_definition.before_delete', $definition);
 
+        // 정의의 채널 템플릿을 먼저 모델 단위로 지운다 — DB CASCADE 에 기대면 템플릿 캐시 무효화 이벤트가 돌지 않는다.
+        foreach ($this->templateRepository->getByDefinitionId($definition->id) as $template) {
+            $this->templateRepository->delete($template);
+        }
+
         $deleted = $this->repository->delete($definition);
 
         $this->invalidateAllCache();

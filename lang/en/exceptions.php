@@ -289,6 +289,18 @@ return [
         'meta_key_missing' => 'The file serving meta is missing a required key: :key',
     ],
 
+    // 업그레이드 스텝 실행 대장 — 같은 DB 를 쓰는 다른 실행이 같은 스텝을 선점함 (콘솔·웹 업데이트 공통)
+    'upgrade_step_already_running' => 'Another run is executing the same upgrade step (:target :version :step) — run again after the update on the other server sharing this database finishes. If that run ended abnormally, run the update again with --force (a running mark older than :hours hours is reclaimed automatically by the next run).',
+
+    // 미뤄 둔 선언형 정리 — 대장 행의 정리 메서드가 허용 목록에 없음
+    'deferred_cleanup_helper_not_allowed' => 'Not run because the cleanup method is not on the allowlist: :helper',
+    'deferred_cleanup_core_resync_failed' => 'A step of the core declaration resync failed, so the cleanup was not finished (the row is kept): :message',
+    'deferred_cleanup_seeder_failed' => 'The seed cleanup seeder failed: :seeder (exit code :code)',
+    'deferred_cleanup_target_not_allowed' => 'Not run because the cleanup target cannot be run (a seeder the extension does not declare, or an unknown scope): :target',
+
+    // 실행 역할(stage/live)과 맞지 않는 레이아웃 테이블 쓰기
+    'stage_layout_write' => 'Tried to write to a layout table that does not match the runtime role: :table',
+
     'seo' => [
         'sitemap_write_failed' => 'Failed to write sitemap file: :path',
         'sitemap_gzip_failed' => 'Failed to compress sitemap child file: :file',

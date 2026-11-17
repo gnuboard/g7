@@ -12,6 +12,7 @@ use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Enums\DeactivationReason;
 use App\Enums\ExtensionStatus;
+use App\Enums\LayoutSyncMode;
 use App\Exceptions\ExtensionOperationLockException;
 use App\Exceptions\PackageIntegrityException;
 use App\Exceptions\TemplateNotFoundException;
@@ -26,6 +27,7 @@ use App\Extension\Integrity\ExtensionIntegrityRecorder;
 use App\Extension\Integrity\PackageAcquirer;
 use App\Extension\Integrity\PackageExpectation;
 use App\Extension\Integrity\PackageIntegrityOptions;
+use App\Extension\Layout\LayoutSyncOptions;
 use App\Extension\Template\TemplateSettingsSchema;
 use App\Extension\Traits\CollectsFragmentSources;
 use App\Extension\Traits\ResolvesLanguageFragments;
@@ -34,6 +36,8 @@ use App\Rules\AllowedTemplateFileType;
 use App\Services\Concerns\ResolvesExtensionAssetType;
 use App\Services\Concerns\SecuresExtensionAssetPath;
 use App\Services\Extension\ExtensionIconResolver;
+use App\Services\Layout\LayoutDeletionService;
+use App\Services\Layout\TemplateChildrenDeleter;
 use App\Support\CustomAssets;
 use App\Support\ExtensionDependencies;
 use App\Support\Filesystem\PathGuard;
@@ -806,6 +810,12 @@ class TemplateService
     /**
      * 템플릿 DB 레코드를 삭제합니다 (before/after_delete 훅 발화).
      *
+     * 템플릿 행만 지우던 탓에 자식(조각·커스텀 번역·첨부 파일·미리보기·레이아웃과 그 버전)이 DB CASCADE 로 기록 없이
+     * 사라졌다. 이제 템플릿 제거와 같은 순서로 자식을 명시적으로 지우고(운영자 데이터는 활동 로그 스냅샷) 행을 지운다.
+     *
+     * @deprecated 7.2.0 코어 안에 호출처가 없다 — 템플릿 제거는 `TemplateManager::uninstallTemplate()` 를 쓴다. 공개 훅
+     *             `core.templates.before_delete`·`after_delete` 와 함께 다음 메이저에서 지운다.
+     *
      * @param  int  $id  템플릿 DB 레코드 ID
      * @return bool 삭제 성공 여부
      *
@@ -820,6 +830,9 @@ class TemplateService
         if (! $template) {
             throw new TemplateOperationException('templates.not_found');
         }
+
+        app(TemplateChildrenDeleter::class)->deleteChildrenBeforeLayouts($template->id);
+        app(LayoutDeletionService::class)->forceDeleteLayoutsByTemplate($template->id, 'template_uninstall');
 
         $result = $this->templateRepository->delete($id);
 
@@ -2703,18 +2716,68 @@ class TemplateService
     /**
      * 템플릿의 레이아웃을 파일에서 다시 읽어 DB에 갱신합니다.
      *
+     * 기본은 keep — 운영자가 편집기로 고친 화면은 고친 부분을 지키고 손대지 않은 부분만 새 판으로 바꾼다. 덮어쓰기는
+     * `$mode = Overwrite` 로 명시할 때만이다. `$decisions` 로 충돌 화면마다 운영자 판/새 판을 고른다.
+     *
      * @param  string  $identifier  템플릿 식별자
+     * @param  LayoutSyncMode  $mode  갱신 전략 (기본 keep)
+     * @param  array<string, string>  $decisions  화면별 결정 ({@see LayoutSyncOptions})
+     * @return array|null 갱신 결과 또는 null (템플릿 정보 + `layout_sync`·`layout_preview`·`layout_warnings`)
+     *
+     * @throws ValidationException 레이아웃 갱신 실패 시
+     */
+    public function refreshTemplateLayouts(string $identifier, LayoutSyncMode $mode = LayoutSyncMode::Keep, array $decisions = []): ?array
+    {
+        return $this->refreshTemplateLayoutsWith($identifier, $mode, $decisions);
+    }
+
+    /**
+     * 레이아웃 갱신을 미리 봅니다 — 실제 갱신과 같은 코드로 판정만 계산하고 DB·캐시는 그대로 둡니다.
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @param  LayoutSyncMode  $mode  갱신 전략
+     * @param  array<string, string>  $decisions  화면별 결정
+     * @return array{strategy: string, entries: list<array<string, mixed>>, summary: array<string, int>, has_conflicts: bool, conflict_screens: list<string>} 미리보기
+     *
+     * @throws ValidationException 템플릿을 찾을 수 없거나 레이아웃을 읽지 못할 때
+     */
+    public function previewTemplateLayoutRefresh(string $identifier, LayoutSyncMode $mode = LayoutSyncMode::Keep, array $decisions = []): array
+    {
+        try {
+            $this->templateManager->loadTemplates();
+            $result = LayoutSyncOptions::run(
+                new LayoutSyncOptions(true, $decisions, null, 'refresh'),
+                fn () => $this->templateManager->refreshTemplateLayouts($identifier, $mode)
+            );
+
+            return $result['layout_preview'];
+        } catch (\Exception $e) {
+            throw ValidationException::withMessages([
+                'identifier' => [__('templates.errors.refresh_layouts_failed', ['error' => SafeExceptionMessage::for($e)])],
+            ]);
+        }
+    }
+
+    /**
+     * 레이아웃 갱신 본체 — 전략·결정을 실행 범위로 걸고 매니저를 부릅니다.
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @param  LayoutSyncMode  $mode  갱신 전략
+     * @param  array<string, string>  $decisions  화면별 결정
      * @return array|null 갱신 결과 또는 null
      *
      * @throws ValidationException 레이아웃 갱신 실패 시
      */
-    public function refreshTemplateLayouts(string $identifier): ?array
+    private function refreshTemplateLayoutsWith(string $identifier, LayoutSyncMode $mode, array $decisions): ?array
     {
         HookManager::doAction('core.templates.before_refresh_layouts', $identifier);
 
         try {
             $this->templateManager->loadTemplates();
-            $result = $this->templateManager->refreshTemplateLayouts($identifier);
+            $result = LayoutSyncOptions::run(
+                new LayoutSyncOptions(false, $decisions, null, 'refresh'),
+                fn () => $this->templateManager->refreshTemplateLayouts($identifier, $mode)
+            );
 
             if ($result['success']) {
                 $templateInfo = $this->templateManager->getTemplateInfo($identifier);
@@ -2724,6 +2787,8 @@ class TemplateService
                 // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712)
                 if (is_array($templateInfo)) {
                     $templateInfo['layout_warnings'] = $result['layout_warnings'] ?? [];
+                    $templateInfo['layout_sync'] = $result['layout_sync'] ?? null;
+                    $templateInfo['layout_preview'] = $result['layout_preview'] ?? null;
                 }
 
                 return $templateInfo;

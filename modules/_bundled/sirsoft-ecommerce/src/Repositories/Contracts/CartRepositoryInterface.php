@@ -229,4 +229,28 @@ interface CartRepositoryInterface
      * @return int 건수
      */
     public function countByUser(int $userId): int;
+
+    /**
+     * 회원의 장바구니 행 ID 를 모두 조회합니다 (회원 삭제 정리용).
+     *
+     * @param  int  $userId  회원 ID
+     * @return array<int, int> 장바구니 행 ID 목록
+     */
+    public function getIdsByUserId(int $userId): array;
+
+    /**
+     * 상품을 담은 장바구니 행 ID 를 모두 조회합니다 (소유자 무관 — 상품 삭제 정리용).
+     *
+     * @param  int  $productId  상품 ID
+     * @return array<int, int> 장바구니 행 ID 목록
+     */
+    public function getIdsByProductId(int $productId): array;
+
+    /**
+     * 상품 옵션들을 담은 장바구니 행 ID 를 모두 조회합니다 (소유자 무관 — 옵션 삭제 정리용).
+     *
+     * @param  array<int, int>  $productOptionIds  상품 옵션 ID 목록
+     * @return array<int, int> 장바구니 행 ID 목록
+     */
+    public function getIdsByProductOptionIds(array $productOptionIds): array;
 }

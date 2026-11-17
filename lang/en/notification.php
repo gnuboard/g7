@@ -69,6 +69,7 @@ return [
         'related_user' => 'Related user (:relation)',
         'role' => 'Role (:roles)',
         'specific_users' => 'Specific users (:count)',
+        'site_admin_email' => 'Site admin email',
         'exclude_trigger_user' => ':rule, excluding the event trigger user',
         'legacy' => 'Default recipients of the definition',
     ],

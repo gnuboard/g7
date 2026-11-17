@@ -73,11 +73,11 @@ class NotificationDataListener implements HookListenerInterface
     {
         return match ($type) {
             'social_login_last_login_method_removed' => $this->forMember($default, $args, [
-                'reset_url' => ScreenUrl::absolute('auth.forgot_password', '/forgot-password'),
-                'site_url' => ScreenUrl::userBase(),
+                'reset_url' => ScreenUrl::absoluteForLinks('auth.forgot_password', '/forgot-password'),
+                'site_url' => ScreenUrl::userLinkBase(),
             ]),
             'social_login_link_removed_by_admin' => $this->forMember($default, $args, [
-                'site_url' => ScreenUrl::userBase(),
+                'site_url' => ScreenUrl::userLinkBase(),
             ]),
             'social_login_provider_failing' => $this->forAdmins($default, [
                 'provider_label' => $this->label($args[0] ?? null),
@@ -171,6 +171,6 @@ class NotificationDataListener implements HookListenerInterface
      */
     private function adminUrl(string $screen): string
     {
-        return ScreenUrl::absolute('sirsoft-social_login.admin.'.$screen, '/admin/plugins/sirsoft-social_login/'.$screen, [], ScreenUrl::SCOPE_ADMIN);
+        return ScreenUrl::absoluteForLinks('sirsoft-social_login.admin.'.$screen, '/admin/plugins/sirsoft-social_login/'.$screen, [], ScreenUrl::SCOPE_ADMIN);
     }
 }

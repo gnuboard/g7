@@ -16,6 +16,7 @@ use App\Exceptions\ConcurrentModificationException;
 use App\Extension\Helpers\LayoutFragmentSourceHelper;
 use App\Extension\HookManager;
 use App\Extension\Layout\LayoutRowSynchronizer;
+use App\Extension\Layout\LayoutSyncOptions;
 use App\Extension\Layout\LayoutSyncReport;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
@@ -26,6 +27,7 @@ use App\Extension\Traits\CollectsFragmentSources;
 use App\Extension\Traits\ComputesLayoutContentHash;
 use App\Models\LayoutExtension;
 use App\Models\TemplateLayoutExtensionVersion;
+use App\Services\Layout\LayoutDeletionService;
 use App\Support\LayoutCompat\LegacyContractShim;
 use App\Support\LayoutEmptyObjects;
 use Composer\Semver\Semver;
@@ -1809,14 +1811,17 @@ class LayoutExtensionService
             return false;
         }
 
-        $existing->delete();
+        // 미리보기(dry-run)는 판정만 한다 — 지우지 않았으므로 「제거」 로그도 남기지 않는다.
+        if (LayoutSyncOptions::writes()) {
+            $existing->delete();
 
-        Log::info('오등록 레이아웃 확장 제거 (다른 템플릿엔 적용 가능)', [
-            'extension_id' => $existing->id,
-            'template_id' => $templateId,
-            'target_name' => $targetName,
-            'source' => $identifier,
-        ]);
+            Log::info('오등록 레이아웃 확장 제거 (다른 템플릿엔 적용 가능)', [
+                'extension_id' => $existing->id,
+                'template_id' => $templateId,
+                'target_name' => $targetName,
+                'source' => $identifier,
+            ]);
+        }
 
         return true;
     }
@@ -2401,7 +2406,8 @@ class LayoutExtensionService
      */
     public function forceDeleteBySource(LayoutSourceType $sourceType, string $identifier): int
     {
-        return $this->repository->forceDeleteBySource($sourceType, $identifier);
+        // 운영자가 고친 조각은 지우기 직전 스냅샷, 버전 이력은 명시 삭제
+        return app(LayoutDeletionService::class)->forceDeleteExtensionsBySource($sourceType, $identifier, 'uninstall');
     }
 
     /**
@@ -2674,6 +2680,11 @@ class LayoutExtensionService
                 continue;
             }
 
+            // 미리보기(dry-run)는 옛 행을 옮기지 않는다 — 판정은 뒤따르는 등록이 옛 행 기준으로 낸다.
+            if (! LayoutSyncOptions::writes()) {
+                continue;
+            }
+
             $this->repository->saveFragmentKey($legacy, $fileKey);
             $adopted++;
 
@@ -2747,9 +2758,11 @@ class LayoutExtensionService
      * @param  string  $templateIdentifier  템플릿 식별자
      * @param  int  $templateId  템플릿 ID
      * @param  array<string, array<int, string>>  $liveKeysByTarget  오버라이드 대상 식별자 → 소스에 실재하는 조각 키 목록
+     * @param  LayoutSyncMode  $mode  동기화 모드 — keep 이면 운영자가 고친 오버라이드 조각은 소스에서 빠져도 남긴다(`kept_removed`)
+     * @param  LayoutSyncReport|null  $report  결과를 모을 보고
      * @return int 정리된 행 수
      */
-    public function removeOrphanTemplateOverrides(string $templateIdentifier, int $templateId, array $liveKeysByTarget): int
+    public function removeOrphanTemplateOverrides(string $templateIdentifier, int $templateId, array $liveKeysByTarget, LayoutSyncMode $mode = LayoutSyncMode::Overwrite, ?LayoutSyncReport $report = null): int
     {
         $live = array_map(static fn (array $keys): array => array_fill_keys($keys, true), $liveKeysByTarget);
         $deleted = 0;
@@ -2764,7 +2777,14 @@ class LayoutExtensionService
                 continue;
             }
 
-            $row->delete();
+            // 지우기(soft delete)·keep 보존·미리보기 판정은 동기화기 한 곳이 한다 — 모듈·플러그인 조각 정리와 같은 규칙.
+            $entry = $this->layoutSynchronizer->removeOrphanExtension($row, $templateIdentifier, $mode);
+            $report?->add($entry);
+
+            if ($entry->verdict !== 'deleted') {
+                continue;
+            }
+
             $deleted++;
 
             Log::info('고아 템플릿 오버라이드 행 정리 (소스에 없는 조각)', [

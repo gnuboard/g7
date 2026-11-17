@@ -1,16 +1,11 @@
-<!-- 모듈이 들고 온 레이아웃을 **다시 심는** 확인 창(활성 모듈만). 편집기로 고친 레이아웃이 원본으로
-  덮이므로 경고를 앞세운다.
-  성공 뒤 대상(`selectedModule`)을 비우는 것은 이 창만의 처리다 — 되돌릴 수 없는 동작이라
-  같은 대상으로 곧바로 한 번 더 누르는 길을 남기지 않는다. -->
+<!-- 모듈이 들고 온 레이아웃을 다시 읽는 창(활성 모듈만). 창을 열면 화면별 처리를 미리 보고(DB 는 바뀌지 않는다) 기본
+  「수정 유지」로 적용한다 — 편집기로 고친 화면은 고친 부분을 지킨다. 덮어쓰기는 창에서 「모두 교체」를 고를 때만이다(#888). -->
 <partial description="모듈 레이아웃 갱신 확인 모달" editor_label="$t:admin.modal_label.admin_module_list.module_refresh_layouts_modal">
-  <modal data-type="composite" data-ref="module_refresh_layouts_modal" title="$t:admin.modules.modals.refresh_layouts_title" size="sm">
+  <modal data-type="composite" data-ref="module_refresh_layouts_modal" title="$t:admin.modules.modals.refresh_layouts_title" size="md">
     <div class="py-2">
-      <div class="alert-warning">
-        <icon name="exclamation-triangle" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
-        <p class="text-warning-soft">$t:admin.modules.modals.refresh_layouts_warning</p>
-      </div>
       <p class="text-gray-700 dark:text-gray-300">$t:admin.modules.modals.refresh_layouts_confirm|name={{_global.selectedModule.name}}</p>
-      <p class="mt-2 text-label-subtle">$t:admin.modules.modals.refresh_layouts_description</p>
+      <p class="mt-2 text-label-subtle">$t:admin.layout_sync_preview.refresh_description</p>
+      <include src="partials/_shared/_layout_sync_preview.g7.html"/>
     </div>
     <!-- 고급 설정 — 레이아웃 설치 소스(#144). 평소에는 자동(.g7.html 우선)이고, 새 형식 처리에 문제가 있을 때만
          원본 JSON 우선을 고른다. 값은 요청 본문 layout_source 로 보내고 서버는 그 요청 동안만 적용한다.
@@ -62,7 +57,7 @@
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button type="button" class="flex-center gap-2 px-4 py-2 bg-amber-700 dark:bg-amber-700 text-white rounded-lg hover:bg-amber-800 dark:hover:bg-amber-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isModuleRefreshingLayouts}}">
+      <button data-ref="module_refresh_layouts_apply" type="button" class="flex-center gap-2 px-4 py-2 bg-amber-700 dark:bg-amber-700 text-white rounded-lg hover:bg-amber-800 dark:hover:bg-amber-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isModuleRefreshingLayouts || _global.layoutPreviewState !== 'ready'}}">
         <on type="click">
           <!-- 다시 심기 실행. 성공 갈래가 대상을 비우므로 **요청 본문은 그 전에 조립된 값을 쓴다**. -->
           <sequence>
@@ -73,7 +68,7 @@
                 <toast type="success" message="$t:admin.modules.refresh_layouts_success"/>
                 <refetch-data-source dataSourceId="modules"/>
                 <close-modal/>
-                <set-state target="global" :selectedModule="null" moduleLayoutSource="auto" :moduleLayoutSourceOpen="false"/>
+                <set-state target="global" :selectedModule="null" moduleLayoutSource="auto" :moduleLayoutSourceOpen="false" layoutSyncStrategy="keep" :layoutDecisions="{}" :layoutPreview="null" layoutPreviewState="idle"/>
                 <!-- 일부 항목이 실패했으면(응답 data.warnings, 코어 7.1.3) 노란 경고 결과 창을 연다 — 다른 창을 닫은 뒤라 맨 끝에 둔다. -->
                 <set-state target="global" lifecycleWarnings="{{response?.data?.warnings ?? []}}" :lifecycleWarningsOpen="false"/>
                 <open-modal if="{{(response?.data?.warnings?.length ?? 0) &gt; 0}}" target="lifecycle_warnings_modal"/>
@@ -82,7 +77,7 @@
                 <set-state target="global" :isModuleRefreshingLayouts="false"/>
                 <toast type="error" message="{{error.message}}"/>
               </fail>
-              <body module_name="{{_global.selectedModule.identifier}}" layout_source="{{_global.moduleLayoutSource ?? 'auto'}}"/>
+              <body module_name="{{_global.selectedModule.identifier}}" layout_source="{{_global.moduleLayoutSource ?? 'auto'}}" layout_strategy="{{_global.layoutSyncStrategy ?? 'keep'}}" decisions="{{_global.layoutDecisions ?? {} }}"/>
             </api-call>
           </sequence>
         </on>

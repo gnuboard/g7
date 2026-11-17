@@ -2,6 +2,8 @@
 
 namespace App\Extension\Layout\DTO;
 
+use App\Extension\Layout\LayoutSyncOptions;
+
 /**
  * 레이아웃 행 하나의 동기화 결과 (Value Object).
  *
@@ -24,6 +26,7 @@ final readonly class LayoutSyncEntry
      * @param  string  $verdict  판정
      * @param  list<array{unit: string, kind: string}>  $applied  새 판 변경을 반영한 단위
      * @param  list<array{unit: string, reason: string}>  $conflicts  겹쳐서 운영자 판을 남긴 단위
+     * @param  string|null  $key  화면별 결정 키 ({@see LayoutSyncOptions::layoutKey()}·`extensionKey()`)
      */
     public function __construct(
         public string $kind,
@@ -32,6 +35,7 @@ final readonly class LayoutSyncEntry
         public string $verdict,
         public array $applied = [],
         public array $conflicts = [],
+        public ?string $key = null,
     ) {}
 
     /**
@@ -47,17 +51,19 @@ final readonly class LayoutSyncEntry
     /**
      * 배열로 바꿉니다 (API 응답·활동 로그용).
      *
-     * @return array{kind: string, template: string, name: string, verdict: string, applied: list<array{unit: string, kind: string}>, conflicts: list<array{unit: string, reason: string}>} 배열
+     * @return array{key: string, kind: string, template: string, name: string, verdict: string, applied: list<array{unit: string, kind: string}>, conflicts: list<array{unit: string, reason: string}>, will_delete: bool} 배열
      */
     public function toArray(): array
     {
         return [
+            'key' => $this->key ?? $this->kind.':'.$this->template.':'.$this->name,
             'kind' => $this->kind,
             'template' => $this->template,
             'name' => $this->name,
             'verdict' => $this->verdict,
             'applied' => $this->applied,
             'conflicts' => $this->conflicts,
+            'will_delete' => $this->verdict === 'deleted',
         ];
     }
 }

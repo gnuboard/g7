@@ -194,7 +194,7 @@ class BoardNotificationDataListener implements HookListenerInterface
                 'comment_author' => $this->authorNameForNotification($comment),
                 'comment_content' => $commentContent,
                 'post_url' => $this->buildPostUrl($board, $post),
-                'site_url' => ScreenUrl::userBase(),
+                'site_url' => ScreenUrl::userLinkBase(),
             ],
             'context' => [
                 'trigger_user_id' => $comment->user_id,
@@ -254,7 +254,7 @@ class BoardNotificationDataListener implements HookListenerInterface
                 'comment_author' => $this->authorNameForNotification($comment),
                 'comment_content' => $commentContent,
                 'post_url' => $this->buildPostUrl($board, $post),
-                'site_url' => ScreenUrl::userBase(),
+                'site_url' => ScreenUrl::userLinkBase(),
             ],
             'context' => [
                 'trigger_user_id' => $comment->user_id,
@@ -309,7 +309,7 @@ class BoardNotificationDataListener implements HookListenerInterface
                 'board_name' => $board->localizedName ?? $board->name,
                 'post_title' => $parentPost->title ?? '',
                 'post_url' => $this->buildPostUrl($board, $parentPost),
-                'site_url' => ScreenUrl::userBase(),
+                'site_url' => ScreenUrl::userLinkBase(),
             ],
             'context' => [
                 'trigger_user_id' => $post->user_id,
@@ -366,7 +366,7 @@ class BoardNotificationDataListener implements HookListenerInterface
                     'action_type' => $actionType,
                     'target_type' => $targetTypeLabel,
                     'post_url' => $this->buildPostUrl($board, $target),
-                    'site_url' => ScreenUrl::userBase(),
+                    'site_url' => ScreenUrl::userLinkBase(),
                 ],
                 'context' => [
                     'trigger_user_id' => Auth::id(),
@@ -407,8 +407,8 @@ class BoardNotificationDataListener implements HookListenerInterface
                     'post_title' => $post?->title ?? '',
                     'action_type' => $actionType,
                     'target_type' => $targetTypeLabel,
-                    'post_url' => $post ? $this->buildPostUrl($board, $post) : ScreenUrl::userBase(),
-                    'site_url' => ScreenUrl::userBase(),
+                    'post_url' => $post ? $this->buildPostUrl($board, $post) : ScreenUrl::userLinkBase(),
+                    'site_url' => ScreenUrl::userLinkBase(),
                 ],
                 'context' => [
                     'trigger_user_id' => Auth::id(),
@@ -464,7 +464,7 @@ class BoardNotificationDataListener implements HookListenerInterface
                     'action_type' => $actionType,
                     'target_type' => $targetTypeLabel,
                     'post_url' => $this->buildPostUrl($board, $target),
-                    'site_url' => ScreenUrl::userBase(),
+                    'site_url' => ScreenUrl::userLinkBase(),
                 ],
                 'context' => [
                     'trigger_user_id' => Auth::id(),
@@ -496,8 +496,8 @@ class BoardNotificationDataListener implements HookListenerInterface
                     'post_title' => $post?->title ?? '',
                     'action_type' => $actionType,
                     'target_type' => $targetTypeLabel,
-                    'post_url' => $post ? $this->buildPostUrl($board, $post) : ScreenUrl::userBase(),
-                    'site_url' => ScreenUrl::userBase(),
+                    'post_url' => $post ? $this->buildPostUrl($board, $post) : ScreenUrl::userLinkBase(),
+                    'site_url' => ScreenUrl::userLinkBase(),
                 ],
                 'context' => [
                     'trigger_user_id' => Auth::id(),
@@ -563,7 +563,7 @@ class BoardNotificationDataListener implements HookListenerInterface
                 'post_title' => $post->title ?? '',
                 'post_author' => $this->authorNameForNotification($post),
                 'post_url' => $this->buildPostUrl($board, $post),
-                'site_url' => SiteUrl::base(),
+                'site_url' => SiteUrl::forOutboundLinks(),
             ],
             'context' => [
                 'trigger_user_id' => $post->user_id,
@@ -632,7 +632,7 @@ class BoardNotificationDataListener implements HookListenerInterface
     private function buildAdminPostUrl(string $slug, int $postId): string
     {
         // 관리자 화면 — 화면 주소 헬퍼의 관리자 범위(베이스 = 사이트 주소, #792)
-        return ScreenUrl::absolute('board.admin.post', '/admin/board/{slug}/post/{id}', ['slug' => $slug, 'id' => $postId], ScreenUrl::SCOPE_ADMIN);
+        return ScreenUrl::absoluteForLinks('board.admin.post', '/admin/board/{slug}/post/{id}', ['slug' => $slug, 'id' => $postId], ScreenUrl::SCOPE_ADMIN);
     }
 
     /**
@@ -692,8 +692,8 @@ class BoardNotificationDataListener implements HookListenerInterface
                 'post_title' => $postTitle,
                 'target_type' => __('sirsoft-board::notification.report_action.target_types.'.$targetType),
                 'reason_type' => __('sirsoft-board::notification.report_received_admin.reason_types.'.$reasonType),
-                'report_url' => ScreenUrl::absolute('board.admin.reports', '/admin/boards/reports', [], ScreenUrl::SCOPE_ADMIN),
-                'site_url' => SiteUrl::base(),
+                'report_url' => ScreenUrl::absoluteForLinks('board.admin.reports', '/admin/boards/reports', [], ScreenUrl::SCOPE_ADMIN),
+                'site_url' => SiteUrl::forOutboundLinks(),
             ],
             'context' => [
                 'trigger_user_id' => $report->reporter_id ?? null,
@@ -743,7 +743,7 @@ class BoardNotificationDataListener implements HookListenerInterface
     private function buildPostUrl(Board $board, Post $post): string
     {
         // 회원이 여는 글보기 — 「사용자 화면 URL」·주소 필터를 따른다(#792)
-        return BoardScreenUrl::post($board->slug, $post->id, absolute: true);
+        return ScreenUrl::toAbsoluteForLinks(BoardScreenUrl::post($board->slug, $post->id));
     }
 
     /**

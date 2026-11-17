@@ -1084,6 +1084,17 @@ sequence 내에서 `setState` 실행 후 다음 스텝은 **갱신된 상태**�
 
 sequence 안의 재계산도 화면 렌더와 같은 규칙을 따릅니다(engine-v1.74.0+): 정의 순서대로 계산해 앞의 computed 를 뒤의 computed 가 최신값으로 읽고, `$switch`·파이프·리터럴 computed 도 재계산 뒤 키가 사라지지 않습니다. 계산에 실패한 키는 직전 값을 유지합니다.
 
+`_global` 은 읽는 자리에 따라 다릅니다.
+
+| 자리 | 읽는 값 |
+| --- | --- |
+| params·`body`·apiCall `target`(engine-v1.95.2+)·중첩 sequence(`action-ref`·switch case 배열) 안의 같은 자리 | 지금의 전역 상태 — 앞 단계 `setState target="global"`, 앞 단계 apiCall 의 `onSuccess` 가 쓴 값이 보인다 |
+| 단계 `if`·`conditions` 분기 판정 | 이벤트가 일어난 때의 값 — 같은 동작 안에서 바뀐 전역 값은 보이지 않는다 |
+
+target 은 engine-v1.95.2 부터 params 와 같아졌습니다. 그 전에는 target 만 이벤트 때 값을 읽어, `<set-state target="global" req="{{({url: '/api/x'})}}"/>` 다음 `<api-call target="{{_global.req?.url}}"/>` 가 첫 클릭에 빈 주소(현재 페이지)로 나갔습니다.
+
+판정이 이벤트 때 값인 것은 의도된 동작이고 번들 레이아웃이 기댑니다 — 로그인 폼은 1단계 `login`(onSuccess 가 `_global.twoFactor` 를 심음)과 2단계 `if="{{_global.twoFactor?.required}}"` 가 한 제출에 하나만 돌고, 게시판 삭제는 `deleteModal` 을 비운 뒤에도 같은 onSuccess 안에서 `if="{{_global.deleteModal.type === 'comment'}}"` 로 댓글·글을 가릅니다. 같은 동작 안에서 바꾼 값으로 분기하려면 그 값을 `_local` 에 두거나(sequence 가 `_local` 을 단계마다 이어 준다) `{{response.*}}` 로 가릅니다.
+
 #### $prev와 $results 상세
 
 | 변수 | 타입 | 설명 |

@@ -1987,6 +1987,7 @@
       "site_description": "Site Description",
       "site_description_placeholder": "Enter a brief description of your site.",
       "admin_email": "Admin Email",
+      "admin_email_desc": "Notification templates whose recipient is set to \"Site admin email\" send mail to this address. If left empty, that rule sends to no one.",
       "site_logo": "Site Title Image",
       "site_logo_desc": "Logo image to be displayed in the header.",
       "site_favicon": "Favicon",
@@ -2326,6 +2327,7 @@
       "desc": "Manage site security settings.",
       "force_https": "Force HTTPS",
       "force_https_desc": "Force all connections to use HTTPS.",
+      "force_https_notice": "Turn this on only after the HTTPS certificate is ready. If you get locked out: php artisan settings:set security.force_https false",
       "allow_internal_outbound_urls": "Allow internal network addresses",
       "allow_internal_outbound_urls_desc": "Allows private IPs and localhost to be used for outbound calls such as external API integrations and scheduled URL calls. Turn this on only when you need to reach servers inside your own network. It lets the server send requests to your internal network, so it is off by default.",
       "login_attempt_limit": "Login Attempt Limit",
@@ -3322,7 +3324,8 @@
           "trigger_user": "Trigger User",
           "related_user": "Related User",
           "role": "Role-based",
-          "specific_users": "Specific Users"
+          "specific_users": "Specific Users",
+          "site_admin_email": "Site admin email"
         },
         "badge": {
           "trigger_user": "Trigger User",
@@ -3338,6 +3341,7 @@
         "role_no_options": "No matching role",
         "relation_placeholder": "Select a relation",
         "relation_undeclared": "This notification does not support the '{{relation}}' relation. Choose one from the list — it cannot be saved as is.",
+        "site_admin_email_hint": "Sends mail only to the admin email in Settings > General (other channels such as site notifications are not used). If it is empty, nothing is sent.",
         "roles_selected_count": "{count} roles selected",
         "roles_selected_count_one": "{count} role selected",
         "users_selected_count": "{count} users selected",
@@ -3493,6 +3497,7 @@
       "detect_done": "The execution environment was detected again.",
       "detect_failed": "Failed to detect the execution environment.",
       "cron_title": "Scheduled tasks",
+      "scheduler_off_on_this_server": "Schedule execution is turned off on the server that handled this page (G7_SCHEDULER=off). If you run several servers, check which server runs the schedules.",
       "cron_desc": "Tasks that run at set times, such as clearing old data and building the sitemap. On hosting where you cannot register a server schedule, call the address below to run them instead.",
       "cron_mode": "How to run",
       "cron_mode_auto": "Detect automatically",
@@ -4015,11 +4020,22 @@
         "restore_success": "Version has been successfully restored.",
         "restore_note": "You must click the save button after restoring for changes to take effect.",
         "saved_by": "Saved by: {{name}}",
+        "saved_by_system": "Saved by: System",
         "lines": "lines",
         "modified": "modified",
         "chars": "chars",
         "load_more": "Load older versions",
-        "limit_reached": "Reached the maximum number of versions that can be listed."
+        "limit_reached": "Reached the maximum number of versions that can be listed.",
+        "source_labels": {
+          "before_extension_update": "Operator version before an extension update replaced it",
+          "before_refresh": "Operator version before a layout refresh replaced it",
+          "before_decision_take_theirs": "Operator version before \"Use new version\" replaced it",
+          "before_upgrade_step": "Operator version before an upgrade changed it",
+          "before_other": "Operator version before it was replaced",
+          "merge_refresh": "Merged by a layout refresh",
+          "merge_extension_update": "Merged by an extension update",
+          "merge_other": "Merge result"
+        }
       },
       "extension_version_history": {
         "title": "Extension Version History",
@@ -4251,6 +4267,9 @@
       "actor_select": "Select Actor",
       "actor_search_placeholder": "Search by name or email",
       "actor_search_initial": "Search for an actor",
+      "deletion_snapshot_label": "Deletion records",
+      "deletion_snapshot_only": "Show pre-deletion records only",
+      "deletion_snapshot_hint": "Shows only records saved right before a permanent deletion, a declaration cleanup or a custom translation deletion. Expand a row to see the deleted content and versions.",
       "date_range_label": "Period",
       "date_from_label": "From",
       "date_to_label": "To",
@@ -4287,7 +4306,16 @@
       "column_field": "Field",
       "column_old": "Before",
       "column_new": "After",
-      "no_value": "-"
+      "no_value": "-",
+      "snapshot_title": "Recorded before deletion",
+      "snapshot_target": "Target: {{target}}",
+      "snapshot_reason": "Reason: {{reason}}",
+      "snapshot_versions": "{{count}} versions kept",
+      "snapshot_versions_one": "{{count}} version kept",
+      "snapshot_versions_truncated": "Only the latest 50 kept",
+      "snapshot_show": "Show content before deletion",
+      "snapshot_hide": "Hide content",
+      "snapshot_content_truncated": "The content is long — only the beginning is shown."
     },
     "pagination": {
       "total": "Total {{count}} items",
@@ -5596,6 +5624,11 @@
   },
   "brand_name": "Gnuboard7",
   "default_user_name": "Administrator",
+  "stage_role": {
+    "banner": "Review server — it shares production data. Extension and core changes go through the deployment process only.",
+    "locked_hint": "This cannot be changed on a review server. Apply it through the deployment process.",
+    "editor_banner": "Saved for review only — not applied to the production site and discarded at the next deployment."
+  },
   "template_partial_test": {
     "title": "Template Partial System Test",
     "meta_description": "Checks the partial system of the sirsoft-admin_basic template",
@@ -5658,6 +5691,64 @@
         "search_scopes": "Recent search scope declaration",
         "seeder": "Seeder"
       }
+    }
+  },
+  "layout_sync_preview": {
+    "title": "Per-screen preview",
+    "refresh_description": "Reloads the layouts from the files. Check below how each screen will change before applying. The preview changes nothing.",
+    "strategy_title": "Layout handling",
+    "strategy_keep": "Keep modifications (recommended)",
+    "strategy_keep_desc": "Parts you changed in the editor stay as they are; only untouched parts take the new version.",
+    "strategy_overwrite": "Overwrite all",
+    "strategy_overwrite_desc": "Replaces every screen with the new version. The operator version is kept in the editor [Version history] before it is replaced.",
+    "overwrite_warning": "Screens you changed in the editor will also be replaced. To go back, restore them from the editor [Version history].",
+    "loading": "Comparing with the new version…",
+    "error": "Could not load the preview. You can apply after the preview loads.",
+    "retry": "Try again",
+    "summary_changed": "{{count}} screens change",
+    "summary_changed_one": "{{count}} screen changes",
+    "summary_conflicts": "{{count}} overlap operator edits",
+    "summary_conflicts_one": "{{count}} overlaps operator edits",
+    "summary_deleted": "{{count}} will be deleted",
+    "skipped_inactive": "Disabled extensions do not refresh layouts on update — they are merged with your modifications kept when enabled.",
+    "skipped_files_missing": "This extension's files are missing from the active directory, so the per-screen check is skipped — the update copies the new version's files first and then syncs the screens.",
+    "empty": "No screen changes.",
+    "kind_extension": "Extension fragment",
+    "conflict_units": "{{count}} overlaps",
+    "conflict_units_one": "{{count}} overlap",
+    "decision_merge": "Apply non-overlapping parts (recommended)",
+    "decision_merge_hint": "Parts that overlap operator edits keep the operator version; everything else takes the new version.",
+    "decision_keep_ours": "Keep operator version",
+    "decision_take_theirs": "Use new version",
+    "decision_keep_ours_hint": "This screen takes nothing from the new version and keeps the whole operator version.",
+    "decision_take_theirs_hint": "Only this screen is replaced with the new version. The operator version is kept in the editor [Version history] before it is replaced.",
+    "deletions_title": "{{count}} items this update will delete",
+    "deletions_title_one": "{{count}} item this update will delete",
+    "deletion_operator": "Operator-modified — recorded in the activity log before deletion",
+    "verdict": {
+      "created": "Added",
+      "updated": "Replaced with the new version",
+      "unchanged": "No change",
+      "took_theirs": "New version applied",
+      "merged": "Partly updated",
+      "conflict": "Overlap — operator version kept",
+      "kept": "Operator version kept",
+      "kept_no_base": "No comparison base — operator version kept",
+      "kept_invalid": "Merge check failed — operator version kept",
+      "kept_removed": "Removed in the new version but kept (modified)",
+      "kept_deleted_by_operator": "Deleted by the operator — skipped",
+      "kept_name_collision": "Operator screen with the same name — skipped",
+      "deleted": "Will be deleted"
+    },
+    "deletion_type": {
+      "notification_definition": "Notification definition",
+      "notification_template": "Notification template",
+      "menu": "Admin menu",
+      "permission": "Permission",
+      "role": "Role",
+      "identity_policy": "Identity verification policy",
+      "schedule": "Schedule",
+      "entity": "Seed data"
     }
   }
 }

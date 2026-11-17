@@ -104,7 +104,7 @@ _단건 응답: `data` 객체의 필드._
 | subject | body | array | 아니오 | — | 다국어 제목. 컬럼이 nullable 이므로 미전송·`null` 이 허용된다(제목 개념이 없는 채널 대응). 전송하는 경우 로케일별 문자열 배열이어야 하며 각 값은 500자 이하 |
 | body | body | array | 예 | — | 본문 |
 | click_url | body | string | 아니오 | max 500 | 알림 클릭 시 이동할 대상 URL (미설정 시 이동 없음) |
-| recipients | body | array | 아니오 | — | 수신자 규칙 목록. 각 원소는 type(trigger_user: 이벤트 유발 사용자, related_user: 연관 사용자, role: 역할 대상, specific_users: 지정 사용자), value(대상 식별값), relation(연관 사용자 관계명), exclude_trigger_user(유발 사용자 제외 여부)로 구성. `related_user` 의 relation 은 그 알림 정의가 선언한 관계 목록(`relations`) 안이어야 한다 — 목록이 비어 있으면(`[]`) 어떤 관계도 422, 목록이 아직 없으면(`NULL` — 코어 업그레이드 직후 확장이 재동기화되기 전) 목록으로 막지 않는다. `role` 의 value 는 식별자 문자열 또는 문자열 **목록**, `specific_users` 의 value 는 UUID **목록**이어야 한다 — 키가 붙은 묶음(`{"x":"admin"}`)은 422. 검증 안내는 `recipients.0.value` 같은 내부 키 대신 항목 이름(수신자 값·관련 사용자 관계 등)으로 나온다 |
+| recipients | body | array | 아니오 | — | 수신자 규칙 목록. 각 원소는 type(trigger_user: 이벤트 유발 사용자, related_user: 연관 사용자, role: 역할 대상, specific_users: 지정 사용자, site_admin_email: 환경설정 > 일반의 관리자 이메일 — 메일만 받고 값 칸 없음, 비어 있으면 0명 + 경고 로그), value(대상 식별값), relation(연관 사용자 관계명), exclude_trigger_user(유발 사용자 제외 여부)로 구성. `related_user` 의 relation 은 그 알림 정의가 선언한 관계 목록(`relations`) 안이어야 한다 — 목록이 비어 있으면(`[]`) 어떤 관계도 422, 목록이 아직 없으면(`NULL` — 코어 업그레이드 직후 확장이 재동기화되기 전) 목록으로 막지 않는다. `role` 의 value 는 식별자 문자열 또는 문자열 **목록**, `specific_users` 의 value 는 UUID **목록**이어야 한다 — 키가 붙은 묶음(`{"x":"admin"}`)은 422. 검증 안내는 `recipients.0.value` 같은 내부 키 대신 항목 이름(수신자 값·관련 사용자 관계 등)으로 나온다 |
 | is_active | body | boolean | 아니오 | — | 활성 여부 (true 활성 / false 비활성) |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.notification_template.update_validation_rules`).
@@ -145,7 +145,7 @@ _단건 응답: `data` 객체의 필드 (`NotificationTemplateResource`)._
 | subject | object | `{"ko":"[{app_name}] 회원가입을 환영합니다","en":"..."}` | 다국어 제목 (로케일 키 → 문자열, 로케일당 최대 500자) |
 | body | object | `{"ko":"<h1>{name}님, 환영합니다!</h1>...","en":"..."}` | 다국어 본문 (로케일 키 → 문자열, 로케일당 최대 65535자) |
 | click_url | string \| null | `null` | 알림 클릭 시 이동할 대상 URL (미설정 시 `null`) |
-| recipients | array | `[{"type":"role","value":"admin","display_name":"관리자"}]` | 수신자 규칙 목록. `type` 은 `trigger_user`/`related_user`/`role`/`specific_users`. `role` 이면 `display_name`, `specific_users` 면 `display_names` 가 표시용으로 부가됨 |
+| recipients | array | `[{"type":"role","value":"admin","display_name":"관리자"}]` | 수신자 규칙 목록. `type` 은 `trigger_user`/`related_user`/`role`/`specific_users`/`site_admin_email`. `role` 이면 `display_name`, `specific_users` 면 `display_names` 가 표시용으로 부가됨 |
 | is_active | boolean | `true` | 활성 여부 (false 면 해당 채널 발송 중단) |
 | is_default | boolean | `false` | 기본값 상태 여부 (수정 시 항상 `false` 로 전환됨) |
 | user_overrides | array \| null | `["subject","body"]` | 사용자가 직접 수정한 필드명 목록 (`HasUserOverrides`) |

@@ -170,6 +170,7 @@
     "chars_one": "({diff} char)",
     "saved_by": "Saved by {name}",
     "unknown_author": "Unknown",
+    "system_author": "System",
     "compare": "Compare",
     "comparing": "Comparing…",
     "diff_title": "Changes v{old} → v{new}",

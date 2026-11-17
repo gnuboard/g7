@@ -19,6 +19,8 @@ import React from 'react';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createLayoutTest, screen } from '@core/template-engine/__tests__/utils/layoutTestUtils';
 import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 // ==============================
 // 테스트용 컴포넌트 정의
@@ -590,172 +592,59 @@ describe('모듈 업데이트 - 업데이트 모달', () => {
   let testUtils: ReturnType<typeof createLayoutTest>;
   let registry: ComponentRegistry;
 
-  const updateModalLayout = {
+  // 실제 굽기 산출물을 읽는다 — 손으로 쓴 모달 사본은 실제 창과 어긋난 옛 구조를 단언하고 있었다(#888).
+  const modal: any = JSON.parse(readFileSync(resolve(__dirname, '../../layouts/partials/admin_module_list/_modal_update.json'), 'utf-8'));
+  const { meta: sharedMeta, ...sharedPreview } = JSON.parse(readFileSync(resolve(__dirname, '../../layouts/partials/_shared/_layout_sync_preview.json'), 'utf-8'));
+  void sharedMeta; // 조각 표식(meta.is_partial)은 페이지에 들어가면 사라진다 — 본문만 쓴다.
+
+  const selected = {
+    identifier: 'sirsoft-board',
+    name: '게시판',
     version: '1.0.0',
-    layout_name: 'module_update_modal_test',
-    initGlobal: {
-      selectedModule: {
-        identifier: 'sirsoft-board',
-        name: '게시판',
-        version: '1.0.0',
-        latest_version: '1.1.0',
-        update_source: 'github',
-        github_changelog_url: 'https://github.com/gnuboard/sirsoft-board/releases',
-      },
-      isModuleUpdating: false,
-    },
-    modals: [
-      {
-        id: 'module_update_modal',
-        type: 'composite',
-        name: 'Modal',
-        props: {
-          title: '$t:admin.modules.modals.update_title',
-          size: 'sm',
-        },
-        children: [
-          {
-            type: 'basic',
-            name: 'Div',
-            props: { className: 'py-2' },
-            children: [
-              {
-                type: 'basic',
-                name: 'P',
-                props: { className: 'text-gray-700 dark:text-gray-300' },
-                text: "$t:admin.modules.modals.update_confirm|name={{_global.selectedModule.name ?? ''}}",
-              },
-              {
-                type: 'basic',
-                name: 'Div',
-                props: { className: 'mt-3 p-3 bg-gray-50 dark:bg-gray-800 border rounded-lg space-y-2' },
-                children: [
-                  {
-                    type: 'basic',
-                    name: 'Div',
-                    props: { className: 'flex items-center gap-2 text-sm' },
-                    children: [
-                      {
-                        type: 'basic',
-                        name: 'Span',
-                        props: { className: 'text-gray-500' },
-                        text: '$t:admin.modules.modals.field_version',
-                      },
-                      {
-                        type: 'basic',
-                        name: 'Span',
-                        props: { className: 'font-medium text-gray-900 dark:text-white' },
-                        text: "$t:admin.modules.modals.update_version_info|from={{_global.selectedModule.version ?? ''}}|to={{_global.selectedModule.latest_version ?? ''}}",
-                      },
-                    ],
-                  },
-                  {
-                    type: 'basic',
-                    name: 'Div',
-                    props: { className: 'flex items-center gap-2 text-sm' },
-                    children: [
-                      {
-                        type: 'basic',
-                        name: 'Span',
-                        props: { className: 'text-gray-500' },
-                        text: '$t:admin.modules.modals.field_vendor',
-                      },
-                      {
-                        type: 'basic',
-                        name: 'Span',
-                        props: { className: 'text-gray-700' },
-                        text: "{{_global.selectedModule.update_source === 'github' ? '$t:admin.modules.modals.update_source_github' : '$t:admin.modules.modals.update_source_bundled'}}",
-                      },
-                    ],
-                  },
-                ],
-              },
-              {
-                type: 'basic',
-                name: 'Div',
-                if: '{{_global.selectedModule.github_changelog_url}}',
-                props: { className: 'mt-3' },
-                children: [
-                  {
-                    type: 'basic',
-                    name: 'A',
-                    props: {
-                      href: '{{_global.selectedModule.github_changelog_url}}',
-                      target: '_blank',
-                      className: 'inline-flex items-center gap-1.5 text-sm text-blue-600',
-                    },
-                    children: [
-                      {
-                        type: 'basic',
-                        name: 'Icon',
-                        props: { name: 'external-link', size: 'sm' },
-                      },
-                      {
-                        type: 'basic',
-                        name: 'Span',
-                        text: '$t:admin.modules.modals.view_changelog',
-                      },
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
-          {
-            type: 'basic',
-            name: 'Div',
-            props: { className: 'flex justify-end gap-3 mt-6' },
-            children: [
-              {
-                type: 'basic',
-                name: 'Button',
-                props: {
-                  className: 'px-4 py-2 bg-white dark:bg-gray-800 border rounded-lg disabled:opacity-50',
-                  disabled: '{{_global.isModuleUpdating}}',
-                  'data-testid': 'cancel-btn',
-                },
-                children: [
-                  { type: 'basic', name: 'Span', text: '$t:common.cancel' },
-                ],
-              },
-              {
-                type: 'basic',
-                name: 'Button',
-                props: {
-                  className: 'flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg disabled:opacity-50',
-                  disabled: '{{_global.isModuleUpdating}}',
-                  'data-testid': 'confirm-update-btn',
-                },
-                children: [
-                  {
-                    type: 'basic',
-                    name: 'Icon',
-                    if: '{{_global.isModuleUpdating}}',
-                    props: { name: 'spinner', className: 'w-4 h-4 animate-spin' },
-                  },
-                  {
-                    type: 'basic',
-                    name: 'Span',
-                    text: "{{_global.isModuleUpdating ? '$t:admin.modules.updating' : '$t:admin.modules.actions.update'}}",
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      },
-    ],
-    components: [
-      {
-        id: 'main-content',
-        type: 'basic',
-        name: 'Div',
-        children: [
-          { type: 'basic', name: 'Span', text: '모듈 관리 페이지' },
-        ],
-      },
-    ],
+    latest_version: '1.1.0',
+    update_source: 'github',
+    github_changelog_url: 'https://github.com/gnuboard/sirsoft-board/releases',
   };
+
+  /** 모달 트리에서 조건에 맞는 노드를 모두 모은다. */
+  function collect(node: any, match: (n: any) => boolean, found: any[] = []): any[] {
+    if (Array.isArray(node)) {
+      node.forEach((child) => collect(child, match, found));
+      return found;
+    }
+    if (node && typeof node === 'object') {
+      if (match(node)) found.push(node);
+      Object.values(node).forEach((value) => {
+        if (value && typeof value === 'object') collect(value, match, found);
+      });
+    }
+    return found;
+  }
+
+  /** 공통 미리보기 조각을 펼쳐 넣는다 — 렌더 시험은 서버가 하는 조각 풀이를 대신한다. */
+  function inlineSharedPreview(node: any): any {
+    if (Array.isArray(node)) return node.map((child) => inlineSharedPreview(child));
+    if (node && typeof node === 'object') {
+      if (node.partial === 'partials/_shared/_layout_sync_preview.json') return sharedPreview;
+      return Object.fromEntries(Object.entries(node).map(([key, v]) => [key, inlineSharedPreview(v)]));
+    }
+    return node;
+  }
+
+  /** 실제 업데이트 창을 띄운 레이아웃 — 창을 여는 쪽이 담는 값(대상·진행 여부·미리보기 로딩)을 시드한다. */
+  function buildLayout() {
+    return {
+      version: '1.0.0',
+      layout_name: 'module_update_modal_test',
+      initGlobal: { selectedModule: selected, isModuleUpdating: false, updateChangelog: [], layoutPreviewState: 'loading' },
+      modals: [inlineSharedPreview(modal)],
+      components: [{ id: 'main-content', type: 'basic', name: 'Div', children: [{ type: 'basic', name: 'Span', text: '모듈 관리 페이지' }] }],
+    };
+  }
+
+  /** 글자(text)에 needle 이 든 노드 */
+  const textNodes = (needle: string) => collect(modal, (n) => typeof n.text === 'string' && n.text.includes(needle));
+  const footer = (): any[] => modal.props.footer;
 
   beforeEach(() => {
     registry = setupTestRegistry();
@@ -769,12 +658,7 @@ describe('모듈 업데이트 - 업데이트 모달', () => {
     // @scenario kind=module, area=layout_structure
     // @effects update_modal_layout_structure_is_declared
     it('레이아웃 정보가 올바르게 로드된다', () => {
-      testUtils = createLayoutTest(updateModalLayout, {
-        translations,
-        locale: 'ko',
-        componentRegistry: registry,
-        includeModals: true,
-      });
+      testUtils = createLayoutTest(buildLayout(), { translations, locale: 'ko', componentRegistry: registry, includeModals: true });
       const info = testUtils.getLayoutInfo();
       expect(info.name).toBe('module_update_modal_test');
       expect(info.version).toBe('1.0.0');
@@ -783,29 +667,19 @@ describe('모듈 업데이트 - 업데이트 모달', () => {
     // @scenario kind=module, area=layout_structure
     // @effects update_modal_layout_structure_is_declared
     it('초기 전역 상태가 올바르게 설정된다', () => {
-      testUtils = createLayoutTest(updateModalLayout, {
-        translations,
-        locale: 'ko',
-        componentRegistry: registry,
-        includeModals: true,
-      });
+      testUtils = createLayoutTest(buildLayout(), { translations, locale: 'ko', componentRegistry: registry, includeModals: true });
       const state = testUtils.getState();
-      expect(state._global.selectedModule).toEqual({
-        identifier: 'sirsoft-board',
-        name: '게시판',
-        version: '1.0.0',
-        latest_version: '1.1.0',
-        update_source: 'github',
-        github_changelog_url: 'https://github.com/gnuboard/sirsoft-board/releases',
-      });
+      expect(state._global.selectedModule).toEqual(selected);
       expect(state._global.isModuleUpdating).toBe(false);
+      expect(state._global.layoutPreviewState).toBe('loading');
     });
 
     // @scenario kind=module, area=layout_structure
     // @effects update_modal_layout_structure_is_declared
-    it('모달 크기가 sm 으로 설정되어 있다', () => {
-      const modal = updateModalLayout.modals[0];
-      expect(modal.props.size).toBe('sm');
+    it('실제 창은 module_update_modal 이고 크기가 medium 이다', () => {
+      expect(modal.name).toBe('Modal');
+      expect(modal.id).toBe('module_update_modal');
+      expect(modal.props.size).toBe('medium');
     });
   });
 
@@ -813,12 +687,7 @@ describe('모듈 업데이트 - 업데이트 모달', () => {
     // @scenario kind=module, area=modal_open_close
     // @effects update_modal_opens_and_closes
     it('업데이트 모달을 열고 닫을 수 있다', async () => {
-      testUtils = createLayoutTest(updateModalLayout, {
-        translations,
-        locale: 'ko',
-        componentRegistry: registry,
-        includeModals: true,
-      });
+      testUtils = createLayoutTest(buildLayout(), { translations, locale: 'ko', componentRegistry: registry, includeModals: true });
       await testUtils.render();
 
       testUtils.openModal('module_update_modal');
@@ -833,136 +702,103 @@ describe('모듈 업데이트 - 업데이트 모달', () => {
     // @scenario kind=module, area=modal_content
     // @effects update_modal_content_lists_versions
     it('모달 타이틀이 업데이트 확인으로 설정되어 있다', () => {
-      const modal = updateModalLayout.modals[0];
       expect(modal.props.title).toBe('$t:admin.modules.modals.update_title');
     });
 
     // @scenario kind=module, area=modal_content
     // @effects update_modal_content_lists_versions
     it('모달에 업데이트 확인 메시지가 포함되어 있다', () => {
-      const modal = updateModalLayout.modals[0];
-      // children[0] = py-2 Div > children[0] = P (confirm message)
-      const confirmP = modal.children[0].children[0];
-      expect(confirmP.text).toContain('$t:admin.modules.modals.update_confirm');
-      expect(confirmP.text).toContain('_global.selectedModule.name');
+      const confirm = textNodes('$t:admin.modules.modals.update_confirm');
+      expect(confirm).toHaveLength(1);
+      expect(confirm[0].text).toContain('_global.selectedModule.name');
     });
 
     // @scenario kind=module, area=modal_content
     // @effects update_modal_content_lists_versions
     it('모달에 버전 정보가 포함되어 있다 (from → to)', () => {
-      const modal = updateModalLayout.modals[0];
-      // children[0] > children[1] = version info Div > children[0] = version row Div > children[1] = Span
-      const versionRow = modal.children[0].children[1].children[0];
-      const versionLabel = versionRow.children[0];
-      const versionValue = versionRow.children[1];
-      expect(versionLabel.text).toBe('$t:admin.modules.modals.field_version');
-      expect(versionValue.text).toContain('$t:admin.modules.modals.update_version_info');
-      expect(versionValue.text).toContain('_global.selectedModule.version');
-      expect(versionValue.text).toContain('_global.selectedModule.latest_version');
+      expect(textNodes('$t:admin.modules.modals.field_version')).toHaveLength(1);
+      const versions = textNodes('$t:admin.modules.modals.update_version_info');
+      expect(versions).toHaveLength(1);
+      expect(versions[0].text).toContain('_global.selectedModule.version');
+      expect(versions[0].text).toContain('_global.selectedModule.latest_version');
     });
 
     // @scenario kind=module, area=modal_content
     // @effects update_modal_content_lists_versions
     it('모달에 update_source 표시가 포함되어 있다', () => {
-      const modal = updateModalLayout.modals[0];
-      // children[0] > children[1] = info Div > children[1] = vendor row
-      const vendorRow = modal.children[0].children[1].children[1];
-      const vendorLabel = vendorRow.children[0];
-      const vendorValue = vendorRow.children[1];
-      expect(vendorLabel.text).toBe('$t:admin.modules.modals.field_vendor');
-      expect(vendorValue.text).toContain('update_source_github');
+      const source = textNodes('$t:admin.modules.modals.update_source_github');
+      expect(source).toHaveLength(1);
+      expect(source[0].text).toContain("_global.selectedModule.update_source === 'github'");
+      expect(source[0].text).toContain('$t:admin.modules.modals.update_source_bundled');
     });
 
     // @scenario kind=module, area=modal_content
     // @effects update_modal_content_lists_versions
     it('모달에 changelog 링크가 조건부로 포함되어 있다', () => {
-      const modal = updateModalLayout.modals[0];
-      // children[0] > children[2] = changelog Div (if 조건)
-      const changelogDiv = modal.children[0].children[2];
-      expect(changelogDiv.if).toBe('{{_global.selectedModule.github_changelog_url}}');
-
-      const linkA = changelogDiv.children[0];
-      expect(linkA.name).toBe('A');
-      expect(linkA.props.target).toBe('_blank');
-      expect(linkA.props.href).toContain('_global.selectedModule.github_changelog_url');
+      const changelogDivs = collect(modal, (n) => n.if === '{{_global.selectedModule.github_changelog_url}}');
+      expect(changelogDivs).toHaveLength(1);
+      const link = collect(changelogDivs[0], (n) => n.name === 'A')[0];
+      expect(link.props.target).toBe('_blank');
+      expect(link.props.href).toContain('_global.selectedModule.github_changelog_url');
+      expect(JSON.stringify(link)).toContain('$t:admin.modules.modals.view_changelog');
     });
 
     // @scenario kind=module, area=modal_content
     // @effects update_modal_content_lists_versions
     it('changelog URL이 없으면 조건에 의해 렌더링되지 않는다', () => {
-      // github_changelog_url이 null이면 if 조건이 falsy
-      const noChangelogState = { ...updateModalLayout.initGlobal.selectedModule, github_changelog_url: null };
-      expect(noChangelogState.github_changelog_url).toBeNull();
-
-      // if="{{_global.selectedModule.github_changelog_url}}" → null은 falsy
-      const modal = updateModalLayout.modals[0];
-      const changelogDiv = modal.children[0].children[2];
-      expect(changelogDiv.if).toBe('{{_global.selectedModule.github_changelog_url}}');
+      const changelogDiv = collect(modal, (n) => n.if === '{{_global.selectedModule.github_changelog_url}}')[0];
+      const expr = changelogDiv.if.slice(2, -2);
+      // eslint-disable-next-line no-new-func
+      const evaluate = new Function('_global', `return (${expr});`);
+      expect(evaluate({ selectedModule: { ...selected, github_changelog_url: null } })).toBeFalsy();
+      expect(evaluate({ selectedModule: selected })).toBeTruthy();
     });
   });
 
   describe('버튼 구조 및 상태 검증', () => {
     // @scenario kind=module, area=button_state
     // @effects update_modal_buttons_reflect_progress
-    it('취소/확인 버튼이 모달에 정의되어 있다', () => {
-      const modal = updateModalLayout.modals[0];
-      // children[1] = 버튼 영역 Div > children = [cancel, confirm]
-      const buttonsDiv = modal.children[1];
-      expect(buttonsDiv.children).toHaveLength(2);
+    it('취소/확인 버튼이 모달 하단에 정의되어 있다', () => {
+      const buttons = footer().filter((n) => n.name === 'Button');
+      expect(buttons).toHaveLength(2);
+      const [cancelBtn, confirmBtn] = buttons;
 
-      const cancelBtn = buttonsDiv.children[0];
-      const confirmBtn = buttonsDiv.children[1];
-
-      // 취소 버튼
-      expect(cancelBtn.name).toBe('Button');
       expect(cancelBtn.props.disabled).toBe('{{_global.isModuleUpdating}}');
-      expect(cancelBtn.children[0].text).toBe('$t:common.cancel');
+      expect(JSON.stringify(cancelBtn.children)).toContain('$t:common.cancel');
+      expect(JSON.stringify(cancelBtn.actions)).toContain('closeModal');
 
-      // 확인 버튼
-      expect(confirmBtn.name).toBe('Button');
-      expect(confirmBtn.props.disabled).toBe('{{_global.isModuleUpdating}}');
+      // 실행 버튼은 진행 중이거나 화면별 처리 미리보기가 준비되기 전에는 잠긴다(#888)
+      expect(confirmBtn.props.disabled).toContain('_global.isModuleUpdating');
+      expect(confirmBtn.props.disabled).toContain("_global.layoutPreviewState !== 'ready'");
     });
 
     // @scenario kind=module, area=button_state
     // @effects update_modal_buttons_reflect_progress
     it('확인 버튼에 스피너 조건부 렌더링이 설정되어 있다', () => {
-      const modal = updateModalLayout.modals[0];
-      const confirmBtn = modal.children[1].children[1];
+      const confirmBtn = footer().filter((n) => n.name === 'Button')[1];
+      const spinner = confirmBtn.children.find((n: any) => n.name === 'Icon');
+      expect(spinner.if).toBe('{{_global.isModuleUpdating}}');
+      expect(spinner.props.name).toBe('spinner');
 
-      // spinner Icon (if: isModuleUpdating)
-      const spinnerIcon = confirmBtn.children[0];
-      expect(spinnerIcon.name).toBe('Icon');
-      expect(spinnerIcon.if).toBe('{{_global.isModuleUpdating}}');
-      expect(spinnerIcon.props.name).toBe('spinner');
-
-      // 텍스트 (ternary: updating → '업데이트 중...' / '업데이트')
-      const textSpan = confirmBtn.children[1];
-      expect(textSpan.text).toContain('_global.isModuleUpdating');
-      expect(textSpan.text).toContain('$t:admin.modules.updating');
-      expect(textSpan.text).toContain('$t:admin.modules.actions.update');
+      const label = confirmBtn.children.find((n: any) => n.name === 'Span');
+      expect(label.text).toContain('_global.isModuleUpdating');
+      expect(label.text).toContain('$t:admin.modules.updating');
+      expect(label.text).toContain('$t:admin.modules.actions.update');
     });
 
     // @scenario kind=module, area=button_state
     // @effects update_modal_buttons_reflect_progress
     it('isModuleUpdating 상태가 올바르게 변경될 수 있다', async () => {
-      testUtils = createLayoutTest(updateModalLayout, {
-        translations,
-        locale: 'ko',
-        componentRegistry: registry,
-        includeModals: true,
-      });
+      testUtils = createLayoutTest(buildLayout(), { translations, locale: 'ko', componentRegistry: registry, includeModals: true });
       await testUtils.render();
 
-      // 초기값 false
       let state = testUtils.getState();
       expect(state._global.isModuleUpdating).toBe(false);
 
-      // true로 변경
       testUtils.setState('isModuleUpdating', true, 'global');
       state = testUtils.getState();
       expect(state._global.isModuleUpdating).toBe(true);
 
-      // 완료 후 false로 복원
       testUtils.setState('isModuleUpdating', false, 'global');
       testUtils.setState('selectedModule', null, 'global');
       state = testUtils.getState();
@@ -1018,7 +854,7 @@ describe('모듈 업데이트 - 레이아웃 전략 선택', () => {
   /**
    * 실제 업데이트 모달을 띄운 레이아웃을 만든다.
    */
-  function buildLayout(strategy: 'overwrite' | 'keep', modified: Array<{ name: string; updated_at: string }>) {
+  function buildLayout(strategy: 'overwrite' | 'keep') {
     return {
       version: '1.0.0',
       layout_name: 'module_update_strategy_test',
@@ -1031,10 +867,7 @@ describe('모듈 업데이트 - 레이아웃 전략 선택', () => {
           update_source: 'bundled',
         },
         isModuleUpdating: false,
-        moduleLayoutStrategy: strategy,
-        hasModifiedModuleLayouts: modified.length > 0,
-        modifiedModuleLayoutsCount: modified.length,
-        modifiedModuleLayouts: modified,
+        layoutSyncStrategy: strategy,
       },
       modals: [modalPartial],
       components: [{ id: 'main-content', type: 'basic', name: 'Div', children: [] }],
@@ -1062,29 +895,68 @@ describe('모듈 업데이트 - 레이아웃 전략 선택', () => {
     if (testUtils) testUtils.cleanup();
   });
 
+  /**
+   * 업데이트 창의 공통 미리보기 조각을 펼쳐 넣는다 — 렌더 시험은 서버가 하는 조각 풀이를 대신한다.
+   */
+  function inlineSharedPreview(node: any, shared: any): any {
+    if (Array.isArray(node)) return node.map((child) => inlineSharedPreview(child, shared));
+    if (node && typeof node === 'object') {
+      if (node.partial === 'partials/_shared/_layout_sync_preview.json') return shared;
+      return Object.fromEntries(Object.entries(node).map(([k, v]) => [k, inlineSharedPreview(v, shared)]));
+    }
+    return node;
+  }
+
+  /**
+   * 미리보기 결과를 실은 업데이트 창 레이아웃을 만든다 (#888).
+   */
+  function buildPreviewLayout(strategy: 'overwrite' | 'keep') {
+    const fs = require('fs');
+    const path = require('path');
+    const { meta, ...shared } = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../layouts/partials/_shared/_layout_sync_preview.json'), 'utf-8'));
+    void meta;
+    const layout: any = buildLayout(strategy);
+    layout.modals = [inlineSharedPreview(modalPartial, shared)];
+    Object.assign(layout.initGlobal, {
+      layoutSyncStrategy: strategy,
+      layoutDecisions: {},
+      layoutPreviewState: 'ready',
+      layoutPreview: { entries: [{ key: 'layout:tpl:sample_list', kind: 'layout', template: 'tpl', name: 'sample_list', verdict: 'merged', conflicts: [], will_delete: false }], conflict_screens: [] },
+      layoutUpdatePreview: { pending_token: null, declarative_deletions: [] },
+    });
+
+    return layout;
+  }
+
   // @scenario kind=module, area=layout_strategy
   // @effects layout_strategy_choice_is_offered
-  it('덮어쓰기·유지 두 선택지가 같은 라디오 그룹으로 있고 기본값은 덮어쓰기다', () => {
-    const radios = collect(modalPartial, (n) => n.name === 'Input' && n.props?.name === 'module_layout_strategy');
+  it('처리 방식은 공통 미리보기의 같은 라디오 그룹이고 기본값은 수정 유지다 (#888)', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const shared = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../layouts/partials/_shared/_layout_sync_preview.json'), 'utf-8'));
+    const radios = collect(shared, (n) => n.name === 'Input' && n.props?.name === 'layout_sync_strategy');
 
-    expect(radios.map((r) => r.props.value)).toEqual(['overwrite', 'keep']);
-    expect(radios[0].props.checked).toBe("{{(_global.moduleLayoutStrategy ?? 'overwrite') === 'overwrite'}}");
-    expect(radios[1].props.checked).toBe("{{(_global.moduleLayoutStrategy ?? 'overwrite') === 'keep'}}");
+    expect(collect(modalPartial, (n) => n.partial === 'partials/_shared/_layout_sync_preview.json')).toHaveLength(1);
+    expect(radios.map((r) => r.props.value)).toEqual(['keep', 'overwrite']);
+    expect(radios[0].props.checked).toBe("{{(_global.layoutSyncStrategy ?? 'keep') === 'keep'}}");
+    expect(radios[1].props.checked).toBe("{{_global.layoutSyncStrategy === 'overwrite'}}");
   });
 
   // @scenario kind=module, area=layout_strategy
   // @effects layout_strategy_choice_is_offered
-  it('업데이트 요청 본문에 고른 전략이 실린다', () => {
+  it('업데이트 요청 본문에 고른 처리 방식·화면별 결정·내려받은 새 판 토큰이 실린다', () => {
     const calls = collect(modalPartial, (n) => n.handler === 'apiCall' && String(n.target ?? '').endsWith('/update'));
 
     expect(calls).toHaveLength(1);
-    expect(calls[0].params.body.layout_strategy).toBe("{{_global.moduleLayoutStrategy ?? 'overwrite'}}");
+    expect(calls[0].params.body.layout_strategy).toBe("{{_global.layoutSyncStrategy ?? 'keep'}}");
+    expect(calls[0].params.body.decisions).toBe('{{_global.layoutDecisions ?? {} }}');
+    expect(calls[0].params.body.pending_token).toBe('{{_global.layoutUpdatePreview?.pending_token ?? null}}');
   });
 
   // @scenario kind=module, area=layout_strategy
   // @effects layout_strategy_keep_notice_explains_merge
-  it('유지를 고르면 수정한 레이아웃 목록과 병합 안내가 보인다', async () => {
-    testUtils = createLayoutTest(buildLayout('keep', [{ name: 'sample_list', updated_at: '2026-09-30 10:00' }]), {
+  it('수정 유지면 미리보기 표의 병합 화면에 화면별 결정 선택지가 보인다', async () => {
+    testUtils = createLayoutTest(buildPreviewLayout('keep'), {
       translations: { admin: adminKo, common: { cancel: '취소' } },
       locale: 'ko',
       componentRegistry: registry,
@@ -1093,14 +965,14 @@ describe('모듈 업데이트 - 레이아웃 전략 선택', () => {
     await testUtils.render();
 
     expect(await screen.findByText('sample_list')).toBeTruthy();
-    expect(screen.getByText(adminKo.modules.modals.modified_layouts_keep_notice)).toBeTruthy();
-    expect(screen.getByText(adminKo.modules.modals.layout_strategy_keep_desc)).toBeTruthy();
+    expect(screen.getByText(adminKo.layout_sync_preview.decision_take_theirs)).toBeTruthy();
+    expect(screen.getByText(adminKo.layout_sync_preview.strategy_keep_desc)).toBeTruthy();
   });
 
   // @scenario kind=module, area=layout_strategy
   // @effects layout_strategy_keep_notice_explains_merge
-  it('덮어쓰기를 고르면 수정한 레이아웃 목록이 숨는다', async () => {
-    testUtils = createLayoutTest(buildLayout('overwrite', [{ name: 'sample_list', updated_at: '2026-09-30 10:00' }]), {
+  it('모두 교체면 화면별 결정이 숨고 덮어쓰기 경고가 보인다', async () => {
+    testUtils = createLayoutTest(buildPreviewLayout('overwrite'), {
       translations: { admin: adminKo, common: { cancel: '취소' } },
       locale: 'ko',
       componentRegistry: registry,
@@ -1108,20 +980,18 @@ describe('모듈 업데이트 - 레이아웃 전략 선택', () => {
     });
     await testUtils.render();
 
-    expect(await screen.findByText(adminKo.modules.modals.layout_strategy_keep_desc)).toBeTruthy();
-    expect(screen.queryByText('sample_list')).toBeNull();
-    expect(screen.queryByText(adminKo.modules.modals.modified_layouts_keep_notice)).toBeNull();
+    expect(await screen.findByText(adminKo.layout_sync_preview.overwrite_warning)).toBeTruthy();
+    expect(screen.queryByText(adminKo.layout_sync_preview.decision_take_theirs)).toBeNull();
   });
 
   // @scenario kind=module, area=layout_strategy
   // @effects layout_strategy_keep_notice_explains_merge
   it('유지 안내 문구가 "통째로 유지" 가 아니라 부분 병합을 설명한다 (ko·en)', () => {
-    const ko = adminKo.modules.modals;
-    const en = adminEn.modules.modals;
+    // 업데이트 창이 실제로 그리는 안내는 공통 미리보기 조각의 처리 방식 설명이다(#888) — 옛 창 전용 키는 더 그리지 않는다.
+    const shared = readFileSync(resolve(__dirname, '../../layouts/partials/_shared/_layout_sync_preview.json'), 'utf-8');
+    expect(shared).toContain('$t:admin.layout_sync_preview.strategy_keep_desc');
 
-    expect(ko.layout_strategy_keep_desc).toContain('손대지 않은 부분은 새 버전');
-    expect(ko.modified_layouts_keep_notice).toContain('고치지 않은 부분에는 새 버전');
-    expect(en.layout_strategy_keep_desc).toContain('untouched parts to the new version');
-    expect(en.modified_layouts_keep_notice).toContain('did not change receive the new version');
+    expect(adminKo.layout_sync_preview.strategy_keep_desc).toContain('손대지 않은 부분만 새 판');
+    expect(adminEn.layout_sync_preview.strategy_keep_desc).toContain('only untouched parts take the new version');
   });
 });
