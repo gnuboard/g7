@@ -421,6 +421,9 @@ describe.each(MANUAL_INSTALL)('수동 설치 창 무결성 — $type', ({ type, 
 // 업데이트 창 (모듈·플러그인·템플릿)
 // ==============================
 
+/** 업데이트 미리보기가 돌려준 준비본 토큰(영숫자 40자) */
+const PENDING_TOKEN = 'P'.repeat(40);
+
 const UPDATE = [
   { type: 'module', selected: 'selectedModule', busy: 'isModuleUpdating', errorKey: 'moduleUpdateError', update: adminKo.modules.actions.update, endpoint: '/api/admin/modules' },
   { type: 'plugin', selected: 'selectedPlugin', busy: 'isPluginUpdating', errorKey: 'pluginUpdateError', update: adminKo.plugins.actions.update, endpoint: '/api/admin/plugins' },
@@ -438,6 +441,11 @@ describe.each(UPDATE)('업데이트 창 무결성 — $type', ({ type, selected,
         [errorKey]: null,
         packageIntegrity: null,
         packageIntegrityMessage: null,
+        // 업데이트 미리보기가 끝난 상태(#888) — 실행 버튼은 미리보기가 준비돼야 풀리고, GitHub 판은 준비본 토큰을 싣는다
+        layoutPreviewState: 'ready',
+        layoutSyncStrategy: 'keep',
+        layoutDecisions: {},
+        layoutUpdatePreview: { pending_token: PENDING_TOKEN, declarative_deletions: [] },
       }) as any,
       { componentRegistry: setupRegistry(), translations: { admin: adminKo }, locale: 'ko' },
     );
@@ -473,6 +481,9 @@ describe.each(UPDATE)('업데이트 창 무결성 — $type', ({ type, selected,
     expect(second.allow_unsigned).toBe(1);
     // 서명 확인을 아는 화면의 표식 — 첫 요청부터 늘 싣는다(#916 옛 화면 호환)
     expect(String(first.integrity_aware)).toBe('1');
+    // 「미서명으로 계속」 재요청도 미리보기 준비본 토큰을 그대로 싣는다 — 서버는 확인이 필요해 멈춘 준비본을 남겨 두고 이 재요청에 넘긴다(#888)
+    expect(first.pending_token).toBe(PENDING_TOKEN);
+    expect(second.pending_token).toBe(PENDING_TOKEN);
     const { allow_unsigned: _a, ...firstRest } = first;
     const { allow_unsigned: _b, ...secondRest } = second;
     expect(secondRest).toEqual(firstRest);

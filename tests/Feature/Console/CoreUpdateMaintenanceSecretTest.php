@@ -9,6 +9,7 @@ use App\CoreUpdate\CoreUpdateRunState;
 use App\CoreUpdate\CoreUpdateStep;
 use App\CoreUpdate\CoreUpdateTimeBudget;
 use App\Execution\CommandRunnerResolver;
+use App\Extension\Integrity\PackageVerification;
 use App\Services\Core\PhpRequirementPreflight;
 use App\Services\CoreUpdateService;
 use App\Support\PhpExtensionProbe;
@@ -273,7 +274,7 @@ class CoreUpdateMaintenanceSecretTest extends TestCase
         $service->shouldReceive('generateFailureReport')->andReturn('report.log')->byDefault();
         // 패키지 서명 검증(7.2.0)은 이 시험의 관심사가 아니다 — 통과(미서명 확인됨)로 둔다
         $service->shouldReceive('preflightReleaseIntegrity')->byDefault();
-        $service->shouldReceive('verifyCoreZipIntegrity')->andReturn(\App\Extension\Integrity\PackageVerification::unsigned())->byDefault();
+        $service->shouldReceive('verifyCoreZipIntegrity')->andReturn(PackageVerification::unsigned())->byDefault();
         $service->shouldReceive('confirmCoreIntegrity')->andReturnUsing(fn ($verification) => $verification)->byDefault();
         $this->app->instance(CoreUpdateService::class, $service);
 

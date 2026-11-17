@@ -121,9 +121,9 @@ class GateMembershipGuardTest extends LayoutMarkupTestCase
         'modules/_bundled/sirsoft-page/tests/Unit/Benchmark/ListIndexCoverageTest.php' => '성능 계측 트랙 소유 (목록 프로파일 ↔ 인덱스 선언 대조).',
         'plugins/_bundled/sirsoft-gdpr/tests/Feature/GdprConsentAtomicityTest.php' => 'GDPR 트랙 소유 (동의 철회·삭제의 원자성).',
         'plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Support/BackendMessageKeyResolutionTest.php' => 'PG 트랙 소유 (백엔드 메시지 키의 로케일 해석).',
-        'plugins/_bundled/sirsoft-verification_kginicis/tests/Feature/Listeners/CleanInicisRecordAtomicityTest.php' => '본인인증 트랙 소유 (인증 기록 정리의 원자성).',
+        //    #888 이 본인인증 두 플러그인 매니페스트(`record-cleanup`)에 등재해 `CleanInicisRecordAtomicityTest`·
+        //    `CleanKcpRecordAtomicityTest` 2행을 해소했다(develop-7.2.0 리베이스 2026-11-17 에서 반영).
         'plugins/_bundled/sirsoft-verification_kginicis/tests/Feature/PluginCacheContextualBindingTest.php' => '확장 캐시 바인딩 트랙 소유 (플러그인 컨텍스추얼 바인딩).',
-        'plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Listeners/CleanKcpRecordAtomicityTest.php' => '본인인증 트랙 소유 (인증 기록 정리의 원자성).',
         'tests/Unit/Benchmark/ListIndexCoverageTest.php' => '성능 계측 트랙 소유 (목록 프로파일 ↔ 인덱스 선언 대조).',
         'tests/Unit/Search/KeywordSearchTest.php' => '검색 트랙 소유 (키워드 술어의 활성 엔진 위임).',
         'tests/Unit/Services/LanguagePackServiceUpdateCheckScopeTest.php' => '언어팩 트랙 소유 (업데이트 확인 범위).',

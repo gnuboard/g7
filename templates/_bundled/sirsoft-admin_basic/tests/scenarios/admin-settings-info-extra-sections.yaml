@@ -21,5 +21,5 @@ test_files:
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-info-extra-sections.test.tsx
 
 notes: |
-  레이아웃 테스트는 `_tab_info.json` 굽기 산출물의 `card_extra_section_*` 노드를 그대로 렌더한다. 서버 쪽 형식 검증·리스너 예외
+  레이아웃 테스트는 `_tab_info.g7.html` 을 구운 산출물의 `card_extra_section_*` 노드를 그대로 렌더한다. 서버 쪽 형식 검증·리스너 예외
   격리·캐시 밖 계산은 코어 `tests/Feature/Services/SettingsServiceSystemInfoTest.php` 가 잠근다.
