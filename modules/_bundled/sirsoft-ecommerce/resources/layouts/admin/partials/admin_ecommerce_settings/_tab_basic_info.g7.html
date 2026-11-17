@@ -20,7 +20,7 @@
         <div data-ref="field_route_path" class="ecommerce-form-group">
           <label class="ecommerce-form-label">
             <span>$t:sirsoft-ecommerce.admin.settings.basic_info.shop_info.route_path</span>
-            <span data-if="{{!_local.form?.basic_info?.no_route}}" class="ecommerce-text-required">*</span>
+            <span data-if="{{settings !== undefined &amp;&amp; (!_local.form?.basic_info?.no_route)}}" class="ecommerce-text-required">*</span>
           </label>
           <input type="text" name="basic_info.route_path" placeholder="shop" disabled="{{_computed.isReadOnly || _local.form?.basic_info?.no_route === true}}" class="{{_local.errors?.['basic_info.route_path'] ? 'ecommerce-input ecommerce-input-error ecommerce:w-60' : 'ecommerce-input ecommerce:w-60'}}{{_local.form?.basic_info?.no_route ? ' ecommerce:opacity-50 ecommerce:cursor-not-allowed' : ''}}"/>
           <span data-if="{{_local.errors?.['basic_info.route_path']}}" class="ecommerce-form-error">{{_local.errors?.['basic_info.route_path']?.[0] ?? ''}}</span>
@@ -193,6 +193,20 @@
             <label class="ecommerce-form-label">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.telecom_number</label>
             <input type="text" name="basic_info.telecom_number" placeholder="$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.telecom_number_placeholder" class="{{_local.errors?.['basic_info.telecom_number'] ? 'ecommerce-input ecommerce-input-error' : 'ecommerce-input'}}" disabled="{{_computed.isReadOnly}}"/>
             <span data-if="{{_local.errors?.['basic_info.telecom_number']}}" class="ecommerce-form-error">{{_local.errors?.['basic_info.telecom_number']?.[0] ?? ''}}</span>
+          </div>
+          <div data-ref="field_hosting_provider" class="ecommerce-form-group">
+            <label class="ecommerce-form-label">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.hosting_provider</label>
+            <input type="text" name="basic_info.hosting_provider" placeholder="$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.hosting_provider_placeholder" class="{{_local.errors?.['basic_info.hosting_provider'] ? 'ecommerce-input ecommerce-input-error' : 'ecommerce-input'}}" disabled="{{_computed.isReadOnly}}"/>
+            <span data-if="{{_local.errors?.['basic_info.hosting_provider']}}" class="ecommerce-form-error">{{_local.errors?.['basic_info.hosting_provider']?.[0] ?? ''}}</span>
+          </div>
+          <div data-ref="field_show_business_footer" class="ecommerce-form-group">
+            <div class="ecommerce-flex-between">
+              <div>
+                <label class="ecommerce-form-label">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.show_business_footer</label>
+                <p class="ecommerce-form-hint">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.show_business_footer_hint</p>
+              </div>
+              <toggle data-type="composite" name="basic_info.show_business_footer" value="{{_local.form?.basic_info?.show_business_footer ?? true}}" disabled="{{_computed.isReadOnly}}"/>
+            </div>
           </div>
         </div>
         <!-- 푸터 사업자 정보 표시 (#434) — 켜면 이 모듈이 사용자 템플릿의 공용 자리(user_global_footer)에 위 값을 그린다(전자상거래법 첫 화면 표시).

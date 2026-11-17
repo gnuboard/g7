@@ -89,7 +89,7 @@ class PublicApiUnexpectedFailureLogTest extends ModuleTestCase
             'popular' => ['getPopularProducts', 'GET', '/products/popular', 'messages.products.fetch_failed', 'products.popular failed'],
             'related' => ['getRelatedProducts', 'GET', '/products/{product}/related', 'messages.products.fetch_failed', 'products.related failed'],
             'new' => ['getNewProducts', 'GET', '/products/new', 'messages.products.fetch_failed', 'products.new failed'],
-            'recent' => ['getProductsByIds', 'GET', '/products/recent?ids={product}', 'messages.products.fetch_failed', 'products.recent failed'],
+            'recent' => ['getRecentProducts', 'GET', '/products/recent?ids={product}', 'messages.products.fetch_failed', 'products.recent failed'],
             'show' => ['getDetail', 'GET', '/products/{product}', 'messages.products.fetch_failed', 'products.show failed'],
         ];
     }
@@ -214,10 +214,10 @@ class PublicApiUnexpectedFailureLogTest extends ModuleTestCase
     public static function settingsEndpoints(): array
     {
         return [
-            'shipping' => ['getSettings', '/settings/shipping', 'settings.shipping failed'],
+            'shipping' => ['getPublicCategorySettings', '/settings/shipping', 'settings.shipping failed'],
             'payment' => ['getPublicPaymentSettings', '/settings/payment', 'settings.payment failed'],
-            'review' => ['getSettings', '/settings/review', 'settings.review failed'],
-            'checkout' => ['getSettings', '/settings/checkout', 'settings.checkout failed'],
+            'review' => ['getPublicCategorySettings', '/settings/review', 'settings.review failed'],
+            'checkout' => ['getPublicCategorySettings', '/settings/checkout', 'settings.checkout failed'],
         ];
     }
 

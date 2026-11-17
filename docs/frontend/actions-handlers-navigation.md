@@ -38,7 +38,7 @@
 }
 ```
 
-> 목적지가 `G7Config.customRoutes` 패턴(서버 `routes/custom.php` 의 GET 주소 — 개발자 화면, engine-v1.91.0+)과 맞으면 SPA 로 그리지 않고 `location.assign` 으로 전체 페이지 이동한다. 뒤로 가기로 그 주소에 오면 새로 불러온다. 패턴의 `{정규식}` 구간은 서버 라우트의 경로 제약이다. [개발자 화면 가이드](../custom-development.md#12-운영-주의)
+> 목적지가 `G7Config.customRoutes` 패턴(서버 `routes/custom.php` 의 GET 주소 — 개발자 화면, engine-v1.92.0+)과 맞으면 SPA 로 그리지 않고 `location.assign` 으로 전체 페이지 이동한다. 뒤로 가기로 그 주소에 오면 새로 불러온다. 패턴의 `{정규식}` 구간은 서버 라우트의 경로 제약이다. [개발자 화면 가이드](../custom-development.md#12-운영-주의)
 
 ### navigate params 구조
 
@@ -220,7 +220,7 @@
 
 **판정 흐름**:
 
-0. 하위 폴더 설치면 마운트 접두사를 품은 목적지(`/g7/board/free`, 같은 출처 전체 주소)는 접두사를 벗겨 대조한다. 목적지가 `//`(프로토콜 상대, 백슬래시와 제어 문자 변형 포함)나 스킴으로 시작하면 사이트 밖이다 — 아래 어느 갈래(`fallback: false`, `replace: true`, 라우터 미초기화 포함)로도 SPA 이동하지 않고 경고만 남기며, 기본 fallback 은 그 주소를 같은 출처 판정으로 거부한다 (engine-v1.93.0)
+0. 하위 폴더 설치면 마운트 접두사를 품은 목적지(`/g7/board/free`, 같은 출처 전체 주소)는 접두사를 벗겨 대조한다. 목적지가 `//`(프로토콜 상대, 백슬래시와 제어 문자 변형 포함)나 스킴으로 시작하면 사이트 밖이다 — 아래 어느 갈래(`fallback: false`, `replace: true`, 라우터 미초기화 포함)로도 SPA 이동하지 않고 경고만 남기며, 기본 fallback 은 그 주소를 같은 출처 판정으로 거부한다 (engine-v1.94.0)
 1. `params.fallback === false` → fallback 비활성화 (SPA navigate 강행, 기존 동작)
 2. `params.replace === true` → 쿼리 갱신 전용이므로 fallback 미적용
 3. Router 미초기화 또는 routes 미로드 → fallback 미적용 (정상 navigate)

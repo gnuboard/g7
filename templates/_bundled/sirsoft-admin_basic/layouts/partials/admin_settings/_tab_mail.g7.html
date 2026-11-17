@@ -22,7 +22,7 @@
             </p>
           </div>
         </div>
-        <div data-ref="smtp_settings_fields" data-if="{{!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp'}}" class="row-stack">
+        <div data-ref="smtp_settings_fields" data-if="{{settings !== undefined &amp;&amp; (!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp')}}" class="row-stack">
           <div class="grid grid-cols-1 gap-4">
             <responsive on="768-" class="grid grid-cols-2 gap-4"/>
             <div data-ref="field_encryption">

@@ -42,6 +42,17 @@
           <span class="ecommerce-text-body">MB</span>
           <p class="ecommerce:w-full ecommerce-form-hint">$t:sirsoft-ecommerce.admin.settings.review_settings.max_image_size_mb_hint</p>
         </div>
+        <!-- 공개 후기 작성자 이름 가림 -->
+        <div class="ecommerce-flex-center ecommerce:gap-2 ecommerce:flex-wrap">
+          <span class="ecommerce-text-body ecommerce:w-48 ecommerce:shrink-0">$t:sirsoft-ecommerce.admin.settings.review_settings.author_name_masking_label</span>
+          <select name="review_settings.author_name_masking" aria-label="$t:sirsoft-ecommerce.admin.settings.review_settings.author_name_masking_label" class="ecommerce-input ecommerce:w-48" disabled="{{_computed.isReadOnly}}" value="{{_local.form?.review_settings?.author_name_masking ?? 'middle'}}" options="{{[{ value: 'middle', label: $t('sirsoft-ecommerce.admin.settings.review_settings.author_name_masking_middle') }, { value: 'none', label: $t('sirsoft-ecommerce.admin.settings.review_settings.author_name_masking_none') }]}}">
+            <on type="change">
+              <!-- 공개 후기(상품 상세 후기 탭·리뷰 모아보기)에 싣는 작성자 이름을 가릴지 정한다. 관리자·본인 화면은 늘 실명이다. -->
+              <set-state target="local" form.review_settings.author_name_masking="{{$event.target.value}}" :hasChanges="true"/>
+            </on>
+          </select>
+          <p class="ecommerce:w-full ecommerce-form-hint">$t:sirsoft-ecommerce.admin.settings.review_settings.author_name_masking_hint</p>
+        </div>
       </div>
     </div>
     <!-- 후기 작성자 표시 이름(#490). 방식은 「상위 영역 따름 / 특정 종류 고정 / 회원이 고른 값」이고, 종류 칸은 고정일 때만 나온다.

@@ -71,7 +71,7 @@ class UninstallLanguagePackCommand extends Command
             if (! $this->unifiedConfirm(__('language_packs.commands.uninstall.confirm', ['identifier' => $identifier]), false)) {
                 $this->info(__('language_packs.commands.uninstall.cancelled'));
 
-                return self::SUCCESS;
+                return $this->confirmAbortExitCode();
             }
         }
 

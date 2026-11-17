@@ -3,6 +3,7 @@
 namespace App\Privacy;
 
 use App\ActivityLog\Traits\ResolvesActivityLogType;
+use App\Contracts\Repositories\UserRepositoryInterface;
 use App\DisplayName\DisplayNameAreaRegistry;
 use App\DisplayName\DisplayNameResolver;
 use App\Enums\ActivityLogType;
@@ -96,8 +97,14 @@ class DormantAccountService
      * 휴면 서비스를 생성합니다.
      *
      * @param  UserService  $userService  탈퇴 처리 재사용 (익명화·훅·연계 정리 포함)
+     * @param  UserRepositoryInterface|null  $userRepository  휴면 전환 시 web 세션 정리 (미지정 시 컨테이너에서 해석)
      */
-    public function __construct(private UserService $userService) {}
+    public function __construct(
+        private UserService $userService,
+        private ?UserRepositoryInterface $userRepository = null,
+    ) {
+        $this->userRepository ??= app(UserRepositoryInterface::class);
+    }
 
     /**
      * 휴면 기능 활성 여부 (기본 꺼짐).
@@ -423,8 +430,9 @@ class DormantAccountService
 
         // 상태가 Active 가 아니게 되면 토큰을 지운다 — 관리자 상태 변경 경로
         // (UserService)와 같은 규칙이다. 미들웨어가 어차피 막지만, 남겨 두면
-        // "휴면인데 토큰은 살아 있다" 는 어긋난 상태가 감사 로그에 남는다.
+        // "휴면인데 토큰은 살아 있다" 는 어긋난 상태가 감사 로그에 남는다. web 세션도 같은 이유로 지운다.
         $user->tokens()->delete();
+        $this->userRepository->deleteSessionsByUserIds([(int) $user->getKey()]);
 
         $this->logActivity('user.dormant_converted', [
             'log_type' => ActivityLogType::System,

@@ -6,7 +6,7 @@ description: |
   값, 주소 없이 루트에 붙이는 no_route 는 빈 문자열이다.
 
   no_route 를 `/` 로 두면 조립한 값이 `//cart` 가 된다. 브라우저는 이를 `cart` 라는 다른 호스트로
-  읽고, 엔진도 사이트 밖 이동으로 막는다(engine-v1.93.0). 그래서 no_route 의 기준 경로는 빈
+  읽고, 엔진도 사이트 밖 이동으로 막는다(engine-v1.94.0). 그래서 no_route 의 기준 경로는 빈
   문자열이어야 하고, 조립한 이동과 링크가 사이트 안 경로(`/cart`)로 남는지 잰다.
 
   서버가 만드는 상점 주소는 shop-route-path-server-urls.yaml 이 맡는다.

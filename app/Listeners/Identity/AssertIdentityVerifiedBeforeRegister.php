@@ -5,6 +5,7 @@ namespace App\Listeners\Identity;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Services\IdentityPolicyService;
+use App\Services\IdentityTokenAcceptanceService;
 use Illuminate\Auth\Access\AuthorizationException;
 
 /**
@@ -25,10 +26,12 @@ class AssertIdentityVerifiedBeforeRegister implements HookListenerInterface
      *
      * @param  IdentityVerificationLogRepositoryInterface  $logRepository  본인인증 기록 저장소 (토큰 검증)
      * @param  IdentityPolicyService  $policyService  본인인증 정책 서비스 (가입 전 정책 해석)
+     * @param  IdentityTokenAcceptanceService  $tokenAcceptance  본인인증 결과 인정(결박·1회 소비) Service — 7.1.6
      */
     public function __construct(
         protected IdentityVerificationLogRepositoryInterface $logRepository,
         protected IdentityPolicyService $policyService,
+        protected IdentityTokenAcceptanceService $tokenAcceptance,
     ) {}
 
     /**
@@ -80,24 +83,23 @@ class AssertIdentityVerifiedBeforeRegister implements HookListenerInterface
             throw new AuthorizationException(__('identity.errors.invalid_verification_token'));
         }
 
-        // 토큰의 이메일 타겟 일치 여부 검증 — consumed 여부와 무관하게 verified 상태 확인
-        $log = $this->logRepository->findVerifiedForToken($token, 'signup');
+        $email = (string) ($data['email'] ?? '');
+        $targetHash = $email !== '' ? hash('sha256', mb_strtolower($email)) : null;
+        $requiredProviderId = $this->policyService->requiredProviderId($policy);
 
-        if (! $log) {
-            throw new AuthorizationException(__('identity.errors.invalid_verification_token'));
+        // 목적·지정 수단·가입 이메일이 맞는 결과만, 한 번만 인정한다 — 조회 뒤 조건 없는 소비로는 같은 결과로
+        // 동시에 두 번 가입할 수 있었다(KVE 동형 O4, 7.1.6). 같은 요청에서 정책 미들웨어가 이미 인정했으면 다시 인정한다.
+        $log = $this->tokenAcceptance->accept($token, 'signup', $requiredProviderId, $targetHash);
+
+        if ($log !== null) {
+            return;
         }
 
-        // 타겟 일치 확인 (하이재킹 방지)
-        $email = (string) ($data['email'] ?? '');
-        if ($email !== '' && $log->target_hash !== hash('sha256', mb_strtolower($email))) {
+        // 거절 사유 구분 — 결과는 있는데 다른 이메일로 받은 것이면 대상 불일치 문구
+        if ($targetHash !== null && $this->tokenAcceptance->peek($token, 'signup', $requiredProviderId) !== null) {
             throw new AuthorizationException(__('identity.errors.target_mismatch'));
         }
 
-        // 재사용 방지 — 검증된 토큰 consume (idempotent: 이미 consume 되어 있어도 OK)
-        if ($log->consumed_at === null) {
-            $this->logRepository->updateById($log->id, [
-                'consumed_at' => now(),
-            ]);
-        }
+        throw new AuthorizationException(__('identity.errors.invalid_verification_token'));
     }
 }

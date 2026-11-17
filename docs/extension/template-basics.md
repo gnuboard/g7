@@ -462,7 +462,7 @@ CHANGELOG 에 적습니다.
 
 운영자가 사이트에 맞게 고치는 값은 `template.json` 이 아니라 베이스 레이아웃에 둡니다 — `template.json` 은 업데이트 때 덮이고 쓰기 화면이 없습니다.
 
-### 첫 화면에 미리 싣는 키 (expose) — engine-v1.95.0+
+### 첫 화면에 미리 싣는 키 (expose) — engine-v1.96.0+
 
 엔진은 앱을 시작할 때 template.json 의 몇 가지 값(`scroll_restoration`·`errorHandling`·`error_config`)을 읽습니다. 종전에는 이 값을 받으려고 첫 화면 전에 `/api/templates/{identifier}/config.json` 을 한 번 불렀습니다. 서버 왕복 한 번이 첫 화면을 그만큼 늦춥니다. 최상위 `expose` 에 키 이름을 적으면 서버가 그 키의 값만 화면 HTML(`G7Config.templateConfig`)에 함께 실어 보내고, 엔진은 API 를 부르지 않습니다.
 
@@ -499,7 +499,7 @@ CHANGELOG 에 적습니다.
 }
 ```
 
-### 코드 레이아웃이 없을 때의 대체 (engine-v1.94.0)
+### 코드 레이아웃이 없을 때의 대체 (engine-v1.95.0)
 
 `showErrorPage` 나 화면 처리가 부른 오류 코드에 맞는 레이아웃이 `layouts` 에 없으면 엔진은 다음 순서로 대신 그리고 경고 로그를 남긴다.
 

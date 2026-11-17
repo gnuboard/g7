@@ -245,6 +245,28 @@ SSO·디렉터리 로그인·헤더 인증처럼 **비밀번호가 아닌 수단
 | `core.user.after_block` | action | `(User $user, array $context)` — `reason_key`·`source` | `UserService::blockUser()` 뒤(토큰 전량 회수 뒤, 이미 차단이어도) |
 | `core.user.after_unblock` | action | `(User $user, array $context)` | `UserService::unblockUser()` 뒤 |
 | `core.user.after_sessions_revoked` | action | `(User $user, ?User $actor, array{count: int})` | `UserService::revokeAllSessions()` 뒤(관리자 「모든 기기에서 로그아웃」 또는 시스템 경로 — 행위자 없음) |
+### 가입 트랜잭션 안 훅 `core.auth.registering` (7.1.6)
+
+회원가입(`AuthService::register()`)은 사용자 행 생성·역할 연결·토큰 발급을 한 DB 트랜잭션으로 묶습니다.
+`core.auth.registering` 은 그 트랜잭션 **안**(역할 연결 뒤, 토큰 발급 앞)에서 발행되는 액션 훅입니다. 「가입과 함께
+성공하거나 함께 취소」되어야 하는 기록 — 예: 본인확인 플러그인의 실명 정보(DI/CI) 선점 — 을 확장이 남기는 자리입니다.
+같은 사람이 이메일 두 개로 동시에 가입할 때, 가입 전 훅(`core.auth.before_register`, 트랜잭션 밖)의 조회만으로는 두 요청이
+모두 「중복 없음」을 볼 수 있어 DB 유니크 선점을 이 훅에서 합니다.
+
+| 훅 | 종류 | 인자 | 발행 시점 |
+| --- | --- | --- | --- |
+| `core.auth.registering` | action | `(User $user, array $data, array $context)` — `$data` = 가입 요청 데이터(`password`·`password_confirmation` 제외), `$context` = `['signup_stage' => 'in_transaction']` | 가입 트랜잭션 안, 사용자 생성·역할 연결 뒤 토큰 발급 전 |
+
+계약:
+
+- **동기 구독만 의미가 있습니다.** `getSubscribedHooks()` 에서 `'sync' => true` 로 받으세요. 큐 구독은 트랜잭션 커밋 뒤로
+  밀려 실행되므로 롤백 대상이 되지 않고, 이 훅을 쓰는 이유(가입과 원자적 기록)가 사라집니다.
+- **구독자가 예외를 던지면 가입 전체가 롤백됩니다** — 사용자 행·역할 연결·이 훅 안에서 쓴 다른 구독자의 기록이 함께
+  취소되고 토큰은 발급되지 않습니다. 화면에 보일 거절이면 `ValidationException`·422 계열 예외를 던집니다.
+- 트랜잭션 안이므로 외부 호출(PG·메일·HTTP)을 하지 않습니다. 잠금을 오래 잡으면 동시 가입이 그만큼 기다립니다.
+- 커밋 뒤 처리(알림·후속 기록)는 기존 `core.auth.after_register` 를 구독합니다.
+- 번들 구독자: 본인확인 플러그인 `sirsoft-verification_nhnkcp`·`sirsoft-verification_kginicis` 가 우선순위 20 으로 실명 정보를
+  선점합니다(플러그인별 선점 표의 UNIQUE). 이미 다른 계정이 선점했으면 중복가입 차단 오류(422)로 가입을 되돌립니다.
 
 ### 회원 역할 변경 훅 (7.1.0)
 

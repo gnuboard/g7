@@ -704,7 +704,7 @@ export interface DataSourceResult {
    * 미뤄 둔 onSuccess 실행 함수 — `deferOnSuccess` 로 받았고 성공 처리가 돌 응답일 때만 있다(errorCondition·실패·fallback 은 없음).
    * 호출부가 새 화면 상태를 세운 뒤 부른다. 받기를 시작한 경로 세대가 지났으면 실행하지 않는다.
    *
-   * @since engine-v1.94.0
+   * @since engine-v1.95.0
    */
   runOnSuccess?: () => Promise<void>;
 }
@@ -1441,7 +1441,7 @@ export class DataSourceManager {
    * @param options fetch 옵션
    *   - ignoreAutoFetch: true면 auto_fetch: false인 소스도 강제 fetch (refetchDataSource 용)
    *   - deferOnSuccess: true면 onSuccess 를 돌리지 않고 결과의 `runOnSuccess` 로 넘긴다 — 다른 화면으로 옮기는 전환의 blocking 받기는
-   *     아직 앞 화면 상태 위라, 거기서 돌린 `_local` 쓰기·다시 받기가 뒤이은 상태 초기화와 렌더 문맥 재구성에 버려진다 (engine-v1.94.0, #869)
+   *     아직 앞 화면 상태 위라, 거기서 돌린 `_local` 쓰기·다시 받기가 뒤이은 상태 초기화와 렌더 문맥 재구성에 버려진다 (engine-v1.95.0, #869)
    */
   async fetchDataSourcesWithResults(
     sources: DataSource[],
@@ -1560,7 +1560,7 @@ export class DataSourceManager {
               }
             };
 
-            // 호출부가 새 화면 상태를 세운 뒤 돌린다 (engine-v1.94.0)
+            // 호출부가 새 화면 상태를 세운 뒤 돌린다 (engine-v1.95.0)
             if (options?.deferOnSuccess) {
               return {
                 id: source.id,

@@ -1,4 +1,4 @@
-feature: 셀 정의(컴포넌트가 직접 그리는 키) 안의 responsive 가 폭을 구독하지 않는 복합 컴포넌트에서도 구간 경계에서 다시 그려진다 (engine-v1.94.0)
+feature: 셀 정의(컴포넌트가 직접 그리는 키) 안의 responsive 가 폭을 구독하지 않는 복합 컴포넌트에서도 구간 경계에서 다시 그려진다 (engine-v1.95.0)
 
 description: |
   셀은 복합 컴포넌트가 렌더 중에 renderItemChildren 으로 그리고 그 순간의 폭으로 분기를 고른다. 번들 DataGrid·CardGrid 는

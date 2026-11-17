@@ -76,8 +76,8 @@
     </button>
   </div>
   <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
-    <span data-ref="total_count" data-if="{{schedules?.data?.pagination?.total_is_exact !== false}}" class="text-label">$t:admin.schedules.total_count|count={{schedules?.data?.pagination?.total ?? 0}}</span>
-    <span data-ref="total_count_at_least" data-if="{{schedules?.data?.pagination?.total_is_exact === false}}" class="text-label">$t:admin.schedules.total_at_least|count={{schedules?.data?.pagination?.total ?? 0}}</span>
+    <span data-ref="total_count" data-if="{{schedules?.data?.pagination?.total_is_exact !== false}}" class="text-label"><blur-until-loaded sources="schedules"/>$t:admin.schedules.total_count|count={{schedules?.data?.pagination?.total ?? 0}}</span>
+    <span data-ref="total_count_at_least" data-if="{{schedules?.data?.pagination?.total_is_exact === false}}" class="text-label"><blur-until-loaded sources="schedules"/>$t:admin.schedules.total_at_least|count={{schedules?.data?.pagination?.total ?? 0}}</span>
     <div data-ref="list_options" class="flex-center gap-3">
       <select name="sort_by" class="w-40" value="{{query.sort_by ? query.sort_by + '_' + (query.sort_order || 'desc') : 'created_at_desc'}}" aria-label="$t:admin.schedules.sort.label">
         <options>

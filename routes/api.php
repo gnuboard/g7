@@ -379,7 +379,7 @@ Route::prefix('identity')->middleware(['allow.inactive_user', 'allow.pending_req
         ->name('api.identity.callback');
 });
 
-// 인증 관련 라우트 (인증 불필요, 속도 제한 없음 - 공개 API)
+// 인증 관련 라우트 (인증 불필요 - 공개 API)
 // start.api.session: 로그인 시 세션 생성 (/dev 대시보드 인증용)
 // throttle:auth-login: per-IP brute-force 백업 방어 (보안 환경설정의 per-account 잠금과 2중 방어)
 Route::prefix('auth')->group(function () {
@@ -417,16 +417,23 @@ Route::prefix('auth')->group(function () {
     // IDV 정책은 bootstrap/app.php 의 자동 매핑 미들웨어가 라우트 이름 기반으로 enforce.
     // 정책 DB 토글만으로 즉시 효과 — 라우트 코드 수정 불필요. 외부 모듈/플러그인이 자기 정책 키를
     // 강제하고 싶을 때만 ->middleware('identity.policy:KEY') 를 명시 사용.
-    // 가입도 세션을 연다 — 가입 직후 개발자 화면(custom)에서 로그인으로 보이도록 세션에 로그인·토큰 짝을 남긴다(#792 D20)
     // 가입 화면이 그릴 회원 항목(운영자 설정 반영)과 정의 버전 — 비로그인 화면이 부른다 (#490)
     Route::get('register/fields', [UserAuthController::class, 'registerFields'])->name('api.auth.register.fields');
+    // 요청 제한(같은 IP·분당, 보안 환경설정): 가입 / 비밀번호 찾기 / 재설정·토큰 확인은 서로 따로 센다.
+    // 가입도 세션을 연다 — 가입 직후 개발자 화면(custom)에서 로그인으로 보이도록 세션에 로그인·토큰 짝을 남긴다(#792 D20)
     Route::post('register', [UserAuthController::class, 'register'])
+        ->middleware('throttle:auth-register')
         ->middleware('start.api.session')
         ->name('api.auth.register');
-    Route::post('forgot-password', [UserAuthController::class, 'forgotPassword'])->name('api.auth.forgot-password');
+    Route::post('forgot-password', [UserAuthController::class, 'forgotPassword'])
+        ->middleware('throttle:auth-password-reset')
+        ->name('api.auth.forgot-password');
     Route::post('reset-password', [UserAuthController::class, 'resetPassword'])
+        ->middleware('throttle:auth-password-reset-verify')
         ->name('api.auth.reset-password');
-    Route::post('validate-reset-token', [UserAuthController::class, 'validateResetToken'])->name('api.auth.validate-reset-token');
+    Route::post('validate-reset-token', [UserAuthController::class, 'validateResetToken'])
+        ->middleware('throttle:auth-password-reset-verify')
+        ->name('api.auth.validate-reset-token');
 
     // 일반 사용자 인증 (인증 필요 - 공용 경로)
     // 본인 정보 조회(헤더·라우트 인증 판정이 부른다)는 비활성 상태 회원이라도 역할의 내 정보 조회 권한으로 허용한다

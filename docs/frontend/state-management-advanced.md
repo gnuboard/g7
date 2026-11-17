@@ -858,7 +858,7 @@ G7Core.toast.show('메시지', { type: 'info', duration: 5000 });
 // 모달 열기/닫기
 G7Core.modal.open('confirm_modal');
 G7Core.modal.close();  // 최상위 모달 닫기 (ID 인자는 무시된다)
-G7Core.modal.closeAll();  // 열린 모달 모두 닫기 (engine-v1.94.0+, closeModal 의 params.all)
+G7Core.modal.closeAll();  // 열린 모달 모두 닫기 (engine-v1.95.0+, closeModal 의 params.all)
 
 // 상태 확인
 G7Core.modal.isOpen('confirm_modal');  // boolean
@@ -891,7 +891,7 @@ await G7Core.componentEvent.emit('eventName', { key: 'value' });
 // 구독 해제 — on() 이 돌려준 해제 함수 (권장)
 unsubscribe();
 
-// 또는 콜백 참조로 그 구독만 해제 (engine-v1.93.0)
+// 또는 콜백 참조로 그 구독만 해제 (engine-v1.94.0)
 G7Core.componentEvent.off('eventName', callback);
 ```
 

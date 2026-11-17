@@ -99,4 +99,30 @@ describe('본인인증 시작 요청 — 대상·정책 보존', () => {
       expect(c.params?.body?.scope, path).toBe('admin');
     }
   });
+
+  /**
+   * @effects fullpage_resend_keeps_provider_and_policy
+   */
+  it('전체화면 본인인증의 재전송은 상태 조회로 받은 수단·정책 키를 다시 싣는다 (코어 7.1.6 정책 수단 결박)', () => {
+    // @scenario surface=fullpage_challenge_resend
+    const fullpage = files.filter(({ path }) => path.endsWith('identity_challenge.json'));
+    expect(fullpage.length).toBe(1);
+
+    const { path, json } = fullpage[0];
+    // 상태 조회 성공 시 수단·정책 키를 화면 상태에 담는다
+    const status = collect(json, (o) => o.handler === 'apiCall' && String(o.target ?? '').includes('/api/identity/challenges/{{query.challenge_id}}'));
+    expect(status.length, path).toBeGreaterThanOrEqual(1);
+    const statusSuccess = JSON.stringify(status[0].onSuccess ?? '');
+    expect(statusSuccess, path).toContain('response.data.provider_id');
+    expect(statusSuccess, path).toContain('response.data.policy_key');
+
+    // 재전송(같은 화면 상태로 challenge 를 다시 여는 호출)마다 수단·정책 키를 싣는다
+    const resends = collect(json, (o) => o.handler === 'apiCall' && o.target === '/api/identity/challenges');
+    expect(resends.length, path).toBeGreaterThanOrEqual(1);
+    for (const c of resends) {
+      const body = JSON.stringify(c.params?.body ?? '');
+      expect(body, path).toContain('_local.provider_id');
+      expect(body, path).toContain('_local.policy_key');
+    }
+  });
 });

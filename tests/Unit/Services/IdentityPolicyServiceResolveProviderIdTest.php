@@ -43,7 +43,7 @@ class IdentityPolicyServiceResolveProviderIdTest extends PureTestCase
     }
 
     /**
-     * 정책의 provider_id 가 등록된 provider 이면 Manager fallback 없이 그 값을 그대로 돌려준다.
+     * 정책의 provider_id 가 등록돼 있고 목적을 지원하며 쓸 수 있으면 그 값을 그대로 돌려준다 (Manager 폴백 없음).
      *
      * @scenario case=registered
      *
@@ -56,9 +56,13 @@ class IdentityPolicyServiceResolveProviderIdTest extends PureTestCase
         $policyRepo = Mockery::mock(IdentityPolicyRepositoryInterface::class);
         $logRepo = Mockery::mock(IdentityVerificationLogRepositoryInterface::class);
 
+        $provider = Mockery::mock(IdentityVerificationInterface::class);
+        $provider->shouldReceive('supportsPurpose')->with('signup')->andReturn(true);
+        $provider->shouldReceive('isAvailable')->andReturn(true);
+
         $manager = Mockery::mock(IdentityVerificationManager::class);
-        // 등록된 provider 면 그대로 반환 — Manager fallback 진입 없음
         $manager->shouldReceive('has')->with('inicis')->andReturn(true);
+        $manager->shouldReceive('get')->with('inicis')->andReturn($provider);
         $manager->shouldNotReceive('resolveForPurpose');
 
         $service = new IdentityPolicyService($policyRepo, $logRepo, $manager);
@@ -72,7 +76,7 @@ class IdentityPolicyServiceResolveProviderIdTest extends PureTestCase
     }
 
     /**
-     * 정책의 provider_id 가 NULL 이면 Manager 의 목적 기반 해석으로 넘어가 그 결과 provider id 를 돌려준다.
+     * 정책의 provider_id 가 NULL(기본 인증 수단 사용)이면 Manager 의 목적 기반 해석 결과를 돌려준다.
      *
      * @scenario case=null_provider
      *
@@ -89,10 +93,9 @@ class IdentityPolicyServiceResolveProviderIdTest extends PureTestCase
         $resolvedProvider->shouldReceive('getId')->andReturn('inicis');
 
         $manager = Mockery::mock(IdentityVerificationManager::class);
-        // 정책 provider_id 가 NULL → 즉시 fallback 분기
         $manager->shouldReceive('resolveForPurpose')
             ->once()
-            ->with('signup', null)
+            ->with('signup')
             ->andReturn($resolvedProvider);
 
         $service = new IdentityPolicyService($policyRepo, $logRepo, $manager);
@@ -106,30 +109,22 @@ class IdentityPolicyServiceResolveProviderIdTest extends PureTestCase
     }
 
     /**
-     * 정책 provider 가 미등록이면 그 값을 0순위로 Manager 에 넘겨 fallback 해석한 provider id 를 돌려준다.
+     * 정책이 지정한 수단을 쓸 수 없으면(미등록·비활성) 메일로 폴백하지 않고 null 을 돌려준다 (7.1.6, KVE 동형 B9).
      *
      * @scenario case=unregistered_provider
      *
-     * @effects unregistered_policy_provider_passed_to_manager_fallback
+     * @effects unavailable_policy_provider_not_replaced
      *
      * @return void 반환값 없음
      */
-    public function test_falls_back_to_manager_when_policy_provider_unregistered(): void
+    public function test_returns_null_when_policy_provider_unregistered(): void
     {
         $policyRepo = Mockery::mock(IdentityPolicyRepositoryInterface::class);
         $logRepo = Mockery::mock(IdentityVerificationLogRepositoryInterface::class);
 
-        $resolvedProvider = Mockery::mock(IdentityVerificationInterface::class);
-        $resolvedProvider->shouldReceive('getId')->andReturn('g7:core.mail');
-
         $manager = Mockery::mock(IdentityVerificationManager::class);
-        // 정책 provider 가 비활성/언인스톨된 경우 — has()=false → fallback 진입
         $manager->shouldReceive('has')->with('plugin:disabled')->andReturn(false);
-        // 핵심 회귀 차단: 정책의 provider_id 를 Manager 의 0번 우선순위로 전달
-        $manager->shouldReceive('resolveForPurpose')
-            ->once()
-            ->with('signup', 'plugin:disabled')
-            ->andReturn($resolvedProvider);
+        $manager->shouldNotReceive('resolveForPurpose');
 
         $service = new IdentityPolicyService($policyRepo, $logRepo, $manager);
 
@@ -138,19 +133,19 @@ class IdentityPolicyServiceResolveProviderIdTest extends PureTestCase
             'provider_id' => 'plugin:disabled',
         ]);
 
-        $this->assertSame('g7:core.mail', $this->invokeResolveProviderId($service, $policy));
+        $this->assertNull($this->invokeResolveProviderId($service, $policy));
     }
 
     /**
-     * Manager 해석이 예외를 던지면 정책에 저장된 원본 provider_id 를 그대로 돌려준다.
+     * 수단을 지정하지 않은 정책에서 Manager 해석이 예외를 던지면 null 을 돌려준다.
      *
      * @scenario case=manager_failure
      *
-     * @effects manager_failure_keeps_original_provider_id
+     * @effects manager_failure_returns_null
      *
      * @return void 반환값 없음
      */
-    public function test_returns_original_provider_id_when_manager_throws(): void
+    public function test_returns_null_when_manager_throws(): void
     {
         $policyRepo = Mockery::mock(IdentityPolicyRepositoryInterface::class);
         $logRepo = Mockery::mock(IdentityVerificationLogRepositoryInterface::class);
@@ -163,11 +158,10 @@ class IdentityPolicyServiceResolveProviderIdTest extends PureTestCase
 
         $policy = new IdentityPolicy([
             'purpose' => 'unknown',
-            'provider_id' => 'legacy-id',
+            'provider_id' => null,
         ]);
 
-        // Manager 예외 발생 시 정책의 원본 provider_id 를 그대로 반환 (정책 정보 보존)
-        $this->assertSame('legacy-id', $this->invokeResolveProviderId($service, $policy));
+        $this->assertNull($this->invokeResolveProviderId($service, $policy));
     }
 
     /**

@@ -12,7 +12,6 @@ use App\Enums\AttachmentSourceType;
 use App\Enums\PermissionType;
 use App\Models\Attachment;
 use App\Models\Menu;
-use App\Models\PasswordResetToken;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\Schedule;
@@ -46,6 +45,8 @@ class MultiStepWriteAtomicityTest extends TestCase
 
     /**
      * deleteUser: 마지막 delete 실패 시 역할·동의·토큰·아바타 파일이 원상 복구된다.
+     *
+     * @scenario failure_injection=last_write_fails
      *
      * @effects withdraw_is_atomic_all_or_nothing, avatar_file_removed_only_after_commit
      *
@@ -162,26 +163,9 @@ class MultiStepWriteAtomicityTest extends TestCase
 
         // 트랜잭션의 **마지막** 쓰기는 토큰 삭제다. 1단계(비밀번호 갱신)를 실패시키면
         // 트랜잭션이 없어도 통과하므로 회귀를 검출하지 못한다.
-        $failingRecord = new class extends PasswordResetToken
-        {
-            /**
-             * 트랜잭션의 마지막 쓰기인 토큰 삭제를 항상 예외로 실패시킨다.
-             *
-             * @return bool 반환하지 않음(항상 예외를 던진다)
-             */
-            public function delete(): bool
-            {
-                throw new RuntimeException('마지막 쓰기 실패');
-            }
-        };
-        $failingRecord->forceFill([
-            'email' => $user->email,
-            'token' => $hashedToken,
-            'created_at' => now(),
-        ])->syncOriginal();
-
+        // 토큰 삭제는 Repository 의 조건부 삭제(deleteMatching — 같은 링크 1회 사용, KVE 동형 O6)를 거친다.
         $tokenRepository = Mockery::mock(app(PasswordResetTokenRepositoryInterface::class));
-        $tokenRepository->shouldReceive('findByEmail')->andReturn($failingRecord);
+        $tokenRepository->shouldReceive('deleteMatching')->andThrow(new RuntimeException('마지막 쓰기 실패'));
         $this->app->instance(PasswordResetTokenRepositoryInterface::class, $tokenRepository);
 
         $this->expectRollbackFailure(
@@ -256,6 +240,8 @@ class MultiStepWriteAtomicityTest extends TestCase
 
     /**
      * updateUser — 역할 동기화 실패 시 프로필 갱신·토큰 정리가 원상 복구된다.
+     *
+     * @scenario failure_injection=last_write_fails
      *
      * @effects withdraw_is_atomic_all_or_nothing
      *

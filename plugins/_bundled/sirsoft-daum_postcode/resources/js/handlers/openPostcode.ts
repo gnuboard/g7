@@ -101,17 +101,26 @@ interface G7AddressEvent {
     _raw: any;
 }
 
-/** 펼치기 영역 공통 클래스 (다크 모드 규칙의 선택자) */
-const INLINE_CLASS = 'g7-postcode-inline';
+/**
+ * 펼치기 영역 공통 클래스 — 규칙은 `resources/css/main.css`(빌드 산출물 `dist/css/plugin.css`)에 있다.
+ *
+ * 검색 창 DOM 에는 `<style>` 요소나 `style` 속성 문자열을 쓰지 않는다 — 엄격한 스타일 정책
+ * (`style-src 'self'; style-src-attr 'none'`)에서 둘 다 막힌다. 고정 규칙은 CSS 파일에, 실행 중에 정해지는 값은
+ * `el.style.x = …`·`el.style.setProperty()` 로 싣는다(이 둘은 막히지 않는다).
+ */
+const INLINE_CLASS = 'daumpostcode-inline';
 
-/** 펼치기 영역 스타일 element id (한 번만 싣는다) */
-const INLINE_STYLE_ID = 'g7-postcode-inline-style';
+/**
+ * 레이어가 화면 가장자리에 남기는 여백 합(px) — 좌우 16px 씩.
+ * `resources/css/main.css` 의 `.daumpostcode-layer` 규칙에 같은 값이 적혀 있어야 한다(테스트가 묶는다).
+ */
+export const LAYER_VIEWPORT_GUTTER_X = 32;
 
-/** 레이어가 화면 가장자리에 남기는 여백 합(px) — 좌우 16px 씩 */
-const LAYER_VIEWPORT_GUTTER_X = 32;
-
-/** 레이어가 화면 위아래에 남기는 여백 합(px) — 닫기 단추·주소창 몫 */
-const LAYER_VIEWPORT_GUTTER_Y = 96;
+/**
+ * 레이어가 화면 위아래에 남기는 여백 합(px) — 닫기 단추·주소창 몫.
+ * `resources/css/main.css` 의 `.daumpostcode-layer` 규칙에 같은 값이 적혀 있어야 한다(테스트가 묶는다).
+ */
+export const LAYER_VIEWPORT_GUTTER_Y = 96;
 
 /** PC 표시 방식 선택지와 기본값 */
 const PC_MODES = ['popup', 'layer', 'inline'] as const;
@@ -323,38 +332,6 @@ function resolveInlineAnchor(button: HTMLElement): HTMLElement | null {
 }
 
 /**
- * 펼치기 영역 스타일을 문서에 한 번만 싣습니다.
- *
- * 영역은 엔진이 그리는 레이아웃 밖에서 핸들러가 만든 DOM 이라 템플릿 Tailwind 클래스가 생성된다는 보장이 없다.
- * 그래서 자체 규칙을 싣고, 다크 모드(`html.dark`)에서도 테두리·머리줄이 보이도록 색을 따로 둔다. 검색 창 본문은
- * 카카오 iframe 이 그리므로 밝은 바탕 그대로다.
- *
- * @return void
- */
-function ensureInlineStyle(): void {
-    if (document.getElementById(INLINE_STYLE_ID)) {
-        return;
-    }
-
-    const style = document.createElement('style');
-    style.id = INLINE_STYLE_ID;
-    style.textContent = `
-.${INLINE_CLASS} { box-sizing: border-box; width: 100%; margin-top: 8px; border: 1px solid #d1d5db; border-radius: 8px; background: #ffffff; overflow: hidden; }
-.${INLINE_CLASS}__bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px 6px 12px; border-bottom: 1px solid #e5e7eb; background: #f9fafb; color: #374151; font-size: 13px; font-weight: 500; }
-.${INLINE_CLASS}__close { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 0; border-radius: 6px; background: transparent; color: #4b5563; font-size: 20px; line-height: 1; cursor: pointer; }
-.${INLINE_CLASS}__close:hover { background: #e5e7eb; }
-.${INLINE_CLASS}__close:focus-visible { outline: 2px solid #2563eb; outline-offset: 1px; }
-.${INLINE_CLASS}__frame { position: relative; width: 100%; background: #ffffff; }
-.dark .${INLINE_CLASS} { border-color: #4b5563; background: #1f2937; }
-.dark .${INLINE_CLASS}-fullscreen { background-color: #111827 !important; }
-.dark .${INLINE_CLASS}__bar { border-bottom-color: #374151; background: #111827; color: #e5e7eb; }
-.dark .${INLINE_CLASS}__close { color: #d1d5db; }
-.dark .${INLINE_CLASS}__close:hover { background: #374151; }
-`;
-    document.head.appendChild(style);
-}
-
-/**
  * 누른 버튼의 주소 입력 줄 바로 뒤에 펼치기 영역을 만듭니다.
  *
  * @param button 누른 버튼
@@ -371,8 +348,6 @@ function createInlineArea(button: HTMLElement, height: number): {
     if (!anchor) {
         return null;
     }
-
-    ensureInlineStyle();
 
     const area = document.createElement('div');
     area.id = `g7-postcode-inline-${++inlineSequence}`;
@@ -612,7 +587,6 @@ function createFullscreenDialog(trigger: HTMLElement | null): {
     close: (restoreFocus: boolean) => void;
 } {
     document.getElementById(FULLSCREEN_ID)?.remove();
-    ensureInlineStyle();
 
     const title = t('postcode.search', '주소 검색');
 
@@ -622,14 +596,6 @@ function createFullscreenDialog(trigger: HTMLElement | null): {
     dialog.setAttribute('role', 'dialog');
     dialog.setAttribute('aria-modal', 'true');
     dialog.setAttribute('aria-label', title);
-    dialog.setAttribute('style', [
-        'position: fixed',
-        'inset: 0',
-        'z-index: 9999',
-        'display: flex',
-        'flex-direction: column',
-        'background-color: #ffffff',
-    ].join('; '));
 
     const bar = document.createElement('div');
     bar.className = `${INLINE_CLASS}__bar`;
@@ -648,8 +614,7 @@ function createFullscreenDialog(trigger: HTMLElement | null): {
     bar.appendChild(closeButton);
 
     const frame = document.createElement('div');
-    frame.className = `${INLINE_CLASS}__frame`;
-    frame.setAttribute('style', 'flex: 1 1 auto; min-height: 0; height: 100%; position: relative;');
+    frame.className = `${INLINE_CLASS}__frame ${INLINE_CLASS}__frame--fill`;
 
     dialog.appendChild(bar);
     dialog.appendChild(frame);
@@ -684,26 +649,12 @@ function createFullscreenDialog(trigger: HTMLElement | null): {
 }
 
 /**
- * 레이어 크기 선언을 만듭니다 — 설정값과 화면 크기 중 작은 쪽.
- *
- * 종전에는 `width: 500px` 고정이라 폭 360px 휴대폰에서 검색 창 좌우가 잘렸다. 높이는 모바일 주소창이 접히고
- * 펴지는 것을 반영하는 `dvh` 를 뒤에 한 번 더 적어, 지원하는 브라우저는 그 값을 쓰고 아니면 `vh` 가 남는다.
- *
- * @param width 설정 너비(px)
- * @param height 설정 높이(px)
- * @return 인라인 스타일 선언 문자열
- */
-function layerSizeStyle(width: number, height: number): string {
-    return [
-        `width: min(${width}px, calc(100vw - ${LAYER_VIEWPORT_GUTTER_X}px))`,
-        `height: min(${height}px, calc(100vh - ${LAYER_VIEWPORT_GUTTER_Y}px))`,
-        `height: min(${height}px, calc(100dvh - ${LAYER_VIEWPORT_GUTTER_Y}px))`,
-    ].join('; ');
-}
-
-/**
  * 임베드용 레이어(오버레이) 요소를 생성합니다.
  * 플러그인 설정에서 전달받은 width, height를 쓰되 화면보다 크면 화면에 맞춥니다.
+ *
+ * 크기 규칙(`min(설정값, 화면 크기 - 여백)`, 높이는 `vh` 뒤에 `dvh` 를 한 번 더)은 `resources/css/main.css` 의
+ * `.daumpostcode-layer` 에 있고, 여기서는 설정값만 CSS 변수(`--dp-width`·`--dp-height`)로 넘긴다. 종전에는
+ * `width: 500px` 고정이라 폭 360px 휴대폰에서 검색 창 좌우가 잘렸다.
  *
  * 닫기: 닫기 단추 · 바깥 클릭 · ESC · 주소 선택. 어느 경로로 닫혀도 누른 버튼으로 초점을 돌린다 — 종전에는 초점이
  * 문서 본문으로 떨어져, 배송지 등록 창 안에서 연 경우 키보드 사용자가 창 안 위치를 잃었다.
@@ -733,16 +684,12 @@ function createEmbedLayer(width: number, height: number, trigger: HTMLElement | 
         z-index: 9999;
     `;
 
-    // 레이어 컨테이너 — min()·dvh 는 CSSOM 파서마다 지원이 달라 속성 문자열로 그대로 싣는다
+    // 레이어 컨테이너 — 모양·크기 규칙은 CSS 파일에 있고, 설정값만 CSS 변수로 싣는다(style 속성 문자열 금지)
     const layer = document.createElement('div');
     layer.id = 'daum-postcode-layer';
-    layer.setAttribute('style', [
-        layerSizeStyle(width, height),
-        'background-color: white',
-        'border-radius: 8px',
-        'overflow: hidden',
-        'box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-    ].join('; '));
+    layer.className = 'daumpostcode-layer';
+    layer.style.setProperty('--dp-width', `${width}px`);
+    layer.style.setProperty('--dp-height', `${height}px`);
 
     // 닫기 버튼
     const closeButton = document.createElement('button');

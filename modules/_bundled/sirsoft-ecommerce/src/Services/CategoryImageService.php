@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 use App\Contracts\Extension\StorageInterface;
 use App\Extension\HookManager;
 use App\Helpers\InlineMediaPolicy;
+use App\Support\Files\StoredFileExtension;
 use App\Support\ImageResizer;
 use App\Support\UploadedFileName;
 use App\Thumbnails\DTO\ThumbnailSource;
@@ -17,7 +18,6 @@ use Modules\Sirsoft\Ecommerce\Models\CategoryImage;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CategoryImageRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\BuildsRowThumbnailSource;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesRowStorage;
-use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesStoredExtension;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ServesImageWithRowValidators;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -30,7 +30,6 @@ class CategoryImageService
 {
     use BuildsRowThumbnailSource;
     use ResolvesRowStorage;
-    use ResolvesStoredExtension;
     use ServesImageWithRowValidators;
 
     /**
@@ -76,7 +75,8 @@ class CategoryImageService
         $file = HookManager::applyFilters('sirsoft-ecommerce.category-image.filter_upload_file', $file);
 
         // 저장 경로 생성 (category + 날짜별 디렉토리)
-        $storedFilename = Str::uuid().'.'.$this->storedExtension($file);
+        $extension = StoredFileExtension::resolve($file, 'jpg');
+        $storedFilename = Str::uuid().'.'.$extension;
         // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
         $datePath = date('Y/m/d');
         $path = "category/{$datePath}/{$storedFilename}";
@@ -93,10 +93,13 @@ class CategoryImageService
         // 처리를 갖는다.
         clearstatcache(true, $file->getRealPath());
 
-        $this->storage->put('images', $path, file_get_contents($file->getRealPath()));
+        // 공개 자산 디스크를 주입받았어도 「공개 디스크로 내보낼 확장자」 밖이면 모듈 기본 디스크에 저장한다.
+        $storage = $this->storageForUpload($extension);
+
+        $storage->put('images', $path, file_get_contents($file->getRealPath()));
 
         // Disk 정보는 스토리지 드라이버에서 가져옴
-        $disk = $this->storage->getDisk();
+        $disk = $storage->getDisk();
 
         // 현재 컬렉션의 최대 sort_order 조회
         $maxSortOrder = $categoryId

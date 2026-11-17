@@ -82,7 +82,11 @@ trait HandlesOrderCreation
             // 활성이고 grace 만료 시 IdentityVerificationRequiredException(428) 을 throw 한다.
             // 이 예외는 \Error 를 상속하므로 아래 catch (Exception) 에 걸리지 않고 전파되어 428 이 유지된다.
             // 주문 레코드 생성(createFromTempOrder) 직전이므로 428 로 막혀도 주문 부산물이 생기지 않는다.
-            HookManager::doAction('sirsoft-ecommerce.checkout.before_payment', $tempOrder, $userId);
+            // 세 번째 인자: 비회원 본인인증 대상 — 인증 결과를 주문자 이메일에 묶어 확인한다(코어 7.1.6, 뒤에 붙인 인자라 기존 구독자 호환).
+            $ordererEmail = (string) ($request->getOrdererInfo()['email'] ?? '');
+            HookManager::doAction('sirsoft-ecommerce.checkout.before_payment', $tempOrder, $userId, [
+                'target_email' => $ordererEmail !== '' ? $ordererEmail : null,
+            ]);
 
             // 주문 생성 (회원/비회원 공통 — TempOrder.user_id 가 주문 user_id 로 그대로 반영)
             $order = $this->orderProcessingService->createFromTempOrder(

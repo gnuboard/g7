@@ -73,6 +73,7 @@ Authorization: Bearer {token}
 | 401 | 비로그인 요청 | `auth:sanctum` |
 | 422 | `code` 검증 실패 | Laravel 표준 검증 응답 (`errors.code`) |
 | 422 | 코드 불일치 · 확정된 자격증명 없음 | 같은 메시지 `sirsoft-totp::messages.errors.invalid_code` |
+| 429 | 코드 확인을 너무 여러 번 틀림 (1.0.3) | `TotpOwnershipThrottle` — 회원 단위(`sirsoft-totp:ownership:{userId}`, 해제·재발급 합산), 상한 = 환경설정 보안 「로그인 시도 횟수」, 대기 = 「잠금 시간」(분). `sirsoft-totp::messages.errors.too_many_attempts` + `Retry-After`. 맞히면 횟수가 초기화된다 |
 
 <!-- @generated:end -->
 

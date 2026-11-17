@@ -80,6 +80,9 @@
                 <set-state target="global" identity_policy_form_modal.form.provider_id="{{$event.target.value}}"/>
               </on>
             </select>
+            <!-- 지정한 수단으로 받은 인증만 인정한다(정확히 일치). 비우면 어떤 수단의 인증이든 인정한다 — 코어 7.1.6 -->
+            <p class="ecommerce-text-hint ecommerce:mt-1">$t:admin.identity.policies.form.provider_id_desc</p>
+            <span data-if="{{_global.identity_policy_form_modal?.errors?.errors?.provider_id}}" class="ecommerce-form-error">{{_global.identity_policy_form_modal?.errors?.errors?.provider_id?.[0] ?? ''}}</span>
           </div>
         </div>
         <div class="ecommerce:grid ecommerce:grid-cols-1 ecommerce:gap-4">

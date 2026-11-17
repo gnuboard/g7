@@ -351,6 +351,10 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
+                                                        "blur_until_loaded": {
+                                                            "enabled": true,
+                                                            "data_sources": "postStats"
+                                                        },
                                                         "props": {
                                                             "className": "text-3xl font-bold text-blue-600 dark:text-blue-400"
                                                         },
@@ -377,6 +381,10 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
+                                                        "blur_until_loaded": {
+                                                            "enabled": true,
+                                                            "data_sources": "postStats"
+                                                        },
                                                         "props": {
                                                             "className": "text-3xl font-bold text-green-600 dark:text-green-400"
                                                         },
@@ -596,7 +604,7 @@
                                         "id": "user_profile_recent_posts_empty",
                                         "type": "basic",
                                         "name": "Div",
-                                        "if": "{{!recentPosts.data?.data?.length && (_global.activeModules?.includes('sirsoft-board') ?? true)}}",
+                                        "if": "{{recentPosts !== undefined && !recentPosts.data?.data?.length && (_global.activeModules?.includes('sirsoft-board') ?? true)}}",
                                         "props": {
                                             "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700"
                                         },

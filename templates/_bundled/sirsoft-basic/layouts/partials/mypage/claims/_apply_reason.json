@@ -207,6 +207,10 @@
                         {
                             "type": "basic",
                             "name": "P",
+                            "blur_until_loaded": {
+                                "enabled": true,
+                                "data_sources": "claimable"
+                            },
                             "props": {
                                 "className": "text-xs text-gray-500 dark:text-gray-400 mb-2"
                             },

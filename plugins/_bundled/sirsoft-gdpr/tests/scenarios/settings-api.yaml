@@ -71,6 +71,7 @@ effects:
   - upgrade_converts_slug_to_page_path
   - upgrade_keeps_existing_privacy_policy_url
   - upgrade_privacy_policy_url_is_idempotent
+  - admin_settings_layout_contract   # 관리자 설정 화면 레이아웃 계약 — 카드·탭 구성, 필드 바인딩, 안내 표시 조건(설정을 받은 뒤 판단, #915)
 
 test_files:
   # PHPUnit (백엔드)

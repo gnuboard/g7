@@ -236,10 +236,12 @@ describe('seo-config — 봇 화면의 머리글·꼬리말 링크', () => {
     // @effects header_footer_module_props
     it('꼬리말 커뮤니티·정보·정책 묶음은 모듈 props 로 가리고, 대체는 사이트명(빈 값 가능)이 아닌 copyrightText', () => {
         const groups = footer.filter((f) => f.tag === 'div' && typeof f.if === 'string');
+        // 네 번째는 사업자 정보 줄 — 쇼핑몰 설정의 사업자 값이 있을 때만(쇼핑몰이 꺼지면 값이 오지 않는다)
         expect(groups.map((g) => g.if)).toEqual([
             '{boardEnabled|defaultCopyrightText|copyrightText}',
             '{pageEnabled|defaultCopyrightText|copyrightText}',
             '{pageEnabled|defaultCopyrightText|copyrightText}',
+            '{businessInfo.company_name|businessInfo.business_number}',
         ]);
         expect(JSON.stringify(seo)).not.toContain('|siteName}');
         expect(JSON.stringify(seo.render_modes.header_nav)).not.toContain('{shopBase}');

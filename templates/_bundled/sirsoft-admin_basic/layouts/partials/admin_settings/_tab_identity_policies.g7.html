@@ -370,7 +370,7 @@
         </div>
         <div data-if="{{policies !== undefined &amp;&amp; (policies?.data?.data ?? []).length === 0}}" class="py-10 text-center text-label-subtle">$t:admin.identity.policies.empty</div>
         <div data-ref="policy_pagination" class="footer-buttons-between">
-          <span class="text-tertiary">$t:admin.identity.policies.pagination_summary|total={{policies?.data?.meta?.total ?? 0}}|page={{policies?.data?.meta?.current_page ?? 1}}|last={{policies?.data?.meta?.last_page ?? '?'}}</span>
+          <span class="text-tertiary"><blur-until-loaded sources="policies"/>$t:admin.identity.policies.pagination_summary|total={{policies?.data?.meta?.total ?? 0}}|page={{policies?.data?.meta?.current_page ?? 1}}|last={{policies?.data?.meta?.last_page ?? '?'}}</span>
           <div class="flex-center gap-1">
             <a href="/admin/settings?tab=identity&amp;page={{Math.max(1, (policies?.data?.meta?.current_page ?? 1) - 1)}}" :mergeQuery="true" disabled="{{(policies?.data?.meta?.current_page ?? 1) <= 1}}" class="button px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed">
               <on type="click">

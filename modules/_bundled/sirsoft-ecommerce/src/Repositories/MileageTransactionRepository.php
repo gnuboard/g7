@@ -29,19 +29,6 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
     use PaginatesWithDeferredJoin;
 
     /**
-     * 적립(잔액 증가) 유형 목록
-     *
-     * @var array<int, string>
-     */
-    private const EARN_TYPES = [
-        'purchase_earn',
-        'admin_earn',
-        'refund_restore',
-        'order_cancel_restore',
-        'refund_credit',
-    ];
-
-    /**
      * {@inheritdoc}
      */
     public function getBalance(int $userId): float
@@ -104,11 +91,24 @@ class MileageTransactionRepository implements MileageTransactionRepositoryInterf
     /**
      * {@inheritdoc}
      */
+    public function existsForUserByTypeForUpdate(int $userId, string $type): bool
+    {
+        // 같은 회원의 같은 유형 거래 구간을 잠근 채 확인한다 — 「한 회원에 한 번」 지급의 경합 방지
+        return MileageTransaction::query()
+            ->where('user_id', $userId)
+            ->where('type', $type)
+            ->lockForUpdate()
+            ->exists();
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function existsEarnForOption(int $orderOptionId): bool
     {
         return MileageTransaction::query()
             ->where('order_option_id', $orderOptionId)
-            ->whereIn('type', self::EARN_TYPES)
+            ->whereIn('type', MileageTransactionTypeEnum::earningValues())
             ->exists();
     }
 

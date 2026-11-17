@@ -193,7 +193,7 @@ await (window as any).G7Core?.locale.change('en');
 // 최상위 모달 닫기 — ID 인자는 무시된다. 액션 밖(타이머·외부 콜백)에서 부르면 열린 창 전체가 닫힌다
 (window as any).G7Core?.modal.close();
 
-// 열린 모달 모두 닫기 (engine-v1.94.0+ — closeModal 의 params.all)
+// 열린 모달 모두 닫기 (engine-v1.95.0+ — closeModal 의 params.all)
 (window as any).G7Core?.modal.closeAll();
 
 // 모달 열림 상태 확인

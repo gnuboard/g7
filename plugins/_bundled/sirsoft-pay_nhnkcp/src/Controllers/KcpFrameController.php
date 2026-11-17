@@ -33,15 +33,19 @@ class KcpFrameController extends Controller
     {
         $sdk = e((string) $request->validated('sdk'));
         $bridgeScript = BridgeScript::tag('kcp-frame.js');
+        // 여백 0·투명 배경은 같은 출처 CSS 파일로 건다 — 스타일 보안 정책이 `<body style="…">` 를 막는다.
+        // `<head>` 의 `<link>` 는 렌더를 막으므로 투명 배경이 깜빡이지 않는다.
+        $stylesheet = BridgeScript::stylesheetTag('kcp-frame.css');
 
         $html = <<<HTML
         <!DOCTYPE html>
         <html>
         <head>
             <meta charset="UTF-8">
+            {$stylesheet}
             <script src="{$sdk}"></script>
         </head>
-        <body style="margin:0;padding:0;background:transparent;">
+        <body>
             <form name="order_info"></form>
             {$bridgeScript}
         </body>

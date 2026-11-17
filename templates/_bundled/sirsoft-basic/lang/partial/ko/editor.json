@@ -692,6 +692,15 @@
     },
     "hdr_search_history_scope": {
       "label": "최근 검색어 범위"
+    },
+    "pr_title": {
+      "label": "줄 제목"
+    },
+    "pr_icon": {
+      "label": "제목 아이콘"
+    },
+    "pc_show_actions": {
+      "label": "장바구니·찜 단추"
     }
   },
   "component": {
@@ -748,7 +757,11 @@
     "footer": "사이트 푸터",
     "theme_toggle": "테마 전환",
     "notification_center": "알림 센터",
-    "recent_search_combobox": "최근 검색어 검색창"
+    "recent_search_combobox": "최근 검색어 검색창",
+    "product_rail": "가로 상품 줄",
+    "chip_rows": "분류 칩 줄",
+    "mobile_buy_bar": "하단 구매바",
+    "bottom_sheet": "바텀시트"
   },
   "action": {
     "go_to_page": {
@@ -1215,6 +1228,8 @@
     "visitor_summary": "방문자 요약",
     "claimable": "클레임 신청 가능 상품",
     "claims": "클레임 신청내역",
-    "claim": "클레임 신청서"
+    "claim": "클레임 신청서",
+    "relatedProducts": "이 상품은 어떠세요?",
+    "reviewFeed": "전체 후기"
   }
 }

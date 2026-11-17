@@ -6,6 +6,7 @@ use App\Exceptions\CannotModifyProtectedRoleException;
 use App\Exceptions\CannotModifySuperAdminException;
 use App\Exceptions\CoreVersionMismatchException;
 use App\Exceptions\ExtensionOperationLockException;
+use App\Exceptions\IdentityPolicyProviderUnavailableException;
 use App\Exceptions\IdentityVerificationRequiredException;
 use App\Exceptions\PermissionEscalationException;
 use App\Exceptions\PhpExtensionRequirementException;
@@ -334,6 +335,16 @@ $app = Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(function (IdentityVerificationRequiredException $e, Request $request) {
             if ($request->expectsJson() || $request->is('api/*')) {
                 return ResponseHelper::identityRequired($e->getPayload());
+            }
+        });
+
+        // 정책이 지정한 본인인증 수단을 지금 쓸 수 없음 → HTTP 503 (다른 수단으로 대신 발급하지 않는다 — 7.1.6)
+        $exceptions->render(function (IdentityPolicyProviderUnavailableException $e, Request $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return ResponseHelper::error($e->getMessage(), 503, [
+                    'failure_code' => 'POLICY_PROVIDER_UNAVAILABLE',
+                    'policy_key' => $e->policyKey,
+                ]);
             }
         });
 

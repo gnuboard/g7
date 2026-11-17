@@ -18,8 +18,12 @@
 
 import { describe, it, expect } from 'vitest';
 import { DataBindingEngine } from '@core/template-engine/DataBindingEngine';
-import purchaseCardJson from '../../layouts/partials/shop/detail/_purchase_card.json';
-import cartSummaryJson from '../../layouts/partials/shop/_cart_summary.json';
+// 담기·바로구매·주문하기는 화면의 이름 붙은 액션이고 옵션 영역은 조각이다 — 엔진이 조립하듯 그 자리에 펼쳐서 본다
+import { inlineNamedActions } from '../helpers/inlineNamedActions';
+import purchaseCardJsonRaw from '../../layouts/partials/shop/detail/_purchase_card.json';
+const purchaseCardJson = inlineNamedActions(purchaseCardJsonRaw);
+import cartSummaryJsonRaw from '../../layouts/partials/shop/_cart_summary.json';
+const cartSummaryJson = inlineNamedActions(cartSummaryJsonRaw, 'shop/cart.json');
 import loginJson from '../../layouts/auth/login.json';
 import checkoutSummaryJson from '../../layouts/partials/shop/_checkout_summary.json';
 import checkoutOrdererJson from '../../layouts/partials/shop/_checkout_orderer.json';
@@ -246,7 +250,8 @@ describe('비회원 조회 비밀번호 입력 섹션 - _checkout_orderer (Issue
   // @effects checkout_orderer_shows_guest_lookup_password_fields_only_when_no_currentUser
   it('비로그인(_global.currentUser?.uuid 없음)일 때만 노출되는 컨테이너가 존재해야 한다', () => {
     expect(guestSection).toBeDefined();
-    expect(guestSection.if).toBe('{{!_global.currentUser?.uuid}}');
+    // 사용자 정보를 받는 중(undefined)을 비회원으로 읽지 않는다 — 회원에게 비회원 입력란이 잠깐 보였다(#915)
+    expect(guestSection.if).toBe('{{_global.currentUser !== undefined && !_global.currentUser?.uuid}}');
   });
 
   // @scenario actor=guest

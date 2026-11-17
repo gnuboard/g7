@@ -1039,7 +1039,7 @@
                                                             "id": "user_avatar_fallback",
                                                             "type": "basic",
                                                             "name": "I",
-                                                            "if": "{{!current_user.data?.avatar}}",
+                                                            "if": "{{current_user !== undefined && (!current_user.data?.avatar)}}",
                                                             "props": {
                                                                 "aria-hidden": "true",
                                                                 "className": "fas fa-user text-gray-600 dark:text-gray-300"
@@ -1069,7 +1069,7 @@
                                                             "props": {
                                                                 "className": "text-primary text-sm font-bold leading-none truncate max-w-xs"
                                                             },
-                                                            "text": "{{current_user.data?.display_name ?? current_user.data?.name ?? $t('admin.default_user_name')}}"
+                                                            "text": "{{current_user === undefined ? '' : (current_user.data?.display_name ?? current_user.data?.name ?? $t('admin.default_user_name'))}}"
                                                         },
                                                         {
                                                             "id": "user_email",

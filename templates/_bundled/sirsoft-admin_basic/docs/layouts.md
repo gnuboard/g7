@@ -296,6 +296,10 @@ auto·접힘으로 되돌립니다 — 한 곳이라도 빠지면 직전에 고�
 
 **본인인증 정책 목록의 검색·필터·쪽 넘김**(7.1.0~): `_tab_identity_policies` 의 목록 조작은 모두 `navigate`(replace)에 `refetch_data_sources="policies"` 를 붙여 정책 목록 소스만 다시 받습니다. 붙이지 않으면 쿼리 갱신이 설정 본체(`settings`, initLocal)까지 다시 받아 같은 탭 위쪽에서 고친 칸이 저장된 값으로 돌아가고 「변경 있음」이 풀립니다. 새 목록 조작을 더할 때도 같은 속성을 붙이고, 레이아웃 테스트 `admin-settings-unsaved-tab-confirm.test.ts` 가 이를 잠급니다.
 
+**본인인증 정책 편집 창의 「인증 수단」**(7.1.6~): 정책의 `provider_id` 는 **인정할 수단**입니다 — 지정하면 그 수단으로 받은 본인인증만 인정하고, 빈 선택지(`admin.identity.policies.form.use_default_provider` 「(지정 안 함 — 모든 수단 인정)」)면 어떤 수단이든 인정합니다. 선택 상자 아래 안내(`provider_id_desc`)가 이 뜻을 알리고, 서버가 등록되지 않은 수단·목적 미지원 수단을 422 로 거부하면 `errors.provider_id[0]` 을 그 아래에 보입니다. 모듈판 정책 창(게시판·이커머스 환경설정)도 같은 키·같은 구조를 씁니다.
+
+**전체 화면 본인인증의 [다시 보내기] 는 정책·수단을 싣는다**(관리자 화면, 코어 7.1.6~): `auth/identity_challenge` 는 상태 조회(`GET /api/identity/challenges/{id}`) 성공 시 응답의 `provider_id`·`policy_key` 를 `_local.provider_id`·`_local.policy_key` 에 담고, 재전송 요청 본문 2곳(코드 입력형·링크형)에 함께 싣습니다. 코어 7.1.6 은 정책이 지정한 수단으로 받은 인증만 인정하고 정책 키가 있으면 그 수단으로만 발급하므로(다른 수단이면 422), 이 두 값을 빼면 다시 보낸 인증이 기본 수단(메일)으로 발급되어 정책을 통과하지 못합니다. 잠금: `__tests__/layouts/identity-challenge-target-and-policy.test.ts`.
+
 **에러 화면**(`errors/*.json`): `_admin_base` 를 extends 하고 content 슬롯만 채운다(사이드바·머리글은 베이스가 그린다).
 `Div`(중앙 정렬) 안에 `Icon`+`H1`(코드)+`H2`(제목)+`P`(메시지)+`A`(홈 이동). `errors/default` 는 코드별 레이아웃이 없는
 코드(400·422·429·502·504 등)를 맡는 공통 오류 화면으로 `template.json` 의 `error_config.layouts.default` 에 등록돼 있다 —
@@ -411,6 +415,14 @@ min/max 는 `_meta.limits.security_*` 바인딩입니다. 만료 대상 두 행(
 데이터소스 `current_user` 를 읽습니다. 수단은 서버가 고르며(7.2.0), 메일을 받을 수 없는 관리자(`current_user.data.email_deliverable === false`)에게는
 「이메일로 받은 인증번호」 안내 대신 일반 안내(`reauth_notice_other`)와 「본인 확인 시작」(`reauth_start`)이 보입니다. 자기 정보 수정의
 비밀번호 첫 설정(`admin_user_form` `password_reauth_verification`)도 같은 규칙입니다.
+
+### 드라이버 탭 「공개 자산 스토리지」 카드의 보호 규칙 경고 두 가지 (코어 7.1.6)
+
+`partials/admin_settings/_tab_drivers` 의 카드 끝에 경고 두 줄이 따로 있습니다. 둘 다 설정 메타 `_meta.public_disk_hardening` 을 읽습니다.
+
+- `public_disk_hardening_warning` — `ok === false`: `/storage` 직접 주소 응답에 보호 헤더가 없음(웹서버가 규칙을 읽지 않음). 설치 문서 링크가 붙습니다.
+- `public_disk_rules_write_failed_warning` — `rules_written === false`: 저장 때 규칙 파일(`.htaccess`)을 지금 설정으로 쓰지 못함(권한).
+  헤더는 옛 규칙 파일로도 붙으므로 `ok` 와 상관없이 보입니다. 값이 없는 옛 결과는 경고하지 않습니다.
 
 ### 회원 등록·수정·상세 / 역할 폼의 비밀번호 칸 (#736)
 

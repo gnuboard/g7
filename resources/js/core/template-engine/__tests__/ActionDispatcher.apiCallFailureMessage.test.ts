@@ -7,7 +7,7 @@
  * `API call failed: ` 로 끝나기도 했다. 이제 다국어 키 `core.errors.api_request_failed` 를 쓰고,
  * 오류 문맥을 만들 때 번역한다(네트워크 실패의 `core.errors.network_request_failed` 와 같은 방식).
  *
- * @since engine-v1.93.0
+ * @since engine-v1.94.0
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -40,7 +40,7 @@ interface FakeResponse {
     invalidJson?: boolean;
 }
 
-describe('ActionDispatcher - apiCall 실패 문구 (engine-v1.93.0)', () => {
+describe('ActionDispatcher - apiCall 실패 문구 (engine-v1.94.0)', () => {
     let dispatcher: ActionDispatcher;
     let captured: string[];
     let originalFetch: typeof fetch;

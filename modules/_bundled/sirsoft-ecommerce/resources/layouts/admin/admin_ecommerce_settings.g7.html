@@ -270,7 +270,7 @@
       <responsive on="640-1023" class="ecommerce:p-6 ecommerce:min-h-screen ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900"/>
       <responsive on="1024-" class="ecommerce:p-8 ecommerce:min-h-screen ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900"/>
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-ecommerce.admin.settings.title" description="$t:sirsoft-ecommerce.admin.settings.description"/>
-      <div data-ref="read_only_banner" data-if="{{_computed.isReadOnly}}" class="ecommerce-alert-warning">
+      <div data-ref="read_only_banner" data-if="{{settings !== undefined &amp;&amp; (_computed.isReadOnly)}}" class="ecommerce-alert-warning">
         <icon name="fas fa-lock" class="ecommerce:text-yellow-700 ecommerce:dark:text-yellow-400"/>
         <span class="ecommerce-tone-warning-soft ecommerce:text-xs">$t:sirsoft-ecommerce.common.read_only_notice</span>
       </div>

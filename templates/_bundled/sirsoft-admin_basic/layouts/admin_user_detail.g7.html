@@ -302,7 +302,7 @@
                 <label class="text-label-subtle block font-medium mb-1">$t:admin.users.form.fields.lock_status</label>
                 <div data-if="{{user?.data?.locked_permanently === true}}" class="text-error-soft text-sm">$t:admin.users.detail.locked_permanently_value</div>
                 <div data-if="{{user?.data?.locked_permanently !== true &amp;&amp; user?.data?.is_locked === true}}" class="text-error-soft text-sm">$t:admin.users.detail.locked_until_value|until={{user?.data?.locked_until ?? ''}}</div>
-                <div data-if="{{user?.data?.is_locked !== true}}" class="text-primary text-sm">$t:admin.users.detail.not_locked_value</div>
+                <div data-if="{{user !== undefined &amp;&amp; (user?.data?.is_locked !== true)}}" class="text-primary text-sm">$t:admin.users.detail.not_locked_value</div>
               </div>
             </div>
             <div class="grid grid-cols-1 gap-4">
@@ -346,7 +346,7 @@
           </div>
           <div data-ref="field_password_expires_at">
             <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.password.expires_at</label>
-            <div data-if="{{!user?.data?.password_status?.applies}}" class="text-primary text-sm">$t:admin.users.detail.password.not_applies</div>
+            <div data-if="{{user !== undefined &amp;&amp; (!user?.data?.password_status?.applies)}}" class="text-primary text-sm">$t:admin.users.detail.password.not_applies</div>
             <div data-if="{{user?.data?.password_status?.applies &amp;&amp; user?.data?.password_status?.expired}}" class="text-error-soft text-sm">$t:admin.users.detail.password.expired|date={{user?.data?.password_status?.expires_at ?? ''}}</div>
             <div data-if="{{user?.data?.password_status?.applies &amp;&amp; !user?.data?.password_status?.expired}}" class="text-primary text-sm">$t:admin.users.detail.password.expires_value|date={{user?.data?.password_status?.expires_at ?? '-'}}|days={{user?.data?.password_status?.days_left ?? 0}}</div>
           </div>
@@ -396,11 +396,11 @@
             <responsive on="768-" class="grid grid-cols-2 gap-4"/>
             <div data-ref="field_notifications_total">
               <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.notifications.total</label>
-              <span class="text-primary text-sm">{{user?.data?.notifications_summary?.total ?? 0}}</span>
+              <span class="text-primary text-sm"><blur-until-loaded sources="user"/>{{user?.data?.notifications_summary?.total ?? 0}}</span>
             </div>
             <div data-ref="field_notifications_unread">
               <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.notifications.unread</label>
-              <span class="text-primary text-sm">{{user?.data?.notifications_summary?.unread ?? 0}}</span>
+              <span class="text-primary text-sm"><blur-until-loaded sources="user"/>{{user?.data?.notifications_summary?.unread ?? 0}}</span>
             </div>
           </div>
           <!-- 회원 알림함을 볼 권한(core.member-notifications.read)이 있을 때만 세운다 — 회원 읽기만 가진 관리자가 누르면 알림함 화면이 권한 오류로 뜬다.

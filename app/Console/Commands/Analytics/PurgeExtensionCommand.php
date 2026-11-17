@@ -96,7 +96,7 @@ class PurgeExtensionCommand extends Command
         if (! $this->unifiedConfirm(__('analytics.console.purge_extension.confirm', ['type' => $type, 'identifier' => $identifier]))) {
             $this->info(__('analytics.console.purge_extension.cancelled'));
 
-            return self::SUCCESS;
+            return $this->confirmAbortExitCode();
         }
 
         $result = $service->purge($type, $identifier);

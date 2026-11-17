@@ -130,6 +130,9 @@ function sandbox(pulledBy) {
         hideInstallationStartSection() {}, showInstallationProgressSection() {}, hideAbortButton() {}, setTaskStatus() {}, scrollResultIntoView() {},
         // 진행 카드 접기·아이콘 같은 화면 보조 함수도 이 시험의 관심 밖이다 (행 아이콘은 빈 문자열)
         setInstallationCardCollapsed() {}, setInstallationCardInteractive() {}, taskIdentityFromElement: () => ({ taskId: null, target: null }), getIconSvg: () => '',
+        // installer-boot.js 의 보이기·숨기기 도우미 (초기 숨김이 hidden 클래스라 보이기는 클래스를 뗀다)
+        installerShow(node, display) { if (!node) return; node.classList.remove('hidden'); node.style.display = display || ''; },
+        installerHide(node) { if (node) node.style.display = 'none'; },
         installationCompleted: false,
         lastRollbackFailure: null,
         INSTALLATION_TASKS: [],

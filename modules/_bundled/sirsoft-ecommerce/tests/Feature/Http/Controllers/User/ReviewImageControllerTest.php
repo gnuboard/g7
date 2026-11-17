@@ -43,7 +43,7 @@ class ReviewImageControllerTest extends ModuleTestCase
     private $storageMock;
 
     /**
-     * 회원, 구매확정 주문옵션, 전시중 리뷰를 만들고 파일 저장소를 목으로 바꿉니다.
+     * 회원·상품 조회 권한·구매 확정 주문옵션·전시 중 후기와 저장소 가짜 객체를 준비합니다.
      *
      * @return void 반환값 없음
      */
@@ -100,7 +100,7 @@ class ReviewImageControllerTest extends ModuleTestCase
     }
 
     /**
-     * Mockery 기대치를 검증하고 닫은 뒤 부모 정리를 실행합니다.
+     * Mockery 기대값을 검증하고 정리합니다.
      *
      * @return void 반환값 없음
      */
@@ -118,11 +118,11 @@ class ReviewImageControllerTest extends ModuleTestCase
     // ========================================
 
     /**
-     * 본인 리뷰에 이미지를 올리면 201 과 함께 이미지 행이 저장되는지 확인
+     * 회원이 자기 후기에 이미지를 올리면 201 과 함께 이미지 행이 저장되는지 확인합니다.
      *
-     * @scenario area=upload
+     * @scenario operation=upload
      *
-     * @effects review_image_upload_creates_row_with_201
+     * @effects user_review_image_upload_saved_for_own_review, review_image_upload_creates_row_with_201
      *
      * @return void 반환값 없음
      */
@@ -149,11 +149,11 @@ class ReviewImageControllerTest extends ModuleTestCase
     }
 
     /**
-     * image 필드 없이 올리면 422 로 거절되는지 확인
+     * image 필드 없이 업로드하면 422 인지 확인합니다.
      *
-     * @scenario area=upload
+     * @scenario operation=upload
      *
-     * @effects review_image_upload_requires_image_field
+     * @effects user_review_image_upload_rejects_invalid_file_with_422, review_image_upload_requires_image_field
      *
      * @return void 반환값 없음
      */
@@ -172,11 +172,11 @@ class ReviewImageControllerTest extends ModuleTestCase
     }
 
     /**
-     * 이미지가 아닌 파일(PDF)을 올리면 422 로 거절되는지 확인
+     * 이미지가 아닌 파일(PDF)을 올리면 422 인지 확인합니다.
      *
-     * @scenario area=upload
+     * @scenario operation=upload
      *
-     * @effects review_image_upload_rejects_non_image_file
+     * @effects user_review_image_upload_rejects_invalid_file_with_422, review_image_upload_rejects_non_image_file
      *
      * @return void 반환값 없음
      */
@@ -198,11 +198,11 @@ class ReviewImageControllerTest extends ModuleTestCase
     }
 
     /**
-     * 기본 용량 한도(10MB)를 넘는 이미지를 올리면 422 로 거절되는지 확인
+     * 10MB 를 넘는 이미지를 올리면 422 인지 확인합니다.
      *
-     * @scenario area=upload
+     * @scenario operation=upload
      *
-     * @effects review_image_upload_rejects_oversized_file
+     * @effects user_review_image_upload_rejects_invalid_file_with_422, review_image_upload_rejects_oversized_file
      *
      * @return void 반환값 없음
      */
@@ -224,11 +224,11 @@ class ReviewImageControllerTest extends ModuleTestCase
     }
 
     /**
-     * 다른 회원의 리뷰에 이미지를 올리면 403 으로 거절되는지 확인
+     * 다른 회원의 후기에 이미지를 올리려 하면 403 인지 확인합니다.
      *
-     * @scenario area=upload
+     * @scenario operation=upload
      *
-     * @effects review_image_upload_forbidden_on_other_member_review
+     * @effects user_review_image_api_forbids_others_review, review_image_upload_forbidden_on_other_member_review
      *
      * @return void 반환값 없음
      */
@@ -263,11 +263,11 @@ class ReviewImageControllerTest extends ModuleTestCase
     }
 
     /**
-     * 이미 5장이 올라간 리뷰에 한 장을 더 올리면 422 로 거절되는지 확인
+     * 이미 5장이 올라간 후기에 6번째 이미지를 올리면 422 인지 확인합니다.
      *
-     * @scenario area=upload
+     * @scenario operation=upload
      *
-     * @effects review_image_upload_rejected_over_max_count
+     * @effects user_review_image_upload_limit_exceeded_returns_422, review_image_upload_rejected_over_max_count
      *
      * @return void 반환값 없음
      */
@@ -293,11 +293,11 @@ class ReviewImageControllerTest extends ModuleTestCase
     }
 
     /**
-     * 로그인하지 않고 이미지를 올리면 401 로 거절되는지 확인
+     * 비로그인 업로드는 401 인지 확인합니다.
      *
-     * @scenario area=upload
+     * @scenario operation=upload
      *
-     * @effects review_image_upload_requires_login
+     * @effects user_review_image_api_requires_authentication, review_image_upload_requires_login
      *
      * @return void 반환값 없음
      */
@@ -322,11 +322,11 @@ class ReviewImageControllerTest extends ModuleTestCase
     // ========================================
 
     /**
-     * 본인 리뷰의 이미지를 지우면 200 과 함께 이미지 행이 소프트 삭제되는지 확인
+     * 회원이 자기 후기 이미지를 지우면 소프트 삭제되는지 확인합니다.
      *
-     * @scenario area=delete
+     * @scenario operation=delete
      *
-     * @effects review_image_delete_soft_deletes_own_image
+     * @effects user_review_image_delete_soft_deletes_own_image, review_image_delete_soft_deletes_own_image
      *
      * @return void 반환값 없음
      */
@@ -352,11 +352,11 @@ class ReviewImageControllerTest extends ModuleTestCase
     }
 
     /**
-     * 다른 회원 리뷰의 이미지를 지우려 하면 403 으로 거절되는지 확인
+     * 다른 회원의 후기 이미지를 지우려 하면 403 인지 확인합니다.
      *
-     * @scenario area=delete
+     * @scenario operation=delete
      *
-     * @effects review_image_delete_forbidden_on_other_member_review
+     * @effects user_review_image_api_forbids_others_review, review_image_delete_forbidden_on_other_member_review
      *
      * @return void 반환값 없음
      */
@@ -391,11 +391,11 @@ class ReviewImageControllerTest extends ModuleTestCase
     }
 
     /**
-     * 내 리뷰 주소에 다른 리뷰의 이미지 ID 를 넣어 지우려 하면 404 인지 확인
+     * 내 후기 주소에 내 다른 후기의 이미지 ID 를 넣어 지우려 하면 404 인지 확인합니다.
      *
-     * @scenario area=delete
+     * @scenario operation=delete
      *
-     * @effects review_image_delete_not_found_for_image_of_other_review
+     * @effects user_review_image_delete_returns_404_for_foreign_or_missing_image, review_image_delete_not_found_for_image_of_other_review
      *
      * @return void 반환값 없음
      */
@@ -429,11 +429,11 @@ class ReviewImageControllerTest extends ModuleTestCase
     }
 
     /**
-     * 없는 이미지 ID 를 지우려 하면 404 인지 확인
+     * 없는 이미지 ID 를 지우려 하면 404 인지 확인합니다.
      *
-     * @scenario area=delete
+     * @scenario operation=delete
      *
-     * @effects review_image_delete_not_found_for_missing_image
+     * @effects user_review_image_delete_returns_404_for_foreign_or_missing_image, review_image_delete_not_found_for_missing_image
      *
      * @return void 반환값 없음
      */
@@ -451,11 +451,11 @@ class ReviewImageControllerTest extends ModuleTestCase
     }
 
     /**
-     * 로그인하지 않고 이미지를 지우려 하면 401 로 거절되는지 확인
+     * 비로그인 삭제는 401 인지 확인합니다.
      *
-     * @scenario area=delete
+     * @scenario operation=delete
      *
-     * @effects review_image_delete_requires_login
+     * @effects user_review_image_api_requires_authentication, review_image_delete_requires_login
      *
      * @return void 반환값 없음
      */
@@ -481,7 +481,7 @@ class ReviewImageControllerTest extends ModuleTestCase
     // ========================================
 
     /**
-     * 관리자가 숨긴 리뷰의 이미지는 해시 주소로 요청해도 404 로 차단되는지 확인
+     * 관리자가 숨긴 후기의 이미지는 무서명 해시 다운로드가 404 로 차단되는지 확인합니다.
      *
      * @scenario resource=review_image, parent_state=restricted
      *
@@ -495,7 +495,8 @@ class ReviewImageControllerTest extends ModuleTestCase
         // Given: 관리자가 숨긴(HIDDEN) 리뷰의 이미지
         $hiddenReview = ProductReview::factory()->create([
             'product_id' => $this->product->id,
-            'order_option_id' => $this->orderOption->id,
+            // 주문옵션당 활성 후기는 1건뿐이라(DB 유니크) setUp 후기와 다른 주문옵션을 쓴다
+            'order_option_id' => OrderOption::factory()->state(['product_id' => $this->product->id]),
             'user_id' => $this->user->id,
             'status' => ReviewStatus::HIDDEN->value,
         ]);
@@ -513,7 +514,7 @@ class ReviewImageControllerTest extends ModuleTestCase
     }
 
     /**
-     * 전시중 리뷰의 이미지는 상태 게이트를 통과해 404 가 아닌 응답을 받는지 확인
+     * 전시 중 후기의 이미지는 해시 다운로드가 상태 게이트를 통과하는지(404 아님) 확인합니다.
      *
      * @scenario resource=review_image, parent_state=public
      *
@@ -561,7 +562,8 @@ class ReviewImageControllerTest extends ModuleTestCase
     {
         $hiddenReview = ProductReview::factory()->create([
             'product_id' => $this->product->id,
-            'order_option_id' => $this->orderOption->id,
+            // 주문옵션당 활성 후기는 1건뿐이라(DB 유니크) setUp 후기와 다른 주문옵션을 쓴다
+            'order_option_id' => OrderOption::factory()->state(['product_id' => $this->product->id]),
             'user_id' => $this->user->id,
             'status' => ReviewStatus::HIDDEN->value,
         ]);

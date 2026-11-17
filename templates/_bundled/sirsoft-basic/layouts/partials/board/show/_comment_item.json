@@ -1027,7 +1027,7 @@
                             "id": "board_reply_guest_fixed_fields",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{!_global.currentUser?.uuid}}",
+                            "if": "{{_global.currentUser !== undefined && !_global.currentUser?.uuid}}",
                             "props": {
                                 "className": "grid grid-cols-2 gap-3 mb-3"
                             },
@@ -1171,7 +1171,7 @@
                             "id": "board_reply_guest_fields",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{!_global.currentUser?.uuid && (post?.data?.board?.guest_fields?.comment ?? []).length > 0}}",
+                            "if": "{{_global.currentUser !== undefined && !_global.currentUser?.uuid && (post?.data?.board?.guest_fields?.comment ?? []).length > 0}}",
                             "dataKey": "replyGuestForm",
                             "props": {
                                 "className": "mb-3"

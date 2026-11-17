@@ -8,7 +8,8 @@
  * - 쇼핑 계속하기 버튼이 setState + closeModal 시퀀스를 실행하는지 확인
  * - 장바구니 이동 버튼이 로딩 스피너 + closeModal + navigate 시퀀스를 실행하는지 확인
  * - show.json에 modals 섹션이 올바르게 설정되었는지 확인
- * - _purchase_card.json의 onSuccess에서 옵션 초기화 + openModal을 호출하는지 확인
+ * - _purchase_card.json 장바구니 단추가 부르는 이름 붙은 액션(show.json named_actions.purchaseAddToCart)의
+ *   onSuccess 에서 옵션 초기화 + openModal 을 호출하는지 확인
  *
  * @vitest-environment node
  */
@@ -18,7 +19,7 @@ import { describe, it, expect } from 'vitest';
 import modalCartAdded from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_modal_cart_added.json';
 import showLayout from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/shop/show.json';
 import purchaseCard from '../../../../../../../templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_purchase_card.json';
-import { asArray } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
+import { asArray, callbacksOf, findActions, flattenNodes } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 
 describe('장바구니 담기 완료 모달 구조 검증', () => {
     /**
@@ -222,15 +223,34 @@ describe('show.json init_actions에서 isNavigatingToCart 초기화 검증', () 
 });
 
 describe('_purchase_card.json 장바구니 버튼 onSuccess 검증', () => {
+    /*
+     * 7.1.6(#898): 담기 동작이 구매 카드 단추 안에서 상세 화면의 이름 붙은 액션 `purchaseAddToCart`
+     * (shop/show.g7.html `<action name="purchaseAddToCart">`)로 옮겨졌다 — 좁은 화면의 하단 구매바·바텀시트가
+     * 같은 동작을 부르게 하려는 것이다(_purchase_card.g7.html 머리 주석). 담기 성공 계약은 그대로이므로
+     * 단추가 그 액션을 부르는지 확인한 뒤, 단언은 액션 정의의 장바구니 apiCall onSuccess 에서 한다.
+     */
+    const addToCartButton = flattenNodes(purchaseCard).find((n: any) => n?.props?.['data-testid'] === 'add-to-cart');
+    const addToCartRef = asArray(addToCartButton?.actions).find((a: any) => a.type === 'click')?.actionRef;
+    const addToCartAction = (showLayout as any).named_actions?.[addToCartRef];
+    const cartApiCall = findActions(
+        addToCartAction,
+        (a: any) => a.handler === 'apiCall' && String(a.target ?? '').endsWith('/api/modules/sirsoft-ecommerce/cart'),
+    )[0];
+    const onSuccess = callbacksOf(cartApiCall, 'onSuccess');
+
     /**
      * @scenario surface=purchase_card
      * @effects add_success_opens_modal_instead_of_toast
      */
     it('장바구니 버튼 onSuccess에서 openModal을 호출해야 함', () => {
-        const json = JSON.stringify(purchaseCard);
+        expect(addToCartButton, '구매 카드에 장바구니 단추(data-testid=add-to-cart)가 있어야 한다').toBeDefined();
+        expect(addToCartRef).toBe('purchaseAddToCart');
+        expect(addToCartAction, 'show.json named_actions 에 purchaseAddToCart 가 있어야 한다').toBeDefined();
+        expect(cartApiCall, '담기 액션이 장바구니 API 를 호출해야 한다').toBeDefined();
 
-        expect(json).toContain('openModal');
-        expect(json).toContain('cart_added_modal');
+        const openModal = onSuccess.find((a: any) => a.handler === 'openModal');
+        expect(openModal).toBeDefined();
+        expect(openModal.target).toBe('cart_added_modal');
     });
 
     /**
@@ -238,10 +258,11 @@ describe('_purchase_card.json 장바구니 버튼 onSuccess 검증', () => {
      * @effects add_success_updates_cart_count
      */
     it('장바구니 버튼 onSuccess에서 cartCount를 업데이트해야 함', () => {
-        const json = JSON.stringify(purchaseCard);
+        const cartCount = onSuccess.find((a: any) => a.handler === 'setState' && 'cartCount' in (a.params ?? {}));
 
-        expect(json).toContain('cartCount');
-        expect(json).toContain('response.data.cart_count');
+        expect(cartCount).toBeDefined();
+        expect(cartCount.params.target).toBe('global');
+        expect(cartCount.params.cartCount).toBe('{{response.data.cart_count}}');
     });
 
     /**
@@ -249,14 +270,16 @@ describe('_purchase_card.json 장바구니 버튼 onSuccess 검증', () => {
      * @effects add_success_resets_option_state
      */
     it('장바구니 버튼 onSuccess에서 옵션 상태를 초기화해야 함', () => {
-        const json = JSON.stringify(purchaseCard);
+        const reset = onSuccess.find((a: any) => a.handler === 'setState' && 'selectedOptionItems' in (a.params ?? {}));
 
         // 초기화 값의 모양이 갱신 쪽(`Object.assign({}, …)`)과 같아야 한다 — 둘 다 map 이다.
         // 종전에는 초기화만 `[]` 였는데, 그것은 소스 이관 때 `{}` 가 `[]` 로 구워진 결과였다.
-        expect(json).toContain('"selectedOptionItems":[]');
-        expect(json).toContain('"currentSelection":{}');
-        expect(json).toContain('"noOptionQuantity":1');
-        expect(json).toContain('"additionalOptions":{}');
+        expect(reset).toBeDefined();
+        expect(reset.params.target).toBe('local');
+        expect(reset.params.selectedOptionItems).toEqual([]);
+        expect(reset.params.currentSelection).toEqual({});
+        expect(reset.params.noOptionQuantity).toBe(1);
+        expect(reset.params.additionalOptions).toEqual({});
     });
 
     /**
@@ -264,8 +287,9 @@ describe('_purchase_card.json 장바구니 버튼 onSuccess 검증', () => {
      * @effects add_success_opens_modal_instead_of_toast
      */
     it('장바구니 버튼 onSuccess에서 toast가 아닌 openModal을 사용해야 함', () => {
-        const json = JSON.stringify(purchaseCard);
-
-        expect(json).not.toContain('"cart_added"');
+        expect(cartApiCall).toBeDefined();
+        expect(onSuccess.some((a: any) => a.handler === 'toast')).toBe(false);
+        expect(JSON.stringify(purchaseCard)).not.toContain('"cart_added"');
+        expect(JSON.stringify(addToCartAction)).not.toContain('"cart_added"');
     });
 });

@@ -126,7 +126,7 @@
                                         {
                                             "type": "basic",
                                             "name": "Span",
-                                            "if": "{{!_local.form?.basic_info?.no_route}}",
+                                            "if": "{{settings !== undefined && (!_local.form?.basic_info?.no_route)}}",
                                             "props": {
                                                 "className": "ecommerce-text-required"
                                             },
@@ -1179,6 +1179,94 @@
                                                 "className": "ecommerce-form-error"
                                             },
                                             "text": "{{_local.errors?.['basic_info.telecom_number']?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "field_hosting_provider",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "ecommerce-form-group"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "ecommerce-form-label"
+                                            },
+                                            "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.hosting_provider"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "text",
+                                                "name": "basic_info.hosting_provider",
+                                                "placeholder": "$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.hosting_provider_placeholder",
+                                                "className": "{{_local.errors?.['basic_info.hosting_provider'] ? 'ecommerce-input ecommerce-input-error' : 'ecommerce-input'}}",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_local.errors?.['basic_info.hosting_provider']}}",
+                                            "props": {
+                                                "className": "ecommerce-form-error"
+                                            },
+                                            "text": "{{_local.errors?.['basic_info.hosting_provider']?.[0] ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "field_show_business_footer",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "ecommerce-form-group"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "ecommerce-flex-between"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Label",
+                                                            "props": {
+                                                                "className": "ecommerce-form-label"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.show_business_footer"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "props": {
+                                                                "className": "ecommerce-form-hint"
+                                                            },
+                                                            "text": "$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.show_business_footer_hint"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "composite",
+                                                    "name": "Toggle",
+                                                    "props": {
+                                                        "name": "basic_info.show_business_footer",
+                                                        "value": "{{_local.form?.basic_info?.show_business_footer ?? true}}",
+                                                        "disabled": "{{_computed.isReadOnly}}"
+                                                    }
+                                                }
+                                            ]
                                         }
                                     ]
                                 }

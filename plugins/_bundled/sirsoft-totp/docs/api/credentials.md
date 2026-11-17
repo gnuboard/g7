@@ -82,6 +82,7 @@ Authorization: Bearer {token}
 | --- | --- | --- |
 | 401 | 비로그인 요청 | `auth:sanctum` |
 | 403 | `sirsoft-totp.credentials.delete` 권한 없음 | `permission` 미들웨어가 차단 |
+| 403 | 슈퍼 관리자가 아닌 운영자가 슈퍼 관리자의 인증 앱을 해제하려 함 (1.0.3) | 코어 `UserGradeGuard::assertActorMayModify()` — 코어 예외 렌더러가 403 으로 낸다. 자격증명은 지우지 않는다 |
 | 404 | 대상 회원이 존재하지 않음 | `common.not_found` |
 
 <!-- @generated:end -->

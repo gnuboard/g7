@@ -116,7 +116,7 @@
           </div>
           <div class="flex-1"/>
           <badge data-type="composite" data-ref="transport_badge_ws" data-if="{{analytics_status?.data?.broadcasting?.configured === true}}" color="green" text="$t:admin.analytics.realtime.badge_ws" size="sm"/>
-          <badge data-type="composite" data-ref="transport_badge_polling" data-if="{{analytics_status?.data?.broadcasting?.configured !== true}}" color="gray" text="$t:admin.analytics.realtime.badge_polling|seconds={{_global.settings?.analytics?.realtime_poll_seconds ?? 30}}" size="sm"/>
+          <badge data-type="composite" data-ref="transport_badge_polling" data-if="{{analytics_status !== undefined &amp;&amp; (analytics_status?.data?.broadcasting?.configured !== true)}}" color="gray" text="$t:admin.analytics.realtime.badge_polling|seconds={{_global.settings?.analytics?.realtime_poll_seconds ?? 30}}" size="sm"/>
         </div>
       </div>
       <div data-ref="realtime_grid" class="grid grid-cols-1 gap-4">
@@ -172,7 +172,7 @@
                   <!-- 지금 보고 있는 사람이 회원이면 그 자리에서 회원 화면으로 건너뛴다(§4.10 「프로필 링크」).
                        목록 화면과 같은 규율 — 목적지(/admin/users/{uuid})는 core.users.read 를 요구하므로
                        그 권한이 없으면 이름만 보인다. 가드 없이 그리면 눌러도 「권한 없음」뿐이다.
-                       데이터소스 `current_user` 를 직접 읽는다 — 7.1.0 실측(E-D4) 때 표 셀이 `_computed` 를 받지 못해 이렇게 썼다(engine-v1.92.0 에서 셀도 부모 `_computed` 를 받게 고쳐졌고, 이 직접 읽기도 그대로 맞다). -->
+                       데이터소스 `current_user` 를 직접 읽는다 — 7.1.0 실측(E-D4) 때 표 셀이 `_computed` 를 받지 못해 이렇게 썼다(engine-v1.93.0 에서 셀도 부모 `_computed` 를 받게 고쳐졌고, 이 직접 읽기도 그대로 맞다). -->
                   <span data-if="{{!!row.user?.name &amp;&amp; !(current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.users.read')}}" class="text-hint block">{{row.user.name}}</span>
                   <a data-ref="realtime_member_link_{{$idx}}" data-if="{{!!row.user?.uuid &amp;&amp; (current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.users.read')}}" href="/admin/users/{{row.user.uuid}}" target="_blank" class="text-hint underline block text-left">{{row.user.name}}</a>
                   <!-- 실명 보조 줄. 서버는 회원 조회 권한이 있는 관리자에게, 실명이 표시 이름과 다를 때만 real_name 을 싣는다. -->

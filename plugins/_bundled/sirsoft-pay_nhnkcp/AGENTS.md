@@ -162,6 +162,7 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 | 화면 확장의 표현식에서 **다른 결제 플러그인이 선언한 데이터소스**를 참조 | 자기 `data_sources[]` 에 선언한 것만 읽는다 | 그 플러그인이 없는 사이트에서 미정의 참조가 되고, 표현식은 오류 없이 조용히 undefined 를 내므로 판정이 어긋나도 드러나지 않는다 |
 | 관리자 응답 `errors` 에 예외 원문(`$e->getMessage()`)을 그대로 싣기 | KCP 거절은 `NhnKcpRejectedException` 의 사유(res_msg)만 싣고, 그 밖은 번역된 일반 문구 + 서버 로그(디버그 모드만 원문) | `errors` 배열은 코어의 운영 모드 500 차단을 거치지 않는다 — CLI 실행 실패 문구의 서버 절대 경로, DB 예외의 SQL·접속 정보가 그대로 화면에 나간다 |
 | 결제 환불 리스너 결과 `error_message` 에 예외 원문을 그대로 싣기 | `refundFailureReason()` — 거절(`NhnKcpRejectedException`)만 res_msg, 그 밖은 `refund.pg_failed` + 서버 로그(디버그 모드만 원문) | 쇼핑몰이 이 값을 「PG 환불 처리에 실패했습니다. (…)」 안내에 끼워 회원·비회원·관리자 응답으로 낸다 — CLI 실행 실패 문구의 서버 절대 경로가 구매자 화면까지 간다 |
+| PC 결제 프레임 페이지(`KcpFrameController`)에 `<style>` 블록·`style="…"` 속성으로 모양 싣기 | 규칙은 `assets/bridge/kcp-frame.css`(빌드 대상 아님), `<head>` 에서 `BridgeScript::stylesheetTag()` 로 싣는다 | 스타일 보안 정책(`style-src 'self'`)에서 인라인 스타일이 막혀 투명 프레임에 여백이 생긴다. `<head>` 의 `<link>` 는 렌더를 막아 배경이 깜빡이지 않는다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -170,9 +171,9 @@ OS 판별 후 `executeCliWindows()`/`executeCliLinux()` 로 분기 → CLI 인�
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 58개 | `plugins/_bundled/sirsoft-pay_nhnkcp/tests` |
-| Vitest | 34개 | `vitest.config.ts` |
+| Vitest | 35개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 58개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 59개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

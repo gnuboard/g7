@@ -495,6 +495,8 @@ async function reissueChallenge(current: Record<string, any>): Promise<Record<st
     const G7Core = getG7Core();
     const body: Record<string, unknown> = { purpose: current.purpose };
     if (current.provider_id) body.provider_id = current.provider_id;
+    // 정책 키도 승계한다 — 서버가 정책이 지정한 수단으로만 발급하고(코어 7.1.6) 정책별 문구를 고른다
+    if (current.policy_key) body.policy_key = current.policy_key;
     if (current.target) body.target = current.target;
 
     try {

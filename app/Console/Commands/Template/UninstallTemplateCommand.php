@@ -95,7 +95,7 @@ class UninstallTemplateCommand extends Command
                 if (! $this->unifiedConfirm(__('templates.commands.uninstall.confirm_question'), false)) {
                     $this->info(__('templates.commands.uninstall.aborted'));
 
-                    return Command::SUCCESS;
+                    return $this->confirmAbortExitCode();
                 }
             }
 

@@ -9,10 +9,10 @@
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `sirsoft-ckeditor5.image.after_upload` | action | 에디터 이미지 업로드 기록 생성 후 발화 | `src/Services/ImageUploadService.php:85` |
-| `sirsoft-ckeditor5.image.before_upload` | action | 에디터 이미지 업로드 직전 발화 (본인인증·쿼터 등 확장 지점) | `src/Services/ImageUploadService.php:44` |
+| `sirsoft-ckeditor5.image.after_upload` | action | 에디터 이미지 업로드 기록 생성 후 발화 | `src/Services/ImageUploadService.php:92` |
+| `sirsoft-ckeditor5.image.before_upload` | action | 에디터 이미지 업로드 직전 발화 (본인인증·쿼터 등 확장 지점) | `src/Services/ImageUploadService.php:47` |
 | `sirsoft-ckeditor5.image.filter_reference_sources` | filter | 에디터 이미지 참조 스캔 대상 테이블/컬럼 목록에 확장 콘텐츠를 추가 | 선언 (호출 위치 미확인) |
-| `sirsoft-ckeditor5.image.filter_upload_file` | filter | 업로드 파일 변형 지점 (압축·리사이즈 등) | `src/Services/ImageUploadService.php:49` |
+| `sirsoft-ckeditor5.image.filter_upload_file` | filter | 업로드 파일 변형 지점 (압축·리사이즈 등) | `src/Services/ImageUploadService.php:52` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->

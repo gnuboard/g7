@@ -34,7 +34,7 @@ class RegisterPolicyDrivenSignupTest extends TestCase
     use RefreshDatabase;
 
     /**
-     * 역할·권한과 기본 본인인증 정책(모두 꺼짐)을 시드하고 알림·큐를 막습니다.
+     * 알림·큐를 가짜로 바꾸고 역할 권한과 기본 본인인증 정책을 시드합니다.
      *
      * @return void 반환값 없음
      */
@@ -58,7 +58,7 @@ class RegisterPolicyDrivenSignupTest extends TestCase
      *
      * @scenario case=no_policy
      *
-     * @effects signup_without_policy_active_email_unverified
+     * @effects signup_without_policy_active_email_unverified, signup_without_policy_creates_active_user
      *
      * @return void 반환값 없음
      */
@@ -114,7 +114,7 @@ class RegisterPolicyDrivenSignupTest extends TestCase
      *
      * @scenario case=before_submit_mail_token
      *
-     * @effects signup_before_submit_mail_token_activates_and_marks_email
+     * @effects signup_before_submit_mail_token_activates_and_marks_email, verified_token_passes_matching_policy
      *
      * @return void 반환값 없음
      */
@@ -249,7 +249,7 @@ class RegisterPolicyDrivenSignupTest extends TestCase
      *
      * @scenario case=before_submit_token_past_grace
      *
-     * @effects signup_token_bypasses_grace_window
+     * @effects signup_token_bypasses_grace_window, token_bypass_ignores_grace_window
      *
      * @return void 반환값 없음
      */
@@ -300,7 +300,7 @@ class RegisterPolicyDrivenSignupTest extends TestCase
      *
      * @scenario case=before_submit_target_mismatch
      *
-     * @effects signup_token_target_mismatch_blocked
+     * @effects signup_token_target_mismatch_blocked, guest_target_bound
      *
      * @return void 반환값 없음
      */
@@ -344,7 +344,7 @@ class RegisterPolicyDrivenSignupTest extends TestCase
      *
      * @scenario case=after_create_pending
      *
-     * @effects signup_after_create_pending_with_challenge
+     * @effects signup_after_create_pending_with_challenge, signup_after_create_creates_pending_user
      *
      * @return void 반환값 없음
      */
@@ -378,7 +378,7 @@ class RegisterPolicyDrivenSignupTest extends TestCase
      *
      * @scenario case=after_create_mail_verify
      *
-     * @effects signup_after_create_verify_activates_and_marks_email
+     * @effects signup_after_create_verify_activates_and_marks_email, signup_after_create_verify_activates_user
      *
      * @return void 반환값 없음
      */
@@ -430,7 +430,7 @@ class RegisterPolicyDrivenSignupTest extends TestCase
      *
      * @scenario case=after_create_generic_enforcer
      *
-     * @effects after_register_not_enforced_by_generic_listener
+     * @effects after_register_not_enforced_by_generic_listener, after_register_hook_not_enforced_twice
      *
      * @return void 반환값 없음
      */
@@ -455,9 +455,93 @@ class RegisterPolicyDrivenSignupTest extends TestCase
     }
 
     /**
+     * 한 번 가입에 쓴 인증 결과로는 다른 이메일·같은 이메일 모두 두 번째 가입을 할 수 없다 (KVE 동형 O4·B2).
+     *
+     * @effects signup_token_single_use
+     *
+     * @return void 반환값 없음
+     */
+    public function test_signup_token_cannot_be_used_twice(): void
+    {
+        $this->enablePolicy('core.auth.signup_before_submit');
+        $token = $this->verifiedSignupToken('twice@example.com');
+
+        $this->postJson('/api/auth/register', $this->signupBody('twice@example.com', $token))->assertStatus(201);
+
+        $second = $this->postJson('/api/auth/register', $this->signupBody('twice@example.com', $token));
+        $this->assertContains($second->status(), [422, 428]);
+        $this->assertSame(1, User::where('email', 'like', 'twice%')->count());
+    }
+
+    /**
+     * 가입이 입력 오류(422)로 끝나면 인증 결과를 돌려줘 고쳐서 다시 가입할 수 있다.
+     *
+     * @effects signup_failure_releases_token
+     *
+     * @return void 반환값 없음
+     */
+    public function test_validation_failure_releases_signup_token(): void
+    {
+        $this->enablePolicy('core.auth.signup_before_submit');
+        $token = $this->verifiedSignupToken('retry@example.com');
+
+        $invalid = $this->signupBody('retry@example.com', $token);
+        $invalid['password_confirmation'] = 'mismatch-value';
+        $this->postJson('/api/auth/register', $invalid)->assertStatus(422);
+
+        $this->assertNull(IdentityVerificationLog::where('verification_token', $token)->value('consumed_at'));
+
+        $this->postJson('/api/auth/register', $this->signupBody('retry@example.com', $token))->assertStatus(201);
+    }
+
+    /**
+     * 가입용 확인 완료 결과를 만들고 토큰을 돌려줍니다.
+     *
+     * @param  string  $email  가입할 이메일
+     * @return string 확인 토큰
+     */
+    private function verifiedSignupToken(string $email): string
+    {
+        $token = 'test-idv-token-'.bin2hex(random_bytes(8));
+        IdentityVerificationLog::create([
+            'id' => (string) Str::uuid(),
+            'provider_id' => 'g7:core.mail',
+            'purpose' => 'signup',
+            'channel' => 'email',
+            'target_hash' => hash('sha256', $email),
+            'status' => IdentityVerificationStatus::Verified->value,
+            'verification_token' => $token,
+            'verified_at' => now()->subSeconds(2),
+            'expires_at' => now()->addMinutes(15),
+        ]);
+
+        return $token;
+    }
+
+    /**
+     * 가입 요청 본문을 만듭니다.
+     *
+     * @param  string  $email  이메일
+     * @param  string  $token  확인 토큰
+     * @return array<string, mixed> 요청 본문
+     */
+    private function signupBody(string $email, string $token): array
+    {
+        return [
+            'name' => '테스트',
+            'email' => $email,
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'agree_terms' => true,
+            'agree_privacy' => true,
+            'verification_token' => $token,
+        ];
+    }
+
+    /**
      * 시드된 정책의 enabled 를 true 로 토글합니다.
      *
-     * @param  string  $key  정책 키
+     * @param  string  $key  켤 정책 키
      * @return void 반환값 없음
      */
     private function enablePolicy(string $key): void

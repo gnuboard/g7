@@ -90,7 +90,7 @@ export function initTemplate(): void {
 
       if (actionDispatcher) {
         // handlerMap의 모든 핸들러를 자동으로 등록 — 등록자를 이 템플릿 식별자로 표시한다(코어 재등록과 같은 표기).
-        // 다른 주인의 이름을 덮으면 엔진이 [G7] 경고로 드러낸다 (engine-v1.93.0)
+        // 다른 주인의 이름을 덮으면 엔진이 [G7] 경고로 드러낸다 (engine-v1.94.0)
         Object.entries(handlerMap).forEach(([name, handler]) => {
           actionDispatcher.registerHandler(name, handler, { category: 'custom', source: TEMPLATE_IDENTIFIER });
         });

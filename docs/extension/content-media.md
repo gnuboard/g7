@@ -287,7 +287,7 @@ ContentMediaRegistrar::register($this->app->make(NoteContentMediaStore::class));
 
 | 읽는 곳 | 방식 |
 | --- | --- |
-| 템플릿 `HtmlContent`(sirsoft-basic·sirsoft-admin_basic) | `G7Core.contentPolicy.sanitize(DOMPurify, html, config)` — 규칙이 없으면(옛 코어) `null` → 종전 DOMPurify |
+| 템플릿 `HtmlContent`(sirsoft-basic·sirsoft-admin_basic) | `G7Core.contentPolicy.sanitize(DOMPurify, html, config)` — 규칙이 없으면(옛 코어) `null` → 종전 DOMPurify. 코어 7.1.6 부터 `config` 에 `G7_DEFER_STYLE: true` 를 넘기면 본문의 `style` 속성이 `data-g7-style` 로 나오므로, 화면에 붙인 뒤 `G7Core.inlineStyle.apply(root)` 를 반드시 불러 서식을 입힌다(엄격한 스타일 정책에서 HTML 문자열의 `style` 속성이 막히기 때문 — [확장 자산 — 인라인 스타일](module-assets.md)). 플래그를 넘기지 않으면 출력은 종전과 같다 |
 | 검색엔진(봇) 정화기 `App\Seo\HtmlSanitizer` | `ContentHtmlPolicy::current()` — 켜진 후보 태그를 제거·벗김 목록에서 빼고 마지막에 `finalize('bot')` |
 | 쇼핑몰 상품 설명 저장 정화(HTMLPurifier) | `purifyHtml($html, 'content')` — 후보 태그 정의를 HTMLPurifier 에 더하고 `finalize('store')` |
 | 편집기 플러그인 | `G7Core.contentPolicy.editorConstraints()` — 외부 영상 서비스 목록·금지 태그·업로드 동영상/오디오 허용 |

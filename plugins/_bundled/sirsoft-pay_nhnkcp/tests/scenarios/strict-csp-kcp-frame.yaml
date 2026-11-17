@@ -9,6 +9,8 @@ description: |
   핵심 동작:
     - iframe 은 같은 출처 라우트 payment.kcp-frame?sdk=… 를 연다(web 그룹 — 코어 CSP 헤더 동반)
     - 프레임은 SDK <script src>(허용 주소 두 개와 정확히 일치할 때만) → order_info 폼 → 브리지 <script src>
+    - 프레임 모양(여백 0·투명 배경)은 <body style> 가 아니라 <head> 의 같은 출처 CSS(assets/bridge/kcp-frame.css)로 건다
+      (스타일 보안 정책 style-src-attr none 이 style 속성을 막는다)
     - 브리지(assets/bridge/kcp-frame.js)는 부모의 window.__g7KcpFrame 으로 값(fields)·결과(complete)·ready·fail 을 주고받는다
 
 axes:
@@ -21,6 +23,7 @@ effects:
   - kcp_pc_frame_without_inline_script
   - kcp_pc_frame_bridge_relays_fields_and_result
   - kcp_sdk_secondary_hosts_declared_for_csp
+  - kcp_frame_styles_from_stylesheet_without_inline_style
 
 test_files:
   - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Feature/Controllers/BridgeNoInlineScriptTest.php

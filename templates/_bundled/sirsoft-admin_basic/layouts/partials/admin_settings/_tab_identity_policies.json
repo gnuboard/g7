@@ -1224,6 +1224,10 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
+                                    "blur_until_loaded": {
+                                        "enabled": true,
+                                        "data_sources": "policies"
+                                    },
                                     "props": {
                                         "className": "text-tertiary"
                                     },

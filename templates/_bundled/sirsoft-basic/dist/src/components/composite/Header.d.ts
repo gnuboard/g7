@@ -68,6 +68,13 @@ interface HeaderProps {
     siteName?: string;
     /** 현재 로그인된 사용자 */
     user?: User | null;
+    /**
+     * 로그인 사용자 정보를 받는 중인가 — true 면 사용자 메뉴 자리에 빈 자리(회색 원 + 이름 막대)를 그리고
+     * 로그인·회원가입·주문조회·사용자 메뉴는 그리지 않는다(이름 길이에 따라 받은 뒤 폭이 조금 달라질 수 있다). 레이아웃이 `{{_global.currentUser === undefined}}` 로 넘긴다.
+     * 받는 중을 비회원으로 읽으면 회원이 새로고침할 때 「로그인·회원가입」이 잠깐 보였다가 바뀌고 검색창이 출렁였다(#915).
+     * 기본값 false — 편집기 미리보기·바인딩이 없는 옛 레이아웃은 지금처럼 그린다.
+     */
+    userLoading?: boolean;
     /** 장바구니 아이템 수 */
     cartCount?: number;
     /** 읽지 않은 알림 수 */
@@ -106,6 +113,10 @@ interface HeaderProps {
      * 옛 코어(7.1.3 이하)의 봇 렌더가 `{shopBase}/products` 같은 섞인 attrs 패턴을 치환하지 못해 레이아웃이 완성된 주소를 넘긴다.
      */
     shopProductsHref?: string;
+    /**
+     * 봇 화면(seo-config header_nav)의 「리뷰」 링크 주소(예: "/shop/reviews") — 이 컴포넌트는 읽지 않는다(화면은 shopBase 로 만든다)
+     */
+    shopReviewsHref?: string;
     /** 추가 CSS 클래스 */
     className?: string;
     /** 레이아웃 편집기 식별 속성(data-editor-*) — 시각적 루트에 spread */

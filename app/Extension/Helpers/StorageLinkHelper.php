@@ -5,6 +5,7 @@ namespace App\Extension\Helpers;
 use App\Extension\ExtensionManager;
 use App\Services\PublicStorageService;
 use App\Support\ExecutionEnvironment;
+use App\Support\PublicDiskHardening;
 use Illuminate\Support\Facades\Log;
 use Psr\Log\LoggerInterface;
 
@@ -346,6 +347,9 @@ class StorageLinkHelper
         // 복구기 자신이 생산한다 (22차 G3 라운드 D4).
         $storageSource = PublicStorageService::rootPath();
 
+        // 공개 디스크 직접 주소의 웹서버 보호 규칙 파일을 함께 보장한다 (링크 상태와 무관하게, 멱등).
+        static::ensurePublicDiskHardening($logger);
+
         // 1) Laravel storage:link source 부재 → 표준 미사용 환경, skip (false positive 차단)
         //
         // 멱등 판정보다 앞에 둔다 — 대상이 없으면 「그 대상을 가리키는가」를 물을 수 없고,
@@ -509,6 +513,29 @@ class StorageLinkHelper
         $logger->warning('[storage-link] public/storage symlink 재생성 실패 — rename 원복, 수동 `php artisan storage:link` 필요', [
             'target' => $storageSource,
         ]);
+    }
+
+    /**
+     * 공개 디스크 루트에 웹서버 보호 규칙 파일(`.htaccess`)이 놓여 있게 합니다(멱등).
+     *
+     * 규칙 생성 클래스는 7.1.6 에서 처음 생겼다 — 이전 버전 메모리에서 불려도 죽지 않게 존재를 확인한다.
+     *
+     * @param  LoggerInterface  $logger  로거
+     * @return void 반환값 없음
+     */
+    protected static function ensurePublicDiskHardening(LoggerInterface $logger): void
+    {
+        if (! class_exists(PublicDiskHardening::class) || ! is_dir(storage_path('app/public'))) {
+            return;
+        }
+
+        try {
+            if (! PublicDiskHardening::ensureHtaccess()) {
+                $logger->warning('[storage-link] 공개 디스크 보호 규칙 파일(.htaccess)을 쓰지 못했습니다 — 권한을 확인하세요');
+            }
+        } catch (\Throwable $e) {
+            $logger->warning('[storage-link] 공개 디스크 보호 규칙 파일 생성 실패', ['error' => $e->getMessage()]);
+        }
     }
 
     /**

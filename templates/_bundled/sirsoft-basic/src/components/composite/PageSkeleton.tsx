@@ -182,6 +182,8 @@ const COMPOSITE_SKELETONS: Record<string, (animClass: string, iterCount: number,
     ),
     Modal: () => <></>,
     Toast: () => <></>,
+    MobileBuyBar: () => <></>,
+    BottomSheet: () => <></>,
     ConfirmDialog: () => <></>,
 };
 
@@ -494,7 +496,7 @@ function resolveResponsiveDisplay(className: string, width: number): { visible: 
     const otherClasses: string[] = [];
 
     for (const token of tokens) {
-        // 확장 접두 빌드 클래스(`ecommerce:md:hidden`)는 앞글자를 떼고 같은 뜻으로 읽는다(engine-v1.93.0)
+        // 확장 접두 빌드 클래스(`ecommerce:md:hidden`)는 앞글자를 떼고 같은 뜻으로 읽는다(engine-v1.94.0)
         const split = (window as any).G7Core?.style?.splitExtensionClassPrefix?.(token) ?? { prefix: '', rest: token };
         const extPrefix: string = split.prefix;
         const bare: string = split.rest;
@@ -630,6 +632,29 @@ function renderSkeletonNode(
             <div key={index} className={className}>
                 {COMPOSITE_SKELETONS[name](animClass, iterCount, width)}
             </div>
+        );
+    }
+
+    // 가로 줄 컨테이너 — 자식(카드·칩)은 레이아웃이 넘기고 줄 배치 클래스는 컴포넌트 안에 있다.
+    // 범용 「자식 있으면 div」로 떨어지면 줄이 세로로 쌓여 실제 화면과 모양이 달라지므로 같은 배치로 감싼다.
+    if (name === 'ProductRail' && children && children.length > 0) {
+        return (
+            <section key={index} className={className}>
+                <div className={`h-6 w-40 mb-4 bg-gray-200 dark:bg-gray-700 rounded ${animClass}`} />
+                <div className="grid grid-flow-col auto-cols-[calc(50%_-_8px)] sm:auto-cols-[calc(33.333%_-_11px)] lg:auto-cols-[calc(25%_-_12px)] gap-4 overflow-hidden">
+                    {renderChildren(children, animClass, iterCount, width)}
+                </div>
+            </section>
+        );
+    }
+    if (name === 'ChipRows' && children && children.length > 0) {
+        return (
+            <nav key={index} className={className}>
+                {/* ChipRows 가 폭을 재기 전 기본 모양(flex-wrap)과 같다 */}
+                <div className="flex flex-wrap gap-2">
+                    {renderChildren(children, animClass, iterCount, width)}
+                </div>
+            </nav>
         );
     }
 

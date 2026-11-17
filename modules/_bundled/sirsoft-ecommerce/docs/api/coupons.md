@@ -656,4 +656,62 @@ HTTP/1.1 201
 
 **설명** 로그인한 회원이 다운로드형 쿠폰 1건을 실제로 발급받습니다. `auth:sanctum` 인증이 필요하고 대상 쿠폰은 `couponId`(경로)로 지정하며, `UserCouponService::downloadCoupon()`이 발급기간·수량·회원당 한도·중복 발급 여부를 검증한 뒤 발급 내역을 생성해 201로 반환합니다. 한도 초과·발급기간 종료 등 발급 불가 사유는 사유 식별자에 대응하는 다국어 키(`messages.coupon.*`)로 해석되어 `400` 으로 응답합니다.
 
+### POST /api/modules/sirsoft-ecommerce/user/coupons/bulk-download
 
+- **라우트명**: `api.modules.sirsoft-ecommerce.user.coupons.bulk-download`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\User\UserCouponController@bulkDownload`
+- **인증/권한**: `auth:sanctum`, `throttle:sirsoft-ecommerce.coupon-download`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| coupon_ids | body | array | 아니오 | 1~50개 | 받을 쿠폰 번호 목록. 주지 않으면 이 회원이 받을 수 있는 쿠폰 전체(최대 50장)가 대상입니다 |
+| coupon_ids.* | body | integer | 아니오 | min 1, 중복 불가 | 쿠폰 번호 |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-ecommerce.user_coupon.bulk_download_validation_rules`).
+
+**요청 예시**
+
+```http
+POST /api/modules/sirsoft-ecommerce/user/coupons/bulk-download HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "coupon_ids": [107, 108, 109]
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| results | array | — | 쿠폰별 결과 |
+| results[].coupon_id | integer | `107` | 쿠폰 번호 |
+| results[].status | string | `issued` | `issued`(받음) 또는 `skipped`(받지 못함) |
+| results[].reason_code | string\|null | `already_downloaded` | 받지 못한 사유 코드. `already_downloaded`·`download_limit_exceeded`·`quantity_exhausted`·`issue_period_expired`·`expired`·`not_downloadable`·`validity_not_configured`·`operation_failed`. 받았으면 `null` |
+| issued_count | integer | `1` | 새로 받은 장수 |
+| skipped_count | integer | `2` | 받지 못한 장수 |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "쿠폰 1장을 받았습니다. 2장은 받지 못했습니다.",
+    "data": {
+        "results": [
+            { "coupon_id": 107, "status": "issued", "reason_code": null },
+            { "coupon_id": 108, "status": "skipped", "reason_code": "already_downloaded" },
+            { "coupon_id": 109, "status": "skipped", "reason_code": "quantity_exhausted" }
+        ],
+        "issued_count": 1,
+        "skipped_count": 2
+    }
+}
+```
+
+**설명** 로그인한 회원이 받을 수 있는 쿠폰을 한 번에 받습니다. 쿠폰마다 단건 받기와 같은 검사(발급 방법·발급 기간·수량·회원당 한도)를 거치며, 한 장이 실패해도 나머지는 받습니다. 받은 장이 없어도 `200` 으로 답하고 쿠폰별 사유 코드를 싣습니다. 이미 한 장 이상 받은 쿠폰은 회원당 한도가 남아 있어도 더 받지 않습니다(`already_downloaded`). 없는 쿠폰 번호는 `not_downloadable` 로 답합니다. 단건 받기와 같은 요청 제한(회원당 분당 한도)을 나눠 쓰며, 넘으면 `429` 입니다.

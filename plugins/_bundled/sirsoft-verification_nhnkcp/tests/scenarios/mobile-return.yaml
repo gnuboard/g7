@@ -25,7 +25,9 @@ effects:
   - failed_result_keeps_panel_open_for_retry
   - verified_result_resolves_and_closes_panel
   - retry_after_failure_issues_new_transaction
+  - reissue_sends_policy_key
   - retry_after_popup_close_issues_new_transaction
+  - failure_notice_explains_reason_by_code   # 실패 안내 문구: 준비된 사유는 다국어 키, 없는 KCP 코드는 [코드] 원문, 원문도 없으면 일반 실패 안내
   - transition_decision_matches_portable_breakpoint_of_the_notice_panel
 
 test_files:

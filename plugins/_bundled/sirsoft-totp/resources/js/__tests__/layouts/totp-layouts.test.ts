@@ -18,6 +18,7 @@ import { describe, it, expect } from 'vitest';
 
 import totpSecurityLayout from '../../../layouts/admin/plugin_settings.json';
 import adminUserCardExtension from '../../../extensions/admin_user_totp_card.json';
+import notificationsCard from '../../../layouts/admin/partials/plugin_settings/_notifications_card.json';
 
 /**
  * 레이아웃 트리에서 data-ref(또는 id)로 노드를 찾는다.
@@ -259,6 +260,94 @@ describe('plugin_settings 운영 설정 카드 (발급자 표기·메일 폴백)
     });
 });
 
+describe('plugin_settings 보안 알림 카드 (등록·해제·백업 코드 재발급 알림)', () => {
+    // 코어 「알림 설정」 화면은 extension_type=core 정의만 보여 주므로, 이 플러그인이 들인 알림 정의 3종은
+    // 이 설정 화면이 유일한 관리 진입점이다(형제: 환율·GDPR 설정 화면).
+    const sources = ((totpSecurityLayout as any).data_sources ?? []) as any[];
+    const definitions = sources.find((s) => s.id === 'totpNotificationDefinitions');
+    const channels = sources.find((s) => s.id === 'totpNotificationChannels');
+
+    // @scenario screen=notification_card
+    // @effects totp_notification_card_reads_own_definitions
+    it('이 플러그인 소유 알림 정의만, 켠 채널 전부의 템플릿과 함께 받는다', () => {
+        expect(definitions, '알림 정의 데이터 소스가 없습니다').toBeDefined();
+        expect(definitions.endpoint).toContain('/api/admin/notification-definitions');
+        expect(definitions.endpoint).toContain('extension_type=plugin');
+        expect(definitions.endpoint).toContain('extension_identifier=sirsoft-totp');
+        // 이 인자가 없으면 응답의 templates 가 비어 템플릿 행(스위치·편집)이 그려지지 않는다
+        expect(definitions.params?.template_channel).toBe('all');
+        expect(definitions.fallback?.data?.data).toEqual([]);
+
+        expect(channels, '발송 채널 데이터 소스가 없습니다').toBeDefined();
+        expect(channels.endpoint).toBe('/api/admin/notification-channels');
+        expect(channels.fallback?.data?.channels).toEqual([]);
+    });
+
+    // @scenario screen=notification_card
+    // @effects totp_notification_card_failure_kept_inside_card
+    it('조회 실패는 카드 안 상태로만 남기고 등록 화면 전체를 오류로 바꾸지 않는다', () => {
+        // 인증 앱 등록은 알림 권한과 무관하게 써야 한다 — 403·그 밖 실패가 show-error-page 로 번지면 등록 카드까지 사라진다.
+        const eh = definitions.errorHandling ?? {};
+        expect(eh['403']?.handler).toBe('setState');
+        expect(eh['403']?.params?.totpNotificationsError).toBe('forbidden');
+        expect(eh.default?.handler).toBe('setState');
+        expect(eh.default?.params?.totpNotificationsError).toBe('failed');
+        expect(flatten(definitions)).not.toContain('showErrorPage');
+
+        // 실패 종류마다 카드 안 문구가 따로 뜨고, 0건 안내는 실패일 때 뜨지 않는다
+        const card = notificationsCard as any;
+        const scope = (error: string | undefined, defs: unknown) => ({ _local: { totpNotificationsError: error }, totpNotificationDefinitions: defs });
+        const ev = (ref: string, s: Record<string, unknown>) => {
+            const node = findByRef(card, ref);
+            expect(node, `${ref} 가 없습니다`).not.toBeNull();
+            const expr = String(node.if).replace(/^\{\{|\}\}$/g, '');
+            // eslint-disable-next-line no-new-func
+            return new Function(...Object.keys(s), `return (${expr});`)(...Object.values(s));
+        };
+        const empty = { data: { data: [] } };
+        expect(ev('totp_notifications_forbidden', scope('forbidden', empty))).toBe(true);
+        expect(ev('totp_notifications_load_failed', scope('failed', empty))).toBe(true);
+        expect(ev('totp_notifications_empty', scope('forbidden', empty))).toBe(false);
+        expect(ev('totp_notifications_empty', scope(undefined, undefined))).toBe(false);
+        expect(ev('totp_notifications_empty', scope(undefined, empty))).toBe(true);
+    });
+
+    // @scenario screen=notification_card
+    // @effects totp_notification_card_placed_below_site_settings
+    it('카드는 사이트 설정 카드 바로 아래에 놓이고, 편집·미리보기·복원 창 3종이 등록된다', () => {
+        const page = findByRef(totpSecurityLayout, 'totp_security_page');
+        const kids = (page?.children ?? []).map((c: any) => c.props?.['data-ref'] ?? c.id ?? c.partial);
+        const settingsAt = kids.indexOf('totp_settings_card');
+        expect(settingsAt).toBeGreaterThanOrEqual(0);
+        expect(kids[settingsAt + 1]).toBe('partials/plugin_settings/_notifications_card.json');
+
+        const modals = ((totpSecurityLayout as any).modals ?? []).map((m: any) => m.partial);
+        expect(modals).toEqual(expect.arrayContaining([
+            'partials/plugin_settings/_modal_notification_template_edit.json',
+            'partials/plugin_settings/_modal_notification_template_preview.json',
+            'partials/plugin_settings/_modal_notification_definition_reset.json',
+        ]));
+    });
+
+    // @scenario screen=notification_card
+    // @effects totp_notification_state_names_do_not_collide
+    it('알림 카드의 화면 상태 이름이 등록·사이트 설정 카드의 _local 과 겹치지 않는다', () => {
+        // 등록 카드가 code·busy·error 를, 사이트 설정 카드가 settings* 를 쓴다 — 같은 이름을 쓰면 한쪽 조작이 다른 쪽 화면을 흔든다.
+        const existing = new Set([...Object.keys((totpSecurityLayout as any).initLocal ?? {}), 'settingsForm']);
+        const written = new Set<string>();
+        (function walk(x: any): void {
+            if (Array.isArray(x)) return x.forEach(walk);
+            if (!x || typeof x !== 'object') return;
+            if (x.handler === 'setState' && x.params?.target === 'local') {
+                Object.keys(x.params).filter((k) => k !== 'target').forEach((k) => written.add(k.split('.')[0]));
+            }
+            Object.values(x).forEach(walk);
+        })([notificationsCard, definitions]);
+        expect([...written].sort()).toEqual(['totpChannels', 'totpNotificationsError', 'totpSavingChannels']);
+        for (const name of written) expect(existing.has(name), `${name} 가 기존 _local 과 겹칩니다`).toBe(false);
+    });
+});
+
 describe('회원 상세 인증 앱 카드 (layout_extension)', () => {
     // @scenario screen=member_detail_card
     // @effects totp_member_card_attaches_to_detail_tab_slot
@@ -353,7 +442,7 @@ describe('회원 상세 인증 앱 카드 (layout_extension)', () => {
         const unavailable = findByRef(adminUserCardExtension, 'admin_user_totp_status_unavailable');
 
         expect(status?.if).toBe('{{!!user?.data?.totp_enrollment}}');
-        expect(unavailable?.if).toBe('{{!user?.data?.totp_enrollment}}');
+        expect(unavailable?.if).toBe('{{user !== undefined && (!user?.data?.totp_enrollment)}}');
         expect(flatten(unavailable)).toContain('$t:sirsoft-totp.admin.user_card.status_unavailable');
     });
 

@@ -11,6 +11,7 @@ use App\Support\Query\BoundedCount;
 use App\Support\Query\BoundedPage;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\AbstractPaginator;
 use Illuminate\Pagination\CursorPaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -240,6 +241,8 @@ class ProductService
         $order = RelatedProductOrder::fromSetting(g7_module_settings('sirsoft-ecommerce', 'product_display.related_order', RelatedProductOrder::RANDOM->value));
         $hours = max(0, (int) g7_module_settings('sirsoft-ecommerce', 'product_display.related_cache_hours', 24));
 
+        HookManager::doAction('sirsoft-ecommerce.product.before_related_list', $product);
+
         $resolve = fn () => $this->repository->getRelatedProductIds($product, $order, $limit);
         $ids = $hours > 0
             ? app(CacheInterface::class)->remember(
@@ -250,7 +253,14 @@ class ProductService
             )
             : $resolve();
 
-        return $this->repository->findByIds($ids);
+        $products = $this->repository->findByIds($ids);
+
+        // 결과 훅은 캐시(상품 번호 목록)를 읽은 뒤에 돈다 — 확장이 바꾼 결과는 캐시에 굳지 않는다
+        $products = HookManager::applyFilters('sirsoft-ecommerce.product.filter_related_list_result', $products, $product);
+
+        HookManager::doAction('sirsoft-ecommerce.product.after_related_list', $products, $product);
+
+        return $products;
     }
 
     /**
@@ -287,6 +297,53 @@ class ProductService
         }
 
         return $this->repository->findByIds($ids);
+    }
+
+    /**
+     * 최근 본 상품 컬렉션을 조회합니다.
+     *
+     * before/after_recent_list 훅과 filter_recent_list_result 훅을 발화합니다.
+     *
+     * @param  array<int, int>  $ids  최근 본 상품 ID 배열 (본 순서)
+     * @return Collection<int, Product> 상품 컬렉션 (빈 입력 시 빈 컬렉션)
+     */
+    public function getRecentProducts(array $ids): Collection
+    {
+        HookManager::doAction('sirsoft-ecommerce.product.before_recent_list', $ids);
+
+        $products = $this->getProductsByIds($ids);
+
+        $products = HookManager::applyFilters('sirsoft-ecommerce.product.filter_recent_list_result', $products, $ids);
+
+        HookManager::doAction('sirsoft-ecommerce.product.after_recent_list', $products, $ids);
+
+        return $products;
+    }
+
+    /**
+     * 공개 상품 목록에 보는 사람 기준 값(찜 여부)과 카드 단추용 집계(활성 옵션 수·추가옵션 유무)를 붙입니다.
+     *
+     * 응답당 정해진 수의 쿼리만 쓴다 — 활성 옵션 수 1회, 추가옵션 유무 1회, 로그인 회원이면 찜 1회.
+     * 비회원은 찜 표를 조회하지 않는다. 결과 필터 훅이 모델 컬렉션이 아닌 것으로 바꿔 끼웠으면 건너뛴다.
+     * 결과 필터 훅 **뒤**에 불러야 확장이 바꾼 결과에도 값이 붙는다.
+     *
+     * @param  mixed  $products  상품 컬렉션 또는 페이지네이터
+     * @return void 반환값 없음
+     */
+    public function attachPublicListViewerContext(mixed $products): void
+    {
+        $collection = $products instanceof AbstractPaginator ? $products->getCollection() : $products;
+
+        if (! $collection instanceof Collection || $collection->isEmpty()) {
+            return;
+        }
+
+        $collection->loadCount(['activeOptions as options_count']);
+        $collection->loadExists(['additionalOptions as has_additional_options']);
+
+        if (Auth::id() !== null) {
+            $collection->load('currentUserWishlist');
+        }
     }
 
     /**
@@ -992,8 +1049,9 @@ class ProductService
      */
     protected function syncProductStock(Product $product): void
     {
-        if ($product->has_options) {
-            $stockSum = $product->calculateOptionStockSum();
+        // 옵션 없는 상품도 기본 옵션 한 개가 재고를 갖는다 — 옵션 행이 있으면 같은 식(활성 옵션 재고 합)으로 맞춘다
+        if ($product->has_options || $product->options()->exists()) {
+            $stockSum = (int) $product->options()->where('is_active', true)->sum('stock_quantity');
             $product->update(['stock_quantity' => $stockSum]);
         }
     }
@@ -2116,13 +2174,14 @@ class ProductService
      * @param  int|null  $categoryId  카테고리 필터
      * @param  int  $offset  오프셋
      * @param  int  $limit  조회할 최대 항목 수
+     * @param  array  $filters  추가 필터 (exclude_sold_out)
      * @return BoundedPage 페이지 결과 (총 건수 정확도 포함)
      */
-    public function searchByKeyword(string $keyword, string $sort = 'latest', ?int $categoryId = null, int $offset = 0, int $limit = 10): BoundedPage
+    public function searchByKeyword(string $keyword, string $sort = 'latest', ?int $categoryId = null, int $offset = 0, int $limit = 10, array $filters = []): BoundedPage
     {
         [$orderBy, $direction] = $this->resolveSortColumn($sort);
 
-        return $this->repository->searchByKeyword($keyword, $orderBy, $direction, $categoryId, $offset, $limit);
+        return $this->repository->searchByKeyword($keyword, $orderBy, $direction, $categoryId, $offset, $limit, $filters);
     }
 
     /**
@@ -2137,6 +2196,7 @@ class ProductService
      * @param  int  $perPage  페이지당 항목 수
      * @param  string|null  $cursor  인코딩된 커서 (첫 페이지면 null)
      * @param  int  $page  요청 페이지 번호 (커서 없이 깊은 페이지를 지목했는지 판정용)
+     * @param  array  $filters  추가 필터 (exclude_sold_out)
      * @return CursorPaginator|null 커서 페이지 결과 (커서 적용 불가 시 null)
      */
     public function searchByKeywordWithCursor(
@@ -2145,7 +2205,8 @@ class ProductService
         ?int $categoryId = null,
         int $perPage = 10,
         ?string $cursor = null,
-        int $page = 1
+        int $page = 1,
+        array $filters = []
     ): ?CursorPaginator {
         $sortKeys = SearchPagePolicy::sortKeys($sort, self::SEARCH_SORT_MAP);
 
@@ -2153,7 +2214,7 @@ class ProductService
             return null;
         }
 
-        return $this->repository->searchByKeywordWithCursor($keyword, $sortKeys, $categoryId, $perPage, $cursor);
+        return $this->repository->searchByKeywordWithCursor($keyword, $sortKeys, $categoryId, $perPage, $cursor, $filters);
     }
 
     /**
@@ -2161,10 +2222,11 @@ class ProductService
      *
      * @param  string  $keyword  검색 키워드
      * @param  int|null  $categoryId  카테고리 필터
+     * @param  array  $filters  추가 필터 (exclude_sold_out)
      * @return BoundedCount 일치하는 상품 수 (정확도 포함)
      */
-    public function countByKeyword(string $keyword, ?int $categoryId = null): BoundedCount
+    public function countByKeyword(string $keyword, ?int $categoryId = null, array $filters = []): BoundedCount
     {
-        return $this->repository->countByKeyword($keyword, $categoryId);
+        return $this->repository->countByKeyword($keyword, $categoryId, $filters);
     }
 }

@@ -26,7 +26,7 @@ description: |
     - 통화 정밀도: `ResolvesBaseCurrencyPrecision` trait 이 단건·벌크 공용 SSoT
     - 적립률 상한: `ValidatesMileageRate` trait
     - 옵션 가격 하한은 `min:0` — 단건 옵션 경로와 동일 경계여야 한다
-      (상품 본가는 `min:0.01`, 옵션은 0 허용이 기존 계약)
+      (0원 상품 허용 이후 상품 본가·옵션 모두 하한 0 — tests/scenarios/zero-price-product.yaml)
 
 axes:
   # G3 회차 16 W6 — 종전 마킹이 쓰던 이름을 선언으로 올린다 (선언 = 마킹). 값은 실제 마킹에서 도출.
@@ -53,7 +53,7 @@ effects:
   # E4 — 벌크 가격
   - bulk_price_respects_currency_precision
   - bulk_selling_price_cannot_exceed_list_price
-  - bulk_product_price_zero_rejected
+  - bulk_product_price_zero_allowed_negative_rejected
   - bulk_option_price_zero_allowed
   - bulk_valid_price_passes
   - bulk_partial_send_deferred_to_service

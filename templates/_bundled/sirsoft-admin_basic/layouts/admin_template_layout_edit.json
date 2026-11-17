@@ -1616,7 +1616,7 @@
                                                                 "id": "layout_meta_description",
                                                                 "type": "basic",
                                                                 "name": "P",
-                                                                "if": "{{_global.selectedNodeKind !== 'extension' && (!_global.selectedLayoutName || current_layout?.data?.name === _global.selectedLayoutName)}}",
+                                                                "if": "{{_global.selectedNodeKind !== 'extension' && (current_layout !== undefined && (!_global.selectedLayoutName || current_layout?.data?.name === _global.selectedLayoutName))}}",
                                                                 "responsive": {
                                                                     "768-": {
                                                                         "props": {
@@ -1651,7 +1651,7 @@
                                                                 "id": "layout_meta_modified_at",
                                                                 "type": "basic",
                                                                 "name": "Span",
-                                                                "if": "{{_global.selectedNodeKind === 'extension' || (!_global.selectedLayoutName || current_layout?.data?.name === _global.selectedLayoutName)}}",
+                                                                "if": "{{_global.selectedNodeKind === 'extension' || (current_layout !== undefined && (!_global.selectedLayoutName || current_layout?.data?.name === _global.selectedLayoutName))}}",
                                                                 "props": {
                                                                     "className": "text-label-subtle whitespace-nowrap"
                                                                 },
@@ -1662,7 +1662,7 @@
                                                                 "id": "layout_meta_version_history",
                                                                 "type": "basic",
                                                                 "name": "Button",
-                                                                "if": "{{_global.selectedNodeKind === 'extension' || (!_global.selectedLayoutName || current_layout?.data?.name === _global.selectedLayoutName)}}",
+                                                                "if": "{{_global.selectedNodeKind === 'extension' || (current_layout !== undefined && (!_global.selectedLayoutName || current_layout?.data?.name === _global.selectedLayoutName))}}",
                                                                 "actions": [
                                                                     {
                                                                         "type": "click",

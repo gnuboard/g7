@@ -10,7 +10,7 @@
       </div>
       <toggle data-type="composite" name="mileage.expiry_enabled" value="{{_local.form?.mileage?.expiry_enabled ?? true}}" disabled="{{_computed.isReadOnly}}"/>
     </div>
-    <div data-if="{{_local.form?.mileage?.expiry_enabled ?? true}}" class="ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:pt-4">
+    <div data-if="{{settings !== undefined &amp;&amp; (_local.form?.mileage?.expiry_enabled ?? true)}}" class="ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:pt-4">
       <label class="ecommerce:block ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:mb-2">$t:sirsoft-ecommerce.admin.mileage_settings.expiry.days</label>
       <div class="ecommerce:flex ecommerce:items-center ecommerce:gap-2">
         <input type="number" name="mileage.expiry_days" value="{{_local.form?.mileage?.expiry_days ?? 365}}" min="{{_local?.form?._meta?.limits?.expiry_days_min ?? 1}}" class="ecommerce-input ecommerce:w-28 ecommerce:text-center" disabled="{{_computed.isReadOnly}}"/>

@@ -101,7 +101,7 @@
             "id": "definitions_permission_notice",
             "type": "basic",
             "name": "P",
-            "if": "{{!_computed.canReadDefinitions}}",
+            "if": "{{current_user !== undefined && (!_computed.canReadDefinitions)}}",
             "props": {
                 "className": "text-hint py-4 text-center"
             },

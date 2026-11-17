@@ -332,7 +332,7 @@ test('편집 후 저장 → PUT 200', async ({ page }) => {
 
 | 하지 말 것 | 이유 (실측) | 대신 |
 |---|---|---|
-| 전환 오버레이 가림을 `toBeVisible()` 로 판정 | Playwright 의 가시성 판정은 **가림(occlusion)을 보지 않는다**. 오버레이는 타겟 안/head 에 덧붙는 방식이고 콘텐츠는 DOM 에 남으므로, 덮여 있어도 visible 로 판정된다 | 오버레이 엘리먼트의 attach/detach 시각으로 측정 (`#g7-skeleton-overlay` 또는 `style#g7-transition-overlay`) |
+| 전환 오버레이 가림을 `toBeVisible()` 로 판정 | Playwright 의 가시성 판정은 **가림(occlusion)을 보지 않는다**. 오버레이는 타겟 안/head 에 덧붙는 방식이고 콘텐츠는 DOM 에 남으므로, 덮여 있어도 visible 로 판정된다 | 오버레이 엘리먼트의 attach/detach 시각으로 측정 (`#g7-skeleton-overlay`, 또는 `<head>` 의 표식 요소 `#g7-transition-overlay`·`#g7-skeleton-overlay-style`). engine-v1.91.0 부터 덮개 규칙은 `<style>` 요소가 아니라 스타일시트 객체로 붙고, `<head>` 에는 같은 id 의 표식 요소(`<meta data-g7-runtime-style="adopted">`)가 덮개가 떠 있는 동안만 남는다 — 태그 이름(`style#…`)으로 찾지 말고 **id 로만** 찾는다(`head #g7-transition-overlay`). 표식 요소는 화면에 보이지 않으므로 `toBeVisible()` 이 아니라 `toBeAttached()`·`toHaveCount()` 로 판정한다 |
 | "캔버스 텍스트 길이가 늘어난다" 로 본체 렌더 판정 | 탭/상태를 바꾸면 **줄어들 수도** 있다. 실측: my_comments 서브탭이 정상 렌더되는데 881 → 669 로 감소(항목당 길이가 짧아서) | 그 데이터에만 있는 고유 문구 존재로 판정 |
 | 상태/옵션의 **총 개수**를 단언 | 상태 그룹은 편집기 스펙에서 계속 늘어난다. 체크아웃 상태가 3 → 4 로 늘면서 `toHaveCount(3)` 이 깨졌다 | 그 테스트가 실제로 쓰는 값의 존재로 판정 |
 | `waitForLoadState('networkidle')` | 관리자 SPA 는 실시간 연결·주기 폴링이 붙어 500ms 무통신 구간이 오지 않을 수 있다. 실측 30초 타임아웃 | 다음 단계에 필요한 구체 신호(클릭할 버튼의 가시성 등) |

@@ -148,7 +148,7 @@
                                     "id": "admin_user_totp_status_unavailable",
                                     "type": "basic",
                                     "name": "P",
-                                    "if": "{{!user?.data?.totp_enrollment}}",
+                                    "if": "{{user !== undefined && (!user?.data?.totp_enrollment)}}",
                                     "props": {
                                         "className": "totp-text-hint totp:mt-3"
                                     },

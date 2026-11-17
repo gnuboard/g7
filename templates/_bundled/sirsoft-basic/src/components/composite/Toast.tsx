@@ -350,6 +350,8 @@ export const Toast: React.FC<ToastProps> = ({
   return (
     <Div
       className={`fixed z-[9999] flex flex-col gap-2 ${positionClassMap[position]}`}
+      // 좁은 화면 하단 구매바가 있을 때 스타일시트가 이 표시를 보고 알림을 바 위로 올린다
+      data-toast-position={position}
       aria-live="polite"
       aria-atomic="true"
     >

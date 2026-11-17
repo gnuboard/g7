@@ -326,7 +326,7 @@ describe('DataBindingEngine - Pipe Integration', () => {
     });
   });
 
-  describe('썸네일 파이프 바인딩 (engine-v1.94.0)', () => {
+  describe('썸네일 파이프 바인딩 (engine-v1.95.0)', () => {
     beforeEach(() => {
       (window as any).G7Config = {
         settings: {

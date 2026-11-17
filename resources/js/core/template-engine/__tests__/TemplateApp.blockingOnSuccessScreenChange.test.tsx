@@ -1,7 +1,7 @@
 // e2e:allow 실제 엔진 구조(TemplateApp.handleRouteChange·renderTemplate·DynamicRenderer·DataSourceManager·ActionDispatcher)에 하네스 레이아웃을 올려 SPA 전환과 첫 진입의 결과를 견준다 — 브라우저 축은 총괄의 번들 재빌드 뒤 매트릭스(마이페이지 → 주문 상세 → 클레임 신청, 신청 내역 → 신청 상세)가 덮는다
 /**
  * @file TemplateApp.blockingOnSuccessScreenChange.test.tsx
- * @description 다른 화면으로 옮길 때 새 화면 blocking 데이터소스의 onSuccess 결과(`_local` 쓰기, 그 안의 다시 받기)가 살아남는다 (engine-v1.94.0)
+ * @description 다른 화면으로 옮길 때 새 화면 blocking 데이터소스의 onSuccess 결과(`_local` 쓰기, 그 안의 다시 받기)가 살아남는다 (engine-v1.95.0)
  *
  * 종전 엔진은 blocking 데이터소스를 받는 자리에서 곧바로 onSuccess 를 돌렸다. 그 시점은 아직 앞 화면 상태 위라,
  * 다른 화면으로 옮기는 SPA 전환에서는 그 뒤 `_local` 초기화(레이아웃 전환)와 렌더 문맥 재구성이 결과를 모두 버렸다.
@@ -223,7 +223,7 @@ async function mount(first: RouteSpec): Promise<{ app: any; go: (r: RouteSpec) =
     return { app, go };
 }
 
-describe('[case:state-global-blocking-onsuccess-lost-on-screen-change] 다른 화면으로 옮길 때 blocking onSuccess 의 `_local` 쓰기와 다시 받기 결과가 사라지지 않는다 (engine-v1.94.0)', () => {
+describe('[case:state-global-blocking-onsuccess-lost-on-screen-change] 다른 화면으로 옮길 때 blocking onSuccess 의 `_local` 쓰기와 다시 받기 결과가 사라지지 않는다 (engine-v1.95.0)', () => {
     afterEach(async () => {
         try { engine.destroyTemplate(); } catch { /* 정리 */ }
         delete (window as any).__templateApp;

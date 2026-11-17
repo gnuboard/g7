@@ -78,11 +78,14 @@
             <label class="form-label">$t:admin.identity.policies.form.provider_id</label>
             <select value="{{_global.identity_policy_form_modal?.form?.provider_id ?? ''}}" class="" options="{{[{value: '', label: '$t:admin.identity.policies.form.use_default_provider'}].concat((identityProviders?.data ?? []).map(function(p) { return {value: p.id, label: p.label}; }))}}">
               <on type="change">
-                <!-- 이 정책에만 쓸 인증 제공자. 첫 항목(빈 값)은 "기본 제공자 사용" 이고,
+                <!-- 이 정책에만 쓸 인증 제공자. 첫 항목(빈 값)은 "지정 안 함 — 모든 수단 인정" 이고,
                      저장할 때 빈 값은 `null` 로 바뀌어 나간다. -->
                 <set-state target="global" identity_policy_form_modal.form.provider_id="{{$event.target.value}}"/>
               </on>
             </select>
+            <!-- 지정한 수단으로 받은 인증만 인정한다(정확히 일치). 비우면 어떤 수단의 인증이든 인정한다 — 코어 7.1.6 -->
+            <p class="text-hint mt-1">$t:admin.identity.policies.form.provider_id_desc</p>
+            <span data-if="{{_global.identity_policy_form_modal?.errors?.errors?.provider_id}}" class="form-error">{{_global.identity_policy_form_modal?.errors?.errors?.provider_id?.[0] ?? ''}}</span>
           </div>
         </div>
         <div class="grid grid-cols-1 gap-4">

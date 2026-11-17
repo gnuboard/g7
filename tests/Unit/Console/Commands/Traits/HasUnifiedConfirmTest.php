@@ -30,7 +30,10 @@ class HasUnifiedConfirmTest extends TestCase
 
         $tester->execute([], ['interactive' => false]);
 
-        $this->assertSame('false', trim($tester->getDisplay()));
+        // 기본값 「아니오」로 떨어지면 --yes 안내가 먼저 나오고 결과는 false 다
+        $display = $tester->getDisplay();
+        $this->assertStringContainsString('--yes', $display);
+        $this->assertStringEndsWith('false', trim($display));
     }
 
     /**
@@ -261,9 +264,11 @@ class HasUnifiedConfirmTest extends TestCase
 
         $tester->execute([]);
 
+        // 묻지는 않는다(질문 줄 없음) — 대신 --yes 안내에 질문 글이 인용되고 결과는 false 다
         $display = $tester->getDisplay();
-        $this->assertSame('false', trim($display));
-        $this->assertStringNotContainsString('진행할까요?', $display);
+        $this->assertStringEndsWith('false', trim($display));
+        $this->assertStringContainsString('--yes', $display);
+        $this->assertStringNotContainsString('(yes/no)', $display);
     }
 
     /**

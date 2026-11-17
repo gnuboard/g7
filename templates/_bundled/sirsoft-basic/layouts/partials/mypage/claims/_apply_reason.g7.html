@@ -41,7 +41,7 @@
       <!-- 사진 첨부 — 장수·용량 상한은 운영자 설정(claim.max_images / claim.image_max_size_kb)이 정한다. 화면이 리터럴을 들고 있으면 운영자가 값을 바꿨을 때 안내와 실제 거절선이 갈린다. -->
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">$t:claim.apply.images_title</label>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">$t:claim.apply.images_hint|count={{(_local.claimableSnapshot ?? claimable?.data)?.settings?.max_images ?? 0}}|max={{(_local.claimableSnapshot ?? claimable?.data)?.settings?.max_images ?? 0}}|size={{(_local.claimableSnapshot ?? claimable?.data)?.settings?.image_max_size_kb ?? 0}}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-2"><blur-until-loaded sources="claimable"/>$t:claim.apply.images_hint|count={{(_local.claimableSnapshot ?? claimable?.data)?.settings?.max_images ?? 0}}|max={{(_local.claimableSnapshot ?? claimable?.data)?.settings?.max_images ?? 0}}|size={{(_local.claimableSnapshot ?? claimable?.data)?.settings?.image_max_size_kb ?? 0}}</p>
         <!-- 첨부 업로더 확장점(선택형) — 업로더는 파일을 고르기만 하고, 신청 제출 때 핸들러가 함께 올린다. 대체 업로더도 onFilesChange 에
              { target: { files } } 모양을 넘겨야 같은 핸들러가 받는다. 정책 값은 아래 기본 업로더와 같다. -->
         <extension-point name="attachment_uploader" data-ref="claim_images_uploader_slot" class="contents">

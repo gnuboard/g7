@@ -277,7 +277,7 @@
         </on>
       </extension-card-grid>
       <div data-ref="pagination_info" class="mt-4 text-label text-center">
-        <span>$t:admin.templates.pagination_info|total={{templates?.data?.pagination?.total ?? 0}}|from={{((templates?.data?.pagination?.current_page ?? 1) - 1) * (templates?.data?.pagination?.per_page ?? 12) + 1}}|to={{Math.min((templates?.data?.pagination?.current_page ?? 1) * (templates?.data?.pagination?.per_page ?? 12), templates?.data?.pagination?.total ?? 0)}}</span>
+        <span><blur-until-loaded sources="templates"/>$t:admin.templates.pagination_info|total={{templates?.data?.pagination?.total ?? 0}}|from={{((templates?.data?.pagination?.current_page ?? 1) - 1) * (templates?.data?.pagination?.per_page ?? 12) + 1}}|to={{Math.min((templates?.data?.pagination?.current_page ?? 1) * (templates?.data?.pagination?.per_page ?? 12), templates?.data?.pagination?.total ?? 0)}}</span>
       </div>
     </div>
     <div data-ref="info_message" class="alert-info">

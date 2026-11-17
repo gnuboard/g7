@@ -4,8 +4,6 @@ use App\Helpers\ResponseHelper;
 use App\Http\Middleware\SetLocale;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\ContentMediaController as PublicContentMediaController;
-use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ContentMediaController as AdminContentMediaController;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminCartController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminInquiryController;
@@ -18,6 +16,7 @@ use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\CashReceiptController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\CategoryController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimController as AdminClaimController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ClaimReasonController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ContentMediaController as AdminContentMediaController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\CouponController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\DashboardController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\EcommerceSettingsController;
@@ -43,6 +42,7 @@ use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\CategoryController as Publ
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\CategoryImageController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\CheckoutController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\ClaimImageDownloadController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\ContentMediaController as PublicContentMediaController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\EcommerceSettingsController as PublicEcommerceSettingsController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\GuestClaimController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\OrderController as PublicOrderController;
@@ -51,6 +51,7 @@ use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\ProductImageController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\ProductInquiryController as PublicProductInquiryController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\ProductReviewController as PublicProductReviewController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\PublicCouponController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\ReviewFeedController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Public\WishlistController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Shop\PaymentConfigController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\User\CashReceiptController as UserCashReceiptController;
@@ -146,9 +147,16 @@ Route::prefix('products')->middleware(['optional.sanctum', 'permission:user,sirs
     // POST /api/modules/sirsoft-ecommerce/products/{product}/inquiries
     Route::post('/{product}/inquiries', [PublicProductInquiryController::class, 'store'])
         ->where('product', '[0-9A-Za-z_-]+')
-        ->middleware('auth:sanctum')
+        ->middleware(['auth:sanctum', 'throttle:sirsoft-ecommerce.inquiry-write'])
         ->name('products.inquiries.store');
 });
+
+// 전체 공개 후기 목록 (리뷰 모아보기)
+// GET /api/modules/sirsoft-ecommerce/reviews - 전시 중인 모든 상품의 노출 후기
+// (products 그룹 밖 — 상품 와일드카드 `products/{product}` 에 먹히지 않게)
+Route::get('reviews', [ReviewFeedController::class, 'index'])
+    ->middleware(['optional.sanctum', 'permission:user,sirsoft-ecommerce.user-products.read'])
+    ->name('reviews.index');
 
 // 상품 이미지 서빙 API
 // GET /api/modules/sirsoft-ecommerce/product-image/{hash} - 상품 이미지 다운로드
@@ -179,9 +187,13 @@ Route::get('review-image/{hash}', [ReviewImageController::class, 'download'])
 // DELETE /api/modules/sirsoft-ecommerce/cart/all - 전체 삭제
 // POST   /api/modules/sirsoft-ecommerce/cart/merge - 비회원→회원 병합
 // GET    /api/modules/sirsoft-ecommerce/cart/count - 아이템 수 조회
+//
+// 쓰기 라우트는 `sirsoft-ecommerce.cart-write` 제한기(회원 단위·비회원은 IP 단위, 분당 한도는 모듈 설정)를 쓴다.
+// 조회(GET·POST /query)는 세지 않는다.
 Route::prefix('cart')->middleware(['optional.sanctum'])->group(function () {
     // cart_key 발급 (비회원용) - 와일드카드보다 먼저 정의
     Route::post('/key', [CartController::class, 'issueCartKey'])
+        ->middleware('throttle:sirsoft-ecommerce.cart-write')
         ->name('cart.key');
 
     // 아이템 수 조회 - 와일드카드보다 먼저 정의
@@ -190,10 +202,12 @@ Route::prefix('cart')->middleware(['optional.sanctum'])->group(function () {
 
     // 비회원→회원 병합 - 와일드카드보다 먼저 정의
     Route::post('/merge', [CartController::class, 'merge'])
+        ->middleware('throttle:sirsoft-ecommerce.cart-write')
         ->name('cart.merge');
 
     // 전체 삭제 - 와일드카드보다 먼저 정의
     Route::delete('/all', [CartController::class, 'destroyAll'])
+        ->middleware('throttle:sirsoft-ecommerce.cart-write')
         ->name('cart.destroy-all');
 
     // 장바구니 조회 (GET)
@@ -206,25 +220,30 @@ Route::prefix('cart')->middleware(['optional.sanctum'])->group(function () {
 
     // 장바구니 담기
     Route::post('/', [CartController::class, 'store'])
+        ->middleware('throttle:sirsoft-ecommerce.cart-write')
         ->name('cart.store');
 
     // 선택 삭제 (body: {ids: []})
     Route::delete('/', [CartController::class, 'destroyMultiple'])
+        ->middleware('throttle:sirsoft-ecommerce.cart-write')
         ->name('cart.destroy-multiple');
 
     // 수량 변경
     Route::patch('/{id}/quantity', [CartController::class, 'updateQuantity'])
         ->whereNumber('id')
+        ->middleware('throttle:sirsoft-ecommerce.cart-write')
         ->name('cart.update-quantity');
 
     // 옵션 변경
     Route::put('/{id}/option', [CartController::class, 'changeOption'])
         ->whereNumber('id')
+        ->middleware('throttle:sirsoft-ecommerce.cart-write')
         ->name('cart.change-option');
 
     // 단일 삭제
     Route::delete('/{id}', [CartController::class, 'destroy'])
         ->whereNumber('id')
+        ->middleware('throttle:sirsoft-ecommerce.cart-write')
         ->name('cart.destroy');
 });
 
@@ -237,6 +256,7 @@ Route::prefix('cart')->middleware(['optional.sanctum'])->group(function () {
 Route::prefix('checkout')->middleware(['optional.sanctum'])->group(function () {
     // 임시 주문 생성
     Route::post('/', [CheckoutController::class, 'store'])
+        ->middleware('throttle:sirsoft-ecommerce.checkout')
         ->name('checkout.store');
 
     // 임시 주문 조회
@@ -245,14 +265,17 @@ Route::prefix('checkout')->middleware(['optional.sanctum'])->group(function () {
 
     // 임시 주문 업데이트 (쿠폰/마일리지 변경)
     Route::put('/', [CheckoutController::class, 'update'])
+        ->middleware('throttle:sirsoft-ecommerce.checkout')
         ->name('checkout.update');
 
     // 임시 주문 삭제
     Route::delete('/', [CheckoutController::class, 'destroy'])
+        ->middleware('throttle:sirsoft-ecommerce.checkout')
         ->name('checkout.destroy');
 
     // 임시 주문 만료 연장
     Route::post('/extend', [CheckoutController::class, 'extend'])
+        ->middleware('throttle:sirsoft-ecommerce.checkout')
         ->name('checkout.extend');
 });
 
@@ -280,8 +303,9 @@ Route::prefix('settings')->group(function () {
 // 회원/비회원 공통 endpoint 로 통일된 이유: PG 플러그인의 fetch 인터셉터가
 // /api/modules/sirsoft-ecommerce/user/orders 한 경로만 매칭하기 때문 — 비회원 주문에서도
 // PG 결제창이 정상 노출되도록 단일 endpoint 로 통합. 회원/비회원 분기는 컨트롤러가 처리한다.
+// 요청 제한은 체크아웃과 같은 제한기(`sirsoft-ecommerce.checkout`)로 합산한다 — 권한 판정보다 앞에서 센다.
 Route::post('user/orders', [PublicOrderController::class, 'store'])
-    ->middleware(['optional.sanctum', 'permission:user,sirsoft-ecommerce.user-orders.create'])
+    ->middleware(['optional.sanctum', 'throttle:sirsoft-ecommerce.checkout', 'permission:user,sirsoft-ecommerce.user-orders.create'])
     ->name('user.orders.store');
 
 // 비회원 주문 조회 인증 API (주문번호+전화번호+비밀번호 → 조회 토큰 발급)
@@ -302,6 +326,9 @@ Route::post('guest/orders/verify', [PublicOrderController::class, 'verify'])
 // 상세 조회(GET /{orderNumber}) 는 회원/비회원 공유로 user/orders/{orderNumber} 통합 라우트가 담당한다
 // (PublicOrderController::showByOrderNumber). 비회원 후속 액션 (cancel/estimate-refund/update-shipping-address/confirm-option)
 // 만 본 그룹에 둔다.
+//
+// 주문을 바꾸는 요청(취소·환불 예상·배송지·구매확정·현금영수증 발급)은 `sirsoft-ecommerce.guest-order-write`
+// 제한기로 합산한다. 아래 클레임 블록은 자기 제한기(`guest-claims`)를 그대로 쓴다.
 Route::prefix('guest/orders/{orderNumber}')
     ->group(function () {
         // POST /guest/orders/{orderNumber}/cancel - 주문 취소 (구 취소 API — 주문 조회 화면은 아래 refund-requests 를 쓴다)
@@ -310,16 +337,17 @@ Route::prefix('guest/orders/{orderNumber}')
         // 상품)면 컨트롤러가 같은 「주문 취소」 권한을 다시 본다 — 버튼은 신청 가능 상품 응답의 `abilities.can_cancel`
         // 로 잠긴다. 그래서 운영자가 권한을 거두면 이 API·즉시 취소 신청·버튼이 함께 닫힌다.
         Route::post('/cancel', [PublicOrderController::class, 'cancel'])
-            ->middleware('permission:user,sirsoft-ecommerce.user-orders.cancel')
+            ->middleware(['throttle:sirsoft-ecommerce.guest-order-write', 'permission:user,sirsoft-ecommerce.user-orders.cancel'])
             ->name('guest.orders.cancel');
 
         // POST /guest/orders/{orderNumber}/estimate-refund - 환불 예상 (취소 창 전용 — 취소와 같은 권한)
         Route::post('/estimate-refund', [PublicOrderController::class, 'estimateRefund'])
-            ->middleware('permission:user,sirsoft-ecommerce.user-orders.cancel')
+            ->middleware(['throttle:sirsoft-ecommerce.guest-order-write', 'permission:user,sirsoft-ecommerce.user-orders.cancel'])
             ->name('guest.orders.estimate-refund');
 
         // PUT /guest/orders/{orderNumber}/shipping-address - 배송지 수정 (배송 전 상태)
         Route::put('/shipping-address', [PublicOrderController::class, 'updateShippingAddress'])
+            ->middleware('throttle:sirsoft-ecommerce.guest-order-write')
             ->name('guest.orders.update-shipping-address');
 
         // POST /guest/orders/{orderNumber}/options/{optionId}/confirm - 구매확정
@@ -327,7 +355,7 @@ Route::prefix('guest/orders/{orderNumber}')
         // 거두면 버튼(options.*.can_confirm)과 API 가 함께 닫힌다.
         Route::post('/options/{optionId}/confirm', [PublicOrderController::class, 'confirmOption'])
             ->whereNumber('optionId')
-            ->middleware('permission:user,sirsoft-ecommerce.user-orders.confirm')
+            ->middleware(['throttle:sirsoft-ecommerce.guest-order-write', 'permission:user,sirsoft-ecommerce.user-orders.confirm'])
             ->name('guest.orders.confirm-option');
 
         // GET /guest/orders/{orderNumber}/cash-receipt - 현금영수증 상태 조회
@@ -337,6 +365,7 @@ Route::prefix('guest/orders/{orderNumber}')
         // POST /guest/orders/{orderNumber}/cash-receipt - 현금영수증 사후 발급
         // 발급취소는 제공하지 않는다 (관리자 전용).
         Route::post('/cash-receipt', [GuestCashReceiptController::class, 'issue'])
+            ->middleware('throttle:sirsoft-ecommerce.guest-order-write')
             ->name('guest.orders.cash-receipt.issue');
 
         // ── 비회원 클레임(교환/반품/취소·환불) ─────────────────────────────
@@ -436,8 +465,10 @@ Route::get('user/orders/{orderNumber}', [PublicOrderController::class, 'showByOr
 
 // 결제 취소 기록 API (PG 결제창 닫기 시 호출, 비회원 지원)
 // POST /api/modules/sirsoft-ecommerce/orders/{orderNumber}/cancel-payment
+// 요청 제한은 체크아웃·주문 생성과 같은 제한기(`sirsoft-ecommerce.checkout`)로 합산한다 — 결제창은 주문 생성 직후에
+// 열리므로 같은 흐름이고, 따로 두면 이 경로만 무제한으로 남는다.
 Route::post('orders/{orderNumber}/cancel-payment', [PublicOrderController::class, 'cancelPayment'])
-    ->middleware('optional.sanctum')
+    ->middleware(['optional.sanctum', 'throttle:sirsoft-ecommerce.checkout'])
     ->name('orders.cancel-payment');
 
 // 환불/취소 사유 카탈로그 조회 API (회원/비회원 공유 — optional.sanctum)
@@ -472,12 +503,14 @@ Route::get('payments/client-config/{provider}', [PaymentConfigController::class,
 // DELETE /api/modules/sirsoft-ecommerce/wishlist/{id} - 찜 삭제
 Route::prefix('wishlist')->middleware('auth:sanctum')->group(function () {
     Route::post('/toggle', [WishlistController::class, 'toggle'])
+        ->middleware('throttle:sirsoft-ecommerce.wishlist-write')
         ->name('wishlist.toggle');
 
     Route::get('/', [WishlistController::class, 'index'])
         ->name('wishlist.index');
 
     Route::delete('/{id}', [WishlistController::class, 'destroy'])
+        ->middleware('throttle:sirsoft-ecommerce.wishlist-write')
         ->name('wishlist.destroy');
 });
 
@@ -497,9 +530,16 @@ Route::prefix('user')->middleware('auth:sanctum')->group(function () {
         Route::get('/downloadable', [UserCouponController::class, 'downloadable'])
             ->name('user.coupons.downloadable');
 
+        // 쿠폰 받기(단건·일괄)는 같은 요청 제한을 나눠 쓴다 — 회원당 분당 한도
         Route::post('/{couponId}/download', [UserCouponController::class, 'download'])
             ->where('couponId', '[0-9]+')
+            ->middleware('throttle:sirsoft-ecommerce.coupon-download')
             ->name('user.coupons.download');
+
+        // POST /api/modules/sirsoft-ecommerce/user/coupons/bulk-download - 쿠폰 일괄 받기
+        Route::post('/bulk-download', [UserCouponController::class, 'bulkDownload'])
+            ->middleware('throttle:sirsoft-ecommerce.coupon-download')
+            ->name('user.coupons.bulk-download');
     });
 
     // 마일리지 API
@@ -552,7 +592,9 @@ Route::prefix('user')->middleware('auth:sanctum')->group(function () {
             ->name('user.orders.confirm-option');
 
         // POST /api/modules/sirsoft-ecommerce/user/orders/{id}/reorder - 재주문 (장바구니에 일괄 추가)
+        // 장바구니 일괄 담기이므로 장바구니 쓰기와 같은 제한기로 센다
         Route::post('/{id}/reorder', [UserOrderController::class, 'reorder'])
+            ->middleware('throttle:sirsoft-ecommerce.cart-write')
             ->whereNumber('id')
             ->name('user.orders.reorder');
 
@@ -659,7 +701,7 @@ Route::prefix('user')->middleware('auth:sanctum')->group(function () {
             ->name('user.reviews.can-write');
 
         Route::post('/', [UserProductReviewController::class, 'store'])
-            ->middleware('permission:user,sirsoft-ecommerce.user-reviews.write')
+            ->middleware(['throttle:sirsoft-ecommerce.review-write', 'permission:user,sirsoft-ecommerce.user-reviews.write'])
             ->name('user.reviews.store');
 
         Route::delete('/{review}', [UserProductReviewController::class, 'destroy'])

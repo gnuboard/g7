@@ -73,12 +73,14 @@
             "endpoint": "/api/modules/sirsoft-ecommerce/products",
             "method": "GET",
             "auto_fetch": true,
+            "auth_mode": "optional",
             "params": {
                 "page": "{{query.page ?? 1}}",
                 "per_page": 12,
                 "category_slug": "{{route.slug}}",
                 "sort": "{{query.sort ?? 'latest'}}",
-                "search": "{{query.keyword ?? ''}}"
+                "search": "{{query.keyword ?? ''}}",
+                "exclude_sold_out": "{{query.exclude_sold_out ?? ''}}"
             },
             "fallback": {
                 "data": [],
@@ -318,11 +320,12 @@
                     },
                     {
                         "comment": "하위 카테고리 칩 (자식 카테고리가 있을 때만 표시). 칩 하나가 줄보다 넓어지지 않게 폭을 줄에 맞추고 이름은 한 줄 … (#143)",
-                        "type": "basic",
-                        "name": "Div",
+                        "type": "composite",
+                        "name": "ChipRows",
                         "if": "{{(category?.data?.children ?? []).length > 0}}",
                         "props": {
-                            "className": "flex flex-wrap gap-2 mb-4"
+                            "ariaLabel": "$t:shop.category.chips_label",
+                            "className": "mb-4"
                         },
                         "children": [
                             {
@@ -333,7 +336,7 @@
                                     "item_var": "sub"
                                 },
                                 "props": {
-                                    "className": "max-w-full"
+                                    "className": "shrink-0"
                                 },
                                 "children": [
                                     {
@@ -348,7 +351,7 @@
                                         ],
                                         "props": {
                                             "href": "{{_global.shopBase}}/category/{{sub?.slug}}",
-                                            "className": "inline-flex items-center justify-center max-w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600"
+                                            "className": "inline-flex items-center justify-center max-w-[16rem] px-[var(--g7-chip-px,0.75rem)] py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-[length:var(--g7-chip-fs,0.875rem)] hover:bg-gray-100 dark:hover:bg-gray-600"
                                         },
                                         "children": [
                                             {
@@ -366,69 +369,8 @@
                         ]
                     },
                     {
-                        "comment": "정렬 바",
-                        "type": "basic",
-                        "name": "Div",
-                        "props": {
-                            "className": "flex items-center justify-between py-3 bg-gray-50 dark:bg-gray-800/50"
-                        },
-                        "children": [
-                            {
-                                "type": "basic",
-                                "name": "Span",
-                                "props": {
-                                    "className": "text-sm font-semibold text-gray-700 dark:text-gray-300"
-                                },
-                                "text": "$t:shop.total_count|count={{products?.data?.pagination?.total ?? 0}}"
-                            },
-                            {
-                                "type": "basic",
-                                "name": "Select",
-                                "actions": [
-                                    {
-                                        "comment": "정렬을 바꾸면 순서가 통째로 달라지므로 보던 쪽수를 유지하지 않고 1쪽으로 돌아간다",
-                                        "type": "change",
-                                        "handler": "navigate",
-                                        "params": {
-                                            "path": "{{route.path}}",
-                                            "mergeQuery": true,
-                                            "query": {
-                                                "sort": "{{$event.target.value}}",
-                                                "page": "1"
-                                            }
-                                        }
-                                    }
-                                ],
-                                "props": {
-                                    "name": "sort",
-                                    "aria-label": "$t:common.sort_order",
-                                    "value": "{{query.sort ?? 'latest'}}",
-                                    "className": "h-9 w-32",
-                                    "options": [
-                                        {
-                                            "value": "latest",
-                                            "label": "$t:shop.sort.latest"
-                                        },
-                                        {
-                                            "value": "sales",
-                                            "label": "$t:shop.sort.sales"
-                                        },
-                                        {
-                                            "value": "reviews",
-                                            "label": "$t:shop.sort.reviews"
-                                        },
-                                        {
-                                            "value": "price_asc",
-                                            "label": "$t:shop.sort.price_asc"
-                                        },
-                                        {
-                                            "value": "price_desc",
-                                            "label": "$t:shop.sort.price_desc"
-                                        }
-                                    ]
-                                }
-                            }
-                        ]
+                        "comment": "정렬 줄(총 상품 수·초기화·품절 제외·정렬) — 전체 상품 목록과 같이 쓰는 조각",
+                        "partial": "partials/shop/list/_sort_bar.json"
                     },
                     {
                         "partial": "partials/shop/list/_product_grid.json"

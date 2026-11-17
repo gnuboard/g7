@@ -78,7 +78,7 @@
                         "comment": "Memo 비어있음 안내",
                         "type": "basic",
                         "name": "Div",
-                        "if": "{{(memos?.data?.data ?? []).length === 0}}",
+                        "if": "{{memos !== undefined && (memos?.data?.data ?? []).length === 0}}",
                         "props": {
                             "className": "rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-6 text-center text-gray-500 dark:text-gray-400"
                         },

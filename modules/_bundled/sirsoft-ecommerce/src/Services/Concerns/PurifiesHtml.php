@@ -46,12 +46,38 @@ trait PurifiesHtml
     private const PURIFIER_BASE_ALLOWED = 'p,br,strong,em,b,i,u,s,ul,ol,li,a[href|target],img[src|alt|width|height],h1,h2,h3,h4,h5,h6,table,tr,td,th,thead,tbody,tfoot,caption,colgroup,col,blockquote,pre,code,div,span[style],hr';
 
     /**
+     * 「본문 콘텐츠」 프로필(상품 설명·상품 공통 정보 — 관리자가 편집기로 쓰는 본문)의 허용 목록.
+     *
+     * 기본 목록과 요소는 같고, 편집기가 서식을 싣는 속성을 더 받는다 — 문단·제목·목록·인용·표·셀·이미지의 `style`,
+     * 병합 셀의 `colspan`·`rowspan`. 기본 목록은 `style` 을 `span` 에만 받아, 가운데 정렬한 문단이 저장하면 왼쪽으로
+     * 돌아가고 병합 셀이 풀렸다. `style` 안의 선언은 {@see self::PURIFIER_CONTENT_CSS} 로 다시 거른다.
+     *
+     * 이관 후기 등 외부에서 들어온 HTML(`baseline`)에는 쓰지 않는다.
+     */
+    private const PURIFIER_CONTENT_ALLOWED = 'p[style],br,strong,em,b,i,u,s,ul[style],ol[style],li[style],a[href|target],img[src|alt|width|height|style],'
+        .'h1[style],h2[style],h3[style],h4[style],h5[style],h6[style],table[style],tr[style],td[style|colspan|rowspan],th[style|colspan|rowspan],'
+        .'thead,tbody,tfoot,caption[style],colgroup,col[style|span],blockquote[style],pre,code,div[style],span[style],hr';
+
+    /**
+     * 「본문 콘텐츠」 프로필이 `style` 안에서 받는 CSS 속성 — 편집기의 정렬·들여쓰기·줄 간격·글자·표·이미지 크기 서식.
+     *
+     * 화면을 덮거나 밖으로 요청을 내는 속성(`position`·`z-index`·`top` 계열·`display`·`overflow`·`background-image`·
+     * `background` 등)은 넣지 않는다. 값의 `url()`·`expression()` 은 HTMLPurifier 가 속성별 문법으로 걸러 낸다.
+     */
+    private const PURIFIER_CONTENT_CSS = 'color,background-color,font-size,font-weight,font-style,font-family,text-align,text-decoration,text-indent,'
+        .'line-height,letter-spacing,vertical-align,white-space,float,'
+        .'margin,margin-top,margin-right,margin-bottom,margin-left,padding,padding-top,padding-right,padding-bottom,padding-left,'
+        .'border,border-top,border-right,border-bottom,border-left,border-width,border-style,border-color,border-collapse,border-spacing,'
+        .'width,height,min-width,max-width,min-height,max-height';
+
+    /**
      * 「본문 콘텐츠」 정의의 이 모듈 판 — 요소 분류·허용 범위를 바꾸면 올린다(정의 캐시 ID 에 붙어 옛 직렬화 정의를 버린다).
      *
      * 2: 후보 전부 허용(스위치는 표시에서만)·문구 콘텐츠 인라인 분류 (#887)
      * 3: 저장 규칙·요소 분류를 코어 한 곳(`ContentHtmlPolicy::forStorage`·`HtmlElementCategories`)으로 — 모르는 서비스 oembed 보존 (#887)
+     * 4: 편집기 서식 속성(문단·표·셀·이미지의 style, 병합 셀)과 CSS 속성 목록을 넓힘 — 후보 요소의 style 은 공통 속성 규칙으로 (#895)
      */
-    private const PURIFIER_CONTENT_SCHEMA = 3;
+    private const PURIFIER_CONTENT_SCHEMA = 4;
 
     /**
      * HTMLPurifier 가 기본 정의로 아는 요소 (지연 계산)
@@ -124,6 +150,9 @@ trait PurifiesHtml
             $cachePath = $this->resolvePurifierCachePath($failure);
             $this->noticePurifierCacheDisabled($cachePath, $failure);
             $config = $this->buildPurifierConfig($cachePath);
+            // 편집기로 쓰는 본문은 서식 속성을 더 받는다 (#895) — 후보 요소·추가 태그는 아래에서 이 목록에 덧붙인다
+            $config->set('HTML.Allowed', self::PURIFIER_CONTENT_ALLOWED);
+            $config->set('CSS.AllowedProperties', self::PURIFIER_CONTENT_CSS);
             $this->extendContentDefinition($config, $definition, $policy->customTags());
             $this->contentPurifiers[$definition['id']] = new \HTMLPurifier($config);
         }
@@ -157,9 +186,9 @@ trait PurifiesHtml
 
         // 기본 정의 계산은 추가 태그가 있을 때만 한다(정의 하나를 더 만드는 비용)
         $native = $customTags !== [] ? self::nativePurifierElements() : [];
-        $baseTags = array_map(fn ($entry) => strtok($entry, '['), explode(',', self::PURIFIER_BASE_ALLOWED));
+        $baseTags = array_map(fn ($entry) => strtok($entry, '['), explode(',', self::PURIFIER_CONTENT_ALLOWED));
 
-        $allowed = self::PURIFIER_BASE_ALLOWED;
+        $allowed = self::PURIFIER_CONTENT_ALLOWED;
         foreach ($definition['elements'] as $tag => $attributes) {
             $allowed .= ','.$tag.($attributes !== [] ? '['.implode('|', $attributes).']' : '');
         }
@@ -187,6 +216,10 @@ trait PurifiesHtml
         foreach ($definition['elements'] as $tag => $attributes) {
             $spec = [];
             foreach ($attributes as $attribute) {
+                // style 은 공통 속성 모음(Common)이 CSS 규칙(허용 속성 목록)으로 거른다 — 글자 속성으로 다시 정의하면 그 검사를 건너뛴다
+                if ($attribute === 'style') {
+                    continue;
+                }
                 $spec[$attribute] = $types[$attribute] ?? 'Text';
             }
             $raw->addElement($tag, HtmlElementCategories::purifierElementType($tag), $content[$tag] ?? 'Flow', 'Common', $spec);

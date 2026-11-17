@@ -27,6 +27,24 @@ return [
         'order_number_prefix' => 'ORD',
     ],
 
+    // 요청 제한 (분당 허용 횟수) — 로그인 회원은 회원 단위, 비회원은 IP 단위로 센다
+    'rate_limits' => [
+        // 장바구니 쓰기 (키 발급·병합·담기·수량·옵션·삭제·전체 삭제)
+        'cart_write' => 120,
+        // 체크아웃 계산·갱신·삭제·연장 + 주문 생성
+        'checkout' => 30,
+        // 비회원 주문 변경 (취소·환불 예상·배송지·구매확정·현금영수증 발급)
+        'guest_order_write' => 20,
+        // 쿠폰 받기 (단건·일괄이 같은 한도를 나눠 쓴다)
+        'coupon_download' => 20,
+        // 찜 추가·해제
+        'wishlist_write' => 60,
+        // 상품 문의 작성
+        'inquiry_write' => 5,
+        // 상품 후기 작성
+        'review_write' => 5,
+    ],
+
     // 결제 설정
     'payment' => [
         // 미입금 주문 자동취소 기한은 관리자 환경설정 order_settings.auto_cancel_days 가 SSoT 다.

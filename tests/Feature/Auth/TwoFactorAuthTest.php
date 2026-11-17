@@ -420,6 +420,8 @@ class TwoFactorAuthTest extends TestCase
 
         $first = $this->login()->json('data.challenge_id');
 
+        // 메일 재발송은 60초 대기를 지킨다(7.1.6) — 대기 경과 뒤의 재발송 동작을 본다
+        $this->travel(61)->seconds();
         $response = $this->postJson('/api/auth/login/two-factor/resend', [
             'challenge_id' => $first,
         ]);
@@ -556,6 +558,8 @@ class TwoFactorAuthTest extends TestCase
             'password' => 'Passw0rd!2fa',
         ])->json('data.challenge_id');
 
+        // 메일 재발송은 60초 대기를 지킨다(7.1.6) — 대기 경과 뒤의 재발송 동작을 본다
+        $this->travel(61)->seconds();
         $response = $this->postJson('/api/auth/admin/login/two-factor/resend', [
             'challenge_id' => $challengeId,
         ]);
@@ -585,6 +589,8 @@ class TwoFactorAuthTest extends TestCase
         // 관리자 로그인은 비관리자에게 challenge 를 내주지 않는다(#40 R12) — 사용자 로그인 challenge 로 잰다.
         $challengeId = $this->login()->json('data.challenge_id');
 
+        // 메일 재발송은 60초 대기를 지킨다(7.1.6) — 대기 경과 뒤의 재발송 동작을 본다
+        $this->travel(61)->seconds();
         // 완료할 수 없는 상대에게 새 인증번호를 계속 보내지 않는다.
         $this->postJson('/api/auth/admin/login/two-factor/resend', [
             'challenge_id' => $challengeId,

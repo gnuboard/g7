@@ -184,7 +184,7 @@
         </button>
       </div>
       <div data-ref="table_header" class="ecommerce:flex ecommerce:flex-wrap ecommerce:items-center ecommerce:justify-between ecommerce:gap-4 ecommerce:mb-4">
-        <span class="ecommerce-text-primary ecommerce:font-bold">$t:sirsoft-ecommerce.admin.wishlists.table.total_count|count={{wishlists?.data?.pagination?.total ?? 0}}</span>
+        <span class="ecommerce-text-primary ecommerce:font-bold"><blur-until-loaded sources="wishlists"/>$t:sirsoft-ecommerce.admin.wishlists.table.total_count|count={{wishlists?.data?.pagination?.total ?? 0}}</span>
         <div data-ref="table_header_controls" class="ecommerce:flex ecommerce:items-center ecommerce:gap-3">
           <select data-ref="sort_select" aria-label="$t:common.sort_order" class="ecommerce:w-40 ecommerce:text-sm" value="{{query.sort || 'created_at_desc'}}">
             <options>

@@ -426,7 +426,7 @@
               <icon name="arrows-rotate" class="bizppurio:text-base bizppurio:leading-none"/>
             </button>
           </div>
-          <p class="bizppurio-text-label-subtle bizppurio:mb-2">$t:sirsoft-message_bizppurio.manage.total_count|count={{bizppurio_templates_list?.data?.pagination?.total ?? 0}}</p>
+          <p class="bizppurio-text-label-subtle bizppurio:mb-2"><blur-until-loaded sources="bizppurio_templates_list"/>$t:sirsoft-message_bizppurio.manage.total_count|count={{bizppurio_templates_list?.data?.pagination?.total ?? 0}}</p>
           <div class="bizppurio-admin-card bizppurio:p-0 bizppurio:overflow-hidden">
             <!-- 데스크톱 grid 헤더 — portable 에서는 카드가 자기 서술이므로 숨긴다 (제품 결정 2026-08-24 모바일 카드뷰). -->
             <div data-ref="bz_manage_list_header" class="bizppurio:grid bizppurio:grid-cols-12 bizppurio:gap-2 bizppurio:px-4 bizppurio:py-2.5 bizppurio:bg-gray-50 bizppurio:dark:bg-gray-900 bizppurio:text-xs bizppurio:font-medium bizppurio:text-gray-500 bizppurio:dark:text-gray-400">
@@ -699,7 +699,7 @@
                 </div>
               </div>
             </div>
-            <div data-if="{{(bizppurio_templates_list?.data?.templates ?? []).length === 0}}" class="bizppurio:py-10 bizppurio:text-center bizppurio:text-gray-500 bizppurio:dark:text-gray-400">
+            <div data-if="{{bizppurio_templates_list !== undefined &amp;&amp; ((bizppurio_templates_list?.data?.templates ?? []).length === 0)}}" class="bizppurio:py-10 bizppurio:text-center bizppurio:text-gray-500 bizppurio:dark:text-gray-400">
               <icon name="inbox" class="bizppurio:text-3xl bizppurio:leading-none bizppurio:text-gray-500 bizppurio:dark:text-gray-500 bizppurio:mb-2"/>
               <p class="bizppurio:font-medium">$t:sirsoft-message_bizppurio.manage.empty</p>
               <p class="bizppurio:text-xs bizppurio:mt-1">$t:sirsoft-message_bizppurio.manage.empty_hint</p>

@@ -28,7 +28,7 @@ effects:
   - cache_invalidation_clears_entries
   - context_bound_roots_not_cached              # _computed·$computed·extensionPointProps 를 읽는 식은 어떤 캐시에도 담지 않는다(engine-v1.82.1)
   - route_query_bindings_follow_current_screen    # route·query 는 영구 캐시 제외 — 화면 전환 뒤 새 값(engine-v1.82.1)
-  - leaving_screen_render_does_not_refill_cache   # 전환이 캐시를 비운 뒤 늦게 처리된 떠나는 화면의 렌더(앞 세대 문맥)가 앞 값을 다시 채우지 않는다(engine-v1.94.0)
+  - leaving_screen_render_does_not_refill_cache   # 전환이 캐시를 비운 뒤 늦게 처리된 떠나는 화면의 렌더(앞 세대 문맥)가 앞 값을 다시 채우지 않는다(engine-v1.95.0)
   - pipe_expression_parsing                      # splitPipes·hasPipes·parsePipeExpression·executePipeChain
   - builtin_pipes_transform_values               # date·number·default·filterBy·join·truncate 등 내장 파이프
   - localized_pipe_picks_locale_value            # localized 파이프 — 인자 → 화면 언어 → 사이트 기본 언어 → 영어
@@ -37,7 +37,7 @@ effects:
   - pipes_apply_in_bindings                      # 바인딩·resolveObject·레이아웃 실사용 패턴에서 파이프 적용
   - pipe_expression_preserves_raw_type           # 단일 바인딩+파이프는 원본 타입 유지
   - pipe_edge_cases_safe
-  # thumb·thumbSrcset 내장 파이프(engine-v1.94.0, #869) — 판정은 support/thumbnailUrl 이 하고(thumbnail-frontend.yaml),
+  # thumb·thumbSrcset 내장 파이프(engine-v1.95.0, #869) — 판정은 support/thumbnailUrl 이 하고(thumbnail-frontend.yaml),
   # 여기서는 파이프 결선과 기본 규격만 잰다
   - thumb_pipe_appends_preset_to_serving_urls       # 등록된 서빙 경로에만 ?size=, 인자 없으면 sm
   - thumb_pipe_leaves_non_targets_untouched         # 외부·정적 주소, null·undefined 는 그대로

@@ -11,6 +11,7 @@
  * @vitest-environment jsdom
  */
 
+import { inlineNamedActions } from '../helpers/inlineNamedActions';
 import { describe, it, expect } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -18,7 +19,8 @@ import * as path from 'path';
 const layoutsDir = path.resolve(__dirname, '../../layouts');
 const read = (rel: string) => fs.readFileSync(path.join(layoutsDir, rel), 'utf-8');
 
-const purchaseCard = read('partials/shop/detail/_purchase_card.json');
+// 담기·바로구매·주문하기는 화면의 이름 붙은 액션이고 옵션 영역은 조각이다 — 엔진이 조립하듯 그 자리에 펼쳐서 본다
+const purchaseCard = JSON.stringify(inlineNamedActions(JSON.parse(read('partials/shop/detail/_purchase_card.json'))), null, 4);
 const cartItem = read('partials/shop/_cart_item.json');
 const optionChangeModal = read('partials/shop/_modal_cart_option_change.json');
 const mypageList = read('partials/mypage/orders/_list.json');

@@ -18,6 +18,7 @@ axes:
   surface: [launcher_policy_key, challenge_resend_layout, guest_password_flow_layout, launcher_link_claim, launcher_close_cleanup, launcher_admin_scope, challenge_admin_scope_layout]
 
 effects:
+  - fullpage_resend_keeps_provider_and_policy
   - launcher_sends_policy_key_from_428          # 428 의 정책 키를 challenge 요청 본문에 싣고, 없으면 싣지 않는다
   - challenge_resend_keeps_policy_key           # 인증 창 재전송도 전역 인증 상태의 정책 키를 싣는다
   - guest_password_flows_declare_identity_target  # 비밀번호 찾기·재설정 API 호출은 인증 대상 이메일을 선언한다

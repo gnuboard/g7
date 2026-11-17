@@ -712,7 +712,7 @@ async function renderTemplate(options: RenderOptions): Promise<void> {
                 return modalRenderer;
               })
               ),  // ParentContextProvider 종료
-              // 운영 화면 편집 진입 단추 — 모달 묶음 뒤 고정 키 형제라 앞 형제의 키·순서를 바꾸지 않는다 (engine-v1.94.0, #869)
+              // 운영 화면 편집 진입 단추 — 모달 묶음 뒤 고정 키 형제라 앞 형제의 키·순서를 바꾸지 않는다 (engine-v1.95.0, #869)
               React.createElement(EditEntryFabHost, {
                 key: '__g7_edit_entry_fab',
                 templateIdentifier: state.templateId || '',
@@ -947,7 +947,7 @@ function updateTemplateData(data: Record<string, any>, options?: UpdateOptions):
                     return modalRenderer;
                   })
                 ),  // ParentContextProvider 종료
-                // 운영 화면 편집 진입 단추 — renderTemplate 과 같은 키·자리여야 재렌더 때 내려갔다 붙지 않는다 (engine-v1.94.0, #869)
+                // 운영 화면 편집 진입 단추 — renderTemplate 과 같은 키·자리여야 재렌더 때 내려갔다 붙지 않는다 (engine-v1.95.0, #869)
                 React.createElement(EditEntryFabHost, {
                   key: '__g7_edit_entry_fab',
                   templateIdentifier: state.templateId || '',

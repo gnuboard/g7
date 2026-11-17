@@ -180,8 +180,8 @@ foreach (buildInstallationTaskList() as $installerTask) {
             </div>
 
             <!-- 상대경로 명령어 -->
-            <p class="fix-guide-hint" id="file-setup-relative-hint" style="display:none;"><?= htmlspecialchars(lang('or_relative_path')) ?></p>
-            <div class="code-box" id="file-setup-relative-box" style="display:none;">
+            <p class="fix-guide-hint hidden" id="file-setup-relative-hint"><?= htmlspecialchars(lang('or_relative_path')) ?></p>
+            <div class="code-box hidden" id="file-setup-relative-box">
                 <pre id="file-setup-command-relative"></pre>
                 <button class="btn-copy" data-action="copySetupCommandRelative"><?= htmlspecialchars(lang('copy_command')) ?></button>
             </div>
@@ -198,7 +198,7 @@ foreach (buildInstallationTaskList() as $installerTask) {
 <div class="installer-container installer-container-wide">
     <div class="installer-header-with-abort">
         <h1 id="installer-title" class="installer-title"><?= htmlspecialchars(lang('installation_title')) ?></h1>
-        <button id="abort-installation-btn" class="btn-abort" data-action="abortInstallation" style="display: none;">
+        <button id="abort-installation-btn" class="btn-abort hidden" data-action="abortInstallation">
             <?php /* 뜻은 옆의 텍스트 라벨이 전한다 — 장식 아이콘은 보조기술에서 감춘다.
                      JS 가 이 버튼을 다시 그릴 때 쓰는 abortButtonMarkup() 과 같은 형태여야
                      첫 렌더와 이후 렌더의 접근성 표면이 어긋나지 않는다. */ ?>
@@ -301,7 +301,7 @@ echo renderInstallResultSection('aborted', 'warning', 'installation_aborted', 'i
 // [건너뛰고 계속] 은 실패한 단계가 선택 확장일 때만 JS 가 노출한다 (W3 — 필수 단계에서는 숨김)
 $failureButtons = '<button id="back-to-extensions-btn" data-action="goBackToExtensionSelection" class="btn btn-primary hidden">'.htmlspecialchars(lang('back_to_extension_selection')).'</button>
                 <button id="retry-installation-btn" data-action="retryInstallation" class="btn btn-primary">'.htmlspecialchars(lang('retry_installation')).'</button>
-                <button id="skip-task-btn" data-action="skipFailedTaskAndContinue" class="btn btn-warning" style="display:none;">'.htmlspecialchars(lang('skip_and_continue')).'</button>
+                <button id="skip-task-btn" data-action="skipFailedTaskAndContinue" class="btn btn-warning hidden">'.htmlspecialchars(lang('skip_and_continue')).'</button>
                 <button data-action="goToSettingsWithConfirm" class="btn btn-secondary">'.htmlspecialchars(lang('failure_go_back')).'</button>';
 echo renderInstallResultSection('failure', 'error', 'installation_failed', '', $failureButtons);
 ?>
@@ -355,18 +355,18 @@ echo renderInstallResultSection('failure', 'error', 'installation_failed', '', $
     </div>
 
     <!-- 설치 시작 버튼 (초기 상태, 설치 시작 후 숨김) -->
-    <div id="installation-start-section" class="installation-start-section" style="display: none;">
+    <div id="installation-start-section" class="installation-start-section hidden">
         <button id="start-installation-btn" class="btn btn-primary btn-lg" type="button" data-action="onStartInstallationClick">
             <?= htmlspecialchars(lang('start_installation_button')) ?>
         </button>
     </div>
 
-    <div class="alert alert-warning" id="install-warning" style="display: none;">
+    <div class="alert alert-warning hidden" id="install-warning">
         ⚠ <?= htmlspecialchars(lang('do_not_close_page')) ?>
     </div>
 
     <!-- 설치 진행 상황 카드 -->
-    <div class="requirement-card" id="installation-progress-card" style="display: none;">
+    <div class="requirement-card hidden" id="installation-progress-card">
         <?php /* 접기/펼치기 트리거 — div + onclick 은 Tab 으로 도달하지 못하고 접힘 상태도
                  보조기술에 전달되지 않는다. 같은 파일군의 .error-detail-toggle 이 이미
                  button + aria-expanded 로 되어 있어 그 형태에 맞춘다. */ ?>
@@ -390,13 +390,13 @@ echo renderInstallResultSection('failure', 'error', 'installation_failed', '', $
                 <div class="progress-header">
                     <span class="progress-label"><?= htmlspecialchars(lang('overall_progress')) ?></span>
                     <span class="progress-percentage-wrap">
-                        <span id="overall-steps" class="progress-steps" style="display:none;"></span>
+                        <span id="overall-steps" class="progress-steps hidden"></span>
                         <span id="overall-percentage" class="progress-percentage">0%</span>
                     </span>
                 </div>
                 <div class="progress-bar-bg" id="overall-progress-track" role="progressbar"
                      aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-labelledby="current-task">
-                    <div id="overall-progress-bar" class="progress-bar-fill" style="width: 0%"></div>
+                    <div id="overall-progress-bar" class="progress-bar-fill"></div>
                 </div>
                 <?php /* 갱신되는 문단이라 라이브 리전이다 — 선언이 없으면 14단계가 도는 동안
                          화면 판독기에 진행이 한 번도 읽히지 않는다. */ ?>
@@ -407,7 +407,7 @@ echo renderInstallResultSection('failure', 'error', 'installation_failed', '', $
                          1초에 한 번 이 한 곳의 텍스트만 바꾼다.
                          `aria-live` 는 두지 않는다 — 초마다 읽히면 형제 라이브 리전(`current-task`)의
                          실제 진행 안내가 묻힌다. 값은 눈으로 보는 보조 표시다. */ ?>
-                <p id="task-elapsed" class="progress-elapsed" style="display:none;"></p>
+                <p id="task-elapsed" class="progress-elapsed hidden"></p>
             </div>
 
             <!-- 작업 목록 -->
@@ -427,7 +427,7 @@ echo renderInstallResultSection('failure', 'error', 'installation_failed', '', $
                      표식이 붙어 와서 화면이 이 접기 영역으로 보낸다. 수동 복구 명령이 이미
                      같은 이유로 실패 화면의 접기로 옮겨져 있고, 이것이 그 형제 통로다.
                      첫 줄이 도착하기 전에는 숨어 있다 — 빈 접기 버튼을 남기지 않는다. */ ?>
-            <div class="command-output-section" id="command-output-section" style="display: none;">
+            <div class="command-output-section hidden" id="command-output-section">
                 <button
                     class="command-output-toggle"
                     type="button"

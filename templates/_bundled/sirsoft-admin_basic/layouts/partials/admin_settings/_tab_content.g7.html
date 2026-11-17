@@ -116,7 +116,7 @@
             <span>$t:admin.settings.content.embed.add</span>
           </button>
         </div>
-        <p data-if="{{(_local.form?.content?.embed_custom_providers ?? []).length === 0}}" class="form-hint">$t:admin.settings.content.embed.custom_empty</p>
+        <p data-if="{{settings !== undefined &amp;&amp; ((_local.form?.content?.embed_custom_providers ?? []).length === 0)}}" class="form-hint">$t:admin.settings.content.embed.custom_empty</p>
         <div data-ref="content_embed_custom_list" data-if="{{(_local.form?.content?.embed_custom_providers ?? []).length > 0}}" class="divider-list">
           <div data-each="provider, idx in _local.form?.content?.embed_custom_providers ?? []" class="py-3 flex-between gap-3 flex-wrap">
             <div class="flex-1 min-w-0">

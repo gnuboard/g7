@@ -1,7 +1,7 @@
 // e2e:allow 실제 엔진 구조(TemplateApp 전역 상태·renderTemplate·컴포넌트 이벤트 핸들러·named_actions)로 sequence 안 apiCall target 의 `_global` 해석을 잰다 — 브라우저 축은 관리자 템플릿 목록 「레이아웃 갱신」 첫 열기 실측(#888)이 덮는다
 /**
  * @file ActionDispatcher.sequenceGlobalFreshness.test.tsx
- * @description 액션 `target` 의 `{{_global.*}}` 를 params 와 같이 지금의 전역 상태로 푼다 (engine-v1.95.2)
+ * @description 액션 `target` 의 `{{_global.*}}` 를 params 와 같이 지금의 전역 상태로 푼다 (engine-v1.96.2)
  *
  * 컴포넌트 이벤트 핸들러의 `context.data._global` 은 렌더 시점 사본이다. 액션 params 는 `evaluateExpression` 이
  * 저장소(`G7Core.state.get()`)의 지금 값으로 바꿔 끼워 읽지만, apiCall `target`(`resolveValue`)은 그 사본을 그대로 읽었다.

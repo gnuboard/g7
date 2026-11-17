@@ -704,7 +704,7 @@
                             "comment": "회원 비밀글 - 비로그인 시 로그인 안내",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{post?.data?.content === null && !post?.data?.is_guest_post && !_global.currentUser?.uuid && post?.data?.status !== 'blinded'}}",
+                            "if": "{{post?.data?.content === null && !post?.data?.is_guest_post && _global.currentUser !== undefined && !_global.currentUser?.uuid && post?.data?.status !== 'blinded'}}",
                             "props": {
                                 "className": "text-center py-12"
                             },

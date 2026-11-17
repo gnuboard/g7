@@ -911,6 +911,7 @@ HTTP/1.1 200
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.orders.update`)이 없는 경우 |
 | 404 | Not Found | 해당 주문에 KG 이니시스 에스크로 결제(`is_escrow = true` + TID 존재)가 없는 경우 |
 | 422 | Unprocessable | 요청 파라미터가 `EscrowDeliveryRegisterRequest` 검증 규칙을 위반한 경우 (표준 validation 응답, `error.errors` 에 필드별 메시지) — `invoice` 미입력·40자 초과(`운송장번호를 입력해주세요.`), `ex_code` 미입력·공식 택배사 코드표에 없음(`택배사를 선택해주세요.` — 다국어 키 `sirsoft-pay_kginicis::messages.escrow.*`), `report`/`charge` 허용값 위반, `recv_*`/`send_*`/`regist_name` 길이 상한 초과 등 |
+| 409 | Conflict | 같은 주문의 다른 에스크로 배송등록이 처리 중이라 주문 잠금(`escrow-delivery`)을 얻지 못한 경우 (errors.message = `messages.errors.escrow_in_progress`) / 잠금 안에서 다시 읽은 결제 메타에 배송등록 이력(`payment_meta.escrow_delivery`)이 이미 있는데 신규 등록(`report=I`)을 요청한 경우 (errors.message = `messages.errors.escrow_delivery_already_registered`) — 두 경우 모두 PG 를 호출하지 않는다 |
 | 500 | Server Error | 배송등록 호출 중 예외 발생(통신 실패·HTTP 오류·DB 예외). errors.message = 번역된 일반 문구 `escrow.delivery_failed` — 예외 원문(결제대행사 API 주소·cURL 문구·SQL)은 서버 로그에만 남긴다. 디버그 모드(`APP_DEBUG=true`)에서는 원문 |
 | 502 | Bad Gateway | KG 이니시스 배송등록 응답의 `resultCode` 가 `00` 이 아닌 경우 (errors.message = PG `resultMsg`, 없으면 번역 문구 `escrow.delivery_rejected`) |
 
@@ -919,7 +920,7 @@ HTTP/1.1 200
 
 
 **설명**
-`AdminEscrowDeliveryController@register` 가 KG 이니시스 에스크로 결제의 배송정보를 INIAPI 에 등록한다. 형식·길이·택배사 코드 검증은 `EscrowDeliveryRegisterRequest` 가 담당한다 — 운송장번호(`invoice`, 필수·최대 40자)와 택배사코드(`ex_code`, 필수·공식 코드표 `COURIER_CODES` 내 값), 등록/수정 구분(`report`: I/U)·배송비 부담(`charge`: SH/BH, 미전송·비허용 값은 컨트롤러 기본값 I/SH 로 흡수), 수령인·발송인 필드 길이 상한(이름 30자/전화 20자/우편번호 10자/주소 200자)을 검증하며 위반 시 표준 validation 422(다국어 메시지)로 거부한다. 수령인 정보는 요청값 우선·부재 시 배송지 DB 로 채운다. 에스크로 결제는 반드시 에스크로 자격증명(`useEscrowCredentials`)으로 `registerEscrowDelivery` 를 호출하며, 성공 시 정제된 PG 응답과 배송 이력을 `payment_meta.escrow_delivery` 에 저장한다. `sirsoft-ecommerce.orders.update` 권한이 필요하고, 입력 검증 실패 422 / 에스크로 결제 미존재 404 / PG 실패(resultCode≠`00`) 502 / 예외 500 으로 매핑된다.
+`AdminEscrowDeliveryController@register` 가 KG 이니시스 에스크로 결제의 배송정보를 INIAPI 에 등록한다. 형식·길이·택배사 코드 검증은 `EscrowDeliveryRegisterRequest` 가 담당한다 — 운송장번호(`invoice`, 필수·최대 40자)와 택배사코드(`ex_code`, 필수·공식 코드표 `COURIER_CODES` 내 값), 등록/수정 구분(`report`: I/U)·배송비 부담(`charge`: SH/BH, 미전송·비허용 값은 컨트롤러 기본값 I/SH 로 흡수), 수령인·발송인 필드 길이 상한(이름 30자/전화 20자/우편번호 10자/주소 200자)을 검증하며 위반 시 표준 validation 422(다국어 메시지)로 거부한다. 수령인 정보는 요청값 우선·부재 시 배송지 DB 로 채운다. 에스크로 결제는 반드시 에스크로 자격증명(`useEscrowCredentials`)으로 `registerEscrowDelivery` 를 호출하며, 성공 시 정제된 PG 응답과 배송 이력을 `payment_meta.escrow_delivery` 에 저장한다. 같은 주문의 배송등록은 주문 단위 잠금(`SerializesPaymentCallbacks`, 문맥 `escrow-delivery`) 안에서 결제 메타를 다시 읽어 처리한다 — 잠금 대기 시간 초과·이미 등록된 건의 신규 등록(I)은 PG 호출 없이 409. `sirsoft-ecommerce.orders.update` 권한이 필요하고, 입력 검증 실패 422 / 에스크로 결제 미존재 404 / 처리 중·이미 등록 409 / PG 실패(resultCode≠`00`) 502 / 예외 500 으로 매핑된다.
 
 
 ### POST /api/plugins/sirsoft-pay_kginicis/admin/orders/{orderNumber}/escrow-deny-confirm
@@ -982,7 +983,8 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.orders.update`)이 없는 경우 |
 | 404 | Not Found | 해당 주문에 KG 이니시스 에스크로 결제(`is_escrow = true` + TID 존재)가 없는 경우 |
-| 422 | Unprocessable | `dcnf_name` 이 형식 검증(문자열, 최대 20자)을 위반한 경우 (표준 validation 응답, `error.errors.dcnf_name`) / 이미 구매거절확인 이력(`payment_meta.escrow_deny_confirm`)이 있는 경우 (errors.message = 번역 문구 `escrow.deny_confirm_already_done`, ko: "이미 구매거절확인이 완료되었습니다.") |
+| 409 | Conflict | 같은 주문의 다른 구매거절확인이 처리 중이라 주문 잠금(`escrow-deny-confirm`)을 얻지 못한 경우 (errors.message = `messages.errors.escrow_in_progress`) / 잠금 안에서 다시 읽은 결제 메타에 구매거절확인 이력(`payment_meta.escrow_deny_confirm`)이 이미 있는 경우 (errors.message = `messages.errors.escrow_deny_already_confirmed`) — 두 경우 모두 PG 를 호출하지 않는다 |
+| 422 | Unprocessable | `dcnf_name` 이 형식 검증(문자열, 최대 20자)을 위반한 경우 (표준 validation 응답, `error.errors.dcnf_name`) |
 | 500 | Server Error | 구매거절확인 호출 중 예외 발생(통신 실패·HTTP 오류·DB 예외). errors.message = 번역된 일반 문구 `escrow.deny_confirm_failed` — 예외 원문은 서버 로그에만 남긴다. 디버그 모드에서는 원문 |
 | 502 | Bad Gateway | KG 이니시스 구매거절확인 응답의 `resultCode` 가 `00` 이 아닌 경우 (errors.message = PG `resultMsg`, 없으면 번역 문구 `escrow.deny_confirm_rejected`) |
 
@@ -991,7 +993,7 @@ HTTP/1.1 200
 
 
 **설명**
-`AdminEscrowDenyConfirmController@confirm` 이 구매자가 구매거절을 선택한 에스크로 주문에 대해 판매자(관리자) 측 거절 확인을 처리한다(INIAPI v1 `type=Dncf`). 대상 에스크로 결제(`is_escrow = true`)를 찾아 이미 거절확인 이력(`payment_meta.escrow_deny_confirm`)이 있으면 중복 처리 없이 422 로 막고, 에스크로 자격증명으로 `denyConfirmEscrow` 를 호출한다. 성공 시 확인 시각과 담당자명(`dcnf_name`, 최대 20자 — `EscrowDenyConfirmRequest` 가 형식 검증하며 미입력 시 다국어 기본값 `escrow.default_confirmer`, ko: "관리자"), 정제된 PG 응답을 메타에 기록한다. `sirsoft-ecommerce.orders.update` 권한이 필요하며, 에스크로 결제 미존재 404 / 이미 확인됨 422 / PG 실패(resultCode≠`00`) 502 / 예외 500 으로 매핑된다.
+`AdminEscrowDenyConfirmController@confirm` 이 구매자가 구매거절을 선택한 에스크로 주문에 대해 판매자(관리자) 측 거절 확인을 처리한다(INIAPI v1 `type=Dncf`). 주문 단위 잠금(`SerializesPaymentCallbacks`, 문맥 `escrow-deny-confirm`)을 잡은 뒤 대상 에스크로 결제(`is_escrow = true`)를 다시 읽어 이미 거절확인 이력(`payment_meta.escrow_deny_confirm`)이 있으면 중복 처리 없이 409 로 막고(잠금 대기 시간 초과도 409 `escrow_in_progress`), 에스크로 자격증명으로 `denyConfirmEscrow` 를 호출한다. 성공 시 확인 시각과 담당자명(`dcnf_name`, 최대 20자 — `EscrowDenyConfirmRequest` 가 형식 검증하며 미입력 시 다국어 기본값 `escrow.default_confirmer`, ko: "관리자"), 정제된 PG 응답을 메타에 기록한다. `sirsoft-ecommerce.orders.update` 권한이 필요하며, 에스크로 결제 미존재 404 / 처리 중·이미 확인됨 409 / PG 실패(resultCode≠`00`) 502 / 예외 500 으로 매핑된다.
 
 
 ### GET /api/plugins/sirsoft-pay_kginicis/admin/orders/{orderNumber}/transaction-status

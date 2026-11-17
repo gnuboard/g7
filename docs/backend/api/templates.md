@@ -95016,7 +95016,7 @@ _단건 응답: `data` 객체의 필드._
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.templates.layouts.edit`)이 없는 경우 |
 | 404 | Not Found | 대상 템플릿이 존재하지 않는 경우 (`템플릿을 찾을 수 없습니다.`) |
-| 422 | Unprocessable Entity | 파일 검증 위반 (이미지 아님, 지원하지 않는 형식 jpg/jpeg/png/gif/webp/svg 외, 크기 초과 등) |
+| 422 | Unprocessable Entity | 파일 검증 위반 (이름 확장자가 허용 목록 밖, 내용이 허용 형식이 아님, 크기 초과 등). 허용 목록 기본값은 jpg/jpeg/png/gif/webp |
 | 500 | Server Error | 스토리지 저장 실패 (`첨부 파일 업로드에 실패했습니다.`) |
 
 <!-- @generated:end -->
@@ -95024,6 +95024,8 @@ _단건 응답: `data` 객체의 필드._
 
 
 **설명** 레이아웃 편집 중 첨부 파일을 업로드합니다. 스토리지 저장 후 DB 행을 생성하고 접근 URL을 반환합니다(TemplateLayoutAttachmentService::upload). 최대 10MB(10240KB)까지 허용합니다. `core.templates.layouts.edit` 권한이 필요합니다.
+
+허용 형식은 **이름 확장자와 파일 내용을 둘 다** 봅니다(7.1.6) — 내용은 이미지이고 이름만 `.html` 인 파일, 이름만 이미지인 다른 형식은 422 입니다. 허용 목록은 환경설정 > 업로드 「레이아웃 첨부 허용 확장자」 (기본 jpg·jpeg·png·gif·webp)이며 템플릿별 목록이 있으면 그것이 우선합니다. 저장 파일의 확장자는 올린 이름이 아니라 파일 내용으로 정합니다(`original_name` 은 올린 이름 그대로). 응답의 `url` 은 공개 자산 디스크가 선언돼 있고 저장 확장자가 「공개 디스크로 내보낼 확장자」 안일 때만 직접 주소이고, 그 밖에는 서버를 거치는 주소(`/api/templates/{identifier}/layout-attachments/{id}/file`)입니다.
 
 
 ### GET /api/admin/templates/{identifier}/license
@@ -98370,7 +98372,7 @@ HTTP/1.1 200
 
 ### GET /api/templates/{identifier}/config
 
-> 응답은 활성 템플릿의 template.json 전체 + `cache_version` 이다(형식 불변). 템플릿이 template.json 최상위 `expose` 에 키 이름을 선언하면 그 키의 값만 화면 HTML(`G7Config.templateConfig`)에도 실리고, 엔진은 앱 시작 때 이 API 를 부르지 않는다(engine-v1.95.0). 레이아웃 편집기와 확장 상태 재로드는 최신 값을 확인하려고 계속 이 API 를 부른다 — [템플릿 기초](../../extension/template-basics.md).
+> 응답은 활성 템플릿의 template.json 전체 + `cache_version` 이다(형식 불변). 템플릿이 template.json 최상위 `expose` 에 키 이름을 선언하면 그 키의 값만 화면 HTML(`G7Config.templateConfig`)에도 실리고, 엔진은 앱 시작 때 이 API 를 부르지 않는다(engine-v1.96.0). 레이아웃 편집기와 확장 상태 재로드는 최신 값을 확인하려고 계속 이 API 를 부른다 — [템플릿 기초](../../extension/template-basics.md).
 
 <!-- @generated:start:api.public.templates.config.extensionless -->
 - **라우트명**: `api.public.templates.config.extensionless`

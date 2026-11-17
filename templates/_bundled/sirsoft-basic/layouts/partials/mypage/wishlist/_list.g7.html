@@ -17,7 +17,7 @@
       <grid data-type="layout" data-if="{{wishlist.data.data &amp;&amp; wishlist.data.data.length > 0}}" :cols="5" :gap="4" class="p-6">
         <responsive on="portable" :cols="2" :gap="3" class="p-4"/>
         <div data-each="item in {{wishlist.data.data ?? []}}" class="relative group">
-          <product-card data-type="composite" product="{{item.product}}" shopBase="{{_global.shopBase ?? '/shop'}}"/>
+          <product-card data-type="composite" product="{{item.product}}" shopBase="{{_global.shopBase ?? '/shop'}}" :showActions="false"/>
           <!-- 찜 해제 버튼 (카드 우상단 오버레이) -->
           <button type="button" aria-label="$t:shop.product.remove_from_wishlist" class="absolute top-2 right-2 z-10 w-9 h-9 flex items-center justify-center bg-white dark:bg-gray-700 rounded-full shadow-md border border-gray-200 dark:border-gray-600 text-red-600 dark:text-red-300 hover:text-red-700 dark:hover:text-red-300 hover:scale-110 transition-all cursor-pointer">
             <on type="click">

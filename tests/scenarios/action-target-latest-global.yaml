@@ -1,4 +1,4 @@
-feature: 액션 target 의 `{{_global.*}}` 를 params 와 같이 지금의 전역 상태로 푼다 (engine-v1.95.2)
+feature: 액션 target 의 `{{_global.*}}` 를 params 와 같이 지금의 전역 상태로 푼다 (engine-v1.96.2)
 
 description: |
   컴포넌트 이벤트 핸들러의 `context.data._global` 은 렌더 때 잡은 사본이다. params 는 evaluateExpression 이 저장소 값으로 바꿔

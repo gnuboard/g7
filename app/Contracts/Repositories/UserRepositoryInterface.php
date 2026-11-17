@@ -354,6 +354,34 @@ interface UserRepositoryInterface
     public function deleteAccessToken(PersonalAccessToken $token): void;
 
     /**
+     * 인증 토큰의 만료 시각을 조건부 UPDATE 로 늦춥니다.
+     *
+     * 토큰 행이 이미 지워졌으면(로그아웃·갱신 직후) 아무것도 하지 않는다 — INSERT 경로가 없어
+     * 폐기한 토큰을 되살리지 않는다.
+     *
+     * @param  int  $tokenId  토큰 ID
+     * @param  \DateTimeInterface  $expiresAt  새 만료 시각
+     * @return bool 행이 있어 갱신했으면 true
+     *
+     * @since 7.1.6
+     */
+    public function extendTokenExpiration(int $tokenId, \DateTimeInterface $expiresAt): bool;
+
+    /**
+     * 회원들의 web 세션을 지웁니다.
+     *
+     * 세션 드라이버가 database 일 때만 세션 행을 지울 수 있다. 다른 드라이버(file·redis 등)는 회원별로
+     * 세션을 찾을 수 없어 아무것도 하지 않고 0 을 돌려준다.
+     *
+     * @param  array<int, int>  $ids  회원 ID 목록
+     * @param  string|null  $exceptSessionId  남겨 둘 세션 ID (본인 비밀번호 변경 시 지금 쓰는 세션)
+     * @return int 지운 세션 수
+     *
+     * @since 7.1.6
+     */
+    public function deleteSessionsByUserIds(array $ids, ?string $exceptSessionId = null): int;
+
+    /**
      * 비밀번호 만료 처리 후보 쿼리를 반환합니다 — 활성 회원이면서 관리자 지정 변경 대기가 아닌 회원.
      *
      * 적용 범위·날짜 조건은 호출자(`PasswordExpiryService`)가 덧붙인다.

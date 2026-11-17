@@ -224,6 +224,7 @@ return [
         'auth_reset_password_by_console' => 'The system (CLI) reset a member password (ID: :user_id)',
         'auth_record_consents' => 'Consent recorded',
         'auth_login_failed' => 'Login failed (:email)',
+        'auth_two_factor_failed' => 'Two-factor verification failed (:email)',
         'auth_account_locked' => 'Account locked (:attempts attempt, :minutes min lockout)|Account locked (:attempts attempts, :minutes min lockout)',
         'auth_account_locked_permanently' => 'Account locked permanently (:attempts attempt, administrator unlock or password reset required)|Account locked permanently (:attempts attempts, administrator unlock or password reset required)',
         'auth_account_unlocked' => 'Account unlocked (:email)',

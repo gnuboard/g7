@@ -698,6 +698,9 @@ if (! function_exists('g7_cli_execute')) {
         $finalize = g7_cli_finalize_env();
         if (! $finalize['success']) {
             $warnings[] = lang('cli_finalize_failed_warning');
+        } elseif (! empty($finalize['runtime_cleanup_failed'])) {
+            // 설치는 끝났지만 설치 잔여 파일이 남았다 — 직접 지우도록 알린다
+            $warnings[] = lang('runtime_cleanup_failed_warning');
         }
 
         g7_cli_apply_web_user_if_root($out, $webUser);

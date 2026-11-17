@@ -320,8 +320,9 @@ describe('플러그인 sirsoft-totp — 입력칸 접근 가능한 이름 (#757)
      * @effects controls_have_accessible_name
      */
     it('모집단(레이아웃 JSON·입력칸)이 비어 있지 않다', () => {
-        expect(files.length).toBeGreaterThanOrEqual(1);
-        expect(judged.length).toBeGreaterThanOrEqual(4);
+        // 설정 화면 + 알림 카드·모달 partial 4종 + 회원 상세 확장
+        expect(files.length).toBeGreaterThanOrEqual(6);
+        expect(judged.length).toBeGreaterThanOrEqual(15);
     });
 
     /**
@@ -336,5 +337,50 @@ describe('플러그인 sirsoft-totp — 입력칸 접근 가능한 이름 (#757)
         expect(here.filter((j) => !j.named).map((j) => j.label)).toEqual([]);
         // 반복(data-each·<sortable>·셀) 안 칸의 이름 출처에 행 값 {{…}} 이 없으면 행마다 같은 이름으로 읽힌다
         expect(here.filter((j) => j.rowConstant).map((j) => j.label)).toEqual([]);
+    });
+
+    /**
+     * 관리자 모달(알림 템플릿 편집·미리보기·기본값 복원) — 이름 없는 칸이 0 개다.
+     *
+     * @scenario surface=admin_modal
+     * @effects controls_have_accessible_name
+     */
+    it('admin_modal: 관리자 모달의 칸이 모두 이름을 갖는다', () => {
+        const here = judged.filter((j) => j.surface === 'admin_modal');
+        expect(here.length).toBeGreaterThan(0);
+        expect(here.filter((j) => !j.named).map((j) => j.label)).toEqual([]);
+        // 반복(data-each·<sortable>·셀) 안 칸의 이름 출처에 행 값 {{…}} 이 없으면 행마다 같은 이름으로 읽힌다
+        expect(here.filter((j) => j.rowConstant).map((j) => j.label)).toEqual([]);
+    });
+
+    /**
+     * 관리자 반복 행(알림 정의별 채널 스위치·템플릿 스위치, 수신자 규칙 줄) — 이름 없는 칸이 0 개고,
+     * 행마다 다른 이름(행 값 {{…}})으로 읽힌다.
+     *
+     * @scenario surface=admin_row
+     * @effects controls_have_accessible_name, row_controls_read_row_and_column
+     */
+    it('admin_row: 관리자 반복 행·표 셀의 칸이 모두 이름을 갖는다', () => {
+        const here = judged.filter((j) => j.surface === 'admin_row');
+        expect(here.length).toBeGreaterThan(0);
+        expect(here.filter((j) => !j.named).map((j) => j.label)).toEqual([]);
+        // 반복(data-each·<sortable>·셀) 안 칸의 이름 출처에 행 값 {{…}} 이 없으면 행마다 같은 이름으로 읽힌다
+        expect(here.filter((j) => j.rowConstant).map((j) => j.label)).toEqual([]);
+        // 셀 렌더 안에서 행 값을 인자로 쓰는 이름은 `$t:defer:` — `$t:` 는 셀 문맥 없이 먼저 번역돼 행 이름이 빈다
+        expect(here.filter((j) => j.eagerInCell).map((j) => j.label)).toEqual([]);
+    });
+
+    /**
+     * 목록형 선택칸(Select options·SearchableDropdown — 수신자 규칙 종류·관계·역할·회원)은 이름이 없으면 고른 값만 읽힌다.
+     * 관리자 쪽 목록형 선택칸 전부가 이름(aria-label·aria-labelledby·곁 라벨)을 가져야
+     * 컴포넌트가 「이름 + 현재 값」으로 읽어 준다.
+     *
+     * @scenario surface=admin_row
+     * @effects listbox_reads_name_and_value
+     */
+    it('관리자 목록형 선택칸이 값만 읽히지 않는다', () => {
+        const listboxes = judged.filter((j) => j.listbox && j.surface.startsWith('admin'));
+        expect(listboxes.length).toBeGreaterThan(0);
+        expect(listboxes.filter((j) => !j.named).map((j) => j.label)).toEqual([]);
     });
 });

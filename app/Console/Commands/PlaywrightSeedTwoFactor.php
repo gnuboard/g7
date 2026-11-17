@@ -189,6 +189,13 @@ class PlaywrightSeedTwoFactor extends Command
             // 관리자 거절 경로를 재현하려면 관리자 역할이 없어야 한다 — 재사용 계정에
             // 앞선 실행의 admin 역할이 남아 있으면 403 을 측정할 수 없다.
             $user->roles()->detach();
+
+            // 대신 일반 회원 역할(`user`)을 붙인다 — 역할이 하나도 없으면 회원 화면(상품·알림 API)이 403 이라
+            // 사용자 템플릿을 실측할 수 없다(engine-v1.91.1 실측 중 발견). 역할이 없는 설치면 조용히 지나간다.
+            $memberRole = Role::where('identifier', 'user')->first();
+            if ($memberRole !== null) {
+                $user->roles()->attach($memberRole->id, ['assigned_at' => now(), 'assigned_by' => null]);
+            }
         }
 
         $this->line($email);

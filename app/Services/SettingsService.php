@@ -18,6 +18,7 @@ use App\Http\Resources\AttachmentResource;
 use App\Jobs\PurgeRetiredThumbnailDiskJob;
 use App\Jobs\PurgeThumbnailsOnReenableJob;
 use App\Models\User;
+use App\Rules\ConnectionHost;
 use App\Rules\EmbedCustomProviderRule;
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use App\Services\Auth\ReauthenticationService;
@@ -1735,6 +1736,26 @@ class SettingsService
 
             // 메일 설정 임시 적용 (드라이버별)
             $mailer = $mailSettings['mailer'] ?? 'smtp';
+
+            // 실제 연결에 쓰이는 호스트를 연결 직전에 한 번 더 본다 — 요청 검증을 거치지 않은 값
+            // (저장값·`.env` 값·내부 호출)도 같은 판정을 받는다. 형식이 틀렸거나 링크로컬·메타데이터
+            // 주소면 연결을 시도하지 않는다.
+            $connectionHost = match ($mailer) {
+                'smtp' => (string) ($mailSettings['host'] ?? ''),
+                'mailgun' => (string) ($mailSettings['mailgun_endpoint'] ?? ''),
+                default => '',
+            };
+
+            if ($connectionHost !== '' && ($violation = ConnectionHost::violation($connectionHost)) !== null) {
+                return [
+                    'success' => false,
+                    'message' => __('settings.test_mail_failed'),
+                    'error' => $violation === 'format'
+                        ? __('validation.settings.host_format_invalid')
+                        : __('settings.connection_target_blocked'),
+                ];
+            }
+
             config(['mail.default' => $mailer]);
 
             match ($mailer) {

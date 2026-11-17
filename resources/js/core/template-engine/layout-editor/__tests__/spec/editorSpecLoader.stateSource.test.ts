@@ -9,7 +9,7 @@ import { loadEditorSpecBundle } from '../../spec/editorSpecLoader';
 import type { EditorSpec } from '../../spec/specTypes';
 import { makeBundleFetcher } from './editorSpecBundleFetcher';
 
-/** 식별자 → spec 매핑으로 묶음 엔드포인트 fetch 를 모킹 (engine-v1.94.0 — 편집기는 묶음 한 요청으로 받는다) */
+/** 식별자 → spec 매핑으로 묶음 엔드포인트 fetch 를 모킹 (engine-v1.95.0 — 편집기는 묶음 한 요청으로 받는다) */
 function makeFetcher(specs: Record<string, EditorSpec | null>): typeof fetch {
   return makeBundleFetcher(specs);
 }

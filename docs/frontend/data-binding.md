@@ -440,8 +440,8 @@ DataBindingEngine은 `{{}}` 내부에서 다양한 표현식을 지원합니다.
 | `last` | 배열 마지막 요소 | `{{items \| last}}` |
 | `join(separator)` | 배열 문자열 결합 | `{{tags \| join(', ')}}` |
 | `localized` | 다국어 객체 → 렌더 문맥의 언어(`$locale`, 없으면 화면 언어) 값. 비면 사이트 기본 언어 → 영어 → 첫 값(`$localized()` 와 같은 순서, engine-v1.81.0). 인자로 언어를 주면 그 언어가 먼저 | `{{title \| localized}}` · `{{title \| localized('en')}}` |
-| `thumb(preset)` | 이미지 주소에 썸네일 규격을 붙인다(기본 `sm`). 같은 출처 + 등록된 서빙 경로만 바꾸고 외부·정적·`data:` 주소와 비문자열 값은 그대로. 기존 쿼리(서명)는 원문 그대로 두고 `size` 만 덧붙인다. 봇 화면도 같은 파이프로 같은 주소를 낸다(engine-v1.94.0). 인자는 리터럴만 | `{{product.thumbnail_url \| thumb('md')}}` |
-| `thumbSrcset(preset)` | 규격의 1x·2x srcset. 2x 는 같은 맞춤·같은 비율 중 가로 1.5배 이상인 가장 작은 규격(없으면 1x 만). 대상이 아니면 빈 문자열(engine-v1.94.0) | `{{product.thumbnail_url \| thumbSrcset('md')}}` |
+| `thumb(preset)` | 이미지 주소에 썸네일 규격을 붙인다(기본 `sm`). 같은 출처 + 등록된 서빙 경로만 바꾸고 외부·정적·`data:` 주소와 비문자열 값은 그대로. 기존 쿼리(서명)는 원문 그대로 두고 `size` 만 덧붙인다. 봇 화면도 같은 파이프로 같은 주소를 낸다(engine-v1.95.0). 인자는 리터럴만 | `{{product.thumbnail_url \| thumb('md')}}` |
+| `thumbSrcset(preset)` | 규격의 1x·2x srcset. 2x 는 같은 맞춤·같은 비율 중 가로 1.5배 이상인 가장 작은 규격(없으면 1x 만). 대상이 아니면 빈 문자열(engine-v1.95.0) | `{{product.thumbnail_url \| thumbSrcset('md')}}` |
 
 ### 파이프 체이닝
 

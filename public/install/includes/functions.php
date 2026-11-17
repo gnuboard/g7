@@ -964,9 +964,10 @@ function showAlertAndRedirect(string $title, string $message, string $redirectUr
     // 스크립트 없이 안내 + 3초 뒤 meta refresh 이동 — 종전 alert + location 인라인 스크립트는 웹서버가
     // `Content-Security-Policy: script-src 'self'` 를 걸면 실행되지 않아 흰 화면에 머물렀다(#158).
     echo '<meta http-equiv="refresh" content="3;url='.$redirectUrl.'">';
-    echo '<style>body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#f8fafc;color:#111827}main{max-width:480px;padding:32px;text-align:center}p{line-height:1.6}.hint{color:#6b7280;font-size:14px}a{color:#2563eb;font-weight:600}</style>';
+    // 스타일은 파일로 싣는다 — 문서 안 style 요소는 웹서버가 `style-src 'self'` 를 걸면 막힌다.
+    echo '<link rel="stylesheet" href="'.htmlspecialchars(installerStandaloneCssUrl()).'">';
     echo '</head>';
-    echo '<body>';
+    echo '<body class="standalone-redirect">';
     echo '<main role="alert">';
     echo '<p>'.$message.'</p>';
     echo '<p class="hint">'.htmlspecialchars(lang('redirect_auto_notice')).'</p>';
@@ -975,6 +976,32 @@ function showAlertAndRedirect(string $title, string $message, string $redirectUr
     echo '</body>';
     echo '</html>';
     exit;
+}
+
+/**
+ * 독립 화면(안내 후 이동·403)용 스타일 파일 주소를 반환합니다.
+ *
+ * 설치기 기준 URL 상수(INSTALLER_BASE_URL)가 정의돼 있으면 그것을 쓰고(index.php 진입 — config.php 가 먼저 로드된다),
+ * 없으면 요청 경로에서 계산합니다(session.php 만 로드한 진입에서 403 화면이 뜨는 경우).
+ *
+ * @return string 스타일 파일 URL
+ */
+function installerStandaloneCssUrl(): string
+{
+    if (defined('INSTALLER_BASE_URL')) {
+        $base = INSTALLER_BASE_URL;
+    } else {
+        $script = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+        $pos = strrpos($script, '/install/');
+        if ($pos !== false) {
+            // /install/index.php, /install/api/*.php 모두 설치기 루트까지 자른다
+            $base = substr($script, 0, $pos).'/install';
+        } else {
+            $base = rtrim(dirname($script), '/.').'/install';
+        }
+    }
+
+    return rtrim($base, '/').'/assets/css/installer-standalone.css';
 }
 
 /**
@@ -1060,7 +1087,7 @@ function getSvgIcon(string $type): string
                 <circle class="result-icon-circle" cx="26" cy="26" r="25" fill="none"/>
                 <path class="result-icon-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
             </svg>',
-        // 색은 CSS 토큰이 정한다 — 인라인 style="color:#f59e0b" 를 두면 느낌표 점(대응 CSS 규칙이
+        // 색은 CSS 토큰이 정한다 — 인라인 style 속성(color:#f59e0b)을 두면 느낌표 점(대응 CSS 규칙이
         // 없는 유일한 요소)만 그 리터럴로 칠해져, 다크에서 링·줄기(--warning-icon: #fbbf24)와
         // 한 글리프 안에서 색이 갈렸다. 형제(success·error)는 인라인 색이 없다.
         'warning' => '<svg class="result-icon result-icon-warning" viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">

@@ -1,4 +1,4 @@
-feature: apiCall 실패 응답에 서버 메시지가 없으면 오류 문맥(`{{error.message}}`)과 기본 토스트가 현재 언어의 안내(`core.errors.api_request_failed`)를 받는다 (engine-v1.93.0, 7.2.0)
+feature: apiCall 실패 응답에 서버 메시지가 없으면 오류 문맥(`{{error.message}}`)과 기본 토스트가 현재 언어의 안내(`core.errors.api_request_failed`)를 받는다 (engine-v1.94.0, 7.2.0)
 
 description: |
   종전에는 응답 본문에 `message` 가 없으면 `API call failed: ${statusText}` 영어 문구가 오류 문맥에 그대로 실려 한국어 화면에도 영어 토스트가

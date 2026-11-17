@@ -34,12 +34,15 @@
 /* g7-extension-css:end */
 
 /**
- * sirsoft-ckeditor5 손 CSS — 다국어 편집기 탭(편집기 위 언어 단추 줄)
+ * sirsoft-ckeditor5 손 CSS — 다국어 편집기 탭(편집기 위 언어 단추 줄)·아이콘·「미디어 넣기」 미리보기
  *
  * 탭은 핸들러(initEditor.ts·localeLabel.ts)가 DOM 으로 만든다. 예전에는 스타일을 JS 가 `<style>` 로 주입했지만,
- * 이 플러그인이 이름을 정하는 클래스이므로 자기 CSS(이 파일 → dist/css/plugin.css)로 옮겼다.
- * CKEditor 라이브러리 DOM(`.ck-*`·`.ck-content`)을 꾸미는 규칙은 라이브러리 CSS 범위라 계속 JS 가 주입한다
- * (라이브러리가 정한 이름이라 이 플러그인 앞글자를 붙일 수 없다).
+ * 이 플러그인이 이름을 정하는 클래스이므로 자기 CSS(이 파일 → dist/css/plugin.css)로 옮겼다. 엄격한 스타일 정책
+ * (`style-src 'self'; style-src-attr 'none'`)에서는 `<style>` 요소와 HTML 문자열의 `style` 속성이 막히므로, 미디어
+ * 미리보기의 `style="…"` 문자열도 이 파일의 클래스로 옮겼다.
+ * CKEditor 라이브러리 DOM(`.ck-*`·`.ck-content`)을 꾸미는 규칙은 라이브러리가 정한 이름이라 이 플러그인 앞글자를 붙일 수
+ * 없어 이 파일에 두지 않는다 — 핸들러가 코어 `G7Core.style.setRules`(생성형 스타일시트, 정책에 막히지 않는다)로 싣는다
+ * (`resources/js/handlers/initEditor.ts` `LIBRARY_CSS`).
  *
  * - 다크 모드: 템플릿 종류와 무관한 중립 표식(`<html data-g7-color-scheme="dark">`)으로 짝을 둔다.
  *   「다크 안의 라이트」(관리자 다크 화면 속 라이트 미리보기)는 제외하는 규격이다
@@ -196,4 +199,20 @@
 
 .ckeditor-icon--check {
     --ckeditor-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 12.5l5.5 5.5L20 6.5'/%3E%3C/svg%3E");
+}
+
+/* 「미디어 넣기」 편집 화면 미리보기 — 16:9 상자에 플레이어를 채운다(종전 미리보기 HTML 의 style 문자열).
+   동봉 CKEditor CSS 가 뒤늦게 실려도 지지 않도록 `:root ` 접두로 우선순위를 한 단계 올린다. */
+:root .ckeditor-embed-preview {
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+}
+
+:root .ckeditor-embed-preview__frame {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
 }

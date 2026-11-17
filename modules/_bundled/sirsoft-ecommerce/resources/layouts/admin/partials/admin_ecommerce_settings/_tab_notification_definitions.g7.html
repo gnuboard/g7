@@ -46,7 +46,7 @@
     </div>
     <div data-ref="ecommerce_notif_channel_content">
       <div data-ref="ecommerce_notif_list_info" class="ecommerce-flex-between ecommerce:py-3">
-        <span class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.settings.notification_definitions.total_count|count={{ecommerceNotificationDefinitions?.data?.pagination?.total ?? 0}}</span>
+        <span class="ecommerce-text-label-subtle"><blur-until-loaded sources="ecommerceNotificationDefinitions"/>$t:sirsoft-ecommerce.admin.settings.notification_definitions.total_count|count={{ecommerceNotificationDefinitions?.data?.pagination?.total ?? 0}}</span>
         <div class="ecommerce-flex-center ecommerce:gap-2">
           <span class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.settings.notification_definitions.per_page_label</span>
           <select name="notifPerPage" aria-label="$t:sirsoft-ecommerce.admin.settings.notification_definitions.per_page_label" class="ecommerce:w-20 ecommerce:px-3 ecommerce:py-1.5 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:text-sm" value="{{String(query.per_page || 20)}}">

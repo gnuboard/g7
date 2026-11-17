@@ -27,7 +27,7 @@
  * 레이아웃 편집 캔버스는 `window.__templateApp` 을 격리 façade 로 바꿔 `sampleGlobal` 시드를 전역 상태로 주므로
  * 캔버스 미리보기가 시드를 따른다 — 편집기 「썸네일 규격」 위젯(`ThumbnailPresetControl`)과 같은 순서다.
  *
- * @since engine-v1.94.0
+ * @since engine-v1.95.0
  */
 
 import { normalizeForOriginCheck, stripBasePrefix } from './assetUrl';
@@ -451,7 +451,7 @@ export interface ContentSrcsetWithinOptions {
  * @param maxWidth 원본 가로(px, 양의 유한수)
  * @param options 옵션
  * @returns srcset 문자열 (대상이 아니거나, 가로를 모르거나, 남는 후보가 없으면 빈 문자열)
- * @since engine-v1.94.0
+ * @since engine-v1.95.0
  */
 export function contentSrcsetWithin(url: unknown, maxWidth: unknown, options?: ContentSrcsetWithinOptions | null): string {
     if (typeof url !== 'string' || !isPositive(maxWidth)) {

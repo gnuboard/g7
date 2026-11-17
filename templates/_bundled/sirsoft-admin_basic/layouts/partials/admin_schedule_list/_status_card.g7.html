@@ -52,16 +52,16 @@
         <span class="text-label-subtle">$t:admin.schedules.status_card.schedules</span>
         <icon name="clock" class="text-xl text-gray-400 dark:text-gray-500"/>
       </div>
-      <div class="text-page-heading mt-2">{{schedules?.data?.statistics?.total ?? 0}}</div>
-      <p class="text-tertiary mt-1">$t:admin.schedules.status_card.active_inactive|active={{schedules?.data?.statistics?.active ?? 0}}|inactive={{schedules?.data?.statistics?.inactive ?? 0}}</p>
+      <div class="text-page-heading mt-2"><blur-until-loaded sources="schedules"/>{{schedules?.data?.statistics?.total ?? 0}}</div>
+      <p class="text-tertiary mt-1"><blur-until-loaded sources="schedules"/>$t:admin.schedules.status_card.active_inactive|active={{schedules?.data?.statistics?.active ?? 0}}|inactive={{schedules?.data?.statistics?.inactive ?? 0}}</p>
     </div>
     <div data-ref="schedule_result_card" class="admin-card">
       <div class="flex-between">
         <span class="text-label-subtle">$t:admin.schedules.status_card.results</span>
         <icon name="circle-xmark" class="{{(schedules?.data?.statistics?.failed ?? 0) &gt; 0 ? 'text-xl text-red-500' : 'text-xl text-gray-400 dark:text-gray-500'}}"/>
       </div>
-      <div class="{{(schedules?.data?.statistics?.failed ?? 0) &gt; 0 ? 'mt-2 text-2xl font-bold text-red-600 dark:text-red-400' : 'mt-2 text-2xl font-bold text-gray-900 dark:text-white'}}">$t:admin.schedules.status_card.failed_count|count={{schedules?.data?.statistics?.failed ?? 0}}</div>
-      <p class="text-tertiary mt-1">$t:admin.schedules.status_card.success_never|success={{schedules?.data?.statistics?.success ?? 0}}|never={{schedules?.data?.statistics?.never_run ?? 0}}</p>
+      <div class="{{(schedules?.data?.statistics?.failed ?? 0) &gt; 0 ? 'mt-2 text-2xl font-bold text-red-600 dark:text-red-400' : 'mt-2 text-2xl font-bold text-gray-900 dark:text-white'}}"><blur-until-loaded sources="schedules"/>$t:admin.schedules.status_card.failed_count|count={{schedules?.data?.statistics?.failed ?? 0}}</div>
+      <p class="text-tertiary mt-1"><blur-until-loaded sources="schedules"/>$t:admin.schedules.status_card.success_never|success={{schedules?.data?.statistics?.success ?? 0}}|never={{schedules?.data?.statistics?.never_run ?? 0}}</p>
     </div>
     <div data-ref="queue_summary_card" class="admin-card">
       <div class="flex-between">

@@ -2343,6 +2343,10 @@
                             {
                                 "type": "basic",
                                 "name": "Span",
+                                "blur_until_loaded": {
+                                    "enabled": true,
+                                    "data_sources": "reports"
+                                },
                                 "text": "$t:sirsoft-board.admin.reports.pagination_info|total={{reports?.data?.pagination?.total ?? 0}}|from={{reports?.data?.pagination?.from ?? 0}}|to={{reports?.data?.pagination?.to ?? 0}}"
                             }
                         ]

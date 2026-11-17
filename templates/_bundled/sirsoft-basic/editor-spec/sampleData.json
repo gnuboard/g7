@@ -254,7 +254,9 @@
               "can_delete": false
             },
             "name_highlighted": "베이직 오버핏 코튼 <mark>티셔츠</mark>",
-            "description_highlighted": "사계절 입기 좋은 오버핏 기본 <mark>티셔츠</mark>"
+            "description_highlighted": "사계절 입기 좋은 오버핏 기본 <mark>티셔츠</mark>",
+            "is_wishlisted": false,
+            "has_additional_options": false
           },
           {
             "id": 105,
@@ -334,7 +336,9 @@
               "can_update": false,
               "can_delete": false
             },
-            "name_highlighted": "스트라이프 긴팔 <mark>티셔츠</mark>"
+            "name_highlighted": "스트라이프 긴팔 <mark>티셔츠</mark>",
+            "is_wishlisted": false,
+            "has_additional_options": false
           },
           {
             "id": 106,
@@ -419,7 +423,9 @@
               "can_update": false,
               "can_delete": false
             },
-            "name_highlighted": "프린팅 그래픽 <mark>티셔츠</mark>"
+            "name_highlighted": "프린팅 그래픽 <mark>티셔츠</mark>",
+            "is_wishlisted": false,
+            "has_additional_options": false
           }
         ],
         "posts": {
@@ -2064,7 +2070,9 @@
           "abilities": {
             "can_update": false,
             "can_delete": false
-          }
+          },
+          "is_wishlisted": false,
+          "has_additional_options": false
         },
         {
           "id": 102,
@@ -2148,7 +2156,9 @@
           "abilities": {
             "can_update": false,
             "can_delete": false
-          }
+          },
+          "is_wishlisted": false,
+          "has_additional_options": false
         },
         {
           "id": 103,
@@ -2232,7 +2242,9 @@
           "abilities": {
             "can_update": false,
             "can_delete": false
-          }
+          },
+          "is_wishlisted": false,
+          "has_additional_options": false
         },
         {
           "id": 104,
@@ -2311,7 +2323,9 @@
           "abilities": {
             "can_update": false,
             "can_delete": false
-          }
+          },
+          "is_wishlisted": false,
+          "has_additional_options": false
         }
       ]
     },
@@ -3858,7 +3872,9 @@
           "abilities": {
             "can_update": false,
             "can_delete": false
-          }
+          },
+          "is_wishlisted": false,
+          "has_additional_options": false
         },
         {
           "id": 102,
@@ -3942,7 +3958,9 @@
           "abilities": {
             "can_update": false,
             "can_delete": false
-          }
+          },
+          "is_wishlisted": false,
+          "has_additional_options": false
         },
         {
           "id": 103,
@@ -4026,7 +4044,9 @@
           "abilities": {
             "can_update": false,
             "can_delete": false
-          }
+          },
+          "is_wishlisted": false,
+          "has_additional_options": false
         },
         {
           "id": 104,
@@ -4105,7 +4125,9 @@
           "abilities": {
             "can_update": false,
             "can_delete": false
-          }
+          },
+          "is_wishlisted": false,
+          "has_additional_options": false
         }
       ]
     },
@@ -5338,7 +5360,9 @@
             "abilities": {
               "can_update": false,
               "can_delete": false
-            }
+            },
+            "is_wishlisted": false,
+            "has_additional_options": false
           },
           {
             "id": 102,
@@ -5422,7 +5446,9 @@
             "abilities": {
               "can_update": false,
               "can_delete": false
-            }
+            },
+            "is_wishlisted": false,
+            "has_additional_options": false
           },
           {
             "id": 103,
@@ -5506,7 +5532,9 @@
             "abilities": {
               "can_update": false,
               "can_delete": false
-            }
+            },
+            "is_wishlisted": false,
+            "has_additional_options": false
           },
           {
             "id": 104,
@@ -5585,7 +5613,9 @@
             "abilities": {
               "can_update": false,
               "can_delete": false
-            }
+            },
+            "is_wishlisted": false,
+            "has_additional_options": false
           }
         ],
         "pagination": {
@@ -5850,7 +5880,9 @@
           "abilities": {
             "can_update": false,
             "can_delete": false
-          }
+          },
+          "is_wishlisted": false,
+          "has_additional_options": false
         },
         {
           "id": 102,
@@ -5934,7 +5966,9 @@
           "abilities": {
             "can_update": false,
             "can_delete": false
-          }
+          },
+          "is_wishlisted": false,
+          "has_additional_options": false
         },
         {
           "id": 103,
@@ -6018,7 +6052,9 @@
           "abilities": {
             "can_update": false,
             "can_delete": false
-          }
+          },
+          "is_wishlisted": false,
+          "has_additional_options": false
         },
         {
           "id": 104,
@@ -6097,7 +6133,9 @@
           "abilities": {
             "can_update": false,
             "can_delete": false
-          }
+          },
+          "is_wishlisted": false,
+          "has_additional_options": false
         }
       ]
     },
@@ -6568,7 +6606,9 @@
               "abilities": {
                 "can_update": false,
                 "can_delete": false
-              }
+              },
+              "is_wishlisted": false,
+              "has_additional_options": false
             }
           },
           {
@@ -6655,7 +6695,9 @@
               "abilities": {
                 "can_update": false,
                 "can_delete": false
-              }
+              },
+              "is_wishlisted": false,
+              "has_additional_options": false
             }
           },
           {
@@ -6737,7 +6779,9 @@
               "abilities": {
                 "can_update": false,
                 "can_delete": false
-              }
+              },
+              "is_wishlisted": false,
+              "has_additional_options": false
             }
           }
         ],
@@ -7376,6 +7420,390 @@
         "abilities": {
           "can_request": true,
           "can_cancel": true
+        }
+      }
+    },
+    "relatedProducts": {
+      "data": [
+        {
+          "id": 101,
+          "name": "베이직 오버핏 코튼 티셔츠",
+          "name_localized": "베이직 오버핏 코튼 티셔츠",
+          "product_code": "TS-1001",
+          "sku": "TS-1001",
+          "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
+          "list_price": 29000,
+          "list_price_formatted": "29,000원",
+          "selling_price": 23200,
+          "selling_price_formatted": "23,200원",
+          "discount_rate": 20,
+          "multi_currency_list_price": {
+            "KRW": {
+              "price": 29000,
+              "formatted": "29,000원",
+              "is_default": true,
+              "editable": true
+            },
+            "USD": {
+              "price": 22.31,
+              "formatted": "$22.31",
+              "is_default": false,
+              "editable": false,
+              "exchange_rate": 1300
+            }
+          },
+          "multi_currency_selling_price": {
+            "KRW": {
+              "price": 23200,
+              "formatted": "23,200원",
+              "is_default": true,
+              "editable": true
+            },
+            "USD": {
+              "price": 17.85,
+              "formatted": "$17.85",
+              "is_default": false,
+              "editable": false,
+              "exchange_rate": 1300
+            }
+          },
+          "stock_quantity": 320,
+          "safe_stock_quantity": 10,
+          "is_below_safe_stock": false,
+          "option_stock_sum": 320,
+          "sales_status": "on_sale",
+          "sales_status_label": "판매중",
+          "sales_status_variant": "success",
+          "display_status": "visible",
+          "display_status_label": "노출",
+          "display_status_variant": "success",
+          "categories": [
+            {
+              "id": 11,
+              "name": "의류",
+              "is_primary": true
+            }
+          ],
+          "primary_category": "의류",
+          "brand_name": "코지홈",
+          "shipping_policy_id": 1,
+          "shipping_policy_name": "기본 배송정책",
+          "min_purchase_qty": 1,
+          "max_purchase_qty": 0,
+          "has_options": true,
+          "options_count": 6,
+          "options": [],
+          "labels": [
+            {
+              "name": "BEST",
+              "color": "#ef4444"
+            },
+            {
+              "name": "한정특가",
+              "color": "#f59e0b"
+            }
+          ],
+          "review_count": 128,
+          "rating_avg": 4.7,
+          "created_at": "2026-05-20 14:30:00",
+          "updated_at": "2026-05-28 09:15:00",
+          "is_owner": false,
+          "abilities": {
+            "can_update": false,
+            "can_delete": false
+          },
+          "is_wishlisted": false,
+          "has_additional_options": false
+        },
+        {
+          "id": 102,
+          "name": "데일리 와이드 슬랙스",
+          "name_localized": "데일리 와이드 슬랙스",
+          "product_code": "PT-2042",
+          "sku": "PT-2042",
+          "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
+          "list_price": 39000,
+          "list_price_formatted": "39,000원",
+          "selling_price": 39000,
+          "selling_price_formatted": "39,000원",
+          "discount_rate": 0,
+          "multi_currency_list_price": {
+            "KRW": {
+              "price": 39000,
+              "formatted": "39,000원",
+              "is_default": true,
+              "editable": true
+            },
+            "USD": {
+              "price": 30,
+              "formatted": "$30.00",
+              "is_default": false,
+              "editable": false,
+              "exchange_rate": 1300
+            }
+          },
+          "multi_currency_selling_price": {
+            "KRW": {
+              "price": 39000,
+              "formatted": "39,000원",
+              "is_default": true,
+              "editable": true
+            },
+            "USD": {
+              "price": 30,
+              "formatted": "$30.00",
+              "is_default": false,
+              "editable": false,
+              "exchange_rate": 1300
+            }
+          },
+          "stock_quantity": 85,
+          "safe_stock_quantity": 10,
+          "is_below_safe_stock": false,
+          "option_stock_sum": 85,
+          "sales_status": "on_sale",
+          "sales_status_label": "판매중",
+          "sales_status_variant": "success",
+          "display_status": "visible",
+          "display_status_label": "노출",
+          "display_status_variant": "success",
+          "categories": [
+            {
+              "id": 11,
+              "name": "의류",
+              "is_primary": true
+            }
+          ],
+          "primary_category": "의류",
+          "brand_name": "어반핏",
+          "shipping_policy_id": 1,
+          "shipping_policy_name": "기본 배송정책",
+          "min_purchase_qty": 1,
+          "max_purchase_qty": 0,
+          "has_options": false,
+          "options_count": 0,
+          "options": [],
+          "labels": [
+            {
+              "name": "NEW",
+              "color": "#3b82f6"
+            }
+          ],
+          "review_count": 42,
+          "rating_avg": 4.3,
+          "created_at": "2026-05-20 14:30:00",
+          "updated_at": "2026-05-28 09:15:00",
+          "is_owner": false,
+          "abilities": {
+            "can_update": false,
+            "can_delete": false
+          },
+          "is_wishlisted": false,
+          "has_additional_options": false
+        },
+        {
+          "id": 103,
+          "name": "구스다운 경량 패딩 점퍼",
+          "name_localized": "구스다운 경량 패딩 점퍼",
+          "product_code": "OW-3310",
+          "sku": "OW-3310",
+          "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
+          "list_price": 189000,
+          "list_price_formatted": "189,000원",
+          "selling_price": 132300,
+          "selling_price_formatted": "132,300원",
+          "discount_rate": 30,
+          "multi_currency_list_price": {
+            "KRW": {
+              "price": 189000,
+              "formatted": "189,000원",
+              "is_default": true,
+              "editable": true
+            },
+            "USD": {
+              "price": 145.38,
+              "formatted": "$145.38",
+              "is_default": false,
+              "editable": false,
+              "exchange_rate": 1300
+            }
+          },
+          "multi_currency_selling_price": {
+            "KRW": {
+              "price": 132300,
+              "formatted": "132,300원",
+              "is_default": true,
+              "editable": true
+            },
+            "USD": {
+              "price": 101.77,
+              "formatted": "$101.77",
+              "is_default": false,
+              "editable": false,
+              "exchange_rate": 1300
+            }
+          },
+          "stock_quantity": 0,
+          "safe_stock_quantity": 10,
+          "is_below_safe_stock": true,
+          "option_stock_sum": 0,
+          "sales_status": "sold_out",
+          "sales_status_label": "품절",
+          "sales_status_variant": "danger",
+          "display_status": "visible",
+          "display_status_label": "노출",
+          "display_status_variant": "success",
+          "categories": [
+            {
+              "id": 11,
+              "name": "의류",
+              "is_primary": true
+            }
+          ],
+          "primary_category": "의류",
+          "brand_name": "노스벨리",
+          "shipping_policy_id": 1,
+          "shipping_policy_name": "기본 배송정책",
+          "min_purchase_qty": 1,
+          "max_purchase_qty": 0,
+          "has_options": true,
+          "options_count": 9,
+          "options": [],
+          "labels": [
+            {
+              "name": "BEST",
+              "color": "#ef4444"
+            }
+          ],
+          "review_count": 271,
+          "rating_avg": 4.9,
+          "created_at": "2026-05-20 14:30:00",
+          "updated_at": "2026-05-28 09:15:00",
+          "is_owner": false,
+          "abilities": {
+            "can_update": false,
+            "can_delete": false
+          },
+          "is_wishlisted": false,
+          "has_additional_options": false
+        },
+        {
+          "id": 104,
+          "name": "캔버스 백팩 20L",
+          "name_localized": "캔버스 백팩 20L",
+          "product_code": "BG-5521",
+          "sku": "BG-5521",
+          "thumbnail_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E",
+          "list_price": 59000,
+          "list_price_formatted": "59,000원",
+          "selling_price": 53100,
+          "selling_price_formatted": "53,100원",
+          "discount_rate": 10,
+          "multi_currency_list_price": {
+            "KRW": {
+              "price": 59000,
+              "formatted": "59,000원",
+              "is_default": true,
+              "editable": true
+            },
+            "USD": {
+              "price": 45.38,
+              "formatted": "$45.38",
+              "is_default": false,
+              "editable": false,
+              "exchange_rate": 1300
+            }
+          },
+          "multi_currency_selling_price": {
+            "KRW": {
+              "price": 53100,
+              "formatted": "53,100원",
+              "is_default": true,
+              "editable": true
+            },
+            "USD": {
+              "price": 40.85,
+              "formatted": "$40.85",
+              "is_default": false,
+              "editable": false,
+              "exchange_rate": 1300
+            }
+          },
+          "stock_quantity": 47,
+          "safe_stock_quantity": 10,
+          "is_below_safe_stock": false,
+          "option_stock_sum": 47,
+          "sales_status": "on_sale",
+          "sales_status_label": "판매중",
+          "sales_status_variant": "success",
+          "display_status": "visible",
+          "display_status_label": "노출",
+          "display_status_variant": "success",
+          "categories": [
+            {
+              "id": 11,
+              "name": "의류",
+              "is_primary": true
+            }
+          ],
+          "primary_category": "의류",
+          "brand_name": "트립기어",
+          "shipping_policy_id": 1,
+          "shipping_policy_name": "기본 배송정책",
+          "min_purchase_qty": 1,
+          "max_purchase_qty": 0,
+          "has_options": false,
+          "options_count": 0,
+          "options": [],
+          "labels": [],
+          "review_count": 18,
+          "rating_avg": 4.1,
+          "created_at": "2026-05-20 14:30:00",
+          "updated_at": "2026-05-28 09:15:00",
+          "is_owner": false,
+          "abilities": {
+            "can_update": false,
+            "can_delete": false
+          },
+          "is_wishlisted": false,
+          "has_additional_options": false
+        }
+      ]
+    },
+    "reviewFeed": {
+      "data": {
+        "reviews": {
+          "data": [
+            {
+              "id": 1,
+              "author_name": "홍*동",
+              "user": {
+                "name": "홍*동",
+                "email": null
+              },
+              "rating": 5,
+              "content": "배송이 빠르고 품질이 좋아요.",
+              "content_mode": "text",
+              "content_plain": "배송이 빠르고 품질이 좋아요.",
+              "created_at": "2026-11-01 10:00",
+              "option_snapshot": null,
+              "images": [],
+              "image_count": 0,
+              "has_reply": false,
+              "product": {
+                "product_code": "SAMPLE-001",
+                "name": "샘플 상품",
+                "thumbnail_url": null
+              }
+            }
+          ],
+          "meta": {
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 10,
+            "total": 1,
+            "has_more_pages": false
+          }
         }
       }
     }

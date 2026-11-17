@@ -21,6 +21,8 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Laravel\Sanctum\PersonalAccessToken;
 
 class UserRepository implements UserRepositoryInterface
@@ -961,17 +963,33 @@ class UserRepository implements UserRepositoryInterface
      */
     public function incrementFailedAttempts(User $user, ?int $windowMinutes = null): int
     {
-        $stale = $windowMinutes !== null
-            && $windowMinutes > 0
-            && $user->last_failed_login_at !== null
-            && $user->last_failed_login_at->lt(now()->subMinutes($windowMinutes));
+        // DB 가 한 문장으로 계산한다 — 메모리의 횟수에 1 을 더해 저장하면 같은 회원을 먼저 읽은 동시 오답이 서로를 덮어
+        // 실패가 덜 세지고 잠금을 우회할 수 있었다(KVE 동형 O8, 7.1.6). 창(windowMinutes) 판정도 같은 문장 안에서 한다.
+        $now = now();
+        $query = User::query()->whereKey($user->getKey());
 
-        $next = ($stale ? 0 : (int) ($user->failed_login_attempts ?? 0)) + 1;
+        // 직전 실패가 창보다 오래됐으면 1 부터 다시 센다(종전 규칙). 창 경계 시각은 PDO quote 로 넣는다 —
+        // update() 의 원시 식 안 자리표시자는 바인딩되지 않는다. 할당 순서상 last_failed_login_at 은 갱신 전 값으로 판정된다.
+        $increment = 'COALESCE(failed_login_attempts, 0) + 1';
+        if ($windowMinutes !== null && $windowMinutes > 0) {
+            $cutoff = $query->getConnection()->getPdo()->quote(
+                // audit:allow datetime-display-user-timezone reason: DB 비교용 기계값 — 저장 시각과 같은 앱 시간대(UTC)로 둔다, 화면 표시 아님
+                $now->copy()->subMinutes($windowMinutes)->format('Y-m-d H:i:s')
+            );
+            $increment = "CASE WHEN last_failed_login_at IS NOT NULL AND last_failed_login_at < {$cutoff} THEN 1 ELSE {$increment} END";
+        }
+
+        (clone $query)->update([
+            'failed_login_attempts' => DB::raw($increment),
+            'last_failed_login_at' => $now,
+        ]);
+
+        $next = (int) (clone $query)->value('failed_login_attempts');
 
         $user->forceFill([
             'failed_login_attempts' => $next,
-            'last_failed_login_at' => now(),
-        ])->save();
+            'last_failed_login_at' => $now,
+        ])->syncOriginal();
 
         return $next;
     }
@@ -1145,8 +1163,16 @@ class UserRepository implements UserRepositoryInterface
      */
     public function updateAccessTokenExpiry(PersonalAccessToken $token, \DateTimeInterface $expiresAt): void
     {
-        $token->expires_at = $expiresAt;
-        $token->save();
+        // 모델 save() 는 지워진 토큰 객체를 INSERT 로 되살린다(KVE-2026-3187) — 지운 토큰은 늘리지 않고,
+        // 행이 있을 때만 바뀌는 조건부 UPDATE 로 늘린 뒤 메모리 값을 맞춘다.
+        if (! $token->exists) {
+            return;
+        }
+
+        if ($this->extendTokenExpiration((int) $token->getKey(), $expiresAt)) {
+            $token->expires_at = $expiresAt;
+            $token->syncOriginalAttribute('expires_at');
+        }
     }
 
     /**
@@ -1175,6 +1201,51 @@ class UserRepository implements UserRepositoryInterface
     public function deleteAccessToken(PersonalAccessToken $token): void
     {
         $token->delete();
+    }
+
+    /**
+     * 인증 토큰의 만료 시각을 조건부 UPDATE 로 늦춥니다.
+     *
+     * 모델 save() 는 지워진 토큰 객체를 INSERT 로 되살린다(KVE-2026-3187) — 행이 있을 때만 바꾸는 UPDATE 로 한다.
+     *
+     * @param  int  $tokenId  토큰 ID
+     * @param  \DateTimeInterface  $expiresAt  새 만료 시각
+     * @return bool 행이 있어 갱신했으면 true
+     */
+    public function extendTokenExpiration(int $tokenId, \DateTimeInterface $expiresAt): bool
+    {
+        return PersonalAccessToken::query()
+            ->whereKey($tokenId)
+            ->update(['expires_at' => $expiresAt]) > 0;
+    }
+
+    /**
+     * 회원들의 web 세션을 지웁니다.
+     *
+     * @param  array<int, int>  $ids  회원 ID 목록
+     * @param  string|null  $exceptSessionId  남겨 둘 세션 ID
+     * @return int 지운 세션 수 (database 외 드라이버는 0)
+     */
+    public function deleteSessionsByUserIds(array $ids, ?string $exceptSessionId = null): int
+    {
+        if (empty($ids)) {
+            return 0;
+        }
+
+        if (config('session.driver') !== 'database') {
+            Log::debug('[auth] 세션 드라이버가 database 가 아니어서 회원 세션을 지우지 않습니다', [
+                'driver' => config('session.driver'),
+                'user_count' => count($ids),
+            ]);
+
+            return 0;
+        }
+
+        return DB::connection(config('session.connection'))
+            ->table(config('session.table', 'sessions'))
+            ->whereIn('user_id', $ids)
+            ->when($exceptSessionId !== null && $exceptSessionId !== '', fn ($query) => $query->where('id', '!=', $exceptSessionId))
+            ->delete();
     }
 
     /**

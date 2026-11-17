@@ -13,6 +13,8 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { LayoutEditorChrome, EDITOR_MIN_WIDTH } from '../../LayoutEditorChrome';
 import { TranslationProvider } from '../../../TranslationContext';
 import { TranslationEngine } from '../../../TranslationEngine';
+import { getCssText } from '../../../../style/RuntimeStyleSheet';
+import { TOOLBAR_STYLE_KEY } from '../../utils/editorRuntimeStyles';
 
 function renderShell(): ReturnType<typeof render> {
   const engine = new TranslationEngine();
@@ -28,8 +30,8 @@ function renderShell(): ReturnType<typeof render> {
 
 describe('LayoutEditorChrome', () => {
   /**
-   * @scenario subject=layout_editor_chrome
-   * @effects chrome_mounts_shell_toolbars_tree_and_canvas
+   * @scenario case=layout_editor_chrome_regression
+   * @effects chrome_mounts_shell_toolbars_tree_and_canvas, editor_chrome_baseline_unchanged
    */
   it('셸 + 툴바 + 디바이스 미리보기 툴바 + 라우트 트리 + 프리뷰 캔버스 모두 마운트', () => {
     renderShell();
@@ -44,7 +46,7 @@ describe('LayoutEditorChrome', () => {
 
   /**
    * @scenario subject=layout_editor_chrome
-   * @effects chrome_shell_classes_use_g7le_prefix
+   * @effects chrome_shell_classes_use_g7le_prefix, editor_chrome_baseline_unchanged
    */
   it('셸 클래스에 g7le- 프리픽스 강제 (CSS 격리 — 19.3)', () => {
     renderShell();
@@ -58,7 +60,7 @@ describe('LayoutEditorChrome', () => {
 
   /**
    * @scenario subject=layout_editor_chrome
-   * @effects chrome_toolbar_receives_t_via_use_translation
+   * @effects chrome_toolbar_receives_t_via_use_translation, chrome_strings_render_via_layout_editor_t_keys_no_hardcoded_text
    */
   it('툴바가 useTranslation 훅을 통해 $t: 키를 전달받음 (자동 해석 통합 경로)', () => {
     // 본 단위 테스트에서는 translation dictionary 가 비어있어 키가 fallback 으로
@@ -72,7 +74,7 @@ describe('LayoutEditorChrome', () => {
 
   /**
    * @scenario subject=layout_editor_chrome
-   * @effects chrome_shows_template_identifier_label
+   * @effects chrome_shows_template_identifier_label, editor_chrome_baseline_unchanged
    */
   it('템플릿 식별자 라벨 표시', () => {
     renderShell();
@@ -87,7 +89,7 @@ describe('LayoutEditorChrome — 대화면 전용 최소 너비 (좁은 창 압�
 
   /**
    * @scenario subject=layout_editor_chrome
-   * @effects chrome_shell_has_editor_min_width
+   * @effects chrome_shell_has_editor_min_width, editor_chrome_baseline_unchanged
    */
   it('셸이 EDITOR_MIN_WIDTH 최소 너비를 갖는다 (압착 대신 가로 스크롤)', () => {
     renderShell();
@@ -96,8 +98,8 @@ describe('LayoutEditorChrome — 대화면 전용 최소 너비 (좁은 창 압�
   });
 
   /**
-   * @scenario subject=layout_editor_chrome
-   * @effects chrome_toolbar_children_do_not_shrink_or_wrap
+   * @scenario case=layout_editor_chrome_regression
+   * @effects chrome_toolbar_children_do_not_shrink_or_wrap, editor_toolbar_rules_via_runtime_sheet
    */
   it('툴바 직접 자식 전체가 축소·줄바꿈되지 않는다 (flex-shrink:0 + nowrap)', () => {
     // 버튼마다 인라인 style 로 붙이면 자체 style 을 가진 하위 컴포넌트
@@ -106,10 +108,25 @@ describe('LayoutEditorChrome — 대화면 전용 최소 너비 (좁은 창 압�
     renderShell();
     const toolbar = screen.getByTestId('g7le-toolbar');
     expect(toolbar.children.length).toBeGreaterThan(1);
-    const styleEl = toolbar.querySelector('style');
-    expect(styleEl?.textContent).toContain('.g7le-toolbar > *');
-    expect(styleEl?.textContent).toContain('flex-shrink: 0');
-    expect(styleEl?.textContent).toContain('white-space: nowrap');
+    // 규칙은 <style> 요소가 아니라 런타임 시트로 붙는다(엄격한 스타일 정책 호환, #163)
+    expect(toolbar.querySelector('style')).toBeNull();
+    const css = getCssText(TOOLBAR_STYLE_KEY);
+    expect(css).toContain('.g7le-toolbar > *');
+    expect(css).toContain('flex-shrink: 0');
+    expect(css).toContain('white-space: nowrap');
+    expect(css).toContain('@keyframes g7le-spin');
+  });
+
+  /**
+   * @scenario case=layout_editor_chrome_regression
+   * @effects editor_toolbar_rules_removed_on_unmount
+   */
+  it('언마운트하면 툴바 규칙을 뗀다', () => {
+    const { unmount } = renderShell();
+    expect(getCssText(TOOLBAR_STYLE_KEY)).not.toBeNull();
+    unmount();
+    expect(getCssText(TOOLBAR_STYLE_KEY)).toBeNull();
+    expect(document.getElementById(TOOLBAR_STYLE_KEY)).toBeNull();
   });
 });
 
@@ -141,7 +158,7 @@ describe('LayoutEditorChrome — 템플릿 메타 fetch 인증 헤더', () => {
 
   /**
    * @scenario subject=layout_editor_chrome
-   * @effects chrome_meta_fetch_sends_bearer_and_shows_version
+   * @effects chrome_meta_fetch_sends_bearer_and_shows_version, editor_chrome_baseline_unchanged
    */
   it('메타 fetch 는 Bearer 토큰 첨부 + name/version 을 툴바에 반영', async () => {
     const calls: Array<{ url: string; auth: string | null }> = [];

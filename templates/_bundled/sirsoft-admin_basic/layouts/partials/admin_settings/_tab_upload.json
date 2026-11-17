@@ -185,6 +185,63 @@
                                             "text": "{{_local.errors?.['upload.allowed_extensions']?.[0] ?? ''}}"
                                         }
                                     ]
+                                },
+                                {
+                                    "id": "field_layout_attachment_extensions",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.settings.upload.layout_attachment_extensions"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "text-red-600 dark:text-red-400 ml-1"
+                                                    },
+                                                    "text": "*"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Input",
+                                            "props": {
+                                                "type": "text",
+                                                "name": "upload.layout_attachment_extensions",
+                                                "placeholder": "jpg,jpeg,png,gif,webp",
+                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "className": "input {{_local.errors?.['upload.layout_attachment_extensions'] ? 'input-error' : ''}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:admin.settings.upload.layout_attachment_extensions_hint"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_local.errors?.['upload.layout_attachment_extensions']}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.['upload.layout_attachment_extensions']?.[0] ?? ''}}"
+                                        }
+                                    ]
                                 }
                             ]
                         }

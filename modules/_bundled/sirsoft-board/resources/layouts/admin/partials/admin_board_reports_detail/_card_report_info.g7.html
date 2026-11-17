@@ -50,7 +50,7 @@
             </on>
           </action-menu>
           <!-- 회원 계정이 남지 않은 작성자(uuid 없음): 갈 곳이 없어 이름만 -->
-          <span data-if="{{!(report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.is_guest : report_detail?.data?.comment?.author?.is_guest) &amp;&amp; !(report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.uuid : report_detail?.data?.comment?.author?.uuid)}}" class="board-text-heading">{{(report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.name : report_detail?.data?.comment?.author?.name) ?? '$t:sirsoft-board.admin.posts.unknown_author'}}</span>
+          <span data-if="{{report_detail !== undefined &amp;&amp; (!(report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.is_guest : report_detail?.data?.comment?.author?.is_guest) &amp;&amp; !(report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.uuid : report_detail?.data?.comment?.author?.uuid))}}" class="board-text-heading">{{(report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.name : report_detail?.data?.comment?.author?.name) ?? '$t:sirsoft-board.admin.posts.unknown_author'}}</span>
           <!-- 비회원 작성자: 이름 + 배지 (드롭다운 없음) -->
           <div data-if="{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.is_guest : report_detail?.data?.comment?.author?.is_guest}}" class="board-flex-center board:gap-2">
             <span class="board-text-heading">{{report_detail?.data?.target_type === 'post' ? report_detail?.data?.post?.author?.name : report_detail?.data?.comment?.author?.name}}</span>
@@ -118,7 +118,7 @@
     <div data-ref="reporters_list_card" class="board-card-stack-item">
       <div data-ref="reporters_list_header" class="board-flex-center board:gap-2 board:mb-4">
         <h2 class="board-text-primary board:text-lg board:font-bold">$t:sirsoft-board.admin.reports.detail.reports_title</h2>
-        <span data-if="{{report_detail?.data}}" class="board:inline-flex board:items-center board:px-3 board:py-1.5 board:rounded board:text-xs board:font-bold board:bg-red-100 board:text-red-800 board:dark:bg-red-900 board:dark:text-red-200">$t:sirsoft-board.admin.reports.detail.report_count_with_unit|count={{reporters_list?.data?.pagination?.total ?? report_detail?.data?.report_count ?? 0}}</span>
+        <span data-if="{{report_detail?.data}}" class="board:inline-flex board:items-center board:px-3 board:py-1.5 board:rounded board:text-xs board:font-bold board:bg-red-100 board:text-red-800 board:dark:bg-red-900 board:dark:text-red-200"><blur-until-loaded sources="reporters_list"/>$t:sirsoft-board.admin.reports.detail.report_count_with_unit|count={{reporters_list?.data?.pagination?.total ?? report_detail?.data?.report_count ?? 0}}</span>
       </div>
       <div class="board-row-stack">
         <div data-ref="reporters_list_container_{{reporterIdx}}" data-each="reporter, reporterIdx in reporters_list?.data?.data ?? report_detail?.data?.reporters ?? []" data-blur-until-loaded="{{_local.reporters_loading}}" class="">

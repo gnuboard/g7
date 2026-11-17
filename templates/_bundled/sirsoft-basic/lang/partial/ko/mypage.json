@@ -169,7 +169,8 @@
             "shipped": "배송중",
             "delivered": "배송완료",
             "cancelled": "취소"
-        }
+        },
+        "track_shipping": "배송 조회"
     },
     "order_detail": {
         "back": "주문 내역",

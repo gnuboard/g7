@@ -8,7 +8,7 @@
  *  (4) 데이터 연결 값(`{{…}}`)은 ControlRenderer 공용 게이트가 배지로 디그레이드
  *  (5) propValue 적용 — 고르면 `thumbPreset` prop 에 이름이 기록된다
  *
- * @since engine-v1.94.0
+ * @since engine-v1.95.0
  */
 
 import { describe, it, expect, vi, afterEach, beforeAll, beforeEach } from 'vitest';

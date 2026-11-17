@@ -1,6 +1,6 @@
 /**
  * @file WebSocketManager.multiSubscriber.test.ts
- * @description 같은 `channel:event` 를 두 주인이 구독할 때의 결함 (engine-v1.93.0, #816 S1 F7)
+ * @description 같은 `channel:event` 를 두 주인이 구독할 때의 결함 (engine-v1.94.0, #816 S1 F7)
  *
  * 결함:
  *   구독 키가 `channel:event` 하나뿐이라 두 번째 구독은 「이미 구독 중」 으로 같은 키만 돌려받고 콜백은 연결되지
@@ -78,7 +78,7 @@ function g7Warnings(spy: ReturnType<typeof vi.spyOn>): string[] {
     .filter((msg: string) => msg.startsWith('[G7]'));
 }
 
-describe('WebSocketManager 같은 키 다중 구독 (engine-v1.93.0)', () => {
+describe('WebSocketManager 같은 키 다중 구독 (engine-v1.94.0)', () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {

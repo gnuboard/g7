@@ -43,7 +43,7 @@
             "id": "claim_addresses_no_update_notice",
             "type": "basic",
             "name": "Div",
-            "if": "{{!route.id && _computed.lacksUpdate}}",
+            "if": "{{policy_abilities !== undefined && (!route.id && _computed.lacksUpdate)}}",
             "props": {
                 "className": "ecommerce:text-sm ecommerce:text-amber-700 ecommerce:dark:text-amber-400 ecommerce:mb-3"
             },

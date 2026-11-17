@@ -1215,7 +1215,7 @@ HTTP/1.1 200
 
 **설명** 관리자가 특정 주문(`order`)에 발급된 현금영수증을 **전액 취소**합니다. `auth:sanctum` + `sirsoft-ecommerce.orders.update` 권한이 필요하며, `Admin\CashReceiptController@cancel`이 `CashReceiptService::cancelAll()`로 활성 영수증을 발급 프로바이더(토스페이먼츠 등)에 취소 요청합니다. 부분취소 API 는 사용하지 않습니다 — 금액이 바뀌는 경우는 재발급(`/cash-receipt/reissue`)이 담당합니다. 취소 이력은 원장에 남아 국세청 신고 근거로 유지되며, 재발급용 식별번호 암호문은 폐기하지 않습니다(관리자가 같은 번호로 다시 발급할 수 있어야 하므로). 발급 취소는 관리자 전용이며 회원·비회원에게는 노출하지 않습니다.
 
-실패 시 사유는 `errors.error_code` 로 구분합니다 — 활성 영수증이 없으면 `NO_ACTIVE_RECEIPT`, 프로바이더 취소가 실패하면 `CANCEL_FAILED` 이며 둘 다 422 입니다.
+실패 시 사유는 `errors.error_code` 로 구분합니다 — 활성 영수증이 없으면 `NO_ACTIVE_RECEIPT`, 프로바이더 취소가 실패하면 `CANCEL_FAILED` 이며 둘 다 422 입니다. 같은 영수증의 다른 취소 요청(다른 화면·자동 동기화)이 아직 처리 중이면 실패가 아니라 **409**(`CANCEL_IN_PROGRESS`, 1.3.5 — `cash_receipt.errors.cancel_in_progress`)이며, 잠시 뒤 주문을 다시 조회해 결과를 확인합니다.
 
 ```json
 {
@@ -1328,7 +1328,7 @@ HTTP/1.1 200
 
 **설명** 관리자가 특정 주문(`order`)에 현금영수증을 발급합니다. 주문 당시 구매자가 신청하지 않은 건의 **사후 발급**과, 발급 실패 후 식별번호를 다시 입력해 발급하는 경우에 사용합니다. `auth:sanctum` + `sirsoft-ecommerce.orders.update` 권한이 필요하며, `Admin\CashReceiptController@issue`가 `CashReceiptService::issue()`로 발급 프로바이더에 위임합니다.
 
-발급 가능 조건은 **무통장입금(dbank) + 입금완료(PAID) + 미발급 + 현금성 금액 > 0 + 프로바이더 설정됨** 이며, 하나라도 어긋나면 `errors.error_code` 로 사유를 구분해 반환합니다 — 이미 발급된 주문은 **409**(`ALREADY_ISSUED`), 그 외는 422(`NOT_CASH_PAYMENT` / `PAYMENT_NOT_PAID` / `NO_ISSUABLE_AMOUNT` / `PROVIDER_NOT_CONFIGURED`). 프로바이더가 발급을 거부하면 422(`PROVIDER_ERROR`)와 함께 `errors.error_message` 에 상세 사유가 담깁니다.
+발급 가능 조건은 **무통장입금(dbank) + 입금완료(PAID) + 미발급 + 현금성 금액 > 0 + 프로바이더 설정됨** 이며, 하나라도 어긋나면 `errors.error_code` 로 사유를 구분해 반환합니다 — 이미 발급된 주문은 **409**(`ALREADY_ISSUED`), 같은 주문의 다른 발급이 처리 중이면 **409**(`ISSUE_IN_PROGRESS`, 1.3.5), 그 외는 422(`NOT_CASH_PAYMENT` / `PAYMENT_NOT_PAID` / `NO_ISSUABLE_AMOUNT` / `PROVIDER_NOT_CONFIGURED`). 프로바이더가 발급을 거부하면 422(`PROVIDER_ERROR`)와 함께 `errors.error_message` 에 상세 사유가 담깁니다.
 
 `receipt_type`(발급 용도)과 `identifier_type`(발급 수단)은 독립 필드입니다. 지출증빙용도 휴대폰번호로 발급할 수 있으며, 사업자등록번호는 체크섬을 검증합니다. 소득공제 + 사업자등록번호 조합과, 지출증빙 + 국세청 자진발급 지정번호(`0100001234`) 조합은 거부됩니다.
 
@@ -1341,6 +1341,7 @@ HTTP/1.1 200
 | error_code | 상태코드 | 의미 |
 | --- | --- | --- |
 | `ALREADY_ISSUED` | 409 | 이미 활성 현금영수증이 발급된 주문 |
+| `ISSUE_IN_PROGRESS` | 409 | 같은 주문의 다른 발급 요청이 처리 중(1.3.5). 가드를 통과한 뒤 겹친 요청이 먼저 발급 자리를 예약한 경우도 같은 409 다(`cash_receipt.errors.issue_in_progress`). 잠시 뒤 주문을 다시 조회해 결과를 확인한다 |
 | `PROVIDER_NOT_CONFIGURED` | 422 | 현금영수증 발급 프로바이더가 설정되지 않음 |
 | `PAYMENT_NOT_FOUND` | 422 | 주문에 결제 정보가 없음 |
 | `NOT_CASH_PAYMENT` | 422 | 무통장입금(dbank) 주문이 아님 |
@@ -2846,6 +2847,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). `orderNumber` 에 해당하는 주문이 없거나 접근 권한이 없는 경우도 포함 (CancelPaymentRequest 의 주문 해석 실패) |
+| 429 | Too Many Requests | 체크아웃·주문 생성과 합산한 요청이 분당 한도(기본 30회, 회원 단위·비회원은 IP 단위)를 넘은 경우 (`Retry-After` 헤더에 남은 초) — [checkout.md](checkout.md) 「요청 제한」 |
 
 <!-- @generated:end -->
 
@@ -2980,7 +2982,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 회원이 마이페이지 주문내역에서 본인 주문 목록을 상태별 통계와 함께 페이지네이션 조회합니다. `auth:sanctum` 인증이 필요하며, `User\OrderController@index`가 `user_id`를 본인으로 고정한 뒤 `OrderService::getList()`와 `getUserStatistics()`를 호출해 `UserOrderCollection`으로 반환합니다. `status`로 특정 주문상태만 필터링할 수 있습니다. 관리자 목록과 달리 항상 본인 주문으로만 한정됩니다.
+**설명** 회원이 마이페이지 주문내역에서 본인 주문 목록을 상태별 통계와 함께 페이지네이션 조회합니다. `auth:sanctum` 인증이 필요하며, `User\OrderController@index`가 `user_id`를 본인으로 고정한 뒤 `OrderService::getList()`와 `getUserStatistics()`를 호출해 `UserOrderCollection`으로 반환합니다. `status`로 특정 주문상태만 필터링할 수 있습니다. 관리자 목록과 달리 항상 본인 주문으로만 한정됩니다. 각 주문에는 대표 배송의 송장 정보 `shipping`(`carrier_name`·`tracking_number`·`tracking_url`)이 실립니다. `tracking_url` 은 주문 상세와 같은 규칙(택배사의 조회 주소 틀에 송장 번호를 넣음)으로 만들며, 송장·택배사가 없으면 `null` 입니다.
 
 
 ### POST /api/modules/sirsoft-ecommerce/user/orders
@@ -3170,6 +3172,7 @@ HTTP/1.1 201
 | 422 | Unprocessable Entity | 요청 파라미터 검증 실패, 예상 결제금액 불일치(`expected_total_amount` ≠ 서버 재계산값), 결제 통화 미지원(`errors.code = unsupported_payment_currency`), 재고 부족(`errors.insufficient_items`), 구매 불가 상품(`errors.code = cart_unavailable`), 주문 확정 재계산 검증 실패(쿠폰 만료·최소주문금액 미달 등 — `errors.code = order_calculation_validation_failed`). `payment_method` 가 결제수단 카탈로그에 없는 값이면 여기서 차단된다. 필드별 메시지는 `error.errors` 에 담긴다 |
 | 409 | Conflict | 적용한 쿠폰을 다른 주문이 먼저 사용한 경우 (`errors.code = coupon_already_used`, `errors.coupon_issue_id` 에 해당 발급 ID). 주문은 생성되지 않고 쿠폰도 소모되지 않으므로 그대로 재시도할 수 있습니다 |
 | 428 | Identity Verification Required | 결제 진입 본인인증(IDV) 정책이 활성이고 미인증(grace 만료)인 경우. 응답 payload 로 인증 수단·목적이 함께 내려간다 |
+| 429 | Too Many Requests | 체크아웃·주문 생성 요청이 분당 한도(기본 30회, 회원 단위·비회원은 IP 단위)를 넘은 경우 (`Retry-After` 헤더에 남은 초) — [checkout.md](checkout.md) 「요청 제한」 |
 | 500 | Server Error | 주문 생성 중 예기치 못한 오류 (`주문 생성에 실패했습니다.` — `messages.order.create_failed`). 원인은 서버 로그 `Order create: unexpected failure` 항목에 예외 클래스·메시지·발생 위치가 기록된다 |
 
 <!-- @generated:end -->
@@ -3658,7 +3661,7 @@ HTTP/1.1 200
 
 **설명** 회원이 주문 당시 신청하지 않은 현금영수증을 마이페이지 주문상세에서 **직접 사후 발급**합니다. `auth:sanctum` 인증이 필요하며, `User\CashReceiptController@issue`가 `Auth::id()` 로 소유권을 확인한 뒤(타인 주문이면 404) 관리자 발급과 **동일한 검증·가드·프로바이더 위임**을 거칩니다.
 
-요청 본문(`receipt_type` / `identifier_type` / `identifier`)과 오류 코드 체계는 관리자 발급 API 와 같습니다 — 이미 발급된 주문은 409(`ALREADY_ISSUED`), 그 외 발급 불가 사유는 422 에 `errors.error_code` 로 구분해 담깁니다.
+요청 본문(`receipt_type` / `identifier_type` / `identifier`)과 오류 코드 체계는 관리자 발급 API 와 같습니다 — 이미 발급된 주문은 409(`ALREADY_ISSUED`), 같은 주문의 다른 발급이 처리 중이면 409(`ISSUE_IN_PROGRESS`, 1.3.5), 그 외 발급 불가 사유는 422 에 `errors.error_code` 로 구분해 담깁니다.
 
 **발급 취소는 제공하지 않습니다** — 국세청 신고 정정을 동반하므로 관리자 전용이며, 유저용 `DELETE` 라우트 자체를 노출하지 않습니다(403 이 아니라 404/405).
 
@@ -3929,6 +3932,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 재주문 도메인 규칙 위반 — 장바구니 담기 불가·수량 한도 초과 등 (`재주문에 실패했습니다.`) |
+| 429 | Too Many Requests | 장바구니 쓰기와 합산한 요청이 분당 한도(기본 120회, 회원 단위)를 넘은 경우 (`Retry-After` 헤더에 남은 초, 1.3.5) |
 | 500 | Internal Server Error | 서버 내부 오류 (`exceptions.operation_failed`) |
 
 <!-- @generated:end -->

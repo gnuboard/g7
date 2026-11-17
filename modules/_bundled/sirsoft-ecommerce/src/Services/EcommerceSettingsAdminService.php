@@ -72,7 +72,9 @@ class EcommerceSettingsAdminService
      */
     public function getSettingsForAdmin(): array
     {
-        $settings = $this->settingsService->getAllSettings();
+        // 기본정보 탭은 사업자 연락처를 나눔 칸으로 입력받는다 — 저장된 합친 값을 펼쳐 실어야
+        // 다른 칸만 고쳐 저장할 때 빈 나눔 칸이 합쳐져 연락처가 지워지지 않는다
+        $settings = $this->settingsService->withSplitContactFields($this->settingsService->getAllSettings());
 
         if (is_array($settings['claim'] ?? null)) {
             unset($settings['claim'][self::REFUND_AUTO_APPROVE_DECIDED_KEY]);

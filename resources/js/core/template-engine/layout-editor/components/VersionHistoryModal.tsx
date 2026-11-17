@@ -12,7 +12,7 @@
  * 대상은 레이아웃(`kind: 'layout'`) 또는 확장 조각(`kind: 'extension'`)이며, 조각은 layout-extensions 버전 API 를 쓴다.
  *
  * 맨 위(최신) 판은 지금 본문과 같아 복원 버튼을 숨긴다. 단 동기화가 덮기 직전에 남긴 운영자 판(`before_overwrite`)이
- * 맨 위면 지금 본문은 새 판이라 복원할 수 있다(engine-v1.95.3).
+ * 맨 위면 지금 본문은 새 판이라 복원할 수 있다(engine-v1.96.3).
  *
  * 각 행에서 "비교" 를 누르면 직전(이전 번호) 버전과의 Unified diff 를 GitHub 스타일로
  * 보여 준다(VersionDiffView). 저장자 이름도 함께 표시한다(백엔드 created_by_name).

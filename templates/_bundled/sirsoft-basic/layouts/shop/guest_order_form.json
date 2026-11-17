@@ -58,7 +58,7 @@
             {
                 "type": "layout",
                 "name": "Container",
-                "if": "{{!_global?.currentUser?.uuid}}",
+                "if": "{{_global?.currentUser !== undefined && !_global?.currentUser?.uuid}}",
                 "responsive": {
                     "portable": {
                         "props": {

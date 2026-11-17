@@ -52,7 +52,10 @@ class CashReceiptMigrationRoundTripTest extends ModuleTestCase
     }
 
     /**
-     * 왕복 검사 대상인 현금영수증 마이그레이션 4종의 저장소 상대 경로를 이름별로 돌려준다.
+     * 왕복 검사 대상인 현금영수증 마이그레이션 5종의 저장소 상대 경로를 이름별로 돌려준다.
+     *
+     * 순서가 의미를 가진다 — tearDown 이 이 순서로 up() 을 다시 돌려 구조를 되살리므로, 이력 테이블을 내린 테스트
+     * 뒤에도 활성 슬롯 키(실컬럼·생성 컬럼·유니크)가 테이블 생성 뒤에 다시 붙는다.
      *
      * @return array<string, string> 마이그레이션 별칭 => 저장소 상대 파일 경로
      */
@@ -63,7 +66,43 @@ class CashReceiptMigrationRoundTripTest extends ModuleTestCase
             'cash_equivalent' => self::MIGRATION_DIR.'/2026_07_09_000002_add_cash_equivalent_amount_to_ecommerce_orders_table.php',
             'identifier_encrypted' => self::MIGRATION_DIR.'/2026_07_09_000003_add_cash_receipt_identifier_encrypted_to_ecommerce_order_payments_table.php',
             'identifier_type' => self::MIGRATION_DIR.'/2026_07_09_000004_add_cash_receipt_identifier_type_to_ecommerce_order_payments_table.php',
+            'active_slot_keys' => self::MIGRATION_DIR.'/2026_11_13_000001_add_active_slot_keys_to_ecommerce_order_cash_receipts_table.php',
         ];
+    }
+
+    /**
+     * 활성 슬롯 키 마이그레이션의 down 은 유니크·생성 컬럼만 지우고 실컬럼(해제 시각·취소 대상)은 남기며, up 으로 되살고 재실행도 안전하다.
+     *
+     * @scenario case=column_round_trip
+     *
+     * @effects migration_up_down_up_round_trip_safe, migration_up_rerun_is_idempotent, cash_receipt_slot_down_keeps_real_columns
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function 활성_슬롯_키는_왕복_후에도_동일하게_생성된다(): void
+    {
+        $migration = $this->load($this->migrations()['active_slot_keys']);
+
+        $migration->down();
+        $this->assertFalse(Schema::hasColumn('ecommerce_order_cash_receipts', 'active_issue_order_key'));
+        $this->assertFalse(Schema::hasColumn('ecommerce_order_cash_receipts', 'open_cancel_target_key'));
+        $this->assertTrue(Schema::hasColumn('ecommerce_order_cash_receipts', 'slot_released_at'), '실컬럼은 down 에서 지우지 않는다');
+        $this->assertTrue(Schema::hasColumn('ecommerce_order_cash_receipts', 'cancel_target_id'), '실컬럼은 down 에서 지우지 않는다');
+
+        $migration->up();
+        $this->assertTrue(Schema::hasColumn('ecommerce_order_cash_receipts', 'active_issue_order_key'));
+        $this->assertTrue(Schema::hasColumn('ecommerce_order_cash_receipts', 'open_cancel_target_key'));
+
+        // 멱등: 재실행해도 SQL error 없음 (중복 컬럼·인덱스 생성 시도 없음)
+        $migration->up();
+        $this->assertTrue(Schema::hasColumn('ecommerce_order_cash_receipts', 'active_issue_order_key'));
+
+        // 이력 테이블이 없는 상태(모듈 삭제 중 부분 롤백)에서도 down·up 이 예외 없이 끝난다
+        $this->load($this->migrations()['cash_receipts'])->down();
+        $migration->down();
+        $migration->up();
+        $this->assertFalse(Schema::hasTable('ecommerce_order_cash_receipts'));
     }
 
     /**

@@ -22,6 +22,14 @@ const PUBLIC_REVIEW_TAB = path.join(
     REPO_ROOT,
     'templates/_bundled/sirsoft-basic/layouts/partials/shop/detail/_tab_reviews.json',
 );
+// 후기 한 장(작성자·본문·첨부 사진)은 7.1.6(#898)부터 공용 카드 조각이 그린다 — 상품 상세 후기 탭과
+// 후기 모아보기 화면(shop/reviews)이 같이 include 한다. 탭은 목록·필터만 갖고 카드는 이 조각에 있다.
+const PUBLIC_REVIEW_CARD_PARTIAL = 'partials/shop/detail/_review_card.json';
+const PUBLIC_REVIEW_CARD = path.join(
+    REPO_ROOT,
+    'templates/_bundled/sirsoft-basic/layouts',
+    PUBLIC_REVIEW_CARD_PARTIAL,
+);
 const LANG_DIR = path.join(REPO_ROOT, 'modules/_bundled/sirsoft-ecommerce/resources/lang/partial');
 
 /**
@@ -147,12 +155,17 @@ describe('관리자 상품 후기 관리 — 회원·주문 없는 후기 표시
  * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): imported_review_screens_render_author_and_missing_order
  */
 describe('공개 상품 상세 후기 탭 — 회원·주문 없는 후기 표시', () => {
-    const layout = readJson(PUBLIC_REVIEW_TAB);
+    const tab = readJson(PUBLIC_REVIEW_TAB);
+    // 탭이 실제로 카드 조각을 include 하는지 — 이 연결이 끊기면 아래 단언이 쓰이지 않는 파일을 보게 된다
+    const tabIncludesCard = collect(tab, (n) => n.partial === PUBLIC_REVIEW_CARD_PARTIAL).length > 0;
+    // 탭과 카드 조각을 한 화면으로 본다 — 후기 한 장의 표시는 어느 쪽에 있든 같은 탭 화면에 그려진다
+    const layout = [tab, readJson(PUBLIC_REVIEW_CARD)];
     const raw = JSON.stringify(layout);
 
     // @scenario content_mode=text, existing_row=none
     // @effects imported_review_screens_render_author_and_missing_order
     it('작성자 이름은 작성자 표시 이름을 먼저 읽는다', () => {
+        expect(tabIncludesCard, '후기 탭이 후기 카드 조각을 include 해야 한다').toBe(true);
         expect(raw).toContain('review.author_name ?? review.user?.name');
         expect(raw).not.toMatch(/"\{\{review\.user\?\.name\}\}"/);
     });
@@ -160,6 +173,7 @@ describe('공개 상품 상세 후기 탭 — 회원·주문 없는 후기 표�
     // @scenario content_mode=html, existing_row=none
     // @effects imported_review_screens_render_author_and_missing_order
     it('HTML 본문은 HtmlContent 로, 텍스트 본문은 기존 문단으로 그린다', () => {
+        expect(tabIncludesCard, '후기 탭이 후기 카드 조각을 include 해야 한다').toBe(true);
         const html = collect(layout, (n) => n.name === 'HtmlContent' && String(n.if ?? '').includes("review.content_mode === 'html'"));
         const text = collect(layout, (n) => n.name === 'P' && String(n.if ?? '').includes("review.content_mode !== 'html'"));
 

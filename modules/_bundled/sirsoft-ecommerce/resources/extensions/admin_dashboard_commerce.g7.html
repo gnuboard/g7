@@ -132,7 +132,7 @@
       </div>
       <!-- 미답변 문의 카드 — 상품 문의는 게시판 글이라 게시판 모듈(선택 연동)이 꺼지면 카드째 숨긴다. 활성 목록이 없는 옛 코어는
         서버 응답의 board_active 로 가른다(꺼져 있으면 서버가 항목을 내지 않는다). -->
-      <div data-ref="pending_inquiries_card" data-if="{{(_global.activeModules?.includes('sirsoft-board') ?? true) &amp;&amp; commerce_pending_inquiries?.data?.board_active !== false}}" class="ecommerce:bg-slate-100 ecommerce:dark:bg-slate-800 ecommerce:p-4 ecommerce:rounded-xl ecommerce:h-full ecommerce:flex ecommerce:flex-col">
+      <div data-ref="pending_inquiries_card" data-if="{{(_global.activeModules?.includes('sirsoft-board') ?? true) &amp;&amp; commerce_pending_inquiries !== undefined &amp;&amp; commerce_pending_inquiries?.data?.board_active !== false}}" class="ecommerce:bg-slate-100 ecommerce:dark:bg-slate-800 ecommerce:p-4 ecommerce:rounded-xl ecommerce:h-full ecommerce:flex ecommerce:flex-col">
         <responsive on="768-" class="ecommerce:bg-slate-100 ecommerce:dark:bg-slate-800 ecommerce:p-6 ecommerce:rounded-2xl ecommerce:h-full ecommerce:flex ecommerce:flex-col"/>
         <blur-until-loaded sources="commerce_pending_inquiries"/>
         <div data-ref="pending_inquiries_header" class="ecommerce-flex-between ecommerce:mb-4">

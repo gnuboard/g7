@@ -1,9 +1,10 @@
 // audit:allow seo-renderer-parity-sync #883 표시 규칙을 코어 「본문 콘텐츠」(G7Core.contentPolicy)로 옮겼다 — 봇 정화기 HtmlSanitizer 도 같은 ContentHtmlPolicy 로 후보 태그를 살리고 마무리한다(외부 영상은 봇에 링크)
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 // @ts-ignore - DOMPurify 타입 정의 없음
 import DOMPurify from 'dompurify';
 import { Div } from '../basic/Div';
 import type { EditorAttrs } from '../../types';
+import { applyDeferredStyles, getInlineStyleApi, sanitizeDeferred } from '../../support/inlineStyleDeferral';
 import { ImageGallery, useImageGallery } from './ImageGallery';
 import { decorateContentImages, ZOOM_ATTR } from '../../support/contentImages';
 import { stripThumb } from '../../support/thumbnail';
@@ -57,6 +58,39 @@ export interface HtmlContentProps {
   /** 레이아웃 편집기 주입 속성 (편집 모드 전용, 루트에 spread) */
   editorAttrs?: EditorAttrs;
 }
+
+/** 기본 DOMPurify 설정 (FORBID 방식: 위험 태그/속성만 차단, 나머지 허용) */
+const DEFAULT_PURIFY_CONFIG: any = {
+  FORBID_TAGS: [
+    // 스크립트 실행
+    'script', 'noscript',
+    // 외부 콘텐츠 삽입
+    'iframe', 'frame', 'frameset', 'object', 'embed', 'applet', 'portal',
+    // 폼 요소 (피싱 방지)
+    'form', 'input', 'textarea', 'select', 'button',
+    // 메타/스타일 조작
+    'style', 'link', 'meta', 'base',
+    // 구조 태그 주입
+    'body', 'head', 'html', 'title',
+    // SVG/MathML (XSS 벡터)
+    'svg', 'math',
+    // 미디어 이벤트 핸들러 (onerror, onloadstart)
+    'audio', 'video', 'source', 'track', 'canvas',
+    // UI 오버레이/이벤트
+    'details', 'dialog',
+    // HTML 파서 혼란/sanitizer 우회
+    'plaintext', 'xmp', 'listing',
+    // 레거시/비표준
+    'marquee', 'noframes', 'noembed', 'template', 'slot',
+  ],
+  FORBID_ATTR: [
+    'onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur',
+    'ontoggle', 'oncanplay', 'onloadstart',
+    'formaction', 'xlink:href', 'action',
+  ],
+  ALLOW_DATA_ATTR: true,
+  ADD_ATTR: ['target'],
+};
 
 /**
  * HtmlContent 콘텐츠 렌더링 컴포넌트
@@ -117,48 +151,16 @@ export const HtmlContent: React.FC<HtmlContentProps> = ({
       return '';
     }
 
-    // 기본 DOMPurify 설정 (FORBID 방식: 위험 태그/속성만 차단, 나머지 허용)
-    const defaultConfig: any = {
-      FORBID_TAGS: [
-        // 스크립트 실행
-        'script', 'noscript',
-        // 외부 콘텐츠 삽입
-        'iframe', 'frame', 'frameset', 'object', 'embed', 'applet', 'portal',
-        // 폼 요소 (피싱 방지)
-        'form', 'input', 'textarea', 'select', 'button',
-        // 메타/스타일 조작
-        'style', 'link', 'meta', 'base',
-        // 구조 태그 주입
-        'body', 'head', 'html', 'title',
-        // SVG/MathML (XSS 벡터)
-        'svg', 'math',
-        // 미디어 이벤트 핸들러 (onerror, onloadstart)
-        'audio', 'video', 'source', 'track', 'canvas',
-        // UI 오버레이/이벤트
-        'details', 'dialog',
-        // HTML 파서 혼란/sanitizer 우회
-        'plaintext', 'xmp', 'listing',
-        // 레거시/비표준
-        'marquee', 'noframes', 'noembed', 'template', 'slot',
-      ],
-      FORBID_ATTR: [
-        'onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur',
-        'ontoggle', 'oncanplay', 'onloadstart',
-        'formaction', 'xlink:href', 'action',
-      ],
-      ALLOW_DATA_ATTR: true,
-      ADD_ATTR: ['target'],
-    };
 
     const config = purifyConfig
       ? {
-          ...defaultConfig,
+          ...DEFAULT_PURIFY_CONFIG,
           ...purifyConfig,
           // 보안 기본값은 항상 유지 (사용자 설정으로 덮어쓰기 방지)
-          FORBID_TAGS: [...defaultConfig.FORBID_TAGS, ...(purifyConfig.FORBID_TAGS || [])],
-          FORBID_ATTR: [...defaultConfig.FORBID_ATTR, ...(purifyConfig.FORBID_ATTR || [])],
+          FORBID_TAGS: [...DEFAULT_PURIFY_CONFIG.FORBID_TAGS, ...(purifyConfig.FORBID_TAGS || [])],
+          FORBID_ATTR: [...DEFAULT_PURIFY_CONFIG.FORBID_ATTR, ...(purifyConfig.FORBID_ATTR || [])],
         }
-      : defaultConfig;
+      : DEFAULT_PURIFY_CONFIG;
     // 정화 결과를 문자열이 아니라 DOM 조각으로 받아 그 자리에서 고치고 한 번만 직렬화한다 — 종전에는 정화 결과
     // 문자열을 다시 파싱(DOMParser)해 고친 뒤 또 직렬화했다. 조각은 DOMPurify 가 만든 비활성 문서(DOMParser)에
     // 속해 이미지 요청이 나가지 않는다. DOMPurify 는 shadowroot 속성이 허용될 때만 조각을 화면 문서로 가져오므로
@@ -174,17 +176,23 @@ export const HtmlContent: React.FC<HtmlContentProps> = ({
     // 코어 「본문 콘텐츠」 규칙(G7Core.contentPolicy, engine-v1.90.0)이 있으면 그 규칙으로 정화한다 — 켜진 후보(그림 캡션·업로드 동영상·
     // 오디오·외부 영상)를 살리고 외부 영상은 정해진 플레이어 iframe 으로 바꾼다. prop 으로 덧붙인 금지는 규칙으로 풀 수 없다.
     // 규칙이 없으면(옛 코어) 종전 경로다 (#883)
+    // 본문 서식 지연 장치(G7Core.inlineStyle)가 있으면 style 속성을 `data-g7-style` 로 받아 붙인 뒤 CSSOM 으로 입힌다 — 엄격한 스타일
+    // 정책(`style-src-attr 'none'`)에서 HTML 문자열의 style 속성이 막히기 때문이다. 장치가 없으면(옛 코어) 종전 그대로다 (공개 #163)
+    const deferStyle = getInlineStyleApi() !== null;
     const policySanitized = (window as any)?.G7Core?.contentPolicy?.sanitize?.(DOMPurify, actualContent, {
       ...inertConfig,
-      FORBID_TAGS: [...defaultConfig.FORBID_TAGS],
+      FORBID_TAGS: [...DEFAULT_PURIFY_CONFIG.FORBID_TAGS],
       G7_KEEP_FORBID_TAGS: purifyConfig?.FORBID_TAGS || [],
+      ...(deferStyle ? { G7_DEFER_STYLE: true } : {}),
     });
     // 고칠 그릇은 어느 경로든 비활성 문서의 요소다. 규칙 경로는 문자열을 돌려준다 — 이미 정화된 결과이므로 다시 정화하지 않고
     // (플레이어 iframe 이 지워진다) 비활성 문서(DOMParser)로 읽은 body 를 쓴다. 규칙이 없으면 DOMPurify 조각을 그 조각과 같은
     // 문서의 요소에 담는다.
+    // 규칙이 없고 서식 지연 장치만 있으면(#163) 지연 정화 문자열을 같은 방식으로 읽는다.
+    const preSanitized = typeof policySanitized === 'string' ? policySanitized : sanitizeDeferred(actualContent, inertConfig);
     let holder: HTMLElement;
-    if (typeof policySanitized === 'string') {
-      holder = new DOMParser().parseFromString(`<!DOCTYPE html><body>${policySanitized}`, 'text/html').body;
+    if (typeof preSanitized === 'string') {
+      holder = new DOMParser().parseFromString(`<!DOCTYPE html><body>${preSanitized}`, 'text/html').body;
     } else {
       const fragment = DOMPurify.sanitize(actualContent, {
         ...inertConfig,
@@ -220,6 +228,13 @@ export const HtmlContent: React.FC<HtmlContentProps> = ({
   // 새 객체를 주면 같은 문자열이어도 innerHTML 을 다시 쓴다 — 확대 보기를 열고 닫는 상태 변화만으로 본문 이미지 요소가
   // 통째로 다시 만들어져(요청 재평가, 누른 이미지 초점 소실) 화면이 흔들렸다.
   const innerHtml = useMemo(() => ({ __html: sanitizedHtml }), [sanitizedHtml]);
+
+  // 지연된 서식을 화면에 붙은 뒤 입힌다. 본문이 바뀌면 React 가 innerHTML 을 다시 쓰므로 다시 입혀야 하는데, 다른 경로로
+  // innerHTML 이 다시 쓰이는 경우까지 덮도록 커밋마다 확인한다(남은 지연 속성이 없으면 querySelectorAll 한 번으로 끝난다).
+  const containerRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    applyDeferredStyles(containerRef.current);
+  });
 
   // 확대 보기가 닫히면(열림 → 닫힘) 누른 이미지로 초점을 돌려준다. 본문이 바뀌어 그 이미지가 문서에서 빠졌으면 두지 않는다.
   useEffect(() => {
@@ -342,6 +357,7 @@ export const HtmlContent: React.FC<HtmlContentProps> = ({
       <Div
         id={id}
         className={containerClasses}
+        ref={containerRef}
         dangerouslySetInnerHTML={innerHtml}
         onClick={zoomable ? handleClick : undefined}
         onKeyDown={zoomable ? handleKeyDown : undefined}

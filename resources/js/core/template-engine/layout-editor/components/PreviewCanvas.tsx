@@ -59,6 +59,7 @@ import { convertToCurrentMode, withBasePrefix } from '../../../support/assetUrl'
 import { buildModalEditParentContext, modalEditParentContext } from '../utils/modalEditParentContext';
 import { rescanPreviewMediaIsolation } from '../hooks/usePreviewMediaIsolation';
 import { PREVIEW_FRAME_CLASS, PREVIEW_VW_VAR } from '../utils/previewMediaIsolation/constants';
+import { applyBaseSlotStyle, removeBaseSlotStyle } from '../utils/editorRuntimeStyles';
 
 export interface PreviewCanvasProps {
   /** components.json 매니페스트 — Chrome 에서 fetch 해 주입 */
@@ -305,7 +306,7 @@ export function PreviewCanvas(props: PreviewCanvasProps = {}): React.ReactElemen
             ? hostDispatcher.getHandler(name)
             : undefined;
           if (typeof fn === 'function') {
-            // 원래 주인을 그대로 넘긴다 — 복제 표기를 등록자로 쓰면 이름공간 소유권 경고가 난다 (engine-v1.93.0)
+            // 원래 주인을 그대로 넘긴다 — 복제 표기를 등록자로 쓰면 이름공간 소유권 경고가 난다 (engine-v1.94.0)
             actionDispatcherRef.current.registerHandler(name, fn, {
               category: 'plugin',
               source: hostDispatcher.getHandlerSource?.(name) ?? 'unknown',
@@ -343,7 +344,7 @@ export function PreviewCanvas(props: PreviewCanvasProps = {}): React.ReactElemen
         if (typeof disp.getHandler === 'function' && disp.getHandler(name)) continue;
         const fn = typeof globalDisp.getHandler === 'function' ? globalDisp.getHandler(name) : undefined;
         if (typeof fn === 'function') {
-          // 원래 주인을 그대로 넘긴다 (engine-v1.93.0 — 위 최초 복제와 같은 이유)
+          // 원래 주인을 그대로 넘긴다 (engine-v1.94.0 — 위 최초 복제와 같은 이유)
           disp.registerHandler(name, fn, {
             category: 'plugin',
             source: globalDisp.getHandlerSource?.(name) ?? 'unknown',
@@ -970,26 +971,16 @@ export function PreviewCanvas(props: PreviewCanvasProps = {}): React.ReactElemen
   // 슬롯 영역 가시화 — 공통(base) 레이아웃 편집 모드에서 자식 콘텐츠가 삽입될
   // 슬롯 위치(`slot: "content"` 등, DynamicRenderer 가 `data-editor-slot` 으로 마킹)를 점선
   // 박스 + 라벨로 표시한다. base 단독 렌더에서 슬롯 컨테이너는 children 이 비어 0 높이로
-  // 찌부러져 위치를 알 수 없으므로 최소 높이도 함께 부여한다. 편집기 전용 <style> 주입 —
+  // 찌부러져 위치를 알 수 없으므로 최소 높이도 함께 부여한다. 편집기 전용 규칙 —
   // 저장 content·운영 렌더 영향 0. g7le-* 네임스페이스 + 표준 CSS 만 사용(라이브러리 비종속).
+  // <style> 요소를 만들지 않는다(엄격한 스타일 정책 호환): 규칙은 정적 상수를 런타임 시트로 붙이고,
+  // 번역 문구는 CSS 변수(`--g7le-slot-label`)로 넘긴다. DOM 접근은 헬퍼가 전역 document 로 한다
+  // (이 컴포넌트 스코프의 `document` 는 레이아웃 문서 변수라 쓰면 안 된다).
   useEffect(() => {
-    // 주의: 이 컴포넌트 스코프의 `document` 는 레이아웃 문서 변수(섀도잉)다 — DOM 접근은
-    // 반드시 window.document 로 한다(로딩 중 layout document 가 null 이라 크래시).
     if (typeof window === 'undefined' || state.editMode !== 'base') return;
-    const dom = window.document;
-    const STYLE_ID = 'g7le-base-slot-style';
-    if (dom.getElementById(STYLE_ID)) return;
-    const el = dom.createElement('style');
-    el.id = STYLE_ID;
-    const label = t('layout_editor.preview.slot_area_label');
-    el.textContent =
-      '.g7le-preview-frame [data-editor-slot]{position:relative;min-height:96px;outline:2px dashed #94a3b8;outline-offset:-2px;}' +
-      `.g7le-preview-frame [data-editor-slot]::after{content:'${label.replace(/'/g, "\\'")} · ' attr(data-editor-slot);` +
-      'position:absolute;top:8px;left:50%;transform:translateX(-50%);font-size:12px;line-height:1;color:#64748b;' +
-      'background:rgba(241,245,249,0.92);border:1px solid #cbd5e1;border-radius:9999px;padding:4px 12px;pointer-events:none;white-space:nowrap;}';
-    dom.head.appendChild(el);
+    applyBaseSlotStyle(t('layout_editor.preview.slot_area_label'));
     return () => {
-      dom.getElementById(STYLE_ID)?.remove();
+      removeBaseSlotStyle();
     };
   }, [state.editMode, t]);
 
@@ -1293,7 +1284,7 @@ export function PreviewCanvas(props: PreviewCanvasProps = {}): React.ReactElemen
           // 가 편집기용 CSS 의 `.dark` 셀렉터를 이 마커로 치환해 서빙하므로, 프리뷰 프레임의 이
           // 마커만으로 다크가 켜지고 조상 html.dark 와 독립된다(라이트 토글 시 확실히 라이트).
           // document.documentElement 가 아니라 프리뷰 프레임에만 적용 → 편집기 chrome 비다크.
-          // 확장 CSS 는 템플릿 `.dark` 대신 코어 중립 표식 `data-g7-color-scheme` 만 본다(engine-v1.93.0).
+          // 확장 CSS 는 템플릿 `.dark` 대신 코어 중립 표식 `data-g7-color-scheme` 만 본다(engine-v1.94.0).
           // 프레임에 같은 표식을 달아, 관리자 화면 테마와 무관하게 프리뷰 안 확장 화면이 프리뷰 테마를 따른다.
           className={colorScheme === 'dark' ? `${PREVIEW_FRAME_CLASS} g7le-preview-dark` : PREVIEW_FRAME_CLASS}
           data-testid="g7le-preview-frame"

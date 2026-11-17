@@ -1,4 +1,4 @@
-feature: 입력 도중 데이터 소스 initLocal 응답이 와도 같은 화면의 다른 `_local` 칸에 친 글자가 지워지지 않는다 (engine-v1.93.0)
+feature: 입력 도중 데이터 소스 initLocal 응답이 와도 같은 화면의 다른 `_local` 칸에 친 글자가 지워지지 않는다 (engine-v1.94.0)
 
 description: |
   입력칸의 set-state target="local" 은 저장소 A 에 쓰고 B 에는 render:false 로 미러해, 데이터 컨텍스트의 `_local`(B 사본)은

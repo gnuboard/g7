@@ -253,6 +253,10 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "if": "{{notificationLogs?.data?.pagination?.total_is_exact !== false}}",
+                                                "blur_until_loaded": {
+                                                    "enabled": true,
+                                                    "data_sources": "notificationLogs"
+                                                },
                                                 "props": {
                                                     "className": "text-label"
                                                 },

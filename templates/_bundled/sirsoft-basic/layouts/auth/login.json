@@ -234,9 +234,10 @@
                         "partial": "partials/auth/_redirect_if_logged_in.json"
                     },
                     {
-                        "comment": "로그인 폼",
+                        "comment": "로그인 폼 — 사용자 정보를 받은 비회원에게만 그린다(받는 중·회원이면 위 조각이 홈으로 보낸다 — 회원에게 폼이 잠깐 보였다, #915). 방금 로그인한 경우(isLoginAction)는 이동을 로그인 처리가 맡으므로 폼을 그대로 둔다.",
                         "type": "basic",
                         "name": "Div",
+                        "if": "{{_global.currentUser !== undefined && (!_global.currentUser?.uuid || _local.isLoginAction)}}",
                         "props": {
                             "className": "w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-lg shadow"
                         },

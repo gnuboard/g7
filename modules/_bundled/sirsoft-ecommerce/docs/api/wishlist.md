@@ -247,7 +247,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 특정 상품(`product_id`)의 찜 상태를 토글합니다. `auth:sanctum` 인증이 필요하며, `WishlistController@toggle`이 `ProductWishlistService::toggle()`을 호출해 이미 찜한 상품이면 제거하고 아니면 추가한 뒤 `added` 불리언을 반환합니다. 상품 상세/목록의 찜 하트 버튼이 이 하나의 엔드포인트로 추가·제거를 모두 처리합니다. 응답의 `added` 값으로 현재 찜 여부를 즉시 갱신할 수 있습니다.
+**설명** 특정 상품(`product_id`)의 찜 상태를 토글합니다. `auth:sanctum` 인증이 필요하며, `WishlistController@toggle`이 `ProductWishlistService::toggle()`을 호출해 이미 찜한 상품이면 제거하고 아니면 추가한 뒤 `added` 불리언을 반환합니다. 상품 상세/목록의 찜 하트 버튼이 이 하나의 엔드포인트로 추가·제거를 모두 처리합니다. 응답의 `added` 값으로 현재 찜 여부를 즉시 갱신할 수 있습니다. 전시 중이고 삭제되지 않은 상품만 새로 찜할 수 있습니다(그 밖은 `422`). 숨기기 전에 찜해 둔 상품은 해제할 수 있습니다. 회원당 분당 요청 제한(`throttle:sirsoft-ecommerce.wishlist-write`, 찜 삭제와 공유)이 걸려 있어 넘으면 `429` 입니다.
 
 
 ### DELETE /api/modules/sirsoft-ecommerce/wishlist/{id}

@@ -1,0 +1,19 @@
+feature: 이미지 — 공개 자산 디스크에는 내보낼 확장자만 (#891)
+
+description: |
+  상품·카테고리·리뷰 이미지 서비스는 공개 자산 디스크를 카테고리 단위로 주입받는다. 저장 확장자가 「공개 디스크로
+  내보낼 확장자」 밖이면 모듈 기본 디스크에 저장하고 서버를 거치는 주소로 내려보낸다. 직접 주소는 경로 확장자가
+  목록 안일 때만 발급한다(기존 행 포함).
+
+axes:
+  case:
+    - product__not_exportable
+    - product__exportable
+    - product__legacy_row_not_exportable
+
+effects:
+  - non_exportable_image_stays_on_default_disk_with_api_url
+  - exportable_image_keeps_direct_url
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ImagePublicDiskExtensionGateTest.php

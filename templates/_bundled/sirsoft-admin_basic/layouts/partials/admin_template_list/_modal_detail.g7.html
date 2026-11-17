@@ -5,7 +5,9 @@
 <partial description="템플릿 상세 정보 모달" editor_label="$t:admin.modal_label.admin_template_list.template_detail_modal">
   <modal data-type="composite" data-ref="template_detail_modal" title="$t:admin.templates.modals.detail_title" size="medium">
     <!-- 상세 재조회 — 응답을 **같은 전역(`selectedTemplate`)에 덮어쓴다**. 목록이 담아 준 얕은 값 위에
-         전체 정보를 얹는 것이라, 창은 목록 값으로 먼저 그려지고 곧 채워진다. -->
+         전체 정보를 얹는 것이라, 창은 목록 값으로 먼저 그려지고 곧 채워진다.
+         그래서 목록 응답에 없는 항목(컴포넌트·코어 요구·언어·외부 자원)의 「없음」은 상세 응답에만 있는
+         `metadata` 가 온 뒤에만 보인다 — 받기 전에 「없음」이 먼저 보였다가 바뀌지 않게(#915). -->
     <data-source id="templateDetail" label_key="$t:editor.data_source.templateDetail" type="api" endpoint="/api/admin/templates/{{_global.selectedTemplate.identifier}}" :auth_required="true" initGlobal="selectedTemplate"/>
     <div class="flex flex-col max-h-[70vh]">
       <div class="flex-1 overflow-y-auto min-h-0 pr-2">
@@ -99,7 +101,7 @@
               <span class="text-primary font-semibold">$t:admin.templates.modals.basic_components</span>
             </div>
             <p class="text-label-subtle mb-2">$t:admin.templates.modals.basic_components_description</p>
-            <p data-if="{{!_global.selectedTemplate.components || !_global.selectedTemplate.components.basic || _global.selectedTemplate.components.basic.length === 0}}" class="text-label-subtle">$t:admin.templates.modals.no_components</p>
+            <p data-if="{{_global.selectedTemplate?.metadata !== undefined &amp;&amp; (!_global.selectedTemplate.components || !_global.selectedTemplate.components.basic || _global.selectedTemplate.components.basic.length === 0)}}" class="text-label-subtle">$t:admin.templates.modals.no_components</p>
             <div data-if="{{_global.selectedTemplate.components &amp;&amp; _global.selectedTemplate.components.basic &amp;&amp; _global.selectedTemplate.components.basic.length > 0}}" class="flex flex-wrap gap-2">
               <span data-each="comp in _global.selectedTemplate.components.basic" class="px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">{{comp}}</span>
             </div>
@@ -110,7 +112,7 @@
               <span class="text-primary font-semibold">$t:admin.templates.modals.composite_components</span>
             </div>
             <p class="text-label-subtle mb-2">$t:admin.templates.modals.composite_components_description</p>
-            <p data-if="{{!_global.selectedTemplate.components || !_global.selectedTemplate.components.composite || _global.selectedTemplate.components.composite.length === 0}}" class="text-label-subtle">$t:admin.templates.modals.no_components</p>
+            <p data-if="{{_global.selectedTemplate?.metadata !== undefined &amp;&amp; (!_global.selectedTemplate.components || !_global.selectedTemplate.components.composite || _global.selectedTemplate.components.composite.length === 0)}}" class="text-label-subtle">$t:admin.templates.modals.no_components</p>
             <div data-if="{{_global.selectedTemplate.components &amp;&amp; _global.selectedTemplate.components.composite &amp;&amp; _global.selectedTemplate.components.composite.length > 0}}" class="flex flex-wrap gap-2">
               <span data-each="comp in _global.selectedTemplate.components.composite" class="px-2 py-1 text-xs bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded">{{comp}}</span>
             </div>
@@ -123,9 +125,9 @@
             <div class="flex-center gap-2 mb-3">
               <span class="text-sm font-medium text-gray-700 dark:text-gray-300">$t:admin.templates.modals.required_core_version</span>
               <span data-if="{{_global.selectedTemplate.requires_core}}" class="text-info-soft px-2 py-0.5 bg-blue-100 dark:bg-blue-900 rounded font-mono">{{_global.selectedTemplate.requires_core}}</span>
-              <span data-if="{{!_global.selectedTemplate.requires_core}}" class="text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 rounded">$t:admin.templates.modals.no_required_core_version</span>
+              <span data-if="{{_global.selectedTemplate?.metadata !== undefined &amp;&amp; (!_global.selectedTemplate.requires_core)}}" class="text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 rounded">$t:admin.templates.modals.no_required_core_version</span>
             </div>
-            <p data-if="{{(!_global.selectedTemplate.dependencies?.modules || _global.selectedTemplate.dependencies.modules.length === 0) &amp;&amp; (!_global.selectedTemplate.dependencies?.plugins || _global.selectedTemplate.dependencies.plugins.length === 0)}}" class="text-label-subtle">$t:admin.templates.modals.no_dependencies_required</p>
+            <p data-if="{{_global.selectedTemplate?.metadata !== undefined &amp;&amp; ((!_global.selectedTemplate.dependencies?.modules || _global.selectedTemplate.dependencies.modules.length === 0) &amp;&amp; (!_global.selectedTemplate.dependencies?.plugins || _global.selectedTemplate.dependencies.plugins.length === 0))}}" class="text-label-subtle">$t:admin.templates.modals.no_dependencies_required</p>
             <div data-if="{{_global.selectedTemplate.dependencies.modules &amp;&amp; _global.selectedTemplate.dependencies.modules.length > 0}}" class="mb-3">
               <p class="text-label-subtle mb-2">$t:admin.templates.modals.required_modules</p>
               <div class="row-stack">
@@ -186,7 +188,7 @@
               <icon name="language" class="text-xl text-gray-500"/>
               <span class="text-primary font-semibold">$t:admin.templates.modals.supported_languages</span>
             </div>
-            <p data-if="{{!_global.selectedTemplate.language_packs || _global.selectedTemplate.language_packs.length === 0}}" class="text-label-subtle">$t:admin.templates.modals.no_supported_languages</p>
+            <p data-if="{{_global.selectedTemplate?.metadata !== undefined &amp;&amp; (!_global.selectedTemplate.language_packs || _global.selectedTemplate.language_packs.length === 0)}}" class="text-label-subtle">$t:admin.templates.modals.no_supported_languages</p>
             <div data-if="{{_global.selectedTemplate.language_packs &amp;&amp; _global.selectedTemplate.language_packs.length > 0}}" class="row-stack">
               <div data-each="lp in _global.selectedTemplate.language_packs" class="flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
                 <span class="text-heading">{{lp.locale_native_name}} ({{lp.locale}})</span>
@@ -206,7 +208,7 @@
               <span class="text-primary font-semibold">$t:admin.templates.modals.external_resources</span>
             </div>
             <p class="text-label-subtle mb-2">$t:admin.templates.modals.external_resources_description</p>
-            <p data-if="{{!_global.selectedTemplate.externals || _global.selectedTemplate.externals.length === 0}}" class="text-label-subtle">$t:admin.templates.modals.no_external_resources</p>
+            <p data-if="{{_global.selectedTemplate?.metadata !== undefined &amp;&amp; (!_global.selectedTemplate.externals || _global.selectedTemplate.externals.length === 0)}}" class="text-label-subtle">$t:admin.templates.modals.no_external_resources</p>
             <div data-if="{{_global.selectedTemplate.externals &amp;&amp; _global.selectedTemplate.externals.length > 0}}" class="row-stack">
               <div data-each="ext in _global.selectedTemplate.externals" class="flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
                 <span data-if="{{ext.id}}" class="text-heading">{{ext.id}}</span>

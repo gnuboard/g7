@@ -23,6 +23,7 @@ return [
         'use_exceeds_balance' => 'Cannot use more than your available mileage (:amount point).|Cannot use more than your available mileage (:amount points).',
         'deduct_exceeds_balance' => 'The mileage to deduct exceeds the available balance.',
         'below_min_use_amount' => 'The minimum usable amount is :amount point.|The minimum usable amount is :amount points.',
+        'below_min_product_total' => 'Mileage can be used when the product total is :amount or more.',
         'invalid_use_unit' => 'Mileage can only be used in units of :unit points.',
         'exceeds_max_use' => 'Exceeds the maximum usable limit. (up to :amount point)|Exceeds the maximum usable limit. (up to :amount points)',
         'base_currency_rule_missing' => 'Mileage cannot be used because the mileage usage unit for the base currency is not configured.',

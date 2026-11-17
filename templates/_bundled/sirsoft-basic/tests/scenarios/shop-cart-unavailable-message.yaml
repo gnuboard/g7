@@ -1,0 +1,18 @@
+feature: 담기·바로구매 실패 안내 문구
+
+description: |
+  판매 중지·구매 수량 한도 초과로 담기나 바로구매가 거절되면 서버가 준 구체 사유를 알린다.
+  일반 문구(「구매할 수 없는 상품이 있습니다」)만 보이면 무엇을 고쳐야 할지 알 수 없다.
+  시험 하나가 시나리오 하나다 — 각 case 는 아래 주석의 시험 이름과 짝이다.
+
+axes:
+  case: [c01, c02, c03]
+  # c01: 상세 구매 카드에 error 토스트가 존재한다
+  # c02: 모든 error 토스트가 error.errors?.message 를 우선 사용한다 (구체 안내)
+  # c03: error 토스트가 generic message 만 단독 참조하지 않는다 (회귀 가드)
+
+effects:
+  - purchase_failure_shows_specific_reason
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/shop-cart-unavailable-message.test.tsx

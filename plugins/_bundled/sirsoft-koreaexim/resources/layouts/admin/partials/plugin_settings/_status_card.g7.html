@@ -7,7 +7,7 @@
     <span class="koreaexim-badge koreaexim:bg-blue-100 koreaexim:text-blue-800 koreaexim:dark:bg-blue-900 koreaexim:dark:text-blue-200">{{koreaeximStatus?.data?.auth_key_set ? $t('sirsoft-koreaexim.key_set') : $t('sirsoft-koreaexim.key_missing')}}</span>
     <span>$t:sirsoft-koreaexim.last_success {{koreaeximStatus?.data?.last_success_run?.finished_at ?? '-'}}</span>
     <span>$t:sirsoft-koreaexim.last_attempt {{koreaeximStatus?.data?.last_run?.finished_at ?? '-'}} · {{koreaeximStatus?.data?.last_run?.status_label ?? '-'}}</span>
-    <span>$t:sirsoft-koreaexim.calls {{koreaeximStatus?.data?.today_request_count ?? 0}}/{{koreaeximStatus?.data?.quota_limit ?? 1000}}</span>
+    <span><blur-until-loaded sources="koreaeximStatus"/>$t:sirsoft-koreaexim.calls {{koreaeximStatus?.data?.today_request_count ?? 0}}/{{koreaeximStatus?.data?.quota_limit ?? 1000}}</span>
     <span>$t:sirsoft-koreaexim.next_run {{koreaeximStatus?.data?.next_run_at_kst ?? '-'}} / {{koreaeximStatus?.data?.next_run_at ?? '-'}}</span>
     <div class="koreaexim:ml-auto koreaexim:flex koreaexim:flex-wrap koreaexim:gap-2">
       <button type="button" data-ref="test_connection" disabled="{{_local.busy || _computed.isReadOnly}}" class="koreaexim-btn koreaexim-btn-secondary koreaexim:disabled:opacity-50 koreaexim:disabled:cursor-not-allowed">

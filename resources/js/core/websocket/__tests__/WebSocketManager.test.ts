@@ -134,7 +134,7 @@ describe('WebSocketManager', () => {
         callback
       );
 
-      // engine-v1.93.0: 구독마다 고유 키 `channel:event#n` — 같은 키를 두 주인이 나눠 들지 않는다
+      // engine-v1.94.0: 구독마다 고유 키 `channel:event#n` — 같은 키를 두 주인이 나눠 들지 않는다
       expect(key).toMatch(/^admin\.dashboard:dashboard\.stats\.updated#\d+$/);
     });
 
@@ -148,7 +148,7 @@ describe('WebSocketManager', () => {
       const key1 = webSocketManager.subscribe('test.channel', 'test.event', callback1);
       const key2 = webSocketManager.subscribe('test.channel', 'test.event', callback2);
 
-      // engine-v1.93.0: 종전에는 key1 === key2 이고 callback2 가 연결되지 않았다(F7)
+      // engine-v1.94.0: 종전에는 key1 === key2 이고 callback2 가 연결되지 않았다(F7)
       expect(key1).not.toBe(key2);
       expect(mockListen).toHaveBeenCalledTimes(1);
     });
@@ -198,7 +198,7 @@ describe('WebSocketManager', () => {
 
       webSocketManager.subscribe('test.channel', 'test.event', callback);
 
-      // engine-v1.93.0: listen 에는 구독자들을 부르는 디스패처가 걸린다
+      // engine-v1.94.0: listen 에는 구독자들을 부르는 디스패처가 걸린다
       expect(mockListen).toHaveBeenCalledWith('.test.event', expect.any(Function));
       const dispatcher = mockListen.mock.calls[0][1] as (data: unknown) => void;
       dispatcher({ ok: 1 });

@@ -242,6 +242,10 @@
                     "type": "basic",
                     "name": "Span",
                     "if": "{{schedules?.data?.pagination?.total_is_exact !== false}}",
+                    "blur_until_loaded": {
+                        "enabled": true,
+                        "data_sources": "schedules"
+                    },
                     "props": {
                         "className": "text-label"
                     },
@@ -252,6 +256,10 @@
                     "type": "basic",
                     "name": "Span",
                     "if": "{{schedules?.data?.pagination?.total_is_exact === false}}",
+                    "blur_until_loaded": {
+                        "enabled": true,
+                        "data_sources": "schedules"
+                    },
                     "props": {
                         "className": "text-label"
                     },

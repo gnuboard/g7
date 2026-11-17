@@ -236,7 +236,11 @@ async function mount(opts: MountOptions): Promise<Mounted> {
 
 const dialog = (): HTMLElement | null => document.querySelector('[role="dialog"]');
 /** 창 안 카드 단추(카드마다 하나) — 닫기 단추 제외 */
-const cardButtons = (): HTMLButtonElement[] => Array.from(dialog()?.querySelectorAll('button:not([aria-label="close"])') ?? []) as HTMLButtonElement[];
+// 쿠폰 카드의 단추만 센다 — 그리드 위 「모두 받기」 단추는 카드가 아니다
+const cardButtons = (): HTMLButtonElement[] =>
+    (Array.from(dialog()?.querySelectorAll('button:not([aria-label="close"])') ?? []) as HTMLButtonElement[]).filter(
+        (b) => !/coupon_download\.download_all|모두 받기/.test(b.textContent ?? ''),
+    );
 const labelOf = (b: HTMLElement): 'downloading' | 'done' | 'download' | 'other' => {
     const t = b.textContent ?? '';
     if (/coupon_download\.downloading|다운로드 중/.test(t)) return 'downloading';

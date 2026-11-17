@@ -44,6 +44,10 @@
                 {
                     "type": "basic",
                     "name": "Span",
+                    "blur_until_loaded": {
+                        "enabled": true,
+                        "data_sources": "cartItems"
+                    },
                     "props": {
                         "className": "font-medium text-gray-900 dark:text-white"
                     },
@@ -76,7 +80,7 @@
             "comment": "선택 없음 안내",
             "type": "basic",
             "name": "Div",
-            "if": "{{!_local.isCalculating && (!_local.selectedItems || _local.selectedItems.length === 0)}}",
+            "if": "{{cartItems !== undefined && _local.cartSelectionReady !== undefined && !_local.isCalculating && (!_local.selectedItems || _local.selectedItems.length === 0)}}",
             "props": {
                 "className": "py-8 text-center"
             },
@@ -416,6 +420,10 @@
                                         {
                                             "type": "basic",
                                             "name": "Span",
+                                            "blur_until_loaded": {
+                                                "enabled": true,
+                                                "data_sources": "cartItems"
+                                            },
                                             "props": {
                                                 "className": "font-medium {{(cartItems.data.calculation?.summary?.total_shipping ?? 0) === 0 ? 'text-green-700 dark:text-green-400' : 'text-gray-900 dark:text-white'}}"
                                             },
@@ -655,115 +663,7 @@
             "actions": [
                 {
                     "type": "click",
-                    "handler": "sequence",
-                    "actions": [
-                        {
-                            "handler": "setState",
-                            "params": {
-                                "target": "local",
-                                "isOrdering": true
-                            }
-                        },
-                        {
-                            "handler": "apiCall",
-                            "target": "/api/modules/sirsoft-ecommerce/checkout",
-                            "auth_mode": "optional",
-                            "params": {
-                                "method": "POST",
-                                "body": {
-                                    "item_ids": "{{_local.selectedItems}}"
-                                },
-                                "headers": {
-                                    "X-Cart-Key": "{{_global.cartKey}}"
-                                }
-                            },
-                            "onSuccess": {
-                                "comment": "로그인: 주문서로 직행 / 비로그인: 로그인 페이지(비회원 주문 선택) 경유. 임시주문은 cart_key(localStorage)로 유지되어 복귀 후에도 조회됨",
-                                "handler": "conditions",
-                                "conditions": [
-                                    {
-                                        "if": "{{_global.currentUser?.uuid}}",
-                                        "then": {
-                                            "handler": "navigate",
-                                            "params": {
-                                                "path": "{{_global.shopBase}}/checkout"
-                                            }
-                                        }
-                                    },
-                                    {
-                                        "then": {
-                                            "handler": "navigate",
-                                            "params": {
-                                                "path": "/login",
-                                                "query": {
-                                                    "redirect": "{{_global.shopBase}}/checkout"
-                                                }
-                                            }
-                                        }
-                                    }
-                                ]
-                            },
-                            "onError": [
-                                {
-                                    "comment": "추가 정보가 비어 있어 거부된 요청(403, error_code 가 required_fields_pending)이면 일반 오류 알림 대신 「추가 정보 필요」 안내 창을 연다",
-                                    "handler": "openModal",
-                                    "target": "required_info_pending_modal",
-                                    "if": "{{error.error_code === 'required_fields_pending'}}"
-                                },
-                                {
-                                    "comment": "구매불가 상품 에러 처리",
-                                    "handler": "sequence",
-                                    "if": "{{error.errors?.code === 'cart_unavailable'}}",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "local",
-                                                "isOrdering": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "local",
-                                                "unavailableModal": {
-                                                    "visible": true,
-                                                    "items": "{{error.errors?.unavailable_items ?? []}}",
-                                                    "hasStockIssue": "{{error.errors?.has_stock_issue ?? false}}"
-                                                }
-                                            }
-                                        },
-                                        {
-                                            "handler": "openModal",
-                                            "target": "cart_unavailable_modal"
-                                        }
-                                    ]
-                                },
-                                {
-                                    "comment": "기타 에러 처리",
-                                    "handler": "sequence",
-                                    "if": "{{error.errors?.code !== 'cart_unavailable'}}",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "local",
-                                                "isOrdering": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "if": "{{error.error_code !== 'required_fields_pending'}}",
-                                            "params": {
-                                                "type": "error",
-                                                "message": "{{error.errors?.message ?? error.message}}"
-                                            }
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    ]
+                    "actionRef": "cartCheckout"
                 }
             ],
             "props": {

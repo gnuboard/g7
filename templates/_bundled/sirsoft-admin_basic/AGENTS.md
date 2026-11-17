@@ -129,6 +129,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 <!-- @intent START -->
 | 금지 | 올바른 사용 | 이유 |
 |---|---|---|
+| 받은 뒤에만 뜻이 있는 안내·경고를 `!ds?.data?.x`·`ds?.data?.y !== true`·`(_local.form?.z ?? []).length === 0` 만으로 판정 | `{{ds !== undefined && (…)}}`(폼 값이면 폼을 채우는 소스로 가드), `?? 0` 숫자는 그 소스를 기다리는 `blur_until_loaded` 아래 | 화면이 먼저 그려진 뒤 받는 데이터는 받기 전 `undefined` 다 — 「잠금 아님」·「권한 없음」·「sync 드라이버」·「0건」이 먼저 보였다가 바뀐다(#915, `__tests__/layouts/loadingNegativeState.test.tsx` 가 전수로 잠근다) |
 | 링크 컴포넌트에 주소 구독 훅·내부 링크 판정·새 창 rel 규칙을 따로 구현 | `G7Core.navigation.useLocationSearch`·`resolveInternalHref`·`mergeRelForTarget` 를 부르고(engine-v1.83.0), 그 API 가 없는 옛 코어에만 짧은 대체를 둔다(내부 링크는 `/` 경로와 경로가 `//` 로 시작하지 않는 같은 출처 `http(s)://` 주소 — 7.1.2 템플릿과 같은 결과라 알림·메뉴의 전체 주소가 새 탭으로 열리지 않는다) | 템플릿마다 사본이 갈라져 엔진 수정을 템플릿마다 옮겨야 했고, 같은 출처 `//다른호스트` 주소를 내부 링크로 본 사본이 생겼다(7.1.3) |
 | `AdminSidebar` 메뉴 아이콘을 `Icon name="home"` 식으로 렌더 | `I` 컴포넌트 + FontAwesome 클래스 문자열(`icon` 필드가 이미 `"fas fa-home"` 형태) | 메뉴 API 가 클래스 문자열을 내려주므로 `Icon`(IconName enum) 으로 받으면 렌더되지 않는다 |
 | 필수 컴포넌트 목록 밖의 이 템플릿 전용 컴포넌트를 모듈 레이아웃에서 사용 | 필수 컴포넌트(config/template.php) 만 사용 | 다른 admin 템플릿으로 교체 시 그 화면만 깨진다 |
@@ -200,9 +201,9 @@ Monaco 를 올릴 때는 `templates/_bundled/sirsoft-admin_basic/tests/Playwrigh
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 569개 | `vitest.config.ts` |
+| Vitest | 576개 | `vitest.config.ts` |
 | Playwright | 41개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 214개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 220개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

@@ -2061,7 +2061,7 @@
                                                 "id": "blocked_domains_off_hint",
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "if": "{{!_local.form?.banner_enabled}}",
+                                                "if": "{{gdprSettings !== undefined && !_local.form?.banner_enabled}}",
                                                 "props": {
                                                     "className": "gdpr:bg-blue-50 gdpr:dark:bg-gray-900 gdpr:border gdpr:border-gray-200 gdpr:dark:border-gray-700 gdpr:border-l-4 gdpr-accent-info gdpr:rounded-lg gdpr:p-4 gdpr-flex-center gdpr:gap-2"
                                                 },

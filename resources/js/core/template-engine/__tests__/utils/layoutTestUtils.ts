@@ -713,7 +713,7 @@ export function createLayoutTest(
         close: () => closeTopModal(),
         getStack: () => [...(state._global.modalStack ?? [])],
       },
-      // 확장 접두 클래스 해석 — 실제 앱 G7Core.style 과 같은 함수(engine-v1.93.0). 템플릿 컴포넌트(Select 등)가
+      // 확장 접두 클래스 해석 — 실제 앱 G7Core.style 과 같은 함수(engine-v1.94.0). 템플릿 컴포넌트(Select 등)가
       // 확장 자체 CSS 클래스(`ecommerce:bg-white`)의 앞글자를 떼고 읽는다. 접두 목록은 G7Config.extensionClassPrefixes 다.
       style: {
         splitExtensionClassPrefix,

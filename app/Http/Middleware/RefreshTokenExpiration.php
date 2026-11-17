@@ -36,6 +36,12 @@ class RefreshTokenExpiration
             return $response;
         }
 
+        // 컨트롤러가 이 토큰을 지웠으면(로그아웃·갱신) 늘리지 않는다 — 지운 토큰을 다시 살리지 않는다(KVE-2026-3187).
+        // 연장 저장도 행이 있을 때만 바뀌는 UPDATE 다(UserRepository::updateAccessTokenExpiry).
+        if (! $token->exists) {
+            return $response;
+        }
+
         // 연장 규칙은 개발자 화면 요청(ScreenAuth)과 공유한다 (#792)
         app(TokenExpirySlider::class)->slide($token, $request);
 

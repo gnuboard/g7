@@ -5,7 +5,7 @@
  * 서버(`EditorSpecBundleService`)와 같이 모듈 → 플러그인 → 템플릿 순서로 항목을 내고,
  * `specs` 에 없는 식별자는 항목 status 404(비활성·미존재)로 낸다. 묶음이 아닌 URL 은 404 응답이다.
  *
- * @since engine-v1.94.0
+ * @since engine-v1.95.0
  */
 
 import { vi } from 'vitest';

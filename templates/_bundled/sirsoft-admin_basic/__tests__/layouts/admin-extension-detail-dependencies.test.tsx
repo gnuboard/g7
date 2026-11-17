@@ -114,7 +114,8 @@ function buildLayoutFromSection(section: any, globalKey: string, value: Record<s
   return {
     version: '1.0.0',
     layout_name: 'dependency_section_test',
-    initGlobal: { [globalKey]: value },
+    // 상세 응답 형태 — metadata 는 상세에만 있는 필드라 「없음」 안내가 상세를 받은 뒤에만 보이는 표지다(#915)
+    initGlobal: { [globalKey]: { metadata: [], ...value } },
     components: [section],
   };
 }

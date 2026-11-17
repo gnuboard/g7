@@ -18,7 +18,7 @@
  * 렌더 사이클 영향: 자체 useState 만 쓰고 전역 상태(_global·_local)를 읽거나 쓰지 않는다. 루트 재렌더에 따라 함께 다시 그려질 뿐
  * 루트 렌더를 일으키지 않는다.
  *
- * @since engine-v1.94.0
+ * @since engine-v1.95.0
  */
 
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';

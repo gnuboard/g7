@@ -29,6 +29,15 @@
             <p class="form-hint">$t:admin.settings.upload.allowed_extensions_hint</p>
             <span data-if="{{_local.errors?.['upload.allowed_extensions']}}" class="form-error">{{_local.errors?.['upload.allowed_extensions']?.[0] ?? ''}}</span>
           </div>
+          <div data-ref="field_layout_attachment_extensions">
+            <label class="form-label">
+              <span>$t:admin.settings.upload.layout_attachment_extensions</span>
+              <span class="text-red-600 dark:text-red-400 ml-1">*</span>
+            </label>
+            <input type="text" name="upload.layout_attachment_extensions" placeholder="jpg,jpeg,png,gif,webp" disabled="{{_computed.isReadOnly}}" class="input {{_local.errors?.['upload.layout_attachment_extensions'] ? 'input-error' : ''}}"/>
+            <p class="form-hint">$t:admin.settings.upload.layout_attachment_extensions_hint</p>
+            <span data-if="{{_local.errors?.['upload.layout_attachment_extensions']}}" class="form-error">{{_local.errors?.['upload.layout_attachment_extensions']?.[0] ?? ''}}</span>
+          </div>
         </div>
       </div>
     </div>

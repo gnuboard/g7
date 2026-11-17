@@ -212,6 +212,12 @@ class OrderProcessingService
         // PG/입금 절차 없이 즉시 결제완료. 판정 기준은 결제수단·충당 수단 종류와 무관한 "잔여 결제액 0".
         $finalAmount = (int) ($calculationResult->summary->finalAmount ?? 0);
         $isZeroPayable = $finalAmount <= 0;
+        // 결제할 것이 없고 적립금으로 충당한 것도 없는 주문(0원 상품·전액 할인)은 결제수단을 「무료」로 남긴다.
+        // 주문서는 기본 선택(카드 등)을 그대로 보내므로, 그대로 두면 PG 가 붙은 것처럼 「신용카드」로 보인다.
+        // 적립금으로 전액 충당한 주문은 종전대로 고른 수단을 유지한다(환불 수단 판정이 그 값을 쓴다).
+        if ($isZeroPayable && (int) ($calculationResult->summary->pointsUsed ?? 0) <= 0) {
+            $paymentMethod = PaymentMethodEnum::FREE->value;
+        }
         $initialStatus = $this->determineInitialStatus($paymentMethod, $finalAmount);
 
         // 실제 결제(잔여 결제액 > 0)가 필요한 주문은 결제 통화로 청구 가능한지 주문 생성 전에 검증한다.
@@ -1616,7 +1622,10 @@ class OrderProcessingService
         $this->userMileageService->validateUsage(
             $userId,
             $usePoints,
-            (int) ($calculationResult->summary->paymentAmount ?? 0)
+            (int) ($calculationResult->summary->paymentAmount ?? 0),
+            null,
+            // 상품 합계(할인 전 소계) — 「사용 가능 최소 상품 합계」 판정
+            (int) ($calculationResult->summary->subtotal ?? 0)
         );
     }
 

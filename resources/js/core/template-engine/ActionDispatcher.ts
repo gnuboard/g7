@@ -1,4 +1,4 @@
-// e2e:allow 엔진 변경(engine-v1.92.0 반복 셀·확장 행 _computed, 빈 confirm, 7.1.3 navigate·링크 API 이식)은 두 템플릿 실화면에서 브라우저로 쟀고, 로그인 흐름은 Playwright 로그인 spec 이 덮는다
+// e2e:allow 엔진 변경(engine-v1.93.0 반복 셀·확장 행 _computed, 빈 confirm, 7.1.3 navigate·링크 API 이식)은 두 템플릿 실화면에서 브라우저로 쟀고, 로그인 흐름은 Playwright 로그인 spec 이 덮는다
 /**
  * NOTE: @since versions (engine-v1.x.x) refer to internal template engine
  * development iterations, not G7 platform release versions.
@@ -115,7 +115,7 @@ function collectSetStateEmptyObjectNullTree(target: unknown, payload: Record<str
 const TOAST_DEDUPE_WINDOW_MS = 3000;
 
 /**
- * 오류 처리기 실행 깊이 상한 (engine-v1.94.0).
+ * 오류 처리기 실행 깊이 상한 (engine-v1.95.0).
  *
  * 실패한 동작의 오류 처리기(errorHandling·onError·레이아웃/템플릿/시스템 기본값)는 `executeAction` 으로 실행되고, 그 처리기의
  * 실패는 같은 catch 갈래에서 다시 오류 처리기를 고른다. 처리기에 자기 정의가 없으면 시스템 기본(`toast`)이 다시 골라지므로, 그
@@ -221,7 +221,7 @@ const PREVIEW_SUPPRESSED_LAYOUT_FEATURES: ReadonlySet<string> = new Set([
 ]);
 
 // ============================================================================
-// 엔진 핸들러 이름 — 소유권 경고의 기준 (engine-v1.93.0)
+// 엔진 핸들러 이름 — 소유권 경고의 기준 (engine-v1.94.0)
 // ============================================================================
 
 /**
@@ -231,7 +231,7 @@ const PREVIEW_SUPPRESSED_LAYOUT_FEATURES: ReadonlySet<string> = new Set([
  */
 export const ENGINE_HANDLER_SOURCE = 'engine';
 
-/** `registerDefaultHandlers` 의 모든 등록에 넘기는 옵션 — 등록자를 엔진으로 표시한다 (engine-v1.93.0) */
+/** `registerDefaultHandlers` 의 모든 등록에 넘기는 옵션 — 등록자를 엔진으로 표시한다 (engine-v1.94.0) */
 const ENGINE_DEFAULT_HANDLER_OPTIONS = { category: 'built-in', source: ENGINE_HANDLER_SOURCE } as const;
 
 /**
@@ -367,7 +367,7 @@ export type ActionType =
   | 'loginTwoFactorResend' // 2단계 인증 코드 재발송
   | 'loginPasswordChange' // 로그인 비밀번호 변경 단계 완료 (engine-v1.77.0)
   | 'loginPasswordChangePostpone' // 로그인 비밀번호 변경 단계 연기 (engine-v1.77.0)
-  | 'loginHandoff' // 로그인 인계 코드 교환 — 외부 인증 로그인 (engine-v1.91.0)
+  | 'loginHandoff' // 로그인 인계 코드 교환 — 외부 인증 로그인 (engine-v1.92.0)
   | 'logout' // 로그아웃
   | 'setState' // 상태 변경
   | 'setError' // 에러 상태 설정
@@ -753,9 +753,17 @@ export interface ActionContext {
   /**
    * 오류 처리기 실행 깊이 — 실패한 동작의 오류 처리기를 실행할 때 1 씩 늘려 싣는다. 하위 동작은 컨텍스트를 펼쳐 받으므로
    * 오류 처리기 안쪽 동작(sequence·onSuccess)도 같은 깊이다. {@link MAX_ERROR_HANDLER_DEPTH} 에 닿은 실패는 오류 처리기를
-   * 다시 고르지 않는다(engine-v1.94.0).
+   * 다시 고르지 않는다(engine-v1.95.0).
    */
   errorHandlerDepth?: number;
+  /**
+   * 컴포넌트 writer 없이(렌더 전 init_actions 등) 등록된 `startInterval` 의 틱 문맥 표지.
+   *
+   * `handleStartInterval` 만 단다. 있으면 `_local` setState 가 렌더 전 경로 대신 액션 밖 writer(`G7Core.state.setLocal`)를 탄다.
+   *
+   * @since engine-v1.91.1
+   */
+  detachedTick?: boolean;
   /**
    * 진입점 이벤트의 currentTarget 이 `<a href>` 일 때 그 href 속성 값.
    *
@@ -887,13 +895,13 @@ export class ActionDispatcher {
   private customHandlers: Map<string, ActionHandler> = new Map();
 
   /**
-   * 핸들러 이름 → 등록자(`registerHandler` 의 `source`, 없으면 `'unknown'`) (engine-v1.93.0)
+   * 핸들러 이름 → 등록자(`registerHandler` 의 `source`, 없으면 `'unknown'`) (engine-v1.94.0)
    *
    * 다른 주인의 이름을 덮는 등록을 경고하는 기준이다.
    */
   private handlerSources: Map<string, string> = new Map();
 
-  /** 이미 낸 소유권 경고의 (이름, 등록자) 키 — 같은 쌍은 1회만 경고한다 (engine-v1.93.0) */
+  /** 이미 낸 소유권 경고의 (이름, 등록자) 키 — 같은 쌍은 1회만 경고한다 (engine-v1.94.0) */
   private warnedHandlerPairs: Set<string> = new Set();
 
   /** 기본 컨텍스트 */
@@ -987,8 +995,9 @@ export class ActionDispatcher {
    * startInterval 핸들러로 등록된 타이머 맵.
    *
    * key = 레이아웃이 지정한 interval id, value = setInterval 반환 timerId.
-   * 레이아웃은 stopInterval 로 id 기반 중단을 수행할 수 있으며,
-   * 페이지 전환 시에는 `stopAllIntervals()` 로 일괄 정리된다.
+   * 레이아웃은 stopInterval 로 id 기반 중단을 수행할 수 있다. 엔진이 페이지 전환 때 `stopAllIntervals()` 를 부르지는 않는다 —
+   * 렌더 전 init_actions 에서 등록한 타이머는 경로 세대가 바뀌면 스스로 멈추고(engine-v1.91.1), 데이터 소스 onSuccess·컴포넌트 동작에서
+   * 등록한 타이머는 레이아웃이 stopInterval(예: onUnmount)로 멈춰야 한다.
    *
    * @since engine-v1.45.0
    */
@@ -2463,7 +2472,7 @@ export class ActionDispatcher {
     const devTools = getDevTools();
     if (!devTools?.isEnabled()) return;
 
-    // 기본 등록과 같은 한 목록(ENGINE_MAP_HANDLER_META)에서 읽는다 — 종전 손 목록은 5종이 빠져 있었다 (engine-v1.93.0)
+    // 기본 등록과 같은 한 목록(ENGINE_MAP_HANDLER_META)에서 읽는다 — 종전 손 목록은 5종이 빠져 있었다 (engine-v1.94.0)
     for (const handler of ENGINE_MAP_HANDLER_META) {
       devTools.trackHandlerRegistration(handler.name, 'built-in', handler.description, ENGINE_HANDLER_SOURCE);
     }
@@ -2605,7 +2614,7 @@ export class ActionDispatcher {
           linkHref,
         };
 
-        // 확인 메시지 표시 — 풀린 문구가 비었으면 묻지 않는다 (engine-v1.92.0, resolveConfirmMessage)
+        // 확인 메시지 표시 — 풀린 문구가 비었으면 묻지 않는다 (engine-v1.93.0, resolveConfirmMessage)
         if (action.confirm) {
           const message = this.resolveConfirmMessage(action.confirm, context.data);
 
@@ -2941,7 +2950,7 @@ export class ActionDispatcher {
         devToolsResolvedParams = this.sanitizeForDevTools(resolvedParams);
       }
 
-      // 타겟 바인딩 — `_global` 은 params 와 같이 저장소의 지금 값으로 푼다 (engine-v1.95.2, withLatestGlobalForTarget)
+      // 타겟 바인딩 — `_global` 은 params 와 같이 저장소의 지금 값으로 푼다 (engine-v1.96.2, withLatestGlobalForTarget)
       const resolvedTarget = action.target
         ? this.resolveValue(
             action.target,
@@ -3439,7 +3448,7 @@ export class ActionDispatcher {
         return { success: false, error: actionError };
       }
 
-      // 오류 처리기 안에서 다시 실패한 것이 상한에 닿았으면 오류 처리기를 다시 고르지 않는다 (engine-v1.94.0,
+      // 오류 처리기 안에서 다시 실패한 것이 상한에 닿았으면 오류 처리기를 다시 고르지 않는다 (engine-v1.95.0,
       // MAX_ERROR_HANDLER_DEPTH) — 처리기가 매번 같은 이유로 실패하면 기본 처리기를 끝없이 다시 실행했다
       const errorHandlerDepth = context.errorHandlerDepth ?? 0;
       if (errorHandlerDepth >= MAX_ERROR_HANDLER_DEPTH) {
@@ -3587,7 +3596,7 @@ export class ActionDispatcher {
       // 붙여 준 주소) 전체 주소와 같이 벗긴다. 벗기지 않으면 접두사째 라우트에 대조해 미등록으로 읽고, 폴백 openWindow
       // `_self` 로 문서 전체를 다시 불렀다(루트 설치는 같은 클릭이 SPA). 경계 없는 `/g7abc` 와 이미 벗겨진 경로는
       // `stripBasePrefix` 가 그대로 두고, 히스토리에 실을 때는 Router 가 `withBasePrefix` 로 한 번 붙인다.
-      // 사이트 밖 판정(`//`·스킴)은 벗기기 전에 먼저 돈다 — 벗긴 결과가 `//host` 면 아래 같은 판정이 이동을 막는다 (engine-v1.93.0)
+      // 사이트 밖 판정(`//`·스킴)은 벗기기 전에 먼저 돈다 — 벗긴 결과가 `//host` 면 아래 같은 판정이 이동을 막는다 (engine-v1.94.0)
       target = stripBasePrefix(target);
     }
     // 다른 화면으로 가기 전에 대기 중인 디바운스 입력을 반영한다 — 이벤트 액션 경로는 이미 그렇게 하지만
@@ -3666,7 +3675,7 @@ export class ActionDispatcher {
     // 미래 다른 overlay 시스템(modal/drawer/tooltip 등)은 각자 독립 키 이름 사용 권장.
     if (params.replace === true) {
       // replace 는 폴백 판정을 건너뛰므로 사이트 밖 판정을 여기서도 먼저 한다 — 종전에는 `//host` 를
-      // replaceState 에 넘겨 교차 출처 SecurityError 가 처리되지 않은 채 남았다 (engine-v1.93.0)
+      // replaceState 에 넘겨 교차 출처 SecurityError 가 처리되지 않은 채 남았다 (engine-v1.94.0)
       if (isOffSiteNavTarget(finalPath)) {
         logger.warn('handleNavigate: not a same-origin site path — not navigating', finalPath);
         return;
@@ -3720,7 +3729,7 @@ export class ActionDispatcher {
     }
 
     // 사이트 밖 목적지는 SPA 이동(`pushState`)으로 갈 수 없다 — 폴백을 끈(`fallback: false`) 이동이나 라우트가
-    // 아직 없는 부팅 단계도 여기서 멈춘다. 종전에는 교차 출처 SecurityError 가 처리되지 않은 채 남았다 (engine-v1.93.0)
+    // 아직 없는 부팅 단계도 여기서 멈춘다. 종전에는 교차 출처 SecurityError 가 처리되지 않은 채 남았다 (engine-v1.94.0)
     if (isOffSiteNavTarget(finalPath)) {
       logger.warn('handleNavigate: not a same-origin site path — not navigating', finalPath);
       return;
@@ -3800,7 +3809,7 @@ export class ActionDispatcher {
     const pathname = finalPath.split('?')[0];
     // 사이트 밖 목적지(`//host`·백슬래시·제어 문자 변형·스킴)는 대조하지 않고 미등록으로 본다 — 라우터 대조는
     // 연속 슬래시를 접어(engine-v1.84.0) `//evil/board/x` 를 `*/board/:slug` 에 맞춰 버리고, 그러면 폴백의
-    // 같은 출처 게이트를 건너뛰어 `pushState` 가 교차 출처 SecurityError 를 던졌다 (engine-v1.93.0)
+    // 같은 출처 게이트를 건너뛰어 `pushState` 가 교차 출처 SecurityError 를 던졌다 (engine-v1.94.0)
     if (!isOffSiteNavTarget(pathname) && router.match(pathname)) {
       // 현재 템플릿에 등록된 경로 — 정상 navigate
       return null;
@@ -4721,7 +4730,7 @@ export class ActionDispatcher {
       if (!response.ok) {
         const errorData = responseData || {};
         // 서버 메시지가 없으면(빈 본문·errors 만 있는 422·JSON 아닌 응답) 다국어 안내를 쓴다 — 오류 문맥을 만들 때
-        // 번역된다. 종전 영어 문구(`API call failed: …`)는 한국어 화면에도 그대로 토스트로 떴다 (engine-v1.93.0)
+        // 번역된다. 종전 영어 문구(`API call failed: …`)는 한국어 화면에도 그대로 토스트로 떴다 (engine-v1.94.0)
         const failureMessage = errorData.message || '$t:core.errors.api_request_failed';
 
         // API 응답 데이터를 포함한 에러 객체 생성
@@ -4797,7 +4806,7 @@ export class ActionDispatcher {
    * 서버가 2단계 인증·비밀번호 변경·휴면 해제를 비밀번호 로그인과 똑같이 처리하므로, 반환 모양도 `login` 액션과
    * 같다 — 로그인 화면은 같은 `onSuccess` 분기(2단계 인증 블록·비밀번호 변경 블록·휴면 해제 안내)를 그대로 쓴다.
    *
-   * @param target 인증 타입 (admin 또는 user — admin 은 관리자 인계 경로로 교환한다, engine-v1.92.0)
+   * @param target 인증 타입 (admin 또는 user — admin 은 관리자 인계 경로로 교환한다, engine-v1.93.0)
    * @param params 요청 파라미터 (body에 code 포함)
    * @param context 액션 컨텍스트
    * @since engine-v1.83.0
@@ -4817,7 +4826,7 @@ export class ActionDispatcher {
 
     const authType = this.resolveAuthType(target);
     // ApiClient 는 baseURL 이 '/api' 이므로 globalHeaders 패턴 매칭용 경로에 '/api' 를 붙인다 — `login` 과 같은
-    // `/api/auth/*` 패턴의 헤더(장바구니 키 등)가 그대로 실린다. 관리자 인계는 관리자 경로로 교환한다(engine-v1.92.0).
+    // `/api/auth/*` 패턴의 헤더(장바구니 키 등)가 그대로 실린다. 관리자 인계는 관리자 경로로 교환한다(engine-v1.93.0).
     const endpoint = authType === 'admin'
       ? '/api/auth/admin/login/handoff'
       : '/api/auth/login/handoff';
@@ -5554,6 +5563,60 @@ export class ActionDispatcher {
         return {
           __target: 'local',
           ...returnedState,
+          ...(mergeMode !== 'deep' ? { __mergeMode: mergeMode } : {}),
+        };
+      } else if (context.detachedTick && typeof G7Core?.state?.setLocal === 'function') {
+        // engine-v1.91.1: 렌더 전 문맥에서 등록한 타이머의 틱 — 화면이 이미 그려졌으므로 렌더 전 경로(아래 globalStateUpdater, 저장소 B 만·
+        // setLocal 덮어쓰기 기록 해제)가 아니라 액션 밖 writer 로 쓴다. setLocal 은 B·화면 덧칠·덮어쓰기 기록을 함께 남겨 루트가 저장소 A 의
+        // 같은 키를 정본 B 값으로 맞춘다(타이머·웹소켓 콜백용 경로 — G7CoreGlobals setLocal 3·3-1단계).
+        const { __mergeMode: _tickMergeMode, __setStateId: _tickSetStateId, ...tickPayload } = resolvedPayload as any;
+        // 틱은 다른 동작이 await 하는 사이(그 동작의 `__g7ActionContext` 가 걸려 있는 동안)에도 돈다. 그대로 부르면 setLocal 4단계가
+        // 그 동작의 컴포넌트 writer(모달 버튼이면 모달 저장소 A)에 틱 값을 쓴다 — 틱은 어느 동작에도 속하지 않으므로 그 호출 동안만
+        // 동작 문맥을 비우고 되돌린다(setLocal 은 동기라 사이에 다른 코드가 끼지 않는다).
+        // 같은 이유로 sequence 동기화 변수(`__g7SequenceLocalSync` — handleSequence 가 await 뒤 현재 상태로 갈아 끼움)도 되돌린다.
+        // 그대로 두면 대기 중인 클릭 sequence 가 틱이 남긴 B 기반 스냅숏으로 자기 상태를 바꿔 B 에 없는 값(scope 상태 등)을 잃는다.
+        //
+        // deep 병합은 값 모양별로 나눠 넘긴다 — 엔진 병합(SETSTATE_DEEP_MERGE_OPTIONS)이 「교체」 로 다루는 값(스칼라·배열·빈 객체 `{}`·
+        // `errors`)이 붙은 최상위 키는 shallow 로(setLocal 의 deep 병합은 빈 객체·errors 교체 규칙이 없어 앞 값이 쌓인다 — 사례 16·47),
+        // 비어 있지 않은 일반 객체·점 경로는 deep 으로(최상위 키를 통째로 바꾸면 B 에 없는 저장소 A 전용 하위 값이 사라진다 — 사례 22).
+        const writes: Array<{ payload: Record<string, any>; merge: 'replace' | 'shallow' | 'deep' }> = [];
+        if (mergeMode === 'deep') {
+          const replacing: Record<string, any> = {};
+          const merging: Record<string, any> = {};
+          for (const [key, value] of Object.entries(tickPayload)) {
+            const isPlainObject = value !== null && typeof value === 'object' && !Array.isArray(value)
+              && (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null);
+            if (!key.includes('.') && (!isPlainObject || Object.keys(value as object).length === 0 || key === 'errors')) {
+              replacing[key] = value;
+            } else {
+              merging[key] = value;
+            }
+          }
+          if (Object.keys(replacing).length > 0) writes.push({ payload: replacing, merge: 'shallow' });
+          if (Object.keys(merging).length > 0) writes.push({ payload: merging, merge: 'deep' });
+        } else {
+          writes.push({ payload: tickPayload, merge: mergeMode });
+        }
+        const pendingActionContext = (window as any).__g7ActionContext;
+        const pendingSequenceSync = (window as any).__g7SequenceLocalSync;
+        (window as any).__g7ActionContext = undefined;
+        try {
+          for (const write of writes) {
+            G7Core.state.setLocal(write.payload, { merge: write.merge, ...(__render === false ? { render: false } : {}) });
+          }
+        } finally {
+          (window as any).__g7ActionContext = pendingActionContext;
+          (window as any).__g7SequenceLocalSync = pendingSequenceSync;
+          // setLocal 은 저장소 B 를 동기로 썼다 — getLocal 대체 스냅숏은 필요 없다. 남기면 render:false 틱처럼 루트가 다시 그려지지 않는 동안
+          // 다른 B 쓰기 위에 옛 값이 얹힌다(state-setstate 사례 49). live B 를 쓰는 setState 갈래와 같이 지운다(engine-v1.81.1)
+          if ((window as any).__templateApp?.getGlobalState) {
+            (window as any).__g7LastSetLocalSnapshot = undefined;
+          }
+        }
+        if (setStateId && devTools) setTimeout(() => devTools.completeStateChange(setStateId), 0);
+        return {
+          __target: 'local',
+          ...(G7Core.state.getLocal?.() ?? tickPayload),
           ...(mergeMode !== 'deep' ? { __mergeMode: mergeMode } : {}),
         };
       } else if (this.globalStateUpdater) {
@@ -6518,7 +6581,7 @@ export class ActionDispatcher {
    * 모달 스택에서 최상위 모달을 제거합니다.
    * 스택이 비어있지 않으면 이전 모달이 다시 표시됩니다.
    *
-   * `params.all === true` 면 열린 창을 모두 닫습니다(engine-v1.94.0). 창 위에 뜬 안내 창에서 다른 화면으로 보낼 때
+   * `params.all === true` 면 열린 창을 모두 닫습니다(engine-v1.95.0). 창 위에 뜬 안내 창에서 다른 화면으로 보낼 때
    * 쓴다 — 맨 위 하나만 닫으면 밑의 창이 전역 창 스택에 남아, 그 화면으로 돌아왔을 때 다시 열린 채 보인다
    * (#490 D-A3: 장바구니 「옵션 변경」 창 위의 「추가 정보가 필요합니다」 창 → 「입력하러 가기」). 엄격 비교라
    * 문자열 "false"·숫자 1 같은 값으로는 전부 닫히지 않는다.
@@ -6952,9 +7015,34 @@ export class ActionDispatcher {
       this.intervals.delete(id);
     }
 
+    // 렌더 전 init_actions 에서(컴포넌트 writer 없이) 등록한 타이머는 틱마다 현재 상태로 문맥을 다시 만든다 (engine-v1.91.1).
+    // 등록 문맥을 그대로 쓰면 렌더 전 데이터 스냅숏을 읽고(렌더 뒤 바뀐 값을 못 봄), 렌더 전 경로로 저장소 B 에만 써서
+    // 저장소 A 가 가진 같은 키에 가려졌다 — 본인인증 전체화면의 남은 시간·재전송 대기가 멈춘 원인.
+    // 이런 타이머는 화면 소속이다 — init_actions 는 경로가 바뀔 때마다 다시 돌아 필요하면 같은 id 로 다시 등록하므로, 경로 세대가
+    // 바뀌면 스스로 멈춘다. 종전에는 화면을 떠나도 계속 돌며 다음 화면 `_local` 에 앞 화면 키를 썼다(`stopAllIntervals` 를 부르는 곳이 없다).
+    // 데이터 소스 onSuccess·컴포넌트 동작에서 등록한 타이머는 종전과 같다.
+    // 판정은 init 실행기가 문맥에 남긴 세대(`__initRouteGeneration`, TemplateApp.executeInitActions)로 한다 — 전역 「init 실행 중」
+    // 깊이값으로 보면 경합 중 다른 문맥(데이터 소스 onSuccess)에서 등록한 타이머까지 잡히고, 등록 시점 세대로 잡으면 init 이 await 하는
+    // 사이 경로가 바뀐 경우(뒤로 가기) 앞 화면 타이머가 새 세대에 붙는다.
+    const initGeneration: unknown = (context.data as Record<string, any> | undefined)?.__initRouteGeneration;
+    const detached = !context.setState && typeof initGeneration === 'number';
+    const registeredGeneration: unknown = detached ? initGeneration : undefined;
+
     const timerId = setInterval(() => {
+      if (detached && typeof registeredGeneration === 'number') {
+        const generationNow = (window as any).__templateApp?.getRouteChangeId?.();
+        if (typeof generationNow === 'number' && generationNow !== registeredGeneration) {
+          clearInterval(timerId);
+          if (this.intervals.get(id) === timerId) {
+            this.intervals.delete(id);
+          }
+
+          return;
+        }
+      }
+      const tickContext = detached ? this.createDetachedTickContext(context) : context;
       for (const act of actions) {
-        this.executeAction(act as ActionDefinition, context).catch((err) => {
+        this.executeAction(act as ActionDefinition, tickContext).catch((err) => {
           logger.error(`[startInterval:${id}] tick action failed`, err);
         });
       }
@@ -6963,6 +7051,35 @@ export class ActionDispatcher {
     this.intervals.set(id, timerId);
 
     return { success: true, id };
+  }
+
+  /**
+   * 컴포넌트 writer 없이 등록된 타이머의 틱 문맥을 현재 상태로 다시 만듭니다. (engine-v1.91.1)
+   *
+   * `_global`·`_local` 을 지금 값(전역 상태·`G7Core.state.getLocal()`)으로 바꾸고 `detachedTick` 표지를 단다 — 이 표지가 있으면
+   * `handleSetState` 의 `_local` 쓰기가 렌더 전 경로(저장소 B 만) 대신 액션 밖 writer(`G7Core.state.setLocal`)를 탄다.
+   * 나머지 문맥(route·query·`_computed`·데이터 소스 등 등록 시점 값)은 그대로 둔다 — 틱의 식은 `_global`·`_local` 만 현재 값으로
+   * 읽는다. 컴포넌트 writer 가 있는 타이머는 이 함수를 거치지 않는다.
+   *
+   * @param context 타이머를 등록한 문맥
+   * @return 틱 문맥
+   */
+  private createDetachedTickContext(context: ActionContext): ActionContext {
+    const G7Core = (window as any).G7Core;
+    const liveGlobal = (window as any).__templateApp?.getGlobalState?.();
+    const liveLocal = G7Core?.state?.getLocal?.();
+    const data: Record<string, any> = { ...(context.data ?? {}) };
+
+    if (liveGlobal && typeof liveGlobal === 'object') {
+      data._global = liveGlobal;
+    }
+    if (liveLocal && typeof liveLocal === 'object') {
+      data._local = liveLocal;
+    }
+
+    // state 도 현재 `_local` 로 — 틱 동작이 sequence 면 handleSequence 가 context.state 로 시작 상태를 잡는다(없으면 `{}` 로 시작해
+    // 첫 setState 전 단계가 빈 `_local` 을 읽는다). setState 는 아니므로 컴포넌트 writer 로 오인되지 않는다(갈래는 setState 로 가른다).
+    return { ...context, data, ...(liveLocal && typeof liveLocal === 'object' ? { state: liveLocal } : {}), detachedTick: true };
   }
 
   /**
@@ -8460,7 +8577,7 @@ export class ActionDispatcher {
   }
 
   /**
-   * 액션 `target` 을 풀 데이터 문맥 — `_global` 을 저장소(`G7Core.state.get()`)의 지금 값으로 바꿔 끼운다 (engine-v1.95.2).
+   * 액션 `target` 을 풀 데이터 문맥 — `_global` 을 저장소(`G7Core.state.get()`)의 지금 값으로 바꿔 끼운다 (engine-v1.96.2).
    *
    * 컴포넌트 이벤트 핸들러의 `context.data._global` 은 렌더 때 잡은 사본이다. params 는 {@link evaluateExpression} 이
    * 이미 저장소 값으로 바꿔 끼워 읽는데 target 만 사본을 읽어, 같은 sequence 안에서 `{{_global.x}}` 가 body 에서는 새 값·
@@ -8740,7 +8857,7 @@ export class ActionDispatcher {
       },
     };
 
-    // 확인 메시지 표시 — 풀린 문구가 비었으면 묻지 않는다 (engine-v1.92.0, resolveConfirmMessage)
+    // 확인 메시지 표시 — 풀린 문구가 비었으면 묻지 않는다 (engine-v1.93.0, resolveConfirmMessage)
     if (action.confirm) {
       const message = this.resolveConfirmMessage(action.confirm, mergedContext.data);
 
@@ -8783,7 +8900,7 @@ export class ActionDispatcher {
   }
 
   /**
-   * 동작의 `confirm` 문구를 풀어 번역한 결과를 반환합니다 (engine-v1.92.0).
+   * 동작의 `confirm` 문구를 풀어 번역한 결과를 반환합니다 (engine-v1.93.0).
    *
    * 풀린 문구가 비었으면(빈 문자열·공백 — 문자열 보간이 null·undefined 를 빈 문자열로 푼다) null 을 돌려 확인창을 띄우지
    * 않는다 — 조건에 따라 묻는 식(`{{hasToken ? '$t:…' : ''}}`)이 묻지 않을 때 빈 확인창이 떴다(종전에는 식 원문의 유무로 판정).
@@ -8806,7 +8923,7 @@ export class ActionDispatcher {
    * 커스텀 액션 핸들러를 등록합니다.
    *
    * 같은 이름이면 마지막 등록이 이긴다(종전 동작 그대로). 다만 다른 주인의 이름을 덮는 경우는
-   * `[G7]` 접두 `console.warn` 으로 드러낸다 — 디버그 모드와 무관하게, (이름, 등록자) 쌍마다 1회 (engine-v1.93.0, D3·D4):
+   * `[G7]` 접두 `console.warn` 으로 드러낸다 — 디버그 모드와 무관하게, (이름, 등록자) 쌍마다 1회 (engine-v1.94.0, D3·D4):
    *
    * - switch 가 직접 처리하는 이름(`ENGINE_SWITCH_HANDLERS`) — 등록해도 호출되지 않는다
    * - 엔진 기본 핸들러(`ENGINE_MAP_HANDLERS`)를 엔진이 아닌 쪽이 덮음
@@ -8849,7 +8966,7 @@ export class ActionDispatcher {
   /**
    * 커스텀 액션 핸들러를 제거합니다.
    *
-   * 엔진 기본 핸들러를 엔진이 아닌 쪽이 지우면 `[G7]` 경고를 낸다. 해제 동작 자체는 그대로다 (engine-v1.93.0).
+   * 엔진 기본 핸들러를 엔진이 아닌 쪽이 지우면 `[G7]` 경고를 낸다. 해제 동작 자체는 그대로다 (engine-v1.94.0).
    * switch 가 처리하는 이름은 Map 을 지워도 엔진 동작이 바뀌지 않으므로 경고 대상이 아니다.
    *
    * @param name 핸들러 이름
@@ -8888,7 +9005,7 @@ export class ActionDispatcher {
   }
 
   /**
-   * 핸들러 이름 소유권 경고를 판정해 냅니다 (engine-v1.93.0).
+   * 핸들러 이름 소유권 경고를 판정해 냅니다 (engine-v1.94.0).
    *
    * 여러 사유가 겹치면 한 건으로 묶는다 — (이름, 등록자) 쌍마다 1회.
    *

@@ -6,6 +6,7 @@ use App\Contracts\Extension\StorageInterface;
 use App\Extension\Helpers\StorageTransaction;
 use App\Extension\HookManager;
 use App\Helpers\InlineMediaPolicy;
+use App\Support\Files\StoredFileExtension;
 use App\Support\ImageResizer;
 use App\Support\UploadedFileName;
 use App\Thumbnails\DTO\ThumbnailSource;
@@ -21,7 +22,6 @@ use Modules\Sirsoft\Ecommerce\Models\ProductReviewImage;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductReviewImageRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\BuildsRowThumbnailSource;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesRowStorage;
-use Modules\Sirsoft\Ecommerce\Services\Concerns\ResolvesStoredExtension;
 use Modules\Sirsoft\Ecommerce\Services\Concerns\ServesImageWithRowValidators;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -34,7 +34,6 @@ class ProductReviewImageService
 {
     use BuildsRowThumbnailSource;
     use ResolvesRowStorage;
-    use ResolvesStoredExtension;
     use ServesImageWithRowValidators;
 
     /**
@@ -77,7 +76,8 @@ class ProductReviewImageService
         // 필터 훅 - 파일 데이터 변형 (압축, 리사이즈 등 확장 포인트)
         $file = HookManager::applyFilters('sirsoft-ecommerce.review-image.filter_upload_file', $file);
 
-        $storedFilename = Str::uuid().'.'.$this->storedExtension($file);
+        $extension = StoredFileExtension::resolve($file, 'jpg');
+        $storedFilename = Str::uuid().'.'.$extension;
         $path = "reviews/{$review->id}/{$storedFilename}";
 
         // 환경설정 > 업로드의 최대 가로/세로·품질 적용 (코어 설정이 모든 업로드 경로에 동일 적용)
@@ -91,9 +91,12 @@ class ProductReviewImageService
         // 처리를 갖는다 (12차 G3 라운드 D3 — 11차가 형제 절반에만 적용했다).
         clearstatcache(true, $file->getRealPath());
 
-        $this->storage->put('images', $path, file_get_contents($file->getRealPath()));
+        // 공개 자산 디스크를 주입받았어도 「공개 디스크로 내보낼 확장자」 밖이면 모듈 기본 디스크에 저장한다.
+        $storage = $this->storageForUpload($extension);
 
-        $disk = $this->storage->getDisk();
+        $storage->put('images', $path, file_get_contents($file->getRealPath()));
+
+        $disk = $storage->getDisk();
 
         // 이미지 크기 정보 추출
         $width = null;

@@ -95,8 +95,10 @@ class TemplateExternals
     }
 
     /**
-     * @param  array<int, array<string, mixed>>  $externals
-     * @return array<int, array<string, mixed>>
+     * 외부 리소스 선언에서 리소스 힌트(preconnect·dns-prefetch) 항목을 중복 없이 모읍니다.
+     *
+     * @param  array<int, array<string, mixed>>  $externals  정규화된 externals 목록
+     * @return array<int, array<string, mixed>> 리소스 힌트 항목 목록
      */
     public static function resourceHints(array $externals): array
     {
@@ -121,8 +123,10 @@ class TemplateExternals
     }
 
     /**
-     * @param  array<int, array<string, mixed>>  $externals
-     * @return array<int, array<string, mixed>>
+     * 외부 리소스 선언에서 `<head>` 에 `<link>` 로 싣는 항목(스타일시트·웹폰트·preload·modulepreload)을 고릅니다.
+     *
+     * @param  array<int, array<string, mixed>>  $externals  정규화된 externals 목록
+     * @return array<int, array<string, mixed>> `<link>` 로 출력할 항목 목록
      */
     public static function headLinks(array $externals): array
     {
@@ -149,8 +153,10 @@ class TemplateExternals
     }
 
     /**
-     * @param  array<string, mixed>  $external
-     * @return array<string, string|bool>
+     * 외부 리소스 항목 하나를 `<link>` 태그의 속성 배열로 바꿉니다.
+     *
+     * @param  array<string, mixed>  $external  externals 항목
+     * @return array<string, string|bool> 속성 이름 → 값(불리언 속성은 true)
      */
     public static function linkAttributes(array $external): array
     {
@@ -179,8 +185,10 @@ class TemplateExternals
     }
 
     /**
-     * @param  array<string, mixed>  $external
-     * @return array<string, string|bool>
+     * 외부 리소스 항목 하나를 `<script>` 태그의 속성 배열로 바꿉니다.
+     *
+     * @param  array<string, mixed>  $external  externals 항목
+     * @return array<string, string|bool> 속성 이름 → 값(불리언 속성은 true)
      */
     public static function scriptAttributes(array $external): array
     {
@@ -553,10 +561,45 @@ class TemplateExternals
      */
     public static function externalScriptHosts(array $externals): array
     {
+        return self::externalHosts(
+            $externals,
+            fn (array $external): bool => ($external['type'] ?? null) === 'script'
+        );
+    }
+
+    /**
+     * 정규화된 externals 중 외부(https) 스타일시트 항목의 호스트를 모읍니다.
+     *
+     * CSP 스타일 정책(`style-src`·`style-src-elem`) 자동 합산용(7.1.6). 스타일시트로 실리는 항목은
+     * `style`·`webfont`, 그리고 `preload` 중 `as` 가 `style` 인 것이다. 같은 출처 자산(`asset`·`/` 경로)은
+     * `'self'` 가 덮으므로 뺀다.
+     *
+     * @param  array<int, array<string, mixed>>  $externals  정규화된 externals
+     * @return array<int, string> 호스트 목록 (소문자, 중복 제거, 포트 포함)
+     */
+    public static function externalStyleHosts(array $externals): array
+    {
+        return self::externalHosts($externals, function (array $external): bool {
+            $type = $external['type'] ?? null;
+
+            return in_array($type, ['style', 'webfont'], true)
+                || ($type === 'preload' && ($external['as'] ?? null) === 'style');
+        });
+    }
+
+    /**
+     * 조건에 맞는 외부(https) 항목의 호스트를 모읍니다.
+     *
+     * @param  array<int, mixed>  $externals  정규화된 externals
+     * @param  \Closure(array<string, mixed>): bool  $matches  항목 선별 조건
+     * @return array<int, string> 호스트 목록 (소문자, 중복 제거, 포트 포함)
+     */
+    private static function externalHosts(array $externals, \Closure $matches): array
+    {
         $hosts = [];
 
         foreach ($externals as $external) {
-            if (($external['type'] ?? null) !== 'script' || ! self::isHttpsUrl($external['url'] ?? null)) {
+            if (! is_array($external) || ! $matches($external) || ! self::isHttpsUrl($external['url'] ?? null)) {
                 continue;
             }
 

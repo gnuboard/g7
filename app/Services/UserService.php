@@ -438,6 +438,7 @@ class UserService
                 // 상태가 Active 외로 변경되었으면 토큰 삭제 (즉시 로그아웃)
                 if ($newStatus && $newStatus !== $oldStatus && $newStatus !== UserStatus::Active->value) {
                     $user->tokens()->delete();
+                    $this->userRepository->deleteSessionsByUserIds([(int) $user->getKey()]);
                 }
 
                 // 역할 동기화
@@ -710,8 +711,9 @@ class UserService
         // 최근 검색어 삭제 (명시적 삭제 - CASCADE 의존 금지, 7.1.5)
         $this->searchHistoryService->purgeForUser($user);
 
-        // 토큰 삭제 (로그아웃 처리)
+        // 토큰·web 세션 삭제 (로그아웃 처리)
         $user->tokens()->delete();
+        $this->userRepository->deleteSessionsByUserIds([(int) $user->getKey()]);
 
         // 탈퇴 처리 (suffix 추가 및 상태 변경)
         return $user->withdraw();
@@ -885,8 +887,9 @@ class UserService
                 // 회원 항목 값 삭제 (운영자 추가 항목의 값, 확장 핸들러 항목 — 명시적 삭제, 7.2.0)
                 app(FieldValueService::class)->purgeOwner($user, FieldSet::CORE_USER);
 
-                // API 토큰 삭제
+                // API 토큰·web 세션 삭제
                 $user->tokens()->delete();
+                $this->userRepository->deleteSessionsByUserIds([(int) $user->getKey()]);
 
                 return $this->userRepository->delete($user);
             });
@@ -1401,6 +1404,7 @@ class UserService
             // Active 외 상태로 변경 시 해당 사용자들의 토큰 전체 삭제
             if ($statusEnum !== UserStatus::Active) {
                 $this->userRepository->deleteTokensByUserIds($userIds);
+                $this->userRepository->deleteSessionsByUserIds($userIds);
             }
 
             return $count;

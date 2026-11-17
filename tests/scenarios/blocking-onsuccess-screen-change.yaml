@@ -1,4 +1,4 @@
-feature: 다른 화면으로 옮길 때 blocking 데이터소스 onSuccess 결과가 살아남는다 (engine-v1.94.0)
+feature: 다른 화면으로 옮길 때 blocking 데이터소스 onSuccess 결과가 살아남는다 (engine-v1.95.0)
 
 description: |
   엔진은 blocking 데이터소스를 받는 자리에서 곧바로 onSuccess 를 돌렸다. 그 시점은 아직 앞 화면 상태 위라, 다른 화면으로 옮기는

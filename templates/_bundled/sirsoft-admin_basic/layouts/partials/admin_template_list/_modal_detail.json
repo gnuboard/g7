@@ -13,7 +13,7 @@
             "endpoint": "/api/admin/templates/{{_global.selectedTemplate.identifier}}",
             "auth_required": true,
             "initGlobal": "selectedTemplate",
-            "comment": "상세 재조회 — 응답을 **같은 전역(`selectedTemplate`)에 덮어쓴다**. 목록이 담아 준 얕은 값 위에\n         전체 정보를 얹는 것이라, 창은 목록 값으로 먼저 그려지고 곧 채워진다."
+            "comment": "상세 재조회 — 응답을 **같은 전역(`selectedTemplate`)에 덮어쓴다**. 목록이 담아 준 얕은 값 위에\n         전체 정보를 얹는 것이라, 창은 목록 값으로 먼저 그려지고 곧 채워진다.\n         그래서 목록 응답에 없는 항목(컴포넌트·코어 요구·언어·외부 자원)의 「없음」은 상세 응답에만 있는\n         `metadata` 가 온 뒤에만 보인다 — 받기 전에 「없음」이 먼저 보였다가 바뀌지 않게(#915)."
         }
     ],
     "id": "template_detail_modal",
@@ -451,7 +451,7 @@
                                         {
                                             "type": "basic",
                                             "name": "P",
-                                            "if": "{{!_global.selectedTemplate.components || !_global.selectedTemplate.components.basic || _global.selectedTemplate.components.basic.length === 0}}",
+                                            "if": "{{_global.selectedTemplate?.metadata !== undefined && (!_global.selectedTemplate.components || !_global.selectedTemplate.components.basic || _global.selectedTemplate.components.basic.length === 0)}}",
                                             "props": {
                                                 "className": "text-label-subtle"
                                             },
@@ -522,7 +522,7 @@
                                         {
                                             "type": "basic",
                                             "name": "P",
-                                            "if": "{{!_global.selectedTemplate.components || !_global.selectedTemplate.components.composite || _global.selectedTemplate.components.composite.length === 0}}",
+                                            "if": "{{_global.selectedTemplate?.metadata !== undefined && (!_global.selectedTemplate.components || !_global.selectedTemplate.components.composite || _global.selectedTemplate.components.composite.length === 0)}}",
                                             "props": {
                                                 "className": "text-label-subtle"
                                             },
@@ -609,7 +609,7 @@
                                                 {
                                                     "type": "basic",
                                                     "name": "Span",
-                                                    "if": "{{!_global.selectedTemplate.requires_core}}",
+                                                    "if": "{{_global.selectedTemplate?.metadata !== undefined && (!_global.selectedTemplate.requires_core)}}",
                                                     "props": {
                                                         "className": "text-secondary px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-800 rounded"
                                                     },
@@ -620,7 +620,7 @@
                                         {
                                             "type": "basic",
                                             "name": "P",
-                                            "if": "{{(!_global.selectedTemplate.dependencies?.modules || _global.selectedTemplate.dependencies.modules.length === 0) && (!_global.selectedTemplate.dependencies?.plugins || _global.selectedTemplate.dependencies.plugins.length === 0)}}",
+                                            "if": "{{_global.selectedTemplate?.metadata !== undefined && ((!_global.selectedTemplate.dependencies?.modules || _global.selectedTemplate.dependencies.modules.length === 0) && (!_global.selectedTemplate.dependencies?.plugins || _global.selectedTemplate.dependencies.plugins.length === 0))}}",
                                             "props": {
                                                 "className": "text-label-subtle"
                                             },
@@ -1024,7 +1024,7 @@
                                         {
                                             "type": "basic",
                                             "name": "P",
-                                            "if": "{{!_global.selectedTemplate.language_packs || _global.selectedTemplate.language_packs.length === 0}}",
+                                            "if": "{{_global.selectedTemplate?.metadata !== undefined && (!_global.selectedTemplate.language_packs || _global.selectedTemplate.language_packs.length === 0)}}",
                                             "props": {
                                                 "className": "text-label-subtle"
                                             },
@@ -1167,7 +1167,7 @@
                                         {
                                             "type": "basic",
                                             "name": "P",
-                                            "if": "{{!_global.selectedTemplate.externals || _global.selectedTemplate.externals.length === 0}}",
+                                            "if": "{{_global.selectedTemplate?.metadata !== undefined && (!_global.selectedTemplate.externals || _global.selectedTemplate.externals.length === 0)}}",
                                             "props": {
                                                 "className": "text-label-subtle"
                                             },

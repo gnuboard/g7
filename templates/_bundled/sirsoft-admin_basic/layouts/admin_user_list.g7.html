@@ -338,7 +338,7 @@
       </div>
       <div data-ref="list_toolbar" class="flex-between mb-4">
         <!-- 총 건수를 끝까지 센 경우 / 상한(result_cap)에 걸려 잘린 경우 — 세지 않은 값을 정확한 총계처럼 말하지 않는다 -->
-        <span data-ref="total_count" data-if="{{users?.data?.pagination?.total_is_exact !== false}}" class="text-label">$t:admin.users.total_count|count={{users?.data?.pagination?.total ?? 0}}</span>
+        <span data-ref="total_count" data-if="{{users?.data?.pagination?.total_is_exact !== false}}" class="text-label"><blur-until-loaded sources="users"/>$t:admin.users.total_count|count={{users?.data?.pagination?.total ?? 0}}</span>
         <span data-ref="total_count_at_least" data-if="{{users?.data?.pagination?.total_is_exact === false}}" class="text-label">$t:admin.users.total_at_least|count={{users?.data?.pagination?.total ?? 0}}</span>
         <div data-ref="list_options" class="flex-center gap-3">
           <select data-ref="sort_select" aria-label="$t:common.sort_order" value="{{query.sort_by ? (query.sort_by + '_' + (query.sort_order || 'desc')) : 'created_at_desc'}}" class="w-32 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-sm">

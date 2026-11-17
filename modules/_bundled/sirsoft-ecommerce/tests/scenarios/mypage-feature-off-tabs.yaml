@@ -36,6 +36,8 @@ effects:
   - ecommerce_exposes_mileage_enabled_to_frontend
   - ecommerce_keeps_inquiry_board_slug_exposure
   - ecommerce_mileage_default_disabled
+  - ecommerce_exposes_mileage_min_product_total_to_frontend
+  - ecommerce_exposes_business_footer_fields_to_frontend
   # 레이아웃 — 탭 숨김 규칙
   - mypage_tabs_declare_all_nine
   - mypage_tabs_hide_mileage_when_disabled

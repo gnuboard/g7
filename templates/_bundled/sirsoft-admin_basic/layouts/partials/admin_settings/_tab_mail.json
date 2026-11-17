@@ -143,7 +143,7 @@
                             "id": "smtp_settings_fields",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp'}}",
+                            "if": "{{settings !== undefined && (!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp')}}",
                             "props": {
                                 "className": "row-stack"
                             },

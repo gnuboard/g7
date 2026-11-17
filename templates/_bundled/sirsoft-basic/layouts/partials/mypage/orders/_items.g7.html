@@ -107,7 +107,8 @@
                 <span>{{item.option_status_label ?? ''}}</span>
               </span>
               <!-- 배송사 + 운송장 (모바일) -->
-              <span data-if="{{!!item.carrier_name}}" class="text-xs text-gray-500 dark:text-gray-400">{{item.carrier_name}} {{item.tracking_number ?? ''}}</span>
+              <a data-if="{{!!item.carrier_name &amp;&amp; !!item.tracking_url}}" href="{{item.tracking_url}}" target="_blank" rel="noopener noreferrer" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline break-all">{{item.carrier_name}} {{item.tracking_number ?? ''}}</a>
+              <span data-if="{{!!item.carrier_name &amp;&amp; !item.tracking_url}}" class="text-xs text-gray-500 dark:text-gray-400">{{item.carrier_name}} {{item.tracking_number ?? ''}}</span>
             </div>
             <!-- 모바일: 구매확정/리뷰 버튼 -->
             <div data-if="{{true}}" class="flex gap-2 mt-2">
@@ -225,7 +226,8 @@
               <responsive on="desktop" data-if="{{!!item.carrier_name}}"/>
               <icon name="truck" size="xs"/>
               <span>{{item.carrier_name}}</span>
-              <span data-if="{{!!item.tracking_number}}" class="text-blue-600 dark:text-blue-400">{{item.tracking_number}}</span>
+              <a data-if="{{!!item.tracking_number &amp;&amp; !!item.tracking_url}}" href="{{item.tracking_url}}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 hover:underline break-all">{{item.tracking_number}}</a>
+              <span data-if="{{!!item.tracking_number &amp;&amp; !item.tracking_url}}" class="text-blue-600 dark:text-blue-400">{{item.tracking_number}}</span>
             </div>
             <!-- 구매확정 버튼 (PC) -->
             <button data-if="{{false}}" type="button" class="px-3 py-1.5 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors cursor-pointer">

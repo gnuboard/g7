@@ -134,5 +134,22 @@
       "Asia/Tokyo",
       "UTC"
     ]
+  },
+  "modules": {
+    "sirsoft-ecommerce": {
+      "basic_info": {
+        "show_business_footer": true,
+        "company_name": "샘플 상사",
+        "ceo_name": "홍길동",
+        "zipcode": "06236",
+        "base_address": "서울시 강남구 테헤란로 1",
+        "detail_address": "10층",
+        "phone": "02-000-0000",
+        "email": "help@example.com",
+        "business_number": "000-00-00000",
+        "mail_order_number": "2026-서울강남-0000",
+        "hosting_provider": "샘플 호스팅"
+      }
+    }
   }
 }

@@ -226,6 +226,7 @@ return [
         'auth_reset_password_by_console' => '시스템(CLI)이 회원 비밀번호를 재설정 (ID: :user_id)',
         'auth_record_consents' => '이용약관 동의 기록',
         'auth_login_failed' => '로그인 실패 (:email)',
+        'auth_two_factor_failed' => '2단계 인증 실패 (:email)',
         'auth_account_locked' => '계정 잠금 (:attempts회 실패, :minutes분 차단)',
         'auth_account_locked_permanently' => '계정 영구 잠금 (:attempts회 실패, 관리자 해제 또는 비밀번호 재설정 필요)',
         'auth_account_unlocked' => '계정 잠금 해제 (:email)',

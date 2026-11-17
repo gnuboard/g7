@@ -39,7 +39,21 @@ effects:
   - missing_identifier_hash_passes
   - non_signup_purpose_is_not_blocked
   - logged_in_verify_blocks_identity_of_other_user
+  # 1.1.4 (KVE-2026-3192) — 정책 지정 수단 fail-closed, 가입 트랜잭션 안 선점, 기존 회원 선점표 백필
+  - policy_requiring_kcp_rejects_other_provider_token
+  - same_identity_second_signup_rejected
+  - rejected_signup_rolls_back_user_and_consents
+  - rejected_signup_keeps_matched_field_audit  # 가입 트랜잭션 안에서 거부돼도 겹친 식별값 감사 기록은 롤백 뒤에 남는다(1.1.4)
+  - other_identity_hash_soft_claimed
+  - claim_is_idempotent_for_same_user
+  - claim_skipped_when_duplicate_block_disabled
+  - withdraw_releases_claim_for_reregistration
+  - backfill_first_registered_user_holds_claim
+  - backfill_warns_shared_identity_hash
+  - backfill_is_idempotent
 
 test_files:
   - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Listeners/AssertNoDuplicateKcpIdentityTest.php
   - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Identity/KcpDuplicateVerifyGuardTest.php
+  - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Listeners/ClaimKcpIdentityOnRegisteringTest.php
+  - plugins/_bundled/sirsoft-verification_nhnkcp/tests/Feature/Upgrades/BackfillIdentityClaimsTest.php

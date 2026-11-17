@@ -75,7 +75,7 @@
       </div>
     </div>
     <!-- 비회원 작성자 정보 입력 (이름/비밀번호) - 신규 작성 시에만 표시 (비로그인 + 수정모드가 아닐 때). 필수 표시는 게시판 응답의 guest_fields.fixed 를 따르고, 그 값이 없는 응답(옛 서버)에서는 종전처럼 필수로 그린다 -->
-    <div data-if="{{form_meta?.data &amp;&amp; !_global.currentUser?.uuid &amp;&amp; !route.id}}" data-ref="board_guest_fixed_fields" class="grid grid-cols-1 gap-4">
+    <div data-if="{{form_meta?.data &amp;&amp; _global.currentUser !== undefined &amp;&amp; !_global.currentUser?.uuid &amp;&amp; !route.id}}" data-ref="board_guest_fixed_fields" class="grid grid-cols-1 gap-4">
       <responsive on="640-" class="grid grid-cols-2 gap-4"/>
       <div>
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">

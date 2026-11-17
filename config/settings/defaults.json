@@ -25,6 +25,8 @@
             "auth_token_lifetime": 30,
             "max_login_attempts": 5,
             "login_lockout_time": 5,
+            "password_reset_rate_limit_per_minute": 10,
+            "register_rate_limit_per_minute": 10,
             "two_factor_auth": false,
             "two_factor_scope": "all",
             "password_min_length": 8,
@@ -52,7 +54,10 @@
             "admin_allowed_ips": [],
             "ip_restriction_rules": [],
             "csp_mode": "off",
-            "csp_extra_script_hosts": []
+            "csp_extra_script_hosts": [],
+            "csp_style_mode": "off",
+            "csp_style_level": "basic",
+            "csp_extra_style_hosts": []
         },
         "mail": {
             "mailer": "smtp",
@@ -73,6 +78,7 @@
         "upload": {
             "max_file_size": 10,
             "allowed_extensions": ["jpg", "jpeg", "png", "gif", "webp", "pdf", "doc", "docx", "xls", "xlsx", "zip"],
+            "layout_attachment_extensions": ["jpg", "jpeg", "png", "gif", "webp"],
             "image_max_width": 2000,
             "image_max_height": 2000,
             "image_quality": 85,
@@ -171,6 +177,7 @@
             "private_attachment_disk": "default",
             "file_delegation": "none",
             "file_delegation_accel_prefix": "/_g7_sendfile/",
+            "public_asset_extensions": ["jpg", "jpeg", "png", "gif", "webp", "avif"],
             "s3_bucket": "",
             "s3_region": "ap-northeast-2",
             "s3_access_key": "",
@@ -365,6 +372,7 @@
             "fields": {
                 "max_file_size": { "type": "integer", "sensitive": false },
                 "allowed_extensions": { "type": "string", "sensitive": false, "transform": "join_comma", "expose": false },
+                "layout_attachment_extensions": { "type": "string", "sensitive": false, "transform": "join_comma", "expose": false },
                 "allowed_extensions_formatted": { "type": "string", "sensitive": false, "computed": true, "source": "allowed_extensions", "transform": "format_extensions" },
                 "image_max_width": { "type": "integer", "sensitive": false },
                 "image_max_height": { "type": "integer", "sensitive": false },
@@ -493,6 +501,7 @@
                 "private_attachment_disk": { "type": "string", "sensitive": false },
                 "file_delegation": { "type": "string", "sensitive": false },
                 "file_delegation_accel_prefix": { "type": "string", "sensitive": false },
+                "public_asset_extensions": { "type": "string", "sensitive": false, "transform": "join_comma" },
                 "s3_bucket": { "type": "string", "sensitive": false },
                 "s3_region": { "type": "string", "sensitive": false },
                 "s3_access_key": { "type": "string", "sensitive": true },

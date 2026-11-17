@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\Base\PublicBaseController;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Concerns\EnsuresPublicProduct;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\PublicProductListRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\PublicProductNewRequest;
 use Modules\Sirsoft\Ecommerce\Http\Requests\Public\PublicProductPopularRequest;
@@ -25,6 +26,8 @@ use Modules\Sirsoft\Ecommerce\Services\ProductService;
  */
 class ProductController extends PublicBaseController
 {
+    use EnsuresPublicProduct;
+
     /**
      * 공개 상품 조회 서비스를 주입받습니다.
      *
@@ -53,6 +56,7 @@ class ProductController extends PublicBaseController
 
             $perPage = (int) ($validated['per_page'] ?? 20);
             $paginator = $this->productService->getPublicList($filters, $perPage);
+            $this->productService->attachPublicListViewerContext($paginator);
 
             $collection = new ProductCollection($paginator);
 
@@ -91,6 +95,7 @@ class ProductController extends PublicBaseController
 
             $limit = (int) ($request->validated('limit') ?? 10);
             $products = $this->productService->getPopularProducts($limit);
+            $this->productService->attachPublicListViewerContext($products);
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
@@ -124,15 +129,14 @@ class ProductController extends PublicBaseController
      */
     public function related(PublicProductRelatedRequest $request, Product $product): JsonResponse
     {
-        if ($product->display_status->value !== 'visible') {
-            return ResponseHelper::notFound('messages.products.not_found', [], 'sirsoft-ecommerce');
-        }
+        $this->ensurePublicProduct($product);
 
         try {
             $this->logApiUsage('products.related', ['product_id' => $product->id]);
 
             $limit = (int) ($request->validated('limit') ?? 8);
             $products = $this->productService->getRelatedProducts($product, $limit);
+            $this->productService->attachPublicListViewerContext($products);
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
@@ -170,6 +174,7 @@ class ProductController extends PublicBaseController
 
             $limit = (int) ($request->validated('limit') ?? 10);
             $products = $this->productService->getNewProducts($limit);
+            $this->productService->attachPublicListViewerContext($products);
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
@@ -215,7 +220,8 @@ class ProductController extends PublicBaseController
                 );
             }
 
-            $products = $this->productService->getProductsByIds($ids);
+            $products = $this->productService->getRecentProducts($ids);
+            $this->productService->attachPublicListViewerContext($products);
 
             return ResponseHelper::moduleSuccess(
                 'sirsoft-ecommerce',
@@ -255,7 +261,7 @@ class ProductController extends PublicBaseController
             // 바인딩된 상품의 id 로 상세(옵션/관계 포함)를 재조회
             $product = $this->productService->getDetail($product->id);
 
-            if (! $product || $product->display_status->value !== 'visible') {
+            if (! self::isPublicProduct($product)) {
                 return ResponseHelper::notFound(
                     'messages.products.not_found',
                     [],

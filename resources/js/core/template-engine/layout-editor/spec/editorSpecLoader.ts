@@ -21,7 +21,7 @@
  *  - 활성 확장 식별자 SSoT 는 `window.G7Config.activeModules` / `activePlugins`
  * 옵션으로 직접 주입 가능(테스트).
  *  - 스펙은 묶음 엔드포인트(`/api/templates/{id}/editor-spec-bundle`) **한 요청**으로 받는다
- *    (engine-v1.94.0). 종전에는 확장마다 개별 엔드포인트를 따로 불러 편집기를 열 때 요청이
+ *    (engine-v1.95.0). 종전에는 확장마다 개별 엔드포인트를 따로 불러 편집기를 열 때 요청이
  *    확장 수만큼 나갔다(개발 서버 27건, 건당 2~5.7초). 서버가 항목마다 개별 엔드포인트와 같은
  *    판정을 하고, 한 항목이 실패하면 그 항목만 비운다(부분 실패).
  *
@@ -480,7 +480,7 @@ export async function loadEditorSpecBundle(
     { kind: 'template' as const, id: options.templateIdentifier },
   ];
 
-  // 확장 수와 무관하게 요청은 한 번이다(engine-v1.94.0 — 종전 확장마다 개별 요청).
+  // 확장 수와 무관하게 요청은 한 번이다(engine-v1.95.0 — 종전 확장마다 개별 요청).
   const { specs: fetched, failed: bundleFailed } = await fetchSpecBundle(
     ordered,
     options.templateIdentifier,

@@ -180,9 +180,11 @@ use App\Services\Schedule\ScheduleSecurityPolicy;
 use App\Services\TemplateLayoutAttachmentService;
 use App\Services\TemplateService;
 use App\Services\UniqueIdService;
+use App\Support\CacheSelfHeal;
 use App\Support\Content\MediaSourceRoutes;
 use App\Support\CoreUpdateContext;
 use App\Support\ExtensionSettingsMirror;
+use App\Support\InstallerResidual;
 use App\Support\PrivateAttachmentDisk;
 use App\Support\PrivilegedDatabaseAccounts;
 use App\Support\RuntimeRole;
@@ -195,6 +197,7 @@ use App\Thumbnails\ThumbnailStore;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Console\Application as ArtisanApplication;
 use Illuminate\Console\Events\CommandStarting;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Events\TransactionCommitted;
 use Illuminate\Database\Events\TransactionRolledBack;
 use Illuminate\Foundation\Console\AboutCommand;
@@ -240,6 +243,11 @@ class CoreServiceProvider extends ServiceProvider
         $this->registerExtensionManagers();
         $this->registerBenchmarkAxes();
         $this->registerThumbnailServices();
+
+        // 확장 오토로드 캐시 파일이 아예 없으면 지금(등록 단계) 다시 만든다. 뒤따르는 ModuleServiceProvider ·
+        // PluginServiceProvider 가 등록 단계에서 확장의 서비스 공급자를 올리는데, 그때 확장 클래스를 찾지 못하면
+        // 바인딩이 빠진 채 부팅돼 그 요청이 500 이 된다 — 부팅 단계의 복구로는 늦다 (7.1.6).
+        $this->healMissingExtensionAutoloadBeforeExtensionProviders();
         // ActivityLogManager 제거됨 — Monolog 채널(config/logging.php 'activity')로 대체
     }
 
@@ -320,6 +328,42 @@ class CoreServiceProvider extends ServiceProvider
         RateLimiter::for(ThumbnailResponder::RATE_LIMITER, fn (Request $request) => Limit::perMinute(
             max(1, (int) config('core.thumbnail.generate_per_minute', 120))
         )->by($request->ip() ?? 'unknown'));
+    }
+
+    /**
+     * 확장 오토로드 캐시 파일이 없을 때, 확장 서비스 공급자가 등록되기 전에 다시 만듭니다.
+     *
+     * 파일이 있으면 아무것도 하지 않습니다(낡은 캐시 판정은 부팅 단계가 한다). 시험 환경·설치 전에는 하지 않습니다.
+     * 다시 만들려면 설치된 확장 목록을 DB 에서 읽어야 하므로, 실패하면(접속 불가 등) 조용히 넘어가 부팅 단계의
+     * 폴백에 맡깁니다.
+     *
+     * @return void 반환값 없음
+     */
+    private function healMissingExtensionAutoloadBeforeExtensionProviders(): void
+    {
+        if ($this->app->environment('testing')) {
+            return;
+        }
+
+        if (file_exists(base_path('bootstrap/cache/autoload-extensions.php'))) {
+            return;
+        }
+
+        if (! InstallerResidual::isInstallCompleted(base_path())) {
+            return;
+        }
+
+        try {
+            // 설치된 확장 목록은 모델로 읽는다. 모델의 DB 연결 해석기는 프레임워크가 부팅 단계에서 걸어 주므로,
+            // 등록 단계인 지금은 아직 비어 있다 — 부팅 단계가 할 일을 같은 값으로 먼저 해 둔다(다시 걸려도 같은 값이다).
+            if (Model::getConnectionResolver() === null) {
+                Model::setConnectionResolver($this->app['db']);
+            }
+
+            $this->app->make(ExtensionManager::class)->healStaleAutoload();
+        } catch (\Throwable $e) {
+            Log::warning('확장 오토로드 캐시 자기 복구 실패(등록 단계) — 부팅 단계가 폴백으로 이어 갑니다', ['error' => $e->getMessage()]);
+        }
     }
 
     /**
@@ -689,6 +733,13 @@ class CoreServiceProvider extends ServiceProvider
                 $this->app->make(ExtensionManager::class)->healStaleAutoload();
             } catch (\Throwable $e) {
                 Log::warning('확장 오토로드 캐시 자기 복구 실패 — 다음 요청이 다시 시도합니다', ['error' => $e->getMessage()]);
+            }
+
+            // 설정·라우트 캐시 파일이 없으면(서버 이전·배포 도구가 비움) 운영 중인 사이트의 웹 요청이 응답 뒤에 다시 만든다 (7.1.6)
+            try {
+                CacheSelfHeal::scheduleMissingConfigAndRouteCaches($this->app);
+            } catch (\Throwable $e) {
+                Log::warning('설정·라우트 캐시 자기 복구 예약 실패 — 다음 요청이 다시 시도합니다', ['error' => $e->getMessage()]);
             }
         }
 

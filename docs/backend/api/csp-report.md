@@ -8,7 +8,7 @@
 
 ```text
 1. 콘텐츠 보안 정책(CSP) 위반 보고를 받는 공개 경로입니다 — 브라우저가 보냅니다
-2. 관리자 환경설정 > 보안의 CSP 모드가 '점검만'·'강제'일 때 정책의 report-uri 가 이 경로입니다
+2. 관리자 환경설정 > 보안의 스크립트 정책·스타일 정책 모드가 '점검만'·'강제'일 때 정책의 report-uri 가 이 경로입니다
 3. 응답은 언제나 204 입니다 — 형식이 잘못된 보고도 기록만 생략합니다(16KB 초과만 413)
 4. 기록은 storage/logs/csp-YYYY-MM-DD.log, 주소의 쿼리스트링은 남기지 않고 요청 IP 는 기록하지 않습니다
 5. 사용법·정책 내용은 docs/backend/content-security-policy.md 를 봅니다
@@ -75,3 +75,37 @@ HTTP/1.1 204 No Content
 
 주소 세 칸(`document_uri`·`blocked_uri`·`source_file`)은 `?`·`#` 뒤를 지운 값입니다. `sample` 은 앞 80자까지입니다.
 <!-- @generated:end:api.public.csp_report -->
+
+#### 스타일 정책 위반 보고 (코어 7.1.6)
+
+스타일 정책(`security.csp_style_mode`)을 켜면 스타일 위반도 같은 경로로 옵니다. 수신 형식·응답·기록 항목은 스크립트 위반과 같고, `effective-directive` 로 구분합니다.
+
+| `effective-directive` | `blocked-uri` | 뜻 |
+| --- | --- | --- |
+| `style-src-elem` | `inline` | `<style>` 요소 |
+| `style-src-elem` | CSS 파일 주소 | 허용 호스트 밖의 CSS 파일 |
+| `style-src-attr` | `inline` | 태그의 `style` 속성 (강도 `strict` 에서만) |
+
+```http
+POST /api/csp-report HTTP/1.1
+Host: api.example.com
+Content-Type: application/csp-report
+
+{
+  "csp-report": {
+    "document-uri": "https://example.com/board/free/12",
+    "blocked-uri": "inline",
+    "effective-directive": "style-src-attr",
+    "disposition": "report",
+    "line-number": 1,
+    "source-file": "https://example.com/board/free/12",
+    "script-sample": "color: red"
+  }
+}
+```
+
+```text
+[2026-11-10 10:12:03] production.INFO: csp-violation {"document_uri":"https://example.com/board/free/12","blocked_uri":"inline","effective_directive":"style-src-attr","disposition":"report","line_number":1,"source_file":"https://example.com/board/free/12","sample":"color: red"}
+```
+
+스크립트 정책과 스타일 정책의 모드가 다르면 응답에 강제용·점검용 헤더가 하나씩 나가고, 두 헤더 모두 이 경로로 보고합니다. `disposition` 이 `enforce` 면 실제로 막힌 것, `report` 면 점검만입니다.

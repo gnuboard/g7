@@ -147,7 +147,7 @@ beforeEach(() => {
 
 afterEach(() => {
   // 사례가 남긴 300ms 디바운스 예약(4-0·4-c 의 검색어 입력)을 지운다 — 남기면 아래에서 `__templateApp` 을 지운 뒤 터져 실패하고,
-  // 그 실패의 기본 오류 처리(toast)도 같은 이유로 실패했다(engine-v1.94.0 전에는 끝없이 되풀이해 작업 프로세스가 힙 한도로 죽었다)
+  // 그 실패의 기본 오류 처리(toast)도 같은 이유로 실패했다(engine-v1.95.0 전에는 끝없이 되풀이해 작업 프로세스가 힙 한도로 죽었다)
   dispatcher.clearDebounceTimers();
   window.removeEventListener('popstate', (router as any).handlePopState);
   cleanup();

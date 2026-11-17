@@ -647,6 +647,10 @@ class PasswordExpiryService
             try {
                 $revoked = $revoke ? (int) $user->tokens()->delete() : 0;
 
+                if ($revoke) {
+                    $this->userRepository->deleteSessionsByUserIds([(int) $user->getKey()]);
+                }
+
                 HookManager::doAction('core.auth.password_expired', $user, [
                     'expired_at' => $this->expiresAt($user, $startedAt)->setTimezone($user->getTimezone())->toDateString(),
                     'sessions_revoked' => $revoked,

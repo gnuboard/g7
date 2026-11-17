@@ -1488,6 +1488,10 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Span",
+                                                "blur_until_loaded": {
+                                                    "enabled": true,
+                                                    "data_sources": "analytics_diagnostics"
+                                                },
                                                 "props": {
                                                     "className": "text-label-subtle"
                                                 },

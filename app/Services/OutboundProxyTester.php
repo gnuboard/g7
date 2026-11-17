@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Support\OutboundProxy;
+use App\Support\OutboundUrlValidator;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -38,6 +39,11 @@ class OutboundProxyTester
             return $this->result(false, 'settings.outbound_proxy_test_invalid_url', null, 0);
         }
 
+        // 링크로컬·클라우드 메타데이터 주소로는 연결을 시도하지 않는다 (요청 검증과 같은 판정).
+        if (OutboundUrlValidator::isRefusedConnectionUrl($proxyUrl)) {
+            return $this->result(false, 'settings.connection_target_blocked', null, 0);
+        }
+
         $urls = (array) config('core.outbound_proxy.egress_lookup_urls', []);
 
         if ($urls === []) {
@@ -50,7 +56,8 @@ class OutboundProxyTester
 
         foreach ($urls as $url) {
             try {
-                $response = Http::withOptions(['proxy' => $proxyOptions])
+                $response = Http::withoutRedirecting()
+                    ->withOptions(['proxy' => $proxyOptions])
                     ->withHeaders(['User-Agent' => 'curl/8'])
                     ->timeout($timeout)
                     ->get($url);

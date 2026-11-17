@@ -68,6 +68,15 @@ effects:
   - update_temp_directory_inherits_ownership
   - runtime_ownership_targets_cover_temp_and_logs
   - bundled_upgrade_migrations_inherit_ownership
+  # 쓰기 보장 디렉토리 권한 강제가 웹서버 직접 서빙 경로(public/build/ext)의 other 읽기·진입을 지우지 않음 (7.1.6 재릴리즈)
+  - web_served_writable_directory_keeps_other_read_execute
+  - non_web_served_writable_directory_keeps_reference_perms
+  - writable_directory_keeps_existing_other_bits
+  # 엄격한 umask(0027·0077) 에서 웹서버 직접 서빙 파일·폴더가 웹서버 계정이 읽을 수 있게 놓임 (7.1.6 재릴리즈)
+  - core_update_new_directory_and_file_follow_parent_mode
+  - core_update_new_file_keeps_source_exec_bit_within_parent
+  - public_disk_htaccess_readable_by_web_server
+  - static_publish_files_readable_by_web_server
 
 test_files:
   - tests/Unit/Services/CoreUpdateServicePermissionPreservationTest.php
@@ -77,6 +86,8 @@ test_files:
   - tests/Unit/Extension/ExtensionSettingsDirectoryOwnershipTest.php
   - tests/Unit/Services/CoreUpdateRuntimeOwnershipTest.php
   - tests/Unit/Upgrade/BundledUpgradeMigrationOwnershipParityTest.php
+  - tests/Unit/Services/CoreUpdateServiceWebServedPermsTest.php
+  - tests/Unit/Helpers/WebServedFileModeUnderUmaskTest.php
 
 notes: |
   - chown/chmod 동작 검증은 POSIX 환경 전용 (Windows 자동 skip).

@@ -512,7 +512,7 @@
         </button>
       </div>
       <div data-ref="table_header" class="ecommerce-flex-between ecommerce:flex-wrap ecommerce:gap-4 ecommerce:mb-4">
-        <span class="ecommerce-text-primary ecommerce:font-bold">$t:sirsoft-ecommerce.admin.product_review.table.total_count|count={{reviews.data?.meta?.total ?? 0}}</span>
+        <span class="ecommerce-text-primary ecommerce:font-bold"><blur-until-loaded sources="reviews"/>$t:sirsoft-ecommerce.admin.product_review.table.total_count|count={{reviews.data?.meta?.total ?? 0}}</span>
         <div class="ecommerce-flex-center ecommerce:gap-3">
           <select name="sortBy" aria-label="$t:common.sort_order" class="ecommerce:w-40 ecommerce:text-sm" value="{{query.sort || 'created_at_desc'}}">
             <options>

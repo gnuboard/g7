@@ -155,6 +155,7 @@ CBT 인증 URL 로 폼 POST → KG 이니시스가 `sid` 를 콜백으로 전달
 | 관리자 응답 `errors` 에 예외 원문(`$e->getMessage()`)을 그대로 싣기 | 결제대행사 거절은 응답의 `resultMsg` 만 싣고, catch 한 예외는 번역된 일반 문구 + 서버 로그(디버그 모드만 원문). 확장 작업 실패 사유는 코어 `SafeExceptionMessage::for()` | `errors` 배열은 코어의 운영 모드 500 차단을 거치지 않는다 — 통신 예외의 결제대행사 API 주소·cURL 문구, DB 예외의 SQL·접속 정보가 그대로 화면에 나간다 |
 | 결제 환불·현금영수증 리스너 결과 `error_message`·CBT 대사 기록(`reason`·`refund_error`·`last_retry_error`)에 예외 원문을 그대로 싣기 | `DescribesRefundFailure::refundFailureReason()`·`pgFailureReason($e, 'cash_receipt.pg_failed')` — 거절(`KgInicisRejectedException`)만 resultMsg, 그 밖은 `refund.pg_failed`·`cash_receipt.pg_failed`. 대사 `reason` 은 `SafeExceptionMessage::for()`. 원문은 서버 로그(디버그 모드만 원문) | 환불 사유는 쇼핑몰 취소 안내로 회원·비회원·관리자 응답에, 현금영수증 사유는 이력으로 관리자 주문 상세·구매자 응답에, 대사 기록은 관리자 주문 상세 「사유」·「환불 오류」 칸에 그대로 보인다 — API 주소·cURL 문구, SQL·DB 접속 정보가 화면에 나간다 |
 | 이커머스 Model 정적 조회(`Order::query()`)·관계 빌더 쓰기(`$order->payment()->update()`)·`DB::table(이커머스 테이블)`·이커머스 Service/Repository 주입 | 공개 결제 계약 `PaymentGatewayBridge` 의 조회(`findOrderByNumber`·`findPaymentByOrderNumber` 등)와 쓰기(`completePayment`·`onVbankAccountIssued`·`mergePaymentMeta`·`mutatePaymentMetaWithLock`·`mutateOrderMetaWithLock` 등). 훅 인자 Model 은 속성 읽기만, 판정은 `describePayment()` DTO | 이커머스 내부 구현은 예고 없이 바뀐다. 계약은 결제사 범위(자기 결제 행만)·잠금·결제사 id 인수를 한 곳에서 지키고, 누적 meta 는 잠금 아래 계산해 경쟁 기록이 빠지지 않는다(#916) |
+| 독립 HTML(CBT 결제확인서 팝업 · 에스크로 구매확인 창)에 `<style>` 블록·`style="…"` 속성으로 모양 싣기 | 규칙은 `assets/bridge/receipt-popup.css`·`escrow-confirm.css`(빌드 대상 아님). 서버 페이지는 `BridgeScript::stylesheetTag()`, 팝업은 `G7Core.asset.plugin` 으로 만든 주소의 `<link>`(API 가 없는 코어에서는 링크 없이 그린다) | 스타일 보안 정책(`style-src 'self'`)에서 인라인 스타일이 막혀 창이 무스타일로 뜬다. 결제사 창 자체는 결제사 CSS 를 쓰므로 `plugin.json` 의 `trusted_style_hosts`(`stdpay.inicis.com`·`stgstdpay.inicis.com`)로 선언해 스타일 정책에 자동 허용되게 한다 — 결제사가 CSS 호스트를 바꾸면 이 선언을 `trusted_script_hosts` 와 함께 갱신한다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -162,10 +163,10 @@ CBT 인증 URL 로 폼 POST → KG 이니시스가 `sid` 를 콜백으로 전달
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 65개 | `plugins/_bundled/sirsoft-pay_kginicis/tests` |
-| Vitest | 33개 | `vitest.config.ts` |
+| PHPUnit | 68개 | `plugins/_bundled/sirsoft-pay_kginicis/tests` |
+| Vitest | 35개 | `vitest.config.ts` |
 | Playwright | 1개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 64개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 67개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

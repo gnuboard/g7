@@ -13,6 +13,9 @@
         <!-- 템플릿 외부 리소스 (template.json의 externals) -->
         @include('partials.template-externals-head')
 
+        {{-- 코어 런타임 스타일 — 템플릿 CSS 앞에 싣는다(뷰 안 스타일 블록 없이, #163) --}}
+        @include('partials.core-styles', ['sheet' => 'core'])
+
         <!-- Fallback UI 스타일 -->
         @if(empty($activeAdminTemplate))
         @include('partials.error-fallback-styles')
@@ -33,7 +36,6 @@
               href="{{ \App\Support\AssetUrl::templateAsset($activeAdminTemplate, $templateStylesheet, $extensionCacheVersion) }}"
               data-g7-template-css>
         @endforeach
-        @include('partials.shell-stall-notice', ['part' => 'style'])
         @endif
 
         {{-- 확장 CSS 의미 클래스 칸 — 템플릿 CSS 링크 **뒤**에 선언한다. 템플릿의 층 규칙(예: Tailwind 초기화)보다
@@ -133,7 +135,7 @@
         @endphp
         <script type="application/json" id="g7-error">@json($g7Error)</script>
         @endif
-        @include('partials.shell-stall-notice', ['part' => 'notice'])
+        @include('partials.shell-stall-notice')
 
         {{-- 코어 엔진 + 템플릿 컴포넌트 번들 로드 → 초기화 (재시도 + 폴백 UI) --}}
         @include('partials.bootstrap-scripts', [

@@ -314,7 +314,7 @@
 
 ### loginHandoff
 
-외부 인증(소셜 로그인 등)이 본인 확인을 마친 회원에 대해 코어가 발급한 **로그인 인계 코드**를 교환해 로그인합니다(engine-v1.91.0+).
+외부 인증(소셜 로그인 등)이 본인 확인을 마친 회원에 대해 코어가 발급한 **로그인 인계 코드**를 교환해 로그인합니다(engine-v1.92.0+).
 확장이 회원을 `/login?login_handoff={코드}` 로 보내면 로그인 화면이 진입 시 이 액션을 실행합니다. 서버가 계정 잠금·회원 상태·
 2단계 인증·비밀번호 변경·휴면 해제를 비밀번호 로그인과 똑같이 처리하므로, **반환값은 `login` 과 키 단위로 같습니다** —
 로그인 화면은 `login` 의 성공 분기를 그대로 씁니다(명명 액션으로 두고 두 액션이 함께 부르는 것을 권장).
@@ -411,7 +411,7 @@
 
 > `closeModal` 은 `target` 을 읽지 않는다 — 모달 id 를 적어도 **모달 스택의 맨 위 모달 하나**를 닫는다. 특정 모달을 골라 닫는 인자는 없다.
 
-**모두 닫기** (engine-v1.94.0+): `params.all` 이 `true` 면 열린 모달을 **모두** 닫는다(`_global.modalStack` 을 비우고 `activeModal` 은 `null`, 모달마다 쌓인 `$parent` 문맥도 비운다). 다른 모달 위에서 뜰 수 있는 안내 모달이 다른 화면으로 보낼 때 쓴다 — 맨 위만 닫으면 밑의 모달이 스택에 남아, 그 화면으로 돌아왔을 때 다시 열린 채 보인다. 값은 엄격 비교라 문자열 `"false"`·숫자 `1` 은 하나만 닫는다.
+**모두 닫기** (engine-v1.95.0+): `params.all` 이 `true` 면 열린 모달을 **모두** 닫는다(`_global.modalStack` 을 비우고 `activeModal` 은 `null`, 모달마다 쌓인 `$parent` 문맥도 비운다). 다른 모달 위에서 뜰 수 있는 안내 모달이 다른 화면으로 보낼 때 쓴다 — 맨 위만 닫으면 밑의 모달이 스택에 남아, 그 화면으로 돌아왔을 때 다시 열린 채 보인다. 값은 엄격 비교라 문자열 `"false"`·숫자 `1` 은 하나만 닫는다.
 
 ```html
 <on type="click">
@@ -558,7 +558,7 @@
 
 1. 액션이 트리거되면 `confirm` 속성이 있는지 확인
 2. `{{}}` 바인딩을 풀고, `$t:` 접두사가 있으면 다국어 번역 수행
-3. 풀린 문구가 비었으면(빈 문자열·공백) 확인 창 없이 핸들러 실행 (engine-v1.92.0)
+3. 풀린 문구가 비었으면(빈 문자열·공백) 확인 창 없이 핸들러 실행 (engine-v1.93.0)
 4. 문구가 있으면 `window.confirm(message)` 호출
 5. 사용자가 "확인" → 핸들러 실행
 6. 사용자가 "취소" → 핸들러 실행 중단 (아무 동작 없음)
@@ -1088,10 +1088,10 @@ sequence 안의 재계산도 화면 렌더와 같은 규칙을 따릅니다(engi
 
 | 자리 | 읽는 값 |
 | --- | --- |
-| params·`body`·apiCall `target`(engine-v1.95.2+)·중첩 sequence(`action-ref`·switch case 배열) 안의 같은 자리 | 지금의 전역 상태 — 앞 단계 `setState target="global"`, 앞 단계 apiCall 의 `onSuccess` 가 쓴 값이 보인다 |
+| params·`body`·apiCall `target`(engine-v1.96.2+)·중첩 sequence(`action-ref`·switch case 배열) 안의 같은 자리 | 지금의 전역 상태 — 앞 단계 `setState target="global"`, 앞 단계 apiCall 의 `onSuccess` 가 쓴 값이 보인다 |
 | 단계 `if`·`conditions` 분기 판정 | 이벤트가 일어난 때의 값 — 같은 동작 안에서 바뀐 전역 값은 보이지 않는다 |
 
-target 은 engine-v1.95.2 부터 params 와 같아졌습니다. 그 전에는 target 만 이벤트 때 값을 읽어, `<set-state target="global" req="{{({url: '/api/x'})}}"/>` 다음 `<api-call target="{{_global.req?.url}}"/>` 가 첫 클릭에 빈 주소(현재 페이지)로 나갔습니다.
+target 은 engine-v1.96.2 부터 params 와 같아졌습니다. 그 전에는 target 만 이벤트 때 값을 읽어, `<set-state target="global" req="{{({url: '/api/x'})}}"/>` 다음 `<api-call target="{{_global.req?.url}}"/>` 가 첫 클릭에 빈 주소(현재 페이지)로 나갔습니다.
 
 판정이 이벤트 때 값인 것은 의도된 동작이고 번들 레이아웃이 기댑니다 — 로그인 폼은 1단계 `login`(onSuccess 가 `_global.twoFactor` 를 심음)과 2단계 `if="{{_global.twoFactor?.required}}"` 가 한 제출에 하나만 돌고, 게시판 삭제는 `deleteModal` 을 비운 뒤에도 같은 onSuccess 안에서 `if="{{_global.deleteModal.type === 'comment'}}"` 로 댓글·글을 가릅니다. 같은 동작 안에서 바꾼 값으로 분기하려면 그 값을 `_local` 에 두거나(sequence 가 `_local` 을 단계마다 이어 준다) `{{response.*}}` 로 가릅니다.
 

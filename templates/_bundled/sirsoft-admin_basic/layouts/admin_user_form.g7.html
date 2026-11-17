@@ -514,7 +514,7 @@
                 <label class="form-label">$t:admin.users.form.fields.lock_status</label>
                 <div data-if="{{user?.data?.locked_permanently === true}}" class="text-error-soft text-sm py-2">$t:admin.users.detail.locked_permanently_value</div>
                 <div data-if="{{user?.data?.locked_permanently !== true &amp;&amp; user?.data?.is_locked === true}}" class="text-error-soft text-sm py-2">$t:admin.users.detail.locked_until_value|until={{user?.data?.locked_until ?? ''}}</div>
-                <div data-if="{{user?.data?.is_locked !== true}}" class="text-primary text-sm py-2">$t:admin.users.detail.not_locked_value</div>
+                <div data-if="{{user !== undefined &amp;&amp; (user?.data?.is_locked !== true)}}" class="text-primary text-sm py-2">$t:admin.users.detail.not_locked_value</div>
               </div>
               <div data-ref="field_ip_address">
                 <label class="form-label">$t:admin.users.form.fields.ip_address</label>
@@ -548,7 +548,7 @@
             </div>
             <div data-ref="field_password_expires_at" data-if="{{!!route?.id}}">
               <label class="form-label">$t:admin.users.detail.password.expires_at</label>
-              <div data-if="{{!user?.data?.password_status?.applies}}" class="text-primary text-sm">$t:admin.users.detail.password.not_applies</div>
+              <div data-if="{{user !== undefined &amp;&amp; (!user?.data?.password_status?.applies)}}" class="text-primary text-sm">$t:admin.users.detail.password.not_applies</div>
               <div data-if="{{user?.data?.password_status?.applies &amp;&amp; user?.data?.password_status?.expired}}" class="text-error-soft text-sm">$t:admin.users.detail.password.expired|date={{user?.data?.password_status?.expires_at ?? ''}}</div>
               <div data-if="{{user?.data?.password_status?.applies &amp;&amp; !user?.data?.password_status?.expired}}" class="text-primary text-sm">$t:admin.users.detail.password.expires_value|date={{user?.data?.password_status?.expires_at ?? '-'}}|days={{user?.data?.password_status?.days_left ?? 0}}</div>
             </div>
@@ -574,7 +574,7 @@
             <p data-ref="password_expiry_status_line" data-if="{{!!route?.id &amp;&amp; user?.data?.password_status}}" class="text-xs text-gray-700 dark:text-gray-300 mt-1">
               <span data-if="{{user?.data?.password_status?.applies &amp;&amp; user?.data?.password_status?.expired}}">$t:admin.users.form.password_policy.status_expired</span>
               <span data-if="{{user?.data?.password_status?.applies &amp;&amp; user?.data?.password_status?.expires_at &amp;&amp; !user?.data?.password_status?.expired}}">$t:admin.users.form.password_policy.status_applies|date={{user?.data?.password_status?.expires_at | date}}|days={{user?.data?.password_status?.days_left ?? 0}}</span>
-              <span data-if="{{!user?.data?.password_status?.applies}}">$t:admin.users.form.password_policy.status_not_applies</span>
+              <span data-if="{{user !== undefined &amp;&amp; (!user?.data?.password_status?.applies)}}">$t:admin.users.form.password_policy.status_not_applies</span>
             </p>
           </div>
         </div>

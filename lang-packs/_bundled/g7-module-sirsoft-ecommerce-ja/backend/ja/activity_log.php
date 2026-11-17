@@ -79,6 +79,7 @@ return [
             'expire' => '消滅',
             'retry' => '再度リクエスト',
         ],
+        'signup_earn' => '会員登録積立',
     ],
     'description' => [
         'product_index' => '商品 目録 閲覧',
@@ -275,6 +276,7 @@ return [
         'export_delete' => 'エクスポートファイル削除 (:file_name)',
         'export_expire' => 'エクスポートファイル保管期間満了 (:file_name)',
         'export_retry' => 'エクスポート再度リクエスト (:file_name)',
+        'mileage_signup_earn' => '会員登録積立マイレージ付与（:amount）',
     ],
     'manual_paid' => [
         'items' => [

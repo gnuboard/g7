@@ -216,6 +216,10 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "if": "{{activityLogs?.data?.pagination?.total_is_exact !== false}}",
+                                                "blur_until_loaded": {
+                                                    "enabled": true,
+                                                    "data_sources": "activityLogs"
+                                                },
                                                 "props": {
                                                     "className": "text-label"
                                                 },

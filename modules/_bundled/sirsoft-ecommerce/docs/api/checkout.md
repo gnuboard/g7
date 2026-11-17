@@ -656,3 +656,13 @@ _단건 응답: `data` 객체의 필드._
 **설명** 임시 주문의 만료 시각을 연장합니다. `optional.sanctum`으로 회원은 `Auth::id()`, 비회원은 cart_key로 대상을 식별하며, `CheckoutController@extend`가 `TempOrderService::extendExpiration()`을 호출해 갱신된 `expires_at`을 반환합니다. 주문서 작성이 길어져 임시 주문이 만료되기 전에 세션을 연장하는 용도이며, 연장할 임시 주문이 이미 만료·미존재면 404를 반환합니다.
 
 
+## 요청 제한 (1.3.5+)
+
+체크아웃 쓰기 라우트와 주문 생성, 결제창을 닫을 때 남기는 결제 취소 기록은 한 제한기(`sirsoft-ecommerce.checkout`, 기본 분당 30회)로 합산한다.
+
+| 대상 | 라우트 |
+| --- | --- |
+| 센다 | `POST /checkout` · `PUT /checkout` · `DELETE /checkout` · `POST /checkout/extend` · `POST /user/orders`(주문 생성) · `POST /orders/{orderNumber}/cancel-payment`(결제 취소 기록) |
+| 세지 않는다 | `GET /checkout` (조회) |
+
+한도는 모듈 설정 `rate_limits`(`config/ecommerce.php`)의 분당 횟수이고, 로그인 회원은 회원 단위로·비회원은 IP 단위로 센다 — 같은 IP 의 회원끼리, 회원과 비회원끼리 서로의 한도를 깎지 않는다. 넘으면 `429` 와 `Retry-After` 헤더(남은 초)를 돌려준다 (문구는 로그인 요청 제한과 같은 `auth.too_many_attempts`).

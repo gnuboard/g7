@@ -730,6 +730,10 @@
                         {
                             "type": "basic",
                             "name": "Span",
+                            "blur_until_loaded": {
+                                "enabled": true,
+                                "data_sources": "templates"
+                            },
                             "text": "$t:admin.templates.pagination_info|total={{templates?.data?.pagination?.total ?? 0}}|from={{((templates?.data?.pagination?.current_page ?? 1) - 1) * (templates?.data?.pagination?.per_page ?? 12) + 1}}|to={{Math.min((templates?.data?.pagination?.current_page ?? 1) * (templates?.data?.pagination?.per_page ?? 12), templates?.data?.pagination?.total ?? 0)}}"
                         }
                     ]

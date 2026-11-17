@@ -415,7 +415,7 @@ describe('PipeRegistry', () => {
     });
   });
 
-  describe('내장 파이프 - thumb/thumbSrcset (engine-v1.94.0)', () => {
+  describe('내장 파이프 - thumb/thumbSrcset (engine-v1.95.0)', () => {
     const presets = [
       { name: 'xs', width: 64, height: 64, fit: 'cover', numeric: false },
       { name: 'sm', width: 160, height: 160, fit: 'cover', numeric: false },

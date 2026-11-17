@@ -311,18 +311,20 @@ interface ProductRepositoryInterface
      * @param  int|null  $categoryId  카테고리 필터 (null이면 전체)
      * @param  int  $offset  오프셋
      * @param  int  $limit  조회할 최대 항목 수
-     * @return array{total: int, items: Collection}
+     * @param  array  $filters  추가 필터 (exclude_sold_out)
+     * @return BoundedPage 페이지 결과 (총 건수 정확도 포함)
      */
-    public function searchByKeyword(string $keyword, string $orderBy = 'created_at', string $direction = 'desc', ?int $categoryId = null, int $offset = 0, int $limit = 10): BoundedPage;
+    public function searchByKeyword(string $keyword, string $orderBy = 'created_at', string $direction = 'desc', ?int $categoryId = null, int $offset = 0, int $limit = 10, array $filters = []): BoundedPage;
 
     /**
      * 키워드와 일치하는 공개 상품 수를 조회합니다.
      *
      * @param  string  $keyword  검색 키워드
      * @param  int|null  $categoryId  카테고리 필터 (null이면 전체)
+     * @param  array  $filters  추가 필터 (exclude_sold_out)
      * @return BoundedCount 일치하는 상품 수 (정확도 포함)
      */
-    public function countByKeyword(string $keyword, ?int $categoryId = null): BoundedCount;
+    public function countByKeyword(string $keyword, ?int $categoryId = null, array $filters = []): BoundedCount;
 
     /**
      * 상품 재고를 옵션 재고 합계와 동기화

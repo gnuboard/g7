@@ -5,6 +5,7 @@ namespace App\Console\Commands\Traits;
 use App\Console\Helpers\ConsoleConfirm;
 use App\Console\Helpers\PromptCapability;
 use Illuminate\Console\Command;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\StreamableInputInterface;
 
 /**
@@ -14,32 +15,112 @@ use Symfony\Component\Console\Input\StreamableInputInterface;
  * expectsQuestion() / expectsConfirmation() 헬퍼와 호환된다. 입력 정규화 및
  * 재질문 루프는 ConsoleConfirm::parse() 와 공유한다.
  *
- * - `--yes` 옵션(확인만 생략)이 있는 명령에서 지정 시: 「예」로 답한 것으로 보고 true 반환 — `--force` 의 다른 효과는 없다
+ * - `--yes`(`-y`) 옵션(확인만 생략)이 있는 명령에서 지정 시: 「예」로 답한 것으로 보고 true 반환 — `--force` 의 다른 효과는 없다
+ *   (부가 선택 질문 `$optional` 은 $default). 이 트레이트를 쓰는 명령에는 `configure()` 가 `--yes` 를 자동으로 붙인다(7.1.6 과 같음).
+ *   명령이 시그니처에 `{--y|yes : …}` 로 직접 선언했으면(7.2.0 — 명령별 설명) 붙이지 않고 그 선언을 쓴다
  * - `--no-interaction` 시: $default 즉시 반환
  * - 응답을 받을 수 없는 실행(콘솔 없는 STDIN) 시: $default 즉시 반환
  *   (기본값 「아니오」가 곧 작업 취소인 확인은 `canAnswerConfirmation()` 으로 먼저 갈라
  *   `refuseUnanswerableConfirmation()` 으로 실패를 알린다 — 취소가 종료 코드 0 으로 끝나면 자동화가 성공으로 읽는다)
  * - 확인 외의 질문(choice·ask·secret)과 선택 질문은 `canShowPrompt()` 로 가르고 `optionalConfirm()` 을 쓴다 — `--yes` 가 답하지 않는다
+ *   (7.1.6 의 `unifiedChoice()`·`unifiedAsk()` 는 물을 수 없거나 `--yes` 면 기다리지 않고 기본값을 돌려준다)
  * - empty 입력 시: $default 반환
  * - yes/y → true, no/n → false (대소문자 무시)
  * - 그 외 입력: "yes, y, no, n 중 하나로 입력해 주세요." 출력 후 재질문
+ *
+ * 묻지 못해 기본값 「아니오」로 떨어진 실행은 조용히 성공하지 않는다 — 경고를 내고, 명령은
+ * `confirmAbortExitCode()` 로 실패 종료코드를 돌려준다. 터미널 없는 실행(스케줄러·배포 스크립트)에서
+ * 「실행했는데 아무 일도 일어나지 않은」 것을 알 수 있어야 하기 때문이다.
  */
 trait HasUnifiedConfirm
 {
+    /**
+     * 이번 실행에서 묻지 못해 기본값 「아니오」로 떨어진 확인이 있었는지.
+     */
+    protected bool $declinedNonInteractive = false;
+
+    /**
+     * 이 트레이트를 쓰는 명령에 `--yes`(`-y`) 옵션을 붙입니다 (7.1.6 의 자동 부착 — 확장 명령의 `-y` 호환).
+     *
+     * Laravel 은 시그니처 옵션을 이 `configure()` 뒤에 정의에 넣는다. 그래서 정의(`hasOption`)로는 시그니처 선언을 볼 수 없고,
+     * 선언한 명령에 또 붙이면 시그니처 옵션을 넣을 때 「이미 있는 옵션」 오류가 난다 — 시그니처 문자열로 선언 여부를 본다.
+     */
+    protected function configure(): void
+    {
+        parent::configure();
+
+        if ($this->getDefinition()->hasOption('yes') || $this->declaresYesOptionInSignature()) {
+            return;
+        }
+
+        $this->addOption('yes', 'y', InputOption::VALUE_NONE, '모든 확인 질문에 예로 답하고 진행 (터미널 없는 실행용)');
+    }
+
+    /**
+     * 명령 시그니처가 `--yes` 옵션을 직접 선언했는지 판정합니다 (`{--yes}`·`{--y|yes}`·`{--yes : 설명}` 등).
+     *
+     * @return bool 선언했으면 true
+     */
+    private function declaresYesOptionInSignature(): bool
+    {
+        $signature = property_exists($this, 'signature') ? (string) ($this->signature ?? '') : '';
+
+        return $signature !== '' && preg_match('/\{\s*--(?:[A-Za-z]\|)?yes(?:\s*[:=}])/', $signature) === 1;
+    }
+
+    /**
+     * `--yes` 옵션이 주어졌는지 (7.1.6 이름 — `confirmationPreApproved()` 와 같다).
+     *
+     * @return bool 주어졌으면 true
+     */
+    protected function yesOptionGiven(): bool
+    {
+        return $this->confirmationPreApproved();
+    }
+
+    /**
+     * 이 실행이 질문을 던질 수 없는지 (7.1.6 이름 — `! canShowPrompt()` 와 같다).
+     *
+     * @return bool 물을 수 없으면 true
+     */
+    protected function cannotPrompt(): bool
+    {
+        return ! $this->canShowPrompt();
+    }
+
+    /**
+     * 확인을 거절해 명령을 끝낼 때의 종료코드.
+     *
+     * 사람이 직접 「아니오」라고 답했으면 성공이고, 묻지 못해 기본값으로 떨어졌으면 실패다.
+     *
+     * @return int 종료코드
+     */
+    protected function confirmAbortExitCode(): int
+    {
+        return $this->declinedNonInteractive ? Command::FAILURE : Command::SUCCESS;
+    }
+
     /**
      * 표준 yes/no 프롬프트.
      *
      * @param  string  $question  질문 메시지
      * @param  bool  $default  기본값 (true=[yes], false=[no])
+     * @param  bool  $optional  진행 여부가 아니라 부가 선택을 묻는 질문인지. 참이면 `--yes`·비대화 실행에서
+     *                          기본값을 그대로 쓰고 경고·실패 처리도 하지 않는다 (예: 「검색 색인도 다시 만들까요?」)
      * @return bool yes 면 true, no 면 false (응답을 받을 수 없거나 빈 입력이면 $default)
      */
-    protected function unifiedConfirm(string $question, bool $default = false): bool
+    protected function unifiedConfirm(string $question, bool $default = false, bool $optional = false): bool
     {
         if ($this->confirmationPreApproved()) {
-            return true;
+            return $optional ? $default : true;
         }
 
         if (! $this->canAnswerConfirmation()) {
+            if (! $default && ! $optional) {
+                $this->warn(__('common.console.confirm_requires_yes', ['question' => $question]));
+                $this->declinedNonInteractive = true;
+            }
+
             return $default;
         }
 
@@ -152,6 +233,39 @@ trait HasUnifiedConfirm
         $this->line($hint);
 
         return Command::FAILURE;
+    }
+
+    /**
+     * 선택 질문. 물을 수 없거나 `--yes` 면 기다리지 않고 기본값을 돌려준다.
+     *
+     * @param  string  $question  질문 메시지
+     * @param  array<int|string, string>  $choices  선택지
+     * @param  string|int  $default  기본 선택 (선택지의 키 또는 값)
+     * @return string 고른 값
+     */
+    protected function unifiedChoice(string $question, array $choices, string|int $default): string
+    {
+        if ($this->yesOptionGiven() || $this->cannotPrompt()) {
+            return (string) $default;
+        }
+
+        return (string) $this->choice($question, $choices, $default);
+    }
+
+    /**
+     * 입력 질문. 물을 수 없거나 `--yes` 면 기다리지 않고 기본값을 돌려준다.
+     *
+     * @param  string  $question  질문 메시지
+     * @param  string  $default  기본값
+     * @return string 입력한 값 (빈 입력이면 기본값)
+     */
+    protected function unifiedAsk(string $question, string $default = ''): string
+    {
+        if ($this->yesOptionGiven() || $this->cannotPrompt()) {
+            return $default;
+        }
+
+        return (string) ($this->ask($question, $default) ?? $default);
     }
 
     /**

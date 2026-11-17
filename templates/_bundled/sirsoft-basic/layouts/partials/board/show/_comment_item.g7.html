@@ -289,7 +289,7 @@
           <span>$t:board.replying_to|name={{comment?.author?.name || $t('board.unknown_author')}}</span>
         </div>
         <!-- 비회원 작성자 정보 입력 (이름/비밀번호) — 새 댓글 입력칸과 같은 규칙이다: 두 칸을 나란히 두고, 필수 표시(칸 옆 별표, required, aria-required)는 글 응답의 guest_fields.fixed 를 따르며(값이 없으면 필수), 접근 가능한 이름(aria-label)을 준다 -->
-        <div data-if="{{!_global.currentUser?.uuid}}" data-ref="board_reply_guest_fixed_fields" class="grid grid-cols-2 gap-3 mb-3">
+        <div data-if="{{_global.currentUser !== undefined &amp;&amp; !_global.currentUser?.uuid}}" data-ref="board_reply_guest_fixed_fields" class="grid grid-cols-2 gap-3 mb-3">
           <div class="min-w-0">
             <div class="flex items-center gap-1">
               <input data-ref="board_reply_guest_author_name" type="text" name="guest_reply_author_name" aria-label="$t:board.guest_author_name" required="{{post?.data?.board?.guest_fields?.fixed?.author_name?.required ?? true}}" aria-required="{{post?.data?.board?.guest_fields?.fixed?.author_name?.required ?? true}}" aria-invalid="{{!!_local.replyErrors?.author_name}}" value="{{_local.guest_reply_author_name ?? ''}}" placeholder="$t:board.guest_author_name" class="min-w-0 flex-1 px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 {{_local.replyErrors?.author_name ? 'border-red-500 dark:border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-blue-300 dark:border-blue-600 focus:ring-blue-500 focus:border-blue-500'}}">
@@ -316,7 +316,7 @@
           </div>
         </div>
         <!-- 게시판이 켠 비회원 항목(이메일, 추가 항목) — 답글도 댓글의 항목 구성을 따른다. 값은 폼 자동 바인딩으로 _local.replyGuestForm.guest_fields.{키} 에 담긴다(새 댓글 입력칸과 값을 나눠 담는다). 항목이 없으면 묶음 자체를 그리지 않는다 -->
-        <div data-if="{{!_global.currentUser?.uuid &amp;&amp; (post?.data?.board?.guest_fields?.comment ?? []).length > 0}}" data-key="replyGuestForm" data-ref="board_reply_guest_fields" class="mb-3">
+        <div data-if="{{_global.currentUser !== undefined &amp;&amp; !_global.currentUser?.uuid &amp;&amp; (post?.data?.board?.guest_fields?.comment ?? []).length > 0}}" data-key="replyGuestForm" data-ref="board_reply_guest_fields" class="mb-3">
           <div data-each="boardGuestFieldGroup in {{[{ key: 'reply', formKey: 'replyGuestForm', fields: post?.data?.board?.guest_fields?.comment ?? [], errors: (_local.replyErrors &amp;&amp; typeof _local.replyErrors === 'object') ? _local.replyErrors : {}, disabled: _local.commentSubmitting === true, inputClassName: 'w-full px-4 py-2 border border-blue-300 dark:border-blue-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500' }]}}">
             <include src="partials/board/_guest_fields.g7.html"/>
           </div>

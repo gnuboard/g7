@@ -44,7 +44,7 @@
     <!-- 알림 정의 행 하단 확장 슬롯(범용). 각 소유 확장이 알림별 부가 UI(예: 채널 연동)를 이 자리에 주입한다. 특정 확장을 알지 못하며, 확장 미설치 시 빈 자리로 남는다. def·현재 채널을 extensionPointProps 로 전달한다. -->
     <div data-ref="board_notif_channel_content">
       <div data-ref="board_notif_list_info" class="board-flex-between board:py-3">
-        <span class="board-text-label-subtle">$t:sirsoft-board.admin.settings.notification_definitions.total_count|count={{boardNotificationDefinitions?.data?.pagination?.total ?? 0}}</span>
+        <span class="board-text-label-subtle"><blur-until-loaded sources="boardNotificationDefinitions"/>$t:sirsoft-board.admin.settings.notification_definitions.total_count|count={{boardNotificationDefinitions?.data?.pagination?.total ?? 0}}</span>
         <div class="board-flex-center board:gap-2">
           <span class="board-text-label-subtle">$t:sirsoft-board.admin.settings.notification_definitions.per_page_label</span>
           <select name="notifPerPage" aria-label="$t:sirsoft-board.admin.settings.notification_definitions.per_page_label" class="board:w-20 board:px-3 board:py-1.5 board:bg-white board:dark:bg-gray-800 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:text-sm" value="{{String(query.per_page || 20)}}">

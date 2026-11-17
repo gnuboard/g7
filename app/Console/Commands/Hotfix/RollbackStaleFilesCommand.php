@@ -123,7 +123,7 @@ class RollbackStaleFilesCommand extends Command
         if (! $this->unifiedConfirm(__('common.console.hotfix_rollback_stale_files.confirm_prune'), false)) {
             $this->info(__('common.console.hotfix_rollback_stale_files.cancelled'));
 
-            return Command::SUCCESS;
+            return $this->confirmAbortExitCode();
         }
 
         $protectedPaths = (array) config('app.update.protected_paths', []);

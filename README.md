@@ -644,7 +644,7 @@ The list of code contributors is available on [GitHub Contributors](https://gith
 |---------|------|
 | GitHub | [github.com/gnuboard/g7](https://github.com/gnuboard/g7) |
 | SIR community (Korean) | [sir.kr](https://sir.kr) |
-| Contact | minsup@sir.kr |
+| Contact | jjh621@sir.kr |
 
 ---
 
@@ -656,7 +656,7 @@ For details on recent changes, see the [CHANGELOG](CHANGELOG.md) (Korean).
 
 ## Security Vulnerabilities
 
-If you discover a security vulnerability, please report it as a private post on the [SIR inquiry board](https://sir.kr/boards/co_qa) (Korean board), or email minsup@sir.kr.
+If you discover a security vulnerability, please report it as a private post on the [SIR inquiry board](https://sir.kr/boards/co_qa) (Korean board), or email jjh621@sir.kr.
 
 ---
 

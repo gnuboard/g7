@@ -752,7 +752,7 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
-                                    "if": "{{(gdprMeConsents?.data?.consents ?? []).length === 0}}",
+                                    "if": "{{gdprMeConsents !== undefined && (gdprMeConsents?.data?.consents ?? []).length === 0}}",
                                     "props": {
                                         "className": "gdpr:py-10 gdpr:text-center gdpr:text-sm gdpr:text-gray-500 gdpr:dark:text-gray-400"
                                     },

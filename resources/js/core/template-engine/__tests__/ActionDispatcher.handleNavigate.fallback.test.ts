@@ -389,7 +389,7 @@ describe('ActionDispatcher - handleNavigate fallback (engine-v1.40.0)', () => {
     });
 
     // replace 갈래는 폴백 판정을 건너뛰고 `updateQueryParams`(history.replaceState)로 바로 간다 — 사이트 밖
-    // 판정이 그 뒤에만 있으면 `//host` 를 replaceState 에 넘겨 교차 출처 SecurityError 가 남았다 (engine-v1.93.0)
+    // 판정이 그 뒤에만 있으면 `//host` 를 replaceState 에 넘겨 교차 출처 SecurityError 가 남았다 (engine-v1.94.0)
     // @scenario route=replace_only, fallback=default
     // @effects offsite_target_refused_without_fallback
     it('replace: true 여도 사이트 밖 목적지는 주소를 바꾸지 않는다', async () => {

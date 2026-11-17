@@ -15,6 +15,8 @@
  * - `editorConstraints()` — 편집기가 쓸 서비스 목록·금지 태그·업로드 동영상/오디오 허용.
  */
 
+import { defer as deferInlineStyle, installHook as installInlineStyleHook } from '../contentStyle/InlineStyleDeferral';
+
 /** 외부 영상 서비스 (서버 `EmbedProviderRegistry::toFrontendArray`) */
 export interface EmbedProviderPolicy {
   id: string;
@@ -134,7 +136,9 @@ export class ContentPolicyRuntime {
    *
    * @param purify 템플릿의 DOMPurify(팩토리 겸 인스턴스)
    * @param html 본문 HTML
-   * @param baseConfig 템플릿 기본 설정(FORBID_TAGS·FORBID_ATTR 등)
+   * @param baseConfig 템플릿 기본 설정(FORBID_TAGS·FORBID_ATTR 등). `G7_DEFER_STYLE: true` 를 넘기면 출력의 `style` 속성을
+   *   `data-g7-style` 로 옮긴다 — 호출자가 DOM 에 붙인 뒤 `G7Core.inlineStyle.apply(root)` 로 입혀야 한다(엄격한 스타일 정책 대응,
+   *   engine-v1.91.0). 플래그가 없으면 출력은 종전과 같다(적용 단계가 없는 옛·외부 템플릿의 서식 소실 방지).
    * @returns 정화한 HTML 또는 null
    */
   sanitize(purify: any, html: string, baseConfig: Record<string, any>): string | null {
@@ -157,7 +161,7 @@ export class ContentPolicyRuntime {
     // 꺼진 후보의 표시 제거 태그(캡션 끔 → figcaption) — 금지 태그는 기본이 「태그만 벗기고 글자 남김」이라 ADD_FORBID_CONTENTS 로 내용째 지운다
     const dropTags: string[] = Array.isArray(policy.drop_tags) ? policy.drop_tags : [];
     const forbid = Array.from(new Set([...baseForbid.filter((tag) => !enabledTags.has(tag) || serverForbid.has(tag)), ...serverForbid, ...keepForbid, ...dropTags]));
-    const { G7_KEEP_FORBID_TAGS: _keep, ...purifyConfig } = baseConfig;
+    const { G7_KEEP_FORBID_TAGS: _keep, G7_DEFER_STYLE: deferStyleFlag, ...purifyConfig } = baseConfig;
     // oembed 는 외부 영상 삽입을 꺼도 통과시킨다 — renderEmbeds 가 원래 주소 링크로 바꾼다(봇 화면 finalize('bot') 과 같은 결과). 호출자 금지는 그대로
     const passEmbed = !keepForbid.includes(EMBED_TAG) && !serverForbid.has(EMBED_TAG);
     const extraAttrs = Array.from(new Set([...Object.values(policy.attributes ?? {}).flat(), ...(passEmbed ? ['url'] : [])]));
@@ -191,7 +195,22 @@ export class ContentPolicyRuntime {
       }
     });
 
-    const fragment = instance.sanitize(html, {
+    // 본문 서식 지연(#163) — 정화(=문자열 파싱) 전에 style 속성 이름을 바꿔 두고, 훅이 data-g7-style 로 올린다.
+    // 후보 태그(video 등)는 정해진 속성만 받으므로 그 목록에 style 이 없으면 서식을 버린다(종전 결과와 같다).
+    let source = html;
+    if (deferStyleFlag === true) {
+      const deferred = deferInlineStyle(html);
+      source = deferred.html;
+      installInlineStyleHook(instance, purifyConfig, deferred.token, {
+        allowStyle: (node: Element) => {
+          const allowedAttrs = policy.attributes?.[String(node?.nodeName ?? '').toLowerCase()];
+
+          return !allowedAttrs || allowedAttrs.includes('style');
+        },
+      });
+    }
+
+    const fragment = instance.sanitize(source, {
       ...purifyConfig,
       FORBID_TAGS: forbid,
       ADD_TAGS: Array.from(new Set([...(baseConfig.ADD_TAGS ?? []), ...(policy.extra_tags ?? []), ...(passEmbed ? [EMBED_TAG] : [])])).filter((tag) => !keepForbid.includes(tag) && !dropTags.includes(tag)),
@@ -260,7 +279,11 @@ export class ContentPolicyRuntime {
         const box = doc.createElement('div');
         box.setAttribute('class', 'g7-embed');
         box.setAttribute('data-provider', resolved.provider.id);
-        box.setAttribute('style', `position:relative;width:100%;aspect-ratio:${ASPECT_RATIO[resolved.aspect] ?? '16 / 9'};${resolved.aspect === '9:16' ? 'max-width:360px;margin:0 auto;' : ''}`);
+        // 모양은 코어 정적 CSS(`.g7-embed`, `.g7-embed[data-aspect=…]`)가 준다 — style 속성은 엄격한 스타일 정책에서 막힌다(#163).
+        // 비율은 유한(4종)하므로 data 속성으로 고른다. 목록 밖 비율은 기본(16:9)이다.
+        if (ASPECT_RATIO[resolved.aspect]) {
+          box.setAttribute('data-aspect', resolved.aspect);
+        }
         const frame = doc.createElement('iframe');
         frame.setAttribute('src', resolved.playerUrl);
         frame.setAttribute('sandbox', EMBED_SANDBOX);
@@ -270,7 +293,6 @@ export class ContentPolicyRuntime {
         frame.setAttribute('loading', 'lazy');
         frame.setAttribute('title', resolved.provider.name);
         frame.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
-        frame.setAttribute('style', 'position:absolute;inset:0;width:100%;height:100%;border:0;');
         box.appendChild(frame);
         embed.parentNode?.replaceChild(box, embed);
 

@@ -13,6 +13,8 @@
 4. --no-interaction 또는 콘솔 없는 STDIN: default 즉시 반환 (파괴적 확인의 default 는 false 여야 한다)
 5. upgrade step / Symfony 외부 환경: \App\Console\Helpers\ConsoleConfirm::ask() FQN 직접 호출
 6. 기본값 「아니오」가 곧 작업 취소인 확인은 canAnswerConfirmation() 으로 먼저 가르고, 답할 수 없으면 refuseUnanswerableConfirmation() 으로 사유 출력 + 종료 코드 1 (취소를 0 으로 끝내지 않는다)
+7. 트레이트를 쓰는 명령은 --yes(-y) 를 자동으로 받는다 — 묻지 않고 진행. 명령별 설명이 필요하면 시그니처에 {--y|yes : 설명} 으로 선언한다(트레이트는 그때 붙이지 않는다)
+8. 확인을 거절해 끝낼 때는 return $this->confirmAbortExitCode() — 묻지 못해 거절된 실행은 경고 + 종료코드 1
 ```
 
 ---
@@ -76,23 +78,61 @@ class UninstallFooCommand extends Command
 ### 시그니처
 
 ```php
-protected function unifiedConfirm(string $question, bool $default = false): bool
+protected function unifiedConfirm(string $question, bool $default = false, bool $optional = false): bool
 ```
 
 | 파라미터 | 설명 |
 |---------|------|
 | `$question` | 질문 메시지 (말미 `(yes/no) [yes\|no]:` 자동 부여) |
 | `$default` | 기본값 — true=`[yes]` 표시 / false=`[no]` 표시 |
+| `$optional` | 진행 여부가 아니라 **부가 선택**을 묻는 질문이면 true. `--yes`·비대화 실행에서 기본값을 그대로 쓰고, 경고·실패 처리도 하지 않는다 (예: 「검색 색인도 다시 만들까요?」) |
 
 ### 동작
 
 | 환경 | 동작 |
 |------|------|
-| `--no-interaction` 옵션 | `$default` 즉시 반환 |
-| 콘솔 없는 STDIN (CI·스케줄러·에이전트) | `$default` 즉시 반환 |
+| `--yes`(`-y`) 옵션 | 묻지 않고 `true` (부가 선택 질문은 `$default`) |
+| `--no-interaction` 옵션 | `$default` 즉시 반환. `$default` 가 false 이고 부가 선택이 아니면 「`--yes` 를 붙이세요」 경고 |
+| 콘솔 없는 STDIN (CI·스케줄러·에이전트) | 위와 같음 |
 | 대화형 + 유효 입력 | 정규화 후 즉시 반환 |
 | 대화형 + 잘못된 입력 | "yes, y, no, n 중 하나로 입력해 주세요." 출력 후 재질문 |
 | 대화형 + empty 입력 | `$default` 반환 |
+
+### `--yes` 옵션과 거절 종료코드 (7.1.6+)
+
+트레이트가 Symfony `configure()` 로 `--yes`(`-y`) 옵션을 더하므로, 트레이트를 쓰는 명령은 시그니처에 적지 않아도
+이 옵션을 받는다. 명령마다 도움말 설명을 달고 싶으면 시그니처에 `{--y|yes : 설명}` 으로 선언한다 — 트레이트는 시그니처에
+`--yes` 선언이 있으면 옵션을 더하지 않으므로 「이미 있는 옵션」 오류가 나지 않는다(7.2.0. 7.1.6 은 선언하면 이 오류가 났다).
+명령이 `configure()` 를 직접 재정의해야 하면 `parent::configure()` 가 아니라 트레이트 메서드를 별칭으로 불러야 한다.
+
+터미널 없는 실행(스케줄러·배포 스크립트·`-n`)에서 확인 질문은 기본값 「아니오」로 떨어진다. 종전에는 이때 명령이
+**아무 일도 하지 않고 성공(0)** 으로 끝나 실패를 알 수 없었다. 지금은:
+
+- 트레이트가 「확인이 필요한 작업이라 실행하지 않았습니다 — `--yes` 를 붙이세요」 경고를 낸다.
+- 명령은 거절 갈래에서 `SUCCESS` 를 직접 돌려주지 않고 `confirmAbortExitCode()` 를 돌려준다 — 묻지 못해 거절됐으면
+  `FAILURE`(1), 사람이 직접 「아니오」라고 답했으면 `SUCCESS`(0).
+
+```php
+if (! $this->unifiedConfirm('Foo 를 삭제하시겠습니까?', false)) {
+    $this->info('취소되었습니다.');
+
+    return $this->confirmAbortExitCode();
+}
+```
+
+`--yes` 는 「진행하시겠습니까?」 류의 확인에만 「예」로 답한다. 부가 선택 질문(`$optional = true`)과 선택·입력 질문은
+기본값으로 진행한다 — `--yes` 가 「검색 색인도 다시 만들까요? [no]」 까지 「예」로 바꾸면 운영 중인 사이트에서
+원하지 않은 무거운 작업이 따라 돈다.
+
+### 선택·입력 질문 — `unifiedChoice()` / `unifiedAsk()`
+
+`$this->choice()`·`$this->ask()` 를 직접 부르면 콘솔 없는 실행에서 오지 않을 답을 기다린다(위 「비TTY 판정」과 같은 이유).
+확인 질문과 섞어 쓰는 선택·입력은 트레이트의 두 메서드로 부른다 — 물을 수 없거나 `--yes` 면 기본값을 곧바로 돌려준다.
+
+```php
+$strategy = $this->unifiedChoice('레이아웃 전략', ['overwrite' => '덮어쓰기', 'keep' => '유지'], 'overwrite');
+$targets = $this->unifiedAsk('대상(쉼표로 구분)', '');
+```
 
 #### 비TTY 판정을 Symfony 에 맡기지 않는 이유
 
@@ -135,7 +175,7 @@ if (! $this->option('force')) {
 | 메서드 | 동작 |
 |--------|------|
 | `canAnswerConfirmation(): bool` | `--yes` 로 미리 답했거나, `isInteractive()` 이고 `canPromptForAnswer()` 이면 true. 답할 수 없는 실행 판정의 단일 지점이며 `unifiedConfirm()` 도 이 판정을 쓴다 |
-| `confirmationPreApproved(): bool` | 명령이 `{--yes}` 를 선언했고 주어졌으면 true — `unifiedConfirm()` 은 묻지 않고 true(7.2.0) |
+| `confirmationPreApproved(): bool` | `--yes` 가 주어졌으면 true(트레이트가 붙인 옵션이든 시그니처 선언이든) — `unifiedConfirm()` 은 묻지 않고 true(7.2.0) |
 | `canShowPrompt(): bool` | `isInteractive()` 이고 `canPromptForAnswer()` 이면 true — `--yes` 는 보지 않는다. 확인 외의 질문과 선택 질문은 이 판정으로 가른다(7.2.0) |
 | `optionalConfirm(string $question, bool $default = false): bool` | 선택 질문용 yes/no — `--yes` 가 「예」로 답하지 않고, 질문을 띄울 수 없으면 `$default`(7.2.0) |
 | `refuseUnanswerableConfirmation(string $reason, string $hint): int` | 사유를 오류로, 안내를 한 줄로 출력하고 `Command::FAILURE` 를 돌려준다 |
@@ -145,7 +185,7 @@ if (! $this->option('force')) {
 답할 수 없으면 기본값을 쓰거나(일괄 업데이트의 레이아웃 전략은 overwrite, 확장별 덮어쓰기·검색 인덱스 재생성은 묻지 않음) 거절한다
 (`user:reset-password`·`settings:set` 의 비밀값 입력은 출처 옵션 안내와 함께 실패).
 
-`--yes`(`-y`) 는 **확인 질문에만** 「예」로 답한다(`module|plugin|template:update`·`:uninstall`·`language-pack:update`·`language-pack:uninstall`·`core:update`·`core:execute-upgrade-steps`·`stage:apply-to-live`·`stage-layouts:reset-from-live`·`settings:migrate-to-json`·`search:index`·`analytics:anonymize`·`analytics:purge`·`analytics:purge-extension`·`hotfix:rollback-stale-files`). 7.1.6 에서 `--yes` 를 받던 명령은 7.2.0 에서도 모두 받는다 — 7.1.6 스크립트가 「옵션 없음」으로 실패하지 않게 한다. 선언은 `{--y|yes : …}` 로 `-y` 축약을 함께 둔다 — `{--yes}` 만 두면 `-y` 가 「옵션 없음」으로 실패한다. 확인 질문이 없는 `language-pack:update` 도 다른 `{type}:update` 와 같은 형태로 부를 수 있게 받는다(효과 없음). 업데이트의 `--force` 는
+`--yes`(`-y`) 는 **확인 질문에만** 「예」로 답한다(`module|plugin|template:update`·`:uninstall`·`language-pack:update`·`language-pack:uninstall`·`core:update`·`core:execute-upgrade-steps`·`stage:apply-to-live`·`stage-layouts:reset-from-live`·`settings:migrate-to-json`·`search:index`·`analytics:anonymize`·`analytics:purge`·`analytics:purge-extension`·`hotfix:rollback-stale-files`). 7.1.6 에서 `--yes` 를 받던 명령은 7.2.0 에서도 모두 받는다 — 확장 명령을 포함해 7.1.6 스크립트가 「옵션 없음」으로 실패하지 않게 한다. 시그니처에 선언할 때는 `{--y|yes : …}` 로 `-y` 축약을 함께 둔다 — `{--yes}` 만 두면 `-y` 가 「옵션 없음」으로 실패한다. 확인 질문이 없는 `language-pack:update` 도 다른 `{type}:update` 와 같은 형태로 부를 수 있게 받는다(효과 없음). 업데이트의 `--force` 는
 확인 생략에 더해 ① 같은 판 재적용 ② 다운그레이드 허용 ③ 코어 호환 검사 생략 ④ 같은 판 업그레이드 스텝 재실행 ⑤ 멈춘 업데이트 정리를 함께 켜므로,
 비대화형 자동화가 확인만 건너뛰려면 `--yes` 를 쓴다.
 

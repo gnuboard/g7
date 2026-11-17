@@ -1,0 +1,22 @@
+feature: 후기 목록 조건 바꾸기 — 받는 동안 앞 목록 가림 브라우저 회귀 (7.1.6)
+
+description: |
+  비회원으로 리뷰 모아보기의 「사진 후기만」과 상품 상세 후기 탭의 「포토리뷰만 보기」를 누른다. 후기 응답만 이 브라우저에서
+  1.5초 늦추고, 그 가운데 시점에 덮개 또는 흐림이 걸려 있으며 응답 뒤에는 걷히는지 본다.
+  수정 전에는 모아보기 덮개가 렌더 직후 걷히고(두 번 반짝임) 상세 탭은 아무 가림이 없어 앞 목록이 또렷하게 남았다.
+
+axes:
+  case:
+    - feed_photo_only
+    - detail_tab_photo_only
+
+effects:
+  - old_list_veiled_while_loading
+  - veil_cleared_after_response
+
+test_files:
+  - templates/_bundled/sirsoft-basic/tests/Playwright/specs/review-list-filter-loading.spec.ts
+
+notes: |
+  Vitest 구조 단언은 shop-reviews-feed.test.tsx c10·c11. 조건 조작 6곳(옵션·별점·초기화·포토·정렬·쪽)의 차례 묶음은 c11 이 전수로 잠그고,
+  이 spec 은 대표 조작(사진 후기만) 하나로 실제 화면의 가림을 잰다.

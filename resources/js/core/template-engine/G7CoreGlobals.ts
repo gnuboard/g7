@@ -1,4 +1,4 @@
-// e2e:allow 엔진 변경(engine-v1.92.0 반복 셀·확장 행 _computed, 빈 confirm, 7.1.3 navigate·링크 API 이식)은 두 템플릿 실화면에서 브라우저로 쟀고, 로그인 흐름은 Playwright 로그인 spec 이 덮는다
+// e2e:allow 엔진 변경(engine-v1.93.0 반복 셀·확장 행 _computed, 빈 confirm, 7.1.3 navigate·링크 API 이식)은 두 템플릿 실화면에서 브라우저로 쟀고, 로그인 흐름은 Playwright 로그인 spec 이 덮는다
 /**
  * NOTE: @since versions (engine-v1.x.x) refer to internal template engine
  * development iterations, not G7 platform release versions.
@@ -49,6 +49,8 @@ import {
 import { CONSENT_CHANGED_EVENT, getConsentRuntime } from '../consent';
 import { getContentMediaRuntime } from '../contentMedia';
 import { getContentPolicyRuntime } from '../contentPolicy';
+import * as InlineStyleDeferral from '../contentStyle/InlineStyleDeferral';
+import * as RuntimeStyleSheet from '../style/RuntimeStyleSheet';
 import { SEARCH_HISTORY_CHANGED_EVENT, getSearchHistoryRuntime } from '../searchHistory';
 import { useSearchHistory } from '../searchHistory/useSearchHistory';
 import { createLogger, flushEarlyLogs } from '../utils/Logger';
@@ -958,7 +960,7 @@ function initComponentEventSystem(G7Core: any): void {
      *
      * - `off(eventName, callback)`: 그 콜백만 지운다 — 같은 이벤트의 다른 구독자는 그대로 받는다.
      * - `off(eventName)`: 그 이벤트의 구독을 **전부** 지운다. 다른 컴포넌트·확장의 구독까지 끊기므로
-     *   구독이 1개 이상이면 `[G7]` 경고를 낸다 (engine-v1.93.0).
+     *   구독이 1개 이상이면 `[G7]` 경고를 낸다 (engine-v1.94.0).
      *
      * @deprecated 콜백 없는 `off(eventName)` 은 폐지 예정이다. `on()` 이 돌려준 해제 함수나
      *   `off(eventName, callback)` 을 쓴다. 콜백 있는 형태는 폐지 대상이 아니다.
@@ -993,7 +995,7 @@ function initComponentEventSystem(G7Core: any): void {
     /**
      * 모든 이벤트 리스너를 제거합니다.
      *
-     * 다른 컴포넌트·확장의 구독까지 끊으므로 구독이 1개 이상이면 `[G7]` 경고를 낸다 (engine-v1.93.0).
+     * 다른 컴포넌트·확장의 구독까지 끊으므로 구독이 1개 이상이면 `[G7]` 경고를 낸다 (engine-v1.94.0).
      */
     clear: () => {
       let removed = 0;
@@ -1365,7 +1367,7 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
     // 전역 상태를 컨텍스트에 자동 병합 (cellChildren에서 _global 접근 가능)
     // itemContext에 이미 해당 키가 있으면 itemContext 값 우선 (명시적 전달 존중)
     // _local 은 itemContext에서 전달받거나 비어있음(셀 렌더 함수가 componentContext.state 를 병합한다)
-    // _computed 는 부모 컴포넌트의 최신 계산값이 기본값이다 (@since engine-v1.92.0) — 종전에는 `{}` 를 먼저 넣어
+    // _computed 는 부모 컴포넌트의 최신 계산값이 기본값이다 (@since engine-v1.93.0) — 종전에는 `{}` 를 먼저 넣어
     // getEffectiveContext 의 부모 문맥 병합(없는 키만)이 막혀 셀 안 `{{_computed.x}}` 가 늘 undefined 였다
     const parentComputed = options?.componentContext?.computedRef?.current
       ?? options?.componentContext?.parentDataContext?._computed;
@@ -1671,7 +1673,7 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
       _local: mergedLocal,
       // 위 cellChildren 과 같은 이유로 `._global` 을 떼었다 — `state.get()` 이 이미 `_global` 이다.
       _global: globalState,
-      // expandContext 평가와 같은 최신 계산값 (@since engine-v1.92.0) — 종전 `globalState._computed || {}` 는 늘 빈 객체라
+      // expandContext 평가와 같은 최신 계산값 (@since engine-v1.93.0) — 종전 `globalState._computed || {}` 는 늘 빈 객체라
       // 확장 행 children 이 `{{_computed.x}}` 를 직접 읽으면 undefined 였다(셀 렌더 함수의 부모 문맥 병합도 이 자리에 막혔다)
       _computed: latestComputed,
       ...resolvedExpandContext,
@@ -3120,7 +3122,7 @@ function initUrlAPI(G7Core: any): void {
  * ```
  *
  * @param G7Core - window.G7Core 전역 객체
- * @since engine-v1.94.0
+ * @since engine-v1.95.0
  */
 function initThumbnailAPI(G7Core: any): void {
   G7Core.thumbnail = {
@@ -3134,7 +3136,7 @@ function initThumbnailAPI(G7Core: any): void {
     contentSrcset: (url: unknown): string => contentSrcset(url),
     /**
      * 원본 가로를 넘지 않는 본문 srcset — `includeOriginal` 이면 원본보다 작은 후보 + 원본, 아니면 원본 가로 이하 후보
-     * @since engine-v1.94.0
+     * @since engine-v1.95.0
      */
     contentSrcsetWithin: (url: unknown, maxWidth: unknown, options?: ContentSrcsetWithinOptions | null): string =>
       contentSrcsetWithin(url, maxWidth, options),
@@ -3300,7 +3302,7 @@ function initModalAPI(G7Core: any): void {
     /**
      * 모든 모달을 닫습니다.
      *
-     * closeModal 의 전부 닫기 옵션(`params.all`)으로 보낸다(engine-v1.94.0). 종전에는 없는 핸들러
+     * closeModal 의 전부 닫기 옵션(`params.all`)으로 보낸다(engine-v1.95.0). 종전에는 없는 핸들러
      * `closeAllModals` 를 불러 아무 일도 하지 않았다.
      */
     closeAll: () => {
@@ -3380,9 +3382,51 @@ function initStyleAPI(G7Core: any): void {
      * ```
      */
     joinClasses,
+    /**
+     * 런타임 CSS 규칙을 문서에 붙입니다(같은 key 는 교체). `<style>` 요소를 만들지 않으므로 엄격한 스타일
+     * 정책(`style-src 'self'`)에서도 적용됩니다. 확장이 동적 규칙이 필요할 때 씁니다(정적 규칙은 확장 CSS 자산으로).
+     *
+     * @example
+     * ```typescript
+     * const handle = G7Core.style.setRules('my-plugin-overlay', '#target::after{content:"";position:absolute;inset:0}');
+     * handle.remove();
+     * ```
+     * @since engine-v1.91.0
+     */
+    setRules: (key: string, css: string | string[], opts?: RuntimeStyleSheet.RuntimeStyleOptions) => RuntimeStyleSheet.setRules(key, css, opts),
+    /** 런타임 CSS 규칙 묶음을 제거합니다. @since engine-v1.91.0 */
+    remove: (key: string) => RuntimeStyleSheet.remove(key),
+    /** 런타임 CSS 규칙 묶음이 붙어 있는지 확인합니다. @since engine-v1.91.0 */
+    has: (key: string) => RuntimeStyleSheet.has(key),
   };
 
   logger.log('전역 객체 window.G7Core.style에 노출됨');
+}
+
+/**
+ * 본문 서식 지연 장치 초기화 — `G7Core.inlineStyle` (engine-v1.91.0, #163)
+ *
+ * 엄격한 스타일 정책에서는 HTML 문자열의 `style` 속성이 적용되지 않는다(문자열 파싱만으로 위반 보고).
+ * 본문 HTML 을 꽂는 컴포넌트는 정화할 때 `style` 을 `data-g7-style` 로 옮기고, DOM 에 붙인 뒤 `apply(root)` 로
+ * `el.style.cssText` 에 대입한다.
+ *
+ * - `ATTR` — `'data-g7-style'`
+ * - `sanitize(purifyInstance, html, config)` — 전용 DOMPurify 인스턴스(`DOMPurify(window)`)로 이름 바꾸기 → 훅 → 정화 → 훅 해제
+ * - `apply(root)` → 적용한 요소 수
+ * - `defer(html)` → `{html, token}` · `installHook(purifyInstance, config, token)` — 단계별로 쓸 때
+ *
+ * 코어 본문 규칙 경로는 `G7Core.contentPolicy.sanitize(purify, html, {...config, G7_DEFER_STYLE: true})` 로 같은 결과를 낸다.
+ *
+ * @param G7Core 전역 G7Core 객체
+ */
+function initInlineStyleAPI(G7Core: any): void {
+  G7Core.inlineStyle = Object.freeze({
+    ATTR: InlineStyleDeferral.ATTR,
+    defer: (html: string) => InlineStyleDeferral.defer(html),
+    installHook: (purifyInstance: any, config?: Record<string, any>, token?: string) => InlineStyleDeferral.installHook(purifyInstance, config, token),
+    sanitize: (purifyInstance: any, html: string, config?: Record<string, any>) => InlineStyleDeferral.sanitize(purifyInstance, html, config),
+    apply: (root: Element | DocumentFragment | null | undefined) => InlineStyleDeferral.apply(root),
+  });
 }
 
 /**
@@ -3891,6 +3935,7 @@ export function initializeG7CoreGlobals(deps: G7CoreDependencies): void {
   initConsentAPI(G7Core);
   initContentMediaAPI(G7Core);
   initContentPolicyAPI(G7Core);
+  initInlineStyleAPI(G7Core);
   initSearchHistoryAPI(G7Core);
   initStateContractsAPI(G7Core);
   // 레이아웃 편집기 확장점 예약 접수함(편집기 lazy 로드 전 템플릿 등록을 큐에 보존)

@@ -20,11 +20,11 @@ use Tests\TestCase;
 class ApiRouteInventoryWebRouteTest extends TestCase
 {
     /**
-     * 플러그인 범위 수집에 토스페이먼츠 웹훅 web 라우트가 포함된다.
+     * 플러그인 웹훅 web 라우트를 문서 대상으로 모은다.
      *
-     * @scenario scope=plugin, source=web_route, route_kind=webhook
+     * @scenario case=plugin_webhook
      *
-     * @effects plugin_webhook_web_routes_collected
+     * @effects plugin_webhook_web_routes_collected, plugin_webhook_web_route_collected
      *
      * @return void 반환값 없음
      */
@@ -40,11 +40,11 @@ class ApiRouteInventoryWebRouteTest extends TestCase
     }
 
     /**
-     * 플러그인 범위 수집에 결제 성공과 실패 콜백 web 라우트가 포함된다.
+     * 플러그인 결제 결과 콜백 web 라우트를 문서 대상으로 모은다.
      *
-     * @scenario scope=plugin, source=web_route, route_kind=payment_callback
+     * @scenario case=plugin_payment_callback
      *
-     * @effects plugin_payment_callback_web_routes_collected
+     * @effects plugin_payment_callback_web_routes_collected, plugin_payment_callback_web_route_collected
      *
      * @return void 반환값 없음
      */
@@ -60,11 +60,11 @@ class ApiRouteInventoryWebRouteTest extends TestCase
     }
 
     /**
-     * 수집된 web 라우트의 메서드, URI, 소유 확장, 컨트롤러가 원본 그대로 담긴다.
+     * 모은 web 라우트는 메서드·주소·확장 소유·컨트롤러를 그대로 보존한다.
      *
-     * @scenario scope=plugin, source=web_route, route_kind=webhook
+     * @scenario case=web_owner_uri
      *
-     * @effects web_route_owner_and_uri_preserved
+     * @effects web_route_owner_and_uri_preserved, web_route_keeps_owner_and_uri
      *
      * @return void 반환값 없음
      */
@@ -87,11 +87,11 @@ class ApiRouteInventoryWebRouteTest extends TestCase
     }
 
     /**
-     * web 라우트도 라우트명 첫 세그먼트로 도메인 그룹이 정해진다.
+     * web 라우트도 이름의 첫 세그먼트로 도메인 그룹을 정한다.
      *
-     * @scenario scope=plugin, source=web_route, route_kind=payment_callback
+     * @scenario case=web_domain_group
      *
-     * @effects web_route_domain_group_classified
+     * @effects web_route_domain_group_classified, web_route_classified_into_domain_group
      *
      * @return void 반환값 없음
      */
@@ -108,11 +108,11 @@ class ApiRouteInventoryWebRouteTest extends TestCase
     }
 
     /**
-     * 코어 범위에는 api/ 라우트만 수집되고 코어 web 라우트는 빠진다.
+     * 확장 소유가 정해지지 않는 코어 web 라우트는 모으지 않는다.
      *
-     * @scenario scope=core, source=api_route, route_kind=core_web
+     * @scenario case=core_web_excluded
      *
-     * @effects core_web_routes_excluded
+     * @effects core_web_routes_excluded, core_web_routes_not_collected
      *
      * @return void 반환값 없음
      */
@@ -132,20 +132,19 @@ class ApiRouteInventoryWebRouteTest extends TestCase
     }
 
     /**
-     * 확장의 관리자 화면 web 라우트는 수집되지 않고 같은 기능의 JSON API 만 수집된다.
+     * 확장의 관리자 화면 web 라우트는 모으지 않는다.
      *
-     * @scenario scope=module, source=api_route, route_kind=admin_screen
+     * @scenario case=extension_admin_web_excluded
      *
-     * @effects extension_admin_screen_web_routes_excluded
+     * @effects extension_admin_screen_web_routes_excluded, admin_web_screens_excluded_admin_api_included
      *
      * @return void 반환값 없음
      */
     #[Test]
     public function 확장의_관리자_화면_web_라우트는_수집되지_않는다(): void
     {
-        // 사람이 브라우저로 여는 관리자 화면(web.modules.{id}.admin.*)은 machine-facing 엔드포인트가
-        // 아니므로 API 레퍼런스 대상이 아니다. hello_module 의 관리자 CRUD 는 api.php 의 JSON API 로
-        // 옮겨졌으므로 api/ 쪽으로 수집되고, web 쪽 관리자 경로는 하나도 수집되지 않아야 한다.
+        // 사람이 브라우저로 여는 확장 관리자 화면(web.modules.{id}.admin.*)은 machine-facing 엔드포인트가
+        // 아니므로 API 레퍼런스 대상이 아니다. hello_module 은 관리자 CRUD 를 JSON API 로 옮겨 web 라우트가 없다.
         $routes = app(ApiRouteInventory::class)->collect('module:gnuboard7-hello_module');
 
         $names = array_column($routes, 'name');
@@ -154,19 +153,21 @@ class ApiRouteInventoryWebRouteTest extends TestCase
         $this->assertNotContains('web.modules.gnuboard7-hello_module.admin.memos.store', $names);
         $this->assertContains('api.modules.gnuboard7-hello_module.admin.memos.index', $names);
 
-        foreach (array_filter($routes, fn (array $route): bool => ! str_starts_with($route['uri'], '/api/')) as $route) {
-            $this->assertStringNotContainsString(
-                '/admin/',
+        // 관리자 JSON API(/api/modules/{id}/admin/…)는 문서 대상이다 — 막는 것은 web 화면 라우트뿐이다
+        foreach ($routes as $route) {
+            $this->assertStringStartsWith(
+                '/api/',
                 $route['uri'],
                 "확장 관리자 화면 web 라우트가 수집되면 안 된다: {$route['uri']}"
             );
+            $this->assertStringStartsNotWith('web.', (string) ($route['name'] ?? ''));
         }
     }
 
     /**
-     * 플러그인 범위에는 그 플러그인 소유 라우트만 담기고 다른 플러그인의 web 라우트는 섞이지 않는다.
+     * 다른 플러그인의 web 라우트는 지정한 범위에 섞이지 않는다.
      *
-     * @scenario scope=plugin, source=web_route, route_kind=other_plugin
+     * @scenario case=other_plugin_isolated
      *
      * @effects other_plugin_web_routes_not_mixed
      *

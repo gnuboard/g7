@@ -254,6 +254,7 @@ return [
         'order_cancel_restore' => '注文キャンセル時に復元',
         'earn_cancel' => '積立回収',
         'refund_credit' => '返金のマイレージ付与',
+        'signup_earn' => '会員登録積立',
     ],
     'mileage_earn_trigger' => [
         'delivered' => '配送完了',

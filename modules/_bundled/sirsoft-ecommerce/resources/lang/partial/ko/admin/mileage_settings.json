@@ -18,6 +18,18 @@
     "earn_delay_days": "적립 지연 일수",
     "earn_trigger_hint": "기본=구매확정 / 배송완료 선택 가능"
   },
+  "policy": {
+    "signup_earn": "가입 적립금",
+    "signup_earn_hint": "회원이 스스로 가입하면 한 번 지급합니다. 본인인증 대기 가입은 인증이 끝나 활성화될 때 지급하고, 관리자가 만든 회원에게는 지급하지 않습니다. 유효기간은 아래 유효기간 설정을 따릅니다.",
+    "signup_earn_amount": "가입 적립금 금액",
+    "point_unit": "점",
+    "no_earn_when_points_used": "마일리지를 쓴 주문은 구매 적립 없음",
+    "no_earn_when_points_used_hint": "켜면 마일리지를 1점이라도 쓴 주문에는 구매 적립을 하지 않습니다. 이미 접수된 주문은 접수 당시 설정을 따릅니다.",
+    "min_product_total_for_use": "상품 합계가 기준 미만이면 사용 불가",
+    "min_product_total_for_use_hint": "켜면 상품 합계(판매가 × 수량, 쿠폰·배송비 반영 전)가 기준 금액 미만인 주문에서는 마일리지를 쓸 수 없습니다.",
+    "min_product_total_for_use_amount": "사용 가능 최소 상품 합계",
+    "min_product_total_for_use_suffix": "이상 구매 시 사용 가능 (기본 통화 기준)"
+  },
   "currency": {
     "title": "통화별 사용 단위",
     "add": "통화 추가",

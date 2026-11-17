@@ -28,6 +28,24 @@ use Modules\Sirsoft\Ecommerce\Support\CurrencySettingsCache;
  */
 class EcommerceSettingsService implements ModuleSettingsInterface
 {
+    /**
+     * 사용자 화면 푸터에 싣는 법정 사업자 항목 (전자상거래법 사이버몰 표시 항목)
+     *
+     * @var array<int, string>
+     */
+    public const BUSINESS_FOOTER_FIELDS = [
+        'company_name',
+        'ceo_name',
+        'zipcode',
+        'base_address',
+        'detail_address',
+        'phone',
+        'email',
+        'business_number',
+        'mail_order_number',
+        'hosting_provider',
+    ];
+
     use NormalizesSettingsData;
 
     /**
@@ -723,7 +741,79 @@ class EcommerceSettingsService implements ModuleSettingsInterface
             }, $frontendSettings['order_settings']['bank_accounts']);
         }
 
+        return $this->stripBusinessInfoWhenHidden($frontendSettings);
+    }
+
+    /**
+     * 공개 설정 API 가 돌려줄 한 카테고리의 설정을 반환합니다.
+     *
+     * 설정 기본값 파일의 공개 키 목록(`public_api_schema`)에 있는 키만 남긴다 — 비회원도 부를 수 있는
+     * 응답에 운영 내부 값이 섞여 나가지 않게 한다. 목록에 없는 카테고리는 빈 배열이다.
+     *
+     * @param  string  $category  설정 카테고리 (예: shipping)
+     * @param  array|null  $source  이미 다듬은 값이 있으면 그 값 (null 이면 저장된 설정)
+     * @return array 공개 키만 남긴 설정
+     */
+    public function getPublicCategorySettings(string $category, ?array $source = null): array
+    {
+        $keys = $this->getDefaults()['public_api_schema'][$category] ?? [];
+
+        if (! is_array($keys) || $keys === []) {
+            return [];
+        }
+
+        return array_intersect_key($source ?? $this->getSettings($category), array_flip($keys));
+    }
+
+    /**
+     * 사업자 정보 표시가 꺼져 있으면 공개 설정에서 사업자 칸을 뺍니다.
+     *
+     * 사용자 화면으로 나가는 두 경로(코어가 모아 주는 확장 공개 설정, 이 모듈의 공개 설정 조회)가
+     * 같은 규칙을 쓰도록 한 곳에 둔다. 표시를 껐는데 값이 페이지 소스에 남으면 「끔」의 의미가 없다.
+     * 경로 설정(route_path·no_route)과 표시 여부는 남긴다.
+     *
+     * @param  array  $frontendSettings  공개 설정 (카테고리 => 값)
+     * @return array 사업자 칸이 정리된 공개 설정
+     */
+    public function stripBusinessInfoWhenHidden(array $frontendSettings): array
+    {
+        $basicInfo = $frontendSettings['basic_info'] ?? null;
+
+        if (! is_array($basicInfo) || (bool) ($basicInfo['show_business_footer'] ?? true)) {
+            return $frontendSettings;
+        }
+
+        foreach (array_keys($basicInfo) as $key) {
+            if (self::isBusinessInfoKey((string) $key)) {
+                unset($basicInfo[$key]);
+            }
+        }
+
+        $frontendSettings['basic_info'] = $basicInfo;
+
         return $frontendSettings;
+    }
+
+    /**
+     * 사업자 정보 칸(분리 입력 칸 포함)인지 판정합니다.
+     *
+     * @param  string  $key  기본 정보 칸 이름
+     * @return bool 사업자 정보 칸이면 true
+     */
+    private static function isBusinessInfoKey(string $key): bool
+    {
+        if (in_array($key, self::BUSINESS_FOOTER_FIELDS, true)) {
+            return true;
+        }
+
+        // 화면 입력용으로 쪼갠 칸(business_number_1, phone_2, email_domain …)
+        foreach (['business_number_', 'phone_', 'fax_', 'email_'] as $prefix) {
+            if (str_starts_with($key, $prefix)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -946,6 +1036,21 @@ class EcommerceSettingsService implements ModuleSettingsInterface
      * @return array 확장된 설정값
      */
     private function expandSplitFieldsForFrontend(array $settings): array
+    {
+        return $this->withSplitContactFields($settings);
+    }
+
+    /**
+     * 합친 사업자 연락처를 입력 폼의 나눔 칸으로 펼칩니다.
+     *
+     * 설정은 합친 값(business_number·phone·fax·email)으로 저장하고, 관리자 「기본정보」 탭은 나눔 칸으로
+     * 입력받아 저장 때 다시 합친다(processSplitFields). 관리자 조회가 이 칸을 채우지 않으면 폼이 빈 칸을
+     * 보이고, 다른 칸만 고쳐 저장해도 그 빈 칸이 합쳐져 네 값이 지워진다 — 관리자 조회·저장 응답도 이 함수를 거친다.
+     *
+     * @param  array  $settings  카테고리별 설정 (basic_info 가 없으면 그대로 돌려준다)
+     * @return array 나눔 칸이 채워진 설정
+     */
+    public function withSplitContactFields(array $settings): array
     {
         if (! isset($settings['basic_info'])) {
             return $settings;

@@ -4,29 +4,32 @@
  * 플러그인 활성화 시 자동으로 로드되어 핸들러를 등록합니다.
  */
 
-import { initEditorHandler } from './handlers/initEditor';
+// 본문 보정·다국어 탭·아이콘·편집기 다크 모드·높이·미리보기 스타일 — 빌드가 dist/css/plugin.css 로 뽑아낸다
+import '../css/main.css';
+import { applyLibraryStyles, initEditorHandler } from './handlers/initEditor';
 import { destroyEditorHandler } from './handlers/destroyEditor';
 import { ckeditorCssUrl } from './handlers/ckeditorAssets';
-// 다국어 탭·아이콘 등 플러그인 자기 클래스(ckeditor-*) 스타일 — 빌드가 dist/css/plugin.css 로 뽑아낸다
-import '../css/main.css';
 
 const PLUGIN_IDENTIFIER = 'sirsoft-ckeditor5';
 
 const CKEDITOR5_CSS_ID = 'ckeditor5-content-styles';
-const CKEDITOR5_CSS_OVERRIDE_ID = 'ckeditor5-content-styles-override';
 
 /**
  * CKEditor5 content styles CSS를 동적으로 주입하는 핸들러
  * html-content.g7.html extension_point의 onMount에서 호출됩니다.
  *
  * HtmlContent 컴포넌트에 ck-content 클래스가 적용되어 동봉 CSS가 직접 동작합니다.
- * 다크모드(원본 미지원)와 col 너비 처리만 override로 추가합니다.
+ * 다크모드(원본 미지원)와 col 너비 같은 보정 규칙은 여기서 `<style>` 로 싣지 않는다 — 엄격한 스타일 정책에서
+ * `<style>` 요소가 막힌다. 라이브러리 클래스(`.ck-content`)를 꾸미는 규칙이라 플러그인 CSS 파일(자기 이름공간만)에도
+ * 둘 수 없어, `applyLibraryStyles()` 가 코어 `G7Core.style.setRules`(생성형 스타일시트)로 싣는다.
  *
  * 이 CSS 는 **작성 화면이 아니라 방문자가 보는 본문**에 걸린다. 실패하면 이미 작성된
  * 글의 표·정렬·목록 서식이 통째로 깨지므로, 종전의 무음 처리(`onerror` 없음)를
  * 재시도 + 실패 표면화로 바꾼다.
  */
 function injectContentCssHandler(): void {
+    applyLibraryStyles();
+
     if (!document.getElementById(CKEDITOR5_CSS_ID)) {
         const asset = (window as any)?.G7Core?.asset;
 
@@ -54,52 +57,6 @@ function injectContentCssHandler(): void {
             console.warn('[ckeditor5] 본문 스타일 URL 을 만들지 못했습니다:', error);
         }
     }
-
-    if (!document.getElementById(CKEDITOR5_CSS_OVERRIDE_ID)) {
-        const style = document.createElement('style');
-        style.id = CKEDITOR5_CSS_OVERRIDE_ID;
-        // 다크모드(CDN 미지원)와 col 너비 처리만 override로 유지
-        style.textContent = `
-            /* 이미지 캡션 - 다크모드 */
-            html[data-g7-color-scheme="dark"] .ck-content .image > figcaption { color: hsl(0, 0%, 80%); background-color: hsl(0, 0%, 15%); }
-
-            /* CKEditor5 표 스타일 - 다크모드 */
-            html[data-g7-color-scheme="dark"] .ck-content figure.table table { border-color: hsl(0, 0%, 35%); }
-            html[data-g7-color-scheme="dark"] .ck-content figure.table table tr { background-color: unset; }
-            html[data-g7-color-scheme="dark"] .ck-content figure.table table td, html[data-g7-color-scheme="dark"] .ck-content figure.table table th { border-color: hsl(0, 0%, 30%); color: hsl(0, 0%, 90%); background-color: unset; }
-            html[data-g7-color-scheme="dark"] .ck-content figure.table table th { background-color: hsl(215, 20%, 25%); }
-
-            /* figure.table 전체 너비 - prose와의 충돌 방지 */
-            .ck-content figure.table { display: table; width: 100%; margin: 1em 0; }
-            .ck-content figure.table table { width: 100%; }
-            .ck-content table tr { background-color: unset; }
-            .ck-content table col { width: auto !important; }
-
-            /* 표 정렬 보정 */
-            .ck-content figure.table[style*="float:left"],
-            .ck-content figure.table[style*="float: left"] { margin-left: 0 !important; margin-right: 1em !important; }
-            .ck-content figure.table[style*="float:right"],
-            .ck-content figure.table[style*="float: right"] { margin-left: 1em !important; margin-right: 0 !important; }
-
-            /* 이미지 인라인/정렬 - Tailwind preflight img:block 대응 */
-            .ck-content img { display: inline; margin: 0; max-width: 100%; }
-            .ck-content p:has(img) { line-height: 0; }
-            .ck-content p:has(img[style*="float"]) { overflow: hidden; }
-
-            /* 이미지 캡션 - 라이트 모드 */
-            .ck-content .image > figcaption { background-color: #f3f4f6; color: #374151; font-size: 0.875em; padding: 4px 8px; text-align: center; }
-
-            /* 목록 마커 및 들여쓰기 - Tailwind preflight reset 대응 */
-            .ck-content ul { list-style-type: disc; padding-left: 2em; }
-            .ck-content ol { list-style-type: decimal; padding-left: 2em; }
-            .ck-content ul ul { list-style-type: circle; padding-left: 2em; }
-            .ck-content ul ul ul { list-style-type: square; padding-left: 2em; }
-            .ck-content ol ol { list-style-type: lower-alpha; padding-left: 2em; }
-            .ck-content ol ol ol { list-style-type: lower-roman; padding-left: 2em; }
-        `;
-        document.head.appendChild(style);
-    }
-
 }
 
 const handlerMap: Record<string, Function> = {

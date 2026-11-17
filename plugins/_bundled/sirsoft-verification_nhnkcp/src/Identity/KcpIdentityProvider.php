@@ -22,6 +22,7 @@ use Plugins\Sirsoft\VerificationNhnkcp\Enums\KcpDuplicateField;
 use Plugins\Sirsoft\VerificationNhnkcp\Exceptions\AlreadyConsumedException;
 use Plugins\Sirsoft\VerificationNhnkcp\Exceptions\RemoteCallException;
 use Plugins\Sirsoft\VerificationNhnkcp\Repositories\KcpCertTransactionRepositoryInterface;
+use Plugins\Sirsoft\VerificationNhnkcp\Repositories\KcpIdentityClaimRepositoryInterface;
 use Plugins\Sirsoft\VerificationNhnkcp\Repositories\KcpIdentityRecordRepositoryInterface;
 use Plugins\Sirsoft\VerificationNhnkcp\Services\KcpCertClient;
 use Plugins\Sirsoft\VerificationNhnkcp\Services\KcpCertClientInterface;
@@ -90,6 +91,7 @@ class KcpIdentityProvider implements IdentityVerificationInterface, ProvidesVeri
      * @param  KcpDuplicateIdentityChecker  $duplicateChecker  동일인 판정 Service
      * @param  CacheInterface  $cache  비로그인 verify PII stash 용 캐시 (PluginCacheDriver 자동 prefix)
      * @param  array<string, mixed>  $config  settings 주입값 (PluginSettingsService::get 결과)
+     * @param  KcpIdentityClaimRepositoryInterface|null  $claimRepository  동일인 선점표 (1.1.4, 미주입이면 컨테이너에서 해석)
      */
     public function __construct(
         protected readonly KcpCertClientInterface $client,
@@ -99,6 +101,7 @@ class KcpIdentityProvider implements IdentityVerificationInterface, ProvidesVeri
         protected readonly KcpDuplicateIdentityChecker $duplicateChecker,
         protected readonly CacheInterface $cache,
         protected readonly array $config = [],
+        protected readonly ?KcpIdentityClaimRepositoryInterface $claimRepository = null,
     ) {}
 
     /**
@@ -490,19 +493,31 @@ class KcpIdentityProvider implements IdentityVerificationInterface, ProvidesVeri
                 $piiPayload,
                 $challengeId,
             ): void {
-                $this->logRepository->updateById((string) $log->id, [
+                // 진행 중인 challenge 만 verified 로 바꾼다(1.1.4, KVE 동형) — 같은 콜백이 동시에 두 번 들어오면
+                // 둘 다 위의 상태 검사를 통과하므로, 조건부 전이에서 진 쪽은 토큰을 발급하지 않고 이미 처리됨으로 끝낸다.
+                $transitioned = $this->logRepository->markVerifiedIfPending((string) $log->id, [
                     'status' => 'verified',
                     'verification_token' => $verificationToken,
                     'verified_at' => $verifiedAt,
-                    'metadata' => array_merge((array) $log->metadata, [
+                    'metadata' => json_encode(array_merge((array) $log->metadata, [
                         'di_hash' => $diHash,
                         'ci_hash' => $ciHash,
                         'duplicate_field_used' => $duplicateField->value,
                         'is_adult' => $isAdult,
-                    ]),
+                    ]), JSON_UNESCAPED_UNICODE),
                 ]);
 
+                if (! $transitioned) {
+                    throw new AlreadyConsumedException($challengeId);
+                }
+
                 if ($log->user_id !== null) {
+                    // 로그인 사용자: 자기 명의 식별값을 선점표에도 채워 둔다(비어 있을 때만) — 이후 같은 명의의 신규 가입이
+                    // records 가 아니라 선점표에서 막힌다(1.1.4).
+                    $claims = $this->claimRepository ?? app(KcpIdentityClaimRepositoryInterface::class);
+                    $claims->claimSoft(KcpDuplicateField::Di->value, $diHash, (int) $log->user_id);
+                    $claims->claimSoft(KcpDuplicateField::Ci->value, $ciHash, (int) $log->user_id);
+
                     // 로그인 사용자: record upsert 는 같은 트랜잭션 — 실패 시 log 갱신과 함께 롤백.
                     $this->recordRepository->upsertForUser((int) $log->user_id, array_merge($piiPayload, [
                         'latest_log_id' => $challengeId,
@@ -520,6 +535,9 @@ class KcpIdentityProvider implements IdentityVerificationInterface, ProvidesVeri
                     : 15 * 60;
                 $this->cache->put(self::PENDING_RECORD_CACHE_PREFIX.$challengeId, $piiPayload, $ttl);
             });
+        } catch (AlreadyConsumedException $e) {
+            // 다른 콜백이 먼저 처리했다 — 트랜잭션은 롤백됐고, 호출자(KcpCallbackResolver)가 이미 처리됨으로 안내한다.
+            throw $e;
         } catch (\Throwable $e) {
             // 식별값(challenge_id)만 로깅 — PII 비노출.
             Log::error('KCP 본인확인: 인증 성공 후 PII 저장 실패 — 토큰 발급 롤백', [

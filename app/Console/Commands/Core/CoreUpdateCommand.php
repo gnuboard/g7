@@ -160,6 +160,15 @@ class CoreUpdateCommand extends Command
         $sourceDir = $this->option('source');
         $zipPath = $this->option('zip');
         $coreLock = null;
+        // 진행 막대는 확인 질문 뒤에 만들어진다 — 그 전에 예외가 나도 catch 가 원래 오류를 가리지 않게 미리 비워 둔다
+        $bar = null;
+        // 「확정」 = 새 버전 기록과 백업 삭제가 끝난 뒤. 이 뒤의 실패는 되돌릴 것이 없으므로 복원하지 않는다
+        $committed = false;
+        // 확정 뒤 어느 마무리 단계에 있는지 (실패 안내에 쓴다)
+        $stage = 'finalize';
+        $updateLogSaved = false;
+        $pendingPath = null;
+        $onProgress = null;
 
         try {
             // 코어 업데이트는 한 번에 하나만 — 두 곳에서 동시에 돌리면 먼저 끝난 쪽이 유지보수 모드를 풀어 교체 중인 사이트가
@@ -315,7 +324,7 @@ class CoreUpdateCommand extends Command
                 }
 
                 if (! $this->unifiedConfirm(__('settings.core_update.console.confirm_update'), false)) {
-                    return Command::SUCCESS;
+                    return $this->confirmAbortExitCode();
                 }
             }
 
@@ -891,25 +900,33 @@ class CoreUpdateCommand extends Command
 
             if ($backupPath) {
                 CoreBackupHelper::deleteBackup($backupPath);
+                // 지운 백업 경로를 들고 있으면 뒤 단계 실패 때 「없는 백업에서 복원 완료」로 보인다
+                $backupPath = null;
             }
+            // 여기부터는 새 버전이 적용된 상태다 — 뒤 단계가 실패해도 파일·배치 기록을 되돌리지 않는다
+            $committed = true;
 
             // 점검 모드는 번들 확장 일괄 업데이트까지 끝난 뒤에 푼다(아래 finally) — 종전에는 여기서 풀어, 새 코어와 옛 확장이
-            // 섞인 사이트가 일괄 업데이트 동안 열려 있었다(#888).
+            // 섞인 사이트가 일괄 업데이트 동안 열려 있었다(#888). 그 사이 마무리 단계가 실패하면
+            // reportPostCommitFailure() 가 아직 켜진 점검 모드를 푼다.
 
             // 모든 파일(코어 config/lang/vendor)이 안착한 뒤 config 캐시를 재생성한다.
             // clearAllCaches() 는 흐름 중간에서 stale 캐시를 비우기만 하므로, 여기서
             // 재생성하지 않으면 업데이트 후 config:cache 가 비활성 상태로 남아 이후 모든
             // 요청이 config 파일을 재파싱한다(성능 손실). ConfigCacheHelper 는 설치 미완료
             // 상태를 가드하고 실패를 안전하게 흡수한다.
+            $stage = 'config_cache';
             ConfigCacheHelper::rebuild();
 
             // 라우트 캐시도 같은 이유로 되살린다. 코어 업데이트는 routes/*.php 와 vendor 를
             // 교체하므로 흐름 중간에 비우는 것이 맞지만, 비운 채로 끝내면 이후 모든 요청이
             // 라우트를 다시 등록한다. 재생성은 파일이 전부 안착한 이 지점에서만 안전하다.
+            $stage = 'route_cache';
             RouteCacheHelper::rebuild();
 
             // 훅 캐시는 새 프로세스에서 한 번 더 굽는다 — 이 프로세스는 이전 코드로 부팅해, 업데이트 시작 때
             // 훅 캐시가 없던 사이트에서는 이전 리스너 구독으로 구워졌을 수 있다(#138 후속).
+            $stage = 'hook_cache';
             $this->rebuildHookCacheInFreshProcess($log);
 
             $log('정리 완료');
@@ -918,7 +935,9 @@ class CoreUpdateCommand extends Command
             $this->newLine(2);
 
             // 설치 로그 저장
+            $stage = 'update_log';
             $this->saveUpdateLog($logEntries, $fromVersion, $toVersion, true);
+            $updateLogSaved = true;
 
             $this->info(__('settings.core_update.console.updated', ['version' => $toVersion]));
             $this->newLine();
@@ -934,6 +953,7 @@ class CoreUpdateCommand extends Command
             // storage/app/* 등이 sudo 컨텍스트에서 root 로 오염될 수 있다.
             // 실제 업데이트가 수행된 경우 restoreOwnership 을 한 번 더 호출해 재복원한다.
             $coreLock?->keepAlive(force: true);
+            $stage = 'bundled_extensions';
             try {
                 $promptResult = $this->runBundledExtensionUpdatePrompt(
                     app(ModuleManager::class),
@@ -975,6 +995,7 @@ class CoreUpdateCommand extends Command
 
             // fallback(spawn 실패)로 부모가 upgrade step 을 직접 실행한 경우, 부모가 만든
             // upgrade 로그가 root 로 남는다 — 모든 로그 쓰기가 끝난 이 시점에 정합한다.
+            $stage = 'finalize';
             $this->restoreUpgradeLogOwnership();
             // root 업데이트가 종료 시점까지 만든 캐시/번들 산출물 소유권 정상화 —
             // restoreOwnership(흐름 중간) 이후의 root 쓰기가 웹 캐시 쓰기를 죽이는
@@ -1002,7 +1023,7 @@ class CoreUpdateCommand extends Command
             //
             // resumeCommand 는 예외에 명시되지 않았으면 `execute-upgrade-steps --from=<afterVersion>
             // --to=<toVersion> --force` 로 자동 생성. step 만 단독 실행되어 재다운로드 없음.
-            $bar->finish();
+            $bar?->finish();
             $this->newLine(2);
 
             $log("업그레이드 핸드오프 수신: {$e->afterVersion} 까지 완료 — {$e->reason}");
@@ -1091,7 +1112,7 @@ class CoreUpdateCommand extends Command
             return $this->handoffExitCode();
 
         } catch (\Throwable $e) {
-            $bar->finish();
+            $bar?->finish();
             $this->newLine(2);
 
             $log("오류 발생: {$e->getMessage()}");
@@ -1110,9 +1131,22 @@ class CoreUpdateCommand extends Command
             // 를 다시 일반 디렉토리로 되돌릴 수 있는 바로 그 경로다.
             $this->surfaceDocrootExposureWarnings($log);
 
+            // 확정 뒤의 실패 — 새 버전은 이미 적용됐고 백업도 지웠다. 파일 복원·번들 배치 기록 되돌림·실패 기록을
+            // 하면 「없는 백업에서 복원 완료」 같은 거짓 안내와 함께 새 상태를 옛 기록으로 덮게 된다.
+            if ($committed) {
+                return $this->reportPostCommitFailure($e, $service, $fromVersion, $toVersion, $stage, $maintenanceEnabled, $updateLogSaved, $logEntries);
+            }
+
             // 롤백
             $restoreSuccess = false;
             $failedTargets = [];
+
+            if ($backupPath && ! $this->backupIsRestorable($backupPath)) {
+                // 백업 경로는 있는데 디렉토리가 없다 — 복원 대상이 0 이라 「복원 완료」로 보이는 것을 막는다
+                $this->warn(__('settings.core_update.console.restore_skipped_no_backup'));
+                $log('백업 디렉토리가 없어 복원을 건너뜀');
+                $backupPath = null;
+            }
 
             if ($backupPath) {
                 $this->warn(__('settings.core_update.console.restoring_backup'));
@@ -1682,6 +1716,88 @@ class CoreUpdateCommand extends Command
         }
 
         return true;
+    }
+
+    /**
+     * 백업 경로에서 실제로 복원할 수 있는지 확인합니다.
+     *
+     * @param  string|null  $backupPath  백업 디렉토리 경로
+     * @return bool 디렉토리가 있으면 true
+     */
+    protected function backupIsRestorable(?string $backupPath): bool
+    {
+        return is_string($backupPath) && $backupPath !== '' && is_dir($backupPath);
+    }
+
+    /**
+     * 확정(새 버전 기록·백업 삭제) 뒤 마무리 단계에서 난 오류를 알립니다.
+     *
+     * 이 시점에는 되돌릴 것이 없습니다 — 파일 복원·번들 배치 기록 되돌림·실패 기록을 하지 않고,
+     * 업데이트가 적용됐다는 사실과 끝내지 못한 단계, 손으로 마저 끝내는 명령을 안내합니다.
+     *
+     * @param  \Throwable  $e  마무리 단계에서 난 오류
+     * @param  CoreUpdateService  $service  코어 업데이트 서비스
+     * @param  string  $fromVersion  업데이트 전 버전
+     * @param  string  $toVersion  적용된 버전
+     * @param  string  $stage  실패한 마무리 단계 키
+     * @param  bool  $maintenanceEnabled  유지보수 모드가 아직 켜져 있는지
+     * @param  bool  $updateLogSaved  업데이트 기록을 이미 남겼는지
+     * @param  array<int, string>  $logEntries  업데이트 기록 줄
+     * @return int 종료 코드 (항상 실패)
+     */
+    protected function reportPostCommitFailure(
+        \Throwable $e,
+        CoreUpdateService $service,
+        string $fromVersion,
+        string $toVersion,
+        string $stage,
+        bool $maintenanceEnabled,
+        bool $updateLogSaved,
+        array $logEntries,
+    ): int {
+        $this->error(__('settings.core_update.console.post_commit_failed', [
+            'version' => $toVersion,
+            'step' => __('settings.core_update.console.post_commit_stage.'.$stage),
+            'message' => $e->getMessage(),
+        ]));
+        $this->newLine();
+        $this->line(__('settings.core_update.console.post_commit_next_steps'));
+        foreach (['config:cache', 'route:cache', 'hooks:cache'] as $command) {
+            $this->line('  php artisan '.$command);
+        }
+        $this->line(__('settings.core_update.console.post_commit_extensions_hint'));
+        foreach (['module', 'plugin', 'template'] as $type) {
+            $this->line('  php artisan '.$type.':update <identifier> --source=bundled');
+        }
+
+        // 새 버전이 적용됐으니 사이트를 열어 둔다 — 유지보수 해제 전에 실패했을 때만 해당
+        if ($maintenanceEnabled) {
+            try {
+                $service->disableMaintenanceMode();
+                // 되돌린 것이 없으므로 「복원 완료」 계열 문구(maintenance_disabled)를 쓰지 않는다
+                $this->info(__('settings.core_update.console.post_commit_maintenance_disabled'));
+            } catch (\Throwable) {
+                $this->warn(__('settings.core_update.console.maintenance_disable_failed'));
+            }
+        }
+
+        // 업데이트 자체는 성공이다 — 기록을 아직 남기지 못했으면 성공 기록으로 남긴다(실패 기록을 겹쳐 남기지 않는다)
+        if (! $updateLogSaved) {
+            try {
+                $this->saveUpdateLog($logEntries, $fromVersion, $toVersion, true);
+            } catch (\Throwable) {
+                // 기록 저장 실패는 안내를 막지 않는다
+            }
+        }
+
+        try {
+            $this->restoreUpgradeLogOwnership();
+            $service->normalizeRuntimeOwnershipAfterRootRun();
+        } catch (\Throwable) {
+            // 소유권 정리 실패는 안내를 막지 않는다
+        }
+
+        return Command::FAILURE;
     }
 
     /**

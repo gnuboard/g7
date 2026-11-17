@@ -1,7 +1,7 @@
 // e2e:allow 실제 엔진 구조(TemplateApp.handleRouteChange·renderTemplate·DynamicRenderer·DataSourceManager·ActionDispatcher)에 하네스 레이아웃을 올려 SPA 전환과 첫 진입의 첫 렌더 상태를 견준다 — 브라우저 축은 총괄의 번들 재빌드 뒤 매트릭스가 덮는다
 /**
  * @file TemplateApp.preRenderRefetchInitLocal.test.tsx
- * @description 첫 렌더 전에 다시 받은 소스의 initLocal·initGlobal 이 SPA 진입에서도 첫 렌더 상태에 실린다 (engine-v1.94.0)
+ * @description 첫 렌더 전에 다시 받은 소스의 initLocal·initGlobal 이 SPA 진입에서도 첫 렌더 상태에 실린다 (engine-v1.95.0)
  *
  * 첫 렌더 전 다시 받기는 두 자리에서 난다 — 레이아웃 init_actions 안의 `refetchDataSource`, 그리고 다른 화면으로 옮길 때
  * 새 화면 상태를 세운 뒤로 미룬 blocking onSuccess 안의 다시 받기. 다시 받기는 그 소스의 initLocal 을 `_localInit` 으로
@@ -259,7 +259,7 @@ async function mount(first: RouteSpec): Promise<{ app: any; go: (r: RouteSpec) =
     return { app, go };
 }
 
-describe('[case:state-global-pre-render-refetch-initlocal-lost-on-spa] 첫 렌더 전에 다시 받은 소스의 initLocal·initGlobal 이 SPA 진입에서도 첫 렌더 상태에 실린다 (engine-v1.94.0)', () => {
+describe('[case:state-global-pre-render-refetch-initlocal-lost-on-spa] 첫 렌더 전에 다시 받은 소스의 initLocal·initGlobal 이 SPA 진입에서도 첫 렌더 상태에 실린다 (engine-v1.95.0)', () => {
     afterEach(async () => {
         try { engine.destroyTemplate(); } catch { /* 정리 */ }
         delete (window as any).__templateApp;
@@ -401,7 +401,7 @@ describe('[case:state-global-pre-render-refetch-initlocal-lost-on-spa] 첫 렌�
 
     /**
      * 폼 화면 → blocking onSuccess 안 다시 받기가 늦는 화면(SPA). 떠나는 폼 화면의 `_localInit` 슬롯은 전환에서 은퇴하고
-     * (engine-v1.88.0), 미뤄진 onSuccess(engine-v1.94.0)가 도는 동안 폼 화면 트리가 남아 다시 그려진다 — 그 사이 새로 붙는 렌더러가
+     * (engine-v1.88.0), 미뤄진 onSuccess(engine-v1.95.0)가 도는 동안 폼 화면 트리가 남아 다시 그려진다 — 그 사이 새로 붙는 렌더러가
      * 은퇴한 슬롯을 받아도, 다시 받기가 initLocal 을 실어도, 앞 화면 `form`·`hasChanges` 가 새 화면 `_local` 에 되살아나지 않는다.
      * 슬롯 은퇴와 onSuccess 미루기가 겹치는 자리다(은퇴 뒤에 미룬 onSuccess 가 놓임).
      *
@@ -441,7 +441,7 @@ describe('[case:state-global-pre-render-refetch-initlocal-lost-on-spa] 첫 렌�
 
     /**
      * 더보기 목록 꼴에서 2쪽까지 본 뒤 다른 화면에 갔다가 뒤로 온다. 진행 상태 `_local.page` 는 스냅샷과 함께 2로 되돌아와야 하는데,
-     * 같은 키를 init_actions 안 다시 받기의 initLocal 이 1로 세운다. 렌더 전 수집(engine-v1.94.0)이 그 1을 `_localInit` 에 싣고,
+     * 같은 키를 init_actions 안 다시 받기의 initLocal 이 1로 세운다. 렌더 전 수집(engine-v1.95.0)이 그 1을 `_localInit` 에 싣고,
      * 스냅샷 되돌리기(engine-v1.85.0)는 정본 B 만 2로 바꾸면, 마운트 뒤 `_localInit` 적용이 A 와 B 를 다시 1로 돌린다 —
      * 다음 더보기가 이미 받은 2쪽을 다시 받는다. 렌더 전 수집과 스냅샷 되돌리기가 같은 키에서 겹치는 자리다.
      *

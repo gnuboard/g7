@@ -247,7 +247,7 @@ describe('[에러 처리] 탭 errorHandling 런타임 라운드트립', () => {
    * @effects error_page_default_key_renders_undefined_code
    */
   it('④-b error_config.layouts 의 default 키는 설정에 보존되고, 미정의 코드는 그 공통 오류 레이아웃으로 그린다', async () => {
-    // 코드별 레이아웃이 없으면 템플릿의 공통 오류 레이아웃(`layouts.default`)으로 그린다(engine-v1.94.0,
+    // 코드별 레이아웃이 없으면 템플릿의 공통 오류 레이아웃(`layouts.default`)으로 그린다(engine-v1.95.0,
     // ErrorPageHandler.renderError). 다른 코드의 레이아웃(500 등)으로 대신하지 않는다.
     const errorConfig = { layouts: { 404: '404', default: 'error' } };
     const fetchSpy = vi.spyOn(window, 'fetch').mockResolvedValue({

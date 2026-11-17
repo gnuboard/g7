@@ -603,19 +603,19 @@
                         {
                             "type": "basic",
                             "name": "Span",
-                            "if": "{{_computed.archiveFreshness?.scheduler?.alive !== true && _computed.archiveFreshness?.on_view?.enabled === true}}",
+                            "if": "{{_computed.archiveFreshness != null && (_computed.archiveFreshness?.scheduler?.alive !== true && _computed.archiveFreshness?.on_view?.enabled === true)}}",
                             "text": "$t:admin.analytics.freshness.on_view|time={{(_computed.archiveFreshness?.last_run_at ?? '').slice(11, 16)}}"
                         },
                         {
                             "type": "basic",
                             "name": "Span",
-                            "if": "{{_computed.archiveFreshness?.scheduler?.alive !== true && _computed.archiveFreshness?.on_view?.enabled !== true && _computed.archiveFreshness?.is_today === true}}",
+                            "if": "{{_computed.archiveFreshness != null && (_computed.archiveFreshness?.scheduler?.alive !== true && _computed.archiveFreshness?.on_view?.enabled !== true && _computed.archiveFreshness?.is_today === true)}}",
                             "text": "$t:admin.analytics.freshness.plain_time|time={{(_computed.archiveFreshness?.last_run_at ?? '').slice(11, 16)}}"
                         },
                         {
                             "type": "basic",
                             "name": "Span",
-                            "if": "{{_computed.archiveFreshness?.scheduler?.alive !== true && _computed.archiveFreshness?.on_view?.enabled !== true && _computed.archiveFreshness?.is_today !== true}}",
+                            "if": "{{_computed.archiveFreshness != null && (_computed.archiveFreshness?.scheduler?.alive !== true && _computed.archiveFreshness?.on_view?.enabled !== true && _computed.archiveFreshness?.is_today !== true)}}",
                             "text": "$t:admin.analytics.freshness.plain_date|month={{Number((_computed.archiveFreshness?.last_run_at ?? '').slice(5, 7))}}|day={{Number((_computed.archiveFreshness?.last_run_at ?? '').slice(8, 10))}}|time={{(_computed.archiveFreshness?.last_run_at ?? '').slice(11, 16)}}"
                         }
                     ]

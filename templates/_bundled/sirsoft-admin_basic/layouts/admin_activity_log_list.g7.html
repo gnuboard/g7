@@ -81,7 +81,7 @@
         <div data-ref="table_header_bar" class="flex-between flex-wrap gap-3 mb-4">
           <div class="flex-center gap-3">
             <!-- 총 건수를 끝까지 센 경우 -->
-            <span data-if="{{activityLogs?.data?.pagination?.total_is_exact !== false}}" class="text-label">$t:admin.activity_log.pagination.total|count={{activityLogs?.data?.pagination?.total || 0}}</span>
+            <span data-if="{{activityLogs?.data?.pagination?.total_is_exact !== false}}" class="text-label"><blur-until-loaded sources="activityLogs"/>$t:admin.activity_log.pagination.total|count={{activityLogs?.data?.pagination?.total || 0}}</span>
             <!-- 총 건수가 상한에 걸려 잘린 경우 — 세지 않은 값을 정확한 것처럼 말하지 않는다 -->
             <span data-if="{{activityLogs?.data?.pagination?.total_is_exact === false}}" class="text-label">$t:admin.activity_log.pagination.total_at_least|count={{activityLogs?.data?.pagination?.total || 0}}</span>
           </div>

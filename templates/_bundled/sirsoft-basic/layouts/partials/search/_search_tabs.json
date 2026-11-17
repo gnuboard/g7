@@ -53,6 +53,10 @@
                 {
                     "type": "basic",
                     "name": "Span",
+                    "blur_until_loaded": {
+                        "enabled": true,
+                        "data_sources": "searchResults"
+                    },
                     "props": {
                         "className": "ml-1.5 {{(query?.type ?? 'all') === 'all' ? 'text-blue-600 dark:text-blue-300' : 'text-gray-600 dark:text-gray-300'}}"
                     },
@@ -103,6 +107,10 @@
                 {
                     "type": "basic",
                     "name": "Span",
+                    "blur_until_loaded": {
+                        "enabled": true,
+                        "data_sources": "searchResults"
+                    },
                     "props": {
                         "className": "ml-1.5 {{query?.type === 'posts' ? 'text-blue-600 dark:text-blue-300' : 'text-gray-600 dark:text-gray-300'}}"
                     },
@@ -153,6 +161,10 @@
                 {
                     "type": "basic",
                     "name": "Span",
+                    "blur_until_loaded": {
+                        "enabled": true,
+                        "data_sources": "searchResults"
+                    },
                     "props": {
                         "className": "ml-1.5 {{query?.type === 'products' ? 'text-blue-600 dark:text-blue-300' : 'text-gray-600 dark:text-gray-300'}}"
                     },
@@ -203,6 +215,10 @@
                 {
                     "type": "basic",
                     "name": "Span",
+                    "blur_until_loaded": {
+                        "enabled": true,
+                        "data_sources": "searchResults"
+                    },
                     "props": {
                         "className": "ml-1.5 {{query?.type === 'pages' ? 'text-blue-600 dark:text-blue-300' : 'text-gray-600 dark:text-gray-300'}}"
                     },

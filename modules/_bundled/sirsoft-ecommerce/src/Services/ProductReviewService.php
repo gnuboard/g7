@@ -9,6 +9,7 @@ use App\Helpers\TimezoneHelper;
 use Carbon\Carbon;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
@@ -92,6 +93,17 @@ class ProductReviewService
     }
 
     /**
+     * 전체 공개 후기 목록(리뷰 모아보기)을 조회합니다.
+     *
+     * @param  array  $filters  필터 조건 (sort, photo_only, rating, per_page)
+     * @return LengthAwarePaginator 페이지네이션된 후기 목록
+     */
+    public function getPublicFeed(array $filters = []): LengthAwarePaginator
+    {
+        return $this->repository->paginatePublicFeed($filters);
+    }
+
+    /**
      * 리뷰 작성 가능 여부 확인
      *
      * @param  int  $userId  사용자 ID
@@ -138,7 +150,7 @@ class ProductReviewService
      * @param  array  $data  리뷰 데이터
      * @return ProductReview 생성된 리뷰 모델
      *
-     * @throws ReviewNotWritableException 작성 자격이 없는 경우
+     * @throws ReviewNotWritableException 작성 자격이 없거나, 같은 주문옵션의 활성 후기가 먼저 저장된 경우(already_written)
      */
     public function createReview(int $userId, array $data): ProductReview
     {
@@ -160,16 +172,23 @@ class ProductReviewService
 
         HookManager::doAction('sirsoft-ecommerce.product-review.before_create', $data);
 
-        $review = $this->repository->create([
-            'product_id' => $resolvedProductId,
-            'order_option_id' => $data['order_option_id'],
-            'user_id' => $userId,
-            'rating' => $data['rating'],
-            'content' => $data['content'],
-            'content_mode' => $data['content_mode'] ?? 'text',
-            'option_snapshot' => $optionSnapshot,
-            'status' => ReviewStatus::VISIBLE->value,
-        ]);
+        try {
+            $review = $this->repository->create([
+                'product_id' => $resolvedProductId,
+                'order_option_id' => $data['order_option_id'],
+                'user_id' => $userId,
+                'rating' => $data['rating'],
+                'content' => $data['content'],
+                'content_mode' => $data['content_mode'] ?? 'text',
+                'option_snapshot' => $optionSnapshot,
+                'status' => ReviewStatus::VISIBLE->value,
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            // canWrite 는 조회로만 중복을 확인하므로, 같은 주문옵션의 작성이 동시에 겹치거나 작성 훅 안에서
+            // 다시 작성되면 둘 다 검사를 통과한다. 주문옵션당 활성 후기 1건 유니크(active_order_option_key)가
+            // 뒤에 온 쪽을 막으므로, 사전 검사와 같은 사유(already_written)로 돌려준다.
+            throw new ReviewNotWritableException('already_written');
+        }
 
         Log::info('상품 리뷰 작성 완료', [
             'review_id' => $review->id,

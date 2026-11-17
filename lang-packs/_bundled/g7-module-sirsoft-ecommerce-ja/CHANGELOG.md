@@ -4,7 +4,7 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [1.3.0] - 2026-11-10
+## [1.3.0] - 2026-11-15
 
 ### Added
 
@@ -38,6 +38,18 @@
 ### Fixed
 
 - 배송정책 「API 응답 테스트」 결과에 배송비·상태 대신 자리표시자가 그대로 보이던 문제 등 화면 문구 12개의 서버 문구식 자리표시자를 화면 번역 형식으로 고쳤습니다(원본 모듈과 같은 수정).
+
+## [1.2.4] - 2026-11-15
+
+### Added
+
+- 이커머스 1.3.5 의 새 문구 일본어 번역을 추가했습니다 — 쿠폰 일괄 받기 결과(`messages.coupon.bulk_download_*`·`operation_failed`), 가입 적립금(`enums` 거래 유형 「가입 적립」, 활동 기록), 마일리지 사용 최소 상품 합계 거절 문구(`exceptions`), 공개 상품 목록·후기 모아보기·쿠폰 일괄 받기·설정 저장의 검증 속성 이름(`validation`), 관리자 환경설정의 사업자 정보 표시·호스팅 서비스 제공자·작성자 이름 가림·마일리지 정책 3종(`admin/settings`·`admin/mileage_settings`).
+
+- 이커머스 1.3.5 의 현금영수증 처리 중 안내 일본어 번역을 추가했습니다 — 같은 주문의 발급이 처리 중일 때(`cash_receipt.errors.issue_in_progress`), 처리 중으로 남은 이력을 실패로 정리했을 때(`cash_receipt.errors.in_progress_stale`), 같은 영수증의 취소가 처리 중일 때(`cash_receipt.errors.cancel_in_progress`).
+
+### Changed
+
+- 카테고리 이미지 업로드 형식 안내(`validation.category_images.file.mimes`)에서 받지 않는 형식(svg)을 뺐습니다(이커머스 1.3.5).
 
 ## [1.2.3] - 2026-11-10
 

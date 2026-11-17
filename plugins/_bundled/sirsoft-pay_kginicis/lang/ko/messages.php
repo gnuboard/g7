@@ -10,6 +10,9 @@ return [
         'order_not_found' => '주문을 찾을 수 없습니다.',
         'cbt_failed' => '해외결제 처리에 실패했습니다.',
         'payment_failed' => '결제 처리에 실패했습니다. 잠시 후 다시 시도해 주세요.',
+        'escrow_in_progress' => '이 주문의 에스크로 요청을 다른 곳에서 처리하고 있습니다. 잠시 후 다시 시도해 주세요.',
+        'escrow_delivery_already_registered' => '이미 에스크로 배송등록이 완료되었습니다. 화면을 새로 고친 뒤 변경으로 다시 등록해 주세요.',
+        'escrow_deny_already_confirmed' => '이미 구매거절확인이 완료되었습니다.',
     ],
     'cash_receipt' => [
         'provider_name' => 'KG이니시스',

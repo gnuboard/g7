@@ -1,4 +1,4 @@
-feature: 반복 노드 자신에 둔 responsive 오버라이드(props·text·if)가 창 폭만 바뀌어도 항목에 반영된다 (engine-v1.94.0)
+feature: 반복 노드 자신에 둔 responsive 오버라이드(props·text·if)가 창 폭만 바뀌어도 항목에 반영된다 (engine-v1.95.0)
 
 description: |
   반복 노드의 항목 렌더는 폭 판정이 끝난 병합 정의를 항목마다 복사해 넘긴다. 그 복사본을 만드는 메모가 정의의 일부

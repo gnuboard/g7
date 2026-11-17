@@ -682,6 +682,12 @@ describe('strictly necessary 허용목록 모집단 커버리지', () => {
 
     /** @effects storage_keys_population_covered_by_allowlist */
 
+    it('코어 선언 필수 키 파싱이 비어 있지 않다 (파서가 죽으면 위 축이 코어 키를 놓친다)', () => {
+        expect(Object.values(CORE_NECESSARY_KEYS).flat()).toContain('g7_search_history');
+    });
+
+    /** @effects storage_keys_population_covered_by_allowlist */
+
     it('의도적 비필수 선언은 실제로 존재하는 키만 담는다 (사문화 방지)', () => {
         const discoveredKeys = new Set(discovered.map((d) => d.key));
         const stale = INTENTIONALLY_NON_NECESSARY

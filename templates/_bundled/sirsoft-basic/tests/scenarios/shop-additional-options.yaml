@@ -1,0 +1,32 @@
+feature: 상품 추가옵션(유료 옵션) 고르기
+
+description: |
+  상품 상세에서 선택 줄마다 추가옵션을 고르고(추가금 표시·필수 그룹 가드), 장바구니·옵션 변경 창·주문 화면들이
+  고른 추가옵션을 보여 준다.
+  시험 하나가 시나리오 하나다 — 각 case 는 아래 주석의 시험 이름과 짝이다.
+
+axes:
+  case: [c01, c02, c03, c04, c05, c06, c07, c08, c09, c10, c11, c12, c13, c14, c15, c16, c17]
+  # c01: 선택된 추가옵션 그룹명·선택지명·추가금을 표시한다
+  # c02: 추가금 0인 선택지는 추가금 표기를 생략한다
+  # c03: 블럭 내부 추가옵션 그룹 iteration이 product.data.additional_options를 사용한다
+  # c04: 블럭별 추가옵션 변경 핸들러 setBlockAdditionalOption을 호출한다
+  # c05: addSelectedItemIfComplete에 additionalOptionGroups를 전달한다
+  # c06: 담기/구매 body에 additional_option_selections를 포함한다
+  # c07: 담기/구매 body가 메인 옵션을 product_option_id(옵션 ID)로 전달한다 (값 기반 option_values 미사용)
+  # c08: 필수 추가옵션 미선택 차단 가드(additional_option_required)가 있다
+  # c09: 레거시 카드레벨 자유텍스트 추가옵션 입력을 제거했다
+  # c10: 선택된 옵션 블록은 space-y-4 부모 + iteration 자식으로 분리한다 (붙어 보이는 회귀 방지)
+  # c11: item.additional_options를 옵션 라인 아래 표시한다
+  # c12: 옵션변경 모달 열기 시 additionalSelections를 현재 선택으로 시드한다
+  # c13: optionProduct.additional_options 기반 그룹 재선택 UI가 있다
+  # c14: PATCH body에 additional_option_selections를 포함한다
+  # c15: 체크아웃 항목에 additional_options 표시가 있다
+  # c16: 주문완료 항목에 additional_options 표시가 있다
+  # c17: 마이페이지 주문상세 항목에 additional_options 표시가 있다
+
+effects:
+  - additional_options_bound_across_purchase_flow
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/shopAdditionalOptions.test.tsx

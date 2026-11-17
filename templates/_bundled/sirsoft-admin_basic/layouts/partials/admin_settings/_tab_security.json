@@ -486,6 +486,102 @@
                             ]
                         },
                         {
+                            "id": "field_password_reset_rate_limit_per_minute",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.security.password_reset_rate_limit_per_minute"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "number",
+                                        "name": "security.password_reset_rate_limit_per_minute",
+                                        "placeholder": "10",
+                                        "min": "{{_local?.form?._meta?.limits?.security_password_reset_rate_limit_per_minute_min ?? 1}}",
+                                        "max": "{{_local?.form?._meta?.limits?.security_password_reset_rate_limit_per_minute_max ?? 1000}}",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": "input input-w-md {{_local.errors?.['security.password_reset_rate_limit_per_minute'] ? 'input-error' : ''}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['security.password_reset_rate_limit_per_minute']}}",
+                                    "props": {
+                                        "className": "form-error"
+                                    },
+                                    "text": "{{_local.errors?.['security.password_reset_rate_limit_per_minute']?.[0] ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-hint mt-1"
+                                    },
+                                    "text": "$t:admin.settings.security.rate_limit_per_minute_hint"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "field_register_rate_limit_per_minute",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": ""
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Label",
+                                    "props": {
+                                        "className": "form-label"
+                                    },
+                                    "text": "$t:admin.settings.security.register_rate_limit_per_minute"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Input",
+                                    "props": {
+                                        "type": "number",
+                                        "name": "security.register_rate_limit_per_minute",
+                                        "placeholder": "10",
+                                        "min": "{{_local?.form?._meta?.limits?.security_register_rate_limit_per_minute_min ?? 1}}",
+                                        "max": "{{_local?.form?._meta?.limits?.security_register_rate_limit_per_minute_max ?? 1000}}",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "className": "input input-w-md {{_local.errors?.['security.register_rate_limit_per_minute'] ? 'input-error' : ''}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['security.register_rate_limit_per_minute']}}",
+                                    "props": {
+                                        "className": "form-error"
+                                    },
+                                    "text": "{{_local.errors?.['security.register_rate_limit_per_minute']?.[0] ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-hint mt-1"
+                                    },
+                                    "text": "$t:admin.settings.security.rate_limit_per_minute_hint"
+                                }
+                            ]
+                        },
+                        {
                             "id": "field_two_factor_auth",
                             "type": "basic",
                             "name": "Div",

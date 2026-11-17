@@ -27,6 +27,10 @@
                             "id": "d_001_total_count",
                             "type": "basic",
                             "name": "Span",
+                            "blur_until_loaded": {
+                                "enabled": true,
+                                "data_sources": "claims"
+                            },
                             "props": {
                                 "className": "ecommerce-text-label"
                             },

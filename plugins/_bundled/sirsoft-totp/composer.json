@@ -1,7 +1,7 @@
 {
     "name": "plugins/sirsoft-totp",
     "description": "Authenticator app (RFC 6238 TOTP) two-factor provider for G7",
-    "version": "1.0.4",
+    "version": "1.1.0",
     "type": "library",
     "authors": [
         {

@@ -5,7 +5,7 @@
 
 <!-- @generated:badges START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.4-0066FF?style=flat-square" alt="version 1.0.4">
+  <img src="https://img.shields.io/badge/version-1.1.0-0066FF?style=flat-square" alt="version 1.1.0">
   <img src="https://img.shields.io/badge/type-%ED%94%8C%EB%9F%AC%EA%B7%B8%EC%9D%B8-555555?style=flat-square" alt="type 플러그인">
   <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.2.0-1F883D?style=flat-square" alt="그누보드7 &gt;=7.2.0">
   <img src="https://img.shields.io/badge/license-MIT-8250DF?style=flat-square" alt="license MIT">
@@ -53,7 +53,9 @@ Authenticator·Authy·1Password 같은 앱에 사이트를 한 번 등록해 두
 | 영역 | 설명 |
 |---|---|
 | 로그인 2단계 인증 | 비밀번호 확인 뒤 인증 앱의 6자리 코드를 추가로 요구합니다. 코드 확인은 코어 2단계 인증 화면이 그대로 처리합니다 |
-| 인증 앱 등록 | QR 코드(otpauth URI)나 직접 입력용 키를 발급하고, 앱이 만든 첫 코드를 확인해 등록을 확정합니다 |
+| 인증 앱 등록 | 현재 비밀번호를 다시 확인한 뒤 QR 코드(otpauth URI)나 직접 입력용 키를 발급하고, 앱이 만든 첫 코드를 확인해 등록을 확정합니다 — 로그인된 탭만으로 다른 사람이 인증 앱을 바꿔 달지 못합니다. 다른 화면에서 먼저 확정됐으면 두 번째 확정은 거절됩니다 |
+| 확인 시도 제한 | 등록 시작의 비밀번호 확인과 해제·백업 코드 재발급의 코드 확인은 회원 단위로 횟수를 셉니다. 상한·대기 시간은 코어 보안 설정의 「최대 로그인 시도 횟수」·「잠금 시간」을 따르고, 넘으면 잠시 뒤 다시 시도하라고 안내합니다 |
+| 보안 알림 | 인증 앱 등록·해제(본인·관리자·서버 명령)·백업 코드 재발급 때 계정 이메일로 알림을 보냅니다. 운영자는 인증 앱 설정 화면의 「보안 알림」 카드에서 알림별로 끄고 켜고 문구를 고칩니다 |
 | 백업 코드 | 확정 시 `xxxxx-xxxxx` 형식 10개를 발급합니다. 단말을 잃었을 때 코드 대신 쓰며, 한 번 쓴 코드는 즉시 소진됩니다 |
 | 백업 코드 재발급 | 현재 코드나 남은 백업 코드로 본인을 확인한 뒤 10개를 새로 발급합니다. 이전 코드는 전부 무효가 됩니다 |
 | 등록 해제 | 회원 본인이 현재 코드(또는 백업 코드)를 넣어 해제합니다 — 자리를 비운 사이 열린 세션으로 2단계 인증이 꺼지는 것을 막습니다 |

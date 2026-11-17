@@ -33,6 +33,7 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ShippingTypeRepositoryInter
 use Modules\Sirsoft\Ecommerce\Rules\ClaimReasonCodeFormat;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
+use Modules\Sirsoft\Ecommerce\Support\AuthorNameMasker;
 use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 use Modules\Sirsoft\Ecommerce\Support\MileageRounding;
 
@@ -402,6 +403,9 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'basic_info.telecom_number' => ['nullable', 'string', 'max:100'],
             // 푸터 사업자 정보 표시 (#434 — 쇼핑몰이 사용자 템플릿 user_global_footer 자리에 그린다, 기본 켜짐)
             'basic_info.footer_business_info_enabled' => ['nullable', 'boolean'],
+            // 사용자 화면 푸터의 사업자 정보: 호스팅 제공자(법정 표시 항목) · 표시 여부
+            'basic_info.hosting_provider' => ['nullable', 'string', 'max:255'],
+            'basic_info.show_business_footer' => ['nullable', 'boolean'],
             // 공개 자산 디스크 — 빈 값은 코어 공개 자산 디스크 설정을 따른다.
             // 선택지가 코어 카탈로그 + 플러그인 훅 등록 디스크로 동적이라 정적 in 불가 —
             // 코어 SaveSettingsRequest 와 동일하게 카탈로그 조회 closure 로 검증한다.
@@ -625,6 +629,8 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'review_settings.write_deadline_days' => ['nullable', 'integer', 'min:'.config('sirsoft-ecommerce.limits.write_deadline_days_min', 1), 'max:'.config('sirsoft-ecommerce.limits.write_deadline_days_max', 365)],
             'review_settings.max_images' => ['nullable', 'integer', 'min:'.config('sirsoft-ecommerce.limits.max_images_min', 0), 'max:'.config('sirsoft-ecommerce.limits.max_images_max', 20)],
             'review_settings.max_image_size_mb' => ['nullable', 'integer', 'min:'.config('sirsoft-ecommerce.limits.max_image_size_mb_min', 1), 'max:'.config('sirsoft-ecommerce.limits.max_image_size_mb_max', 50)],
+            // 공개 후기 작성자 이름 가림 방식 (가운데 가림 / 가리지 않음)
+            'review_settings.author_name_masking' => ['nullable', 'string', 'in:'.AuthorNameMasker::MODE_MIDDLE.','.AuthorNameMasker::MODE_NONE],
 
             // mileage 섹션
             'mileage' => ['sometimes', 'array'],
@@ -652,6 +658,12 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'mileage.expiry_enabled' => ['nullable', 'boolean'],
             'mileage.expiry_days' => ['nullable', 'integer', 'min:'.config('sirsoft-ecommerce.limits.expiry_days_min', 1), 'max:'.config('sirsoft-ecommerce.limits.expiry_days_max', 3650)],
             'mileage.expiry_notification_enabled' => ['nullable', 'boolean'],
+            // 적립금 정책 (모두 기본 꺼짐): 가입 적립금 · 적립금 쓴 주문 적립 제외 · 사용 가능 최소 상품 합계
+            'mileage.signup_earn_enabled' => ['nullable', 'boolean'],
+            'mileage.signup_earn_amount' => ['nullable', 'integer', 'min:0', 'max:1000000000'],
+            'mileage.no_earn_when_points_used' => ['nullable', 'boolean'],
+            'mileage.min_product_total_for_use_enabled' => ['nullable', 'boolean'],
+            'mileage.min_product_total_for_use' => ['nullable', 'integer', 'min:0', 'max:1000000000'],
             'mileage.expiry_notification_days_before' => ['nullable', 'integer', 'min:'.config('sirsoft-ecommerce.limits.expiry_notification_days_before_min', 1), 'max:'.config('sirsoft-ecommerce.limits.expiry_notification_days_before_max', 365)],
 
             // shipping 섹션
@@ -727,6 +739,15 @@ class StoreEcommerceSettingsRequest extends FormRequest
         $attributes = __('sirsoft-ecommerce::validation.attributes');
 
         return array_merge(is_array($attributes) ? $attributes : [], [
+            // 7.1.6 에 더한 칸 — 키별로 명시해 오류 문구에 필드 키가 노출되지 않게 한다
+            'basic_info.hosting_provider' => __('sirsoft-ecommerce::validation.settings_attributes.hosting_provider'),
+            'basic_info.show_business_footer' => __('sirsoft-ecommerce::validation.settings_attributes.show_business_footer'),
+            'review_settings.author_name_masking' => __('sirsoft-ecommerce::validation.settings_attributes.author_name_masking'),
+            'mileage.signup_earn_enabled' => __('sirsoft-ecommerce::validation.settings_attributes.signup_earn_enabled'),
+            'mileage.signup_earn_amount' => __('sirsoft-ecommerce::validation.settings_attributes.signup_earn_amount'),
+            'mileage.no_earn_when_points_used' => __('sirsoft-ecommerce::validation.settings_attributes.no_earn_when_points_used'),
+            'mileage.min_product_total_for_use_enabled' => __('sirsoft-ecommerce::validation.settings_attributes.min_product_total_for_use_enabled'),
+            'mileage.min_product_total_for_use' => __('sirsoft-ecommerce::validation.settings_attributes.min_product_total_for_use'),
             // 개인정보 보유기간 (이슈 #636) — 키별로 명시해 오류 문구에 필드 키가 노출되지 않게 한다
             'privacy_retention' => __('sirsoft-ecommerce::validation.privacy_retention_attributes.section'),
             'privacy_retention.enabled' => __('sirsoft-ecommerce::validation.privacy_retention_attributes.enabled'),

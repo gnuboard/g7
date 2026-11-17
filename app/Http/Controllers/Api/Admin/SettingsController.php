@@ -33,6 +33,7 @@ use App\Services\TrustedProxyProbe;
 use App\Support\Csp\CspPolicyBuilder;
 use App\Support\EnvPriority;
 use App\Support\FileServing\FileDelegation;
+use App\Support\PublicDiskHardeningProbe;
 use App\Support\RuntimeRole;
 use App\Support\SearchScopes;
 use App\Support\ThumbnailDiskOptions;
@@ -95,7 +96,7 @@ class SettingsController extends AdminBaseController
      * - `consent_providers`: 등록된 동의 관리 제공자 `[{id, label}]` (개인정보 탭의 선택 목록, 수집을 꺼 둔 제공자 포함)
      * - `consent_selection`: 지금 선택 상태 `{state, reason, provider_id, provider_label}`
      * - `queue_connection_options`: 큐 워커로 등록할 수 있는 연결 `[{name, driver}]` (sync·null 제외, #139)
-     * - `csp`: 콘텐츠 보안 정책 섹션 메타 `{override, preview, auto_hosts}` (#158)
+     * - `csp`: 콘텐츠 보안 정책 섹션 메타 `{override, preview, auto_hosts, style_override, style_preview, style_auto_hosts}` (#158, 스타일 3키는 7.1.6)
      * - `thumbnail_engine_available`: 이 서버에 쓸 수 있는 이미지 처리 엔진이 있는지 (없으면 업로드 탭이 「썸네일 없이 원본」 안내, #869)
      * - `thumbnail_disk_options`: 썸네일 저장 위치 선택지 `{public: [{id, label}], gated: [{id, label}]}` — label 은 로케일 맵 (#869)
      * - `thumbnail_server_defaults`: 업로드 탭 「고급」 칸(썸네일 서버 보호 값)을 비웠을 때 쓸 값 — `.env` G7_THUMBNAIL_* 가 있으면 그 값,
@@ -104,6 +105,7 @@ class SettingsController extends AdminBaseController
      * - `embed_extension_providers`: 확장이 제공한 외부 영상 서비스 `[{key, extension, id, name}]` (본문 콘텐츠 탭, 7.1.5 #883)
      * - `file_delegation`: 웹서버 파일 위임 요약 `{mode, base_path, accel_prefix, accel_mapping, nginx_alias_path}` — 지금 적용 중인 값이다(저장값이
      *   아니라 `.env` 잠금까지 반영한 config). 드라이버 탭이 웹서버 설정 안내를 실제 경로로 채운다 (#878)
+     * - `public_disk_hardening`: `/storage` 직접 주소 보호 헤더 점검 결과 `{ok, nosniff, disposition, status, checked_at, rules_written}` 또는 null (드라이버 탭 경고, 7.1.6 — `rules_written=false` 는 규칙 파일을 지금 설정으로 쓰지 못함)
      *
      * @return array<string, mixed> 응답 메타 배열
      */
@@ -136,6 +138,7 @@ class SettingsController extends AdminBaseController
             'file_delegation' => FileDelegation::describe(),
             // 비공개 첨부 저장소 카드(#916) — .env 로 고정된 주체, 저장된 선택이 이 서버에 없는 디스크인지
             'private_attachment' => $this->settingsService->privateAttachmentMeta(),
+            'public_disk_hardening' => PublicDiskHardeningProbe::cached(),
         ];
     }
 
@@ -159,8 +162,11 @@ class SettingsController extends AdminBaseController
      * - `override`: `.env G7_CSP_MODE` 탈출구 값 (없으면 null) — 있으면 화면의 모드 선택을 잠근다
      * - `preview`: 지금 저장값으로 붙을 정책 문자열 (모드가 끔이어도 미리 보여 준다)
      * - `auto_hosts`: 활성 확장 선언에서 자동 합산된 호스트
+     * - `style_override`: `.env G7_CSP_STYLE_MODE` 탈출구 값 (없으면 null) — 있으면 스타일 모드 선택을 잠근다 (7.1.6)
+     * - `style_preview`: 지금 저장값으로 붙을 스타일 정책 문자열 (모드가 끔이어도 미리 보여 준다)
+     * - `style_auto_hosts`: 활성 템플릿의 외부 스타일시트와 켜진 확장의 `trusted_style_hosts` 선언에서 자동 합산된 호스트
      *
-     * @return array{override: string|null, preview: string, auto_hosts: array<int, string>} CSP 메타
+     * @return array{override: string|null, preview: string, auto_hosts: array<int, string>, style_override: string|null, style_preview: string, style_auto_hosts: array<int, string>} CSP 메타
      */
     private function buildCspMeta(): array
     {
@@ -170,6 +176,9 @@ class SettingsController extends AdminBaseController
             'override' => $builder->modeOverride(),
             'preview' => $builder->build(),
             'auto_hosts' => $builder->autoHosts(),
+            'style_override' => $builder->styleModeOverride(),
+            'style_preview' => $builder->buildStyle(),
+            'style_auto_hosts' => $builder->styleAutoHosts(),
         ];
     }
 

@@ -26,6 +26,7 @@
 - [모듈에서 사용하기](#모듈에서-사용하기)
 - [카테고리 네이밍 규칙](#카테고리-네이밍-규칙)
 - [예제 코드](#예제-코드)
+- [저장 파일명 확장자](#저장-파일명-확장자)
 - [스트림 계약 (StreamingStorageInterface)](#스트림-계약-streamingstorageinterface-715)
 - [트랜잭션 파일 보상 (StorageTransaction)](#트랜잭션-파일-보상-storagetransaction-715)
 - [마이그레이션 가이드](#마이그레이션-가이드)
@@ -232,7 +233,7 @@ class AttachmentService
     public function upload(string $slug, UploadedFile $file, ?int $postId = null): DynamicAttachment
     {
         // 경로 생성
-        $storedFilename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $storedFilename = Str::uuid() . '.' . StoredFileExtension::resolve($file);
         $datePath = date('Y/m/d');
         $path = "{$slug}/{$datePath}/{$storedFilename}";
 
@@ -413,7 +414,7 @@ class CategoryImageService
         $this->imageResizer->resizeInPlace($file->getRealPath(), $file->getMimeType());
         clearstatcache(true, $file->getRealPath());
 
-        $storedFilename = Str::uuid().'.'.strtolower($file->extension() ?: $file->getClientOriginalExtension());
+        $storedFilename = Str::uuid().'.'.StoredFileExtension::resolve($file);
         $path = 'category/'.date('Y/m/d').'/'.$storedFilename;
 
         $this->storage->put('images', $path, file_get_contents($file->getRealPath()));
@@ -512,7 +513,7 @@ class TempFileService
      */
     public function storeTempFile(string $sessionId, UploadedFile $file): string
     {
-        $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $filename = Str::uuid() . '.' . StoredFileExtension::resolve($file);
         $path = "{$sessionId}/{$filename}";
 
         $this->storage->put('temp', $path, file_get_contents($file->getRealPath()));
@@ -675,6 +676,64 @@ class ProductImageService
 
 ---
 
+## 저장 파일명 확장자
+
+저장 파일명의 확장자는 **올린 파일 이름이 아니라 파일 내용**에서 정합니다. 코어의 `App\Support\Files\StoredFileExtension` 을 씁니다.
+
+```php
+use App\Support\Files\StoredFileExtension;
+
+// ✅ 올바름 — 내용에서 추론한 확장자 (소문자, 점 없음). 추론하지 못하면 두 번째 인자(기본 'bin')
+$storedFilename = Str::uuid() . '.' . StoredFileExtension::resolve($file);
+$storedFilename = Str::uuid() . '.' . StoredFileExtension::resolve($file, 'jpg'); // 이미지 전용 업로드
+
+// ❌ 금지 — 올린 이름의 확장자를 저장 경로에 그대로 사용
+$storedFilename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+```
+
+이유: 업로드 검증(`image`·`mimes`·내용 판정 규칙)의 통과 기준은 파일 **내용**입니다. 내용은 정상 이미지이고 이름만 `.html`·`.js` 인 파일은 그 검증을 통과합니다. 그 이름의 확장자로 저장하면, 그 디스크를 직접 내보내는 웹서버·객체 저장소가 **확장자로** 형식을 정해 같은 출처에서 스크립트가 실행됩니다(공개 자산 디스크 운용에서 특히).
+
+지켜야 할 것:
+
+| 지점 | 규칙 |
+| --- | --- |
+| 업로드 요청 검증 | 이름 확장자(`extensions:`)와 내용(`mimes:`·`mimetypes:`·`AttachmentFileContent`)을 **둘 다** 봅니다. 한쪽만 보면 이름만 바꾼 파일이 통과합니다 |
+| 저장 파일명 | `StoredFileExtension::resolve($file)` |
+| 표시·내려받기 이름 | 원본 파일 이름 컬럼(`original_name` 등)을 그대로 씁니다 — 저장 확장자가 달라도 사용자가 받는 이름은 바뀌지 않습니다 |
+
+참고:
+
+- 텍스트 계열(csv·md·log 등)은 내용이 일반 텍스트로 추론되어 `.txt` 로 저장됩니다. 내려받는 이름은 원본 이름입니다.
+- 이름 확장자를 **허용 목록·내용과 교차 검증한 뒤** 저장에 쓰는 구현(코어 일반 첨부·본문 미디어·게시판 첨부)은 이 규칙의 예외입니다 — 검증이 이름과 내용의 짝을 이미 확인했기 때문입니다. 새 업로드 경로는 예외를 만들지 말고 `StoredFileExtension` 을 씁니다.
+
+### 레이아웃 첨부 허용 확장자
+
+레이아웃 편집기에서 올릴 수 있는 형식은 `App\Support\TemplateLayoutAttachmentPolicy::allowedExtensions($templateIdentifier)` 가 정합니다. 우선순위는 **템플릿 설정 > 코어 설정 > 기본값** 입니다.
+
+| 순서 | 출처 | 값 |
+| --- | --- | --- |
+| 1 | 기본값 | `jpg, jpeg, png, gif, webp` |
+| 2 | 코어 설정 | 환경설정 > 업로드 「레이아웃 첨부 허용 확장자」 (비어 있으면 기본값) |
+| 3 | 템플릿 설정 | 필터 훅 `core.template_layout_attachment.filter_allowed_extensions` |
+
+```php
+use App\Extension\HookManager;
+
+// 템플릿별 목록을 가진 쪽이 그 템플릿의 목록을 돌려준다. 다른 템플릿은 받은 값을 그대로 돌려준다.
+HookManager::addFilter(
+    'core.template_layout_attachment.filter_allowed_extensions',
+    function (array $extensions, string $templateIdentifier): array {
+        return $templateIdentifier === 'vendor-mytemplate' ? ['png', 'webp', 'pdf'] : $extensions;
+    }
+);
+```
+
+- 훅이 빈 목록을 돌려주면 코어 값으로 되돌아갑니다(업로드 전면 차단 방지).
+- 템플릿별 값은 코어 설정을 덮어쓰지 않고 이 훅으로만 끼어듭니다.
+- 이미지가 아닌 형식을 허용해도, 「공개 디스크로 내보낼 확장자」 밖의 파일은 공개 자산 디스크에 저장되지 않고 서버를 거치는 주소(내려받기)로 제공됩니다.
+
+---
+
 ## 스트림 계약 (StreamingStorageInterface, 7.1.5+)
 
 `StorageInterface` 는 파일 내용을 문자열로 주고받는다. 동영상처럼 큰 파일을 메모리에 통째로 올리지 않고 옮기거나 일부 구간만
@@ -749,7 +808,7 @@ class AttachmentService
         $disk = config('sirsoft-board.attachment.disk', 'local');
 
         // 경로 생성
-        $storedFilename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $storedFilename = Str::uuid() . '.' . StoredFileExtension::resolve($file);
         $datePath = date('Y/m/d');
         $path = "attachments/modules/sirsoft/board/{$slug}/{$datePath}/{$storedFilename}";
 
@@ -800,7 +859,7 @@ class AttachmentService
     public function upload(string $slug, UploadedFile $file, ?int $postId = null): DynamicAttachment
     {
         // 경로 생성 (모듈 prefix 제거)
-        $storedFilename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $storedFilename = Str::uuid() . '.' . StoredFileExtension::resolve($file);
         $datePath = date('Y/m/d');
         $path = "{$slug}/{$datePath}/{$storedFilename}";  // 변경됨
 
@@ -1848,6 +1907,37 @@ class AttachmentServiceTest extends TestCase
   디스크)와 사이트 자기 host 는 규칙이 외부로 보지 않습니다(`App\Support\SiteAssetHosts`).
   프록시 URL 을 절대 형태로 발급하면 그 저장이 422 로 거부될 뿐 아니라, 저장된 레이아웃이
   발급 시점의 도메인·스킴에 묶여 주소가 바뀌면 그 이미지가 전부 깨집니다.
+
+### 공개 디스크로 내보낼 확장자 (7.1.6+)
+
+공개 자산 디스크의 파일은 서버(PHP)를 거치지 않고 직접 주소로 나가므로, 그대로 열려도 안전한 형식만 공개 디스크에 둡니다. 목록은 환경설정 > 드라이버 「공개 디스크로 내보낼 확장자」 (기본 `jpg, jpeg, png, gif, webp, avif`)이고, 판정은 `App\Support\PublicAssetDisk` 가 소유합니다.
+
+| 메서드 | 쓰는 곳 |
+| --- | --- |
+| `exportsExtension($ext)` | 확장자가 목록 안인지 |
+| `resolveForExtension($ext, $override)` | 저장할 공개 디스크 이름 — 디스크가 선언돼 있고 확장자가 목록 안일 때만, 아니면 null |
+| `storageForExtension($storage, $ext, $fallbackDisk)` | 공개 자산 디스크를 카테고리 단위로 주입받는 업로드 서비스용 — 목록 밖이면 확장의 기본 디스크 저장소를 돌려줍니다 |
+| `allowsDirectUrl($rowDisk, $path, $override)` | 행에 직접 주소를 발급해도 되는지 |
+
+확장의 `resolvePublicAssetDisk($override, $extension)` 도 두 번째 인자로 확장자를 받습니다(주지 않으면 종전과 같습니다).
+
+```php
+use App\Support\Files\StoredFileExtension;
+use App\Support\PublicAssetDisk;
+
+$extension = StoredFileExtension::resolve($file, 'jpg');
+
+// 목록 밖 확장자면 확장의 기본 디스크(서버를 거치는 주소)로 저장한다 — 업로드는 성공한다
+$storage = PublicAssetDisk::storageForExtension($this->storage, $extension, $defaultDisk);
+$storage->put('images', $path, file_get_contents($file->getRealPath()));
+
+$record->disk = $storage->getDisk(); // 행에는 실제로 저장한 디스크를 기록한다
+```
+
+- 목록 밖 확장자의 **기존 행**은 직접 주소 대신 서버를 거치는 주소로 내려갑니다. 파일은 옮기지 않습니다.
+- **저장 드라이버의 최후 관문**: 대상 디스크가 Laravel `public` 디스크이거나 코어 전역 공개 자산 디스크인데 경로의 확장자가 목록 밖이면 `put()`·`writeStream()` 이 `false` 를 반환하고 경고 로그를 남깁니다. 조용히 다른 디스크로 돌리지 않습니다 — 디스크 선택은 위 메서드로 서비스 계층이 합니다. 일반 첨부 디스크를 `public` 으로 돌려 둔 구성이라면 그 첨부 형식을 목록에 넣어야 저장됩니다. 예외로, 코어 전역 공개 자산 디스크가 일반 첨부 디스크(`attachment.disk`)와 같은 디스크이면(저장소와 공개 자산 스토리지를 둘 다 객체 저장소로 고른 구성) 관문이 막지 않습니다 — 그 디스크가 비공개 첨부의 정상 저장 위치이기 때문이며, 직접 주소는 이때도 목록 안 확장자에만 발급됩니다. `public` 디스크에는 이 예외가 없습니다. 확장 저장소(`getStorage()`)가 자기 기본 디스크(`getStorageDisk()`)에 쓸 때도 막지 않는다 — 그 디스크가 공개 자산 디스크와 같은 저장 공간이어도 확장의 비공개 파일이 원래 놓이는 자리이기 때문이다. 다른 디스크가 기본인 확장이 `withDisk()` 로 공개 자산 디스크에 쓰는 경우와 Laravel `public` 디스크는 그대로 막는다.
+- 운영자가 목록에 넣은 비이미지 형식은 직접 주소에서도 내려받기로만 열립니다(웹서버 규칙·객체 메타데이터). 웹서버·CDN 쪽 설정은 [requirements.md](../requirements.md) 의 「`/storage` 와 S3 공개 디스크 하드닝」 을 참고하세요.
+- S3 디스크에 쓸 때는 객체에 `Content-Type`(내용 기준)이 기록되고, 이미지가 아니면 `Content-Disposition: attachment` 가 함께 기록됩니다.
 
 ### 혼재 운용
 

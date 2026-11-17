@@ -444,6 +444,10 @@
                             {
                                 "type": "basic",
                                 "name": "Span",
+                                "blur_until_loaded": {
+                                    "enabled": true,
+                                    "data_sources": "transactions"
+                                },
                                 "props": {
                                     "className": "ecommerce-text-primary ecommerce:font-bold"
                                 },

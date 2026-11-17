@@ -421,7 +421,7 @@
             "id": "board_guest_fixed_fields",
             "type": "basic",
             "name": "Div",
-            "if": "{{form_meta?.data && !_global.currentUser?.uuid && !route.id}}",
+            "if": "{{form_meta?.data && _global.currentUser !== undefined && !_global.currentUser?.uuid && !route.id}}",
             "responsive": {
                 "640-": {
                     "props": {

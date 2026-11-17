@@ -69,6 +69,8 @@ return [
             'process_failed' => '터미널 설치 스크립트를 실행하지 못했습니다.',
         ],
         // 콘솔 yes/no 확인 프롬프트(HasUnifiedConfirm·ConsoleConfirm) 공통 출력
+        // 확인 질문을 던질 수 없는 실행(터미널 없음·--no-interaction)에서 --yes 없이 거절로 떨어졌을 때
+        'confirm_requires_yes' => '확인이 필요한 작업이라 실행하지 않았습니다(:question). 터미널 없이 실행할 때는 --yes 를 붙이세요.',
         'console_confirm' => [
             'invalid_answer' => 'yes, y, no, n 중 하나로 입력해 주세요.',
         ],

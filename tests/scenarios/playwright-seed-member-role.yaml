@@ -1,0 +1,16 @@
+feature: Playwright 시험 계정 명령(playwright:seed-two-factor)의 역할 부여 — 일반 계정은 일반 회원 역할(user)을 갖는다
+
+description: |
+  일반(관리자 아님) 계정은 앞선 실행의 관리자 역할을 떼야 관리자 거절 경로를 잴 수 있지만, 역할이 하나도 없으면 회원 화면(상품·알림 API)이
+  403 이라 사용자 템플릿을 실측할 수 없었다(engine-v1.91.1 브라우저 실측 중 발견).
+  축 case 는 계정 종류다.
+
+axes:
+  case: [non_admin, admin]
+
+effects:
+  - non_admin_account_has_only_member_role   # 일반 계정은 관리자 역할을 떼고 user 역할만 갖는다
+  - admin_account_keeps_admin_role           # 관리자 계정은 종전대로 admin 역할을 갖는다
+
+test_files:
+  - tests/Feature/Console/PlaywrightSeedTwoFactorRoleTest.php

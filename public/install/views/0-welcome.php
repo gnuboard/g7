@@ -117,17 +117,17 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
                         <pre class="fix-command"><?= htmlspecialchars($groupCommand) ?></pre>
                         <button class="btn-copy" data-action="copyWelcomeCommand"><?= lang('copy_command') ?></button>
                     </div>
-                    <p class="fix-guide-label" style="margin-top: 1rem;"><?= lang('ownership_mismatch_option_chown') ?></p>
+                    <p class="fix-guide-label u-mt-md"><?= lang('ownership_mismatch_option_chown') ?></p>
                     <div class="code-box">
                         <pre class="fix-command"><?= htmlspecialchars("sudo chown -R {$webUser}:{$webUser} {$storagePath}") ?></pre>
                         <button class="btn-copy" data-action="copyWelcomeCommand"><?= lang('copy_command') ?></button>
                     </div>
-                    <p class="fix-guide-label" style="margin-top: 1rem;"><?= lang('ownership_mismatch_option_777') ?></p>
+                    <p class="fix-guide-label u-mt-md"><?= lang('ownership_mismatch_option_777') ?></p>
                     <div class="code-box">
                         <pre class="fix-command"><?= htmlspecialchars("chmod -R 777 {$storagePath}") ?></pre>
                         <button class="btn-copy" data-action="copyWelcomeCommand"><?= lang('copy_command') ?></button>
                     </div>
-                    <p class="fix-guide-hint" style="margin-top: 0.75rem;"><?= lang('ownership_mismatch_hint', ['owner' => htmlspecialchars($owner), 'web_user' => htmlspecialchars($webUser)]) ?></p>
+                    <p class="fix-guide-hint u-mt-075"><?= lang('ownership_mismatch_hint', ['owner' => htmlspecialchars($owner), 'web_user' => htmlspecialchars($webUser)]) ?></p>
                 <?php } elseif (in_array($storageResult['error_type'], ['not_writable', 'not_readable', 'subdirectory_issues', 'windows_readonly'])) { ?>
                     <?php
                     // W7 — 이 화면을 보는 사람의 다수는 SSH 를 쓸 수 없다. FTP 조작 절차가
@@ -198,16 +198,14 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
 
         <!-- 세션 쿠키 차단 경고 배너 (round-trip 검증 실패 시 JS 가 표시) -->
         <div id="session-cookie-blocked-banner"
-             class="alert alert-warning"
-             role="alert"
-             style="display:none;margin-bottom:1rem;">
-            <div class="alert-header" style="display:flex;justify-content:space-between;align-items:center;">
+             class="alert alert-warning u-mb-md hidden"
+             role="alert">
+            <div class="alert-header u-flex-between">
                 <strong><?= lang('session_cookie_blocked_title') ?></strong>
                 <button type="button"
                         data-action="hideElement" data-arg="session-cookie-blocked-banner"
                         class="btn-close"
-                        aria-label="<?= htmlspecialchars(lang('session_cookie_blocked_dismiss')) ?>"
-                        style="background:transparent;border:0;cursor:pointer;font-size:1.25rem;">×</button>
+                        aria-label="<?= htmlspecialchars(lang('session_cookie_blocked_dismiss')) ?>">×</button>
             </div>
             <p><?= lang('session_cookie_blocked_description') ?></p>
             <ol>

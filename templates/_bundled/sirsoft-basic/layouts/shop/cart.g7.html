@@ -2,12 +2,15 @@
      헤더에 그 키를 실어 보낸다(로그인 토큰이 없어도 자기 장바구니를 찾는 경로). -->
 <layout name="shop/cart" version="1.0.0" extends="_user_base">
   <!-- 담긴 상품과 결제 예정 금액을 함께 받는다. 금액은 서버가 계산하므로(쿠폰·배송비·과세 분해)
-       선택 항목이 바뀔 때마다 다시 받아야 한다 — 선택 id 목록을 실어야 해서 GET 이 아니라 POST 다. -->
+       선택 항목이 바뀔 때마다 다시 받아야 한다 — 선택 id 목록을 실어야 해서 GET 이 아니라 POST 다.
+       cartSelectionReady 는 받은 선택 목록이 화면 상태에 들어왔다는 표지다 — 진행형 소스의 initLocal 은 받은 데이터를 그린
+       다음 박자에 들어오므로 그 사이 「상품을 선택해주세요」가 잠깐 보였다(#915). 그 안내는 이 표지가 있을 때만 판단한다. -->
   <data-source id="cartItems" label_key="$t:editor.data_source.cartItems" type="api" endpoint="/api/modules/sirsoft-ecommerce/cart/query" method="POST" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive">
     <headers X-Cart-Key="{{_global.cartKey}}"/>
     <params selected_ids="{{_local.selectedItems?.length > 0 ? _local.selectedItems : undefined}}"/>
     <init-local>
       <field name="selectedItems" value="item_ids"/>
+      <field name="cartSelectionReady" value="item_ids"/>
     </init-local>
     <fallback>
       <field name="data">
@@ -58,6 +61,53 @@
     <!-- cartKey 초기화 (data_sources headers에서 사용) -->
     <action handler="initCartKey"/>
   </init>
+  <!-- 주문하기 — 요약 칸의 단추와 좁은 화면 하단 구매바가 같이 부른다. 먼저 화면을 잠그고(중복 누름 차단) 임시 주문을 만든다.
+       비로그인이면 곧바로 주문서로 가지 않고 로그인을 거치는데, 임시 주문은 cart_key 로 남아 있어 돌아와도 그 주문서가 이어진다 -->
+  <action name="cartCheckout">
+    <sequence>
+      <set-state target="local" :isOrdering="true"/>
+      <api-call target="/api/modules/sirsoft-ecommerce/checkout" auth_mode="optional" method="POST">
+        <success>
+          <!-- 로그인: 주문서로 직행 / 비로그인: 로그인 페이지(비회원 주문 선택) 경유. 임시주문은 cart_key(localStorage)로 유지되어 복귀 후에도 조회됨 -->
+          <conditions>
+            <when if="{{_global.currentUser?.uuid}}">
+              <navigate path="{{_global.shopBase}}/checkout"/>
+            </when>
+            <else>
+              <navigate path="/login">
+                <query redirect="{{_global.shopBase}}/checkout"/>
+              </navigate>
+            </else>
+          </conditions>
+        </success>
+        <fail>
+          <!-- 추가 정보가 비어 있어 거부된 요청(403, error_code 가 required_fields_pending)이면 일반 오류 알림 대신 「추가 정보 필요」 안내 창을 연다 -->
+          <open-modal if="{{error.error_code === 'required_fields_pending'}}" target="required_info_pending_modal"/>
+          <!-- 구매불가 상품 에러 처리 -->
+          <sequence if="{{error.errors?.code === 'cart_unavailable'}}">
+            <set-state target="local" :isOrdering="false"/>
+            <set-state target="local">
+              <field name="unavailableModal">
+                <field name="visible" :value="true"/>
+                <field name="items" value="{{error.errors?.unavailable_items ?? []}}"/>
+                <field name="hasStockIssue" value="{{error.errors?.has_stock_issue ?? false}}"/>
+              </field>
+            </set-state>
+            <open-modal target="cart_unavailable_modal"/>
+          </sequence>
+          <!-- 기타 에러 처리 -->
+          <sequence if="{{error.errors?.code !== 'cart_unavailable'}}">
+            <set-state target="local" :isOrdering="false"/>
+            <toast if="{{error.error_code !== 'required_fields_pending'}}" type="error" message="{{error.errors?.message ?? error.message}}"/>
+          </sequence>
+        </fail>
+        <body item_ids="{{_local.selectedItems}}"/>
+        <field name="headers">
+          <field name="X-Cart-Key" value="{{_global.cartKey}}"/>
+        </field>
+      </api-call>
+    </sequence>
+  </action>
   <slot name="content">
     <container data-type="layout" class="py-8">
       <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
@@ -74,6 +124,12 @@
           <include src="partials/shop/_cart_summary.g7.html"/>
         </div>
       </grid>
+      <!-- 좁은 화면 하단 구매바 — 결제 금액과 주문하기를 늘 손 닿는 자리에 둔다. 금액·잠금·동작은 요약 칸과 같다 -->
+      <mobile-buy-bar data-type="composite" data-ref="mobile_cart_bar" data-if="{{(cartItems.data?.items ?? []).length > 0}}" variant="cart" priceText="{{cartItems.data.calculation?.summary?.multi_currency?.[_global.preferredCurrency ?? _global.defaultCurrency]?.final_amount_formatted ?? cartItems.data.calculation?.summary?.final_amount_formatted ?? '-'}}" primaryLabel="$t:shop.cart.checkout_with_count|count={{(_local.selectedItems ?? []).length}}" primaryDisabled="{{(_local.isOrdering || !cartItems.data.items || cartItems.data.items.length === 0 || !_local.selectedItems || _local.selectedItems.length === 0 || cartItems.data.has_unshippable_items === true) || cartItems.data?.abilities?.can_order !== true}}" busy="{{!!_local.isOrdering}}">
+        <on event="onPrimary">
+          <action-ref name="cartCheckout"/>
+        </on>
+      </mobile-buy-bar>
     </container>
   </slot>
   <!-- 선택 삭제·개별 삭제가 함께 부르는 확인 창. 지울 대상은 `_local.deleteModal.targetIds` 로 넘어온다 -->

@@ -414,8 +414,7 @@ return [
         'validation' => [
             'file_required' => 'Please select a file to upload.',
             'file_invalid' => 'The file is invalid.',
-            'file_image' => 'Only image files can be uploaded.',
-            'file_mimes' => 'Unsupported image format (jpg, jpeg, png, gif, webp, svg).',
+            'file_extensions' => 'This file type cannot be uploaded. Allowed types: :extensions',
             'file_max' => 'The file size may not exceed :max MB.',
             'layout_name_max' => 'The layout name may not exceed 150 characters.',
         ],

@@ -18,9 +18,10 @@ _`getSettingsSchema()` 선언이 없습니다._
 |---|---|
 | `_meta.categories` | 설정 그룹 10개의 목록과 순서 (`basic_info` · `language_currency` · `order_settings` · `claim` · `shipping` · `seo` · `review_settings` · `inquiry` · `notifications` · `mileage`) |
 | `defaults` | 그룹별 기본값. 설치 시 `storage/app/settings/` 로 동기화되어 `module_setting()` 이 읽는 값이 됩니다 |
-| `frontend_schema` | 관리자 화면이 자동으로 그리는 입력 폼 정의 |
+| `frontend_schema` | 관리자 화면이 자동으로 그리는 입력 폼 정의. 칸마다 `expose` 로 사용자 화면(페이지 소스의 설정 묶음)에 내려보낼지를 정합니다 |
+| `public_api_schema` | 비회원도 부르는 공개 설정 API(`settings/shipping`·`payment`·`review`·`checkout`)가 돌려줄 칸 목록. 여기에 없는 칸은 저장돼 있어도 응답에 싣지 않습니다. 페이지 소스 노출(`frontend_schema` 의 `expose`)과는 따로 관리합니다 — 화면이 API 로만 읽는 칸을 페이지 소스에까지 싣지 않기 위해서입니다 |
 
-**`frontend_schema` 는 8개 그룹뿐이고 `claim` 과 `mileage` 가 없습니다.** 자동 생성 폼으로는
+**`frontend_schema` 에는 `claim` 이 없고, `mileage` 는 입력 폼 정의 없이 사용자 화면 노출 정의(`expose`)만 있습니다.** 자동 생성 폼으로는
 표현할 수 없는 입력(통화별 적립 규칙 표, 유형별 신청 가능 상태·환불 자동 승인 결제수단 같은
 다중 선택 묶음)이 있어서 이 두 탭만 레이아웃 JSON 으로 직접 그리기 때문입니다
 (`resources/layouts/admin/partials/admin_ecommerce_settings/_tab_mileage*.json` 6개,
@@ -59,6 +60,14 @@ _`getSettingsSchema()` 선언이 없습니다._
 기한(`vbank_due_at`·`deposit_due_at`)이 있는 결제수단만 훑고, 임시주문 정리는 다른 테이블을 봅니다.
 브라우저 리턴 콜백이 주문 상태를 바꾸지 않게 된 뒤로는 승인 거절분도 여기에 머무르므로, 이 정리가
 선차감 마일리지 복원의 최종 안전망입니다.
+
+`mileage` 그룹의 정책 세 가지(모두 기본 꺼짐)는 다음과 같습니다.
+
+| 칸 | 뜻 |
+|---|---|
+| `signup_earn_enabled` · `signup_earn_amount` | 가입 적립금. **가입 훅(`core.auth.after_register`, 본인인증 대기 뒤 활성화는 `core.auth.after_register_activated`)을 발행하는 가입 경로에만 지급합니다** — 스스로 가입한 회원이 대상이고, 관리자 화면에서 만든 회원·일괄 등록처럼 이 훅을 발행하지 않는 경로에는 지급하지 않습니다. 회원당 한 번만 지급하며 마일리지 사용(`enabled`)이 꺼져 있으면 지급하지 않습니다 |
+| `no_earn_when_points_used` | 적립금을 쓴 주문에는 구매 적립을 하지 않습니다. 주문 시점의 값을 주문에 남겨, 나중에 설정을 바꿔도 그 주문의 판정은 바뀌지 않습니다 |
+| `min_product_total_for_use_enabled` · `min_product_total_for_use` | 상품 합계(배송비·할인 전 소계)가 이 금액 이상일 때만 적립금을 쓸 수 있습니다. 주문서에 안내 줄이 보이고, 미달이면 사용 요청을 거절합니다 |
 
 `claim` 그룹(스키마 1.5.0)은 신청 가능 조건(교환·반품·즉시취소·환불신청 가능 상품 상태, 신청
 가능 기간) · 청구(허용 청구 방식 · 추가 결제수단) · 자동 승인 3종 · **환불 자동 승인 결제수단** ·
@@ -131,6 +140,13 @@ _`getSettingsSchema()` 선언이 없습니다._
 키를 뺄 때 **구조분해 매개변수를 쓰지 않습니다** — 식 평가기가 읽지 못하면 본문 전체가 식 원문 문자열로
 나가 모든 탭 저장이 아무것도 저장하지 못했습니다(#703 실측). 관리 환율 제외처럼 키를 걸러야 하면
 `Object.keys(…).filter(…).reduce(…)` 로 구성합니다.
+
+**사업자 연락처는 합친 값으로 저장하고 폼은 나눔 칸으로 받습니다.** 「기본정보」 탭은 사업자등록번호·
+전화·팩스를 `*_1`·`*_2`·`*_3`, 이메일을 `email_id`·`email_domain` 으로 입력받고, 저장 때 합쳐
+`business_number`·`phone`·`fax`·`email` 로 남깁니다. 관리자 조회·카테고리 조회·저장 응답은 모두
+`EcommerceSettingsAdminService::getSettingsForAdmin()` 을 거쳐 합친 값을 나눔 칸으로 펼쳐
+(`EcommerceSettingsService::withSplitContactFields()`) 싣습니다 — 펼치지 않으면 폼이 빈 칸을 보이고
+다른 칸만 고쳐 저장해도 그 빈 칸이 합쳐져 네 값이 지워집니다(1.3.5 에서 고침).
 
 **무통장입금은 사용할 수 있는 계좌와 짝입니다.** 「사용할 수 있는 계좌」는 사용 중(`is_active`)이고
 계좌번호가 채워진 계좌이며, 판정은 `EcommerceSettingsService::hasUsableBankAccount()` 한 곳입니다.
@@ -457,7 +473,7 @@ IDV 정책의 라우트명 인덱스가 그 라우트를 찾지 못해, 보호�
 | `sirsoft-board` | 모듈 | `*` |
 | `sirsoft-hero_section` | 플러그인 | `>=1.4.0` |
 | `sirsoft-message_bizppurio` | 플러그인 | `*` |
-| `sirsoft-basic` | 템플릿 | `>=1.3.4` |
+| `sirsoft-basic` | 템플릿 | `>=1.3.5` |
 <!-- @generated:dependencies END -->
 
 <!-- @intent START -->

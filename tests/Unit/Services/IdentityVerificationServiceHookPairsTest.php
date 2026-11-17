@@ -42,7 +42,7 @@ class IdentityVerificationServiceHookPairsTest extends TestCase
      *
      * @scenario surface=service_lifecycle_hooks
      *
-     * @effects cancel_fires_before_and_after_hooks_on_success
+     * @effects cancel_fires_before_and_after_hooks_on_success, cancel_hook_pair_dispatched
      *
      * @return void 반환값 없음
      */
@@ -92,7 +92,7 @@ class IdentityVerificationServiceHookPairsTest extends TestCase
      *
      * @scenario surface=service_lifecycle_hooks
      *
-     * @effects cancel_fires_hook_pair_with_false_when_log_missing
+     * @effects cancel_fires_hook_pair_with_false_when_log_missing, cancel_hook_pair_dispatched
      *
      * @return void 반환값 없음
      */
@@ -130,7 +130,7 @@ class IdentityVerificationServiceHookPairsTest extends TestCase
      *
      * @scenario surface=service_lifecycle_hooks
      *
-     * @effects consume_token_fires_before_and_after_hooks_on_success
+     * @effects consume_token_fires_before_and_after_hooks_on_success, consume_hook_pair_dispatched
      *
      * @return void 반환값 없음
      */
@@ -151,8 +151,9 @@ class IdentityVerificationServiceHookPairsTest extends TestCase
         $logRepo->shouldReceive('findVerifiedForToken')
             ->with('token-abc', 'signup')
             ->andReturn($log);
-        $logRepo->shouldReceive('updateById')
-            ->with(Mockery::any(), Mockery::on(fn ($attrs) => isset($attrs['consumed_at'])))
+        // 소비는 「아직 안 쓴 행만」 바꾸는 조건부 갱신이다 — 동시 소비 두 번째는 false (KVE 동형 O4)
+        $logRepo->shouldReceive('consumeIfUnconsumed')
+            ->with('log-uuid', Mockery::type(\DateTimeInterface::class))
             ->andReturn(true);
 
         $userRepo = Mockery::mock(UserRepositoryInterface::class);
@@ -175,7 +176,7 @@ class IdentityVerificationServiceHookPairsTest extends TestCase
      *
      * @scenario surface=service_lifecycle_hooks
      *
-     * @effects consume_token_fires_hook_pair_with_false_when_log_missing
+     * @effects consume_token_fires_hook_pair_with_false_when_log_missing, consume_hook_pair_dispatched
      *
      * @return void 반환값 없음
      */

@@ -239,7 +239,7 @@ describe('이커머스 라우트 바인딩', () => {
     });
 
     // no_route 상점의 shopBase 는 `_user_base.json` 이 '' 로 둔다. '/' 로 두면 `{{shopBase}}/cart` 가 `//cart`(프로토콜 상대,
-    // 다른 호스트)가 되어 엔진이 사이트 밖 이동으로 막는다(engine-v1.93.0 isOffSiteNavTarget).
+    // 다른 호스트)가 되어 엔진이 사이트 밖 이동으로 막는다(engine-v1.94.0 isOffSiteNavTarget).
     // @scenario route_setting=no_route, surface=navigate
     // @effects navigate_cart_stays_on_site_when_no_route
     it('no_route 시 장바구니 navigate → /cart', async () => {

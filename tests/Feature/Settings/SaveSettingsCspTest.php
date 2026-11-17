@@ -22,6 +22,9 @@ use Tests\TestCase;
  * 키워드·스킴 소스·`*` 단독·`http://` 가 하나라도 들어가면 정책이 무력해지거나 다른 지시어가 끼어든다.
  * 응답 `_meta.csp` 는 화면의 잠금·미리보기·자동 호스트 표시가 읽는다(조회·저장 두 응답이 같은 모양).
  *
+ * 스타일 정책(7.1.6)은 `csp_style_mode`·`csp_style_level`·`csp_extra_style_hosts` 3키를 같은 규칙으로 저장하고
+ * `_meta.csp` 에 `style_override`·`style_preview`·`style_auto_hosts` 를 더한다. 새 키를 보내지 않는 저장은 기본값을 유지한다.
+ *
  * DB 는 관리자 계정·역할만 쓰므로 트랜잭션으로 격리한다.
  */
 class SaveSettingsCspTest extends TestCase
@@ -40,7 +43,7 @@ class SaveSettingsCspTest extends TestCase
     {
         parent::setUp();
 
-        config(['core.csp.mode_override' => null]);
+        config(['core.csp.mode_override' => null, 'core.csp.style_mode_override' => null]);
         $this->token = $this->createAdminUser()->createToken('csp-settings-test')->plainTextToken;
     }
 
@@ -265,5 +268,167 @@ class SaveSettingsCspTest extends TestCase
             ->getJson('/api/admin/settings')
             ->assertOk()
             ->assertJsonPath('data._meta.csp.override', 'off');
+    }
+
+    /**
+     * 스타일 정책 저장 — 모드·강도·호스트(정규화)가 저장되고 응답 `_meta.csp` 에 스타일 3키가 실린다.
+     * 기존 3키(`override`·`preview`·`auto_hosts`)는 스크립트 정책 그대로다.
+     *
+     * @scenario case=style_level_strict
+     *
+     * @effects csp_style_settings_persisted_normalized, csp_style_meta_reflects_saved_policy
+     *
+     * @return void 반환값 없음
+     */
+    public function test_스타일_정책_저장과_응답_메타(): void
+    {
+        $response = $this->saveSecurity([
+            'csp_style_mode' => 'report_only',
+            'csp_style_level' => 'strict',
+            'csp_extra_style_hosts' => ['  Fonts.Example.com ', 'fonts.example.com', '', null, '*.cdn.example.net'],
+        ])->assertOk();
+
+        $stored = app(ConfigRepositoryInterface::class)->getCategory('security');
+        $this->assertSame('report_only', $stored['csp_style_mode']);
+        $this->assertSame('strict', $stored['csp_style_level']);
+        $this->assertSame(['fonts.example.com', '*.cdn.example.net'], $stored['csp_extra_style_hosts']);
+
+        $meta = $response->json('data.settings._meta.csp');
+        $this->assertSame(
+            ['override', 'preview', 'auto_hosts', 'style_override', 'style_preview', 'style_auto_hosts'],
+            array_keys($meta)
+        );
+        $this->assertNull($meta['style_override']);
+        $this->assertIsArray($meta['style_auto_hosts']);
+        $this->assertStringStartsWith("style-src 'self' ", $meta['style_preview']);
+        $this->assertStringContainsString('*.cdn.example.net', $meta['style_preview']);
+        $this->assertStringContainsString('fonts.example.com', $meta['style_preview']);
+        $this->assertStringEndsWith("; style-src-attr 'none'; report-uri /api/csp-report", $meta['style_preview']);
+
+        // 스크립트 미리보기에는 스타일 지시어·호스트가 섞이지 않는다
+        $this->assertStringStartsWith("script-src 'self'", $meta['preview']);
+        $this->assertStringNotContainsString('style', $meta['preview']);
+        $this->assertStringNotContainsString('fonts.example.com', $meta['preview']);
+
+        $index = $this->withHeader('Authorization', 'Bearer '.$this->token)->getJson('/api/admin/settings')->assertOk();
+        $this->assertSame($meta['style_preview'], $index->json('data._meta.csp.style_preview'), '조회·저장 두 응답의 스타일 미리보기가 다르다');
+    }
+
+    /**
+     * 스타일 정책의 잘못된 모드·강도·호스트·개수 초과는 422.
+     *
+     * @scenario case=input_invalid_host
+     *
+     * @effects csp_style_settings_rejects_invalid_input
+     *
+     * @return void 반환값 없음
+     */
+    public function test_스타일_정책의_잘못된_입력은_422(): void
+    {
+        $mode = $this->saveSecurity(['csp_style_mode' => 'strict'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['security.csp_style_mode']);
+        $this->assertSame(__('validation.settings.csp_style_mode_in'), $mode->json('errors')['security.csp_style_mode'][0]);
+
+        $level = $this->saveSecurity(['csp_style_level' => 'enforce'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['security.csp_style_level']);
+        $this->assertSame(__('validation.settings.csp_style_level_in'), $level->json('errors')['security.csp_style_level'][0]);
+
+        $response = $this->saveSecurity(['csp_extra_style_hosts' => ['ok.example.com', "'unsafe-inline'"]])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['security.csp_extra_style_hosts.1']);
+        $this->assertStringContainsString("'unsafe-inline'", (string) $response->json('errors')['security.csp_extra_style_hosts.1'][0]);
+
+        $this->saveSecurity(['csp_extra_style_hosts' => 'fonts.example.com'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['security.csp_extra_style_hosts']);
+
+        $hosts = array_map(fn ($i) => "h{$i}.example.com", range(1, 51));
+        $max = $this->saveSecurity(['csp_extra_style_hosts' => $hosts])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['security.csp_extra_style_hosts']);
+        $this->assertSame(
+            __('validation.settings.csp_extra_style_hosts_max', ['max' => 50]),
+            $max->json('errors')['security.csp_extra_style_hosts'][0]
+        );
+    }
+
+    /**
+     * 검증 문구·필드 이름 키가 ko·en 양쪽에 있다 (키가 없으면 키 문자열이 그대로 화면에 나온다).
+     *
+     * @scenario case=input_invalid_host
+     *
+     * @effects csp_style_settings_rejects_invalid_input
+     *
+     * @return void 반환값 없음
+     */
+    public function test_스타일_정책_검증_언어키가_있다(): void
+    {
+        $keys = [
+            'validation.settings.csp_style_mode_in',
+            'validation.settings.csp_style_level_in',
+            'validation.settings.csp_extra_style_hosts_array',
+            'validation.settings.csp_extra_style_hosts_max',
+            'validation.attributes.csp_style_mode',
+            'validation.attributes.csp_style_level',
+            'validation.attributes.csp_extra_style_hosts',
+        ];
+
+        foreach (['ko', 'en'] as $locale) {
+            foreach ($keys as $key) {
+                $this->assertNotSame($key, __($key, [], $locale), "{$locale}: {$key}");
+            }
+        }
+    }
+
+    /**
+     * 스타일 탈출구(`.env G7_CSP_STYLE_MODE`)는 `style_override` 에만 실린다 — 스크립트 `override` 와 섞이지 않는다.
+     *
+     * @scenario case=style_mode_override
+     *
+     * @effects csp_style_meta_reflects_saved_policy
+     *
+     * @return void 반환값 없음
+     */
+    public function test_스타일_탈출구는_응답_메타에_실린다(): void
+    {
+        config(['core.csp.style_mode_override' => 'report_only']);
+
+        $this->withHeader('Authorization', 'Bearer '.$this->token)
+            ->getJson('/api/admin/settings')
+            ->assertOk()
+            ->assertJsonPath('data._meta.csp.style_override', 'report_only')
+            ->assertJsonPath('data._meta.csp.override', null);
+
+        config(['core.csp.style_mode_override' => null, 'core.csp.mode_override' => 'off']);
+
+        $this->withHeader('Authorization', 'Bearer '.$this->token)
+            ->getJson('/api/admin/settings')
+            ->assertOk()
+            ->assertJsonPath('data._meta.csp.style_override', null)
+            ->assertJsonPath('data._meta.csp.override', 'off');
+    }
+
+    /**
+     * 새 키를 보내지 않는 저장(옛 화면)은 스타일 정책을 기본값(끔·basic·빈 목록)으로 둔다 — 업그레이드 스텝 없이 채워진다.
+     *
+     * @scenario case=style_level_basic
+     *
+     * @effects csp_style_settings_default_when_absent
+     *
+     * @return void 반환값 없음
+     */
+    public function test_새_키_미전송_저장은_기본값_유지(): void
+    {
+        $response = $this->saveSecurity(['csp_mode' => 'report_only'])->assertOk();
+
+        $stored = app(ConfigRepositoryInterface::class)->getCategory('security');
+        $this->assertSame('report_only', $stored['csp_mode']);
+        $this->assertSame('off', $stored['csp_style_mode']);
+        $this->assertSame('basic', $stored['csp_style_level']);
+        $this->assertSame([], $stored['csp_extra_style_hosts']);
+
+        $this->assertStringStartsWith("style-src-elem 'self'", $response->json('data.settings._meta.csp.style_preview'));
     }
 }

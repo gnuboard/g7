@@ -638,7 +638,7 @@ describe('G7CoreGlobals - modal API', () => {
 
   // @scenario surface=ui
   // @effects modal_api_dispatches_open_close_actions
-  // 종전에는 없는 핸들러(closeAllModals)를 불러 아무 일도 하지 않았다 — closeModal 의 전부 닫기 옵션으로 보낸다(engine-v1.94.0)
+  // 종전에는 없는 핸들러(closeAllModals)를 불러 아무 일도 하지 않았다 — closeModal 의 전부 닫기 옵션으로 보낸다(engine-v1.95.0)
   it('modal.closeAll()이 closeModal 의 전부 닫기(params.all)를 dispatch해야 함', () => {
     G7Core.modal.closeAll();
 

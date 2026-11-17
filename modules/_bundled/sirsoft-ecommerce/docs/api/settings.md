@@ -548,6 +548,8 @@ HTTP/1.1 200
 | basic_info.privacy_officer_email | body | email | 아니오 | max 255 | 개인정보 보호책임자 E-mail |
 | basic_info.mail_order_number | body | string | 아니오 | max 100 | 통신판매업 신고번호 |
 | basic_info.telecom_number | body | string | 아니오 | max 100 | 부가통신 사업자번호 |
+| basic_info.hosting_provider | body | string | 아니오 | max 255 | 호스팅 서비스 제공자 (사용자 화면 푸터의 사업자 정보에 표시) |
+| basic_info.show_business_footer | body | boolean | 아니오 | — | 사용자 화면 푸터에 사업자 정보를 표시할지 여부. 끄면 사업자 칸을 사용자 화면으로 내려보내지 않음 |
 | basic_info.public_asset_disk | body | string | 아니오 | max 100 | 공개 자산 디스크 오버라이드 (빈값=코어 설정 따름, none=강제 스트리밍, 그 외=카탈로그 디스크 id — 존재하지 않는 디스크는 스트리밍으로 안전 폴백) |
 | basic_info.export_retention_days | body | integer | 아니오 | min 1, max 30 | 내보내기 파일 보관 기간(일). 환경설정 기본정보의 「내보내기 파일 보관 기간」. 값이 없거나 1 미만이면 기본 7일로 본다 (범위는 `limits.export_retention_days_min`, `limits.export_retention_days_max`) |
 | language_currency | body | array | 아니오 | — | 통화 설정 섹션 (기본 통화·통화 목록: 코드·다국어명·환율·반올림 규칙·통화별 로케일) |
@@ -619,6 +621,7 @@ HTTP/1.1 200
 | review_settings.write_deadline_days | body | integer | 아니오 | min 1, max 365 | 구매 확정 후 리뷰를 작성할 수 있는 기간(일) |
 | review_settings.max_images | body | integer | 아니오 | min 0, max 20 | 리뷰 1건당 첨부 가능한 이미지 수 (0 = 이미지 첨부 불가) |
 | review_settings.max_image_size_mb | body | integer | 아니오 | min 1, max 50 | 리뷰 이미지 파일 1개의 최대 용량(MB) |
+| review_settings.author_name_masking | body | string | 아니오 | `middle`, `none` | 공개 후기의 작성자 이름 가림 방식 (`middle`=가운데 가림, `none`=가리지 않음) |
 | privacy_retention | body | array | 아니오 | — | 종결 주문 개인정보 보유기간 섹션(이슈 #636). 「개인정보 보유기간」 탭 저장이 `_tab: privacy_retention` 과 함께 보낸다. 코어 보유기간 커맨드(`privacy:process-retention`)가 핸들러 `sirsoft-ecommerce.order` 를 통해 이 값을 읽어 매일 실행한다 |
 | privacy_retention.enabled | body | boolean | 아니오 | — | 보유기간 처리 사용 여부. **기본 false** — 되돌릴 수 없는 처리라 운영자가 직접 켜야 하며, 핸들러가 실행 시점에 false 폴백으로 다시 읽는다 |
 | privacy_retention.retention_years | body | integer | 예 | min 5, max 20 | 주문 종결(구매확정·취소, 진행 중 환불·교환·반품 없음) 후 보유기간(년, 기본 5). 하한 5년은 전자상거래법 §6 보존기간이라 서버가 강제하고, 판독부도 5년 바닥값을 둔다. 한계값은 `config('sirsoft-ecommerce.limits')` |
@@ -633,6 +636,11 @@ HTTP/1.1 200
 | mileage.expiry_days | body | integer | 아니오 | min 1, max 3650 | 마일리지 유효기간(일) |
 | mileage.expiry_notification_enabled | body | boolean | 아니오 | — | 소멸 예정 알림 발송 여부 |
 | mileage.expiry_notification_days_before | body | integer | 아니오 | min 1, max 365 | 유효기간 만료 며칠 전에 소멸 예정 알림을 발송할지 |
+| mileage.signup_earn_enabled | body | boolean | 아니오 | — | 가입 적립금 사용 여부 (스스로 가입한 회원에게 한 번 지급) |
+| mileage.signup_earn_amount | body | integer | 아니오 | min 0, max 1000000000 | 가입 적립금 금액 |
+| mileage.no_earn_when_points_used | body | boolean | 아니오 | — | 적립금을 쓴 주문에는 구매 적립을 하지 않을지 여부 |
+| mileage.min_product_total_for_use_enabled | body | boolean | 아니오 | — | 적립금 사용에 최소 상품 합계 조건을 둘지 여부 |
+| mileage.min_product_total_for_use | body | integer | 아니오 | min 0, max 1000000000 | 적립금을 쓸 수 있는 최소 상품 합계 |
 | shipping | body | array | 아니오 | — | 배송 설정 섹션 (기본 국가·배송 가능 국가·무료배송·배송사(carriers)·배송유형(types) — carriers/types는 DB 동기화 대상으로 분리 저장) |
 | shipping.default_country | body | string | 아니오 | max 10 | 기본 배송 국가 코드. 새 배송정책 등록 시 기본으로 추가되며, `available_countries` 에 존재해야 함 |
 | shipping.available_countries | body | array | 아니오 | — | 배송 가능 국가 목록. 항목별 `code`(max 10, 필수)·`name`(다국어 배열, 필수)·`is_active`. 코드 중복 불가 |
@@ -1993,7 +2001,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 인증 없이 접근 가능한 공개 엔드포인트로, 체크아웃 화면이 필요로 하는 배송·결제 설정을 한 번에 반환합니다. `EcommerceSettingsService::getSettings()`로 `shipping` 과 `order_settings` 두 섹션을 함께 조회하며, 개별 shipping/payment 엔드포인트를 두 번 호출하지 않도록 묶어줍니다. 비회원·회원 모두 접근하고, `logApiUsage('settings.checkout')`로 사용 로그를 남깁니다.
+**설명** 인증 없이 접근 가능한 공개 엔드포인트로, 체크아웃 화면이 필요로 하는 배송·결제 설정을 한 번에 반환합니다. `EcommerceSettingsService::getPublicCategorySettings()` 로 `shipping` 과 `order_settings`(결제 공개 항목을 `getPublicPaymentSettings()` 로 추린 뒤) 두 섹션을 공개 키만 남겨 함께 조회하며, 개별 shipping/payment 엔드포인트를 두 번 호출하지 않도록 묶어줍니다. 비회원·회원 모두 접근하고, `logApiUsage('settings.checkout')`로 사용 로그를 남깁니다. 응답에는 설정 기본값 파일의 공개 키 목록(`public_api_schema`)에 있는 키만 실립니다 — 배송은 `default_country`·`available_countries`·`international_shipping_enabled`, 결제는 `payment_methods`·`banks`·`bank_accounts`·`auto_cancel_days`·`default_pg_provider`·`cash_receipt_provider`, 후기는 `write_deadline_days`·`max_images`·`max_image_size_mb` 입니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/settings/payment
@@ -2104,7 +2112,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 인증 없이 접근 가능한 공개 엔드포인트로, 체크아웃에서 필요한 결제 설정을 반환합니다. `EcommerceSettingsService::getPublicPaymentSettings()`가 활성화된 결제 수단과 무통장입금 설정 등 공개 가능한 항목만 추려 `order_settings` 로 내려줍니다. 관리자 전용 민감 정보는 제외되며, 비회원·회원 모두 접근하고 `logApiUsage('settings.payment')`로 사용 로그를 남깁니다.
+**설명** 인증 없이 접근 가능한 공개 엔드포인트로, 체크아웃에서 필요한 결제 설정을 반환합니다. `EcommerceSettingsService::getPublicPaymentSettings()`가 활성화된 결제 수단과 무통장입금 설정 등 공개 가능한 항목을 추리고, `getPublicCategorySettings('order_settings', …)` 가 그중 공개 키만 남겨 `order_settings` 로 내려줍니다. 관리자 전용 민감 정보는 제외되며, 비회원·회원 모두 접근하고 `logApiUsage('settings.payment')`로 사용 로그를 남깁니다. 응답에는 설정 기본값 파일의 공개 키 목록(`public_api_schema`)에 있는 키만 실립니다 — 배송은 `default_country`·`available_countries`·`international_shipping_enabled`, 결제는 `payment_methods`·`banks`·`bank_accounts`·`auto_cancel_days`·`default_pg_provider`·`cash_receipt_provider`, 후기는 `write_deadline_days`·`max_images`·`max_image_size_mb` 입니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/settings/review
@@ -2161,7 +2169,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 인증 없이 접근 가능한 공개 엔드포인트로, 리뷰 작성 화면이 필요로 하는 리뷰 정책을 반환합니다. `EcommerceSettingsService::getSettings('review_settings')`로 리뷰 이미지 최대 개수(`max_images`)·최대 용량(`max_image_size_mb`)·작성 기한(`write_deadline_days`) 등을 `review_settings` 로 내려줍니다. 프론트가 이미지 업로드 제한과 작성 가능 기간을 판단하는 데 사용하며, `logApiUsage('settings.review')`로 사용 로그를 남깁니다.
+**설명** 인증 없이 접근 가능한 공개 엔드포인트로, 리뷰 작성 화면이 필요로 하는 리뷰 정책을 반환합니다. `EcommerceSettingsService::getPublicCategorySettings('review_settings')`로 리뷰 이미지 최대 개수(`max_images`)·최대 용량(`max_image_size_mb`)·작성 기한(`write_deadline_days`) 세 칸만 `review_settings` 로 내려줍니다. 프론트가 이미지 업로드 제한과 작성 가능 기간을 판단하는 데 사용하며, `logApiUsage('settings.review')`로 사용 로그를 남깁니다. 응답에는 설정 기본값 파일의 공개 키 목록(`public_api_schema`)에 있는 키만 실립니다 — 배송은 `default_country`·`available_countries`·`international_shipping_enabled`, 결제는 `payment_methods`·`banks`·`bank_accounts`·`auto_cancel_days`·`default_pg_provider`·`cash_receipt_provider`, 후기는 `write_deadline_days`·`max_images`·`max_image_size_mb` 입니다.
 
 
 ### GET /api/modules/sirsoft-ecommerce/settings/shipping
@@ -2239,7 +2247,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 인증 없이 접근 가능한 공개 엔드포인트로, 체크아웃에서 필요한 배송 설정을 반환합니다. `EcommerceSettingsService::getSettings('shipping')`로 기본 배송 국가·이용 가능한 국가 목록·국제 배송 활성화 여부·배송 타입·무료 배송 설정 등을 `shipping` 으로 내려줍니다. 프론트가 배송지 선택과 배송비 안내를 구성하는 데 사용하며, `logApiUsage('settings.shipping')`로 사용 로그를 남깁니다.
+**설명** 인증 없이 접근 가능한 공개 엔드포인트로, 체크아웃에서 필요한 배송 설정을 반환합니다. `EcommerceSettingsService::getPublicCategorySettings('shipping')`로 기본 배송 국가·이용 가능한 국가 목록·국제 배송 활성화 여부 세 칸만 `shipping` 으로 내려줍니다(배송 타입·무료 배송 같은 운영 설정은 싣지 않습니다). 프론트가 배송지 선택과 배송비 안내를 구성하는 데 사용하며, `logApiUsage('settings.shipping')`로 사용 로그를 남깁니다. 응답에는 설정 기본값 파일의 공개 키 목록(`public_api_schema`)에 있는 키만 실립니다 — 배송은 `default_country`·`available_countries`·`international_shipping_enabled`, 결제는 `payment_methods`·`banks`·`bank_accounts`·`auto_cancel_days`·`default_pg_provider`·`cash_receipt_provider`, 후기는 `write_deadline_days`·`max_images`·`max_image_size_mb` 입니다.
 
 
 

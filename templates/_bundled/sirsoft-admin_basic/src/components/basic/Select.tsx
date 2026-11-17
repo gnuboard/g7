@@ -416,7 +416,7 @@ export const Select: React.FC<SelectProps> = ({
   // hasCustomStyle/hasTextColor 판정에서 제외한다. 베이스 토큰만으로 커스텀 외형 여부를 판단해야
   // 호출처가 disabled:bg-gray-100 만 추가했을 때 기본 크기 클래스(w-full px-4 py-2.5)가 유실되지 않는다.
   // 확장이 자기 CSS 로 준 접두 빌드 클래스(`ecommerce:bg-white`)는 앞글자를 떼고 같은 뜻으로 읽는다 —
-  // 앞글자는 변형이 아니다(코어 G7Core.style.splitExtensionClassPrefix, engine-v1.93.0).
+  // 앞글자는 변형이 아니다(코어 G7Core.style.splitExtensionClassPrefix, engine-v1.94.0).
   const bareToken = (t: string): string =>
     (window as any).G7Core?.style?.splitExtensionClassPrefix?.(t)?.rest ?? t;
   const baseTokens = (className ?? '')

@@ -27,8 +27,8 @@
     </fallback>
   </data-source>
   <!-- 이 카테고리에 속한 상품. 조건이 URL 에 살아 있어 `navigate` 로 쿼리만 바꾸면 다시 받는다 -->
-  <data-source id="products" label_key="$t:editor.data_source.products" type="api" endpoint="/api/modules/sirsoft-ecommerce/products" method="GET" :auto_fetch="true">
-    <params page="{{query.page ?? 1}}" :per_page="12" category_slug="{{route.slug}}" sort="{{query.sort ?? 'latest'}}" search="{{query.keyword ?? ''}}"/>
+  <data-source id="products" label_key="$t:editor.data_source.products" type="api" endpoint="/api/modules/sirsoft-ecommerce/products" method="GET" :auto_fetch="true" auth_mode="optional">
+    <params page="{{query.page ?? 1}}" :per_page="12" category_slug="{{route.slug}}" sort="{{query.sort ?? 'latest'}}" search="{{query.keyword ?? ''}}" exclude_sold_out="{{query.exclude_sold_out ?? ''}}"/>
     <fallback>
       <field name="data" :value="[]"/>
       <field name="meta">
@@ -94,9 +94,9 @@
         </recent-search-combobox>
       </div>
       <!-- 하위 카테고리 칩 (자식 카테고리가 있을 때만 표시). 칩 하나가 줄보다 넓어지지 않게 폭을 줄에 맞추고 이름은 한 줄 … (#143) -->
-      <div data-if="{{(category?.data?.children ?? []).length > 0}}" class="flex flex-wrap gap-2 mb-4">
-        <div data-each="sub in {{category?.data?.children ?? []}}" class="max-w-full">
-          <a href="{{_global.shopBase}}/category/{{sub?.slug}}" class="inline-flex items-center justify-center max-w-full px-3 py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-600">
+      <chip-rows data-type="composite" data-if="{{(category?.data?.children ?? []).length > 0}}" ariaLabel="$t:shop.category.chips_label" class="mb-4">
+        <div data-each="sub in {{category?.data?.children ?? []}}" class="shrink-0">
+          <a href="{{_global.shopBase}}/category/{{sub?.slug}}" class="inline-flex items-center justify-center max-w-[16rem] px-[var(--g7-chip-px,0.75rem)] py-1.5 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-full text-[length:var(--g7-chip-fs,0.875rem)] hover:bg-gray-100 dark:hover:bg-gray-600">
             <on type="click">
               <!-- audit:allow layout-list-context-navigate-merge-query 하위 카테고리 이동 — 다른 목록으로의 이동이라 상위 카테고리의 검색·정렬·페이지를 승계하지 않는다 -->
               <navigate/>
@@ -104,26 +104,9 @@
             <span class="min-w-0 truncate">{{sub?.name_localized}}</span>
           </a>
         </div>
-      </div>
-      <!-- 정렬 바 -->
-      <div class="flex items-center justify-between py-3 bg-gray-50 dark:bg-gray-800/50">
-        <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">$t:shop.total_count|count={{products?.data?.pagination?.total ?? 0}}</span>
-        <select name="sort" aria-label="$t:common.sort_order" value="{{query.sort ?? 'latest'}}" class="h-9 w-32">
-          <options>
-            <option value="latest">$t:shop.sort.latest</option>
-            <option value="sales">$t:shop.sort.sales</option>
-            <option value="reviews">$t:shop.sort.reviews</option>
-            <option value="price_asc">$t:shop.sort.price_asc</option>
-            <option value="price_desc">$t:shop.sort.price_desc</option>
-          </options>
-          <on type="change">
-            <!-- 정렬을 바꾸면 순서가 통째로 달라지므로 보던 쪽수를 유지하지 않고 1쪽으로 돌아간다 -->
-            <navigate path="{{route.path}}" :mergeQuery="true">
-              <query sort="{{$event.target.value}}" page="1"/>
-            </navigate>
-          </on>
-        </select>
-      </div>
+      </chip-rows>
+      <!-- 정렬 줄(총 상품 수·초기화·품절 제외·정렬) — 전체 상품 목록과 같이 쓰는 조각 -->
+      <include src="partials/shop/list/_sort_bar.g7.html"/>
       <include src="partials/shop/list/_product_grid.g7.html"/>
     </container>
   </slot>

@@ -1,0 +1,27 @@
+feature: 상품 등록·수정 폼 — 고른 공통정보의 본문 미리보기를 html_content 확장점으로 그린다
+
+description: |
+  상품 폼의 「상품 공통 정보」 구획에서 공통정보를 고르고 상세를 펼치면 그 본문이 미리보기로 나온다. 종전 블록은
+  HTML 모드 본문을 `Div` 의 `dangerouslySetInnerHTML` 에 문자열로 넘겼다. React 는 그 값을 `{ __html }` 객체로만
+  받으므로, HTML 로 작성한 공통정보를 고르면 미리보기 자리에 「컴포넌트 로드 실패」 오류 상자가 떴다(정화도 없었다).
+
+  공통정보 관리 화면의 보기 패널과 같은 `html_content` 확장점으로 바꾼다 — 편집기 플러그인이 있으면 그 표시기가,
+  없으면 템플릿의 `HtmlContent`(정화 포함)가 그린다. HTML 여부는 고른 공통정보의 `content_mode` 로 정하고(값이
+  없으면 텍스트), 본문은 미리보기에서 고른 언어를 따른다. 텍스트 모드 본문도 같은 확장점이 줄바꿈을 보존해 그린다.
+
+axes:
+  case:
+    - layout_contract     # 조각의 구조 계약
+    - html_mode           # HTML 로 작성한 공통정보
+    - text_mode           # 텍스트로 작성했거나 모드 값이 없는 공통정보
+    - fallback_renderer   # 편집기 플러그인이 없을 때의 기본 표시
+
+effects:
+  - no_raw_inner_html_prop                       # dangerouslySetInnerHTML 문자열을 쓰지 않는다
+  - preview_uses_html_content_extension_point    # 미리보기 본문 = html_content 확장점 하나
+  - html_mode_follows_content_mode               # isHtml 식이 content_mode 를 본다(없으면 text)
+  - preview_content_follows_selected_locale      # 본문이 고른 공통정보·고른 언어를 따른다
+  - fallback_renders_with_template_html_content  # 기본 표시기는 같은 값을 받는 HtmlContent
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/productFormCommonInfoPreview.test.tsx

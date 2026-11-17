@@ -45,7 +45,7 @@ effects:
   - html_content_host_clean
   # 글 편집기 영역 호스트를 정리해도 편집기가 뜨고 입력이 폼 상태(form.content)에 반영된다.
   - html_editor_host_clean
-  # 호스트 className·통과 DOM 속성의 `{{…}}` 가 평가된 값으로 붙는다(식 원문·조각 클래스 0) — 반복 컨텍스트와 같은 규칙 (engine-v1.93.0, #816 A15).
+  # 호스트 className·통과 DOM 속성의 `{{…}}` 가 평가된 값으로 붙는다(식 원문·조각 클래스 0) — 반복 컨텍스트와 같은 규칙 (engine-v1.94.0, #816 A15).
   - extension_point_host_class_expression_evaluated
 
 test_files:

@@ -13,6 +13,7 @@
  *      인자는 `data-arg`(문자열), 이벤트 종류는 `data-event`(기본 click)로 준다.
  *
  * 단계별 스크립트(step-N-*.js)가 쓰는 도우미 installerLang()·installerStepData()·installerEscapeAttr() 도 여기서 연다.
+ * 보이기·숨기기 도우미 installerShow()·installerHide() 도 여기 둔다(설치기 스크립트 중 가장 먼저 로드된다).
  * 손작성 ES5, 빌드하지 않는다.
  */
 (function () {
@@ -74,6 +75,33 @@
             .replace(/>/g, '&gt;');
     };
 
+    /**
+     * 요소를 보이게 한다 — 초기 숨김은 `hidden` 클래스(`display:none !important`)라 클래스를 떼야 보인다.
+     *
+     * 웹서버가 `style-src 'self'; style-src-attr 'none'` 을 걸면 마크업의 `style="display:none"` 이 막히므로
+     * 초기 숨김을 클래스로 옮겼다. `el.style.display = ''` 만으로는 `!important` 를 이기지 못한다.
+     *
+     * @param {Element|null} el 대상 요소
+     * @param {string} [display] 지정할 display 값(생략 시 스타일시트 값)
+     */
+    function installerShow(el, display) {
+        if (!el) return;
+        el.classList.remove('hidden');
+        el.style.display = display || '';
+    }
+
+    /**
+     * 요소를 숨긴다 (CSSOM 대입 — style 속성 정책에 걸리지 않는다).
+     *
+     * @param {Element|null} el 대상 요소
+     */
+    function installerHide(el) {
+        if (el) el.style.display = 'none';
+    }
+
+    window.installerShow = installerShow;
+    window.installerHide = installerHide;
+
     // ── 2. 다크 모드 즉시 적용 (FOUC 방지) ────────────────────────────
     try {
         var theme = window.localStorage.getItem('g7_color_scheme')
@@ -108,7 +136,7 @@
         recheckPermission: noArg('recheckPermission'),
         hideElement: function (el, arg) {
             var target = arg ? document.getElementById(arg) : null;
-            if (target) target.style.display = 'none';
+            installerHide(target);
         },
         // 단계 이동·요구사항
         goToStep: function (el, arg) { return call('goToStep', [parseInt(arg, 10)]); },

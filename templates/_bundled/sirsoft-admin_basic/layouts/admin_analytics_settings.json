@@ -212,7 +212,7 @@
         "siteTimezoneName": "{{_computed.canReadAnalytics === true ? (analytics_status?.data?.timezone ?? '') : ''}}",
         "queueBacklogged": "{{_computed.canReadAnalytics === true && analytics_status?.data?.queue?.backlogged === true}}",
         "consentFallbackReason": "{{_computed.canReadAnalytics === true ? (analytics_status?.data?.collection?.anonymous_fallback_reason ?? '') : ''}}",
-        "consentFallback": "{{_computed.canReadAnalytics && (!!_computed.consentFallbackReason || (_local.form?.settings?.privacy_mode === 'consent' && (!analytics_status?.data?.collection?.consent_source || analytics_status?.data?.collection?.consent_source === 'none')))}}",
+        "consentFallback": "{{analytics_status !== undefined && _computed.canReadAnalytics && (!!_computed.consentFallbackReason || (_local.form?.settings?.privacy_mode === 'consent' && (!analytics_status?.data?.collection?.consent_source || analytics_status?.data?.collection?.consent_source === 'none')))}}",
         "canReadDefinitions": "{{(current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.settings.read')}}",
         "canManageDefinitions": "{{(current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.settings.update')}}",
         "activeTab": "{{query.tab || 'collection'}}"
@@ -1422,7 +1422,7 @@
                                         "id": "consent_warning",
                                         "type": "basic",
                                         "name": "Div",
-                                        "if": "{{_computed.consentFallback}}",
+                                        "if": "{{analytics_status !== undefined && (_computed.consentFallback)}}",
                                         "props": {
                                             "className": "alert-warning"
                                         },
@@ -2222,7 +2222,7 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Span",
-                                                                "if": "{{_computed.canReadAnalytics && analytics_status?.data?.geoip?.enabled !== true}}",
+                                                                "if": "{{analytics_status !== undefined && (_computed.canReadAnalytics && analytics_status?.data?.geoip?.enabled !== true)}}",
                                                                 "props": {
                                                                     "className": "form-hint"
                                                                 },
@@ -2985,7 +2985,7 @@
                                                 "id": "storage_permission_notice",
                                                 "type": "basic",
                                                 "name": "P",
-                                                "if": "{{!_computed.canReadAnalytics}}",
+                                                "if": "{{current_user !== undefined && (!_computed.canReadAnalytics)}}",
                                                 "props": {
                                                     "className": "text-hint py-2"
                                                 },
@@ -3002,6 +3002,10 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
+                                                        "blur_until_loaded": {
+                                                            "enabled": true,
+                                                            "data_sources": "analytics_storage"
+                                                        },
                                                         "props": {
                                                             "className": "text-label-subtle"
                                                         },
@@ -3010,6 +3014,10 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
+                                                        "blur_until_loaded": {
+                                                            "enabled": true,
+                                                            "data_sources": "analytics_storage"
+                                                        },
                                                         "props": {
                                                             "className": "text-label-subtle"
                                                         },

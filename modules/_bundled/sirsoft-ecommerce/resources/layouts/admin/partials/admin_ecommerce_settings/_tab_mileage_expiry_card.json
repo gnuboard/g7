@@ -62,7 +62,7 @@
         {
             "type": "basic",
             "name": "Div",
-            "if": "{{_local.form?.mileage?.expiry_enabled ?? true}}",
+            "if": "{{settings !== undefined && (_local.form?.mileage?.expiry_enabled ?? true)}}",
             "props": {
                 "className": "ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:pt-4"
             },

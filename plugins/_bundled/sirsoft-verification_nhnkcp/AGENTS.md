@@ -53,6 +53,7 @@ DB 에 쓰지 않고 임시 보관했다가 가입 완료 시에만 레코드로
 | `src/Enums/` | 상태·타입·분류 | 문자열 리터럴 대신 Enum 을 SSoT 로 둔다 |
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
+| `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
 | `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update sirsoft-verification_nhnkcp --force` (빌드 불필요) |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-verification_nhnkcp --force` |
 | `resources/extensions/` | 다른 확장 레이아웃에 주입하는 조각 | `php artisan plugin:update sirsoft-verification_nhnkcp --force` |
@@ -111,8 +112,8 @@ FormRequest 검증과 Service 저장이 서로 다른 파이프라인 단계이�
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 0개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 9개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 8개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 구독 훅 | 10개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 9개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 2개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -162,7 +163,7 @@ FormRequest 검증과 Service 저장이 서로 다른 파이프라인 단계이�
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 25개 | `plugins/_bundled/sirsoft-verification_nhnkcp/tests` |
+| PHPUnit | 27개 | `plugins/_bundled/sirsoft-verification_nhnkcp/tests` |
 | Vitest | 17개 | `vitest.config.ts` |
 | Playwright | 3개 | `tests/Playwright` |
 | 시나리오 매니페스트 | 30개 | `tests/scenarios` |

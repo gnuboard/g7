@@ -5,25 +5,25 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
-## [engine-v1.95.3] - 2026-11-16
+## [engine-v1.96.3] - 2026-11-16
 
 ### Fixed
 
 - (engine-v1.95.3) 레이아웃 편집기 [버전 기록] 창에서 맨 위 판이 동기화가 덮기 직전에 남긴 운영자 판(`changes_summary.before_overwrite`)이면 최신이어도 [복원] 단추를 보입니다. 종전에는 맨 위 판을 늘 「지금 적용된 판」으로 보고 단추를 숨겨, 「레이아웃 갱신」·확장 업데이트가 운영자 판을 새 판으로 덮은 직후 그 판으로 되돌릴 길이 없었습니다(관리자 코드 편집기 버전 창은 같은 조건으로 이미 보임). 저장한 사람 없이 동기화가 남긴 판(출처 `source` 있음)의 저장자는 「알 수 없음」 대신 「시스템」으로 보입니다(새 문구 `layout_editor.version_history.system_author`). 발생 시점: 덮기 전 판 기록이 생긴 이번 7.2.0 개발 중(#888). 회귀 잠금 `layout-editor/__tests__/components/VersionHistoryModal.test.tsx` (수정 전 2건 red) (layout-editor/components/VersionHistoryModal.tsx, hooks/useLayoutVersions.ts `LayoutVersionChangesSummary`)
 
-## [engine-v1.95.2] - 2026-11-16
+## [engine-v1.96.2] - 2026-11-16
 
 ### Fixed
 
 - (engine-v1.95.2) 액션 `target` 의 `{{_global.*}}` 를 params 와 같이 지금의 전역 상태로 풉니다. 종전에는 params·body 는 저장소 값을, target 만 이벤트 때 잡은 전역 사본을 읽어, sequence 에서 `setState target="global"` 다음 apiCall 의 target 이 빈 값이 됐습니다 — 관리자 템플릿 목록 「레이아웃 갱신」 첫 열기에서 미리보기 요청이 현재 페이지 주소로 나가 405(다시 시도는 정상). 단계 `if`·`conditions` 분기 판정은 바꾸지 않았습니다(이벤트 때 값) — 로그인 폼의 1·2단계 상호배타, 게시판·문의 삭제 onSuccess 의 「상태 비우기 → 분기」 가 그 동작에 기댑니다. 회귀 잠금 `ActionDispatcher.sequenceGlobalFreshness.test.tsx`, 트러블슈팅 state-setstate 사례 57 (ActionDispatcher.ts)
 
-## [engine-v1.95.1] - 2026-11-16
+## [engine-v1.96.1] - 2026-11-16
 
 ### Fixed
 
 - 컴포넌트 정의를 담은 prop(Modal 고정 하단 `footer` 등) 안 단추 액션의 `$t:키|이름={{response…}}` 가 응답이 오기 전 렌더 문맥으로 미리 번역돼 인자 자리가 빈 글자로 굳던 문제를 고쳤습니다. 확장 설치 창의 서명 확인 토스트가 「(서명자: )」로 보였고, 같은 꼴의 연동 확장 안내·알림 템플릿 경고 수·게시판 일괄 적용 건수 토스트도 같은 결함군입니다. props 의 바인딩 단계(`DataBindingEngine.resolveObject`)와 반복 렌더(`RenderHelpers.resolveValue`)는 액션 정의를 건너뛰는데(engine-v1.56.0) 번역 단계(`DynamicRenderer.resolveTranslationsDeep`)만 그 안까지 내려갔습니다. 이제 번역 단계도 액션 정의를 번역하지 않고 원문 표식만 걷어(`stripRawDeep`, 반복 렌더 경로와 같음) 넘기며, 액션 안의 `$t:` 는 실행 시점에 디스패처가 번역합니다(toast·setError·showAlert·confirm, `$t:` 를 내는 식). 같은 prop 안 컴포넌트 정의의 글자는 종전처럼 번역됩니다. 결함은 응답 값을 번역 인자로 쓰는 footer 토스트가 생긴 7.1.4 부터 있었습니다 (DynamicRenderer.tsx `resolveTranslationsDeep`, 회귀: `__tests__/DynamicRenderer.propActionTranslation.test.tsx`, `templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-install-toast-footer.test.tsx`)
 
-## [engine-v1.95.0] - 2026-11-13
+## [engine-v1.96.0] - 2026-11-14
 
 ### Added
 
@@ -35,7 +35,7 @@
 - 첫 화면 전 PHP 왕복을 줄였습니다(#879). ① 부팅이 템플릿 설정을 셸 HTML 에서 읽으면 `GET /api/templates/{id}/config.json` 을 부르지 않습니다(캐시 버전은 셸 주입값 `G7Config.cache_version`). ② routes 를 받고 인증 확인이 끝나면 현재 경로의 레이아웃 요청을 `LayoutLoader.prefetchLayout()` 으로 먼저 시작합니다. 종전에는 확장 번들을 다 실은 뒤에야 레이아웃 요청이 나갔습니다. 첫 라우트 처리의 `loadLayout` 은 Promise 캐시로 같은 요청을 쓰고(실패하면 캐시에서 지워져 다시 받음), 리다이렉트·인증 필요·미리보기·매칭 없음·서버 오류 셸·레이아웃 편집기 경로와, 셸이 캐시 버전을 주지 않은 경우(저장소 버전은 낡았을 수 있어 핸드셰이크가 바꾸면 옛 버전 요청이 늦게 끝나며 현재 레이아웃 기록·캐시 항목을 건드릴 수 있다)는 미리 요청하지 않습니다. 레이아웃은 인증 헤더로 걸러지므로 인증 확인 뒤에 시작해 기존 토큰 처리(401 → 토큰 없이 재시도)를 그대로 탑니다. 토큰이 있는데 인증 확인이 통과하지 못했으면(만료 토큰) 미리 요청하지 않습니다 — 그 요청이 401 재시도의 첫 시도가 되면 실패가 캐시에서 지워진 뒤 본 요청이 「토큰이 있었다」 표시 없이 끝나 로그인 화면의 세션 만료 안내가 빠지기 때문입니다. 이를 위해 `LayoutLoader` 를 병렬 로딩 전에 만들고 셸 캐시 버전을 먼저 설정합니다(핸드셰이크로 버전이 바뀌면 `setCacheVersion` 이 비움). 첫 진입도 캐시 히트 경로라 레이아웃이 깊은 복사로 전달되고(SPA 재방문과 같음), DevTools 의 레이아웃 출처 표시는 첫 방문에도 미리 요청(`api`) 다음 `cache` 로 남습니다 — 출처 `cache` 만으로 재진입이라고 판단하지 않습니다. 레이아웃 편집기와 확장 상태 재로드(`reloadExtensionState`)는 최신 값을 확인하려고 계속 API 를 씁니다 (TemplateApp.ts `init`·`prefetchInitialLayout`, 회귀: `__tests__/TemplateApp.inlineTemplateConfig.test.ts`)
 - 오류 화면 설정(`ErrorPageHandler.loadConfig`)이 셸에 실린 `error_config` 키가 있으면(null 포함) API 를 부르지 않습니다. 없으면 종전처럼 1회 부릅니다 (template-engine/ErrorPageHandler.ts)
 
-## [engine-v1.94.0] - 2026-11-09
+## [engine-v1.95.0] - 2026-11-14
 
 ### Added
 
@@ -98,7 +98,7 @@
 - 레이아웃 편집기 페이지 설정의 오류 처리에서 템플릿 설정에 있는 코드를 이 페이지에서 덮는 [덮기] 단추가 나오지 않던 문제와, 레이아웃이 따로 선언한 오류 코드(예: 418)가 행으로 나오지 않던 문제를 고쳤습니다. 행은 표준 코드, 템플릿 코드, 레이아웃 코드의 합집합입니다 (PageSettingsModal.tsx, ErrorHandlingForm.tsx, 회귀: `ErrorHandlingTemplateOverride.test.tsx`, #869)
 - 오류 처리기 자신이 실패하면 오류 처리를 끝없이 다시 돌리던 문제를 고쳤습니다. 실패한 동작의 오류 처리기는 같은 실행 갈래에서 실행되고, 그 처리기가 실패하면 다시 오류 처리기를 고릅니다. 처리기에 자기 정의가 없으면 시스템 기본(`toast`)이 골라지는데, 그 `toast` 가 같은 이유로 실패하면(전역 상태 갱신기가 던짐) 끝이 없었습니다. 비동기 재귀라 마이크로태스크만 돌아 타이머가 실행되지 않고 탭의 메모리만 늘었습니다(전역 에러 처리 도입 826857b658 부터, 출시본 포함). 이제 오류 처리 문맥에 깊이(`errorHandlerDepth`)를 싣고 깊이 2(원래 동작의 오류 처리기, 그 처리기 실패의 오류 처리기)를 넘는 실패는 기록만 하고 실패로 끝냅니다. onError 안 동작 실패의 기본 토스트 같은 종전 동작은 그대로입니다 (ActionDispatcher.ts `MAX_ERROR_HANDLER_DEPTH`, `ActionContext.errorHandlerDepth`, 회귀: `template-engine/__tests__/ActionDispatcher.errorHandlerReentry.test.ts`, #869)
 
-## [engine-v1.93.0] - 2026-11-09
+## [engine-v1.94.0] - 2026-11-14
 
 ### Added
 
@@ -145,7 +145,7 @@
 - 하위 폴더에 설치한 사이트(`/g7/`)에서 글 목록 행, 쇼핑 카테고리, 쇼핑 쪽 넘김처럼 경로 없는 `navigate` 를 단 링크를 누르면 SPA 이동 대신 문서 전체를 다시 부르던 문제를 고쳤습니다. 링크가 그린 `href` 는 마운트 접두사를 품은 브라우저 주소(`/g7/board/free/2849`)인데, 같은 출처 전체 주소(`https://…/g7/…`)만 접두사를 벗기고 루트 상대 경로는 접두사째 라우트에 대조해 미등록으로 읽은 뒤 미등록 경로 폴백(같은 탭 openWindow)으로 갔습니다. 도착 화면은 맞았지만 입력 중인 상태와 스크롤을 잃고 문서와 부트 자산을 다시 받았습니다. 이제 접두사를 품은 루트 상대 목적지도 벗겨 대조하고, 히스토리에는 Router 가 접두사를 한 번만 붙입니다. 접두사 경계가 아닌 경로(`/g7abc/…`), 이미 벗겨진 경로, 루트 설치는 종전과 같고, 사이트 밖 판정(`//`, 스킴)은 벗기기 전에 먼저 합니다. 관리자 모듈 라우트처럼 언어 접두 패턴(`*/admin/…`)은 접두사를 언어 자리로 받아 우연히 맞았기 때문에 관리자 화면에서는 드러나지 않았습니다. 이 버전의 하위 폴더 지원이 링크 `href` 로 가는 이동(engine-v1.80.1)을 함께 다루지 않아 생긴 결함입니다 (ActionDispatcher.ts `handleNavigate`, 회귀: `template-engine/__tests__/ActionDispatcher.linkClick.test.tsx`·`ActionDispatcher.handleNavigate.fallback.test.ts`, 종전 코드 4건 실패 확인)
 - 노드 오류 경계(`ComponentErrorBoundary`)가 렌더 오류를 잡은 뒤 되돌리는 경로가 없어, 같은 레이아웃 안 SPA 이동(쿼리만 바꾸는 `navigate`, `navigate replace`, 같은 레이아웃의 다른 경로)으로 노드가 다시 마운트되지 않으면 새 화면 데이터가 정상이어도 「컴포넌트 로드 실패」 박스가 새로고침 전까지 남던 문제를 고쳤습니다. 경계가 렌더 문맥의 `route`, `query`(기존 객체 참조)를 받아, 오류 상태일 때 값이 오류 때와 달라지면 자식을 다시 그립니다. 정상 경계는 참조만 기록하고 다시 마운트하지 않으며, 값이 같은 새 객체는 변경으로 보지 않습니다. 다시 그리기는 렌더 중이 아니라 커밋 뒤에 합니다. 커밋 때 화면이 데이터를 받는 중(`transitionManager.getIsPending()`)이 아니면 곧바로, 받는 중이면 받기 끝 알림 때 `React.startTransition` 갱신으로 한 번 다시 그립니다. 받는 중에 난 실패도 받기가 끝난 뒤 한 번 다시 그립니다. 링크 이동의 같은 화면 판정은 첫 렌더에 앞 화면 progressive 값을 이어 그리고, 서버가 빠르면 그 전환 렌더가 끝나기 전에 받는 중 표시가 꺼집니다. 렌더 중에 판정하면 그 렌더의 옛 값으로 던지고, React 가 루트를 동기로 다시 그리며 회복 오류(#520)를 알렸습니다. 받기가 끝난 뒤의 실패는 다음 경로나 쿼리 변경 전까지 다시 시도하지 않습니다(렌더 루프 없음). 받기 끝 알림은 다시 그릴 오류 경계만 구독합니다. 7.0.0-beta.1 부터 있던 결함입니다 (DynamicRenderer.tsx `ComponentErrorBoundary`, 회귀: `__tests__/DynamicRenderer.errorBoundaryRouteReset.test.tsx`)
 
-## [engine-v1.92.0] - 2026-11-09
+## [engine-v1.93.0] - 2026-11-14
 
 ### Added
 
@@ -161,13 +161,47 @@
 - DataGrid 셀(`cellChildren`·`subRowChildren`)과 확장 행(`expandChildren`) 안의 `{{_computed.x}}` 가 늘 undefined 이던 문제(engine-v1.19.1 부모 문맥 병합 때부터). `G7Core.renderItemChildren` 이 셀 문맥에 빈 `_computed` 를 먼저 넣어 셀 렌더 함수의 부모 문맥 병합(없는 키만)이 막혔고, `renderExpandContent` 는 expandContext 평가에만 최신 계산값을 쓰고 자식 문맥에는 빈 객체를 넣었습니다. 셀 문맥의 `_computed` 기본값을 부모 컴포넌트의 최신 계산값(`componentContext.computedRef.current`, 없으면 `parentDataContext._computed`)으로 둡니다. 셀 문맥이 `_computed` 를 직접 주면 그 값이 이기고, 부모 문맥이 없는 호출(CardGrid)은 종전처럼 빈 객체입니다. 영향 화면: 통계 리포트 표(`_computed.reportName`), 이커머스 상품 목록 통화 열(`_computed.currencyDisplayColumns`) (G7CoreGlobals.ts. 잠금: `__tests__/G7CoreGlobals.itemChildrenComputed.test.ts` — 수정 전 3 red · 대조군 2)
 - 동작의 `confirm` 식이 빈 문구로 풀려도 빈 확인창이 뜨던 문제. 식 원문의 유무로 판정해 `confirm="{{hasToken ? '$t:…' : ''}}"` 가 묻지 않을 때도 `confirm('')` 을 불렀습니다. 이벤트 핸들러 경로와 `dispatchAction` 경로 모두 문구를 풀고 번역한 뒤 비었으면(빈 문자열·공백) 확인창 없이 실행합니다. 묻지 않으려면 식이 `''` 를 돌려줍니다(`false` 는 보간이 문자열 "false" 로 푼다) (ActionDispatcher.ts `resolveConfirmMessage`. 잠금: `__tests__/ActionDispatcher.emptyConfirm.test.ts` — 수정 전 8 red · 대조군 4)
 
-## [engine-v1.91.0] - 2026-11-09
+## [engine-v1.92.0] - 2026-11-14
 
 ### Added
 
 - 로그인 인계 코드를 교환해 로그인하는 `loginHandoff` 액션과 `AuthManager.loginWithHandoff()` 를 추가했습니다. 외부 인증(소셜 로그인 등)이 본인 확인을 마친 회원에 대해 코어가 발급한 일회용 코드(`/login?login_handoff=…`)를 로그인 화면이 `POST /api/auth/login/handoff` 로 바꾸면, 서버가 잠금·회원 상태·2단계 인증·비밀번호 변경·휴면 해제를 비밀번호 로그인과 똑같이 처리합니다. 반환 모양은 `login` 액션과 키 단위로 같아(`login`·`loginHandoff` 가 같은 변환 `toLoginResponse` 를 공유) 로그인 화면의 2단계 인증 블록·비밀번호 변경 블록·휴면 해제 안내 분기를 그대로 씁니다. `/api/auth/*` globalHeaders(장바구니 키 등)도 같이 실립니다. 사용자 인증 타입만 지원하며(`AuthConfig.handoffEndpoint`), 관리자 타입은 요청 없이 오류입니다. 레이아웃 편집기 액션 목록에도 「로그인 인계 코드로 로그인」 이 추가됐습니다 (auth/AuthManager.ts `loginWithHandoff`, ActionDispatcher.ts `handleLoginHandoff`·`toLoginResponse`, layout-editor/spec/coreActionRecipes.ts, 회귀: `auth/__tests__/AuthManager.handoff.test.ts`·`__tests__/actions/loginHandoff.test.ts`)
 - 엔진 화면 안에서 서버의 개발자 화면(코어 7.2.0 의 `routes/custom.php`) 주소로 이동하면 엔진이 그 주소를 직접 그리지 않고 전체 페이지 이동(`location.assign`)으로 서버에 넘깁니다. 뒤로·앞으로 가기로 그 주소에 돌아오면 페이지를 다시 적재(`location.reload`)해 서버가 그리게 합니다. 판정은 셸이 싣는 `G7Config.customRoutes = { user: [...], admin: [...] }`(라라벨 라우트 URI 의 `{param}` 구간을 `*` 로 바꾼 GET 패턴, `*` = 한 구간)로 하고, `/admin` 으로 시작하면 관리자 목록과 비교합니다. 쿼리·해시·끝 슬래시를 떼고 퍼센트 인코딩(한글)을 풀어 비교하며, 다른 출처 주소는 대상이 아닙니다. 패턴이 없으면(개발자 라우트 없음) 종전과 완전히 같습니다. 종전에는 템플릿 라우트에도 같은 주소(예: `/board/:slug`)가 있으면 엔진이 `pushState` 로 그려 개발자 화면이 보이지 않았고, 템플릿 라우트에 없는 주소만 navigate 대체 동작(`location.assign`)으로 우연히 서버에 갔습니다 (routing/CustomRouteMatcher.ts 신설, routing/Router.ts `executeNavigation`·`handlePopState`, 회귀: `routing/__tests__/CustomRouteNavigation.test.ts`)
 - 개발자 화면 주소 판정은 서버 라우트의 경로 제약을 따릅니다. 패턴의 `*` 는 제약 없는 한 구간, `{정규식}` 은 그 구간 전체가 정규식과 맞아야 하는 구간이며(예: `/board/{slug}/{id}` 에 `whereNumber('id')` 면 `/board/*/{[0-9]+}`), 구간 수가 같아야 합니다. 제약을 잃으면 `/board/free/write` 처럼 서버가 그리지 않는 엔진 주소까지 전체 이동으로 넘어갑니다 (CustomRouteMatcher.ts, 회귀: `CustomRouteNavigation.test.ts` route_constraints_respected)
+
+## [engine-v1.91.1] - 2026-11-14
+
+### Fixed
+
+- 렌더 전 `init_actions` 에서 등록한 `startInterval` 의 틱이 화면 `_local` 을 갱신하지 못하던 문제를 고쳤다. 틱은 등록 문맥으로 돌아 ① 렌더 전 데이터 스냅숏을 읽어 렌더 뒤 바뀐 값을 보지 못했고 ② 컴포넌트 writer 가 없어 `setState`(target `local`)가 렌더 전 경로(저장소 B 만)로 가서 저장소 A 가 가진 같은 키(클릭 `setState`·init 값)에 가려졌다. 본인인증 전체화면(`auth/identity_challenge`, 사용자·관리자 템플릿)이 들어가자마자 「코드 만료」 를 띄우고, [재전송] 뒤 대기 시간이 줄지 않아 새로고침해야 다시 누를 수 있었다. 이제 `TemplateApp.executeInitActions` 가 init 문맥에 시작 세대(`__initRouteGeneration`)를 남기고, 그 값이 있고 컴포넌트 writer 가 없는 타이머의 틱은 매번 `_global`·`_local`(sequence 시작 상태 포함)을 현재 값으로 다시 읽는다. `_local` 쓰기는 액션 밖 writer(`G7Core.state.setLocal` — 저장소 B·화면 덧칠·덮어쓰기 기록)로 하되, 병합은 엔진 규칙(`deepMergeWithState` + 빈 객체 교체)으로 먼저 계산해 최상위 키만 shallow 로 넘기고, 호출 동안 `__g7ActionContext` 를 비우고 `__g7SequenceLocalSync` 를 되돌린다 — 다른 동작이 await 하는 사이 틱이 돌아도 그 동작의 writer(모달 저장소 A)·대기 중인 sequence 상태를 건드리지 않는다(ActionDispatcher `handleStartInterval`·`createDetachedTickContext`·`handleSetState`, `ActionContext.detachedTick`). `route`·`query`·`_computed` 는 등록 시점 값 그대로다.
+- 같은 타이머가 화면을 떠난 뒤에도 계속 돌며 다음 화면 `_local` 에 앞 화면 키를 쓰던 문제를 고쳤다(`stopAllIntervals` 를 부르는 곳이 없었다 — 타이머 맵 주석도 바로잡았다). 렌더 전 `init_actions` 에서 등록한 타이머는 경로 전환 세대가 init 시작 세대와 달라지면 스스로 멈춘다 — init 은 경로마다 다시 돌아 화면이 여전히 원하면 같은 id 로 다시 등록한다. init 이 await 하는 사이 경로가 바뀐 경우(뒤로 가기 경합)도 시작 세대로 판정해 새 세대에 붙지 않는다. 데이터 소스 `onSuccess`·컴포넌트 동작에서 등록한 타이머는 종전과 같다(레이아웃이 `stopInterval` 로 멈춘다).
+- 발생 시점: `startInterval` 과 본인인증 전체화면을 함께 들인 회원 인증 인프라(#297, engine-v1.45.0 무렵)부터. 회귀 잠금: `__tests__/DynamicRenderer.intervalTickFromInit.test.tsx`(실물 TemplateApp init 실행기·루트 렌더러, 수정 전 코드에서 red).
+
+## [engine-v1.91.0] - 2026-11-11
+
+### Added
+
+- `G7Core.style.setRules(key, css, opts?)` · `remove(key)` · `has(key)` — 런타임 CSS 규칙 헬퍼(`resources/js/core/style/RuntimeStyleSheet.ts`). 기존 `G7Core.style`(`mergeClasses`·`conditionalClass`·`joinClasses`)에 더했다. `<style>` 요소를 만들지 않고 생성형 스타일시트(`new CSSStyleSheet()` + `replaceSync`)를 `document.adoptedStyleSheets` 에 더한다(배열을 덮어쓰지 않고 이어 붙이며, 제거는 자기 시트만 거른다). 같은 key 는 교체. 반환 핸들은 `{key, mode: 'adopted' | 'element', remove()}`. adopted 모드에서도 `<head>` 에 표식 요소 `<meta id="{key}" data-g7-runtime-style="adopted">` 를 붙였다가 제거 때 뗀다(`opts.markerAttrs` 로 속성 추가, `style` 이름은 무시). 기능이 없는 환경(구형 브라우저·jsdom)은 `<style id="{key}" data-g7-runtime-style="element">` 로 폴백한다. 레지스트리는 `window.__g7RuntimeStyles`(Map)라 편집기·DevTools 번들에 모듈이 복제돼도 한 곳을 공유한다. 모듈 내부용으로 `getCssText(key)`·`getSheet(key)` 도 있다(전역에는 노출하지 않음).
+- `G7Core.inlineStyle` — 본문 서식 지연 장치(`resources/js/core/contentStyle/InlineStyleDeferral.ts`). `ATTR`(`'data-g7-style'`) · `defer(html)` → `{html, token}`(정화 전에 태그 안의 `style=` 을 1회용 이름 `data-g7-style-{token}` 으로 바꿈) · `installHook(purifyInstance, config, token)`(전용 DOMPurify 인스턴스의 `beforeSanitizeAttributes`·`afterSanitizeAttributes` 훅이 그 이름만 `data-g7-style` 로 올림) · `sanitize(purifyInstance, html, config)`(이름 바꾸기 → 훅 → 정화 → 훅 해제를 한 번에) · `apply(root)` → 적용한 요소 수(`[data-g7-style]` 마다 `el.style.cssText` 에 대입하고 속성 제거, 루트 자신 포함). 원문에 이미 적혀 있던 `data-g7-style` 은 버리고, 정화 설정이 `style` 을 금지하면(`FORBID_ATTR` 에 포함, 또는 `ALLOWED_ATTR` 이 있는데 `ALLOWED_ATTR`·`ADD_ATTR` 어디에도 없음) 올리지 않고 버린다.
+- `G7Core.contentPolicy.sanitize(purify, html, { …, G7_DEFER_STYLE: true })` — 플래그가 있으면 출력의 `style` 속성을 `data-g7-style` 로 옮긴다(호출자가 DOM 에 붙인 뒤 `G7Core.inlineStyle.apply(root)`). 후보 태그(`video` 등)는 허용 속성 목록에 `style` 이 없으면 서식을 버린다(종전 결과와 같음). 플래그가 없으면 출력은 종전과 같다 — `apply` 를 구현하지 않은 옛·외부 템플릿에서 서식이 통째로 사라지지 않게 하기 위해서다. 플래그는 `G7_KEEP_FORBID_TAGS` 처럼 걸러 DOMPurify 에 넘기지 않는다.
+
+### Changed
+
+- 전환 덮개(`transition_overlay`)의 타겟 지정 규칙과 스켈레톤·스피너 덮개의 타겟 규칙을 `<style>` 요소 대신 `RuntimeStyleSheet` 로 붙인다(키 `g7-transition-overlay`·`g7-skeleton-overlay-style`). `<head>` 에는 같은 id 의 표식 요소가 남으므로 「같은 id 요소가 있으면 덮개가 떠 있다」는 계약은 그대로지만, 태그는 `<style>` 이 아니라 `<meta>` 다(TemplateApp).
+- 기본 스피너(커스텀 `spinner.component` 미지정)를 `innerHTML` 의 `style` 속성 문자열 대신 요소 + 코어 정적 CSS 클래스(`g7-spinner-overlay`·`g7-spinner`)로 그린다. 색을 바꾸는 CSS 변수 `--g7-overlay-bg`·`--g7-spinner-color` 는 그대로다. `@keyframes g7-spin` 은 런타임 주입에서 코어 정적 CSS(`public/assets/core/css/g7-core.css`)로 옮겼다 — 이 이름에 기대는 템플릿 로딩 컴포넌트는 그대로 동작한다(TemplateApp).
+- 본문의 외부 영상 상자(`renderEmbeds()` 가 만드는 `.g7-embed`)가 `style` 속성 대신 `data-aspect` 속성(목록에 있는 비율만)과 코어 정적 CSS 로 비율·배치를 정한다. 목록 밖 비율은 기본(16:9)이다(ContentPolicyRuntime).
+
+### Fixed
+
+- 엄격한 스타일 정책(`style-src 'self'; style-src-attr 'none'` 또는 `style-src-elem 'self'`)을 건 사이트에서 코어 런타임이 만든 스타일이 적용되지 않던 문제. 고친 자리:
+  - 전환 덮개·스켈레톤·스피너 덮개 — `<head>` 에 붙인 `<style>` 이 막혀 덮개가 보이지 않고 앞 화면이 비쳤다(TemplateApp, 위 Changed).
+  - 엔진 오류 화면 — `innerHTML` 의 `style` 속성이 막혀 제목·버튼이 무스타일로 그려졌다. `g7-error*` 클래스 + 코어 정적 CSS 로 바꿨다. 다크 모드는 `prefers-color-scheme` 미디어 쿼리(ErrorDisplay).
+  - 레이아웃 로드 실패·컴포넌트 없음·컴포넌트 오류 안내 — 같은 원인. `g7-layout-error__*`·`g7-layout-placeholder__*`·`g7-layout-component-error__*` 클래스로 바꿨다(LayoutLoader).
+  - 시스템 배너 — 배너 항목을 `style` 속성 문자열로 그려 배경·글자색이 사라졌다. 요소를 만들고 고정 모양은 `g7-system-banner` 클래스, 배너별 배경·글자색은 `el.style` 대입으로 준다. 메시지는 종전대로 HTML 문자열을 받는다(SystemBannerManager).
+  - 레이아웃 편집기 — 툴바 규칙(저장 스피너 `@keyframes g7le-spin`·압착 차단), 공통 레이아웃 슬롯 표시 규칙(번역 문구는 CSS 변수 `--g7le-slot-label`), 빈 표 셀 최소 크기 규칙, 권한 가드된 편집기 CSS 자산(키 `g7le-asset:{href}`, 표식 요소에 `data-g7le-asset`), 미리보기 미디어 격리의 컨테이너 지정 규칙을 `<style>` 요소 대신 `RuntimeStyleSheet` 로 붙인다. 생성형 시트는 `ownerNode` 가 없어 미디어 격리의 속성 옵트아웃이 걸리지 않으므로 시트 객체 비교로 격리 대상에서 뺀다. 생성형 시트의 `replaceSync` 는 `@import` 를 무시하므로 편집기 CSS 에 `@import` 가 있으면 경고를 남긴다(EditorToolbar·PreviewCanvas·TableInplaceOverlay·useEditorTemplateAssets·usePreviewMediaIsolation·editorRuntimeStyles).
+  - DevTools 패널 — 패널 CSS 를 `<style>` 요소 대신 `RuntimeStyleSheet`(키 `g7-devtools-styles`)로 붙인다(devtools/ui/styles).
+
+배경: 엄격한 스타일 정책에서 막히는 것은 세 가지다 — `<style>` 요소, HTML 문자열(서버 HTML·`innerHTML`·`dangerouslySetInnerHTML`)의 `style="…"` 속성, `setAttribute('style', …)`. Chrome 156 실측에서 `document.adoptedStyleSheets`, 기존 `<link>` 시트의 `insertRule`, `el.style.x = …`·`el.style.cssText = …`·`el.style.setProperty()`, React `style` prop 은 위반 0건이었다. 같은 실측에서 엄격 정책 아래 HTML 문자열을 `DOMParser`·`<template>` 로 **파싱만 해도** 그 안의 `style` 속성이 위반으로 보고됐다 — 그래서 본문 서식 지연은 정화 뒤에 속성을 옮기는 방식이 아니라 정화(=파싱) **전에** 속성 이름을 바꾸는 방식이다. 발생 시점: 각 기능이 처음 들어온 때부터다(타겟 지정 덮개 engine-v1.23.0, 스켈레톤 engine-v1.24.0, 스피너 engine-v1.29.0). 스타일 정책을 걸지 않은 사이트에서는 드러나지 않았다. 한계: `adoptedStyleSheets` 가 없는 브라우저는 `<style>` 폴백이라, 그 브라우저에서 정책을 강제하면 덮개가 표시되지 않는다. 서버 짝: 셸·오류·점검 화면의 `<style>` 블록을 코어 정적 CSS 2종(`g7-core.css`·`g7-standalone.css`)으로 옮겼고, 스타일 정책 설정(`security.csp_style_mode`·`csp_style_level`)이 생겼다. 회귀 잠금: `style/__tests__/RuntimeStyleSheet.test.ts`, `contentStyle/__tests__/InlineStyleDeferral.test.ts`, `__tests__/TemplateApp.overlayNoInlineStyle.test.ts`, `__tests__/coreCss.contract.test.ts`(런타임이 쓰는 클래스·keyframes 가 코어 정적 CSS 에 있는지), `template-engine/__tests__/coreRuntime.noInlineStyle.test.ts`, `contentPolicy/__tests__/ContentPolicyRuntime.noInlineStyle.test.ts`, `template-engine/layout-editor/__tests__/noInlineStyleElement.test.tsx`, `devtools/__tests__/injectDevToolsStyles.test.ts`.
 
 ## [engine-v1.90.1] - 2026-11-09
 

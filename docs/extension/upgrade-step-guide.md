@@ -352,6 +352,13 @@ upgrade step PR 검토 시 아래 항목을 모두 확인:
 
 beta.2 이후 버전은 `CoreUpdateService::snapshotOwnership() + restoreOwnership()` 공통 로직이 Step 11 Cleanup 에서 자동 수행. upgrade step 에서 별도 소유권 복원이 필요한 예외 상황(이전 버전에 해당 로직이 없음) 에서만 인라인 작성.
 
+공통 복원이 닿지 않는 자리가 두 곳 있다 — 스텝이 그 자리에 파일을 새로 만들면 sudo 실행에서 root 소유로 남아 웹 계정이 다시 쓰지 못한다.
+
+- 복원 대상 목록(`config('app.update.restore_ownership')`) **밖** 경로. `storage/app/public`·`storage/app/{modules,plugins,attachments,settings}` 같은 사용자 데이터 영역은 업로드 파일 소유자를 지키려고 일부러 뺐다(재귀 chown 대상 아님).
+- 업데이트 **시작 시점에 없던** 파일. 스냅샷은 시작 시점의 경로만 기록한다.
+
+이런 파일은 스텝이 쓴 직후 부모 디렉터리의 소유자·그룹으로 직접 맞춘다(root 로 실행 중일 때만 실제로 바뀐다). 스텝은 신규 헬퍼 대신 PHP 파일 함수(`fileowner`·`filegroup`·`chown`·`chgrp`)로 쓴다 — 선례: 7.1.6 `WritePublicDiskHtaccess`(`storage/app/public/.htaccess`), 설정 JSON 은 `SettingsMigrator` 가 같은 방식으로 부모 소유를 잇는다.
+
 ### 6.1 항목별 정확 복원 — `snapshotOwnershipDetailed` + `restoreOwnership($detailedSnapshot)` (beta.4+)
 
 `snapshotOwnership` 은 target 의 **루트 디렉토리 1개만** stat. 트리 내부 항목의 owner/group/perms 는 보존하지 않는다. PHP-FPM 쓰기 영역(`storage/logs`, `storage/framework`, `storage/app/core_pending`, `bootstrap/cache`) 처럼 **항목 수가 적고 정확 복원이 필요한 경로** 는 다음 패턴 사용:

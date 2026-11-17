@@ -451,7 +451,7 @@ HTTP/1.1 200
 
 **설명** 비회원이 주문 당시 신청하지 않은 현금영수증을 주문상세에서 **직접 사후 발급**합니다. `VerifyGuestOrderToken` 미들웨어가 `X-Guest-Order-Token` 헤더를 검증해 소유권을 보장하며, 토큰이 검증한 주문에 대해서만 발급합니다.
 
-요청 본문(`receipt_type` / `identifier_type` / `identifier`), 검증 규칙, 발급 가능 조건, 오류 코드 체계는 관리자·회원 발급 API 와 모두 동일합니다 — 이미 발급된 주문은 409(`ALREADY_ISSUED`), 그 외 발급 불가 사유는 422 에 `errors.error_code` 로 구분해 담깁니다.
+요청 본문(`receipt_type` / `identifier_type` / `identifier`), 검증 규칙, 발급 가능 조건, 오류 코드 체계는 관리자·회원 발급 API 와 모두 동일합니다 — 이미 발급된 주문은 409(`ALREADY_ISSUED`), 같은 주문의 다른 발급이 처리 중이면 409(`ISSUE_IN_PROGRESS`, 1.3.5), 그 외 발급 불가 사유는 422 에 `errors.error_code` 로 구분해 담깁니다.
 
 **발급 취소는 제공하지 않습니다**(관리자 전용). 회원 경로와 마찬가지로 비회원용 `DELETE` 라우트 자체를 노출하지 않습니다.
 
@@ -1324,3 +1324,16 @@ Content-Type: application/json
 <!-- @generated:end -->
 
 **설명** 회원 승인과 같은 멱등 확정 흐름입니다. 결제창에서 돌아온 비회원 화면은 토큰을 잃지 않도록 결제창 진입 전 상태를 그대로 유지해야 합니다(토큰이 없으면 승인 호출이 404 가 된다).
+
+
+## 요청 제한 (1.3.5+)
+
+비회원 주문을 바꾸는 라우트는 한 제한기(`sirsoft-ecommerce.guest-order-write`, 기본 분당 20회)로 합산한다.
+
+| 대상 | 라우트 (`/guest/orders/{orderNumber}` 아래) |
+| --- | --- |
+| 센다 | `POST /cancel` · `POST /estimate-refund` · `PUT /shipping-address` · `POST /options/{optionId}/confirm` · `POST /cash-receipt` |
+| 세지 않는다 | `GET /cash-receipt` (조회) |
+| 별도 제한기 | 주문 조회 인증(`guest-order-verify`, 분당 20회) · 클레임 블록(`guest-claims`, 분당 120회) · 클레임 첨부 업로드(`guest-claim-uploads`, 분당 20회) — 종전 그대로 |
+
+한도는 모듈 설정 `rate_limits`(`config/ecommerce.php`)의 분당 횟수이고, 로그인 회원은 회원 단위로·비회원은 IP 단위로 센다 — 같은 IP 의 회원끼리, 회원과 비회원끼리 서로의 한도를 깎지 않는다. 넘으면 `429` 와 `Retry-After` 헤더(남은 초)를 돌려준다 (문구는 로그인 요청 제한과 같은 `auth.too_many_attempts`).

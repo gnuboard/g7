@@ -291,6 +291,10 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "blur_until_loaded": {
+                                "enabled": true,
+                                "data_sources": "schedules"
+                            },
                             "props": {
                                 "className": "text-page-heading mt-2"
                             },
@@ -299,6 +303,10 @@
                         {
                             "type": "basic",
                             "name": "P",
+                            "blur_until_loaded": {
+                                "enabled": true,
+                                "data_sources": "schedules"
+                            },
                             "props": {
                                 "className": "text-tertiary mt-1"
                             },
@@ -342,6 +350,10 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "blur_until_loaded": {
+                                "enabled": true,
+                                "data_sources": "schedules"
+                            },
                             "props": {
                                 "className": "{{(schedules?.data?.statistics?.failed ?? 0) > 0 ? 'mt-2 text-2xl font-bold text-red-600 dark:text-red-400' : 'mt-2 text-2xl font-bold text-gray-900 dark:text-white'}}"
                             },
@@ -350,6 +362,10 @@
                         {
                             "type": "basic",
                             "name": "P",
+                            "blur_until_loaded": {
+                                "enabled": true,
+                                "data_sources": "schedules"
+                            },
                             "props": {
                                 "className": "text-tertiary mt-1"
                             },

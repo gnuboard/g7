@@ -468,13 +468,7 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         foreach ($limits as $name => $perMinute) {
             RateLimiter::for($name, fn (Request $request) => Limit::perMinute($perMinute)
                 ->by((string) $request->ip())
-                ->response(fn (Request $request, array $headers) => ResponseHelper::error(
-                    'auth.too_many_attempts',
-                    429,
-                    null,
-                    // `count` 로 「1 second」/「2 seconds」 를 고른다.
-                    ['seconds' => (int) ($headers['Retry-After'] ?? 60), 'count' => (int) ($headers['Retry-After'] ?? 60)]
-                )->withHeaders($headers)));
+                ->response($this->tooManyRequestsResponse()));
         }
 
         // 내보내기 — 로그인한 운영자 단위로 센다(사무실 하나가 IP 를 공유해도 서로 막지 않게).
@@ -488,13 +482,55 @@ class EcommerceServiceProvider extends BaseModuleServiceProvider
         foreach ($userLimits as $name => $perMinute) {
             RateLimiter::for($name, fn (Request $request) => Limit::perMinute($perMinute)
                 ->by((string) ($request->user()?->getAuthIdentifier() ?? $request->ip()))
-                ->response(fn (Request $request, array $headers) => ResponseHelper::error(
-                    'auth.too_many_attempts',
-                    429,
-                    null,
-                    ['seconds' => (int) ($headers['Retry-After'] ?? 60), 'count' => (int) ($headers['Retry-After'] ?? 60)]
-                )->withHeaders($headers)));
+                ->response($this->tooManyRequestsResponse()));
         }
+
+        // 장바구니 쓰기·체크아웃·비회원 주문 변경 — 한도는 모듈 설정(`rate_limits`)에서 요청 시점에 읽는다.
+        // 로그인 회원은 회원 단위로, 비회원은 IP 단위로 센다 — 사내망처럼 여러 회원이 한 IP 를 쓰는 곳에서
+        // 서로의 한도를 깎지 않고, 한 회원이 IP 를 바꿔 가며 한도를 늘리지 못한다.
+        $bundles = [
+            'sirsoft-ecommerce.cart-write' => ['cart_write', 120],
+            'sirsoft-ecommerce.checkout' => ['checkout', 30],
+            'sirsoft-ecommerce.guest-order-write' => ['guest_order_write', 20],
+            // 회원 쓰기 — 쿠폰 받기(단건·일괄 공유)·찜·상품 문의·상품 후기
+            'sirsoft-ecommerce.coupon-download' => ['coupon_download', 20],
+            'sirsoft-ecommerce.wishlist-write' => ['wishlist_write', 60],
+            'sirsoft-ecommerce.inquiry-write' => ['inquiry_write', 5],
+            'sirsoft-ecommerce.review-write' => ['review_write', 5],
+        ];
+
+        foreach ($bundles as $name => [$configKey, $default]) {
+            RateLimiter::for($name, function (Request $request) use ($configKey, $default) {
+                $perMinute = (int) config("sirsoft-ecommerce.rate_limits.{$configKey}", $default);
+                if ($perMinute < 1) {
+                    $perMinute = $default;
+                }
+
+                // 요청 제한 미들웨어는 라우트의 선택적 인증(`optional.sanctum`)보다 먼저 돈다(프레임워크의
+                // 미들웨어 우선순위). 기본 가드로 물으면 늘 비회원으로 보이므로 토큰 가드에 직접 묻는다.
+                $userId = $request->user('sanctum')?->getAuthIdentifier();
+
+                return Limit::perMinute($perMinute)
+                    ->by($userId !== null ? 'user:'.$userId : 'ip:'.$request->ip())
+                    ->response($this->tooManyRequestsResponse());
+            });
+        }
+    }
+
+    /**
+     * 요청 제한 초과(429) 응답을 만드는 함수를 반환합니다 — 로그인 제한과 같은 다국어 문구로 낸다.
+     *
+     * @return \Closure(Request, array<string, mixed>): mixed 응답 생성 함수
+     */
+    private function tooManyRequestsResponse(): \Closure
+    {
+        return fn (Request $request, array $headers) => ResponseHelper::error(
+            'auth.too_many_attempts',
+            429,
+            null,
+            // `count` 로 「1 second」/「2 seconds」 를 고른다.
+            ['seconds' => (int) ($headers['Retry-After'] ?? 60), 'count' => (int) ($headers['Retry-After'] ?? 60)]
+        )->withHeaders($headers);
     }
 
     /**

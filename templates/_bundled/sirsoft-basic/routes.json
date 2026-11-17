@@ -133,6 +133,15 @@
       }
     },
     {
+      "path": "/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/reviews",
+      "layout": "shop/reviews",
+      "requires": {"modules": ["sirsoft-ecommerce"]},
+      "auth_required": false,
+      "meta": {
+        "title": "$t:user.shop.reviews_title"
+      }
+    },
+    {
       "path": "/{{_global.modules?.['sirsoft-ecommerce']?.basic_info?.no_route ? '' : (_global.modules?.['sirsoft-ecommerce']?.basic_info?.route_path ?? 'shop')}}/category/:slug",
       "layout": "shop/category",
       "requires": {"modules": ["sirsoft-ecommerce"]},

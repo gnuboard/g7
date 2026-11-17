@@ -1281,6 +1281,10 @@
                             {
                                 "type": "basic",
                                 "name": "Span",
+                                "blur_until_loaded": {
+                                    "enabled": true,
+                                    "data_sources": "posts"
+                                },
                                 "text": "$t:sirsoft-board.admin.posts.pagination_info|total={{posts?.data?.pagination?.total ?? 0}}|from={{posts?.data?.pagination?.from ?? 0}}|to={{posts?.data?.pagination?.to ?? 0}}"
                             }
                         ]

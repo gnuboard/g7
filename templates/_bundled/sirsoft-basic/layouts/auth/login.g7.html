@@ -87,8 +87,8 @@
         <set-state target="global" :twoFactor="null" :passwordChange="null"/>
       </on>
       <include src="partials/auth/_redirect_if_logged_in.g7.html"/>
-      <!-- 로그인 폼 -->
-      <div class="w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-lg shadow">
+      <!-- 로그인 폼 — 사용자 정보를 받은 비회원에게만 그린다(받는 중·회원이면 위 조각이 홈으로 보낸다 — 회원에게 폼이 잠깐 보였다, #915). 방금 로그인한 경우(isLoginAction)는 이동을 로그인 처리가 맡으므로 폼을 그대로 둔다. -->
+      <div data-if="{{_global.currentUser !== undefined &amp;&amp; (!_global.currentUser?.uuid || _local.isLoginAction)}}" class="w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-lg shadow">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">$t:auth.login</h2>
         <!-- 비상 계정 진입(`?local=1`, 7.2.0) — 자동 이동을 건너뛴 비밀번호 화면임을 알린다(디자인 ⑤) -->
         <div data-if="{{!!query.local}}" data-ref="login_local_notice" class="mb-6 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-200" role="note">$t:auth.external.local_notice</div>

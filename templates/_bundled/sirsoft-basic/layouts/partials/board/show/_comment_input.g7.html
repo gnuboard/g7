@@ -6,7 +6,7 @@
       <avatar data-type="composite" name="{{_global.currentUser?.display_name ?? _global.currentUser?.name ?? _local.guest_comment_author_name ?? ''}}" avatar="{{_global.currentUser?.avatar}}" size="sm"/>
       <div class="flex-1 flex flex-col gap-3">
         <!-- 비회원 작성자 정보 입력 (이름/비밀번호) — 좁은 화면에서도 두 칸을 나란히 둔다. 필수 표시(칸 옆 별표, required, aria-required)는 글 응답의 guest_fields.fixed 를 따르고, 그 값이 없는 응답(옛 서버)에서는 필수로 그린다. 칸에 라벨이 따로 없어 접근 가능한 이름(aria-label)을 준다 -->
-        <div data-if="{{!_global.currentUser?.uuid}}" data-ref="board_comment_guest_fixed_fields" class="grid grid-cols-2 gap-3">
+        <div data-if="{{_global.currentUser !== undefined &amp;&amp; !_global.currentUser?.uuid}}" data-ref="board_comment_guest_fixed_fields" class="grid grid-cols-2 gap-3">
           <div class="min-w-0">
             <div class="flex items-center gap-1">
               <input data-ref="board_comment_guest_author_name" type="text" name="guest_author_name" aria-label="$t:board.guest_author_name" required="{{post?.data?.board?.guest_fields?.fixed?.author_name?.required ?? true}}" aria-required="{{post?.data?.board?.guest_fields?.fixed?.author_name?.required ?? true}}" aria-invalid="{{!!_local.commentErrors?.author_name}}" value="{{_local.guest_comment_author_name ?? ''}}" placeholder="$t:board.guest_author_name" class="min-w-0 flex-1 px-4 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 {{_local.commentErrors?.author_name ? 'border-red-500 dark:border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500'}}">
@@ -33,7 +33,7 @@
           </div>
         </div>
         <!-- 게시판이 켠 비회원 항목(이메일, 추가 항목) — 이름과 비밀번호 줄 아래에 그린다. 값은 폼 자동 바인딩으로 _local.commentGuestForm.guest_fields.{키} 에 담긴다. 항목이 없으면 묶음 자체를 그리지 않는다 -->
-        <div data-if="{{!_global.currentUser?.uuid &amp;&amp; (post?.data?.board?.guest_fields?.comment ?? []).length > 0}}" data-key="commentGuestForm" data-ref="board_comment_guest_fields">
+        <div data-if="{{_global.currentUser !== undefined &amp;&amp; !_global.currentUser?.uuid &amp;&amp; (post?.data?.board?.guest_fields?.comment ?? []).length > 0}}" data-key="commentGuestForm" data-ref="board_comment_guest_fields">
           <div data-each="boardGuestFieldGroup in {{[{ key: 'comment', formKey: 'commentGuestForm', fields: post?.data?.board?.guest_fields?.comment ?? [], errors: (_local.commentErrors &amp;&amp; typeof _local.commentErrors === 'object') ? _local.commentErrors : {}, disabled: _local.commentSubmitting === true, inputClassName: 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500' }]}}">
             <include src="partials/board/_guest_fields.g7.html"/>
           </div>

@@ -794,7 +794,10 @@ class TempOrderService
         $this->userMileageService->validateUsage(
             $userId,
             $usePoints,
-            (int) ($calculationResult->summary->paymentAmount ?? 0)
+            (int) ($calculationResult->summary->paymentAmount ?? 0),
+            null,
+            // 상품 합계(할인 전 소계) — 「사용 가능 최소 상품 합계」 판정
+            (int) ($calculationResult->summary->subtotal ?? 0)
         );
     }
 

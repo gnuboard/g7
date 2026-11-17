@@ -172,7 +172,7 @@ _단건 응답: `data` 객체의 필드._
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | general | object | `{"site_name":"그누보드7","site_url":"https:\/\/api.example.com","sit…` | 일반 탭 설정 그룹 (사이트명·사이트 URL·설명·관리자 이메일·타임존·기본 언어·통화·사이트 로고·사이트 파비콘 첨부). site_logo·site_favicon 은 SettingsService 가 별도 주입한 첨부 정보(업로더 초기 파일). 공개 계산 필드 `site_logo_url`·`site_favicon_url` 은 이 관리자 응답에는 없고 저장 응답 `frontend_settings`·셸 `G7Config.settings` 에 있다 |
-| security | object | `{"force_https":false,"login_attempt_enabled":true,"auth_t…` | 보안 탭 설정 그룹 (HTTPS 강제·로그인 시도 제한 사용·인증 토큰 유지시간(분, 0=무한)·최대 로그인 시도 횟수·잠금 시간·내부 네트워크 주소 호출 허용). `allow_internal_outbound_urls`(boolean, 기본 false): 서버가 대신 호출하는 outbound 요청(예약 작업 URL 호출, 외부 API 연동)에서 사설 IP·`localhost` 등 내부 주소를 허용할지 여부 — 켜면 사내 서버 호출이 가능해지지만 서버가 내부망으로 요청을 보낼 수 있게 되므로 기본은 차단입니다. 언어팩 URL 설치는 원격 코드를 내려받으므로 이 설정과 무관하게 항상 내부 주소를 거부합니다. IP 접근 제한 3키(`ip_restriction_enabled`·`admin_allowed_ips`·`ip_restriction_rules`)도 이 그룹에 실린다 — 의미는 아래 「IP 접근 제한」 절. 비밀번호 정책 키(`password_min_length`·`require_password_special_char` 와 `password_*` 16키 — 작성 규칙·재사용 금지·만료, 서버가 기록하는 만료 기준 시작일 `password_expiry_started_at` 포함 — #736)도 이 그룹에 실린다 — 범위·기본값은 `POST /api/admin/settings` 의 `security.password_*` 행. 활동 로그(접속기록) 보관 기간 `activity_log_retention_days`(정수 일, 기본 365)도 이 그룹이다. 콘텐츠 보안 정책 2키(`csp_mode` 기본 `off`·`csp_extra_script_hosts` 기본 `[]`, #158)도 이 그룹이다 — 의미는 `POST /api/admin/settings` 의 `security.csp_*` 행. 미서명 패키지 차단 `extension_block_unsigned`(boolean, 기본 false, 7.2.0)도 이 그룹이다 — 의미는 `POST /api/admin/settings` 의 `security.extension_block_unsigned` 행 |
+| security | object | `{"force_https":false,"login_attempt_enabled":true,"auth_t…` | 보안 탭 설정 그룹 (HTTPS 강제·로그인 시도 제한 사용·인증 토큰 유지시간(분, 0=무한)·최대 로그인 시도 횟수·잠금 시간·내부 네트워크 주소 호출 허용). `allow_internal_outbound_urls`(boolean, 기본 false): 서버가 대신 호출하는 outbound 요청(예약 작업 URL 호출, 외부 API 연동)에서 사설 IP·`localhost` 등 내부 주소를 허용할지 여부 — 켜면 사내 서버 호출이 가능해지지만 서버가 내부망으로 요청을 보낼 수 있게 되므로 기본은 차단입니다. 언어팩 URL 설치는 원격 코드를 내려받으므로 이 설정과 무관하게 항상 내부 주소를 거부합니다. IP 접근 제한 3키(`ip_restriction_enabled`·`admin_allowed_ips`·`ip_restriction_rules`)도 이 그룹에 실린다 — 의미는 아래 「IP 접근 제한」 절. 비밀번호 정책 키(`password_min_length`·`require_password_special_char` 와 `password_*` 16키 — 작성 규칙·재사용 금지·만료, 서버가 기록하는 만료 기준 시작일 `password_expiry_started_at` 포함 — #736)도 이 그룹에 실린다 — 범위·기본값은 `POST /api/admin/settings` 의 `security.password_*` 행. 활동 로그(접속기록) 보관 기간 `activity_log_retention_days`(정수 일, 기본 365)도 이 그룹이다. 콘텐츠 보안 정책 2키(`csp_mode` 기본 `off`·`csp_extra_script_hosts` 기본 `[]`, #158)와 스타일 정책 3키(`csp_style_mode` 기본 `off`·`csp_style_level` 기본 `basic`·`csp_extra_style_hosts` 기본 `[]`, 7.1.6)도 이 그룹이다 — 의미는 `POST /api/admin/settings` 의 `security.csp_*` 행. 미서명 패키지 차단 `extension_block_unsigned`(boolean, 기본 false, 7.2.0)도 이 그룹이다 — 의미는 `POST /api/admin/settings` 의 `security.extension_block_unsigned` 행 |
 | mail | object | `{"mailer":"smtp","host":"","port":587,"username":"","pass…` | 메일 탭 설정 그룹 (메일러 종류(smtp/mailgun/ses)·SMTP 호스트/포트/인증 정보·암호화 방식·발신자 주소/이름·Mailgun/SES 자격 정보) |
 | upload | object | `{"max_file_size":10,"allowed_extensions":["jpg","jpeg","p…` | 업로드 탭 설정 그룹 (최대 파일 크기(MB)·허용 확장자 목록·이미지 최대 가로/세로·이미지 품질). `thumbnail_presets` 와 `thumbnail_presets_rows` 는 저장 행이 아니라 레지스트리가 합친 썸네일 규격 표(고정 5행, og, 켜진 확장 규격, 운영자 규격 — 행마다 `kind` fixed/og/extension/custom, 확장 행 `defaults`, og 행 `size_readonly`)다 (#869). 행마다 `label` 은 확장이 등록한 표시 이름의 로케일 맵(`{"ko":"배너 목록","en":"Banner list"}`)이고, 이름을 등록하지 않은 확장 행과 고정·og·운영자 행은 null 이다(화면은 null 이면 `name` 을 보인다). 표시 전용이라 저장하지 않는다. `thumbnail_presets_rows` 는 응답 전용이라 저장 요청에 실려 와도 버린다 |
 | seo | object | `{"meta_title_suffix":null,"meta_description":null,"meta_k…` | SEO 탭 설정 그룹 (메타 타이틀 접미사·메타 설명/키워드·검색엔진 인증 코드·봇 감지·OG/Twitter 기본값·SEO 캐시·사이트맵·생성기 설정) |
@@ -196,7 +196,8 @@ _단건 응답: `data` 객체의 필드._
 | _meta.consent_providers | array | `[{"id":"sirsoft-gdpr","label":"쿠키 동의 배너 (sirsoft-gdpr)"}]` | 등록된 동의 관리 제공자 `{id, label}` 목록 — 개인정보 탭 「동의 관리 제공자」 선택 상자의 항목. 동의 수집을 꺼 둔 제공자도 실린다(고를 수 있다) |
 | _meta.consent_selection | object | `{"state":"auto","reason":null,"provider_id":"sirsoft-gdpr","provider_label":"GDPR …"}` | 지금 선택 상태. `state` 는 `none`·`auto`·`selected`·`ambiguous`·`missing`, `reason` 은 `none` 의 사유(`no_provider`·`provider_unavailable`) |
 | _meta.queue_connection_options | array | `[{"name":"database","driver":"database"},{"name":"database-long","driver":"database"},{"name":"redis","driver":"redis"}]` | 드라이버 탭 「큐 워커」 의 등록 연결 선택지 — `config/queue.php` 연결 중 드라이버가 `sync`·`null` 이 아닌 것 (#139) |
-| _meta.csp | object | `{"override":null,"preview":"script-src 'self' t1.daumcdn.net t1.kakaocdn.net; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; report-uri /api/csp-report","auto_hosts":["t1.kakaocdn.net","t1.daumcdn.net"]}` | 보안 탭 「콘텐츠 보안 정책」 카드가 읽는 메타(#158). `override`: `.env G7_CSP_MODE` 탈출구 값(`off`·`report_only`·`enforce`, 없으면 null — 값이 있으면 화면이 모드 선택을 잠근다) · `preview`: **저장된 값** 기준으로 붙을 정책 문자열(모드가 끔이어도 미리 보여 준다) · `auto_hosts`: 활성 확장 선언(`trusted_script_hosts`·템플릿 externals 외부 script)에서 자동 합산된 호스트 |
+| _meta.public_disk_hardening | object\|null | `{"ok":true,"nosniff":true,"disposition":true,"status":200,"checked_at":"2026-11-10T21:00:00+09:00","rules_written":true}` | 드라이버 탭 「공개 자산 스토리지」 카드의 경고 판정 메타(7.1.6). 공개 자산 디스크를 로컬 공개 디스크(`public`)로 두고 드라이버 탭을 저장하면 서버가 `/storage` 직접 주소의 응답 헤더를 점검해 남긴 결과다. `ok` 는 nosniff 와 내려받기 지시가 모두 있으면 true, 응답은 받았는데 하나라도 없으면 false(화면이 경고), 서버가 자기 주소에 닿지 못해 판정할 수 없으면 null. 점검한 적이 없거나 다른 디스크를 쓰면 필드 값이 null `ok` 는 점검 파일이 내려왔는데(200) 헤더가 없거나 접근이 막혔을 때(403) `false`, 리다이렉트·404·서버 오류처럼 확인할 수 없는 응답이면 `null`(경고 없음). `rules_written` 은 저장 때 웹서버 규칙 파일(`storage/app/public/.htaccess`)을 지금 설정으로 썼는지다 — `false` 면 헤더가 붙어 있어도 규칙은 옛 내용이라 화면이 따로 경고한다. 규칙 파일을 못 쓰면 다른 디스크를 써도 `{ok: null, rules_written: false}` 가 남는다 |
+| _meta.csp | object | `{"override":null,"preview":"script-src 'self' t1.daumcdn.net t1.kakaocdn.net; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; report-uri /api/csp-report","auto_hosts":["t1.kakaocdn.net","t1.daumcdn.net"],"style_override":null,"style_preview":"style-src-elem 'self'; report-uri /api/csp-report","style_auto_hosts":[]}` | 보안 탭 「콘텐츠 보안 정책」 카드가 읽는 메타(#158). `override`: `.env G7_CSP_MODE` 탈출구 값(`off`·`report_only`·`enforce`, 없으면 null — 값이 있으면 화면이 모드 선택을 잠근다) · `preview`: **저장된 값** 기준으로 붙을 정책 문자열(모드가 끔이어도 미리 보여 준다) · `auto_hosts`: 활성 확장 선언(`trusted_script_hosts`·템플릿 externals 외부 script)에서 자동 합산된 호스트. 스타일 정책 3키(7.1.6) — `style_override`: `.env G7_CSP_STYLE_MODE` 탈출구 값(`off`·`report_only`·`enforce`, 없으면 null — 값이 있으면 화면이 스타일 모드 선택을 잠근다. `G7_CSP_MODE` 와 독립) · `style_preview`: **저장된 값** 기준으로 붙을 스타일 정책 문자열(강도 `basic` 은 `style-src-elem 'self' …; report-uri …`, `strict` 는 `style-src 'self' …; style-src-attr 'none'; report-uri …`. 모드가 끔이어도 미리 보여 준다) · `style_auto_hosts`: 켜진 모듈·플러그인의 `trusted_style_hosts` 선언(+ 필터 훅 `core.csp.trusted_style_hosts`)과 활성 관리자·사용자 템플릿 externals 의 외부 스타일시트(`style`·`webfont`·`as` 가 `style` 인 `preload`)에서 자동 합산된 호스트 |
 | _meta.favicon | object\|null | `{"user":{"source":"template","template_identifier":"sirsoft-basic","template_name":"Basic","settings_route":"/admin/templates/sirsoft-basic/settings"},"admin":{…}}` | 화면 종류별(사용자·관리자) 현재 파비콘 계층(`template`·`core`·`custom_ico`·`bundled`)과 활성 템플릿·설정 화면 경로 — 일반 탭 파비콘 칸 아래 「○○ 템플릿 설정의 파비콘이 우선 적용됩니다」 안내용 (#434). 해석 실패 시 null |
 | _meta.thumbnail_engine_available | boolean | `true` | 이 서버에 쓸 수 있는 이미지 처리 엔진(`drivers.image_driver` 가 고른 엔진, 쓸 수 없으면 gd)이 있는지 (#869). false 면 썸네일 없이 원본을 내고 업로드 축소도 하지 않는다. 업로드 탭은 이 값으로 「엔진 없음」 안내를 띄운다 |
 | _meta.thumbnail_disk_options | object | `{"public":[{"id":"thumbnails","label":{"ko":"서버 비공개 저장소 (기본)",…}},{"id":"public",…}],"gated":[{"id":"thumbnails",…},{"id":"s3",…}]}` | 업로드 탭 썸네일 「저장 위치」 선택지 (#869). `public` 은 `thumbnails` 와 공개 자산 디스크 카탈로그(`available_drivers.public_asset` 에서 `none` 제외), `gated` 는 `thumbnails` 와 `s3`(이 서버에서 S3 어댑터를 쓸 수 있을 때만). `label` 은 `available_drivers` 와 같은 로케일 맵. 저장 검증(`upload.thumbnail_disk_public`/`_gated`)이 같은 목록을 쓴다 |
@@ -327,14 +328,14 @@ HTTP/1.1 200
 | general.site_logo | body | array | 아니오 | — | 사이트 로고 이미지 |
 | general.site_favicon | body | array | 아니오 | max 1, 항목: `site_favicon` 컬렉션에 존재하는 첨부 ID | 사이트 파비콘(브라우저 탭 아이콘) 첨부 ID 배열 — ico·png·svg·gif·jpg·jpeg·webp, 1MB 이하. 보내지 않으면 기존 값 유지, 빈 배열이면 지우고 첨부를 저장 뒤 파기. 활성 템플릿 설정의 파비콘이 있으면 그것이 우선한다(`_meta.favicon`) |
 | mail.mailer | body | string | 아니오 | — | 메일 발송 드라이버 (smtp/mailgun/ses) |
-| mail.host | body | string | 아니오 | max 255 | 호스트 주소 |
+| mail.host | body | string | 아니오 | max 255 | 호스트 주소 — 호스트명 또는 IP 만(경로·포트·계정 정보·공백 불가), 링크로컬·클라우드 메타데이터 주소는 422 |
 | mail.port | body | integer | 아니오 | min 1, max 65535 | 포트 번호 |
 | mail.username | body | string | 아니오 | max 255 | 사용자명 (로그인/인증 아이디) |
 | mail.password | body | string | 아니오 | max 255 | 비밀번호 |
 | mail.encryption | body | string | 아니오 | — | 전송 암호화 방식 (tls/ssl) |
 | mail.mailgun_domain | body | string | 아니오 | max 255 | Mailgun 도메인 |
 | mail.mailgun_secret | body | string | 아니오 | max 255 | Mailgun 시크릿 키 |
-| mail.mailgun_endpoint | body | string | 아니오 | max 255 | Mailgun 엔드포인트 |
+| mail.mailgun_endpoint | body | string | 아니오 | max 255 | Mailgun 엔드포인트 — 호스트명 또는 IP 만(경로·포트·계정 정보·공백 불가), 링크로컬·클라우드 메타데이터 주소는 422 |
 | mail.ses_key | body | string | 아니오 | max 255 | SES 액세스 키 |
 | mail.ses_secret | body | string | 아니오 | max 255 | SES 시크릿 키 |
 | mail.ses_region | body | string | 아니오 | max 255 | SES 리전 |
@@ -342,6 +343,7 @@ HTTP/1.1 200
 | mail.from_name | body | string | 아니오 | max 255 | mail.from 이름 (식별자) |
 | upload.max_file_size | body | integer | 아니오 | min 1, max 1024 | 업로드 허용 최대 파일 크기 |
 | upload.allowed_extensions | body | string | 아니오 | — | 업로드 허용 확장자 목록 |
+| upload.layout_attachment_extensions | body | string | 아니오 | 500자 이하 | 레이아웃 첨부 허용 확장자 (콤마 문자열 또는 배열, 기본 `jpg,jpeg,png,gif,webp`). 소문자 배열로 저장한다. 빈 목록은 422 — 비우면 "제한 없음" 이 아니다 |
 | upload.image_max_width | body | integer | 아니오 | min 100, max 10000 | 이미지 리사이즈 최대 너비 (px) |
 | upload.image_max_height | body | integer | 아니오 | min 100, max 10000 | 이미지 리사이즈 최대 높이 (px) |
 | upload.image_quality | body | integer | 아니오 | min 1, max 100 | 이미지 리사이즈 시 압축 품질 (1~100) |
@@ -409,6 +411,8 @@ HTTP/1.1 200
 | security.two_factor_auth | body | boolean | 아니오 | — | 2단계 인증 사용 여부 |
 | security.allow_internal_outbound_urls | body | boolean | 아니오 | — | 내부 네트워크 주소로의 아웃바운드 호출을 허용할지 여부 (기본 차단 — 켜면 SSRF 방어가 완화된다) |
 | security.extension_block_unsigned | body | boolean | 아니오 | — | 미서명 패키지 차단 (7.2.0, 기본 false). 켜면 서명이 없거나 이 서버에서 서명을 확인할 수 없는 확장·언어팩·코어 패키지의 설치·업데이트를 막는다 — 설치·업데이트 API 가 409 `package_unsigned`(`errors.integrity.can_continue: false`)로 답하고 `allow_unsigned`·`--allow-unsigned` 도 통하지 않는다. `_bundled` 원본은 영향 없음. 신뢰 키 추가·삭제는 이 저장과 별개인 `/api/admin/extension-trust-keys` 가 맡는다 ([패키지 서명](../../extension/package-signing.md#미서명-패키지-차단)) |
+| security.password_reset_rate_limit_per_minute | body | integer | 아니오 | min 1, max 1000 | 비밀번호 찾기·재설정의 같은 IP 분당 허용 횟수 (기본 10). 찾기와 재설정·토큰 확인은 이 값을 함께 쓰되 따로 센다. 0(끄기)은 받지 않는다 |
+| security.register_rate_limit_per_minute | body | integer | 아니오 | min 1, max 1000 | 회원가입의 같은 IP 분당 허용 횟수 (기본 10) |
 | security.ip_restriction_enabled | body | boolean | 아니오 | — | IP 접근 제한 마스터 토글 (기본 false). 끄면 아래 목록·규칙은 저장만 되고 적용되지 않는다 |
 | security.admin_allowed_ips | body | array | 아니오 | max 100 | 관리자 영역(관리자 화면·코어/확장 관리자 API·관리자 로그인 API)에 접근을 허용할 IP·CIDR 목록. **빈 목록 = 이 축 미적용**. 앞뒤 공백·빈 항목·중복은 저장 전에 정리된다 |
 | security.admin_allowed_ips.* | body | string | 아니오 | IPv4·IPv6·CIDR (`203.0.113.0/24`, `2001:db8::/32`) | 허용 항목. 호스트명·범위 표기(`a-b`)·와일드카드(`192.168.*`)는 422 |
@@ -421,6 +425,10 @@ HTTP/1.1 200
 | security.csp_mode | body | string | 아니오 | `off`·`report_only`·`enforce` | 콘텐츠 보안 정책 헤더 모드 (#158, 기본 `off`). `report_only` 는 `Content-Security-Policy-Report-Only`, `enforce` 는 `Content-Security-Policy` 를 사이트 HTML 응답에 붙인다. `.env G7_CSP_MODE` 가 있으면 저장값과 무관하게 그 값이 적용된다 |
 | security.csp_extra_script_hosts | body | array | 아니오 | max 50 | `script-src` 에 더할 운영자 추가 호스트. 활성 확장이 선언한 호스트는 자동으로 들어가므로 그 밖의 호스트만 넣는다. 앞뒤 공백 제거·소문자화·빈 항목·중복은 저장 전에 정리된다 |
 | security.csp_extra_script_hosts.* | body | string | 아니오 | 호스트 소스 (`cdn.example.com`·`*.example.com`·`https://cdn.example.com`·`cdn.example.com:8443`) | 따옴표·세미콜론·공백·`'unsafe-*'` 같은 키워드·`data:`·`*` 단독·`http://` 는 422 (정책 문자열에 그대로 이어 붙이므로) |
+| security.csp_style_mode | body | string | 아니오 | `off`·`report_only`·`enforce` | 스타일 정책 헤더 모드 (7.1.6, 기본 `off`). 스크립트 정책(`csp_mode`)과 따로 정한다 — 두 모드가 같으면 한 헤더에 함께 실리고, 다르면 `Content-Security-Policy` 와 `Content-Security-Policy-Report-Only` 가 하나씩 나간다. `.env G7_CSP_STYLE_MODE` 가 있으면 저장값과 무관하게 그 값이 적용된다 |
+| security.csp_style_level | body | string | 아니오 | `basic`·`strict` | 스타일 정책 강도 (7.1.6, 기본 `basic`). `basic` 은 `style-src-elem` 으로 `<style>` 요소와 허용 밖 CSS 파일만 막고, `strict` 는 `style-src` + `style-src-attr 'none'` 으로 태그의 `style` 속성까지 막는다 |
+| security.csp_extra_style_hosts | body | array | 아니오 | max 50 | 스타일 지시어에 더할 운영자 추가 호스트 (7.1.6). 활성 템플릿이 선언한 외부 스타일시트 호스트는 자동으로 들어가므로 그 밖의 호스트만 넣는다. 앞뒤 공백 제거·소문자화·빈 항목·중복은 저장 전에 정리된다 |
+| security.csp_extra_style_hosts.* | body | string | 아니오 | 호스트 소스 (`fonts.example.com`·`*.example.com`·`https://fonts.example.com`·`fonts.example.com:8443`) | 형식 규칙은 `security.csp_extra_script_hosts.*` 와 같다 — 어긋나면 422 |
 | security.password_require_char_types | body | boolean | 아니오 | — | 비밀번호 조합 규칙 — 켜면 영문·숫자·특수문자 중 2종류 이상 (기본 false). 가입·변경·재설정·관리자 지정 전 경로에 적용 |
 | security.password_block_identifier | body | boolean | 아니오 | — | 이메일 `@` 앞부분(3자 이상, 대소문자 무시)이 들어간 비밀번호 거부 (기본 false) |
 | security.password_block_repeated_chars | body | boolean | 아니오 | — | 같은 문자가 연속으로 반복되는 비밀번호 거부 (기본 false) |
@@ -464,15 +472,15 @@ HTTP/1.1 200
 | drivers.s3_region | body | string | 아니오 | max 64 | S3 리전 — AWS 리전 코드 또는 S3 호환 스토리지 값 (Cloudflare R2 는 `auto`, MinIO 관례는 `us-east-1`) |
 | drivers.s3_access_key | body | string | 아니오 | max 255 | S3 액세스 키 |
 | drivers.s3_secret_key | body | string | 아니오 | max 255 | S3 시크릿 키 |
-| drivers.s3_url | body | string | 아니오 | max 500 | S3 공개 URL(CDN) base — 파일 URL 생성에만 사용 (API 요청 주소 아님) |
-| drivers.s3_endpoint | body | string | 아니오 | max 500 | S3 API 엔드포인트 — S3 호환 스토리지(R2/MinIO/NCP 등)용. AWS S3 는 미입력 (예: `https://<account-id>.r2.cloudflarestorage.com`) |
+| drivers.s3_url | body | string | 아니오 | url, max 500 | S3 공개 URL(CDN) base — 파일 URL 생성에만 사용 (API 요청 주소 아님). 계정 정보(`user:pass@`)·링크로컬·메타데이터 호스트는 422 |
+| drivers.s3_endpoint | body | string | 아니오 | url, max 500 | S3 API 엔드포인트 — S3 호환 스토리지(R2/MinIO/NCP 등)용. AWS S3 는 미입력 (예: `https://<account-id>.r2.cloudflarestorage.com`). 스킴·호스트·포트까지만(경로·쿼리·계정 정보 불가), 링크로컬·메타데이터 호스트는 422 |
 | drivers.s3_use_path_style | body | boolean | 아니오 | — | S3 path-style 주소 사용 여부 — MinIO 등 path-style 전용 스토리지에서 true |
 | drivers.cache_driver | body | string | 아니오 | — | 캐시 드라이버 (file/redis/memcached) |
-| drivers.redis_host | body | string | 아니오 | max 255 | Redis 호스트 주소 |
+| drivers.redis_host | body | string | 아니오 | max 255 | Redis 호스트 주소 — 호스트명 또는 IP 만(경로·포트·계정 정보·공백 불가), 링크로컬·클라우드 메타데이터 주소는 422. `/` 로 시작하는 유닉스 소켓 절대 경로, `tls://`·`rediss://` 접두, 대괄호 없는 IPv6(`::1`)는 허용 |
 | drivers.redis_port | body | integer | 아니오 | min 1, max 65535 | Redis 포트 번호 |
 | drivers.redis_password | body | string | 아니오 | max 255 | Redis 비밀번호 |
 | drivers.redis_database | body | integer | 아니오 | min 0, max 15 | Redis 데이터베이스 번호 |
-| drivers.memcached_host | body | string | 아니오 | max 255 | Memcached 호스트 주소 |
+| drivers.memcached_host | body | string | 아니오 | max 255 | Memcached 호스트 주소 — 호스트명 또는 IP 만(경로·포트·계정 정보·공백 불가), 링크로컬·클라우드 메타데이터 주소는 422. `/` 로 시작하는 유닉스 소켓 절대 경로, `tls://`·`rediss://` 접두, 대괄호 없는 IPv6(`::1`)는 허용 |
 | drivers.memcached_port | body | integer | 아니오 | min 1, max 65535 | Memcached 포트 번호 |
 | drivers.session_driver | body | string | 아니오 | — | 세션 드라이버 (file/database/redis) |
 | drivers.session_lifetime | body | integer | 아니오 | min 1, max 43200 | 세션 유효 시간 (분) |
@@ -485,11 +493,11 @@ HTTP/1.1 200
 | drivers.websocket_app_id | body | string | 아니오 | max 255 | drivers.websocket app 식별자 |
 | drivers.websocket_app_key | body | string | 아니오 | max 255 | WebSocket 앱 키 |
 | drivers.websocket_app_secret | body | string | 아니오 | max 255 | WebSocket 앱 시크릿 |
-| drivers.websocket_host | body | string | 아니오 | max 255 | WebSocket 호스트 주소 |
+| drivers.websocket_host | body | string | 아니오 | max 255 | WebSocket 호스트 주소 — 호스트명 또는 IP 만(경로·포트·계정 정보·공백 불가), 링크로컬·클라우드 메타데이터 주소는 422 |
 | drivers.websocket_port | body | integer | 아니오 | min 1, max 65535 | WebSocket 포트 번호 |
 | drivers.websocket_scheme | body | string | 아니오 | — | WebSocket 스킴 (http/https) |
 | drivers.websocket_verify_ssl | body | boolean | 아니오 | — | WebSocket 서버 SSL 인증서 검증 여부 |
-| drivers.websocket_server_host | body | string | 아니오 | max 255 | WebSocket 서버 호스트 주소 (서버측 발행 대상) |
+| drivers.websocket_server_host | body | string | 아니오 | max 255 | WebSocket 서버 호스트 주소 (서버측 발행 대상) — 호스트명 또는 IP 만(경로·포트·계정 정보·공백 불가), 링크로컬·클라우드 메타데이터 주소는 422 |
 | drivers.websocket_server_port | body | integer | 아니오 | min 1, max 65535 | WebSocket 서버 포트 번호 (서버측 발행 대상) |
 | drivers.websocket_server_scheme | body | string | 아니오 | — | WebSocket 서버 스킴 (http/https — 서버측 발행 대상) |
 | drivers.search_engine_driver | body | string | 아니오 | — | 검색 엔진 드라이버 (Scout 엔진 선택) |
@@ -498,6 +506,7 @@ HTTP/1.1 200
 | drivers.log_level | body | string | 아니오 | — | 로그 레벨 (debug/info/warning/error 등) |
 | drivers.log_days | body | integer | 아니오 | min 1, max 365 | 로그 파일 보관 일수 |
 | drivers.public_asset_disk | body | string | 아니오 | max 100 | 공개 자산 직접 URL 서빙 디스크 (none/public/s3 + 플러그인 훅 등록 디스크). 카탈로그(`available_drivers.public_asset`)에 없는 값은 422 |
+| drivers.public_asset_extensions | body | string | 아니오 | 500자 이하 | 공개 디스크로 내보낼 확장자 (콤마 문자열 또는 배열, 기본 `jpg,jpeg,png,gif,webp,avif`). 이 목록 밖의 파일은 공개 디스크에 저장하지 않는다. 빈 목록은 422 |
 | drivers.file_delegation | body | string | 아니오 | max 50, `available_drivers.file_delegation` 의 id (none/x-sendfile/x-accel-redirect) | 웹서버 파일 위임 방식 (기본 none, #878). 로컬 파일 응답의 본문을 웹서버가 보내게 한다. 카탈로그에 없는 값은 422(`validation.settings.file_delegation_invalid`). `.env` 의 `G7_FILE_DELEGATION` 과 짝이며, `.env` 우선 모드에서 그 값이 있으면 저장에서 빠지고 `_meta.env_locked` 에 실린다 |
 | drivers.file_delegation_accel_prefix | body | string | `drivers.file_delegation` 이 `x-accel-redirect` 면 예 | max 255, `/` 로 시작하고 끝나며 세그먼트는 영숫자와 `._-` (점만으로 된 세그먼트 불가) | nginx internal 위치 접두사 (기본 `/_g7_sendfile/`). 앞뒤 공백을 떼고 끝 `/` 를 붙여 저장한다. 누락은 `validation.settings.file_delegation_accel_prefix_required`, 형식 오류는 `validation.settings.file_delegation_accel_prefix_format` 로 422. `.env` 의 `G7_FILE_DELEGATION_ACCEL_PREFIX` 와 짝 |
 | identity.default_provider | body | string | 아니오 | max 100 | 본인인증 기본 프로바이더 (목적별로 지정되지 않은 경우 사용). 예: `g7:core.mail` |
@@ -2652,6 +2661,8 @@ _단건 응답: `data` 객체의 필드 (DriverConnectionTester::testAll() 산�
 
 폼에 입력한 드라이버 접속 정보(S3·Redis·Memcached·Websocket 등)로 실제 연결을 시도해 결과를 반환합니다. 설정을 저장하기 전에 접속 정보가 유효한지 확인하는 용도입니다. 모든 테스트 통과 시 성공 메시지, 일부 실패 시에도 HTTP 성공 응답으로 항목별 결과(`all_passed=false` 포함)를 함께 반환합니다.
 
+연결 대상 주소는 저장(`POST /api/admin/settings`)과 같은 규칙으로 검증합니다(7.1.6). 호스트 칸은 호스트명·IP 만 받고(경로·쿼리·계정 정보·포트·공백은 422), 링크로컬·클라우드 메타데이터 주소(`169.254.0.0/16`·`fe80::/10`·`100.100.100.200`·`metadata.google.internal` 등)는 「허용되지 않는 주소입니다」 로 422 입니다. localhost·사내 IP 는 정상 구성이라 그대로 허용합니다. 연결 테스트는 응답의 리다이렉트를 따라가지 않습니다(3xx 응답은 "서버가 응답했다" 로 봅니다). 연결을 시도한 뒤의 실패 사유(연결 거부·시간 초과 등)는 `error` 에 원문 그대로 실립니다.
+
 
 ### POST /api/admin/settings/test-mail
 <!-- @generated:start:api.admin.settings.test-mail -->
@@ -2746,7 +2757,7 @@ _단건 응답: `data` 객체의 필드 (발송 성공 시에만 반환)._
 
 **설명**
 
-폼에 입력한 메일 설정으로 지정한 주소에 테스트 메일을 발송합니다. 요청에서 전달한 값(호스트·포트·인증 정보 등)을 저장된 메일 설정 위에 임시로 덮어써 그 값으로만 발송을 시도하므로, 설정을 저장하기 전에 실제 발송 가능 여부를 검증할 수 있습니다. 성공 시 발송한 제목/본문을 응답에 포함하고, 실패 시 오류 사유와 함께 500 을 반환합니다.
+폼에 입력한 메일 설정으로 지정한 주소에 테스트 메일을 발송합니다. 요청에서 전달한 값(호스트·포트·인증 정보 등)을 저장된 메일 설정 위에 임시로 덮어써 그 값으로만 발송을 시도하므로, 설정을 저장하기 전에 실제 발송 가능 여부를 검증할 수 있습니다. 성공 시 발송한 제목/본문을 응답에 포함하고, 실패 시 오류 사유와 함께 500 을 반환합니다. 메일 서버 호스트(`host`)와 Mailgun 엔드포인트(`mailgun_endpoint`)는 저장과 같은 규칙으로 검증합니다(7.1.6) — 호스트명·IP 만 받고, 링크로컬·클라우드 메타데이터 주소는 422 입니다.
 
 
 ### POST /api/admin/settings/test-outbound-proxy
@@ -2813,7 +2824,7 @@ Content-Type: application/json
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`core.settings.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 프록시 주소가 비어 있거나 허용 스킴이 아닌 경우 |
+| 422 | Unprocessable Entity | 프록시 주소가 비어 있거나 허용 스킴이 아닌 경우, 프록시 호스트가 링크로컬·클라우드 메타데이터 주소인 경우(「허용되지 않는 주소입니다」) |
 
 <!-- @generated:end -->
 

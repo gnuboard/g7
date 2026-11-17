@@ -20,7 +20,7 @@
 이 파일은 자동 생성 산출물이 아니라 **수작업으로 작성**한다. 확장 루트(`module.json`/`plugin.json`/`template.json` 옆)에 둔다.
 
 - 타입 SSoT: `resources/js/core/template-engine/layout-editor/spec/specTypes.ts` 의 `EditorSpec` 인터페이스 — 각 블록의 의도·병합 규칙·플레이스홀더 문법이 JSDoc 으로 명시되어 있다. 본 문서와 타입이 어긋나면 타입이 정본이다.
-- 서빙 엔드포인트: 편집기는 묶음 엔드포인트 `GET /api/templates/{id}/editor-spec-bundle?modules[]=..&plugins[]=..` 한 요청으로 받는다(7.2.0, engine-v1.94.0). 항목마다 개별 엔드포인트 `/api/{templates|modules|plugins}/{id}/editor-spec` 과 같은 판정(활성 확장만, 설치본만)을 하고, 한 확장이 실패해도 그 항목만 비운다. 개별 엔드포인트는 서드파티 호환을 위해 그대로 있다 — [templates.md](../backend/api/templates.md#get-apitemplatesidentifiereditor-spec-bundle)
+- 서빙 엔드포인트: 편집기는 묶음 엔드포인트 `GET /api/templates/{id}/editor-spec-bundle?modules[]=..&plugins[]=..` 한 요청으로 받는다(7.2.0, engine-v1.95.0). 항목마다 개별 엔드포인트 `/api/{templates|modules|plugins}/{id}/editor-spec` 과 같은 판정(활성 확장만, 설치본만)을 하고, 한 확장이 실패해도 그 항목만 비운다. 개별 엔드포인트는 서드파티 호환을 위해 그대로 있다 — [templates.md](../backend/api/templates.md#get-apitemplatesidentifiereditor-spec-bundle)
 - 로더: `editorSpecLoader.ts` — 편집 대상 템플릿 + 활성 모듈/플러그인 스펙을 묶음으로 받아 네임스페이스 병합한다.
 
 ## 확장 컴포넌트의 팔레트 등재

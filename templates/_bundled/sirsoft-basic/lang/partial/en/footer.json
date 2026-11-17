@@ -10,5 +10,15 @@
   "terms": "Terms of Service",
   "privacy": "Privacy Policy",
   "refund": "Refund Policy",
-  "powered_by": "Powered by Gnuboard7"
+  "powered_by": "Powered by Gnuboard7",
+  "business": {
+    "company_name": "Company",
+    "ceo_name": "Representative",
+    "address": "Address",
+    "phone": "Phone",
+    "email": "Email",
+    "business_number": "Business registration no.",
+    "mail_order_number": "Mail-order registration no.",
+    "hosting_provider": "Hosting provider"
+  }
 }

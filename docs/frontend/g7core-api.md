@@ -59,7 +59,8 @@
 | UI 알림 | `G7Core.toast` | 토스트 알림 표시 | 현재 문서 |
 | 모달 | `G7Core.modal` | 모달 열기/닫기 | 현재 문서 |
 | 네비게이션 | `G7Core.navigation` | 페이지 전환 상태 | 현재 문서 |
-| 스타일 | `G7Core.style` | Tailwind 클래스 병합 | 현재 문서 |
+| 스타일 | `G7Core.style` | Tailwind 클래스 병합, 런타임 CSS 규칙(`setRules`·`remove`·`has`, engine-v1.91.0) | 현재 문서 |
+| 본문 서식 지연 | `G7Core.inlineStyle` | 본문 HTML 의 `style` 속성을 화면에 붙인 뒤 입히는 장치 — 엄격한 스타일 정책 대응 (engine-v1.91.0) | [확장 자산 — 인라인 스타일](../extension/module-assets.md) |
 | 주소 | `G7Core.url` | 마운트 접두사 붙이기/벗기기 (확장 공용) | 현재 문서 |
 | 썸네일 주소 | `G7Core.thumbnail` | 이미지 서빙 주소에 썸네일 규격·srcset 붙이기 (확장 공용) | 현재 문서 |
 | 플러그인 | `G7Core.plugin` | 플러그인 설정 조회 | 현재 문서 |
@@ -538,13 +539,13 @@ G7Core.dispatch({
 |--------|------|----------|
 | `open(modalId)` | 모달 열기 | modalId: string |
 | `close(modalId?)` | 맨 위 모달 닫기 | modalId?: string — 전달되지만 `closeModal` 핸들러가 읽지 않는다(아래 「알려진 제약」) |
-| `closeAll()` | 열린 모달 모두 닫기(engine-v1.94.0+, `closeModal` 의 `params.all`) | - |
+| `closeAll()` | 열린 모달 모두 닫기(engine-v1.95.0+, `closeModal` 의 `params.all`) | - |
 | `isOpen(modalId)` | 모달 열림 확인 | modalId: string |
 | `getStack()` | 모달 스택 반환 | - |
 
 #### 알려진 제약 (engine-v1.75.2 기준)
 
-- `closeAll()` 은 engine-v1.93 까지 엔진에 없는 `closeAllModals` 액션을 보내 아무 창도 닫지 못했다(`Unknown action handler` 오류). engine-v1.94.0 부터 `closeModal` 의 `params.all: true` 로 보내 열린 창을 모두 닫는다. 레이아웃 액션에서는 `<close-modal :all="true"/>` 를 쓴다.
+- `closeAll()` 은 engine-v1.93 까지 엔진에 없는 `closeAllModals` 액션을 보내 아무 창도 닫지 못했다(`Unknown action handler` 오류). engine-v1.95.0 부터 `closeModal` 의 `params.all: true` 로 보내 열린 창을 모두 닫는다. 레이아웃 액션에서는 `<close-modal :all="true"/>` 를 쓴다.
 - `close(modalId)` 의 `modalId` 는 무시된다. 인자와 상관없이 스택 맨 위 창이 닫힌다.
 - 액션 실행 밖(타이머, 외부 SDK 콜백처럼 `__g7ActionContext` 가 없는 곳)에서 `close()` 를 부르면 문맥에 전역 사본이 없어 빈 스택에서 계산한다. 그 결과 **열린 창 전체가 닫힌다**. 같은 자리에서 `open(id)` 를 부르면 스택이 `[id]` 로 바뀌어 아래 창이 사라진다. 종전부터의 동작이며 engine-v1.75.2 도 이 경로는 바꾸지 않았다(`ActionDispatcher.modalStack.test.ts` 가 고정). 부모 창 위에 띄워야 하면 `G7Core.dispatch(action, { componentContext })` 로 문맥을 넘긴다.
 
@@ -702,6 +703,20 @@ Tailwind CSS 클래스를 런타임에서 병합하는 헬퍼 API입니다.
 | `mergeClasses(base, override)` | 충돌하는 Tailwind 클래스 병합 — 엔진 충돌 그룹 표에 든 클래스만 판정([한계](#지원-범위와-한계)) | `string` |
 | `conditionalClass(conditions)` | 조건부 클래스 적용 | `string` |
 | `joinClasses(...classes)` | 여러 클래스 문자열 결합 | `string` |
+| `setRules(key, css, opts?)` | 런타임 CSS 규칙 묶음을 문서에 붙인다(같은 `key` 는 교체). `<style>` 요소를 만들지 않아 엄격한 스타일 정책에서도 적용된다 (engine-v1.91.0) | `{ key, mode, remove() }` |
+| `remove(key)` | 규칙 묶음 제거 (engine-v1.91.0) | `void` |
+| `has(key)` | 규칙 묶음이 붙어 있는지 (engine-v1.91.0) | `boolean` |
+
+런타임 규칙 3종은 화면이 뜬 뒤에 정해지는 CSS 규칙(대상 id 가 실행 중에 정해지는 덮개 등)에만 씁니다. 고정된 규칙은 확장의 CSS
+자산(`assets.css`)에, 요소 하나의 값은 `el.style.x = …`·CSS 변수에 둡니다. 규칙은 생성형 스타일시트
+(`document.adoptedStyleSheets`)로 붙고 `<head>` 에 같은 id 의 표식 요소(`<meta id="{key}" data-g7-runtime-style>`)가 남습니다.
+생성형 스타일시트가 없는 구형 브라우저에서는 `<style id="{key}">` 로 붙습니다(이 경우 스타일 정책을 강제하면 적용되지 않습니다).
+`key` 는 확장 식별자로 시작하게 지어 다른 확장·코어(`g7-` 로 시작)와 겹치지 않게 합니다.
+
+```typescript
+const handle = G7Core.style.setRules('my-plugin-overlay', '#my-target::after{content:"";position:absolute;inset:0}');
+handle.remove();
+```
 
 ### mergeClasses
 
@@ -866,7 +881,7 @@ if (/^\/shop\/orders\/([^/]+)\/complete$/.test(routePath(window.location.pathnam
 
 서버가 만드는 **절대** 주소(알림·메일 링크 · 결제·본인인증의 복귀·통보 주소 · 사이트맵 · 봇 화면)는 브라우저 축이 아니라 서버 축이다 — 사이트 주소 기준의 `App\Support\SiteUrl`(회원이 여는 사용자 화면 주소는 `ScreenUrl`)이 그 단일 지점이고, `url()` 이나 `config('app.url').'/…'` 로 조립하지 않는다. 하위 폴더 설치에서 이미 접두사가 붙은 경로를 넘겨도 `SiteUrl` 은 접두사를 다시 붙이지 않으며, `AssetUrl::siteAbsolute()` 는 그 위임(호환)이다 (상세: [routing.md "절대 URL 은 사이트 주소로 만든다"](../backend/routing.md#절대-url-은-사이트-주소로-만든다) · ["마운트 접두사"](../backend/routing.md#마운트-접두사--라우트는-언제나-접두사-없이-등록된다)).
 
-`routePath()`/`stripBasePrefix()` 의 결과가 `/` 하나로 시작한다는 보장은 없다 — `/g7//evil.com` 을 벗기면 `//evil.com` 이다(접두사 뒤 나머지를 그대로 돌려준다). 그 값을 `navigate` 에 넘기면 사이트 밖 목적지로 판정돼 이동하지 않지만(engine-v1.93.0), `location.href` 대입처럼 라우터를 거치지 않는 통로에 넘기면 그 방어가 없다. 벗긴 값은 대조에만 쓰고 이동 주소로 재사용하지 않는다.
+`routePath()`/`stripBasePrefix()` 의 결과가 `/` 하나로 시작한다는 보장은 없다 — `/g7//evil.com` 을 벗기면 `//evil.com` 이다(접두사 뒤 나머지를 그대로 돌려준다). 그 값을 `navigate` 에 넘기면 사이트 밖 목적지로 판정돼 이동하지 않지만(engine-v1.94.0), `location.href` 대입처럼 라우터를 거치지 않는 통로에 넘기면 그 방어가 없다. 벗긴 값은 대조에만 쓰고 이동 주소로 재사용하지 않는다.
 
 경계 판정의 기대표(입력 24종 × 붙이기/벗기기 + 접두사 정규화 변종)는 `tests/Fixtures/AssetUrl/base-prefix-boundary.json` 하나이며 서버 `AssetUrlTest` 와 프론트 `assetUrl.test.ts` 가 같은 파일을 읽는다. 규칙을 바꾸면 양쪽 구현과 그 표를 함께 바꾼다.
 
@@ -874,7 +889,7 @@ if (/^\/shop\/orders\/([^/]+)\/complete$/.test(routePath(window.location.pathnam
 
 ## 이미지 썸네일 주소 (G7Core.thumbnail)
 
-> engine-v1.94.0+
+> engine-v1.95.0+
 
 업로드 이미지 서빙 주소에 `?size={규격}` 을 붙이면 서버가 환경설정의 규격으로 줄인 썸네일을 내준다. 붙여도 되는 주소는 **같은 출처 + 등록된 서빙 경로**(환경설정이 내려 주는 `upload.thumbnail_url_patterns`)뿐이고, 외부·CDN 직접 주소·`/storage/...`·`data:`·`blob:` 는 그대로 둔다. 확장 번들은 코어 모듈을 import 할 수 없으므로 판정과 덧붙임 규칙은 이 API 하나로 쓴다 — 규칙 사본을 두면 서명 주소가 깨지거나 외부 주소에 `size` 가 붙는다.
 

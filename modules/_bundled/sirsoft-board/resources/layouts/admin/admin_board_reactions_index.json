@@ -284,6 +284,10 @@
                             {
                                 "type": "basic",
                                 "name": "Span",
+                                "blur_until_loaded": {
+                                    "enabled": true,
+                                    "data_sources": "reactions"
+                                },
                                 "props": {
                                     "className": "board-text-label"
                                 },
@@ -802,6 +806,10 @@
                             {
                                 "type": "basic",
                                 "name": "Span",
+                                "blur_until_loaded": {
+                                    "enabled": true,
+                                    "data_sources": "reactions"
+                                },
                                 "text": "$t:sirsoft-board.admin.reactions.pagination_info|total={{reactions?.data?.pagination?.total ?? 0}}|from={{reactions?.data?.pagination?.from ?? 0}}|to={{reactions?.data?.pagination?.to ?? 0}}"
                             }
                         ]

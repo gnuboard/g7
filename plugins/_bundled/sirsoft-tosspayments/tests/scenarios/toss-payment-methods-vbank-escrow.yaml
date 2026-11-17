@@ -169,6 +169,7 @@ effects:
   - client_config_exposes_no_methods_when_order_sheet_off           # 주문서 모드가 꺼지면 enabled_methods 가 빈 배열
   - client_config_exposes_vbank_and_escrow_settings                 # 가상계좌 유효시간, 현금영수증 유형, 에스크로 설정을 그대로 노출
   - client_config_never_exposes_secret_key                          # 시크릿 키는 응답 어디에도 없고 클라이언트 키만 노출
+  - admin_payment_methods_layout_contract   # 관리자 결제수단·가상계좌·에스크로 설정 화면 레이아웃 계약 — 섹션 구성·바인딩·안내 표시 조건(설정을 받은 뒤 판단, #915)
 
 notes: |
   실계약 전이므로 실제 PG 결제창 진입/승인은 샌드박스 의존이며 M20·M21(Chrome MCP)은

@@ -551,7 +551,7 @@
                         {
                             "type": "basic",
                             "name": "P",
-                            "if": "{{(_local.form?.content?.embed_custom_providers ?? []).length === 0}}",
+                            "if": "{{settings !== undefined && ((_local.form?.content?.embed_custom_providers ?? []).length === 0)}}",
                             "props": {
                                 "className": "form-hint"
                             },

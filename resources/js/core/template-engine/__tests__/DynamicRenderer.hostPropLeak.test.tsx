@@ -173,7 +173,7 @@ describe('DynamicRenderer — 호스트 DOM prop 누출 차단', () => {
     });
 
     /**
-     * 호스트 className·DOM 속성의 `{{…}}` 는 평가된 값으로 붙는다 (engine-v1.93.0).
+     * 호스트 className·DOM 속성의 `{{…}}` 는 평가된 값으로 붙는다 (engine-v1.94.0).
      *
      * 반복 컨텍스트(renderItemChildren)는 평가한 props 로 호스트를 만들었지만, 일반 경로는 평가 전 원본을 넘겨
      * 게시판 관리자 글 상세 본문 확장점의 래퍼에 `{{post?.data?.content_mode`·`===`·`'html'` 같은 식 조각이 클래스로 붙었다.

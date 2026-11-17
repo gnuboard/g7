@@ -6,6 +6,7 @@ use App\Contracts\Extension\StorageInterface;
 use App\Extension\Storage\PluginStorageDriver;
 use App\Models\User;
 use App\Support\AssetUrl;
+use App\Support\PublicAssetDisk;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -151,6 +152,11 @@ class Ckeditor5ImageUpload extends Model
         [$category, $relativePath] = explode('/', $filePath, 2);
 
         if ($category === '' || $relativePath === '') {
+            return null;
+        }
+
+        // 「공개 디스크로 내보낼 확장자」 밖의 파일은 직접 주소로 내보내지 않는다 — 서버를 거치는 주소로.
+        if (! PublicAssetDisk::exportsExtension(pathinfo($relativePath, PATHINFO_EXTENSION))) {
             return null;
         }
 

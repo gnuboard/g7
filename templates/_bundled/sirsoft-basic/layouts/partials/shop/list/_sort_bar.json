@@ -1,0 +1,149 @@
+{
+    "comment": "목록 위의 정렬 줄 — 전체 상품 목록과 분류 화면이 같이 쓴다. 모든 조건이 URL 쿼리로 나가므로 이 조각은 목록을\n     직접 다시 받지 않는다(주소가 바뀌면 목록 데이터소스가 따라온다). 이동은 전부 보던 화면 주소(`route.path`)로 한다 —\n     전체 목록에서는 상품 목록 주소, 분류 화면에서는 그 분류 주소다.",
+    "meta": {
+        "is_partial": true,
+        "description": "정렬 줄 (총 상품 수, 초기화, 품절 제외, 정렬)"
+    },
+    "id": "shop_sort_bar",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "flex flex-wrap items-center justify-between gap-2 py-3 bg-gray-50 dark:bg-gray-800/50"
+    },
+    "children": [
+        {
+            "comment": "총 상품 수",
+            "type": "basic",
+            "name": "Span",
+            "blur_until_loaded": {
+                "enabled": true,
+                "data_sources": "products"
+            },
+            "props": {
+                "className": "text-sm font-semibold text-gray-700 dark:text-gray-300"
+            },
+            "text": "$t:shop.total_count|count={{products?.data?.pagination?.total ?? 0}}"
+        },
+        {
+            "comment": "오른쪽: 초기화 버튼 + 품절 제외 + 정렬",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "flex flex-wrap items-center gap-2"
+            },
+            "children": [
+                {
+                    "comment": "전체 초기화 버튼 (필터 적용 시에만 표시)",
+                    "type": "basic",
+                    "name": "Button",
+                    "if": "{{!!query.category || !!query.keyword || query.exclude_sold_out === '1'}}",
+                    "actions": [
+                        {
+                            "comment": "audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 검색어·카테고리·품절 제외·정렬·페이지를 모두 비우는 의도적 리셋이므로 병합하지 않는다",
+                            "type": "click",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "{{route.path}}",
+                                "query": {}
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "h-9 px-3 text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                    },
+                    "text": "$t:shop.reset_all"
+                },
+                {
+                    "comment": "품절 제외 — 판매상태 품절·재고 없는 상품을 목록에서 뺀다",
+                    "type": "basic",
+                    "name": "Label",
+                    "props": {
+                        "className": "flex items-center gap-2 h-9 text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Checkbox",
+                            "actions": [
+                                {
+                                    "comment": "조건이 바뀌면 쪽수 구성이 달라지므로 1쪽으로 돌아간다(빈 값은 주소에서 빠진다)",
+                                    "type": "change",
+                                    "handler": "navigate",
+                                    "params": {
+                                        "path": "{{route.path}}",
+                                        "mergeQuery": true,
+                                        "query": {
+                                            "exclude_sold_out": "{{$event.target.checked ? '1' : ''}}",
+                                            "page": ""
+                                        }
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "id": "shop_exclude_sold_out",
+                                "name": "exclude_sold_out",
+                                "checked": "{{query.exclude_sold_out === '1'}}",
+                                "autoBinding": false,
+                                "className": "w-4 h-4 text-gray-900 dark:text-white border-gray-300 dark:border-gray-600 rounded"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:shop.exclude_sold_out"
+                        }
+                    ]
+                },
+                {
+                    "comment": "정렬 Select",
+                    "type": "basic",
+                    "name": "Select",
+                    "actions": [
+                        {
+                            "comment": "정렬을 바꾸면 순서가 통째로 달라지므로 보던 쪽수를 유지하지 않고 1쪽으로 돌아간다",
+                            "type": "change",
+                            "handler": "navigate",
+                            "params": {
+                                "path": "{{route.path}}",
+                                "mergeQuery": true,
+                                "query": {
+                                    "sort": "{{$event.target.value}}",
+                                    "page": "1"
+                                }
+                            }
+                        }
+                    ],
+                    "props": {
+                        "name": "sort",
+                        "aria-label": "$t:common.sort_order",
+                        "value": "{{query.sort ?? 'latest'}}",
+                        "className": "h-9 w-32",
+                        "options": [
+                            {
+                                "value": "latest",
+                                "label": "$t:shop.sort.latest"
+                            },
+                            {
+                                "value": "sales",
+                                "label": "$t:shop.sort.sales"
+                            },
+                            {
+                                "value": "reviews",
+                                "label": "$t:shop.sort.reviews"
+                            },
+                            {
+                                "value": "price_asc",
+                                "label": "$t:shop.sort.price_asc"
+                            },
+                            {
+                                "value": "price_desc",
+                                "label": "$t:shop.sort.price_desc"
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    ]
+}

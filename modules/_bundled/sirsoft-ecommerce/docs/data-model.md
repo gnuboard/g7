@@ -30,7 +30,7 @@
 | `OrderAddress` | `ecommerce_order_addresses` | 23 | order→Order | - |
 | `OrderCancel` | `ecommerce_order_cancels` | 12 | order→Order, cancelOptions→OrderCancelOption, refund→OrderRefund, cancelledByUser→User | - |
 | `OrderCancelOption` | `ecommerce_order_cancel_options` | 11 | orderCancel→OrderCancel, order→Order, orderOption→OrderOption, processedByUser→User | - |
-| `OrderCashReceipt` | `ecommerce_order_cash_receipts` | 16 | order→Order, payment→OrderPayment | - |
+| `OrderCashReceipt` | `ecommerce_order_cash_receipts` | 18 | order→Order, payment→OrderPayment | - |
 | `OrderExchange` | `ecommerce_order_exchanges` | 45 | order→Order, exchangeOptions→OrderExchangeOption, refunds→OrderRefund, images→ClaimImage, claimPayments→ClaimPayment, requestedByUser→User, 외 4개 | - |
 | `OrderExchangeOption` | `ecommerce_order_exchange_options` | 30 | orderExchange→OrderExchange, order→Order, orderOption→OrderOption, newProductOption→ProductOption, newOrderOption→OrderOption, collectionCarrier→ShippingCarrier, 외 2개 | - |
 | `OrderOption` | `ecommerce_order_options` | 58 | order→Order, parentOption→self, childOptions→self, splitOptions→self, product→Product, productOption→ProductOption, 외 4개 | - |
@@ -182,6 +182,30 @@
 지웁니다(빈 표는 `2026_11_10_000002_drop_ecommerce_content_media_table` 이 지움). 파일은 모듈 저장소 카테고리 `content-media`(기본 디스크 — 미공개 상품은
 서명·관리자 게이트가 걸려 공개 자산 디스크에 올리지 않음)이고, 행 `path` 는 그 카테고리 기준 경로(`{owner_type}/Y/m/d/{uuid}.ext`)입니다.
 「데이터도 삭제」 제거는 `2026_11_10_000001_create_ecommerce_attachments_table` 의 down 이 표째 지웁니다.
+
+### 현금영수증 활성 발급 슬롯·후기 중복 방지 (1.3.5)
+
+주문 하나에 살아 있는 현금영수증 발급은 하나뿐이고, 발급 하나를 취소하는 진행 중·완료 취소도 하나뿐입니다. 이 규칙은 조회로 확인하지
+않고 **DB 유니크가 동시 두 번째를 거부**하게 둡니다 — 같은 주문에 발급 요청이 동시에 두 번 오면 둘 다 「활성 없음」을 읽고 결제사에
+두 번 발급하던 문제(KVE-2026-3191)를 막기 위해서입니다.
+
+| `ecommerce_order_cash_receipts` 컬럼 | 뜻 |
+|---|---|
+| `slot_released_at` | 발급 행이 활성 슬롯을 내려놓은 시각 — 취소 완료·영수증 번호 없는 완료·과거 중복 정리 때 채움 |
+| `cancel_target_id` | 취소 행이 취소하는 발급 행 id |
+| `active_issue_order_key` (가상 생성, 유니크) | 발급 행이고 처리 중·완료이며 슬롯을 쥔 동안만 `order_id`, 그 밖은 NULL |
+| `open_cancel_target_key` (가상 생성, 유니크) | 취소 행이고 처리 중·완료인 동안만 `cancel_target_id`, 그 밖은 NULL |
+
+발급·취소는 **처리 중(IN_PROGRESS) 예약 행을 먼저 넣고** 결제사를 부른 뒤(트랜잭션 밖), 예약 행을 조건부 갱신(`updateIfStatus`)으로
+완료·실패 처리합니다. 예약이 유니크에 막히면 슬롯을 쥔 행을 돌려줍니다 — 완료면 그 행, 10분 넘은 처리 중이면 실패
+(`IN_PROGRESS_STALE`)로 바꾸되 **자동 재발급은 하지 않고**(결제사에서는 발급됐을 수 있음 — 관리자가 결제사 화면을 확인한 뒤 재발급),
+그 밖의 처리 중이면 409(`ISSUE_IN_PROGRESS`·`CANCEL_IN_PROGRESS`)입니다. 1.3.5 업그레이드 마이그레이션은 과거 데이터에서 슬롯을 쥔
+발급이 둘 이상인 주문을 최신 1건만 남기고 나머지 슬롯을 내려놓습니다(행·화면은 그대로, 주문·행 id 는 로그 warning — 결제사 쪽 중복은
+수동 취소).
+
+`ecommerce_product_reviews.active_order_option_key`(가상 생성, 유니크)는 지워지지 않은 후기의 `order_option_id` 입니다 — 주문 옵션
+하나에 살아 있는 후기는 하나뿐이고, 지운 뒤에는 다시 쓸 수 있습니다. 과거 활성 중복은 가장 먼저 쓴 1건만 남기고 소프트 삭제합니다(id 는
+로그). 이 제약 때문에 나뉜 주문 옵션 두 줄에 후기가 하나씩 있으면 두 줄을 합치지 않습니다(`OrderOptionService` 병합 가드).
 <!-- @intent END -->
 
 ## 소유 테이블
@@ -292,7 +316,7 @@ NULL 로 끊습니다(nullOnDelete 와 같은 결과를 명시적으로). 새 �
 ## 마이그레이션
 
 <!-- @generated:migrations START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-마이그레이션 135개.
+마이그레이션 137개.
 
 | 파일 | 생성 테이블 | 변경 테이블 | down() |
 |---|---|---|---|
@@ -430,6 +454,8 @@ NULL 로 끊습니다(nullOnDelete 와 같은 결과를 명시적으로). 새 �
 | `2026_11_02_000001_update_imported_review_fields_in_ecommerce_product_reviews_table.php` | - | - | ✅ |
 | `2026_11_10_000001_create_ecommerce_attachments_table.php` | `ecommerce_attachments` | `ecommerce_attachments` | ✅ |
 | `2026_11_10_000002_drop_ecommerce_content_media_table.php` | - | - | ✅ |
+| `2026_11_13_000001_add_active_slot_keys_to_ecommerce_order_cash_receipts_table.php` | - | - | ✅ |
+| `2026_11_13_000002_add_unique_active_review_per_order_option_to_ecommerce_product_reviews_table.php` | - | - | ✅ |
 | `2026_11_15_000001_add_disk_to_ecommerce_exports_table.php` | - | `ecommerce_exports` | ✅ |
 <!-- @generated:migrations END -->
 
@@ -502,7 +528,7 @@ NULL 로 끊습니다(nullOnDelete 와 같은 결과를 명시적으로). 새 �
 | `ExportStatusEnum` | `string` | 5 | `pending`, `processing`, `completed`, `failed`, `expired` |
 | `ExportTypeEnum` | `string` | 3 | `orders`, `products`, `mileage` |
 | `MileageEarnTriggerEnum` | `string` | 2 | `delivered`, `confirmed` |
-| `MileageTransactionTypeEnum` | `string` | 9 | `purchase_earn`, `admin_earn`, `order_use`, `admin_deduct`, `expired`, `refund_restore`, `order_cancel_restore`, `earn_cancel`, `외 1개` |
+| `MileageTransactionTypeEnum` | `string` | 10 | `purchase_earn`, `admin_earn`, `order_use`, `admin_deduct`, `expired`, `refund_restore`, `order_cancel_restore`, `earn_cancel`, `외 2개` |
 | `OrderDateTypeEnum` | `string` | 5 | `ordered_at`, `paid_at`, `confirmed_at`, `delivered_at`, `cancelled_at` |
 | `OrderOptionSourceTypeEnum` | `string` | 3 | `order`, `exchange`, `split` |
 | `OrderStatusEnum` | `string` | 14 | `pending_order`, `pending_payment`, `payment_complete`, `shipping_hold`, `preparing`, `shipping_ready`, `shipping`, `delivered`, `외 6개` |

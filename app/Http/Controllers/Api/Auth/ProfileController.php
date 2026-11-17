@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Auth;
 
 use App\Enums\AttachmentSourceType;
 use App\Exceptions\Auth\PasswordAuthDisallowedException;
+use App\Exceptions\Auth\PasswordReconfirmThrottledException;
 use App\Exceptions\CannotDeleteSuperAdminException;
 use App\Exceptions\IdentityVerificationRequiredException;
 use App\Fields\FieldContext;
@@ -20,6 +21,7 @@ use App\Services\AttachmentService;
 use App\Services\Auth\ReauthenticationService;
 use App\Services\IdentityPolicyService;
 use App\Services\MemberFieldSchemaService;
+use App\Services\PasswordReconfirmationService;
 use App\Services\UserLockedFieldsService;
 use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
@@ -44,6 +46,7 @@ class ProfileController extends AuthBaseController
      * @param  ReauthenticationService  $reauthenticationService  민감 작업 재확인 서비스 (비밀번호 또는 이메일 인증번호)
      * @param  UserLockedFieldsService  $lockedFields  회원 칸 수정 잠금 (언어 변경 경로)
      * @param  MemberFieldSchemaService  $memberFieldSchema  회원 항목 화면 계약 서비스
+     * @param  PasswordReconfirmationService  $passwordReconfirmation  현재 비밀번호 재확인(회원 단위 시도 제한) 서비스 — 7.1.6
      */
     public function __construct(
         private UserService $userService,
@@ -52,6 +55,7 @@ class ProfileController extends AuthBaseController
         private ReauthenticationService $reauthenticationService,
         private UserLockedFieldsService $lockedFields,
         private MemberFieldSchemaService $memberFieldSchema,
+        private PasswordReconfirmationService $passwordReconfirmation,
     ) {
         parent::__construct();
     }
@@ -349,7 +353,20 @@ class ProfileController extends AuthBaseController
             }
 
             // 비밀번호가 있는 회원은 비밀번호로, 없는 회원은 이메일 인증번호로 받은 토큰으로 확인한다.
-            $result = $this->reauthenticationService->verify($user, $request->validated());
+            // 비밀번호로 확인하는 갈래는 회원 단위 시도 제한과 함께 확인한다 — 열린 세션으로 비밀번호를 계속 맞혀 보지
+            // 못하게(7.1.6, KVE 동형 L2). 인증번호 토큰·비밀번호 없는 회원 갈래는 재확인 서비스가 그대로 판정한다.
+            $validated = $request->validated();
+            $verificationToken = $validated['verification_token'] ?? null;
+            $password = $validated['password'] ?? null;
+
+            if ((! is_string($verificationToken) || $verificationToken === '')
+                && is_string($password) && $password !== '' && $user->hasPassword()) {
+                $result = $this->passwordReconfirmation->attempt($user, $password)
+                    ? ReauthenticationService::PASSED
+                    : ReauthenticationService::PASSWORD_MISMATCH;
+            } else {
+                $result = $this->reauthenticationService->verify($user, $validated);
+            }
 
             // 비밀번호 없는 회원이 비밀번호 칸으로 왔다 = 그 회원을 모르는 옛 화면(7.1.x)이다. 보낸 값은 쓰지 않고 본인인증을
             // 요구한다(428) — 엔진이 인증 창을 열고, 확인이 끝나면 토큰을 붙여 이 요청을 다시 보낸다(위 verify 가 소비).
@@ -371,6 +388,9 @@ class ProfileController extends AuthBaseController
             $this->logUserActivity('profile.verify_password');
 
             return $this->success('user.password_verified');
+        } catch (PasswordReconfirmThrottledException $e) {
+            return $this->error('auth.password_reconfirm_throttled', 429, null, ['seconds' => $e->retryAfterSeconds])
+                ->header('Retry-After', (string) $e->retryAfterSeconds);
         } catch (ValidationException $e) {
             return $this->validationError($e->errors(), 'user.password_verify_failed');
         } catch (\Exception $e) {

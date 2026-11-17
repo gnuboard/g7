@@ -322,11 +322,11 @@
                    모든 관리자 화면의 첫 화면 머리에 걸리므로 로고와 같이 지연 로딩하지 않는다(eager). 이름이 없을 때의 대체 문구는 옆 이름 줄과 같은 키다. -->
               <img data-ref="user_avatar_img" data-if="{{current_user.data?.avatar}}" src="{{current_user.data?.avatar}}" thumbPreset="xs" loading="eager" alt="{{current_user.data?.display_name ?? current_user.data?.name ?? $t('admin.default_user_name')}}" class="user_avatar_img"/>
               <!-- 사진 없을 때의 대신 그림 — 옆에 이름이 있어 장식이다(읽지 않음). 원 바탕(gray-200 / 다크 gray-600) 위 3:1 이상인 단계(종전 icon-muted 다크 2.9) -->
-              <i data-ref="user_avatar_fallback" data-if="{{!current_user.data?.avatar}}" aria-hidden="true" class="fas fa-user text-gray-600 dark:text-gray-300"/>
+              <i data-ref="user_avatar_fallback" data-if="{{current_user !== undefined &amp;&amp; (!current_user.data?.avatar)}}" aria-hidden="true" class="fas fa-user text-gray-600 dark:text-gray-300"/>
             </div>
             <div data-ref="user_info" class="hidden min-w-0">
               <responsive on="768-" class="block min-w-0"/>
-              <p data-ref="user_name" class="text-primary text-sm font-bold leading-none truncate max-w-xs">{{current_user.data?.display_name ?? current_user.data?.name ?? $t('admin.default_user_name')}}</p>
+              <p data-ref="user_name" class="text-primary text-sm font-bold leading-none truncate max-w-xs">{{current_user === undefined ? '' : (current_user.data?.display_name ?? current_user.data?.name ?? $t('admin.default_user_name'))}}</p>
               <p data-ref="user_email" class="text-tertiary text-[11px] mt-1 truncate max-w-xs">{{current_user.data?.email ?? ''}}</p>
             </div>
             <user-profile data-type="composite" data-ref="user_dropdown" user="{{current_user.data}}" profileText="$t:admin.profile_settings" logoutText="$t:admin.logout" languageText="$t:admin.language" availableLocales="{{_global.appConfig.supportedLocales ?? $locales}}" class="" :showAvatar="false" :showName="false" :dropdownOnly="true" :showChevron="false" dropdownDirection="down"/>

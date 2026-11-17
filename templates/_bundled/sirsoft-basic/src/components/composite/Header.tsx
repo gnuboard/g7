@@ -144,6 +144,13 @@ interface HeaderProps {
   siteName?: string;
   /** 현재 로그인된 사용자 */
   user?: User | null;
+  /**
+   * 로그인 사용자 정보를 받는 중인가 — true 면 사용자 메뉴 자리에 빈 자리(회색 원 + 이름 막대)를 그리고
+   * 로그인·회원가입·주문조회·사용자 메뉴는 그리지 않는다(이름 길이에 따라 받은 뒤 폭이 조금 달라질 수 있다). 레이아웃이 `{{_global.currentUser === undefined}}` 로 넘긴다.
+   * 받는 중을 비회원으로 읽으면 회원이 새로고침할 때 「로그인·회원가입」이 잠깐 보였다가 바뀌고 검색창이 출렁였다(#915).
+   * 기본값 false — 편집기 미리보기·바인딩이 없는 옛 레이아웃은 지금처럼 그린다.
+   */
+  userLoading?: boolean;
   /** 장바구니 아이템 수 */
   cartCount?: number;
   /** 읽지 않은 알림 수 */
@@ -182,6 +189,10 @@ interface HeaderProps {
    * 옛 코어(7.1.3 이하)의 봇 렌더가 `{shopBase}/products` 같은 섞인 attrs 패턴을 치환하지 못해 레이아웃이 완성된 주소를 넘긴다.
    */
   shopProductsHref?: string;
+  /**
+   * 봇 화면(seo-config header_nav)의 「리뷰」 링크 주소(예: "/shop/reviews") — 이 컴포넌트는 읽지 않는다(화면은 shopBase 로 만든다)
+   */
+  shopReviewsHref?: string;
   /** 추가 CSS 클래스 */
   className?: string;
   /** 레이아웃 편집기 식별 속성(data-editor-*) — 시각적 루트에 spread */
@@ -258,6 +269,7 @@ const Header: React.FC<HeaderProps> = ({
   menu,
   siteName = '그누보드7',
   user,
+  userLoading = false,
   cartCount = 0,
   notificationCount = 0,
   boards = [],
@@ -364,6 +376,12 @@ const Header: React.FC<HeaderProps> = ({
            currentPath.startsWith(`${base}/category`);
   };
 
+  // 리뷰 모아보기 화면인지
+  const isReviewsActive = (): boolean => {
+    const base = shopBase === '/' ? '' : shopBase;
+    return currentPath.startsWith(`${base}/reviews`);
+  };
+
   // 네비게이션 버튼 스타일
   const getNavButtonClass = (isActive: boolean): string => {
     const baseClass = 'px-3 py-2 text-sm font-medium whitespace-nowrap cursor-pointer rounded-lg transition-colors';
@@ -417,6 +435,7 @@ const Header: React.FC<HeaderProps> = ({
 
   const navMenu: HeaderMenuItem[] = Array.isArray(menu) ? menu : DEFAULT_HEADER_MENU;
   const shopProductsPath = `${shopBase === '/' ? '' : shopBase}/products`;
+  const shopReviewsPath = `${shopBase === '/' ? '' : shopBase}/reviews`;
   const dropdownItemClass = (active: boolean) =>
     `block w-full text-left px-4 py-2 text-sm cursor-pointer ${active ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`;
   const isInternalPath = (url: string) => url.startsWith('/') && !url.startsWith('//');
@@ -470,11 +489,17 @@ const Header: React.FC<HeaderProps> = ({
           </LinkButton>
         ) : null;
       case 'shop':
+        // 쇼핑 항목은 「쇼핑」 바로 뒤에 「리뷰 모아보기」 탭을 함께 편다 — 쇼핑몰 모듈이 꺼져 있으면 둘 다 숨긴다
         return shopEnabled ? (
-          <LinkButton key={key} href={shopProductsPath} onNavigate={() => { navigate(shopProductsPath); close(); }} className={inDropdown ? dropdownItemClass(isShopActive()) : `flex items-center gap-1 ${getNavButtonClass(isShopActive())}`} data-testid="nav-shop" aria-current={isShopActive() ? 'page' : undefined}>
-            <Span>🛒</Span>
-            {autoLabel(item, 'nav.shop')}
-          </LinkButton>
+          <React.Fragment key={key}>
+            <LinkButton href={shopProductsPath} onNavigate={() => { navigate(shopProductsPath); close(); }} className={inDropdown ? dropdownItemClass(isShopActive()) : `flex items-center gap-1 ${getNavButtonClass(isShopActive())}`} data-testid="nav-shop" aria-current={isShopActive() ? 'page' : undefined}>
+              <Span>🛒</Span>
+              {autoLabel(item, 'nav.shop')}
+            </LinkButton>
+            <LinkButton href={shopReviewsPath} onNavigate={() => { navigate(shopReviewsPath); close(); }} className={inDropdown ? dropdownItemClass(isReviewsActive()) : `flex items-center gap-1 ${getNavButtonClass(isReviewsActive())}`} data-testid="nav-reviews" aria-current={isReviewsActive() ? 'page' : undefined}>
+              {t('nav.reviews')}
+            </LinkButton>
+          </React.Fragment>
         ) : null;
       case 'boards': {
         const list = inDropdown ? navBoards : visibleBoards;
@@ -702,8 +727,10 @@ const Header: React.FC<HeaderProps> = ({
               />
             )}
 
-            {/* 알림센터 드롭다운 — 로그인 사용자에게만 노출 */}
-            {user?.uuid && (
+            {/* 알림센터 드롭다운 — 로그인 사용자에게만 노출. 사용자 정보를 받는 동안에는 같은 크기의 빈 자리(받은 뒤 회원이면
+                종 단추가 같은 크기로 들어온다 — 받는 사람은 사실상 회원뿐이다) */}
+            {userLoading && <Span aria-hidden="true" className="block w-9 h-9" data-skeleton="notification" />}
+            {!userLoading && user?.uuid && (
               <NotificationCenter
                 notifications={notifications}
                 unreadCount={notificationCount}
@@ -801,8 +828,15 @@ const Header: React.FC<HeaderProps> = ({
                 root id 가 컨테이너별로 스코프되도록(SlotContainer 가 id 로 자식 root id 를 고유화) 한다. */}
             <SlotContainer slotId="header_currency" id="header_currency_slot_desktop" className="flex items-center" />
 
-            {/* 사용자 메뉴 */}
-            {user?.uuid ? (
+            {/* 사용자 메뉴 — 사용자 정보를 받는 동안에는 회원 단추 모양의 빈 자리(아바타 sm 원 + 이름 막대 + 펼침 표시 자리 — 이름 길이에 따라 받은 뒤 폭이 조금 달라질 수 있다).
+                받는 중을 비회원으로 읽으면 회원에게 로그인·회원가입이 잠깐 보였다(#915) */}
+            {userLoading ? (
+              <Div role="status" aria-label={t('common.loading')} className="flex items-center gap-2 p-2" data-testid="header-user-skeleton">
+                <Span aria-hidden="true" data-skeleton="avatar" className="block w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                <Span aria-hidden="true" data-skeleton="name" className="hidden sm:block h-4 w-20 max-w-32 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                <Span aria-hidden="true" className="block w-4 h-4" />
+              </Div>
+            ) : user?.uuid ? (
               <Div ref={userMenuRef} className="relative">
                 <Button
                   onClick={() => setShowUserMenu(!showUserMenu)}

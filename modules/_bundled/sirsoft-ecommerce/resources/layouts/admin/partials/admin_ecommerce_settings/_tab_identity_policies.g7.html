@@ -369,7 +369,7 @@
         </div>
         <div data-if="{{ecommerceIdentityPolicies !== undefined &amp;&amp; ((ecommerceIdentityPolicies?.data?.data ?? []).length === 0)}}" class="ecommerce:py-10 ecommerce:text-center ecommerce-text-label-subtle">$t:admin.identity.policies.empty</div>
         <div data-ref="policy_pagination" class="ecommerce-footer-buttons-between">
-          <span class="ecommerce-text-tertiary">$t:admin.identity.policies.pagination_summary|total={{ecommerceIdentityPolicies?.data?.meta?.total ?? 0}}|page={{ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1}}|last={{ecommerceIdentityPolicies?.data?.meta?.last_page ?? '-'}}</span>
+          <span class="ecommerce-text-tertiary"><blur-until-loaded sources="ecommerceIdentityPolicies"/>$t:admin.identity.policies.pagination_summary|total={{ecommerceIdentityPolicies?.data?.meta?.total ?? 0}}|page={{ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1}}|last={{ecommerceIdentityPolicies?.data?.meta?.last_page ?? '-'}}</span>
           <div class="ecommerce-flex-center ecommerce:gap-1">
             <a href="/admin/ecommerce/settings?tab=identity_policies&amp;page={{Math.max(1, (ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) - 1)}}" :mergeQuery="true" disabled="{{(ecommerceIdentityPolicies?.data?.meta?.current_page ?? 1) <= 1}}" class="ecommerce:px-3 ecommerce:py-1.5 ecommerce:text-xs ecommerce:font-medium ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:text-gray-700 ecommerce:dark:text-gray-200 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:aria-disabled:opacity-50 ecommerce:aria-disabled:cursor-not-allowed">
               <on type="click">

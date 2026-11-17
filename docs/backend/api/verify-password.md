@@ -65,6 +65,7 @@ _이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지�
 | 401 | 비밀번호 불일치 | 전달한 `password` 가 저장된 해시와 일치하지 않는 경우 (`message`: 비밀번호가 일치하지 않습니다.) |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 | 428 | 본인인증 필요 | 비밀번호가 없는 회원이 `password` 로 확인하려 하거나 아무것도 없이(빈 본문) 온 경우 (`error_code`: `identity_verification_required`, `verification.purpose`: `sensitive_action`) — 확인 뒤 `?verification_token=` 을 붙여 같은 요청을 다시 보낸다 (7.2.0) |
+| 429 | Too Many Requests | 비밀번호 확인을 너무 여러 번 틀린 경우 (`auth.password_reconfirm_throttled`, `:seconds` 치환, `Retry-After` 헤더, 7.1.6). 회원 단위로 세며(`PasswordReconfirmationService`, 키 `password-reconfirm:{userId}`) 상한은 환경설정 보안의 「로그인 시도 횟수」, 대기는 「잠금 시간」(분)이다. 맞히면 횟수가 초기화된다. 인증 앱 등록 시작(`sirsoft-totp`)의 현재 비밀번호 확인과 같은 횟수를 공유한다 |
 | 500 | 비밀번호 확인 실패 | 확인 처리 중 예기치 못한 예외가 발생한 경우 (`message`: 비밀번호 확인에 실패했습니다.) |
 
 <!-- @generated:end -->

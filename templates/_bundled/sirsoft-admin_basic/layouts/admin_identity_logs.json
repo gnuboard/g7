@@ -351,6 +351,10 @@
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "if": "{{identityLogs?.data?.pagination?.total_is_exact !== false}}",
+                                                "blur_until_loaded": {
+                                                    "enabled": true,
+                                                    "data_sources": "identityLogs"
+                                                },
                                                 "props": {
                                                     "className": "text-label"
                                                 },

@@ -3,6 +3,8 @@
 namespace App\Http\Requests\Identity;
 
 use App\Extension\HookManager;
+use App\Rules\IdentityProviderForPurposeRule;
+use App\Rules\RegisteredIdentityPurposeRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -31,11 +33,13 @@ class RequestChallengeRequest extends FormRequest
     public function rules(): array
     {
         $rules = [
-            'purpose' => ['required', 'string', 'max:64'],
+            // 등록된 목적만 — 공개 경로는 로그인 2단계 목적을 발급하지 않는다(7.1.6, KVE 동형 B1)
+            'purpose' => ['required', 'string', 'max:64', new RegisteredIdentityPurposeRule(false, 'identity.errors.purpose_unknown')],
             'target' => ['nullable', 'array'],
             'target.email' => ['nullable', 'email', 'max:255'],
             'target.phone' => ['nullable', 'string', 'max:32'],
-            'provider_id' => ['nullable', 'string', 'max:64'],
+            // 등록돼 있고 그 목적을 지원하는 수단만 — 모르는 수단을 메일로 바꿔 발급하지 않는다(B9)
+            'provider_id' => ['nullable', 'string', 'max:64', new IdentityProviderForPurposeRule(fn (): ?string => is_string($this->input('purpose')) ? $this->input('purpose') : null)],
             // 428 응답이 알려 준 정책 키 — 정책별 문구를 고르는 데만 쓰고, 쓸 수 없는 키는 컨트롤러가 무시한다.
             'policy_key' => ['nullable', 'string', 'max:120'],
             // 외부 화면을 거치는 수단(회사 계정 다시 로그인 등)이 확인을 마친 뒤 돌려보낼 화면 경로(7.2.0). 같은 출처 경로만

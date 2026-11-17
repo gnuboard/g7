@@ -199,22 +199,35 @@ class BoardServiceProvider extends BaseModuleServiceProvider
     /**
      * 게시판 모듈의 이름 붙은 요청 제한기를 등록합니다.
      *
-     * 비밀글 비밀번호 확인(글 비밀번호·스레드 비밀번호)은 그룹 제한(분당 600회)만 걸려 있어
-     * 비밀번호 대입이 사실상 막히지 않았다. 두 엔드포인트가 같은 제한기를 써서 IP 당 합산
-     * 분당 10회로 묶는다. 429 응답은 로그인 제한과 같은 다국어 문구로 낸다.
+     * 비밀번호 확인 엔드포인트(비밀글 글 비밀번호·스레드 비밀번호, 비회원 글 수정·삭제용 확인, 비회원 댓글
+     * 비밀번호 확인)는 그룹 제한(분당 600회)뿐이거나 제한이 없어 비밀번호 대입이 사실상 막히지 않았다.
+     * 네 엔드포인트가 같은 제한기를 써서 IP 당 합산 분당 10회로 묶는다 — 문을 바꿔 가며 대입해도 합쳐서 센다.
+     * 429 응답은 로그인 제한과 같은 다국어 문구로 낸다.
+     *
+     * 글·댓글의 수정·삭제 요청도 비밀번호를 본문으로 직접 받아 비교하므로 같은 제한기를 건다. 다만 비밀번호가
+     * 실리지 않은 요청(회원 본인 수정·삭제, 확인 토큰으로 오는 요청)은 비교할 것이 없으므로 세지 않는다.
+     * 글 번호와 비밀번호를 함께 받는 글쓰기 폼 데이터 조회·첨부 업로드·본문 미디어 업로드도 같은 방식으로 건다.
      *
      * @return void 반환값 없음
      */
     protected function registerRateLimiters(): void
     {
-        RateLimiter::for('sirsoft-board.secret-password-verify', fn (Request $request) => Limit::perMinute(10)
-            ->by((string) $request->ip())
-            ->response(fn (Request $request, array $headers) => ResponseHelper::error(
-                'auth.too_many_attempts',
-                429,
-                null,
-                // `count` 로 「1 second」/「2 seconds」 를 고른다.
-                ['seconds' => (int) ($headers['Retry-After'] ?? 60), 'count' => (int) ($headers['Retry-After'] ?? 60)]
-            )->withHeaders($headers)));
+        RateLimiter::for('sirsoft-board.secret-password-verify', function (Request $request) {
+            $password = $request->input('password');
+
+            if (! is_string($password) || $password === '') {
+                return Limit::none();
+            }
+
+            return Limit::perMinute(10)
+                ->by((string) $request->ip())
+                ->response(fn (Request $request, array $headers) => ResponseHelper::error(
+                    'auth.too_many_attempts',
+                    429,
+                    null,
+                    // `count` 로 「1 second」/「2 seconds」 를 고른다.
+                    ['seconds' => (int) ($headers['Retry-After'] ?? 60), 'count' => (int) ($headers['Retry-After'] ?? 60)]
+                )->withHeaders($headers));
+        });
     }
 }

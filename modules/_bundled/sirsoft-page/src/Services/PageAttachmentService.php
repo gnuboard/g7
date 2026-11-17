@@ -7,6 +7,7 @@ use App\Extension\Helpers\StorageTransaction;
 use App\Extension\HookManager;
 use App\Helpers\InlineMediaPolicy;
 use App\Helpers\PermissionHelper;
+use App\Support\Files\StoredFileExtension;
 use App\Support\ImageResizer;
 use App\Support\UploadedFileName;
 use App\Thumbnails\DTO\ThumbnailSource;
@@ -177,7 +178,9 @@ class PageAttachmentService
 
         $file = HookManager::applyFilters('sirsoft-page.attachment.filter_upload_file', $file);
 
-        $storedFilename = Str::uuid().'.'.$file->getClientOriginalExtension();
+        // 확장자는 올린 이름이 아니라 파일 내용에서 정한다 (코어 `StoredFileExtension` 주석 참조).
+        // 내려받는 이름은 `original_filename` 이라 바뀌지 않는다.
+        $storedFilename = Str::uuid().'.'.StoredFileExtension::resolve($file);
 
         // 경로 결정: 페이지가 있으면 최종 경로, 없으면 임시 경로
         if ($pageId) {

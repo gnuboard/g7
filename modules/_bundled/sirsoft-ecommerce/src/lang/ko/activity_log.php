@@ -64,6 +64,7 @@ return [
         'extend_expiry' => '유효기간 연장',
         'adjust' => '적립건 수정',
         'refund_credit' => '환불 지급',
+        'signup_earn' => '가입 적립',
         // 클레임 (교환/반품/환불/추가결제/첨부)
         'request' => '신청 접수',
         'option_status_change' => '상품 단위 상태 변경',
@@ -269,6 +270,7 @@ return [
         'mileage_deletion_expire' => '회원 삭제로 마일리지 소멸 (:amount)',
         'mileage_earn_cancel' => '마일리지 적립 회수 (:amount)',
         'mileage_admin_earn' => '관리자 마일리지 지급 (:amount)',
+        'mileage_signup_earn' => '가입 적립 마일리지 지급 (:amount)',
         'mileage_admin_deduct' => '관리자 마일리지 차감 (:amount)',
         'mileage_extend_expiry' => '마일리지 유효기간 연장 (:days일)',
         'mileage_adjust' => '마일리지 적립건 수정 (:amount)',

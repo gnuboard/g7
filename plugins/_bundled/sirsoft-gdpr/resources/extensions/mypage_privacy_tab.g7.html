@@ -58,7 +58,7 @@ e2e:allow 항목 이름 접미사 중복 방지 표현식 2곳 — 표현식 평
           <h3 class="gdpr:text-gray-900 gdpr:dark:text-white gdpr:text-sm gdpr:font-semibold">$t:sirsoft-gdpr.mypage.privacy.section_consents</h3>
           <p class="gdpr:text-xs gdpr:text-gray-500 gdpr:dark:text-gray-400 gdpr:mt-1">$t:sirsoft-gdpr.mypage.privacy.section_consents_hint</p>
         </div>
-        <div data-if="{{(gdprMeConsents?.data?.consents ?? []).length === 0}}" class="gdpr:py-10 gdpr:text-center gdpr:text-sm gdpr:text-gray-500 gdpr:dark:text-gray-400">$t:sirsoft-gdpr.mypage.privacy.no_consents</div>
+        <div data-if="{{gdprMeConsents !== undefined &amp;&amp; (gdprMeConsents?.data?.consents ?? []).length === 0}}" class="gdpr:py-10 gdpr:text-center gdpr:text-sm gdpr:text-gray-500 gdpr:dark:text-gray-400">$t:sirsoft-gdpr.mypage.privacy.no_consents</div>
         <!-- 「모두 동의」 일괄 동의 바 — 선택형(is_required=false) 중 미동의(is_consented=false) 항목이 하나라도 있을 때만 노출. 필수는 대상 외. renew-all 이 아니라 신규/재동의 축이므로 grant 를 항목별로 반복 호출하는 대신, 서버 renew-all 은 '이미 활성 항목의 정책 갱신' 전용이라 여기서는 각 미동의 선택형 항목을 grant 로 순차 처리한다. 다만 레이아웃 반복 호출은 표현이 어렵기에, 배너의 '모두 동의' 와 동일하게 consent/cookie(intent 없음, 전체 true) 로 한 번에 처리. -->
         <div data-if="{{(gdprMeConsents?.data?.consents ?? []).filter(c => c?.is_required !== true &amp;&amp; c?.is_consented !== true).length > 0}}" class="gdpr:flex gdpr:items-center gdpr:justify-between gdpr:gap-3 gdpr:px-4 gdpr:py-3 gdpr:bg-blue-50 gdpr:dark:bg-blue-900/20 gdpr:border-b gdpr:border-blue-100 gdpr:dark:border-blue-800">
           <span class="gdpr:text-sm gdpr:text-blue-800 gdpr:dark:text-blue-200">$t:sirsoft-gdpr.mypage.privacy.enable_all_hint</span>

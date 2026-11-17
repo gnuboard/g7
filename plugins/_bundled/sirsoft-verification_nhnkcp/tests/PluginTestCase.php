@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Plugins\Sirsoft\VerificationNhnkcp\Listeners\AssertNoDuplicateKcpIdentity;
+use Plugins\Sirsoft\VerificationNhnkcp\Listeners\ClaimKcpIdentityOnRegistering;
 use Plugins\Sirsoft\VerificationNhnkcp\Listeners\CleanKcpCertTransactionsOnLogPurge;
 use Plugins\Sirsoft\VerificationNhnkcp\Listeners\CleanKcpRecordOnUserDelete;
 use Plugins\Sirsoft\VerificationNhnkcp\Listeners\CleanKcpRecordOnUserWithdraw;
@@ -42,7 +43,7 @@ abstract class PluginTestCase extends TestCase
     /**
      * 플러그인 마이그레이션을 포함하여 DB 를 초기화한다.
      *
-     * @return array<string, mixed> migrate:fresh 옵션
+     * @return array<string, mixed> migrate:fresh 에 넘길 옵션(번들 확장 마이그레이션 경로 포함)
      */
     protected function migrateFreshUsing(): array
     {
@@ -66,7 +67,7 @@ abstract class PluginTestCase extends TestCase
     }
 
     /**
-     * 스토리지 격리 → 오토로드 → 다국어 → 서비스·플러그인 인스턴스·라우트·훅 등록 순으로 플러그인 실행 환경을 꾸린다.
+     * 플러그인 스토리지 격리·오토로드·다국어·서비스 프로바이더·인스턴스·라우트·훅 리스너를 등록합니다.
      *
      * @return void 반환값 없음
      */
@@ -113,7 +114,7 @@ abstract class PluginTestCase extends TestCase
     }
 
     /**
-     * 격리했던 플러그인 스토리지를 되돌린다.
+     * 격리했던 플러그인 스토리지를 지우고 기본 정리를 합니다.
      *
      * @return void 반환값 없음
      */
@@ -193,6 +194,7 @@ abstract class PluginTestCase extends TestCase
             CleanKcpRecordOnUserDelete::class,
             CleanKcpCertTransactionsOnLogPurge::class,
             AssertNoDuplicateKcpIdentity::class,
+            ClaimKcpIdentityOnRegistering::class,
             ValidateKcpSettingsListener::class,
         ] as $listener) {
             HookListenerRegistrar::register($listener, $source);

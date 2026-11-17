@@ -7,6 +7,7 @@ use App\Contracts\Extension\UserScopedIdentityProviderInterface;
 use App\Enums\IdentityPolicySourceType;
 use App\Enums\IdentityVerificationChannel;
 use App\Enums\IdentityVerificationPurpose;
+use App\Exceptions\IdentityProviderUnavailableException;
 use App\Extension\HookManager;
 use App\Models\User;
 use InvalidArgumentException;
@@ -213,8 +214,9 @@ class IdentityVerificationManager
      * 정책의 provider_id 가 우선되므로 (IdentityPolicyService::resolveRenderHint 참조), 본 메서드는
      * 정책에 provider_id 가 명시되지 않은 경우의 fallback 으로 사용됩니다.
      *
-     * $providerId 가 등록되지 않았거나 purpose 미지원이면 silent fallback (1~4 단계 진행).
-     * 운영자가 정책에 명시한 provider 가 비활성화/미설치된 상태에서도 가입 흐름이 중단되지 않도록 한다.
+     * $providerId 를 명시했는데 등록되지 않았거나 purpose 를 지원하지 않으면 다른 수단으로 바꾸지 않고
+     * `IdentityProviderUnavailableException` 을 던진다(7.1.6). 정책이 지정한 수단 대신 메일로 발급하면 받은 결과가
+     * 정책 결박에서 다시 거부되어 사용자가 끝없이 인증을 반복하게 된다. 명시하지 않은 일반 경로는 1~4 단계 폴백을 그대로 쓴다.
      *
      * 대상 회원을 알면(7.2.0) 해석된 수단이 그 회원에게 쓸 수 없을 때(`UserScopedIdentityProviderInterface::canChallengeUser()` 거짓 —
      * 예: 받을 메일이 없는 회원의 메일 수단) 같은 목적을 지원하고 그 회원에게 쓸 수 있는 다음 수단(등록 순서)으로 넘어간다. 그런
@@ -229,6 +231,8 @@ class IdentityVerificationManager
      * @param  string|null  $providerId  호출자 명시 provider id (Mode A controller 요청 / Mode B 정책)
      * @param  User|null  $user  대상 회원 (모르면 null — 회원별 폴백을 하지 않는다)
      * @return IdentityVerificationInterface 해석된 provider
+     *
+     * @throws IdentityProviderUnavailableException 명시한 수단을 이 목적에 쓸 수 없을 때
      */
     public function resolveForPurpose(string $purpose, ?string $providerId = null, ?User $user = null): IdentityVerificationInterface
     {
@@ -302,8 +306,12 @@ class IdentityVerificationManager
     {
         $providers = $this->all();
 
-        if ($providerId !== null && $providerId !== '' && isset($providers[$providerId]) && $providers[$providerId]->supportsPurpose($purpose)) {
-            return $providers[$providerId];
+        if ($providerId !== null && $providerId !== '') {
+            if (isset($providers[$providerId]) && $providers[$providerId]->supportsPurpose($purpose)) {
+                return $providers[$providerId];
+            }
+
+            throw new IdentityProviderUnavailableException($providerId, $purpose);
         }
 
         $explicitId = (string) config("settings.identity.purpose_providers.{$purpose}", '');

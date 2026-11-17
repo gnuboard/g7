@@ -4,7 +4,7 @@
  * 로그아웃 응답이 `data.redirect_url` 을 실으면(외부 인증의 IdP 로그아웃 등) 같은 출처 경로일 때만 그 경로로 가고,
  * 없거나 외부 주소면 지금처럼 로그인 화면으로 간다. 토큰과 상태는 어느 경우든 지운다.
  *
- * @since engine-v1.92.0
+ * @since engine-v1.93.0
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';

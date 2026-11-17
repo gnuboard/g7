@@ -1,6 +1,6 @@
 /**
  * @file ActionDispatcher.errorHandlerReentry.test.ts
- * @description 오류 처리기 자신이 실패해도 오류 처리를 끝없이 다시 돌리지 않는다 (engine-v1.94.0)
+ * @description 오류 처리기 자신이 실패해도 오류 처리를 끝없이 다시 돌리지 않는다 (engine-v1.95.0)
  *
  * 실패한 동작의 오류 처리기(errorHandling·onError·레이아웃/템플릿/시스템 기본값)는 `executeAction` 으로 실행되고, 그 처리기가 실패하면
  * 같은 catch 갈래에서 다시 오류 처리기를 고른다. 처리기에 자기 정의가 없으면 시스템 기본(`toast`)이 다시 골라지고, 그 `toast` 가
@@ -19,7 +19,7 @@ import { Logger } from '../../utils/Logger';
 /** 수정 전에도 시험이 끝나도록 갱신기는 이 횟수 뒤 던지기를 멈춘다(그 횟수까지 닿으면 끝없는 재진입이다) */
 const RUNAWAY_LIMIT = 200;
 
-describe('[case:network-error-handler-reentry-runaway] 오류 처리기 자신의 실패는 오류 처리 재진입 상한에서 끝난다 (engine-v1.94.0)', () => {
+describe('[case:network-error-handler-reentry-runaway] 오류 처리기 자신의 실패는 오류 처리 재진입 상한에서 끝난다 (engine-v1.95.0)', () => {
     let dispatcher: ActionDispatcher;
     let updaterCalls = 0;
     let originalG7Core: any;

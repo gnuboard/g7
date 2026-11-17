@@ -1,6 +1,6 @@
 /**
  * @file TemplateApp.refetchLatestState.test.ts
- * @description 다시 받기는 정본 최신 상태로 요청을 만든다 (engine-v1.94.0, #869 λ 4부 17)
+ * @description 다시 받기는 정본 최신 상태로 요청을 만든다 (engine-v1.95.0, #869 λ 4부 17)
  *
  * `G7Core.state.set` 은 정본 전역 상태(TemplateApp.globalState)를 바로 바꾸지만, `TemplateApp.refetchDataSource` 는 요청 식과 전역 헤더를
  * 다시 그리기 전 화면 문맥(`currentDataContext._global`·`._local`)으로 풀었다. 그래서 state.set 직후의 다시 받기가 앞 값으로 나갔다
@@ -47,7 +47,7 @@ import { TemplateApp } from '../TemplateApp';
 import { AuthManager } from '../auth/AuthManager';
 import { DataSourceManager } from '../template-engine/DataSourceManager';
 
-describe('다시 받기 — 정본 최신 상태로 요청을 만든다 (engine-v1.94.0)', () => {
+describe('다시 받기 — 정본 최신 상태로 요청을 만든다 (engine-v1.95.0)', () => {
     let app: TemplateApp;
 
     beforeEach(() => {

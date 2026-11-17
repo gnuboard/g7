@@ -5,6 +5,7 @@ namespace App\Extension\Storage;
 use App\Contracts\Extension\ProvidesThumbnailSource;
 use App\Contracts\Extension\StreamingStorageInterface;
 use App\Exceptions\UnsafeStoragePathException;
+use App\Extension\Storage\Concerns\GuardsPublicDiskWrites;
 use App\Extension\Storage\Concerns\GuardsStoragePaths;
 use App\Extension\Storage\Concerns\ProvidesStreamingAccess;
 use App\Extension\Storage\Concerns\ResolvesPublicUrl;
@@ -20,6 +21,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class PluginStorageDriver implements ProvidesThumbnailSource, StreamingStorageInterface
 {
+    use GuardsPublicDiskWrites;
     use GuardsStoragePaths;
     use ProvidesStreamingAccess;
     use ResolvesPublicUrl;
@@ -45,6 +47,7 @@ class PluginStorageDriver implements ProvidesThumbnailSource, StreamingStorageIn
     {
         $this->identifier = $identifier;
         $this->disk = $disk;
+        $this->homeDisk = $disk;
     }
 
     /**
@@ -105,10 +108,15 @@ class PluginStorageDriver implements ProvidesThumbnailSource, StreamingStorageIn
     public function put(string $category, string $path, mixed $content): bool
     {
         $fullPath = $this->resolvePath($category, $path);
+
+        if ($this->refusesPublicDiskWrite($category, $fullPath)) {
+            return false;
+        }
+
         $this->ensurePreservationMarker();
         $this->syncThumbnailsBeforePut($fullPath);
 
-        $written = Storage::disk($this->disk)->put($fullPath, $content);
+        $written = Storage::disk($this->disk)->put($fullPath, $content, $this->objectStorageWriteOptions($fullPath, $content));
         $this->syncThumbnailsAfterPut($fullPath, $written);
 
         return $written;

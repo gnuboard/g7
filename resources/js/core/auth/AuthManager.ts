@@ -51,7 +51,7 @@ export interface AuthConfig {
    * 로그인 인계 코드 교환 엔드포인트 — 외부 인증(소셜 로그인 등)이 발급한 일회용 코드를 바꿔 로그인한다.
    * 없으면 그 인증 타입은 인계를 지원하지 않는다(관리자는 아직 미지원).
    *
-   * @since engine-v1.91.0
+   * @since engine-v1.92.0
    */
   handoffEndpoint?: string;
   /**
@@ -170,7 +170,7 @@ export interface AuthState {
  * - `unauthenticated`: 토큰이 없거나 서버가 인증 실패(401·419 등)로 답했다
  * - `unavailable`: 서버 일시 오류(5xx)·네트워크 오류가 짧은 재시도 뒤에도 이어져 인증 여부를 알 수 없다
  *
- * @since engine-v1.94.0
+ * @since engine-v1.95.0
  */
 export type AuthCheckStatus = 'authenticated' | 'unauthenticated' | 'unavailable';
 
@@ -185,7 +185,7 @@ type EventHandler = (...args: any[]) => void;
  * 개발 서버의 라우트 캐시 재생성처럼 서버가 잠깐 5xx 를 내는 순간을 넘기는 정도로만 짧게 둔다 — 부팅 때
  * `preloadAuth` 와 라우터 확인이 차례로 한 번씩 부르므로, 서버가 계속 죽어 있으면 이 합의 두 배만큼 늦게 오류 화면이 뜬다.
  *
- * @since engine-v1.94.0
+ * @since engine-v1.95.0
  */
 const TRANSIENT_RETRY_DELAYS_MS = [250, 750, 1500] as const;
 
@@ -198,7 +198,7 @@ const TRANSIENT_RETRY_DELAYS_MS = [250, 750, 1500] as const;
  *
  * @param error 요청 오류
  * @returns 일시 오류면 true
- * @since engine-v1.94.0
+ * @since engine-v1.95.0
  */
 function isTransientAuthCheckError(error: any): boolean {
   if (error?.code === 'ERR_CANCELED' || error?.name === 'CanceledError') {
@@ -214,7 +214,7 @@ function isTransientAuthCheckError(error: any): boolean {
 }
 
 /**
- * 429 의 Retry-After 를 따를 최대 대기(ms) — 부팅 인증 확인이 화면을 오래 막지 않게 이보다 길게 기다리지 않는다 (engine-v1.94.0)
+ * 429 의 Retry-After 를 따를 최대 대기(ms) — 부팅 인증 확인이 화면을 오래 막지 않게 이보다 길게 기다리지 않는다 (engine-v1.95.0)
  */
 const RETRY_AFTER_MAX_MS = 5000;
 
@@ -227,7 +227,7 @@ const RETRY_AFTER_MAX_MS = 5000;
  * @param error 요청 오류
  * @param attempt 지금까지 다시 물은 횟수
  * @returns 대기 시간(ms)
- * @since engine-v1.94.0
+ * @since engine-v1.95.0
  */
 function transientRetryDelay(error: any, attempt: number): number {
   const base: number = TRANSIENT_RETRY_DELAYS_MS[attempt];
@@ -357,9 +357,9 @@ export class AuthManager {
   private isRefreshing: boolean = false;
   private refreshPromise: Promise<boolean> | null = null;
   private eventHandlers: Map<string, EventHandler[]> = new Map();
-  /** 인증 타입별 마지막 확인 결론 (@since engine-v1.94.0) */
+  /** 인증 타입별 마지막 확인 결론 (@since engine-v1.95.0) */
   private lastCheckStatus: Map<AuthType, AuthCheckStatus> = new Map();
-  /** 인증 타입별 마지막 「확인 불가」 시각(ms) (@since engine-v1.94.0) */
+  /** 인증 타입별 마지막 「확인 불가」 시각(ms) (@since engine-v1.95.0) */
   private lastUnavailableAt: Map<AuthType, number> = new Map();
 
   /**
@@ -489,7 +489,7 @@ export class AuthManager {
    *
    * @param type - 인증 타입 (admin 또는 user)
    * @returns 인증 여부
-   * @since engine-v1.94.0 일시 오류 재시도·세션 유지·`getLastCheckStatus`
+   * @since engine-v1.95.0 일시 오류 재시도·세션 유지·`getLastCheckStatus`
    */
   async checkAuth(type: AuthType): Promise<boolean> {
     const apiClient = getApiClient();
@@ -538,7 +538,7 @@ export class AuthManager {
             type: type,
           };
           this.lastCheckStatus.set(type, 'authenticated');
-          // 구독자 예외를 격리한다 — 이 try 안에서 새면 사용자 조회 실패로 잡혀 다시 묻거나 세션을 비운다 (engine-v1.94.0)
+          // 구독자 예외를 격리한다 — 이 try 안에서 새면 사용자 조회 실패로 잡혀 다시 묻거나 세션을 비운다 (engine-v1.95.0)
           this.emitIsolated('authStateChange', this.state);
           return finish('authenticated', true);
         }
@@ -597,7 +597,7 @@ export class AuthManager {
    *
    * @param type 인증 타입
    * @returns 유효 시간 안의 확인 불가 결론이 있으면 true
-   * @since engine-v1.94.0
+   * @since engine-v1.95.0
    */
   isRecentlyUnavailable(type: AuthType): boolean {
     if (this.lastCheckStatus.get(type) !== 'unavailable') {
@@ -629,7 +629,7 @@ export class AuthManager {
    *
    * @param type 인증 타입
    * @returns 마지막 결론, 없으면 null
-   * @since engine-v1.94.0
+   * @since engine-v1.95.0
    */
   getLastCheckStatus(type: AuthType): AuthCheckStatus | null {
     return this.lastCheckStatus.get(type) ?? null;
@@ -717,7 +717,7 @@ export class AuthManager {
    * @param options - 추가 옵션 (headers 등 — globalHeaders 의 장바구니 키 등)
    * @returns 인증 완료 / 2단계 인증 요구 / 비밀번호 변경 단계 요구
    * @throws Error 인계를 지원하지 않는 인증 타입이거나 코드가 무효(422)·상태 거절(401)·잠금(423)일 때
-   * @since engine-v1.91.0
+   * @since engine-v1.92.0
    */
   async loginWithHandoff(
     type: AuthType,
@@ -1123,7 +1123,7 @@ export class AuthManager {
   async logout(): Promise<void> {
     const apiClient = getApiClient();
     const config = this.state.type ? this.config.get(this.state.type) : null;
-    // 서버가 정한 로그아웃 뒤 이동 경로(외부 인증의 IdP 로그아웃 등) — 같은 출처 경로만 따른다 (engine-v1.92.0)
+    // 서버가 정한 로그아웃 뒤 이동 경로(외부 인증의 IdP 로그아웃 등) — 같은 출처 경로만 따른다 (engine-v1.93.0)
     let serverRedirect: string | null = null;
 
     try {

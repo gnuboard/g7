@@ -3,6 +3,8 @@ feature: 회원 상품 후기 작성 자격·상태 변경·판매자 답변 (Pr
 description: |
   회원 후기는 본인 주문의 구매 확정 옵션에만, 작성 기한 안에, 옵션당 한 번 쓸 수 있다.
   자격이 없으면 canWrite 가 false 를 돌려주고 createReview 는 예외로 막는다.
+  canWrite 는 조회로만 중복을 보므로, 주문옵션당 활성(소프트 삭제 안 된) 후기 1건을 DB 유니크
+  (생성 컬럼 active_order_option_key)로도 강제하고, 위반은 createReview 가 already_written 으로 바꿔 던진다.
   상태 변경(단건·일괄)은 저장소에 위임하고, 판매자 답변은 첫 답변과 수정 시각을 따로 기록하며
   답변 삭제는 답변 내용·작성자·시각을 모두 비운다.
 
@@ -21,6 +23,10 @@ effects:
   - review_status_change_delegated         # updateStatus·bulkUpdateStatus → 저장소
   - review_reply_timestamps_tracked        # 첫 답변 replied_at, 수정 reply_updated_at
   - review_reply_cleared_on_delete         # 답변 내용·작성 관리자·시각 비움, 형식 text
+  - review_duplicate_active_write_rejected_by_unique_guard  # canWrite 통과 뒤 같은 옵션 후기가 먼저 저장되면 already_written, 활성 1건
+  - review_rewrite_allowed_after_soft_delete               # 지운 후기 뒤 같은 옵션 재작성 허용
+  - review_active_order_option_unique_enforced_in_schema   # active_order_option_key 생성 컬럼 + 유니크, 주문옵션 NULL 은 중복 허용
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ProductReviewServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Review/ProductReviewUniqueGuardTest.php

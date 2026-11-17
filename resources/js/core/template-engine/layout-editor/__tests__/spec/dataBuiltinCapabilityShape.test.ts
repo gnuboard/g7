@@ -1,4 +1,4 @@
-// 소속 조합(마커 아님 — 평문): 시험마다 aspect=capability_attach 조합이 붙어 있다.
+// 소속 조합(마커 아님 — 평문): 시험마다 aspect(·data_surface) 조합이 붙어 있다.
 // 종전의 파일 머리 소속 표기는 시험에 붙지 않아 커버로 세지 않으므로 평문으로 내렸다(#869).
 
 // e2e:allow-shape 게이트(데이터 표면 누락 0 잠금)만 추가한다.
@@ -42,7 +42,7 @@ const basic = (basicCaps as any).componentCapabilities ?? (basicCaps as any);
 describe('데이터 정의 빌트인 capability 정합', () => {
   describe('단순 배열 부착(8-a (E) #1~#4)', () => {
     /**
-     * @scenario aspect=capability_attach
+     * @scenario aspect=capability_attach, data_surface=single_object_array
      * @effects data_builtin_capability_attached_to_8a_targets_both_templates
      */
     it('TabNavigationScroll.tabs — nodeEditor:array(tabs)', () => {
@@ -52,7 +52,7 @@ describe('데이터 정의 빌트인 capability 정합', () => {
     });
 
     /**
-     * @scenario aspect=capability_attach
+     * @scenario aspect=capability_attach, data_surface=single_object_array
      * @effects data_builtin_capability_attached_to_8a_targets_both_templates
      */
     it('DonutChart.data — nodeEditor:array(data) + number/color 필드', () => {
@@ -65,7 +65,7 @@ describe('데이터 정의 빌트인 capability 정합', () => {
     });
 
     /**
-     * @scenario aspect=capability_attach
+     * @scenario aspect=capability_attach, data_surface=flat_typed_array
      * @effects data_builtin_capability_attached_to_8a_targets_both_templates
      */
     it('DynamicFieldList.columns — nodeEditor:array(columns) + type select', () => {
@@ -91,7 +91,7 @@ describe('데이터 정의 빌트인 capability 정합', () => {
 
   describe('다중 배열 / 중첩 셀 트리(8-a (E) #5~#6)', () => {
     /**
-     * @scenario aspect=capability_attach
+     * @scenario aspect=capability_attach, data_surface=multi_array
      * @effects data_builtin_capability_attached_to_8a_targets_both_templates
      */
     it('BarChart — nodeEditor:array-group(labels+datasets), datasets.data=number-list', () => {
@@ -107,7 +107,7 @@ describe('데이터 정의 빌트인 capability 정합', () => {
     });
 
     /**
-     * @scenario aspect=capability_attach
+     * @scenario aspect=capability_attach, data_surface=cell_tree
      * @effects data_builtin_capability_attached_to_8a_targets_both_templates
      */
     it('CardGrid.cardColumns — nodeEditor:array-cell-tree(idField/cellChildrenProp)', () => {
@@ -121,7 +121,7 @@ describe('데이터 정의 빌트인 capability 정합', () => {
 
   describe('newItem shape ↔ 컴포넌트 read shape 정합(1-c-verify-4 결함#7 회귀 가드)', () => {
     /**
-     * @scenario aspect=capability_attach
+     * @scenario aspect=field_widget, data_surface=single_object_array
      * @effects data_builtin_capability_attached_to_8a_targets_both_templates, array_editor_newitem_shape_matches_component_read_shape
      */
     it('DonutChart newItem 은 name/value/color (컴포넌트 read shape)', () => {
@@ -132,7 +132,7 @@ describe('데이터 정의 빌트인 capability 정합', () => {
     });
 
     /**
-     * @scenario aspect=capability_attach
+     * @scenario aspect=field_widget, data_surface=multi_array
      * @effects data_builtin_capability_attached_to_8a_targets_both_templates, array_editor_newitem_shape_matches_component_read_shape
      */
     it('BarChart datasets newItem 은 label/data:[]/backgroundColor', () => {
@@ -144,7 +144,7 @@ describe('데이터 정의 빌트인 capability 정합', () => {
     });
 
     /**
-     * @scenario aspect=capability_attach
+     * @scenario aspect=structure_op, data_surface=cell_tree
      * @effects data_builtin_capability_attached_to_8a_targets_both_templates, array_editor_newitem_shape_matches_component_read_shape
      */
     it('CardGrid newItem 은 id + 빈 cellChildren 배열', () => {
@@ -154,7 +154,7 @@ describe('데이터 정의 빌트인 capability 정합', () => {
     });
 
     /**
-     * @scenario aspect=capability_attach
+     * @scenario aspect=field_widget, data_surface=flat_typed_array
      * @effects data_builtin_capability_attached_to_8a_targets_both_templates, array_editor_newitem_shape_matches_component_read_shape
      */
     it('DynamicFieldList newItem 은 key/type/label/placeholder', () => {
@@ -167,7 +167,7 @@ describe('데이터 정의 빌트인 capability 정합', () => {
 
   describe('검토군 판정(8-a (E) #6) — 데이터 편집 비대상 회귀 가드', () => {
     /**
-     * @scenario aspect=capability_attach
+     * @scenario aspect=capability_attach, data_surface=single_object_array
      * @effects data_builtin_capability_attached_to_8a_targets_both_templates, review_group_chipcheckbox_value_covered_by_propcontrol_not_dataprop
      */
     it('ChipCheckbox.value 는 propControl ccValue 로 커버(nodeEditor/dataProps 없음)', () => {
@@ -203,7 +203,7 @@ const NON_TARGET: Record<string, Set<string>> = {
     'Div', 'Span', 'P', 'H1', 'H2', 'H3', 'H4', 'A', 'Button', 'Img', 'Icon', 'Hr',
     'Container', 'Flex', 'Grid', 'SectionLayout', 'ThreeColumnLayout', 'HtmlContent', 'HtmlEditor',
     'RichTextEditor', 'ExpandableContent', 'FileUploader', 'AvatarUploader', 'Checkbox', 'Label',
-    'Pagination',
+    'Pagination', 'ProductRail', 'ChipRows', 'MobileBuyBar', 'BottomSheet',
   ]),
 };
 
@@ -216,7 +216,7 @@ describe('전 draggable 데이터 편집 누락 0 게이트', () => {
   };
 
   /**
-   * @scenario aspect=capability_attach
+   * @scenario aspect=capability_attach, data_surface=single_object_array
    * @effects data_builtin_capability_attached_to_8a_targets_both_templates
    */
   it.each([
@@ -238,7 +238,7 @@ describe('전 draggable 데이터 편집 누락 0 게이트', () => {
   });
 
   /**
-   * @scenario aspect=capability_attach
+   * @scenario aspect=capability_attach, data_surface=single_object_array
    * @effects data_builtin_capability_attached_to_8a_targets_both_templates
    */
   it.each([

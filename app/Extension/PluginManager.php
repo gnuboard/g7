@@ -63,6 +63,7 @@ use App\Extension\Layout\LayoutSyncReport;
 use App\Extension\Support\ComputedSettingKeys;
 use App\Extension\Support\ExtensionRemoteStorageCleanup;
 use App\Extension\Support\LifecycleWarnings;
+use App\Extension\Support\StatusRestore;
 use App\Extension\Support\UnusableUpgradeStep;
 use App\Extension\Testing\ExtensionTestAllowlist;
 use App\Extension\Traits\CollectsFragmentSources;
@@ -5594,11 +5595,13 @@ class PluginManager implements PluginManagerInterface
             // 판정돼 같은 업데이트를 다시 시도할 수도 없다. 파일을 되돌리지 못했으면(백업 삭제 뒤 실패·복원 실패) 새 버전
             // 파일에 맞춰 버전 칸을 그대로 둔다 — 반대 방향 불일치를 만들지 않는다. 업그레이드 스텝은 멱등이 규정이라
             // (upgrade-step-guide 원칙 4) 다시 시도할 때 처음부터 돌아도 안전하다.
-            $this->pluginRepository->updateByIdentifier($identifier, [
+            // 이 쓰기가 실패하면(실패 원인이 DB 연결 고갈일 때 흔하다) 확장이 「업데이트 중」에 남고 그 예외가 아래의
+            // 원래 실패를 가린다 — 연결을 다시 맺고 한 번 더 시도하고, 그래도 안 되면 기록만 남기고 원래 예외로 넘어간다.
+            StatusRestore::run(fn () => $this->pluginRepository->updateByIdentifier($identifier, [
                 'status' => $previousStatus,
                 'updated_at' => now(),
                 ...($filesRestored && $recordedColumns !== [] ? Arr::only($record->getRawOriginal(), $recordedColumns) : []),
-            ]);
+            ]), 'plugin', $identifier);
 
             // 상태 캐시 무효화 (성공 경로와 동일) — updating 창에서 누군가 활성 목록을 읽었다면
             // 그 목록에는 이 플러그인이 빠져 있다. 여기서 비우지 않으면 상태를 되돌려 놓고도

@@ -94,92 +94,32 @@
             ]
         },
         {
-            "comment": "페이지네이션 — 총 건수가 상한에 걸리면 last_page 가 null 로 온다. 그때 last_page 만 보고 판단하면 페이저가 통째로 사라져 1페이지 밖 상품에 도달할 방법이 없어지므로, has_more_pages 와 현재 페이지도 함께 본다",
-            "type": "basic",
-            "name": "Div",
+            "comment": "쪽 번호 — 다른 목록과 같은 쪽 번호 컴포넌트(번호마다 실제 링크). 총 건수가 상한에 걸리면 last_page 가 null 로 온다.\n         그때 last_page 만 보고 판단하면 쪽 이동이 통째로 사라지므로 has_more_pages 와 현재 쪽도 함께 본다",
+            "type": "composite",
+            "name": "Pagination",
             "if": "{{((products?.data?.pagination?.last_page ?? 0) > 1) || (products?.data?.pagination?.has_more_pages ?? false) || ((products?.data?.pagination?.current_page ?? 1) > 1)}}",
-            "props": {
-                "className": "flex justify-center items-center gap-2 mb-12"
-            },
-            "children": [
+            "actions": [
                 {
-                    "comment": "이전 페이지 버튼",
-                    "type": "basic",
-                    "name": "A",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "navigate",
-                            "params": {
-                                "mergeQuery": true,
-                                "query": {
-                                    "page": "{{(products?.data?.pagination?.current_page ?? 1) - 1}}"
-                                }
-                            }
-                        }
-                    ],
-                    "props": {
-                        "href": "{{route.path}}?page={{(products?.data?.pagination?.current_page ?? 1) - 1}}",
+                    "comment": "검색어·분류·정렬·품절 제외는 그대로 두고 쪽수만 바꾼다",
+                    "event": "onPageChange",
+                    "handler": "navigate",
+                    "params": {
+                        "path": "{{route.path}}",
                         "mergeQuery": true,
-                        "aria-label": "$t:common.prev",
-                        "className": "inline-flex items-center justify-center p-2 border border-gray-300 dark:border-gray-600 rounded-lg {{(products?.data?.pagination?.current_page ?? 1) <= 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer'}}",
-                        "disabled": "{{(products?.data?.pagination?.current_page ?? 1) <= 1}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "props": {
-                                "name": "chevron-left",
-                                "className": "text-base"
-                            }
+                        "query": {
+                            "page": "{{$args[0]}}"
                         }
-                    ]
-                },
-                {
-                    "comment": "페이지 번호 표시 — 마지막 페이지를 모를 때(총 건수 상한 초과) 1 로 채우면 '1 / 1' 로 굳어 끝난 것처럼 보인다. 그때는 현재 페이지만 표기한다",
-                    "type": "basic",
-                    "name": "Span",
-                    "props": {
-                        "className": "px-3 py-1 text-sm text-gray-700 dark:text-gray-300"
-                    },
-                    "text": "{{products?.data?.pagination?.last_page ? ((products?.data?.pagination?.current_page ?? 1) + ' / ' + products.data.pagination.last_page) : (products?.data?.pagination?.current_page ?? 1)}}"
-                },
-                {
-                    "comment": "다음 페이지 버튼 — 이동 가능 여부는 총 건수와 무관하게 has_more_pages 가 정확히 말해 준다. last_page 로 판정하면 그 값이 null 인 목록에서 첫 페이지부터 비활성이 된다",
-                    "type": "basic",
-                    "name": "A",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "navigate",
-                            "params": {
-                                "mergeQuery": true,
-                                "query": {
-                                    "page": "{{(products?.data?.pagination?.current_page ?? 1) + 1}}"
-                                }
-                            }
-                        }
-                    ],
-                    "props": {
-                        "href": "{{route.path}}?page={{(products?.data?.pagination?.current_page ?? 1) + 1}}",
-                        "mergeQuery": true,
-                        "aria-label": "$t:common.next",
-                        "className": "inline-flex items-center justify-center p-2 border border-gray-300 dark:border-gray-600 rounded-lg {{(products?.data?.pagination?.has_more_pages ?? false) ? 'hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer' : 'opacity-50 cursor-not-allowed'}}",
-                        "disabled": "{{!(products?.data?.pagination?.has_more_pages ?? false)}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "props": {
-                                "name": "chevron-right",
-                                "className": "text-base"
-                            }
-                        }
-                    ]
+                    }
                 }
-            ]
+            ],
+            "props": {
+                "pageHref": "{{route.path}}?page={page}",
+                "pageHrefMergeQuery": true,
+                "currentPage": "{{products?.data?.pagination?.current_page ?? 1}}",
+                "totalPages": "{{products?.data?.pagination?.last_page ?? null}}",
+                "hasMorePages": "{{products?.data?.pagination?.has_more_pages ?? false}}",
+                "className": "mb-12 flex justify-center"
+            }
         }
     ]
 }

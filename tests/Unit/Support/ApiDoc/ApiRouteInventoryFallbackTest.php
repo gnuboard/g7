@@ -19,11 +19,11 @@ use Tests\TestCase;
 class ApiRouteInventoryFallbackTest extends TestCase
 {
     /**
-     * 미설치 모듈 범위는 번들 라우트 파일을 읽어 라우트를 폴백 수집한다.
+     * 설치되지 않은 모듈 범위는 번들 라우트 파일을 읽어 라우트를 모은다.
      *
-     * @scenario scope=module, source=bundled_fallback
+     * @scenario case=uninstalled_fallback
      *
-     * @effects uninstalled_module_routes_collected_from_bundle
+     * @effects uninstalled_module_routes_collected_from_bundle, uninstalled_scope_falls_back_to_bundled_route_files
      *
      * @return void 반환값 없음
      */
@@ -41,11 +41,11 @@ class ApiRouteInventoryFallbackTest extends TestCase
     }
 
     /**
-     * 폴백으로 수집한 라우트도 프로바이더와 같은 URI, 이름, 소유, 도메인 규약을 따른다.
+     * 폴백으로 모은 라우트도 라우트 프로바이더와 같은 주소·이름·소유·도메인 규약을 따른다.
      *
-     * @scenario scope=module, source=bundled_fallback
+     * @scenario case=fallback_url_convention
      *
-     * @effects fallback_routes_follow_provider_conventions
+     * @effects fallback_routes_follow_provider_conventions, fallback_routes_follow_provider_url_convention
      *
      * @return void 반환값 없음
      */
@@ -69,20 +69,21 @@ class ApiRouteInventoryFallbackTest extends TestCase
     }
 
     /**
-     * 폴백 수집 결과에 관리자 화면 web 라우트는 없고 api/ 라우트만 남는다.
+     * 관리자 화면 web 라우트는 빼고, 관리자 JSON API 는 문서 대상으로 모은다.
      *
-     * @scenario scope=module, source=bundled_fallback, route_kind=admin_screen
+     * @scenario case=fallback_admin_web_excluded
      *
-     * @effects fallback_excludes_web_admin_routes
+     * @effects fallback_excludes_web_admin_routes, admin_web_screens_excluded_admin_api_included
      *
      * @return void 반환값 없음
      */
     #[Test]
     public function web_admin_라우트는_ap_i_문서_대상에서_제외된다(): void
     {
-        // 확장 web 라우트 중 PG 콜백·웹훅은 문서 대상이지만(machine-facing), 사람이 브라우저로 여는
-        // 관리자 화면(web.modules.{id}.admin.*)은 제외된다. hello_module 의 관리자 CRUD 는 권한 미들웨어를
-        // 단 JSON API(api.php 의 admin/memos)로 옮겨졌으므로 api/ 라우트로서 문서 대상이다.
+        // 확장 web 라우트 중 PG 콜백·웹훅은 문서 대상이지만(machine-facing), 사람이 브라우저로 여는 관리자
+        // 화면(web.modules.{id}.admin.*)은 제외된다. hello_module 은 관리자 CRUD 를 JSON API
+        // (routes/api.php 의 admin/memos 그룹)로 옮겨 web 라우트가 없다 — 그 관리자 API 는 다른 모듈의
+        // 관리자 API 와 같이 문서 대상이다.
         $routes = app(ApiRouteInventory::class)->collect('module:gnuboard7-hello_module');
 
         foreach ($routes as $route) {
@@ -97,11 +98,11 @@ class ApiRouteInventoryFallbackTest extends TestCase
     }
 
     /**
-     * 라우트 파일이 없는 범위는 빈 배열을 돌려준다.
+     * 라우트 파일이 없는 범위는 빈 목록을 돌려준다.
      *
-     * @scenario scope=nonexistent_module, source=none
+     * @scenario case=no_route_file
      *
-     * @effects missing_route_file_returns_empty
+     * @effects missing_route_file_returns_empty, scope_without_route_file_returns_empty
      *
      * @return void 반환값 없음
      */

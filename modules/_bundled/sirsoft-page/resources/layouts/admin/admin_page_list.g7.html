@@ -134,7 +134,7 @@
         </div>
       </div>
       <div data-ref="list_toolbar" class="page-flex-between page:mb-4">
-        <span data-ref="total_count" class="page-text-secondary page:text-sm">$t:sirsoft-page.admin.page.total_count|count={{pages?.data?.meta?.total ?? 0}}</span>
+        <span data-ref="total_count" class="page-text-secondary page:text-sm"><blur-until-loaded sources="pages"/>$t:sirsoft-page.admin.page.total_count|count={{pages?.data?.meta?.total ?? 0}}</span>
         <div data-ref="list_options" class="page-flex-center page:gap-3">
           <select data-ref="published_filter_select" aria-label="$t:sirsoft-page.admin.page.columns.published" value="{{query.published ?? ''}}" class="page:w-32 page:px-3 page:py-2 page:bg-white page:dark:bg-gray-700 page:border page:border-gray-300 page:dark:border-gray-600 page:rounded-lg page:text-sm">
             <options>

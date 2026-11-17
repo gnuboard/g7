@@ -48,7 +48,7 @@
           <span data-ref="admin_user_totp_status_not_enrolled" data-if="{{user?.data?.totp_enrollment?.enrolled === false}}" class="totp:inline-flex totp:items-center totp:px-2 totp:py-0.5 totp:rounded-full totp:text-xs totp:font-medium totp:bg-gray-100 totp:text-gray-700 totp:dark:bg-gray-700 totp:dark:text-gray-300">$t:sirsoft-totp.admin.user_card.not_enrolled</span>
         </div>
         <p data-ref="admin_user_totp_not_enrolled_notice" data-if="{{user?.data?.totp_enrollment?.enrolled === false}}" class="totp-text-hint totp:mt-2">$t:sirsoft-totp.admin.user_card.not_enrolled_notice</p>
-        <p data-ref="admin_user_totp_status_unavailable" data-if="{{!user?.data?.totp_enrollment}}" class="totp-text-hint totp:mt-3">$t:sirsoft-totp.admin.user_card.status_unavailable</p>
+        <p data-ref="admin_user_totp_status_unavailable" data-if="{{user !== undefined &amp;&amp; (!user?.data?.totp_enrollment)}}" class="totp-text-hint totp:mt-3">$t:sirsoft-totp.admin.user_card.status_unavailable</p>
         <button data-ref="admin_user_totp_reset" data-if="{{user?.data?.totp_enrollment?.enrolled === true}}" type="button" class="totp:mt-3 totp:px-4 totp:py-2 totp:bg-red-600 totp:hover:bg-red-700 totp:dark:bg-red-600 totp:dark:hover:bg-red-700 totp:text-white totp:rounded-lg totp:font-medium totp:transition-colors totp:cursor-pointer">
           <on type="click">
             <!-- 되돌릴 수 없는 조치라 확인을 거친다 — 해제하면 그 회원은 다음 로그인부터 인증 앱을

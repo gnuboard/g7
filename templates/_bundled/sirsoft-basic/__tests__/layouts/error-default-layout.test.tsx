@@ -2,7 +2,7 @@
  * @file error-default-layout.test.tsx
  * @description 코드별 오류 레이아웃이 없는 코드(400 등)가 공통 오류 화면(`errors/default`)으로 그려지고 받은 코드가 보이는지 (sirsoft-basic 1.4.0, #869)
  *
- * 엔진은 오류 코드에 맞는 레이아웃이 없으면 `error_config.layouts.default` → 엔진 내장 오류 화면 순서로 대신 그린다(engine-v1.94.0).
+ * 엔진은 오류 코드에 맞는 레이아웃이 없으면 `error_config.layouts.default` → 엔진 내장 오류 화면 순서로 대신 그린다(engine-v1.95.0).
  * 이 템플릿에 `default` 가 없으면 400·422·429·502·504 는 내장 화면이 머리글과 바닥글까지 `#app` 전체를 덮었다.
  * 이 파일은 실제 `template.json` 과 실제 오류 레이아웃 JSON 을 엔진 `ErrorPageHandler` 에 물려 어느 레이아웃이 그려지는지 보고,
  * 그 레이아웃을 받은 코드(`errorCode`)로 렌더해 코드와 일반 문구, 새로고침과 홈 단추가 보이는지 확인한다.

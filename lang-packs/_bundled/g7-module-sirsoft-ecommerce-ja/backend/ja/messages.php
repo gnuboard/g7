@@ -340,6 +340,10 @@ return [
         'already_used' => '既に使用されたクーポンです。',
         'not_found' => 'クーポンが見つかりません。',
         'per_user_limit_exceeded' => 'このクーポンの使用可能回数を超過しました。',
+        'bulk_download_result' => 'クーポンを :issued 枚受け取りました。:skipped 枚は受け取れませんでした。',
+        'bulk_download_all' => 'クーポンを :issued 枚受け取りました。',
+        'bulk_download_none' => '新しく受け取ったクーポンはありません。',
+        'operation_failed' => '処理中にエラーが発生したため受け取れませんでした。',
     ],
     'mileage' => [
         'balance_fetched' => 'マイレージ残高を閲覧しました。',

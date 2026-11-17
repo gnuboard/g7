@@ -219,6 +219,56 @@
                                     "text": "$t:sirsoft-ecommerce.admin.settings.review_settings.max_image_size_mb_hint"
                                 }
                             ]
+                        },
+                        {
+                            "comment": "공개 후기 작성자 이름 가림",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:flex-wrap"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "ecommerce-text-body ecommerce:w-48 ecommerce:shrink-0"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.review_settings.author_name_masking_label"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "actions": [
+                                        {
+                                            "comment": "공개 후기(상품 상세 후기 탭·리뷰 모아보기)에 싣는 작성자 이름을 가릴지 정한다. 관리자·본인 화면은 늘 실명이다.",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "form.review_settings.author_name_masking": "{{$event.target.value}}",
+                                                "hasChanges": true
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "name": "review_settings.author_name_masking",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.settings.review_settings.author_name_masking_label",
+                                        "className": "ecommerce-input ecommerce:w-48",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "value": "{{_local.form?.review_settings?.author_name_masking ?? 'middle'}}",
+                                        "options": "{{[{ value: 'middle', label: $t('sirsoft-ecommerce.admin.settings.review_settings.author_name_masking_middle') }, { value: 'none', label: $t('sirsoft-ecommerce.admin.settings.review_settings.author_name_masking_none') }]}}"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "ecommerce:w-full ecommerce-form-hint"
+                                    },
+                                    "text": "$t:sirsoft-ecommerce.admin.settings.review_settings.author_name_masking_hint"
+                                }
+                            ]
                         }
                     ]
                 }

@@ -16,6 +16,12 @@
 - KG이니시스가 사유 없이 결제 취소를 거절했을 때의 안내(`refund.pg_rejected`) 일본어 번역을 추가했습니다.
 - 현금영수증 발급·취소가 결제대행사 오류로 끝났을 때의 안내(`cash_receipt.pg_failed`)와 KG이니시스가 사유 없이 현금영수증 취소를 거절했을 때의 안내(`cash_receipt.cancel_rejected`) 일본어 번역을 추가했습니다.
 
+## [1.2.3] - 2026-11-15
+
+### Added
+
+- KG이니시스 결제 1.2.4 의 에스크로 관리자 요청 안내 문구 일본어 번역을 추가했습니다 — 같은 주문의 에스크로 요청을 다른 곳에서 처리하고 있을 때(`messages.errors.escrow_in_progress`), 배송등록이 이미 끝났을 때(`escrow_delivery_already_registered`), 구매거절확인이 이미 끝났을 때(`escrow_deny_already_confirmed`).
+
 ## [1.2.2] - 2026-11-01
 
 ### Added

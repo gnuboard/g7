@@ -141,7 +141,7 @@ export class Router {
    * 확정 화면의 주소를 같은 자리에서 곧바로 다시 쌓는다(`pushState`). 화면은 다시 그리지 않는다 (engine-v1.82.0)
    *
    * 이탈을 허락한 뒤 그 주소가 서버의 개발자 화면(routes/custom.php) 주소면 엔진이 그리지 않고 페이지를 다시
-   * 적재해 서버가 그리게 한다 (#792 W6, engine-v1.91.0). `navigate` 와 같은 순서(이탈 가드 → custom 판정)다.
+   * 적재해 서버가 그리게 한다 (#792 W6, engine-v1.92.0). `navigate` 와 같은 순서(이탈 가드 → custom 판정)다.
    * 패턴이 없으면 종전과 같다.
    */
   private handlePopState = (): void => {
@@ -300,7 +300,7 @@ export class Router {
    * @param routes - 라우트 목록
    * @param pathname - 매칭할 URL 경로 (사이트 마운트 접두사를 벗긴 값)
    * @returns 매칭된 라우트와 파라미터, 없으면 null
-   * @since engine-v1.95.0
+   * @since engine-v1.96.0
    */
   static matchRoutes(routes: Route[], pathname: string): RouteMatch | null {
     const normalizedPath = normalizePathname(pathname);
@@ -475,7 +475,7 @@ export class Router {
 
       // 인증 상태가 없거나 타입이 다른 경우에만 API 호출
       // 방금(부팅 preloadAuth 등) 재시도 끝에 「확인 불가」로 끝났으면 다시 묻지 않는다 — 같은 장애에 재시도를 한 번 더 하면
-      // 백지가 두 배로 길어진다. 유효 시간은 AuthManager.UNAVAILABLE_REUSE_MS (설계 확정 2026-11-08, engine-v1.94.0)
+      // 백지가 두 배로 길어진다. 유효 시간은 AuthManager.UNAVAILABLE_REUSE_MS (설계 확정 2026-11-08, engine-v1.95.0)
       if (!isAuthenticated && !authManager.isRecentlyUnavailable(authType)) {
         isAuthenticated = await authManager.checkAuth(authType);
       }
@@ -487,7 +487,7 @@ export class Router {
       }
 
       // 서버 일시 오류(5xx·네트워크)로 인증 여부를 알 수 없다 — 유효한 토큰을 가진 사람을 로그인 화면으로 보내지 않는다.
-      // 받는 쪽(TemplateApp 의 중립 오류 화면)이 없으면 종전처럼 로그인으로 보낸다(빈 화면으로 멈추지 않게) (engine-v1.94.0)
+      // 받는 쪽(TemplateApp 의 중립 오류 화면)이 없으면 종전처럼 로그인으로 보낸다(빈 화면으로 멈추지 않게) (engine-v1.95.0)
       if (
         !isAuthenticated
         && authManager.getLastCheckStatus(authType) === 'unavailable'
@@ -600,7 +600,7 @@ export class Router {
    */
   private async executeNavigation(path: string): Promise<void> {
     // 서버의 개발자 화면(routes/custom.php) 주소는 엔진이 그리지 않는다 — 전체 페이지 이동으로 서버에 넘긴다
-    // (#792 W6, engine-v1.91.0). `pushState` 하지 않으므로 히스토리·대기열·라우트 이벤트에 아무 흔적도 남기지 않는다.
+    // (#792 W6, engine-v1.92.0). `pushState` 하지 않으므로 히스토리·대기열·라우트 이벤트에 아무 흔적도 남기지 않는다.
     if (isCustomRoutePath(path)) {
       logger.log(`navigate to custom route — full page load: ${path}`);
       this.pendingNavigation = null;

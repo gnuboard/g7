@@ -32,7 +32,7 @@ import { Logger } from '../../utils/Logger';
  *          manual_data_sources_refetch_after_locale_switch_under_subpath,
  *          url_only_path_alias_matches_browser_address
  *
- * @since engine-v1.92.0
+ * @since engine-v1.93.0
  */
 describe('하위 폴더 마운트 — 7.2.0 신규 엔진 지점', () => {
     const MOUNT = '/g7';
