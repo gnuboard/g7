@@ -10,6 +10,7 @@ use App\Enums\LanguagePackScope;
 use App\Enums\LanguagePackStatus;
 use App\Exceptions\LanguagePackOperationException;
 use App\Exceptions\LanguagePackSlotConflictException;
+use App\Exceptions\PackageIntegrityException;
 use App\Extension\Helpers\ExtensionBackupHelper;
 use App\Extension\Helpers\ExtensionOperationLock;
 use App\Extension\Helpers\ExtensionPendingHelper;
@@ -17,6 +18,12 @@ use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\InstalledExtensionLookup;
 use App\Extension\Helpers\ZipInstallHelper;
 use App\Extension\HookManager;
+use App\Extension\Integrity\PackageAcquirer;
+use App\Extension\Integrity\PackageExpectation;
+use App\Extension\Integrity\PackageIntegrityOptions;
+use App\Extension\Integrity\PackageReleaseNotFoundException;
+use App\Extension\Integrity\PackageVerification;
+use App\Extension\Integrity\PackageVerificationStatus;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Models\LanguagePack;
 use App\Services\Extension\ExtensionIconResolver;
@@ -35,6 +42,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use RuntimeException;
 use Throwable;
@@ -813,12 +821,15 @@ class LanguagePackService
      * @param  UploadedFile  $file  업로드된 ZIP 파일
      * @param  bool  $autoActivate  설치 후 자동 활성화 여부
      * @param  int|null  $installedBy  설치자 사용자 ID
+     * @param  PackageIntegrityOptions|null  $integrity  패키지 무결성 선택(미서명 계속·서명 파일, 7.2.0) — null 이면 미서명은 409
      * @return LanguagePack 설치된 언어팩
      *
      * @throws RuntimeException 설치 실패 시
+     * @throws PackageIntegrityException 서명 검증이 설치를 멈췄을 때
      */
-    public function installFromFile(UploadedFile $file, bool $autoActivate = false, ?int $installedBy = null): LanguagePack
+    public function installFromFile(UploadedFile $file, bool $autoActivate = false, ?int $installedBy = null, ?PackageIntegrityOptions $integrity = null): LanguagePack
     {
+        $integrity ??= PackageIntegrityOptions::none();
         $this->assertInstallDirectoriesWritable();
 
         $tempId = (string) Str::uuid();
@@ -826,9 +837,13 @@ class LanguagePackService
 
         try {
             $zipPath = $file->getRealPath();
+            // 서명 검증(해제 전 바이트) — 업로드 임시 파일은 옆 서명 파일을 자동으로 찾지 않는다(서명 파일 칸으로만, 7.2.0)
+            $verification = app(PackageAcquirer::class)->verifyLocalZip(
+                $zipPath, new PackageExpectation(PackageExpectation::TYPE_LANGUAGE_PACK), $integrity, autoSidecar: false
+            );
             ZipInstallHelper::extractZip($zipPath, $extractPath, UploadedFileName::original($file));
 
-            return $this->finalizeInstall($extractPath, 'zip', UploadedFileName::original($file), $autoActivate, $installedBy);
+            return $this->finalizeInstall($extractPath, 'zip', UploadedFileName::original($file), $autoActivate, $installedBy, false, $verification, $integrity);
         } catch (Throwable $e) {
             $this->cleanupPending($extractPath);
             throw $e;
@@ -842,12 +857,15 @@ class LanguagePackService
      * @param  bool  $autoActivate  설치 후 자동 활성화 여부
      * @param  int|null  $installedBy  설치자 사용자 ID
      * @param  bool  $force  다운그레이드 차단 우회 여부 (true 면 신버전 < 기존버전 도 허용)
+     * @param  PackageIntegrityOptions|null  $integrity  패키지 무결성 선택(미서명 계속·서명 파일, 7.2.0) — null 이면 미서명은 409
      * @return LanguagePack 설치된 언어팩
      *
      * @throws RuntimeException 설치 실패 시
+     * @throws PackageIntegrityException 서명 검증이 설치를 멈췄을 때
      */
-    public function installFromGithub(string $githubUrl, bool $autoActivate = false, ?int $installedBy = null, bool $force = false): LanguagePack
+    public function installFromGithub(string $githubUrl, bool $autoActivate = false, ?int $installedBy = null, bool $force = false, ?PackageIntegrityOptions $integrity = null): LanguagePack
     {
+        $integrity ??= PackageIntegrityOptions::none();
         $this->assertInstallDirectoriesWritable();
 
         $tempId = (string) Str::uuid();
@@ -858,10 +876,19 @@ class LanguagePackService
             File::ensureDirectoryExists($tempPath);
             // parseUrl 은 [소유자, 저장소] 목록을 돌려준다 — 종전의 키 분해(owner/repo)는 늘 실패해 GitHub 경로가 동작하지 않았다.
             [$owner, $repo] = GithubHelper::parseUrl($githubUrl);
-            $zipPath = GithubHelper::downloadZip($owner, $repo, $tempPath);
-            ZipInstallHelper::extractZip($zipPath, $extractPath);
+            // 태그 릴리스만 받는다(브랜치 폴백 없음) — 서명 자산이 있으면 검증하고, 없으면 미서명 정책을 거친다 (7.2.0)
+            try {
+                $acquired = app(PackageAcquirer::class)->fromGithubRelease(
+                    $owner, $repo, null, (string) (config('app.update.github_token') ?? ''),
+                    new PackageExpectation(PackageExpectation::TYPE_LANGUAGE_PACK), $integrity, $tempPath
+                );
+            } catch (PackageReleaseNotFoundException $e) {
+                // 릴리스 없음은 운영자가 고칠 수 있는 안내성 실패다 — 서버 오류(500)로 사유를 숨기지 않고 422 와 그 문구로 답한다
+                throw new LanguagePackOperationException('common.errors.github_release_not_found', ['repository' => $e->repository], $e);
+            }
+            ZipInstallHelper::extractZip($acquired->zipPath, $extractPath);
 
-            return $this->finalizeInstall($extractPath, 'github', $githubUrl, $autoActivate, $installedBy, $force);
+            return $this->finalizeInstall($extractPath, 'github', $githubUrl, $autoActivate, $installedBy, $force, $acquired->verification, $integrity);
         } catch (Throwable $e) {
             $this->cleanupPending($extractPath);
             throw $e;
@@ -880,12 +907,17 @@ class LanguagePackService
      * @param  bool  $autoActivate  설치 후 자동 활성화 여부
      * @param  int|null  $installedBy  설치자 사용자 ID
      * @param  bool  $force  다운그레이드 차단 우회 여부 (true 면 신버전 < 기존버전 도 허용)
+     * @param  string|null  $signatureUrl  서명 파일(`.sig.json`) 주소 (선택 — 주소를 추측해 요청하지 않는다, 7.2.0)
+     * @param  PackageIntegrityOptions|null  $integrity  패키지 무결성 선택(미서명 계속·서명 파일, 7.2.0) — null 이면 미서명은 409
      * @return LanguagePack 설치된 언어팩
      *
      * @throws RuntimeException 설치 실패 시
+     * @throws PackageIntegrityException 서명 검증이 설치를 멈췄을 때
      */
-    public function installFromUrl(string $url, ?string $checksum, bool $autoActivate = false, ?int $installedBy = null, bool $force = false): LanguagePack
+    public function installFromUrl(string $url, ?string $checksum, bool $autoActivate = false, ?int $installedBy = null, bool $force = false, ?string $signatureUrl = null, ?PackageIntegrityOptions $integrity = null): LanguagePack
     {
+        $integrity ??= PackageIntegrityOptions::none();
+
         // 서버가 이 URL 을 대신 내려받으므로, 내부 네트워크 주소가 목적지가 되지 않도록 차단한다.
         if (! OutboundUrlValidator::isPublicHttpUrl($url)) {
             throw new LanguagePackOperationException('language_packs.errors.download_url_not_public');
@@ -919,9 +951,29 @@ class LanguagePackService
                 }
             }
 
+            // 서명 검증(해제 전) — 서명 파일 주소를 준 경우만 받는다(7.2.0). 체크섬은 전송 확인, 서명은 제작자 확인이다
+            $acquirer = app(PackageAcquirer::class);
+            if ($signatureUrl !== null && $signatureUrl !== '') {
+                try {
+                    $signaturePath = $acquirer->downloadSignature($signatureUrl, $tempPath);
+                } catch (PackageIntegrityException $e) {
+                    throw $e;
+                } catch (RuntimeException $e) {
+                    // 서명 파일을 받지 못하면 설치하지 않는다 — 준 주소를 무시하고 「미서명」으로 넘기면 운영자 뜻과 다르다
+                    throw new LanguagePackOperationException('language_packs.errors.download_failed', [
+                        'url' => $signatureUrl,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+                $integrity = new PackageIntegrityOptions($integrity->allowUnsigned, $signaturePath);
+            }
+            $verification = $acquirer->verifyLocalZip(
+                $zipPath, new PackageExpectation(PackageExpectation::TYPE_LANGUAGE_PACK), $integrity, autoSidecar: false
+            );
+
             ZipInstallHelper::extractZip($zipPath, $extractPath);
 
-            return $this->finalizeInstall($extractPath, 'url', $url, $autoActivate, $installedBy, $force);
+            return $this->finalizeInstall($extractPath, 'url', $url, $autoActivate, $installedBy, $force, $verification, $integrity);
         } catch (Throwable $e) {
             $this->cleanupPending($extractPath);
             throw $e;
@@ -963,7 +1015,7 @@ class LanguagePackService
             File::ensureDirectoryExists(dirname($extractPath));
             File::copyDirectory($bundledPath, $extractPath);
 
-            return $this->finalizeInstall($extractPath, 'bundled', $identifier, $autoActivate, $installedBy, $force);
+            return $this->finalizeInstall($extractPath, 'bundled', $identifier, $autoActivate, $installedBy, $force, PackageVerification::bundled());
         } catch (Throwable $e) {
             $this->cleanupPending($extractPath);
             throw $e;
@@ -979,9 +1031,12 @@ class LanguagePackService
      * @param  bool  $autoActivate  설치 후 자동 활성화 여부
      * @param  int|null  $installedBy  설치자 사용자 ID
      * @param  bool  $force  다운그레이드·충돌 가드를 건너뛸지 여부
+     * @param  PackageVerification|null  $verification  해제 전 무결성 검증 결과 (null 이면 기록 없음, 7.2.0)
+     * @param  PackageIntegrityOptions|null  $integrity  패키지 무결성 선택 (manifest 대조 뒤 정책 재적용)
      * @return LanguagePack 설치/갱신된 언어팩
      *
      * @throws RuntimeException 검증/의존성/충돌 실패 시
+     * @throws PackageIntegrityException 서명된 식별자·버전·vendor 가 manifest 와 맞지 않을 때
      */
     private function finalizeInstall(
         string $extractPath,
@@ -989,7 +1044,9 @@ class LanguagePackService
         string $sourceUrl,
         bool $autoActivate,
         ?int $installedBy,
-        bool $force = false
+        bool $force = false,
+        ?PackageVerification $verification = null,
+        ?PackageIntegrityOptions $integrity = null,
     ): LanguagePack {
         $manifestPath = ZipInstallHelper::findManifest($extractPath, 'language-pack.json');
         if (! $manifestPath) {
@@ -1004,6 +1061,11 @@ class LanguagePackService
 
         $packageRoot = dirname($manifestPath);
         $this->validator->validate($manifest, $packageRoot);
+
+        // 해제 뒤·복사 전 manifest 대조 — 서명된 식별자·버전, 제작자 키의 vendor 범위(manifest vendor)를 확인한다 (7.2.0)
+        if ($verification !== null && $verification->status !== PackageVerificationStatus::Bundled) {
+            $verification = app(PackageAcquirer::class)->confirmManifest($verification, $manifest, $integrity ?? PackageIntegrityOptions::none());
+        }
 
         $this->assertSecurityRules($packageRoot, $manifest);
         $this->assertDependencies($manifest);
@@ -1047,8 +1109,10 @@ class LanguagePackService
                 $existing?->id
             );
 
-        $pack = DB::transaction(function () use ($existing, $manifest, $sourceType, $sourceUrl, $installedBy, $awaitingHost) {
+        $pack = DB::transaction(function () use ($existing, $manifest, $sourceType, $sourceUrl, $installedBy, $awaitingHost, $verification) {
             $data = $this->buildPackData($manifest, $sourceType, $sourceUrl, $installedBy);
+            // 받은 패키지의 무결성 검증 결과 — 언어팩 상세의 서명 배지 (7.2.0, 결과가 없으면 기록을 비운다)
+            $data += $this->integrityColumns($verification);
 
             // 설치 트랜잭션은 항상 installed 로만 기록한다. 활성화는 아래에서 activate() 를
             // 경유해야 의존성 검사·대상 확장 존재 확인·슬롯 충돌 검사가 반드시 수행되고,
@@ -1296,6 +1360,23 @@ class LanguagePackService
                 'activated_at' => now(),
             ]);
         }
+    }
+
+    /**
+     * 설치 행에 적을 무결성 검증 칸을 만듭니다 (칸이 없는 옛 스키마면 빈 배열).
+     *
+     * @param  PackageVerification|null  $verification  검증 결과 (null 이면 기록을 비운다)
+     * @return array<string, string|null> 무결성 칸
+     */
+    private function integrityColumns(?PackageVerification $verification): array
+    {
+        if (! Schema::hasColumn('language_packs', 'integrity_status')) {
+            return [];
+        }
+
+        return $verification !== null
+            ? $verification->toInstallColumns()
+            : ['integrity_status' => null, 'integrity_key_id' => null];
     }
 
     /**
@@ -2058,11 +2139,13 @@ class LanguagePackService
      *
      * @param  LanguagePack  $pack  대상 언어팩
      * @param  bool  $force  버전 변동 가드 우회 여부 (true 면 같은 버전으로도 _bundled 강제 재적용)
+     * @param  PackageIntegrityOptions|null  $integrity  패키지 무결성 선택(미서명 계속·서명 파일, 7.2.0) — null 이면 미서명은 409
      * @return LanguagePack 갱신된 언어팩
      *
      * @throws LanguagePackOperationException source_type 이 github 이 아니거나 source_url 이 없는 경우, 또는 진행 중일 때
+     * @throws PackageIntegrityException GitHub 에서 받은 패키지의 서명 검증이 업데이트를 멈췄을 때 (백업으로 되돌린 뒤)
      */
-    public function performUpdate(LanguagePack $pack, bool $force = false): LanguagePack
+    public function performUpdate(LanguagePack $pack, bool $force = false, ?PackageIntegrityOptions $integrity = null): LanguagePack
     {
         // 요구사항 #4: bundled 도 update 가능. force=true 시 bundled 1순위, 그 외 GitHub 1순위 + bundled 폴백
         $githubUrl = $this->resolveGithubUrl($pack);
@@ -2118,7 +2201,7 @@ class LanguagePackService
             if ($useBundled) {
                 $updated = $this->installFromBundled($identifier, $autoActivate, $pack->installed_by, $force);
             } else {
-                $updated = $this->installFromGithub((string) $githubUrl, $autoActivate, $pack->installed_by, $force);
+                $updated = $this->installFromGithub((string) $githubUrl, $autoActivate, $pack->installed_by, $force, $integrity);
             }
             $operationLock->keepAlive(force: true);
 

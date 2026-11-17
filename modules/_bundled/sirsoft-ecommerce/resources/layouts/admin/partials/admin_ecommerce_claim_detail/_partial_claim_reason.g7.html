@@ -31,26 +31,77 @@
         <div class="ecommerce-text-label-subtle ecommerce:mb-2">$t:sirsoft-ecommerce.admin.claim.detail.reason.images_label</div>
         <!-- 상한 안내는 서버 봉투(attachment_settings)를 읽는다. 리터럴로 적으면 운영자가 설정을 바꾼 순간 화면과 서버가 갈리고, 사용자에게는 이유 없는 422 만 남는다. -->
         <div data-ref="cr_005b_images_hint" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mb-2">$t:sirsoft-ecommerce.admin.claim.detail.reason.images_hint|count={{claim?.data?.attachment_settings?.max_images ?? 0}}|max={{claim?.data?.attachment_settings?.max_images ?? 0}}&amp;size={{(claim?.data?.attachment_settings?.image_max_size_mb ?? '-') + 'MB'}}&amp;types={{(claim?.data?.attachment_settings?.allowed_extensions ?? []).join(', ')}}</div>
-        <!-- 용량 상한은 서버가 MB 로 내려 준 값(`image_max_size_mb`)을 그대로 쓴다 — 화면이 KB 를 나누면 반올림 규칙이 화면마다 갈린다. 값이 없으면 prop 을 비워 컴포넌트 기본값에 맡긴다: 0 으로 떨어뜨리면 업로더가 모든 파일을 거절한다. 구매자 신청 화면과 같은 공용 업로더를 쓴다 — 드롭존·다중 선택·미리보기·진행률·상한 안내·개별 삭제가 한 벌로 온다. `reorder` 는 빈 문자열로 명시해야 한다: 기본값은 코어 첨부 순서 API 라, 드래그 한 번이 **남의 첨부 순서**를 바꾸고 이 화면에는 오류가 뜨지 않는다. `maxConcurrentUploads` 를 1 로 낮추는 것은 서버가 개수 상한을 잠금 없이 판정하기 때문이다(병렬이면 상한을 넘겨 저장된다). -->
-        <file-uploader data-type="composite" data-ref="cr_006_images_uploader" collection="claim" :autoUpload="true" :maxConcurrentUploads="1" maxFiles="{{claim?.data?.attachment_settings?.max_images ?? 5}}" maxSize="{{claim?.data?.attachment_settings?.image_max_size_mb}}" accept="{{claim?.data?.attachment_settings?.accept ?? ''}}" initialFiles="{{claim?.data?.claim?.images ?? []}}" :confirmBeforeRemove="true" confirmRemoveTitle="$t:sirsoft-ecommerce.admin.claim.detail.reason.confirm_remove_image_title" confirmRemoveMessage="$t:sirsoft-ecommerce.admin.claim.detail.reason.confirm_remove_image_message" disabled="{{claim?.data?.abilities?.can_update_status !== true}}">
-          <prop name="apiEndpoints">
-            <field name="upload" value="{{'/api/modules/sirsoft-ecommerce/admin/' + (claim?.data?.claim_path_segment ?? '') + '/' + (claim?.data?.claim?.id ?? '') + '/images'}}"/>
-            <field name="delete" value="{{'/api/modules/sirsoft-ecommerce/admin/' + (claim?.data?.claim_path_segment ?? '') + '/' + (claim?.data?.claim?.id ?? '') + '/images/:id'}}"/>
-            <field name="reorder" value=""/>
+        <!-- 첨부 업로더 확장점 — 운영자 대리 업로드. 고르는 즉시 신청서로 올라가고 정렬 API 가 없어 정렬 주소는 null 이다.
+             동시 업로드 1 은 서버의 개수 상한 판정 때문이므로 대체 업로더도 지켜야 한다 -->
+        <extension-point name="attachment_uploader" data-ref="cr_006_images_uploader_slot" class="ecommerce:contents">
+          <prop name="uploader">
+            <field name="version" :value="1"/>
+            <field name="mode" value="upload"/>
+            <field name="endpoints">
+              <field name="upload" value="{{'/api/modules/sirsoft-ecommerce/admin/' + (claim?.data?.claim_path_segment ?? '') + '/' + (claim?.data?.claim?.id ?? '') + '/images'}}"/>
+              <field name="delete" value="{{'/api/modules/sirsoft-ecommerce/admin/' + (claim?.data?.claim_path_segment ?? '') + '/' + (claim?.data?.claim?.id ?? '') + '/images/:id'}}"/>
+              <field name="reorder" :value="null"/>
+            </field>
+            <field name="fields" :value="{}"/>
+            <field name="policy">
+              <field name="accept" value="{{claim?.data?.attachment_settings?.accept ?? ''}}"/>
+              <field name="maxSize" value="{{claim?.data?.attachment_settings?.image_max_size_mb ?? null}}"/>
+              <field name="maxFiles" value="{{claim?.data?.attachment_settings?.max_images ?? 5}}"/>
+              <field name="maxConcurrentUploads" :value="1"/>
+              <field name="imageCompression" :value="null"/>
+            </field>
+            <field name="collection" value="claim"/>
+            <field name="attachmentable">
+              <field name="type" :value="null"/>
+              <field name="id" :value="null"/>
+            </field>
+            <field name="triggerEvent" :value="null"/>
+            <field name="initialFiles" value="{{claim?.data?.claim?.images ?? []}}"/>
+            <field name="disabled" value="{{claim?.data?.abilities?.can_update_status !== true}}"/>
+            <field name="autoUpload" :value="true"/>
+            <field name="ui">
+              <field name="confirmBeforeRemove" :value="true"/>
+            </field>
+            <field name="context">
+              <field name="owner" value="sirsoft-ecommerce"/>
+              <field name="purpose" value="admin_claim_images"/>
+            </field>
           </prop>
-          <on event="onUploadComplete">
-            <!-- 올린 것과 지운 것은 다른 사건이라 안내 문구가 다르다 — 한 핸들러가 둘을 받으므로 어느 쪽인지 알려 준다. -->
+          <callback name="onUploadComplete">
+            <!-- 올린 뒤 상세를 다시 읽고 업로드 안내를 띄운다(기본 업로더와 같다) -->
             <action handler="sirsoft-ecommerce.refreshClaimAttachments" event="upload"/>
-          </on>
-          <on event="onRemove">
-            <!-- 지우는 일은 업로더가 확인창을 거쳐 이미 끝냈고 자기 격자만 고쳤다 — 출처 스트립과 활동 로그는 상세를 다시 읽어야 따라오므로 여기서 다시 읽고 삭제 안내를 띄운다. -->
+          </callback>
+          <callback name="onRemove">
+            <!-- 지운 뒤 상세를 다시 읽고 삭제 안내를 띄운다(기본 업로더와 같다) -->
             <action handler="sirsoft-ecommerce.refreshClaimAttachments" event="remove"/>
-          </on>
-          <on event="onUploadError">
-            <!-- 오류 문구는 컴포넌트가 개수·용량·확장자별로 이미 사람이 읽는 문장을 만든다 — 핸들러를 거치면 그 문장을 다시 만들어야 한다. -->
-            <toast type="error" message="{{$args[0]}}"/>
-          </on>
-        </file-uploader>
+          </callback>
+          <callback name="onUploadError">
+            <!-- 업로더가 만든 오류 문장을 그대로 띄운다 -->
+            <toast type="error" message="{{$event}}"/>
+          </callback>
+          <default>
+            <!-- 용량 상한은 서버가 MB 로 내려 준 값(`image_max_size_mb`)을 그대로 쓴다 — 화면이 KB 를 나누면 반올림 규칙이 화면마다 갈린다. 값이 없으면 prop 을 비워 컴포넌트 기본값에 맡긴다: 0 으로 떨어뜨리면 업로더가 모든 파일을 거절한다. 구매자 신청 화면과 같은 공용 업로더를 쓴다 — 드롭존·다중 선택·미리보기·진행률·상한 안내·개별 삭제가 한 벌로 온다. `reorder` 는 빈 문자열로 명시해야 한다: 기본값은 코어 첨부 순서 API 라, 드래그 한 번이 **남의 첨부 순서**를 바꾸고 이 화면에는 오류가 뜨지 않는다. `maxConcurrentUploads` 를 1 로 낮추는 것은 서버가 개수 상한을 잠금 없이 판정하기 때문이다(병렬이면 상한을 넘겨 저장된다). -->
+            <file-uploader data-type="composite" data-ref="cr_006_images_uploader" collection="claim" :autoUpload="true" :maxConcurrentUploads="1" maxFiles="{{claim?.data?.attachment_settings?.max_images ?? 5}}" maxSize="{{claim?.data?.attachment_settings?.image_max_size_mb}}" accept="{{claim?.data?.attachment_settings?.accept ?? ''}}" initialFiles="{{claim?.data?.claim?.images ?? []}}" :confirmBeforeRemove="true" confirmRemoveTitle="$t:sirsoft-ecommerce.admin.claim.detail.reason.confirm_remove_image_title" confirmRemoveMessage="$t:sirsoft-ecommerce.admin.claim.detail.reason.confirm_remove_image_message" disabled="{{claim?.data?.abilities?.can_update_status !== true}}">
+              <prop name="apiEndpoints">
+                <field name="upload" value="{{'/api/modules/sirsoft-ecommerce/admin/' + (claim?.data?.claim_path_segment ?? '') + '/' + (claim?.data?.claim?.id ?? '') + '/images'}}"/>
+                <field name="delete" value="{{'/api/modules/sirsoft-ecommerce/admin/' + (claim?.data?.claim_path_segment ?? '') + '/' + (claim?.data?.claim?.id ?? '') + '/images/:id'}}"/>
+                <field name="reorder" value=""/>
+              </prop>
+              <on event="onUploadComplete">
+                <!-- 올린 것과 지운 것은 다른 사건이라 안내 문구가 다르다 — 한 핸들러가 둘을 받으므로 어느 쪽인지 알려 준다. -->
+                <action handler="sirsoft-ecommerce.refreshClaimAttachments" event="upload"/>
+              </on>
+              <on event="onRemove">
+                <!-- 지우는 일은 업로더가 확인창을 거쳐 이미 끝냈고 자기 격자만 고쳤다 — 출처 스트립과 활동 로그는 상세를 다시 읽어야 따라오므로 여기서 다시 읽고 삭제 안내를 띄운다. -->
+                <action handler="sirsoft-ecommerce.refreshClaimAttachments" event="remove"/>
+              </on>
+              <on event="onUploadError">
+                <!-- 오류 문구는 컴포넌트가 개수·용량·확장자별로 이미 사람이 읽는 문장을 만든다 — 핸들러를 거치면 그 문장을 다시 만들어야 한다. -->
+                <toast type="error" message="{{$args[0]}}"/>
+              </on>
+            </file-uploader>
+          </default>
+        </extension-point>
         <!-- 출처 구분 스트립. 뱃지를 썸네일 안에 넣으려면 공유 템플릿(FileList·SortableThumbnailItem)을 고쳐야 하는데, 모듈이 '이 템플릿 ≥ X 버전' 의존을 선언할 수단이 없어 구버전에서 오류 없이 뱃지만 사라진다. 그래서 모듈이 소유한 스트립으로 낸다. `unknown` 은 뱃지를 그리지 않는다 — 조용한 거짓 대신 공백이 낫다. 삭제 버튼은 두지 않는다(액션은 업로더가 단독 소유). -->
         <div data-ref="cr_007_images_origin_list" data-if="{{(claim?.data?.claim?.images ?? []).length > 0}}" class="ecommerce:mt-3 ecommerce:space-y-1">
           <div class="ecommerce-text-label-subtle">$t:sirsoft-ecommerce.admin.claim.detail.reason.images_origin_title</div>

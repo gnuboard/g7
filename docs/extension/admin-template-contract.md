@@ -77,6 +77,7 @@
 | 확장점 | `identity_provider_ui:{provider}` | 본인인증 설정 |
 | 확장점 | `notification_definition_row_footer`, `notification_template_form_sections`, `notification_template_form_footer_actions` | 알림 설정·알림 템플릿 편집 창 |
 | 확장점 | `html_editor` | 본문 편집기 자리(편집기 플러그인이 채움) |
+| 확장점 | `attachment_uploader` (7.2.0+) | 환경설정 일반 탭의 사이트 로고·파비콘, SEO 탭의 기본 OG 이미지 업로더 자리(업로더 플러그인이 바꿈). 확장점 안에 기본 업로더를 default 로 두고 계약 `uploader` 를 넘긴다 — [attachment-uploader.md](attachment-uploader.md) |
 | 확장점 | `address_search_slot` | 주소 검색 자리(관리자·사용자 양쪽) |
 | 확장점 | `admin_login_extensions` (7.2.0+) | 관리자 로그인 폼 바로 뒤(SSO 단추). 7.1.x 화면으로 만든 템플릿은 코어 [호환 심](layout-extensions.md#옛-템플릿-호환-심-720)이 채운다 |
 | 확장점 | `member_field_input` | 회원 항목 조각(`partials/member/_member_fields`)에서 확장이 더한 유형의 입력칸 자리 |
@@ -108,6 +109,7 @@
 - 조각은 둘이다. 입력은 `layouts/partials/member/_member_fields`, 보기는 `_member_fields_view`. 부르는 화면이 `data-each="memberFieldGroup in …"` 안에서 include 하고, 반복 변수 `memberFieldGroup` 은 `{ key, fields, className, wideClassName }` 이다(`wideClassName` 은 768px 이상에서 쓸 클래스).
 - 묶음과 무관한 문맥은 화면의 computed `memberFieldCtx`(`formKey`, `errors`, `disabled`)가 준다. 회원 폼의 폼 상태 이름은 `form` 이다. 조각은 계산값을 `_computed` 접두로 읽는다.
 - 화면의 computed `memberFieldGroups` 가 항목을 여섯 묶음으로 나눈다. `basic`, `contact`, `location`, `profile` 은 항목의 `ui.group`, `extra` 는 묶음이 없는 운영자 추가 항목, `extension` 은 `owner_type` 이 `module` 또는 `plugin` 인 항목이다.
+- 회원 추가와 수정의 저장 요청(`POST /api/admin/users`, `PUT /api/admin/users/{user}`)에는 `memberFields` 가 준 `data.fields_version` 을 얹는다. 회원 항목을 그리는 화면이라는 표식이고, 서버는 버전을 대조하지 않는다. 싣지 않은 요청은 회원 항목을 모르는 옛 관리자 화면(7.1.x 템플릿)으로 보고, 운영자 추가 항목과 확장 선언 항목의 필수 규칙을 값을 보냈을 때만 건다(7.1.x 관리자 폼은 기본 항목을 모두 그렸으므로 기본 항목 규칙은 그대로다). 그렇게 추가한 회원에게 추가 정보 입력 대기 표시는 남기지 않고, 수정은 보내지 않은 항목의 저장된 값을 그대로 둔다. 표식을 빼면 운영자가 필수로 둔 항목이 빈 채로 저장되므로 새 템플릿은 빼지 않는다. 사용자 화면 쪽 같은 약속은 [user-template-contract.md](user-template-contract.md#옛-화면-호환-71x-템플릿) 에 있다.
 - 구획 노드는 `section_basic_info`, `section_contact_info`, `section_location_info`, `section_profile_memo`, `section_extra_fields`, `section_extension_fields` 다. 「확장 항목」 구획(`section_extension_fields`, 탭 id `extension_fields`)은 확장이 선언한 항목이 하나라도 있을 때만 그려진다. 동의 항목(`ui.group` 이 `agreements`)도 이 구획에서 다른 항목과 같이 그린다.
 
 조각이 만드는 노드 id:
@@ -183,6 +185,7 @@
 
 - [template-basics.md](template-basics.md) — 템플릿 타입·메타데이터
 - [layout-extensions.md](layout-extensions.md) — 확장점·조각 등록
+- [attachment-uploader.md](attachment-uploader.md) — 첨부 업로더 확장점과 계약
 - [user-template-contract.md](user-template-contract.md) — 사용자 템플릿 계약(가입, 내 정보 화면의 앵커와 회원 항목 그리기)
 - [module-assets.md](module-assets.md#확장-css-자기-공급-규약) — 확장 자기 CSS·템플릿 확장 CSS 덮기
 - [sample-extensions.md](sample-extensions.md) — 학습용 샘플 확장

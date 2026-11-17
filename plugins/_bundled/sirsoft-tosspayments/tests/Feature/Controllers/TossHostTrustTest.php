@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Services\PluginSettingsService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Modules\Sirsoft\Ecommerce\Database\Factories\ClaimPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderReturnFactory;
@@ -13,8 +14,6 @@ use Modules\Sirsoft\Ecommerce\Enums\ClaimChargeMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimPaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ReturnStatusEnum;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Modules\Sirsoft\Ecommerce\Support\ClaimPaymentRedirect;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Plugins\Sirsoft\Tosspayments\Controllers\PaymentCallbackController;
@@ -223,7 +222,7 @@ class TossHostTrustTest extends PluginTestCase
      */
     private function bindImpatientCallbackController(): void
     {
-        $this->app->bind(PaymentCallbackController::class, fn ($app) => new class($app->make(OrderProcessingService::class), $app->make(PluginSettingsService::class), $app->make(TossPaymentsApiService::class), $app->make(ClaimPaymentRepositoryInterface::class)) extends PaymentCallbackController
+        $this->app->bind(PaymentCallbackController::class, fn ($app) => new class($app->make(PaymentGatewayBridge::class), $app->make(PluginSettingsService::class), $app->make(TossPaymentsApiService::class)) extends PaymentCallbackController
         {
             /**
              * 락 대기 시간을 0초로 줄여 대기 초과를 즉시 재현합니다.

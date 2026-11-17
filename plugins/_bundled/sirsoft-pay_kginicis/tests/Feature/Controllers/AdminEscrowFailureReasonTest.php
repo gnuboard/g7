@@ -9,12 +9,12 @@ use Illuminate\Database\QueryException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Testing\TestResponse;
+use Modules\Sirsoft\Ecommerce\Contracts\Catalog\ProductProvisioner;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
-use Modules\Sirsoft\Ecommerce\Services\ProductService;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
 
@@ -204,14 +204,15 @@ class AdminEscrowFailureReasonTest extends PluginTestCase
      */
     public function test_cbt_test_product_db_failure_returns_generic_detail(): void
     {
-        $mock = $this->createMock(ProductService::class);
-        $mock->method('create')->willThrowException(new QueryException(
+        // 시험 상품 생성은 이커머스 공개 계약에 맡긴다(#916) — 계약이 DB 예외를 그대로 올려보내는 경우를 만든다.
+        $mock = $this->createMock(ProductProvisioner::class);
+        $mock->method('createSimpleProduct')->willThrowException(new QueryException(
             'mysql',
             'insert into `ecommerce_products` (`product_code`) values (?)',
             ['CBT-TEST-1'],
             new \PDOException('SQLSTATE[HY000] [2002] Connection refused'),
         ));
-        $this->app->instance(ProductService::class, $mock);
+        $this->app->instance(ProductProvisioner::class, $mock);
 
         $response = $this->actingAs($this->adminUser)
             ->withHeaders(['Accept-Language' => 'ko'])

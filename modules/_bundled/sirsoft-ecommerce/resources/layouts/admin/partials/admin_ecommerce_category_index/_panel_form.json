@@ -480,14 +480,140 @@
                                             "text": "$t:sirsoft-ecommerce.admin.category.form.image"
                                         },
                                         {
-                                            "id": "form_image_uploader",
-                                            "type": "composite",
-                                            "name": "FileUploader",
-                                            "actions": [
+                                            "comment": "첨부 업로더 확장점 — 카테고리 이미지. 새 카테고리는 임시 키, 수정은 카테고리 id 를 업로드 주소에 싣는다(기본 업로더와 같다).\n                 정렬 API 가 없어 정렬 주소는 null 이다",
+                                            "id": "form_image_uploader_slot",
+                                            "type": "extension_point",
+                                            "name": "attachment_uploader",
+                                            "props": {
+                                                "className": "ecommerce:contents",
+                                                "uploader": {
+                                                    "version": 1,
+                                                    "mode": "upload",
+                                                    "endpoints": {
+                                                        "upload": "/api/modules/sirsoft-ecommerce/admin/categories/images{{_global.tempKey ? '?temp_key=' + _global.tempKey : (_global.selectedCategoryId ? '?category_id=' + _global.selectedCategoryId : '')}}",
+                                                        "delete": "/api/modules/sirsoft-ecommerce/admin/categories/images/:id",
+                                                        "reorder": null
+                                                    },
+                                                    "fields": {},
+                                                    "policy": {
+                                                        "accept": ".jpg,.jpeg,.png,.gif,.webp",
+                                                        "maxSize": 5,
+                                                        "maxFiles": 1,
+                                                        "maxConcurrentUploads": 1,
+                                                        "imageCompression": null
+                                                    },
+                                                    "collection": "category_image",
+                                                    "attachmentable": {
+                                                        "type": null,
+                                                        "id": null
+                                                    },
+                                                    "triggerEvent": null,
+                                                    "initialFiles": "{{_local.form?.images ?? []}}",
+                                                    "disabled": "{{_global.panelMode === 'edit' && categories?.data?.abilities?.can_update !== true}}",
+                                                    "autoUpload": true,
+                                                    "ui": {
+                                                        "confirmBeforeRemove": true
+                                                    },
+                                                    "context": {
+                                                        "owner": "sirsoft-ecommerce",
+                                                        "purpose": "category_image"
+                                                    }
+                                                }
+                                            },
+                                            "default": [
                                                 {
-                                                    "comment": "파일을 건드린 것도 폼 변경으로 친다 — 이미지만 바꾸고 나가려 할 때 이탈 경고가 뜨게 하는 자리. 이미 `true` 면 다시 쓰지 않는다.",
-                                                    "type": "change",
-                                                    "event": "onFilesChange",
+                                                    "id": "form_image_uploader",
+                                                    "type": "composite",
+                                                    "name": "FileUploader",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "파일을 건드린 것도 폼 변경으로 친다 — 이미지만 바꾸고 나가려 할 때 이탈 경고가 뜨게 하는 자리. 이미 `true` 면 다시 쓰지 않는다.",
+                                                            "type": "change",
+                                                            "event": "onFilesChange",
+                                                            "handler": "setState",
+                                                            "if": "{{!_local.hasChanges}}",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "hasChanges": true
+                                                            }
+                                                        },
+                                                        {
+                                                            "comment": "업로드가 끝난 파일을 폼의 이미지 목록에 **덧붙인다**. 통째로 갈아끼우지 않는 것은 여러 번에 나눠 올릴 때 앞서 올린 것이 사라지기 때문이다.",
+                                                            "type": "change",
+                                                            "event": "onUploadComplete",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "form.images": "{{[...(_local.form?.images ?? []), ...$args[0]]}}"
+                                                            }
+                                                        },
+                                                        {
+                                                            "comment": "업로드 실패 — 사유를 알림으로 띄우면서 `_local.uploadError` 에도 남긴다. 알림은 사라지지만 이 값은 남아 다른 자리에서 상태를 물을 수 있다.",
+                                                            "type": "change",
+                                                            "event": "onUploadError",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "local",
+                                                                        "uploadError": "{{$args[0]}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "handler": "toast",
+                                                                    "params": {
+                                                                        "type": "error",
+                                                                        "message": "{{$args[0]}}",
+                                                                        "icon": "triangle-exclamation"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "comment": "삭제 실패 — 서버 사유 대신 고정 문구를 쓴다. 여기서 목록을 되돌리지 않으므로, 화면에서 사라진 이미지가 서버에는 남아 있을 수 있다.",
+                                                            "type": "change",
+                                                            "event": "onDeleteError",
+                                                            "handler": "toast",
+                                                            "params": {
+                                                                "type": "error",
+                                                                "message": "$t:sirsoft-ecommerce.admin.category.messages.image_delete_failed"
+                                                            }
+                                                        },
+                                                        {
+                                                            "comment": "목록에서 뺀다 — 지운 파일의 id 만 걸러낸다. 실제 삭제 요청은 업로더가 자기 삭제 주소로 따로 보낸다.",
+                                                            "type": "change",
+                                                            "event": "onRemove",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "form.images": "{{(_local.form?.images ?? []).filter(img => (img.hash || img.id) !== $args[0])}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "collection": "category_image",
+                                                        "maxFiles": 1,
+                                                        "maxSize": 5,
+                                                        "accept": ".jpg,.jpeg,.png,.gif,.webp",
+                                                        "initialFiles": "{{_local.form?.images ?? []}}",
+                                                        "autoUpload": true,
+                                                        "size": "sm",
+                                                        "confirmBeforeRemove": true,
+                                                        "confirmRemoveTitle": "$t:sirsoft-ecommerce.admin.category.form.confirm_remove_image_title",
+                                                        "confirmRemoveMessage": "$t:sirsoft-ecommerce.admin.category.form.confirm_remove_image_message",
+                                                        "disabled": "{{_global.panelMode === 'edit' && categories?.data?.abilities?.can_update !== true}}",
+                                                        "apiEndpoints": {
+                                                            "upload": "/api/modules/sirsoft-ecommerce/admin/categories/images{{_global.tempKey ? '?temp_key=' + _global.tempKey : (_global.selectedCategoryId ? '?category_id=' + _global.selectedCategoryId : '')}}",
+                                                            "delete": "/api/modules/sirsoft-ecommerce/admin/categories/images/:id",
+                                                            "reorder": null
+                                                        }
+                                                    }
+                                                }
+                                            ],
+                                            "callbacks": {
+                                                "onFilesChange": {
+                                                    "comment": "파일을 건드린 것도 폼 변경으로 친다(기본 업로더와 같다)",
                                                     "handler": "setState",
                                                     "if": "{{!_local.hasChanges}}",
                                                     "params": {
@@ -495,75 +621,50 @@
                                                         "hasChanges": true
                                                     }
                                                 },
-                                                {
-                                                    "comment": "업로드가 끝난 파일을 폼의 이미지 목록에 **덧붙인다**. 통째로 갈아끼우지 않는 것은 여러 번에 나눠 올릴 때 앞서 올린 것이 사라지기 때문이다.",
-                                                    "type": "change",
-                                                    "event": "onUploadComplete",
+                                                "onUploadComplete": {
+                                                    "comment": "업로드가 끝난 파일을 폼의 이미지 목록에 덧붙인다(기본 업로더와 같다)",
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "local",
-                                                        "form.images": "{{[...(_local.form?.images ?? []), ...$args[0]]}}"
+                                                        "form.images": "{{[...(_local.form?.images ?? []), ...$event]}}"
                                                     }
                                                 },
-                                                {
-                                                    "comment": "업로드 실패 — 사유를 알림으로 띄우면서 `_local.uploadError` 에도 남긴다. 알림은 사라지지만 이 값은 남아 다른 자리에서 상태를 물을 수 있다.",
-                                                    "type": "change",
-                                                    "event": "onUploadError",
+                                                "onUploadError": {
+                                                    "comment": "업로드 실패 사유를 남기고 알린다(기본 업로더와 같다)",
                                                     "handler": "sequence",
                                                     "actions": [
                                                         {
                                                             "handler": "setState",
                                                             "params": {
                                                                 "target": "local",
-                                                                "uploadError": "{{$args[0]}}"
+                                                                "uploadError": "{{$event}}"
                                                             }
                                                         },
                                                         {
                                                             "handler": "toast",
                                                             "params": {
                                                                 "type": "error",
-                                                                "message": "{{$args[0]}}",
+                                                                "message": "{{$event}}",
                                                                 "icon": "triangle-exclamation"
                                                             }
                                                         }
                                                     ]
                                                 },
-                                                {
-                                                    "comment": "삭제 실패 — 서버 사유 대신 고정 문구를 쓴다. 여기서 목록을 되돌리지 않으므로, 화면에서 사라진 이미지가 서버에는 남아 있을 수 있다.",
-                                                    "type": "change",
-                                                    "event": "onDeleteError",
+                                                "onDeleteError": {
+                                                    "comment": "삭제 실패를 고정 문구로 알린다",
                                                     "handler": "toast",
                                                     "params": {
                                                         "type": "error",
                                                         "message": "$t:sirsoft-ecommerce.admin.category.messages.image_delete_failed"
                                                     }
                                                 },
-                                                {
-                                                    "comment": "목록에서 뺀다 — 지운 파일의 id 만 걸러낸다. 실제 삭제 요청은 업로더가 자기 삭제 주소로 따로 보낸다.",
-                                                    "type": "change",
-                                                    "event": "onRemove",
+                                                "onRemove": {
+                                                    "comment": "지운 파일을 폼 목록에서 뺀다(기본 업로더와 같다)",
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "local",
-                                                        "form.images": "{{(_local.form?.images ?? []).filter(img => (img.hash || img.id) !== $args[0])}}"
+                                                        "form.images": "{{(_local.form?.images ?? []).filter(img => (img.hash || img.id) !== $event)}}"
                                                     }
-                                                }
-                                            ],
-                                            "props": {
-                                                "collection": "category_image",
-                                                "maxFiles": 1,
-                                                "maxSize": 5,
-                                                "accept": ".jpg,.jpeg,.png,.gif,.webp",
-                                                "initialFiles": "{{_local.form?.images ?? []}}",
-                                                "autoUpload": true,
-                                                "size": "sm",
-                                                "confirmBeforeRemove": true,
-                                                "confirmRemoveTitle": "$t:sirsoft-ecommerce.admin.category.form.confirm_remove_image_title",
-                                                "confirmRemoveMessage": "$t:sirsoft-ecommerce.admin.category.form.confirm_remove_image_message",
-                                                "disabled": "{{_global.panelMode === 'edit' && categories?.data?.abilities?.can_update !== true}}",
-                                                "apiEndpoints": {
-                                                    "upload": "/api/modules/sirsoft-ecommerce/admin/categories/images{{_global.tempKey ? '?temp_key=' + _global.tempKey : (_global.selectedCategoryId ? '?category_id=' + _global.selectedCategoryId : '')}}",
-                                                    "delete": "/api/modules/sirsoft-ecommerce/admin/categories/images/:id"
                                                 }
                                             }
                                         }

@@ -319,7 +319,9 @@ class MobileApprovalControllerTest extends PluginTestCase
 
         $response->assertStatus(422)
             ->assertJsonPath('success', false)
-            ->assertJsonPath('error', __('sirsoft-pay_nhnkcp::messages.errors.mobile_payment_unavailable'));
+            ->assertJsonPath('message', __('sirsoft-pay_nhnkcp::messages.responses.approval_key_failed', [
+                'reason' => __('sirsoft-pay_nhnkcp::messages.errors.mobile_payment_unavailable'),
+            ]));
     }
 
     /**
@@ -415,7 +417,7 @@ class MobileApprovalControllerTest extends PluginTestCase
 
         $response->assertUnprocessable()
             ->assertJsonPath('success', false)
-            ->assertJsonPath('error', 'Payment currency is not chargeable.');
+            ->assertJsonPath('message', __('sirsoft-pay_nhnkcp::messages.responses.currency_not_chargeable'));
     }
 
     /**

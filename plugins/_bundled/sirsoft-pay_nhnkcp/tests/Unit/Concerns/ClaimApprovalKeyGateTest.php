@@ -6,14 +6,13 @@ namespace Plugins\Sirsoft\PayNhnkcp\Tests\Unit\Concerns;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Modules\Sirsoft\Ecommerce\Database\Factories\ClaimPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderReturnFactory;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimPaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\HandlesClaimPaymentCallbacks;
 use Plugins\Sirsoft\PayNhnkcp\Tests\PluginTestCase;
 
@@ -38,20 +37,20 @@ class ClaimApprovalKeyGateTest extends PluginTestCase
      */
     private function gate(): object
     {
-        // 트레이트는 호스트가 Repository 를 생성자로 주입받는다고 전제한다(서비스 로케이터 금지).
-        return new class(app(ClaimPaymentRepositoryInterface::class))
+        // 트레이트는 호스트가 이커머스 결제 계약을 생성자로 주입받는다고 전제한다(서비스 로케이터 금지).
+        return new class(app(PaymentGatewayBridge::class))
         {
             use HandlesClaimPaymentCallbacks {
                 validateClaimApprovalKeyContext as public;
             }
 
             /**
-             * 트레이트가 쓰는 클레임 결제 Repository 를 주입받습니다.
+             * 트레이트가 쓰는 이커머스 결제 계약을 주입받습니다.
              *
-             * @param  ClaimPaymentRepositoryInterface  $claimPaymentRepository  클레임 결제 Repository
+             * @param  PaymentGatewayBridge  $bridge  이커머스 결제 계약
              */
             public function __construct(
-                private readonly ClaimPaymentRepositoryInterface $claimPaymentRepository,
+                private readonly PaymentGatewayBridge $bridge,
             ) {}
         };
     }
@@ -105,7 +104,6 @@ class ClaimApprovalKeyGateTest extends PluginTestCase
             'CP-K9GATE-1',
             3000,
             'KRW',
-            app(GuestOrderAuthService::class),
         );
 
         $this->assertInstanceOf(
@@ -132,7 +130,6 @@ class ClaimApprovalKeyGateTest extends PluginTestCase
             'CP-DOES-NOT-EXIST',
             3000,
             'KRW',
-            app(GuestOrderAuthService::class),
         );
 
         $this->assertInstanceOf(JsonResponse::class, $response);
@@ -179,7 +176,6 @@ class ClaimApprovalKeyGateTest extends PluginTestCase
             'CP-K9GATE-2',
             3000,
             'KRW',
-            app(GuestOrderAuthService::class),
         );
 
         $this->assertInstanceOf(JsonResponse::class, $response);

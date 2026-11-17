@@ -5,6 +5,7 @@ namespace Tests\Feature\Services;
 use App\Enums\PermissionType;
 use App\Enums\UserStatus;
 use App\Extension\HookManager;
+use App\Helpers\TimezoneHelper;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -100,9 +101,11 @@ class AdminWithdrawPathUnificationTest extends TestCase
             'name' => '원래 이름',
         ]);
 
-        // withdraw() 가 만들 이메일을 미리 점유 → unique 충돌로 마지막 쓰기 실패
+        // withdraw() 가 만들 이메일을 미리 점유 → unique 충돌로 마지막 쓰기 실패.
+        // 접미사 날짜는 사이트 시간대 기준이다(User::withdraw) — UTC 날짜로 만들면 한국 시간 0~9시에 하루 어긋나 충돌이 나지 않는다.
+        $dateSuffix = now()->setTimezone(TimezoneHelper::getSiteTimezone())->format('Ymd');
         User::factory()->create([
-            'email' => 'g7fix112.w8c@example.com_deleted_'.now()->format('Ymd').'_'.$user->id,
+            'email' => 'g7fix112.w8c@example.com_deleted_'.$dateSuffix.'_'.$user->id,
         ]);
 
         try {

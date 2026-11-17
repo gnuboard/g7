@@ -577,6 +577,16 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 크기를 호출처 className 으로 덮어쓰지 않는다 — 화면마다 값이 갈려 같은 부품이 서로 다르게 보인다.
 받지 않는 속성을 적으면 **조용히 무시**된다(감사 룰 `component-unknown-prop` 이 잡는다).
 
+##### FileUploader 정렬 주소(`apiEndpoints.reorder`, 7.2.0)
+
+`apiEndpoints` 에 `reorder` 키가 **있으면** 그 값을 쓴다. `null`·빈 문자열이면 끌어 옮겨도 정렬 요청을 보내지 않는다(순서는
+`onReorder` 로만 알린다). 키가 없을 때만 코어 첨부 정렬 주소(`/api/admin/attachments/reorder`)로 떨어진다 — 정렬 API 가 없는
+화면(카테고리 이미지·반응 아이콘·배너·팝업)은 `reorder` 를 `null` 로 명시한다. 판정은 `utils.ts` 의 `resolveApiEndpoints`.
+회귀 테스트: `src/components/composite/__tests__/FileUploaderReorderNull.test.tsx`.
+
+레이아웃의 업로더는 확장점 `attachment_uploader` 의 default 안에 두고 계약 `uploader` 를 함께 넘긴다 — 업로더 플러그인이
+`mode="replace"` 로 바꾼다(코어 문서 `docs/extension/attachment-uploader.md`).
+
 ##### FileUploader 키보드 초점
 
 - **키보드 초점 자리**: 항목의 「삭제」로 항목이 사라지면 초점은 다음 항목(없으면 이전 항목, 둘 다 없으면 「추가」 타일, 목록이 비면 드롭존)의 같은 단추로 간다. 빈 드롭존이나 「추가」 타일로 파일을 고른 뒤 그 요소가 사라지면 「추가」 타일(한도가 차서 없으면 새로 추가된 첫 항목)로 간다. 삭제 확인 창을 거친 삭제도 같다. 초점이 업로더 밖으로 나간 뒤에는 끌어오지 않는다. 자리 판정은 항목 루트의 `data-uploader-item` 과 단추의 `data-uploader-action`(`pick`·`add`·`primary`·`drag`·`download`·`retry`·`remove`)으로 하므로 이 표식을 지우지 않는다. 회귀 테스트: `src/components/composite/__tests__/FileUploaderFocusRecovery.test.tsx`.

@@ -5,6 +5,7 @@
 namespace App\Http\Controllers\Api\Base;
 
 use App\Exceptions\ExtensionOperationLockException;
+use App\Exceptions\PackageIntegrityException;
 use App\Extension\Support\LifecycleWarnings;
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Controller;
@@ -84,6 +85,20 @@ abstract class BaseApiController extends Controller
      * @return JsonResponse 409 또는 503 응답
      */
     protected function operationLockError(ExtensionOperationLockException $e): JsonResponse
+    {
+        return $this->error($e->getMessageKey(), $e->getStatusCode(), $e->getErrors(), $e->getMessageParams());
+    }
+
+    /**
+     * 패키지 무결성 거절(미서명 409 / 서명 불일치·미신뢰 키 422)을 응답으로 만듭니다 (7.2.0).
+     *
+     * `errors` 에 표지(`package_unsigned`·`package_signature_invalid`·`package_signer_untrusted`)와 `integrity` 페이로드
+     * (`can_continue` 포함)를 싣는다 — 화면이 같은 409 의 작업 잠금 거절과 가르고, 「미서명으로 계속」을 보일지 정한다.
+     *
+     * @param  PackageIntegrityException  $e  무결성 거절 예외
+     * @return JsonResponse 409 또는 422 응답
+     */
+    protected function packageIntegrityError(PackageIntegrityException $e): JsonResponse
     {
         return $this->error($e->getMessageKey(), $e->getStatusCode(), $e->getErrors(), $e->getMessageParams());
     }

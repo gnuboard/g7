@@ -6,6 +6,9 @@ use App\Contracts\Extension\StorageInterface;
 use App\Models\Attachment;
 use App\Services\AttachmentService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Storage;
 use Mockery;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Tests\TestCase;
@@ -184,5 +187,39 @@ class AttachmentS3DiskServingTest extends TestCase
 
         $response->assertStatus(200);
         $this->assertNotEmpty($response->headers->get('ETag'));
+    }
+
+    /**
+     * 비공개 첨부 저장소를 고르면 새 코어 첨부는 그 디스크에 저장되고 행 disk 에 기록되며, 고르기 전 행은 원래 디스크에서 그대로 내려간다(#916).
+     * `ATTACHMENT_DISK` env 명시는 선택보다 우선한다.
+     *
+     * @scenario attachment_disk=private_attachment_selection, consumer=attachment
+     *
+     * @effects attachment_upload_follows_private_attachment_selection
+     *
+     * @return void 반환값 없음
+     */
+    public function test_new_upload_follows_private_attachment_selection_and_old_rows_still_serve(): void
+    {
+        $root = storage_path('framework/testing/fx916-core-private');
+        Config::set('filesystems.disks.fx916-core-private', ['driver' => 'local', 'root' => $root]);
+        Config::set('attachment.disk_explicit', null);
+        Config::set('core.storage.private_attachment_disk', 'fx916-core-private');
+
+        $old = Attachment::factory()->create(['disk' => 'attachments', 'path' => '2026/11/15/fx916-old.png', 'mime_type' => 'image/png']);
+        Storage::disk('attachments')->put('2026/11/15/fx916-old.png', 'old-bytes');
+
+        $new = app(AttachmentService::class)->upload(UploadedFile::fake()->image('fx916-new.png', 4, 4));
+
+        $this->assertSame('fx916-core-private', $new->disk);
+        $this->assertTrue(Storage::disk('fx916-core-private')->exists($new->path), '새 첨부가 고른 디스크에 없습니다');
+        $this->get('/api/attachment/'.$old->hash)->assertStatus(200);
+
+        Config::set('attachment.disk_explicit', 'attachments');
+        $pinned = app(AttachmentService::class)->upload(UploadedFile::fake()->image('fx916-pinned.png', 4, 4));
+        $this->assertSame('attachments', $pinned->disk, 'ATTACHMENT_DISK env 명시가 선택보다 우선해야 합니다');
+
+        Storage::disk('attachments')->delete(['2026/11/15/fx916-old.png', $pinned->path]);
+        Storage::disk('fx916-core-private')->delete($new->path);
     }
 }

@@ -18,11 +18,6 @@ use Illuminate\Validation\Rule;
 class TestDriverConnectionRequest extends FormRequest
 {
     /**
-     * 지원되는 스토리지 드라이버 목록
-     */
-    private const SUPPORTED_STORAGE_DRIVERS = ['local', 's3'];
-
-    /**
      * S3 리전 형식 (AWS 리전 코드 + S3 호환 스토리지 임의값 허용 — R2 의 `auto` 등)
      */
     private const S3_REGION_FORMAT = 'regex:/^[a-z0-9-]+$/';
@@ -85,10 +80,11 @@ class TestDriverConnectionRequest extends FormRequest
     {
         $rules = [
             // 드라이버 선택
-            'storage_driver' => ['nullable', Rule::in(self::SUPPORTED_STORAGE_DRIVERS), $this->getDriverUsabilityRule('storage')],
-            'cache_driver' => ['nullable', Rule::in(self::SUPPORTED_CACHE_DRIVERS), $this->getDriverUsabilityRule('cache')],
-            'session_driver' => ['nullable', Rule::in(self::SUPPORTED_SESSION_DRIVERS), $this->getDriverUsabilityRule('session')],
-            'queue_driver' => ['nullable', Rule::in(self::SUPPORTED_QUEUE_DRIVERS), $this->getDriverUsabilityRule('queue')],
+            // 플러그인 등록 스토리지 드라이버도 시험할 수 있게 카탈로그로 판정한다(#916 A4 — 저장 검증과 같은 판정)
+            'storage_driver' => ['nullable', 'string', $this->catalogRule('storage'), $this->getDriverUsabilityRule('storage')],
+            'cache_driver' => ['nullable', 'string', $this->catalogRule('cache', self::SUPPORTED_CACHE_DRIVERS), $this->getDriverUsabilityRule('cache')],
+            'session_driver' => ['nullable', 'string', $this->catalogRule('session', self::SUPPORTED_SESSION_DRIVERS), $this->getDriverUsabilityRule('session')],
+            'queue_driver' => ['nullable', 'string', $this->catalogRule('queue', self::SUPPORTED_QUEUE_DRIVERS), $this->getDriverUsabilityRule('queue')],
             'websocket_enabled' => ['nullable', 'boolean'],
 
             // S3 설정
@@ -179,6 +175,26 @@ class TestDriverConnectionRequest extends FormRequest
             'file_delegation_accel_prefix.max' => __('validation.settings.file_delegation_accel_prefix_format'),
             'file_delegation_accel_prefix.regex' => __('validation.settings.file_delegation_accel_prefix_format'),
         ];
+    }
+
+    /**
+     * 값이 드라이버 카탈로그(코어 + 플러그인 훅 등록)에 있는지 검사하는 규칙을 반환합니다 — 저장 검증과 같은 판정(#916 A4).
+     *
+     * @param  string  $category  드라이버 카테고리
+     * @param  array<int, string>  $coreValues  카탈로그 밖이지만 받는 코어 값(캐시 memcached 등)
+     * @return \Closure 검증 클로저
+     */
+    private function catalogRule(string $category, array $coreValues = []): \Closure
+    {
+        return function ($attribute, $value, $fail) use ($category, $coreValues) {
+            if ($value === null || $value === '' || (is_string($value) && in_array($value, $coreValues, true))) {
+                return;
+            }
+
+            if (! is_string($value) || ! app(DriverRegistryService::class)->isDriverAvailable($category, $value)) {
+                $fail(__("validation.settings.{$category}_driver_invalid"));
+            }
+        };
     }
 
     /**

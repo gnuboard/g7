@@ -88,4 +88,24 @@ return [
     'kcp_frame' => [
         'sdk' => '決済ウィンドウ SDK の URL',
     ],
+    'vbank_close_reason' => '入金前の注文キャンセル',
+    // 決済画面・決済代行会社連携 API のエラー応答メッセージ
+    'responses' => [
+        'amount_mismatch' => '決済金額が注文金額と一致しません。',
+        'claim_amount_mismatch' => '決済金額が請求決済の金額と一致しません。',
+        'claim_approval_forbidden' => 'この請求決済の NHN KCP 承認キーはリクエストできません。',
+        'order_approval_forbidden' => 'この注文の NHN KCP 承認キーはリクエストできません。',
+        'approval_key_failed' => 'NHN KCP の決済を準備できませんでした。:reason',
+        'claim_deposit_not_supported' => 'クレーム追加決済は入金待ち方式(仮想口座)に対応していません。',
+        'claim_payment_not_found' => '請求決済が見つかりません。',
+        'claim_payment_not_payable' => 'この請求決済は決済できません。',
+        'currency_not_chargeable' => '決済通貨で請求額を計算できません。',
+        'guest_verification_failed' => '非会員注文の確認に失敗しました。',
+        'krw_only' => 'NHN KCP はウォン建ての決済のみ対応しています。',
+        'order_not_found' => '注文が見つかりません。',
+        'order_not_retryable' => 'この注文は再決済できません。',
+        'ownership_verification_failed' => '注文の所有者確認に失敗しました。',
+        'too_many_requests' => 'リクエストが多すぎます。しばらくしてから再度お試しください。',
+        'vbank_session_failed' => '仮想口座決済を準備できませんでした。しばらくしてから再度お試しください。',
+    ],
 ];

@@ -10,9 +10,9 @@
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
 | `sirsoft-tosspayments.payment.after_cancel` | action | 토스페이먼츠 결제 취소 완료 후 | `src/Services/TossPaymentsApiService.php:119` |
-| `sirsoft-tosspayments.payment.after_confirm` | action | 토스페이먼츠 결제 승인 완료 후 | `src/Controllers/PaymentCallbackController.php:175` |
+| `sirsoft-tosspayments.payment.after_confirm` | action | 토스페이먼츠 결제 승인 완료 후 | `src/Controllers/PaymentCallbackController.php:177` |
 | `sirsoft-tosspayments.payment.before_cancel` | action | 토스페이먼츠 결제 취소 API 호출 전 | `src/Services/TossPaymentsApiService.php:114` |
-| `sirsoft-tosspayments.payment.before_confirm` | action | 토스페이먼츠 결제 승인 API 호출 전 | `src/Controllers/PaymentCallbackController.php:168` |
+| `sirsoft-tosspayments.payment.before_confirm` | action | 토스페이먼츠 결제 승인 API 호출 전 | `src/Controllers/PaymentCallbackController.php:170` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->
@@ -24,6 +24,10 @@
 주문 청구액입니다. `after_confirm`·`after_cancel` 이 넘기는 토스 응답에는 가상계좌 입금통보 검증값
 (`secret`)이 빠져 있습니다 — 큐로 실행되는 구독자의 작업 기록에 남지 않게 하기 위해서이고, 그 밖의
 응답 필드는 그대로입니다.
+
+`before_confirm`·`after_confirm` 의 첫 인자는 종전대로 이커머스 `Order` Model 입니다(시그니처 유지). 이 플러그인은
+이커머스 공개 결제 계약의 읽기 전용 조회(`OrderAccess::findOrderModel()`)로 그 Model 을 얻어 넘기며, 구독하는 확장도
+속성 읽기만 해야 합니다 — 주문이나 결제 행을 바꾸려면 이커머스 공개 계약(`Contracts\Payment\PaymentLifecycle`)을 쓰세요.
 <!-- @intent END -->
 
 ## 구독 훅

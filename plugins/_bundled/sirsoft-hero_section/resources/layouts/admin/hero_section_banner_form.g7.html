@@ -379,61 +379,173 @@
                   <span class="hs-text-required">*</span>
                 </label>
                 <p class="hs-form-hint hs:mb-2">$t:sirsoft-hero_section.admin.form.media.pc_video_hint|mb={{_computed.videoUploadMb}}</p>
-                <file-uploader data-type="composite" data-ref="pc_video_uploader" :maxFiles="1" disabled="{{_local.isSaving}}" maxSize="{{_computed.videoUploadMb}}" accept=".mp4,.webm" :autoUpload="true" size="sm" initialFiles="{{_local.form?.videos?.pc ? [_local.form.videos.pc] : []}}" uploadParams="{{({ device: 'pc', kind: 'video', temp_key: _global.tempKey ?? '' })}}">
-                  <prop name="apiEndpoints">
-                    <field name="upload" value="/api/plugins/sirsoft-hero_section/admin/banner-images"/>
-                    <field name="delete" value=""/>
+                <!-- 첨부 업로더 확장점 — PC 영상. 고르는 즉시 임시 묶음으로 올라가고 「저장」 때 붙는다. 삭제 주소가 비어 빼기는 화면에서만 하고,
+                     정렬 API 가 없어 정렬 주소는 null 이다. 계약(uploader)은 기본 업로더에 넘기는 값과 같다 -->
+                <extension-point name="attachment_uploader" data-ref="pc_video_uploader_slot" class="hs:contents">
+                  <prop name="uploader">
+                    <field name="version" :value="1"/>
+                    <field name="mode" value="upload"/>
+                    <field name="endpoints">
+                      <field name="upload" value="/api/plugins/sirsoft-hero_section/admin/banner-images"/>
+                      <field name="delete" value=""/>
+                      <field name="reorder" :value="null"/>
+                    </field>
+                    <field name="fields" value="{{({ device: 'pc', kind: 'video', temp_key: _global.tempKey ?? '' })}}"/>
+                    <field name="policy">
+                      <field name="accept" value=".mp4,.webm"/>
+                      <field name="maxSize" value="{{_computed.videoUploadMb}}"/>
+                      <field name="maxFiles" :value="1"/>
+                      <field name="maxConcurrentUploads" :value="1"/>
+                      <field name="imageCompression" :value="null"/>
+                    </field>
+                    <field name="collection" value="default"/>
+                    <field name="attachmentable">
+                      <field name="type" :value="null"/>
+                      <field name="id" :value="null"/>
+                    </field>
+                    <field name="triggerEvent" :value="null"/>
+                    <field name="initialFiles" value="{{_local.form?.videos?.pc ? [_local.form.videos.pc] : []}}"/>
+                    <field name="disabled" value="{{!!_local.isSaving}}"/>
+                    <field name="autoUpload" :value="true"/>
+                    <field name="context">
+                      <field name="owner" value="sirsoft-hero_section"/>
+                      <field name="purpose" value="banner_pc_video"/>
+                    </field>
                   </prop>
-                  <on type="change" event="onFilesChange">
+                  <callback name="onFilesChange">
                     <!-- PC 영상 올리기 진행 — 올리는 중인 파일이 있으면 저장 잠금 표시를 켠다. 아직 바뀐 것이 없던 폼이면 파일을 고른 것만으로 수정됨이 되지 않게 그대로 둔다 -->
                     <sequence>
-                      <set-state target="local" pcVideoUploadBlocked="{{($args[0] ?? []).some(f =&gt; f.status !== 'done')}}"/>
+                      <set-state target="local" pcVideoUploadBlocked="{{($event ?? []).some(f =&gt; f.status !== 'done')}}"/>
                       <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="false"/>
                     </sequence>
-                  </on>
-                  <on type="change" event="onUploadComplete">
+                  </callback>
+                  <callback name="onUploadComplete">
                     <!-- PC 영상 업로드 완료 — 받은 영상(임시)을 폼에 담는다. 배너에 붙는 것은 저장할 때다 -->
-                    <set-state target="local" form.videos.pc="{{$args[0]?.[0] ?? null}}"/>
-                  </on>
-                  <on type="change" event="onUploadError">
+                    <set-state target="local" form.videos.pc="{{$event?.[0] ?? null}}"/>
+                  </callback>
+                  <callback name="onUploadError">
                     <!-- 업로드 실패 사유(용량·형식 등)를 알린다 -->
-                    <toast type="error" message="{{$args[0]}}" icon="triangle-exclamation"/>
-                  </on>
-                  <on type="change" event="onRemove">
+                    <toast type="error" message="{{$event}}" icon="triangle-exclamation"/>
+                  </callback>
+                  <callback name="onRemove">
                     <!-- 화면에서 뺀 PC 영상을 폼에서도 비운다 — 저장해야 배너에서 빠진다 -->
                     <set-state target="local" :form.videos.pc="null"/>
-                  </on>
-                </file-uploader>
+                  </callback>
+                  <default>
+                    <file-uploader data-type="composite" data-ref="pc_video_uploader" :maxFiles="1" disabled="{{_local.isSaving}}" maxSize="{{_computed.videoUploadMb}}" accept=".mp4,.webm" :autoUpload="true" size="sm" initialFiles="{{_local.form?.videos?.pc ? [_local.form.videos.pc] : []}}" uploadParams="{{({ device: 'pc', kind: 'video', temp_key: _global.tempKey ?? '' })}}">
+                      <prop name="apiEndpoints">
+                        <field name="upload" value="/api/plugins/sirsoft-hero_section/admin/banner-images"/>
+                        <field name="delete" value=""/>
+                        <field name="reorder" :value="null"/>
+                      </prop>
+                      <on type="change" event="onFilesChange">
+                        <!-- PC 영상 올리기 진행 — 올리는 중인 파일이 있으면 저장 잠금 표시를 켠다. 아직 바뀐 것이 없던 폼이면 파일을 고른 것만으로 수정됨이 되지 않게 그대로 둔다 -->
+                        <sequence>
+                          <set-state target="local" pcVideoUploadBlocked="{{($args[0] ?? []).some(f =&gt; f.status !== 'done')}}"/>
+                          <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="false"/>
+                        </sequence>
+                      </on>
+                      <on type="change" event="onUploadComplete">
+                        <!-- PC 영상 업로드 완료 — 받은 영상(임시)을 폼에 담는다. 배너에 붙는 것은 저장할 때다 -->
+                        <set-state target="local" form.videos.pc="{{$args[0]?.[0] ?? null}}"/>
+                      </on>
+                      <on type="change" event="onUploadError">
+                        <!-- 업로드 실패 사유(용량·형식 등)를 알린다 -->
+                        <toast type="error" message="{{$args[0]}}" icon="triangle-exclamation"/>
+                      </on>
+                      <on type="change" event="onRemove">
+                        <!-- 화면에서 뺀 PC 영상을 폼에서도 비운다 — 저장해야 배너에서 빠진다 -->
+                        <set-state target="local" :form.videos.pc="null"/>
+                      </on>
+                    </file-uploader>
+                  </default>
+                </extension-point>
                 <p data-if="{{_local.errors?.pc_video || _local.errors?.pc_video_id}}" class="hs-form-error">{{_local.errors?.pc_video?.[0] ?? _local.errors?.pc_video_id?.[0] ?? ''}}</p>
               </div>
               <div data-ref="field_mobile_video" data-if="{{_computed.mediaType === 'video'}}">
                 <label class="hs-form-label">$t:sirsoft-hero_section.admin.form.media.mobile_video</label>
                 <p class="hs-form-hint hs:mb-2">$t:sirsoft-hero_section.admin.form.media.mobile_video_hint|mb={{_computed.videoUploadMb}}</p>
-                <file-uploader data-type="composite" data-ref="mobile_video_uploader" :maxFiles="1" disabled="{{_local.isSaving}}" maxSize="{{_computed.videoUploadMb}}" accept=".mp4,.webm" :autoUpload="true" size="sm" initialFiles="{{_local.form?.videos?.mobile ? [_local.form.videos.mobile] : []}}" uploadParams="{{({ device: 'mobile', kind: 'video', temp_key: _global.tempKey ?? '' })}}">
-                  <prop name="apiEndpoints">
-                    <field name="upload" value="/api/plugins/sirsoft-hero_section/admin/banner-images"/>
-                    <field name="delete" value=""/>
+                <!-- 첨부 업로더 확장점 — 휴대폰 영상. 고르는 즉시 임시 묶음으로 올라가고 「저장」 때 붙는다. 삭제 주소가 비어 빼기는 화면에서만 하고,
+                     정렬 API 가 없어 정렬 주소는 null 이다. 계약(uploader)은 기본 업로더에 넘기는 값과 같다 -->
+                <extension-point name="attachment_uploader" data-ref="mobile_video_uploader_slot" class="hs:contents">
+                  <prop name="uploader">
+                    <field name="version" :value="1"/>
+                    <field name="mode" value="upload"/>
+                    <field name="endpoints">
+                      <field name="upload" value="/api/plugins/sirsoft-hero_section/admin/banner-images"/>
+                      <field name="delete" value=""/>
+                      <field name="reorder" :value="null"/>
+                    </field>
+                    <field name="fields" value="{{({ device: 'mobile', kind: 'video', temp_key: _global.tempKey ?? '' })}}"/>
+                    <field name="policy">
+                      <field name="accept" value=".mp4,.webm"/>
+                      <field name="maxSize" value="{{_computed.videoUploadMb}}"/>
+                      <field name="maxFiles" :value="1"/>
+                      <field name="maxConcurrentUploads" :value="1"/>
+                      <field name="imageCompression" :value="null"/>
+                    </field>
+                    <field name="collection" value="default"/>
+                    <field name="attachmentable">
+                      <field name="type" :value="null"/>
+                      <field name="id" :value="null"/>
+                    </field>
+                    <field name="triggerEvent" :value="null"/>
+                    <field name="initialFiles" value="{{_local.form?.videos?.mobile ? [_local.form.videos.mobile] : []}}"/>
+                    <field name="disabled" value="{{!!_local.isSaving}}"/>
+                    <field name="autoUpload" :value="true"/>
+                    <field name="context">
+                      <field name="owner" value="sirsoft-hero_section"/>
+                      <field name="purpose" value="banner_mobile_video"/>
+                    </field>
                   </prop>
-                  <on type="change" event="onFilesChange">
+                  <callback name="onFilesChange">
                     <!-- 휴대폰 영상 올리기 진행 — PC 영상과 같이 저장 잠금 표시를 켜고, 파일 고르기만으로 수정됨이 되지 않게 둔다 -->
                     <sequence>
-                      <set-state target="local" mobileVideoUploadBlocked="{{($args[0] ?? []).some(f =&gt; f.status !== 'done')}}"/>
+                      <set-state target="local" mobileVideoUploadBlocked="{{($event ?? []).some(f =&gt; f.status !== 'done')}}"/>
                       <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="false"/>
                     </sequence>
-                  </on>
-                  <on type="change" event="onUploadComplete">
+                  </callback>
+                  <callback name="onUploadComplete">
                     <!-- 휴대폰 영상 업로드 완료 — 받은 영상(임시)을 폼에 담는다 -->
-                    <set-state target="local" form.videos.mobile="{{$args[0]?.[0] ?? null}}"/>
-                  </on>
-                  <on type="change" event="onUploadError">
+                    <set-state target="local" form.videos.mobile="{{$event?.[0] ?? null}}"/>
+                  </callback>
+                  <callback name="onUploadError">
                     <!-- 업로드 실패 사유를 알린다 -->
-                    <toast type="error" message="{{$args[0]}}" icon="triangle-exclamation"/>
-                  </on>
-                  <on type="change" event="onRemove">
+                    <toast type="error" message="{{$event}}" icon="triangle-exclamation"/>
+                  </callback>
+                  <callback name="onRemove">
                     <!-- 화면에서 뺀 휴대폰 영상을 폼에서도 비운다 — 저장해야 배너에서 빠진다 -->
                     <set-state target="local" :form.videos.mobile="null"/>
-                  </on>
-                </file-uploader>
+                  </callback>
+                  <default>
+                    <file-uploader data-type="composite" data-ref="mobile_video_uploader" :maxFiles="1" disabled="{{_local.isSaving}}" maxSize="{{_computed.videoUploadMb}}" accept=".mp4,.webm" :autoUpload="true" size="sm" initialFiles="{{_local.form?.videos?.mobile ? [_local.form.videos.mobile] : []}}" uploadParams="{{({ device: 'mobile', kind: 'video', temp_key: _global.tempKey ?? '' })}}">
+                      <prop name="apiEndpoints">
+                        <field name="upload" value="/api/plugins/sirsoft-hero_section/admin/banner-images"/>
+                        <field name="delete" value=""/>
+                        <field name="reorder" :value="null"/>
+                      </prop>
+                      <on type="change" event="onFilesChange">
+                        <!-- 휴대폰 영상 올리기 진행 — PC 영상과 같이 저장 잠금 표시를 켜고, 파일 고르기만으로 수정됨이 되지 않게 둔다 -->
+                        <sequence>
+                          <set-state target="local" mobileVideoUploadBlocked="{{($args[0] ?? []).some(f =&gt; f.status !== 'done')}}"/>
+                          <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="false"/>
+                        </sequence>
+                      </on>
+                      <on type="change" event="onUploadComplete">
+                        <!-- 휴대폰 영상 업로드 완료 — 받은 영상(임시)을 폼에 담는다 -->
+                        <set-state target="local" form.videos.mobile="{{$args[0]?.[0] ?? null}}"/>
+                      </on>
+                      <on type="change" event="onUploadError">
+                        <!-- 업로드 실패 사유를 알린다 -->
+                        <toast type="error" message="{{$args[0]}}" icon="triangle-exclamation"/>
+                      </on>
+                      <on type="change" event="onRemove">
+                        <!-- 화면에서 뺀 휴대폰 영상을 폼에서도 비운다 — 저장해야 배너에서 빠진다 -->
+                        <set-state target="local" :form.videos.mobile="null"/>
+                      </on>
+                    </file-uploader>
+                  </default>
+                </extension-point>
                 <p data-if="{{_local.errors?.mobile_video_id}}" class="hs-form-error">{{_local.errors?.mobile_video_id?.[0] ?? ''}}</p>
               </div>
             </div>
@@ -450,65 +562,177 @@
                 <p data-if="{{_computed.formLayout === 'background'}}" class="hs-form-hint hs:mb-2">$t:sirsoft-hero_section.admin.form.image.pc_hint|mb={{_computed.uploadMb}}</p>
                 <p data-ref="pc_image_promo_hint" data-if="{{_computed.formLayout === 'promo'}}" class="hs-form-hint hs:mb-2">$t:sirsoft-hero_section.admin.form.image.pc_promo_hint|mb={{_computed.uploadMb}}</p>
                 <p data-ref="pc_image_poster_hint" data-if="{{_computed.mediaType !== 'image'}}" class="hs-form-hint hs:mb-2">$t:sirsoft-hero_section.admin.form.media.poster_hint</p>
-                <!-- 업로드는 임시 묶음에만 들어가고, 빼기는 삭제 주소를 비워 화면에서만 뺀다 — 배너 이미지는 「저장」 때 바뀐다. PC 이미지는 필수라 빼면 저장이 잠긴다 -->
-                <file-uploader data-type="composite" data-ref="pc_image_uploader" :maxFiles="1" disabled="{{_local.isSaving}}" maxSize="{{_computed.uploadMb}}" accept=".jpg,.jpeg,.png,.webp" :autoUpload="true" size="sm" initialFiles="{{_local.form?.images?.pc ? [_local.form.images.pc] : []}}" uploadParams="{{({ device: 'pc', temp_key: _global.tempKey ?? '' })}}">
-                  <prop name="apiEndpoints">
-                    <field name="upload" value="/api/plugins/sirsoft-hero_section/admin/banner-images"/>
-                    <field name="delete" value=""/>
+                <!-- 첨부 업로더 확장점 — PC 이미지. 고르는 즉시 임시 묶음으로 올라가고 「저장」 때 붙는다. 삭제 주소가 비어 빼기는 화면에서만 하고,
+                     정렬 API 가 없어 정렬 주소는 null 이다. 계약(uploader)은 기본 업로더에 넘기는 값과 같다 -->
+                <extension-point name="attachment_uploader" data-ref="pc_image_uploader_slot" class="hs:contents">
+                  <prop name="uploader">
+                    <field name="version" :value="1"/>
+                    <field name="mode" value="upload"/>
+                    <field name="endpoints">
+                      <field name="upload" value="/api/plugins/sirsoft-hero_section/admin/banner-images"/>
+                      <field name="delete" value=""/>
+                      <field name="reorder" :value="null"/>
+                    </field>
+                    <field name="fields" value="{{({ device: 'pc', temp_key: _global.tempKey ?? '' })}}"/>
+                    <field name="policy">
+                      <field name="accept" value=".jpg,.jpeg,.png,.webp"/>
+                      <field name="maxSize" value="{{_computed.uploadMb}}"/>
+                      <field name="maxFiles" :value="1"/>
+                      <field name="maxConcurrentUploads" :value="1"/>
+                      <field name="imageCompression" :value="null"/>
+                    </field>
+                    <field name="collection" value="default"/>
+                    <field name="attachmentable">
+                      <field name="type" :value="null"/>
+                      <field name="id" :value="null"/>
+                    </field>
+                    <field name="triggerEvent" :value="null"/>
+                    <field name="initialFiles" value="{{_local.form?.images?.pc ? [_local.form.images.pc] : []}}"/>
+                    <field name="disabled" value="{{!!_local.isSaving}}"/>
+                    <field name="autoUpload" :value="true"/>
+                    <field name="context">
+                      <field name="owner" value="sirsoft-hero_section"/>
+                      <field name="purpose" value="banner_pc_image"/>
+                    </field>
                   </prop>
-                  <on type="change" event="onFilesChange">
+                  <callback name="onFilesChange">
                     <!-- PC 이미지 올리기 진행 — 올리는 중이면 저장 잠금 표시를 켜고, 파일 고르기만으로 수정됨이 되지 않게 둔다 -->
                     <sequence>
-                      <set-state target="local" pcUploadBlocked="{{($args[0] ?? []).some(f =&gt; f.status !== 'done')}}"/>
+                      <set-state target="local" pcUploadBlocked="{{($event ?? []).some(f =&gt; f.status !== 'done')}}"/>
                       <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="false"/>
                     </sequence>
-                  </on>
-                  <on type="change" event="onUploadComplete">
+                  </callback>
+                  <callback name="onUploadComplete">
                     <!-- PC 이미지 업로드 완료 — 받은 이미지(임시)를 폼에 담는다. 배너에 붙는 것은 저장할 때다 -->
-                    <set-state target="local" form.images.pc="{{$args[0]?.[0] ?? null}}"/>
-                  </on>
-                  <on type="change" event="onUploadError">
+                    <set-state target="local" form.images.pc="{{$event?.[0] ?? null}}"/>
+                  </callback>
+                  <callback name="onUploadError">
                     <!-- 업로드 실패 사유(용량·형식 등)를 알린다 -->
-                    <toast type="error" message="{{$args[0]}}" icon="triangle-exclamation"/>
-                  </on>
-                  <on type="change" event="onRemove">
+                    <toast type="error" message="{{$event}}" icon="triangle-exclamation"/>
+                  </callback>
+                  <callback name="onRemove">
                     <!-- 화면에서 뺀 PC 이미지를 폼에서도 비운다 — 저장해야 배너에서 빠진다 -->
                     <set-state target="local" :form.images.pc="null"/>
-                  </on>
-                </file-uploader>
+                  </callback>
+                  <default>
+                    <!-- 업로드는 임시 묶음에만 들어가고, 빼기는 삭제 주소를 비워 화면에서만 뺀다 — 배너 이미지는 「저장」 때 바뀐다. PC 이미지는 필수라 빼면 저장이 잠긴다 -->
+                    <file-uploader data-type="composite" data-ref="pc_image_uploader" :maxFiles="1" disabled="{{_local.isSaving}}" maxSize="{{_computed.uploadMb}}" accept=".jpg,.jpeg,.png,.webp" :autoUpload="true" size="sm" initialFiles="{{_local.form?.images?.pc ? [_local.form.images.pc] : []}}" uploadParams="{{({ device: 'pc', temp_key: _global.tempKey ?? '' })}}">
+                      <prop name="apiEndpoints">
+                        <field name="upload" value="/api/plugins/sirsoft-hero_section/admin/banner-images"/>
+                        <field name="delete" value=""/>
+                        <field name="reorder" :value="null"/>
+                      </prop>
+                      <on type="change" event="onFilesChange">
+                        <!-- PC 이미지 올리기 진행 — 올리는 중이면 저장 잠금 표시를 켜고, 파일 고르기만으로 수정됨이 되지 않게 둔다 -->
+                        <sequence>
+                          <set-state target="local" pcUploadBlocked="{{($args[0] ?? []).some(f =&gt; f.status !== 'done')}}"/>
+                          <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="false"/>
+                        </sequence>
+                      </on>
+                      <on type="change" event="onUploadComplete">
+                        <!-- PC 이미지 업로드 완료 — 받은 이미지(임시)를 폼에 담는다. 배너에 붙는 것은 저장할 때다 -->
+                        <set-state target="local" form.images.pc="{{$args[0]?.[0] ?? null}}"/>
+                      </on>
+                      <on type="change" event="onUploadError">
+                        <!-- 업로드 실패 사유(용량·형식 등)를 알린다 -->
+                        <toast type="error" message="{{$args[0]}}" icon="triangle-exclamation"/>
+                      </on>
+                      <on type="change" event="onRemove">
+                        <!-- 화면에서 뺀 PC 이미지를 폼에서도 비운다 — 저장해야 배너에서 빠진다 -->
+                        <set-state target="local" :form.images.pc="null"/>
+                      </on>
+                    </file-uploader>
+                  </default>
+                </extension-point>
                 <p data-if="{{_computed.pcSizeMismatch}}" data-ref="pc_size_warning" class="hs:mt-2 hs:text-sm hs:text-amber-700 hs:dark:text-amber-300">$t:sirsoft-hero_section.admin.form.image.size_mismatch|width={{_local.form?.images?.pc?.width}}|height={{_local.form?.images?.pc?.height}}|recommended=1920×640</p>
                 <p data-if="{{_local.errors?.temp_key || _local.errors?.pc_image_id || _local.errors?.pc_image}}" class="hs-form-error">{{_local.errors?.temp_key?.[0] ?? _local.errors?.pc_image_id?.[0] ?? _local.errors?.pc_image?.[0] ?? ''}}</p>
               </div>
               <div data-ref="field_mobile_image">
                 <label class="hs-form-label">$t:sirsoft-hero_section.admin.form.image.mobile</label>
                 <p class="hs-form-hint hs:mb-2">$t:sirsoft-hero_section.admin.form.image.mobile_hint|mb={{_computed.uploadMb}}</p>
-                <!-- PC 와 같이 화면에서만 뺀다 — 빼고 저장하면 그때 모바일 이미지가 빠진다(저장하지 않으면 그대로). 저장은 화면에 남은
-                  이미지 ID 만 붙이므로 뺀 임시 이미지는 붙지 않고 정리 명령이 지운다 -->
-                <file-uploader data-type="composite" data-ref="mobile_image_uploader" :maxFiles="1" disabled="{{_local.isSaving}}" maxSize="{{_computed.uploadMb}}" accept=".jpg,.jpeg,.png,.webp" :autoUpload="true" size="sm" initialFiles="{{_local.form?.images?.mobile ? [_local.form.images.mobile] : []}}" uploadParams="{{({ device: 'mobile', temp_key: _global.tempKey ?? '' })}}">
-                  <prop name="apiEndpoints">
-                    <field name="upload" value="/api/plugins/sirsoft-hero_section/admin/banner-images"/>
-                    <field name="delete" value=""/>
+                <!-- 첨부 업로더 확장점 — 휴대폰 이미지. 고르는 즉시 임시 묶음으로 올라가고 「저장」 때 붙는다. 삭제 주소가 비어 빼기는 화면에서만 하고,
+                     정렬 API 가 없어 정렬 주소는 null 이다. 계약(uploader)은 기본 업로더에 넘기는 값과 같다 -->
+                <extension-point name="attachment_uploader" data-ref="mobile_image_uploader_slot" class="hs:contents">
+                  <prop name="uploader">
+                    <field name="version" :value="1"/>
+                    <field name="mode" value="upload"/>
+                    <field name="endpoints">
+                      <field name="upload" value="/api/plugins/sirsoft-hero_section/admin/banner-images"/>
+                      <field name="delete" value=""/>
+                      <field name="reorder" :value="null"/>
+                    </field>
+                    <field name="fields" value="{{({ device: 'mobile', temp_key: _global.tempKey ?? '' })}}"/>
+                    <field name="policy">
+                      <field name="accept" value=".jpg,.jpeg,.png,.webp"/>
+                      <field name="maxSize" value="{{_computed.uploadMb}}"/>
+                      <field name="maxFiles" :value="1"/>
+                      <field name="maxConcurrentUploads" :value="1"/>
+                      <field name="imageCompression" :value="null"/>
+                    </field>
+                    <field name="collection" value="default"/>
+                    <field name="attachmentable">
+                      <field name="type" :value="null"/>
+                      <field name="id" :value="null"/>
+                    </field>
+                    <field name="triggerEvent" :value="null"/>
+                    <field name="initialFiles" value="{{_local.form?.images?.mobile ? [_local.form.images.mobile] : []}}"/>
+                    <field name="disabled" value="{{!!_local.isSaving}}"/>
+                    <field name="autoUpload" :value="true"/>
+                    <field name="context">
+                      <field name="owner" value="sirsoft-hero_section"/>
+                      <field name="purpose" value="banner_mobile_image"/>
+                    </field>
                   </prop>
-                  <on type="change" event="onFilesChange">
+                  <callback name="onFilesChange">
                     <!-- 휴대폰 이미지 올리기 진행 — PC 이미지와 같이 저장 잠금 표시를 켜고, 파일 고르기만으로 수정됨이 되지 않게 둔다 -->
                     <sequence>
-                      <set-state target="local" mobileUploadBlocked="{{($args[0] ?? []).some(f =&gt; f.status !== 'done')}}"/>
+                      <set-state target="local" mobileUploadBlocked="{{($event ?? []).some(f =&gt; f.status !== 'done')}}"/>
                       <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="false"/>
                     </sequence>
-                  </on>
-                  <on type="change" event="onUploadComplete">
+                  </callback>
+                  <callback name="onUploadComplete">
                     <!-- 휴대폰 이미지 업로드 완료 — 받은 이미지(임시)를 폼에 담는다 -->
-                    <set-state target="local" form.images.mobile="{{$args[0]?.[0] ?? null}}"/>
-                  </on>
-                  <on type="change" event="onUploadError">
+                    <set-state target="local" form.images.mobile="{{$event?.[0] ?? null}}"/>
+                  </callback>
+                  <callback name="onUploadError">
                     <!-- 업로드 실패 사유를 알린다 -->
-                    <toast type="error" message="{{$args[0]}}" icon="triangle-exclamation"/>
-                  </on>
-                  <on type="change" event="onRemove">
+                    <toast type="error" message="{{$event}}" icon="triangle-exclamation"/>
+                  </callback>
+                  <callback name="onRemove">
                     <!-- 화면에서 뺀 휴대폰 이미지를 폼에서도 비운다 — 저장해야 배너에서 빠진다 -->
                     <set-state target="local" :form.images.mobile="null"/>
-                  </on>
-                </file-uploader>
+                  </callback>
+                  <default>
+                    <!-- PC 와 같이 화면에서만 뺀다 — 빼고 저장하면 그때 모바일 이미지가 빠진다(저장하지 않으면 그대로). 저장은 화면에 남은
+                      이미지 ID 만 붙이므로 뺀 임시 이미지는 붙지 않고 정리 명령이 지운다 -->
+                    <file-uploader data-type="composite" data-ref="mobile_image_uploader" :maxFiles="1" disabled="{{_local.isSaving}}" maxSize="{{_computed.uploadMb}}" accept=".jpg,.jpeg,.png,.webp" :autoUpload="true" size="sm" initialFiles="{{_local.form?.images?.mobile ? [_local.form.images.mobile] : []}}" uploadParams="{{({ device: 'mobile', temp_key: _global.tempKey ?? '' })}}">
+                      <prop name="apiEndpoints">
+                        <field name="upload" value="/api/plugins/sirsoft-hero_section/admin/banner-images"/>
+                        <field name="delete" value=""/>
+                        <field name="reorder" :value="null"/>
+                      </prop>
+                      <on type="change" event="onFilesChange">
+                        <!-- 휴대폰 이미지 올리기 진행 — PC 이미지와 같이 저장 잠금 표시를 켜고, 파일 고르기만으로 수정됨이 되지 않게 둔다 -->
+                        <sequence>
+                          <set-state target="local" mobileUploadBlocked="{{($args[0] ?? []).some(f =&gt; f.status !== 'done')}}"/>
+                          <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="false"/>
+                        </sequence>
+                      </on>
+                      <on type="change" event="onUploadComplete">
+                        <!-- 휴대폰 이미지 업로드 완료 — 받은 이미지(임시)를 폼에 담는다 -->
+                        <set-state target="local" form.images.mobile="{{$args[0]?.[0] ?? null}}"/>
+                      </on>
+                      <on type="change" event="onUploadError">
+                        <!-- 업로드 실패 사유를 알린다 -->
+                        <toast type="error" message="{{$args[0]}}" icon="triangle-exclamation"/>
+                      </on>
+                      <on type="change" event="onRemove">
+                        <!-- 화면에서 뺀 휴대폰 이미지를 폼에서도 비운다 — 저장해야 배너에서 빠진다 -->
+                        <set-state target="local" :form.images.mobile="null"/>
+                      </on>
+                    </file-uploader>
+                  </default>
+                </extension-point>
                 <p data-if="{{_computed.mobileSizeMismatch}}" data-ref="mobile_size_warning" class="hs:mt-2 hs:text-sm hs:text-amber-700 hs:dark:text-amber-300">$t:sirsoft-hero_section.admin.form.image.size_mismatch|width={{_local.form?.images?.mobile?.width}}|height={{_local.form?.images?.mobile?.height}}|recommended=750×1000</p>
                 <p data-if="{{_local.errors?.mobile_image_id}}" class="hs-form-error">{{_local.errors?.mobile_image_id?.[0] ?? ''}}</p>
               </div>

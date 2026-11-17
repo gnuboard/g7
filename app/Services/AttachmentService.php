@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Services\Concerns\ResolvesRowStorage;
 use App\Support\Favicon\FaviconPolicy;
 use App\Support\ImageResizer;
+use App\Support\PrivateAttachmentDisk;
 use App\Support\SettingAttachmentReferences;
 use App\Support\UploadedFileName;
 use App\Thumbnails\DTO\ThumbnailSource;
@@ -118,7 +119,8 @@ class AttachmentService
         $path = "{$datePath}/{$storedFilename}";
 
         // 스토리지에 파일 저장
-        $disk = config('attachment.disk');
+        // 비공개 첨부 저장소 선택을 따른다(#916) — ATTACHMENT_DISK env 명시 > 선택 > 종전 규칙(s3 이면 s3, 아니면 attachments)
+        $disk = PrivateAttachmentDisk::forCore();
         $this->storage->withDisk($disk)->put('', $path, file_get_contents($file->getRealPath()));
 
         // 현재 컬렉션의 최대 order 조회

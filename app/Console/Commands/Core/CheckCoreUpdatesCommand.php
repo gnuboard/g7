@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Core;
 
 use App\Console\Commands\Traits\LocalizesDescription;
+use App\Extension\Integrity\BuiltinTrustKeys;
 use App\Services\CoreUpdateService;
 use Illuminate\Console\Command;
 
@@ -27,6 +28,13 @@ class CheckCoreUpdatesCommand extends Command
         $this->newLine();
         $this->info(__('common.console.core_check_updates.current_version', ['version' => $result['current_version']]));
         $this->info(__('common.console.core_check_updates.latest_version', ['version' => $result['latest_version']]));
+
+        // 코어 패키지는 내장 신뢰 키로만 검증한다 — 쓸 수 있는 키가 없으면(비었거나 전부 폐기) 공식 서명 코어 업데이트도
+        // 「신뢰하지 않는 키」로 막힌다. about·extension:trust-key list 와 같은 판정이다
+        if (! BuiltinTrustKeys::hasUsableKey()) {
+            $this->newLine();
+            $this->warn('⚠️  '.__('extensions.commands.trust_key.builtin_empty'));
+        }
 
         if (! empty($result['check_failed'])) {
             $this->newLine();

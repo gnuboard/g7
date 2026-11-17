@@ -41,6 +41,7 @@ use Modules\Sirsoft\Ecommerce\Fields\OrderContactFields;
 use Modules\Sirsoft\Ecommerce\Helpers\DeviceDetector;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderOption;
+use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Models\ProductOption;
 use Modules\Sirsoft\Ecommerce\Models\TempOrder;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CartRepositoryInterface;
@@ -1967,6 +1968,10 @@ class OrderProcessingService
                 'receipt_url' => $paymentData['receipt_url'] ?? null,
                 'payment_meta' => $paymentData['payment_meta'] ?? null,
                 'payment_device' => $paymentData['payment_device'] ?? null,
+                // 결제사 계약(PaymentGatewayBridge)이 넘길 때만 — 결제사 id 인수와 에스크로 여부를 같은 트랜잭션에서 쓴다.
+                // 넘기지 않는 기존 호출자는 null 이라 걸러져 동작이 같다(#916).
+                'pg_provider' => $paymentData['pg_provider'] ?? null,
+                'is_escrow' => $paymentData['is_escrow'] ?? null,
             ], fn ($v) => $v !== null));
 
             // 마일리지 사용 차감 (payment_complete 타이밍 — 결제가 실제 완료된 시점에 차감).
@@ -3254,6 +3259,172 @@ class OrderProcessingService
         ]);
 
         return $order->fresh();
+    }
+
+    /**
+     * 재결제 복구를 막아야 하는 이력이 있는지 확인합니다 (#916, D34).
+     *
+     * 결제 완료 이력(주문·결제 행 결제 시각)과 부분 취소 이력(결제 행 누적 취소액, 통화별 누적 취소액, 주문 상품 취소 수량)을 본다.
+     * 결제 행 취소 이력(`cancel_history`)은 보지 않는다 — 결제창 닫힘이 USER_CANCEL 한 줄을 남기므로 그것으로 막으면 정상 복구가 모두 막힌다.
+     *
+     * @param  Order  $order  잠긴 주문
+     * @param  OrderPayment  $payment  잠긴 결제 행
+     * @return string|null 막는 사유(paid_history, partial_cancel_history), 없으면 null
+     */
+    public function retryRestoreBlocker(Order $order, OrderPayment $payment): ?string
+    {
+        if ($order->paid_at !== null || $payment->paid_at !== null) {
+            return 'paid_history';
+        }
+
+        $mcCancelled = is_array($payment->mc_cancelled_amount) ? $payment->mc_cancelled_amount : [];
+        $hasMcCancelled = array_filter($mcCancelled, fn ($amount) => (float) $amount > 0) !== [];
+
+        if ((float) $payment->cancelled_amount > 0 || $hasMcCancelled
+            || $order->options()->where('cancelled_quantity', '>', 0)->exists()) {
+            return 'partial_cancel_history';
+        }
+
+        return null;
+    }
+
+    /**
+     * 결제사가 재시도 가능하다고 판정한 실패 주문을 결제 대기로 되돌립니다 (#916, D34).
+     *
+     * 호출자가 주문 → 결제 행 순으로 잠근 트랜잭션 안에서 부른다. 주문 meta 와 결제 meta 쓰기는 결제사가 지금까지 직접 하던
+     * 알고리즘을 순서까지 옮긴 것이라 결과가 같다(특성화 녹화로 대조). 달라진 점은 결제 실패 처리가 취소로 바꾼 주문 상품을
+     * 주문 대기로 함께 되돌리는 것 — 되돌리지 않으면 재결제가 성공해도 결제완료 동기화가 취소 상품을 건너뛰어
+     * 「주문 결제완료 / 상품 취소」가 남는다. 훅은 커밋 뒤 {@see firePaymentRetryRestored()} 로 발화한다.
+     *
+     * @param  Order  $order  잠긴 주문(결제 취소 상태)
+     * @param  OrderPayment  $payment  잠긴 결제 행(실패 또는 취소 상태)
+     * @param  string  $metaPrefix  주문 meta 키 접두(결제사 id)
+     * @param  bool  $clearTransaction  거래번호와 카드 승인번호도 비울지
+     * @param  bool  $recordFailureStage  실패 이력에 결제 meta 의 failure_stage 를 남기고 그 키도 지울지
+     * @return array{retry_count: int, option_changes: array<int, array<string, mixed>>, before: array<string, mixed>} 훅 발화 재료
+     */
+    public function restorePaymentForRetry(
+        Order $order,
+        OrderPayment $payment,
+        string $metaPrefix,
+        bool $clearTransaction,
+        bool $recordFailureStage,
+    ): array {
+        $beforeSnapshot = $order->toArray();
+
+        // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 결제사 플러그인 현행과 같은 값
+        $now = now()->toIso8601String();
+        $orderMeta = $order->order_meta ?? [];
+        $paymentMeta = $payment->payment_meta ?? [];
+
+        $previousFailure = [
+            'code' => $orderMeta['payment_failure_code'] ?? $paymentMeta['failure_code'] ?? null,
+            'message' => $orderMeta['payment_failure_message'] ?? $paymentMeta['failure_message'] ?? null,
+            'failed_at' => $orderMeta['payment_failed_at'] ?? $paymentMeta['failed_at'] ?? null,
+        ];
+        if ($recordFailureStage) {
+            $previousFailure['stage'] = $paymentMeta['failure_stage'] ?? null;
+        }
+        $previousFailure = array_filter($previousFailure, fn ($value) => $value !== null && $value !== '');
+
+        $historyKey = $metaPrefix.'_retry_failures';
+        if ($previousFailure !== []) {
+            $history = $orderMeta[$historyKey] ?? [];
+            $history = is_array($history) ? $history : [];
+            $history[] = $previousFailure;
+            $orderMeta[$historyKey] = array_slice($history, -5);
+        }
+
+        unset(
+            $orderMeta['payment_failure_code'],
+            $orderMeta['payment_failure_message'],
+            $orderMeta['payment_failed_at'],
+            $paymentMeta['failure_code'],
+            $paymentMeta['failure_message'],
+            $paymentMeta['failed_at'],
+            $paymentMeta['failure_source'],
+        );
+        if ($recordFailureStage) {
+            unset($paymentMeta['failure_stage']);
+        }
+
+        $orderMeta[$metaPrefix.'_retry_count'] = (int) ($orderMeta[$metaPrefix.'_retry_count'] ?? 0) + 1;
+        $orderMeta[$metaPrefix.'_retry_started_at'] = $now;
+        $paymentMeta['retry_count'] = (int) ($paymentMeta['retry_count'] ?? 0) + 1;
+        $paymentMeta['retry_started_at'] = $now;
+
+        $order->update([
+            'order_status' => OrderStatusEnum::PENDING_ORDER,
+            'order_meta' => $orderMeta,
+        ]);
+
+        $paymentUpdates = [
+            'payment_status' => PaymentStatusEnum::READY->value,
+            'payment_meta' => $paymentMeta,
+            'paid_at' => null,
+            'cancelled_at' => null,
+        ];
+        if ($clearTransaction) {
+            $paymentUpdates['transaction_id'] = null;
+            $paymentUpdates['card_approval_number'] = null;
+        }
+        $payment->update($paymentUpdates);
+
+        // 결제 실패 처리(syncOptionStatuses CANCELLED)가 취소로 바꾼 상품만 — 클레임으로 떼어 낸 수량이 있는 행은 대상이 아니다
+        // (그런 주문은 retryRestoreBlocker 가 먼저 막는다).
+        $query = $order->options()
+            ->where('option_status', OrderStatusEnum::CANCELLED->value)
+            ->where(fn ($q) => $q->whereNull('cancelled_quantity')->orWhere('cancelled_quantity', 0));
+
+        $optionChanges = $query->get(['id', 'order_id', 'option_status'])
+            ->map(fn ($option): array => [
+                'order_option_id' => (int) $option->id,
+                'order_id' => (int) $option->order_id,
+                'previous' => OrderStatusEnum::CANCELLED->value,
+                'new' => OrderStatusEnum::PENDING_ORDER->value,
+            ])
+            ->values()
+            ->all();
+
+        if ($optionChanges !== []) {
+            $query->update([
+                'option_status' => OrderStatusEnum::PENDING_ORDER->value,
+                'updated_at' => Carbon::now(),
+            ]);
+        }
+
+        return [
+            'retry_count' => $orderMeta[$metaPrefix.'_retry_count'],
+            'option_changes' => $optionChanges,
+            'before' => $beforeSnapshot,
+        ];
+    }
+
+    /**
+     * 재결제 복구 뒤 훅을 발화합니다(커밋 뒤 호출) — 상품 상태 동기화, 주문 상태 전이, 재결제 복구 (#916).
+     *
+     * @param  Order  $order  복구된 주문
+     * @param  string  $provider  결제사 id
+     * @param  array{option_changes: array<int, array<string, mixed>>, before: array<string, mixed>}  $restored  restorePaymentForRetry() 결과
+     * @return void 반환값 없음
+     */
+    public function firePaymentRetryRestored(Order $order, string $provider, array $restored): void
+    {
+        if ($restored['option_changes'] !== []) {
+            HookManager::doAction(
+                'sirsoft-ecommerce.order_option.after_sync_status',
+                $restored['option_changes'],
+                OrderStatusEnum::PENDING_ORDER->value,
+                'payment_retry_restore',
+            );
+        }
+
+        $fresh = $order->fresh() ?? $order;
+        $previous = $restored['before']['order_status'] ?? OrderStatusEnum::CANCELLED->value;
+        $previous = $previous instanceof OrderStatusEnum ? $previous->value : (string) $previous;
+
+        HookManager::doAction('sirsoft-ecommerce.order.after_status_change', $fresh, $previous, OrderStatusEnum::PENDING_ORDER->value);
+        HookManager::doAction('sirsoft-ecommerce.order.payment_retry_restored', $fresh, $provider, $restored['before']);
     }
 
     /**

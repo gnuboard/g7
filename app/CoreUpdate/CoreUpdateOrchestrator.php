@@ -4,6 +4,7 @@ namespace App\CoreUpdate;
 
 use App\Console\Commands\Core\ExecuteBundledUpdatesCommand;
 use App\Exceptions\CoreUpdateOperationException;
+use App\Exceptions\PackageIntegrityException;
 use App\Execution\CommandRunnerResolver;
 use App\Execution\CommandRunResult;
 use App\Execution\Exceptions\CommandExecutionException;
@@ -14,6 +15,7 @@ use App\Extension\Helpers\CoreBackupHelper;
 use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\Helpers\StorageLinkHelper;
 use App\Extension\HookManager;
+use App\Extension\Integrity\PackageVerification;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
@@ -255,6 +257,7 @@ class CoreUpdateOrchestrator
      * @return array<string, mixed> 착수 후 상태
      *
      * @throws CoreUpdateOperationException 이미 실행 중이거나 지정한 ZIP 이 없는 경우
+     * @throws PackageIntegrityException 배포본 서명이 맞지 않거나·미신뢰 키거나·미서명 확인이 필요한 경우 (착수 전, 7.2.0)
      */
     public function start(CoreUpdateOptions $options, ?int $userId): array
     {
@@ -277,6 +280,10 @@ class CoreUpdateOrchestrator
                     'path' => (string) $options->zipFile,
                 ]);
             }
+
+            // 패키지 서명 검증(7.2.0) — 유지보수 모드를 켜기 전에 미서명 확인(409)·불일치(422)로 멈춘다.
+            // 서명 파일은 같은 폴더의 `{zip}.sig.json` 을 자동으로 쓴다. 내려받기 단계에서 한 번 더 확인한다.
+            $this->service->verifyCoreZipIntegrity($zipPath, $options->integrityOptions());
         } else {
             $updateInfo = $this->service->checkForUpdates();
 
@@ -289,6 +296,9 @@ class CoreUpdateOrchestrator
             }
 
             $toVersion = (string) $updateInfo['latest_version'];
+
+            // 릴리스에 서명 자산이 없으면 착수 전에 미서명 정책을 묻는다(7.2.0) — 실제 검증은 내려받은 뒤
+            $this->service->preflightReleaseIntegrity($toVersion, $options->integrityOptions());
         }
 
         $runId = $this->state->start($options, $fromVersion, $toVersion, $userId);
@@ -790,18 +800,24 @@ class CoreUpdateOrchestrator
                     ]);
                 }
 
+                // 착수 뒤 파일이 바뀌지 않았는지 해제 전에 다시 검증한다(7.2.0)
+                $verification = $this->service->verifyCoreZipIntegrity($zipPath, $options->integrityOptions());
+
                 $root = $this->service->createPendingDirectory();
                 $this->state->mergeContext(['pending_path' => $root]);
-                $progress = ['pending_root' => $root, 'archive' => $zipPath, 'from' => 0, 'manual' => true];
+                $progress = ['pending_root' => $root, 'archive' => $zipPath, 'from' => 0, 'manual' => true, 'integrity' => $verification->toArray()];
             } else {
                 $toVersion = (string) ($this->state->all()['to_version'] ?? '');
                 $root = $this->service->createPendingDirectory();
                 $this->state->mergeContext(['pending_path' => $root]);
+                // 서명 자산이 있으면 그것을 받아 해제 전에 검증한다(7.2.0) — 결과는 다 푼 뒤 버전 대조에 쓴다
+                $acquired = $this->service->fetchVerifiedReleaseArchive($toVersion, $root, $options->integrityOptions());
                 $progress = [
                     'pending_root' => $root,
-                    'archive' => $this->service->fetchReleaseArchive($toVersion, $root),
+                    'archive' => $acquired->zipPath,
                     'from' => 0,
                     'manual' => false,
+                    'integrity' => $acquired->verification->toArray(),
                 ];
             }
 
@@ -834,6 +850,11 @@ class CoreUpdateOrchestrator
         }
 
         $pendingPath = (string) $chunk['source_path'];
+
+        // 다 풀었다 — 서명된 버전과 푼 배포본의 config/app.php 버전을 대조한다(7.2.0). 불일치면 이 단계가 실패해 되돌린다.
+        if (is_array($progress['integrity'] ?? null)) {
+            $this->service->confirmCoreIntegrity(PackageVerification::fromArray($progress['integrity']), $pendingPath, $options->integrityOptions());
+        }
 
         if (($progress['manual'] ?? false) !== true && is_file((string) $progress['archive'])) {
             @unlink((string) $progress['archive']);

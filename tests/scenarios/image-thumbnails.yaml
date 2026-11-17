@@ -29,6 +29,7 @@ effects:
   - permanent_bypass_shared_max_age_follows_thumbnail_ttl
   - truncated_source_copy_is_rejected
   - public_thumbnail_disk_limited_to_catalog
+  - gated_thumbnail_disk_limited_to_allowlist   # 권한 썸네일 디스크는 ThumbnailDiskOptions 판정 밖이면 비공개 디스크, 판정 실패 시 thumbnails·s3 로 좁힘
   - retired_thumbnail_disk_is_purged
   - thumbnail_cache_capped_by_source_max_age
   - core_attachment_original_private_only_behind_gate

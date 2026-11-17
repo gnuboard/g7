@@ -10,6 +10,8 @@ use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Exceptions\IdentityVerificationRequiredException;
 use App\Extension\ExtensionManager;
 use App\Extension\HookManager;
+use App\Extension\ModuleManager;
+use App\Extension\PluginManager;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Helpers\TimezoneHelper;
 use App\Http\Resources\AttachmentResource;
@@ -30,11 +32,13 @@ use App\Support\Favicon\FaviconPolicy;
 use App\Support\OpcacheStatus;
 use App\Support\PhpExtensionProbe;
 use App\Support\PhpExtensionRequirements;
+use App\Support\PrivateAttachmentDisk;
 use App\Support\ProcessOutputEncoding;
 use App\Support\RouteCacheHelper;
 use App\Support\SearchScopes;
 use App\Support\Settings\ComputedSettingFields;
 use App\Support\SettingsVersion;
+use App\Support\ThumbnailDiskOptions;
 use App\Support\TrustedProxyDiagnostic;
 use App\Support\TrustedProxySetting;
 use App\Thumbnails\ThumbnailConfig;
@@ -403,6 +407,84 @@ class SettingsService
         }
 
         return $settings;
+    }
+
+    /**
+     * 환경설정 > 드라이버 「비공개 첨부 저장소」 카드가 읽는 메타를 만듭니다 (#916).
+     *
+     * - `pins`: `.env` 로 비공개 원본 디스크를 고정해 관리자 선택을 따르지 않는 주체(코어 `ATTACHMENT_DISK`, 확장별 env).
+     * - `orphaned`: 저장된 선택이 이 서버에 정의되지 않은 디스크(디스크를 등록한 플러그인이 꺼짐)라 「기본」으로 동작 중인지.
+     *
+     * @return array{pins: list<array{owner: string, env: string, disk: string}>, orphaned: bool} 메타
+     */
+    public function privateAttachmentMeta(): array
+    {
+        $pins = [];
+
+        $coreExplicit = config('attachment.disk_explicit');
+        if (is_string($coreExplicit) && $coreExplicit !== '') {
+            $pins[] = ['owner' => 'core', 'env' => 'ATTACHMENT_DISK', 'disk' => $coreExplicit];
+        }
+
+        $extensions = [];
+        try {
+            $extensions = [
+                ...array_values(app(ModuleManager::class)->getActiveModules()),
+                ...array_values(app(PluginManager::class)->getActivePlugins()),
+            ];
+        } catch (\Throwable) {
+            // 확장 목록을 못 읽어도 화면 메타 전체를 깨지 않는다 — 고정 안내만 빠진다
+        }
+
+        foreach ($extensions as $extension) {
+            if (! method_exists($extension, 'getPrivateAttachmentDiskPin')) {
+                continue;
+            }
+            $pin = $extension->getPrivateAttachmentDiskPin();
+            if (is_array($pin) && is_string($pin['env'] ?? null) && is_string($pin['disk'] ?? null)) {
+                $pins[] = ['owner' => $extension->getIdentifier(), 'env' => $pin['env'], 'disk' => $pin['disk']];
+            }
+        }
+
+        return ['pins' => $pins, 'orphaned' => PrivateAttachmentDisk::isOrphaned()];
+    }
+
+    /**
+     * 저장은 허용하지만 운영자에게 알려야 할 저장소 조합 경고를 만듭니다 (#916 D5).
+     *
+     * 비공개 첨부 저장소를 공개 자산 디스크와 같은 디스크로 고르면 같은 버킷의 공개 정책이 비공개 원본에도 걸릴 수 있다 —
+     * 서버 서빙 경로가 권한을 확인해도 버킷 주소로 직접 읽힐 수 있다.
+     *
+     * 권한이 걸린 이미지 썸네일 디스크도 같다 — 코어 `s3` 는 공개 자산 디스크로도 고를 수 있어 권한 썸네일 디스크로 허용하되,
+     * 공개 자산 디스크도 `s3` 이면 같은 버킷이라 경고한다(`ThumbnailDiskOptions::SHARED_BUCKET_DISK`).
+     *
+     * @param  array<string, mixed>  $drivers  저장된 drivers 카테고리 값
+     * @param  array<string, mixed>  $upload  저장된 upload 카테고리 값 (권한 썸네일 디스크 판정용)
+     * @return list<array{key: string, message: string}> 경고 목록(필드 키, 문구)
+     */
+    public function storageWarnings(array $drivers, array $upload = []): array
+    {
+        $warnings = [];
+        $private = (string) ($drivers['private_attachment_disk'] ?? '');
+        $public = (string) ($drivers['public_asset_disk'] ?? '');
+
+        if (! in_array($private, ['', PrivateAttachmentDisk::DEFAULT], true) && ! in_array($public, ['', 'none'], true) && $private === $public) {
+            $warnings[] = [
+                'key' => 'drivers.private_attachment_disk',
+                'message' => __('settings.warnings.private_attachment_same_as_public_asset', ['disk' => $private]),
+            ];
+        }
+
+        $gatedThumbnail = (string) ($upload['thumbnail_disk_gated'] ?? '');
+
+        if ($gatedThumbnail === ThumbnailDiskOptions::SHARED_BUCKET_DISK && $public === ThumbnailDiskOptions::SHARED_BUCKET_DISK) {
+            $warnings[] = [
+                'key' => 'upload.thumbnail_disk_gated',
+                'message' => __('settings.warnings.gated_thumbnail_same_as_public_asset', ['disk' => $gatedThumbnail]),
+            ];
+        }
+
+        return $warnings;
     }
 
     /**

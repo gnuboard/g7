@@ -163,8 +163,10 @@ class AdminOrderScopeGuardTest extends PluginTestCase
         $this->assertSame([], $routeViolations, json_encode($routeViolations, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
         $pluginPaths = array_merge(...array_column(OrderScopeLedgerListener::entries(), 'paths'));
+        // 범위 판정은 이커머스 공개 결제 계약(OrderAccess)이 코어 PermissionHelper 로 한다 — 그 계약 호출도 판정으로 센다(#916).
+        $contractScopeTokens = ['bridge->isOrderWithinScope(', 'bridge->isTransactionWithinScope(', 'bridge->orderNumbersWithinScope('];
         $enforcerViolations = array_values(array_filter(
-            ScopedPermissionEnforcement::auditEnforcers('sirsoft-ecommerce.'),
+            ScopedPermissionEnforcement::auditEnforcers('sirsoft-ecommerce.', $contractScopeTokens),
             fn (array $violation) => in_array($violation['path'], $pluginPaths, true)
         ));
         $this->assertSame([], $enforcerViolations, json_encode($enforcerViolations, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));

@@ -59,6 +59,18 @@
                   <span class="{{_global.selectedTemplate.status === 'active' ? 'badge badge-green' : (_global.selectedTemplate.status === 'uninstalled' ? 'badge badge-blue' : 'badge badge-gray')}}">{{_global.selectedTemplate.status === 'active' ? '$t:admin.templates.status.active' : (_global.selectedTemplate.status === 'uninstalled' ? '$t:admin.templates.status.not_installed' : '$t:admin.templates.status.inactive')}}</span>
                 </div>
               </div>
+              <!-- 패키지 서명(#916) — 설치·업데이트 때 남긴 검증 기록(integrity_status). verified 면 키 ID 콜론 앞(서명자)을 보인다.
+                   기록이 없으면(이 기능 전에 설치했거나 옛 코어) 「기록 없음」이다. -->
+              <div data-ref="package_signature_field">
+                <span class="text-label-subtle">$t:admin.package_integrity.signature_label</span>
+                <div>
+                  <span data-if="{{_global.selectedTemplate?.integrity_status === 'verified'}}" class="badge badge-green">$t:admin.package_integrity.status_verified|signer={{(_global.selectedTemplate?.integrity_key_id ?? '').split(':')[0]}}</span>
+                  <span data-if="{{_global.selectedTemplate?.integrity_status === 'unsigned'}}" class="badge badge-yellow">$t:admin.package_integrity.status_unsigned</span>
+                  <span data-if="{{_global.selectedTemplate?.integrity_status === 'unverifiable'}}" class="badge badge-yellow">$t:admin.package_integrity.status_unverifiable</span>
+                  <span data-if="{{_global.selectedTemplate?.integrity_status === 'bundled'}}" class="badge badge-blue">$t:admin.package_integrity.status_bundled</span>
+                  <span data-if="{{!['verified', 'unsigned', 'unverifiable', 'bundled'].includes(_global.selectedTemplate?.integrity_status)}}" class="badge badge-gray">$t:admin.package_integrity.status_none</span>
+                </div>
+              </div>
               <div>
                 <span class="text-label-subtle">$t:admin.license.license_text</span>
                 <button type="button" class="block text-left text-primary font-medium cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors">

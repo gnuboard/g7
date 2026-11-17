@@ -119,6 +119,33 @@ class ThumbnailPregenerateOnStoreTest extends TestCase
     }
 
     /**
+     * 「비공개 첨부 저장소」로 고른 디스크에 올린 코어 첨부도 코어 첨부 원본(게이트)으로 분류해 작업을 넣는다 (#916).
+     *
+     * 업로드 디스크는 `PrivateAttachmentDisk::forCore()` 가 정한다. 원본 제공자가 종전 `attachment.disk` 하나만 알면
+     * 고른 디스크의 새 첨부가 「모르는 원본」이 되어 미리 생성이 조용히 빠진다.
+     *
+     * @effects pregenerate_job_dispatched_on_real_queue
+     *
+     * @return void 반환값 없음
+     */
+    public function test_core_attachment_on_selected_private_disk_dispatches_the_job(): void
+    {
+        Config::set('queue.default', 'database');
+        Queue::fake();
+        // 해석기는 `filesystems.disks` 에 정의된 디스크만 선택으로 인정한다(미정의 = 꺼진 플러그인 디스크)
+        Config::set('filesystems.disks.fx916-vault', ['driver' => 'local', 'root' => storage_path('framework/testing/fx916-vault')]);
+        Storage::fake('fx916-vault');
+        Config::set('attachment.disk_explicit', null);
+        Config::set('core.storage.private_attachment_disk', 'fx916-vault');
+        $bytes = (string) file_get_contents(TestImages::solid(800, 600, 'jpeg'));
+
+        (new CoreStorageDriver('attachments'))->withDisk('fx916-vault')->put('', '2026/11/16/vault.jpg', $bytes);
+
+        Queue::assertPushed(GenerateThumbnailsJob::class, fn (GenerateThumbnailsJob $job) => $job->disk === 'fx916-vault'
+            && $job->path === '2026/11/16/vault.jpg' && $job->gated === true);
+    }
+
+    /**
      * 작업을 실행하면 미리 생성 규격만 만든다.
      *
      * @effects pregenerate_job_dispatched_on_real_queue

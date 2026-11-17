@@ -21,6 +21,7 @@ use App\Fields\FieldRegistry;
 use App\Fields\FieldSet;
 use App\Fields\FieldValueService;
 use App\Models\Attachment;
+use App\Models\ExtensionTrustKey;
 use App\Models\FieldDefinition;
 use App\Models\IdentityVerificationLog;
 use App\Models\PrivacyManualRun;
@@ -130,6 +131,10 @@ class CoreActivityLogListener implements HookListenerInterface
             // ─── Settings ───
             'core.settings.after_save' => ['method' => 'handleSettingsAfterSave', 'priority' => 20],
             'core.settings.after_set' => ['method' => 'handleSettingsAfterSet', 'priority' => 20],
+
+            // Extension Trust Key 훅 (환경설정 > 보안 「확장 신뢰 키」·extension:trust-key, #916)
+            'core.extension_trust_keys.after_create' => ['method' => 'handleExtensionTrustKeyAfterCreate', 'priority' => 20],
+            'core.extension_trust_keys.after_delete' => ['method' => 'handleExtensionTrustKeyAfterDelete', 'priority' => 20],
 
             // ─── Privacy (관리자 직권 실행) ───
             'core.privacy.manual_run_queued' => ['method' => 'handlePrivacyManualRunQueued', 'priority' => 20],
@@ -1090,6 +1095,45 @@ class CoreActivityLogListener implements HookListenerInterface
         $this->logActivity('settings.save', [
             'description_key' => 'activity_log.description.settings_save',
             'properties' => ['tab' => $tab, 'keys' => array_keys($settings)],
+        ]);
+    }
+
+    /**
+     * 확장 신뢰 키(제작자 공개키) 등록 후 로그 기록 (#916)
+     *
+     * 이 키로 서명한 확장·언어팩이 「서명 확인됨」이 되는 보안 설정 변경이다. 누가 어떤 vendor 범위로 믿기 시작했는지 남긴다.
+     *
+     * @param  ExtensionTrustKey  $key  등록한 키
+     * @return void 반환값 없음
+     */
+    public function handleExtensionTrustKeyAfterCreate(ExtensionTrustKey $key): void
+    {
+        $vendors = array_values((array) $key->vendor_scope);
+
+        $this->logActivity('extension_trust_key.create', [
+            'loggable' => $key,
+            'description_key' => 'activity_log.description.extension_trust_key_create',
+            'description_params' => ['key_id' => (string) $key->key_id, 'vendors' => implode(', ', $vendors)],
+            'properties' => ['key_id' => (string) $key->key_id, 'label' => (string) $key->label, 'vendor_scope' => $vendors],
+        ]);
+    }
+
+    /**
+     * 확장 신뢰 키(제작자 공개키) 삭제 후 로그 기록 (#916)
+     *
+     * 지운 행이라 모델 참조는 싣지 않고 식별 값만 남긴다(역할·스케줄 삭제와 같다).
+     *
+     * @param  ExtensionTrustKey  $key  지운 키 (훅 인자 스냅샷)
+     * @return void 반환값 없음
+     */
+    public function handleExtensionTrustKeyAfterDelete(ExtensionTrustKey $key): void
+    {
+        $vendors = array_values((array) $key->vendor_scope);
+
+        $this->logActivity('extension_trust_key.delete', [
+            'description_key' => 'activity_log.description.extension_trust_key_delete',
+            'description_params' => ['key_id' => (string) $key->key_id, 'vendors' => implode(', ', $vendors)],
+            'properties' => ['id' => $key->id, 'key_id' => (string) $key->key_id, 'label' => (string) $key->label, 'vendor_scope' => $vendors],
         ]);
     }
 

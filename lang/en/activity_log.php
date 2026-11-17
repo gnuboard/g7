@@ -185,6 +185,8 @@ return [
         // Settings management
         'settings_index' => 'Settings list viewed',
         'settings_save' => 'Settings saved',
+        'extension_trust_key_create' => 'Extension trust key added (:key_id, vendor: :vendors)',
+        'extension_trust_key_delete' => 'Extension trust key deleted (:key_id, vendor: :vendors)',
         'settings_show' => 'Setting viewed',
         'settings_update' => 'Setting updated',
         'settings_system_info' => 'System information viewed',

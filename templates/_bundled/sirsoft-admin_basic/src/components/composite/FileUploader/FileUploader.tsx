@@ -24,7 +24,7 @@ import { FileDropZone } from './FileDropZone';
 import { FileList } from './FileList';
 import { useFocusRecovery } from './useFocusRecovery';
 import type { FileUploaderProps, FileUploaderRef, Attachment, PendingFile } from './types';
-import { t } from './utils';
+import { t, resolveApiEndpoints } from './utils';
 
 // 생략된 배열 속성의 기본값 — 렌더마다 새 배열을 만들면 그 값을 의존성으로 쓰는 동기화 effect·콜백이
 // 렌더마다 다시 돌아 상태 갱신이 끝없이 이어진다(7.1.0). 얼려 두어 공유 상수가 바뀌지 않게 한다.
@@ -70,12 +70,8 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
     },
     ref
   ) => {
-    // API 엔드포인트 기본값 설정
-    const endpoints = {
-      upload: apiEndpoints?.upload ?? '/api/admin/attachments',
-      delete: apiEndpoints?.delete ?? '/api/admin/attachments/:id',
-      reorder: apiEndpoints?.reorder ?? '/api/admin/attachments/reorder',
-    };
+    // API 엔드포인트 기본값 설정 — 정렬 주소는 `reorder` 키가 있으면 그 값(`null`·빈 문자열이면 정렬 없음), 없을 때만 기본값
+    const endpoints = resolveApiEndpoints(apiEndpoints);
 
     // 핵심 로직 훅 사용
     const uploader = useFileUploader({

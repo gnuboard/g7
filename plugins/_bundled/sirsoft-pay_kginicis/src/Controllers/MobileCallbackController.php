@@ -9,12 +9,11 @@ use App\Support\ScreenUrl;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
-use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\OrderRecord;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\PaymentCompletion;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\VbankIssuance;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Modules\Sirsoft\Ecommerce\Exceptions\PaymentAmountMismatchException;
-use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
-use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\PayKginicis\Concerns\BindsApprovalToOrder;
 use Plugins\Sirsoft\PayKginicis\Concerns\HandlesClaimPaymentCallbacks;
 use Plugins\Sirsoft\PayKginicis\Concerns\IssuesReceiptCookie;
@@ -92,16 +91,14 @@ class MobileCallbackController
     ];
 
     /**
-     * @param  OrderProcessingService  $orderService  주문 결제 처리 서비스
+     * @param  PaymentGatewayBridge  $bridge  이커머스 결제 공개 계약
      * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 조회 서비스
      * @param  KgInicisApiService  $apiService  KG 이니시스 API 서비스
-     * @param  ClaimPaymentRepositoryInterface  $claimPaymentRepository  클레임 결제 Repository
      */
     public function __construct(
-        private readonly OrderProcessingService $orderService,
+        private readonly PaymentGatewayBridge $bridge,
         private readonly PluginSettingsService $pluginSettingsService,
         private readonly KgInicisApiService $apiService,
-        private readonly ClaimPaymentRepositoryInterface $claimPaymentRepository,
     ) {}
 
     /**
@@ -151,7 +148,7 @@ class MobileCallbackController
             ]);
 
             // 클레임 추가결제(CP 채번)는 체크아웃이 아니라 신청서 상세로 돌려보낸다.
-            if (ClaimPayment::isClaimPaymentNumber($moid)) {
+            if ($this->bridge->isClaimPaymentNumber($moid)) {
                 $claimRedirect = $this->redirectClaimWindowFailure($moid, $isUserCancel ? null : $pStatus);
 
                 if ($claimRedirect !== null) {
@@ -167,7 +164,7 @@ class MobileCallbackController
             return redirect($this->resolveFailUrl([
                 'error' => $pStatus,
                 // PC 콜백과 같은 이유 — 결제 건을 못 찾은 CP 콜백에는 PG 원문을 싣지 않는다.
-                'message' => ClaimPayment::isClaimPaymentNumber($moid) ? null : $pMesg,
+                'message' => $this->bridge->isClaimPaymentNumber($moid) ? null : $pMesg,
                 'orderId' => $moid,
             ]));
         }
@@ -201,8 +198,8 @@ class MobileCallbackController
         // 클레임 추가결제(CP 채번)는 주문이 아니다 — 주문 분기를 태우면 order_not_found 로 끝난다.
         // 승인은 모듈 위임(필터 발화 → 이 플러그인의 승인 리스너)이고, 승인 금액 불일치는 승인이
         // 확정된 뒤의 거절이므로 취소 API 로 보상한다 (모바일 경로에는 망취소 URL 이 없다).
-        if (ClaimPayment::isClaimPaymentNumber($moid)) {
-            $payment = $this->findClaimPayment($moid);
+        if ($this->bridge->isClaimPaymentNumber($moid)) {
+            $payment = $this->findClaimPaymentModel($moid);
 
             if (! $payment) {
                 Log::error('KG Inicis mobile: claim payment not found', ['P_OID' => $moid]);
@@ -226,7 +223,7 @@ class MobileCallbackController
         $callbackLock = null;
 
         try {
-            $order = $this->orderService->findByOrderNumber($moid);
+            $order = $this->bridge->findOrderByNumber($moid, 'kginicis');
 
             if (! $order) {
                 Log::error('KG Inicis mobile: order not found', ['P_OID' => $moid]);
@@ -293,7 +290,7 @@ class MobileCallbackController
                     Log::warning('KG Inicis mobile: vbank issue rejected (order not payable or amount mismatch); cancelling', [
                         'P_OID' => $moid,
                         'P_TID' => $tid,
-                        'order_status' => $order->order_status->value,
+                        'order_status' => $order->orderStatus->value,
                         'pg_amount' => $result['P_AMT'] ?? null,
                     ]);
 
@@ -331,7 +328,7 @@ class MobileCallbackController
             // 이미 끝난다. 통과시키면 `CANCELLED` 주문이 결제완료로 되돌아가 재고·마일리지가
             // 재차감된다. 형제 경로(`CbtCallbackController::assertPayableCbtOrder`)와 같은 판정이며,
             // 승인된 돈은 붙들지 않고 즉시 PG 취소로 돌려준다.
-            if (! $order->order_status->isBeforePayment()) {
+            if (! $order->orderStatus->isBeforePayment()) {
                 $this->autoCancelIfApproved($approvedTid, $moid, $approvedTotPrice, 'order_not_payable');
 
                 return redirect($this->resolveFailUrl(['error' => 'order_not_payable', 'orderId' => $moid]));
@@ -360,16 +357,18 @@ class MobileCallbackController
                 'easy_pay' => $this->buildEasyPayLogContext($selectedEasyPayMethod),
             ]);
 
-            $this->orderService->completePayment($order, [
-                'transaction_id' => $tid,
-                'card_approval_number' => $result['P_APPL_NUM'] ?? null,
-                'card_number_masked' => $result['P_CARD_NUM'] ?? null,
-                'card_name' => $result['P_CARD_ISSUER_NAME'] ?? null,
-                'card_installment_months' => (int) ($result['P_CARD_QUOTA'] ?? 0),
-                'is_interest_free' => false,
-                'embedded_pg_provider' => $embeddedPgProvider,
-                'receipt_url' => null,
-                'payment_meta' => array_merge([
+            // 결제사 id 인수와 에스크로 표시는 결제 완료와 같은 트랜잭션에서 쓴다(종전 완료 뒤 별도 갱신).
+            // 에스크로를 켠 상점의 결제는 에스크로 MID 로 승인된다 — [구매결정]·에스크로 배송 등록·환불이 이 표시로 판정한다 (S4-D18)
+            $this->bridge->completePayment($order->orderNumber, 'kginicis', new PaymentCompletion(
+                transactionId: $tid,
+                cardApprovalNumber: $result['P_APPL_NUM'] ?? null,
+                cardNumberMasked: $result['P_CARD_NUM'] ?? null,
+                cardName: $result['P_CARD_ISSUER_NAME'] ?? null,
+                cardInstallmentMonths: (int) ($result['P_CARD_QUOTA'] ?? 0),
+                isInterestFree: false,
+                embeddedPgProvider: $embeddedPgProvider,
+                receiptUrl: null,
+                paymentMeta: array_merge([
                     'result_code' => $resultStatus,
                     'pay_method' => $payType ?: null,
                     'auth_date' => $result['P_AUTH_DT'] ?? null,
@@ -379,12 +378,11 @@ class MobileCallbackController
                     'pg_raw_response' => $this->sanitizePgResponse($result, self::MOBILE_APPROVE_RESPONSE_KEYS),
                     // 결제창이 과세 구분(P_TAX·P_TAXFREE)을 실은 결제 — 부분취소가 같은 구분을 싣는 근거(#820)
                 ], $this->buildEasyPayPaymentMeta($selectedEasyPayMethod), $this->buildTaxSplitApprovalMeta($order, $totPrice)),
-                'payment_device' => 'mobile',
-            ], $totPrice);
+                paymentDevice: 'mobile',
+                isEscrow: $this->apiService->isEscrowEnabled() && $selectedEasyPayMethod === null,
+                takeOverProvider: true,
+            ), $totPrice);
 
-            // 에스크로를 켠 상점의 결제는 에스크로 MID 로 승인된다 — [구매결정]·에스크로 배송 등록·환불이 이 표시로 판정한다 (S4-D18)
-            // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
-            $order->payment()->update(['pg_provider' => 'kginicis', 'is_escrow' => $this->apiService->isEscrowEnabled() && $selectedEasyPayMethod === null]);
             $this->queueReceiptCookie($moid);
 
             return redirect($this->resolveSuccessUrl($moid));
@@ -491,12 +489,12 @@ class MobileCallbackController
      * 실제 결제 완료(completePayment)는 입금 통보(mobileVbankNotify) 시점에 처리.
      * 응답 필드는 manual.inicis.com/pay/stdpay_m.html 표준에 따른 P_VACT_* 형식.
      *
-     * @param  Order  $order  대상 주문
+     * @param  OrderRecord  $order  대상 주문
      * @param  array  $result  모바일 승인 응답
      * @param  string  $tid  PG 거래번호
      * @return void 반환값 없음
      */
-    private function handleVbankIssued(Order $order, array $result, string $tid): void
+    private function handleVbankIssued(OrderRecord $order, array $result, string $tid): void
     {
         $vactDate = $result['P_VACT_DATE'] ?? null;
         $vactTime = $result['P_VACT_TIME'] ?? '235959';
@@ -511,21 +509,20 @@ class MobileCallbackController
             }
         }
 
-        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
-        $order->payment()->update(array_filter([
-            'pg_provider' => 'kginicis',
+        // 입금 대기 전이 + 발급 정보 저장 + (커밋 뒤) 장바구니 정리를 계약이 한 번에 한다.
+        // 계좌를 받은 순간 고객의 주문은 끝났다 — 입금 전이라도 주문한 장바구니 항목을 정리한다(재고는 입금 때 차감).
+        $this->bridge->onVbankAccountIssued($order->orderNumber, 'kginicis', new VbankIssuance(
+            vbankIssuedAt: now(),
+            transactionId: $tid ?: null,
+            vbankCode: $result['P_VACT_BANK_CODE'] ?? $result['P_FN_CD1'] ?? null,
+            vbankName: $result['P_VACT_BANK_NAME'] ?? $result['P_FN_NM'] ?? null,
+            vbankNumber: $result['P_VACT_NUM'] ?? null,
+            vbankHolder: $result['P_VACT_NAME'] ?? $result['P_RVACTNM'] ?? null,
+            vbankDueAt: $vbankDueAt,
             // 에스크로를 켠 상점의 가상계좌는 에스크로 MID 로 발급된다 (S4-D18)
-            'is_escrow' => $this->apiService->isEscrowEnabled(),
-            'payment_status' => PaymentStatusEnum::WAITING_DEPOSIT,
-            'transaction_id' => $tid ?: null,
-            'vbank_code' => $result['P_VACT_BANK_CODE'] ?? $result['P_FN_CD1'] ?? null,
-            'vbank_name' => $result['P_VACT_BANK_NAME'] ?? $result['P_FN_NM'] ?? null,
-            'vbank_number' => $result['P_VACT_NUM'] ?? null,
-            'vbank_holder' => $result['P_VACT_NAME'] ?? $result['P_RVACTNM'] ?? null,
-            'vbank_due_at' => $vbankDueAt,
-            'vbank_issued_at' => now(),
-            'payment_device' => 'mobile',
-            'payment_meta' => [
+            isEscrow: $this->apiService->isEscrowEnabled(),
+            paymentDevice: 'mobile',
+            paymentMeta: [
                 'result_code' => $result['P_STATUS'] ?? '00',
                 'pay_method' => 'VBank',
                 'auth_date' => $result['P_AUTH_DT'] ?? null,
@@ -534,13 +531,12 @@ class MobileCallbackController
                 'pg_response_sanitized' => true,
                 'pg_raw_response' => $this->sanitizePgResponse($result, self::MOBILE_VBANK_ISSUE_RESPONSE_KEYS),
             ],
-        ], fn ($v) => $v !== null));
-
-        // 계좌를 받은 순간 고객의 주문은 끝났다 — 입금 전이라도 주문한 장바구니 항목을 정리한다(재고는 입금 때 차감).
-        $this->orderService->onVbankAccountIssued($order);
+            clearCart: true,
+            takeOverProvider: true,
+        ));
 
         Log::info('KG Inicis mobile: vbank account issued', [
-            'P_OID' => $order->order_number,
+            'P_OID' => $order->orderNumber,
             'P_TID' => $tid,
             'vbank_name' => $result['P_VACT_BANK_NAME'] ?? $result['P_FN_NM'] ?? null,
             'vbank_number' => $result['P_VACT_NUM'] ?? null,

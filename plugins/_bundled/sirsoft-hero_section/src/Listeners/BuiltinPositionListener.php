@@ -4,6 +4,9 @@ namespace Plugins\Sirsoft\HeroSection\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use App\Extension\ModuleManager;
+use Modules\Sirsoft\Board\Contracts\BoardDirectory;
+use Modules\Sirsoft\Ecommerce\Contracts\Catalog\CategoryDirectory;
+use Modules\Sirsoft\Ecommerce\Contracts\Catalog\ProductDirectory;
 use Plugins\Sirsoft\HeroSection\Services\PositionRegistry;
 use Plugins\Sirsoft\HeroSection\Support\Targets\BoardTargetResolver;
 use Plugins\Sirsoft\HeroSection\Support\Targets\CategoryTargetResolver;
@@ -13,7 +16,8 @@ use Plugins\Sirsoft\HeroSection\Support\Targets\ProductTargetResolver;
  * 내장 노출 위치 — 위치 필터에 히어로 자신의 위치를 맨 앞으로 넣는다.
  *
  * 사이트 홈·쇼핑몰 메인(정적)은 늘 넣고, 게시판 목록(게시판마다)·상품 상세(상품마다)·카테고리 목록(카테고리마다)은 그 모듈이 켜져 있을
- * 때만 넣는다. 모듈 코드는 고치지 않는다 — 해석기가 모듈 저장소 계약만 쓴다. 모듈을 끄면 그 위치가 목록에서 빠지고, 배너는 남는다.
+ * 때만 넣는다. 해석기는 모듈이 공개한 조회 계약만 쓰므로, 모듈이 켜져 있어도 계약이 없는 옛 판(게시판 1.3.0·이커머스 1.4.0 미만)이면
+ * 위치를 넣지 않는다(#916). 모듈을 끄면 그 위치가 목록에서 빠지고, 배너는 남는다.
  */
 class BuiltinPositionListener implements HookListenerInterface
 {
@@ -61,12 +65,13 @@ class BuiltinPositionListener implements HookListenerInterface
             ['key' => 'shop_hero', 'label' => 'sirsoft-hero_section.admin.position.shop_hero', 'order' => 20],
         ];
 
-        if (in_array('sirsoft-board', $active, true)) {
+        if (in_array('sirsoft-board', $active, true) && $this->contractBound(BoardDirectory::class)) {
             $positions[] = ['key' => 'board_hero', 'label' => 'sirsoft-hero_section.admin.position.board_hero', 'order' => 100,
                 'target' => ['type' => 'board', 'label' => 'sirsoft-hero_section.admin.target.board', 'resolver' => BoardTargetResolver::class, 'route_param' => 'slug']];
         }
 
-        if (in_array('sirsoft-ecommerce', $active, true)) {
+        if (in_array('sirsoft-ecommerce', $active, true)
+            && $this->contractBound(ProductDirectory::class) && $this->contractBound(CategoryDirectory::class)) {
             $positions[] = ['key' => 'product_hero', 'label' => 'sirsoft-hero_section.admin.position.product_hero', 'order' => 110,
                 'target' => ['type' => 'product', 'label' => 'sirsoft-hero_section.admin.target.product', 'resolver' => ProductTargetResolver::class, 'route_param' => 'product_code']];
             $positions[] = ['key' => 'category_hero', 'label' => 'sirsoft-hero_section.admin.position.category_hero', 'order' => 120,
@@ -84,5 +89,16 @@ class BuiltinPositionListener implements HookListenerInterface
     protected function activeModules(): array
     {
         return ModuleManager::getActiveModuleIdentifiers();
+    }
+
+    /**
+     * 모듈이 공개한 조회 계약이 컨테이너에 바인딩돼 있는지 확인합니다(시험에서 바꿔 끼운다).
+     *
+     * @param  string  $contract  계약 인터페이스 이름
+     * @return bool 바인딩돼 있으면 true
+     */
+    protected function contractBound(string $contract): bool
+    {
+        return app()->bound($contract);
     }
 }

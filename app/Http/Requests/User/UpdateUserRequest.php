@@ -181,6 +181,9 @@ class UpdateUserRequest extends FormRequest
             throw app(ReauthenticationService::class)->challengeFor($this);
         }
 
+        // 옛 화면(회원 항목 표식 없음)이라 보내지 않은 필수 항목은 저장된 값을 그대로 두고 건너뛴다 — 그 사실을 남긴다.
+        $this->noteLegacyMemberFieldScreen();
+
         if ($this->isSelfUpdate() && $target !== null && is_string($token) && $token !== '') {
             app(ReauthenticationService::class)->consume($target, ['verification_token' => $token]);
         }
@@ -196,6 +199,18 @@ class UpdateUserRequest extends FormRequest
         $actor = $this->user();
 
         return FieldContext::for(FieldContext::SURFACE_ADMIN_UPDATE, $this->targetUser(), $actor instanceof User ? $actor : null);
+    }
+
+    /**
+     * 옛 화면 호환을 받는다 — 정의 버전(`fields_version`)을 싣지 않은 수정 요청은 회원 항목 조각이 없는 옛 관리자 화면(7.1.x 템플릿)에서 왔다고 본다.
+     *
+     * 그 요청은 운영자 추가 항목과 확장 선언 항목의 필수 규칙을 「값을 보냈을 때만」으로 늦춘다. 보내지 않은 항목은 저장된 값이 그대로 남는다.
+     *
+     * @return bool 항상 true
+     */
+    protected function acceptsLegacyMemberFieldScreen(): bool
+    {
+        return true;
     }
 
     /**

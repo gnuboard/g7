@@ -24,7 +24,7 @@ import { FileDropZone } from './FileDropZone';
 import { FileList } from './FileList';
 import { useFocusRecovery } from './useFocusRecovery';
 import type { FileUploaderProps, FileUploaderRef, Attachment, PendingFile } from './types';
-import { t } from './utils';
+import { t, resolveApiEndpoints } from './utils';
 
 /** 안정적인 빈 배열 참조 — 매 렌더마다 새 [] 생성 방지 (useEffect 무한 루프 방지). 얼려 두어 공유 상수가 바뀌지 않게 한다(7.1.0) */
 const EMPTY_FILES = Object.freeze([]) as unknown as Attachment[];
@@ -73,12 +73,8 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
     },
     ref
   ) => {
-    // API 엔드포인트 기본값 설정 (User 템플릿용 기본 경로)
-    const endpoints = {
-      upload: apiEndpoints?.upload ?? '/api/attachments',
-      delete: apiEndpoints?.delete ?? '/api/attachments/:id',
-      reorder: apiEndpoints?.reorder ?? '/api/attachments/reorder',
-    };
+    // API 엔드포인트 — 사용자 템플릿에는 기본 주소가 없다(resolveApiEndpoints 참조)
+    const endpoints = resolveApiEndpoints(apiEndpoints);
 
     // onFilesChange 래퍼: ActionDispatcher 호환 형태로 변환
     // ActionDispatcher는 type: "change" → onChange prop으로 매핑하므로,

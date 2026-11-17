@@ -1153,6 +1153,20 @@
         });
         requiredExtHtml += '</div>';
 
+        // 권장 모듈 — 없어도 설치는 진행한다. sodium 이 없으면 패키지 서명을 확인할 수 없다는 경고만 보인다 (7.2.0)
+        const recommendedExt = data.php_extensions.recommended || {};
+        const missingRecommended = Object.entries(recommendedExt).filter(([, info]) => !info?.installed);
+        if (missingRecommended.length > 0) {
+            requiredExtHtml += '<div class="requirement-extension-grid" data-ref="recommended-extensions">';
+            missingRecommended.forEach(([ext]) => {
+                requiredExtHtml += renderExtensionItem(ext, false, false);
+            });
+            requiredExtHtml += '</div>';
+            missingRecommended.forEach(([, info]) => {
+                requiredExtHtml += `<p class="requirement-text">${escapeHtml(lang('recommended_extension_missing'))} ${escapeHtml(info?.reason || '')}</p>`;
+            });
+        }
+
         const requiredStatusClass = allRequiredPassed ? 'status-pass' : 'status-fail';
         html += renderMultiItemCard(
             lang('php_modules'),

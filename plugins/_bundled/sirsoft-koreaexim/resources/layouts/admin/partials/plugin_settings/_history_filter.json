@@ -188,6 +188,10 @@
                                         "label": "$t:sirsoft-koreaexim.RunStatus.unsupported_base"
                                     },
                                     {
+                                        "value": "save_failed",
+                                        "label": "$t:sirsoft-koreaexim.RunStatus.save_failed"
+                                    },
+                                    {
                                         "value": "dry_run",
                                         "label": "$t:sirsoft-koreaexim.RunStatus.dry_run"
                                     }

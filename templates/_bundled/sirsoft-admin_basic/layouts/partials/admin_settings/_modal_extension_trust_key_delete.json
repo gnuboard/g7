@@ -1,0 +1,258 @@
+{
+    "comment": "제작자 신뢰 키 삭제 확인 창(#916, 「확장 신뢰 키」 카드의 키 행 [삭제]가 연다). 대상은 행이 담아 준 `_global.trustKeyDeleteTarget`.\n  삭제는 탭 저장과 분리된 전용 API(DELETE /api/admin/extension-trust-keys/{id}) 이고 본인 비밀번호를 다시 받는다 —\n  지운 키로 서명된 확장은 다음 설치·업데이트부터 미신뢰 키로 막히므로 자리를 비운 사이 남이 누르는 것을 막는다.\n  비밀번호 없는 관리자는 칸이 없고 서버의 본인인증 요구(428)를 엔진이 받는다. 입력한 비밀번호는 창을 닫으면(어느 갈래로든) 지운다.",
+    "meta": {
+        "is_partial": true,
+        "editor_label": "$t:admin.modal_label.admin_settings.extension_trust_key_delete_modal",
+        "description": "확장 신뢰 키 삭제 확인 모달"
+    },
+    "id": "extension_trust_key_delete_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.settings.extension_trust_key_modal.delete_title",
+        "size": "sm",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "취소 — 입력한 비밀번호와 대상을 지우고 닫는다",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "trustKeyPassword": "",
+                                    "trustKeyDeleteTarget": null,
+                                    "trustKeyErrors": null,
+                                    "trustKeyError": null
+                                }
+                            },
+                            {
+                                "handler": "closeModal"
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-secondary",
+                    "disabled": "{{_global.isDeletingTrustKey}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:common.cancel"
+                    }
+                ]
+            },
+            {
+                "id": "trust_key_delete_submit",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "삭제 실행 — 성공하면 비밀번호·대상을 지우고 목록 소스만 다시 받는다. 실패(비밀번호 틀림 422·이미 없음 404)는 창 안에 남긴다",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "isDeletingTrustKey": true,
+                                    "trustKeyErrors": null,
+                                    "trustKeyError": null
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/admin/extension-trust-keys/{{_global.trustKeyDeleteTarget?.id}}",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "DELETE",
+                                    "body": {
+                                        "password": "{{_global.trustKeyPassword ?? ''}}"
+                                    }
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isDeletingTrustKey": false,
+                                            "trustKeyPassword": "",
+                                            "trustKeyDeleteTarget": null
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "$t:admin.settings.extension_trust_key_modal.delete_success"
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "extensionTrustKeys"
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal"
+                                    }
+                                ],
+                                "onError": {
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "isDeletingTrustKey": false,
+                                        "trustKeyError": "{{error.message}}",
+                                        "trustKeyErrors": "{{error.errors && Object.keys(error.errors).length > 0 ? error.errors : null}}"
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-danger",
+                    "disabled": "{{_global.isDeletingTrustKey || !_global.trustKeyDeleteTarget?.id || (current_user?.data?.has_password !== false && !_global.trustKeyPassword)}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.isDeletingTrustKey}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "spinner-sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.isDeletingTrustKey ? '$t:admin.settings.extension_trust_key_modal.deleting' : '$t:admin.settings.extension_trust_key_modal.delete_submit'}}"
+                    }
+                ]
+            }
+        ]
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "lifecycle": {
+                "onUnmount": [
+                    {
+                        "comment": "창이 닫혀 본문이 내려갈 때(어느 갈래로 닫든) 입력한 비밀번호를 지운다",
+                        "handler": "setState",
+                        "params": {
+                            "target": "global",
+                            "trustKeyPassword": ""
+                        }
+                    }
+                ]
+            },
+            "props": {
+                "className": "py-2 space-y-3"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-body break-all"
+                    },
+                    "text": "$t:admin.settings.extension_trust_key_modal.delete_confirm|key_id={{_global.trustKeyDeleteTarget?.key_id ?? ''}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "alert-warning"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "triangle-exclamation",
+                                "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5",
+                                "aria-hidden": "true"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-warning-soft"
+                            },
+                            "text": "$t:admin.settings.extension_trust_key_modal.delete_warning"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{!!_global.trustKeyError && !_global.trustKeyErrors?.password}}",
+                    "props": {
+                        "className": "form-error"
+                    },
+                    "text": "{{_global.trustKeyError}}"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{current_user?.data?.has_password !== false}}",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "form-label"
+                            },
+                            "text": "$t:admin.settings.modals.enter_password"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "입력한 비밀번호를 전역에 담는다 — 삭제 버튼의 잠금 조건과 요청 본문이 이 값을 함께 읽는다",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "trustKeyPassword": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "password",
+                                "value": "{{_global.trustKeyPassword ?? ''}}",
+                                "placeholder": "$t:admin.settings.modals.password_placeholder",
+                                "autoComplete": "current-password",
+                                "className": "{{_global.trustKeyErrors?.password ? 'input input-error' : 'input'}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{_global.trustKeyErrors?.password}}",
+                            "props": {
+                                "className": "form-error"
+                            },
+                            "text": "{{_global.trustKeyErrors?.password?.[0] ?? ''}}"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

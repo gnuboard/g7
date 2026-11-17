@@ -7,6 +7,8 @@ use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Mockery;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\PaymentRecord;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
@@ -17,7 +19,6 @@ use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\PayKginicis\Exceptions\KgInicisRejectedException;
-use Plugins\Sirsoft\PayKginicis\Repositories\CbtCvsOperationsRepositoryInterface;
 use Plugins\Sirsoft\PayKginicis\Services\CbtCheckoutTokenService;
 use Plugins\Sirsoft\PayKginicis\Services\CbtCvsOperationsService;
 use Plugins\Sirsoft\PayKginicis\Services\CbtReconciliationService;
@@ -697,31 +698,34 @@ class CbtPaymentControllerTest extends PluginTestCase
             'cvs_payment_term' => now()->subDay()->format('YmdHis'),
         ]);
 
-        $repository = Mockery::mock(CbtCvsOperationsRepositoryInterface::class);
-        $repository->shouldReceive('findOrderWithPayment')
+        // 조회 뒤 잠그기 전에 다른 요청이 결제를 끝낸 경쟁을 만든다 — 만료 계약이 잠근 행으로 다시 판정해야 한다.
+        $real = $this->app->make(PaymentGatewayBridge::class);
+        $bridge = Mockery::mock(PaymentGatewayBridge::class);
+        $bridge->shouldReceive('findOrderByNumber')
             ->once()
-            ->with('JP-ORDER-CVS-RACE-001')
-            ->andReturn($order->fresh('payment'));
-        $repository->shouldReceive('lockPayment')
+            ->with('JP-ORDER-CVS-RACE-001', 'kginicis')
+            ->andReturnUsing(fn (string $number, $pg) => $real->findOrderByNumber($number, $pg));
+        $bridge->shouldReceive('expireAwaitingDeposit')
             ->once()
-            ->with(Mockery::type(OrderPayment::class))
-            ->andReturnUsing(function (OrderPayment $payment): OrderPayment {
-                $meta = is_array($payment->payment_meta) ? $payment->payment_meta : [];
+            ->andReturnUsing(function (string $number, string $pg, \Closure $guard, \Closure $meta) use ($real, $order): bool {
+                $payment = $order->payment()->firstOrFail();
                 $payment->forceFill([
                     'payment_status' => PaymentStatusEnum::PAID,
-                    'payment_meta' => array_merge($meta, [
+                    'payment_meta' => array_merge(is_array($payment->payment_meta) ? $payment->payment_meta : [], [
                         'cvs_status' => 'paid',
                     ]),
                 ])->save();
 
-                return $payment->fresh();
+                return $real->expireAwaitingDeposit($number, $pg, function (PaymentRecord $locked) use ($guard): bool {
+                    $this->assertSame(PaymentStatusEnum::PAID, $locked->paymentStatus, '판정은 잠근 행의 최신 상태로 한다');
+
+                    return $guard($locked);
+                }, $meta);
             });
-        $repository->shouldReceive('updatePayment')->never();
 
         $service = new CbtCvsOperationsService(
-            $this->app->make(OrderProcessingService::class),
+            $bridge,
             $this->app->make(KgInicisApiService::class),
-            $repository,
         );
 
         $result = $service->expireOverdue('JP-ORDER-CVS-RACE-001');
@@ -1034,7 +1038,9 @@ class CbtPaymentControllerTest extends PluginTestCase
                 $order,
                 Mockery::on(fn (array $data): bool => ($data['transaction_id'] ?? null) === 'CBT_TID_013'),
                 100,
-            );
+            )
+            // 결제 계약은 완료 서비스가 돌려준 주문으로 결과를 만든다(실제 서비스는 늘 주문을 돌려준다).
+            ->andReturn($order);
 
         $apiService = Mockery::mock(KgInicisApiService::class);
         $apiService->shouldReceive('getJapanMid')->andReturn(KgInicisApiService::JAPAN_TEST_MID);
@@ -1095,7 +1101,9 @@ class CbtPaymentControllerTest extends PluginTestCase
                 $order,
                 Mockery::on(fn (array $data): bool => ($data['transaction_id'] ?? null) === 'CBT_TID_PAYPAY_OK'),
                 500,
-            );
+            )
+            // 결제 계약은 완료 서비스가 돌려준 주문으로 결과를 만든다(실제 서비스는 늘 주문을 돌려준다).
+            ->andReturn($order);
 
         $apiService = Mockery::mock(KgInicisApiService::class);
         $apiService->shouldReceive('getJapanMid')->andReturn(KgInicisApiService::JAPAN_TEST_MID);
@@ -1173,7 +1181,7 @@ class CbtPaymentControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonPath('message', 'Payment amount does not match the order amount.');
+            ->assertJsonPath('message', __('sirsoft-pay_kginicis::messages.responses.amount_mismatch'));
     }
 
     /**
@@ -1219,7 +1227,7 @@ class CbtPaymentControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(403)
-            ->assertJsonPath('message', 'Order buyer verification failed.');
+            ->assertJsonPath('message', __('sirsoft-pay_kginicis::messages.responses.buyer_verification_failed'));
     }
 
     /**
@@ -1316,7 +1324,7 @@ class CbtPaymentControllerTest extends PluginTestCase
         ]);
 
         $response->assertStatus(403)
-            ->assertJsonPath('message', 'CBT checkout token verification failed.');
+            ->assertJsonPath('message', __('sirsoft-pay_kginicis::messages.responses.cbt_token_invalid'));
     }
 
     /**
@@ -1512,6 +1520,7 @@ class CbtPaymentControllerTest extends PluginTestCase
      */
     public function test_cbt_callback_records_manual_reconciliation_when_auto_refund_fails(): void
     {
+        config(['app.debug' => false]);
         $this->insertOrderRow('JP-ORDER-010', 100);
         $order = $this->makePendingJpyOrder('JP-ORDER-010', 100);
 
@@ -1553,7 +1562,10 @@ class CbtPaymentControllerTest extends PluginTestCase
         $record = $meta[CbtReconciliationService::META_KEY] ?? [];
         $this->assertSame(CbtReconciliationService::STATUS_MANUAL_REFUND_REQUIRED, $record['status'] ?? null);
         $this->assertSame('CBT_TID_010', $record['tid'] ?? null);
-        $this->assertSame('refund timeout', $record['refund_error'] ?? null);
+        // 관리자 주문 상세에 보이는 기록이라 통신 예외 원문은 싣지 않고 일반 문구만 남긴다(#858) — 원문은 서버 로그에만.
+        // 결과가 app.debug 에 따라 갈리므로 운영과 같은 꺼짐 상태를 위에서 고정했다.
+        $this->assertSame(__('sirsoft-pay_kginicis::messages.refund.pg_failed'), $record['refund_error'] ?? null);
+        $this->assertStringNotContainsString('refund timeout', (string) ($record['refund_error'] ?? ''));
     }
 
     /**

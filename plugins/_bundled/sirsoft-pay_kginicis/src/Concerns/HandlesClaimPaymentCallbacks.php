@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayKginicis\Concerns;
 
+use App\Helpers\ResponseHelper;
 use App\Support\ScreenUrl;
 use Illuminate\Contracts\Cache\LockTimeoutException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\ClaimPaymentLookup;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\ClaimPaymentRecord;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\OrderRecord;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
 use Modules\Sirsoft\Ecommerce\Support\ClaimPaymentCallback;
 use Modules\Sirsoft\Ecommerce\Support\ClaimPaymentRedirect;
 
@@ -23,9 +25,12 @@ use Modules\Sirsoft\Ecommerce\Support\ClaimPaymentRedirect;
  * 이 플러그인의 콜백·서명 컨트롤러가 함께 쓰는 조각(결제 건 조회, 결제창 실패 복귀,
  * 콜백 락 안의 승인 위임)만 둔다. 승인 확정 뒤 거절의 보상은 승인 리스너의 `voidApproval()` 이 맡는다.
  *
- * 호스트 요건: 생성자에서 `ClaimPaymentRepositoryInterface` 를 `$claimPaymentRepository` 로 주입받는다
- * (서비스 로케이터 `app()` 로 Repository 를 꺼내지 않는다). 승인 직렬화 헬퍼
- * `approveClaimPaymentSerialized()` 를 부르는 호스트는 `SerializesPaymentCallbacks` 도 함께 쓴다.
+ * 결제 건 조회·청구액 계산은 이커머스 공개 계약 {@see ClaimPaymentLookup} 로 한다(#916). 공개 Support
+ * (`ClaimPaymentCallback`·`ClaimPaymentRedirect`)가 결제 건 Model 을 받으므로 그 인자만 읽기 전용 Model 조회
+ * (`findClaimPaymentModel`)로 얻는다.
+ *
+ * 호스트 요건: 생성자에서 `PaymentGatewayBridge` 를 `$bridge` 로 주입받는다(서비스 로케이터 `app()` 로 꺼내지 않는다).
+ * 승인 직렬화 헬퍼 `approveClaimPaymentSerialized()` 를 부르는 호스트는 `SerializesPaymentCallbacks` 도 함께 쓴다.
  */
 trait HandlesClaimPaymentCallbacks
 {
@@ -33,11 +38,35 @@ trait HandlesClaimPaymentCallbacks
      * 클레임 결제 건을 결제번호로 되찾습니다.
      *
      * @param  string  $paymentNumber  클레임 결제번호 (CP 채번)
+     * @return ClaimPaymentRecord|null 결제 건
+     */
+    protected function findClaimPayment(string $paymentNumber): ?ClaimPaymentRecord
+    {
+        return $this->bridge->findClaimPayment($paymentNumber, 'kginicis');
+    }
+
+    /**
+     * 공개 Support 에 넘길 클레임 결제 건 Model 을 되찾습니다(읽기 전용 — 쓰기·조회에 쓰지 않는다).
+     *
+     * @param  string  $paymentNumber  클레임 결제번호 (CP 채번)
      * @return ClaimPayment|null 결제 건
      */
-    protected function findClaimPayment(string $paymentNumber): ?ClaimPayment
+    protected function findClaimPaymentModel(string $paymentNumber): ?ClaimPayment
     {
-        return $this->claimPaymentRepository->findByPaymentNumber($paymentNumber);
+        return $this->bridge->findClaimPaymentModel($paymentNumber, 'kginicis');
+    }
+
+    /**
+     * 클레임 결제 건의 부모 주문을 되찾습니다.
+     *
+     * @param  ClaimPaymentRecord  $payment  결제 건
+     * @return OrderRecord|null 부모 주문 (soft-delete 등으로 못 읽으면 null)
+     */
+    protected function claimPaymentOrder(ClaimPaymentRecord $payment): ?OrderRecord
+    {
+        return $payment->orderNumber === null
+            ? null
+            : $this->bridge->findOrderByNumber($payment->orderNumber, 'kginicis');
     }
 
     /**
@@ -48,7 +77,7 @@ trait HandlesClaimPaymentCallbacks
      * 복귀 주소를 정한다({@see busyClaimCallbackRedirectUrl()}).
      *
      * @param  string  $context  콜백 문맥 (락 키 구분자 — 주문 경로와 같은 값을 쓴다)
-     * @param  ClaimPayment  $payment  승인 대상 결제 건
+     * @param  ClaimPayment  $payment  승인 대상 결제 건 (공개 Support 인자 — 읽기 전용)
      * @param  array  $callback  모듈 승인에 넘길 콜백 파라미터
      * @return RedirectResponse 신청서 상세로 리다이렉트
      */
@@ -83,14 +112,15 @@ trait HandlesClaimPaymentCallbacks
      */
     protected function busyClaimCallbackRedirectUrl(ClaimPayment $payment): string
     {
-        $latest = $this->findClaimPayment((string) $payment->payment_number) ?? $payment;
+        $latest = $this->findClaimPaymentModel((string) $payment->payment_number) ?? $payment;
+        $record = $this->bridge->describeClaimPayment($latest);
 
         Log::warning('KG Inicis: claim payment callback skipped because the callback lock is busy', [
             'payment_number' => $payment->payment_number,
-            'payment_status' => $latest->payment_status?->value,
+            'payment_status' => $record->paymentStatus?->value,
         ]);
 
-        return $latest->isPaid()
+        return $record->isPaid
             ? ClaimPaymentRedirect::success($latest)
             : ClaimPaymentRedirect::fail($latest, 'callback_locked');
     }
@@ -104,7 +134,7 @@ trait HandlesClaimPaymentCallbacks
      */
     protected function redirectClaimWindowFailure(string $paymentNumber, ?string $errorCode): ?RedirectResponse
     {
-        $payment = $this->findClaimPayment($paymentNumber);
+        $payment = $this->findClaimPaymentModel($paymentNumber);
 
         if (! $payment) {
             Log::error('KG Inicis: claim payment not found on window failure', [
@@ -137,51 +167,32 @@ trait HandlesClaimPaymentCallbacks
         $payment = $this->findClaimPayment($paymentNumber);
 
         if (! $payment) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Claim payment not found.',
-            ], 404);
+            return ResponseHelper::pluginError('sirsoft-pay_kginicis', 'messages.responses.claim_payment_not_found', 404);
         }
 
-        if (! $payment->isPending()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Claim payment is not payable.',
-            ], 422);
+        if (! $payment->isPending) {
+            return ResponseHelper::pluginError('sirsoft-pay_kginicis', 'messages.responses.claim_payment_not_payable', 422);
         }
 
-        $charge = app(ClaimPaymentService::class)->resolvePaymentCharge($payment);
+        $charge = $this->bridge->resolveClaimCharge($paymentNumber);
 
         if ($charge === null) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Payment currency is not chargeable.',
-            ], 422);
+            return ResponseHelper::pluginError('sirsoft-pay_kginicis', 'messages.responses.currency_not_chargeable', 422);
         }
 
-        if (strtoupper($charge['currency']) !== 'KRW') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Standard KG Inicis signature is only available for KRW payments.',
-            ], 422);
+        if (strtoupper($charge->currency) !== 'KRW') {
+            return ResponseHelper::pluginError('sirsoft-pay_kginicis', 'messages.responses.krw_only', 422);
         }
 
-        $payment->loadMissing('order');
-
-        // 부모를 못 읽으면(soft-delete 등) 통과가 아니라 차단이다 — `$payment->order &&` 는
-        // 주문이 사라진 결제 건에서 구매자 대조를 통째로 건너뛴다.
-        if (! $payment->order || ! $this->requestMatchesOrderBuyer($request, $payment->order)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Order buyer verification failed.',
-            ], 403);
+        // 부모를 못 읽으면(soft-delete 등) 통과가 아니라 차단이다 — 주문이 사라진 결제 건에서
+        // 구매자 대조를 통째로 건너뛰지 않는다.
+        $order = $this->claimPaymentOrder($payment);
+        if (! $order || ! $this->requestMatchesOrderBuyer($request, $order)) {
+            return ResponseHelper::pluginError('sirsoft-pay_kginicis', 'messages.responses.buyer_verification_failed', 403);
         }
 
-        if ($price !== $charge['minor_unit_amount']) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Payment amount does not match the claim payment amount.',
-            ], 422);
+        if ($price !== $charge->minorUnitAmount) {
+            return ResponseHelper::pluginError('sirsoft-pay_kginicis', 'messages.responses.claim_amount_mismatch', 422);
         }
 
         return null;

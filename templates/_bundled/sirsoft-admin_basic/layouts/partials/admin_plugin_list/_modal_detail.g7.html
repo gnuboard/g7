@@ -80,6 +80,18 @@
                   <span class="{{_global.selectedPlugin.status === 'active' ? 'badge badge-green' : (_global.selectedPlugin.status === 'uninstalled' ? 'badge badge-blue' : 'badge badge-gray')}}">{{_global.selectedPlugin.status === 'active' ? '$t:admin.plugins.status.active' : (_global.selectedPlugin.status === 'uninstalled' ? '$t:admin.plugins.status.not_installed' : '$t:admin.plugins.status.inactive')}}</span>
                 </div>
               </div>
+              <!-- 패키지 서명(#916) — 설치·업데이트 때 남긴 검증 기록(integrity_status). verified 면 키 ID 콜론 앞(서명자)을 보인다.
+                   기록이 없으면(이 기능 전에 설치했거나 옛 코어) 「기록 없음」이다. -->
+              <div data-ref="package_signature_field">
+                <span class="text-label-subtle">$t:admin.package_integrity.signature_label</span>
+                <div>
+                  <span data-if="{{_global.selectedPlugin?.integrity_status === 'verified'}}" class="badge badge-green">$t:admin.package_integrity.status_verified|signer={{(_global.selectedPlugin?.integrity_key_id ?? '').split(':')[0]}}</span>
+                  <span data-if="{{_global.selectedPlugin?.integrity_status === 'unsigned'}}" class="badge badge-yellow">$t:admin.package_integrity.status_unsigned</span>
+                  <span data-if="{{_global.selectedPlugin?.integrity_status === 'unverifiable'}}" class="badge badge-yellow">$t:admin.package_integrity.status_unverifiable</span>
+                  <span data-if="{{_global.selectedPlugin?.integrity_status === 'bundled'}}" class="badge badge-blue">$t:admin.package_integrity.status_bundled</span>
+                  <span data-if="{{!['verified', 'unsigned', 'unverifiable', 'bundled'].includes(_global.selectedPlugin?.integrity_status)}}" class="badge badge-gray">$t:admin.package_integrity.status_none</span>
+                </div>
+              </div>
             </div>
           </div>
           <div data-ref="dependencies_section">
@@ -153,6 +165,35 @@
                 <span data-if="{{!item.is_installed}}" class="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">$t:admin.extension_integrations.not_installed</span>
                 <span data-if="{{item.is_installed &amp;&amp; !item.is_active}}" class="text-warning-soft px-2 py-0.5 bg-yellow-100 dark:bg-yellow-900 rounded">$t:admin.extension_integrations.inactive</span>
                 <span data-if="{{item.is_installed &amp;&amp; item.is_met === false}}" class="text-danger-soft px-2 py-0.5 bg-red-100 dark:bg-red-900 rounded">$t:admin.extension_integrations.version_mismatch</span>
+              </div>
+            </div>
+          </div>
+          <!-- 다른 확장에 공개하는 PHP 표면 (#916) — manifest `public_api`. 선언이 없으면 절을 그리지 않는다.
+            옛 코어는 `public_api` 를 싣지 않으므로 `?.` 와 `?? []` 로 읽는다. -->
+          <div data-ref="public_api_section" data-if="{{!!_global.selectedPlugin?.public_api}}">
+            <div class="flex-center gap-2 mb-3">
+              <icon name="code" class="text-xl text-gray-500" aria-hidden="true"/>
+              <span class="text-primary font-semibold">$t:admin.extension_public_api.title</span>
+            </div>
+            <p class="text-label-subtle mb-2">$t:admin.extension_public_api.hint</p>
+            <div class="row-stack">
+              <div data-if="{{(_global.selectedPlugin?.public_api?.namespaces ?? []).length > 0}}" class="row-stack">
+                <span class="text-secondary text-sm font-medium">$t:admin.extension_public_api.namespaces</span>
+                <div data-each="fqcn in _global.selectedPlugin.public_api.namespaces" class="p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+                  <span class="text-heading text-xs font-mono break-all">{{fqcn}}</span>
+                </div>
+              </div>
+              <div data-if="{{(_global.selectedPlugin?.public_api?.classes ?? []).length > 0}}" class="row-stack">
+                <span class="text-secondary text-sm font-medium">$t:admin.extension_public_api.classes</span>
+                <div data-each="fqcn in _global.selectedPlugin.public_api.classes" class="p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+                  <span class="text-heading text-xs font-mono break-all">{{fqcn}}</span>
+                </div>
+              </div>
+              <div data-if="{{(_global.selectedPlugin?.public_api?.readonly_models ?? []).length > 0}}" class="row-stack">
+                <span class="text-secondary text-sm font-medium">$t:admin.extension_public_api.readonly_models</span>
+                <div data-each="fqcn in _global.selectedPlugin.public_api.readonly_models" class="p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+                  <span class="text-heading text-xs font-mono break-all">{{fqcn}}</span>
+                </div>
               </div>
             </div>
           </div>

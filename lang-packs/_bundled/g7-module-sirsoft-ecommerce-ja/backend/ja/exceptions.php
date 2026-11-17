@@ -205,4 +205,16 @@ return [
         'no_rows' => '現在の条件に合致する行がないため、再度リクエストしませんでした。一覧から期間または検索条件を変更して新たにリクエストしてください。',
     ],
     'imported_review_invalid_field' => '移行レビューの入力値が正しくありません: :field',
+    'payment_contract' => [
+        'order_not_found' => '注文が見つかりません: :order_number',
+        'provider_mismatch' => '決済行が別の決済代行会社([:owner])のものなので、[:caller] は変更できません。',
+        'transition_denied' => '注文 :order_number の決済状態を変更できません: :reason',
+        'retry_prefix_mismatch' => '再決済復旧の meta 接頭辞 [:prefix] が決済代行会社 ID [:pg] と異なります。',
+        'pg_attribute_not_allowed' => '[:column] 列は決済代行会社の付加情報として記録できません。',
+        'failure_status_invalid' => '決済失敗の状態は failed または cancelled である必要があります。',
+        'provider_required' => '決済代行会社 ID が必要です。',
+        'order_meta_namespace_invalid' => '注文 meta の namespace [:namespace] は [:prefix] で始まる必要があります。',
+        'sample_column_not_allowed' => '[:column] 列は API ドキュメントのサンプル決済行に使用できません。',
+        'currency_rate_missing' => '[:currency] 通貨に為替レートが設定されていません。',
+    ],
 ];

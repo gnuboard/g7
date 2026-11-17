@@ -1,0 +1,91 @@
+<!-- 보안 탭의 **확장 신뢰 키** 카드(#916) — 확장·언어팩·코어 패키지의 서명을 확인할 때 믿는 공개키를 보여 주고 관리한다.
+  값의 출처가 둘이라 저장 경로도 둘이다.
+  ⑴ 「미서명 패키지 차단」 스위치는 설정 값(`security.extension_block_unsigned`)이라 화면 하단 공용 저장 버튼이 탭과 함께 보낸다.
+  ⑵ 키 목록은 설정 폼이 아니라 소스 `extensionTrustKeys`(GET /api/admin/extension-trust-keys)에서 읽는다. 코어 내장 키는 코어가
+     상수로 들고 있어 읽기 전용이고, 제작자 키의 추가·삭제는 탭 저장과 분리된 전용 API 를 비밀번호 재확인 창을 거쳐 부른 뒤 이 소스만
+     다시 받는다(탭 저장을 기다리지 않고 곧바로 반영된다).
+  서버에 sodium 이 없으면 서명을 확인할 수 없어(서명된 패키지도 미서명 정책을 따른다) 카드 위에 경고를 띄운다.
+  키 행은 표가 아니라 줄 바꿈되는 카드라 좁은 화면 프리셋이 따로 없다. -->
+<partial description="환경설정 보안 탭 — 확장 신뢰 키 카드">
+  <div data-ref="card_extension_trust" class="card-stack-item">
+    <h3 class="card-title">$t:admin.settings.security.extension_trust.title</h3>
+    <div class="card-description">$t:admin.settings.security.extension_trust.desc</div>
+    <!-- sodium 없음 — 서버가 알려 준 값이 false 일 때만 뜬다(값을 못 받았으면 띄우지 않는다) -->
+    <div data-ref="extension_trust_sodium_warning" data-if="{{extensionTrustKeys?.data?.sodium_available === false}}" class="alert-warning">
+      <div class="flex gap-3">
+        <icon name="triangle-exclamation" class="text-xl text-yellow-700 dark:text-yellow-400 flex-shrink-0 mt-0.5" aria-hidden="true"/>
+        <p class="text-warning-soft">$t:admin.settings.security.extension_trust.sodium_missing</p>
+      </div>
+    </div>
+    <div class="row-stack">
+      <div data-ref="toggle_extension_block_unsigned" class="flex-between">
+        <div>
+          <div class="flex-center">
+            <span class="text-heading">$t:admin.settings.security.extension_trust.block_unsigned</span>
+          </div>
+          <p class="text-label-subtle">$t:admin.settings.security.extension_trust.block_unsigned_desc</p>
+          <span data-if="{{_local.errors?.['security.extension_block_unsigned']}}" class="form-error">{{_local.errors?.['security.extension_block_unsigned']?.[0] ?? ''}}</span>
+        </div>
+        <toggle data-type="composite" name="security.extension_block_unsigned" size="md" disabled="{{_computed.isReadOnly}}"/>
+      </div>
+      <p data-ref="extension_trust_load_failed" data-if="{{!!extensionTrustKeys &amp;&amp; !extensionTrustKeys?.data}}" class="form-error">$t:admin.settings.security.extension_trust.load_failed</p>
+      <!-- 코어 내장 키 — 코어가 상수로 들고 있는 키(env·설정으로 덮을 수 없다). 바꿀 수 없으므로 버튼이 없다 -->
+      <div data-ref="extension_trust_builtin" class="space-y-2">
+        <div>
+          <h4 class="text-heading">$t:admin.settings.security.extension_trust.builtin_title</h4>
+          <p class="text-label-subtle">$t:admin.settings.security.extension_trust.builtin_hint</p>
+        </div>
+        <p data-ref="extension_trust_builtin_empty" data-if="{{!!extensionTrustKeys?.data &amp;&amp; (extensionTrustKeys?.data?.builtin ?? []).length === 0}}" class="text-secondary text-sm">$t:admin.settings.security.extension_trust.builtin_empty</p>
+        <div data-each="builtinKey in (extensionTrustKeys?.data?.builtin ?? [])" class="flex-center flex-wrap gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+          <span class="text-heading text-sm">{{builtinKey.label}}</span>
+          <code class="text-label-subtle text-xs font-mono break-all">{{builtinKey.key_id}}</code>
+          <span data-if="{{builtinKey.status === 'active'}}" class="badge badge-green">$t:admin.settings.security.extension_trust.status_active</span>
+          <span data-if="{{builtinKey.status === 'retired'}}" class="badge badge-gray">$t:admin.settings.security.extension_trust.status_retired</span>
+          <span data-if="{{builtinKey.status === 'revoked'}}" class="badge badge-red">$t:admin.settings.security.extension_trust.status_revoked</span>
+        </div>
+      </div>
+      <!-- 제작자 키 — 관리자가 추가한 키. vendor 범위에 든 식별자의 서명만 믿는다 -->
+      <div data-ref="extension_trust_vendor" class="space-y-2">
+        <div class="flex-between gap-2 flex-wrap">
+          <h4 class="text-heading">$t:admin.settings.security.extension_trust.vendor_title</h4>
+          <button data-ref="extension_trust_add_button" type="button" class="btn btn-secondary btn-sm" disabled="{{_computed.isReadOnly || !extensionTrustKeys?.data}}">
+            <on type="click">
+              <!-- 키 추가 창은 늘 빈 칸으로 연다 — 지난 입력·오류·비밀번호가 남아 있으면 다른 키를 잘못 등록한다 -->
+              <sequence>
+                <set-state target="global" trustKeyForm="{{ {public_key: '', label: '', vendor_scope: ''} }}" trustKeyPassword="" :trustKeyErrors="null" :trustKeyError="null"/>
+                <open-modal target="extension_trust_key_add_modal"/>
+              </sequence>
+            </on>
+            <icon name="plus" size="sm"/>
+            <span>$t:admin.settings.security.extension_trust.add_key</span>
+          </button>
+        </div>
+        <p data-ref="extension_trust_vendor_empty" data-if="{{!!extensionTrustKeys?.data &amp;&amp; (extensionTrustKeys?.data?.keys ?? []).length === 0}}" class="text-secondary text-sm">$t:admin.settings.security.extension_trust.vendor_empty</p>
+        <div data-each="vendorKey in (extensionTrustKeys?.data?.keys ?? [])" class="flex-between flex-wrap gap-2 p-3 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+          <div class="min-w-0 flex-1 space-y-1">
+            <code class="text-heading text-xs font-mono break-all">{{vendorKey.key_id}}</code>
+            <div class="flex-center flex-wrap gap-x-3 gap-y-1 text-xs">
+              <span class="text-label-subtle">$t:admin.settings.security.extension_trust.field_signer</span>
+              <span class="text-primary">{{vendorKey.label}}</span>
+              <span class="text-label-subtle">$t:admin.settings.security.extension_trust.field_vendor_scope</span>
+              <span data-each="scopeVendor in (vendorKey.vendor_scope ?? [])" class="badge badge-blue font-mono">{{scopeVendor}}</span>
+              <span class="text-label-subtle">$t:admin.settings.security.extension_trust.field_created_at</span>
+              <span class="text-secondary">{{vendorKey.created_at | date}}</span>
+            </div>
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm flex-shrink-0" disabled="{{_computed.isReadOnly}}">
+            <on type="click">
+              <!-- 삭제할 키를 담고 비밀번호 재확인 창을 연다 — 지난 비밀번호·오류는 비운다 -->
+              <sequence>
+                <set-state target="global" trustKeyDeleteTarget="{{vendorKey}}" trustKeyPassword="" :trustKeyError="null" :trustKeyErrors="null"/>
+                <open-modal target="extension_trust_key_delete_modal"/>
+              </sequence>
+            </on>
+            <icon name="trash" size="sm"/>
+            <span>$t:admin.settings.security.extension_trust.delete_key</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

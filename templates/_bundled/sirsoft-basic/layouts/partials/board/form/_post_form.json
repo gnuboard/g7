@@ -750,13 +750,114 @@
                     "text": "$t:board.form.attachments_desc|count={{form_meta?.data?.board?.max_file_count ?? 5}}|maxFiles={{form_meta?.data?.board?.max_file_count ?? 5}}|maxSize={{form_meta?.data?.board?.max_file_size ?? 10}}"
                 },
                 {
-                    "type": "composite",
-                    "name": "FileUploader",
-                    "actions": [
+                    "comment": "첨부 업로더 확장점 — 업로더 플러그인이 mode=\"replace\" 로 이 자리를 바꾼다. 표시 조건(파일 첨부 사용 + 업로드 권한)은 위 감싸는 칸에 있어\n           대체 업로더도 권한 없는 회원에게는 그려지지 않는다. 계약(uploader)은 기본 업로더에 넘기는 값과 같고, 새 글은 정렬 주소가 없다.\n           저장 버튼의 upload:board_attachments 신호와 결과(_eventResult) 모양은 그대로다.",
+                    "id": "post_attachments_uploader_slot",
+                    "type": "extension_point",
+                    "name": "attachment_uploader",
+                    "props": {
+                        "className": "contents",
+                        "uploader": {
+                            "version": 1,
+                            "mode": "upload",
+                            "endpoints": {
+                                "upload": "/api/modules/sirsoft-board/boards/{{route.slug}}/attachments",
+                                "delete": "/api/modules/sirsoft-board/boards/{{route.slug}}/attachments/:id",
+                                "reorder": "{{route.id ? '/api/modules/sirsoft-board/boards/' + route.slug + '/attachments/reorder' : null}}"
+                            },
+                            "fields": {
+                                "temp_key": "{{_local.tempKey}}"
+                            },
+                            "policy": {
+                                "accept": "{{form_meta?.data?.board?.allowed_extensions?.length ? '.' + form_meta?.data?.board?.allowed_extensions?.join(',.') : '.jpg,.jpeg,.png,.gif,.pdf,.zip'}}",
+                                "maxSize": "{{form_meta?.data?.board?.max_file_size ?? 10}}",
+                                "maxFiles": "{{form_meta?.data?.board?.max_file_count ?? 5}}",
+                                "maxConcurrentUploads": 1,
+                                "imageCompression": null
+                            },
+                            "collection": "post_attachments",
+                            "attachmentable": {
+                                "type": null,
+                                "id": null
+                            },
+                            "triggerEvent": "upload:board_attachments",
+                            "initialFiles": "{{form_meta?.data?.attachments ?? []}}",
+                            "disabled": false,
+                            "autoUpload": false,
+                            "ui": {
+                                "confirmBeforeRemove": true
+                            },
+                            "context": {
+                                "owner": "sirsoft-board",
+                                "purpose": "post_attachments"
+                            }
+                        }
+                    },
+                    "default": [
                         {
-                            "comment": "첨부 목록이 바뀜 — 이미 서 있는 표시를 다시 세우지 않도록 조건을 건다(파일을 고를 때마다 상태를 갈아 끼우면 목록이 통째로 다시 그려진다).",
-                            "type": "change",
-                            "event": "onFilesChange",
+                            "type": "composite",
+                            "name": "FileUploader",
+                            "actions": [
+                                {
+                                    "comment": "첨부 목록이 바뀜 — 이미 서 있는 표시를 다시 세우지 않도록 조건을 건다(파일을 고를 때마다 상태를 갈아 끼우면 목록이 통째로 다시 그려진다).",
+                                    "type": "change",
+                                    "event": "onFilesChange",
+                                    "handler": "setState",
+                                    "if": "{{!_local.hasChanges}}",
+                                    "params": {
+                                        "target": "local",
+                                        "hasChanges": true
+                                    }
+                                },
+                                {
+                                    "comment": "첨부 올리기 실패 — 저장 잠금을 반드시 푼다. 저장 버튼이 업로드를 먼저 발화시키므로, 여기서 풀지 않으면 버튼이 잠긴 채 남는다.",
+                                    "type": "change",
+                                    "event": "onUploadError",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "uploadError": "{{$args[0]}}",
+                                                "isSaving": false
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "params": {
+                                                "type": "error",
+                                                "message": "{{$args[0]}}",
+                                                "icon": "triangle-exclamation"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "collection": "post_attachments",
+                                "maxFiles": "{{form_meta?.data?.board?.max_file_count ?? 5}}",
+                                "maxSize": "{{form_meta?.data?.board?.max_file_size ?? 10}}",
+                                "accept": "{{form_meta?.data?.board?.allowed_extensions?.length ? '.' + form_meta?.data?.board?.allowed_extensions?.join(',.') : '.jpg,.jpeg,.png,.gif,.pdf,.zip'}}",
+                                "initialFiles": "{{form_meta?.data?.attachments ?? []}}",
+                                "autoUpload": false,
+                                "uploadTriggerEvent": "upload:board_attachments",
+                                "confirmBeforeRemove": true,
+                                "confirmRemoveTitle": "$t:board.posts.form.confirm_remove_attachment_title",
+                                "confirmRemoveMessage": "$t:board.posts.form.confirm_remove_attachment_message",
+                                "uploadParams": {
+                                    "temp_key": "{{_local.tempKey}}"
+                                },
+                                "apiEndpoints": {
+                                    "upload": "/api/modules/sirsoft-board/boards/{{route.slug}}/attachments",
+                                    "delete": "/api/modules/sirsoft-board/boards/{{route.slug}}/attachments/:id",
+                                    "reorder": "/api/modules/sirsoft-board/boards/{{route.slug}}/attachments/reorder"
+                                }
+                            }
+                        }
+                    ],
+                    "callbacks": {
+                        "onFilesChange": {
+                            "comment": "첨부 목록이 바뀜 — 이미 서 있는 표시는 다시 세우지 않는다(기본 업로더와 같다)",
                             "handler": "setState",
                             "if": "{{!_local.hasChanges}}",
                             "params": {
@@ -764,17 +865,15 @@
                                 "hasChanges": true
                             }
                         },
-                        {
-                            "comment": "첨부 올리기 실패 — 저장 잠금을 반드시 푼다. 저장 버튼이 업로드를 먼저 발화시키므로, 여기서 풀지 않으면 버튼이 잠긴 채 남는다.",
-                            "type": "change",
-                            "event": "onUploadError",
+                        "onUploadError": {
+                            "comment": "첨부 올리기 실패 — 저장 잠금을 반드시 풀고 사유를 알린다(기본 업로더와 같다)",
                             "handler": "sequence",
                             "actions": [
                                 {
                                     "handler": "setState",
                                     "params": {
                                         "target": "local",
-                                        "uploadError": "{{$args[0]}}",
+                                        "uploadError": "{{$event}}",
                                         "isSaving": false
                                     }
                                 },
@@ -782,31 +881,11 @@
                                     "handler": "toast",
                                     "params": {
                                         "type": "error",
-                                        "message": "{{$args[0]}}",
+                                        "message": "{{$event}}",
                                         "icon": "triangle-exclamation"
                                     }
                                 }
                             ]
-                        }
-                    ],
-                    "props": {
-                        "collection": "post_attachments",
-                        "maxFiles": "{{form_meta?.data?.board?.max_file_count ?? 5}}",
-                        "maxSize": "{{form_meta?.data?.board?.max_file_size ?? 10}}",
-                        "accept": "{{form_meta?.data?.board?.allowed_extensions?.length ? '.' + form_meta?.data?.board?.allowed_extensions?.join(',.') : '.jpg,.jpeg,.png,.gif,.pdf,.zip'}}",
-                        "initialFiles": "{{form_meta?.data?.attachments ?? []}}",
-                        "autoUpload": false,
-                        "uploadTriggerEvent": "upload:board_attachments",
-                        "confirmBeforeRemove": true,
-                        "confirmRemoveTitle": "$t:board.posts.form.confirm_remove_attachment_title",
-                        "confirmRemoveMessage": "$t:board.posts.form.confirm_remove_attachment_message",
-                        "uploadParams": {
-                            "temp_key": "{{_local.tempKey}}"
-                        },
-                        "apiEndpoints": {
-                            "upload": "/api/modules/sirsoft-board/boards/{{route.slug}}/attachments",
-                            "delete": "/api/modules/sirsoft-board/boards/{{route.slug}}/attachments/:id",
-                            "reorder": "/api/modules/sirsoft-board/boards/{{route.slug}}/attachments/reorder"
                         }
                     }
                 }

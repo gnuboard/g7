@@ -64,7 +64,8 @@
     "bad_request": "リクエストエラー",
     "bad_response": "レスポンス形式エラー",
     "network_error": "ネットワークエラー",
-    "unsupported_base": "基本通貨未サポート"
+    "unsupported_base": "基本通貨未サポート",
+    "save_failed": "為替レート保存失敗"
   },
   "RunTrigger": {
     "scheduled": "定期",

@@ -41,6 +41,7 @@ class FieldRuleFactory
      * | 꺼진 항목, 표면에서 받지 않는 항목 | 제외 |
      * | 필수 항목 | required (예/아니오는 accepted) |
      * | 관리자 수정에서 대상의 현재 값이 빈 필수 항목 | nullable |
+     * | 옛 화면 문맥({@see FieldContext::isLegacyScreen()})에서 그 화면에 입력칸이 없던 필수 항목 (운영자 추가, 확장 선언, 7.1.x 화면에 없던 코어 칸) | sometimes 를 앞에 붙인 required (값을 보냈을 때만). 기간·주소 같은 묶음 항목은 required_with(묶음의 다른 경로) — 통째로 안 보냈을 때만 건너뛴다 |
      * | 그 밖 | nullable |
      *
      * @param  string  $set  집합 식별자
@@ -67,9 +68,14 @@ class FieldRuleFactory
 
             $required = $this->isRequired($definition, $context, $current);
             $requiredPaths = $required ? ($type->requiredAttributes($definition, $attribute) ?: [$attribute]) : [];
+            // 옛 화면에는 이 항목의 입력칸이 없다 — 보내지 않았으면 건너뛰고, 보냈으면 종전대로 필수와 형식을 본다.
+            $relaxed = $required && $this->relaxesOnLegacyScreen($definition, $context);
 
             foreach ($typeRules as $path => $pathRules) {
                 $rules[$path] = $this->withPresence($definition, $path, $pathRules, $attribute, $requiredPaths);
+                if ($relaxed) {
+                    $rules[$path] = $this->legacyScreenPresence($rules[$path], $path, $this->groupPaths($definition, $type, $attribute, $typeRules));
+                }
             }
 
             $rules[$attribute] = [
@@ -160,6 +166,104 @@ class FieldRuleFactory
         }
 
         return $messages;
+    }
+
+    /**
+     * 옛 화면 문맥에서 필수 규칙이 늦춰지는 항목을 반환합니다.
+     *
+     * 이 요청에서 필수인 항목 가운데 옛 화면에 입력칸이 없던 항목이다({@see self::relaxesOnLegacyScreen()}). 옛 화면 문맥이 아니면 빈 배열이다.
+     * 요청 클래스가 「보내지 않아 건너뛴 항목」을 가려 로그에 남길 때 쓴다.
+     *
+     * @param  string  $set  집합 식별자
+     * @param  FieldContext  $context  요청 문맥
+     * @return array<string, string> 항목 키 => 요청 속성 경로
+     *
+     * @since 7.2.0
+     */
+    public function relaxedOnLegacyScreen(string $set, FieldContext $context): array
+    {
+        if (! $context->isLegacyScreen()) {
+            return [];
+        }
+
+        $definitions = $this->registry->forSurface($set, $context);
+        $current = $this->currentValues($set, $context, $definitions);
+
+        $relaxed = [];
+        foreach ($definitions as $definition) {
+            if ($this->isRequired($definition, $context, $current) && $this->relaxesOnLegacyScreen($definition, $context)) {
+                $relaxed[$definition->key] = $this->registry->attributeFor($definition);
+            }
+        }
+
+        return $relaxed;
+    }
+
+    /**
+     * 옛 화면 문맥에서 이 항목의 필수 규칙을 늦출지 반환합니다.
+     *
+     * 옛 화면에 입력칸이 없던 항목만 늦춘다 — 운영자 추가 항목과 확장 선언 항목 전부, 그리고 그 표면의 7.1.x 화면이 보내지 않던
+     * 코어 항목(가입의 주소, 홈페이지 등. {@see LegacyScreenFields}). 7.1.x 화면이 그리던 코어 칸(이름, 닉네임, 연락처 등)은 그대로 건다.
+     *
+     * @param  FieldDefinition  $definition  항목 정의
+     * @param  FieldContext  $context  요청 문맥
+     * @return bool 늦추면 true
+     */
+    protected function relaxesOnLegacyScreen(FieldDefinition $definition, FieldContext $context): bool
+    {
+        if (! $context->isLegacyScreen()) {
+            return false;
+        }
+
+        if ($definition->source_type !== FieldDefinition::SOURCE_CORE) {
+            return true;
+        }
+
+        $legacyKeys = LegacyScreenFields::coreKeysFor($context->surface);
+
+        return $legacyKeys !== null && ! in_array($definition->key, $legacyKeys, true);
+    }
+
+    /**
+     * 옛 화면 문맥에서 늦추는 항목의 한 경로 규칙을 만듭니다.
+     *
+     * 칸이 하나인 항목은 `sometimes` 를 앞에 붙인다(보내지 않으면 건너뛰고, 보냈으면 종전대로 본다). 기간·주소처럼 경로가 여럿인
+     * 묶음 항목은 경로마다 따로 건너뛰면 일부 칸만 보내도 통과하므로, 필수 규칙을 「같은 묶음의 다른 경로가 하나라도 오면 필수」로
+     * 바꾼다 — 통째로 보내지 않을 때만 건너뛴다. 존재 규칙이 아닌 형식 규칙은 값이 왔을 때만 돈다.
+     *
+     * @param  array<int, mixed>  $rules  존재 규칙까지 붙인 그 경로의 규칙
+     * @param  string  $path  요청 속성 경로
+     * @param  array<int, string>  $group  같은 항목의 입력 경로 전부 (부모 배열 포함)
+     * @return array<int, mixed> 늦춘 규칙
+     */
+    protected function legacyScreenPresence(array $rules, string $path, array $group): array
+    {
+        if (count($group) < 2) {
+            return ['sometimes', ...$rules];
+        }
+
+        $others = array_values(array_diff($group, [$path]));
+
+        return array_map(
+            fn ($rule) => in_array($rule, ['required', 'accepted'], true) ? 'required_with:'.implode(',', $others) : $rule,
+            $rules,
+        );
+    }
+
+    /**
+     * 항목의 입력 경로 전부를 반환합니다 (부모 배열·유형이 선언한 입력 경로·규칙 경로, 배열 요소 `.*` 제외).
+     *
+     * @param  FieldDefinition  $definition  항목 정의
+     * @param  FieldTypeInterface  $type  유형
+     * @param  string  $attribute  요청 속성 경로
+     * @param  array<string, array<int, mixed>>  $typeRules  유형 규칙
+     * @return array<int, string> 경로 목록
+     */
+    protected function groupPaths(FieldDefinition $definition, FieldTypeInterface $type, string $attribute, array $typeRules): array
+    {
+        $paths = [$attribute, ...$type->inputPaths($definition, $attribute), ...array_keys($typeRules)];
+
+        return array_values(array_unique(array_filter($paths, fn (string $path) => ! str_ends_with($path, '.*'))));
     }
 
     /**

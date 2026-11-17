@@ -1713,7 +1713,8 @@
     "template_settings": "テンプレート設定",
     "memberFieldDefs": "会員項目定義",
     "memberFields": "会員項目",
-    "memberNicknameRecompute": "ニックネーム重複チェックの準備状態"
+    "memberNicknameRecompute": "ニックネーム重複チェックの準備状態",
+    "extensionTrustKeys": "拡張信頼鍵"
   },
   "array_group": {
     "chart_labels": "項目ラベル",

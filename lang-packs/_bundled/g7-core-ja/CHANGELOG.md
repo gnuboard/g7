@@ -8,6 +8,10 @@
 
 ### Added
 
+- 확장 신뢰 키를 등록하거나 삭제했을 때 활동 로그에 남는 문구(`activity_log.description.extension_trust_key_create`·`extension_trust_key_delete`)의 일본어 번역을 추가했습니다.
+- 설치와 업데이트 요청의 「패키지 서명 확인 화면 표식」 검증 문구와 항목 이름(`extension_integrity.validation.integrity_aware_boolean`·`extension_integrity.attributes.integrity_aware`)의 일본어 번역을 추가했습니다.
+- 확장 패키지 서명 검증 문구(확장 설치와 업데이트의 서명 상태, 거절 사유, 신뢰 키 관리, `extension_integrity.*`), 서명 명령 설명(`commands.descriptions.extension:keygen`, `extension:sign`, `extension:trust-key`), GitHub 저장소에 태그 릴리스가 없을 때의 오류(`common.errors.github_release_not_found`)의 일본어 번역을 추가했습니다.
+- 환경설정 > 드라이버 「비공개 첨부 저장소」의 선택지 이름(`settings.drivers.private_attachment.*`), 저장 경고(`settings.warnings.*`), 저장 검증 문구와 항목 이름(`validation.settings.private_attachment_disk_invalid`·`validation.attributes.private_attachment_disk`)의 일본어 번역을 추가했습니다.
 - 터미널 비밀번호 재설정(`user:reset-password`)을 이메일 없이 실행해 최고관리자를 고를 때의 안내·확인·취소 문구와, 재설정 뒤에도 회원 상태 때문에 로그인할 수 없다는 경고(`user.commands.reset_password.*` 8개)의 일본어 번역을 추가하고, 명령 설명에 「이메일을 생략하면 최고관리자」를 덧붙였습니다.
 - 템플릿 설치·업데이트 결과의 「첫 화면에 미리 실을 설정(`expose`) 선언」 경고 문구(`extensions.warnings.expose_not_array`·`expose_missing_engine_keys`)의 일본어 번역을 추가했습니다.
 - 환경설정 > 드라이버 「웹서버 파일 위임」의 선택지 이름(`settings.drivers.file_delegation.*`), 설정 점검 결과 문구(`settings.driver_test.file_delegation.*`), 저장 검증 문구와 항목 이름(`validation.settings.file_delegation_*`·`validation.attributes.file_delegation*`)의 일본어 번역을 추가했습니다 (#878).
@@ -76,6 +80,7 @@
 
 ### Changed
 
+- 권한이 걸린 이미지 썸네일 저장 위치 검증 문구(`validation.settings.thumbnail_disk_gated_invalid`)를 새 허용 범위(서버 비공개 저장소, Amazon S3, 비공개 첨부 저장소 목록의 디스크, 공개 자산 디스크 불가)에 맞춰 고쳤습니다.
 - `g7:asset-url-mode` 의 마운트 접두사 안내 문구 3건(두 값의 출처, 오류 로그로 남는다는 안내)을 갱신했습니다.
 - 스케줄 관리의 검증 문구·항목 이름을 화면 용어에 맞췄습니다 — 「識別子」「タスク名」「制限時間」「有効状態」「最近の実行結果」, 작업 유형 표기 「Artisan」「Shell」「URL」「Job」, 복제 → 「コピー」.
 - 루트 보호 규칙 파일 쓰기 실패 안내를 「임시 파일은 대상 파일의 디렉토리에 만들며, 심볼릭 링크면 링크 대상의 권한」으로 원인 범위를 넓힌 코어 문구에 맞춰 일본어 번역을 갱신했습니다 (`settings.core_update.root_htaccess_write_failed`).

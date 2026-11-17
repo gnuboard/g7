@@ -46,6 +46,10 @@ return [
             'public' => 'Public ディスク',
             's3' => 'Amazon S3',
         ],
+        'private_attachment' => [
+            'default' => '既定 (サイトのストレージドライバーに従う)',
+            's3' => 'Amazon S3',
+        ],
         'file_delegation' => [
             'none' => '使用しない (PHP が送信)',
             'x-sendfile' => 'X-Sendfile (Apache mod_xsendfile)',
@@ -662,5 +666,9 @@ return [
             'no_composer_json' => 'custom/composer.json がありません — 先に `composer require <パッケージ> -d custom` で開発者パッケージをインストールしてください。',
             'no_bundle_zip' => 'custom/vendor-bundle.zip がありません — 先に `php artisan custom:vendor-bundle` で作成してください。',
         ],
+    ],
+    'warnings' => [
+        'private_attachment_same_as_public_asset' => '非公開添付ストレージと公開アセットディスクが同じディスク(:disk)です。バケットに公開読み取りポリシーがあると、非公開の原本もバケットのアドレスから直接読まれる可能性があります。非公開の原本には公開ポリシーのないバケットまたはパスを使用してください。',
+        'gated_thumbnail_same_as_public_asset' => '権限付き画像のサムネイルと公開アセットディスクが同じS3バケット(:disk)を使用しています。バケットに公開読み取りポリシーがあると、権限付き画像のサムネイルもバケットのアドレスから直接読まれる可能性があります。サムネイルのパス(thumbnails/)に公開ポリシーがかかっていないか確認してください。',
     ],
 ];

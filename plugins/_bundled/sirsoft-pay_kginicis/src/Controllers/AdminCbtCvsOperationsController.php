@@ -8,6 +8,7 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Plugins\Sirsoft\PayKginicis\Concerns\GuardsOrderScope;
 use Plugins\Sirsoft\PayKginicis\Services\CbtCvsOperationsService;
 
@@ -19,9 +20,11 @@ class AdminCbtCvsOperationsController extends AdminBaseController
      * 의존성을 주입받습니다.
      *
      * @param  CbtCvsOperationsService  $operationsService  해외 편의점 결제 운영 서비스
+     * @param  PaymentGatewayBridge  $bridge  이커머스 결제 공개 계약 (주문 권한 범위 판정)
      */
     public function __construct(
         private readonly CbtCvsOperationsService $operationsService,
+        private readonly PaymentGatewayBridge $bridge,
     ) {
         parent::__construct();
     }

@@ -72,6 +72,10 @@ effects:
   - public_asset_disk_injection_is_skipped_in_testing_env
   # #869 매핑 부채: 카탈로그에 있는 디스크를 저장하면 drivers 카테고리에 그 값이 남는다(422 판정의 짝)
   - catalog_public_asset_disk_saved_to_drivers_category
+  # #916 StorageCategoryDiskTest 를 손대며 매핑한 옛 시험의 효과
+  - storage_category_disk_defaults_to_base_disk          # 카테고리 오버라이드가 없으면 모든 카테고리가 확장 기본 디스크
+  - storage_category_reuses_base_instance_for_same_disk  # 카테고리 디스크가 기본 디스크와 같으면 기본 스토리지 인스턴스를 그대로 쓴다
+  - unset_public_asset_disk_keeps_streaming              # 코어 전역·확장 개별 설정이 모두 비면 공개 자산 디스크는 null(스트리밍 유지)
   # #878 두 주소: 직접 URL 행도 썸네일은 API 주소로
   - preview_url_is_always_api_serving_url   # 리소스·업로드 응답의 preview_url 은 행 disk 와 무관하게 API 서빙 경로, 화면 미리보기 칸이 그 주소에 규격을 건다
   - thumbnail_url_uses_api_preview   # 대표 이미지 thumbnail_url(목록·og·스냅샷·장바구니·카테고리 상세)은 API 주소, 내보내기는 원본

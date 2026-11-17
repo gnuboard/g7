@@ -20,6 +20,8 @@ use App\Extension\Traits\ReportsLifecycleFailure;
 use App\Extension\Traits\ResolvesLayoutInstallSource;
 use App\Fields\Contracts\FieldTypeInterface;
 use App\Support\ExtensionIntegrations;
+use App\Support\PrivateAttachmentDisk;
+use App\Support\PublicApiManifest;
 use App\Support\PublicAssetDisk;
 use App\Support\SearchScopes;
 use App\Support\StateContracts;
@@ -1102,6 +1104,24 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     }
 
     /**
+     * 다른 확장에 공개하는 PHP 표면을 반환합니다.
+     *
+     * plugin.json 의 `public_api` 에서 읽습니다. 선언한 네임스페이스·클래스만 다른 확장이 import 할 수 있고, `readonly_models` 는
+     * 타입힌트·속성 읽기만 허용됩니다. 자기 네임스페이스 밖 항목은 버립니다({@see PublicApiManifest}).
+     *
+     * @return array{version: int, namespaces: array<int, string>, classes: array<int, string>, readonly_models: array<int, string>}|null 선언이 없으면 null
+     *
+     * @since 7.2.0
+     */
+    public function getPublicApi(): ?array
+    {
+        return PublicApiManifest::normalize(
+            $this->loadManifest()['public_api'] ?? null,
+            'Plugins\\'.ExtensionManager::directoryToNamespace($this->getIdentifier())
+        );
+    }
+
+    /**
      * 신뢰하는 외부 스크립트 호스트 목록을 반환합니다.
      *
      * plugin.json 의 `trusted_script_hosts` 배열에서 읽습니다. 이 플러그인이 레이아웃
@@ -1600,6 +1620,15 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
     }
 
     /**
+     * 비공개 원본 디스크 선택 전용 바인딩 키 (#916)
+     *
+     * 서비스 프로바이더 `$storageCategoryServices` 에 `서비스 => self::PRIVATE_ATTACHMENT_BINDING` 으로 등록하면 그 서비스에
+     * 관리자가 고른 비공개 첨부 저장소 디스크의 스토리지가 주입된다(「기본」이면 플러그인 기본 디스크 `plugins`). 저장 경로
+     * 카테고리(`attachments` 등)는 서비스 안에서 그대로 쓴다. 기존 `attachments` 키로 묶은 서비스는 동작이 바뀌지 않는다.
+     */
+    public const PRIVATE_ATTACHMENT_BINDING = 'private_attachments';
+
+    /**
      * 카테고리별 스토리지 인스턴스 캐시 (디스크명 키 memoize)
      *
      * @var array<string, StorageInterface>
@@ -1621,7 +1650,30 @@ abstract class AbstractPlugin implements CacheableExtensionInterface, PluginInte
      */
     public function getStorageDiskFor(string $category): string
     {
+        // 비공개 원본 디스크 선택 전용 키(#916) — 저장 경로 카테고리가 아니다. 서비스 프로바이더의
+        // $storageCategoryServices 에 이 키로 등록한 서비스만 관리자가 고른 비공개 첨부 저장소를 따른다.
+        if ($category === self::PRIVATE_ATTACHMENT_BINDING) {
+            $pin = $this->getPrivateAttachmentDiskPin();
+
+            return $pin['disk'] ?? PrivateAttachmentDisk::forExtension($this->getStorageDisk());
+        }
+
         return $this->getStorageDisk();
+    }
+
+    /**
+     * `.env` 로 비공개 원본 디스크를 고정했는지 반환합니다.
+     *
+     * 고정돼 있으면 관리자의 「비공개 첨부 저장소」 선택보다 이 디스크가 우선하고, 환경설정 > 드라이버 화면이
+     * 「.env 로 고정된 확장」으로 안내합니다. 기본은 고정 없음(null). env 로 디스크를 바꿀 수 있는 플러그인이 재정의합니다.
+     *
+     * @return array{env: string, disk: string}|null 고정한 env 이름과 디스크
+     *
+     * @since 7.2.0
+     */
+    public function getPrivateAttachmentDiskPin(): ?array
+    {
+        return null;
     }
 
     /**

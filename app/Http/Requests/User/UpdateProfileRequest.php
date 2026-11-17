@@ -136,6 +136,29 @@ class UpdateProfileRequest extends FormRequest
     }
 
     /**
+     * 옛 화면 호환을 받는다 — 정의 버전(`fields_version`)을 싣지 않은 내 정보 수정은 회원 항목 조각이 없는 옛 화면(7.1.x 템플릿)에서 왔다고 본다.
+     *
+     * 그 요청은 운영자 추가 항목과 확장 선언 항목의 필수 규칙을 「값을 보냈을 때만」으로 늦춘다. 보내지 않은 항목은 저장된 값이 그대로 남고,
+     * 비어 있는 필수 항목은 종전대로 추가 정보 입력 요구가 받는다.
+     *
+     * @return bool 항상 true
+     */
+    protected function acceptsLegacyMemberFieldScreen(): bool
+    {
+        return true;
+    }
+
+    /**
+     * 검증을 마친 뒤 옛 화면 호환으로 건너뛴 항목을 로그에 남깁니다.
+     *
+     * @return void 반환값 없음
+     */
+    protected function passedValidation(): void
+    {
+        $this->noteLegacyMemberFieldScreen();
+    }
+
+    /**
      * 검증 속성명 — 운영자 추가 항목과 확장 항목의 이름을 요청 로케일로 싣는다.
      *
      * @return array<string, string> 속성 => 이름

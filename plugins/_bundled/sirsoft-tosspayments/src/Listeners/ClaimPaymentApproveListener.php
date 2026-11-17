@@ -6,8 +6,8 @@ namespace Plugins\Sirsoft\Tosspayments\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
-use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
 use Plugins\Sirsoft\Tosspayments\Exceptions\TossPaymentsApiException;
 use Plugins\Sirsoft\Tosspayments\Services\TossPaymentsApiService;
 
@@ -24,6 +24,13 @@ use Plugins\Sirsoft\Tosspayments\Services\TossPaymentsApiService;
 class ClaimPaymentApproveListener implements HookListenerInterface
 {
     private const PG_PROVIDER_ID = 'tosspayments';
+
+    /**
+     * @param  PaymentGatewayBridge  $bridge  이커머스 공개 결제 계약 (클레임 결제 청구액 계산)
+     */
+    public function __construct(
+        private readonly PaymentGatewayBridge $bridge,
+    ) {}
 
     /**
      * 구독할 훅 매핑을 반환합니다.
@@ -98,13 +105,15 @@ class ClaimPaymentApproveListener implements HookListenerInterface
         //
         // 기준을 세울 수 없으면(주문 삭제 등 통화 스냅샷 부재) 통과시키지 않는다 — 근거 없는
         // "일치" 로 승인을 부르면 그 결과를 되돌릴 방법이 없다.
-        $charge = app(ClaimPaymentService::class)->resolvePaymentCharge($payment);
+        //
+        // 훅이 넘긴(잠긴) 결제 건을 그대로 넘긴다 — 이커머스가 그 행으로 계산한다.
+        $charge = $this->bridge->resolveClaimCharge($payment);
 
-        if ($charge === null || $amount !== (int) $charge['minor_unit_amount']) {
+        if ($charge === null || $amount !== $charge->minorUnitAmount) {
             Log::warning('토스페이먼츠 클레임 결제 승인 전 금액 불일치', [
                 'payment_number' => $payment->payment_number,
                 'callback_amount' => $amount,
-                'expected' => $charge['minor_unit_amount'] ?? null,
+                'expected' => $charge?->minorUnitAmount,
             ]);
 
             return $this->failure('AMOUNT_MISMATCH', __('sirsoft-tosspayments::messages.claim.amount_mismatch'));

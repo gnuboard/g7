@@ -534,6 +534,8 @@ describe('내 정보 수정 — 운영자 설정을 따르는 항목', () => {
       const sent = { name: '홍길동', nickname: '길동이', custom_fields: { job: 'dev' }, zipcode: '12345' };
       expect(evaluate(call.params.body, { _local: { profileEditForm: sent }, profileFields: { data: { display_name: { can_choose: false, options: [] } } } })).toEqual(sent);
       expect(engineExpression(call.params.body, { _local: { profileEditForm: sent }, profileFields: { data: {} } })).toEqual(sent);
+      // 받은 정의 버전(fields_version)을 얹는다 — 회원 항목을 그리는 화면이라는 표식이다(없으면 서버가 옛 화면으로 보고 운영자 추가 필수 항목을 건너뛴다).
+      expect(engineExpression(call.params.body, { _local: { profileEditForm: sent }, profileFields: { data: { fields_version: 'v916' } } })).toEqual({ ...sent, fields_version: 'v916' });
 
       // 저장 성공 처리는 확장의 전역 값을 직접 맞추지 않는다 — 확장이 current_user 재조회를 지켜보다 자기 전역 값을 맞춘다(#490 7단계).
       const saved = callbacksOf(call, 'onSuccess');

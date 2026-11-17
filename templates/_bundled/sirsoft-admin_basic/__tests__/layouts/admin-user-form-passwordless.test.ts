@@ -149,13 +149,14 @@ describe('sirsoft-admin_basic 회원 추가 「비밀번호 없이 만들기」 
    * @scenario mode=create, checked=true
    * @effects save_body_carries_passwordless_flag
    */
-  it('저장 요청 본문은 _local.form 그대로라 create_without_password 가 함께 나간다', () => {
+  it('저장 요청 본문은 _local.form 에 정의 버전만 얹으므로 create_without_password 가 함께 나간다', () => {
     const saves = flattenActions(nodes.flatMap((n) => asArray(n.actions))).filter(
       (a) => a.handler === 'apiCall' && String(a.target).includes("'/api/admin/users'"),
     );
     expect(saves.length).toBeGreaterThan(0);
+    const form = { email: 'a@example.com', create_without_password: true };
     for (const save of saves) {
-      expect(save.params?.body).toBe('{{_local.form}}');
+      expect(evaluate(save.params?.body, { _local: { form }, memberFields: { data: { fields_version: 'v916' } } })).toEqual({ ...form, fields_version: 'v916' });
       expect(evaluate(save.params?.method, { route: {} })).toBe('POST');
     }
   });

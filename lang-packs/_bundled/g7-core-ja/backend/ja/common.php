@@ -22,6 +22,7 @@ return [
         'github_url_invalid' => '無効なGitHub URLフォーマットです。',
         'github_api_failed' => 'GitHub APIの呼び出しに失敗しました。',
         'github_download_failed' => 'GitHubからのダウンロードに失敗しました。',
+        'github_release_not_found' => ':repository リポジトリにタグ付きリリースがありません。ブランチ(main・master)からはインストールしません — 制作者がリリースを公開してから、もう一度お試しください。',
         'github_archive_download_failed' => 'アーカイブのダウンロードに失敗しました。(:url)',
         'zip_file_not_found' => 'ZIPファイルが見つかりません。',
         'archive_php_extension_missing' => 'アーカイブを展開するには、サーバーに PHP 拡張 :extensions が必要です。サーバー管理者にインストールを依頼してください。',

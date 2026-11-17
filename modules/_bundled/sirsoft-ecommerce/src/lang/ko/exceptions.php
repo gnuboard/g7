@@ -234,4 +234,18 @@ return [
 
     // 회원·주문 없이 등록하는 후기(다른 쇼핑몰 이관) 입력 오류
     'imported_review_invalid_field' => '이관 후기 입력값이 올바르지 않습니다: :field',
+
+    // 결제사 플러그인용 공개 결제 계약(Contracts\Payment) 예외 — 결제사 코드가 계약을 잘못 부를 때 나는 오류다(#916)
+    'payment_contract' => [
+        'order_not_found' => '주문을 찾을 수 없습니다: :order_number',
+        'provider_mismatch' => '결제 행이 다른 결제사([:owner]) 것이라 [:caller] 가 바꿀 수 없습니다.',
+        'transition_denied' => '주문 :order_number 의 결제 상태를 바꿀 수 없습니다: :reason',
+        'retry_prefix_mismatch' => '재결제 복구 meta 접두 [:prefix] 가 결제사 id [:pg] 와 다릅니다.',
+        'pg_attribute_not_allowed' => '[:column] 칸은 결제사 부가 정보로 기록할 수 없습니다.',
+        'failure_status_invalid' => '결제 실패 상태는 failed 또는 cancelled 여야 합니다.',
+        'provider_required' => '결제사 id 가 필요합니다.',
+        'order_meta_namespace_invalid' => '주문 meta namespace [:namespace] 는 [:prefix] 로 시작해야 합니다.',
+        'sample_column_not_allowed' => '[:column] 칸은 API 문서 샘플 결제 행에 쓸 수 없습니다.',
+        'currency_rate_missing' => '[:currency] 통화에 환율이 설정되어 있지 않습니다.',
+    ],
 ];

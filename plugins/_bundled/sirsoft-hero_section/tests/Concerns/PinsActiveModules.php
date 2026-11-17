@@ -15,19 +15,35 @@ trait PinsActiveModules
     /**
      * 켜진 모듈을 정합니다.
      *
+     * 모듈 조회 계약(게시판 `BoardDirectory`, 이커머스 `ProductDirectory`·`CategoryDirectory`)도 바인딩된 것으로 고정한다 — 시험 DB 에
+     * 모듈이 설치돼 있지 않아도 위치가 생긴다. 계약이 없는 옛 모듈 판을 흉내 내려면 `$contractsBound` 를 false 로 준다(#916).
+     *
      * @param  array<int, string>  $modules  켜진 모듈 식별자
+     * @param  bool  $contractsBound  모듈 조회 계약이 바인딩됐는지
      * @return void 반환값 없음
      */
-    protected function pinActiveModules(array $modules): void
+    protected function pinActiveModules(array $modules, bool $contractsBound = true): void
     {
-        $this->app->instance(BuiltinPositionListener::class, new class($modules) extends BuiltinPositionListener
+        $this->app->instance(BuiltinPositionListener::class, new class($modules, $contractsBound) extends BuiltinPositionListener
         {
             /**
              * 시험용 켜진 모듈을 받습니다.
              *
              * @param  array<int, string>  $modules  켜진 모듈 식별자
+             * @param  bool  $contractsBound  모듈 조회 계약이 바인딩됐는지
              */
-            public function __construct(private array $modules) {}
+            public function __construct(private array $modules, private bool $contractsBound) {}
+
+            /**
+             * 시험용 계약 바인딩 여부를 돌려줍니다.
+             *
+             * @param  string  $contract  계약 인터페이스 이름
+             * @return bool 바인딩됐는지
+             */
+            protected function contractBound(string $contract): bool
+            {
+                return $this->contractsBound;
+            }
 
             /**
              * 시험용 켜진 모듈을 돌려줍니다.

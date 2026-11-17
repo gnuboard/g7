@@ -96,11 +96,21 @@ if (! function_exists('installer_requirement_php_extensions')) {
             ];
         }
 
+        // 권장 모듈 — 설치를 막지 않고 화면에 경고로만 보인다. sodium 은 확장·코어·언어팩 패키지 서명(Ed25519) 검증에
+        // 쓰인다(7.2.0) — 없으면 서명이 있어도 확인할 수 없어 「서명 검증 불가」로 미서명과 같이 다룬다.
+        $recommended = [
+            'sodium' => [
+                'installed' => extension_loaded('sodium') && function_exists('sodium_crypto_sign_verify_detached'),
+                'reason' => lang('recommended_sodium_reason'),
+            ],
+        ];
+
         return [
             'required' => $requiredExtensions,
             'optional' => $optionalExtensions,
             'installed' => $installed,
             'optional_installed' => $optionalInstalled,
+            'recommended' => $recommended,
             'all_required_passed' => $allRequiredPassed,
             'message' => $allRequiredPassed
                 ? lang('success_php_extensions')

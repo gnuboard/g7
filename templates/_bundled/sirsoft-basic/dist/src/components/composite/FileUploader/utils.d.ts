@@ -1,3 +1,15 @@
+import { ApiEndpoints, FileUploaderProps } from './types';
+/**
+ * 레이아웃이 넘긴 주소 묶음을 정리합니다 — 사용자 템플릿에는 **기본 주소가 없다**.
+ *
+ * 종전 기본값 `/api/attachments*` 는 존재하지 않는 경로라, 주소를 빠뜨린 화면이 404 를 받고도 어디가 틀렸는지 드러나지
+ * 않았다. 이제 업로드 주소가 없으면 빈 문자열로 두고, 업로드 훅이 요청 없이 그 파일을 실패로 돌려 `onUploadError` 를 부르며
+ * 개발 경고를 남긴다. 삭제 주소가 없으면 서버 삭제 없이 화면에서만 뺀다. 정렬 주소는 `null`·빈 문자열·키 없음 모두 정렬 없음.
+ *
+ * @param apiEndpoints 레이아웃이 넘긴 주소 묶음
+ * @returns 업로드·삭제·정렬 주소(정렬하지 않으면 reorder 가 null)
+ */
+export declare const resolveApiEndpoints: (apiEndpoints: FileUploaderProps["apiEndpoints"]) => ApiEndpoints;
 /**
  * FileUploader 유틸리티 함수
  *

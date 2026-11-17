@@ -92,4 +92,25 @@ return [
         // PC 결제창 프레임 요청 항목명(#158) — 검증 실패는 빈 400 이라 화면에 나가지 않지만 항목명은 둔다.
         'sdk' => '결제창 SDK 주소',
     ],
+    // 입금 전에 취소된 주문의 가상계좌 발급 취소 사유(KCP 로 보내는 취소 사유) — 이커머스 문구와 같은 값
+    'vbank_close_reason' => '입금 전 주문 취소',
+    // 결제 화면·결제대행사 연동 API 의 오류 응답 문구
+    'responses' => [
+        'amount_mismatch' => '결제 금액이 주문 금액과 일치하지 않습니다.',
+        'claim_amount_mismatch' => '결제 금액이 청구 결제 금액과 일치하지 않습니다.',
+        'claim_approval_forbidden' => '이 청구 결제의 NHN KCP 승인키를 요청할 수 없습니다.',
+        'order_approval_forbidden' => '이 주문의 NHN KCP 승인키를 요청할 수 없습니다.',
+        'approval_key_failed' => 'NHN KCP 결제를 준비하지 못했습니다. :reason',
+        'claim_deposit_not_supported' => '클레임 추가결제는 입금 대기 방식(가상계좌)을 지원하지 않습니다.',
+        'claim_payment_not_found' => '청구 결제를 찾을 수 없습니다.',
+        'claim_payment_not_payable' => '결제할 수 없는 청구 결제입니다.',
+        'currency_not_chargeable' => '결제 통화로 청구액을 계산할 수 없습니다.',
+        'guest_verification_failed' => '비회원 주문 확인에 실패했습니다.',
+        'krw_only' => 'NHN KCP 는 원화 결제만 지원합니다.',
+        'order_not_found' => '주문을 찾을 수 없습니다.',
+        'order_not_retryable' => '다시 결제할 수 없는 주문입니다.',
+        'ownership_verification_failed' => '주문 소유자 확인에 실패했습니다.',
+        'too_many_requests' => '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.',
+        'vbank_session_failed' => '가상계좌 결제를 준비하지 못했습니다. 잠시 후 다시 시도해 주세요.',
+    ],
 ];

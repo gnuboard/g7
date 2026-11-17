@@ -123,6 +123,8 @@
         <span data-if="{{_global.scheduleFormErrors?.command}}" class="form-error">{{_global.scheduleFormErrors?.command?.[0] ?? ''}}</span>
         <p data-if="{{!(_global.selectedSchedule?.locked_fields ?? []).includes('command')}}" class="form-hint">{{$t('admin.schedules.form.command_help.' + (_global.scheduleForm?.type ?? 'artisan')) + ' ' + $t('admin.schedules.form.command_multiline_hint')}}</p>
         <p data-if="{{(_global.selectedSchedule?.locked_fields ?? []).includes('command')}}" class="form-hint">$t:admin.schedules.form.locked_hint</p>
+        <!-- 패키지 무결성(#916) — 비대화형 설치·업데이트 명령은 미서명 패키지에서 `--allow-unsigned` 없이는 멈춘다(exit 1). Artisan 명령을 직접 적는 자리에서만 알린다 -->
+        <p data-ref="schedule_form_allow_unsigned_hint" data-if="{{(_global.scheduleForm?.type ?? 'artisan') === 'artisan' &amp;&amp; !(_global.selectedSchedule?.locked_fields ?? []).includes('command')}}" class="form-hint">$t:admin.schedules.form.allow_unsigned_hint</p>
       </div>
       <div class="grid grid-cols-1 gap-4">
         <responsive on="768-" class="grid grid-cols-2 gap-4"/>

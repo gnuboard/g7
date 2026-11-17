@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\PayNhnkcp\Concerns;
 
 use App\Support\LocalizedValue;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\PaymentRecord;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 
 trait ResolvesEasyPayDisplay
@@ -33,8 +34,10 @@ trait ResolvesEasyPayDisplay
     ];
 
     /**
+     * 페이로드가 고른 KCP 간편결제 수단을 결제 meta 에 남길 값으로 해석합니다.
+     *
      * @param  array<string, mixed>  $payload  PG 승인 응답·요청 페이로드
-     * @return array{method: string, provider: string, label: array{ko: string, en: string}}|array{}
+     * @return array{method: string, provider: string, label: array{ko: string, en: string}}|array{} 간편결제 값 (간편결제가 아니면 빈 배열)
      */
     protected function resolveEasyPayMeta(array $payload): array
     {
@@ -53,40 +56,23 @@ trait ResolvesEasyPayDisplay
     }
 
     /**
-     * @param  mixed  $paymentMeta  결제 메타(배열 또는 JSON 문자열)
-     * @return array<string, mixed>
-     */
-    protected function decodePaymentMeta(mixed $paymentMeta): array
-    {
-        if (is_array($paymentMeta)) {
-            return $paymentMeta;
-        }
-
-        if (! is_string($paymentMeta) || trim($paymentMeta) === '') {
-            return [];
-        }
-
-        $decoded = json_decode($paymentMeta, true);
-
-        return is_array($decoded) ? $decoded : [];
-    }
-
-    /**
-     * @param  object  $payment  결제 행
+     * 결제 행의 결제수단·간편결제 표시 값을 해석합니다.
+     *
+     * @param  PaymentRecord  $payment  결제 행 (이커머스 결제 계약 DTO)
      * @return array{
      *     payment_method_label: string|null,
      *     payment_method_display_label: string|null,
      *     selected_payment_method: string|null,
      *     embedded_pg_provider: string|null,
      *     embedded_pg_provider_label: string|null
-     * }
+     * } 결제수단 라벨, 표시 라벨, 고른 간편결제 수단, 간편결제 제공자와 그 라벨
      */
-    protected function resolvePaymentDisplay(object $payment): array
+    protected function resolvePaymentDisplay(PaymentRecord $payment): array
     {
-        $paymentMeta = $this->decodePaymentMeta($payment->payment_meta ?? null);
+        $paymentMeta = $payment->paymentMeta;
         $selectedPaymentMethod = $this->stringOrNull($paymentMeta['nhnkcp_easy_pay_method'] ?? null);
         $provider = $this->stringOrNull(
-            $payment->embedded_pg_provider
+            $payment->embeddedPgProvider
                 ?? $paymentMeta['nhnkcp_easy_pay_provider']
                 ?? $paymentMeta['embedded_pg_provider']
                 ?? null
@@ -96,7 +82,7 @@ trait ResolvesEasyPayDisplay
             $provider = $this->stringOrNull(self::EASY_PAY_METHODS[$selectedPaymentMethod]['provider'] ?? null);
         }
 
-        $baseLabel = $this->paymentMethodLabel($this->stringOrNull($payment->payment_method ?? null));
+        $baseLabel = $this->paymentMethodLabel($this->stringOrNull($payment->paymentMethod));
         $embeddedLabel = $this->embeddedPgProviderLabel($provider, $paymentMeta);
 
         return [
@@ -144,6 +130,8 @@ trait ResolvesEasyPayDisplay
     }
 
     /**
+     * 간편결제 제공자의 표시 라벨을 반환합니다 (결제 meta 에 저장한 라벨 우선).
+     *
      * @param  string|null  $provider  간편결제 제공자 코드
      * @param  array<string, mixed>  $paymentMeta  결제 메타(라벨 저장값 우선)
      * @return string|null 제공자 라벨 (없으면 null)

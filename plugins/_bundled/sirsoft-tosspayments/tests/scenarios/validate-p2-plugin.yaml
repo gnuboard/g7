@@ -35,7 +35,7 @@ effects:
   - toss_claim_clean_confirmation_is_unchanged                                  # 비회귀 — 깨끗한 승인은 그대로
   - toss_claim_callback_is_serialized_per_payment_number                        # CP 콜백 락, 대기 초과는 정상 리다이렉트
   - toss_refund_success_is_independent_of_the_cancel_ledger_sync                # 장부 동기화 실패가 환불 성공을 뒤집지 않는다
-  - toss_repositories_are_constructor_injected                                  # Repository 생성자 주입
+  - toss_repositories_are_constructor_injected                                  # 이커머스 공개 결제 계약 생성자 주입
   - toss_claim_void_approval_cancels_the_confirmation                            # void_approval 필터 → 토스 취소
 
 test_files:

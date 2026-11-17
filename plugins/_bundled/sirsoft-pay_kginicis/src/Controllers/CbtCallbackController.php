@@ -10,11 +10,10 @@ use App\Support\ScreenUrl;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
-use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
-use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
-use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\OrderRecord;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\PaymentCompletion;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\VbankIssuance;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Plugins\Sirsoft\PayKginicis\Concerns\DescribesRefundFailure;
 use Plugins\Sirsoft\PayKginicis\Concerns\HandlesCbtClaimPayments;
 use Plugins\Sirsoft\PayKginicis\Concerns\HandlesClaimPaymentCallbacks;
@@ -120,18 +119,16 @@ class CbtCallbackController
     /**
      * CBT 콜백 처리에 필요한 서비스를 주입받습니다.
      *
-     * @param  OrderProcessingService  $orderService  주문 결제 처리 서비스
+     * @param  PaymentGatewayBridge  $bridge  이커머스 결제 공개 계약
      * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 조회 서비스
      * @param  KgInicisApiService  $apiService  KG 이니시스 API 서비스
      * @param  CbtReconciliationService  $reconciliationService  CBT 대사 상태 기록 서비스
-     * @param  ClaimPaymentRepositoryInterface  $claimPaymentRepository  클레임 결제 Repository
      */
     public function __construct(
-        private readonly OrderProcessingService $orderService,
+        private readonly PaymentGatewayBridge $bridge,
         private readonly PluginSettingsService $pluginSettingsService,
         private readonly KgInicisApiService $apiService,
         private readonly CbtReconciliationService $reconciliationService,
-        private readonly ClaimPaymentRepositoryInterface $claimPaymentRepository,
     ) {}
 
     /**
@@ -156,7 +153,7 @@ class CbtCallbackController
             ]);
 
             // 클레임 추가결제는 체크아웃이 아니라 신청서 상세로 돌려보낸다 (국내 경로와 동일).
-            if (ClaimPayment::isClaimPaymentNumber($oid)) {
+            if ($this->bridge->isClaimPaymentNumber($oid)) {
                 $claimRedirect = $this->redirectClaimWindowFailure($oid, null);
 
                 if ($claimRedirect !== null) {
@@ -183,7 +180,7 @@ class CbtCallbackController
 
             // 결제창 단계 실패도 클레임은 신청서 상세로 돌려보낸다 — PG 원문 메시지는 싣지 않고
             // 코드만 전달한다(이 경로는 비인증 브라우저 리다이렉트다).
-            if (ClaimPayment::isClaimPaymentNumber($oid)) {
+            if ($this->bridge->isClaimPaymentNumber($oid)) {
                 $claimRedirect = $this->redirectClaimWindowFailure(
                     $oid,
                     $authResultCode !== '' ? $authResultCode : 'cbt_auth_failed',
@@ -221,7 +218,7 @@ class CbtCallbackController
         // 승인은 모듈 위임(필터 발화 → 이 플러그인의 승인 리스너)이고, 승인 뒤의 거절은 모듈의
         // `claim_payment.void_approval` 필터(승인 리스너가 CBT 환불 API 로 되돌림)가 보상한다.
         // 주문 경로와 같은 직렬화 락을 건다.
-        if (ClaimPayment::isClaimPaymentNumber($oid)) {
+        if ($this->bridge->isClaimPaymentNumber($oid)) {
             $claimPayment = $this->resolveApprovableCbtClaimPayment($oid);
 
             if (! $claimPayment) {
@@ -248,7 +245,7 @@ class CbtCallbackController
         }
 
         try {
-            $order = $this->orderService->findByOrderNumber($oid);
+            $order = $this->bridge->findOrderByNumber($oid, 'kginicis');
 
             if (! $order) {
                 Log::error('KG Inicis CBT: order not found', ['oid' => $oid]);
@@ -332,11 +329,12 @@ class CbtCallbackController
                 return redirect($this->resolveSuccessUrl($oid));
             }
 
-            $this->orderService->completePayment($order, [
-                'transaction_id' => $tid,
-                'card_approval_number' => $pgResponse['approve'] ?? null,
-                'card_installment_months' => $this->normalizeInstallmentMonths($pgResponse['installMonth'] ?? null),
-                'payment_meta' => array_merge([
+            // 현행 CBT 카드 완료는 결제사 id 를 덮어쓰지 않는다(takeOverProvider 기본 false) — 주문 생성 때 값 그대로.
+            $this->bridge->completePayment($order->orderNumber, 'kginicis', new PaymentCompletion(
+                transactionId: $tid,
+                cardApprovalNumber: $pgResponse['approve'] ?? null,
+                cardInstallmentMonths: $this->normalizeInstallmentMonths($pgResponse['installMonth'] ?? null),
+                paymentMeta: array_merge([
                     'result_code' => $resultCode,
                     'pay_method' => $payMethod,
                     'cbt_type' => 'JPPG',
@@ -351,7 +349,7 @@ class CbtCallbackController
                     'pg_approve_response' => $approveResponse,
                     'pg_raw_response' => $approveResponse,
                 ], $selectionMeta),
-            ], $approvedAmount);
+            ), $approvedAmount);
 
             $this->queueReceiptCookie($oid);
 
@@ -497,14 +495,14 @@ class CbtCallbackController
     /**
      * 주문이 결제 전 상태이고 JPY 통화인지 확인하고, 아니면 예외를 던집니다.
      *
-     * @param  Order  $order  결제 대상 주문
+     * @param  OrderRecord  $order  결제 대상 주문
      * @return void 반환값 없음
      *
      * @throws \RuntimeException 결제할 수 없는 주문이거나 JPY 주문이 아닐 때
      */
-    private function assertPayableCbtOrder(Order $order): void
+    private function assertPayableCbtOrder(OrderRecord $order): void
     {
-        if (! $order->order_status->isBeforePayment()) {
+        if (! $order->orderStatus->isBeforePayment()) {
             throw new \RuntimeException('Order is not payable.');
         }
 
@@ -529,10 +527,10 @@ class CbtCallbackController
      * 승인액으로 신뢰한다.
      *
      * @param  array<string,mixed>  $pgResponse  CBT 승인 응답
-     * @param  Order  $order  결제 대상 주문
+     * @param  OrderRecord  $order  결제 대상 주문
      * @return int 확정된 승인 금액 (결제 통화 단위)
      */
-    private function resolveApprovedAmount(array $pgResponse, Order $order): int
+    private function resolveApprovedAmount(array $pgResponse, OrderRecord $order): int
     {
         // 결제 청구액 SSoT = 결제 통화(order_currency) 환산액 (buildPgPaymentData 와 동일 기준).
         // CBT 는 order_currency=JPY 강제이나 base 통화는 다를 수 있어(예: base KRW, 결제 JPY)
@@ -564,7 +562,7 @@ class CbtCallbackController
     /**
      * 승인 응답의 주문번호·MID·통화·결제수단이 주문과 요청에 맞는지 확인하고, 어긋나면 예외를 던집니다.
      *
-     * @param  Order  $order  결제 대상 주문
+     * @param  OrderRecord  $order  결제 대상 주문
      * @param  array<string,mixed>  $pgResponse  CBT 승인 응답
      * @param  CbtCallbackRequest  $request  CBT 인증 콜백 요청
      * @param  string  $approvedPayMethod  승인 응답의 결제수단
@@ -573,13 +571,13 @@ class CbtCallbackController
      * @throws \RuntimeException 승인 응답 값이 주문과 어긋날 때
      */
     private function assertCbtApproveResponseMatchesOrder(
-        Order $order,
+        OrderRecord $order,
         array $pgResponse,
         CbtCallbackRequest $request,
         string $approvedPayMethod,
     ): void {
         $receivedOrderId = $this->firstNonEmptyString($pgResponse, ['orderId', 'orderID', 'oid']);
-        if ($receivedOrderId !== null && $receivedOrderId !== (string) $order->order_number) {
+        if ($receivedOrderId !== null && $receivedOrderId !== $order->orderNumber) {
             throw new \RuntimeException('KG Inicis CBT approved order id mismatch.');
         }
 
@@ -722,7 +720,7 @@ class CbtCallbackController
     /**
      * 편의점(CVS) 결제번호 발급 결과를 주문 결제에 입금 대기 상태로 기록합니다.
      *
-     * @param  Order  $order  결제 대상 주문
+     * @param  OrderRecord  $order  결제 대상 주문
      * @param  array<string,mixed>  $pgResponse  CBT 승인 응답
      * @param  string  $tid  PG 거래번호
      * @param  string  $sid  CBT 세션 ID
@@ -733,7 +731,7 @@ class CbtCallbackController
      * @return void 반환값 없음
      */
     private function handleCbtCvsIssued(
-        Order $order,
+        OrderRecord $order,
         array $pgResponse,
         string $tid,
         string $sid,
@@ -754,16 +752,15 @@ class CbtCallbackController
             }
         }
 
-        $order->payment()->update(array_filter([
-            'pg_provider' => 'kginicis',
-            'payment_status' => PaymentStatusEnum::WAITING_DEPOSIT,
-            'transaction_id' => $tid,
-            'vbank_code' => $pgResponse['convenience'] ?? null,
-            'vbank_name' => 'CVS',
-            'vbank_number' => $pgResponse['confNo'] ?? ($pgResponse['receiptNo'] ?? null),
-            'vbank_due_at' => $dueAt,
-            'vbank_issued_at' => now(),
-            'payment_meta' => array_merge([
+        // 입금 대기 전이 + 발급 정보 저장은 계약이 한 번에 한다. 이 경로는 장바구니 정리를 부르지 않던 현행을 지킨다.
+        $this->bridge->onVbankAccountIssued($order->orderNumber, 'kginicis', new VbankIssuance(
+            vbankIssuedAt: now(),
+            transactionId: $tid,
+            vbankCode: $pgResponse['convenience'] ?? null,
+            vbankName: 'CVS',
+            vbankNumber: $pgResponse['confNo'] ?? ($pgResponse['receiptNo'] ?? null),
+            vbankDueAt: $dueAt,
+            paymentMeta: array_merge([
                 'result_code' => $pgResponse['resultCode'] ?? 'OK',
                 'pay_method' => 'CVS',
                 'cbt_type' => 'JPPG',
@@ -784,7 +781,9 @@ class CbtCallbackController
                 'cvs_receipt_no' => $pgResponse['receiptNo'] ?? null,
                 'cvs_payment_term' => $paymentTerm !== '' ? $paymentTerm : null,
             ], $this->buildCbtSelectionPaymentMeta($selectedPaymentMethod)),
-        ], fn ($value) => $value !== null));
+            clearCart: false,
+            takeOverProvider: true,
+        ));
     }
 
     /**

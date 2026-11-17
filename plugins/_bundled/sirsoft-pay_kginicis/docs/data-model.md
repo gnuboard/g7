@@ -59,19 +59,18 @@ _Enum 이 없습니다._
 <!-- @generated:repositories START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 클래스 | 종류 | 설명 |
 |---|---|---|
-| `CbtCvsOperationsRepository` | 구현 | - |
-| `CbtCvsOperationsRepositoryInterface` | 인터페이스 | - |
-| `CbtReconciliationRepository` | 구현 | - |
+| `CbtReconciliationRepository` | 구현 | CBT 대사 레코드 저장소 — 주문 meta 의 이 결제사 키(`kginicis_cbt_reconciliation`)만 읽고 쓴다. |
 | `CbtReconciliationRepositoryInterface` | 인터페이스 | - |
-| `EscrowDeliveryRepository` | 구현 | - |
+| `EscrowDeliveryRepository` | 구현 | 에스크로 배송 등록 기록 저장소 — 결제 meta `escrow_delivery` 의 수령인 칸을 지운다. |
 | `EscrowDeliveryRepositoryInterface` | 인터페이스 | - |
 <!-- @generated:repositories END -->
 
 <!-- @intent START -->
-두 Repository 모두 자체 테이블이 아니라 `sirsoft-ecommerce`의 `Order` 모델을 조회합니다
-(`CbtCvsOperationsRepository::findOrderWithPayment()`가 대표적 예). 소유 데이터가 없는데도
-Repository 인터페이스를 쓰는 이유는 "이 플러그인이 이커머스 데이터에 접근하는 지점"을
-Service 안에 흩어진 쿼리가 아니라 한 곳으로 모아, 나중에 이커머스의 주문 조회 방식이 바뀌어도
-이 두 클래스만 고치면 되게 하기 위해서입니다 — 일반적인 "내 테이블 CRUD" Repository 와는
-쓰임이 다릅니다.
+두 Repository 모두 자체 테이블이 없고 `sirsoft-ecommerce` 의 공개 결제 계약
+(`Contracts\Payment\PaymentGatewayBridge`)을 감쌉니다 — `CbtReconciliationRepository` 는 주문 meta 의 자기 키
+(`kginicis_cbt_reconciliation`)를 `getOrderMeta`·`mutateOrderMetaWithLock` 으로, `EscrowDeliveryRepository` 는 결제 meta
+`escrow_delivery` 의 수령인 칸을 `scrubPaymentMetaKeys` 로 다룹니다(#916). 이커머스 Model 을 직접 조회하던 종전
+`CbtCvsOperationsRepository` 는 없앴고, `CbtCvsOperationsService` 가 같은 계약을 바로 씁니다. 소유 데이터가 없는데도
+이 둘을 남긴 이유는 Service 가 쓰는 의미 단위(대사 기록 읽기·덮어쓰기·잠금 변경, 수령인 파기)를 한 곳에 모으기
+위해서입니다 — 일반적인 "내 테이블 CRUD" Repository 와는 쓰임이 다릅니다.
 <!-- @intent END -->

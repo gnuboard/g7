@@ -1,4 +1,5 @@
-<!-- 내 정보 수정 폼 본체. 이름, 닉네임, 연락처, 위치, 서명, 자기소개와 운영자가 추가한 항목은 서버가 준 항목 계약(데이터소스 profileFields)대로
+<!-- e2e:allow 이번 변경은 PUT /api/me 본문에 항목 정의 버전(fields_version)을 싣는 것뿐이다 — 본문 모양은 Vitest mypage-profile-dynamic-fields, 서버의 옛 화면 판정은 PHPUnit LegacyMemberFieldScreenTest 가 잠근다(화면 동작 불변).
+     내 정보 수정 폼 본체. 이름, 닉네임, 연락처, 위치, 서명, 자기소개와 운영자가 추가한 항목은 서버가 준 항목 계약(데이터소스 profileFields)대로
      공용 조각(partials/member/_member_fields)이 카드마다 그린다 — 어떤 칸을 받고 무엇이 필수이고 무엇이 잠겼는지는 환경설정 > 회원이 정한다.
      값은 `user` 소스가 `initLocal` 로 채운 폼 상태(profileEditForm)에서 오고, 검증 오류는 서버가 돌려준 것을 칸 아래에 보여 준다.
      아바타와 이메일, 표시 이름 종류 선택 칸은 이 조각이 직접 그리고, 모듈과 플러그인이 선언한 항목은 확장별 카드(computed profileExtensionGroups)로 그린다.
@@ -71,7 +72,9 @@
       <responsive on="portable" class="space-y-4"/>
       <on type="submit">
         <set-state target="local" :isSavingProfile="true" :profileErrors="null"/>
-        <api-call :auth_required="true" target="/api/me" method="PUT" body="{{Object.fromEntries(Object.entries(_local?.profileEditForm ?? {}).filter(function(entry) { return entry[0] !== 'display_name_kind' || (profileFields?.data?.display_name?.can_choose === true &amp;&amp; (entry[1] == null || entry[1] === '' || (profileFields?.data?.display_name?.options ?? []).some(function(o) { return o.value === entry[1]; }))); }))}}">
+        <!-- 저장 본문에는 받은 회원 항목의 정의 버전(fields_version)을 얹는다 — 회원 항목을 그리는 화면이라는 표식이다.
+             표식 없는 요청은 서버가 옛 화면(7.1.x)으로 보고 운영자 추가 필수 항목을 건너뛴다. -->
+        <api-call :auth_required="true" target="/api/me" method="PUT" body="{{Object.assign(Object.fromEntries(Object.entries(_local?.profileEditForm ?? {}).filter(function(entry) { return entry[0] !== 'display_name_kind' || (profileFields?.data?.display_name?.can_choose === true &amp;&amp; (entry[1] == null || entry[1] === '' || (profileFields?.data?.display_name?.options ?? []).some(function(o) { return o.value === entry[1]; }))); })), profileFields?.data?.fields_version ? { fields_version: profileFields.data.fields_version } : {})}}">
           <success>
             <!-- 확장이 전역 상태에 둔 선호값(결제 통화, 배송 국가 등)은 아래 current_user 재조회를 그 확장이 지켜보다 맞춘다 — 코어 템플릿은 확장의 키를 모른다.
                  같은 재조회가 헤더와 모바일 메뉴의 이름도 맞춘다 — 표시 이름 종류나 닉네임을 바꿔 저장하면 새로고침 없이 새 이름으로 바뀐다. -->

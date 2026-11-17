@@ -884,6 +884,17 @@
                                                         "className": "form-error"
                                                     },
                                                     "text": "{{_local.errors?.['upload.thumbnail_disk_' + loc.kind]?.[0] ?? ''}}"
+                                                },
+                                                {
+                                                    "comment": "같은 버킷 경고 — 권한이 걸린 이미지 썸네일과 드라이버 탭 「공개 자산 디스크」가 둘 다 s3 일 때만. 저장은 막지 않는다(저장 응답 warnings 와 같은 조건).",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{loc.kind === 'gated' && (_local.form?.upload?.thumbnail_disk_gated ?? '') === 's3' && (_local.form?.drivers?.public_asset_disk ?? '') === 's3'}}",
+                                                    "props": {
+                                                        "className": "text-warning-soft mt-2",
+                                                        "data-testid": "{{'thumbnail-same-bucket-warning-' + loc.kind}}"
+                                                    },
+                                                    "text": "$t:admin.settings.upload.thumbnail.storage.same_bucket_warning"
                                                 }
                                             ]
                                         },

@@ -6,9 +6,9 @@ namespace Plugins\Sirsoft\PayKginicis\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderPaymentRepositoryInterface;
 use Plugins\Sirsoft\PayKginicis\Concerns\DescribesRefundFailure;
 use Plugins\Sirsoft\PayKginicis\Concerns\SplitsInicisTax;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
@@ -21,10 +21,10 @@ class PaymentRefundListener implements HookListenerInterface
     private const PG_PROVIDER_ID = 'kginicis';
 
     /**
-     * @param  OrderPaymentRepositoryInterface  $orderPaymentRepository  주문 결제 Repository (과세 구분 소진액 기록)
+     * @param  PaymentGatewayBridge  $bridge  이커머스 결제 공개 계약 (과세 구분 계산·소진액 기록)
      */
     public function __construct(
-        private readonly OrderPaymentRepositoryInterface $orderPaymentRepository,
+        private readonly PaymentGatewayBridge $bridge,
     ) {}
 
     /**
@@ -148,7 +148,9 @@ class PaymentRefundListener implements HookListenerInterface
 
             $isCbt = $this->isCbtPayment($payment);
             // 승인 때 과세 구분을 실은 결제의 부분취소만 같은 구분을 싣는다(#820). 가상계좌 환불 경로(/vacct)에는 필드가 없다.
-            $taxSplit = $isPartial && ! $isCbt && ! $payment->isVirtualAccount()
+            // 판정 메서드는 훅 인자 Model 이 아니라 계약의 DTO 로 읽는다(읽기 전용 Model 은 속성 읽기만).
+            $isVirtualAccount = $this->bridge->describePayment($payment)->isVirtualAccount;
+            $taxSplit = $isPartial && ! $isCbt && ! $isVirtualAccount
                 ? $this->resolvePartialTaxSplit($order, $payment, $cancelAmt)
                 : null;
             if ($isCbt) {
@@ -173,7 +175,7 @@ class PaymentRefundListener implements HookListenerInterface
                     // 가상계좌 환불계좌 — 없으면 PG 가 vbank 취소를 거절한다(P5).
                     // 계좌의 정본은 결제행이며, 신청서에 적힌 계좌는 환불 실행 직전에
                     // 코어(`AppliesRefundBankAccount`)가 이 행에 반영한다.
-                    $payment->isVirtualAccount() ? [
+                    $isVirtualAccount ? [
                         'bank_code' => $payment->refund_bank_code,
                         'account_number' => $payment->refund_bank_account,
                         'holder' => $payment->refund_bank_holder,
@@ -182,7 +184,7 @@ class PaymentRefundListener implements HookListenerInterface
                 );
 
             if ($taxSplit !== null) {
-                $this->recordTaxFreeCancelledSafely($payment, $taxSplit['taxFree'], $tid);
+                $this->recordTaxFreeCancelledSafely($order, $payment, $taxSplit['taxFree'], $tid);
             }
 
             Log::info('KG Inicis: refund success', [
@@ -224,17 +226,21 @@ class PaymentRefundListener implements HookListenerInterface
      *
      * 이 시점에 PG 취소는 이미 성립했다 — 저장 실패를 환불 실패로 돌려주면 재시도가 같은 금액을 한 번 더 취소하러 간다
      * (토스 `syncCancelSnapshotSafely` 와 같은 판단). 소진액이 낡으면 다음 회차의 비과세 상한이 실제보다 커지므로 크게 남긴다.
+     * 누적 증가라 결제 행 잠금 아래 현재 meta 로 계산해 저장한다(계약 `mutatePaymentMetaWithLock`). 훅 인자 Model 은 바꾸지 않는다.
      *
-     * @param  OrderPayment  $payment  결제 레코드
+     * @param  Order  $order  주문 (훅 인자 — 주문번호만 읽는다)
+     * @param  OrderPayment  $payment  결제 레코드 (훅 인자 — 로그 문맥만 읽는다)
      * @param  int  $taxFree  이번 회차에 취소한 비과세 금액
      * @param  string  $tid  원거래 번호 (로그 문맥)
      * @return void 반환값 없음
      */
-    private function recordTaxFreeCancelledSafely(OrderPayment $payment, int $taxFree, string $tid): void
+    private function recordTaxFreeCancelledSafely(Order $order, OrderPayment $payment, int $taxFree, string $tid): void
     {
         try {
-            $this->orderPaymentRepository->savePendingChanges(
-                $payment->forceFill(['payment_meta' => $this->withTaxFreeCancelled($payment, $taxFree)]),
+            $this->bridge->mutatePaymentMetaWithLock(
+                (string) $order->order_number,
+                self::PG_PROVIDER_ID,
+                fn (array $meta): ?array => is_array($meta['tax_split'] ?? null) ? $this->withTaxFreeCancelled($meta, $taxFree) : null,
             );
         } catch (\Throwable $e) {
             Log::error('KG Inicis: 비과세 소진액 기록 실패 — 취소는 성립, 다음 부분취소의 비과세 상한이 낡음', [
@@ -272,7 +278,7 @@ class PaymentRefundListener implements HookListenerInterface
         try {
             $apiService = app(KgInicisApiService::class);
             $this->useStoredStandardCredentials($apiService, $payment, $tid);
-            $apiService->cancelPayment($tid, (string) ($payment->payment_meta['pay_method'] ?? 'Vacct'), null, __('sirsoft-ecommerce::messages.vbank_close_reason'));
+            $apiService->cancelPayment($tid, (string) ($payment->payment_meta['pay_method'] ?? 'Vacct'), null, __('sirsoft-pay_kginicis::messages.vbank_close_reason'));
 
             return ['handled' => true, 'success' => true, 'error_message' => null];
         } catch (\Throwable $e) {

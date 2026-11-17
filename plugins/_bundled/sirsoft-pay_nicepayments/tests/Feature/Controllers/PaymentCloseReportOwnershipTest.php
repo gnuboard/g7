@@ -50,7 +50,7 @@ class PaymentCloseReportOwnershipTest extends PluginTestCase
         ]);
 
         $response->assertStatus(403)
-            ->assertJsonPath('errors.message.0', 'Order ownership verification failed.');
+            ->assertJsonPath('errors.message.0', __('sirsoft-pay_nicepayments::messages.responses.ownership_verification_failed'));
         $this->assertOrderUnchanged($order);
     }
 

@@ -2249,6 +2249,24 @@
         "app_key": "base64:sAMpLEkEyDoNotUsEiNpRoDuCtIoN0123456789ABCDEF="
       }
     },
+    "extensionTrustKeys": {
+      "data": {
+        "builtin": [],
+        "keys": [
+          {
+            "id": 1,
+            "key_id": "sample:0123456789abcdef",
+            "label": "sample",
+            "public_key": "c2FtcGxlLXB1YmxpYy1rZXktbm90LWEtcmVhbC1rZXk=",
+            "vendor_scope": ["sample"],
+            "created_by": 1,
+            "created_at": "2026-11-15T09:00:00+09:00"
+          }
+        ],
+        "block_unsigned": false,
+        "sodium_available": true
+      }
+    },
     "auto_deactivated_banner": {
       "data": {
         "items": {

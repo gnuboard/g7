@@ -22,6 +22,7 @@ use App\Enums\LayoutSyncMode;
 use App\Enums\PermissionType;
 use App\Exceptions\ExtensionOperationInProgressException;
 use App\Exceptions\ExtensionUpdateFailedException;
+use App\Exceptions\PackageIntegrityException;
 use App\Extension\Concerns\ChecksDependencyVersions;
 use App\Extension\Concerns\ResolvesExtensionIcons;
 use App\Extension\Concerns\ResolvesExtensionSharedRecords;
@@ -50,10 +51,14 @@ use App\Extension\Helpers\IdentityPolicySyncHelper;
 use App\Extension\Helpers\IntegrationNotices;
 use App\Extension\Helpers\NotificationSyncHelper;
 use App\Extension\Helpers\StuckUpdateRecovery;
+use App\Extension\Integrity\ExtensionIntegrityRecorder;
+use App\Extension\Integrity\PackageIntegrityOptions;
+use App\Extension\Integrity\PackageVerification;
 use App\Extension\Layout\DTO\LayoutSyncEntry;
 use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\Layout\LayoutSyncReport;
 use App\Extension\Support\ComputedSettingKeys;
+use App\Extension\Support\ExtensionRemoteStorageCleanup;
 use App\Extension\Support\LifecycleWarnings;
 use App\Extension\Support\UnusableUpgradeStep;
 use App\Extension\Testing\ExtensionTestAllowlist;
@@ -77,6 +82,7 @@ use App\Services\LayoutExtensionService;
 use App\Support\AssetUrl;
 use App\Support\ExtensionStoragePath;
 use App\Support\LocalizedValue;
+use App\Support\PublicApiManifest;
 use App\Support\RouteCacheHelper;
 use App\Thumbnails\ThumbnailStore;
 use Illuminate\Support\Arr;
@@ -486,6 +492,8 @@ class PluginManager implements PluginManagerInterface
         $plugin = null;
 
         $onProgress?->__invoke('copy', __('extensions.progress.copy_files'));
+        // 무결성 기록용 원본 판별 — `_bundled` 는 번들, `_pending` 은 ZIP·GitHub 설치 서비스가 검증 결과를 적는다 (7.2.0)
+        $integritySource = ExtensionIntegrityRecorder::installSourceOf($this->pluginsPath, $pluginName, $force || ! File::isDirectory($this->pluginsPath.DIRECTORY_SEPARATOR.$pluginName));
         $this->copyFromPendingOrBundled($pluginName, $onProgress, $force);
 
         // 설치 시점에는 autoload-extensions.php 가 아직 갱신되지 않았다. plugin.php 의
@@ -741,6 +749,8 @@ class PluginManager implements PluginManagerInterface
 
         // 정규 훅 — Service 경유 여부와 무관하게 CLI 에서도 리스너(큐 재시작·활동 로그·언어팩)가
         // 돈다(#138). 설치 롤백 try 밖에서 발화해, 리스너 예외가 방금 끝난 설치를 되돌리지 않게 한다.
+        app(ExtensionIntegrityRecorder::class)->recordInstallSource('plugin', $pluginName, $integritySource);
+
         HookManager::doAction('core.plugins.after_install', $pluginName, $this->getPluginInfo($pluginName) ?? []);
 
         // 기존 레코드 위 재설치(--force) — 판·상태가 manifest 값으로 바뀌어 이 확장을 요구하던 활성 의존자가 깨질 수 있다.
@@ -1281,7 +1291,10 @@ class PluginManager implements PluginManagerInterface
         // Phase 1: 데이터 삭제 옵션이 true인 경우 동적 데이터 정리 및 마이그레이션 롤백 (DDL - 트랜잭션 외부)
         // MySQL에서 DROP TABLE 등 DDL 문은 암시적 커밋을 유발하므로 트랜잭션 외부에서 실행
         $onProgress?->__invoke('data_cleanup', __('extensions.progress.data_cleanup'));
+        $remoteDisks = [];
         if ($deleteData) {
+            // 기본 디스크 밖(비공개 첨부 저장소·공개 자산 디스크)의 플러그인 폴더 — 플러그인 행·설정을 지우기 전에 판정한다 (#916 D28)
+            $remoteDisks = ExtensionRemoteStorageCleanup::resolveDisks($plugin, 'plugin');
             // 동적 데이터 정리 (마이그레이션 롤백 전에 실행해야 메타 테이블 조회 가능)
             $this->cleanupDynamicPluginData($plugin);
             $this->rollbackMigrations($plugin);
@@ -1377,6 +1390,8 @@ class PluginManager implements PluginManagerInterface
 
                 // 플러그인 설정 디렉토리 삭제 (deleteData 옵션이 true인 경우)
                 if ($deleteData) {
+                    // 원격 디스크의 플러그인 폴더 삭제 — 실패는 수명주기 경고로 남기고 제거를 계속한다
+                    ExtensionRemoteStorageCleanup::purge($plugin, 'plugin', $remoteDisks);
                     $this->deletePluginSettingsDirectory($plugin);
                     // Composer vendor 디렉토리 및 composer.lock 삭제
                     $this->deleteVendorDirectory('plugins', $plugin->getIdentifier());
@@ -1518,6 +1533,8 @@ class PluginManager implements PluginManagerInterface
                     'description' => $this->getLocalizedValue($plugin->getDescription(), $locale),
                     'dependencies' => $this->enrichDependencies($plugin->getDependencies()),
                     'integrations' => $this->enrichIntegrations($plugin->getIntegrationConstraints()),
+                    // 다른 확장에 공개하는 PHP 표면 — 확장 상세 「공개 API」 칸 (#916)
+                    'public_api' => $plugin->getPublicApi(),
                     'requires_core' => $plugin->getRequiredCoreVersion(),
                     'status' => 'uninstalled',
                     'is_pending' => false,
@@ -1542,6 +1559,8 @@ class PluginManager implements PluginManagerInterface
                     'description' => $this->getLocalizedValue($metadata['description'] ?? '', $locale),
                     'dependencies' => $this->enrichDependencies($metadata['dependencies'] ?? []),
                     'integrations' => $this->enrichIntegrations($metadata['integrations'] ?? []),
+                    // 다른 확장에 공개하는 PHP 표면 — 확장 상세 「공개 API」 칸 (#916)
+                    'public_api' => PublicApiManifest::normalize($metadata['public_api'] ?? null, 'Plugins\\'.ExtensionManager::directoryToNamespace($identifier)),
                     'requires_core' => $metadata['g7_version'] ?? null,
                     'status' => 'uninstalled',
                     'is_pending' => true,
@@ -1566,6 +1585,8 @@ class PluginManager implements PluginManagerInterface
                     'description' => $this->getLocalizedValue($metadata['description'] ?? '', $locale),
                     'dependencies' => $this->enrichDependencies($metadata['dependencies'] ?? []),
                     'integrations' => $this->enrichIntegrations($metadata['integrations'] ?? []),
+                    // 다른 확장에 공개하는 PHP 표면 — 확장 상세 「공개 API」 칸 (#916)
+                    'public_api' => PublicApiManifest::normalize($metadata['public_api'] ?? null, 'Plugins\\'.ExtensionManager::directoryToNamespace($identifier)),
                     'requires_core' => $metadata['g7_version'] ?? null,
                     'status' => 'uninstalled',
                     'is_pending' => false,
@@ -1642,6 +1663,8 @@ class PluginManager implements PluginManagerInterface
                     'description' => $this->getLocalizedValue($descriptionJson, $locale),
                     'dependencies' => $this->enrichDependencies($plugin->getDependencies()),
                     'integrations' => $this->enrichIntegrations($plugin->getIntegrationConstraints()),
+                    // 다른 확장에 공개하는 PHP 표면 — 확장 상세 「공개 API」 칸 (#916)
+                    'public_api' => $plugin->getPublicApi(),
                     'requires_core' => $plugin->getRequiredCoreVersion(),
                     'status' => $record->status,
                     // 멈춘 업데이트(updating 이 10분 넘게 남고 잠금이 빔) — 관리자 카드가 정리·활성화 단추를 보인다
@@ -1650,6 +1673,9 @@ class PluginManager implements PluginManagerInterface
                     'latest_version' => $latestVersion,
                     'file_version' => $fileVersion,
                     'update_source' => $record->update_source ?? null,
+                    // 설치·업데이트 때 받은 패키지의 서명 검증 결과 (7.2.0, 이 칸 전 설치는 null)
+                    'integrity_status' => $record->integrity_status ?? null,
+                    'integrity_key_id' => $record->integrity_key_id ?? null,
                     // 업데이트 대상 버전의 코어 호환 — 업데이트 창의 경고·강제 업데이트 체크가 읽는다(업데이트가 있을 때만).
                     ...($updateAvailable ? $this->buildUpdateCompatibilityFields($this->resolveUpdateTargetRequiredCoreVersion(
                         $record->update_source ?? null,
@@ -1730,12 +1756,17 @@ class PluginManager implements PluginManagerInterface
             'update_available' => (bool) ($pluginRecord?->update_available ?? false),
             'latest_version' => $pluginRecord?->latest_version,
             'update_source' => $pluginRecord?->update_source,
+            // 설치·업데이트 때 받은 패키지의 서명 검증 결과 (7.2.0, 이 칸 전 설치는 null)
+            'integrity_status' => $pluginRecord?->integrity_status,
+            'integrity_key_id' => $pluginRecord?->integrity_key_id,
             'description' => $this->getLocalizedValue($descriptionJson, $locale),
             'github_url' => $plugin->getGithubUrl(),
             'metadata' => $metadata,
             'requires_core' => $plugin->getRequiredCoreVersion(),
             'dependencies' => $this->enrichDependencies($plugin->getDependencies()),
             'integrations' => $this->enrichIntegrations($plugin->getIntegrationConstraints()),
+            // 다른 확장에 공개하는 PHP 표면 — 확장 상세 「공개 API」 칸 (#916)
+            'public_api' => $plugin->getPublicApi(),
             // 선언은 {name, description, categories} 계층이지만 상세 창은 분류 배열을 그린다 —
             // 모듈 정보(ModuleManager::getModuleInfo)와 같은 모양으로 categories 만 내보낸다.
             'permissions' => $plugin->getPermissions()['categories'] ?? [],
@@ -1797,6 +1828,8 @@ class PluginManager implements PluginManagerInterface
                 'requires_core' => $plugin->getRequiredCoreVersion(),
                 'dependencies' => $this->enrichDependencies($plugin->getDependencies()),
                 'integrations' => $this->enrichIntegrations($plugin->getIntegrationConstraints()),
+                // 다른 확장에 공개하는 PHP 표면 — 확장 상세 「공개 API」 칸 (#916)
+                'public_api' => $plugin->getPublicApi(),
                 'permissions' => $plugin->getPermissions()['categories'] ?? [],
                 'roles' => $plugin->getRoles(),
                 'config' => $plugin->getConfigValues(),
@@ -1867,6 +1900,8 @@ class PluginManager implements PluginManagerInterface
             'requires_core' => $metadata['g7_version'] ?? null,
             'dependencies' => $this->enrichDependencies($metadata['dependencies'] ?? []),
             'integrations' => $this->enrichIntegrations($metadata['integrations'] ?? []),
+            // 다른 확장에 공개하는 PHP 표면 — 확장 상세 「공개 API」 칸 (#916)
+            'public_api' => PublicApiManifest::normalize($metadata['public_api'] ?? null, 'Plugins\\'.ExtensionManager::directoryToNamespace($metadata['identifier'] ?? $pluginName)),
             'permissions' => $metadata['permissions']['categories'] ?? $metadata['permissions'] ?? [],
             'roles' => $metadata['roles'] ?? [],
             'config' => $metadata['config'] ?? [],
@@ -4804,65 +4839,41 @@ class PluginManager implements PluginManagerInterface
     }
 
     /**
-     * GitHub에서 플러그인 업데이트를 다운로드하여 _pending 스테이징에 배치합니다.
+     * GitHub 태그 릴리스에서 플러그인 업데이트를 받아 서명을 검증하고 임시 디렉토리에 풀어 둡니다.
      *
-     * ExtensionManager의 공용 GitHub 다운로드 유틸리티를 사용하여
-     * 코어 업데이트와 동일한 폴백 체인(ZipArchive → unzip)을 적용합니다.
+     * 서명 자산(`{identifier}-{version}.zip` + `.sig.json`)이 있으면 그것을, 없으면 미서명 정책이 허락할 때만 태그
+     * zipball 을 받는다(7.2.0). 스테이징은 호출부(updatePlugin)가 풀어 둔 디렉토리에서 한다.
      *
      * @param  PluginInterface  $plugin  플러그인 인스턴스
      * @param  string  $version  다운로드할 버전
-     * @return string 스테이징 경로
+     * @param  PackageIntegrityOptions  $integrity  패키지 무결성 선택
+     * @return array{temp_dir: string, extracted_dir: string, verification: PackageVerification} 받은 소스 (호출부가 temp_dir 정리)
      *
+     * @throws PackageIntegrityException 서명 불일치·미신뢰 키·미서명 확인 필요 시
      * @throws \RuntimeException 다운로드 실패 시
      */
-    protected function downloadPluginUpdate(PluginInterface $plugin, string $version): string
+    protected function downloadPluginUpdate(PluginInterface $plugin, string $version, PackageIntegrityOptions $integrity): array
     {
         $githubUrl = $plugin->getGithubUrl();
         if (! $githubUrl) {
             throw new \RuntimeException(__('plugins.errors.invalid_github_url', ['plugin' => $plugin->getIdentifier()]));
         }
 
-        if (! preg_match('#github\.com[/:]([^/]+)/([^/\.]+)#', $githubUrl, $matches)) {
+        if (! preg_match('#github\.com[/:]([^/]+)/([^/\.]+)#', $githubUrl)) {
             throw new \RuntimeException(__('plugins.errors.invalid_github_url', ['plugin' => $plugin->getIdentifier()]));
         }
 
-        $owner = $matches[1];
-        $repo = $matches[2];
+        $acquired = $this->extensionManager->acquireGithubUpdate(
+            'plugin', $plugin->getIdentifier(), $githubUrl, $version, 'plugin.json', $integrity, config('app.update.github_token') ?? ''
+        );
 
-        // _pending 스테이징 경로 생성
-        $stagingPath = ExtensionPendingHelper::createUpdateStagingPath($this->pluginsPath, $plugin->getIdentifier());
+        Log::info('플러그인 업데이트 다운로드·검증 완료', [
+            'plugin' => $plugin->getIdentifier(),
+            'version' => $version,
+            'integrity' => $acquired['verification']->status->value,
+        ]);
 
-        // 임시 디렉토리 (다운로드/추출용)
-        $tempDir = storage_path('app/temp/plugin_update_'.uniqid());
-
-        try {
-            ExtensionPendingHelper::ensureUpdateTempDirectory($tempDir);
-
-            // GitHub에서 다운로드 및 추출 (코어와 동일한 폴백 체인)
-            $extractedDir = $this->extensionManager->downloadAndExtractFromGitHub(
-                $owner, $repo, $version, $tempDir, config('app.update.github_token') ?? ''
-            );
-
-            // 추출된 파일을 _pending 스테이징으로 복사
-            ExtensionPendingHelper::stageForUpdate($extractedDir, $stagingPath);
-
-            Log::info('플러그인 업데이트 다운로드 및 스테이징 완료', [
-                'plugin' => $plugin->getIdentifier(),
-                'version' => $version,
-                'staging_path' => $stagingPath,
-            ]);
-
-            return $stagingPath;
-
-        } catch (\Exception $e) {
-            ExtensionPendingHelper::cleanupStaging($stagingPath);
-            throw $e;
-        } finally {
-            // 임시 파일 정리
-            if (File::isDirectory($tempDir)) {
-                File::deleteDirectory($tempDir);
-            }
-        }
+        return $acquired;
     }
 
     /**
@@ -4996,10 +5007,12 @@ class PluginManager implements PluginManagerInterface
      * @param  \Closure|null  $onUpgradeStep  upgrade step 실행 콜백 (인자: 버전 문자열)
      * @param  string|null  $sourceOverride  업데이트 소스 강제 지정 (auto|bundled|github)
      * @param  string|null  $zipPath  사전 다운로드된 zip 파일 경로
+     * @param  PackageIntegrityOptions|null  $integrity  패키지 무결성 선택(미서명 계속·서명 파일) — null 이면 미서명은 409 (7.2.0)
      * @return array{success: bool, from_version: string|null, to_version: string|null, message: string} 업데이트 결과(성공 여부·이전/이후 버전·메시지)
      *
      * @throws \RuntimeException 업데이트 실패 시
      * @throws ExtensionOperationInProgressException 같은 확장의 업데이트가 이미 진행 중일 때 (409)
+     * @throws PackageIntegrityException 받은 패키지의 서명이 맞지 않거나·미신뢰 키거나·미서명 확인이 필요할 때 (백업 전)
      */
     public function updatePlugin(
         string $identifier,
@@ -5010,7 +5023,9 @@ class PluginManager implements PluginManagerInterface
         ?\Closure $onUpgradeStep = null,
         ?string $sourceOverride = null,
         ?string $zipPath = null,
+        ?PackageIntegrityOptions $integrity = null,
     ): array {
+        $integrity ??= PackageIntegrityOptions::none();
         // 같은 플러그인의 업데이트는 한 번에 하나만 — 상태 가드(status=updating)가 서기 전 구간에 들어온 두 번째 요청이
         // 함께 통과해 업데이트가 두 번 수행됐다(#138 실측 ② 버튼 더블클릭). 직전 훅보다 먼저 잠그고, 이 지역 변수가
         // 메서드를 빠져나갈 때(정상 반환·예외 모두) 잠금이 풀린다.
@@ -5068,10 +5083,14 @@ class PluginManager implements PluginManagerInterface
         // zipTempDir / zipExtractedDir 는 staging 단계에서 사용 후 finally 에서 정리.
         $zipTempDir = null;
         $zipExtractedDir = null;
+        // 받은 패키지의 무결성 검증 결과 — 끝나면 설치 행에 적는다(번들은 bundled, 7.2.0)
+        $integrityVerification = PackageVerification::bundled();
         if ($zipPath !== null) {
-            $prepared = $this->extensionManager->prepareZipSource($zipPath, $identifier, 'plugin.json');
+            // 서명 검증(해제 전 바이트 + 해제 뒤 manifest) — 미서명 확인(409)·불일치(422)는 아무것도 바꾸기 전에 멈춘다
+            $prepared = $this->extensionManager->prepareVerifiedZipSource('plugin', $zipPath, $identifier, 'plugin.json', $integrity);
             $zipTempDir = $prepared['temp_dir'];
             $zipExtractedDir = $prepared['extracted_dir'];
+            $integrityVerification = $prepared['verification'];
             $updateSource = 'zip';
             $toVersion = $prepared['to_version'];
         }
@@ -5132,10 +5151,24 @@ class PluginManager implements PluginManagerInterface
         // 다운그레이드 차단 — fromVersion > toVersion 인 경우 force=false 면 차단.
         // force=true 는 의도적 다운그레이드 (장애 롤백 등) 허용. lang pack/모듈과 일관.
         if ($fromVersion && version_compare($toVersion, $fromVersion, '<') && ! $force) {
+            // 받아 둔 ZIP 소스 임시 디렉토리 — 이 차단은 바깥 try 앞이라 그 catch 의 정리를 지나지 않는다 (#916)
+            if ($zipTempDir && File::isDirectory($zipTempDir)) {
+                File::deleteDirectory($zipTempDir);
+            }
+
             throw new \RuntimeException(__('plugins.errors.downgrade_blocked', [
                 'from' => $fromVersion,
                 'to' => $toVersion,
             ]));
+        }
+
+        // GitHub 소스는 백업·상태 변경 전에 받아 검증한다(7.2.0) — 미서명 확인(409)·서명 불일치(422)·릴리스 없음이
+        // 아무것도 바꾸지 않은 채로 끝나게 한다. 받은 소스는 ZIP 경로와 같은 임시 디렉토리로 다루고 finally 에서 정리한다.
+        if ($updateSource === 'github') {
+            $acquired = $this->downloadPluginUpdate($plugin, $toVersion, $integrity);
+            $zipTempDir = $acquired['temp_dir'];
+            $zipExtractedDir = $acquired['extracted_dir'];
+            $integrityVerification = $acquired['verification'];
         }
 
         $backupPath = null;
@@ -5166,13 +5199,12 @@ class PluginManager implements PluginManagerInterface
             $stagingPath = null;
 
             try {
-                if ($updateSource === 'github') {
-                    $stagingPath = $this->downloadPluginUpdate($plugin, $toVersion);
-                } elseif ($updateSource === 'bundled') {
+                if ($updateSource === 'bundled') {
                     $sourcePath = ExtensionPendingHelper::getBundledPath($this->pluginsPath, $identifier);
                     $stagingPath = ExtensionPendingHelper::createUpdateStagingPath($this->pluginsPath, $identifier);
                     ExtensionPendingHelper::stageForUpdate($sourcePath, $stagingPath, $onProgress);
-                } elseif ($updateSource === 'zip') {
+                } elseif ($updateSource === 'zip' || $updateSource === 'github') {
+                    // GitHub 소스도 위에서 받아 검증하고 풀어 둔 디렉토리에서 스테이징한다
                     $stagingPath = ExtensionPendingHelper::createUpdateStagingPath($this->pluginsPath, $identifier);
                     ExtensionPendingHelper::stageForUpdate($zipExtractedDir, $stagingPath, $onProgress);
                 }
@@ -5417,10 +5449,14 @@ class PluginManager implements PluginManagerInterface
                 $this->pluginsPath.DIRECTORY_SEPARATOR.$identifier.DIRECTORY_SEPARATOR.'plugin.json'
             );
 
+            // 받은 패키지의 무결성 검증 결과를 설치 행에 남긴다 — 확장 상세의 서명 배지 (7.2.0)
+            app(ExtensionIntegrityRecorder::class)->record('plugin', $identifier, $integrityVerification);
+
             $result = [
                 'success' => true,
                 'from_version' => $fromVersion,
                 'to_version' => $toVersion,
+                'integrity' => $integrityVerification->toArray(),
                 'layout_strategy' => $layoutStrategy,
                 // 이번 실행의 레이아웃 설치 소스 — 활동 로그 리스너가 큐로 돌아도 실행 당시 값을 기록하게 결과에 싣는다.
                 'layout_source' => self::normalizeLayoutInstallSource(config('template.layout_markup.install_source')),
@@ -5436,6 +5472,13 @@ class PluginManager implements PluginManagerInterface
             ];
         } catch (\Throwable $e) {
             $statusUpdating = false;
+
+            // 받아 둔 ZIP·GitHub 소스 임시 디렉토리 — 스테이징의 finally 보다 앞(백업 생성·진행 기록·상태 변경)에서 실패하면
+            // 여기로 바로 온다. 스테이징을 지났으면 이미 지워져 있다(두 번 지워도 안전, #916).
+            if ($zipTempDir && File::isDirectory($zipTempDir)) {
+                File::deleteDirectory($zipTempDir);
+            }
+
             // 실패 시: 백업 복원 + 상태 복원
             Log::error('플러그인 업데이트 실패', [
                 'plugin' => $identifier,

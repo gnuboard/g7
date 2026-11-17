@@ -150,6 +150,35 @@
 연동 대상이 꺼진 사이트에서 이 모듈의 화면·응답이 그 대상으로 가는 링크·데이터를 내지 않게 하는 것은 이 모듈의 몫입니다 —
 서버는 활성 여부를 확인하고, 레이아웃은 `_global.activeModules` 로 가립니다([선택 연동](plugin-development.md#선택-연동-integrations)).
 
+### public_api 필드 (선택)
+
+다른 확장이 PHP 로 이 모듈을 부를 때 써도 되는 표면을 선언합니다(코어 7.2.0+, `getPublicApi()` 로 자동 파싱, 플러그인 `plugin.json` 도 같은 모양).
+선언하지 않은 클래스(Model·Service·Repository 등)와 소유 테이블은 내부 구현이라 다른 확장이 import·생성·정적 호출·직접 조회하면
+번들 확장 검수에서 위반으로 막습니다. 관리자 확장 상세 화면 「공개 API」 칸에 이 목록이 보입니다.
+
+```json
+"public_api": {
+    "version": 1,
+    "namespaces": ["Modules\\Vendor\\Shop\\Contracts", "Modules\\Vendor\\Shop\\Enums"],
+    "classes": ["Modules\\Vendor\\Shop\\Support\\ShopPathResolver"],
+    "readonly_models": ["Modules\\Vendor\\Shop\\Models\\Order"]
+}
+```
+
+| 키 | 뜻 | 다른 확장이 할 수 있는 것 |
+| --- | --- | --- |
+| `version` | 선언 판. 지금은 `1` 만(생략하면 1) | — |
+| `namespaces` | 그 네임스페이스와 하위 전체를 공개 | import·생성·정적 호출·주입 |
+| `classes` | 하나씩 공개하는 클래스 | 위와 같음 |
+| `readonly_models` | 훅이 인자로 넘기는 Model | 타입힌트·`instanceof`·`::class`·속성 읽기·읽기 메서드(`getKey()` 등)만. 그 Model 로 `save`·`update`·`query`·관계 호출·속성 대입은 금지 — 바꾸려면 공개 계약 메서드를 id·번호로 부른다 |
+
+- 모든 항목은 이 모듈의 네임스페이스(`Modules\{Vendor}\{Name}`) 하위여야 합니다. 형식이 틀리거나 다른 네임스페이스를 가리키는 항목은 버립니다.
+- 계약은 인터페이스 + 읽기 전용 DTO(`final readonly class`)로 만들고 `ServiceProvider` 에서 구현을 바인딩합니다. 다른 확장은 인터페이스를
+  생성자 주입(`app(ShopDirectory::class)`)으로 받습니다. 인터페이스 상수 `VERSION` 으로 판을 밝히고, 메서드 추가는 마이너 호환입니다(구현은 소유 모듈만).
+- 계약을 새 판에서 처음 내놓으면, 그 계약을 쓰는 확장은 `dependencies`(또는 버전 제약이 있는 `integrations`)에 그 판 이상을 적고,
+  `integrations` 로만 연동할 때는 실행 중에 `app()->bound(계약::class)` 로 계약이 있는지 확인한 뒤 씁니다.
+- 선언이 없으면 다른 확장에 공개한 PHP 표면이 없다는 뜻입니다 — 그때는 공개 훅·API 로만 협력합니다.
+
 ### search_scopes 필드 (선택)
 
 자기 검색창을 가진 모듈은 `module.json` 의 `search_scopes` 로 최근 검색어 범위를 선언합니다(코어 7.1.5+, `getSearchScopes()` 로 자동 파싱).

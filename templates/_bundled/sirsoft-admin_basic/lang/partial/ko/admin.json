@@ -5,6 +5,13 @@
       "with_label": "실명: {{name}}"
     }
   },
+  "extension_public_api": {
+    "title": "공개 API (다른 확장이 쓸 수 있는 PHP 표면)",
+    "hint": "다른 확장은 아래에 공개된 네임스페이스·클래스와 공개 훅만 써야 합니다. 그 밖의 클래스는 내부 구현이라 예고 없이 바뀔 수 있습니다.",
+    "namespaces": "네임스페이스",
+    "classes": "클래스",
+    "readonly_models": "읽기 전용 Model (타입힌트·속성 읽기만)"
+  },
   "extension_integrations": {
     "title": "함께 쓰면 연동되는 확장",
     "hint": "아래 확장이 설치돼 있으면 기능이 서로 연결됩니다. 없어도 이 확장은 그대로 동작합니다.",
@@ -27,6 +34,35 @@
     "deactivate_confirm": "비활성화",
     "uninstall_notice": "아래 확장이 이 확장과 연동 중입니다 — 삭제하면 이 확장을 쓰던 메뉴·화면이 사라집니다.",
     "notice_toast": "함께 쓰면 연동되는 확장 안내: {{items}}"
+  },
+  "package_integrity": {
+    "signature_label": "패키지 서명",
+    "status_verified": "서명 확인됨: {{signer}}",
+    "status_unsigned": "서명 없음",
+    "status_unverifiable": "서명 확인 불가 (서버에 sodium 없음)",
+    "status_bundled": "번들 원본",
+    "status_none": "기록 없음",
+    "unsigned_title": "서명이 없는 패키지입니다",
+    "unverifiable_title": "이 서버에서 서명을 확인할 수 없습니다",
+    "invalid_title": "서명이 맞지 않아 진행을 멈췄습니다",
+    "untrusted_title": "신뢰하지 않는 키로 서명된 패키지입니다",
+    "package": "패키지: {{identifier}} {{version}}",
+    "signer_key": "서명 키: {{key}}",
+    "continue_hint": "제작자를 믿을 수 있을 때만 아래 「미서명으로 계속」을 누르세요. 같은 요청을 서명 확인 없이 다시 보냅니다.",
+    "blocked_hint": "환경설정 > 보안의 「미서명 패키지 차단」이 켜져 있어 진행할 수 없습니다. 서명된 패키지를 쓰거나 차단을 끄세요.",
+    "invalid_hint": "패키지 내용이 바뀌었거나 서명 파일이 다른 패키지의 것입니다. 배포처에서 ZIP 과 서명 파일을 다시 받으세요.",
+    "untrusted_hint": "환경설정 > 보안의 「확장 신뢰 키」에 제작자 키가 등록돼 있는지, 그 키의 vendor 범위가 이 식별자와 맞는지 확인하세요.",
+    "continue_unsigned": "미서명으로 계속",
+    "result_verified": "패키지 서명을 확인했습니다 (서명자: {{signer}}).",
+    "result_unsigned": "서명을 확인하지 않은 패키지로 진행했습니다.",
+    "signature_file_label": "서명 파일 (.sig.json, 선택)",
+    "no_signature_selected": "선택한 서명 파일이 없습니다.",
+    "signature_file_hint": "릴리스에 ZIP 과 함께 올라온 서명 파일(ZIP 이름 뒤에 .sig.json)을 고르면 설치 전에 서명을 확인합니다. 고르지 않으면 서명 없는 패키지로 다룹니다.",
+    "signature_url_label": "서명 파일 주소 (선택)",
+    "signature_url_hint": "ZIP 과 함께 배포된 .sig.json 파일의 https 주소입니다. 비워 두면 서명 없는 패키지로 다룹니다(주소를 짐작해 따로 요청하지 않습니다).",
+    "core_signature_label": "릴리스 서명",
+    "core_signature_available": "서명 있음",
+    "core_signature_missing": "서명 없음"
   },
   "sidebar": {
     "no_accessible_menus": "접근 가능한 메뉴가 없습니다",
@@ -738,16 +774,22 @@
     },
     "install_modal": {
       "title": "언어팩 설치",
-      "description": "ZIP 파일 또는 GitHub URL로 언어팩을 설치합니다.",
+      "description": "ZIP 파일, GitHub URL 또는 ZIP 주소로 언어팩을 설치합니다.",
       "tabs": {
         "zip": "ZIP 파일",
-        "github": "GitHub"
+        "github": "GitHub",
+        "url": "URL"
       },
       "file_label": "ZIP 파일",
       "no_file_selected": "선택된 파일이 없습니다.",
       "file_requirements": "다음 manifest 파일이 ZIP 루트에 포함되어 있어야 합니다.",
       "github_url_label": "GitHub URL",
-      "github_requirements": "Public 저장소만 지원합니다. 다음 manifest 파일이 저장소 루트에 있어야 합니다."
+      "github_requirements": "Public 저장소만 지원합니다. 다음 manifest 파일이 저장소 루트에 있어야 합니다.",
+      "url_label": "패키지 주소 (https)",
+      "url_hint": "언어팩 ZIP 을 바로 받을 수 있는 https 주소입니다.",
+      "checksum_label": "SHA-256 체크섬 (선택)",
+      "checksum_hint": "배포처가 알려 준 ZIP 의 SHA-256 값(16진수 64자)을 적으면 받은 파일과 대조합니다.",
+      "url_requirements": "받은 ZIP 의 루트에 다음 manifest 파일이 있어야 합니다."
     },
     "installing": "설치 중...",
     "messages": {
@@ -1002,7 +1044,7 @@
       "file_requirements": "모듈 패키지는 반드시",
       "file_structure_hint": "파일을 포함해야 하며, 그누보드7 모듈 표준 구조를 따라야 합니다.",
       "github_url_label": "GitHub 저장소 URL",
-      "github_url_hint": "GitHub 저장소의 기본 브랜치에서 모듈을 다운로드합니다.",
+      "github_url_hint": "GitHub 저장소의 최신 태그 릴리스에서 모듈을 받습니다. 릴리스가 없는 저장소는 설치하지 않습니다.",
       "github_requirements": "루트 디렉토리에",
       "github_public_only": "파일이 있어야 합니다."
     },
@@ -1234,7 +1276,7 @@
       "file_requirements": "플러그인 패키지는 반드시",
       "file_structure_hint": "파일을 포함해야 하며, 그누보드7 플러그인 표준 구조를 따라야 합니다.",
       "github_url_label": "GitHub 저장소 URL",
-      "github_url_hint": "GitHub 저장소의 기본 브랜치에서 플러그인을 다운로드합니다.",
+      "github_url_hint": "GitHub 저장소의 최신 태그 릴리스에서 플러그인을 받습니다. 릴리스가 없는 저장소는 설치하지 않습니다.",
       "github_requirements": "루트 디렉토리에",
       "github_public_only": "파일이 있어야 합니다."
     },
@@ -1649,7 +1691,8 @@
       "queue_default": "기본값",
       "overridden_badge": "운영자 수정됨",
       "owned_badge": "{{owner}} 등록 작업 — 이름·유형·명령 잠김",
-      "timezone_badge": "시간대: {{timezone}}"
+      "timezone_badge": "시간대: {{timezone}}",
+      "allow_unsigned_hint": "설치·업데이트 명령(module:update 등)을 등록할 때는 --allow-unsigned 를 함께 적어야 서명 없는 패키지에서 멈추지 않습니다."
     },
     "modals": {
       "create_title": "스케줄 등록",
@@ -2072,7 +2115,8 @@
           "purge_failed": "썸네일을 비우지 못했습니다.",
           "purge_all": "두 곳 모두 비우기",
           "pregenerate": "기존 이미지 썸네일 만들기",
-          "cdn_purge_notice": "공개 썸네일을 공개 저장소(CDN)에 두면, 비우기와 원본 삭제 때 CDN 캐시 무효화는 CDN 플러그인이 처리합니다. 플러그인이 없으면 CDN 에 남은 사본이 만료될 때까지 보일 수 있습니다."
+          "cdn_purge_notice": "공개 썸네일을 공개 저장소(CDN)에 두면, 비우기와 원본 삭제 때 CDN 캐시 무효화는 CDN 플러그인이 처리합니다. 플러그인이 없으면 CDN 에 남은 사본이 만료될 때까지 보일 수 있습니다.",
+          "same_bucket_warning": "드라이버 탭의 공개 자산 디스크도 Amazon S3 라서 권한이 걸린 이미지 썸네일과 같은 버킷을 씁니다. 버킷에 공개 읽기 정책이 있으면 이 썸네일도 버킷 주소로 직접 읽힐 수 있으니, 썸네일 경로(thumbnails/)에 공개 정책이 걸리지 않았는지 확인하세요."
         },
         "purge_all_modal": {
           "title": "썸네일 모두 비우기",
@@ -2427,6 +2471,28 @@
         "auto_hosts_empty": "활성 확장이 선언한 외부 스크립트 호스트가 없습니다.",
         "preview": "적용될 정책 미리보기",
         "preview_hint": "저장된 값 기준입니다. 모드나 호스트를 바꿨다면 저장한 뒤 다시 확인하세요."
+      },
+      "extension_trust": {
+        "title": "확장 신뢰 키",
+        "desc": "확장·언어팩·코어 패키지의 서명을 확인할 때 믿는 공개키입니다. 코어 내장 키는 코어와 함께 배포되고, 제작자 키는 여기서 추가합니다. 키 추가와 삭제는 저장 버튼과 별개로 바로 반영됩니다.",
+        "block_unsigned": "미서명 패키지 차단",
+        "block_unsigned_desc": "켜면 서명이 없거나 이 서버에서 서명을 확인할 수 없는 패키지의 설치·업데이트를 막습니다(「미서명으로 계속」도 나타나지 않습니다). 저장 버튼을 눌러야 반영됩니다.",
+        "sodium_missing": "이 서버에 PHP sodium 확장이 없어 서명을 확인할 수 없습니다. 서명된 패키지도 「서명 확인 불가」로 다뤄 미서명과 같은 정책을 따릅니다.",
+        "builtin_title": "코어 내장 키",
+        "builtin_hint": "코어와 함께 배포되는 키라 여기서 바꿀 수 없습니다.",
+        "builtin_empty": "코어 내장 키가 아직 없습니다. 코어 업데이트로 함께 배포됩니다.",
+        "vendor_title": "제작자 키",
+        "vendor_empty": "등록한 제작자 키가 없습니다.",
+        "add_key": "키 추가",
+        "delete_key": "삭제",
+        "field_key_id": "키 ID",
+        "field_signer": "서명자",
+        "field_vendor_scope": "vendor 범위",
+        "field_created_at": "등록일",
+        "status_active": "사용 중",
+        "status_retired": "새 서명 중단",
+        "status_revoked": "폐기",
+        "load_failed": "신뢰 키 목록을 불러오지 못했습니다."
       }
     },
     "member": {
@@ -2781,6 +2847,16 @@
         "desc": "완전 공개 자산(상품·카테고리·리뷰·에디터 이미지, 레이아웃 배경 이미지 등)의 직접 URL 서빙 디스크를 설정합니다. 사용 안 함이면 기존 스트리밍 방식으로 동작합니다. 켠 뒤 업로드한 파일만 직접 URL 로 발급되며, 그 주소는 저장된 레이아웃에 그대로 남습니다.",
         "disk": "디스크",
         "s3_help": "S3 선택 시 위 파일 스토리지 카드의 S3 URL(CDN 도메인) 설정이 필요합니다. 미설정 시 스트리밍으로 동작합니다."
+      },
+      "private_attachment": {
+        "title": "비공개 첨부 저장소",
+        "desc": "권한을 확인한 뒤 서버가 내려주는 파일(게시판·페이지·코어 첨부, 클레임 이미지, 본문 미디어, 내보내기 파일)을 저장할 디스크입니다. 「기본」이면 지금까지처럼 사이트 스토리지 드라이버를 따릅니다. 바꾼 뒤 올린 파일만 새 디스크에 저장되고, 이미 올린 파일은 원래 디스크에서 그대로 내려줍니다.",
+        "disk": "디스크",
+        "same_disk_warning": "공개 자산 스토리지와 같은 디스크입니다. 버킷에 공개 읽기 정책이 있으면 비공개 파일도 버킷 주소로 직접 읽힐 수 있습니다. 공개 정책이 없는 버킷이나 경로를 쓰세요.",
+        "s3_help": "S3 를 고르면 위 파일 스토리지 카드의 S3 접속 정보를 씁니다. 버킷은 공개 읽기를 막아 두세요.",
+        "pins_title": ".env 로 고정된 확장",
+        "pin_core": "코어 첨부",
+        "pins_hint": "이 항목들은 .env 에 적은 디스크를 쓰므로 위 선택을 따르지 않습니다. 선택을 따르게 하려면 .env 에서 해당 값을 지우세요."
       },
       "file_delegation": {
         "title": "웹서버 파일 위임",
@@ -3653,6 +3729,29 @@
       "language_packs": "언어팩을 볼 권한이 없습니다. 「언어팩 조회」 권한이 필요합니다.",
       "identity_providers": "본인인증 프로바이더를 볼 권한이 없습니다. 「프로바이더 설정 조회」 권한이 필요합니다.",
       "identity_policies": "본인인증 정책을 볼 권한이 없습니다. 「정책 조회」 권한이 필요합니다."
+    },
+    "extension_trust_key_modal": {
+      "add_title": "제작자 신뢰 키 추가",
+      "add_desc": "확장 제작자가 알려 준 공개키를 등록합니다. 이 키로 서명된 패키지 가운데 vendor 범위에 든 식별자만 신뢰합니다.",
+      "public_key": "공개키",
+      "public_key_placeholder": "base64 로 인코딩한 32바이트 Ed25519 공개키",
+      "public_key_hint": "제작자가 extension:keygen 명령으로 만든 공개키 한 줄을 그대로 붙여 넣습니다. 키 ID 는 서버가 계산합니다.",
+      "label": "서명자 이름",
+      "label_placeholder": "예: glitter",
+      "label_hint": "영문·숫자·밑줄·하이픈 32자 이내이고 sirsoft 로 시작할 수 없습니다. 키 ID 의 앞부분이 됩니다.",
+      "vendor_scope": "vendor 범위",
+      "vendor_scope_placeholder": "예: glitter, glitter-labs",
+      "vendor_scope_hint": "이 키의 서명을 믿을 확장 식별자의 vendor(하이픈 앞부분)를 쉼표로 구분해 하나 이상 적습니다. sirsoft 는 넣을 수 없습니다.",
+      "password_notice": "신뢰 키를 바꾸면 어떤 패키지를 믿을지가 바뀌므로 본인 비밀번호를 다시 확인합니다.",
+      "submit": "키 추가",
+      "submitting": "추가하는 중...",
+      "add_success": "신뢰 키를 추가했습니다.",
+      "delete_title": "제작자 신뢰 키 삭제",
+      "delete_confirm": "{{key_id}} 키를 삭제합니다.",
+      "delete_warning": "이 키로 서명된 확장은 다음 설치·업데이트부터 「신뢰하지 않는 키」로 차단됩니다.",
+      "delete_submit": "삭제",
+      "deleting": "삭제하는 중...",
+      "delete_success": "신뢰 키를 삭제했습니다."
     }
   },
   "templates": {
@@ -3708,7 +3807,7 @@
       "file_requirements": "템플릿 패키지는 반드시",
       "file_structure_hint": "파일을 포함해야 하며, 그누보드7 템플릿 표준 구조를 따라야 합니다.",
       "github_url_label": "GitHub 저장소 URL",
-      "github_url_hint": "GitHub 저장소의 기본 브랜치에서 템플릿을 다운로드합니다.",
+      "github_url_hint": "GitHub 저장소의 최신 태그 릴리스에서 템플릿을 받습니다. 릴리스가 없는 저장소는 설치하지 않습니다.",
       "github_requirements": "루트 디렉토리에",
       "github_public_only": "파일이 있어야 합니다."
     },
@@ -3902,7 +4001,7 @@
       "file_requirements": "템플릿 패키지는 반드시",
       "file_structure_hint": "파일을 포함해야 하며, 그누보드7 템플릿 표준 구조를 따라야 합니다.",
       "github_url_label": "GitHub 저장소 URL",
-      "github_url_hint": "GitHub 저장소의 기본 브랜치에서 템플릿을 다운로드합니다.",
+      "github_url_hint": "GitHub 저장소의 최신 태그 릴리스에서 템플릿을 받습니다. 릴리스가 없는 저장소는 설치하지 않습니다.",
       "github_requirements": "루트 디렉토리에",
       "github_public_only": "파일이 있어야 합니다."
     },
@@ -5334,7 +5433,9 @@
       "settings_thumbnail_pregenerate_modal": "기존 이미지 썸네일 만들기",
       "member_field_form_modal": "회원 항목 추가와 수정",
       "member_field_delete_modal": "회원 항목 삭제 확인",
-      "member_field_required_modal": "회원 항목 필수 전환 확인"
+      "member_field_required_modal": "회원 항목 필수 전환 확인",
+      "extension_trust_key_add_modal": "확장 신뢰 키 추가 창",
+      "extension_trust_key_delete_modal": "확장 신뢰 키 삭제 창"
     },
     "admin_template_list": {
       "template_activate_modal": "템플릿 활성화 확인",

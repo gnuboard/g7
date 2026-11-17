@@ -8,6 +8,7 @@
 3. 활성화 시 의존성 + 버전 호환성 자동 검사 (호스트 확장 active + requires.target_version 제약). 설치는 호스트가 설치돼 있으면 꺼져 있어도 허용(꺼진 채 설치)
 4. 호스트 확장 비활성화 시 종속 언어팩 자동 비활성화. 재활성화 시 모달로 "다음 언어팩도 활성화 하시겠습니까" 질의. 호스트가 꺼진 동안 켜 달라는 요청으로 설치된 팩은 호스트를 켤 때 함께 켜짐
 5. 업데이트 출처: GitHub 공개 최신과 bundled 판 중 높은 버전(같으면 GitHub), 실제 업데이트도 확인이 고른 출처에서 받음. --force·--source=bundled 는 bundled — 모듈·플러그인·템플릿과 같은 규칙
+6. 외부 언어팩(업로드·URL·GitHub)은 패키지 서명을 검증(7.2.0) — 제작자 키의 vendor 범위는 manifest vendor 칸으로 대조. 공식 언어팩(_bundled·확장 lang/)은 bundled (「패키지 서명」 절)
 ```
 
 ## 개요
@@ -212,8 +213,8 @@ UI 에서 라디오로 즉시 전환 가능. 활성 팩이 제거되면 slot 의
 
 ## 설치 흐름
 
-1. ZIP/GitHub/URL → `_pending/{tmp}/` 추출
-2. `LanguagePackManifestValidator` → manifest 구조 검증
+1. ZIP/GitHub/URL → 풀기 전 패키지 서명 검증(7.2.0, 아래 「패키지 서명」) → `_pending/{tmp}/` 추출
+2. `LanguagePackManifestValidator` → manifest 구조 검증, 서명된 패키지면 manifest 식별자·버전·`vendor` 를 서명·제작자 키 범위와 대조
 3. 보안 검사: `backend/` 외 PHP 파일 차단, `eval`/`include` 패턴 차단
 4. 의존성 검사: `depends_on_core_locale=true` 면 코어 언어팩 active 여부 확인
 5. 대상 확장 존재 확인 (modules/plugins/templates 테이블) — 미설치·버전 미달은 거부, 설치돼 있으나 꺼진 대상은 허용
@@ -431,6 +432,7 @@ wrap 이 필요한 이유: TemplateService 가 모듈/플러그인 자체 ko 데
 | `/api/admin/language-packs/install-from-file` | POST | `install` |
 | `/api/admin/language-packs/install-from-github` | POST | `install` |
 | `/api/admin/language-packs/install-from-url` | POST | `install` |
+| `/api/admin/language-packs/{id}/update` | POST | `update` |
 | `/api/admin/language-packs/{id}/activate` | POST | `manage` |
 | `/api/admin/language-packs/{id}/deactivate` | POST | `manage` |
 | `/api/admin/language-packs/{id}` | DELETE | `manage` |
@@ -441,7 +443,31 @@ wrap 이 필요한 이유: TemplateService 가 모듈/플러그인 자체 ko 데
 2. **PHP 격리** — `backend/` 디렉토리 외 PHP 파일 거부
 3. **위험 함수 차단** — `eval/include/require/exec/system/popen` 등 정적 분석으로 거부
 4. **파일 크기 제한** — 10MB
-5. **체크섬 검증** — URL 설치 시 SHA-256 옵션
+5. **체크섬 검증** — URL 설치 시 SHA-256 옵션 (전송이 온전한지만 확인한다)
+6. **패키지 서명** — 외부 언어팩은 제작자 서명을 검증한다 (7.2.0, 아래 절)
+
+## 패키지 서명
+
+외부 언어팩도 모듈·플러그인·템플릿과 같은 서명 파일(`{zip}.sig.json`, `package.type` 은 `language_pack`)과 같은 정책을 씁니다.
+서명 형식·제작자 서명 절차·신뢰 키 등록은 [패키지 서명](package-signing.md) 에 있고, 여기서는 언어팩에서 다른 점만 적습니다.
+
+| 설치 경로 | 서명 파일 |
+| --- | --- |
+| ZIP 업로드 (`install-from-file`) | 선택 칸 「서명 파일」(`signature`, 64KB 이하). 업로드 ZIP 은 옆 파일을 자동으로 찾지 않는다 |
+| URL (`install-from-url`, `language-pack:install {url} --source=url`) | 선택 칸 서명 파일 주소(`signature_url`, 명령은 `--signature={주소}`). 공개 http·https 주소만 받고, 주소를 주었는데 받지 못하면 설치하지 않는다. 주소를 추측해 따로 요청하지 않으므로 비우면 미서명 |
+| GitHub (`install-from-github`, `language-pack:install {GitHub 주소} --source=github`) | 최신 태그 릴리스의 ZIP·`.sig.json` 자산 짝. 릴리스가 없으면 브랜치를 받지 않고 실패 |
+| 업데이트 (`{id}/update`, `language-pack:update`) | GitHub 에서 받을 때 그 태그 릴리스의 자산 짝. bundled 출처는 검증하지 않음 |
+
+- URL 설치의 `checksum`(SHA-256)과 서명은 서로 다른 확인입니다. 체크섬은 받은 파일이 운영자가 기대한 그 파일인지(전송 확인),
+  서명은 그 파일을 누가 만들었는지(제작자 확인)를 봅니다. 둘 다 주면 체크섬을 먼저 보고 서명을 봅니다.
+- **vendor 범위는 manifest 의 `vendor` 칸으로 판정합니다.** 언어팩 식별자는 `{vendor}-...` 형식을 강제하지 않으므로, 제작자 키로
+  서명된 언어팩은 ZIP 을 푼 뒤 `language-pack.json` 의 `vendor` 가 그 키의 vendor 범위 안인지 대조합니다(밖이면 `untrusted`).
+  코어 내장 키는 vendor 와 관계없이 유효합니다.
+- 공식 언어팩 — 코어 `lang-packs/_bundled` 의 패키지와 확장이 자기 `lang/` 에 담아 배포하는 언어 — 은 부모 패키지(코어 배포본·
+  확장 패키지)의 서명이 덮으므로 따로 서명하지 않습니다. `_bundled` 소스 설치(`--source=bundled`)는 `integrity_status` 가 `bundled` 입니다.
+- 미서명·검증 불가는 409 경고 창의 「미서명으로 계속」(같은 요청을 `allow_unsigned=1` 로 다시 보냄), 명령은 `--allow-unsigned` 로 진행합니다.
+  답할 수 없는 실행은 `--allow-unsigned` 없이 실패(exit 1)합니다. 서명 불일치·신뢰하지 않는 키는 422 로 멈춥니다.
+- 결과는 `language_packs.integrity_status`·`integrity_key_id` 에 남고 언어팩 상세 창 「패키지 서명」 배지로 보입니다.
 
 ## 외부 패키지형 vs 메타데이터 전용 번들
 
@@ -597,12 +623,16 @@ my-lang-pack-zh/
 ### 설치
 
 ```bash
-# 로컬 디렉토리에서 설치
-php artisan language-pack:install /path/to/my-lang-pack-zh --source=local
+# zip 으로 배포 후 URL 에서 설치 (서명 파일 주소는 선택)
+php artisan language-pack:install https://example.com/my-lang-pack-zh.zip --source=url \
+  --signature=https://example.com/my-lang-pack-zh.zip.sig.json
 
-# 또는 zip 으로 배포 후 URL 에서 설치
-php artisan language-pack:install https://example.com/my-lang-pack-zh.zip --source=url
+# 또는 GitHub 태그 릴리스에서 설치
+php artisan language-pack:install https://github.com/acme/my-lang-pack-zh --source=github
 ```
+
+명령의 설치 소스는 `bundled`·`github`·`url` 셋입니다. 로컬 ZIP 은 관리자 화면의 업로드로 설치합니다. 배포할 때는
+`php artisan extension:sign ./my-lang-pack-zh --key=...` 로 ZIP 과 서명 파일을 함께 만들어 올립니다([패키지 서명 — 제작자 절차](package-signing.md#제작자-절차)).
 
 설치 후 `language-pack:list` 로 확인. 다른 로케일 패키지와 동일하게 활성/비활성/제거가 가능하며, 의존성 검증(`core_locale_missing` 등) 도 동일하게 적용된다.
 

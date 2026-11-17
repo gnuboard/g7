@@ -386,6 +386,7 @@ public function addProviders(array $providers): array
 
 ## FAQ
 
+- **첨부 목록(본문 밖 첨부 파일) 업로더도 바꿀 수 있나?** 그건 이 계약이 아니라 확장점 `attachment_uploader` 와 업로더 계약(`uploader`)입니다 — [첨부 업로더 확장점](attachment-uploader.md). 본문 미디어는 첨부 목록·개수와 따로 셉니다.
 - **편집기를 CKEditor 가 아닌 것으로 바꾸면?** 새 편집기 플러그인이 `extensionPointProps.mediaUpload` 를 읽어 `G7Core.contentMedia.upload` 를 부르면
   같은 규칙으로 올라갑니다. 확장 쪽은 바꿀 것이 없습니다.
 - **플러그인도 본문 미디어를 받을 수 있나?** 네. `ContentMediaContext::plugin()` 문맥과 `api.plugins.{식별자}.…` 서빙 라우트로 모듈과 같은 골격·훅·계약 엔드포인트를 씁니다.

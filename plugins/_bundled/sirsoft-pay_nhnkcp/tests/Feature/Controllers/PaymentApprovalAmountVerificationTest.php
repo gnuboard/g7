@@ -406,6 +406,47 @@ class PaymentApprovalAmountVerificationTest extends PluginTestCase
     }
 
     /**
+     * 다른 결제사가 이미 가상계좌를 발급한 주문을 KCP 카드로 승인하면 승인분을 취소하고 실패 화면으로 보낸다.
+     *
+     * 결제 완료 쓰기가 `ProviderMismatch` 로 거부된 뒤 실패 기록도 같은 이유로 거부된다. 그 거부가 catch 밖으로
+     * 새면 고객은 실패 화면 대신 500 을 본다. 다른 결제사의 결제 행은 바뀌지 않아야 한다.
+     *
+     * @return void 반환값 없음
+     *
+     * @effects kcp_approval_on_order_issued_by_another_pg_cancels_and_redirects_to_fail
+     */
+    public function test_order_approval_on_order_issued_by_another_pg_cancels_and_redirects_to_fail(): void
+    {
+        $order = $this->createOrder(50000);
+        $order->update(['order_status' => OrderStatusEnum::PENDING_PAYMENT]);
+        $order->payment()->update([
+            'pg_provider' => 'tosspayments',
+            'payment_method' => PaymentMethodEnum::VBANK,
+            'payment_status' => PaymentStatusEnum::WAITING_DEPOSIT,
+            'transaction_id' => 'TOSS-VBANK-FOREIGN',
+            'vbank_issued_at' => now(),
+        ]);
+        $this->mockPluginSettings();
+        $this->mockKcp(
+            $this->cardApproveResponse('KCP-FOREIGN-TNO', ['amount' => '50000']),
+            $order->order_number,
+            50000,
+            expectCancelTno: 'KCP-FOREIGN-TNO',
+        );
+
+        $response = $this->post(self::CALLBACK_URL, $this->callbackParams($order->order_number, ['good_mny' => 50000]));
+
+        $response->assertRedirect();
+        $this->assertStringContainsString('error=confirm_failed', $response->headers->get('Location'));
+
+        $payment = $order->payment()->first();
+        $this->assertSame('tosspayments', $payment->pg_provider);
+        $this->assertSame(PaymentStatusEnum::WAITING_DEPOSIT, $payment->payment_status);
+        $this->assertSame('TOSS-VBANK-FOREIGN', $payment->transaction_id);
+        $this->assertEquals(OrderStatusEnum::PENDING_PAYMENT, $order->fresh()->order_status);
+    }
+
+    /**
      * PC 가상계좌 발급 요청에도 청구액을 싣고, 발급 응답 금액이 청구액과 같으면 계좌를 기록한다.
      *
      * @return void 반환값 없음

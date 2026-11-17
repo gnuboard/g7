@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayKginicis\Controllers;
 
-// audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 테이블명 리터럴을 모델 파생으로 정리한 내부 리팩토링 (#571)
+// audit:allow api-doc-coverage 요청 파라미터·응답 구조 무변경 — 결제 행 직접 조회·기록을 이커머스 공개 결제 계약으로 바꾼 내부 전환 (#916)
 
 use App\Http\Controllers\Controller;
 use App\Support\SiteUrl;
@@ -12,10 +12,11 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\MetaEncoding;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\PaymentFilters;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\PaymentRecord;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Modules\Sirsoft\Ecommerce\Support\EcommerceScreenUrl;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 use Plugins\Sirsoft\PayKginicis\Support\BridgeScript;
@@ -43,10 +44,12 @@ class UserEscrowConfirmController extends Controller
     /**
      * @param  KgInicisApiService  $apiService  KG 이니시스 API 서비스
      * @param  EscrowConfirmNonce  $nonces  확인창 ↔ 결과 수신 결속 증표
+     * @param  PaymentGatewayBridge  $bridge  이커머스 결제 공개 계약
      */
     public function __construct(
         private readonly KgInicisApiService $apiService,
         private readonly EscrowConfirmNonce $nonces,
+        private readonly PaymentGatewayBridge $bridge,
     ) {}
 
     /**
@@ -81,13 +84,13 @@ class UserEscrowConfirmController extends Controller
 
         $this->apiService->useEscrowCredentials(true);
 
-        $nonce = $this->nonces->issue((string) $payment->transaction_id, $orderNumber, $userId);
+        $nonce = $this->nonces->issue((string) $payment->transactionId, $orderNumber, $userId);
 
         if ($this->isMobile($request)) {
-            return $this->mobileConfirmPage((string) $payment->transaction_id, $nonce);
+            return $this->mobileConfirmPage((string) $payment->transactionId, $nonce);
         }
 
-        return $this->pcConfirmPage((string) $payment->transaction_id, $nonce);
+        return $this->pcConfirmPage((string) $payment->transactionId, $nonce);
     }
 
     /**
@@ -360,43 +363,30 @@ class UserEscrowConfirmController extends Controller
             return null;
         }
 
-        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
-        $row = DB::table((new OrderPayment)->getTable().' as p')
-            ->join((new Order)->getTable().' as o', 'o.id', '=', 'p.order_id')
-            ->where('p.transaction_id', $tid)
-            ->where('p.pg_provider', 'kginicis')
-            ->where('p.is_escrow', true)
-            ->select('p.id', 'p.payment_meta', 'o.order_number')
-            ->first();
+        $row = $this->bridge->findPaymentByTransactionId('kginicis', $tid, new PaymentFilters(escrow: true));
 
-        if (! $row) {
+        if (! $row || $row->orderNumber === null) {
             Log::warning('KG Inicis: escrow confirm — payment not found', ['tid' => $tid]);
 
             return null;
         }
 
-        $meta = $row->payment_meta ? json_decode($row->payment_meta, true) : [];
-        $meta['escrow_confirm'] = array_merge(
-            // audit:allow datetime-display-user-timezone reason: UTC 저장 — 표시 시 변환
-            ['confirmed_at' => now()->toDateTimeString()],
-            $data,
-        );
-
-        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
-        DB::table((new OrderPayment)->getTable())
-            ->where('id', $row->id)
-            ->update([
-                'payment_meta' => json_encode($meta, JSON_UNESCAPED_UNICODE),
-                'updated_at' => now(),
-            ]);
+        // 결제 행 잠금 아래 현재 meta 에 병합한다(원문 유니코드 그대로)
+        $this->bridge->mergePaymentMeta($row->orderNumber, 'kginicis', [
+            'escrow_confirm' => array_merge(
+                // audit:allow datetime-display-user-timezone reason: UTC 저장 — 표시 시 변환
+                ['confirmed_at' => now()->toDateTimeString()],
+                $data,
+            ),
+        ], MetaEncoding::UnescapedUnicode);
 
         Log::info('KG Inicis: escrow confirm saved', [
-            'order_number' => $row->order_number,
+            'order_number' => $row->orderNumber,
             'tid' => $tid,
             'type' => $data['type'] ?? '',
         ]);
 
-        return $row->order_number;
+        return $row->orderNumber;
     }
 
     /**
@@ -404,20 +394,15 @@ class UserEscrowConfirmController extends Controller
      *
      * @param  string  $orderNumber  주문번호
      * @param  int  $userId  회원 ID
-     * @return object|null 결제 행(id, transaction_id) — 없으면 null
+     * @return PaymentRecord|null 결제 행 — 없으면 null
      */
-    private function findEscrowPayment(string $orderNumber, int $userId): ?object
+    private function findEscrowPayment(string $orderNumber, int $userId): ?PaymentRecord
     {
-        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
-        return DB::table((new OrderPayment)->getTable().' as p')
-            ->join((new Order)->getTable().' as o', 'o.id', '=', 'p.order_id')
-            ->where('o.order_number', $orderNumber)
-            ->where('o.user_id', $userId)
-            ->where('p.pg_provider', 'kginicis')
-            ->where('p.is_escrow', true)
-            ->whereNotNull('p.transaction_id')
-            ->select('p.id', 'p.transaction_id')
-            ->first();
+        return $this->bridge->findPaymentByOrderNumber(
+            'kginicis',
+            $orderNumber,
+            new PaymentFilters(escrow: true, hasTransactionId: true, ownerUserId: $userId),
+        );
     }
 
     /**

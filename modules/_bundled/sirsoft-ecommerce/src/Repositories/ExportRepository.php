@@ -33,13 +33,14 @@ class ExportRepository implements ExportRepositoryInterface
      * 관리 목록이 실제로 쓰는 컬럼
      *
      * 실행 컨텍스트(`context`)·중복 방지 키·선택 ID 목록·해시는 목록이 그리지 않는다. 저장 경로(`file_path`)는
-     * 화면에 내지 않지만 「내려받을 수 있는가」 판정(`Export::isDownloadable()`)에 필요해 싣는다(모델 hidden).
+     * 화면에 내지 않지만 「내려받을 수 있는가」 판정(`Export::isDownloadable()`)에 필요해 싣는다(모델 hidden). 저장 디스크(`disk`)도
+     * 같은 이유로 싣는다 — 이 열이 빠진 행으로 파일을 다루면 지금 디스크로 가서 저장소를 바꾸기 전 파일에 닿지 못한다.
      * 작업 수는 요청 횟수만큼만 늘어 OFFSET 이 커지지 않으므로 지연 조인은 쓰지 않는다.
      */
     public const LIST_COLUMNS = [
         'id', 'uuid', 'type', 'format', 'status', 'requested_by', 'requester_name_snapshot',
         'options', 'filters', 'contains_personal_data', 'reason', 'warnings', 'locale', 'timezone',
-        'file_name', 'file_path', 'file_size', 'total_rows', 'processed_rows', 'download_count', 'error_code',
+        'file_name', 'file_path', 'disk', 'file_size', 'total_rows', 'processed_rows', 'download_count', 'error_code',
         'requested_at', 'cutoff_at', 'started_at', 'completed_at', 'expires_at', 'created_at', 'updated_at', 'deleted_at',
     ];
 

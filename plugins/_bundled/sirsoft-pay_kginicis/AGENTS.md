@@ -122,6 +122,7 @@ CBT 인증 URL 로 폼 POST → KG 이니시스가 `sid` 를 콜백으로 전달
 - [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 클래스를 새로 쓰지 않았으면 빌드 없이 update 만, 새 클래스(`paykginicis:` 유틸리티·`pay-kginicis-*`)를 쓰면 `plugin:build` 로 자기 CSS 를 다시 만든다(「화면 클래스 규약」)
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
+- [ ] 이커머스 주문·결제를 읽고 쓰는 코드는 공개 결제 계약(`Contracts\Payment\PaymentGatewayBridge` — 생성자 주입)만 쓴다. 계약에 없는 동작이 필요하면 이커머스 계약을 먼저 넓힌다(이 플러그인에서 Model 정적 조회·`DB::table`·이커머스 Service/Repository 를 쓰지 않는다). 확인: 정적 검사 `extension-internal-symbol-reference`·`controller-direct-data-access`·`service-direct-data-access` 위반 0
 - [ ] 승인/취소 흐름을 고칠 때 `before_*`/`after_*` 훅 순서와 우선순위(`PaymentRefundListener` < `CancelActivityLogListener`)를 유지 — 로그가 실제 처리보다 먼저 실행되면 안 된다
 - [ ] IP 화이트리스트(`InicisNotifyIpWhitelist`) 대상 라우트를 추가/변경하면 미들웨어 부착 대상(targets)도 함께 갱신
 - [ ] 새 결제수단·통화를 추가하면 그 결제수단의 콜백 URL을 관리자 설정 안내(README "콜백/통보 URL 등록")에도 반영
@@ -153,6 +154,7 @@ CBT 인증 URL 로 폼 POST → KG 이니시스가 `sid` 를 콜백으로 전달
 | 화면 확장(`resources/extensions/*.json`)의 표현식에서 **다른 결제 플러그인이 선언한 데이터소스**를 참조 | 자기 `data_sources[]` 에 선언한 것만 읽는다 | 그 플러그인이 없는 사이트에서는 미정의 참조가 되고, 표현식은 오류 없이 조용히 undefined 를 내므로 판정이 어긋나도 드러나지 않는다. 배지 문구는 이 플러그인 것으로 고정되어 있어 남의 PG 결제에 이 플러그인 이름이 붙기도 한다(#599) |
 | 관리자 응답 `errors` 에 예외 원문(`$e->getMessage()`)을 그대로 싣기 | 결제대행사 거절은 응답의 `resultMsg` 만 싣고, catch 한 예외는 번역된 일반 문구 + 서버 로그(디버그 모드만 원문). 확장 작업 실패 사유는 코어 `SafeExceptionMessage::for()` | `errors` 배열은 코어의 운영 모드 500 차단을 거치지 않는다 — 통신 예외의 결제대행사 API 주소·cURL 문구, DB 예외의 SQL·접속 정보가 그대로 화면에 나간다 |
 | 결제 환불·현금영수증 리스너 결과 `error_message`·CBT 대사 기록(`reason`·`refund_error`·`last_retry_error`)에 예외 원문을 그대로 싣기 | `DescribesRefundFailure::refundFailureReason()`·`pgFailureReason($e, 'cash_receipt.pg_failed')` — 거절(`KgInicisRejectedException`)만 resultMsg, 그 밖은 `refund.pg_failed`·`cash_receipt.pg_failed`. 대사 `reason` 은 `SafeExceptionMessage::for()`. 원문은 서버 로그(디버그 모드만 원문) | 환불 사유는 쇼핑몰 취소 안내로 회원·비회원·관리자 응답에, 현금영수증 사유는 이력으로 관리자 주문 상세·구매자 응답에, 대사 기록은 관리자 주문 상세 「사유」·「환불 오류」 칸에 그대로 보인다 — API 주소·cURL 문구, SQL·DB 접속 정보가 화면에 나간다 |
+| 이커머스 Model 정적 조회(`Order::query()`)·관계 빌더 쓰기(`$order->payment()->update()`)·`DB::table(이커머스 테이블)`·이커머스 Service/Repository 주입 | 공개 결제 계약 `PaymentGatewayBridge` 의 조회(`findOrderByNumber`·`findPaymentByOrderNumber` 등)와 쓰기(`completePayment`·`onVbankAccountIssued`·`mergePaymentMeta`·`mutatePaymentMetaWithLock`·`mutateOrderMetaWithLock` 등). 훅 인자 Model 은 속성 읽기만, 판정은 `describePayment()` DTO | 이커머스 내부 구현은 예고 없이 바뀐다. 계약은 결제사 범위(자기 결제 행만)·잠금·결제사 id 인수를 한 곳에서 지키고, 누적 meta 는 잠금 아래 계산해 경쟁 기록이 빠지지 않는다(#916) |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -163,7 +165,7 @@ CBT 인증 URL 로 폼 POST → KG 이니시스가 `sid` 를 콜백으로 전달
 | PHPUnit | 65개 | `plugins/_bundled/sirsoft-pay_kginicis/tests` |
 | Vitest | 33개 | `vitest.config.ts` |
 | Playwright | 1개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 59개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 64개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

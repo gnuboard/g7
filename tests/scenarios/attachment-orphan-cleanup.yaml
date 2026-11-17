@@ -69,6 +69,8 @@ sub_flows:
       - site_logo_stale_submitted_id_filtered
       - site_logo_untouched_when_not_submitted
       - site_logo_failed_save_keeps_removed_attachment
+      - site_logo_remove_expression_declared_in_layout          # 실제 레이아웃 파일(업로더 확장점 default 안 포함)에 로고 onRemove 식이 선언되어 있다
+      - site_logo_remove_expression_ignores_unknown_identifier  # 대상이 아닌 식별자로 통지되면 로고 목록에서 아무것도 빼지 않는다
   - id: settings_surface
     description: 화면 바인딩 키가 코어 기본값·서버 검증과 일치하는지
     effects:

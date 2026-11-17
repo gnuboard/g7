@@ -34,7 +34,11 @@ export declare function refreshCoreUpdateStatusHandler(): Promise<any>;
  * 착수 선택(`action.params`)은 레이아웃이 폼 상태에서 채워 넘긴다. **여기 없는 값은
  * 서버에도 없다** — `force`·`prune`·백업 생략은 웹 동선에 존재하지 않는 선택이다(D27).
  *
- * @param action 액션 정의 (params: update_bundled_extensions · rebuild_search_index · layout_strategy · zip_file)
+ * 서버가 미서명 패키지(409)·서명 불일치(422)로 착수를 거절하면(#916) 토스트 대신 거절 내용을 전역에 실어
+ * 화면의 공용 안내 조각이 그리게 한다. 정책이 허용하면 화면의 시작 버튼이 「미서명으로 계속」이 되어
+ * 같은 선택에 `allow_unsigned` 만 더해 이 핸들러를 다시 부른다(서버는 앞 요청을 보관하지 않는다).
+ *
+ * @param action 액션 정의 (params: update_bundled_extensions · rebuild_search_index · layout_strategy · zip_file · allow_unsigned)
  */
 export declare function startCoreUpdateHandler(action?: any): Promise<void>;
 /**

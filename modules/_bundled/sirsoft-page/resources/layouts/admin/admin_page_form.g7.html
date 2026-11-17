@@ -194,35 +194,92 @@
           <icon name="paperclip" class="page-text-secondary page:text-lg"/>
           <h3 class="page-section-heading">$t:sirsoft-page.admin.page.form.attachments</h3>
         </div>
-        <!-- 한도는 서버 공개 설정(publicLimits)을 그대로 따른다. 개수 상한이 없으면(max_count=null, 제한 없음)
-             maxFiles 를 비워(undefined) 컴포넌트 기본값을 쓰게 한다 — `?? 5` 로 받으면 "제한 없음" 이 5개 상한이 된다.
-             허용 형식이 비면(accept='') 빈 accept 가 파일 선택창에서 모든 형식을 열므로 기본 목록으로 떨어뜨린다(`||`). -->
-        <file-uploader data-type="composite" data-ref="file_uploader" collection="page_attachments" maxFiles="{{attachmentSettings?.data?.max_count ?? undefined}}" maxSize="{{attachmentSettings?.data?.max_size_mb ?? 10}}" accept="{{attachmentSettings?.data?.accept || '.jpg,.jpeg,.png,.gif,.webp,.pdf,.zip'}}" initialFiles="{{_local.form?.attachments ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:page_attachments" disabled="{{_computed.isReadOnly}}" :confirmBeforeRemove="true" confirmRemoveTitle="$t:sirsoft-page.admin.page.form.confirm_remove_attachment_title" confirmRemoveMessage="$t:sirsoft-page.admin.page.form.confirm_remove_attachment_message">
-          <prop name="uploadParams">
-            <field name="temp_key" value="{{_local.tempKey}}"/>
+        <!-- 첨부 업로더 확장점 — 업로더 플러그인이 mode="replace" 로 이 자리를 바꾼다. 저장 버튼의 upload:page_attachments 신호와
+             결과(_eventResult) 모양은 그대로다. 새 페이지는 임시 키로 올리고 정렬 주소가 없다 -->
+        <extension-point name="attachment_uploader" data-ref="file_uploader_slot" class="page:contents">
+          <prop name="uploader">
+            <field name="version" :value="1"/>
+            <field name="mode" value="upload"/>
+            <field name="endpoints">
+              <field name="upload" value="/api/modules/sirsoft-page/admin/attachments"/>
+              <field name="delete" value="/api/modules/sirsoft-page/admin/attachments/:id"/>
+              <field name="reorder" value="{{route?.id ? '/api/modules/sirsoft-page/admin/attachments/reorder' : null}}"/>
+            </field>
+            <field name="fields">
+              <field name="temp_key" value="{{_local.tempKey}}"/>
+            </field>
+            <field name="policy">
+              <field name="accept" value="{{attachmentSettings?.data?.accept || '.jpg,.jpeg,.png,.gif,.webp,.pdf,.zip'}}"/>
+              <field name="maxSize" value="{{attachmentSettings?.data?.max_size_mb ?? 10}}"/>
+              <field name="maxFiles" value="{{attachmentSettings?.data?.max_count ?? null}}"/>
+              <field name="maxConcurrentUploads" :value="1"/>
+              <field name="imageCompression" :value="null"/>
+            </field>
+            <field name="collection" value="page_attachments"/>
+            <field name="attachmentable">
+              <field name="type" :value="null"/>
+              <field name="id" :value="null"/>
+            </field>
+            <field name="triggerEvent" value="upload:page_attachments"/>
+            <field name="initialFiles" value="{{_local.form?.attachments ?? []}}"/>
+            <field name="disabled" value="{{!!_computed.isReadOnly}}"/>
+            <field name="autoUpload" :value="false"/>
+            <field name="ui">
+              <field name="confirmBeforeRemove" :value="true"/>
+            </field>
+            <field name="context">
+              <field name="owner" value="sirsoft-page"/>
+              <field name="purpose" value="page_attachments"/>
+            </field>
           </prop>
-          <prop name="apiEndpoints">
-            <field name="upload" value="/api/modules/sirsoft-page/admin/attachments"/>
-            <field name="delete" value="/api/modules/sirsoft-page/admin/attachments/:id"/>
-            <field name="reorder" value="{{route?.id ? '/api/modules/sirsoft-page/admin/attachments/reorder' : ''}}"/>
-          </prop>
-          <on event="onUploadComplete">
-            <!-- 업로드 완료 시 form.attachments 에 누적 (수정 모드만 - 생성 모드는 저장 시 temp_key 로 연결) -->
-            <set-state target="local" form.attachments="{{route?.id ? [...(_local.form?.attachments ?? []), ...($args[0] ?? [])] : (_local.form?.attachments ?? [])}}"/>
-          </on>
-          <on event="onReorder">
-            <!-- 드래그 순서 변경 시 form.attachments 를 최종 순서로 덮어쓰기 (이커머스 상품 이미지와 동일 패턴) -->
-            <set-state target="local" form.attachments="{{$args[0] ?? []}}"/>
-          </on>
-          <on event="onRemove">
-            <!-- 첨부 삭제 시 form.attachments 에서 제거 -->
-            <set-state target="local" form.attachments="{{(_local.form?.attachments ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"/>
-          </on>
-          <on event="onUploadError">
-            <!-- 업로드 검증 실패(용량/확장자/개수 초과 등) 시 사용자에게 toast 안내 -->
-            <toast type="error" message="{{$args[0]}}"/>
-          </on>
-        </file-uploader>
+          <callback name="onUploadComplete">
+            <!-- 수정 모드에서만 form.attachments 에 누적한다(기본 업로더와 같다) -->
+            <set-state target="local" form.attachments="{{route?.id ? [...(_local.form?.attachments ?? []), ...($event ?? [])] : (_local.form?.attachments ?? [])}}"/>
+          </callback>
+          <callback name="onReorder">
+            <!-- 끌어 옮긴 최종 순서로 form.attachments 를 덮어쓴다(기본 업로더와 같다) -->
+            <set-state target="local" form.attachments="{{$event ?? []}}"/>
+          </callback>
+          <callback name="onRemove">
+            <!-- 지운 첨부를 form.attachments 에서 뺀다(기본 업로더와 같다) -->
+            <set-state target="local" form.attachments="{{(_local.form?.attachments ?? []).filter(item => (item.hash || item.id) !== $event)}}"/>
+          </callback>
+          <callback name="onUploadError">
+            <!-- 업로드 검증 실패 사유를 알린다 -->
+            <toast type="error" message="{{$event}}"/>
+          </callback>
+          <default>
+            <!-- 한도는 서버 공개 설정(publicLimits)을 그대로 따른다. 개수 상한이 없으면(max_count=null, 제한 없음)
+                 maxFiles 를 비워(undefined) 컴포넌트 기본값을 쓰게 한다 — `?? 5` 로 받으면 "제한 없음" 이 5개 상한이 된다.
+                 허용 형식이 비면(accept='') 빈 accept 가 파일 선택창에서 모든 형식을 열므로 기본 목록으로 떨어뜨린다(`||`). -->
+            <file-uploader data-type="composite" data-ref="file_uploader" collection="page_attachments" maxFiles="{{attachmentSettings?.data?.max_count ?? undefined}}" maxSize="{{attachmentSettings?.data?.max_size_mb ?? 10}}" accept="{{attachmentSettings?.data?.accept || '.jpg,.jpeg,.png,.gif,.webp,.pdf,.zip'}}" initialFiles="{{_local.form?.attachments ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:page_attachments" disabled="{{_computed.isReadOnly}}" :confirmBeforeRemove="true" confirmRemoveTitle="$t:sirsoft-page.admin.page.form.confirm_remove_attachment_title" confirmRemoveMessage="$t:sirsoft-page.admin.page.form.confirm_remove_attachment_message">
+              <prop name="uploadParams">
+                <field name="temp_key" value="{{_local.tempKey}}"/>
+              </prop>
+              <prop name="apiEndpoints">
+                <field name="upload" value="/api/modules/sirsoft-page/admin/attachments"/>
+                <field name="delete" value="/api/modules/sirsoft-page/admin/attachments/:id"/>
+                <field name="reorder" value="{{route?.id ? '/api/modules/sirsoft-page/admin/attachments/reorder' : ''}}"/>
+              </prop>
+              <on event="onUploadComplete">
+                <!-- 업로드 완료 시 form.attachments 에 누적 (수정 모드만 - 생성 모드는 저장 시 temp_key 로 연결) -->
+                <set-state target="local" form.attachments="{{route?.id ? [...(_local.form?.attachments ?? []), ...($args[0] ?? [])] : (_local.form?.attachments ?? [])}}"/>
+              </on>
+              <on event="onReorder">
+                <!-- 드래그 순서 변경 시 form.attachments 를 최종 순서로 덮어쓰기 (이커머스 상품 이미지와 동일 패턴) -->
+                <set-state target="local" form.attachments="{{$args[0] ?? []}}"/>
+              </on>
+              <on event="onRemove">
+                <!-- 첨부 삭제 시 form.attachments 에서 제거 -->
+                <set-state target="local" form.attachments="{{(_local.form?.attachments ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"/>
+              </on>
+              <on event="onUploadError">
+                <!-- 업로드 검증 실패(용량/확장자/개수 초과 등) 시 사용자에게 toast 안내 -->
+                <toast type="error" message="{{$args[0]}}"/>
+              </on>
+            </file-uploader>
+          </default>
+        </extension-point>
       </div>
       <div data-ref="section_seo" class="page-admin-card">
         <div data-ref="seo_header" class="page-flex-center page:gap-2 page:mb-4">

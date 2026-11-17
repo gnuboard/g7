@@ -187,6 +187,8 @@ return [
         // 설정 관리
         'settings_index' => '설정 목록 조회',
         'settings_save' => '설정 저장',
+        'extension_trust_key_create' => '확장 신뢰 키 등록 (:key_id, vendor: :vendors)',
+        'extension_trust_key_delete' => '확장 신뢰 키 삭제 (:key_id, vendor: :vendors)',
         'settings_show' => '설정 조회',
         'settings_update' => '설정 수정',
         'settings_system_info' => '시스템 정보 조회',

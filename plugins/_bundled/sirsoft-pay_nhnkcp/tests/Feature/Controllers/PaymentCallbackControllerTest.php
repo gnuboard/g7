@@ -296,6 +296,153 @@ class PaymentCallbackControllerTest extends PluginTestCase
     }
 
     /**
+     * 결제창 닫힘으로 취소된 KCP 주문을 재결제할 수 있는 상태(승인 흔적 없는 KCP 실패)로 만든다.
+     *
+     * @param  Order  $order  대상 주문
+     * @return void 반환값 없음
+     */
+    private function markRetryableKcpFailure(Order $order): void
+    {
+        $order->update([
+            'order_status' => OrderStatusEnum::CANCELLED,
+            'order_meta' => [
+                'payment_failure_code' => 'USER_CANCEL',
+                'payment_failed_at' => now()->subMinute()->toIso8601String(),
+            ],
+        ]);
+        $order->payment->update([
+            'payment_status' => PaymentStatusEnum::CANCELLED,
+            'payment_meta' => [
+                'failure_source' => 'nhnkcp',
+                'failure_code' => 'USER_CANCEL',
+                'failure_stage' => 'window_closed',
+                'failed_at' => now()->subMinute()->toIso8601String(),
+            ],
+        ]);
+    }
+
+    /**
+     * 재결제 콜백의 승인이 성립하지 않으면 취소된 주문을 되살리지 않는다.
+     *
+     * 이 콜백은 비인증 브라우저 POST 라, 승인 전에 되살리면 주문번호만 아는 제3자가 남의 취소 주문을
+     * 결제 대기로 되돌릴 수 있다. 되살리기는 승인·발급이 확정된 뒤에만 한다.
+     *
+     * @scenario context=paymentCallback_card, caller=unauthenticated_browser, callback_state=approval_failed
+     *
+     * @effects cancelled_order_is_restored_only_after_approval_or_issuance_is_confirmed
+     *
+     * @return void 반환값 없음
+     */
+    public function test_auth_callback_keeps_cancelled_order_cancelled_when_approval_fails(): void
+    {
+        $order = $this->createTestOrder(50000);
+        $this->markRetryableKcpFailure($order);
+        $this->mockPluginSettings();
+
+        $tno = 'KCP_TNO_RETRY_FAIL';
+        $this->mockApiService($this->makeCliResponse($tno, $order->order_number, 50000, '8888'));
+
+        $response = $this->post(
+            '/plugins/sirsoft-pay_nhnkcp/payment/callback',
+            $this->makeCallbackParams($order->order_number, 50000, ['tno' => $tno])
+        );
+
+        $response->assertRedirect();
+        $this->assertStringContainsString('error=8888', $response->headers->get('Location'));
+
+        $order->refresh();
+        $this->assertEquals(OrderStatusEnum::CANCELLED, $order->order_status);
+        $this->assertArrayNotHasKey('nhnkcp_retry_count', $order->order_meta ?? []);
+        $this->assertSame('USER_CANCEL', $order->order_meta['payment_failure_code'] ?? null);
+
+        $payment = $order->payment;
+        $payment->refresh();
+        $this->assertEquals(PaymentStatusEnum::CANCELLED, $payment->payment_status);
+        $this->assertNull($payment->transaction_id);
+        $this->assertSame('nhnkcp', $payment->payment_meta['failure_source'] ?? null);
+    }
+
+    /**
+     * 재결제 콜백의 승인이 확정되면 그때 취소된 주문을 되살리고 결제완료로 확정한다.
+     *
+     * @scenario context=paymentCallback_card, caller=pg_server_verified, callback_state=approval_succeeded
+     *
+     * @effects cancelled_order_is_restored_only_after_approval_or_issuance_is_confirmed
+     *
+     * @return void 반환값 없음
+     */
+    public function test_auth_callback_restores_cancelled_order_after_approval_and_completes_it(): void
+    {
+        $order = $this->createTestOrder(50000);
+        $this->markRetryableKcpFailure($order);
+        $this->mockPluginSettings();
+
+        $tno = 'KCP_TNO_RETRY_OK';
+        $this->mockApiService($this->makeCliResponse($tno, $order->order_number, 50000));
+
+        $response = $this->post(
+            '/plugins/sirsoft-pay_nhnkcp/payment/callback',
+            $this->makeCallbackParams($order->order_number, 50000, ['tno' => $tno])
+        );
+
+        $response->assertRedirect("/shop/orders/{$order->order_number}/complete");
+
+        $order->refresh();
+        $this->assertEquals(OrderStatusEnum::PAYMENT_COMPLETE, $order->order_status);
+        $this->assertSame(1, $order->order_meta['nhnkcp_retry_count'] ?? null);
+
+        $payment = $order->payment;
+        $payment->refresh();
+        $this->assertEquals(PaymentStatusEnum::PAID, $payment->payment_status);
+        $this->assertEquals($tno, $payment->transaction_id);
+    }
+
+    /**
+     * 승인 뒤 후속 처리(금액 대조)가 실패하면 승인분을 그 거래번호로 자동 취소하고, 주문에는 실패를 기록한다.
+     *
+     * 승인 전 실패(브라우저 입력만 있는 단계)는 주문을 바꾸지 않지만, 승인이 실제로 일어난 뒤의 실패는
+     * 주문·결제 행에 남겨야 운영자가 원인을 본다.
+     *
+     * @scenario context=paymentCallback_card, caller=pg_server_verified, callback_state=domain_fails
+     *
+     * @effects post_approve_failure_triggers_auto_cancel, post_approval_failure_still_records_failure_with_tno
+     *
+     * @return void 반환값 없음
+     */
+    public function test_post_approval_amount_mismatch_auto_cancels_and_records_the_failure(): void
+    {
+        $order = $this->createTestOrder(50000);
+        $this->mockPluginSettings();
+
+        $tno = 'KCP_TNO_POST_APPROVE_FAIL';
+        $mock = $this->createMock(NhnKcpApiService::class);
+        $mock->method('approvePayment')->willReturn($this->makeCliResponse($tno, $order->order_number, 45000));
+        $mock->expects($this->once())
+            ->method('cancelPayment')
+            ->with($tno, $order->order_number, $this->anything(), $this->anything())
+            ->willReturn(['res_cd' => '0000']);
+        $this->app->instance(NhnKcpApiService::class, $mock);
+
+        $response = $this->post(
+            '/plugins/sirsoft-pay_nhnkcp/payment/callback',
+            $this->makeCallbackParams($order->order_number, 50000, ['tno' => $tno])
+        );
+
+        $response->assertRedirect();
+        $this->assertStringContainsString('error=amount_mismatch', $response->headers->get('Location'));
+
+        $order->refresh();
+        $this->assertEquals(OrderStatusEnum::CANCELLED, $order->order_status);
+
+        $payment = $order->payment;
+        $payment->refresh();
+        $this->assertEquals(PaymentStatusEnum::FAILED, $payment->payment_status);
+        $this->assertSame('nhnkcp', $payment->payment_meta['failure_source'] ?? null);
+        $this->assertSame('AMOUNT_MISMATCH', $payment->payment_meta['failure_code'] ?? null);
+        $this->assertSame('amount_mismatch', $payment->payment_meta['failure_stage'] ?? null);
+    }
+
+    /**
      * 간편결제로 승인되면 간편결제 제공자와 표시 이름을 결제 건 메타에 남긴다.
      *
      * @return void 반환값 없음

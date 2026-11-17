@@ -6,8 +6,8 @@ namespace Plugins\Sirsoft\Tosspayments\Concerns;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\OrderRecord;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 
 /**
  * 결제 도중 브라우저가 보낸 주문 상태 변경 요청의 소유자를 확인한다.
@@ -21,6 +21,10 @@ use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
  * - 비회원 주문: 주문 생성 응답에서 발급된 조회 토큰(X-Guest-Order-Token)이 이 주문의 것이어야 통과.
  *
  * 라우트에 optional.sanctum 이 붙어 있어야 Bearer 토큰이 회원으로 인식된다.
+ * 비회원 토큰 검증은 이커머스 공개 결제 계약(`OrderAccess::verifyGuestOrderToken`)으로 한다 — 이 trait 를
+ * 쓰는 클래스는 `$bridge`(PaymentGatewayBridge) 속성을 생성자로 주입받아야 한다.
+ *
+ * @property-read PaymentGatewayBridge $bridge 이커머스 공개 결제 계약 (사용하는 클래스가 주입)
  */
 trait VerifiesOrderOwnership
 {
@@ -28,21 +32,19 @@ trait VerifiesOrderOwnership
      * 요청자가 주문의 소유자인지 확인합니다.
      *
      * @param  Request  $request  브라우저 요청 (Bearer 토큰 또는 X-Guest-Order-Token 헤더)
-     * @param  Order  $order  상태를 바꾸려는 주문
-     * @param  GuestOrderAuthService  $guestOrderAuthService  비회원 조회 토큰 검증 서비스
+     * @param  OrderRecord  $order  상태를 바꾸려는 주문
      * @return bool 소유자로 확인되면 true
      */
-    protected function requestOwnsOrder(Request $request, Order $order, GuestOrderAuthService $guestOrderAuthService): bool
+    protected function requestOwnsOrder(Request $request, OrderRecord $order): bool
     {
-        if ($order->user_id !== null) {
-            return Auth::check() && (int) $order->user_id === (int) Auth::id();
+        if ($order->userId !== null) {
+            return Auth::check() && $order->userId === (int) Auth::id();
         }
 
-        $verified = $guestOrderAuthService->verifyToken(
+        // 토큰은 이 주문번호의 비회원 주문에 대해서만 맞는다 — 다른 주문 토큰으로는 통과하지 못한다.
+        return $this->bridge->verifyGuestOrderToken(
             $request->header('X-Guest-Order-Token'),
-            (string) $order->order_number,
+            $order->orderNumber,
         );
-
-        return $verified !== null && (int) $verified->id === (int) $order->id;
     }
 }

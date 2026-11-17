@@ -35,4 +35,12 @@ return [
     'settings' => [
         'redirect_url_format' => '결제 후 이동 주소는 {shopBase}, / 또는 http(s):// 로 시작해야 하며 공백을 넣을 수 없습니다. 다른 사이트로 보내는 //주소 와 javascript: 는 쓸 수 없습니다.',
     ],
+    // 결제 화면·결제대행사 연동 API 의 오류 응답 문구
+    'responses' => [
+        'amount_mismatch' => '결제 금액이 주문 금액과 일치하지 않습니다.',
+        'currency_not_chargeable' => '결제 통화로 청구액을 계산할 수 없습니다.',
+        'order_not_found' => '주문을 찾을 수 없습니다.',
+        'ownership_verification_failed' => '주문 소유자 확인에 실패했습니다.',
+        'too_many_requests' => '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.',
+    ],
 ];

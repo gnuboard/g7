@@ -8,6 +8,9 @@
 
 ### Added
 
+- 확장 설치와 업데이트의 패키지 무결성 안내 패널(`package_integrity.*`), 환경설정 > 보안 탭 「신뢰 키」 구획과 키 추가 및 삭제 창(`settings.security.extension_trust.*`, `settings.extension_trust_key_modal.*`, `modal_label.admin_settings.extension_trust_key_*`), 언어팩 설치 창의 URL 탭(`language_packs.install_modal.*`), 스케줄 편집 창의 `--allow-unsigned` 도움말(`schedules.form.allow_unsigned_hint`), 편집기 데이터 소스 이름(`data_source.extensionTrustKeys`)의 일본어 번역을 추가했습니다.
+- 확장 상세 창 「공개 API」 칸(`extension_public_api.*`)과 환경설정 > 드라이버 「비공개 첨부 저장소」 카드(`settings.drivers.private_attachment.*`)의 일본어 번역을 추가했습니다.
+- 환경설정 > 업로드 「저장 위치」에서 권한이 걸린 이미지 썸네일과 공개 자산 디스크가 둘 다 Amazon S3 일 때 나오는 같은 버킷 경고(`admin.settings.upload.thumbnail.storage.same_bucket_warning`)의 일본어 번역을 추가했습니다.
 - 환경설정 > 드라이버 「웹서버 파일 위임」 카드(위임 방식·내부 위치 접두사·Apache/nginx 설정 안내·설정 점검(nginx 매핑 표시 포함)·실제 전송 확인·복구 안내, `admin.settings.drivers.file_delegation.*`)의 일본어 번역을 추가했습니다 (#878).
 - 태그 입력 칸의 기본 안내(「検索または入力...」), 결과 없음, 새 항목 추가 문장(「{값}を追加」) 문구를 일본어로 추가했습니다.
 - 이 템플릿 설정 화면의 목록 칸 문구를 설정 화면 묶음(`settings.screen.fields`)으로 옮겼습니다.

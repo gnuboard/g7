@@ -4,7 +4,10 @@
      맞을 때는 그 띠 자체가 안 보인다.
   ⑵ **화면 정의를 어떻게 할지** — 새 것으로 덮을지, 지금 것을 그대로 둘지. 손댄 화면이 있으면
      몇 개인지 먼저 알려 주고, 「그대로 두기」를 고르면 어느 화면이 남는지 목록으로 편다.
-  실패해도 창은 열린 채이고 사유가 창 안에 남는다. -->
+  실패해도 창은 열린 채이고 사유가 창 안에 남는다.
+  패키지 무결성(#916): 새 판본이 미서명(409)·서명 불일치(422)로 거절되면 오류 상자 대신 공용 안내 조각이 사유를 그린다.
+  정책이 허용하면(`can_continue`) 실행 버튼이 「미서명으로 계속」으로 바뀌어 같은 본문에 `allow_unsigned=1` 만 더해 다시 보낸다.
+  작업 잠금 409(같은 확장의 업데이트가 진행 중)는 종전대로 안내 토스트다 — 둘은 상태 코드가 아니라 응답 표지로 가른다. -->
 <partial description="플러그인 업데이트 확인 모달" editor_label="$t:admin.modal_label.admin_plugin_list.plugin_update_modal">
   <modal data-type="composite" data-ref="plugin_update_modal" title="$t:admin.plugins.modals.update_title" size="medium">
     <div data-if="{{_global.selectedPlugin?.is_compatible === false}}" class="mb-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg" role="alert">
@@ -79,6 +82,7 @@
         <div class="text-error-soft break-all">{{_global.pluginUpdateError}}</div>
       </div>
     </div>
+    <include src="partials/_package_integrity_notice.g7.html"/>
     <div class="py-2">
       <p class="text-gray-700 dark:text-gray-300 flex items-center gap-2"><span data-ref="plugin_update_icon" class="inline-flex flex-shrink-0 w-6 h-6 bg-gray-100 dark:bg-gray-700 rounded items-center justify-center overflow-hidden">
         <!-- thumb-exempt: 확장 아이콘은 업로드 이미지가 아니다(확장 패키지에 든 파일이고 SVG 도 받는다) -->
@@ -247,6 +251,9 @@
                 <set-state target="global" :isPluginUpdating="false"/>
                 <!-- 서버 문구를 그대로 띄운다 — 업데이트할 것이 없었으면 「업데이트할 내용이 없습니다」가 온다 -->
                 <toast type="success" message="{{response?.message ?? '$t:admin.plugins.update_success'}}"/>
+                <!-- 새 판본의 서명 결과(응답 integrity_status, #916) — 확인됐으면 서명자를, 서명 없이 올렸으면 그 사실을 알린다 -->
+                <toast if="{{response?.data?.integrity_status === 'verified'}}" type="success" message="$t:admin.package_integrity.result_verified|signer={{(response?.data?.integrity_key_id ?? '').split(':')[0]}}"/>
+                <toast if="{{response?.data?.integrity_status === 'unsigned' || response?.data?.integrity_status === 'unverifiable'}}" type="warning" message="$t:admin.package_integrity.result_unsigned"/>
                 <!-- 멈춘 업데이트를 정리하고 다시 업데이트했으면 확장은 비활성으로 남는다(정리 규칙) — 다시 켜라고 알린다 -->
                 <toast if="{{_global.selectedPlugin?.stuck_update === true}}" type="info" message="$t:admin.plugins.stuck_update_reactivate_hint"/>
                 <refetch-data-source dataSourceId="plugins"/>
@@ -259,17 +266,19 @@
               <fail>
                 <!-- 409 = 같은 플러그인의 업데이트가 이미 진행 중(더블클릭·CLI 동시 실행). 실패가 아니므로 오류 상자를 띄우지 않고
                      안내만 한다. 버튼은 풀어 둔다 — CLI 가 돌리는 중이면 이 창의 요청은 끝나지 않으므로 잠가 두면 창을 닫을 수 없다. -->
-                <set-state if="{{error.status === 409}}" target="global" :isPluginUpdating="false"/>
-                <toast if="{{error.status === 409}}" type="info" message="{{error.message}}"/>
-                <set-state if="{{error.status !== 409}}" target="global" :isPluginUpdating="false" pluginUpdateError="{{error.message}}"/>
-                <toast if="{{error.status !== 409}}" type="error" message="{{error.message}}"/>
+                <set-state if="{{error.status === 409 &amp;&amp; !(error.errors?.package_unsigned || error.errors?.package_signature_invalid || error.errors?.package_signer_untrusted)}}" target="global" :isPluginUpdating="false"/>
+                <toast if="{{error.status === 409 &amp;&amp; !(error.errors?.package_unsigned || error.errors?.package_signature_invalid || error.errors?.package_signer_untrusted)}}" type="info" message="{{error.message}}"/>
+                <set-state if="{{error.status !== 409 &amp;&amp; !(error.errors?.package_unsigned || error.errors?.package_signature_invalid || error.errors?.package_signer_untrusted)}}" target="global" :isPluginUpdating="false" pluginUpdateError="{{error.message}}" :packageIntegrity="null" :packageIntegrityMessage="null"/>
+                <toast if="{{error.status !== 409 &amp;&amp; !(error.errors?.package_unsigned || error.errors?.package_signature_invalid || error.errors?.package_signer_untrusted)}}" type="error" message="{{error.message}}"/>
+                <!-- 패키지 무결성 거절(#916, 응답 표지로 가른다) — 오류 상자·토스트 대신 위쪽 공용 안내 조각이 사유를 그린다 -->
+                <set-state if="{{!!(error.errors?.package_unsigned || error.errors?.package_signature_invalid || error.errors?.package_signer_untrusted)}}" target="global" :isPluginUpdating="false" :pluginUpdateError="null" packageIntegrity="{{error.errors?.integrity ?? null}}" packageIntegrityMessage="{{error.message}}"/>
               </fail>
-              <body layout_strategy="{{_global.pluginLayoutStrategy ?? 'overwrite'}}" force="{{_global.pluginForceUpdate === true}}" rebuild_search_index="{{_global.pluginRebuildSearchIndex === true}}" layout_source="{{_global.pluginLayoutSource ?? 'auto'}}"/>
+              <body layout_strategy="{{_global.pluginLayoutStrategy ?? 'overwrite'}}" force="{{_global.pluginForceUpdate === true}}" rebuild_search_index="{{_global.pluginRebuildSearchIndex === true}}" layout_source="{{_global.pluginLayoutSource ?? 'auto'}}" allow_unsigned="{{_global.packageIntegrity?.can_continue === true ? 1 : null}}" integrity_aware="1"/>
             </api-call>
           </sequence>
         </on>
         <icon data-if="{{_global.isPluginUpdating}}" name="spinner" class="spinner-sm"/>
-        <span>{{_global.isPluginUpdating ? '$t:admin.plugins.updating' : '$t:admin.plugins.actions.update'}}</span>
+        <span>{{_global.isPluginUpdating ? '$t:admin.plugins.updating' : (_global.packageIntegrity?.can_continue === true ? '$t:admin.package_integrity.continue_unsigned' : '$t:admin.plugins.actions.update')}}</span>
       </button>
     </footer>
   </modal>

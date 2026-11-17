@@ -22,7 +22,8 @@ type AnyNode = Record<string, any>;
 function findById(node: AnyNode | null, id: string): AnyNode | null {
     if (!node) return null;
     if (node.id === id) return node;
-    for (const child of node.children ?? []) {
+    // 확장점의 기본 노드(default)도 본다 — 첨부 업로더는 attachment_uploader 확장점의 default 안에 있다
+    for (const child of [...(node.children ?? []), ...(node.type === 'extension_point' ? node.default ?? [] : [])]) {
         const found = findById(child, id);
         if (found) return found;
     }

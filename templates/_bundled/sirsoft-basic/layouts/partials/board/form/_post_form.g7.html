@@ -149,27 +149,80 @@
         <span>$t:board.form.attachments</span>
       </label>
       <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">$t:board.form.attachments_desc|count={{form_meta?.data?.board?.max_file_count ?? 5}}|maxFiles={{form_meta?.data?.board?.max_file_count ?? 5}}|maxSize={{form_meta?.data?.board?.max_file_size ?? 10}}</p>
-      <file-uploader data-type="composite" collection="post_attachments" maxFiles="{{form_meta?.data?.board?.max_file_count ?? 5}}" maxSize="{{form_meta?.data?.board?.max_file_size ?? 10}}" accept="{{form_meta?.data?.board?.allowed_extensions?.length ? '.' + form_meta?.data?.board?.allowed_extensions?.join(',.') : '.jpg,.jpeg,.png,.gif,.pdf,.zip'}}" initialFiles="{{form_meta?.data?.attachments ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:board_attachments" :confirmBeforeRemove="true" confirmRemoveTitle="$t:board.posts.form.confirm_remove_attachment_title" confirmRemoveMessage="$t:board.posts.form.confirm_remove_attachment_message">
-        <prop name="uploadParams">
-          <field name="temp_key" value="{{_local.tempKey}}"/>
+      <!-- 첨부 업로더 확장점 — 업로더 플러그인이 mode="replace" 로 이 자리를 바꾼다. 표시 조건(파일 첨부 사용 + 업로드 권한)은 위 감싸는 칸에 있어
+           대체 업로더도 권한 없는 회원에게는 그려지지 않는다. 계약(uploader)은 기본 업로더에 넘기는 값과 같고, 새 글은 정렬 주소가 없다.
+           저장 버튼의 upload:board_attachments 신호와 결과(_eventResult) 모양은 그대로다. -->
+      <extension-point name="attachment_uploader" data-ref="post_attachments_uploader_slot" class="contents">
+        <prop name="uploader">
+          <field name="version" :value="1"/>
+          <field name="mode" value="upload"/>
+          <field name="endpoints">
+            <field name="upload" value="/api/modules/sirsoft-board/boards/{{route.slug}}/attachments"/>
+            <field name="delete" value="/api/modules/sirsoft-board/boards/{{route.slug}}/attachments/:id"/>
+            <field name="reorder" value="{{route.id ? '/api/modules/sirsoft-board/boards/' + route.slug + '/attachments/reorder' : null}}"/>
+          </field>
+          <field name="fields">
+            <field name="temp_key" value="{{_local.tempKey}}"/>
+          </field>
+          <field name="policy">
+            <field name="accept" value="{{form_meta?.data?.board?.allowed_extensions?.length ? '.' + form_meta?.data?.board?.allowed_extensions?.join(',.') : '.jpg,.jpeg,.png,.gif,.pdf,.zip'}}"/>
+            <field name="maxSize" value="{{form_meta?.data?.board?.max_file_size ?? 10}}"/>
+            <field name="maxFiles" value="{{form_meta?.data?.board?.max_file_count ?? 5}}"/>
+            <field name="maxConcurrentUploads" :value="1"/>
+            <field name="imageCompression" :value="null"/>
+          </field>
+          <field name="collection" value="post_attachments"/>
+          <field name="attachmentable">
+            <field name="type" :value="null"/>
+            <field name="id" :value="null"/>
+          </field>
+          <field name="triggerEvent" value="upload:board_attachments"/>
+          <field name="initialFiles" value="{{form_meta?.data?.attachments ?? []}}"/>
+          <field name="disabled" :value="false"/>
+          <field name="autoUpload" :value="false"/>
+          <field name="ui">
+            <field name="confirmBeforeRemove" :value="true"/>
+          </field>
+          <field name="context">
+            <field name="owner" value="sirsoft-board"/>
+            <field name="purpose" value="post_attachments"/>
+          </field>
         </prop>
-        <prop name="apiEndpoints">
-          <field name="upload" value="/api/modules/sirsoft-board/boards/{{route.slug}}/attachments"/>
-          <field name="delete" value="/api/modules/sirsoft-board/boards/{{route.slug}}/attachments/:id"/>
-          <field name="reorder" value="/api/modules/sirsoft-board/boards/{{route.slug}}/attachments/reorder"/>
-        </prop>
-        <on type="change" event="onFilesChange">
-          <!-- 첨부 목록이 바뀜 — 이미 서 있는 표시를 다시 세우지 않도록 조건을 건다(파일을 고를 때마다 상태를 갈아 끼우면 목록이 통째로 다시 그려진다). -->
+        <callback name="onFilesChange">
+          <!-- 첨부 목록이 바뀜 — 이미 서 있는 표시는 다시 세우지 않는다(기본 업로더와 같다) -->
           <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="true"/>
-        </on>
-        <on type="change" event="onUploadError">
-          <!-- 첨부 올리기 실패 — 저장 잠금을 반드시 푼다. 저장 버튼이 업로드를 먼저 발화시키므로, 여기서 풀지 않으면 버튼이 잠긴 채 남는다. -->
+        </callback>
+        <callback name="onUploadError">
+          <!-- 첨부 올리기 실패 — 저장 잠금을 반드시 풀고 사유를 알린다(기본 업로더와 같다) -->
           <sequence>
-            <set-state target="local" uploadError="{{$args[0]}}" :isSaving="false"/>
-            <toast type="error" message="{{$args[0]}}" icon="triangle-exclamation"/>
+            <set-state target="local" uploadError="{{$event}}" :isSaving="false"/>
+            <toast type="error" message="{{$event}}" icon="triangle-exclamation"/>
           </sequence>
-        </on>
-      </file-uploader>
+        </callback>
+        <default>
+          <file-uploader data-type="composite" collection="post_attachments" maxFiles="{{form_meta?.data?.board?.max_file_count ?? 5}}" maxSize="{{form_meta?.data?.board?.max_file_size ?? 10}}" accept="{{form_meta?.data?.board?.allowed_extensions?.length ? '.' + form_meta?.data?.board?.allowed_extensions?.join(',.') : '.jpg,.jpeg,.png,.gif,.pdf,.zip'}}" initialFiles="{{form_meta?.data?.attachments ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:board_attachments" :confirmBeforeRemove="true" confirmRemoveTitle="$t:board.posts.form.confirm_remove_attachment_title" confirmRemoveMessage="$t:board.posts.form.confirm_remove_attachment_message">
+            <prop name="uploadParams">
+              <field name="temp_key" value="{{_local.tempKey}}"/>
+            </prop>
+            <prop name="apiEndpoints">
+              <field name="upload" value="/api/modules/sirsoft-board/boards/{{route.slug}}/attachments"/>
+              <field name="delete" value="/api/modules/sirsoft-board/boards/{{route.slug}}/attachments/:id"/>
+              <field name="reorder" value="/api/modules/sirsoft-board/boards/{{route.slug}}/attachments/reorder"/>
+            </prop>
+            <on type="change" event="onFilesChange">
+              <!-- 첨부 목록이 바뀜 — 이미 서 있는 표시를 다시 세우지 않도록 조건을 건다(파일을 고를 때마다 상태를 갈아 끼우면 목록이 통째로 다시 그려진다). -->
+              <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="true"/>
+            </on>
+            <on type="change" event="onUploadError">
+              <!-- 첨부 올리기 실패 — 저장 잠금을 반드시 푼다. 저장 버튼이 업로드를 먼저 발화시키므로, 여기서 풀지 않으면 버튼이 잠긴 채 남는다. -->
+              <sequence>
+                <set-state target="local" uploadError="{{$args[0]}}" :isSaving="false"/>
+                <toast type="error" message="{{$args[0]}}" icon="triangle-exclamation"/>
+              </sequence>
+            </on>
+          </file-uploader>
+        </default>
+      </extension-point>
     </div>
     <!-- 확장 자리 — 글쓰기 맨 아래(취소·저장 단추 바로 위)에 확장이 동의 문구·부가 입력칸을 붙인다(#149). props 는 맨 위 자리와 같다 -->
     <extension-point name="board_post_form_bottom" class="contents" data-extension-point="board_post_form_bottom" mode="{{route.id ? 'edit' : ((form_data?.data?.parent_id || query?.parent_id) ? 'reply' : 'create')}}" boardSlug="{{route.slug}}" postId="{{route.id ?? null}}" board="{{form_meta?.data?.board}}"/>

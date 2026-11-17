@@ -1,0 +1,30 @@
+# 시나리오 매니페스트 — KG이니시스 CBT 관리자 시험 상품·거래 조회 (#916 ②)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: kginicis_cbt_test_product_admin
+
+description: |
+  관리자가 CBT(일본 엔 결제) 연동 확인용 시험 상품을 만들고, CBT 거래 상태를 조회하는 관리자 경로.
+  시험 상품 생성은 이커머스 내부 Model 대신 공개 계약 `ProductProvisioner` 를 쓴다(#916).
+
+  - 시험 상품은 상점 기본 통화와 무관하게 결제 때 정확히 100엔이 되는 가격으로 저장된다. 통화 설정에 엔화가 없으면
+    422 와 안내 문구로 멈춘다. 상품명은 항상 다국어 배열이고, 관리자 인증 없이 부를 수 없다.
+  - CBT 결제의 관리자 거래 상태 조회는 국내 조회 API 대신 로컬 결제 기록으로 답하고, 로컬 기록이 없는 CBT 거래번호
+    직접 조회도 국내 API 를 부르지 않는다. tid 상한은 저장 컬럼 길이(100)가 기준이다.
+
+  시험 상품 생성 실패의 내부 상세 가림은 `escrow-delivery-register.yaml`(flow=cbt_test_product)이 소유한다.
+
+axes:
+  case: [cbt_test_product_jpy_price, cbt_test_product_name, admin_auth_required, cbt_transaction_status, cbt_direct_tid_query, tid_length_gate]
+
+effects:
+  - cbt_test_product_charges_exactly_100_yen                     # 기본 통화와 무관하게 저장 가격을 엔화로 환산하면 정확히 100
+  - cbt_test_product_requires_jpy_currency                       # 통화 설정에 엔화가 없으면 422 와 안내 문구
+  - cbt_test_product_name_is_multilingual_array                  # 상품명이 다국어 배열로 저장돼 상품 목록이 500 이 되지 않는다
+  - cbt_test_product_endpoint_requires_admin                     # 관리자 인증 없이 시험 상품 생성을 부를 수 없다
+  - cbt_admin_transaction_status_uses_local_confirmation         # CBT 결제 거래 상태는 국내 조회 API 대신 로컬 결제 기록으로 답한다
+  - cbt_direct_tid_query_skips_korean_inquiry_without_local_row  # 로컬 기록이 없는 CBT 거래번호 직접 조회도 국내 조회 API 를 부르지 않는다
+  - transaction_query_rejects_tid_over_storage_column_length     # 저장 컬럼(100자)을 넘는 tid 조회는 422
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/Controllers/AdminCbtTestProductControllerTest.php

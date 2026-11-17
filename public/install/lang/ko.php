@@ -50,6 +50,8 @@ return [
     'checking_requirements' => '서버 요구사항을 확인하는 중...',
     'php_version' => 'PHP 버전',
     'php_modules' => 'PHP 모듈',
+    'recommended_extension_missing' => '권장 PHP 모듈이 없습니다(설치는 계속할 수 있습니다).',
+    'recommended_sodium_reason' => 'sodium 이 없으면 확장·코어 업데이트·언어팩 패키지의 서명을 확인할 수 없어, 서명된 패키지도 「서명 검증 불가」로 처리되고 설치할 때마다 확인을 거칩니다.',
     'directory_permissions' => '디렉토리 권한',
     'disk_space' => '디스크 공간',
     'https' => 'HTTPS',

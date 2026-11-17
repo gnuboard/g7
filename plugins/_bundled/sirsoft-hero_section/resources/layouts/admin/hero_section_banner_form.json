@@ -1132,21 +1132,131 @@
                                                                 "text": "$t:sirsoft-hero_section.admin.form.media.pc_video_hint|mb={{_computed.videoUploadMb}}"
                                                             },
                                                             {
-                                                                "id": "pc_video_uploader",
-                                                                "type": "composite",
-                                                                "name": "FileUploader",
-                                                                "actions": [
+                                                                "comment": "첨부 업로더 확장점 — PC 영상. 고르는 즉시 임시 묶음으로 올라가고 「저장」 때 붙는다. 삭제 주소가 비어 빼기는 화면에서만 하고,\n                     정렬 API 가 없어 정렬 주소는 null 이다. 계약(uploader)은 기본 업로더에 넘기는 값과 같다",
+                                                                "id": "pc_video_uploader_slot",
+                                                                "type": "extension_point",
+                                                                "name": "attachment_uploader",
+                                                                "props": {
+                                                                    "className": "hs:contents",
+                                                                    "uploader": {
+                                                                        "version": 1,
+                                                                        "mode": "upload",
+                                                                        "endpoints": {
+                                                                            "upload": "/api/plugins/sirsoft-hero_section/admin/banner-images",
+                                                                            "delete": "",
+                                                                            "reorder": null
+                                                                        },
+                                                                        "fields": "{{({ device: 'pc', kind: 'video', temp_key: _global.tempKey ?? '' })}}",
+                                                                        "policy": {
+                                                                            "accept": ".mp4,.webm",
+                                                                            "maxSize": "{{_computed.videoUploadMb}}",
+                                                                            "maxFiles": 1,
+                                                                            "maxConcurrentUploads": 1,
+                                                                            "imageCompression": null
+                                                                        },
+                                                                        "collection": "default",
+                                                                        "attachmentable": {
+                                                                            "type": null,
+                                                                            "id": null
+                                                                        },
+                                                                        "triggerEvent": null,
+                                                                        "initialFiles": "{{_local.form?.videos?.pc ? [_local.form.videos.pc] : []}}",
+                                                                        "disabled": "{{!!_local.isSaving}}",
+                                                                        "autoUpload": true,
+                                                                        "context": {
+                                                                            "owner": "sirsoft-hero_section",
+                                                                            "purpose": "banner_pc_video"
+                                                                        }
+                                                                    }
+                                                                },
+                                                                "default": [
                                                                     {
+                                                                        "id": "pc_video_uploader",
+                                                                        "type": "composite",
+                                                                        "name": "FileUploader",
+                                                                        "actions": [
+                                                                            {
+                                                                                "comment": "PC 영상 올리기 진행 — 올리는 중인 파일이 있으면 저장 잠금 표시를 켠다. 아직 바뀐 것이 없던 폼이면 파일을 고른 것만으로 수정됨이 되지 않게 그대로 둔다",
+                                                                                "type": "change",
+                                                                                "event": "onFilesChange",
+                                                                                "handler": "sequence",
+                                                                                "actions": [
+                                                                                    {
+                                                                                        "handler": "setState",
+                                                                                        "params": {
+                                                                                            "target": "local",
+                                                                                            "pcVideoUploadBlocked": "{{($args[0] ?? []).some(f => f.status !== 'done')}}"
+                                                                                        }
+                                                                                    },
+                                                                                    {
+                                                                                        "handler": "setState",
+                                                                                        "if": "{{!_local.hasChanges}}",
+                                                                                        "params": {
+                                                                                            "target": "local",
+                                                                                            "hasChanges": false
+                                                                                        }
+                                                                                    }
+                                                                                ]
+                                                                            },
+                                                                            {
+                                                                                "comment": "PC 영상 업로드 완료 — 받은 영상(임시)을 폼에 담는다. 배너에 붙는 것은 저장할 때다",
+                                                                                "type": "change",
+                                                                                "event": "onUploadComplete",
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "form.videos.pc": "{{$args[0]?.[0] ?? null}}"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "comment": "업로드 실패 사유(용량·형식 등)를 알린다",
+                                                                                "type": "change",
+                                                                                "event": "onUploadError",
+                                                                                "handler": "toast",
+                                                                                "params": {
+                                                                                    "type": "error",
+                                                                                    "message": "{{$args[0]}}",
+                                                                                    "icon": "triangle-exclamation"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "comment": "화면에서 뺀 PC 영상을 폼에서도 비운다 — 저장해야 배너에서 빠진다",
+                                                                                "type": "change",
+                                                                                "event": "onRemove",
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "form.videos.pc": null
+                                                                                }
+                                                                            }
+                                                                        ],
+                                                                        "props": {
+                                                                            "maxFiles": 1,
+                                                                            "disabled": "{{_local.isSaving}}",
+                                                                            "maxSize": "{{_computed.videoUploadMb}}",
+                                                                            "accept": ".mp4,.webm",
+                                                                            "autoUpload": true,
+                                                                            "size": "sm",
+                                                                            "initialFiles": "{{_local.form?.videos?.pc ? [_local.form.videos.pc] : []}}",
+                                                                            "uploadParams": "{{({ device: 'pc', kind: 'video', temp_key: _global.tempKey ?? '' })}}",
+                                                                            "apiEndpoints": {
+                                                                                "upload": "/api/plugins/sirsoft-hero_section/admin/banner-images",
+                                                                                "delete": "",
+                                                                                "reorder": null
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "callbacks": {
+                                                                    "onFilesChange": {
                                                                         "comment": "PC 영상 올리기 진행 — 올리는 중인 파일이 있으면 저장 잠금 표시를 켠다. 아직 바뀐 것이 없던 폼이면 파일을 고른 것만으로 수정됨이 되지 않게 그대로 둔다",
-                                                                        "type": "change",
-                                                                        "event": "onFilesChange",
                                                                         "handler": "sequence",
                                                                         "actions": [
                                                                             {
                                                                                 "handler": "setState",
                                                                                 "params": {
                                                                                     "target": "local",
-                                                                                    "pcVideoUploadBlocked": "{{($args[0] ?? []).some(f => f.status !== 'done')}}"
+                                                                                    "pcVideoUploadBlocked": "{{($event ?? []).some(f => f.status !== 'done')}}"
                                                                                 }
                                                                             },
                                                                             {
@@ -1159,50 +1269,30 @@
                                                                             }
                                                                         ]
                                                                     },
-                                                                    {
+                                                                    "onUploadComplete": {
                                                                         "comment": "PC 영상 업로드 완료 — 받은 영상(임시)을 폼에 담는다. 배너에 붙는 것은 저장할 때다",
-                                                                        "type": "change",
-                                                                        "event": "onUploadComplete",
                                                                         "handler": "setState",
                                                                         "params": {
                                                                             "target": "local",
-                                                                            "form.videos.pc": "{{$args[0]?.[0] ?? null}}"
+                                                                            "form.videos.pc": "{{$event?.[0] ?? null}}"
                                                                         }
                                                                     },
-                                                                    {
+                                                                    "onUploadError": {
                                                                         "comment": "업로드 실패 사유(용량·형식 등)를 알린다",
-                                                                        "type": "change",
-                                                                        "event": "onUploadError",
                                                                         "handler": "toast",
                                                                         "params": {
                                                                             "type": "error",
-                                                                            "message": "{{$args[0]}}",
+                                                                            "message": "{{$event}}",
                                                                             "icon": "triangle-exclamation"
                                                                         }
                                                                     },
-                                                                    {
+                                                                    "onRemove": {
                                                                         "comment": "화면에서 뺀 PC 영상을 폼에서도 비운다 — 저장해야 배너에서 빠진다",
-                                                                        "type": "change",
-                                                                        "event": "onRemove",
                                                                         "handler": "setState",
                                                                         "params": {
                                                                             "target": "local",
                                                                             "form.videos.pc": null
                                                                         }
-                                                                    }
-                                                                ],
-                                                                "props": {
-                                                                    "maxFiles": 1,
-                                                                    "disabled": "{{_local.isSaving}}",
-                                                                    "maxSize": "{{_computed.videoUploadMb}}",
-                                                                    "accept": ".mp4,.webm",
-                                                                    "autoUpload": true,
-                                                                    "size": "sm",
-                                                                    "initialFiles": "{{_local.form?.videos?.pc ? [_local.form.videos.pc] : []}}",
-                                                                    "uploadParams": "{{({ device: 'pc', kind: 'video', temp_key: _global.tempKey ?? '' })}}",
-                                                                    "apiEndpoints": {
-                                                                        "upload": "/api/plugins/sirsoft-hero_section/admin/banner-images",
-                                                                        "delete": ""
                                                                     }
                                                                 }
                                                             },
@@ -1240,21 +1330,131 @@
                                                                 "text": "$t:sirsoft-hero_section.admin.form.media.mobile_video_hint|mb={{_computed.videoUploadMb}}"
                                                             },
                                                             {
-                                                                "id": "mobile_video_uploader",
-                                                                "type": "composite",
-                                                                "name": "FileUploader",
-                                                                "actions": [
+                                                                "comment": "첨부 업로더 확장점 — 휴대폰 영상. 고르는 즉시 임시 묶음으로 올라가고 「저장」 때 붙는다. 삭제 주소가 비어 빼기는 화면에서만 하고,\n                     정렬 API 가 없어 정렬 주소는 null 이다. 계약(uploader)은 기본 업로더에 넘기는 값과 같다",
+                                                                "id": "mobile_video_uploader_slot",
+                                                                "type": "extension_point",
+                                                                "name": "attachment_uploader",
+                                                                "props": {
+                                                                    "className": "hs:contents",
+                                                                    "uploader": {
+                                                                        "version": 1,
+                                                                        "mode": "upload",
+                                                                        "endpoints": {
+                                                                            "upload": "/api/plugins/sirsoft-hero_section/admin/banner-images",
+                                                                            "delete": "",
+                                                                            "reorder": null
+                                                                        },
+                                                                        "fields": "{{({ device: 'mobile', kind: 'video', temp_key: _global.tempKey ?? '' })}}",
+                                                                        "policy": {
+                                                                            "accept": ".mp4,.webm",
+                                                                            "maxSize": "{{_computed.videoUploadMb}}",
+                                                                            "maxFiles": 1,
+                                                                            "maxConcurrentUploads": 1,
+                                                                            "imageCompression": null
+                                                                        },
+                                                                        "collection": "default",
+                                                                        "attachmentable": {
+                                                                            "type": null,
+                                                                            "id": null
+                                                                        },
+                                                                        "triggerEvent": null,
+                                                                        "initialFiles": "{{_local.form?.videos?.mobile ? [_local.form.videos.mobile] : []}}",
+                                                                        "disabled": "{{!!_local.isSaving}}",
+                                                                        "autoUpload": true,
+                                                                        "context": {
+                                                                            "owner": "sirsoft-hero_section",
+                                                                            "purpose": "banner_mobile_video"
+                                                                        }
+                                                                    }
+                                                                },
+                                                                "default": [
                                                                     {
+                                                                        "id": "mobile_video_uploader",
+                                                                        "type": "composite",
+                                                                        "name": "FileUploader",
+                                                                        "actions": [
+                                                                            {
+                                                                                "comment": "휴대폰 영상 올리기 진행 — PC 영상과 같이 저장 잠금 표시를 켜고, 파일 고르기만으로 수정됨이 되지 않게 둔다",
+                                                                                "type": "change",
+                                                                                "event": "onFilesChange",
+                                                                                "handler": "sequence",
+                                                                                "actions": [
+                                                                                    {
+                                                                                        "handler": "setState",
+                                                                                        "params": {
+                                                                                            "target": "local",
+                                                                                            "mobileVideoUploadBlocked": "{{($args[0] ?? []).some(f => f.status !== 'done')}}"
+                                                                                        }
+                                                                                    },
+                                                                                    {
+                                                                                        "handler": "setState",
+                                                                                        "if": "{{!_local.hasChanges}}",
+                                                                                        "params": {
+                                                                                            "target": "local",
+                                                                                            "hasChanges": false
+                                                                                        }
+                                                                                    }
+                                                                                ]
+                                                                            },
+                                                                            {
+                                                                                "comment": "휴대폰 영상 업로드 완료 — 받은 영상(임시)을 폼에 담는다",
+                                                                                "type": "change",
+                                                                                "event": "onUploadComplete",
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "form.videos.mobile": "{{$args[0]?.[0] ?? null}}"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "comment": "업로드 실패 사유를 알린다",
+                                                                                "type": "change",
+                                                                                "event": "onUploadError",
+                                                                                "handler": "toast",
+                                                                                "params": {
+                                                                                    "type": "error",
+                                                                                    "message": "{{$args[0]}}",
+                                                                                    "icon": "triangle-exclamation"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "comment": "화면에서 뺀 휴대폰 영상을 폼에서도 비운다 — 저장해야 배너에서 빠진다",
+                                                                                "type": "change",
+                                                                                "event": "onRemove",
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "form.videos.mobile": null
+                                                                                }
+                                                                            }
+                                                                        ],
+                                                                        "props": {
+                                                                            "maxFiles": 1,
+                                                                            "disabled": "{{_local.isSaving}}",
+                                                                            "maxSize": "{{_computed.videoUploadMb}}",
+                                                                            "accept": ".mp4,.webm",
+                                                                            "autoUpload": true,
+                                                                            "size": "sm",
+                                                                            "initialFiles": "{{_local.form?.videos?.mobile ? [_local.form.videos.mobile] : []}}",
+                                                                            "uploadParams": "{{({ device: 'mobile', kind: 'video', temp_key: _global.tempKey ?? '' })}}",
+                                                                            "apiEndpoints": {
+                                                                                "upload": "/api/plugins/sirsoft-hero_section/admin/banner-images",
+                                                                                "delete": "",
+                                                                                "reorder": null
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "callbacks": {
+                                                                    "onFilesChange": {
                                                                         "comment": "휴대폰 영상 올리기 진행 — PC 영상과 같이 저장 잠금 표시를 켜고, 파일 고르기만으로 수정됨이 되지 않게 둔다",
-                                                                        "type": "change",
-                                                                        "event": "onFilesChange",
                                                                         "handler": "sequence",
                                                                         "actions": [
                                                                             {
                                                                                 "handler": "setState",
                                                                                 "params": {
                                                                                     "target": "local",
-                                                                                    "mobileVideoUploadBlocked": "{{($args[0] ?? []).some(f => f.status !== 'done')}}"
+                                                                                    "mobileVideoUploadBlocked": "{{($event ?? []).some(f => f.status !== 'done')}}"
                                                                                 }
                                                                             },
                                                                             {
@@ -1267,50 +1467,30 @@
                                                                             }
                                                                         ]
                                                                     },
-                                                                    {
+                                                                    "onUploadComplete": {
                                                                         "comment": "휴대폰 영상 업로드 완료 — 받은 영상(임시)을 폼에 담는다",
-                                                                        "type": "change",
-                                                                        "event": "onUploadComplete",
                                                                         "handler": "setState",
                                                                         "params": {
                                                                             "target": "local",
-                                                                            "form.videos.mobile": "{{$args[0]?.[0] ?? null}}"
+                                                                            "form.videos.mobile": "{{$event?.[0] ?? null}}"
                                                                         }
                                                                     },
-                                                                    {
+                                                                    "onUploadError": {
                                                                         "comment": "업로드 실패 사유를 알린다",
-                                                                        "type": "change",
-                                                                        "event": "onUploadError",
                                                                         "handler": "toast",
                                                                         "params": {
                                                                             "type": "error",
-                                                                            "message": "{{$args[0]}}",
+                                                                            "message": "{{$event}}",
                                                                             "icon": "triangle-exclamation"
                                                                         }
                                                                     },
-                                                                    {
+                                                                    "onRemove": {
                                                                         "comment": "화면에서 뺀 휴대폰 영상을 폼에서도 비운다 — 저장해야 배너에서 빠진다",
-                                                                        "type": "change",
-                                                                        "event": "onRemove",
                                                                         "handler": "setState",
                                                                         "params": {
                                                                             "target": "local",
                                                                             "form.videos.mobile": null
                                                                         }
-                                                                    }
-                                                                ],
-                                                                "props": {
-                                                                    "maxFiles": 1,
-                                                                    "disabled": "{{_local.isSaving}}",
-                                                                    "maxSize": "{{_computed.videoUploadMb}}",
-                                                                    "accept": ".mp4,.webm",
-                                                                    "autoUpload": true,
-                                                                    "size": "sm",
-                                                                    "initialFiles": "{{_local.form?.videos?.mobile ? [_local.form.videos.mobile] : []}}",
-                                                                    "uploadParams": "{{({ device: 'mobile', kind: 'video', temp_key: _global.tempKey ?? '' })}}",
-                                                                    "apiEndpoints": {
-                                                                        "upload": "/api/plugins/sirsoft-hero_section/admin/banner-images",
-                                                                        "delete": ""
                                                                     }
                                                                 }
                                                             },
@@ -1413,22 +1593,132 @@
                                                                 "text": "$t:sirsoft-hero_section.admin.form.media.poster_hint"
                                                             },
                                                             {
-                                                                "comment": "업로드는 임시 묶음에만 들어가고, 빼기는 삭제 주소를 비워 화면에서만 뺀다 — 배너 이미지는 「저장」 때 바뀐다. PC 이미지는 필수라 빼면 저장이 잠긴다",
-                                                                "id": "pc_image_uploader",
-                                                                "type": "composite",
-                                                                "name": "FileUploader",
-                                                                "actions": [
+                                                                "comment": "첨부 업로더 확장점 — PC 이미지. 고르는 즉시 임시 묶음으로 올라가고 「저장」 때 붙는다. 삭제 주소가 비어 빼기는 화면에서만 하고,\n                     정렬 API 가 없어 정렬 주소는 null 이다. 계약(uploader)은 기본 업로더에 넘기는 값과 같다",
+                                                                "id": "pc_image_uploader_slot",
+                                                                "type": "extension_point",
+                                                                "name": "attachment_uploader",
+                                                                "props": {
+                                                                    "className": "hs:contents",
+                                                                    "uploader": {
+                                                                        "version": 1,
+                                                                        "mode": "upload",
+                                                                        "endpoints": {
+                                                                            "upload": "/api/plugins/sirsoft-hero_section/admin/banner-images",
+                                                                            "delete": "",
+                                                                            "reorder": null
+                                                                        },
+                                                                        "fields": "{{({ device: 'pc', temp_key: _global.tempKey ?? '' })}}",
+                                                                        "policy": {
+                                                                            "accept": ".jpg,.jpeg,.png,.webp",
+                                                                            "maxSize": "{{_computed.uploadMb}}",
+                                                                            "maxFiles": 1,
+                                                                            "maxConcurrentUploads": 1,
+                                                                            "imageCompression": null
+                                                                        },
+                                                                        "collection": "default",
+                                                                        "attachmentable": {
+                                                                            "type": null,
+                                                                            "id": null
+                                                                        },
+                                                                        "triggerEvent": null,
+                                                                        "initialFiles": "{{_local.form?.images?.pc ? [_local.form.images.pc] : []}}",
+                                                                        "disabled": "{{!!_local.isSaving}}",
+                                                                        "autoUpload": true,
+                                                                        "context": {
+                                                                            "owner": "sirsoft-hero_section",
+                                                                            "purpose": "banner_pc_image"
+                                                                        }
+                                                                    }
+                                                                },
+                                                                "default": [
                                                                     {
+                                                                        "comment": "업로드는 임시 묶음에만 들어가고, 빼기는 삭제 주소를 비워 화면에서만 뺀다 — 배너 이미지는 「저장」 때 바뀐다. PC 이미지는 필수라 빼면 저장이 잠긴다",
+                                                                        "id": "pc_image_uploader",
+                                                                        "type": "composite",
+                                                                        "name": "FileUploader",
+                                                                        "actions": [
+                                                                            {
+                                                                                "comment": "PC 이미지 올리기 진행 — 올리는 중이면 저장 잠금 표시를 켜고, 파일 고르기만으로 수정됨이 되지 않게 둔다",
+                                                                                "type": "change",
+                                                                                "event": "onFilesChange",
+                                                                                "handler": "sequence",
+                                                                                "actions": [
+                                                                                    {
+                                                                                        "handler": "setState",
+                                                                                        "params": {
+                                                                                            "target": "local",
+                                                                                            "pcUploadBlocked": "{{($args[0] ?? []).some(f => f.status !== 'done')}}"
+                                                                                        }
+                                                                                    },
+                                                                                    {
+                                                                                        "handler": "setState",
+                                                                                        "if": "{{!_local.hasChanges}}",
+                                                                                        "params": {
+                                                                                            "target": "local",
+                                                                                            "hasChanges": false
+                                                                                        }
+                                                                                    }
+                                                                                ]
+                                                                            },
+                                                                            {
+                                                                                "comment": "PC 이미지 업로드 완료 — 받은 이미지(임시)를 폼에 담는다. 배너에 붙는 것은 저장할 때다",
+                                                                                "type": "change",
+                                                                                "event": "onUploadComplete",
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "form.images.pc": "{{$args[0]?.[0] ?? null}}"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "comment": "업로드 실패 사유(용량·형식 등)를 알린다",
+                                                                                "type": "change",
+                                                                                "event": "onUploadError",
+                                                                                "handler": "toast",
+                                                                                "params": {
+                                                                                    "type": "error",
+                                                                                    "message": "{{$args[0]}}",
+                                                                                    "icon": "triangle-exclamation"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "comment": "화면에서 뺀 PC 이미지를 폼에서도 비운다 — 저장해야 배너에서 빠진다",
+                                                                                "type": "change",
+                                                                                "event": "onRemove",
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "form.images.pc": null
+                                                                                }
+                                                                            }
+                                                                        ],
+                                                                        "props": {
+                                                                            "maxFiles": 1,
+                                                                            "disabled": "{{_local.isSaving}}",
+                                                                            "maxSize": "{{_computed.uploadMb}}",
+                                                                            "accept": ".jpg,.jpeg,.png,.webp",
+                                                                            "autoUpload": true,
+                                                                            "size": "sm",
+                                                                            "initialFiles": "{{_local.form?.images?.pc ? [_local.form.images.pc] : []}}",
+                                                                            "uploadParams": "{{({ device: 'pc', temp_key: _global.tempKey ?? '' })}}",
+                                                                            "apiEndpoints": {
+                                                                                "upload": "/api/plugins/sirsoft-hero_section/admin/banner-images",
+                                                                                "delete": "",
+                                                                                "reorder": null
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "callbacks": {
+                                                                    "onFilesChange": {
                                                                         "comment": "PC 이미지 올리기 진행 — 올리는 중이면 저장 잠금 표시를 켜고, 파일 고르기만으로 수정됨이 되지 않게 둔다",
-                                                                        "type": "change",
-                                                                        "event": "onFilesChange",
                                                                         "handler": "sequence",
                                                                         "actions": [
                                                                             {
                                                                                 "handler": "setState",
                                                                                 "params": {
                                                                                     "target": "local",
-                                                                                    "pcUploadBlocked": "{{($args[0] ?? []).some(f => f.status !== 'done')}}"
+                                                                                    "pcUploadBlocked": "{{($event ?? []).some(f => f.status !== 'done')}}"
                                                                                 }
                                                                             },
                                                                             {
@@ -1441,50 +1731,30 @@
                                                                             }
                                                                         ]
                                                                     },
-                                                                    {
+                                                                    "onUploadComplete": {
                                                                         "comment": "PC 이미지 업로드 완료 — 받은 이미지(임시)를 폼에 담는다. 배너에 붙는 것은 저장할 때다",
-                                                                        "type": "change",
-                                                                        "event": "onUploadComplete",
                                                                         "handler": "setState",
                                                                         "params": {
                                                                             "target": "local",
-                                                                            "form.images.pc": "{{$args[0]?.[0] ?? null}}"
+                                                                            "form.images.pc": "{{$event?.[0] ?? null}}"
                                                                         }
                                                                     },
-                                                                    {
+                                                                    "onUploadError": {
                                                                         "comment": "업로드 실패 사유(용량·형식 등)를 알린다",
-                                                                        "type": "change",
-                                                                        "event": "onUploadError",
                                                                         "handler": "toast",
                                                                         "params": {
                                                                             "type": "error",
-                                                                            "message": "{{$args[0]}}",
+                                                                            "message": "{{$event}}",
                                                                             "icon": "triangle-exclamation"
                                                                         }
                                                                     },
-                                                                    {
+                                                                    "onRemove": {
                                                                         "comment": "화면에서 뺀 PC 이미지를 폼에서도 비운다 — 저장해야 배너에서 빠진다",
-                                                                        "type": "change",
-                                                                        "event": "onRemove",
                                                                         "handler": "setState",
                                                                         "params": {
                                                                             "target": "local",
                                                                             "form.images.pc": null
                                                                         }
-                                                                    }
-                                                                ],
-                                                                "props": {
-                                                                    "maxFiles": 1,
-                                                                    "disabled": "{{_local.isSaving}}",
-                                                                    "maxSize": "{{_computed.uploadMb}}",
-                                                                    "accept": ".jpg,.jpeg,.png,.webp",
-                                                                    "autoUpload": true,
-                                                                    "size": "sm",
-                                                                    "initialFiles": "{{_local.form?.images?.pc ? [_local.form.images.pc] : []}}",
-                                                                    "uploadParams": "{{({ device: 'pc', temp_key: _global.tempKey ?? '' })}}",
-                                                                    "apiEndpoints": {
-                                                                        "upload": "/api/plugins/sirsoft-hero_section/admin/banner-images",
-                                                                        "delete": ""
                                                                     }
                                                                 }
                                                             },
@@ -1531,22 +1801,132 @@
                                                                 "text": "$t:sirsoft-hero_section.admin.form.image.mobile_hint|mb={{_computed.uploadMb}}"
                                                             },
                                                             {
-                                                                "comment": "PC 와 같이 화면에서만 뺀다 — 빼고 저장하면 그때 모바일 이미지가 빠진다(저장하지 않으면 그대로). 저장은 화면에 남은\n                  이미지 ID 만 붙이므로 뺀 임시 이미지는 붙지 않고 정리 명령이 지운다",
-                                                                "id": "mobile_image_uploader",
-                                                                "type": "composite",
-                                                                "name": "FileUploader",
-                                                                "actions": [
+                                                                "comment": "첨부 업로더 확장점 — 휴대폰 이미지. 고르는 즉시 임시 묶음으로 올라가고 「저장」 때 붙는다. 삭제 주소가 비어 빼기는 화면에서만 하고,\n                     정렬 API 가 없어 정렬 주소는 null 이다. 계약(uploader)은 기본 업로더에 넘기는 값과 같다",
+                                                                "id": "mobile_image_uploader_slot",
+                                                                "type": "extension_point",
+                                                                "name": "attachment_uploader",
+                                                                "props": {
+                                                                    "className": "hs:contents",
+                                                                    "uploader": {
+                                                                        "version": 1,
+                                                                        "mode": "upload",
+                                                                        "endpoints": {
+                                                                            "upload": "/api/plugins/sirsoft-hero_section/admin/banner-images",
+                                                                            "delete": "",
+                                                                            "reorder": null
+                                                                        },
+                                                                        "fields": "{{({ device: 'mobile', temp_key: _global.tempKey ?? '' })}}",
+                                                                        "policy": {
+                                                                            "accept": ".jpg,.jpeg,.png,.webp",
+                                                                            "maxSize": "{{_computed.uploadMb}}",
+                                                                            "maxFiles": 1,
+                                                                            "maxConcurrentUploads": 1,
+                                                                            "imageCompression": null
+                                                                        },
+                                                                        "collection": "default",
+                                                                        "attachmentable": {
+                                                                            "type": null,
+                                                                            "id": null
+                                                                        },
+                                                                        "triggerEvent": null,
+                                                                        "initialFiles": "{{_local.form?.images?.mobile ? [_local.form.images.mobile] : []}}",
+                                                                        "disabled": "{{!!_local.isSaving}}",
+                                                                        "autoUpload": true,
+                                                                        "context": {
+                                                                            "owner": "sirsoft-hero_section",
+                                                                            "purpose": "banner_mobile_image"
+                                                                        }
+                                                                    }
+                                                                },
+                                                                "default": [
                                                                     {
+                                                                        "comment": "PC 와 같이 화면에서만 뺀다 — 빼고 저장하면 그때 모바일 이미지가 빠진다(저장하지 않으면 그대로). 저장은 화면에 남은\n                      이미지 ID 만 붙이므로 뺀 임시 이미지는 붙지 않고 정리 명령이 지운다",
+                                                                        "id": "mobile_image_uploader",
+                                                                        "type": "composite",
+                                                                        "name": "FileUploader",
+                                                                        "actions": [
+                                                                            {
+                                                                                "comment": "휴대폰 이미지 올리기 진행 — PC 이미지와 같이 저장 잠금 표시를 켜고, 파일 고르기만으로 수정됨이 되지 않게 둔다",
+                                                                                "type": "change",
+                                                                                "event": "onFilesChange",
+                                                                                "handler": "sequence",
+                                                                                "actions": [
+                                                                                    {
+                                                                                        "handler": "setState",
+                                                                                        "params": {
+                                                                                            "target": "local",
+                                                                                            "mobileUploadBlocked": "{{($args[0] ?? []).some(f => f.status !== 'done')}}"
+                                                                                        }
+                                                                                    },
+                                                                                    {
+                                                                                        "handler": "setState",
+                                                                                        "if": "{{!_local.hasChanges}}",
+                                                                                        "params": {
+                                                                                            "target": "local",
+                                                                                            "hasChanges": false
+                                                                                        }
+                                                                                    }
+                                                                                ]
+                                                                            },
+                                                                            {
+                                                                                "comment": "휴대폰 이미지 업로드 완료 — 받은 이미지(임시)를 폼에 담는다",
+                                                                                "type": "change",
+                                                                                "event": "onUploadComplete",
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "form.images.mobile": "{{$args[0]?.[0] ?? null}}"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "comment": "업로드 실패 사유를 알린다",
+                                                                                "type": "change",
+                                                                                "event": "onUploadError",
+                                                                                "handler": "toast",
+                                                                                "params": {
+                                                                                    "type": "error",
+                                                                                    "message": "{{$args[0]}}",
+                                                                                    "icon": "triangle-exclamation"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "comment": "화면에서 뺀 휴대폰 이미지를 폼에서도 비운다 — 저장해야 배너에서 빠진다",
+                                                                                "type": "change",
+                                                                                "event": "onRemove",
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "form.images.mobile": null
+                                                                                }
+                                                                            }
+                                                                        ],
+                                                                        "props": {
+                                                                            "maxFiles": 1,
+                                                                            "disabled": "{{_local.isSaving}}",
+                                                                            "maxSize": "{{_computed.uploadMb}}",
+                                                                            "accept": ".jpg,.jpeg,.png,.webp",
+                                                                            "autoUpload": true,
+                                                                            "size": "sm",
+                                                                            "initialFiles": "{{_local.form?.images?.mobile ? [_local.form.images.mobile] : []}}",
+                                                                            "uploadParams": "{{({ device: 'mobile', temp_key: _global.tempKey ?? '' })}}",
+                                                                            "apiEndpoints": {
+                                                                                "upload": "/api/plugins/sirsoft-hero_section/admin/banner-images",
+                                                                                "delete": "",
+                                                                                "reorder": null
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "callbacks": {
+                                                                    "onFilesChange": {
                                                                         "comment": "휴대폰 이미지 올리기 진행 — PC 이미지와 같이 저장 잠금 표시를 켜고, 파일 고르기만으로 수정됨이 되지 않게 둔다",
-                                                                        "type": "change",
-                                                                        "event": "onFilesChange",
                                                                         "handler": "sequence",
                                                                         "actions": [
                                                                             {
                                                                                 "handler": "setState",
                                                                                 "params": {
                                                                                     "target": "local",
-                                                                                    "mobileUploadBlocked": "{{($args[0] ?? []).some(f => f.status !== 'done')}}"
+                                                                                    "mobileUploadBlocked": "{{($event ?? []).some(f => f.status !== 'done')}}"
                                                                                 }
                                                                             },
                                                                             {
@@ -1559,50 +1939,30 @@
                                                                             }
                                                                         ]
                                                                     },
-                                                                    {
+                                                                    "onUploadComplete": {
                                                                         "comment": "휴대폰 이미지 업로드 완료 — 받은 이미지(임시)를 폼에 담는다",
-                                                                        "type": "change",
-                                                                        "event": "onUploadComplete",
                                                                         "handler": "setState",
                                                                         "params": {
                                                                             "target": "local",
-                                                                            "form.images.mobile": "{{$args[0]?.[0] ?? null}}"
+                                                                            "form.images.mobile": "{{$event?.[0] ?? null}}"
                                                                         }
                                                                     },
-                                                                    {
+                                                                    "onUploadError": {
                                                                         "comment": "업로드 실패 사유를 알린다",
-                                                                        "type": "change",
-                                                                        "event": "onUploadError",
                                                                         "handler": "toast",
                                                                         "params": {
                                                                             "type": "error",
-                                                                            "message": "{{$args[0]}}",
+                                                                            "message": "{{$event}}",
                                                                             "icon": "triangle-exclamation"
                                                                         }
                                                                     },
-                                                                    {
+                                                                    "onRemove": {
                                                                         "comment": "화면에서 뺀 휴대폰 이미지를 폼에서도 비운다 — 저장해야 배너에서 빠진다",
-                                                                        "type": "change",
-                                                                        "event": "onRemove",
                                                                         "handler": "setState",
                                                                         "params": {
                                                                             "target": "local",
                                                                             "form.images.mobile": null
                                                                         }
-                                                                    }
-                                                                ],
-                                                                "props": {
-                                                                    "maxFiles": 1,
-                                                                    "disabled": "{{_local.isSaving}}",
-                                                                    "maxSize": "{{_computed.uploadMb}}",
-                                                                    "accept": ".jpg,.jpeg,.png,.webp",
-                                                                    "autoUpload": true,
-                                                                    "size": "sm",
-                                                                    "initialFiles": "{{_local.form?.images?.mobile ? [_local.form.images.mobile] : []}}",
-                                                                    "uploadParams": "{{({ device: 'mobile', temp_key: _global.tempKey ?? '' })}}",
-                                                                    "apiEndpoints": {
-                                                                        "upload": "/api/plugins/sirsoft-hero_section/admin/banner-images",
-                                                                        "delete": ""
                                                                     }
                                                                 }
                                                             },

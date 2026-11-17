@@ -50,6 +50,8 @@ return [
     'checking_requirements' => 'Checking server requirements...',
     'php_version' => 'PHP Version',
     'php_modules' => 'PHP Modules',
+    'recommended_extension_missing' => 'A recommended PHP module is missing (installation can continue).',
+    'recommended_sodium_reason' => 'Without sodium, signatures on extension, core update and language pack packages cannot be checked, so even signed packages are treated as "cannot verify signature" and need confirmation on every install.',
     'directory_permissions' => 'Directory Permissions',
     'disk_space' => 'Disk Space',
     'https' => 'HTTPS',

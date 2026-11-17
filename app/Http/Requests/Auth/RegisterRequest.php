@@ -74,6 +74,30 @@ class RegisterRequest extends FormRequest
     }
 
     /**
+     * 옛 화면 호환을 받는다 — 정의 버전(`fields_version`)을 싣지 않은 가입은 회원 항목 조각이 없는 옛 화면(7.1.x 템플릿)에서 왔다고 본다.
+     *
+     * 그 가입은 옛 화면에 입력칸이 없던 항목(운영자 추가 항목, 확장 선언 항목, 7.1.x 가입 화면에 없던 코어 칸)의 필수 규칙을
+     * 「값을 보냈을 때만」으로 늦춰 통과시킨다. 그 회원에게 추가 정보 입력 대기 표시는 남기지 않는다 — 빈 항목은 템플릿을 7.2.0 으로
+     * 올린 뒤 운영자가 채운다.
+     *
+     * @return bool 항상 true
+     */
+    protected function acceptsLegacyMemberFieldScreen(): bool
+    {
+        return true;
+    }
+
+    /**
+     * 검증을 마친 뒤 옛 화면 호환으로 건너뛴 항목을 로그에 남깁니다.
+     *
+     * @return void 반환값 없음
+     */
+    protected function passedValidation(): void
+    {
+        $this->noteLegacyMemberFieldScreen();
+    }
+
+    /**
      * 검증 전에 낡은 화면을 가려내고 옛 요청 키를 정식 키로 옮깁니다.
      *
      * - 화면이 실어 보낸 정의 버전이 지금과 다르면 검증 오류보다 먼저 409 로 알린다 — 운영자가 항목을 바꾼 뒤

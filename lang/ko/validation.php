@@ -1220,6 +1220,7 @@ return [
 
         // 공개 자산 디스크 설정
         'public_asset_disk_invalid' => '올바른 공개 자산 디스크를 선택해주세요.',
+        'private_attachment_disk_invalid' => '올바른 비공개 첨부 저장소를 선택해주세요.',
         'file_delegation_invalid' => '올바른 웹서버 파일 위임 방식을 선택해주세요.',
         'file_delegation_accel_prefix_required' => 'nginx(X-Accel-Redirect)를 고르면 내부 위치 접두사를 입력해야 합니다.',
         'file_delegation_accel_prefix_format' => '내부 위치 접두사는 /_g7_sendfile/ 처럼 / 로 시작하고 끝나야 하며 영문·숫자·. _ - 만 쓸 수 있습니다.',
@@ -1245,7 +1246,7 @@ return [
         'thumbnail_preset_format_invalid' => '올바른 저장 형식을 선택해주세요.',
         'thumbnail_content_preset_invalid' => '사용 중인 규격 중에서 본문 이미지 규격을 선택해주세요.',
         'thumbnail_disk_public_invalid' => '공개 이미지 썸네일 저장 위치를 목록에서 선택해주세요.',
-        'thumbnail_disk_gated_invalid' => '권한이 걸린 이미지 썸네일은 서버 비공개 저장소나 Amazon S3 에만 둘 수 있습니다.',
+        'thumbnail_disk_gated_invalid' => '권한이 걸린 이미지 썸네일은 서버 비공개 저장소, Amazon S3, 비공개 첨부 저장소 목록의 디스크에만 둘 수 있습니다. 공개 자산 디스크는 고를 수 없습니다.',
 
         // 드라이버 조건부 필수 메시지 (선택 드라이버에 따라 필수)
         's3_bucket_required' => 'S3 버킷 이름은 필수입니다.',
@@ -1701,6 +1702,7 @@ return [
         'queue_job_log_enabled' => '큐 처리 기록 사용',
         'queue_record_retention_days' => '큐 처리 기록 보관 기간',
         'public_asset_disk' => '공개 자산 디스크',
+        'private_attachment_disk' => '비공개 첨부 저장소',
         'file_delegation' => '웹서버 파일 위임',
         'file_delegation_accel_prefix' => '내부 위치 접두사',
         // 이미지 처리 엔진, 이미지 썸네일 (#869)

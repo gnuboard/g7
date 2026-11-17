@@ -185,7 +185,8 @@ describe('팝업 등록·수정 화면', () => {
   it('이미지 올림·뺌과 본문 입력은 값을 직접 넘기는 경로라 hasChanges 를 직접 올린다(떠날 때 확인)', () => {
     const writes = actionsOf(doc, 'setState').filter((a) => Object.keys(a.params ?? {}).some((k) => /^form\.(images\.(pc|mobile)|body_html)$/.test(k)));
 
-    expect(writes).toHaveLength(5);
+    // 기본 업로더의 올림·뺌 4개 + 본문 1개, 그리고 첨부 업로더 확장점 콜백(대체 업로더가 같은 일을 하는 자리)의 올림·뺌 4개
+    expect(writes).toHaveLength(9);
     for (const write of writes) {
       expect(write.params.hasChanges, json(write)).toBe(true);
     }

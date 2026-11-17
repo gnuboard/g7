@@ -753,22 +753,134 @@
                                                                 "text": "$t:sirsoft-popup.admin.form.image.pc_hint|width={{_computed.pcWidth}}|height={{_computed.pcHeight}}|width2={{_computed.pcWidth * 2}}|height2={{_computed.pcHeight * 2}}|mb={{_computed.uploadMb}}"
                                                             },
                                                             {
-                                                                "comment": "업로드는 임시 묶음에만 들어가고, 빼기는 화면에서만 뺀다 — 팝업 이미지는 「저장」 때 바뀐다. PC 이미지는 필수라 빼면 저장이 잠긴다",
-                                                                "id": "pc_image_uploader",
-                                                                "type": "composite",
-                                                                "name": "FileUploader",
-                                                                "actions": [
+                                                                "comment": "첨부 업로더 확장점 — PC 이미지. 고르는 즉시 임시 묶음으로 올라가고 「저장」 때 붙는다. 삭제 주소가 비어 빼기는 화면에서만 하고,\n                     정렬 API 가 없어 정렬 주소는 null 이다. 계약(uploader)은 기본 업로더에 넘기는 값과 같다",
+                                                                "id": "pc_image_uploader_slot",
+                                                                "type": "extension_point",
+                                                                "name": "attachment_uploader",
+                                                                "props": {
+                                                                    "className": "gpp:contents",
+                                                                    "uploader": {
+                                                                        "version": 1,
+                                                                        "mode": "upload",
+                                                                        "endpoints": {
+                                                                            "upload": "/api/plugins/sirsoft-popup/admin/popup-images",
+                                                                            "delete": "",
+                                                                            "reorder": null
+                                                                        },
+                                                                        "fields": "{{({ device: 'pc', temp_key: _global.tempKey ?? '' })}}",
+                                                                        "policy": {
+                                                                            "accept": ".jpg,.jpeg,.png,.webp,.gif",
+                                                                            "maxSize": "{{_computed.uploadMb}}",
+                                                                            "maxFiles": 1,
+                                                                            "maxConcurrentUploads": 1,
+                                                                            "imageCompression": null
+                                                                        },
+                                                                        "collection": "default",
+                                                                        "attachmentable": {
+                                                                            "type": null,
+                                                                            "id": null
+                                                                        },
+                                                                        "triggerEvent": null,
+                                                                        "initialFiles": "{{_local.form?.images?.pc ? [_local.form.images.pc] : []}}",
+                                                                        "disabled": "{{!!_local.isSaving}}",
+                                                                        "autoUpload": true,
+                                                                        "context": {
+                                                                            "owner": "sirsoft-popup",
+                                                                            "purpose": "popup_pc_image"
+                                                                        }
+                                                                    }
+                                                                },
+                                                                "default": [
                                                                     {
+                                                                        "comment": "업로드는 임시 묶음에만 들어가고, 빼기는 화면에서만 뺀다 — 팝업 이미지는 「저장」 때 바뀐다. PC 이미지는 필수라 빼면 저장이 잠긴다",
+                                                                        "id": "pc_image_uploader",
+                                                                        "type": "composite",
+                                                                        "name": "FileUploader",
+                                                                        "actions": [
+                                                                            {
+                                                                                "comment": "PC 파일 목록이 바뀔 때 — 아직 다 올라가지 않은 파일이 있으면 저장을 잠그고, 목록 변화만으로는 수정됨으로 치지 않는다",
+                                                                                "type": "change",
+                                                                                "event": "onFilesChange",
+                                                                                "handler": "sequence",
+                                                                                "actions": [
+                                                                                    {
+                                                                                        "handler": "setState",
+                                                                                        "params": {
+                                                                                            "target": "local",
+                                                                                            "pcUploadBlocked": "{{($args[0] ?? []).some(f => f.status !== 'done')}}"
+                                                                                        }
+                                                                                    },
+                                                                                    {
+                                                                                        "handler": "setState",
+                                                                                        "if": "{{!_local.hasChanges}}",
+                                                                                        "params": {
+                                                                                            "target": "local",
+                                                                                            "hasChanges": false
+                                                                                        }
+                                                                                    }
+                                                                                ]
+                                                                            },
+                                                                            {
+                                                                                "comment": "PC 업로드가 끝나면 그 임시 이미지를 PC 이미지로 담고 수정됨으로 둔다",
+                                                                                "type": "change",
+                                                                                "event": "onUploadComplete",
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "form.images.pc": "{{$args[0]?.[0] ?? null}}",
+                                                                                    "hasChanges": true
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "comment": "PC 업로드 실패 사유를 알린다",
+                                                                                "type": "change",
+                                                                                "event": "onUploadError",
+                                                                                "handler": "toast",
+                                                                                "params": {
+                                                                                    "type": "error",
+                                                                                    "message": "{{$args[0]}}",
+                                                                                    "icon": "triangle-exclamation"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "comment": "PC 이미지 빼기 — 화면에서만 비우고 수정됨으로 둔다(실제로는 「저장」 때 바뀐다)",
+                                                                                "type": "change",
+                                                                                "event": "onRemove",
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "form.images.pc": null,
+                                                                                    "hasChanges": true
+                                                                                }
+                                                                            }
+                                                                        ],
+                                                                        "props": {
+                                                                            "maxFiles": 1,
+                                                                            "disabled": "{{_local.isSaving}}",
+                                                                            "maxSize": "{{_computed.uploadMb}}",
+                                                                            "accept": ".jpg,.jpeg,.png,.webp,.gif",
+                                                                            "autoUpload": true,
+                                                                            "size": "sm",
+                                                                            "initialFiles": "{{_local.form?.images?.pc ? [_local.form.images.pc] : []}}",
+                                                                            "uploadParams": "{{({ device: 'pc', temp_key: _global.tempKey ?? '' })}}",
+                                                                            "apiEndpoints": {
+                                                                                "upload": "/api/plugins/sirsoft-popup/admin/popup-images",
+                                                                                "delete": "",
+                                                                                "reorder": null
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "callbacks": {
+                                                                    "onFilesChange": {
                                                                         "comment": "PC 파일 목록이 바뀔 때 — 아직 다 올라가지 않은 파일이 있으면 저장을 잠그고, 목록 변화만으로는 수정됨으로 치지 않는다",
-                                                                        "type": "change",
-                                                                        "event": "onFilesChange",
                                                                         "handler": "sequence",
                                                                         "actions": [
                                                                             {
                                                                                 "handler": "setState",
                                                                                 "params": {
                                                                                     "target": "local",
-                                                                                    "pcUploadBlocked": "{{($args[0] ?? []).some(f => f.status !== 'done')}}"
+                                                                                    "pcUploadBlocked": "{{($event ?? []).some(f => f.status !== 'done')}}"
                                                                                 }
                                                                             },
                                                                             {
@@ -781,52 +893,32 @@
                                                                             }
                                                                         ]
                                                                     },
-                                                                    {
+                                                                    "onUploadComplete": {
                                                                         "comment": "PC 업로드가 끝나면 그 임시 이미지를 PC 이미지로 담고 수정됨으로 둔다",
-                                                                        "type": "change",
-                                                                        "event": "onUploadComplete",
                                                                         "handler": "setState",
                                                                         "params": {
                                                                             "target": "local",
-                                                                            "form.images.pc": "{{$args[0]?.[0] ?? null}}",
+                                                                            "form.images.pc": "{{$event?.[0] ?? null}}",
                                                                             "hasChanges": true
                                                                         }
                                                                     },
-                                                                    {
+                                                                    "onUploadError": {
                                                                         "comment": "PC 업로드 실패 사유를 알린다",
-                                                                        "type": "change",
-                                                                        "event": "onUploadError",
                                                                         "handler": "toast",
                                                                         "params": {
                                                                             "type": "error",
-                                                                            "message": "{{$args[0]}}",
+                                                                            "message": "{{$event}}",
                                                                             "icon": "triangle-exclamation"
                                                                         }
                                                                     },
-                                                                    {
+                                                                    "onRemove": {
                                                                         "comment": "PC 이미지 빼기 — 화면에서만 비우고 수정됨으로 둔다(실제로는 「저장」 때 바뀐다)",
-                                                                        "type": "change",
-                                                                        "event": "onRemove",
                                                                         "handler": "setState",
                                                                         "params": {
                                                                             "target": "local",
                                                                             "form.images.pc": null,
                                                                             "hasChanges": true
                                                                         }
-                                                                    }
-                                                                ],
-                                                                "props": {
-                                                                    "maxFiles": 1,
-                                                                    "disabled": "{{_local.isSaving}}",
-                                                                    "maxSize": "{{_computed.uploadMb}}",
-                                                                    "accept": ".jpg,.jpeg,.png,.webp,.gif",
-                                                                    "autoUpload": true,
-                                                                    "size": "sm",
-                                                                    "initialFiles": "{{_local.form?.images?.pc ? [_local.form.images.pc] : []}}",
-                                                                    "uploadParams": "{{({ device: 'pc', temp_key: _global.tempKey ?? '' })}}",
-                                                                    "apiEndpoints": {
-                                                                        "upload": "/api/plugins/sirsoft-popup/admin/popup-images",
-                                                                        "delete": ""
                                                                     }
                                                                 }
                                                             },
@@ -890,21 +982,133 @@
                                                                 "text": "$t:sirsoft-popup.admin.form.image.mobile_hint|ratio={{_computed.mobileRatio}}|example={{_computed.mobileExample}}|mb={{_computed.uploadMb}}"
                                                             },
                                                             {
-                                                                "id": "mobile_image_uploader",
-                                                                "type": "composite",
-                                                                "name": "FileUploader",
-                                                                "actions": [
+                                                                "comment": "첨부 업로더 확장점 — 휴대폰 이미지. 고르는 즉시 임시 묶음으로 올라가고 「저장」 때 붙는다. 삭제 주소가 비어 빼기는 화면에서만 하고,\n                     정렬 API 가 없어 정렬 주소는 null 이다. 계약(uploader)은 기본 업로더에 넘기는 값과 같다",
+                                                                "id": "mobile_image_uploader_slot",
+                                                                "type": "extension_point",
+                                                                "name": "attachment_uploader",
+                                                                "props": {
+                                                                    "className": "gpp:contents",
+                                                                    "uploader": {
+                                                                        "version": 1,
+                                                                        "mode": "upload",
+                                                                        "endpoints": {
+                                                                            "upload": "/api/plugins/sirsoft-popup/admin/popup-images",
+                                                                            "delete": "",
+                                                                            "reorder": null
+                                                                        },
+                                                                        "fields": "{{({ device: 'mobile', temp_key: _global.tempKey ?? '' })}}",
+                                                                        "policy": {
+                                                                            "accept": ".jpg,.jpeg,.png,.webp,.gif",
+                                                                            "maxSize": "{{_computed.uploadMb}}",
+                                                                            "maxFiles": 1,
+                                                                            "maxConcurrentUploads": 1,
+                                                                            "imageCompression": null
+                                                                        },
+                                                                        "collection": "default",
+                                                                        "attachmentable": {
+                                                                            "type": null,
+                                                                            "id": null
+                                                                        },
+                                                                        "triggerEvent": null,
+                                                                        "initialFiles": "{{_local.form?.images?.mobile ? [_local.form.images.mobile] : []}}",
+                                                                        "disabled": "{{!!_local.isSaving}}",
+                                                                        "autoUpload": true,
+                                                                        "context": {
+                                                                            "owner": "sirsoft-popup",
+                                                                            "purpose": "popup_mobile_image"
+                                                                        }
+                                                                    }
+                                                                },
+                                                                "default": [
                                                                     {
+                                                                        "id": "mobile_image_uploader",
+                                                                        "type": "composite",
+                                                                        "name": "FileUploader",
+                                                                        "actions": [
+                                                                            {
+                                                                                "comment": "모바일 파일 목록이 바뀔 때 — 아직 다 올라가지 않은 파일이 있으면 저장을 잠그고, 목록 변화만으로는 수정됨으로 치지 않는다",
+                                                                                "type": "change",
+                                                                                "event": "onFilesChange",
+                                                                                "handler": "sequence",
+                                                                                "actions": [
+                                                                                    {
+                                                                                        "handler": "setState",
+                                                                                        "params": {
+                                                                                            "target": "local",
+                                                                                            "mobileUploadBlocked": "{{($args[0] ?? []).some(f => f.status !== 'done')}}"
+                                                                                        }
+                                                                                    },
+                                                                                    {
+                                                                                        "handler": "setState",
+                                                                                        "if": "{{!_local.hasChanges}}",
+                                                                                        "params": {
+                                                                                            "target": "local",
+                                                                                            "hasChanges": false
+                                                                                        }
+                                                                                    }
+                                                                                ]
+                                                                            },
+                                                                            {
+                                                                                "comment": "모바일 업로드가 끝나면 그 임시 이미지를 모바일 이미지로 담고 수정됨으로 둔다",
+                                                                                "type": "change",
+                                                                                "event": "onUploadComplete",
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "form.images.mobile": "{{$args[0]?.[0] ?? null}}",
+                                                                                    "hasChanges": true
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "comment": "모바일 업로드 실패 사유를 알린다",
+                                                                                "type": "change",
+                                                                                "event": "onUploadError",
+                                                                                "handler": "toast",
+                                                                                "params": {
+                                                                                    "type": "error",
+                                                                                    "message": "{{$args[0]}}",
+                                                                                    "icon": "triangle-exclamation"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "comment": "모바일 이미지 빼기 — 화면에서만 비우고 수정됨으로 둔다(실제로는 「저장」 때 바뀐다)",
+                                                                                "type": "change",
+                                                                                "event": "onRemove",
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "form.images.mobile": null,
+                                                                                    "hasChanges": true
+                                                                                }
+                                                                            }
+                                                                        ],
+                                                                        "props": {
+                                                                            "maxFiles": 1,
+                                                                            "disabled": "{{_local.isSaving}}",
+                                                                            "maxSize": "{{_computed.uploadMb}}",
+                                                                            "accept": ".jpg,.jpeg,.png,.webp,.gif",
+                                                                            "autoUpload": true,
+                                                                            "size": "sm",
+                                                                            "initialFiles": "{{_local.form?.images?.mobile ? [_local.form.images.mobile] : []}}",
+                                                                            "uploadParams": "{{({ device: 'mobile', temp_key: _global.tempKey ?? '' })}}",
+                                                                            "apiEndpoints": {
+                                                                                "upload": "/api/plugins/sirsoft-popup/admin/popup-images",
+                                                                                "delete": "",
+                                                                                "reorder": null
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "callbacks": {
+                                                                    "onFilesChange": {
                                                                         "comment": "모바일 파일 목록이 바뀔 때 — 아직 다 올라가지 않은 파일이 있으면 저장을 잠그고, 목록 변화만으로는 수정됨으로 치지 않는다",
-                                                                        "type": "change",
-                                                                        "event": "onFilesChange",
                                                                         "handler": "sequence",
                                                                         "actions": [
                                                                             {
                                                                                 "handler": "setState",
                                                                                 "params": {
                                                                                     "target": "local",
-                                                                                    "mobileUploadBlocked": "{{($args[0] ?? []).some(f => f.status !== 'done')}}"
+                                                                                    "mobileUploadBlocked": "{{($event ?? []).some(f => f.status !== 'done')}}"
                                                                                 }
                                                                             },
                                                                             {
@@ -917,52 +1121,32 @@
                                                                             }
                                                                         ]
                                                                     },
-                                                                    {
+                                                                    "onUploadComplete": {
                                                                         "comment": "모바일 업로드가 끝나면 그 임시 이미지를 모바일 이미지로 담고 수정됨으로 둔다",
-                                                                        "type": "change",
-                                                                        "event": "onUploadComplete",
                                                                         "handler": "setState",
                                                                         "params": {
                                                                             "target": "local",
-                                                                            "form.images.mobile": "{{$args[0]?.[0] ?? null}}",
+                                                                            "form.images.mobile": "{{$event?.[0] ?? null}}",
                                                                             "hasChanges": true
                                                                         }
                                                                     },
-                                                                    {
+                                                                    "onUploadError": {
                                                                         "comment": "모바일 업로드 실패 사유를 알린다",
-                                                                        "type": "change",
-                                                                        "event": "onUploadError",
                                                                         "handler": "toast",
                                                                         "params": {
                                                                             "type": "error",
-                                                                            "message": "{{$args[0]}}",
+                                                                            "message": "{{$event}}",
                                                                             "icon": "triangle-exclamation"
                                                                         }
                                                                     },
-                                                                    {
+                                                                    "onRemove": {
                                                                         "comment": "모바일 이미지 빼기 — 화면에서만 비우고 수정됨으로 둔다(실제로는 「저장」 때 바뀐다)",
-                                                                        "type": "change",
-                                                                        "event": "onRemove",
                                                                         "handler": "setState",
                                                                         "params": {
                                                                             "target": "local",
                                                                             "form.images.mobile": null,
                                                                             "hasChanges": true
                                                                         }
-                                                                    }
-                                                                ],
-                                                                "props": {
-                                                                    "maxFiles": 1,
-                                                                    "disabled": "{{_local.isSaving}}",
-                                                                    "maxSize": "{{_computed.uploadMb}}",
-                                                                    "accept": ".jpg,.jpeg,.png,.webp,.gif",
-                                                                    "autoUpload": true,
-                                                                    "size": "sm",
-                                                                    "initialFiles": "{{_local.form?.images?.mobile ? [_local.form.images.mobile] : []}}",
-                                                                    "uploadParams": "{{({ device: 'mobile', temp_key: _global.tempKey ?? '' })}}",
-                                                                    "apiEndpoints": {
-                                                                        "upload": "/api/plugins/sirsoft-popup/admin/popup-images",
-                                                                        "delete": ""
                                                                     }
                                                                 }
                                                             },

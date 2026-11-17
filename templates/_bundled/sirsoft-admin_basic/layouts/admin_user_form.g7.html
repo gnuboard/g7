@@ -676,10 +676,12 @@
                 <!-- 저장. 등록/수정 한 자리에서 주소와 메서드를 함께 가른다.
                      검증 실패는 필드별 오류를 `_local.errors` 에 담아 각 칸 아래에 띄우고, 403·500 은
                      필드 오류가 아니므로 문구만 다르게 낸다 — 어느 갈래든 진행 표시를 반드시 끈다
-                     (한 갈래라도 빠뜨리면 저장 버튼이 영영 잠긴다). -->
+                     (한 갈래라도 빠뜨리면 저장 버튼이 영영 잠긴다).
+                     본문에는 받은 회원 항목의 정의 버전(fields_version)을 얹는다 — 회원 항목을 그리는 화면이라는 표식이다.
+                     표식 없는 요청은 서버가 옛 화면(7.1.x)으로 보고 운영자 추가 필수 항목을 건너뛴다. -->
                 <sequence>
                   <set-state target="global" :isSaving="true"/>
-                  <api-call :auth_required="true" target="{{route?.id ? '/api/admin/users/' + route?.id : '/api/admin/users'}}" method="{{route?.id ? 'PUT' : 'POST'}}" body="{{_local.form}}">
+                  <api-call :auth_required="true" target="{{route?.id ? '/api/admin/users/' + route?.id : '/api/admin/users'}}" method="{{route?.id ? 'PUT' : 'POST'}}" body="{{Object.assign({}, _local.form, memberFields?.data?.fields_version ? { fields_version: memberFields.data.fields_version } : {})}}">
                     <success>
                       <set-state target="global" :isSaving="false"/>
                       <toast type="success" message="{{route?.id ? '$t:admin.users.form.update_success' : '$t:admin.users.form.create_success'}}"/>
@@ -743,7 +745,7 @@
             <sequence>
               <set-state target="local" :showWithdrawConfirm="false"/>
               <set-state target="global" :isSaving="true"/>
-              <api-call :auth_required="true" target="{{route?.id ? '/api/admin/users/' + route?.id : '/api/admin/users'}}" method="{{route?.id ? 'PUT' : 'POST'}}" body="{{_local.form}}">
+              <api-call :auth_required="true" target="{{route?.id ? '/api/admin/users/' + route?.id : '/api/admin/users'}}" method="{{route?.id ? 'PUT' : 'POST'}}" body="{{Object.assign({}, _local.form, memberFields?.data?.fields_version ? { fields_version: memberFields.data.fields_version } : {})}}">
                 <success>
                   <set-state target="global" :isSaving="false"/>
                   <toast type="success" message="{{route?.id ? '$t:admin.users.form.update_success' : '$t:admin.users.form.create_success'}}"/>

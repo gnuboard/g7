@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Enums\LanguagePackScope;
 use App\Exceptions\ExtensionOperationLockException;
+use App\Exceptions\PackageIntegrityException;
 use App\Exceptions\PluginOperationException;
 use App\Extension\Helpers\IntegrationNotices;
 use App\Extension\Layout\LayoutInstallSourceScope;
@@ -513,13 +514,16 @@ class PluginController extends AdminBaseController
     {
         try {
             $file = $request->file('file');
-            $plugin = $this->pluginService->installFromZipFile($file);
+            $plugin = $this->pluginService->installFromZipFile($file, $request->packageIntegrityOptions());
 
             // 파일·GitHub 설치도 일반 설치와 같이 연동 안내를 싣는다 (#822 §3.3)
             return $this->withIntegrationNotices(
                 $this->successWithResource('plugins.install_success', new PluginResource($plugin), 201),
                 $this->buildIntegrationNotices('plugin', (string) data_get($plugin, 'identifier', ''))
             );
+        } catch (PackageIntegrityException $e) {
+            // 미서명 확인 필요(409, 「미서명으로 계속」 가능 여부 포함)·서명 불일치·미신뢰 키(422) — 7.2.0
+            return $this->packageIntegrityError($e);
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
             return $this->operationLockError($e);
@@ -542,13 +546,16 @@ class PluginController extends AdminBaseController
     {
         try {
             $githubUrl = $request->validated()['github_url'];
-            $plugin = $this->pluginService->installFromGithub($githubUrl);
+            $plugin = $this->pluginService->installFromGithub($githubUrl, $request->packageIntegrityOptions());
 
             // 파일·GitHub 설치도 일반 설치와 같이 연동 안내를 싣는다 (#822 §3.3)
             return $this->withIntegrationNotices(
                 $this->successWithResource('plugins.install_success', new PluginResource($plugin), 201),
                 $this->buildIntegrationNotices('plugin', (string) data_get($plugin, 'identifier', ''))
             );
+        } catch (PackageIntegrityException $e) {
+            // 미서명 확인 필요(409, 「미서명으로 계속」 가능 여부 포함)·서명 불일치·미신뢰 키(422) — 7.2.0
+            return $this->packageIntegrityError($e);
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
             return $this->operationLockError($e);
@@ -635,7 +642,7 @@ class PluginController extends AdminBaseController
             // 관리자 창 '고급 설정'의 레이아웃 설치 소스 — 이 요청 동안만 설정을 덮고 끝나면 되돌린다(CLI --layout-source 와 같은 자리).
             $result = LayoutInstallSourceScope::run(
                 $validated['layout_source'] ?? null,
-                fn () => $this->pluginService->updatePlugin($pluginName, $vendorMode, $layoutStrategy, $force)
+                fn () => $this->pluginService->updatePlugin($pluginName, $vendorMode, $layoutStrategy, $force, $request->packageIntegrityOptions())
             );
 
             // 검색 인덱스 재생성은 운영자가 체크했을 때만 수행한다 — 인덱스 잠금·재색인 비용이
@@ -682,6 +689,9 @@ class PluginController extends AdminBaseController
                 200,
                 $messageParams
             ), $result['integration_notices'] ?? []);
+        } catch (PackageIntegrityException $e) {
+            // 미서명 확인 필요(409, 「미서명으로 계속」 가능 여부 포함)·서명 불일치·미신뢰 키(422) — 7.2.0
+            return $this->packageIntegrityError($e);
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
             return $this->operationLockError($e);

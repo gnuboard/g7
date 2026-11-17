@@ -75,6 +75,18 @@
                 <span class="block text-label-subtle">$t:admin.language_packs.modal.detail.text_direction</span>
                 <p class="text-primary font-medium uppercase">{{language_pack_detail?.data?.text_direction ?? 'ltr'}}</p>
               </div>
+              <!-- 패키지 서명(#916) — 설치·업데이트 때 남긴 검증 기록(integrity_status). verified 면 키 ID 콜론 앞(서명자)을 보인다.
+                   기록이 없으면(이 기능 전에 설치했거나 옛 코어) 「기록 없음」이다. -->
+              <div data-ref="lp_package_signature_field">
+                <span class="block text-label-subtle">$t:admin.package_integrity.signature_label</span>
+                <div>
+                  <span data-if="{{language_pack_detail?.data?.integrity_status === 'verified'}}" class="badge badge-green">$t:admin.package_integrity.status_verified|signer={{(language_pack_detail?.data?.integrity_key_id ?? '').split(':')[0]}}</span>
+                  <span data-if="{{language_pack_detail?.data?.integrity_status === 'unsigned'}}" class="badge badge-yellow">$t:admin.package_integrity.status_unsigned</span>
+                  <span data-if="{{language_pack_detail?.data?.integrity_status === 'unverifiable'}}" class="badge badge-yellow">$t:admin.package_integrity.status_unverifiable</span>
+                  <span data-if="{{language_pack_detail?.data?.integrity_status === 'bundled'}}" class="badge badge-blue">$t:admin.package_integrity.status_bundled</span>
+                  <span data-if="{{!['verified', 'unsigned', 'unverifiable', 'bundled'].includes(language_pack_detail?.data?.integrity_status)}}" class="badge badge-gray">$t:admin.package_integrity.status_none</span>
+                </div>
+              </div>
               <div class="col-span-2">
                 <span class="block text-label-subtle">$t:admin.language_packs.modal.detail.description</span>
                 <p class="text-body">{{language_pack_detail?.data?.description ?? '—'}}</p>

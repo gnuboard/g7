@@ -26,6 +26,7 @@ effects:
   - kcp_approval_missing_amount_is_treated_as_mismatch               # 응답 금액 없음·비숫자·0 이하 = 불일치
   - kcp_approval_browser_amount_is_never_the_basis                   # 브라우저 good_mny 가 청구액과 같아도 근거가 되지 않음
   - kcp_approval_tno_comes_only_from_the_pg_response                 # 응답 tno 없으면 브라우저 tno 로 채우지 않고 거절
+  - kcp_approval_on_order_issued_by_another_pg_cancels_and_redirects_to_fail  # 다른 결제사 발급 주문은 승인 취소 뒤 실패 화면(500 아님)
   - kcp_vbank_issue_amount_mismatch_records_no_account               # PC 가상계좌 발급 불일치 → 계좌·거래번호 미기록
 
 test_files:

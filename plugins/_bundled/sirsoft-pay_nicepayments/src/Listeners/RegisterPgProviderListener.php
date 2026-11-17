@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\PayNicepayments\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
-use App\Support\ExtensionStoragePath;
 use App\Support\SiteUrl;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentLookup;
 
 class RegisterPgProviderListener implements HookListenerInterface
 {
@@ -62,6 +62,8 @@ class RegisterPgProviderListener implements HookListenerInterface
             // 내려가 템플릿이 그대로 호출한다. 미선언 시 프론트가 응답을 변조해 결제창을
             // 직접 띄우는 우회가 필요해진다(#475).
             'payment_handler' => 'sirsoft-pay_nicepayments.requestPayment',
+            // 식별자를 바꾸기 전(`nicepay`)에 만들어진 결제 행도 이 결제사 것이다 — 입금 통보·환불 같은 쓰기가 막히지 않게 알린다(#916)
+            'legacy_ids' => ['nicepay'],
         ];
 
         return $providers;
@@ -116,19 +118,13 @@ class RegisterPgProviderListener implements HookListenerInterface
     /**
      * 쇼핑몰 주문 설정의 기본 PG 가 나이스페이먼츠인지 판정합니다.
      *
-     * @return bool 주문 설정 파일의 default_pg_provider 가 nicepayments 이면 true (파일이 없으면 false)
+     * 이커머스 저장 파일을 직접 읽지 않고 공개 결제 계약(`PaymentLookup::defaultPgProvider`)으로 묻는다.
+     *
+     * @return bool 주문 설정의 기본 결제사가 nicepayments 이면 true (설정이 없으면 false)
      */
     private function isNicepayDefaultPg(): bool
     {
-        $path = ExtensionStoragePath::module('sirsoft-ecommerce', 'settings').'/order_settings.json';
-
-        if (! file_exists($path)) {
-            return false;
-        }
-
-        $data = json_decode(file_get_contents($path), true);
-
-        return ($data['default_pg_provider'] ?? '') === 'nicepayments';
+        return app(PaymentLookup::class)->defaultPgProvider() === 'nicepayments';
     }
 
     /**

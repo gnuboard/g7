@@ -7,6 +7,8 @@ namespace Plugins\Sirsoft\PayNicepayments\Listeners;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Extension\HookManager;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Contracts\Currency\PriceFormatter;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentLookup;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Plugins\Sirsoft\PayNicepayments\Exceptions\NicePayRejectedException;
@@ -66,7 +68,8 @@ class PaymentRefundListener implements HookListenerInterface
             return $supported;
         }
 
-        if ($payment->isVirtualAccount() || (bool) $payment->is_escrow) {
+        // 판정 값은 계약의 결제 행 DTO 로 읽는다(훅 인자 Model 은 속성 읽기만)
+        if (app(PaymentLookup::class)->describePayment($payment)->isVirtualAccount || (bool) $payment->is_escrow) {
             return false;
         }
 
@@ -153,7 +156,7 @@ class PaymentRefundListener implements HookListenerInterface
                     'success' => false,
                     'handled' => true,
                     'error_code' => 'INVALID_REFUND_AMOUNT',
-                    'error_message' => __('sirsoft-pay_nicepayments::messages.errors.invalid_refund_amount', ['amount' => ecommerce_format_price($cancelAmt, $order->currency)]),
+                    'error_message' => __('sirsoft-pay_nicepayments::messages.errors.invalid_refund_amount', ['amount' => app(PriceFormatter::class)->format($cancelAmt, $order->currency)]),
                     'transaction_id' => null,
                 ];
             }
@@ -235,10 +238,11 @@ class PaymentRefundListener implements HookListenerInterface
      */
     private function shouldUsePartialCancelCode(OrderPayment $payment, int $cancelAmt): bool
     {
-        $cancelledBeforeThisRefund = max(0.0, $payment->cancelledLocalAmount() - $cancelAmt);
+        $record = app(PaymentLookup::class)->describePayment($payment);
+        $cancelledBeforeThisRefund = max(0.0, $record->cancelledLocalAmount - $cancelAmt);
 
         return $cancelledBeforeThisRefund > self::MONEY_EPSILON
-            || $payment->getCancellableAmount() > self::MONEY_EPSILON;
+            || $record->cancellableAmount > self::MONEY_EPSILON;
     }
 
     /**

@@ -6,8 +6,8 @@ use App\Extension\HookManager;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
 use Mockery;
-use Modules\Sirsoft\Board\Models\Board;
-use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
+use Modules\Sirsoft\Board\Contracts\BoardDirectory;
+use Modules\Sirsoft\Board\Contracts\Data\BoardSummary;
 use Plugins\Sirsoft\HeroSection\Models\Banner;
 use Plugins\Sirsoft\HeroSection\Services\PositionSettingService;
 use Plugins\Sirsoft\HeroSection\Services\PublicHeroService;
@@ -193,7 +193,7 @@ class HeroTargetTest extends PluginTestCase
 
     /**
      * 게시판·상품·카테고리 모듈이 대상을 만들거나 고치거나 지우면 그 위치의 해석 기억을 버린다 — 실제 훅 체인(모듈 훅 → 리스너 →
-     * 공개 API)으로 본다. 게시판 저장소만 목으로 바꾼다(지운 게시판 slug 를 새 게시판이 쓰는 상황).
+     * 공개 API)으로 본다. 게시판 조회 계약만 목으로 바꾼다(지운 게시판 slug 를 새 게시판이 쓰는 상황).
      *
      * @scenario case=public_target_change_forgets_resolution
      *
@@ -203,14 +203,14 @@ class HeroTargetTest extends PluginTestCase
     {
         $this->setPluginSettings(['public_cache_minutes' => 10]);
         $this->pinActiveModules(['sirsoft-board', 'sirsoft-ecommerce']);
-        $boards = Mockery::mock(BoardRepositoryInterface::class);
+        $boards = Mockery::mock(BoardDirectory::class);
         $boards->shouldReceive('findBySlug')->with('free')->andReturn($this->board(2), $this->board(7));
-        $this->app->instance(BoardRepositoryInterface::class, $boards);
+        $this->app->instance(BoardDirectory::class, $boards);
         Banner::factory()->withImages()->forPosition('board_hero', '2')->create(['title' => ['ko' => '지운 게시판']]);
         Banner::factory()->withImages()->forPosition('board_hero', '7')->create(['title' => ['ko' => '새 게시판']]);
 
         $this->assertSame(['지운 게시판'], array_column($this->hero('board_hero', 'free')->json('data.banners'), 'title'));
-        $this->assertSame(['지운 게시판'], array_column($this->hero('board_hero', 'free')->json('data.banners'), 'title'), '기억한 해석을 쓴다(저장소를 다시 묻지 않음)');
+        $this->assertSame(['지운 게시판'], array_column($this->hero('board_hero', 'free')->json('data.banners'), 'title'), '기억한 해석을 쓴다(계약을 다시 묻지 않음)');
 
         HookManager::doAction('sirsoft-board.board.after_delete', 2);
         $this->assertSame(['새 게시판'], array_column($this->hero('board_hero', 'free')->json('data.banners'), 'title'));
@@ -228,14 +228,14 @@ class HeroTargetTest extends PluginTestCase
     }
 
     /**
-     * 시험용 게시판을 만듭니다(저장하지 않음).
+     * 시험용 게시판 요약을 만듭니다.
      *
      * @param  int  $id  게시판 id
-     * @return Board 게시판
+     * @return BoardSummary 게시판 요약
      */
-    private function board(int $id): Board
+    private function board(int $id): BoardSummary
     {
-        return (new Board)->forceFill(['id' => $id, 'slug' => 'free', 'name' => ['ko' => '자유게시판']]);
+        return new BoardSummary($id, 'free', '자유게시판', '/board/free');
     }
 
     /**

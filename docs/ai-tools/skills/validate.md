@@ -188,15 +188,15 @@ class ProductService implements ProductServiceInterface
 
 dto.md 는 두 패턴을 정의한다 — 한 패턴을 강제하지 않는다. VO 인지 Carrier 인지의 선택은 도메인 본질 판단이라 자동 판정 대상이 아니고, 아래 공통 규칙 위반만 적발한다.
 
-- **Value Object**: `final readonly class` + constructor promotion + `toArray()`.
+- **Value Object**: `final readonly class` + constructor promotion (+ 직렬화에 실리면 `toArray()`).
 - **Data Carrier**: 일반 `class` + public mutable 속성 + 헬퍼 메서드 + `static fromArray()`.
 
 | # | 항목 | 금지 | 올바름 |
 | --- | --- | --- | --- |
 | 1 | 외부 라이브러리 | `Spatie\LaravelData`, `Spatie\DataTransferObject` | 순수 readonly class + constructor promotion |
 | 2 | 네이밍 | `XxxDto`·`XxxData`·`XxxObject` | 의미 단어만(`VerificationChallenge`, `OrderCalculationResult`) |
-| 3 | 위치 | `app/Models/Dto/`, 도메인 분류 없는 임의 경로 | `app/{도메인}/DTO/`, `app/Extension/{영역}/DTO/`, `app/DTO/`, `{확장 루트}/src/DTO/` |
-| 4 | 직렬화 | `toArray()` 누락 | 모든 DTO 가 `toArray(): array` 정의 |
+| 3 | 위치 | `app/Models/Dto/`, 도메인 분류 없는 임의 경로 | `app/{도메인}/DTO/`, `app/Extension/{영역}/DTO/`, `app/DTO/`, `{확장 루트}/src/DTO/`. 예외: 공개 계약 값은 `src/Contracts/{영역}/Data/`, 영역 전용 값은 그 영역 폴더(dto.md 「위치」 예외 표) |
+| 4 | 직렬화 | 응답·로그·저장 직렬화에 통째로 실리는데 `toArray()` 누락 | 실리는 DTO 만 `toArray(): array` 정의. 칸만 읽히는 DTO 에 쓰이지 않는 `toArray()` 를 요구하지 않는다(dto.md 「직렬화」) |
 | 5 | 검증 혼입 | 생성자 본문의 비즈니스 검증 | 검증은 FormRequest — DTO 는 타입힌트만 |
 | 6 | ApiResource 중첩 | DTO 를 ApiResource 로 감싸거나 그 반대 | 모델 → ApiResource, 값 묶음 → DTO |
 

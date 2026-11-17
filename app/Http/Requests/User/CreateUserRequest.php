@@ -149,6 +149,29 @@ class CreateUserRequest extends FormRequest
     }
 
     /**
+     * 옛 화면 호환을 받는다 — 정의 버전(`fields_version`)을 싣지 않은 추가 요청은 회원 항목 조각이 없는 옛 관리자 화면(7.1.x 템플릿)에서 왔다고 본다.
+     *
+     * 그 요청은 옛 화면에 입력칸이 없던 항목(운영자 추가 항목, 확장 선언 항목)의 필수 규칙을 「값을 보냈을 때만」으로 늦춰 통과시킨다.
+     * 만든 회원에게 추가 정보 입력 대기 표시는 남기지 않는다 — 빈 항목은 템플릿을 7.2.0 으로 올린 뒤 운영자가 채운다.
+     *
+     * @return bool 항상 true
+     */
+    protected function acceptsLegacyMemberFieldScreen(): bool
+    {
+        return true;
+    }
+
+    /**
+     * 검증을 마친 뒤 옛 화면 호환으로 건너뛴 항목을 로그에 남깁니다.
+     *
+     * @return void 반환값 없음
+     */
+    protected function passedValidation(): void
+    {
+        $this->noteLegacyMemberFieldScreen();
+    }
+
+    /**
      * 아이디(이메일 앞부분) 포함 판정에 쓸 이메일을 반환합니다.
      *
      * @return string|null 입력 이메일 (없으면 null)

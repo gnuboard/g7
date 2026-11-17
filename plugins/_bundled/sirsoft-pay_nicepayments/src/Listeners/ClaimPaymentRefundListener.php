@@ -6,8 +6,8 @@ namespace Plugins\Sirsoft\PayNicepayments\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\ClaimPaymentLookup;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
-use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
 use Plugins\Sirsoft\PayNicepayments\Services\NicePaymentsApiService;
 
 /**
@@ -44,6 +44,7 @@ class ClaimPaymentRefundListener implements HookListenerInterface
      * 기본 핸들러 (미사용 — 개별 메서드에서 처리)
      *
      * @param  mixed  ...$args  훅 인수
+     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 
@@ -131,6 +132,7 @@ class ClaimPaymentRefundListener implements HookListenerInterface
      *
      * @param  NicePaymentsApiService  $apiService  API 서비스
      * @param  ClaimPayment  $payment  결제 건
+     * @return void 반환값 없음
      */
     private function restoreCredentials(NicePaymentsApiService $apiService, ClaimPayment $payment): void
     {
@@ -155,7 +157,7 @@ class ClaimPaymentRefundListener implements HookListenerInterface
      */
     private function paidLocalTotal(ClaimPayment $payment): float
     {
-        return app(ClaimPaymentService::class)->resolvePaymentCurrencyTotal($payment);
+        return app(ClaimPaymentLookup::class)->claimPaymentTotals($payment)->paymentCurrencyTotal;
     }
 
     /**

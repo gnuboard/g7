@@ -417,87 +417,195 @@
                                     "text": "$t:admin.settings.seo.og_image_default_desc"
                                 },
                                 {
-                                    "id": "og_image_default_uploader",
-                                    "type": "composite",
-                                    "name": "FileUploader",
-                                    "actions": [
+                                    "comment": "첨부 업로더 확장점(#916) — 업로더 플러그인이 mode=\"replace\" 로 바꿔 끼울 수 있다. 계약은 기존 값만으로 조립하고(새 API 없음),\n               콜백은 기본 업로더의 이벤트 처리와 같은 동작이다($args[0] → $event). 기본 업로더는 <default> 안에 그대로 둔다.",
+                                    "id": "og_image_default_uploader_slot",
+                                    "type": "extension_point",
+                                    "name": "attachment_uploader",
+                                    "props": {
+                                        "className": "contents",
+                                        "uploader": {
+                                            "version": 1,
+                                            "mode": "upload",
+                                            "endpoints": {
+                                                "upload": "/api/admin/attachments",
+                                                "delete": "/api/admin/attachments/:id",
+                                                "reorder": "/api/admin/attachments/reorder"
+                                            },
+                                            "fields": {},
+                                            "policy": {
+                                                "accept": "{{_global.settings?.upload?.allowed_extensions_formatted ?? _global.uploadSettings?.allowed_extensions_formatted ?? '.jpg,.jpeg,.png,.gif,.svg,.webp'}}",
+                                                "maxSize": "{{_global.settings?.upload?.max_file_size ?? _global.uploadSettings?.max_file_size ?? 10}}",
+                                                "maxFiles": 1,
+                                                "maxConcurrentUploads": 1,
+                                                "imageCompression": {
+                                                    "maxSizeMB": 1,
+                                                    "maxWidthOrHeight": "{{_global.settings?.upload?.image_max_width ?? _global.uploadSettings?.image_max_width ?? 1200}}"
+                                                }
+                                            },
+                                            "collection": "og_image_default",
+                                            "attachmentable": {
+                                                "type": null,
+                                                "id": null
+                                            },
+                                            "triggerEvent": "upload:og_image_default",
+                                            "initialFiles": "{{settings?.data?.seo?.og_image_default ?? []}}",
+                                            "disabled": "{{!!_computed.isReadOnly}}",
+                                            "autoUpload": false,
+                                            "ui": {
+                                                "confirmBeforeRemove": true
+                                            },
+                                            "context": {
+                                                "owner": "core",
+                                                "purpose": "og_image_default"
+                                            }
+                                        }
+                                    },
+                                    "default": [
                                         {
-                                            "comment": "파일을 고르는 순간 변경됨으로 표시한다 — 업로드 완료만 기다리면 그 사이 저장 버튼이 잠겨 있어 방금 고른 이미지를 저장하지 못한다.",
-                                            "type": "change",
-                                            "event": "onFilesChange",
+                                            "id": "og_image_default_uploader",
+                                            "type": "composite",
+                                            "name": "FileUploader",
+                                            "actions": [
+                                                {
+                                                    "comment": "파일을 고르는 순간 변경됨으로 표시한다 — 업로드 완료만 기다리면 그 사이 저장 버튼이 잠겨 있어 방금 고른 이미지를 저장하지 못한다.",
+                                                    "type": "change",
+                                                    "event": "onFilesChange",
+                                                    "handler": "setState",
+                                                    "if": "{{$args[0] && $args[0].length > 0}}",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "hasChanges": true
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "업로드된 파일을 기본 OG 이미지 목록(form.seo.og_image_default)에 덧붙인다 — 저장은 설정 폼에 실려 나가므로 폼 상태에 넣어야 반영된다.",
+                                                    "type": "change",
+                                                    "event": "onUploadComplete",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "hasChanges": true,
+                                                        "form.seo.og_image_default": "{{[...(_local.form?.seo?.og_image_default ?? []), ...$args[0]]}}"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "업로드 완료를 알리기만 한다 — 목록 갱신은 위 change 블록이 맡는다.",
+                                                    "type": "custom",
+                                                    "event": "onUploadComplete",
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:attachment.upload_success"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "업로드 실패 사유는 첫 인자로 온다 — 서버가 준 문구를 그대로 보여 준다.",
+                                                    "type": "custom",
+                                                    "event": "onUploadError",
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{$args[0]}}"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "목록에서 그 파일을 빼고 변경됨으로 표시한다 — 식별자는 hash 가 있으면 hash, 없으면 id 다(저장 전 임시 파일과 저장된 파일이 한 목록에 섞인다).",
+                                                    "type": "change",
+                                                    "event": "onRemove",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "hasChanges": true,
+                                                        "form.seo.og_image_default": "{{(_local.form?.seo?.og_image_default ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"
+                                                    }
+                                                },
+                                                {
+                                                    "comment": "제거를 알리기만 한다 — 목록 갱신은 위 change 블록이 맡는다.",
+                                                    "type": "custom",
+                                                    "event": "onRemove",
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "info",
+                                                        "message": "$t:attachment.deleted"
+                                                    }
+                                                }
+                                            ],
+                                            "props": {
+                                                "collection": "og_image_default",
+                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "maxFiles": 1,
+                                                "maxSize": "{{_global.settings?.upload?.max_file_size ?? _global.uploadSettings?.max_file_size ?? 10}}",
+                                                "accept": "{{_global.settings?.upload?.allowed_extensions_formatted ?? _global.uploadSettings?.allowed_extensions_formatted ?? '.jpg,.jpeg,.png,.gif,.svg,.webp'}}",
+                                                "initialFiles": "{{settings?.data?.seo?.og_image_default ?? []}}",
+                                                "autoUpload": false,
+                                                "uploadTriggerEvent": "upload:og_image_default",
+                                                "confirmBeforeRemove": true,
+                                                "imageCompression": {
+                                                    "maxSizeMB": 1,
+                                                    "maxWidthOrHeight": "{{_global.settings?.upload?.image_max_width ?? _global.uploadSettings?.image_max_width ?? 1200}}"
+                                                }
+                                            }
+                                        }
+                                    ],
+                                    "callbacks": {
+                                        "onFilesChange": {
+                                            "comment": "고른 것만으로는 올라가지 않는다 — 저장 버튼을 풀어 주는 표시만 켠다(기본 업로더와 같다)",
                                             "handler": "setState",
-                                            "if": "{{$args[0] && $args[0].length > 0}}",
+                                            "if": "{{$event && $event.length > 0}}",
                                             "params": {
                                                 "target": "local",
                                                 "hasChanges": true
                                             }
                                         },
-                                        {
-                                            "comment": "업로드된 파일을 기본 OG 이미지 목록(form.seo.og_image_default)에 덧붙인다 — 저장은 설정 폼에 실려 나가므로 폼 상태에 넣어야 반영된다.",
-                                            "type": "change",
-                                            "event": "onUploadComplete",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "local",
-                                                "hasChanges": true,
-                                                "form.seo.og_image_default": "{{[...(_local.form?.seo?.og_image_default ?? []), ...$args[0]]}}"
-                                            }
+                                        "onUploadComplete": {
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "comment": "올라간 파일을 폼 값에 반영하고 성공을 알린다(기본 업로더와 같다)",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "hasChanges": true,
+                                                        "form.seo.og_image_default": "{{[...(_local.form?.seo?.og_image_default ?? []), ...$event]}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "success",
+                                                        "message": "$t:attachment.upload_success"
+                                                    }
+                                                }
+                                            ]
                                         },
-                                        {
-                                            "comment": "업로드 완료를 알리기만 한다 — 목록 갱신은 위 change 블록이 맡는다.",
-                                            "type": "custom",
-                                            "event": "onUploadComplete",
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "success",
-                                                "message": "$t:attachment.upload_success"
-                                            }
-                                        },
-                                        {
-                                            "comment": "업로드 실패 사유는 첫 인자로 온다 — 서버가 준 문구를 그대로 보여 준다.",
-                                            "type": "custom",
-                                            "event": "onUploadError",
+                                        "onUploadError": {
+                                            "comment": "업로드 실패 사유를 그대로 띄운다",
                                             "handler": "toast",
                                             "params": {
                                                 "type": "error",
-                                                "message": "{{$args[0]}}"
+                                                "message": "{{$event}}"
                                             }
                                         },
-                                        {
-                                            "comment": "목록에서 그 파일을 빼고 변경됨으로 표시한다 — 식별자는 hash 가 있으면 hash, 없으면 id 다(저장 전 임시 파일과 저장된 파일이 한 목록에 섞인다).",
-                                            "type": "change",
-                                            "event": "onRemove",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "local",
-                                                "hasChanges": true,
-                                                "form.seo.og_image_default": "{{(_local.form?.seo?.og_image_default ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"
-                                            }
-                                        },
-                                        {
-                                            "comment": "제거를 알리기만 한다 — 목록 갱신은 위 change 블록이 맡는다.",
-                                            "type": "custom",
-                                            "event": "onRemove",
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "info",
-                                                "message": "$t:attachment.deleted"
-                                            }
-                                        }
-                                    ],
-                                    "props": {
-                                        "collection": "og_image_default",
-                                        "disabled": "{{_computed.isReadOnly}}",
-                                        "maxFiles": 1,
-                                        "maxSize": "{{_global.settings?.upload?.max_file_size ?? _global.uploadSettings?.max_file_size ?? 10}}",
-                                        "accept": "{{_global.settings?.upload?.allowed_extensions_formatted ?? _global.uploadSettings?.allowed_extensions_formatted ?? '.jpg,.jpeg,.png,.gif,.svg,.webp'}}",
-                                        "initialFiles": "{{settings?.data?.seo?.og_image_default ?? []}}",
-                                        "autoUpload": false,
-                                        "uploadTriggerEvent": "upload:og_image_default",
-                                        "confirmBeforeRemove": true,
-                                        "imageCompression": {
-                                            "maxSizeMB": 1,
-                                            "maxWidthOrHeight": "{{_global.settings?.upload?.image_max_width ?? _global.uploadSettings?.image_max_width ?? 1200}}"
+                                        "onRemove": {
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "comment": "뺀 파일을 폼 값에서 걸러 내고 알린다 — 실제 삭제는 저장 때 정해진다",
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "hasChanges": true,
+                                                        "form.seo.og_image_default": "{{(_local.form?.seo?.og_image_default ?? []).filter(item => (item.hash || item.id) !== $event)}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "info",
+                                                        "message": "$t:attachment.deleted"
+                                                    }
+                                                }
+                                            ]
                                         }
                                     }
                                 }

@@ -1,20 +1,18 @@
 <?php
 
-// audit:allow api-doc-coverage reason: 룰 면제 주석만 추가 — 요청/응답 계약 불변 (해당 엔드포인트 문서 부재는 사전 상태)
+// audit:allow api-doc-coverage reason: 응답을 공통 형식(ResponseHelper)으로 바꾸고 오류 문구를 error 대신 번역된 message 에 싣는다 — 결제 핸들러는 error 와 message 를 모두 읽는다(#916). 해당 엔드포인트 문서 부재는 사전 상태
 
 declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNhnkcp\Controllers;
 
+use App\Helpers\ResponseHelper;
 use App\Support\SiteUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
-use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
-use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\OrderRecord;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\BindsMobileVbankSession;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\HandlesClaimPaymentCallbacks;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\RecordsPaymentWindowClosure;
@@ -78,15 +76,11 @@ class MobileApprovalController
 
     /**
      * @param  KcpSoapService  $soapService  KCP SOAP 서비스
-     * @param  OrderProcessingService  $orderService  주문 결제 처리 서비스
-     * @param  ClaimPaymentRepositoryInterface  $claimPaymentRepository  클레임 결제 Repository
-     * @param  GuestOrderAuthService  $guestOrderAuthService  비회원 조회 토큰 검증 서비스 (비회원 주문 소유자 확인)
+     * @param  PaymentGatewayBridge  $bridge  이커머스 결제 계약 (주문·클레임 결제 조회, 소유자 확인, 재결제 복구, 결제 meta 기록)
      */
     public function __construct(
         private readonly KcpSoapService $soapService,
-        private readonly OrderProcessingService $orderService,
-        private readonly ClaimPaymentRepositoryInterface $claimPaymentRepository,
-        private readonly GuestOrderAuthService $guestOrderAuthService,
+        private readonly PaymentGatewayBridge $bridge,
     ) {}
 
     /**
@@ -137,13 +131,10 @@ class MobileApprovalController
             $order = null;
 
             // 클레임 추가결제(CP 채번)는 주문이 아니다 — 결제 건 기준으로 같은 강도의 검증을 적용한다.
-            if (ClaimPayment::isClaimPaymentNumber($validated['order_number'])) {
+            if ($this->bridge->isClaimPaymentNumber($validated['order_number'])) {
                 // 입금 대기 수단(가상계좌)은 클레임 결제 상태 모델에 대기 상태가 없어 지원하지 않는다.
                 if ($mobilePayMethod === 'VCNT') {
-                    return response()->json([
-                        'success' => false,
-                        'error' => 'Claim additional payments do not support deposit-pending methods (virtual account).',
-                    ], 422);
+                    return ResponseHelper::pluginError('sirsoft-pay_nhnkcp', 'messages.responses.claim_deposit_not_supported', 422);
                 }
 
                 $claimError = $this->validateClaimApprovalKeyContext(
@@ -151,27 +142,22 @@ class MobileApprovalController
                     (string) $validated['order_number'],
                     (int) $validated['amount'],
                     $validated['currency'] ?? null,
-                    $this->guestOrderAuthService,
                 );
 
                 if ($claimError !== null) {
                     return $claimError;
                 }
             } else {
-                $order = $this->orderService->findByOrderNumber($validated['order_number']);
+                $order = $this->bridge->findOrderByNumber($validated['order_number'], 'nhnkcp');
                 if (! $order) {
-                    return response()->json([
-                        'success' => false,
-                        'error' => 'Order not found.',
-                    ], 404);
+                    return ResponseHelper::pluginError('sirsoft-pay_nhnkcp', 'messages.responses.order_not_found', 404);
                 }
 
                 // 회원 주문은 로그인 본인(아니면 403), 비회원 주문은 그 주문의 조회 토큰(아니면 401) — 클레임 경로와 한 판정(#883, #855)
                 $ownershipError = $this->orderOwnershipRejection(
                     $request,
                     $order,
-                    $this->guestOrderAuthService,
-                    'You cannot request a NHN KCP approval key for this order.',
+                    'messages.responses.order_approval_forbidden',
                 );
                 if ($ownershipError !== null) {
                     return $ownershipError;
@@ -184,34 +170,24 @@ class MobileApprovalController
                     'ip' => $request->ip(),
                 ]);
                 if ($expectedAmount === null) {
-                    return response()->json([
-                        'success' => false,
-                        'error' => 'Payment currency is not chargeable.',
-                    ], 422);
+                    return ResponseHelper::pluginError('sirsoft-pay_nhnkcp', 'messages.responses.currency_not_chargeable', 422);
                 }
 
                 if ((int) $validated['amount'] !== $expectedAmount) {
-                    return response()->json([
-                        'success' => false,
-                        'error' => 'Payment amount does not match the order amount.',
-                    ], 422);
+                    return ResponseHelper::pluginError('sirsoft-pay_nhnkcp', 'messages.responses.amount_mismatch', 422);
                 }
 
                 if (! $this->isKrwPayment($order, $validated['currency'] ?? null)) {
-                    return response()->json([
-                        'success' => false,
-                        'error' => 'NHN KCP supports KRW payments only.',
-                    ], 422);
+                    return ResponseHelper::pluginError('sirsoft-pay_nhnkcp', 'messages.responses.krw_only', 422);
                 }
 
-                if (! $order->order_status->isBeforePayment()) {
-                    $restored = $this->restoreRetryableKcpOrder($order, (int) $validated['amount']);
-                    if (! $restored) {
-                        return response()->json([
-                            'success' => false,
-                            'error' => 'Order is not retryable for NHN KCP payment.',
-                        ], 409);
+                if (! $order->orderStatus->isBeforePayment()) {
+                    $restored = $this->restoreKcpOrderForRetry($order, (int) $validated['amount']);
+                    if ($restored === null) {
+                        return ResponseHelper::pluginError('sirsoft-pay_nhnkcp', 'messages.responses.order_not_retryable', 409);
                     }
+
+                    $order = $restored;
                 }
             }
 
@@ -261,10 +237,7 @@ class MobileApprovalController
                 // param_opt_1 은 간편결제 수단 식별자가 점유하므로 param_opt_2 를 쓴다.
                 $mobileVbankState = $this->issueMobileVbankState($order);
                 if ($mobileVbankState === null) {
-                    return response()->json([
-                        'success' => false,
-                        'error' => 'Failed to prepare the virtual account payment session.',
-                    ], 500);
+                    return ResponseHelper::pluginError('sirsoft-pay_nhnkcp', 'messages.responses.vbank_session_failed', 500);
                 }
 
                 $fields['param_opt_2'] = $mobileVbankState;
@@ -279,19 +252,16 @@ class MobileApprovalController
                 $fields = [...$fields, ...$this->buildEasyPayReturnFields($payMethodKey)];
             }
 
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'pay_url' => $result['pay_url'],
-                    'fields' => $fields,
-                ],
+            return ResponseHelper::success('common.success', [
+                'pay_url' => $result['pay_url'],
+                'fields' => $fields,
             ]);
 
         } catch (NhnKcpApiException $e) {
-            return response()->json([
-                'success' => false,
-                'error' => $e->getMessage(),
-            ], 422);
+            // 예외 문구는 KCP 서비스가 번역 키로 만든 안내(연결 불가·승인키 거절 사유)라 사유 자리에 그대로 싣는다.
+            return ResponseHelper::pluginError('sirsoft-pay_nhnkcp', 'messages.responses.approval_key_failed', 422, null, [
+                'reason' => $e->getMessage(),
+            ]);
         }
     }
 
@@ -302,14 +272,14 @@ class MobileApprovalController
      * 일수는 한국 날짜로 센다. 기한이 없거나 오늘 이전이면 종전 예비값(플러그인 `vbank_expire_days`, 없으면 3일)으로 연다
      * — PC 결제창(`buildKcpVbankExpireFields`)과 같은 규칙이다.
      *
-     * @param  Order|null  $order  대상 주문
+     * @param  OrderRecord|null  $order  대상 주문
      * @param  array<string, mixed>  $settings  플러그인 설정
      * @return array<string, string> KCP 가상계좌 만료 필드
      */
-    private function buildVbankExpireFields(?Order $order, array $settings): array
+    private function buildVbankExpireFields(?OrderRecord $order, array $settings): array
     {
         // KCP 가상계좌 입금기한(vcnt_expire_term)은 KCP 규격상 한국 시간 일수·시각이다
-        $due = $order?->payment?->vbank_due_at?->copy()->setTimezone('Asia/Seoul');
+        $due = $order?->payment?->vbankDueAt?->setTimezone('Asia/Seoul');
 
         if ($due !== null) {
             $days = (int) Carbon::now()->setTimezone('Asia/Seoul')->startOfDay()->diffInDays($due->copy()->startOfDay(), false);
@@ -329,14 +299,16 @@ class MobileApprovalController
      * 비과세 금액이 있는 경우에만 comm_tax_mny / comm_vat_mny / comm_free_mny 추가.
      * 전액 과세라면 good_mny 만으로 KCP가 내부적으로 세금 계산.
      *
-     * @param  Order  $order  과세·면세 금액을 읽을 주문
+     * @param  OrderRecord  $order  과세·면세 금액을 읽을 주문
      * @param  int  $paymentAmount  결제 금액 (KRW)
      * @return array<string, string>
      */
-    private function buildTaxFields(Order $order, int $paymentAmount): array
+    private function buildTaxFields(OrderRecord $order, int $paymentAmount): array
     {
-        // 면세 = 면세 + 영세, 과세 합계 = 영세를 뺀 과세 합계(이커머스 1.3.3, #612) — 영세는 부가세가 없어 KCP 에는 비과세로 넘긴다
-        $taxFreeAmt = (int) round($this->pgTaxFreeOf($order));
+        // 면세 = 면세 + 영세, 과세 합계 = 영세를 뺀 과세 합계(이커머스 1.3.3, #612) — 영세는 부가세가 없어 KCP 에는 비과세로 넘긴다.
+        // 세 값은 이커머스 결제 계약(pgTaxSplit)이 주문 저장값으로 계산한다.
+        $taxSplit = $this->bridge->pgTaxSplit($order->orderNumber);
+        $taxFreeAmt = (int) round($taxSplit->taxFree);
         if ($taxFreeAmt <= 0) {
             return [];
         }
@@ -344,8 +316,8 @@ class MobileApprovalController
         $paymentAmount = max(0, $paymentAmount);
         $taxFreeAmt = min($taxFreeAmt, $paymentAmount);
         $taxablePaymentAmt = max(0, $paymentAmount - $taxFreeAmt);
-        $taxTotalAmt = (int) round($this->pgTaxableOf($order));
-        $vatAmt = (int) round((float) ($order->total_vat_amount ?? 0));
+        $taxTotalAmt = (int) round($taxSplit->taxable);
+        $vatAmt = (int) round($taxSplit->vat);
         if ($taxablePaymentAmt > 0 && $taxTotalAmt > 0 && $vatAmt > 0) {
             $vatAmt = min($taxablePaymentAmt, (int) round($taxablePaymentAmt * ($vatAmt / $taxTotalAmt)));
         } else {
@@ -362,8 +334,10 @@ class MobileApprovalController
     }
 
     /**
+     * 간편결제 수단이면 KCP 모바일 결제창의 간편결제 지정 필드를 만듭니다.
+     *
      * @param  string  $payMethodKey  쇼핑몰 결제수단 키
-     * @return array<string, string>
+     * @return array<string, string> KCP 간편결제 필드 (간편결제가 아니면 빈 배열)
      */
     private function buildEasyPayReturnFields(string $payMethodKey): array
     {
@@ -380,14 +354,14 @@ class MobileApprovalController
     /**
      * 요청 통화와 주문 통화가 모두 KRW 인지 판정합니다. (KCP 는 KRW 전용)
      *
-     * @param  Order  $order  대상 주문
+     * @param  OrderRecord  $order  대상 주문
      * @param  string|null  $requestedCurrency  요청이 보낸 결제 통화
      * @return bool 둘 다 KRW 이면 true
      */
-    private function isKrwPayment(Order $order, ?string $requestedCurrency): bool
+    private function isKrwPayment(OrderRecord $order, ?string $requestedCurrency): bool
     {
         return $this->normalizeCurrency($requestedCurrency) === 'KRW'
-            && $this->normalizeCurrency((string) ($order->currency ?? 'KRW')) === 'KRW';
+            && $this->normalizeCurrency($order->currency) === 'KRW';
     }
 
     /**
@@ -401,34 +375,5 @@ class MobileApprovalController
         $normalized = strtoupper(trim((string) $currency));
 
         return $normalized !== '' ? $normalized : 'KRW';
-    }
-
-    /**
-     * 결제사에 면세로 넘길 주문 금액(면세 + 영세)을 읽습니다.
-     *
-     * 이커머스 1.3.3 의 `Order::pgTaxFreeAmount()` 를 쓰고, 그 메서드가 없는 구버전(영세 없음)은 면세 합계로 떨어진다 —
-     * 플러그인 갱신은 이커머스 의존 버전을 다시 검사하지 않아 구버전과 함께 돌 수 있다.
-     *
-     * @param  Order  $order  주문
-     * @return float 면세 + 영세
-     */
-    private function pgTaxFreeOf(Order $order): float
-    {
-        return method_exists($order, 'pgTaxFreeAmount')
-            ? $order->pgTaxFreeAmount()
-            : (float) ($order->total_tax_free_amount ?? 0);
-    }
-
-    /**
-     * 결제사에 과세로 넘길 주문 금액(영세를 뺀 과세 합계, 부가세 포함)을 읽습니다.
-     *
-     * @param  Order  $order  주문
-     * @return float 과세 합계(영세 제외)
-     */
-    private function pgTaxableOf(Order $order): float
-    {
-        return method_exists($order, 'pgTaxableAmount')
-            ? $order->pgTaxableAmount()
-            : (float) ($order->total_tax_amount ?? 0);
     }
 }

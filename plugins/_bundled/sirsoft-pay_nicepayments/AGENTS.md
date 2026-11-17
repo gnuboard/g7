@@ -24,7 +24,9 @@
 **설계 원칙**: 이 플러그인도 상태를 소유하지 않습니다(§data-model.md — 모델·테이블·Repository
 0개). 주문·결제 상태는 `sirsoft-ecommerce`에 있고, 이 플러그인은 그 상태를 나이스페이먼츠
 API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
-(`sirsoft-ecommerce.payment.registered_pg_providers` 필터).
+(`sirsoft-ecommerce.payment.registered_pg_providers` 필터). 주문·결제 행은 이커머스 공개 결제 계약
+(`Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge`)으로만 읽고 쓰며, 잠금 안 판정은 계약 쓰기
+메서드의 `$guard` 클로저로 넘깁니다. 결제사 판정(재시도 가능 여부, 거래번호·금액·MID 대조)은 이 플러그인에 남깁니다.
 
 **의도적으로 하지 않는 것**: 사용자가 결제창에서 취소하거나 PG 가 인증을 거부한 경우
 (`AuthResultCode != '0000'`)는 아직 승인 API 호출 전이므로 일반 오류 메시지를 띄우지 않고
@@ -145,6 +147,8 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 | 주문목록 「결제수단」 칸을 통째로 교체해 배지를 달기 | `columns._patch`(by: field) → `cellChildren._patch`(by: id) → `children._append` 로 자기 배지만 더한다 | 통째 교체는 함께 설치된 다른 결제 플러그인의 배지를 지운다 — priority 가 가장 높은 하나만 남는다. 호스트가 래퍼(`payment_method_cell`)와 라벨(`payment_method_label`)을 소유하므로 그 `id` 를 앵커로 쓴다(#599) |
 | 화면 확장의 표현식에서 **다른 결제 플러그인이 선언한 데이터소스**를 참조 | 자기 `data_sources[]` 에 선언한 것만 읽는다 | 그 플러그인이 없는 사이트에서 미정의 참조가 되고, 표현식은 오류 없이 조용히 undefined 를 내므로 판정이 어긋나도 드러나지 않는다 |
 | 관리자 응답 `errors` 에 예외 원문(`$e->getMessage()`)을 그대로 싣기 | 결제대행사 거절은 `NicePayRejectedException` 의 사유(ResultMsg)만 싣고, 그 밖은 번역된 일반 문구 + 서버 로그(디버그 모드만 원문) | `errors` 배열은 코어의 운영 모드 500 차단을 거치지 않는다 — 통신 예외의 결제대행사 API 주소·cURL 문구, DB 예외의 SQL·접속 정보가 그대로 화면에 나간다 |
+| 이커머스 Model 정적 조회(`Order::query()` 등)·`DB::table`·`getTable()`·내부 Service/Repository(`OrderProcessingService`, `GuestOrderAuthService` 등)·`ecommerce_format_price()`·이커머스 저장 파일 직접 사용 | 이커머스 공개 결제 계약(`PaymentGatewayBridge` 생성자 주입, 리스너는 `app(PaymentLookup::class)` 같은 공개 인터페이스)과 `PriceFormatter`. 훅 인자 Model 은 속성만 읽고 판정 값은 `describePayment()` 등 DTO 로 | 이커머스 내부 구현은 예고 없이 바뀐다. 계약이 잠금 순서(주문 → 결제 행)와 결제사 범위(자기 결제 행만)를 강제한다. 정적 검사 `extension-internal-symbol-reference` 가 막는다 |
+| 재결제 복구(SignData)에서 주문·결제 상태와 meta 를 직접 고쳐 쓰기 | 재시도 가능 판정만 이 플러그인이 하고 `restoreForRetry` 로 넘긴다 | 직접 쓰면 상태 전이 훅·활동 로그가 빠지고, 결제 실패 처리가 취소로 바꾼 주문 상품이 취소로 남아 재결제 성공 뒤에도 「주문 결제완료 / 상품 취소」가 된다. meta 키 바이트는 특성화 녹화(`tests/Feature/Characterization`)가 고정한다 |
 | 결제 환불 리스너 결과 `error_message` 에 예외 원문을 그대로 싣기 | `refundFailureReason()` — 거절(`NicePayRejectedException`)만 ResultMsg, 그 밖은 `refund.pg_failed` + 서버 로그(디버그 모드만 원문) | 쇼핑몰이 이 값을 「PG 환불 처리에 실패했습니다. (…)」 안내에 끼워 회원·비회원·관리자 응답으로 낸다 — 통신 예외의 API 주소·cURL 문구가 구매자 화면까지 간다 |
 <!-- @intent END -->
 
@@ -153,10 +157,10 @@ API 와 동기화하는 역할만 합니다. 등록은 훅 기반입니다
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 41개 | `plugins/_bundled/sirsoft-pay_nicepayments/tests` |
+| PHPUnit | 43개 | `plugins/_bundled/sirsoft-pay_nicepayments/tests` |
 | Vitest | 30개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 49개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 50개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

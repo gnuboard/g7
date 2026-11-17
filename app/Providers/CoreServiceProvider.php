@@ -30,6 +30,7 @@ use App\Contracts\Repositories\Analytics\TableStatsRepositoryInterface as Analyt
 use App\Contracts\Repositories\Analytics\VisitRepositoryInterface as AnalyticsVisitRepositoryInterface;
 use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
+use App\Contracts\Repositories\ExtensionTrustKeyRepositoryInterface;
 use App\Contracts\Repositories\ExtensionUpdateJournalRepositoryInterface;
 use App\Contracts\Repositories\FieldDefinitionRepositoryInterface;
 use App\Contracts\Repositories\FieldValueRepositoryInterface;
@@ -86,6 +87,9 @@ use App\Extension\HookManager;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Extension\IdentityVerification\Providers\MailIdentityProvider;
 use App\Extension\IncompatibleExtensionDeactivator;
+use App\Extension\Integrity\BuiltinTrustKeys;
+use App\Extension\Integrity\PackageSignatureVerifier;
+use App\Extension\Integrity\UnsignedPackagePolicy;
 use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
@@ -117,6 +121,7 @@ use App\Repositories\Analytics\StatsRepository as AnalyticsStatsRepository;
 use App\Repositories\Analytics\TableStatsRepository as AnalyticsTableStatsRepository;
 use App\Repositories\Analytics\VisitRepository as AnalyticsVisitRepository;
 use App\Repositories\AttachmentRepository;
+use App\Repositories\ExtensionTrustKeyRepository;
 use App\Repositories\ExtensionUpdateJournalRepository;
 use App\Repositories\FieldDefinitionRepository;
 use App\Repositories\FieldValueRepository;
@@ -170,6 +175,7 @@ use App\Services\UniqueIdService;
 use App\Support\Content\MediaSourceRoutes;
 use App\Support\CoreUpdateContext;
 use App\Support\ExtensionSettingsMirror;
+use App\Support\PrivateAttachmentDisk;
 use App\Support\PrivilegedDatabaseAccounts;
 use App\Thumbnails\ImageProcessorResolver;
 use App\Thumbnails\ThumbnailPresetRegistry;
@@ -181,6 +187,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Console\Application as ArtisanApplication;
 use Illuminate\Database\Events\TransactionCommitted;
 use Illuminate\Database\Events\TransactionRolledBack;
+use Illuminate\Foundation\Console\AboutCommand;
 use Illuminate\Http\Request;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\Events\JobProcessed;
@@ -240,6 +247,40 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->singleton(ThumbnailSourceProviders::class);
         $this->app->singleton(ThumbnailStore::class);
         $this->app->singleton(ImageProcessorResolver::class);
+    }
+
+    /**
+     * `php artisan about` 에 패키지 무결성 구획을 더합니다.
+     *
+     * 내장 신뢰 키 수·sodium 확장·미서명 차단 스위치를 보이고, 내장 키가 비어 있으면 그 줄에 경고를 붙인다(공식 서명
+     * 패키지도 「신뢰하지 않는 키」가 되는 상태). 값은 about 이 구획을 그릴 때만 계산하고, 설정을 읽지 못하면(설치 전)
+     * 그 줄만 「알 수 없음」으로 둔다.
+     *
+     * @return void 반환값 없음
+     */
+    private function registerPackageIntegrityAbout(): void
+    {
+        AboutCommand::add(__('extension_integrity.about.section'), function (): array {
+            // 쓸 수 있는(폐기 아닌) 내장 키 수 — core:check-updates·extension:trust-key list 와 같은 판정
+            $builtin = BuiltinTrustKeys::hasUsableKey()
+                ? (string) BuiltinTrustKeys::usableCount()
+                : '<fg=yellow;options=bold>0</> — '.__('extensions.commands.trust_key.builtin_empty');
+
+            try {
+                $blocks = $this->app->make(UnsignedPackagePolicy::class)->blocksUnsigned();
+                $block = $blocks ? __('extension_integrity.about.on') : __('extension_integrity.about.off');
+            } catch (\Throwable) {
+                $block = __('extension_integrity.about.unknown');
+            }
+
+            return [
+                __('extension_integrity.about.builtin_keys') => $builtin,
+                __('extension_integrity.about.sodium') => $this->app->make(PackageSignatureVerifier::class)->sodiumAvailable()
+                    ? __('extension_integrity.about.available')
+                    : '<fg=yellow;options=bold>'.__('extension_integrity.about.missing').'</>',
+                __('extension_integrity.about.block_unsigned') => $block,
+            ];
+        });
     }
 
     /**
@@ -340,6 +381,8 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->singleton(ConfigRepositoryInterface::class, JsonConfigRepository::class);
         // 확장 업데이트 진행 기록 — 파일 기반, 끊긴 업데이트가 못 끝낸 업그레이드 스텝만 이어 돌게 한다
         $this->app->bind(ExtensionUpdateJournalRepositoryInterface::class, ExtensionUpdateJournalRepository::class);
+        // 확장 신뢰 키(제작자 공개키) — 패키지 서명 검증이 내장 키 다음으로 찾는다(7.2.0)
+        $this->app->bind(ExtensionTrustKeyRepositoryInterface::class, ExtensionTrustKeyRepository::class);
         $this->app->bind(LayoutPreviewRepositoryInterface::class, LayoutPreviewRepository::class);
         $this->app->bind(LayoutRepositoryInterface::class, LayoutRepository::class);
         $this->app->bind(LayoutVersionRepositoryInterface::class, LayoutVersionRepository::class);
@@ -439,14 +482,16 @@ class CoreServiceProvider extends ServiceProvider
         // UniqueIdService 바인딩
         $this->app->singleton(UniqueIdServiceInterface::class, UniqueIdService::class);
 
-        // AttachmentService용 CoreStorageDriver 바인딩
+        // AttachmentService용 CoreStorageDriver 바인딩 — 코어 첨부는 비공개 원본이라 관리자가 고른
+        // 「비공개 첨부 저장소」를 따른다(#916). ATTACHMENT_DISK env 명시가 우선, 「기본」이면 종전 규칙.
         $this->app->when(AttachmentService::class)
             ->needs(StorageInterface::class)
             ->give(function () {
-                return new CoreStorageDriver(config('attachment.disk', 'attachments'));
+                return new CoreStorageDriver(PrivateAttachmentDisk::forCore());
             });
 
-        // TemplateLayoutAttachmentService용 CoreStorageDriver 바인딩
+        // TemplateLayoutAttachmentService용 CoreStorageDriver 바인딩 — 레이아웃 배경 이미지는 공개 화면 자산이라
+        // 비공개 첨부 저장소를 따르지 않는다(공개 자산 디스크 → 꺼져 있으면 종전 디스크, #916 D29)
         $this->app->when(TemplateLayoutAttachmentService::class)
             ->needs(StorageInterface::class)
             ->give(function () {
@@ -599,6 +644,11 @@ class CoreServiceProvider extends ServiceProvider
 
         // 썸네일 퍼지 묶음 비우기 시점·생성 제한 (DB 무관)
         $this->bootThumbnailServices();
+
+        // `php artisan about` 에 패키지 무결성 구획 (내장 신뢰 키가 비면 경고) — 값은 about 실행 때만 계산한다
+        if ($this->app->runningInConsole()) {
+            $this->registerPackageIntegrityAbout();
+        }
 
         // .env 파일이 없으면 스킵 (인스톨러 실행 전)
         if (! File::exists(base_path('.env'))) {
@@ -967,8 +1017,16 @@ class CoreServiceProvider extends ServiceProvider
                     continue;
                 }
 
+                $available = $driverRegistry->isDriverAvailable($category, $selectedDriver);
+
+                // 디스크 카테고리는 쓰는 시점에 해석한다 — 플러그인 디스크는 booted 에서 정의돼 지금은 카탈로그에 없을 수 있다.
+                // 여기서 기본값으로 덮으면 저장된 선택이 모든 요청에서 사라진다(#916 A7). 고아 디스크는 해석기가 거른다.
+                if (! $available && $driverRegistry->isRuntimeResolved($category)) {
+                    continue;
+                }
+
                 // 플러그인 드라이버: 사용 가능 여부 확인
-                if ($driverRegistry->isDriverAvailable($category, $selectedDriver)) {
+                if ($available) {
                     // 플러그인이 Config을 직접 적용하도록 액션 훅 발행
                     HookManager::doAction(
                         'core.settings.apply_driver_config',

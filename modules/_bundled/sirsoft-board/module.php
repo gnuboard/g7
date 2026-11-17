@@ -161,6 +161,8 @@ class Module extends AbstractModule
      * - sirsoft-board.boards.* (게시판 관리)
      * - sirsoft-board.reports.* (신고 관리)
      * - sirsoft-board.scraps.* (전 회원 스크랩 조회·삭제)
+     *
+     * @return array<string, mixed> 모듈 → 카테고리 → 개별 권한 계층 정의
      */
     public function getPermissions(): array
     {
@@ -480,6 +482,8 @@ class Module extends AbstractModule
 
     /**
      * 모듈 설정 파일 목록 반환
+     *
+     * @return array<string, string> 설정 키 => 설정 파일 경로
      */
     public function getConfig(): array
     {
@@ -498,6 +502,8 @@ class Module extends AbstractModule
      *
      * 모듈 루트는 getPermissions() 의 정적 식별자(moduleIdentifier) 와 동일하므로 생략.
      * cleanup 시 이 목록에 포함된 식별자는 stale 로 판정되지 않는다.
+     *
+     * @return array<int, string> 동적 권한 식별자 목록
      */
     public function getDynamicPermissionIdentifiers(): array
     {
@@ -525,6 +531,8 @@ class Module extends AbstractModule
      * BoardService::createBoardRoles 가 게시판 생성 시 생성:
      *   - {module}.{slug}.manager
      *   - {module}.{slug}.step
+     *
+     * @return array<int, string> 동적 역할 식별자 목록
      */
     public function getDynamicRoleIdentifiers(): array
     {
@@ -546,6 +554,8 @@ class Module extends AbstractModule
      * 런타임 동적 메뉴 slug 전수.
      *
      * BoardService 가 게시판 생성 시 `board-{slug}` 형식의 메뉴를 기록.
+     *
+     * @return array<int, string> 동적 메뉴 slug 목록
      */
     public function getDynamicMenuSlugs(): array
     {
@@ -713,6 +723,8 @@ class Module extends AbstractModule
 
     /**
      * 훅 리스너 목록 반환
+     *
+     * @return array<int, class-string> 리스너 클래스 목록
      */
     public function getHookListeners(): array
     {
@@ -983,6 +995,8 @@ class Module extends AbstractModule
 
     /**
      * 스토리지 디스크 설정 반환
+     *
+     * @return string 디스크 이름(`.env` `SIRSOFT_BOARD_ATTACHMENT_DISK` 가 있으면 그 값, 없으면 `modules`)
      */
     public function getStorageDisk(): string
     {
@@ -990,7 +1004,26 @@ class Module extends AbstractModule
     }
 
     /**
+     * `.env` `SIRSOFT_BOARD_ATTACHMENT_DISK` 로 첨부 디스크를 고정했는지 반환합니다 (#916 D7).
+     *
+     * 고정돼 있으면 첨부·본문 미디어는 관리자의 「비공개 첨부 저장소」 선택 대신 그 디스크를 쓰고, 환경설정 > 드라이버 화면이
+     * 「.env 로 고정된 확장: 게시판」으로 안내한다.
+     *
+     * @return array{env: string, disk: string}|null 고정 정보(고정 없음이면 null)
+     */
+    public function getPrivateAttachmentDiskPin(): ?array
+    {
+        $explicit = config('sirsoft-board.attachment.disk_explicit');
+
+        return is_string($explicit) && $explicit !== ''
+            ? ['env' => 'SIRSOFT_BOARD_ATTACHMENT_DISK', 'disk' => $explicit]
+            : null;
+    }
+
+    /**
      * 관리자 메뉴 정의
+     *
+     * @return array<int, array<string, mixed>> 관리자 메뉴 정의 목록
      */
     public function getAdminMenus(): array
     {
@@ -1309,6 +1342,8 @@ class Module extends AbstractModule
 
     /**
      * 새 댓글 알림 정의.
+     *
+     * @return array<string, mixed> 알림 정의(유형·훅·변수·채널 템플릿)
      */
     private function newCommentDefinition(): array
     {
@@ -1364,6 +1399,8 @@ class Module extends AbstractModule
 
     /**
      * 대댓글 알림 정의.
+     *
+     * @return array<string, mixed> 알림 정의(유형·훅·변수·채널 템플릿)
      */
     private function replyCommentDefinition(): array
     {
@@ -1419,6 +1456,8 @@ class Module extends AbstractModule
 
     /**
      * 답변글 알림 정의.
+     *
+     * @return array<string, mixed> 알림 정의(유형·훅·변수·채널 템플릿)
      */
     private function postReplyDefinition(): array
     {
@@ -1470,6 +1509,8 @@ class Module extends AbstractModule
 
     /**
      * 게시글 처리 알림 정의.
+     *
+     * @return array<string, mixed> 알림 정의(유형·훅·변수·채널 템플릿)
      */
     private function postActionDefinition(): array
     {
@@ -1525,6 +1566,8 @@ class Module extends AbstractModule
 
     /**
      * 관리자 새 게시글 알림 정의.
+     *
+     * @return array<string, mixed> 알림 정의(유형·훅·변수·채널 템플릿)
      */
     private function newPostAdminDefinition(): array
     {
@@ -1579,6 +1622,8 @@ class Module extends AbstractModule
 
     /**
      * 신고 접수 관리자 알림 정의.
+     *
+     * @return array<string, mixed> 알림 정의(유형·훅·변수·채널 템플릿)
      */
     private function reportReceivedAdminDefinition(): array
     {
@@ -1644,6 +1689,8 @@ class Module extends AbstractModule
 
     /**
      * 신고 처리 결과 알림 정의.
+     *
+     * @return array<string, mixed> 알림 정의(유형·훅·변수·채널 템플릿)
      */
     private function reportActionDefinition(): array
     {

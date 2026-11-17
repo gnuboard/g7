@@ -64,36 +64,96 @@
         <div>
           <label class="form-label">$t:admin.settings.seo.og_image_default</label>
           <p class="text-tertiary mb-2">$t:admin.settings.seo.og_image_default_desc</p>
-          <file-uploader data-type="composite" data-ref="og_image_default_uploader" collection="og_image_default" disabled="{{_computed.isReadOnly}}" :maxFiles="1" maxSize="{{_global.settings?.upload?.max_file_size ?? _global.uploadSettings?.max_file_size ?? 10}}" accept="{{_global.settings?.upload?.allowed_extensions_formatted ?? _global.uploadSettings?.allowed_extensions_formatted ?? '.jpg,.jpeg,.png,.gif,.svg,.webp'}}" initialFiles="{{settings?.data?.seo?.og_image_default ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:og_image_default" :confirmBeforeRemove="true">
-            <prop name="imageCompression">
-              <field name="maxSizeMB" :value="1"/>
-              <field name="maxWidthOrHeight" value="{{_global.settings?.upload?.image_max_width ?? _global.uploadSettings?.image_max_width ?? 1200}}"/>
+          <!-- 첨부 업로더 확장점(#916) — 업로더 플러그인이 mode="replace" 로 바꿔 끼울 수 있다. 계약은 기존 값만으로 조립하고(새 API 없음),
+               콜백은 기본 업로더의 이벤트 처리와 같은 동작이다($args[0] → $event). 기본 업로더는 <default> 안에 그대로 둔다. -->
+          <extension-point name="attachment_uploader" data-ref="og_image_default_uploader_slot" class="contents">
+            <prop name="uploader">
+              <field name="version" :value="1"/>
+              <field name="mode" value="upload"/>
+              <field name="endpoints">
+                <field name="upload" value="/api/admin/attachments"/>
+                <field name="delete" value="/api/admin/attachments/:id"/>
+                <field name="reorder" value="/api/admin/attachments/reorder"/>
+              </field>
+              <field name="fields" :value="{}"/>
+              <field name="policy">
+                <field name="accept" value="{{_global.settings?.upload?.allowed_extensions_formatted ?? _global.uploadSettings?.allowed_extensions_formatted ?? '.jpg,.jpeg,.png,.gif,.svg,.webp'}}"/>
+                <field name="maxSize" value="{{_global.settings?.upload?.max_file_size ?? _global.uploadSettings?.max_file_size ?? 10}}"/>
+                <field name="maxFiles" :value="1"/>
+                <field name="maxConcurrentUploads" :value="1"/>
+                <field name="imageCompression">
+                  <field name="maxSizeMB" :value="1"/>
+                  <field name="maxWidthOrHeight" value="{{_global.settings?.upload?.image_max_width ?? _global.uploadSettings?.image_max_width ?? 1200}}"/>
+                </field>
+              </field>
+              <field name="collection" value="og_image_default"/>
+              <field name="attachmentable">
+                <field name="type" :value="null"/>
+                <field name="id" :value="null"/>
+              </field>
+              <field name="triggerEvent" value="upload:og_image_default"/>
+              <field name="initialFiles" value="{{settings?.data?.seo?.og_image_default ?? []}}"/>
+              <field name="disabled" value="{{!!_computed.isReadOnly}}"/>
+              <field name="autoUpload" :value="false"/>
+              <field name="ui">
+                <field name="confirmBeforeRemove" :value="true"/>
+              </field>
+              <field name="context">
+                <field name="owner" value="core"/>
+                <field name="purpose" value="og_image_default"/>
+              </field>
             </prop>
-            <on type="change" event="onFilesChange">
-              <!-- 파일을 고르는 순간 변경됨으로 표시한다 — 업로드 완료만 기다리면 그 사이 저장 버튼이 잠겨 있어 방금 고른 이미지를 저장하지 못한다. -->
-              <set-state if="{{$args[0] &amp;&amp; $args[0].length > 0}}" target="local" :hasChanges="true"/>
-            </on>
-            <on type="change" event="onUploadComplete">
-              <!-- 업로드된 파일을 기본 OG 이미지 목록(form.seo.og_image_default)에 덧붙인다 — 저장은 설정 폼에 실려 나가므로 폼 상태에 넣어야 반영된다. -->
-              <set-state target="local" :hasChanges="true" form.seo.og_image_default="{{[...(_local.form?.seo?.og_image_default ?? []), ...$args[0]]}}"/>
-            </on>
-            <on type="custom" event="onUploadComplete">
-              <!-- 업로드 완료를 알리기만 한다 — 목록 갱신은 위 change 블록이 맡는다. -->
+            <callback name="onFilesChange">
+              <!-- 고른 것만으로는 올라가지 않는다 — 저장 버튼을 풀어 주는 표시만 켠다(기본 업로더와 같다) -->
+              <set-state if="{{$event &amp;&amp; $event.length > 0}}" target="local" :hasChanges="true"/>
+            </callback>
+            <callback name="onUploadComplete">
+              <!-- 올라간 파일을 폼 값에 반영하고 성공을 알린다(기본 업로더와 같다) -->
+              <set-state target="local" :hasChanges="true" form.seo.og_image_default="{{[...(_local.form?.seo?.og_image_default ?? []), ...$event]}}"/>
               <toast type="success" message="$t:attachment.upload_success"/>
-            </on>
-            <on type="custom" event="onUploadError">
-              <!-- 업로드 실패 사유는 첫 인자로 온다 — 서버가 준 문구를 그대로 보여 준다. -->
-              <toast type="error" message="{{$args[0]}}"/>
-            </on>
-            <on type="change" event="onRemove">
-              <!-- 목록에서 그 파일을 빼고 변경됨으로 표시한다 — 식별자는 hash 가 있으면 hash, 없으면 id 다(저장 전 임시 파일과 저장된 파일이 한 목록에 섞인다). -->
-              <set-state target="local" :hasChanges="true" form.seo.og_image_default="{{(_local.form?.seo?.og_image_default ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"/>
-            </on>
-            <on type="custom" event="onRemove">
-              <!-- 제거를 알리기만 한다 — 목록 갱신은 위 change 블록이 맡는다. -->
+            </callback>
+            <callback name="onUploadError">
+              <!-- 업로드 실패 사유를 그대로 띄운다 -->
+              <toast type="error" message="{{$event}}"/>
+            </callback>
+            <callback name="onRemove">
+              <!-- 뺀 파일을 폼 값에서 걸러 내고 알린다 — 실제 삭제는 저장 때 정해진다 -->
+              <set-state target="local" :hasChanges="true" form.seo.og_image_default="{{(_local.form?.seo?.og_image_default ?? []).filter(item => (item.hash || item.id) !== $event)}}"/>
               <toast type="info" message="$t:attachment.deleted"/>
-            </on>
-          </file-uploader>
+            </callback>
+            <default>
+              <file-uploader data-type="composite" data-ref="og_image_default_uploader" collection="og_image_default" disabled="{{_computed.isReadOnly}}" :maxFiles="1" maxSize="{{_global.settings?.upload?.max_file_size ?? _global.uploadSettings?.max_file_size ?? 10}}" accept="{{_global.settings?.upload?.allowed_extensions_formatted ?? _global.uploadSettings?.allowed_extensions_formatted ?? '.jpg,.jpeg,.png,.gif,.svg,.webp'}}" initialFiles="{{settings?.data?.seo?.og_image_default ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:og_image_default" :confirmBeforeRemove="true">
+                <prop name="imageCompression">
+                  <field name="maxSizeMB" :value="1"/>
+                  <field name="maxWidthOrHeight" value="{{_global.settings?.upload?.image_max_width ?? _global.uploadSettings?.image_max_width ?? 1200}}"/>
+                </prop>
+                <on type="change" event="onFilesChange">
+                  <!-- 파일을 고르는 순간 변경됨으로 표시한다 — 업로드 완료만 기다리면 그 사이 저장 버튼이 잠겨 있어 방금 고른 이미지를 저장하지 못한다. -->
+                  <set-state if="{{$args[0] &amp;&amp; $args[0].length > 0}}" target="local" :hasChanges="true"/>
+                </on>
+                <on type="change" event="onUploadComplete">
+                  <!-- 업로드된 파일을 기본 OG 이미지 목록(form.seo.og_image_default)에 덧붙인다 — 저장은 설정 폼에 실려 나가므로 폼 상태에 넣어야 반영된다. -->
+                  <set-state target="local" :hasChanges="true" form.seo.og_image_default="{{[...(_local.form?.seo?.og_image_default ?? []), ...$args[0]]}}"/>
+                </on>
+                <on type="custom" event="onUploadComplete">
+                  <!-- 업로드 완료를 알리기만 한다 — 목록 갱신은 위 change 블록이 맡는다. -->
+                  <toast type="success" message="$t:attachment.upload_success"/>
+                </on>
+                <on type="custom" event="onUploadError">
+                  <!-- 업로드 실패 사유는 첫 인자로 온다 — 서버가 준 문구를 그대로 보여 준다. -->
+                  <toast type="error" message="{{$args[0]}}"/>
+                </on>
+                <on type="change" event="onRemove">
+                  <!-- 목록에서 그 파일을 빼고 변경됨으로 표시한다 — 식별자는 hash 가 있으면 hash, 없으면 id 다(저장 전 임시 파일과 저장된 파일이 한 목록에 섞인다). -->
+                  <set-state target="local" :hasChanges="true" form.seo.og_image_default="{{(_local.form?.seo?.og_image_default ?? []).filter(item => (item.hash || item.id) !== $args[0])}}"/>
+                </on>
+                <on type="custom" event="onRemove">
+                  <!-- 제거를 알리기만 한다 — 목록 갱신은 위 change 블록이 맡는다. -->
+                  <toast type="info" message="$t:attachment.deleted"/>
+                </on>
+              </file-uploader>
+            </default>
+          </extension-point>
         </div>
         <div>
           <label class="form-label">$t:admin.settings.seo.twitter_default_card</label>

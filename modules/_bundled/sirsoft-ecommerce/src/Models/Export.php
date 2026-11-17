@@ -13,7 +13,10 @@ use Modules\Sirsoft\Ecommerce\Enums\ExportStatusEnum;
  * 내보내기 작업
  *
  * 목록 화면에서 요청한 파일 생성 1건. 요청 조건(필터·필드·옵션)과 실행 컨텍스트를 함께 들고 있어
- * 큐 작업이 이 행 하나만 읽고 파일을 만든다. 저장 경로(`file_path`)는 화면·API 에 내지 않는다.
+ * 큐 작업이 이 행 하나만 읽고 파일을 만든다. 저장 경로(`file_path`)와 저장 디스크(`disk`)는 화면·API 에 내지 않는다.
+ *
+ * `disk` 는 파일을 저장할 때의 디스크다(비공개 첨부 저장소). 다운로드·삭제·만료 정리는 지금 주입된 디스크가 아니라
+ * 이 디스크로 간다 — 운영자가 저장소를 바꿔도 전에 만든 파일에 닿는다.
  *
  * @property int $id
  * @property string $uuid
@@ -27,6 +30,8 @@ use Modules\Sirsoft\Ecommerce\Enums\ExportStatusEnum;
  * @property array|null $context
  * @property bool $contains_personal_data
  * @property array|null $warnings
+ * @property string|null $file_path
+ * @property string $disk
  */
 class Export extends Model
 {
@@ -54,6 +59,7 @@ class Export extends Model
         'format_version',
         'file_name',
         'file_path',
+        'disk',
         'file_size',
         'checksum_sha256',
         'total_rows',
@@ -74,6 +80,7 @@ class Export extends Model
      */
     protected $hidden = [
         'file_path',
+        'disk',
         'context',
         'idempotency_key',
     ];

@@ -133,6 +133,8 @@ class SettingsController extends AdminBaseController
             'search_scopes' => $this->searchHistoryService->settingsMeta(),
             'embed_extension_providers' => $this->settingsService->embedExtensionProviderOptions(),
             'file_delegation' => FileDelegation::describe(),
+            // 비공개 첨부 저장소 카드(#916) — .env 로 고정된 주체, 저장된 선택이 이 서버에 없는 디스크인지
+            'private_attachment' => $this->settingsService->privateAttachmentMeta(),
         ];
     }
 
@@ -251,6 +253,11 @@ class SettingsController extends AdminBaseController
                     // 전역 상태(`_global.settings`)용 공개 설정 — 계산 필드(site_logo_url·site_favicon_url)가 실려 있다.
                     // 화면이 저장 직후 `settings`(관리자 형태, 계산 필드 없음)로 전역을 덮으면 상단 로고가 새로고침 전까지 사라졌다(#434 S-3).
                     'frontend_settings' => $this->settingsService->getFrontendSettings(),
+                    // 저장은 했지만 알려야 할 조합(#916 D5 — 비공개 첨부 저장소 = 공개 자산 디스크, D26 — 권한 썸네일 = 공개 자산 = s3)
+                    'warnings' => $this->settingsService->storageWarnings(
+                        is_array($allSettings['drivers'] ?? null) ? $allSettings['drivers'] : [],
+                        is_array($allSettings['upload'] ?? null) ? $allSettings['upload'] : [],
+                    ),
                 ]);
             } else {
                 return $this->error('settings.save_failed');

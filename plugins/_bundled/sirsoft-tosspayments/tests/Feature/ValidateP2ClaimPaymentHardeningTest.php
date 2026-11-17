@@ -9,6 +9,8 @@ use App\Services\PluginSettingsService;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Mockery;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Modules\Sirsoft\Ecommerce\Database\Factories\ClaimPaymentFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderReturnFactory;
@@ -21,9 +23,7 @@ use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 use Modules\Sirsoft\Ecommerce\Models\OrderReturn;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ClaimPaymentRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Repositories\Contracts\OrderPaymentRepositoryInterface;
-use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
+use Modules\Sirsoft\Ecommerce\Services\Bridge\EcommercePaymentGatewayBridge;
 use Modules\Sirsoft\Ecommerce\Services\UserClaimService;
 use Plugins\Sirsoft\Tosspayments\Controllers\PaymentCallbackController;
 use Plugins\Sirsoft\Tosspayments\Listeners\ClaimPaymentApproveListener;
@@ -257,7 +257,7 @@ class ValidateP2ClaimPaymentHardeningTest extends PluginTestCase
      */
     private function bindImpatientCallbackController(): void
     {
-        $this->app->bind(PaymentCallbackController::class, fn ($app) => new class($app->make(OrderProcessingService::class), $app->make(PluginSettingsService::class), $app->make(TossPaymentsApiService::class), $app->make(ClaimPaymentRepositoryInterface::class)) extends PaymentCallbackController
+        $this->app->bind(PaymentCallbackController::class, fn ($app) => new class($app->make(PaymentGatewayBridge::class), $app->make(PluginSettingsService::class), $app->make(TossPaymentsApiService::class)) extends PaymentCallbackController
         {
             /**
              * 락 대기 시간을 0초로 줄여 대기 초과를 즉시 재현합니다.
@@ -363,16 +363,21 @@ class ValidateP2ClaimPaymentHardeningTest extends PluginTestCase
             'api.tosspayments.com/*' => Http::response(['cancels' => [['transactionKey' => 'TXN_LEDGER_1']]], 200),
         ]);
 
-        $repository = $this->createMock(OrderPaymentRepositoryInterface::class);
-        $repository->expects($this->once())->method('savePendingChanges')->willThrowException(new \RuntimeException('db down'));
-        $this->app->instance(OrderPaymentRepositoryInterface::class, $repository);
+        // 장부 저장(계약 mergePaymentMeta)만 실패시키고 나머지 계약 메서드는 실제 구현을 쓴다.
+        $bridge = Mockery::mock(EcommercePaymentGatewayBridge::class)->makePartial();
+        $bridge->shouldReceive('mergePaymentMeta')
+            ->once()
+            ->with('ORD-LEDGER-1', 'tosspayments', Mockery::on(fn ($patch) => isset($patch['pg_raw_response']['cancels'])))
+            ->andThrow(new \RuntimeException('db down'));
+        $this->app->instance(PaymentGatewayBridge::class, $bridge);
 
         $order = new Order;
-        $order->forceFill(['total_tax_free_amount' => 0, 'total_tax_amount' => 10000]);
+        $order->forceFill(['order_number' => 'ORD-LEDGER-1', 'total_tax_free_amount' => 0, 'total_tax_amount' => 10000]);
 
         $payment = new OrderPayment;
         $payment->forceFill([
             'pg_provider' => 'tosspayments',
+            'payment_status' => 'paid',
             'transaction_id' => 'pk_ledger',
             'paid_amount_local' => 10000,
             'cancelled_amount' => 0,
@@ -394,9 +399,10 @@ class ValidateP2ClaimPaymentHardeningTest extends PluginTestCase
     }
 
     /**
-     * 콜백 컨트롤러와 환불 리스너가 Repository 를 생성자로 주입받는다(서비스 로케이터 없음).
+     * 콜백 컨트롤러와 환불 리스너가 이커머스 공개 결제 계약(PaymentGatewayBridge)을 생성자로 주입받는다(서비스 로케이터 없음).
      *
-     * 수정 전: 두 클래스 모두 `app(...RepositoryInterface::class)` 로 꺼냈다.
+     * 수정 전: 두 클래스 모두 `app(...RepositoryInterface::class)` 로 꺼냈다. 그 뒤 이커머스 내부 Repository 를 생성자로
+     * 받았고, 지금은 공개 계약만 받는다.
      *
      * @return void 반환값 없음
      *
@@ -406,8 +412,8 @@ class ValidateP2ClaimPaymentHardeningTest extends PluginTestCase
      */
     public function test_repositories_are_constructor_injected(): void
     {
-        $this->assertConstructorTakes(PaymentCallbackController::class, ClaimPaymentRepositoryInterface::class);
-        $this->assertConstructorTakes(PaymentRefundListener::class, OrderPaymentRepositoryInterface::class);
+        $this->assertConstructorTakes(PaymentCallbackController::class, PaymentGatewayBridge::class);
+        $this->assertConstructorTakes(PaymentRefundListener::class, PaymentGatewayBridge::class);
     }
 
     /**

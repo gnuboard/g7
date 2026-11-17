@@ -32,6 +32,8 @@ class ModuleResource extends BaseApiResource
             'description' => $this->getLocalizedField('description'),
             'dependencies' => $this->getValue('dependencies', []),
             'integrations' => $this->getValue('integrations', []),
+            // 다른 확장에 공개하는 PHP 표면(manifest public_api) — 상세 「공개 API」 칸 (#916)
+            'public_api' => $this->getValue('public_api'),
             // 이 모듈을 연동으로 선언한 활성 확장 — 비활성화·제거 확인 창의 「연동 중인 확장」(7.1.4)
             'integrated_by' => $this->integratedBy('module'),
             'status' => $this->getValue('status'),
@@ -43,6 +45,9 @@ class ModuleResource extends BaseApiResource
             // 업데이트 관련 필드
             'update_available' => $this->getValue('update_available', false),
             'update_source' => $this->getValue('update_source'),
+            // 패키지 서명 검증 결과(verified·unsigned·unverifiable·bundled, 기록 없으면 null) — 상세 「패키지 서명」 배지 (7.2.0)
+            'integrity_status' => $this->getValue('integrity_status'),
+            'integrity_key_id' => $this->getValue('integrity_key_id'),
             'latest_version' => $this->getValue('latest_version'),
             'file_version' => $this->getValue('file_version'),
             'github_url' => $this->getValue('github_url'),
@@ -119,6 +124,8 @@ class ModuleResource extends BaseApiResource
             'requires_core' => $this->getValue('requires_core'),
             'dependencies' => $this->getValue('dependencies', []),
             'integrations' => $this->getValue('integrations', []),
+            // 다른 확장에 공개하는 PHP 표면(manifest public_api) — 상세 「공개 API」 칸 (#916)
+            'public_api' => $this->getValue('public_api'),
             // 이 모듈을 연동으로 선언한 활성 확장 — 비활성화·제거 확인 창의 「연동 중인 확장」(7.1.4)
             'integrated_by' => $this->integratedBy('module'),
             'status' => $this->getValue('status'),
@@ -136,6 +143,9 @@ class ModuleResource extends BaseApiResource
             // 업데이트 관련 필드
             'update_available' => $this->getValue('update_available', false),
             'update_source' => $this->getValue('update_source'),
+            // 패키지 서명 검증 결과(verified·unsigned·unverifiable·bundled, 기록 없으면 null) — 상세 「패키지 서명」 배지 (7.2.0)
+            'integrity_status' => $this->getValue('integrity_status'),
+            'integrity_key_id' => $this->getValue('integrity_key_id'),
             'latest_version' => $this->getValue('latest_version'),
             'file_version' => $this->getValue('file_version'),
             'github_changelog_url' => $this->getValue('github_changelog_url'),

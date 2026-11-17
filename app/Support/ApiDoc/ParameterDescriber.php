@@ -283,7 +283,7 @@ class ParameterDescriber
         'thumbnail_presets' => '썸네일 규격 표 (고정 5행·og·켜진 확장 규격·운영자 규격, 최대 settings_limits.upload_thumbnail_presets_max 행)',
         'thumbnail_content_preset' => '본문 이미지에 쓸 썸네일 규격 이름 (사용 중인 규격만)',
         'thumbnail_disk_public' => '공개 이미지 썸네일 저장 디스크 (thumbnails + 공개 자산 디스크)',
-        'thumbnail_disk_gated' => '권한이 걸린 이미지 썸네일 저장 디스크 (thumbnails/s3)',
+        'thumbnail_disk_gated' => '권한이 걸린 이미지 썸네일 저장 디스크 (thumbnails, s3, 비공개 첨부 저장소 디스크. 공개 자산 디스크는 s3 외 불가)',
         'thumbnail_prune_enabled' => '썸네일 정리 스케줄(thumbnails:prune --scheduled) 사용 여부',
         'thumbnail_animated_original' => '움직이는 이미지(GIF·WebP·APNG)를 썸네일 대신 원본으로 낼지 (끄면 첫 프레임 썸네일, 기본 true)',
         'thumbnail_generate_per_minute' => 'IP 하나가 1분에 새로 만들게 할 수 있는 썸네일 수 (1~10000, 비우면 .env G7_THUMBNAIL_GENERATE_PER_MINUTE 또는 120)',

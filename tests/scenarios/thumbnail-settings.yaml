@@ -35,6 +35,8 @@ effects:
   - og_row_size_not_validated
   - content_preset_must_be_enabled_after_save
   - thumbnail_disks_limited_per_kind
+  - gated_thumbnail_disk_options_include_private_catalog  # 권한 썸네일 선택지 = thumbnails·s3·비공개 첨부 저장소 카탈로그, 공개 자산 디스크(public·플러그인 공개 디스크)와 정의 없는 디스크는 선택지에 없고 저장도 422
+  - gated_thumbnail_same_bucket_warning                   # 공개 자산 디스크와 권한 썸네일 디스크가 둘 다 s3 이면 저장 응답 warnings 에 같은 버킷 경고, 한쪽만이면 없음
   # 저장 변환·반영
   - retired_disk_purge_leaves_the_save_request
   - reenable_purges_stale_derivatives            # 썸네일을 다시 켜면 지금 쓰는 썸네일 디스크를 저장 요청 밖(큐·응답 뒤)에서 비운다, 켠 채 저장·끄기는 비우지 않는다

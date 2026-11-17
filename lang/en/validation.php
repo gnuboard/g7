@@ -1242,6 +1242,7 @@ return [
 
         // Public asset disk settings
         'public_asset_disk_invalid' => 'Please select a valid public asset disk.',
+        'private_attachment_disk_invalid' => 'Please select a valid private attachment storage.',
         'file_delegation_invalid' => 'Please select a valid web server file delegation method.',
         'file_delegation_accel_prefix_required' => 'An internal location prefix is required when nginx (X-Accel-Redirect) is selected.',
         'file_delegation_accel_prefix_format' => 'The internal location prefix must start and end with / (e.g. /_g7_sendfile/) and may only contain letters, digits, ., _ and -.',
@@ -1267,7 +1268,7 @@ return [
         'thumbnail_preset_format_invalid' => 'Please select a valid output format.',
         'thumbnail_content_preset_invalid' => 'Please choose the content image preset from the presets in use.',
         'thumbnail_disk_public_invalid' => 'Please choose the storage for public image thumbnails from the list.',
-        'thumbnail_disk_gated_invalid' => 'Thumbnails of access-controlled images can only be stored in private server storage or Amazon S3.',
+        'thumbnail_disk_gated_invalid' => 'Thumbnails of access-controlled images can only be stored in private server storage, Amazon S3, or a disk listed under private attachment storage. Public asset disks cannot be selected.',
 
         // Identity verification (IDV) settings
         'identity_default_provider_string' => 'Default provider must be a string.',
@@ -1708,6 +1709,7 @@ return [
         'queue_job_log_enabled' => 'queue job records',
         'queue_record_retention_days' => 'queue job record retention',
         'public_asset_disk' => 'public asset disk',
+        'private_attachment_disk' => 'private attachment storage',
         'file_delegation' => 'web server file delegation',
         'file_delegation_accel_prefix' => 'internal location prefix',
         // Image processing engine, image thumbnails (#869)

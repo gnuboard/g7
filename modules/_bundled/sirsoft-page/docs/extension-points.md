@@ -153,6 +153,16 @@ _레이아웃 확장이 없습니다._
 없앨 때 오류 없이 사라지는 결합이 생깁니다.
 <!-- @intent END -->
 
+### 이 모듈 화면이 여는 자리 — 첨부 업로더 (7.2.0)
+
+<!-- @intent START -->
+페이지 등록·수정 화면(`admin_page_form`)의 첨부 업로더는 코어 확장점 `attachment_uploader` 의 기본 업로더(default)다. 업로더 플러그인이
+`mode="replace"` 로 주입하면 이 자리의 업로더가 바뀐다. 계약 `uploader` 는 `context { owner: 'sirsoft-page', purpose: 'page_attachments' }`,
+업로드 신호 `upload:page_attachments`(저장 버튼이 보내고 `_eventResult` 의 `failedCount` 로 저장을 멈춘다), 새 페이지는 임시 키(`fields.temp_key`)로
+올리고 정렬 주소가 `null` 이다. 콜백은 `onUploadComplete`·`onReorder`·`onRemove`·`onUploadError` 로 기본 업로더와 같은 일을 한다.
+계약과 플러그인 규약은 코어 문서 `docs/extension/attachment-uploader.md`.
+<!-- @intent END -->
+
 ## 미들웨어
 
 <!-- @generated:middleware START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->

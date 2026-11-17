@@ -8,7 +8,7 @@ use App\Services\Concerns\ResolvesRowStorage;
 use Tests\TestCase;
 
 /**
- * 행 `disk` 를 읽어 서빙·삭제하는 **여덟 지점이 같은 판정을 쓴다.**
+ * 행 `disk` 를 읽어 서빙·삭제하는 **아홉 지점이 같은 판정을 쓴다.**
  *
  * 왜 재는가:
  *   같은 판정이 번들 확장 넷(board·page·ecommerce·ckeditor5)에는 있고 **코어 두
@@ -22,7 +22,7 @@ use Tests\TestCase;
  *
  * 무엇을 재는가:
  *   ① 코어 trait 의 **거동** — 네 입력(null · 빈 문자열 · 등록된 disk · 고아 disk)
- *   ② 그 판정을 쓰는 **여덟 지점의 모집단** — 하나라도 사본이 판정을 잃으면 red
+ *   ② 그 판정을 쓰는 **아홉 지점의 모집단** — 하나라도 사본이 판정을 잃으면 red
  *
  *   ②를 함께 재는 이유는 ①만으로는 trait 이 옳아도 소비처가 그것을 **안 쓰는** 방향이
  *   드러나지 않기 때문이다. 실제 결함이 그 방향이었다 — 판정은 저장소에 넉 벌 있었고
@@ -51,6 +51,9 @@ class RowStorageOrphanDiskParityTest extends TestCase
         // 사본을 또 두지 않고 코어 도우미 `RowDiskStorage::resolve()`(@since 7.1.5)를 부른다.
         'plugins/_bundled/sirsoft-hero_section/src/Services/BannerImageService.php',
         'plugins/_bundled/sirsoft-popup/src/Services/PopupImageService.php',
+        // #916 — 내보내기 파일이 비공개 첨부 저장소를 따르게 되며 행 disk(`ecommerce_exports.disk`)로 내리고·지우게 됐다.
+        // 이커머스 사본 trait(`use ResolvesRowStorage;`)을 쓴다.
+        'modules/_bundled/sirsoft-ecommerce/src/Services/ExportService.php',
     ];
 
     /**
@@ -97,7 +100,7 @@ class RowStorageOrphanDiskParityTest extends TestCase
         $root = dirname(__DIR__, 3);
 
         $this->assertGreaterThanOrEqual(
-            8,
+            9,
             count(self::ROW_DISK_CONSUMERS),
             '모집단이 줄었다 — 지점을 지웠다면 그 파일이 정말 행 disk 를 안 읽는지 확인하고 목록을 고친다'
         );

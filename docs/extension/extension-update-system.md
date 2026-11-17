@@ -13,6 +13,7 @@
 6. 확장 수정/개발은 _bundled 에서만 (활성 디렉토리 직접 수정 금지 → {type}:update 로 반영)
 7. DB/설정 구조 변경 시 업그레이드 스텝 작성 필수 (필요 판단은 "업그레이드 스텝이 필요한 경우" 표)
 8. 파일만 교체했으면: 훅·오토로드 캐시는 자동 감지(7.1.3+), 레이아웃·config·라우트·정적 게시·캐시는 명령 실행 ("파일만 교체했을 때" 표)
+9. GitHub·--zip 업데이트는 패키지 서명을 검증(7.2.0) — 미서명은 확인 후 계속(답할 수 없는 실행은 --allow-unsigned), 불일치·미신뢰 키는 차단. GitHub 는 태그 릴리스만 받음 (package-signing.md)
 ```
 
 ---
@@ -26,9 +27,9 @@
 5. [ExtensionBackupHelper](#5-extensionbackuphelper)
 6. [ExtensionPendingHelper](#6-extensionpendinghelper)
 7. [UpgradeStepInterface + UpgradeContext](#7-upgradestepinterface--upgradecontext)
-8. [번들 디렉토리 개발 워크플로우](#8-번들-디렉토리-개발-워크플로우-critical---mandatory)
+8. [번들 디렉토리 개발 워크플로우](#8-번들-디렉토리-개발-워크플로우)
 9. [개발자 버전 업데이트 가이드](#9-개발자-버전-업데이트-가이드)
-10. [템플릿 레이아웃 충돌 전략](#10-템플릿-레이아웃-충돌-전략)
+10. [레이아웃 충돌 전략 (3종 공통)](#10-레이아웃-충돌-전략-3종-공통)
 11. [Artisan 커맨드](#11-artisan-커맨드)
 12. [API 엔드포인트](#12-api-엔드포인트)
 13. [역할/권한/메뉴 동기화](#13-역할권한메뉴-동기화)
@@ -124,6 +125,8 @@
 
 `module:update` / `plugin:update` / `template:update` 는 실행 전에 확인을 묻습니다. cron, CI, 원격 명령, `--no-interaction` 처럼 확인에 답할 수 없는 실행에서 `--force` 가 없으면 업데이트를 시작하지 않은 사유와 `--force` 안내를 출력하고 **종료 코드 1** 로 끝나므로(아무것도 바뀌지 않음) 자동 실행에는 `--force` 를 붙입니다. 터미널에서 직접 「아니오」를 답한 취소는 종료 코드 0 입니다. 제거 명령(`module:uninstall` / `plugin:uninstall` / `template:uninstall` / `language-pack:uninstall`)도 같은 규칙입니다. 단 `--force` 는 확인을 건너뛸 뿐 아니라 버전 비교 없이 같은 판도 다시 적용하므로, 실제로 갱신할 확장에만 붙입니다. 언어팩 명령(`language-pack:update`)은 확인을 묻지 않습니다.
 
+**미서명 패키지 확인 (7.2.0~)**: GitHub·`--zip` 소스가 서명되지 않은 패키지(또는 이 서버에 sodium 이 없어 검증할 수 없는 패키지)면 업데이트 확인과 별도로 계속할지 한 번 더 묻습니다. 답할 수 없는 실행은 `--allow-unsigned` 가 없으면 아무것도 바꾸지 않고 **종료 코드 1** 로 끝나며, `--force` 는 이 확인을 대신하지 않습니다. 그래서 미서명 판을 받을 수 있는 자동 실행에는 `--force` 와 함께 `--allow-unsigned` 를 명시합니다. 환경설정 > 보안 「미서명 패키지 차단」이 켜져 있으면 `--allow-unsigned` 도 무시되고, 서명 불일치·신뢰하지 않는 키는 어떤 옵션으로도 진행하지 않습니다. `--source=bundled` 는 코어와 함께 배포된 원본이라 이 확인이 없습니다(기록 `bundled`). 상세: [패키지 서명](package-signing.md)
+
 **활성 디렉토리만 사라진 확장의 복구 (7.2.0~)**: DB 에는 설치(활성 포함) 행이 남았는데 `modules/{id}`·`plugins/{id}`·`templates/{id}` 활성 디렉토리만 없으면, 번들 소스 업데이트(`{type}:update {id} --force --source=bundled`)와 기본 소스 업데이트가 `_pending`·`_bundled` 원본을 활성 디렉토리로 복사한 뒤 업데이트를 이어 갑니다. 활성 상태는 그대로입니다. 종전에는 업데이트는 「찾을 수 없습니다」, 설치는 「이미 설치되어 있습니다」로 막혀 되돌릴 길이 없었습니다. GitHub·ZIP 소스와 원본이 없는 확장은 종전처럼 실패합니다.
 
 #### 외부 ZIP 직접 지정 (`--zip`)
@@ -133,9 +136,12 @@
 | 값 | 동작 |
 | --- | --- |
 | `--zip=/path/to/ext.zip` | 지정 ZIP 을 추출하여 소스로 사용. `manifest.json`(module.json / plugin.json / template.json)의 `identifier` 가 대상 확장과 일치해야 하며, `version` 은 manifest 기준으로 자동 결정 |
+| `--signature=/path/to/ext.zip.sig.json` | `--zip` 의 서명 파일 (7.2.0). 생략하면 ZIP 옆 `<zip>.sig.json` 을 자동으로 쓰고, 그것도 없으면 미서명. 지정한 파일이 없으면 시작 전에 실패 |
+| `--allow-unsigned` | 미서명·검증 불가 ZIP 을 확인 없이 계속 (7.2.0, 위 「미서명 패키지 확인」) |
 
 동작 요약:
 
+0. ZIP 을 풀기 전에 서명 파일로 종류·식별자·크기·SHA-256·키 신뢰·서명을 검증하고, 백업 전에 멈춘다 (7.2.0 — [검증 순서](package-signing.md#검증-순서))
 1. `extractFromZip()` 이 ZIP 을 임시 디렉토리에 추출 (GitHub zipball 의 `owner-repo-hash/` 래퍼든 평탄 루트든 자동 감지)
 2. `prepareZipSource()` 가 manifest 존재·JSON 해석·identifier 일치·version 존재를 검증
 3. manifest 의 `version` 을 `$toVersion` 으로 채택하고 staging → 적용 → 마이그레이션 → upgrade step 순 진행
@@ -159,6 +165,8 @@
 ### GitHub 아카이브 다운로드 및 해석
 
 GitHub 소스 업데이트 시 아카이브 URL 해석 → 다운로드 → 압축 해제 과정을 거칩니다:
+
+**태그 릴리스와 서명 자산 (7.2.0~)**: 받을 판의 태그 릴리스에 `{identifier}-{version}.zip` 과 `{identifier}-{version}.zip.sig.json` 이 짝으로 있으면 그 자산을 받아 풀기 전에 검증합니다. 짝이 없으면 아래 태그 zipball 을 미서명으로 받는데, 미서명 정책이 허락하지 않으면 **받기 전에** 멈춥니다(관리자 화면은 409 경고 창, 명령은 확인 질문). 릴리스·태그가 없으면 `main`·`master` 브랜치로 물러서지 않고 실패합니다. 상세: [패키지 서명 — GitHub 설치는 태그 릴리스만](package-signing.md#github-설치는-태그-릴리스만)
 
 **v접두사 자동 감지 및 태그 실재 검증** (`resolveGithubArchiveUrl`):
 
@@ -228,7 +236,7 @@ GitHub 소스 업데이트 시 아카이브 URL 해석 → 다운로드 → 압�
 - **마이그레이션**: 없음 (템플릿은 DB 스키마 미사용)
 - **업그레이드 스텝**: 없음
 - **판 기록 시점**: 이전 상태 복원 → 레이아웃 갱신(활성일 때, 확장 조각 재등록 포함) → DB 판·메타데이터 기록 → 백업 삭제(진행 기록 삭제) 순서다. 새 판은 레이아웃 갱신을 마친 **뒤**에 적는다 — 레이아웃 갱신 도중 프로세스가 죽어도(catch 가 돌지 않는다) DB 판이 옛 판으로 남아 「업데이트 확인」이 같은 업데이트를 다시 잡고, 다음 업데이트가 진행 기록을 이어받아 레이아웃을 다시 갱신한다. 판을 먼저 적으면 판은 새 판인데 레이아웃은 옛 판으로 남고, 상태도 이미 복원된 뒤라 멈춘 업데이트 정리 대상도 아니어서 드러나지 않는다
-- **레이아웃 전략**: `layout_strategy` 파라미터로 충돌 처리 (→ [10. 레이아웃 충돌 전략](#10-템플릿-레이아웃-충돌-전략))
+- **레이아웃 전략**: `layout_strategy` 파라미터로 충돌 처리 (→ [10. 레이아웃 충돌 전략](#10-레이아웃-충돌-전략-3종-공통))
 - **Roles/Permissions/Menus**: 없음
 
 ### 에러 발생 시
@@ -842,6 +850,7 @@ Body: { "layout_strategy": "keep" }
 > 관리자 화면: 확장(템플릿·모듈·플러그인) 설치·업데이트·레이아웃 갱신 창의 접힌 「고급 설정」에서 같은 값을 고른다(자동(권장) / 원본 JSON 우선(문제 해결용)). 창을 열 때마다 자동으로 돌아가며, 고른 값은 요청 본문 `layout_source` 로 가서 **그 요청 동안만** 적용된다
 > `--vendor-mode`: 모듈/플러그인 전용. `auto|composer|bundled` — Vendor 설치 방식 선택 (템플릿 미지원)
 > `--force` (update): 버전 비교를 건너뛰고 강제 재설치 (파일 손상, 수동 수정 복원 시 사용)
+> `--allow-unsigned`·`--signature=` (update, 7.2.0): 미서명 패키지 확인과 `--zip` 의 서명 파일 지정 — §2 「미서명 패키지 확인」, [패키지 서명](package-signing.md#artisan-명령). install 은 `_bundled`·`_pending` 원본만 설치하므로 이 옵션이 없다
 > `--force` (install): 이미 설치된 확장이라도 `_bundled`/`_pending` 원본으로 활성 디렉토리를 덮어쓰고 재설치 — 불완전 활성 디렉토리(manifest 누락 등) 복구 시 사용
 > 코어 업데이트 (`core:update`) 완료 후에는 `_bundled` 에 새 버전이 있는 확장을 감지하여 일괄 업데이트 인터랙티브 프롬프트가 자동으로 표시됨
 > 7.1.1+ 코어 업데이트는 새 배포본의 `_bundled` 를 통째로 배치하지 않는다 — 설치된 확장·그 의존 번들·이미 디스크에 있는 번들만 갱신하고, 나머지는 운영자가 고른 것만 배치한다(`--bundled-sources`). 일괄 업데이트 대상은 원래 DB 에 설치된 확장뿐이라 이 판정과 겹치지 않는다. 배치하지 않은 번들은 나중에 `php artisan core:bundled-sources place <id>` 로 `_bundled` 에 놓은 뒤 `{type}:install` 로 설치한다([코어 업데이트 시스템 — 공식 번들 배치 판정](../backend/core-update-system.md#공식-번들-배치-판정-711))
@@ -858,7 +867,7 @@ Body: { "layout_strategy": "keep" }
 |--------|------|------|------|
 | POST | `/api/admin/modules/check-updates` | `core.modules.install` | 모듈 업데이트 일괄 확인 |
 | GET | `/api/admin/modules/{moduleName}/check-modified-layouts` | `core.modules.read` | 수정된 레이아웃 확인 |
-| POST | `/api/admin/modules/{moduleName}/update` | `core.modules.install` | 모듈 업데이트 실행 (`layout_strategy`, `vendor_mode` body) |
+| POST | `/api/admin/modules/{moduleName}/update` | `core.modules.install` | 모듈 업데이트 실행 (`layout_strategy`, `vendor_mode`, `allow_unsigned` body — 미서명이면 409 `package_unsigned`) |
 
 ### 플러그인
 
@@ -866,7 +875,7 @@ Body: { "layout_strategy": "keep" }
 |--------|------|------|------|
 | POST | `/api/admin/plugins/check-updates` | `core.plugins.install` | 플러그인 업데이트 일괄 확인 |
 | GET | `/api/admin/plugins/{pluginName}/check-modified-layouts` | `core.plugins.read` | 수정된 레이아웃 확인 |
-| POST | `/api/admin/plugins/{pluginName}/update` | `core.plugins.install` | 플러그인 업데이트 실행 (`layout_strategy`, `vendor_mode` body) |
+| POST | `/api/admin/plugins/{pluginName}/update` | `core.plugins.install` | 플러그인 업데이트 실행 (`layout_strategy`, `vendor_mode`, `allow_unsigned` body — 미서명이면 409 `package_unsigned`) |
 
 ### 템플릿
 
@@ -874,7 +883,9 @@ Body: { "layout_strategy": "keep" }
 |--------|------|------|------|
 | POST | `/api/admin/templates/check-updates` | `core.templates.install` | 템플릿 업데이트 일괄 확인 |
 | GET | `/api/admin/templates/{templateName}/check-modified-layouts` | `core.templates.read` | 수정된 레이아웃 확인 |
-| POST | `/api/admin/templates/{templateName}/update` | `core.templates.install` | 템플릿 업데이트 실행 (`layout_strategy` body) |
+| POST | `/api/admin/templates/{templateName}/update` | `core.templates.install` | 템플릿 업데이트 실행 (`layout_strategy`, `allow_unsigned` body — 미서명이면 409 `package_unsigned`) |
+
+> 세 업데이트 API 모두 서명 불일치·신뢰하지 않는 키는 422(`package_signature_invalid`·`package_signer_untrusted`)다. 응답 `errors.integrity` 형식: [패키지 서명 — 오류 응답](package-signing.md#오류-응답)
 
 ### 훅 (Hook)
 

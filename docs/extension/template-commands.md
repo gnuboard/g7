@@ -164,7 +164,7 @@ php artisan template:check-updates sirsoft-admin_basic
 템플릿을 업데이트합니다.
 
 ```bash
-php artisan template:update [identifier] [--layout-strategy=overwrite] [--force] [--source=auto|bundled|github]
+php artisan template:update [identifier] [--layout-strategy=overwrite] [--force] [--source=auto|bundled|github] [--zip=] [--signature=] [--allow-unsigned]
 ```
 
 **인수**:
@@ -174,6 +174,9 @@ php artisan template:update [identifier] [--layout-strategy=overwrite] [--force]
 - `--layout-strategy=overwrite`: 레이아웃 전략 (`overwrite` = 전체 덮어쓰기 | `keep` = 운영자 수정본에 새 버전 3자 병합 + 결과 표)
 - `--force`: 버전 비교 없이 강제 업데이트 (파일 손상, 수동 수정 복원 시 사용)
 - `--source`: 업데이트 소스 강제 (`auto` 기본 = GitHub·`_bundled` 중 높은 버전(같으면 GitHub, GitHub 조회 실패·URL 없음이면 `_bundled`), `bundled` = `_bundled` 단독(GitHub 안 봄), `github` = GitHub 단독(`_bundled` 폴백 없음))
+- `--zip`: 외부 ZIP 파일을 소스로 사용 (GitHub·번들 우회, `--source` 와 함께 쓸 수 없음)
+- `--signature` (7.2.0): `--zip` 의 서명 파일(`.sig.json`) 경로. 생략하면 ZIP 옆 `<zip>.sig.json` 을 자동으로 쓴다
+- `--allow-unsigned` (7.2.0): 미서명(또는 이 서버에서 검증할 수 없는) 패키지를 확인 없이 계속. 답할 수 없는 실행은 이 옵션 없이 미서명이면 종료 코드 1, `--force` 는 대신하지 않음. 상세: [패키지 서명](package-signing.md#artisan-명령)
 
 **수행 작업**:
 - 레이아웃 전략 검증 (`overwrite` | `keep` 외 FAILURE)
