@@ -104,7 +104,6 @@ storage/installer/
 .api-test/
 .serena/
 .claudeignore
-.mcp.json
 boost.json
 cypress/
 cypress.config.js
