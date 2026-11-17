@@ -50,6 +50,23 @@
       </field>
     </fallback>
   </data-source>
+  <!-- 레이아웃 갱신·업데이트 창의 화면별 처리 미리보기 — 여는 쪽이 정한 요청(layoutPreviewRequest)에 지금 처리 방식·결정을 실어 부른다.
+       업데이트 미리보기 응답은 레이아웃 판정이 layouts 안에 있고, 삭제 예정 선언 항목·내려받은 새 판 토큰이 함께 온다.
+       업데이트 응답인지는 늘 실려 오는 declarative_deletions 로 가른다 — 꺼 둔 확장·파일이 없는 설치본은 판정 목록이 비어(layouts_skipped)
+       오므로 layouts 유무로 가르면 지워질 항목·새 판 토큰을 잃는다. -->
+  <action name="fetchLayoutPreview">
+    <sequence>
+      <set-state target="global" layoutPreviewState="loading" :layoutPreviewError="null"/>
+      <api-call :auth_required="true" target="{{_global.layoutPreviewRequest?.url}}" method="POST" body="{{Object.assign({}, _global.layoutPreviewRequest?.body ?? {}, {layout_strategy: _global.layoutSyncStrategy ?? 'keep', decisions: _global.layoutDecisions ?? {}})}}">
+        <success>
+          <set-state target="global" layoutPreview="{{Array.isArray(response.data?.declarative_deletions) ? (response.data?.layouts ?? null) : response.data}}" layoutUpdatePreview="{{Array.isArray(response.data?.declarative_deletions) ? response.data : null}}" layoutPreviewState="ready"/>
+        </success>
+        <fail>
+          <set-state target="global" layoutPreviewState="error" layoutPreviewError="{{error.message}}"/>
+        </fail>
+      </api-call>
+    </sequence>
+  </action>
   <init-local>
     <field name="searchQuery" value=""/>
   </init-local>
@@ -112,7 +129,7 @@
           <icon data-if="{{_global.isCheckingTemplateUpdates}}" name="spinner" size="sm" class="animate-spin"/>
           <span>$t:admin.templates.actions.check_updates</span>
         </button>
-        <button type="button" data-ref="manual_install_button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{templates?.data?.abilities?.can_install !== true}}">
+        <button type="button" data-ref="manual_install_button" class="flex-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{templates?.data?.abilities?.can_install !== true || _global.appConfig?.runtime_role === 'stage'}}" title="{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}">
           <responsive on="portable" class="hidden"/>
           <on type="click">
             <open-modal target="template_manual_install_modal"/>
@@ -128,7 +145,7 @@
       </page-header>
       <div data-ref="mobile_action_buttons" class="hidden">
         <responsive on="portable" class="flex-center gap-2 -mt-4 mb-4"/>
-        <button type="button" data-ref="mobile_manual_install_button" class="flex-center flex-1 justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{templates?.data?.abilities?.can_install !== true}}">
+        <button type="button" data-ref="mobile_manual_install_button" class="flex-center flex-1 justify-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{templates?.data?.abilities?.can_install !== true || _global.appConfig?.runtime_role === 'stage'}}" title="{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}">
           <on type="click">
             <open-modal target="template_manual_install_modal"/>
           </on>

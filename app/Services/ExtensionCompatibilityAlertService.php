@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\Contracts\Extension\CacheInterface;
-use App\Extension\Cache\CoreCacheDriver;
+use App\Extension\Cache\CacheDriverFactory;
 
 /**
  * 확장 호환성 알림 dismiss 상태 관리 서비스.
@@ -67,6 +67,7 @@ class ExtensionCompatibilityAlertService
      *
      * @param  string  $alertId  알림 ID (compat_{type}_{identifier} 또는 recover_{type}_{identifier})
      * @param  int|null  $userId  사용자 ID (null/0 이면 무시)
+     * @return void 반환값 없음
      */
     public function dismissAlert(string $alertId, ?int $userId): void
     {
@@ -94,6 +95,6 @@ class ExtensionCompatibilityAlertService
      */
     public static function fallback(): self
     {
-        return new self(new CoreCacheDriver(config('cache.default', 'array')));
+        return new self(CacheDriverFactory::core());
     }
 }

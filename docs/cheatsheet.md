@@ -150,41 +150,52 @@ php artisan migrate:rollback
 php artisan core:check-updates                                    # 코어 업데이트 확인
 php artisan core:update [--yes] [--force] [--no-backup] [--no-maintenance] [--vendor-mode=auto|composer|bundled] [--bundled-sources=none|all|id,…]
 php artisan core:bundled-sources list|place <id…>|prune [--force] [--include-modified] [--source=|--zip=]   # 공식 번들 소스 보고·배치·정리 (7.1.1+, prune 기본 미리보기)
-php artisan core:execute-upgrade-steps --from=X.Y.Z --to=A.B.C [--force]   # 업그레이드 스텝 단독 실행 (HANDOFF 안내 또는 수동 복구용 — 단독 호출 시 migration·resync·.env·캐시·번들 확장 일괄 업데이트 자동 수행. CoreUpdateCommand 내부 spawn 은 --skip-* 5개 옵션 자동 전달)
+php artisan core:execute-upgrade-steps --from=X.Y.Z --to=A.B.C [--yes|--force]   # 업그레이드 스텝 단독 실행 (HANDOFF 안내 또는 수동 복구용 — 단독 호출 시 migration·resync·.env·캐시·번들 확장 일괄 업데이트 자동 수행. CoreUpdateCommand 내부 spawn 은 --skip-* 5개 옵션 자동 전달)
+php artisan core:deploy-ledger-seed                               # deploy/** 서버 설정 조각의 해시 원장을 지금 디스크 내용으로 씨앗 (이미 있는 항목은 유지)
+
+# 관리자 계정 복구 (메일 없이 서버 터미널에서)
+php artisan user:reset-password [email] [--password-file=<파일>] [--generate] [--require-change]   # 이메일 생략 시 최고관리자, --generate 는 무작위 비밀번호를 한 번만 출력(다음 로그인 때 변경 강제)
 
 # 모듈
 php artisan module:list
 php artisan module:install [identifier] [--vendor-mode=auto|composer|bundled] [--force]
 php artisan module:activate [identifier]
 php artisan module:deactivate [identifier]
-php artisan module:uninstall [identifier]
+php artisan module:uninstall [identifier] [--yes] [--force] [--delete-data]
 php artisan module:composer-install [identifier?] [--all]
 php artisan module:cache-clear [identifier?]
 php artisan module:seed [identifier] [--sample] [--count=key=value]
 php artisan module:check-updates [identifier?]
-php artisan module:update [identifier] [--force] [--vendor-mode=auto|composer|bundled] [--layout-strategy=overwrite|keep] [--source=auto|bundled|github]
+php artisan module:update [identifier] [--yes] [--force] [--vendor-mode=auto|composer|bundled] [--layout-strategy=overwrite|keep] [--source=auto|bundled|github] [--dry-run [--json]] [--decisions=<파일>]
+php artisan module:refresh-layout [identifier?] [--layout-strategy=keep|overwrite] [--dry-run [--json]] [--decisions=<파일>]   # 기본 keep(운영자 수정 유지)
 
 # 플러그인
 php artisan plugin:list
 php artisan plugin:install [identifier] [--vendor-mode=auto|composer|bundled] [--force]
 php artisan plugin:activate [identifier]
 php artisan plugin:deactivate [identifier]
-php artisan plugin:uninstall [identifier]
+php artisan plugin:uninstall [identifier] [--yes] [--force] [--delete-data]
 php artisan plugin:composer-install [identifier?] [--all]
 php artisan plugin:cache-clear [identifier?]
 php artisan plugin:seed [identifier] [--sample] [--count=key=value]
 php artisan plugin:check-updates [identifier?]
-php artisan plugin:update [identifier] [--force] [--vendor-mode=auto|composer|bundled] [--layout-strategy=overwrite|keep] [--source=auto|bundled|github]
+php artisan plugin:update [identifier] [--yes] [--force] [--vendor-mode=auto|composer|bundled] [--layout-strategy=overwrite|keep] [--source=auto|bundled|github] [--dry-run [--json]] [--decisions=<파일>]
+php artisan plugin:refresh-layout [identifier?] [--layout-strategy=keep|overwrite] [--dry-run [--json]] [--decisions=<파일>]   # 기본 keep(운영자 수정 유지)
 
 # 템플릿
 php artisan template:list
 php artisan template:install [identifier] [--force]
 php artisan template:activate [identifier]
 php artisan template:deactivate [identifier]
-php artisan template:uninstall [identifier]
+php artisan template:uninstall [identifier] [--yes] [--force] [--delete-data]
 php artisan template:cache-clear [identifier?]
 php artisan template:check-updates [identifier?]
-php artisan template:update [identifier] [--layout-strategy=overwrite|keep] [--force] [--source=auto|bundled|github]
+php artisan template:update [identifier] [--layout-strategy=overwrite|keep] [--yes] [--force] [--source=auto|bundled|github] [--dry-run [--json]] [--decisions=<파일>]
+php artisan template:refresh-layout [identifier?] [--layout-strategy=keep|overwrite] [--dry-run [--json]] [--decisions=<파일>]   # 기본 keep(운영자 수정 유지)
+# --dry-run: 화면별 판정(유지·새 판 적용·병합·삭제 예정)과 새 판에서 빠져 지워질 선언 항목을 무변경으로 출력. --decisions 는 화면별 take_theirs|keep_mine JSON
+# --yes: 확인 질문만 생략. --force(같은 판 재적용·다운그레이드·호환 검사 생략·같은 판 스텝 재실행·멈춘 업데이트 정리)와 별개
+# 같은 판 스텝 재실행: 검수 서버(G7_RUNTIME_ROLE=stage)의 --force 는 같은 내용(지문)으로 이미 끝난 스텝을 건너뛰고 고친 스텝만 다시 돈다. 운영 서버는 늘 다시 돈다
+# 이 서버의 업데이트가 끝나지 않은 채 남았으면(DB 판 기록 뒤 프로세스 종료) --force 없는 update 는 「업데이트 없음」 대신 안내 후 종료 코드 1 — --force 로 이어받는다
 # --layout-strategy=keep: 운영자가 고친 부분은 유지하고 손대지 않은 조각·설정에 새 버전을 병합 + 결과 표 (3종 공통)
 # update, uninstall 은 진행 확인을 묻는다. 확인에 답할 수 없는 실행(--no-interaction, cron, CI, 원격 명령)은 --force 가 없으면 사유를 출력하고 종료 코드 1 (3종과 language-pack:uninstall 공통, --force 가 확인 생략을 겸함)
 
@@ -193,10 +204,30 @@ php artisan language-pack:list
 php artisan language-pack:install [identifier] [--source=bundled|github|url] [--no-activate]
 php artisan language-pack:activate [identifier] [--force]
 php artisan language-pack:deactivate [identifier]
-php artisan language-pack:uninstall [identifier] [--cascade] [--force]
+php artisan language-pack:uninstall [identifier] [--cascade] [--yes] [--force]
 php artisan language-pack:cache-clear
 php artisan language-pack:check-updates [identifier?]
 php artisan language-pack:update [identifier] [--force] [--source=auto|bundled|github]
+
+# 설치 상태 조회 (DB·캐시·파일 무변경, GitHub 조회 없음 — 스크립트는 --json, schema 1)
+php artisan extension:list [--type=all|module|plugin|template|language-pack] [--json]
+
+# 같은 판인데 파일이 다른 확장·언어팩의 활성 폴더를 번들 내용으로 덮어씀 (번들 → 활성 폴더, 직접 고친 파일은 사라짐, custom/ 보존, 판 번호·스텝·레이아웃 본문 그대로 — 빈 레이아웃 병합 기준만 교체 전 파일로 채움)
+php artisan extension:reset-files-from-bundled [identifier?] [--type=module|plugin|template|language-pack] [--migrate] [--dry-run] [--json]   # 예전 이름 extension:sync-files 도 동작
+
+# 실행 대기 마이그레이션의 SQL·파괴 여부·출처와 새 판의 업그레이드 스텝 (실행 없음)
+php artisan g7:migrate-plan [--scope=all|core|extensions] [--json]
+
+# storage 경로 분류 (운영 데이터·서버별 파일·업데이트 상태·임시 파일)
+php artisan storage:paths [--json]
+
+# 여러 서버 운영 (G7_RUNTIME_ROLE=stage 검수 서버 — docs/backend/runtime-role.md)
+php artisan stage:apply-to-live [--dry-run] [--json] [--yes]        # 운영 서버에서: 검수 서버가 먼저 올린 판 마무리 — 파일 맞추기 → 레이아웃 갱신 keep → 미룬 정리 (번들 파일 → 이 서버, 검수 서버 데이터는 옮기지 않음, 실패 단계에서 멈춤)
+# 운영 서버 배포 순서: 코드 배포 → (코어가 바뀌었으면) core:update → stage:apply-to-live --yes
+php artisan extension:apply-deferred-cleanup [--dry-run] [--json]   # 운영 서버에서: 검수 서버가 미룬 선언 항목 정리 실행 (stage:apply-to-live 의 3단계, 파일 판·내용 지문이 같을 때만)
+php artisan core:resync-declarations                               # 판과 무관하게 코어 선언(config/core.php)만 다시 맞춤 — 같은 판으로 코어 선언을 고친 배포에서
+php artisan stage-layouts:reset-from-live [--yes]                   # 검수 서버에서: 운영 → 검수 서버로 레이아웃 덮어쓰기 (검수 서버 편집본·버전 기록 지워짐, 실행 전 건수 안내 — 검수 → 운영 올리기 기능은 없음)
+# 검수 서버 갱신 순서: 업그레이드 스텝 → stage-layouts:reset-from-live --yes → <type>:refresh-layout (검수 서버를 처음 띄울 때도 reset-from-live 1회)
 
 # Composer 의존성 (모듈/플러그인별 독립 vendor/)
 php artisan extension:composer-install          # 모든 모듈+플러그인
@@ -208,6 +239,17 @@ php artisan extension:update-autoload            # 오토로드 캐시 + 정적 
 php artisan hooks:cache                           # bootstrap/cache/hooks.php 생성
 php artisan hooks:clear                           # 캐시 삭제 (삭제 후 스캔 폴백 — 항상 안전)
 ```
+
+### 종료 코드 (비대화형 실행·스크립트)
+
+cron·스크립트는 화면 문구가 아니라 종료 코드로 성공을 판단한다. 코어 업데이트·확장 명령의 종료 코드는 다음과 같다.
+
+| 코드 | 뜻 | 예 |
+| --- | --- | --- |
+| 0 | 성공 | 업데이트 완료, 업데이트 없음(GitHub 조회 성공 또는 릴리스 없음) |
+| 1 | 실패 | 번들 확장 일괄 업데이트 중 하나라도 실패, 결과를 남기지 못한 일괄 업데이트 프로세스, `*:check-updates` 의 GitHub 조회 실패, `*:update --source=github` 의 GitHub 조회 실패, 답할 수 없는 확인 질문, `extension:list` 설치 전 |
+| 2 | 입력 오류 | 알 수 없는 옵션 값(`extension:list --type=…`·`extension:reset-files-from-bundled --type=…`) |
+| 75 | 재개 필요 | `core:update`·`core:execute-upgrade-steps` 가 업그레이드 스텝 새 프로세스 재진입으로 멈춤 — 출력된 재개 명령(`core:execute-upgrade-steps --from=… --to=… --force`)을 이어서 실행 |
 
 > 훅 캐시는 확장 install/update 및 코어 업데이트(`clearAllCaches` → `extension:update-autoload`) 시 자동 재생성됩니다. 코어 리스너 코드 배포 시(구독 훅·`sync` 옵션만 바뀐 경우 포함)에는 `hooks:cache` 수동 실행 — stale 캐시는 오류 없이 이전 구독으로 동작합니다. 상세: [extension/hooks.md "정적 훅 매핑 캐시"](extension/hooks.md).
 
@@ -399,7 +441,7 @@ php artisan api:docgen-backfill-fields               # 응답 필드 표 TODO �
 php artisan core:check-updates                                    # 코어 업데이트 확인
 php artisan core:update [--yes] [--force] [--no-backup] [--no-maintenance] # 코어 업데이트 실행 (cron, CI 처럼 확인에 답할 수 없으면 --yes)
 php artisan core:bundled-sources list|place <id…>|prune [--force] [--include-modified] [--source=|--zip=]   # 공식 번들 소스 보고·배치·정리 (7.1.1+, prune 기본 미리보기)
-php artisan core:execute-upgrade-steps --from=X.Y.Z --to=A.B.C [--force]   # 업그레이드 스텝 단독 실행 (HANDOFF 안내 또는 수동 복구용)
+php artisan core:execute-upgrade-steps --from=X.Y.Z --to=A.B.C [--yes|--force]   # 업그레이드 스텝 단독 실행 (HANDOFF 안내 또는 수동 복구용) — 비대화형 배포는 --yes(확인만), --force 는 같은 판 재실행·대장 무시
 
 # CLI (Artisan 커맨드)
 php artisan module:check-updates [identifier?]                   # 모듈 업데이트 확인
@@ -598,7 +640,7 @@ php artisan plugin:build sirsoft-payment --active       # 활성 디렉토리에
 php artisan core:check-updates                                    # 코어 업데이트 확인
 php artisan core:update [--yes] [--force] [--no-backup] [--no-maintenance] # 코어 업데이트 실행 (cron, CI 처럼 확인에 답할 수 없으면 --yes)
 php artisan core:bundled-sources list|place <id…>|prune [--force] [--include-modified] [--source=|--zip=]   # 공식 번들 소스 보고·배치·정리 (7.1.1+, prune 기본 미리보기)
-php artisan core:execute-upgrade-steps --from=X.Y.Z --to=A.B.C [--force]  # 업그레이드 스텝 단독 실행 (HANDOFF 안내/수동 복구용 — 사전·사후 단계 자동 수행)
+php artisan core:execute-upgrade-steps --from=X.Y.Z --to=A.B.C [--yes|--force]  # 업그레이드 스텝 단독 실행 (HANDOFF 안내/수동 복구용 — 사전·사후 단계 자동 수행)
 
 # 모듈
 php artisan module:list

@@ -55,6 +55,14 @@ interface UserRepositoryInterface
     public function delete(User $user): bool;
 
     /**
+     * 회원에게 직접 준 메뉴 권한(`menu_permissions.user_id`)을 지웁니다 — 회원을 지우기 직전에 부른다(DB CASCADE 비의존).
+     *
+     * @param  User  $user  대상 회원
+     * @return int 지운 행 수
+     */
+    public function deleteMenuPermissions(User $user): int;
+
+    /**
      * 모든 사용자를 조회합니다.
      *
      * @return Collection 사용자 컬렉션

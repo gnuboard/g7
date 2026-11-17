@@ -519,17 +519,37 @@ Laravel 의 `url()`·`route()`·`redirect('/x')`·`redirect()->back()` 과 FormR
 | `SiteUrl::forPath($pathAndQuery)` | 요청에서 꺼낸 경로·쿼리(`$request->getRequestUri()`)를 사이트 주소에 붙인 URL |
 | `SiteUrl::base()` · `SiteUrl::origin()` · `SiteUrl::hostWithPort()` | 사이트 주소(끝 `/` 제거)·출처(`scheme://host[:port]`)·호스트[:포트] |
 | `SiteUrl::isSameOrigin($url)` | 주어진 URL 이 사이트 주소와 같은 출처인지 |
+| `SiteUrl::forOutboundLinks()` | 메일·알림처럼 밖으로 나가는 링크의 베이스 — `G7_PUBLIC_LINK_URL` 을 정했으면 그 값, 비면 사이트 주소(아래 「밖으로 나가는 링크의 주소」) |
 
-**사람이 여는 화면 주소는 화면 주소 헬퍼로 (7.2.0)** — 알림·메일 링크, 비밀번호 재설정, 결제·클레임 결제 뒤 성공·실패 복귀, 본인인증 복귀처럼 **회원이 브라우저로 여는 사용자 화면**은 `SiteUrl` 대신 `App\Support\ScreenUrl` 로 만든다. 기본은 사이트 주소와 같고, 환경설정 「사용자 화면 URL」(`general.user_screen_url`)을 정하면 그 주소가 베이스가 되며, 필터 훅 `core.screen_url.filter_path` 로 경로를 바꿀 수 있다. PG·본인인증 제공자에 넘기는 **콜백·웹훅 주소와 관리자 화면 주소**는 이 서버가 받아야 하므로 계속 `SiteUrl` 이다.
+**사람이 여는 화면 주소는 화면 주소 헬퍼로 (7.2.0)** — 알림·메일 링크, 비밀번호 재설정, 결제·클레임 결제 뒤 성공·실패 복귀, 본인인증 복귀처럼 **회원이 브라우저로 여는 사용자 화면**은 `SiteUrl` 대신 `App\Support\ScreenUrl` 로 만든다. 기본은 사이트 주소와 같고, 환경설정 「사용자 화면 URL」(`general.user_screen_url`)을 정하면 그 주소가 베이스가 되며, 필터 훅 `core.screen_url.filter_path` 로 경로를 바꿀 수 있다. PG·본인인증 제공자에 넘기는 **콜백·웹훅 주소**는 이 서버가 받아야 하므로 계속 `SiteUrl` 이다. 관리자 화면 링크는 관리자 범위(`ScreenUrl::SCOPE_ADMIN`)로 만든다 — 「사용자 화면 URL」을 따르지 않는다.
 
 | 용도 | 사용 |
 | --- | --- |
 | 화면 키로 경로·절대 URL 만들기 | `ScreenUrl::path('auth.login', '/login')` · `ScreenUrl::absolute('board.post', '/board/{slug}/{id}', [...])` |
 | 이미 만든 상대 경로(설정값 등)를 사용자 화면 베이스로 | `redirect(ScreenUrl::toAbsolute(ShopRedirectUrl::resolve($setting)))` (브라우저 복귀용 `failedValidation` 포함) |
 | 관리자 링크 | 범위 `ScreenUrl::SCOPE_ADMIN` — 베이스는 사이트 주소 |
+| 메일·알림·문자에 싣는 링크 | 링크 변형 `ScreenUrl::absoluteForLinks()` · `ScreenUrl::toAbsoluteForLinks()` · `ScreenUrl::userLinkBase()` (아래 「밖으로 나가는 링크의 주소」) |
 | 입력 복귀 주소 출처 허용 | `SiteUrl::isSameOrigin($url) \|\| ScreenUrl::isUserScreenOrigin($url)` |
 
 화면 키 목록과 필터 예제는 [개발자 화면 가이드](../custom-development.md#5-화면-주소-키와-주소-필터).
+
+**밖으로 나가는 링크의 주소 (`G7_PUBLIC_LINK_URL`)** — 같은 DB 를 쓰는 서버를 공개 주소와 다른 주소로 띄우면(예: 검수용
+사이트), 그 서버가 보내는 메일·알림의 링크가 그 서버 주소를 가리켜 받는 사람이 공개 사이트가 아닌 곳을 열게 된다. `.env` 의
+`G7_PUBLIC_LINK_URL`(config `core.public_link_url`, 비면 null)에 공개 주소를 적으면 링크 베이스가 그 주소로 바뀐다.
+
+| 주소 | 베이스 (처음 정해진 값) |
+| --- | --- |
+| 메일·알림·문자의 회원용 링크 (`ScreenUrl::absoluteForLinks()`·`toAbsoluteForLinks()` 회원 범위·`userLinkBase()`) | 환경설정 「사용자 화면 URL」 → `G7_PUBLIC_LINK_URL` → 사이트 주소 |
+| 메일·알림·문자의 관리자용 링크 (링크 변형의 관리자 범위)·알림의 사이트 링크(`{site_url}`) | `G7_PUBLIC_LINK_URL` → 사이트 주소 (`SiteUrl::forOutboundLinks()`) |
+| 브라우저가 돌아가는 화면 주소 (`ScreenUrl::absolute()`·`toAbsolute()`·`userBase()` — 결제·본인인증 뒤 복귀, 복귀 출처 검사 `isUserScreenOrigin()`, 사이트맵) | 회원 범위 = 「사용자 화면 URL」 → 사이트 주소, 관리자 범위 = 사이트 주소 — 이 값을 따르지 않는다 |
+| PG·본인인증·소셜 로그인 콜백, 웹훅, 정식 주소 이동, 분석 수집 주소 | 사이트 주소 (`SiteUrl::base()`·`absolute()`·`forPath()`) — 이 값을 따르지 않는다 |
+
+알림 데이터 리스너(`extract_data` 필터)와 메일 본문을 만드는 코드는 링크를 링크 변형으로 만든다 — 경로는
+`ScreenUrl::absoluteForLinks($key, $path, $params, $scope)`·`ScreenUrl::toAbsoluteForLinks($path, $scope)`, 회원용 `{site_url}` 은
+`ScreenUrl::userLinkBase()`, 관리자용 `{site_url}` 은 `SiteUrl::forOutboundLinks()`. 확장 헬퍼가 절대 주소를 만들어 주는 경우
+(`BoardScreenUrl::post(..., absolute: true)` 등)는 상대 경로로 받아 `ScreenUrl::toAbsoluteForLinks()` 로 감싼다. 문자·알림톡 채널은
+알림 데이터의 `*_url` 을 그대로 실으므로 따로 손볼 것이 없다. 결제·본인인증 뒤 브라우저 복귀는 요청을 받은 이 서버의 화면으로
+돌아가야 하므로 기본 변형(`ScreenUrl::toAbsolute()`)을 그대로 쓴다. 비워 두면 종전과 같다.
 
 API 라우트(`api/*`)의 검증 오류는 Accept 헤더와 관계없이 JSON 으로 응답한다(`bootstrap/app.php` 의 `shouldRenderJsonWhen`) — 직전 화면으로 되돌아가는 응답이 생기지 않는다. 사이트 주소가 아닌 Host(하위 도메인·www 쌍·다른 포트·별칭)로 들어온 화면 요청은 사이트 주소로 이동한다(`CANONICAL_HOST_REDIRECT`, 기본 켜짐).
 

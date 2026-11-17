@@ -363,7 +363,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
             return $this->emptyResult();
         }
 
-        $baseUrl = SiteUrl::base();
+        $baseUrl = SiteUrl::forOutboundLinks();
 
         return [
             'notifiable' => null,
@@ -429,7 +429,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
             return $this->emptyResult();
         }
 
-        $baseUrl = SiteUrl::base();
+        $baseUrl = SiteUrl::forOutboundLinks();
         $product = $inquiry->product;
 
         return [
@@ -442,7 +442,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
                 // 받는 사람이 아닌 회원(문의 작성자)의 이름은 알림 영역의 표시 이름이다
                 'customer_name' => MemberDisplayName::name($inquiry->user, MemberDisplayName::AREA_NOTIFICATION) ?? '',
                 'inquiry_content' => mb_substr($inquiry->inquirable?->content ?? '', 0, 200),
-                'inquiry_url' => EcommerceScreenUrl::admin('ecommerce.admin.inquiries', '/admin/ecommerce/product-inquiries', [], absolute: true),
+                'inquiry_url' => ScreenUrl::toAbsoluteForLinks(EcommerceScreenUrl::admin('ecommerce.admin.inquiries', '/admin/ecommerce/product-inquiries'), ScreenUrl::SCOPE_ADMIN),
                 'site_url' => $baseUrl,
             ],
             'context' => [
@@ -469,7 +469,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
             return $this->emptyResult();
         }
 
-        $baseUrl = ScreenUrl::userBase();
+        $baseUrl = ScreenUrl::userLinkBase();
 
         return [
             'notifiable' => null,
@@ -480,7 +480,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
                 'app_name' => config('app.name'),
                 'product_name' => $inquiry->product?->getLocalizedName() ?? ($inquiry->product_name_snapshot[app()->getLocale()] ?? ''),
                 'inquiry_content' => mb_substr($inquiry->inquirable?->content ?? '', 0, 200),
-                'inquiry_url' => EcommerceScreenUrl::mypageInquiries(absolute: true),
+                'inquiry_url' => ScreenUrl::toAbsoluteForLinks(EcommerceScreenUrl::mypageInquiries()),
                 'site_url' => $baseUrl,
             ],
             'context' => [
@@ -524,7 +524,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
      */
     private function buildOrderData(Order $order, array $extra = []): array
     {
-        $baseUrl = ScreenUrl::userBase();
+        $baseUrl = ScreenUrl::userLinkBase();
 
         // 회원 주문의 이름은 받는 사람 이름이다 — 코어가 받는 사람과 채널마다 그 채널의 표시 이름으로 바꾼다.
         // 비회원 주문은 회원이 없으므로 주문서에 적힌 주문자 이름 그대로다.
@@ -581,8 +581,8 @@ class EcommerceNotificationDataListener implements HookListenerInterface
     {
         // 사람이 여는 화면 — 「사용자 화면 URL」·주소 필터를 따른다(#792)
         return $order->isGuestOrder()
-            ? EcommerceScreenUrl::guestOrders(absolute: true)
-            : EcommerceScreenUrl::mypageOrderDetail((string) $order->order_number, absolute: true);
+            ? ScreenUrl::toAbsoluteForLinks(EcommerceScreenUrl::guestOrders())
+            : ScreenUrl::toAbsoluteForLinks(EcommerceScreenUrl::mypageOrderDetail((string) $order->order_number));
     }
 
     /**
@@ -622,8 +622,8 @@ class EcommerceNotificationDataListener implements HookListenerInterface
         }
 
         // 운영자에게 가는 알림의 사이트 주소는 관리자 화면 기준(사이트 주소)이다 — 회원 기본값은 사용자 화면 URL(#792).
-        $data['site_url'] = SiteUrl::base();
-        $data['order_url'] = EcommerceScreenUrl::admin('ecommerce.admin.order', '/admin/ecommerce/orders/{order_number}', ['order_number' => $orderNumber], absolute: true);
+        $data['site_url'] = SiteUrl::forOutboundLinks();
+        $data['order_url'] = ScreenUrl::toAbsoluteForLinks(EcommerceScreenUrl::admin('ecommerce.admin.order', '/admin/ecommerce/orders/{order_number}', ['order_number' => $orderNumber]), ScreenUrl::SCOPE_ADMIN);
 
         return $data;
     }
@@ -702,7 +702,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
         $currency = (string) ($args[2] ?? 'KRW');
         $expiresDate = (string) ($args[3] ?? '');
         $balance = (float) ($args[4] ?? 0);
-        $baseUrl = ScreenUrl::userBase();
+        $baseUrl = ScreenUrl::userLinkBase();
 
         return [
             'notifiable' => null,
@@ -715,7 +715,7 @@ class EcommerceNotificationDataListener implements HookListenerInterface
                 'currency' => $currency,
                 'expires_date' => $expiresDate,
                 'balance' => number_format($balance),
-                'mileage_url' => EcommerceScreenUrl::mypageMileage(absolute: true),
+                'mileage_url' => ScreenUrl::toAbsoluteForLinks(EcommerceScreenUrl::mypageMileage()),
                 'site_url' => $baseUrl,
             ],
             'context' => [

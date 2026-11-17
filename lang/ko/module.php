@@ -21,6 +21,7 @@ return [
     'update_success' => '모듈이 성공적으로 업데이트되었습니다.',
     'update_failed' => '모듈 업데이트에 실패했습니다: :error',
     'refresh_layouts_success' => '모듈 레이아웃이 성공적으로 갱신되었습니다.',
+    'refresh_layouts_preview_success' => '레이아웃 갱신 미리보기를 만들었습니다.',
     'refresh_layouts_failed' => '모듈 레이아웃 갱신에 실패했습니다: :error',
     'uninstall_info_success' => '모듈 삭제 정보를 성공적으로 조회했습니다.',
     'uninstall_info_failed' => '모듈 삭제 정보 조회에 실패했습니다: :error',

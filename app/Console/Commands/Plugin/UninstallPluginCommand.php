@@ -28,6 +28,7 @@ class UninstallPluginCommand extends Command
     protected $signature = 'plugin:uninstall
         {identifier : 제거할 플러그인 식별자}
         {--force : 확인 없이 삭제}
+        {--yes : 확인 질문만 생략 (--force 의 다른 효과 없이)}
         {--delete-data : 플러그인 데이터(테이블, 환경설정) 함께 삭제}';
 
     /**

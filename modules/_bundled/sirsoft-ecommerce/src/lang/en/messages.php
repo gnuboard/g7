@@ -1662,11 +1662,13 @@ return [
             ],
         ],
         'shipping_carrier' => [
+            'entity_label' => 'Shipping carrier',
             'sync_start' => 'Starting shipping carrier initial data synchronization.',
             'created' => 'Shipping carrier created: :name (:code)',
             'sync_done' => 'Shipping carrier sync complete: :created created, :synced synced, :deleted stale deleted, :preserved in use kept (:total total)',
         ],
         'shipping_type' => [
+            'entity_label' => 'Shipping type',
             'sync_start' => 'Starting shipping type initial data synchronization.',
             'sync_done' => 'Shipping type sync complete: :defined defined / :count in DB / :deleted stale deleted / :preserved in use kept',
         ],
@@ -1817,6 +1819,7 @@ return [
             'created' => 'Category created: :name (depth: :depth)',
         ],
         'claim_reason' => [
+            'entity_label' => 'Claim reason',
             'sync_start' => 'Starting claim reason initial data synchronization.',
             'created' => 'Claim reason created: :name (:code)',
             'preserved' => 'Reasons kept because they are in use: :count',

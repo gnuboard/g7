@@ -138,6 +138,7 @@
 | 진행 중 | 진행 콜백(30초 간격)·진행 막대 단계마다 잠금을 늘리고, 캐시 비우기 직후와 번들 일괄 업데이트 직전에는 바로 늘리거나 다시 잡는다(redis·memcached 의 flush 는 잠금까지 지운다) |
 
 - 자식 프로세스(`core:execute-upgrade-steps`, `core:execute-bundled-updates`)는 코어 잠금을 잡지 않는다 — 부모와 소유자가 달라 스스로 막힌다.
+- 운영자가 **단독으로** 실행한 `core:execute-upgrade-steps`(spawn 표식 `G7_UPDATE_IN_PROGRESS` 없음)는 코어 업데이트 실행 잠금(`CoreUpdateService::acquireRunLock()`)을 잡는다. 다른 `core:update`·단독 실행이 쥐고 있으면 아무 단계도 돌리지 않고 안내와 함께 종료 코드 1 이다 (7.2.0).
 - file 캐시의 잠금은 `storage/framework/cache/locks` 에 있어 `cache:clear` 가 지우지 않는다.
 - 번들 일괄 업데이트는 잠금 저장소 장애를 만나면 첫 항목에서 멈추고 남은 항목 수를 한 번 알린다(docs/extension/extension-update-system.md 「작업 잠금」).
 - 적용 시점: 업데이트를 실행하는 것은 **설치된(이전) 판의 명령**이다. 7.1.4 → 7.1.5 업데이트에는 이 차단이 없고, 7.1.5 에서 그다음 판으로 올릴 때부터 적용된다.
@@ -399,6 +400,46 @@ v접두사 자동 감지 (resolveGithubArchiveUrl):
 > **단독 실행 안전성 (beta.6 이후)**: `core:execute-upgrade-steps` 는 HANDOFF 안내 또는 수동 복구 목적으로 운영자가 직접 호출되는 경로가 있다. 단독 실행 시 자식은 기본값으로 부모 Step 9 (`runMigrations` + `reloadCoreConfigAndResync`), Step 11 (`updateVersionInEnv` + `clearAllCaches`), Step 12 (번들 확장 일괄 업데이트) 를 자체적으로 수행해 단일 명령으로 업그레이드를 완결한다. 부모 `CoreUpdateCommand::spawnUpgradeStepsProcess()` 는 자식 명령 라인에 `--skip-migrations`, `--skip-resync`, `--skip-version-env`, `--skip-cache-clear`, `--skip-bundled-updates` 5개를 무조건 추가해 중복 회피한다 — 부모가 자식 종료 후 동일 단계를 직접 수행하기 때문이다.
 
 > **spawn 자식은 이전 버전의 config 캐시로 부팅한다**: 7.0.9 이하 부모는 Step 10(spawn) 전에 config 캐시를 비우지 않았다 — `clearAllCaches()` 는 Step 11 이다. 그래서 이전 버전 설치본에 `bootstrap/cache/config.php` 가 있으면(설치 마법사·설정 저장·확장 업데이트가 만든다) 자식은 그 캐시로 부팅하고, 자식의 `config('app.version')` 은 부모가 env 로 넘긴 `APP_VERSION={toVersion}` 이 아니라 캐시에 박힌 fromVersion 이다. 업데이트 흐름 안에서 "지금 프로세스의 코어 버전" 을 판정하는 코드는 `config('app.version')` 을 직접 읽지 않고 `CoreVersionChecker::getCoreVersion()`(env 우선, config 폴백)을 쓴다. `runUpgradeSteps()` 의 stale 메모리 가드가 config 만 읽던 시절에는 정상 spawn 자식을 stale 부모로 오판해 스텝이 0건인 릴리즈에서도 핸드오프로 중단됐다(7.0.9→7.0.10). 부모 in-process fallback 에서는 env 가 `.env` 의 fromVersion 이므로 가드는 그대로 발동한다.
+
+> **단독 실행은 가드 대상이 아니다 (7.2.0)**: 가드의 목적은 옛 코드를 메모리에 올린 `core:update` 부모가 in-process 로 새 스텝을 돌리는 것을 막는 것이다. `core:execute-upgrade-steps` 는 spawn 자식이든 운영자 단독 실행이든 새로 시작한 프로세스라 디스크의 새 코드를 읽으므로 `runUpgradeSteps(..., freshProcess: true)` 로 가드를 건너뛴다. 종전에는 단독 실행도 `.env` 의 옛 `APP_VERSION` 으로 판정돼, 핸드오프 안내대로 재개 명령을 실행해도 같은 가드가 다시 막았다(abort 모드에서 종료 코드 75). `.env` 의 판 번호는 종전대로 스텝이 성공한 뒤에만 갱신한다. 가드가 남은 경로의 재개 안내는 `APP_VERSION=<대상 판> php artisan core:execute-upgrade-steps --from=… --to=… --force` 와 PowerShell 형식(`$env:APP_VERSION='<대상 판>'; php artisan …`)을 함께 적는다.
+>
+> **spawn 실패 모드는 config 하나만 읽는다 (7.2.0)**: `CoreUpdateService::spawnFailureMode()` 가 `app.update.spawn_failure_mode`(기본 `abort`)만 읽는다. 종전에는 코드 두 곳의 폴백값이 `fallback` 이라 그 키가 없는 config 캐시로 부팅하면 같은 설치가 다르게 움직였다. 값이 없거나 모르는 값이면 `abort` 다.
+
+### 점검 모드 통과 수단과 해제 시점 (7.2.0)
+
+점검 화면은 Laravel 기본 점검 미들웨어 대신 `MaintenanceModePage` 가 만든다. 이 미들웨어가 `php artisan down` 옵션과 아래 서버 로컬 설정을 따른다.
+
+| `down` 옵션·설정 | 동작 |
+| --- | --- |
+| `--secret=<값>` | `/<값>` 을 열면 우회 쿠키를 주고 `/` 로 보낸다 — 그 쿠키로 들어간다(7.2.0 전에는 쿠키를 발급하지 않아 503 이었다) |
+| `G7_MAINTENANCE_EXCEPT` (`core.maintenance.except`) | 쉼표 구분 경로(`*` 와일드카드) — 그 경로는 통과. `down` 명령에는 경로 예외 옵션이 없어 서버 로컬 설정으로 둔다 |
+| `G7_MAINTENANCE_ALLOW_IPS` (`core.maintenance.allow_ips`) | 쉼표 구분 IP·CIDR — 신뢰 프록시를 거친 요청 IP 가 맞으면 통과 |
+| `--retry=<초>`·`--refresh=<초>` | `Retry-After`·`Refresh` 헤더 |
+| `--status=<코드>`·`--redirect=<경로>` | 응답 상태 코드 · 다른 경로의 이동 대상 |
+
+웹 코어 업데이트의 진행·되돌리기 경로 면제(`MAINTENANCE_EXEMPT_URIS`)는 그대로다.
+
+점검 모드를 켜고 끄는 수단은 `php artisan down` / `php artisan up` 뿐이다. 환경설정에 있던 `general.maintenance_mode` 는 어떤
+코드도 읽지 않아 켜 두어도 사이트가 막히지 않았다 — 7.2.0 에서 기본값·저장 검증에서 지웠고, 저장 파일에 남은 값은 7.2.0 업그레이드
+데이터 스텝 `10_RemoveMaintenanceModeSetting` 이 지운다(#888).
+
+`core:update` 는 번들 확장 일괄 업데이트가 끝난 뒤에 점검 모드를 푼다 — 일괄 업데이트가 실패하거나 예외로 멈춰도 그 호출을 감싼 `finally` 에서 푼다.
+종전에는 코어 마무리 직후 풀어, 새 코어와 옛 확장이 섞인 사이트가 일괄 업데이트 동안 열려 있었다. 웹 경로는 단계 순서(번들 → 마무리)가 이미 같다.
+
+### 실행 전 계획 보기 — `g7:migrate-plan` (7.2.0)
+
+```bash
+php artisan g7:migrate-plan [--scope=all|core|extensions] [--json]
+```
+
+실행 대기 마이그레이션의 SQL 을 연결의 pretend 로 모아 보여 준다 — DB·파일은 바뀌지 않는다. 항목마다 출처(`source`: `core`·`custom`·`module:<id>`·`plugin:<id>`)와
+파괴적 종류(`drop_table`·`drop_column`·`drop`·`rename`·`change`·`not_null`)를 적고, 컬럼 삭제·이름 변경·타입 변경·NOT NULL 전환은 `defer_recommended: true` 다
+(옛 코드가 새 스키마와 함께 도는 기간에 깨질 수 있다). core 범위는 `database/migrations` 와 마이그레이터에 등록된 비확장 경로(`database/migrations/custom` 등) 전부다 —
+`php artisan migrate` 가 실제로 돌릴 집합과 같다. 확장은 번들 폴더(새 판) 기준이다.
+
+업그레이드 스텝은 현재 판보다 새로운 것을 나열하고, `AbstractUpgradeStep::describe()`(선택 구현, `['summary' => …, 'destructive' => bool]`)가 없으면 「설명 없음」이다.
+마이그레이션 안에서 DB 를 조회해 분기하는 코드는 pretend 에서 조회가 실행되지 않아 실제와 다를 수 있다 — 출력 맨 위에 이 경고를 낸다.
+
 >
 > 같은 이유로 자식이 `config('app.update.*')` 로 읽는 목록(쓰기 권한 디렉토리 등)도 캐시에 박힌 옛 목록이다 — 신버전이 항목을 추가해도 자식에게 보이지 않는다. 방어는 두 겹이다: ① 부모(7.0.10+)는 `spawnUpgradeStepsProcess()` 가 `proc_open` 직전에 `ConfigCacheHelper::clear()` 로 캐시를 비워 자식이 디스크 config + `.env` + spawn env 로 부팅하게 한다(캐시는 Step 11 이 다시 만든다). ② 자식(7.0.10+)은 이전 버전 부모가 캐시를 남겨 둔 경우를 위해, 캐시 파일이 있으면 `CoreUpdateService::freshDiskUpdateConfig()` 로 디스크의 `config/app.php` 를 직접 읽는다 — 캐시 부팅에서는 `.env` 도 로드되지 않으므로 그 안에서 `.env` 를 먼저 불변 로드한다(프로세스 env 의 `APP_VERSION` 은 덮어쓰지 않는다).
 
@@ -483,7 +524,7 @@ spawn 자식이 실패(`proc_open` 미지원 · 비정상 종료 · silent skip)
 > - **집계**: `success`·`failed` 는 항목 단위 수다. 결과 줄 없이 끝난 항목 프로세스(메모리 고갈 등)는 그 항목 1건만 실패로 세고 다음 항목으로 간다.
 > - **실패 항목 안내**: 끝에 「업데이트하지 못한 항목」 목록과 항목별 다시 실행 명령(`php artisan module:update {id} --source=bundled --force --layout-strategy={전략}`, 언어팩은 `php artisan language-pack:update {id} --source=bundled`)을 출력한다. 결과 줄에는 실패가 있을 때만 `failed_items`(종류·식별자·전략·사유)를 덧붙인다 — 이전 판 `core:update` 는 `success`·`failed` 만 읽으므로 7.1.x 에서 올라오는 업데이트도 정확한 수를 받는다.
 > - **proc_open 이 없는 서버**: 같은 프로세스에서 차례로 돌되 config·라우트 캐시 재굽기를 `ConfigCacheHelper::deferRebuilds()`·`RouteCacheHelper::deferRebuilds()` 로 끝에 한 번만 한다(그 사이 캐시를 읽는 새 프로세스는 뜰 수 없다). 부모의 in-process fallback 도 같다.
-> - **부모가 결과를 못 받은 경우**: 자식 전체가 결과 줄 없이 끝나면 부모는 실패 1건으로 세고, 어느 항목까지 갱신됐는지 알 수 없다는 경고와 종료 코드를 출력한다.
+> - **부모가 결과를 못 받은 경우**: 자식 전체가 결과 줄 없이 끝나면 부모는 실패 1건으로 세고, 어느 항목까지 갱신됐는지 알 수 없다는 경고와 종료 코드를 출력한다. 자식은 대상이 0건이어도 정상 종료 경로에서 결과 줄을 늘 내므로, 정상 종료(0)인데 결과 줄이 없어도 실패 1건이다(7.2.0 — 종전에는 「성공 0 / 실패 0」으로 성공 처리).
 
 > **선언형 산출물 일괄 sync — `syncDeclarativeArtifacts`**: `ModuleManager::syncDeclarativeArtifacts(ModuleInterface)` / `PluginManager::syncDeclarativeArtifacts(PluginInterface)` 는 모듈/플러그인의 모든 declarative 데이터(역할·권한·메뉴·cleanup·IDV 정책·알림 정의 — 본인인증 알림 포함) 를 한 묶음으로 동기화하는 public 진입점이다. `installModule` / `updateModule` 트랜잭션이 내부적으로 호출하며, 코어 업그레이드 사후 보정(`Upgrade_7_0_0_beta_4` 등) 도 활성 모듈/플러그인을 순회하며 이 메서드를 호출해 일회성 회복을 수행한다. 각 sync 메서드는 helper 의 user_overrides 보존 패턴을 따르므로 정상 환경 재호출 무해 (멱등).
 
@@ -522,6 +563,15 @@ spawn 자식이 실패(`proc_open` 미지원 · 비정상 종료 · silent skip)
 - 관리자에게 안내: "이전 버전으로 사이트를 운영하려면: php artisan up"
 - 유지보수 모드 bypass secret 출력
 ```
+
+### 되돌리지 않는 것 — 적용된 마이그레이션 (앞으로 고친다)
+
+롤백은 **파일**만 백업으로 되돌린다. 업데이트가 실패하기 전에 이미 적용된 마이그레이션(Step 9)과 끝난 업그레이드 스텝의 데이터 변경은 되돌리지 않는다 — 코어와 확장(모듈·플러그인·템플릿 업데이트의 실패 처리)이 같다.
+
+- 원칙: 되돌리기보다 **앞으로 고친다(fix forward)**. 원인을 고친 판으로 같은 업데이트를 다시 실행한다. 마이그레이션은 이미 적용된 것을 건너뛰고, 업그레이드 스텝은 멱등으로 작성돼 있어 다시 돌아도 안전하다([업그레이드 스텝 작성 가이드](../extension/upgrade-step-guide.md) 원칙 4).
+- 이유: `down()` 을 자동으로 돌리면 파괴적 변경(컬럼·테이블 삭제)에서 데이터가 사라지고, 실패 지점에 따라 스키마가 어느 판과도 맞지 않는 상태가 된다.
+- 그래서 마이그레이션은 옛 코드와 함께 돌아도 깨지지 않게(추가형 우선) 쓴다. 파괴적 변경이 있는지는 실행 전에 `php artisan g7:migrate-plan` 으로 본다(「2. 업데이트 실행 흐름」의 「실행 전 계획 보기」).
+- DB 를 이전 상태로 되돌려야 하면 업데이트 전에 받아 둔 DB 백업으로 복원한다 — 코어 업데이트는 DB 를 백업하지 않는다.
 
 ---
 
@@ -922,8 +972,14 @@ php artisan core:update [--yes] [--force] [--no-backup] [--prune] [--no-maintena
 | `--source={path}` | 지정 디렉토리를 소스로 사용 (GitHub 스킵) |
 
 **종료 코드**:
-- `0` (SUCCESS): 업데이트 성공, 이미 최신 버전, 또는 대화형에서 운영자가 진행 확인에 「아니오」를 답함
-- `1` (FAILURE): 요건 미충족 또는 업데이트 실패. 7.1.1 이후에는 코어가 새 버전으로 반영됐어도 번들 확장 일괄 업데이트가 하나라도 실패하면 `1` (위 「종료 코드 (7.1.1 이후)」). 7.2.0 이후에는 `--yes` 없이 확인에 답할 수 없는 실행(`--no-interaction`, 터미널 없음)도 사유 출력과 함께 `1`
+
+| 코드 | 뜻 | 경우 |
+| --- | --- | --- |
+| `0` | 성공 | 업데이트 성공, 이미 최신 버전, 또는 대화형에서 운영자가 진행 확인에 「아니오」를 답함 |
+| `1` | 실패 | 요건 미충족 또는 업데이트 실패. 7.1.1 이후에는 코어가 새 버전으로 반영됐어도 번들 확장 일괄 업데이트가 하나라도 실패하면 `1` (위 「종료 코드 (7.1.1 이후)」). 결과 줄을 남기지 못한 일괄 업데이트 자식은 정상 종료여도 실패 1건이다(7.2.0). 7.2.0 이후에는 `--yes` 없이 확인에 답할 수 없는 실행(`--no-interaction`, 터미널 없음)도 사유 출력과 함께 `1` |
+| `75` | 재개 필요 | 업그레이드 스텝이 새 프로세스 재진입을 요청해 멈춤(핸드오프). 파일·설정은 새 버전이고 정리·점검 해제까지 끝났지만 스텝이 남았다 — 출력된 재개 명령(`php artisan core:execute-upgrade-steps --from=… --to=… --force`)을 이어서 실행한다. 단독 `core:execute-upgrade-steps` 의 핸드오프와 같은 값(`UpgradeHandoffException::EXIT_CODE`)이다. 7.1.x 까지는 이 경우 `0` 이라 스크립트가 성공으로 읽고 재개 명령을 건너뛰었다(7.2.0) |
+
+웹 코어 업데이트(관리자 화면)는 `core:update` 를 부르지 않고 `core:execute-upgrade-steps` 를 직접 실행해 출력의 `[HANDOFF]` 줄로 재개를 판정하므로 이 종료 코드 변경의 영향을 받지 않는다.
 
 **질문과 비대화형 동작**: 확인에 답할 수 없는 실행은 `--no-interaction`, 또는 입력이 터미널이 아닌 실행이다.
 

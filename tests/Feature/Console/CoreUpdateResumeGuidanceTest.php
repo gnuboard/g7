@@ -36,9 +36,10 @@ class CoreUpdateResumeGuidanceTest extends TestCase
      *
      * @param  string  $mode  실행 맥락 판정값(non_root·root_web_known 등)
      * @param  string|null  $webUser  식별한 웹서버 계정명, 모르면 null
+     * @param  string  $resume  재개 명령 (기본은 접두 없는 명령)
      * @return string 안내가 찍힌 콘솔 출력 문자열
      */
-    private function render(string $mode, ?string $webUser): string
+    private function render(string $mode, ?string $webUser, string $resume = self::RESUME): string
     {
         $command = app(CoreUpdateCommand::class);
 
@@ -53,7 +54,7 @@ class CoreUpdateResumeGuidanceTest extends TestCase
 
         $method = new \ReflectionMethod(CoreUpdateCommand::class, 'renderResumeGuidance');
         $method->setAccessible(true);
-        $method->invoke($command, self::RESUME, $mode, $webUser);
+        $method->invoke($command, $resume, $mode, $webUser);
 
         return $output->fetch();
     }
@@ -74,6 +75,31 @@ class CoreUpdateResumeGuidanceTest extends TestCase
         $this->assertStringContainsString(self::RESUME, $out);
         $this->assertStringNotContainsString('sudo -u', $out);
         $this->assertStringNotContainsString('root', $out);
+    }
+
+    /**
+     * `APP_VERSION=<대상 판>` 접두가 붙은 재개 명령은 PowerShell 형식(`$env:APP_VERSION='<대상 판>'; …`)도 함께 안내한다 —
+     * POSIX 접두 문법은 PowerShell 에서 명령 이름으로 읽혀 실행되지 않는다.
+     *
+     * @scenario resume_exec_context=non_root
+     *
+     * @effects renderResumeGuidance_app_version_prefix_adds_powershell_form
+     *
+     * @return void 반환값 없음
+     */
+    public function test_app_version_prefixed_command_also_shows_powershell_form(): void
+    {
+        $prefixed = 'APP_VERSION=7.0.1 '.self::RESUME;
+        $out = $this->render('non_root', null, $prefixed);
+
+        $this->assertStringContainsString($prefixed, $out);
+        $this->assertStringContainsString("\$env:APP_VERSION='7.0.1'; ".self::RESUME, $out);
+
+        $symmetric = $this->render('root_web_symmetric', null, $prefixed);
+        $this->assertStringContainsString("\$env:APP_VERSION='7.0.1'; ".self::RESUME, $symmetric);
+
+        // 접두가 없는 명령은 두 셸에서 같으므로 PowerShell 줄을 따로 내지 않는다
+        $this->assertStringNotContainsString('$env:', $this->render('non_root', null));
     }
 
     /**

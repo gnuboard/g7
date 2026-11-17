@@ -1,9 +1,10 @@
 <!-- 활동 로그 표. 쪽 넘김을 서버가 하므로 표는 현재 쪽만 들고 있고, 쪽을 옮기는 것도
   **주소를 갈아 끼워 다시 받는 방식**이다 — 돌아온 목록이 곧 화면이다.
-  변경 내역이 있는 줄만 펼칠 수 있고(`has_changes`), 펼친 자리에는 한 건짜리 수정과 여러 건을
-  한 번에 고친 일괄 수정이 서로 다른 모양으로 실린다. 일괄 쪽은 대상 ID 별로 묶여 온다. -->
+  변경 내역이나 삭제 직전 기록이 있는 줄만 펼칠 수 있고(`has_details`), 펼친 자리에는 한 건짜리 수정과 여러 건을
+  한 번에 고친 일괄 수정이 서로 다른 모양으로 실린다. 일괄 쪽은 대상 ID 별로 묶여 온다. 삭제 직전 기록(영구 삭제·
+  선언 정리)은 대상·사유·남긴 버전 수와 지우기 전 본문(접어 둠)을 보인다(#888). -->
 <partial description="Activity Log List DataGrid">
-  <data-grid data-type="composite" data-ref="activity_log_datagrid" rowLabelField="localized_description" data="{{activityLogs?.data?.data}}" :pagination="true" :serverSidePagination="true" pageHref="/admin/activity-logs?page={page}" :pageHrefMergeQuery="true" serverCurrentPage="{{activityLogs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{activityLogs?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{activityLogs?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" selectable="{{activityLogs?.data?.abilities?.can_delete === true}}" selectionScope="page" selectedIds="{{_global.selectedIds_admin_activity_logs || []}}" selectedCountText="" :expandable="true" expandConditionField="has_changes" emptyMessage="{{activityLogs === undefined ? '' : $t('common.no_data')}}" actionsColumnHeader="$t:common.actions">
+  <data-grid data-type="composite" data-ref="activity_log_datagrid" rowLabelField="localized_description" data="{{activityLogs?.data?.data}}" :pagination="true" :serverSidePagination="true" pageHref="/admin/activity-logs?page={page}" :pageHrefMergeQuery="true" serverCurrentPage="{{activityLogs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{activityLogs?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{activityLogs?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" selectable="{{activityLogs?.data?.abilities?.can_delete === true}}" selectionScope="page" selectedIds="{{_global.selectedIds_admin_activity_logs || []}}" selectedCountText="" :expandable="true" expandConditionField="has_details" emptyMessage="{{activityLogs === undefined ? '' : $t('common.no_data')}}" actionsColumnHeader="$t:common.actions">
     <blur-until-loaded sources="activityLogs"/>
     <expand>
       <div class="p-4 bg-gray-50 dark:bg-gray-900 space-y-4">
@@ -44,6 +45,25 @@
               </div>
             </div>
           </div>
+        </div>
+        <div data-if="{{!!row.snapshot}}" class="stack-tight">
+          <span class="form-label">$t:admin.activity_log.detail.snapshot_title</span>
+          <div class="flex flex-wrap items-center gap-4 text-sm">
+            <span class="text-gray-700 dark:text-gray-300">$t:defer:admin.activity_log.detail.snapshot_target|target={{row.snapshot?.target ?? ''}}</span>
+            <span data-if="{{!!row.snapshot?.reason_label}}" class="text-gray-600 dark:text-gray-400">$t:defer:admin.activity_log.detail.snapshot_reason|reason={{row.snapshot?.reason_label ?? ''}}</span>
+            <span class="text-gray-600 dark:text-gray-400">$t:defer:admin.activity_log.detail.snapshot_versions|count={{row.snapshot?.version_count ?? 0}}</span>
+            <span data-if="{{row.snapshot?.versions_truncated === true}}" class="badge badge-yellow">$t:admin.activity_log.detail.snapshot_versions_truncated</span>
+          </div>
+          <button type="button" class="text-label hover:text-gray-900 dark:hover:text-gray-200 inline-flex items-center gap-1" aria-expanded="{{(_local.openSnapshots ?? {})[row.id] === true}}">
+            <on type="click">
+              <!-- 지우기 전 본문을 펼치거나 접는다 — 줄마다 따로 기억한다. -->
+              <set-state target="local" openSnapshots="{{Object.assign({}, _local.openSnapshots ?? {}, {[row.id]: !(_local.openSnapshots ?? {})[row.id]})}}"/>
+            </on>
+            <icon name="{{(_local.openSnapshots ?? {})[row.id] === true ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'}}" class="text-xs"/>
+            <span>{{(_local.openSnapshots ?? {})[row.id] === true ? $t('admin.activity_log.detail.snapshot_hide') : $t('admin.activity_log.detail.snapshot_show')}}</span>
+          </button>
+          <div data-if="{{(_local.openSnapshots ?? {})[row.id] === true}}" class="p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg font-mono text-xs whitespace-pre-wrap break-all max-h-80 overflow-y-auto text-gray-700 dark:text-gray-300">{{row.snapshot?.content_preview ?? ''}}</div>
+          <p data-if="{{(_local.openSnapshots ?? {})[row.id] === true &amp;&amp; row.snapshot?.content_truncated === true}}" class="text-xs text-amber-700 dark:text-amber-400">$t:admin.activity_log.detail.snapshot_content_truncated</p>
         </div>
       </div>
     </expand>

@@ -116,7 +116,7 @@
       <div data-ref="core_update_start_row" data-if="{{!_computed.coreUpdateRun &amp;&amp; (_local.coreUpdateInfo?.update_available === true || (_local.coreUpdateZipFile ?? '') !== '')}}" class="flex justify-end">
         <!-- 업데이트 시작 — 위에서 고른 함께 할 일과 직접 올린 ZIP(고르지 않았으면 빈 값이고 배포처에서 받는다)을 핸들러에 넘긴다. 진행 여부는 핸들러가 _global.coreUpdateBusy 로 싣고 그동안 버튼이 잠긴다.
              미서명 거절을 정책이 허용한 뒤의 클릭은 「미서명으로 계속」이다 — 같은 선택에 allow_unsigned 만 더한다(#916). -->
-        <button data-ref="core_update_start_button" type="button" class="btn btn-primary" disabled="{{_global.coreUpdateBusy === true}}">
+        <button data-ref="core_update_start_button" type="button" class="btn btn-primary" disabled="{{_global.coreUpdateBusy === true || _global.appConfig?.runtime_role === 'stage'}}" title="{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}">
           <on type="click">
             <action handler="startCoreUpdate" update_bundled_extensions="{{_local.coreUpdateBundled !== false}}" rebuild_search_index="{{_local.coreUpdateRebuildIndex === true}}" layout_strategy="{{_local.coreUpdateLayoutStrategy ?? 'overwrite'}}" zip_file="{{_local.coreUpdateZipFile ?? ''}}" allow_unsigned="{{_global.packageIntegrity?.can_continue === true}}"/>
           </on>
@@ -177,7 +177,7 @@
             {{(_local.coreUpdateLogOpen ?? false) ? $t('admin.settings.core_update.hide_log') : $t('admin.settings.core_update.view_log')}}
           </button>
           <!-- 종전에는 진행 중이면 `if` 로 버튼을 **감췄다**. 사라지는 것은 「눌렸다」는 신호로 읽히지 않는다 — 착수 버튼과 같이 자리를 지킨 채 비활성·스피너로 알린다. 진행 여부는 핸들러가 `publishBusy()` 로 싣는 `_global.coreUpdateBusy` 가 소유한다. -->
-          <button data-ref="core_update_resume_button" data-if="{{_computed.coreUpdateRun?.status === 'running' || _computed.coreUpdateRun?.status === 'rolling_back'}}" type="button" class="btn btn-primary" disabled="{{_global.coreUpdateBusy === true}}">
+          <button data-ref="core_update_resume_button" data-if="{{_computed.coreUpdateRun?.status === 'running' || _computed.coreUpdateRun?.status === 'rolling_back'}}" type="button" class="btn btn-primary" disabled="{{_global.coreUpdateBusy === true || _global.appConfig?.runtime_role === 'stage'}}" title="{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}">
             <on type="click">
               <action handler="resumeCoreUpdate"/>
             </on>
@@ -191,7 +191,7 @@
             $t:admin.settings.core_update.view_guide
           </button>
           <!-- 형제들과 달리 `dismissCoreUpdate` 는 전역 진행 플래그를 싣지 않는다(기록 정리는 업데이트 진행이 아니다). 그래서 진행 표시는 이 버튼의 지역 플래그로 잡고, 커스텀 핸들러도 `onSuccess`/`onError` 를 지원하므로 되돌리는 자리가 있다. -->
-          <button data-ref="core_update_dismiss_button" data-if="{{_computed.coreUpdateRun?.status === 'completed' || _computed.coreUpdateRun?.status === 'rolled_back' || _computed.coreUpdateRun?.status === 'rollback_failed'}}" type="button" class="btn btn-secondary" disabled="{{_local.coreUpdateDismissing}}">
+          <button data-ref="core_update_dismiss_button" data-if="{{_computed.coreUpdateRun?.status === 'completed' || _computed.coreUpdateRun?.status === 'rolled_back' || _computed.coreUpdateRun?.status === 'rollback_failed'}}" type="button" class="btn btn-secondary" disabled="{{_local.coreUpdateDismissing || _global.appConfig?.runtime_role === 'stage'}}" title="{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}">
             <on type="click">
               <set-state target="local" :coreUpdateDismissing="true"/>
               <action handler="dismissCoreUpdate">

@@ -67,6 +67,7 @@
   "thumbnailStatsFailed": false,
   "appConfig": {
     "version": "1.1.0",
+    "runtime_role": "live",
     "releaseYear": 2026,
     "isIos": false,
     "supportedLocales": [

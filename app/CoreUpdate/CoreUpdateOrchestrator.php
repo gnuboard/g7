@@ -1351,11 +1351,12 @@ class CoreUpdateOrchestrator
 
         $this->forceSpawnFailureFallback();
 
+        // `--force` 는 넘기지 않는다 — 실행 대장의 「이미 실행됨」을 무시하게 해, DB 를 함께 쓰는 두 번째 서버의
+        // 웹 업데이트가 끝난 스텝을 다시 돌린다. 웹은 늘 from < to 라 같은 판 강제 실행도 필요 없다.
         $result = $this->runArtisan('core:execute-upgrade-steps', [
             '--from' => $fromVersion,
             '--to' => $toVersion,
             '--steps-only' => true,
-            '--force' => true,
         ]);
 
         $handoff = $this->parseLineProtocol($result->output, '[HANDOFF] ');

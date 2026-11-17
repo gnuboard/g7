@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands\Settings;
 
+use App\Console\Commands\Traits\HasUnifiedConfirm;
 use App\Console\Commands\Traits\LocalizesDescription;
 use App\Exceptions\SettingsConsoleException;
 use App\Services\SettingsConsoleService;
@@ -18,6 +19,7 @@ use Illuminate\Validation\ValidationException;
  */
 class SettingsSetCommand extends Command
 {
+    use HasUnifiedConfirm;
     use LocalizesDescription;
 
     /**
@@ -130,7 +132,8 @@ class SettingsSetCommand extends Command
             return (string) $positional;
         }
 
-        if ($sensitive && $this->input->isInteractive()) {
+        // 콘솔 없는 실행은 isInteractive() 가 참으로 남는 환경(Windows)이 있어 비밀값 입력을 무한히 기다린다 — 답할 수 있을 때만 묻는다
+        if ($sensitive && $this->canAnswerConfirmation()) {
             return (string) $this->secret(__('settings.console.cli.ask_secret', ['key' => $key]));
         }
 

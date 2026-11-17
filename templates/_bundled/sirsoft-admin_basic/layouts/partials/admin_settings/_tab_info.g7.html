@@ -125,6 +125,38 @@
           </div>
         </div>
       </div>
+      <!-- 확장 카드(#888) — 확장이 필터 훅 `core.settings.filter_system_info_sections` 로 더한 섹션을 응답 순서대로 「시스템 정보」 카드 옆에 그린다.
+           서버가 형식을 검증해 넘기므로(배지·항목·접는 목록·알림) 화면은 그 모양만 따른다. 값은 모두 글자로 그린다(HTML 해석 없음).
+           섹션이 없으면 아무것도 그리지 않는다. -->
+      <div data-each="section, sectionIdx in {{systemInfo?.data?.extra_sections ?? []}}" data-ref="card_extra_section_{{sectionIdx}}" class="admin-card">
+        <div class="flex-between gap-2">
+          <h3 class="card-title min-w-0 break-words">{{section.title}}</h3>
+          <status-badge data-type="composite" data-if="{{section.badge}}" status="{{section.badge?.tone === 'neutral' ? 'default' : (section.badge?.tone ?? 'default')}}" label="{{section.badge?.text ?? ''}}"/>
+        </div>
+        <div data-if="{{section.notice}}" class="{{section.notice?.tone === 'danger' ? 'alert-danger' : (section.notice?.tone === 'warning' ? 'alert-warning' : (section.notice?.tone === 'success' ? 'alert-success' : 'alert-info'))}}">
+          <p class="text-body break-words">{{section.notice?.text ?? ''}}</p>
+        </div>
+        <div data-if="{{(section.rows ?? []).length > 0}}" class="row-stack">
+          <div data-each="row in {{section.rows ?? []}}" class="flex-between gap-3">
+            <span class="text-label flex-shrink-0">{{row.label}}</span>
+            <span class="{{row.mono ? 'text-heading font-mono break-all text-right min-w-0' : 'text-heading break-words text-right min-w-0'}}">{{row.value}}</span>
+          </div>
+        </div>
+        <div data-if="{{section.list}}" class="mt-3">
+          <p data-if="{{!section.list?.collapsible}}" class="text-body font-medium mb-2">{{section.list?.title ?? ''}}</p>
+          <button data-if="{{section.list?.collapsible}}" type="button" class="w-full flex-between gap-2 text-body font-medium mb-2" aria-expanded="{{(_local.infoExtraOpenIds ?? []).includes(section.id)}}">
+            <on type="click">
+              <!-- 접는 목록 열고 닫기 — 열린 섹션 id 목록에 넣거나 뺀다(섹션마다 따로 열린다). -->
+              <set-state target="local" infoExtraOpenIds="{{(_local.infoExtraOpenIds ?? []).includes(section.id) ? (_local.infoExtraOpenIds ?? []).filter(i => i !== section.id) : [...(_local.infoExtraOpenIds ?? []), section.id]}}"/>
+            </on>
+            <span class="min-w-0 break-words text-left">{{section.list?.title ?? ''}} ({{(section.list?.items ?? []).length}})</span>
+            <icon name="{{(_local.infoExtraOpenIds ?? []).includes(section.id) ? 'chevron-up' : 'chevron-down'}}" size="sm"/>
+          </button>
+          <ul data-if="{{!section.list?.collapsible || (_local.infoExtraOpenIds ?? []).includes(section.id)}}" class="list-disc pl-5 space-y-1">
+            <li data-each="item in {{section.list?.items ?? []}}" class="text-body break-words">{{item}}</li>
+          </ul>
+        </div>
+      </div>
     </div>
     <div data-ref="card_install_paths" class="admin-card">
       <h3 class="card-title">$t:admin.settings.info.install_paths</h3>

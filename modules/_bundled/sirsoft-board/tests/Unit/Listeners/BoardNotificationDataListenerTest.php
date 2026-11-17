@@ -1165,6 +1165,47 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
     }
 
     /**
+     * 밖으로 나가는 링크의 주소(`G7_PUBLIC_LINK_URL`)를 정하면 신고 접수 관리자 알림의 링크와 사이트 링크가 그 주소입니다 (#888).
+     *
+     * @scenario notification_type=report_received_admin
+     *
+     * @effects report_received_admin_links_use_public_link_url
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function test_report_received_admin_공개_링크_주소(): void
+    {
+        config(['core.public_link_url' => 'https://public.example.test']);
+
+        Config::set('g7_settings.modules.sirsoft-board.report_policy', [
+            'notify_admin_on_report' => true,
+            'notify_admin_on_report_scope' => 'per_report',
+        ]);
+
+        $log = new ReportLog;
+        $log->snapshot = ['title' => '신고된 게시글', 'board_name' => '자유게시판'];
+        $log->reason_type = 'spam';
+
+        $report = Mockery::mock(Report::class)->makePartial();
+        $report->id = 56;
+        $report->target_type = 'post';
+        $report->reporter_id = 20;
+        $report->reporter = $this->createMockUser(20, '신고자');
+        $report->board = $this->createMockBoard('test-board', true);
+
+        $this->reportRepository->shouldReceive('findLatestLogByReport')->with(56)->andReturn($log);
+        $this->roleRepository->shouldReceive('getUsersByIdentifier')
+            ->with('sirsoft-board.test-board.manager')
+            ->andReturn(new Collection);
+
+        $result = $this->listener->extractData([], 'report_received_admin', [$report]);
+
+        $this->assertSame('https://public.example.test', $result['data']['site_url'] ?? null);
+        $this->assertSame('https://public.example.test/admin/boards/reports', $result['data']['report_url'] ?? null);
+    }
+
+    /**
      * notify_admin_on_report가 꺼져있으면 빈 결과를 반환합니다.
      *
      * @scenario notification_type=report_received_admin

@@ -162,7 +162,6 @@ return [
         'check_failed' => 'アップデート確認に失敗しました。',
         'update_available' => '新しいアップデートがあります。',
         'no_update' => '現在、最新バージョンです。',
-        'maintenance_mode_active' => 'システムメンテナンス中です。しばらく後に再度お試しください。',
         'invalid_github_url' => 'GitHubリポジトリURLが無効です。',
         'download_failed' => ':version バージョンのダウンロードに失敗しました。',
         'zip_extract_failed' => 'ZIPファイルの展開に失敗しました。',
@@ -231,8 +230,6 @@ return [
             'preflight_low_disk' => '空き容量が不足しています（空き :free / 必要見込み :required）。バックアップと新バージョンが同時に置かれる区間があるため、現在のサイズの数倍が必要です。',
             'version_from_zip' => '（ZIP 展開後に判定）',
             'zip_file_invalid' => 'ZIP ファイル名のみ指定できます（パスなし、`.zip` で終わる名前）。',
-
-            // 開始リクエストの項目名（検証エラー文言）
             'attributes' => [
                 'update_bundled_extensions' => 'バンドル拡張・言語パックも更新',
                 'rebuild_search_index' => '検索インデックスの再作成',
@@ -433,6 +430,7 @@ return [
                 'steps_signal_missing' => 'spawn 子プロセスが [STEPS_EXECUTED] シグナルを出力しませんでした — 旧バージョンの子プロセスまたは silent skip の疑い',
                 'zero_steps' => 'spawn 子プロセスは exit=0 ですがステップを 0 件実行 — 意図された動作ではありません (from=:from to=:to)',
                 'zero_steps_discovered' => 'spawn 子プロセスは exit=0 ですがステップを 0 件実行 — 意図された動作ではありません (from=:from to=:to、検出 :count 件)',
+                'steps_already_run' => '範囲内のアップグレードステップ :count 件は、同じ DB の別サーバー・別の実行で実行済みのためスキップしました。',
                 'abnormal_exit' => 'spawn 異常終了 (exit=:code)',
                 'abort_reason' => 'spawn 子プロセス失敗 — :reason。fail-fast モードです。手動再開で進めてください。',
             ],
@@ -442,6 +440,7 @@ return [
             'owner_mismatch_hint' => '権限拒否が発生する可能性があります。通常はコアファイルの所有者で SSH ログインしてから実行する必要があります。vendor/ が別のユーザーの所有である場合は \'chown -R $(whoami) vendor/\' を実行してから再試行してください。',
             'resume_root_known_warning' => '現在 sudo(root) で実行中です。上記のコマンドを root のまま実行すると、アップグレードステップが作成するファイルが root 所有となり、以後の Web サーバー(:user) のリクエストが書き込みに失敗する可能性があります。必ず Web サーバーアカウント(:user) で再実行してください。',
             'resume_command_unknown_user' => 'sudo -u <Webサーバーアカウント> :command',
+            'resume_command_powershell' => 'PowerShell: :command',
             'resume_root_unknown_warning' => '現在 sudo(root) で実行中です。Web サーバーアカウントを自動で識別できませんでした。',
             'resume_root_unknown_hint' => '上記のコマンドを root のまま実行すると、アップグレードステップが作成するファイルが root 所有となり、以後の Web サーバー(php-fpm) のリクエストが書き込みに失敗する可能性があります。Web サーバーアカウント(例: www-data、nginx、apache)を確認し、そのアカウントで再実行してください。',
             'permission_failed' => '権限の正常化に失敗しました — 一部のパスの所有権/グループ書き込み権限を復元できませんでした。',
@@ -452,6 +451,7 @@ return [
             'permission_failed_item' => ':target [:kind]: :count 件失敗',
             'permission_more_paths' => '… (合計 :count 件、上位 5 件のみ表示)',
             'permission_recovery_example' => '復旧例:',
+            'handoff_exit_code' => '終了コード :code (再開が必要) — スクリプトから実行した場合は、上の再開コマンドを続けて実行してください。',
         ],
     ],
     'bundled_sources' => [
@@ -617,7 +617,6 @@ return [
             'no_settings' => '表示する設定がありません。',
         ],
     ],
-    // 환경설정 > 고급 > GeoIP [갱신] 결과
     'geoip' => [
         'update_success' => 'GeoIP データベースを更新しました。',
         'license_key_missing' => 'MaxMind ライセンスキーが設定されていません。',
@@ -625,8 +624,6 @@ return [
         'connection_failed' => 'MaxMind サーバーに接続できませんでした。',
         'update_failed' => 'GeoIP データベースを更新できませんでした。',
     ],
-
-    // custom 予約領域(#792) — custom:check・custom:vendor-* コマンドとコアアップデートの出力
     'custom_reserved' => [
         'check' => [
             'reserved_title' => 'custom 予約領域(コアアップデートが上書きも削除もしない)',

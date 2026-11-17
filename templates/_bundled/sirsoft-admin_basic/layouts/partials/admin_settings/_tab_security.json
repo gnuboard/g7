@@ -176,6 +176,16 @@
                                             "text": "$t:admin.settings.security.force_https_desc"
                                         },
                                         {
+                                            "comment": "켜는 순간 http 요청이 https 로 이동한다 — 인증서가 없거나 프록시 뒤에서 https 를 알리지 못하면 관리자도 들어올 수 없으므로, 끄는 명령을 함께 보인다(#888).",
+                                            "id": "force_https_notice",
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-warning-soft mt-1"
+                                            },
+                                            "text": "$t:admin.settings.security.force_https_notice"
+                                        },
+                                        {
                                             "type": "basic",
                                             "name": "Span",
                                             "if": "{{_local.errors?.['security.force_https']}}",

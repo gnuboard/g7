@@ -603,7 +603,7 @@
                                                                                 "aria-label": "$t:common.row_cell|row={{$t('admin.settings.notification_definitions.recipients.rule_label', {index: rcptIdx + 1})}}|column={{$t('admin.settings.notification_definitions.recipients.type_label')}}",
                                                                                 "value": "{{rcpt.type ?? ''}}",
                                                                                 "className": "gdpr:w-full gdpr:text-sm",
-                                                                                "options": "{{[{ value: 'trigger_user', label: '$t:admin.settings.notification_definitions.recipients.types.trigger_user' }, ...(((_global.gdpr_notification_template_form_modal?.definition?.relations ?? []).length > 0) ? [{ value: 'related_user', label: '$t:admin.settings.notification_definitions.recipients.types.related_user' }] : []), { value: 'role', label: '$t:admin.settings.notification_definitions.recipients.types.role' }, { value: 'specific_users', label: '$t:admin.settings.notification_definitions.recipients.types.specific_users' }]}}"
+                                                                                "options": "{{[{ value: 'trigger_user', label: '$t:admin.settings.notification_definitions.recipients.types.trigger_user' }, ...(((_global.gdpr_notification_template_form_modal?.definition?.relations ?? []).length > 0) ? [{ value: 'related_user', label: '$t:admin.settings.notification_definitions.recipients.types.related_user' }] : []), { value: 'role', label: '$t:admin.settings.notification_definitions.recipients.types.role' }, { value: 'specific_users', label: '$t:admin.settings.notification_definitions.recipients.types.specific_users' }, { value: 'site_admin_email', label: '$t:admin.settings.notification_definitions.recipients.types.site_admin_email' }]}}"
                                                                             }
                                                                         }
                                                                     ]
@@ -933,6 +933,17 @@
                                                                     }
                                                                 }
                                                             ]
+                                                        },
+                                                        {
+                                                            "comment": "사이트 관리자 이메일(#888) — 값 칸이 없다. 환경설정 > 일반의 관리자 이메일 한 곳으로 메일만 가므로 그 사실과 빈 값의 결과를 밝힌다(코어 편집 창과 같은 규칙).",
+                                                            "id": "rcpt_site_admin_email_hint_{{rcptIdx}}",
+                                                            "type": "basic",
+                                                            "name": "P",
+                                                            "if": "{{rcpt.type === 'site_admin_email'}}",
+                                                            "props": {
+                                                                "className": "gdpr:text-xs gdpr:text-gray-500 gdpr:dark:text-gray-400"
+                                                            },
+                                                            "text": "$t:admin.settings.notification_definitions.recipients.site_admin_email_hint"
                                                         },
                                                         {
                                                             "type": "basic",

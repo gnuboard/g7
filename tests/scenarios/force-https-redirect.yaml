@@ -1,0 +1,24 @@
+feature: force_https_redirect
+
+description: |
+  관리자 환경설정 > 보안의 「HTTPS 강제 적용」(`security.force_https`)을 `ForceHttps` 미들웨어가 실제로 따른다(#888).
+  web·api 그룹 맨 앞에서, 켜져 있고 `$request->secure()` 가 거짓이면 같은 호스트·경로·쿼리의 https 로 보낸다
+  (GET·HEAD 301, 그 밖 308). https 요청과 신뢰 프록시가 `X-Forwarded-Proto: https` 로 알린 요청은 통과하고,
+  신뢰하지 않는 주소의 같은 헤더는 무시한다. 꺼져 있으면(기본) 아무것도 하지 않는다.
+
+coverage_strategy: full
+
+# 축 의미:
+#   case — 설정 × 요청 방식 × 메서드 가운데 판정이 갈리는 조합만(꺼짐이면 방식·메서드와 무관하게 통과하므로 하나로 잰다).
+axes:
+  case: [off_http_get, on_http_get, on_http_post, on_https, on_forwarded_https]
+
+effects:
+  - force_https_off_passes_http
+  - force_https_get_redirects_301_to_same_url
+  - force_https_non_get_redirects_308
+  - force_https_passes_secure_request
+  - force_https_trusts_forwarded_proto_from_trusted_proxy
+
+test_files:
+  - tests/Feature/Middleware/ForceHttpsTest.php

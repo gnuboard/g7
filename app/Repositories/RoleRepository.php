@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
+use App\Models\MenuPermission;
 use App\Models\Role;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
@@ -254,9 +255,21 @@ class RoleRepository implements RoleRepositoryInterface
             $role->permissions()->detach();
             $role->menus()->detach();
             $role->users()->detach();
+            $this->deleteMenuPermissions($role);
 
             return (bool) $role->delete();
         });
+    }
+
+    /**
+     * 역할에 걸린 메뉴 권한(`menu_permissions.role_id`)을 지웁니다 — 역할을 지우기 직전에 부른다(DB CASCADE 비의존).
+     *
+     * @param  Role  $role  대상 역할
+     * @return int 지운 행 수
+     */
+    public function deleteMenuPermissions(Role $role): int
+    {
+        return MenuPermission::query()->where('role_id', $role->id)->delete();
     }
 
     /**

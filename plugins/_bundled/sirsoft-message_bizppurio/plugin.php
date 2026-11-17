@@ -211,16 +211,20 @@ class Plugin extends AbstractPlugin
     {
         $this->deactivate();
 
-        // 메뉴 잔재 삭제 — 비활성화는 메뉴 행을 지우지 않으므로 제거가 직접 지운다.
-        app(ExtensionMenuSyncHelper::class)->cleanupStaleMenus(
-            ExtensionOwnerType::Plugin,
-            $this->getIdentifier(),
-            currentSlugs: [],
-        );
-
-        $this->cleanupChannelContributions();
-
+        // 메뉴·채널 템플릿은 「데이터도 함께 삭제」를 고른 제거에서만 지운다(코어 7.2.0 — uninstallData()).
         return true;
+    }
+
+    /**
+     * 「데이터도 함께 삭제」를 고른 제거에서만 — 이 플러그인이 코어 알림 정의에 더한 채널 템플릿을 지웁니다.
+     *
+     * 메뉴는 코어가 지운다. 운영자가 고친 채널 템플릿은 코어 헬퍼가 지우기 직전 활동 로그에 남긴다.
+     *
+     * @return void 반환값 없음
+     */
+    public function uninstallData(): void
+    {
+        $this->cleanupChannelContributions();
     }
 
     /**

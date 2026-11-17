@@ -327,6 +327,8 @@ null 아님으로 가정하지 마세요 — 작성자 표시는 `ProductReview:
 지정하면 그 회원의 적립건만 연장합니다(`MileageTransactionRepositoryInterface::getRemainingLotsByIds(?int $userId, …)`).
 관리자 마일리지 내역 화면은 적립건만 보내고 회원을 지정하지 않습니다 — 고른 것 중 첫 건의 회원을 뽑아
 보내던 때는 나머지 회원의 적립건이 조용히 빠졌습니다.
+**기본 데이터 시더의 선언 정리(코어 7.2.0)**: 클레임 사유·배송사·배송 유형 시더는 선언에서 빠진 기본 행을 `GenericEntitySyncHelper::cleanupStale(..., ownerIdentifier: 'sirsoft-ecommerce')` 로 지운다 — 운영자가 고친 행(`user_overrides`)이면 지우기 직전 활동 로그 `entity.sync_deleted` 에 남는다.
+
 <!-- @intent END -->
 
 ## 4. 확장점
@@ -474,10 +476,10 @@ CRUD 를 바꾸고 싶으면 이 4종 중 하나를 잡으면 되고, 이 모듈
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 794개 | `modules/_bundled/sirsoft-ecommerce/tests` |
-| Vitest | 319개 | `vitest.config.ts` |
+| PHPUnit | 797개 | `modules/_bundled/sirsoft-ecommerce/tests` |
+| Vitest | 320개 | `vitest.config.ts` |
 | Playwright | 84개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 501개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 504개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

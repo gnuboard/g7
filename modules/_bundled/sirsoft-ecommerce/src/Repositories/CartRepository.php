@@ -402,4 +402,38 @@ class CartRepository implements CartRepositoryInterface
     {
         return (int) $this->model->where('user_id', $userId)->count();
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getIdsByUserId(int $userId): array
+    {
+        // audit:allow query-unbounded-get reason: 한 회원의 장바구니 행 ID 한 열만 고른다 — 행 수가 그 회원의 담기 행위에 묶인다
+        return array_map('intval', $this->model->newQuery()->where('user_id', $userId)->pluck('id')->all());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getIdsByProductId(int $productId): array
+    {
+        // audit:allow query-unbounded-get reason: 삭제할 상품 한 개를 담은 행의 ID 한 열만 고른다 — 삭제 정리 경로 전용
+        return array_map('intval', $this->model->newQuery()->where('product_id', $productId)->pluck('id')->all());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getIdsByProductOptionIds(array $productOptionIds): array
+    {
+        if ($productOptionIds === []) {
+            return [];
+        }
+
+        // audit:allow query-unbounded-get reason: 삭제할 옵션을 담은 행의 ID 한 열만 고른다 — 옵션 삭제 정리 경로 전용
+        return array_map('intval', $this->model->newQuery()
+            ->whereIn('product_option_id', $productOptionIds)
+            ->pluck('id')
+            ->all());
+    }
 }

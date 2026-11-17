@@ -9,7 +9,7 @@
 2. notification_definitions 테이블 = 알림 타입 SSoT (채널, 훅, 변수 정의)
 3. notification_templates 테이블 = 채널별 독립 템플릿 + 수신자 (mail/database/fcm)
 4. 훅 기반 트리거: NotificationHookListener가 template별 독립 발송
-5. 수신자 설정: template.recipients JSON으로 채널별 독립 수신자 (4종 타입)
+5. 수신자 설정: template.recipients JSON으로 채널별 독립 수신자 (5종 타입)
 6. 채널 확장: 채널 제공 확장은 코어 훅 `core.notification.channels` 하나에 답하고(도메인 비인지), 도메인은 `{hookPrefix}.notification.channels`로 좁힌다
 7. 전칭 규칙: 사용자·운영자에게 나가는 모든 발송 메시지는 알림 시스템의 정의·템플릿·채널 설정·디스패처를 경유한다.
    별도 발송 경로·별도 메시지 정의 테이블을 만들지 않는다. 예외는 아래 「예외」 표에 이유와 함께 등재해야 한다
@@ -259,6 +259,9 @@ notification_definitions 레코드:
 | `related_user` | 관련 사용자 | relation 키 | 문의 작성자 |
 | `role` | 역할 기반 | role identifier | admin, manager |
 | `specific_users` | 특정 사용자 | user UUID 배열 | ["uuid1", "uuid2"] |
+| `site_admin_email` | 사이트 관리자 이메일 (환경설정 > 일반 `general.admin_email`) | - | 운영 담당 메일함 |
+
+> `site_admin_email`(7.2.0, #888)은 설정의 관리자 이메일 한 곳을 **비회원 수신자**(`GuestNotifiable::fromSiteAdminEmail()`)로 만든다 — 비회원을 허용하는 채널(메일)만 받고, 사이트 알림처럼 회원 계정이 필요한 채널은 건너뛴다. 권한을 묻는 치환(관리자 화면 주소 등)은 `NotificationRecipientCapability` 가 거짓으로 판정한다. 값이 비었거나 형식이 틀리면 그 규칙은 0명이고 `Log::warning` 을 남긴다.
 
 > `trigger_user` 는 회원/비회원을 동일 규칙으로 처리합니다. context 에 `trigger_user_id` 가 있으면 회원(User), 없고 표준 키 `guest_recipient` 가 있으면 비회원([비회원 발송](#비회원게스트-알림-발송) 참조)으로 해석됩니다.
 
@@ -456,7 +459,7 @@ use App\Helpers\TimezoneHelper;
 
 전수는 `config/core.php` 의 `notification_definitions` 가 단독으로 소유한다 — 아래는 그중 인증·휴면 계열이다. 비밀번호 만료 2종(#736)은 `auth:process-password-expiry` 가 발행하며, 변경 화면 주소(`{action_url}`)가 수신자에 따라 다르다 — 관리자는 관리자 회원 수정 화면·관리자 로그인, 회원은 마이페이지 비밀번호 변경·로그인.
 
-> 알림 변수의 화면 주소(`{action_url}`·`{site_url}`, 확장의 `{post_url}`·`{order_url}` 등)는 화면 주소 헬퍼 `ScreenUrl` 로 만든다(7.2.0+). 회원에게 가는 링크는 환경설정 「사용자 화면 URL」(비면 사이트 주소), 운영자에게 가는 링크는 사이트 주소 기준이고, 경로는 필터 `core.screen_url.filter_path` 로 바꿀 수 있다. 확장이 새 알림 변수에 화면 주소를 넣을 때도 같은 헬퍼를 쓴다 — [라우팅 「절대 URL」](routing.md), [개발자 화면 가이드 5절](../custom-development.md#5-화면-주소-키와-주소-필터).
+> 알림 변수의 화면 주소(`{action_url}`·`{site_url}`, 확장의 `{post_url}`·`{order_url}` 등)는 화면 주소 헬퍼 `ScreenUrl` 로 만든다(7.2.0+). 회원에게 가는 링크는 환경설정 「사용자 화면 URL」(비면 사이트 주소), 운영자에게 가는 링크는 사이트 주소 기준이고, 경로는 필터 `core.screen_url.filter_path` 로 바꿀 수 있다. `.env` 의 `G7_PUBLIC_LINK_URL` 을 정하면 「사이트 주소」 자리가 그 주소로 바뀐다 — 공개 주소와 다른 주소로 띄운 서버가 보내는 링크도 공개 주소를 가리키게 하는 값이다. 알림 링크는 링크 변형(`ScreenUrl::absoluteForLinks()`·`toAbsoluteForLinks()`, 회원용 `{site_url}` 은 `ScreenUrl::userLinkBase()`, 운영자용 `{site_url}` 은 `SiteUrl::forOutboundLinks()`)으로 만든다 — 기본 변형(`ScreenUrl::absolute()`·`toAbsolute()`)은 결제·본인인증 뒤 브라우저 복귀용이라 이 값을 따르지 않는다. 확장이 새 알림 변수에 화면 주소를 넣을 때도 같은 헬퍼를 쓴다 — [라우팅 「절대 URL」](routing.md), [개발자 화면 가이드 5절](../custom-development.md#5-화면-주소-키와-주소-필터).
 
 | type | hooks | 채널 |
 |------|-------|------|

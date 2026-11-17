@@ -77,7 +77,7 @@ interface PageRepositoryInterface
     public function update(Page $page, array $data): Page;
 
     /**
-     * 페이지를 삭제합니다 (소프트 삭제).
+     * 페이지를 영구 삭제합니다 (소프트 삭제 없음).
      *
      * @param  Page  $page  페이지 모델
      * @return bool 삭제 성공 여부

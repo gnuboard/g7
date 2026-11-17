@@ -131,6 +131,14 @@ interface RoleRepositoryInterface
     public function deleteWithRelations(Role $role): bool;
 
     /**
+     * 역할에 걸린 메뉴 권한(`menu_permissions.role_id`)을 지웁니다 — 역할을 지우기 직전에 부른다(DB CASCADE 비의존).
+     *
+     * @param  Role  $role  대상 역할
+     * @return int 지운 행 수
+     */
+    public function deleteMenuPermissions(Role $role): int;
+
+    /**
      * 확장이 소유한 역할을 식별자로 찾습니다.
      *
      * @param  string  $identifier  역할 식별자

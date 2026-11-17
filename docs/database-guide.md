@@ -550,7 +550,14 @@ Service에서 `delete()` 메서드 작성 시 반드시 확인:
 □ 6. 모든 BelongsToMany 중간 테이블 detach
 □ 7. TODO 주석으로 미구현 연관 데이터 명시
 □ 8. 메인 레코드 삭제
+□ 9. 다른 확장이 소유한 자식 — 코어·모듈은 그 테이블을 모른다. 지우기 직전 `*.before_delete`(또는 `before_purge`) 훅으로 알리고 소유 확장의 리스너가 지운다
 ```
+
+#### 새 cascade FK·삭제 경로를 넣을 때 (7.2.0)
+
+- 새 cascade FK 를 마이그레이션에 넣으면 그 부모를 지우는 모든 지점이 자식을 명시적으로 지우는지 함께 확인한다 — 저장소의 정적 검사가 cascade FK 와 부모 삭제 지점을 목록과 대조해, 목록에 없는 FK·삭제 지점을 막는다.
+- 「FK cascade 로 정리」처럼 CASCADE 가 지워 준다는 주석은 쓰지 않는다 — 명시 삭제가 빠진 자리를 정상처럼 보이게 한다.
+- 회귀 테스트는 외래키 검사를 끈 상태(`Schema::disableForeignKeyConstraints()`)에서 삭제를 실행해 자식 고아 0건을 단언한다 — CASCADE 가 돌지 않으므로 남으면 그 경로가 CASCADE 에 기대고 있다.
 
 #### 예외: RESTRICT 사용 케이스
 

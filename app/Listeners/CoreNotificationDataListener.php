@@ -80,8 +80,8 @@ class CoreNotificationDataListener implements HookListenerInterface
             'data' => [
                 'name' => NotificationHookListener::RECIPIENT_NAME_PLACEHOLDER,
                 'app_name' => config('app.name'),
-                'action_url' => ScreenUrl::absolute('auth.login', '/login'),
-                'site_url' => ScreenUrl::userBase(),
+                'action_url' => ScreenUrl::absoluteForLinks('auth.login', '/login'),
+                'site_url' => ScreenUrl::userLinkBase(),
             ],
             'context' => [
                 'trigger_user_id' => $user->id,
@@ -116,10 +116,10 @@ class CoreNotificationDataListener implements HookListenerInterface
                 'name' => NotificationHookListener::RECIPIENT_NAME_PLACEHOLDER,
                 'app_name' => config('app.name'),
                 'action_url' => $extra['reset_url'] ?? ($isAdmin
-                    ? ScreenUrl::absolute('admin.reset_password', '/admin/reset-password', [], ScreenUrl::SCOPE_ADMIN)
-                    : ScreenUrl::absolute('auth.reset_password', '/reset-password')),
+                    ? ScreenUrl::absoluteForLinks('admin.reset_password', '/admin/reset-password', [], ScreenUrl::SCOPE_ADMIN)
+                    : ScreenUrl::absoluteForLinks('auth.reset_password', '/reset-password')),
                 'expire_minutes' => (string) config('auth.passwords.users.expire', 60),
-                'site_url' => $isAdmin ? SiteUrl::base() : ScreenUrl::userBase(),
+                'site_url' => $isAdmin ? SiteUrl::forOutboundLinks() : ScreenUrl::userLinkBase(),
             ],
             'context' => [
                 'trigger_user_id' => $user->id,
@@ -153,9 +153,9 @@ class CoreNotificationDataListener implements HookListenerInterface
                 'name' => NotificationHookListener::RECIPIENT_NAME_PLACEHOLDER,
                 'app_name' => config('app.name'),
                 'action_url' => $isAdmin
-                    ? ScreenUrl::absolute('admin.login', '/admin/login', [], ScreenUrl::SCOPE_ADMIN)
-                    : ScreenUrl::absolute('auth.login', '/login'),
-                'site_url' => $isAdmin ? SiteUrl::base() : ScreenUrl::userBase(),
+                    ? ScreenUrl::absoluteForLinks('admin.login', '/admin/login', [], ScreenUrl::SCOPE_ADMIN)
+                    : ScreenUrl::absoluteForLinks('auth.login', '/login'),
+                'site_url' => $isAdmin ? SiteUrl::forOutboundLinks() : ScreenUrl::userLinkBase(),
             ],
             'context' => [
                 'trigger_user_id' => $user->id,
@@ -190,9 +190,9 @@ class CoreNotificationDataListener implements HookListenerInterface
                 'name' => NotificationHookListener::RECIPIENT_NAME_PLACEHOLDER,
                 'app_name' => config('app.name'),
                 'action_url' => $isAdmin
-                    ? ScreenUrl::absolute('admin.user.edit', '/admin/users/{uuid}/edit', ['uuid' => $user->uuid], ScreenUrl::SCOPE_ADMIN)
-                    : ScreenUrl::absolute('mypage.change_password', '/mypage/change-password'),
-                'site_url' => $isAdmin ? SiteUrl::base() : ScreenUrl::userBase(),
+                    ? ScreenUrl::absoluteForLinks('admin.user.edit', '/admin/users/{uuid}/edit', ['uuid' => $user->uuid], ScreenUrl::SCOPE_ADMIN)
+                    : ScreenUrl::absoluteForLinks('mypage.change_password', '/mypage/change-password'),
+                'site_url' => $isAdmin ? SiteUrl::forOutboundLinks() : ScreenUrl::userLinkBase(),
                 'expires_at' => (string) ($extra['expires_at'] ?? ''),
                 'days_left' => (string) ($extra['days_left'] ?? ''),
             ],
@@ -228,9 +228,9 @@ class CoreNotificationDataListener implements HookListenerInterface
                 'name' => NotificationHookListener::RECIPIENT_NAME_PLACEHOLDER,
                 'app_name' => config('app.name'),
                 'action_url' => $isAdmin
-                    ? ScreenUrl::absolute('admin.login', '/admin/login', [], ScreenUrl::SCOPE_ADMIN)
-                    : ScreenUrl::absolute('auth.login', '/login'),
-                'site_url' => $isAdmin ? SiteUrl::base() : ScreenUrl::userBase(),
+                    ? ScreenUrl::absoluteForLinks('admin.login', '/admin/login', [], ScreenUrl::SCOPE_ADMIN)
+                    : ScreenUrl::absoluteForLinks('auth.login', '/login'),
+                'site_url' => $isAdmin ? SiteUrl::forOutboundLinks() : ScreenUrl::userLinkBase(),
                 'expired_at' => (string) ($extra['expired_at'] ?? ''),
             ],
             'context' => [

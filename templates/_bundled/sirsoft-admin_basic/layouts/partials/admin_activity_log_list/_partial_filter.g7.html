@@ -191,6 +191,23 @@
           </div>
         </div>
       </div>
+      <div data-ref="deletion_snapshot_filter" class="flex flex-col gap-2">
+        <responsive on="768-" class="flex flex-row gap-2 items-center"/>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.activity_log.filter.deletion_snapshot_label</span>
+        <div class="flex-center flex-wrap gap-2">
+          <label class="inline-clickable" title="$t:admin.activity_log.filter.deletion_snapshot_hint">
+            <input type="checkbox" class="checkbox" checked="{{_local.filter.deletionSnapshot === true}}">
+              <on type="change">
+                <!-- 영구 삭제·선언 정리·커스텀 번역 삭제 직전에 남긴 기록(펼치면 본문·버전이 보이는 행)만 고른다. 판정은 서버 한 곳
+                  (ActivityLog::isDeletionSnapshotAction)이라 화면은 켜고 끄기만 담아 두고, 검색 버튼이 deletion_snapshot=1 로 주소에 옮긴다. -->
+                <set-state target="local" filter.deletionSnapshot="{{$event.target.checked}}"/>
+              </on>
+            </input>
+            <span class="text-label">$t:admin.activity_log.filter.deletion_snapshot_only</span>
+          </label>
+          <span class="form-hint">$t:admin.activity_log.filter.deletion_snapshot_hint</span>
+        </div>
+      </div>
     </div>
     <div data-ref="filter_actions" class="flex justify-center gap-3 mt-6">
       <responsive on="portable" class="flex gap-3 mt-6"/>
@@ -202,7 +219,7 @@
         $t:admin.activity_log.filter.search_button
       </button>
       <!-- 검색 조건 초기화. 폼 상태와 주소를 함께 비운다 — 초기화는 걸린 조건을 없애는 것이라 지금 조건과 병합하지 않는다 -->
-      <button type="button" class="btn btn-secondary px-6">
+      <button data-ref="filter_reset_button" type="button" class="btn btn-secondary px-6">
         <responsive on="portable" class="btn btn-secondary flex-1"/>
         <on type="click">
           <set-state target="local" :actorSearchResults="[]">
@@ -214,6 +231,7 @@
               <field name="dateQuick" value=""/>
               <field name="dateFrom" value=""/>
               <field name="dateTo" value=""/>
+              <field name="deletionSnapshot" :value="false"/>
             </field>
           </set-state>
           <!-- audit:allow layout-list-context-navigate-merge-query 필터 초기화 — 걸려 있던 조건을 전부 비우는 것이 이 버튼의 목적이므로 병합하지 않는다. -->

@@ -4,7 +4,7 @@ namespace Plugins\Sirsoft\Koreaexim\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use App\Support\LocalizedValue;
-use App\Support\SiteUrl;
+use App\Support\ScreenUrl;
 use Plugins\Sirsoft\Koreaexim\Models\KoreaeximRateRun;
 use Plugins\Sirsoft\Koreaexim\Plugin;
 
@@ -67,7 +67,7 @@ class UpdateFailedNotificationDataListener implements HookListenerInterface
             : $run->status->label();
         $data['data'] = ['name' => '{recipient_name}', 'app_name' => (string) config('app.name'), 'status_label' => $statusLabel, 'message' => $run->message,
             // audit:allow datetime-display-user-timezone reason: 한국수출입은행 업무 날짜·시각 — Asia/Seoul 고정
-            'search_date' => $run->search_date->toDateString(), 'settings_url' => SiteUrl::absolute('/admin/plugins/sirsoft-koreaexim/settings')];
+            'search_date' => $run->search_date->toDateString(), 'settings_url' => ScreenUrl::toAbsoluteForLinks('/admin/plugins/sirsoft-koreaexim/settings', ScreenUrl::SCOPE_ADMIN)];
 
         return $data;
     }

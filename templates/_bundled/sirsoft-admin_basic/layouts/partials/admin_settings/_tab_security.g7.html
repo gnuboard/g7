@@ -42,6 +42,8 @@
               <span class="text-red-600 dark:text-red-400 ml-1">*</span>
             </div>
             <p class="text-label-subtle">$t:admin.settings.security.force_https_desc</p>
+            <!-- 켜는 순간 http 요청이 https 로 이동한다 — 인증서가 없거나 프록시 뒤에서 https 를 알리지 못하면 관리자도 들어올 수 없으므로, 끄는 명령을 함께 보인다(#888). -->
+            <p data-ref="force_https_notice" class="text-warning-soft mt-1">$t:admin.settings.security.force_https_notice</p>
             <span data-if="{{_local.errors?.['security.force_https']}}" class="form-error">{{_local.errors?.['security.force_https']?.[0] ?? ''}}</span>
           </div>
           <toggle data-type="composite" name="security.force_https" size="md" disabled="{{_computed.isReadOnly}}"/>

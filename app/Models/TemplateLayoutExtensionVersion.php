@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\UsesRuntimeRoleLayoutTable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -27,6 +28,7 @@ use Illuminate\Support\Carbon;
 class TemplateLayoutExtensionVersion extends Model
 {
     use HasFactory;
+    use UsesRuntimeRoleLayoutTable;
 
     /**
      * 테이블명
@@ -71,6 +73,8 @@ class TemplateLayoutExtensionVersion extends Model
 
     /**
      * 레이아웃 확장과의 관계
+     *
+     * @return BelongsTo 레이아웃 확장 관계
      */
     public function extension(): BelongsTo
     {
@@ -79,6 +83,8 @@ class TemplateLayoutExtensionVersion extends Model
 
     /**
      * 생성자와의 관계
+     *
+     * @return BelongsTo 생성자(회원) 관계
      */
     public function creator(): BelongsTo
     {

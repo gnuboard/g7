@@ -33,6 +33,8 @@ DB 에 쓰지 않고 Cache 에 임시 저장(`inicis:pending_record:` 접두)했
 완료된 뒤(`core.auth.after_register` 훅)에야 레코드로 흡수합니다 — 가입을 완료하지 않은
 방문자의 PII 를 DB 에 영구 저장하지 않기 위함입니다. 사용자가 탈퇴하거나 계정이 삭제되면
 `core.user.after_withdraw`/`core.user.before_delete` 훅에서 관련 레코드를 정리합니다.
+코어가 보관주기 경과 본인확인 로그를 파기할 때는 지우기 직전 `core.identity_logs.before_purge`
+훅에서 그 로그를 참조하는 challenge 매핑을 명시 삭제합니다(외래키 연쇄 삭제에 기대지 않음).
 <!-- @intent END -->
 
 ## 2. 디렉토리 지도
@@ -93,6 +95,12 @@ Cache 에 stash(`inicis:pending_record:{key}`) → 회원가입 완료 → `core
 `CleanInicisRecordOnUserDelete`/`CleanInicisRecordOnUserWithdraw`가 해당 사용자의
 `inicis_identity_records`를 정리.
 
+**로그 보관주기 파기 시 매핑 정리**: 코어 `IdentityLogService::purge()`가 배치마다 지우기 직전
+`core.identity_logs.before_purge`(인자: 그 배치의 로그 ID 배열) 발화 →
+`CleanInicisChallengeMappingsOnLogPurge`(sync)가 `inicis_challenge_mappings`의 해당 `challenge_id`
+행을 Repository 로 명시 삭제. `inicis_identity_records.latest_log_id`는 외래키 없는 감사 링크라
+로그가 지워져도 그대로 남는다 — 인증 값 조회(`verifiedClaims`)는 로그가 있을 때만 이 값을 대조한다.
+
 **외부로 나가는 주소**: 이니시스에 넘기는 복귀 주소(챌린지 공개 payload 의 `callbackUrl`)와 콜백 뒤 팝업 브리지 이동은 요청 Host 가 아니라 코어 사이트 주소(`App\Support\SiteUrl`, `APP_URL`)로 만든다. 공개 payload 의 `siteOrigin` 은 프론트가 브리지 메시지의 출처를 대조하는 기준이다. 팝업 브리지는 결과를 사이트 출처 리터럴로만 `postMessage` 하고, 모바일 복귀는 같은 출처 경로만 따르며, `Referrer-Policy: no-referrer`·`Cache-Control: no-store` 로 응답한다.
 <!-- @intent END -->
 
@@ -102,8 +110,8 @@ Cache 에 stash(`inicis:pending_record:{key}`) → 회원가입 완료 → `core
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 3개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 6개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 6개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 구독 훅 | 7개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 7개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 2개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -159,7 +167,7 @@ Cache 에 stash(`inicis:pending_record:{key}`) → 회원가입 완료 → `core
 | PHPUnit | 29개 | `plugins/_bundled/sirsoft-verification_kginicis/tests` |
 | Vitest | 17개 | `vitest.config.ts` |
 | Playwright | 1개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 27개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 28개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

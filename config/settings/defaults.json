@@ -14,7 +14,6 @@
             "timezone": "Asia/Seoul",
             "language": "ko",
             "currency": "KRW",
-            "maintenance_mode": false,
             "site_logo": [],
             "site_favicon": [],
             "asset_url_mode": "extension"

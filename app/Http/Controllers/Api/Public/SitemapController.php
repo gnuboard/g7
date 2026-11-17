@@ -10,6 +10,7 @@ use App\Jobs\GenerateSitemapJob;
 use App\Seo\SeoCacheSettings;
 use App\Seo\SitemapFileStore;
 use App\Seo\SitemapManager;
+use App\Support\RuntimeRole;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -72,7 +73,10 @@ class SitemapController extends PublicBaseController
         }
 
         // 신선도 만료 또는 세트 부재 — 생성은 큐에 맡긴다 (ShouldBeUnique 로 중복 디스패치 방지).
-        GenerateSitemapJob::dispatch();
+        // 검수 서버는 사이트맵 파일·메타를 만들지 않는다(운영 서버 몫)
+        if (! RuntimeRole::isStage()) {
+            GenerateSitemapJob::dispatch();
+        }
 
         $serveStale = (bool) g7_core_settings('seo.sitemap_serve_stale_on_miss', true);
 

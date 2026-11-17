@@ -306,6 +306,16 @@
                                         "className": "form-error"
                                     },
                                     "text": "{{_local.errors?.['general.admin_email']?.[0] ?? ''}}"
+                                },
+                                {
+                                    "comment": "이 주소의 쓰임새 — 알림 템플릿 받는 사람 「사이트 관리자 이메일」 규칙이 여기로 메일을 보낸다(#888).",
+                                    "id": "admin_email_desc",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-tertiary mt-1"
+                                    },
+                                    "text": "$t:admin.settings.general.admin_email_desc"
                                 }
                             ]
                         },

@@ -1,0 +1,26 @@
+feature: 운영 서버 마무리 (stage:apply-to-live)
+
+description: |
+  DB·캐시를 함께 쓰는 검수 서버가 확장을 먼저 업데이트하면 공유 DB 판이 새 판이 되어 운영 서버의 `*:update`·`language-pack:update` 는
+  「업데이트 없음/이미 최신」으로 끝난다. 운영 서버에서 이 명령이 나머지 일을 차례로 한다 — 파일 맞추기
+  (`extension:reset-files-from-bundled`, 전 종류·언어팩 포함) → 레이아웃 갱신 keep(켜진 사용자 템플릿 → 관리자 템플릿 → 레이아웃을 가진
+  켜진 모듈·플러그인) → 미뤄 둔 정리(`extension:apply-deferred-cleanup`). 방향은 이 서버의 번들 파일 → 이 서버의 활성 폴더·레이아웃 표이며
+  검수 서버 데이터를 옮기지 않는다. 실행 전에 방향을 알리고, 실패한 단계에서 멈춰 1 로 끝난다. `--dry-run` 은 모든 단계를 미리보기로,
+  확인은 `--yes` 규약이다. 검수 서버에서는 종료 1.
+
+# 축 의미:
+#   case — 실행 역할·방식·결과 (검수 서버는 방식과 무관하게 거절하므로 한 칸).
+axes:
+  case: [stage_refused, live_run, dry_run, step_failure, cleanup_failure, no_confirmation]
+
+effects:
+  - stage_role_refuses_apply_to_live
+  - steps_run_in_order_files_layouts_cleanup
+  - direction_is_announced_before_running
+  - dry_run_passes_dry_run_to_every_step
+  - failed_step_stops_the_run
+  - unanswerable_confirmation_refuses
+  - steps_after_file_reset_run_in_fresh_process
+
+test_files:
+  - tests/Feature/Console/Commands/Extension/StageApplyToLiveCommandTest.php

@@ -205,6 +205,37 @@ challenge 요청에 `provider_id` 를 고정하지 않는다. 판정은 조회�
 외부 화면을 거치는 수단은 확인 뒤 요청 맥락의 `return_path`(같은 출처 경로만, 코어가 정규화)로 돌려보낸다. 정보 수정 화면과 템플릿의
 본인인증 launcher(428 경로)는 지금 화면 경로를 싣는다.
 
+### 5.2 로그를 참조하는 자기 테이블은 파기 훅에서 지운다 (7.2.0)
+
+제공자가 challenge 를 자기 테이블(거래 매핑 등)에 이어 두면, 보관주기 파기(`IdentityLogService::purge()`)가 로그를 지울 때 그 행도
+함께 사라져야 한다. 코어는 확장 테이블을 모르므로 배치마다 지우기 **직전에** action 훅 `core.identity_logs.before_purge` 를 그 배치의
+로그 ID 배열(`array<int, string>`) 하나로 발화한다. 제공자는 이 훅을 구독해 자기 행을 명시적으로 지운다 — 외래키의
+`cascadeOnDelete()` 는 안전망일 뿐 삭제 경로가 아니다([database-guide.md](../database-guide.md)).
+
+```php
+public static function getSubscribedHooks(): array
+{
+    return [
+        'core.identity_logs.before_purge' => [
+            'method' => 'purgeChallengeRows',
+            'priority' => 10,
+            'sync' => true, // 로그 행이 지워지기 전에 같은 요청 안에서 끝나야 한다
+        ],
+    ];
+}
+
+public function purgeChallengeRows(array $logIds): void
+{
+    $this->mappingRepository->deleteByChallengeIds($logIds);
+}
+```
+
+`'sync' => true` 는 빠뜨리면 안 된다. Action 훅 리스너는 기본이 큐 디스패치라, 큐 드라이버가 `sync` 가 아닌 사이트에서는 리스너가
+코어가 그 배치의 로그를 지운 **뒤에** 따로 돈다. 그 사이 외래키가 있으면 연쇄 삭제가 먼저 일어나 리스너가 할 일이 없어지고(정리 경로가
+리스너가 아니게 된다), 외래키가 꺼진 환경이면 로그 없는 자기 행이 남는다. 동기로 구독해야 파기와 같은 요청·같은 배치 안에서 로그보다
+먼저 지워진다. 번들 예: `sirsoft-verification_kginicis` 의 `CleanInicisChallengeMappingsOnLogPurge`,
+`sirsoft-verification_nhnkcp` 의 `CleanKcpCertTransactionsOnLogPurge`.
+
 ## 6. provider 추가 후 검증 매트릭스 (MANDATORY)
 
 새 provider 추가 시 다음 테스트가 통과해야 합니다.

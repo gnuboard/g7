@@ -43,7 +43,7 @@
         <icon name="fas fa-broom" size="sm"/>
         <span>$t:admin.language_packs.actions.refresh_cache</span>
       </button>
-      <button data-ref="lp_btn_install" data-if="{{language_packs?.data?.abilities?.can_install}}" type="button" class="flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
+      <button data-ref="lp_btn_install" data-if="{{language_packs?.data?.abilities?.can_install}}" type="button" disabled="{{_global.appConfig?.runtime_role === 'stage'}}" title="{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}" class="disabled:opacity-50 disabled:cursor-not-allowed flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors">
         <responsive on="portable" class="hidden"/>
         <on type="click">
           <open-modal target="language_pack_install_modal"/>
@@ -83,7 +83,7 @@
         <icon name="fas fa-broom" size="sm"/>
         <span>$t:admin.language_packs.actions.refresh_cache</span>
       </button>
-      <button data-if="{{language_packs?.data?.abilities?.can_install}}" type="button" class="flex-center flex-1 justify-center gap-2 px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors text-sm">
+      <button data-if="{{language_packs?.data?.abilities?.can_install}}" type="button" disabled="{{_global.appConfig?.runtime_role === 'stage'}}" title="{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}" class="disabled:opacity-50 disabled:cursor-not-allowed flex-center flex-1 justify-center gap-2 px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors text-sm">
         <on type="click">
           <open-modal target="language_pack_install_modal"/>
         </on>
@@ -247,16 +247,16 @@
           ...(p.files_missing === true ? [{ label: '$t:admin.language_packs.badge.files_missing', tone: 'danger' }] : []),
           ...(p.has_update === true &amp;&amp; p.status !== 'uninstalled' ? [{ label: '$t:admin.language_packs.badge.update_available', tone: 'danger' }] : [])
         ],
-        toggle: p.status !== 'uninstalled' ? { checked: p.status === 'active', disabled: p.is_protected === true || (p.abilities?.can_activate !== true &amp;&amp; p.abilities?.can_deactivate !== true), label: p.name ?? p.identifier } : null,
+        toggle: p.status !== 'uninstalled' ? { checked: p.status === 'active', disabled: _global.appConfig?.runtime_role === 'stage' || p.is_protected === true || (p.abilities?.can_activate !== true &amp;&amp; p.abilities?.can_deactivate !== true), label: p.name ?? p.identifier } : null,
         secondaryAction: p.files_missing === true &amp;&amp; p.bundled_source_available === true &amp;&amp; p.abilities?.can_install === true
-          ? { label: '$t:admin.language_packs.actions.reinstall', icon: 'refresh' }
-          : (p.has_update === true &amp;&amp; p.status !== 'uninstalled' &amp;&amp; language_packs?.data?.abilities?.can_update ? { label: '$t:admin.language_packs.actions.update', icon: 'refresh' } : null),
+          ? { label: '$t:admin.language_packs.actions.reinstall', icon: 'refresh', disabled: _global.appConfig?.runtime_role === 'stage', title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined }
+          : (p.has_update === true &amp;&amp; p.status !== 'uninstalled' &amp;&amp; language_packs?.data?.abilities?.can_update ? { label: '$t:admin.language_packs.actions.update', icon: 'refresh', disabled: _global.appConfig?.runtime_role === 'stage', title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined } : null),
         primaryAction: p.status === 'uninstalled'
-          ? { label: '$t:admin.language_packs.actions.install', icon: 'download', variant: 'solid', disabled: p.abilities?.can_install !== true }
+          ? { label: '$t:admin.language_packs.actions.install', icon: 'download', variant: 'solid', disabled: _global.appConfig?.runtime_role === 'stage' || p.abilities?.can_install !== true, title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined }
           : null,
         actions: [
           { id: 'view_detail', label: '$t:admin.language_packs.actions.detail', iconName: 'info-circle' },
-          { id: 'uninstall', label: '$t:admin.language_packs.actions.uninstall', iconName: 'trash', variant: 'danger', disabled: p.is_protected === true || p.status === 'uninstalled' || p.abilities?.can_uninstall !== true }
+          { id: 'uninstall', label: '$t:admin.language_packs.actions.uninstall', iconName: 'trash', variant: 'danger', disabledReason: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined, disabled: _global.appConfig?.runtime_role === 'stage' || p.is_protected === true || p.status === 'uninstalled' || p.abilities?.can_uninstall !== true }
         ]
       }))}}">
         <on type="action" event="onItemClick">

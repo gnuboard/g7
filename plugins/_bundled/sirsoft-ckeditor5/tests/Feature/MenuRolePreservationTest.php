@@ -94,21 +94,23 @@ class MenuRolePreservationTest extends TestCase
     }
 
     /**
-     * 제거(uninstall)는 메뉴를 지운다.
+     * 플러그인의 uninstall() 은 메뉴를 지우지 않는다 — 데이터 보존 제거에서도 불리므로, 메뉴는 「데이터도 함께 삭제」 제거에서
+     * 코어(PluginManager)가 지운다(#888). 코어 쪽 계약은 tests/Feature/Extension/PluginUninstallKeepsMenusTest.php.
      *
      * @scenario plugin=ckeditor5, transition=uninstall
      *
-     * @effects menus_removed_on_uninstall
+     * @effects plugin_uninstall_hook_keeps_menus
      *
      * @return void 반환값 없음
      */
-    public function test_uninstall_removes_menus(): void
+    public function test_uninstall_hook_keeps_menus_for_core(): void
     {
         $this->plugin->activate();
-        $this->assertNotEmpty($this->menus());
+        $count = $this->menus()->count();
+        $this->assertGreaterThan(0, $count);
 
         $this->plugin->uninstall();
 
-        $this->assertCount(0, $this->menus());
+        $this->assertCount($count, $this->menus(), '데이터 보존 제거에서도 불리는 훅이라 메뉴를 남긴다');
     }
 }

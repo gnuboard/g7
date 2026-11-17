@@ -3,7 +3,7 @@
 namespace App\Rules;
 
 use App\Contracts\Extension\CacheInterface;
-use App\Extension\Cache\CoreCacheDriver;
+use App\Extension\Cache\CacheDriverFactory;
 use App\Models\Template;
 use Closure;
 use Illuminate\Contracts\Validation\DataAwareRule;
@@ -144,7 +144,7 @@ class ComponentExists implements DataAwareRule, ValidationRule
         try {
             return app(CacheInterface::class);
         } catch (\Throwable $e) {
-            return new CoreCacheDriver(config('cache.default', 'array'));
+            return CacheDriverFactory::core();
         }
     }
 

@@ -1,14 +1,11 @@
-<!-- 템플릿이 들고 온 레이아웃을 **다시 심는** 확인 창. 레이아웃 편집기로 고친 것이 원본으로 덮이므로
-  경고를 앞세운다 — 이 템플릿에서는 그 편집기가 바로 옆 화면이라 되돌릴 것이 있을 가능성이 높다. -->
-<partial description="템플릿 레이아웃 갱신 확인 모달" editor_label="$t:admin.modal_label.admin_template_list.template_refresh_layouts_modal">
-  <modal data-type="composite" data-ref="template_refresh_layouts_modal" title="$t:admin.templates.modals.refresh_layouts_title" size="sm">
+<!-- 템플릿이 들고 온 레이아웃을 다시 읽는 창. 창을 열면 화면별 처리를 미리 보고(DB 는 바뀌지 않는다) 기본 「수정 유지」로
+  적용한다 — 편집기로 고친 화면은 고친 부분을 지킨다. 덮어쓰기는 창에서 「모두 교체」를 고를 때만이다(#888). -->
+<partial description="템플릿 레이아웃 갱신 모달 (미리보기 후 적용)" editor_label="$t:admin.modal_label.admin_template_list.template_refresh_layouts_modal">
+  <modal data-type="composite" data-ref="template_refresh_layouts_modal" title="$t:admin.templates.modals.refresh_layouts_title" size="md">
     <div class="py-2">
-      <div class="alert-warning">
-        <icon name="exclamation-triangle" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
-        <p class="text-warning-soft">$t:admin.templates.modals.refresh_layouts_warning</p>
-      </div>
       <p class="text-gray-700 dark:text-gray-300">$t:admin.templates.modals.refresh_layouts_confirm|name={{_global.selectedTemplate.name}}</p>
-      <p class="mt-2 text-label-subtle">$t:admin.templates.modals.refresh_layouts_description</p>
+      <p class="mt-2 text-label-subtle">$t:admin.layout_sync_preview.refresh_description</p>
+      <include src="partials/_shared/_layout_sync_preview.g7.html"/>
     </div>
     <!-- 고급 설정 — 레이아웃 설치 소스(#144). 평소에는 자동(.g7.html 우선)이고, 새 형식 처리에 문제가 있을 때만
          원본 JSON 우선을 고른다. 값은 요청 본문 layout_source 로 보내고 서버는 그 요청 동안만 적용한다.
@@ -60,9 +57,9 @@
         </on>
         <span>$t:common.cancel</span>
       </button>
-      <button type="button" class="flex-center gap-2 px-4 py-2 bg-amber-700 dark:bg-amber-700 text-white rounded-lg hover:bg-amber-800 dark:hover:bg-amber-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isTemplateRefreshingLayouts}}">
+      <button data-ref="template_refresh_layouts_apply" type="button" class="flex-center gap-2 px-4 py-2 bg-amber-700 dark:bg-amber-700 text-white rounded-lg hover:bg-amber-800 dark:hover:bg-amber-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.isTemplateRefreshingLayouts || _global.layoutPreviewState !== 'ready'}}">
         <on type="click">
-          <!-- 다시 심기 실행 — 편집기로 고친 레이아웃이 원본으로 덮인다. -->
+          <!-- 적용 — 미리보기에서 고른 처리 방식과 화면별 결정을 함께 보낸다. 미리보기가 준비되기 전·실패한 동안은 잠긴다. -->
           <sequence>
             <set-state target="global" :isTemplateRefreshingLayouts="true"/>
             <api-call :auth_required="true" target="/api/admin/templates/refresh-layouts" method="POST">
@@ -71,7 +68,7 @@
                 <toast type="success" message="$t:admin.templates.refresh_layouts_success"/>
                 <refetch-data-source dataSourceId="templates"/>
                 <close-modal/>
-                <set-state target="global" :selectedTemplate="null" templateLayoutSource="auto" :templateLayoutSourceOpen="false"/>
+                <set-state target="global" :selectedTemplate="null" templateLayoutSource="auto" :templateLayoutSourceOpen="false" layoutSyncStrategy="keep" :layoutDecisions="{}" :layoutPreview="null" layoutPreviewState="idle"/>
                 <!-- 일부 항목이 실패했으면(응답 data.warnings, 코어 7.1.3) 노란 경고 결과 창을 연다 — 다른 창을 닫은 뒤라 맨 끝에 둔다. -->
                 <set-state target="global" lifecycleWarnings="{{response?.data?.warnings ?? []}}" :lifecycleWarningsOpen="false"/>
                 <open-modal if="{{(response?.data?.warnings?.length ?? 0) &gt; 0}}" target="lifecycle_warnings_modal"/>
@@ -80,7 +77,7 @@
                 <set-state target="global" :isTemplateRefreshingLayouts="false"/>
                 <toast type="error" message="{{error.message}}"/>
               </fail>
-              <body template_name="{{_global.selectedTemplate.identifier}}" layout_source="{{_global.templateLayoutSource ?? 'auto'}}"/>
+              <body template_name="{{_global.selectedTemplate.identifier}}" layout_source="{{_global.templateLayoutSource ?? 'auto'}}" layout_strategy="{{_global.layoutSyncStrategy ?? 'keep'}}" decisions="{{_global.layoutDecisions ?? {} }}"/>
             </api-call>
           </sequence>
         </on>

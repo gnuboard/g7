@@ -9,7 +9,7 @@
 
 ## 목차
 
-- [코어](#코어) (734)
+- [코어](#코어) (736)
 - [기본 제공 확장](#기본-제공-확장) (19)
 - [사용 중단](#사용-중단)
 - [이름을 조립하는 발화처](#이름을-조립하는-발화처)
@@ -248,6 +248,7 @@
 | `core.identity.settings_schema` | filter | 2 |  |
 | `core.identity.verified_claims_validation_rules` | filter | 2 |  |
 | `core.identity.verify_validation_rules` | filter | 2 |  |
+| `core.identity_logs.before_purge` | action | 1 |  |
 | `core.identity_policy.destroy_validation_rules` | filter | 2 |  |
 | `core.identity_policy.reset_field_validation_rules` | filter | 2 |  |
 | `core.identity_policy.store_validation_rules` | filter | 2 |  |
@@ -613,6 +614,7 @@
 | `core.settings.before_set` | action | 2 |  |
 | `core.settings.embed_preview_validation_rules` | filter | 2 |  |
 | `core.settings.filter_save_data` | filter | 1 |  |
+| `core.settings.filter_system_info_sections` | filter | 1 |  |
 | `core.settings.password_expiry_preview_validation_rules` | filter | 2 |  |
 | `core.settings.privacy_preview_validation_rules` | filter | 2 |  |
 | `core.settings.regenerate_app_key_validation_rules` | filter | 2 |  |
@@ -814,5 +816,6 @@
 | `app/Seo/Editor/SeoOgPreviewService.php` | `core.seo.filter_og_data`<br>`core.seo.filter_twitter_data` | buildKeyCascade() 호출부가 리터럴로 넘긴다 |
 | `app/Services/Analytics/ReportMailService.php` | `core.analytics.weekly_report_ready`<br>`core.analytics.monthly_report_ready` | 기간(weekly·monthly)별 리포트 |
 | `app/Services/DriverRegistryService.php` | `core.settings.available_*_drivers` | 드라이버 카테고리별 필터 |
+| `app/Services/Extension/ExtensionDeclarativeCleanupPlanner.php` | `seed.*.schedules.translations` | 문자열 보간 조립 — 업데이트 미리보기의 스케줄 정리 계획이 매니저와 같은 언어팩 필터를 적용 (#888, 7.2.0) |
 | `app/Services/NotificationChannelService.php` | `*.notification.channels` | 도메인 채널 후보 필터 — 알림 정의의 hook_prefix 로 조립(코어 core.notification.channels 다음) |
 | `database/seeders/Concerns/LoadsConfigSeedWithLangPackFilter.php` | `seed.*.translations` | 설정 시드 언어팩 필터 — 호출부가 키를 넘긴다(seed.notifications.translations 등) |

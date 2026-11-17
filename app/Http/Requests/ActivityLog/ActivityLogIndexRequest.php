@@ -41,6 +41,8 @@ class ActivityLogIndexRequest extends FormRequest
             'created_by' => ['nullable', 'string', 'max:36'],
             'date_from' => ['nullable', 'date'],
             'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+            // 「삭제 직전 기록만 보기」 — 켜면 영구 삭제·선언 정리·커스텀 번역 삭제 직전 기록만 (ActivityLog::scopeDeletionSnapshots)
+            'deletion_snapshot' => ['nullable', 'boolean'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
             // 게이트는 화면이 제공하는 정렬만 연다. ActivityLogRepository::SORTABLE_COLUMNS 는
             // 이보다 넓게(id·user_id 포함) 두어, 확장이 이 규칙을 훅으로 넓혔을 때 저장소가

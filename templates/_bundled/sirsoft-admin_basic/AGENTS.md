@@ -79,7 +79,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 제공 컴포넌트 | 135개 | [제공 컴포넌트](docs/components.md#제공-컴포넌트) |
-| 레이아웃 | 222개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
+| 레이아웃 | 223개 | [레이아웃 목록](docs/layouts.md#레이아웃-목록) |
 | 전용 핸들러 | 29개 | [템플릿 전용 핸들러](docs/handlers.md#템플릿-전용-핸들러) |
 | 확장 오버라이드 | 0개 | [확장 오버라이드](docs/layouts.md#확장-오버라이드) |
 <!-- @generated:extension-points-summary END -->
@@ -121,6 +121,7 @@ admin/`)이 이 템플릿의 베이스(`_admin_base`)를 extends 하고 이 템�
 - [ ] 수정 라우트와 등록 라우트가 한 레이아웃을 공유하는 폼(`admin_role_form`·`admin_user_form`)은 생성 조건 `init_actions` 에서 `form: null` 로 직전 레코드를 비우고 `state.form` 기본값을 다시 쓴다 — 엔진은 `layout_name` 이 바뀔 때만 `_local` 을 비우므로 수정 → 등록 SPA 이동에서 직전 값이 등록 폼에 남는다. 새 폼 레이아웃을 같은 구조로 만들면 같은 액션을 둔다(트러블슈팅 state-global 사례 7)
 - [ ] 사이트·회원·게시판 이름처럼 입력값을 그리는 글은 넘침을 막는다 — 모바일 상단 좌측 칸은 `min-w-0 flex-1`(이름 `truncate`, 우측 `flex-shrink-0`), 블록 제목·설명은 `break-words`, 이름·이메일 같은 좁은 칸은 `truncate` + 폭 상한. `.admin_layout_root` 가 `overflow-hidden` 이라 문서 넘침은 늘 0 이므로 우측 묶음 clip 이나 `#right_content_area` 초과분으로 잰다 (#143)
 - [ ] 확장·언어팩 작업(설치·활성화·업데이트·레이아웃 갱신) 성공 갈래를 새로 만들면 응답 `data.warnings` 를 `_global.lifecycleWarnings` 에 담고(`lifecycleWarningsOpen` 은 false) 경고가 있을 때만 `lifecycle_warnings_modal` 을 연다 — 그 화면에 `layouts/partials/_modal_lifecycle_warnings.g7.html` 을 포함한다. 항목 `level` 이 `notice`(실패 아닌 안내)뿐이면 창이 안내 제목·파란 상자로 바뀐다(코어 7.1.3). 항목 `cause` 가 `declaration`(확장 manifest 선언 형식 오류 — 다시 실행해도 같음)이면 항목 아래에 「확장 개발자가 고칠 선언」 안내가 붙고, 실패가 모두 그런 항목이면 「다시 실행하세요」 문구 대신 `declaration_description` 을 쓴다(코어 7.1.5). `admin-extension-lifecycle-warnings-modal.test.tsx` 가 성공 갈래 전수를 잠근다
+- [ ] 확장(모듈·플러그인·템플릿)·언어팩·코어 업데이트의 수명주기 단추(설치·켜기/끄기·업데이트·삭제·시작)를 새로 만들면 검수 서버(셸 설정 `_global.appConfig?.runtime_role === 'stage'`)에서 잠근다 — 단추는 `disabled` + `title`(`$t:admin.stage_role.locked_hint`), 카드 항목은 `disabled`·`title`/`disabledReason`. 서버는 그 API 를 409 `errors.stage_role_locked` 로 막으므로 화면이 먼저 알린다(#888). `admin-stage-role-gating.test.tsx` 가 지금 자리들을 잠근다
 - [ ] `_admin_base` 자식 레이아웃에 progressive 데이터소스를 추가하면 `transition_overlay.wait_for` 에도 같은 ID 를 넣는다 — 레이아웃 테스트(`admin-base-transition-overlay`)가 누락을 잡는다
 
 ## 6. 금지 패턴
@@ -189,6 +190,9 @@ Monaco 를 올릴 때는 `templates/_bundled/sirsoft-admin_basic/tests/Playwrigh
 규칙**으로 갈아 끼우고(앞 종류의 `value`·`display_names`·`relation` 은 버린다 — 남기면 회원 UUID 가 역할로
 저장돼 수신자 0명), 관련 사용자면 정의가 선언한 첫 `relation` 을 채운다(서버가 선언 안의 값만 받는다).
 「행위자 제외」는 역할↔특정 회원 사이에서만 이어 간다. 이 규칙을 바꾸면 네 벌을 함께 바꾼다.
+수신자 유형 선택지(값 칸 없는 「사이트 관리자 이메일」 `site_admin_email` 과 고르면 뜨는 안내 포함, #888)와 정의 탭 받는 사람 요약도
+같은 목록이어야 한다 — 개인정보 동의(`sirsoft-gdpr`)·소셜 로그인(`sirsoft-social_login`) 플러그인 사본까지 다섯 벌을 함께 바꾼다
+(문구는 이 템플릿의 `admin.settings.notification_definitions.recipients.*` 키를 그대로 쓴다).
 
 ## 7. 테스트 실행
 
@@ -196,9 +200,9 @@ Monaco 를 올릴 때는 `templates/_bundled/sirsoft-admin_basic/tests/Playwrigh
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 564개 | `vitest.config.ts` |
-| Playwright | 37개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 206개 | `tests/scenarios` |
+| Vitest | 569개 | `vitest.config.ts` |
+| Playwright | 41개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 214개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

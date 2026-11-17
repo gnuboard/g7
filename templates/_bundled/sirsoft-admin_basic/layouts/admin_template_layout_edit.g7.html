@@ -406,6 +406,12 @@
           </div>
         </div>
       </page-header>
+      <!-- 검수용 저장 띠(#888) — 실행 역할이 stage 인 서버에서 이 편집기의 저장은 그 서버 전용 레이아웃에만 들어가고
+           운영 사이트에는 반영되지 않는다. 다음 배포가 검수 서버의 편집분을 버리므로, 저장 전에 그 사실을 알린다. -->
+      <div data-ref="stage_editor_banner" data-if="{{_global.appConfig?.runtime_role === 'stage'}}" role="status" class="alert-warning mt-4">
+        <icon name="flask" class="text-amber-700 dark:text-amber-300 flex-shrink-0"/>
+        <p class="text-warning-soft">$t:admin.stage_role.editor_banner</p>
+      </div>
       <!-- 모바일 하단 고정 바(계획서 §7.5) — 저장·미리보기만 남긴다. 아래 여백에 safe-area 를 더해
            홈 인디케이터에 가리지 않게 하고, 페이지 컨테이너는 그만큼 바닥 여백을 둔다. -->
       <div class="fixed bottom-0 inset-x-0 z-30 flex gap-2 px-3 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700" data-testid="mobile-action-bar">

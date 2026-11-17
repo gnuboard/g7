@@ -7,6 +7,7 @@ use App\Contracts\Repositories\MenuRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Enums\MenuPermissionType;
+use App\Extension\Helpers\Concerns\RecordsSyncDeletion;
 use App\Extension\Support\LifecycleWarnings;
 use App\Models\Menu;
 use App\Models\Role;
@@ -26,6 +27,8 @@ use Illuminate\Support\Facades\Log;
  */
 class ExtensionMenuSyncHelper
 {
+    use RecordsSyncDeletion;
+
     /**
      * @param  MenuRepositoryInterface  $menuRepository  메뉴 저장소
      * @param  RoleRepositoryInterface  $roleRepository  역할 저장소
@@ -418,6 +421,11 @@ class ExtensionMenuSyncHelper
         string $extensionIdentifier,
         array $currentSlugs,
     ): int {
+        // 검수 서버(stage)는 공유 DB 의 선언 항목을 지우지 않고 대장에 미룬다 — 운영 서버가 extension:apply-deferred-cleanup 으로 같은 규칙대로 지운다
+        if (DeferredDeclarativeCleanup::shouldDefer()) {
+            return DeferredDeclarativeCleanup::defer($this, __FUNCTION__, func_get_args());
+        }
+
         $existingMenus = $this->menuRepository->getMenusByExtension($extensionType, $extensionIdentifier);
 
         $deleted = 0;
@@ -426,18 +434,12 @@ class ExtensionMenuSyncHelper
                 continue;
             }
 
-            // role_menus 피벗 정리
-            $menu->roles()->detach();
-
-            // 자식 메뉴 먼저 삭제 (orphan 회피)
-            foreach ($menu->children as $child) {
-                $child->roles()->detach();
-                $this->menuRepository->delete($child);
-                $deleted++;
+            // 앞선 메뉴의 하위 트리로 이미 지워졌으면 건너뛴다.
+            if ($this->menuRepository->findById((int) $menu->id) === null) {
+                continue;
             }
 
-            $this->menuRepository->delete($menu);
-            $deleted++;
+            $deleted += $this->deleteMenuSubtree($menu, $extensionType, $extensionIdentifier, $currentSlugs);
         }
 
         if ($deleted > 0) {
@@ -480,5 +482,108 @@ class ExtensionMenuSyncHelper
         }
 
         return $slugs;
+    }
+
+    /**
+     * 선언에서 빠진 메뉴 하나를 하위 트리(손자 포함)째 명시적으로 지웁니다.
+     *
+     * 순서: 역할 배정(`role_menus`)·메뉴 권한(`menu_permissions`) → 깊은 자식부터 → 본 메뉴. 운영자가 만든 자식(다른 출처)과
+     * 새 판이 여전히 선언한 자식은 지우지 않고 최상위(부모 null)로 올린다 — 종전에는 손자까지 DB CASCADE 로 사라졌다.
+     * 운영자 데이터(고친 필드·운영자가 만든 자식)가 있으면 지우기 직전 `menu.sync_deleted` 로 트리·역할 배정을 남긴다.
+     *
+     * @param  Menu  $menu  선언에서 빠진 메뉴
+     * @param  ExtensionOwnerType  $extensionType  소유 확장 종류
+     * @param  string  $extensionIdentifier  소유 확장 식별자
+     * @param  array<int, string>  $currentSlugs  새 판이 선언한 슬러그
+     * @return int 지운 메뉴 수
+     */
+    private function deleteMenuSubtree(Menu $menu, ExtensionOwnerType $extensionType, string $extensionIdentifier, array $currentSlugs): int
+    {
+        [$owned, $lifted] = $this->partitionMenuSubtree($menu, $extensionType, $extensionIdentifier, $currentSlugs);
+
+        $operatorData = $lifted !== [] || collect($owned)->contains(fn (Menu $m) => $this->hasOperatorOverrides($m));
+        if ($operatorData) {
+            $this->recordSyncDeletion('menu', (string) $menu->slug, $extensionType->value, $extensionIdentifier, [
+                'menus' => array_map(fn (Menu $m) => $m->toArray() + ['role_ids' => $m->roles()->pluck('roles.id')->all()], $owned),
+                'lifted_children' => array_map(fn (Menu $m) => (string) $m->slug, $lifted),
+            ]);
+        }
+
+        foreach ($lifted as $child) {
+            $this->menuRepository->update($child, ['parent_id' => null]);
+        }
+
+        foreach (array_reverse($owned) as $node) {
+            $node->roles()->detach();
+            $this->menuRepository->deleteMenuPermissions($node);
+            $this->menuRepository->delete($node);
+        }
+
+        return count($owned);
+    }
+
+    /**
+     * 메뉴 하위 트리를 「같이 지울 것」과 「최상위로 올릴 것」으로 나눕니다 (부모 → 자식 순).
+     *
+     * @param  Menu  $menu  뿌리 메뉴
+     * @param  ExtensionOwnerType  $extensionType  소유 확장 종류
+     * @param  string  $extensionIdentifier  소유 확장 식별자
+     * @param  array<int, string>  $currentSlugs  새 판이 선언한 슬러그
+     * @return array{0: list<Menu>, 1: list<Menu>} [지울 메뉴(뿌리 포함), 올릴 자식]
+     */
+    private function partitionMenuSubtree(Menu $menu, ExtensionOwnerType $extensionType, string $extensionIdentifier, array $currentSlugs): array
+    {
+        $owned = [$menu];
+        $lifted = [];
+        $queue = [$menu];
+
+        while ($queue !== []) {
+            $node = array_shift($queue);
+
+            foreach ($this->menuRepository->getChildrenByParent((int) $node->id) as $child) {
+                $childType = $child->extension_type instanceof ExtensionOwnerType ? $child->extension_type : ExtensionOwnerType::tryFrom((string) $child->extension_type);
+                $sameOwner = $childType === $extensionType && (string) $child->extension_identifier === $extensionIdentifier;
+
+                if (! $sameOwner || in_array($child->slug, $currentSlugs, true)) {
+                    $lifted[] = $child;
+
+                    continue;
+                }
+
+                $owned[] = $child;
+                $queue[] = $child;
+            }
+        }
+
+        return [$owned, $lifted];
+    }
+
+    /**
+     * 지워질 stale 메뉴를 미리 계산합니다 — 쓰기 없음, 실제 정리와 같은 판정식.
+     *
+     * @param  ExtensionOwnerType  $extensionType  소유 확장 종류
+     * @param  string  $extensionIdentifier  소유 확장 식별자
+     * @param  array<int, string>  $currentSlugs  새 판이 선언한 슬러그
+     * @return list<array{type: string, key: string, has_operator_overrides: bool}> 삭제 예정
+     */
+    public function planCleanup(ExtensionOwnerType $extensionType, string $extensionIdentifier, array $currentSlugs): array
+    {
+        $plan = [];
+        $seen = [];
+
+        foreach ($this->menuRepository->getMenusByExtension($extensionType, $extensionIdentifier) as $menu) {
+            if (in_array($menu->slug, $currentSlugs, true) || isset($seen[$menu->id])) {
+                continue;
+            }
+
+            [$owned, $lifted] = $this->partitionMenuSubtree($menu, $extensionType, $extensionIdentifier, $currentSlugs);
+            foreach ($owned as $node) {
+                $seen[$node->id] = true;
+            }
+
+            $plan[] = ['type' => 'menu', 'key' => (string) $menu->slug, 'has_operator_overrides' => $lifted !== [] || collect($owned)->contains(fn (Menu $m) => $this->hasOperatorOverrides($m))];
+        }
+
+        return $plan;
     }
 }

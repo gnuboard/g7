@@ -870,6 +870,9 @@ class UserService
                 // 역할 연결 해제 (명시적 삭제 - CASCADE 의존 금지)
                 $user->roles()->detach();
 
+                // 회원에게 직접 준 메뉴 권한 삭제 (명시적 삭제 - CASCADE 의존 금지)
+                $this->userRepository->deleteMenuPermissions($user);
+
                 // 약관 동의 이력 삭제
                 $user->consents()->delete();
 

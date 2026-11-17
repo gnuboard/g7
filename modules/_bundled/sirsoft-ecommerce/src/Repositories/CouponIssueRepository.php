@@ -19,6 +19,11 @@ class CouponIssueRepository implements CouponIssueRepositoryInterface
 {
     use PaginatesWithDeferredJoin;
 
+    /**
+     * CouponIssueRepository 생성자
+     *
+     * @param  CouponIssue  $model  쿠폰 발급 모델
+     */
     public function __construct(
         protected CouponIssue $model
     ) {}
@@ -271,5 +276,28 @@ class CouponIssueRepository implements CouponIssueRepositoryInterface
         }
 
         return $this->model->whereIn('id', $ids)->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function countIssuedByCouponForUser(int $userId): array
+    {
+        return $this->model->newQuery()
+            ->where('user_id', $userId)
+            ->whereNotIn('status', [CouponIssueRecordStatus::CANCELLED->value, CouponIssueRecordStatus::USED->value])
+            ->selectRaw('coupon_id, COUNT(*) as issued')
+            ->groupBy('coupon_id')
+            ->pluck('issued', 'coupon_id')
+            ->mapWithKeys(fn ($count, $couponId) => [(int) $couponId => (int) $count])
+            ->all();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function deleteByUserId(int $userId): int
+    {
+        return (int) $this->model->newQuery()->where('user_id', $userId)->delete();
     }
 }

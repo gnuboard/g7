@@ -8,6 +8,7 @@ use App\Benchmark\Axes\ListAxisRunner;
 use App\Benchmark\Axes\ScreenAxisRunner;
 use App\Benchmark\Axes\WriteAxisRunner;
 use App\Console\Commands\BenchCommand;
+use App\Console\RuntimeRoleCommandGuard;
 use App\Contracts\Analytics\ConversionRecorderInterface as AnalyticsConversionRecorderInterface;
 use App\Contracts\Analytics\DimensionRegistryInterface as AnalyticsDimensionRegistryInterface;
 use App\Contracts\Analytics\GoalRegistryInterface as AnalyticsGoalRegistryInterface;
@@ -30,6 +31,7 @@ use App\Contracts\Repositories\Analytics\TableStatsRepositoryInterface as Analyt
 use App\Contracts\Repositories\Analytics\VisitRepositoryInterface as AnalyticsVisitRepositoryInterface;
 use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
+use App\Contracts\Repositories\ExtensionDeferredCleanupRepositoryInterface;
 use App\Contracts\Repositories\ExtensionTrustKeyRepositoryInterface;
 use App\Contracts\Repositories\ExtensionUpdateJournalRepositoryInterface;
 use App\Contracts\Repositories\FieldDefinitionRepositoryInterface;
@@ -59,10 +61,12 @@ use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\ScheduleHistoryRepositoryInterface;
 use App\Contracts\Repositories\ScheduleRepositoryInterface;
 use App\Contracts\Repositories\SeoCacheStatRepositoryInterface;
+use App\Contracts\Repositories\StageLayoutTableRepositoryInterface;
 use App\Contracts\Repositories\SystemConfigRepositoryInterface;
 use App\Contracts\Repositories\TemplateCustomTranslationRepositoryInterface;
 use App\Contracts\Repositories\TemplateLayoutAttachmentRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
+use App\Contracts\Repositories\UpgradeStepRunRepositoryInterface;
 use App\Contracts\Repositories\UserConsentRepositoryInterface;
 use App\Contracts\Repositories\UserPasswordHistoryRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
@@ -76,6 +80,7 @@ use App\DisplayName\DisplayNameSettings;
 use App\DisplayName\MemberNamePresenter;
 use App\DisplayName\NicknameRequirement;
 use App\Extension\Auth\CredentialVerifierManager;
+use App\Extension\Cache\CacheDriverFactory;
 use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\Consent\ConsentManager;
 use App\Extension\CoreVersionChecker;
@@ -121,6 +126,7 @@ use App\Repositories\Analytics\StatsRepository as AnalyticsStatsRepository;
 use App\Repositories\Analytics\TableStatsRepository as AnalyticsTableStatsRepository;
 use App\Repositories\Analytics\VisitRepository as AnalyticsVisitRepository;
 use App\Repositories\AttachmentRepository;
+use App\Repositories\ExtensionDeferredCleanupRepository;
 use App\Repositories\ExtensionTrustKeyRepository;
 use App\Repositories\ExtensionUpdateJournalRepository;
 use App\Repositories\FieldDefinitionRepository;
@@ -151,10 +157,12 @@ use App\Repositories\RoleRepository;
 use App\Repositories\ScheduleHistoryRepository;
 use App\Repositories\ScheduleRepository;
 use App\Repositories\SeoCacheStatRepository;
+use App\Repositories\StageLayoutTableRepository;
 use App\Repositories\SystemConfigRepository;
 use App\Repositories\TemplateCustomTranslationRepository;
 use App\Repositories\TemplateLayoutAttachmentRepository;
 use App\Repositories\TemplateRepository;
+use App\Repositories\UpgradeStepRunRepository;
 use App\Repositories\UserConsentRepository;
 use App\Repositories\UserPasswordHistoryRepository;
 use App\Repositories\UserRepository;
@@ -177,6 +185,7 @@ use App\Support\CoreUpdateContext;
 use App\Support\ExtensionSettingsMirror;
 use App\Support\PrivateAttachmentDisk;
 use App\Support\PrivilegedDatabaseAccounts;
+use App\Support\RuntimeRole;
 use App\Thumbnails\ImageProcessorResolver;
 use App\Thumbnails\ThumbnailPresetRegistry;
 use App\Thumbnails\ThumbnailPurgeBuffer;
@@ -185,6 +194,7 @@ use App\Thumbnails\ThumbnailSourceProviders;
 use App\Thumbnails\ThumbnailStore;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Console\Application as ArtisanApplication;
+use Illuminate\Console\Events\CommandStarting;
 use Illuminate\Database\Events\TransactionCommitted;
 use Illuminate\Database\Events\TransactionRolledBack;
 use Illuminate\Foundation\Console\AboutCommand;
@@ -383,6 +393,9 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->bind(ExtensionUpdateJournalRepositoryInterface::class, ExtensionUpdateJournalRepository::class);
         // 확장 신뢰 키(제작자 공개키) — 패키지 서명 검증이 내장 키 다음으로 찾는다(7.2.0)
         $this->app->bind(ExtensionTrustKeyRepositoryInterface::class, ExtensionTrustKeyRepository::class);
+        $this->app->bind(UpgradeStepRunRepositoryInterface::class, UpgradeStepRunRepository::class);
+        $this->app->bind(StageLayoutTableRepositoryInterface::class, StageLayoutTableRepository::class);
+        $this->app->bind(ExtensionDeferredCleanupRepositoryInterface::class, ExtensionDeferredCleanupRepository::class);
         $this->app->bind(LayoutPreviewRepositoryInterface::class, LayoutPreviewRepository::class);
         $this->app->bind(LayoutRepositoryInterface::class, LayoutRepository::class);
         $this->app->bind(LayoutVersionRepositoryInterface::class, LayoutVersionRepository::class);
@@ -501,7 +514,7 @@ class CoreServiceProvider extends ServiceProvider
         // 코어 서비스용 CoreCacheDriver 바인딩
         // Phase 7(이관)에서 각 서비스에 CacheInterface DI 추가 시 when() 목록 확대 예정
         $this->app->bind(CacheInterface::class, function () {
-            return new CoreCacheDriver(config('cache.default'));
+            return CacheDriverFactory::core();
         });
 
         // 확장 선언 미들웨어 self-gate 인덱스 — 요청 내 인덱스 1회 빌드. scoped 라서 인덱스·해석 메모가
@@ -621,6 +634,14 @@ class CoreServiceProvider extends ServiceProvider
 
         // 코어 훅 리스너 자동 발견 및 등록 (환경 무관)
         $this->registerCoreHookListeners();
+
+        // 실행 역할 값은 부팅 때 검증한다(live|stage 외 값이면 예외) — 잘못 적은 값이 조용히 live 로 동작하지 않게
+        RuntimeRole::current();
+
+        // 운영 전용 명령(스케줄·큐 워커·재시작 신호·확장 수명주기)을 실행 역할·서버별 스케줄 스위치로 막는다
+        if ($this->app->runningInConsole()) {
+            Event::listen(CommandStarting::class, [RuntimeRoleCommandGuard::class, 'handle']);
+        }
 
         // 회원 행이 바뀌면 비어 있는 필수 항목 판정 캐시를 버린다 — 회원 서비스를 거치지 않는 저장(외부 인증의 속성 동기화,
         // 건너뛴 표시 변경)도 다음 요청에서 다시 판정되게 한다. 판정 캐시가 회원 저장을 막지 않도록 실패는 삼킨다.

@@ -9,6 +9,7 @@ use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Board\Exceptions\PostNotFoundException;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostScrapRepositoryInterface;
@@ -249,6 +250,41 @@ class PostScrapService
         }
 
         return $deleted->count();
+    }
+
+    /**
+     * 삭제되는 회원의 스크랩을 모두 지우고, 영향받은 게시글의 scrap_count 를 남은 행 기준으로 다시 계산합니다 (#888).
+     *
+     * 회원 행이 지워지기 전에 코어 회원 삭제 트랜잭션 안에서 불린다 — DB CASCADE 에 기대지 않고 명시적으로 지운다.
+     *
+     * 스크랩 해제 훅(`sirsoft-board.scrap.after_toggle` false)은 발화하지 않는다 — 회원 본인의 해제 행위가 아니라서
+     * 활동 로그에 사라질 회원 이름으로 「스크랩 해제」 기록이 쌓이게 된다. 정리 결과는 운영 로그에 한 줄로 남긴다.
+     *
+     * @param  int  $userId  삭제되는 회원 ID
+     * @return int 지운 스크랩 건수
+     */
+    public function purgeForUser(int $userId): int
+    {
+        return DB::transaction(function () use ($userId) {
+            $scraps = $this->repository->deleteByUser($userId);
+
+            if ($scraps->isEmpty()) {
+                return 0;
+            }
+
+            $postIds = $scraps->pluck('post_id')->map(fn ($id) => (int) $id)->unique()->values();
+
+            // 글마다 COUNT·UPDATE 를 내지 않고 묶음 집계로 한꺼번에 맞춘다
+            $this->postRepository->recalculateScrapCounts($postIds->all());
+
+            Log::info('회원 삭제: 게시판 스크랩 정리', [
+                'user_id' => $userId,
+                'deleted' => $scraps->count(),
+                'recalculated_posts' => $postIds->count(),
+            ]);
+
+            return $scraps->count();
+        });
     }
 
     /**

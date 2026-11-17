@@ -11,6 +11,44 @@
 - 코어 스케줄 시딩과 개발자 패키지 명령(`custom:vendor-bundle`·`custom:vendor-verify`)의 콘솔 안내가 머리말, 결과 줄, 요약까지 사이트 언어(ko·en·ja)로 나옵니다.
 - 최고관리자 비밀번호를 잊었을 때 이메일을 몰라도 서버 터미널에서 재설정할 수 있습니다. `php artisan user:reset-password` 를 이메일 없이 실행하면 최고관리자 계정을 보여 주고(여럿이면 고르게 함) 확인을 받은 뒤 재설정하며, 그 계정이 차단 같은 상태라 여전히 로그인할 수 없으면 이유도 알려 줍니다. (sir.kr 커뮤니티의 오오소피아 님께서 문의해주셨습니다.)
 
+#### 레이아웃 보존·업데이트 미리보기
+
+- 레이아웃 갱신(`*:refresh-layout`, 관리자 [레이아웃 갱신])과 확장 업데이트를 실행하기 전에 화면별 판정(유지·새 판 적용·병합·삭제 예정)을 미리 볼 수 있습니다. 명령은 `--dry-run`(`--json`), 관리자 화면은 갱신·업데이트 창에서 바로 보이며, 화면마다 「새 판 적용」·「내 수정 유지」를 골라(`--decisions=<파일>`·API `decisions`) 그대로 실행합니다. 미리보기는 DB·파일·캐시를 바꾸지 않습니다.
+- 확장 업데이트 미리보기(`POST /api/admin/{modules|plugins|templates}/{id}/update/preview`, CLI `*:update --dry-run --json`)가 새 판 선언에서 빠져 지워질 메뉴·권한·역할·알림 정의·알림 템플릿(남는 알림의 빠진 발송 수단)·본인확인 정책·스케줄을 운영자 수정본 표시와 함께 보여 줍니다. 업데이트가 돌리지 않는 확장 시더의 기본 데이터 정리는 목록에 넣지 않습니다.
+- 운영자가 고친 화면을 새 판으로 덮어쓰기 직전에 그 판을 레이아웃 버전 이력에 남깁니다 — 버전 이력 화면에서 되돌릴 수 있습니다.
+- 레이아웃 버전 이력과 확장 조각 버전 이력의 목록 응답이 판마다 어디서 왔는지(확장 업데이트·레이아웃 갱신·「새 판 적용」·업그레이드로 덮기 직전에 남긴 운영자 판인지, 병합 결과인지)와 병합 충돌 수를 함께 알려 줍니다. 출처를 적지 않던 예전 판은 출처 없음으로 나옵니다. 레이아웃 편집기 [버전 기록]은 덮기 직전에 남긴 판이 맨 위(최신)에 있어도 [복원]을 보이고, 저장한 사람 없이 동기화가 남긴 판의 저장자를 「시스템」으로 보입니다.
+- 레이아웃·확장 조각·커스텀 번역을 영구 삭제하기 직전, 운영자가 고친 것이면 본문과 최근 버전(최대 50개)을 활동 로그에 남깁니다. 활동 로그 표에서 펼쳐 볼 수 있습니다.
+- 새 판 선언에서 빠진 메뉴·권한·역할·알림 정의/템플릿·본인확인 정책·시드 엔티티·스케줄을 지우기 직전, 운영자가 고친 데이터가 있으면 활동 로그에 남깁니다. 운영자가 만든 하위 메뉴는 지우지 않고 최상위로 올립니다.
+- 활동 로그 목록 API 에 `deletion_snapshot` 파라미터를 더했습니다. 참이면 영구 삭제·선언 정리·커스텀 번역 삭제 직전 기록만 돌려줍니다(목록 행의 `snapshot` 요약과 같은 판정).
+- 식별자 없이 전체 레이아웃 갱신(`template:refresh-layout`·`module:refresh-layout`·`plugin:refresh-layout`)을 실행해도 확장마다 판정별 화면 수와 운영자 수정과 겹친 화면 목록을 보여 줍니다(낱개 갱신과 같은 꼴).
+
+#### 명령줄 운영·여러 서버 운영
+
+- 확장 업데이트·제거·언어팩 제거 명령에 `--yes`(확인 질문만 생략)를 더했습니다. 비대화형 자동화가 확인만 건너뛸 때 `--force`(같은 판 재적용·다운그레이드 허용·코어 호환 검사 생략·같은 판 스텝 재실행·멈춘 업데이트 정리)를 쓸 필요가 없습니다.
+- 업그레이드 스텝 실행 대장(`upgrade_step_runs`)을 두어, 같은 DB 를 쓰는 다른 서버가 이미 끝낸 스텝은 「이미 실행됨」으로 건너뜁니다(관리자 화면 코어 업데이트 포함). 검수 서버에서 같은 판 번호로 다시 배포해 `--force` 로 돌리면 고친 스텝만 다시 돕니다(`docs/extension/upgrade-step-guide.md` 「실행 대장」·「내용 지문」).
+- `php artisan extension:reset-files-from-bundled` — 같은 판인데 파일이 다른 확장·언어팩의 활성 폴더만 번들 내용으로 덮어씁니다(운영자 `custom/` 보존, 판 번호·업그레이드 스텝·레이아웃 본문은 그대로, 예전 이름 `extension:sync-files`). 범위는 `docs/extension/extension-update-system.md` 「같은 판인데 파일만 다를 때」.
+- `php artisan stage:apply-to-live` — 검수 서버가 먼저 업데이트해 운영 서버의 업데이트가 「업데이트 없음」으로 끝날 때, 운영 서버에서 파일 맞추기 → 레이아웃 갱신(운영자 수정 유지) → 미뤄 둔 정리를 차례로 실행합니다(검수 서버 데이터는 옮기지 않음, `docs/backend/runtime-role.md` 「운영 서버 배포 순서」).
+- `php artisan g7:migrate-plan` — 실행 대기 마이그레이션의 SQL·파괴 여부·출처(`core`·`custom`·`module:<id>`·`plugin:<id>`)와 새 판의 업그레이드 스텝 목록을 실행 없이 보여 줍니다. 컬럼 삭제·이름 변경·타입 변경·NOT NULL 전환은 미루기 권장으로 표시합니다. 업그레이드 스텝은 `describe()` 로 설명을 붙일 수 있습니다.
+- `php artisan extension:list [--type=…] [--json]` — 설치·번들 확장의 상태와 DB·활성 폴더·번들 판을 쓰기 없이 출력합니다(`--json` 은 schema 1, 설치 전이면 종료 1).
+- `php artisan storage:paths [--json]` — storage 경로를 운영 데이터·서버별 파일·업데이트 상태·임시 파일로 나눈 목록(`config/g7-storage.php`)을 보여 줍니다. 백업 대상·서버 간 공유 경로를 정할 때 씁니다.
+- `.env` 의 `G7_RUNTIME_ROLE=stage` 로 같은 DB·캐시를 쓰는 검수 서버를 띄울 수 있습니다. 검수 서버는 스케줄·큐 워커·사이트맵·SEO 캐시·방문 분석을 돌리지 않고 관리자 화면의 확장·코어·언어팩 변경을 막으며, 레이아웃과 코드 범위 캐시를 운영과 따로 둡니다. 확장 업데이트는 업데이트 중 상태를 공유 DB 에 쓰지 않아 운영 화면에서 그 확장이 빠지지 않습니다(`docs/backend/runtime-role.md`).
+- 검수 서버의 확장 업데이트는 새 판에서 빠진 메뉴·권한·알림 정의 등의 삭제를 미루고, 운영 서버가 `php artisan extension:apply-deferred-cleanup` 으로 그 순간의 운영 서버 선언 기준으로 실행합니다(배포 뒤 운영 서버에서 생긴 데이터는 지우지 않고, 판 번호가 같아도 운영 서버 파일 내용이 검수 서버와 다르면 기다림). 판 번호를 올리지 않고 코어 선언을 고친 배포는 `php artisan core:resync-declarations` 로 반영합니다. `core:execute-upgrade-steps` 에 확인만 넘기는 `--yes` 를 더했습니다 — 운영 서버 배포는 `--force`(실행 대장 무시) 대신 이 옵션으로 검수 서버가 이미 끝낸 업그레이드 스텝을 건너뜁니다. 검수 서버 레이아웃은 `php artisan stage-layouts:reset-from-live` 로 운영 레이아웃으로 덮어씁니다(운영 → 검수 서버 방향만, 검수 서버의 레이아웃 캐시도 함께 비움).
+- 검수 서버(`G7_RUNTIME_ROLE=stage`)는 모듈·플러그인·템플릿·언어팩의 `activate`·`deactivate`·`uninstall` 명령을 안내 후 종료 코드 1 로 끝냅니다 — 같은 DB 를 쓰므로 검수 서버의 `template:activate` 가 운영 사이트의 활성 템플릿을 끄고, `module:uninstall --delete-data` 가 운영 테이블을 지웁니다. 설치·업데이트·레이아웃 갱신·번들 파일 복원·업그레이드 스텝 명령은 그대로 실행합니다(새 확장은 검수 서버에 설치해 시험하고, 켜기·끄기·제거는 운영 서버에서 합니다). 검수 서버의 `language-pack:update` 는 언어팩 상태를 바꾸지 않고 판과 파일만 새로 해, 업데이트하는 동안 운영 사이트에서 그 언어가 빠지지 않습니다(다국어 DB 항목의 번역 재적용은 운영 서버에서 업데이트할 때 합니다).
+- 같은 DB 를 쓰는 서버들의 코드 판이 다를 때(검수 서버가 새 판을 먼저 받음), 각 서버는 자기 코드에 없는 명령·작업의 스케줄을 실행하지 않고 건너뜁니다 — 실패 이력·오류 로그·실패 알림이 쌓이지 않고, 경고 로그는 하루 한 번만 남깁니다. 판정 자체가 실패하면 건너뛰지 않고 실행합니다.
+- `.env` 의 `G7_SCHEDULER=off` 로 그 서버의 스케줄 실행(서버 cron·웹 크론 주소·방문 트리거)을 끌 수 있습니다. 여러 서버가 같은 DB 를 쓸 때 한 대만 스케줄을 돌리게 할 때 씁니다(공유 설정 `system.cron_mode` 와 별개).
+- `.env` 의 `G7_PUBLIC_LINK_URL` 로 메일·알림·문자의 회원용·관리자용 링크 주소를 정할 수 있습니다 — 공개 주소와 다른 주소로 띄운 서버도 공개 주소로 링크를 보냅니다. 결제·본인인증 콜백 주소와 결제·본인인증 뒤 브라우저가 돌아가는 주소는 사이트 주소 그대로입니다.
+- 점검 모드(`php artisan down`)에서 비밀 주소(`--secret`)를 열면 우회 쿠키를 받고 들어갈 수 있습니다. 통과 경로(`G7_MAINTENANCE_EXCEPT`, `*` 허용), 허용 IP(`G7_MAINTENANCE_ALLOW_IPS`, CIDR 허용, 리버스 프록시 뒤에서는 `TRUSTED_PROXIES` 기준 접속 주소), `--retry`·`--refresh`·`--status`·`--redirect` 도 반영합니다.
+- 환경설정 > 보안의 「HTTPS 강제 적용」이 실제로 동작합니다(GET 301, 그 밖 308). 프록시 뒤에서는 `TRUSTED_PROXIES` 가 필요하고, 잠겼을 때는 `php artisan settings:set security.force_https false` 로 끕니다.
+- 알림 템플릿 받는 사람에 「사이트 관리자 이메일」(환경설정 > 일반의 관리자 이메일, 메일만)을 추가했습니다. 주소가 비어 있으면 보내지 않고 경고 로그를 남깁니다.
+
+#### 확장 개발자 — 운영 훅·도구
+
+- 훅 `core.identity_logs.before_purge` — 본인확인 로그를 보관주기로 지우기 직전, 배치마다 로그 ID 로 발화합니다. 로그를 참조하는 자기 테이블은 이 훅에서 지웁니다.
+- 필터 훅 `core.settings.filter_system_info_sections` — 확장이 관리자 정보 탭에 카드(배지·항목·접는 목록·알림)를 더할 수 있습니다. 형식이 틀린 카드는 빠지고, 확장 하나가 오류를 내도 화면은 열립니다.
+- `AbstractPlugin::uninstallData()` — 플러그인이 코어 행에 더한 데이터는 「데이터도 함께 삭제」를 고른 제거에서만 이 메서드로 지웁니다.
+- 레이아웃 테이블 이름을 질의에 쓸 때는 `App\Support\LayoutTable::name()`, 캐시 드라이버는 `CacheDriverFactory::core()`·`::extension()` 을 씁니다(검수 서버 테이블·캐시 범위). 실행 역할은 `App\Support\RuntimeRole`, 바깥으로 나가는 링크 주소는 `SiteUrl::forOutboundLinks()` 입니다.
+- 업데이트 확인 응답에 GitHub 조회 실패 사유 `check_error`, 일괄 확인 결과에 `failures` 가 생깁니다. `GithubHelper::fetchLatestRelease()` 반환값에 HTTP 상태 `status` 가 생깁니다.
+
 #### 템플릿 환경설정·파비콘
 
 - 템플릿 설정 화면을 **그 템플릿이 공급**합니다. 모듈·플러그인처럼 템플릿이 화면 레이아웃(`settings/template_settings.g7.html`)과 부품 묶음(`dist/settings/settings.iife.js`·`settings.css`, 부품 매니페스트 `components.settings.json`)을 내고, 코어가 관리자 화면에 설치된 템플릿(꺼진 것 포함)의 묶음과 문구(`{템플릿id}.{묶음}`)를 싣습니다. 그래서 어느 관리자 템플릿이 켜져 있든 설정 화면이 뜹니다. 켜진 관리자 템플릿은 `layouts/overrides/{템플릿id}/template_settings.*` 와 부품 `overrides` 로 그 화면을 덮어쓸 수 있습니다. 관리자 템플릿이 그려 주는 공용 화면은 없습니다 — 화면을 공급하지 않은 템플릿은 목록 「설정」이 잠깁니다.
@@ -299,6 +337,23 @@
 
 ### Changed
 
+#### 레이아웃 보존·업데이트 (동작 변경)
+
+- 레이아웃 갱신(`*:refresh-layout`, 관리자 [레이아웃 갱신], 개발 대시보드)의 기본이 운영자 수정 유지(keep)로 바뀌었습니다. 종전처럼 새 판으로 덮으려면 `--layout-strategy=overwrite`(API `layout_strategy=overwrite`)를 고릅니다.
+- 검수 서버(`G7_RUNTIME_ROLE=stage`)에서 호환성 복구 API(`POST /api/admin/extensions/{type}/{identifier}/recover`)도 409 로 막습니다 — 복구는 확장을 다시 켜는 수명주기 동작입니다. 수명주기 경로 전체가 이 잠금을 거치는지 등록된 경로 목록으로 검사합니다.
+- `GenericEntitySyncHelper::cleanupStale()` 의 `entityLabel` 이 언어별 묶음(`LocalizedValue::translateAll()`)도 받습니다. 운영자가 고친 시드 행을 지우기 직전 남기는 활동 로그가 로그를 볼 때의 언어로 항목 이름을 보입니다.
+- 플러그인을 제거할 때 「데이터도 함께 삭제」를 고르지 않으면 관리자 메뉴를 지우지 않습니다(종전에는 일부 플러그인이 옵션과 무관하게 지웠습니다).
+- 템플릿을 제거하면 그 템플릿의 레이아웃 첨부 파일·커스텀 번역·미리보기·다른 출처 조각을 함께 지웁니다(운영자 데이터는 삭제 직전 기록).
+- 부모 행을 지우는 경로(회원·역할·메뉴·권한·스케줄 일괄·알림 정의·템플릿·본인확인 로그 파기·확장 메뉴/권한 일괄 삭제)가 자식 행을 DB 연쇄 삭제에 맡기지 않고 명시적으로 지웁니다. 확장 메뉴 일괄 삭제는 다른 출처의 하위 메뉴를 최상위로 올립니다.
+
+#### 명령줄 운영 (동작 변경)
+
+- `core:update` 는 번들 확장 일괄 업데이트가 끝난 뒤에 점검 모드를 풉니다(실패·예외에서도 풉니다).
+- `core:update` 가 업그레이드 스텝 핸드오프로 멈추면 종료 코드가 0 에서 75(재개 필요)로 바뀝니다. 번들 일괄 업데이트 자식이 정상 종료했는데 결과를 남기지 않으면 실패 1건으로 셉니다.
+- `module:check-updates`·`plugin:check-updates`·`template:check-updates` 는 GitHub 조회에 실패한 확장이 있으면 실패 표를 출력하고 종료 1 이며, 그 확장의 DB 업데이트 정보(업데이트 여부·최신 판·출처)를 덮지 않습니다 — 번들에 더 새 판이 있어도 그 판은 출력에만 보입니다. `*:update --source=github` 는 조회에 실패하면 「업데이트 없음」(0) 대신 사유와 함께 종료 1 입니다(소스 자동이면 번들 기준으로 판정하고 경고 한 줄).
+- 단독 실행한 `core:execute-upgrade-steps` 는 낡은 메모리 가드에 걸리지 않고(새 프로세스), 코어 업데이트 실행 잠금을 잡습니다. 재개 안내는 `APP_VERSION=<대상 판>` 접두(PowerShell 형식 포함)를 적습니다. spawn 실패 모드는 `app.update.spawn_failure_mode`(기본 abort) 하나만 읽습니다.
+- 콘솔이 없는 실행(cron·CI·원격 명령)에서 번들 일괄 업데이트의 전략 선택, 비밀번호 재설정·설정 지정의 비밀값 입력을 묻지 않고 기본값을 쓰거나 실패합니다(종전에는 응답을 무한히 기다렸습니다).
+
 #### 회원
 
 - 회원 저장소의 `findManyByIdsKeyed()` 가 표시 이름 계산에 필요한 칸(`User::DISPLAY_COLUMNS`)을 읽습니다. `getNamesByIds()` 는 원본 이름을 돌려주며 이름이 없는 회원은 빈 문자열입니다. 화면에 보일 이름은 표시 이름 계산기로 만듭니다.
@@ -348,6 +403,8 @@
 - 이번 판에 새로 들어온 코어 명령(`custom:check`, `custom:example`, `custom:vendor-bundle`, `custom:vendor-verify`, `queue:prune-records`, `g7:schedule-run`, `core:deploy-ledger-seed` 등)의 설명도 `php artisan list` 와 `--help` 에서 사이트 언어(ko, en, ja)로 나옵니다. 종전에는 이 명령들만 언어와 상관없이 한국어로 고정돼 있었습니다.
 - 관리자 메뉴 정의의 `permission` 키가 이제 동작에 쓰입니다. 확장이 선언한 역할이 그 권한을 가지면 메뉴가 그 역할에 붙습니다. `permission` 이 없는 단독 메뉴는 선언 역할에 붙지 않습니다.
 - 확장 개발자용: 템플릿 `template.json` 에 선택 필드 `expose`(첫 화면에 미리 실을 최상위 키 이름 목록)를 둘 수 있습니다. 선언한 키의 값만 페이지에 함께 실리고, 엔진이 앱을 시작할 때 읽는 키가 모두 실려 있으면 템플릿 설정을 따로 요청하지 않습니다. 선언이 없는 템플릿은 종전처럼 요청합니다. 선언이 배열이 아니거나 엔진이 읽는 키가 빠지면 설치·업데이트 결과에 경고가 나옵니다(설치는 그대로 됩니다, engine-v1.95.0).
+- 확장 개발 API: 메뉴 저장소 계약(`MenuRepositoryInterface`)에 메뉴 권한을 지우는 `deleteMenuPermissions()` 를 더하고, `getAccessibleNavigationMenus()` 에 이 서버가 불러온 모듈·플러그인 식별자를 받는 선택 인자 두 개를 더했습니다. 이 계약을 직접 구현한 클래스는 메서드를 추가하고 시그니처를 맞춰야 합니다.
+- 확장 개발 API: 코어 저장소 계약에 메서드를 더했습니다 — `RoleRepositoryInterface`·`UserRepositoryInterface::deleteMenuPermissions()`, `LayoutRepositoryInterface`·`LayoutExtensionRepositoryInterface` 의 삭제된 행 포함 조회(`getWithTrashedBySource()`·`getWithTrashedByTemplateId()`)와 `LayoutExtensionRepositoryInterface::forceDeleteRow()`, `LayoutExtensionVersionRepositoryInterface::getRecentVersionsWithContent()`, `LayoutPreviewRepositoryInterface::deleteByTemplateId()`, `NotificationTemplateRepositoryInterface::delete()`, `PermissionRepositoryInterface::getChildrenByParent()`, `ScheduleHistoryRepositoryInterface::deleteByScheduleIds()`. `LayoutVersionRepositoryInterface::getVersions()`·`IdentityVerificationLogRepositoryInterface::purgeOlderThan()` 에는 선택 인자를 더했습니다. 이 계약을 직접 구현한 클래스는 메서드를 추가해야 합니다.
 
 #### 외부 인증 로그인(소셜 로그인 등)
 
@@ -398,11 +455,24 @@
 
 ### Deprecated
 
+- `TemplateService::deleteTemplate()` 는 폐지 예정입니다(코어 안에 호출처가 없습니다). 템플릿 제거는 `TemplateManager::uninstallTemplate()` 를 씁니다. 공개 훅 `core.templates.before_delete`·`after_delete` 와 함께 다음 메이저에서 지웁니다.
 - 콜백 없이 부르는 `G7Core.componentEvent.off(name)` 과 `componentEvent.clear()` 는 폐지 예정입니다. 다른 화면·확장의 구독까지 지우므로 지금은 경고를 내고 종전대로 지웁니다. 구독할 때 받은 해제 함수나 `off(name, callback)` 을 쓰세요(engine-v1.93.0).
 - `G7Core.websocket.unsubscribe()` 에 `채널:이벤트`(번호 없는 키)를 넘기는 사용은 폐지 예정입니다. 지금은 그 채널·이벤트의 구독을 모두 끊고 경고를 냅니다. `subscribe()` 가 돌려준 키를 넘기세요(engine-v1.93.0).
 - 레이아웃에서 Tailwind 반응형 접두 클래스(`sm:`·`md:`·`lg:`·`xl:`·`2xl:`)와 폭에 따라 모양이 바뀌는 의미 클래스(관리자 `filter-row`·`grid-2col-responsive`·`page-title` 등과 확장의 같은 이름 사본)를 쓰는 방식은 폐지 예정입니다. 번들 레이아웃·부품은 더 쓰지 않고 정적 검사가 새 사용을 막습니다. 사이트에서 직접 고친 레이아웃과 사이트 자체 확장이 그대로 보이도록 지난 출시본 빌드 CSS 에 있던 반응형 접두 클래스(관리자 템플릿 705개 — 이커머스 모듈 CSS 가 싣던 3개 포함, 사용자 템플릿 693개)와 의미 클래스 정의는 빌드 CSS 에 이번 버전까지 남겨 두며, 다음 출시 이후 뺍니다. 직접 고친 레이아웃은 `responsive` 구간 값으로 옮깁니다(`docs/frontend/responsive-layout.md`).
 
+### Removed
+
+- 환경설정의 「점검 모드」 저장값(`general.maintenance_mode`)을 없앴습니다. 이 값은 어디에서도 읽지 않았고, 점검 모드는 `php artisan down`·`php artisan up` 이 맡습니다. 남은 저장값은 7.2.0 업그레이드가 지웁니다.
+
 ### Fixed
+
+#### 레이아웃·확장 업데이트
+
+- 확장 업데이트가 DB 판을 새 판으로 적은 뒤(업그레이드 스텝·레이아웃 갱신 도중) 프로세스가 죽으면, 다음 `module|plugin|template:update`(`--force` 없이)가 「업데이트 없음」으로 끝나 남은 스텝·레이아웃 갱신이 영영 돌지 않던 문제를 고쳤습니다. 이제 그 서버에 끝나지 않은 업데이트 기록이 남아 있으면 판과 `--force` 이어받기 명령을 알리고 종료 코드 1 로 끝납니다.
+- 템플릿 업데이트가 실패해 상태를 되돌린 뒤 상태 캐시를 비우지 않아, 템플릿이 정상인데 그 화면이 캐시 만료까지 빠질 수 있던 문제를 고쳤습니다.
+- 운영자가 지운 화면과 같은 이름으로 새 화면을 만들면 다음 템플릿 갱신이 그 화면을 템플릿 출신으로 보고 지우던 문제를 고쳤습니다.
+- 운영자 수정 유지(keep)로 갱신·업데이트할 때 겹친 곳만 있어 본문이 그대로인 화면·조각에도 버전 이력을 남겨, [버전 기록]에 같은 내용의 판이 두 줄씩 쌓이던 문제를 고쳤습니다. 본문이 바뀐 병합에만 버전을 남기고, 겹친 곳은 업데이트 결과와 활동 로그로 알립니다.
+- 대시보드 호환성 알림에서 이미 없는 확장을 [다시 활성화]하면 「확장(:identifier) 을 찾을 수 없습니다.」처럼 자리표시자가 그대로 보이던 문제를 고쳤습니다. 이제 찾지 못한 확장 식별자를 보입니다.
 
 #### 환경설정·첨부
 
@@ -495,6 +565,7 @@
 - 확인 질문에 답할 수 없는 실행(`--no-interaction`, 터미널 없는 cron, CI, 원격 명령)에서 `php artisan core:update` 가 아무 출력 없이 성공(종료 코드 0)으로 끝나, 자동화가 업데이트가 끝난 줄 알던 문제를 고쳤습니다. 이제 업데이트를 시작하지 않은 사유와 `--yes` 사용법을 출력하고 종료 코드 1 로 끝납니다. 터미널에서 직접 「아니오」를 답한 경우는 종전처럼 0 입니다.
 - 확인 질문에 답할 수 없는 실행(`--no-interaction`, 터미널 없는 cron, CI, 원격 명령)에서 `module:update`, `plugin:update`, `template:update`, `module:uninstall`, `plugin:uninstall`, `template:uninstall`, `language-pack:uninstall` 을 `--force` 없이 실행하면 「취소되었습니다」 한 줄만 내고 성공(종료 코드 0)으로 끝나, 자동화가 업데이트나 제거가 끝난 줄 알던 문제를 고쳤습니다. 이제 작업을 시작하지 않은 사유와 `--force` 로 확인 없이 진행하는 방법을 출력하고 종료 코드 1 로 끝납니다. 터미널에서 직접 「아니오」를 답한 경우는 종전처럼 0 입니다.
 - 확인 질문에 답할 수 없는 실행(`--no-interaction`, 터미널 없는 cron, CI, 원격 명령)에서 `analytics:anonymize`, `analytics:purge`, `analytics:purge-extension`, `hotfix:rollback-stale-files --prune`, `settings:migrate-to-json` 이 「취소했습니다」 한 줄만 내고 성공(종료 코드 0)으로 끝나던 문제를 고쳤습니다. 이제 작업하지 않은 사유를 출력하고 종료 코드 1 로 끝납니다. `analytics:anonymize`, `settings:migrate-to-json` 은 확인 없이 진행하는 `--force` 를 안내합니다. 방문자 통계 삭제(`analytics:purge`, `analytics:purge-extension`)는 되돌릴 수 없어 `--confirm` 을 붙여도 터미널에서 직접 확인해야 하며, 확인 없이 지우는 방법은 제공하지 않습니다. 터미널에서 직접 「아니오」를 답한 경우는 종전처럼 0 입니다.
+- 점검 모드를 캐시 저장소에 두는 설정(`APP_MAINTENANCE_DRIVER=cache`)에서 우회 쿠키를 늘 무효로 판정해, 비밀 주소로 받은 쿠키로도 점검 화면이 나오던 문제를 고쳤습니다.
 
 #### 설치 마법사
 
@@ -507,6 +578,7 @@
 #### 관리자 메뉴
 
 - 확장이 만든 역할(이커머스 관리자, SSO 운영자 등)만 가진 운영자의 관리자 왼쪽 메뉴가 「접근 가능한 메뉴가 없습니다」로 비던 문제를 고쳤습니다. 확장을 설치하거나 업데이트하면 그 역할이 가진 권한으로 열 수 있는 확장 메뉴가 그 역할에 붙습니다. 이미 운영 중인 사이트는 7.2.0 업데이트 때 채워집니다. 운영자가 역할 관리나 메뉴 관리에서 그 역할에서 뺀 메뉴는 다시 붙지 않습니다.
+- 같은 DB 를 쓰는 검수 서버에만 새 확장을 설치해도 그 확장의 메뉴가 운영 사이트 관리자 왼쪽 메뉴에 보이고 누르면 404 이던 문제를 고쳤습니다. 왼쪽 메뉴와 메뉴 관리 목록은 켜진 확장 가운데 그 서버에 파일이 있는 확장의 메뉴만 보입니다.
 
 #### 다국어
 

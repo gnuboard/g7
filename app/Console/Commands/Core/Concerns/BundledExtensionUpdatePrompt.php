@@ -131,18 +131,7 @@ trait BundledExtensionUpdatePrompt
         }
 
         // 전역 레이아웃 전략
-        $globalStrategy = 'overwrite';
-        if (! $force) {
-            $answer = $this->choice(
-                __('extensions.commands.bundled_update.strategy_question'),
-                [
-                    'overwrite' => __('extensions.commands.bundled_update.strategy_options.overwrite'),
-                    'keep' => __('extensions.commands.bundled_update.strategy_options.keep'),
-                ],
-                'overwrite',
-            );
-            $globalStrategy = $answer;
-        }
+        $globalStrategy = $this->askGlobalLayoutStrategy($force);
 
         // 확장별 전략 오버라이드
         $strategies = $this->collectPerExtensionStrategies($updates, $globalStrategy, $force);
@@ -188,6 +177,32 @@ trait BundledExtensionUpdatePrompt
     }
 
     /**
+     * 모든 확장에 기본 적용할 레이아웃 전략을 정합니다.
+     *
+     * 질문을 띄울 수 없는 실행(콘솔 없음·`--no-interaction`)은 묻지 않고 기본값 overwrite 를 쓴다. 콘솔이 없는데
+     * choice() 를 부르면 Windows 처럼 비대화 감지가 없는 환경에서 오지 않을 응답을 무한히 기다린다. `--yes` 는 확인
+     * 질문에만 답하므로 이 선택을 정하지 않는다 — 콘솔이 없으면 `--yes` 가 있어도 기본값이다.
+     *
+     * @param  bool  $force  true 면 묻지 않고 overwrite
+     * @return string 레이아웃 전략 (overwrite|keep)
+     */
+    private function askGlobalLayoutStrategy(bool $force): string
+    {
+        if ($force || ! $this->canShowPrompt()) {
+            return 'overwrite';
+        }
+
+        return (string) $this->choice(
+            __('extensions.commands.bundled_update.strategy_question'),
+            [
+                'overwrite' => __('extensions.commands.bundled_update.strategy_options.overwrite'),
+                'keep' => __('extensions.commands.bundled_update.strategy_options.keep'),
+            ],
+            'overwrite',
+        );
+    }
+
+    /**
      * 확장별 전략 오버라이드 수집.
      *
      * @param  array  $updates  collectBundledUpdates() 반환값
@@ -206,11 +221,13 @@ trait BundledExtensionUpdatePrompt
             }
         }
 
-        if ($force) {
+        // 질문을 띄울 수 없는 실행은 확장별 덮어쓰기를 묻지 않는다(전역 전략 그대로).
+        // 선택 질문이라 `--yes` 가 「예」로 답하지 않는다 — 답하면 뒤따르는 ask() 가 콘솔 없는 실행을 멈춰 세운다.
+        if ($force || ! $this->canShowPrompt()) {
             return $strategies;
         }
 
-        if (! $this->unifiedConfirm(__('extensions.commands.bundled_update.override_confirm'), false)) {
+        if (! $this->optionalConfirm(__('extensions.commands.bundled_update.override_confirm'), false)) {
             return $strategies;
         }
 
@@ -456,32 +473,47 @@ trait BundledExtensionUpdatePrompt
             fclose($pipes[2]);
             $exitCode = proc_close($process);
 
-            if ($resultPayload === null) {
-                // 결과를 못 남기고 비정상 종료한 자식(치명 오류·메모리 초과 등)은 실패 1건으로 센다 — 0/0 으로 두면
-                // 부모가 성공으로 끝내 자동화 스크립트가 실패를 알 수 없다(#144). 정상 종료인데 결과가 없으면 종전대로 0/0.
-                if ($exitCode !== 0) {
-                    Log::warning('번들 spawn 자식이 결과 페이로드 없이 비정상 종료 — 실패 1건으로 처리', ['exit_code' => $exitCode]);
-                    // 어느 항목까지 갱신됐는지 알 수 없다 — 화면에 실패 항목이 없으므로 무엇을 확인할지 알린다
-                    $this->warn(__('extensions.commands.bundled_update.child_aborted', ['code' => $exitCode]));
-
-                    return ['success' => 0, 'failed' => 1];
-                }
-
-                Log::warning('번들 spawn 자식이 결과 페이로드를 출력하지 않음 — 카운트 0 으로 처리', ['exit_code' => $exitCode]);
-
-                return ['success' => 0, 'failed' => 0];
-            }
-
-            return [
-                'success' => (int) ($resultPayload['success'] ?? 0),
-                'failed' => (int) ($resultPayload['failed'] ?? 0),
-                'skipped' => (int) ($resultPayload['skipped'] ?? 0),
-            ];
+            return $this->bundledSpawnOutcome($resultPayload, $exitCode);
         } finally {
             if (File::exists($manifestPath)) {
                 File::delete($manifestPath);
             }
         }
+    }
+
+    /**
+     * spawn 자식의 결과 페이로드와 종료 코드로 일괄 업데이트 결과를 정합니다.
+     *
+     * 자식(`core:execute-bundled-updates`)은 대상이 0건이어도 정상 종료 경로에서 결과 줄(`[BUNDLED-RESULT]`)을 늘 출력한다.
+     * 그러니 결과 줄이 없으면 종료 코드와 무관하게 결과를 알 수 없는 것이고, 실패 1건으로 센다 — 0/0 으로 두면 부모가
+     * 성공으로 끝내 자동화 스크립트가 실패를 알 수 없다(비정상 종료 #144, 정상 종료인데 결과 없음 #888).
+     *
+     * @param  array<string, mixed>|null  $resultPayload  결과 줄에서 읽은 페이로드 (없으면 null)
+     * @param  int  $exitCode  자식 종료 코드
+     * @return array{success: int, failed: int, skipped?: int} 일괄 업데이트 결과
+     */
+    private function bundledSpawnOutcome(?array $resultPayload, int $exitCode): array
+    {
+        if ($resultPayload !== null) {
+            return [
+                'success' => (int) ($resultPayload['success'] ?? 0),
+                'failed' => (int) ($resultPayload['failed'] ?? 0),
+                'skipped' => (int) ($resultPayload['skipped'] ?? 0),
+            ];
+        }
+
+        // 어느 항목까지 갱신됐는지 알 수 없다 — 화면에 실패 항목이 없으므로 무엇을 확인할지 알린다
+        if ($exitCode !== 0) {
+            // 결과를 못 남기고 비정상 종료한 자식(치명 오류·메모리 초과 등)
+            Log::warning('번들 spawn 자식이 결과 페이로드 없이 비정상 종료 — 실패 1건으로 처리', ['exit_code' => $exitCode]);
+            $this->warn(__('extensions.commands.bundled_update.child_aborted', ['code' => $exitCode]));
+        } else {
+            // 정상 종료인데 결과 줄이 없다(출력이 잘렸거나 결과 줄을 내지 않는 자식)
+            Log::warning('번들 spawn 자식이 결과 페이로드 없이 정상 종료 — 실패 1건으로 처리', ['exit_code' => $exitCode]);
+            $this->warn(__('extensions.commands.bundled_update.child_no_result'));
+        }
+
+        return ['success' => 0, 'failed' => 1];
     }
 
     /**
@@ -673,7 +705,8 @@ trait BundledExtensionUpdatePrompt
             return true;
         }
 
-        if ($force) {
+        // 선택 질문 — `--yes` 는 확인 질문에만 답하므로 재생성을 켜지 않는다. 질문을 띄울 수 없으면 기본값(아니오)
+        if ($force || ! $this->canShowPrompt()) {
             return false;
         }
 
@@ -687,7 +720,7 @@ trait BundledExtensionUpdatePrompt
         $this->newLine();
         $this->line('  '.__('search.index.rebuild_cost_warning'));
 
-        return $this->unifiedConfirm(__('search.index.rebuild_after_bulk_confirm'), false);
+        return $this->optionalConfirm(__('search.index.rebuild_after_bulk_confirm'), false);
     }
 
     /**

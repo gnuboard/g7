@@ -341,6 +341,13 @@ foreach ($config['categories'] as $cat) { ... }
 복원한다. 복원하지 않으면 active 였던 팩이 installed 로 방치되어 해당 로케일의 백엔드 번역이
 안내 없이 기본 로케일로 폴백된다.
 
+### 검수 서버의 업데이트
+
+검수 서버(`G7_RUNTIME_ROLE=stage`)의 `language-pack:update` 는 공유 DB 의 팩 상태를 바꾸지 않는다 — `updating` 기록도,
+재설치의 `installed` 기록 → 다시 켜기도 거치지 않고 판·파일·매니페스트만 새로 한다(운영 서버에서 그 로케일이 빠지지 않게).
+켜기를 거치지 않으므로 활성화 훅의 엔티티 번역 재적용은 검수 서버에서 돌지 않고, 운영 서버의 업데이트가 한다.
+검수 서버에서 `language-pack:activate`·`deactivate`·`uninstall` 은 종료 1 이다 — [runtime-role.md](../backend/runtime-role.md).
+
 ### 같은 프로세스 활성화와 필터 인스턴스
 
 시더 번역 필터 클로저는 boot 시점의 injector→registry **인스턴스**를 캡처한다. 활성 팩 목록

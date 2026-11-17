@@ -70,11 +70,13 @@ class GithubHelper
      * 최신 릴리스 정보를 조회합니다.
      *
      * `assets` 는 릴리스에 올린 파일 목록이다(서명 자산 짝 찾기 — `findSignedAssetPair()`).
+     * `status` 는 응답을 받았을 때의 HTTP 상태 코드다(연결 실패면 null). 404 는 「릴리스가 아직 없음」이고, 그 밖의 실패
+     * 상태(403 요청 한도 초과·5xx 등)는 조회 실패다 — 호출자가 둘을 가를 수 있게 싣는다(7.2.0 부터).
      *
      * @param  string  $owner  저장소 소유자
      * @param  string  $repo  저장소 이름
      * @param  string  $token  GitHub Personal Access Token
-     * @return array{version: string|null, tag: string|null, zipball_url: string|null, assets: array<int, array{name: string, size: int, url: string|null, browser_download_url: string|null}>, error: string|null} 릴리스 정보 (릴리스가 없으면 version null, API 연결 실패면 error 문장)
+     * @return array{version: string|null, tag: string|null, zipball_url: string|null, assets: array<int, array{name: string, size: int, url: string|null, browser_download_url: string|null}>, error: string|null, status: int|null} 릴리스 정보 (조회 실패면 version null, API 연결 실패면 error 문장, 응답을 받았으면 HTTP 상태)
      */
     public static function fetchLatestRelease(string $owner, string $repo, string $token = ''): array
     {
@@ -91,12 +93,12 @@ class GithubHelper
      * @param  string  $repo  저장소 이름
      * @param  string  $version  버전 (v 접두 유/무 무관)
      * @param  string  $token  GitHub Personal Access Token
-     * @return array{version: string|null, tag: string|null, zipball_url: string|null, assets: array<int, array{name: string, size: int, url: string|null, browser_download_url: string|null}>, error: string|null} 릴리스 정보 (릴리스가 없으면 version null, API 연결 실패면 error 문장)
+     * @return array{version: string|null, tag: string|null, zipball_url: string|null, assets: array<int, array{name: string, size: int, url: string|null, browser_download_url: string|null}>, error: string|null, status: int|null} 릴리스 정보 (릴리스가 없으면 version null, API 연결 실패면 error 문장, 응답을 받았으면 HTTP 상태)
      */
     public static function fetchReleaseByTag(string $owner, string $repo, string $version, string $token = ''): array
     {
         $plain = ltrim($version, 'vV');
-        $last = ['version' => null, 'tag' => null, 'zipball_url' => null, 'assets' => [], 'error' => null];
+        $last = ['version' => null, 'tag' => null, 'zipball_url' => null, 'assets' => [], 'error' => null, 'status' => null];
 
         foreach (["v{$plain}", $plain] as $tag) {
             $result = static::fetchRelease("https://api.github.com/repos/{$owner}/{$repo}/releases/tags/".rawurlencode($tag), $token);
@@ -233,11 +235,11 @@ class GithubHelper
      *
      * @param  string  $apiUrl  릴리스 API 주소
      * @param  string  $token  GitHub Personal Access Token
-     * @return array{version: string|null, tag: string|null, zipball_url: string|null, assets: array<int, array{name: string, size: int, url: string|null, browser_download_url: string|null}>, error: string|null} 릴리스 정보 (릴리스가 없으면 version null, API 연결 실패면 error 문장)
+     * @return array{version: string|null, tag: string|null, zipball_url: string|null, assets: array<int, array{name: string, size: int, url: string|null, browser_download_url: string|null}>, error: string|null, status: int|null} 릴리스 정보 (릴리스가 없으면 version null, API 연결 실패면 error 문장, 응답을 받았으면 HTTP 상태)
      */
     protected static function fetchRelease(string $apiUrl, string $token = ''): array
     {
-        $empty = ['version' => null, 'tag' => null, 'zipball_url' => null, 'assets' => [], 'error' => null];
+        $empty = ['version' => null, 'tag' => null, 'zipball_url' => null, 'assets' => [], 'error' => null, 'status' => null];
 
         try {
             $response = static::request($token, 10)->get($apiUrl);
@@ -248,13 +250,13 @@ class GithubHelper
         }
 
         if (! $response->successful()) {
-            return $empty;
+            return ['status' => $response->status()] + $empty;
         }
 
         $data = $response->json();
 
         if (! is_array($data) || ! isset($data['tag_name'])) {
-            return $empty;
+            return ['status' => $response->status()] + $empty;
         }
 
         $assets = [];
@@ -276,6 +278,7 @@ class GithubHelper
             'zipball_url' => $data['zipball_url'] ?? null,
             'assets' => $assets,
             'error' => null,
+            'status' => $response->status(),
         ];
     }
 

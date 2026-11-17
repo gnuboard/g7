@@ -134,10 +134,25 @@ if (! $this->option('force')) {
 
 | 메서드 | 동작 |
 |--------|------|
-| `canAnswerConfirmation(): bool` | `isInteractive()` 이고 `canPromptForAnswer()` 이면 true. 답할 수 없는 실행 판정의 단일 지점이며 `unifiedConfirm()` 도 이 판정을 쓴다 |
+| `canAnswerConfirmation(): bool` | `--yes` 로 미리 답했거나, `isInteractive()` 이고 `canPromptForAnswer()` 이면 true. 답할 수 없는 실행 판정의 단일 지점이며 `unifiedConfirm()` 도 이 판정을 쓴다 |
+| `confirmationPreApproved(): bool` | 명령이 `{--yes}` 를 선언했고 주어졌으면 true — `unifiedConfirm()` 은 묻지 않고 true(7.2.0) |
+| `canShowPrompt(): bool` | `isInteractive()` 이고 `canPromptForAnswer()` 이면 true — `--yes` 는 보지 않는다. 확인 외의 질문과 선택 질문은 이 판정으로 가른다(7.2.0) |
+| `optionalConfirm(string $question, bool $default = false): bool` | 선택 질문용 yes/no — `--yes` 가 「예」로 답하지 않고, 질문을 띄울 수 없으면 `$default`(7.2.0) |
 | `refuseUnanswerableConfirmation(string $reason, string $hint): int` | 사유를 오류로, 안내를 한 줄로 출력하고 `Command::FAILURE` 를 돌려준다 |
 
-안내 문구는 사실대로 쓴다. 확인 생략 옵션이 있는 명령은 그 옵션(`--force`, `core:update` 는 `--yes`)을 안내하고,
+확인 외의 질문(`choice()`·`ask()`·`secret()`)은 `canShowPrompt()` 로 먼저 가른다 — 콘솔 없는 실행에서 그 질문을 띄우면 위와 같은 이유로 영영 끝나지 않는다.
+`canAnswerConfirmation()` 은 `--yes` 를 준 실행도 「답할 수 있음」으로 보므로 이 갈래에 쓰지 않는다.
+답할 수 없으면 기본값을 쓰거나(일괄 업데이트의 레이아웃 전략은 overwrite, 확장별 덮어쓰기·검색 인덱스 재생성은 묻지 않음) 거절한다
+(`user:reset-password`·`settings:set` 의 비밀값 입력은 출처 옵션 안내와 함께 실패).
+
+`--yes` 는 **확인 질문에만** 「예」로 답한다(7.2.0, `module|plugin|template:update`·`:uninstall`·`language-pack:uninstall`). 업데이트의 `--force` 는
+확인 생략에 더해 ① 같은 판 재적용 ② 다운그레이드 허용 ③ 코어 호환 검사 생략 ④ 같은 판 업그레이드 스텝 재실행 ⑤ 멈춘 업데이트 정리를 함께 켜므로,
+비대화형 자동화가 확인만 건너뛰려면 `--yes` 를 쓴다.
+
+단위 테스트에서 `canPromptForAnswer()` 는 늘 true 다(입력을 주입하므로). 「콘솔 없는 실행」 갈래는 `App\Console\Helpers\PromptCapability::fake(false)` 로
+고정해 재고, `tearDown()` 에서 `PromptCapability::reset()` 으로 되돌린다.
+
+안내 문구는 사실대로 쓴다. 확인 생략 옵션이 있는 명령은 그 옵션(`--yes`, 같은 판 재적용이 필요할 때만 `--force`)을 안내하고,
 없는 명령은 터미널에서 실행해 질문에 답하라고 안내한다. 되돌릴 수 없는 삭제(`analytics:purge` 등)의 필수 동의
 표식(`--confirm`)은 비대화형 동의가 아니다. 이 규칙을 따르는 명령: `core:update`, `module:update`, `plugin:update`,
 `template:update`, `module:uninstall`, `plugin:uninstall`, `template:uninstall`, `language-pack:uninstall`,
@@ -145,8 +160,8 @@ if (! $this->option('force')) {
 `analytics:anonymize`, `analytics:purge`, `analytics:purge-extension`, `hotfix:rollback-stale-files --prune`,
 `settings:migrate-to-json`.
 
-선택 질문(기본값이 문서화된 진행 방식이고 거절이 작업 취소가 아닌 것, 예: 검색 인덱스 재생성 여부)은 종전처럼
-`unifiedConfirm()` 의 기본값을 그대로 쓴다.
+선택 질문(기본값이 문서화된 진행 방식이고 거절이 작업 취소가 아닌 것, 예: 확장별 덮어쓰기 변경 여부, 검색 인덱스 재생성 여부)은
+`optionalConfirm()` 으로 묻는다 — `--yes` 가 「예」로 답하지 않고, 질문을 띄울 수 없으면 기본값을 그대로 쓴다.
 
 ---
 

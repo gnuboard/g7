@@ -956,7 +956,6 @@ return [
         'language_required' => '기본 언어를 선택해주세요.',
         'language_invalid' => '올바른 언어를 선택해주세요.',
         'currency_max' => '통화 코드는 10자를 초과할 수 없습니다.',
-        'maintenance_mode_boolean' => '유지보수 모드는 true 또는 false 값이어야 합니다.',
 
         // 메일 설정
         'mailer_required' => '메일러를 선택해주세요.',
@@ -1418,6 +1417,10 @@ return [
         'embed_provider_id_rule' => 'id 글자 규칙',
         'embed_provider_sample_url' => '예시 주소',
         'layout_source' => '레이아웃 설치 소스',
+        'layout_strategy' => '레이아웃 처리 방식',
+        'decisions' => '화면별 결정',
+        'decisions.*' => '화면별 결정 값',
+        'pending_token' => '레이아웃 미리보기 토큰',
         'layout_meta_icon' => '메뉴 아이콘',
         'layout_meta_editor_label' => '편집기 표시 이름',
         'layout_meta_authoring_note' => '작성 도구 표기',
@@ -1595,7 +1598,6 @@ return [
         'notification_channel_sort_order' => '알림 채널 정렬 순서',
         'currency' => '통화',
         'default_currency' => '기본 통화',
-        'maintenance_mode' => '점검 모드',
         'asset_url_mode' => '자산 주소 방식',
         'site_logo' => '사이트 로고',
         'site_favicon' => '사이트 파비콘',

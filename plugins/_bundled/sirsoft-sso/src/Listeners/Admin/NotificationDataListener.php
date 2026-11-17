@@ -119,7 +119,7 @@ class NotificationDataListener implements HookListenerInterface
                     ? $this->idpLabel($args[1])
                     : $this->translations('sirsoft-sso::admin.notification.company_account', 'sirsoft-sso::admin.notification.company_account'),
                 'login_guide' => $this->loginGuide($args[1] ?? null),
-                'login_url' => ScreenUrl::absolute('auth.login', '/login'),
+                'login_url' => ScreenUrl::absoluteForLinks('auth.login', '/login'),
             ]),
             default => $default,
         };
@@ -276,7 +276,7 @@ class NotificationDataListener implements HookListenerInterface
     {
         $path = '/admin/plugins/sirsoft-sso/settings'.($idp instanceof IdentityProvider ? '?idp='.$idp->id : '');
 
-        return ScreenUrl::absolute('sirsoft-sso.admin.settings', $path, [], ScreenUrl::SCOPE_ADMIN);
+        return ScreenUrl::absoluteForLinks('sirsoft-sso.admin.settings', $path, [], ScreenUrl::SCOPE_ADMIN);
     }
 
     /**
@@ -289,6 +289,6 @@ class NotificationDataListener implements HookListenerInterface
     {
         $path = $user instanceof User ? '/admin/users/'.$user->uuid : '/admin/users';
 
-        return ScreenUrl::absolute('admin.users.show', $path, [], ScreenUrl::SCOPE_ADMIN);
+        return ScreenUrl::absoluteForLinks('admin.users.show', $path, [], ScreenUrl::SCOPE_ADMIN);
     }
 }

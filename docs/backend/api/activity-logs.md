@@ -36,6 +36,7 @@
 | created_by | query | string | 아니오 | max 36 | 로그를 생성한 행위 주체 식별자 필터 (행위자 기준 조회) |
 | date_from | query | date | 아니오 | — | 조회 기간 시작일 |
 | date_to | query | date | 아니오 | — | 조회 기간 종료일 |
+| deletion_snapshot | query | boolean | 아니오 | — | 「삭제 직전 기록만 보기」 — 참이면 영구 삭제(`*.force_deleted`)·선언 정리(`*.sync_deleted`)·커스텀 번역 삭제(`template_custom_translation.deleted`) 직전 기록만 조회. 응답 행의 `snapshot` 요약과 같은 판정 |
 | per_page | query | integer | 아니오 | min 1, max 100 | 페이지당 항목 수 |
 | sort_by | query | string | 아니오 | — | 정렬 기준 필드명 |
 | sort_order | query | string | 아니오 | — | 정렬 방향 (asc 오름차순 / desc 내림차순) |

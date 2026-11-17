@@ -245,12 +245,12 @@ class ClaimNotificationDataListener implements HookListenerInterface
         }
 
         // 운영자에게 가는 알림의 사이트 주소는 관리자 화면 기준(사이트 주소)이다 — 회원 기본값은 사용자 화면 URL(주문 알림과 같다).
-        $data['site_url'] = SiteUrl::base();
+        $data['site_url'] = SiteUrl::forOutboundLinks();
 
         $claimNumber = (string) ($context['claim_number'] ?? '');
         $data['claim_url'] = $claimNumber === ''
-            ? EcommerceScreenUrl::admin('ecommerce.admin.claims', ClaimUrl::ADMIN_LIST, [], absolute: true)
-            : ScreenUrl::toAbsolute(ClaimUrl::adminDetail($claimNumber), ScreenUrl::SCOPE_ADMIN);
+            ? ScreenUrl::toAbsoluteForLinks(EcommerceScreenUrl::admin('ecommerce.admin.claims', ClaimUrl::ADMIN_LIST), ScreenUrl::SCOPE_ADMIN)
+            : ScreenUrl::toAbsoluteForLinks(ClaimUrl::adminDetail($claimNumber), ScreenUrl::SCOPE_ADMIN);
 
         return $data;
     }
@@ -323,8 +323,8 @@ class ClaimNotificationDataListener implements HookListenerInterface
             'requester_name' => $this->resolveRequesterName($claim, $order),
             // 기본값은 **가장 안전한 쪽**(고객 링크)이다. 운영자에게 보낼 관리자 주소는
             // 수신자가 정해진 뒤 personalize 가 올린다.
-            'claim_url' => ScreenUrl::toAbsolute($this->resolveClaimPath($claimNumber, $isGuest)),
-            'site_url' => ScreenUrl::userBase(),
+            'claim_url' => ScreenUrl::toAbsoluteForLinks($this->resolveClaimPath($claimNumber, $isGuest)),
+            'site_url' => ScreenUrl::userLinkBase(),
         ], $this->buildAmountData($claim, $order, $snapshot), $this->buildShippingData($claim));
     }
 

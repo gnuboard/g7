@@ -589,7 +589,8 @@
                             "props": {
                                 "type": "button",
                                 "className": "btn btn-primary",
-                                "disabled": "{{_global.coreUpdateBusy === true}}"
+                                "disabled": "{{_global.coreUpdateBusy === true || _global.appConfig?.runtime_role === 'stage'}}",
+                                "title": "{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}"
                             },
                             "children": [
                                 {
@@ -932,7 +933,8 @@
                                     "props": {
                                         "type": "button",
                                         "className": "btn btn-primary",
-                                        "disabled": "{{_global.coreUpdateBusy === true}}"
+                                        "disabled": "{{_global.coreUpdateBusy === true || _global.appConfig?.runtime_role === 'stage'}}",
+                                        "title": "{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}"
                                     },
                                     "children": [
                                         {
@@ -1010,7 +1012,8 @@
                                     "props": {
                                         "type": "button",
                                         "className": "btn btn-secondary",
-                                        "disabled": "{{_local.coreUpdateDismissing}}"
+                                        "disabled": "{{_local.coreUpdateDismissing || _global.appConfig?.runtime_role === 'stage'}}",
+                                        "title": "{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}"
                                     },
                                     "children": [
                                         {

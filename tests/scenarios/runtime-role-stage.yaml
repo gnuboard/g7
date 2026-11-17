@@ -1,0 +1,30 @@
+feature: 실행 역할(G7_RUNTIME_ROLE)과 서버별 스케줄 스위치(G7_SCHEDULER)
+
+description: |
+  같은 DB·캐시·저장소를 쓰는 검수 서버(`G7_RUNTIME_ROLE=stage`)는 운영 작업을 하지 않는다. 스케줄 등록 0건·스케줄 명령은
+  안내 후 0, 큐 워커·`reverb:start`·`queue:restart` 는 1(내부 재시작 신호도 건너뜀), 큐 연결은 sync 강제, 사이트맵 잡·명령·
+  관리자 재생성 차단, SEO 봇 렌더·캐시 쓰기와 방문 분석 수집 무동작, 확장·코어·언어팩 수명주기 API(호환성 복구 포함 — 등록된 경로 전수 검사)는 409
+  `errors.stage_role_locked`(CLI 는 허용). 업데이트 전체 확인(관리자 「업데이트 확인」·인자 없는 `*:check-updates`)은 결과만 돌려주고 공유 DB 의
+  업데이트 표시(`update_available`·`latest_version`)를 쓰지 않는다. 관리자 화면은 부트 설정의 `runtime_role` 로 띠를 그린다. 서버 로컬 스위치
+  `G7_SCHEDULER=off` 는 그 서버의 스케줄 명령·웹 크론·방문 트리거를 끈다 — 판정은 `RuntimeRole::schedulerEnabled()` 하나.
+  live 는 모든 진입점이 종전과 같다.
+
+# 축 의미:
+#   case — 진입점.
+axes:
+  case: [role_resolution, schedule_registration, command_guard, queue_restart_signal, queue_connection, sitemap, seo_analytics, boot_payload, lifecycle_api, update_check, scheduler_switch]
+
+effects:
+  - runtime_role_single_judgment
+  - stage_registers_no_schedules
+  - stage_blocks_workers_and_schedules
+  - stage_forces_sync_queue
+  - stage_skips_sitemap_seo_and_analytics
+  - stage_role_exposed_to_admin_ui
+  - stage_locks_lifecycle_api
+  - stage_update_check_keeps_shared_rows
+  - scheduler_switch_disables_web_triggers
+
+test_files:
+  - tests/Feature/RuntimeRole/RuntimeRoleStageTest.php
+  - tests/Feature/Scheduling/SchedulerSwitchEntryPointTest.php

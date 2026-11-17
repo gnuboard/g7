@@ -55,15 +55,44 @@ class MenuService
     }
 
     /**
-     * 메뉴 관리 화면용 최상위 메뉴 목록을 반환합니다 (활성 모듈/플러그인 식별자 기준 필터링).
+     * 메뉴를 보일 모듈 식별자 — DB 활성 모듈 가운데 이 서버가 불러온 것.
+     *
+     * 같은 DB 를 쓰는 다른 서버(검수 서버)에 새로 설치한 모듈은 DB 에 활성으로 있지만 이 서버에는 파일·라우트가 없다 —
+     * 그 메뉴를 보이면 누를 때 404 다.
+     *
+     * @return array<int, string> 모듈 식별자 목록
+     */
+    private function visibleModuleIdentifiers(): array
+    {
+        return array_values(array_intersect(
+            $this->moduleService->getActiveModuleIdentifiers(),
+            $this->moduleService->getLoadedModuleIdentifiers(),
+        ));
+    }
+
+    /**
+     * 메뉴를 보일 플러그인 식별자 — DB 활성 플러그인 가운데 이 서버가 불러온 것 ({@see self::visibleModuleIdentifiers()}).
+     *
+     * @return array<int, string> 플러그인 식별자 목록
+     */
+    private function visiblePluginIdentifiers(): array
+    {
+        return array_values(array_intersect(
+            $this->pluginService->getActivePluginIdentifiers(),
+            $this->pluginService->getLoadedPluginIdentifiers(),
+        ));
+    }
+
+    /**
+     * 메뉴 관리 화면용 최상위 메뉴 목록을 반환합니다 (활성이면서 이 서버가 불러온 모듈/플러그인 식별자 기준 필터링).
      *
      * @param  User|null  $user  권한 평가 기준 사용자 (null 이면 권한 필터 미적용)
      * @return Collection 메뉴 관리 화면용 최상위 메뉴 컬렉션
      */
     public function getTopLevelMenusForManagement(?User $user = null): Collection
     {
-        $activeModuleIdentifiers = $this->moduleService->getActiveModuleIdentifiers();
-        $activePluginIdentifiers = $this->pluginService->getActivePluginIdentifiers();
+        $activeModuleIdentifiers = $this->visibleModuleIdentifiers();
+        $activePluginIdentifiers = $this->visiblePluginIdentifiers();
 
         return $this->menuRepository->getTopLevelMenusForManagement($activeModuleIdentifiers, $activePluginIdentifiers, $user);
     }
@@ -77,8 +106,8 @@ class MenuService
      */
     public function getFilteredMenusForManagement(array $filters, ?User $user = null): Collection
     {
-        $activeModuleIdentifiers = $this->moduleService->getActiveModuleIdentifiers();
-        $activePluginIdentifiers = $this->pluginService->getActivePluginIdentifiers();
+        $activeModuleIdentifiers = $this->visibleModuleIdentifiers();
+        $activePluginIdentifiers = $this->visiblePluginIdentifiers();
 
         $menus = $this->menuRepository->getFilteredTopLevelMenus($filters, $activeModuleIdentifiers, $activePluginIdentifiers, $user);
 
@@ -214,8 +243,9 @@ class MenuService
             // Hook: 메뉴 삭제 전
             HookManager::doAction('core.menu.before_delete', $menu);
 
-            // 역할 연결 해제 (명시적 삭제 - CASCADE 의존 금지)
+            // 역할 연결·메뉴 권한 해제 (명시적 삭제 - CASCADE 의존 금지)
             $menu->roles()->detach();
+            $this->menuRepository->deleteMenuPermissions($menu);
 
             return $this->menuRepository->delete($menu);
         });
@@ -410,7 +440,12 @@ class MenuService
      */
     public function getAccessibleNavigationMenus(User $user): Collection
     {
-        return $this->menuRepository->getAccessibleNavigationMenus($user);
+        // 확장 메뉴는 이 서버가 불러온 확장의 것만 — 다른 서버가 설치해 DB 에만 활성인 확장의 메뉴는 누르면 404 다
+        return $this->menuRepository->getAccessibleNavigationMenus(
+            $user,
+            $this->moduleService->getLoadedModuleIdentifiers(),
+            $this->pluginService->getLoadedPluginIdentifiers(),
+        );
     }
 
     /**

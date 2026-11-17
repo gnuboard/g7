@@ -491,4 +491,30 @@ class ProductReviewRepository implements ProductReviewRepositoryInterface
 
         return $review;
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getWithTrashedByUserId(int $userId): Collection
+    {
+        // audit:allow query-unbounded-get reason: 삭제되는 회원 한 명이 쓴 리뷰만 고른다 — 행 수가 그 회원의 작성 행위에 묶인다
+        return $this->model->newQuery()
+            ->withTrashed()
+            ->with(['images' => fn ($query) => $query->withTrashed()])
+            ->where('user_id', $userId)
+            ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getWithTrashedByProductId(int $productId): Collection
+    {
+        // audit:allow query-unbounded-get reason: 삭제되는 상품 한 개의 리뷰만 고른다 — 주문 이력이 있는 상품은 삭제가 막혀 이관 후기만 남는다
+        return $this->model->newQuery()
+            ->withTrashed()
+            ->with(['images' => fn ($query) => $query->withTrashed()])
+            ->where('product_id', $productId)
+            ->get();
+    }
 }

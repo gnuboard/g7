@@ -125,6 +125,9 @@ class PermissionRepository implements PermissionRepositoryInterface
     /**
      * 특정 확장의 모든 권한을 삭제합니다.
      *
+     * 역할 부여(`role_permissions`)·훅 매핑(`permission_hooks`)을 먼저 떼고 깊은 자식부터 지운다. 다른 출처의 자식 권한은
+     * 부모 연결만 끊는다 — DB CASCADE 에 기대면 그 자식까지 사라진다.
+     *
      * @param  ExtensionOwnerType  $type  확장 타입
      * @param  string|null  $identifier  확장 식별자
      * @return int 삭제된 레코드 수
@@ -137,7 +140,44 @@ class PermissionRepository implements PermissionRepositoryInterface
             $query->where('extension_identifier', $identifier);
         }
 
-        return $query->delete();
+        $permissions = $query->get();
+        if ($permissions->isEmpty()) {
+            return 0;
+        }
+
+        $ids = $permissions->pluck('id')->all();
+        Permission::query()->whereIn('parent_id', $ids)->whereNotIn('id', $ids)->update(['parent_id' => null]);
+
+        $byId = $permissions->keyBy('id');
+        $depth = function (Permission $permission) use ($byId): int {
+            $d = 0;
+            $seen = [];
+            while ($permission->parent_id !== null && $byId->has($permission->parent_id) && ! isset($seen[$permission->id])) {
+                $seen[$permission->id] = true;
+                $permission = $byId->get($permission->parent_id);
+                $d++;
+            }
+
+            return $d;
+        };
+
+        // 연결 행은 행마다 지우지 않고 ID 묶음으로 한 번에 지운다 (권한 수와 무관하게 쿼리 수 고정)
+        $rolePermissions = (new Permission)->roles();
+        $rolePermissions->newPivotStatement()->whereIn($rolePermissions->getForeignPivotKeyName(), $ids)->delete();
+        $hooks = (new Permission)->hooks();
+        $hooks->getRelated()->newQuery()->whereIn($hooks->getForeignKeyName(), $ids)->delete();
+
+        // 같은 깊이끼리 묶어 깊은 자식부터 지운다 — 부모 행이 자식보다 먼저 사라지지 않게 해 FK 동작(CASCADE·RESTRICT)에 기대지 않는다
+        $deleted = 0;
+        $levels = $permissions
+            ->groupBy(fn (Permission $p) => $depth($p))
+            ->sortKeysDesc()
+            ->map(fn ($level) => $level->pluck('id')->all());
+        foreach ($levels as $levelIds) {
+            $deleted += Permission::query()->whereIn('id', $levelIds)->delete();
+        }
+
+        return $deleted;
     }
 
     /**
@@ -148,6 +188,17 @@ class PermissionRepository implements PermissionRepositoryInterface
     public function getCorePermissions(): Collection
     {
         return Permission::where('extension_type', ExtensionOwnerType::Core)->get();
+    }
+
+    /**
+     * 한 권한의 바로 아래 자식 권한을 조회합니다 (소유 확장과 무관).
+     *
+     * @param  int  $parentId  부모 권한 ID
+     * @return Collection 자식 권한 컬렉션
+     */
+    public function getChildrenByParent(int $parentId): Collection
+    {
+        return Permission::query()->where('parent_id', $parentId)->orderBy('id')->get();
     }
 
     /**

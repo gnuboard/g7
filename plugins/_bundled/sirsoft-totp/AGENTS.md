@@ -141,6 +141,8 @@ EXPIRED / MAX_ATTEMPTS)를 통과시킨 뒤 `attempts` 를 먼저 올리고
 `HookManager::doAction('sirsoft-totp.credential.admin_reset', $user, ['actor_id', 'ip_address'])`
 발행. 관리자 본인이 단말과 백업 코드를 모두 잃어 관리자 화면에 들어갈 수 없을 때는
 `php artisan totp:reset {email}` 이 같은 `reset()` 을 서버 셸에서 호출한다.
+**제거와 데이터(코어 7.2.0)**: `uninstall()` 은 데이터 보존 제거에서도 불린다 — 메뉴는 지우지 않는다. 메뉴·권한·역할·알림 정의·본인확인 정책·스케줄은 「데이터도 함께 삭제」를 고른 제거에서 코어가 지운다(운영자가 만든 자식 메뉴는 최상위로 올리고, 운영자가 고친 항목은 지우기 직전 활동 로그에 남긴다). 플러그인이 코어 행에 더한 데이터는 `uninstallData()` 에서 지운다.
+
 <!-- @intent END -->
 
 ## 4. 확장점

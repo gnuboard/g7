@@ -65,7 +65,7 @@
 | 표시 이름 (7.2.0) | `app/DisplayName/**`(계산기 `DisplayNameResolver`, 검색과 정렬 `DisplayNameQuery`, 응답 이름 묶음 `MemberNamePresenter`, 영역 `DisplayNameArea`, 등록소 `DisplayNameAreaRegistry`와 `DisplayNameKindRegistry`, 설정 `DisplayNameSettings`, 닉네임 요구 `NicknameRequirement`), `app/Models/User.php` 의 `User::displayColumns()` 와 `User::DISPLAY_COLUMNS`, `app/Support/NameMasker.php` | 게시판, 이커머스 |
 | 항목 엔진 (7.2.0) | `app/Fields/**`(핸들러 계약 `Contracts\FieldValueHandlerInterface`, 문맥 `FieldContext`, 집합 `FieldSet`, 등록소 `FieldRegistry`, 규칙 `FieldRuleFactory`, 값 `FieldValueService`, 화면 계약 `FieldFormSchema`), `app/Models/FieldDefinition.php`, `app/Contracts/Repositories/FieldValueRepositoryInterface.php`, `app/Rules/NicknamePolicy.php`, `app/Extension/Helpers/FieldDefinitionSyncHelper.php`(위 트리거 디렉터리 안이지만 확장이 설정 저장 뒤 선언을 다시 동기화할 때 직접 부르는 도구라 함께 적는다) | 게시판, 이커머스, 마케팅, 소셜 로그인, sso |
 | 본인인증 값 연결 (7.2.0) | `app/Contracts/Extension/ProvidesVerifiedClaimsInterface.php`(위 트리거 디렉터리 안), `app/Extension/IdentityVerification/DTO/VerifiedClaims.php` | 본인인증 2종 |
-| 사이트 주소·외부 출처 | `app/Support/SiteUrl.php`, `app/Support/TrustedScriptHosts.php` | 게시판, 이커머스, gdpr, koreaexim, 결제 4종, 본인인증 2종 |
+| 사이트 주소·외부 출처 | `app/Support/SiteUrl.php`, `app/Support/TrustedScriptHosts.php` | 게시판, 이커머스, gdpr, bizppurio, 결제 4종, 본인인증 2종 |
 | 권한 | `app/Support/PermissionEscalationGuard.php`, `app/Exceptions/PermissionEscalationException.php`, `app/Support/GuestRoleResolver.php`, `app/Contracts/Repositories/PermissionRepositoryInterface.php` | 게시판 |
 | 첨부·본문 미디어 | `app/Helpers/InlineMediaPolicy.php`, `app/Rules/AttachmentFileContent.php`, `app/Services/AttachmentService.php`, `app/Contracts/Repositories/AttachmentRepositoryInterface.php`, `app/Enums/AttachmentSourceType.php`, `app/Exceptions/UnsafeStoragePathException.php`, `app/Support/ContentMedia/**`(7.1.5 골격 `AbstractContentMediaService`·문맥 `ContentMediaContext`·훅 이름 `ContentMediaHooks`·등록 `ContentMediaRegistrar` 포함), `app/Contracts/ContentMedia/**`(어댑터 계약 `ContentMediaStore`), `app/Http/Controllers/Concerns/RespondsWithContentMediaTarget.php`(표준 계약 엔드포인트), `app/Enums/ContentMediaKind.php`, `app/Rules/ContentMediaFile.php`, `app/Exceptions/ContentMediaLimitExceededException.php` (본문 미디어 계약, 7.1.5), `app/Support/Content/**`(`ContentHtmlPolicy`·`EmbedProviderRegistry` — 「본문 콘텐츠」 규칙, 7.1.5) | 게시판, 이커머스, 페이지, ckeditor5 |
 | 업로드 파일 이름 | `app/Support/UploadedFileName.php`(브라우저가 바꿔 보낸 `%22`, `%0D`, `%0A` 복원) | 게시판, 이커머스, 페이지, ckeditor5, 히어로섹션, 팝업 |
@@ -73,7 +73,7 @@
 | 본인인증 | `app/Enums/IdentityVerificationChannel.php`, `app/Enums/IdentityVerificationPurpose.php` | totp |
 | SEO | `app/Seo/SeoRenderRequest.php` | 게시판, 이커머스, 페이지 |
 | 설정 응답 | `app/Traits/FiltersFrontendSchema.php` | 페이지 |
-| 화면 주소 | `app/Support/ScreenUrl.php` (필터 `core.screen_url.filter_path`) | 게시판, 페이지, 이커머스, gdpr, 결제 4종, 본인인증 2종 |
+| 화면 주소 | `app/Support/ScreenUrl.php` (필터 `core.screen_url.filter_path`) | 게시판, 페이지, 이커머스, gdpr, koreaexim, bizppurio, 결제 4종, 본인인증 2종 |
 | 개발자 화면(custom) | `app/Services/Screen/ScreenAuth.php`, `app/Services/Screen/InternalApiClient.php`, `app/Services/Screen/InternalApiResponse.php`, `app/Http/Middleware/Custom/RequireScreenUser.php`(`custom.auth`), `app/Http/Middleware/Custom/RequireScreenAdmin.php`(`custom.admin`) | 번들 확장 없음 — routes/custom.php 와 app/Custom 의 개발자 코드, custom:example 견본이 쓴다 |
 | 언어 코드·다국어 값 | `app/Support/LocaleTag.php`(BCP 47 판정·정규화·협상), `app/Support/LocalizedValue.php`(다국어 값 대체 순서, 7.1.5 `translateAll()` 알림 변수 번역 묶음) | 게시판, 이커머스, 페이지, 마케팅, gdpr, 결제 2종, 비즈뿌리오, koreaexim |
 

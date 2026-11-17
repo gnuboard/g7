@@ -90,6 +90,7 @@ class ResourceFieldDescriber
         'total_users' => '전체 사용자 수 (통계 객체는 count/추이 포함)',
         'time' => '상대 시각 표시 (예: "24초 전" — diffForHumans() 산물)',
         'server_time' => '서버 현재 시각 (Y-m-d H:i:s)',
+        'extra_sections' => '확장이 필터 훅 core.settings.filter_system_info_sections 로 더한 정보 카드 목록 ({id, title, badge, rows, list, notice} — 서버 검증, 매 요청 계산)',
         'number' => '목록에서의 순번 (페이지네이션 반영 행 번호 — HasRowNumber 파생)',
 
         // 로케일 (TemplateResource/LocaleController)

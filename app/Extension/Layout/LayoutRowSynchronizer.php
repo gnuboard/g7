@@ -15,6 +15,7 @@ use App\Extension\Traits\ComputesLayoutContentHash;
 use App\Extension\Traits\ValidatesLayoutFiles;
 use App\Models\LayoutExtension;
 use App\Models\TemplateLayout;
+use App\Services\Layout\LayoutDeletionService;
 use App\Support\LayoutMarkup\EmptyMap;
 use App\Support\LayoutMarkup\LayoutPartialOrigin;
 use Illuminate\Support\Facades\Auth;
@@ -33,9 +34,14 @@ use Illuminate\Support\Facades\Log;
  *  - 운영자가 만든 같은 이름 화면(원본 해시·원본 본문 없음): Keep 이면 건드리지 않음(`kept_name_collision`).
  *  - Overwrite 또는 운영자가 안 고친 행: 새 판.
  *  - Keep + 운영자가 고친 행: 기준(base)을 찾아 {@see LayoutThreeWayMerger} 로 병합, 못 찾으면 통째 보존(`kept_no_base`).
+ *  - 화면별 결정({@see LayoutSyncOptions}): `take-theirs` 면 그 화면만 새 판으로 덮고, `keep-ours` 면 운영자 판을 통째로 둔다(`kept`).
+ *  - 운영자 판(고친 행·운영자가 만든 행)을 새 판으로 덮기 직전에는 그 판을 편집기 버전 이력에 남긴다({@see LayoutVersionRecorder}).
+ *  - 미리보기(dry-run)면 판정만 내고 쓰지 않는다 — 모든 쓰기 지점이 {@see LayoutSyncOptions::writes()} 를 본다.
  *
- * 상태가 없다(저장소만 들고 있다) — 생성자 주입으로 재사용해도, `app()` 로 새로 받아도 같다. 행 조회·쓰기는 모두 저장소
- * 인터페이스를 지난다.
+ * 인스턴스 상태가 없다(주입받은 저장소·협력 서비스만 들고 있다) — 생성자 주입으로 재사용해도, `app()` 로 새로 받아도 같다.
+ * 행 조회·쓰기는 저장소 인터페이스를 지나고, 영구 삭제는 {@see LayoutDeletionService}(스냅샷 + 버전 명시 삭제)에 맡긴다.
+ * 동기화 옵션(미리보기·화면별 결정·출처)만은 호출부가 정한 실행 범위의 값이라 인자로 받지 않고 {@see LayoutSyncOptions::current()} 에서
+ * 읽는다 — 설치·갱신 경로마다 옵션을 인자로 꿰지 않으려는 것이며, 범위 밖에서는 기본값(쓰기 허용)이다.
  */
 final class LayoutRowSynchronizer
 {
@@ -48,6 +54,8 @@ final class LayoutRowSynchronizer
      * @param  LayoutExtensionRepositoryInterface  $extensions  확장 조각 저장소
      * @param  LayoutExtensionVersionRepositoryInterface  $extensionVersions  확장 조각 버전 이력 저장소
      * @param  TemplateRepositoryInterface  $templates  템플릿 저장소
+     * @param  LayoutVersionRecorder  $versionRecorder  덮어쓰기 직전 운영자 판 기록기
+     * @param  LayoutDeletionService  $deletion  영구 삭제(운영자 데이터 스냅샷 + 버전 명시 삭제) 서비스
      */
     public function __construct(
         private LayoutRepositoryInterface $layouts,
@@ -55,6 +63,8 @@ final class LayoutRowSynchronizer
         private LayoutExtensionRepositoryInterface $extensions,
         private LayoutExtensionVersionRepositoryInterface $extensionVersions,
         private TemplateRepositoryInterface $templates,
+        private LayoutVersionRecorder $versionRecorder,
+        private LayoutDeletionService $deletion,
     ) {}
 
     /**
@@ -69,14 +79,21 @@ final class LayoutRowSynchronizer
      */
     public function syncLayout(array $identity, array $fileData, array $fileOriginal, LayoutSyncMode $mode, ?array $backupOriginal = null): LayoutSyncEntry
     {
-        $entry = fn (string $verdict, array $applied = [], array $conflicts = []) => new LayoutSyncEntry('layout', $identity['template'], $identity['name'], $verdict, $applied, $conflicts);
+        $options = LayoutSyncOptions::current();
+        $writes = ! $options->dryRun;
+        $key = LayoutSyncOptions::layoutKey((string) $identity['template'], (string) $identity['name']);
+        $decision = $options->decisionFor($key);
+        $takeTheirs = $decision === LayoutSyncOptions::TAKE_THEIRS;
+        $entry = fn (string $verdict, array $applied = [], array $conflicts = []) => new LayoutSyncEntry('layout', $identity['template'], $identity['name'], $verdict, $applied, $conflicts, $key);
         $row = $this->layouts->findWithTrashedByName((int) $identity['template_id'], $identity['name']);
 
         if ($row === null) {
-            $this->layouts->updateOrCreate(
-                ['template_id' => (int) $identity['template_id'], 'name' => $identity['name']],
-                $this->freshLayoutValues($identity, $fileData, $fileOriginal) + ['content' => $fileData, 'created_by' => Auth::id(), 'updated_by' => Auth::id()]
-            );
+            if ($writes) {
+                $this->layouts->updateOrCreate(
+                    ['template_id' => (int) $identity['template_id'], 'name' => $identity['name']],
+                    $this->freshLayoutValues($identity, $fileData, $fileOriginal) + ['content' => $fileData, 'created_by' => Auth::id(), 'updated_by' => Auth::id()]
+                );
+            }
 
             return $entry('created');
         }
@@ -86,29 +103,43 @@ final class LayoutRowSynchronizer
         if ($row->trashed()) {
             // 운영자는 템플릿 화면만 지울 수 있다(모듈·플러그인 화면 삭제는 파일 관리 API 가 막는다). 모듈·플러그인의
             // 지운 행은 확장 비활성화의 잔재라 되살려 평소대로 처리한다.
-            if ($isTemplateRow && $mode === LayoutSyncMode::Keep) {
+            if ($isTemplateRow && $mode === LayoutSyncMode::Keep && ! $takeTheirs) {
                 return $entry('kept_deleted_by_operator');
             }
 
-            $this->layouts->restoreTrashed($row);
+            if ($writes) {
+                $this->layouts->restoreTrashed($row);
+            }
 
             if ($isTemplateRow) {
-                return $entry($this->overwriteLayout($row, $identity, $fileData, $fileOriginal) ? 'updated' : 'unchanged');
+                // 운영자가 지운 화면을 되살려 덮는다 — 운영자가 고친 판이었다면 덮기 직전 판을 이력에 남긴다.
+                $changed = $this->overwriteLayout($row, $identity, $fileData, $fileOriginal, $this->isOperatorModified($row), $this->overwriteSource($takeTheirs));
+
+                return $entry($changed ? 'updated' : 'unchanged');
             }
         }
 
         if (! $this->hasFileOrigin($row)) {
-            if ($mode === LayoutSyncMode::Keep) {
+            if ($mode === LayoutSyncMode::Keep && ! $takeTheirs) {
                 return $entry('kept_name_collision');
             }
 
-            return $entry($this->overwriteLayout($row, $identity, $fileData, $fileOriginal) ? 'updated' : 'unchanged');
+            // 운영자가 만든 같은 이름 화면을 덮는다 — 그 판은 늘 운영자 것이라 이력에 남긴다.
+            $changed = $this->overwriteLayout($row, $identity, $fileData, $fileOriginal, true, $this->overwriteSource($takeTheirs));
+
+            return $entry($changed ? 'updated' : 'unchanged');
         }
 
-        if ($mode === LayoutSyncMode::Overwrite || ! $this->isOperatorModified($row)) {
-            $changed = $this->overwriteLayout($row, $identity, $fileData, $fileOriginal);
+        $modified = $this->isOperatorModified($row);
 
-            return $entry($changed ? ($mode === LayoutSyncMode::Overwrite ? 'updated' : 'took_theirs') : 'unchanged');
+        if ($modified && $decision === LayoutSyncOptions::KEEP_OURS) {
+            return $entry('kept');
+        }
+
+        if ($mode === LayoutSyncMode::Overwrite || ! $modified || $takeTheirs) {
+            $changed = $this->overwriteLayout($row, $identity, $fileData, $fileOriginal, $modified, $this->overwriteSource($takeTheirs));
+
+            return $entry($changed ? ($mode === LayoutSyncMode::Overwrite || $takeTheirs ? 'updated' : 'took_theirs') : 'unchanged');
         }
 
         $base = $this->resolveBase($row, $backupOriginal, $fileOriginal);
@@ -129,18 +160,21 @@ final class LayoutRowSynchronizer
             return $entry('kept_invalid', [], $result->conflicts);
         }
 
-        $changed = ! LayoutContentComparator::sameDocument($ours, $result->merged);
-        $values = $this->freshLayoutValues($identity, $fileData, $fileOriginal, $result->merged);
+        if ($writes) {
+            $changed = ! LayoutContentComparator::sameDocument($ours, $result->merged);
+            $values = $this->freshLayoutValues($identity, $fileData, $fileOriginal, $result->merged);
 
-        if ($changed) {
-            $values['content'] = $result->merged;
-            $values['lock_version'] = (int) $row->lock_version + 1;
-        }
+            if ($changed) {
+                $values['content'] = $result->merged;
+                $values['lock_version'] = (int) $row->lock_version + 1;
+            }
 
-        $this->layouts->saveAttributes($row->id, $values);
+            $this->layouts->saveAttributes($row->id, $values);
 
-        if (in_array($result->verdict, ['merged', 'conflict'], true)) {
-            $this->recordLayoutVersion($row->id, $ours, $result);
+            // 본문이 그대로면(결정 없는 충돌만 있고 반영된 곳 없음) 되돌릴 판이 없다 — 같은 내용 버전을 쌓지 않는다 (#888)
+            if ($changed && in_array($result->verdict, ['merged', 'conflict'], true)) {
+                $this->recordLayoutVersion($row->id, $ours, $result);
+            }
         }
 
         return $entry($result->verdict, $result->applied, $result->conflicts);
@@ -161,13 +195,18 @@ final class LayoutRowSynchronizer
             return null;
         }
 
+        $key = LayoutSyncOptions::layoutKey($template, (string) $row->name);
+
         if ($mode === LayoutSyncMode::Keep && $this->isOperatorModified($row)) {
-            return new LayoutSyncEntry('layout', $template, $row->name, 'kept_removed');
+            return new LayoutSyncEntry('layout', $template, $row->name, 'kept_removed', [], [], $key);
         }
 
-        $this->layouts->forceDelete($row);
+        if (LayoutSyncOptions::writes()) {
+            // 운영자 데이터면 지우기 직전 활동 로그에 스냅샷을 남기고, 버전 이력은 명시적으로 지운다(덮어쓰기 갱신에서 새 판에 없는 화면).
+            $this->deletion->forceDeleteLayout($row, 'refresh_overwrite_removed', $template);
+        }
 
-        return new LayoutSyncEntry('layout', $template, $row->name, 'deleted');
+        return new LayoutSyncEntry('layout', $template, $row->name, 'deleted', [], [], $key);
     }
 
     /**
@@ -212,30 +251,49 @@ final class LayoutRowSynchronizer
      */
     public function syncExtension(array $attributes, array $content, LayoutSyncMode $mode, string $template, ?array $backupOriginal = null): LayoutSyncEntry
     {
+        $options = LayoutSyncOptions::current();
+        $writes = ! $options->dryRun;
         $name = ($attributes['target_name'] ?? '').':'.($attributes['fragment_key'] ?? '');
-        $entry = fn (string $verdict, array $applied = [], array $conflicts = []) => new LayoutSyncEntry('extension', $template, $name, $verdict, $applied, $conflicts);
+        $key = LayoutSyncOptions::extensionKey($template, $attributes['source_identifier'] ?? null, $attributes['fragment_key'] ?? null);
+        $decision = $options->decisionFor($key);
+        $takeTheirs = $decision === LayoutSyncOptions::TAKE_THEIRS;
+        $entry = fn (string $verdict, array $applied = [], array $conflicts = []) => new LayoutSyncEntry('extension', $template, $name, $verdict, $applied, $conflicts, $key);
 
         $existing = $this->extensions->findWithTrashedByAttributes($attributes);
 
         if ($existing === null) {
-            $this->extensions->create($attributes + $this->freshExtensionValues($content) + ['content' => $content]);
+            if ($writes) {
+                $this->extensions->create($attributes + $this->freshExtensionValues($content) + ['content' => $content]);
+            }
 
             return $entry('created');
         }
 
-        if ($existing->trashed()) {
+        if ($existing->trashed() && $writes) {
             $this->extensions->restoreTrashed($existing);
         }
 
-        if ($mode === LayoutSyncMode::Overwrite || ! $this->isOperatorModified($existing)) {
-            $changed = $this->overwriteExtension($existing, $content);
+        $modified = $this->isOperatorModified($existing);
 
-            return $entry($changed ? ($mode === LayoutSyncMode::Overwrite ? 'updated' : 'took_theirs') : 'unchanged');
+        if ($modified && $decision === LayoutSyncOptions::KEEP_OURS) {
+            if ($writes) {
+                $this->extensions->saveModelAttributes($existing, ['is_active' => true]);
+            }
+
+            return $entry('kept');
+        }
+
+        if ($mode === LayoutSyncMode::Overwrite || ! $modified || $takeTheirs) {
+            $changed = $this->overwriteExtension($existing, $content, $modified, $this->overwriteSource($takeTheirs));
+
+            return $entry($changed ? ($mode === LayoutSyncMode::Overwrite || $takeTheirs ? 'updated' : 'took_theirs') : 'unchanged');
         }
 
         $base = $this->resolveBase($existing, $backupOriginal, $content);
         if ($base === null) {
-            $this->extensions->saveModelAttributes($existing, ['is_active' => true]);
+            if ($writes) {
+                $this->extensions->saveModelAttributes($existing, ['is_active' => true]);
+            }
 
             return $entry('kept_no_base');
         }
@@ -244,23 +302,29 @@ final class LayoutRowSynchronizer
         $result = (new LayoutThreeWayMerger)->merge($base, $ours, $content);
 
         if ($result->verdict === 'kept_invalid') {
-            $this->extensions->saveModelAttributes($existing, ['is_active' => true]);
+            if ($writes) {
+                $this->extensions->saveModelAttributes($existing, ['is_active' => true]);
+            }
 
             return $entry('kept_invalid', [], $result->conflicts);
         }
 
-        $values = $this->freshExtensionValues($content, $result->merged);
-        if (! LayoutContentComparator::sameDocument($ours, $result->merged)) {
-            $values['content'] = $result->merged;
-            $values['lock_version'] = (int) $existing->lock_version + 1;
-        }
-        $this->extensions->saveModelAttributes($existing, $values);
-
-        if (in_array($result->verdict, ['merged', 'conflict'], true)) {
-            if ($this->extensionVersions->getNextVersion($existing->id) <= 1) {
-                $this->extensionVersions->saveVersion($existing->id, $ours, null);
+        if ($writes) {
+            $values = $this->freshExtensionValues($content, $result->merged);
+            $changed = ! LayoutContentComparator::sameDocument($ours, $result->merged);
+            if ($changed) {
+                $values['content'] = $result->merged;
+                $values['lock_version'] = (int) $existing->lock_version + 1;
             }
-            $this->extensionVersions->saveVersion($existing->id, $result->merged, $ours, null, $this->summaryExtra($result));
+            $this->extensions->saveModelAttributes($existing, $values);
+
+            // 본문이 그대로면 같은 내용 버전을 쌓지 않는다 (#888)
+            if ($changed && in_array($result->verdict, ['merged', 'conflict'], true)) {
+                if ($this->extensionVersions->getNextVersion($existing->id) <= 1) {
+                    $this->extensionVersions->saveVersion($existing->id, $ours, null);
+                }
+                $this->extensionVersions->saveVersion($existing->id, $result->merged, $ours, null, $this->summaryExtra($result));
+            }
         }
 
         return $entry($result->verdict, $result->applied, $result->conflicts);
@@ -277,14 +341,17 @@ final class LayoutRowSynchronizer
     public function removeOrphanExtension(LayoutExtension $row, string $template, LayoutSyncMode $mode): LayoutSyncEntry
     {
         $name = $row->target_name.':'.$row->fragment_key;
+        $key = LayoutSyncOptions::extensionKey($template, $row->source_identifier, $row->fragment_key);
 
         if ($mode === LayoutSyncMode::Keep && $this->isOperatorModified($row)) {
-            return new LayoutSyncEntry('extension', $template, $name, 'kept_removed');
+            return new LayoutSyncEntry('extension', $template, $name, 'kept_removed', [], [], $key);
         }
 
-        $this->extensions->softDelete($row);
+        if (LayoutSyncOptions::writes()) {
+            $this->extensions->softDelete($row);
+        }
 
-        return new LayoutSyncEntry('extension', $template, $name, 'deleted');
+        return new LayoutSyncEntry('extension', $template, $name, 'deleted', [], [], $key);
     }
 
     /**
@@ -352,7 +419,7 @@ final class LayoutRowSynchronizer
                 continue;
             }
 
-            if ($this->computeContentHash(LayoutPartialOrigin::strip($originals[$row->name])) === $row->original_content_hash) {
+            if (LayoutSyncOptions::writes() && $this->computeContentHash(LayoutPartialOrigin::strip($originals[$row->name])) === $row->original_content_hash) {
                 $this->layouts->saveAttributes($row->id, ['original_content' => $this->encode($originals[$row->name])]);
                 $filled++;
             }
@@ -439,14 +506,25 @@ final class LayoutRowSynchronizer
      * @param  array<string, mixed>  $identity  행 식별 정보
      * @param  array<string, mixed>  $fileData  파일 판
      * @param  array<string, mixed>  $fileOriginal  파일 판 원본
+     * @param  bool  $operatorVersion  지금 본문이 운영자 판인지 — 그렇다면 덮기 직전에 버전 이력에 남긴다
+     * @param  string  $source  버전 요약의 출처 (`extension_update`·`refresh`·`decision_take_theirs`)
      * @return bool 본문이 바뀌었으면 true
      */
-    private function overwriteLayout(TemplateLayout $row, array $identity, array $fileData, array $fileOriginal): bool
+    private function overwriteLayout(TemplateLayout $row, array $identity, array $fileData, array $fileOriginal, bool $operatorVersion = false, string $source = 'extension_update'): bool
     {
         $changed = ! LayoutContentComparator::sameDocument($row->getRawOriginal('content'), $fileData);
+
+        if (! LayoutSyncOptions::writes()) {
+            return $changed;
+        }
+
         $values = $this->freshLayoutValues($identity, $fileData, $fileOriginal);
 
         if ($changed) {
+            if ($operatorVersion) {
+                $this->versionRecorder->recordBeforeMutation($row, $source);
+            }
+
             $values['content'] = $fileData;
             $values['lock_version'] = (int) $row->lock_version + 1;
         }
@@ -461,14 +539,25 @@ final class LayoutRowSynchronizer
      *
      * @param  LayoutExtension  $row  행
      * @param  array<string, mixed>  $content  파일 판
+     * @param  bool  $operatorVersion  지금 본문이 운영자 판인지 — 그렇다면 덮기 직전에 버전 이력에 남긴다
+     * @param  string  $source  버전 요약의 출처
      * @return bool 본문이 바뀌었으면 true
      */
-    private function overwriteExtension(LayoutExtension $row, array $content): bool
+    private function overwriteExtension(LayoutExtension $row, array $content, bool $operatorVersion = false, string $source = 'extension_update'): bool
     {
         $changed = ! LayoutContentComparator::sameDocument($row->getRawOriginal('content'), $content);
+
+        if (! LayoutSyncOptions::writes()) {
+            return $changed;
+        }
+
         $values = $this->freshExtensionValues($content);
 
         if ($changed) {
+            if ($operatorVersion) {
+                $this->versionRecorder->recordBeforeMutation($row, $source);
+            }
+
             $values['content'] = $content;
             $values['lock_version'] = (int) $row->lock_version + 1;
         }
@@ -544,6 +633,17 @@ final class LayoutRowSynchronizer
     }
 
     /**
+     * 덮어쓰기 직전 버전의 출처 표시를 정합니다.
+     *
+     * @param  bool  $takeTheirs  화면별 「새 판 적용」 결정인지
+     * @return string 출처 (`decision_take_theirs` 또는 실행 범위의 출처)
+     */
+    private function overwriteSource(bool $takeTheirs): string
+    {
+        return $takeTheirs ? 'decision_take_theirs' : LayoutSyncOptions::current()->origin;
+    }
+
+    /**
      * 버전 이력 변경 요약에 덧붙일 병합 출처 정보.
      *
      * @param  LayoutMergeResult  $result  병합 결과
@@ -551,7 +651,7 @@ final class LayoutRowSynchronizer
      */
     private function summaryExtra(LayoutMergeResult $result): array
     {
-        return ['source' => 'extension_update', 'applied' => $result->applied, 'conflicts' => $result->conflicts];
+        return ['source' => LayoutSyncOptions::current()->origin, 'applied' => $result->applied, 'conflicts' => $result->conflicts];
     }
 
     /**

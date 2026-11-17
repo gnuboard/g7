@@ -8,6 +8,7 @@ use App\Extension\Consent\ConsentSnapshot;
 use App\Services\Auth\LoginEntryService;
 use App\Support\Custom\CustomRoutes;
 use App\Support\EmptyMapChildren;
+use App\Support\RuntimeRole;
 
 /**
  * 프론트엔드 공개 설정 조립 — G7 셸(`window.G7Config`)과 공개 설정 API 가 **같은 함수**로 만든다 (#792 D8).
@@ -105,6 +106,10 @@ class FrontendConfigService
         // 로그인 화면이 읽는 계산값(7.2.0) — 로그인 칸 형식(사내 아이디를 받는 외부 자격 증명 검증자가 있으면 `email_or_username`)과
         // 로그인 화면 자동 이동 경로(확장 필터, 같은 출처 경로만). 요청마다 계산한다 — 설정 캐시 무효화가 필요 없다.
         $appConfig['auth'] = $this->loginEntryConfig();
+
+        // 실행 역할(live|stage) — 셸(`G7Config.appConfig`)로도 실어 관리자 화면이 `_global.appConfig.runtime_role` 로
+        // 검수 서버 띠·수명주기 버튼 잠금을 그린다(#888). 설정 값이 아니라 서버 환경값이라 요청마다 읽는다.
+        $appConfig['runtime_role'] = RuntimeRole::current();
 
         return [
             'settings' => EmptyMapChildren::asObjects($settings),
@@ -214,6 +219,8 @@ class FrontendConfigService
             'app_config' => (object) $bundle['appConfig'],
             'websocket' => $this->websocket(),
             'custom_routes' => $this->customRoutes(),
+            // 실행 역할 — 관리자 화면이 검수 서버 띠를 그리고 수명주기 버튼을 끈다(서버 판정은 DenyOnStageRole)
+            'runtime_role' => RuntimeRole::current(),
         ];
 
         if ($scope === self::SCOPE_USER) {

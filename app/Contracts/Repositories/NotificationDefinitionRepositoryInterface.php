@@ -84,7 +84,7 @@ interface NotificationDefinitionRepositoryInterface
     public function create(array $data): NotificationDefinition;
 
     /**
-     * 알림 정의를 삭제합니다 (소속 템플릿은 FK cascade 로 함께 정리).
+     * 알림 정의 행만 삭제합니다 — 소속 템플릿은 호출하는 서비스가 먼저 명시적으로 지운다(DB CASCADE 비의존).
      *
      * @param  NotificationDefinition  $definition  삭제할 정의
      * @return bool 삭제 여부

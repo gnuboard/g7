@@ -5,7 +5,9 @@ description: |
   layout-editor-tree-version-badge-and-modal-scroll)가 선언하지 않은 동작만 여기 둔다. 목록, 복원,
   비교, 확장 타겟 효과는 그 매니페스트의 이름을 그대로 쓴다.
 
-  - 최신 행은 최신 배지를 달고 복원 버튼을 숨긴다.
+  - 최신 행은 최신 배지를 달고 복원 버튼을 숨긴다. 단 최신 행이 동기화가 덮기 직전에 남긴 운영자 판
+    (changes_summary.before_overwrite)이면 복원 버튼을 보인다(#888).
+  - 저장자 없이 동기화가 남긴 판(출처 있음)의 저장자는 「시스템」, 출처도 없으면 「알 수 없음」(#888).
   - diff 뷰에서 목록으로 돌아온다.
   - 더 보기는 응답이 상한을 채울 때만 나오고, 누르면 상한을 넓혀 다시 조회하며, 서버 최대 상한을
     넘겨 요청하지 않는다.
@@ -19,11 +21,14 @@ effects:
   - version_load_more_only_when_limit_filled
   - version_load_more_widens_limit_and_refetches
   - version_load_more_clamps_to_server_max
+  - version_latest_before_overwrite_row_keeps_restore
+  - version_row_sync_author_shows_system
 
 test_files:
   - resources/js/core/template-engine/layout-editor/__tests__/components/VersionHistoryModal.test.tsx
   - resources/js/core/template-engine/layout-editor/__tests__/components/VersionHistoryModal.loadMore.test.tsx
   - resources/js/core/template-engine/layout-editor/__tests__/hooks/useLayoutVersions.loadMore.test.tsx
+  - tests/Playwright/specs/layout-editor/version-history-sync-source.spec.ts
 
 validation:
   note: |

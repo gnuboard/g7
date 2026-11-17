@@ -86,6 +86,12 @@ stash(`nhnkcp:pending_record:`) → `core.auth.after_register`에서 흡수,
 `core.auth.before_register`에서 `AssertNoDuplicateKcpIdentity`가 중복 차단,
 `core.user.before_delete`/`after_withdraw`에서 PII 정리.
 
+**로그 보관주기 파기 시 거래 행 정리**: 코어 `IdentityLogService::purge()`가 배치마다 지우기 직전
+`core.identity_logs.before_purge`(인자: 그 배치의 로그 ID 배열) 발화 →
+`CleanKcpCertTransactionsOnLogPurge`(sync)가 `nhnkcp_cert_transactions`의 해당 `challenge_id`
+행을 Repository 로 명시 삭제(외래키 연쇄 삭제에 기대지 않음). `nhnkcp_identity_records.latest_log_id`는
+외래키 없는 감사 링크라 로그가 지워져도 그대로 남는다 — 인증 값 조회(`verifiedClaims`)는 로그가 있을 때만 이 값을 대조한다.
+
 **설정 저장 시 검증 + 라이브 사이트코드 정규화**: 관리자가 설정 저장 요청 → FormRequest
 검증 단계에서 `core.plugin_settings.update_validation_rules` 훅 →
 `ValidateKcpSettingsListener::addLiveModeRules()`가 라이브 모드일 때 `live_site_cd`/
@@ -105,8 +111,8 @@ FormRequest 검증과 Service 저장이 서로 다른 파이프라인 단계이�
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 0개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 8개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 7개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 구독 훅 | 9개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 8개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 2개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -159,7 +165,7 @@ FormRequest 검증과 Service 저장이 서로 다른 파이프라인 단계이�
 | PHPUnit | 25개 | `plugins/_bundled/sirsoft-verification_nhnkcp/tests` |
 | Vitest | 17개 | `vitest.config.ts` |
 | Playwright | 3개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 29개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 30개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

@@ -1106,10 +1106,8 @@ class BoardService
                 continue;
             }
 
-            // 그누보드7 규정: detach 후 삭제
-            $this->roleRepository->detachAllPermissions($role);
-            $role->users()->detach();
-            $this->roleRepository->delete($role);
+            // 권한·메뉴·회원 연결과 메뉴 권한을 먼저 떼고 지운다 — DB 외래키 연쇄에 맡기지 않는다(#888)
+            $this->roleRepository->deleteWithRelations($role);
         }
     }
 

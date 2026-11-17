@@ -213,6 +213,17 @@ class MenuRepository implements MenuRepositoryInterface
     }
 
     /**
+     * 메뉴에 걸린 메뉴 권한(`menu_permissions`)을 지웁니다 — 메뉴를 지우기 직전에 부른다(DB CASCADE 비의존).
+     *
+     * @param  Menu  $menu  대상 메뉴
+     * @return int 지운 행 수
+     */
+    public function deleteMenuPermissions(Menu $menu): int
+    {
+        return $menu->permissions()->delete();
+    }
+
+    /**
      * 메뉴의 순서를 업데이트합니다.
      *
      * @param  array  $menuOrders  메뉴 ID와 순서 매핑 배열
@@ -364,18 +375,54 @@ class MenuRepository implements MenuRepositoryInterface
      * 사용자가 접근 가능한 네비게이션용 메뉴들을 조회합니다.
      *
      * @param  User  $user  접근 권한을 확인할 사용자
+     * @param  array<int, string>|null  $loadedModuleIdentifiers  이 서버가 불러온 모듈 식별자 (null 이면 거르지 않음)
+     * @param  array<int, string>|null  $loadedPluginIdentifiers  이 서버가 불러온 플러그인 식별자 (null 이면 거르지 않음)
      * @return Collection 사용자가 접근 가능한 메뉴 컬렉션
      */
-    public function getAccessibleNavigationMenus(User $user): Collection
+    public function getAccessibleNavigationMenus(User $user, ?array $loadedModuleIdentifiers = null, ?array $loadedPluginIdentifiers = null): Collection
     {
+        $loaded = function (Builder $query) use ($loadedModuleIdentifiers, $loadedPluginIdentifiers): void {
+            $this->limitToLoadedExtensions($query, $loadedModuleIdentifiers, $loadedPluginIdentifiers);
+        };
+
         return Menu::active()
             ->accessibleBy($user)
-            ->with(['activeChildren' => function ($query) use ($user) {
-                $query->accessibleBy($user)->orderBy('order');
+            ->where($loaded)
+            ->with(['activeChildren' => function ($query) use ($user, $loaded) {
+                $query->accessibleBy($user)->where($loaded)->orderBy('order');
             }])
             ->whereNull('parent_id') // 최상위 메뉴만
             ->orderBy('order')
             ->get();
+    }
+
+    /**
+     * 모듈·플러그인 소유 메뉴를 이 서버가 불러온 확장의 것으로 좁힙니다. 코어 메뉴와 운영자가 만든 사용자 정의 메뉴(소유 타입 없음)는 그대로 둡니다 — 메뉴 소유 타입은 코어·모듈·플러그인뿐이다.
+     *
+     * 같은 DB 를 쓰는 다른 서버(검수 서버)가 설치한 확장은 DB 에 활성으로 있어도 이 서버에 파일·라우트가 없다 —
+     * 그 메뉴를 보이면 누를 때 404 다. 두 목록이 모두 null 이면 거르지 않는다.
+     *
+     * @param  Builder  $query  메뉴 질의
+     * @param  array<int, string>|null  $modules  이 서버가 불러온 모듈 식별자
+     * @param  array<int, string>|null  $plugins  이 서버가 불러온 플러그인 식별자
+     * @return void 반환값 없음
+     */
+    private function limitToLoadedExtensions(Builder $query, ?array $modules, ?array $plugins): void
+    {
+        if ($modules === null && $plugins === null) {
+            return;
+        }
+
+        $query->whereNull('extension_type')
+            ->orWhereNotIn('extension_type', [ExtensionOwnerType::Module, ExtensionOwnerType::Plugin])
+            ->orWhere(function (Builder $q) use ($modules) {
+                $q->where('extension_type', ExtensionOwnerType::Module)
+                    ->whereIn('extension_identifier', $modules ?? []);
+            })
+            ->orWhere(function (Builder $q) use ($plugins) {
+                $q->where('extension_type', ExtensionOwnerType::Plugin)
+                    ->whereIn('extension_identifier', $plugins ?? []);
+            });
     }
 
     /**
@@ -409,15 +456,67 @@ class MenuRepository implements MenuRepositoryInterface
     /**
      * 특정 확장의 모든 메뉴를 삭제합니다.
      *
+     * 역할 배정(`role_menus`)·메뉴 권한(`menu_permissions`)을 먼저 떼고, 깊은 자식부터 지운다. 다른 출처(운영자·다른 확장)의
+     * 자식 메뉴는 지우지 않고 최상위(부모 null)로 올린다 — DB CASCADE 에 기대면 그 자식까지 사라진다.
+     *
      * @param  ExtensionOwnerType  $type  확장 타입
      * @param  string  $identifier  확장 식별자
      * @return int 삭제된 레코드 수
      */
     public function deleteByExtension(ExtensionOwnerType $type, string $identifier): int
     {
-        return Menu::where('extension_type', $type)
+        $menus = Menu::where('extension_type', $type)
             ->where('extension_identifier', $identifier)
-            ->delete();
+            ->get();
+        if ($menus->isEmpty()) {
+            return 0;
+        }
+
+        $ids = $menus->pluck('id')->all();
+        Menu::query()->whereIn('parent_id', $ids)->whereNotIn('id', $ids)->update(['parent_id' => null]);
+
+        // 연결 행은 행마다 지우지 않고 ID 묶음으로 한 번에 지운다 (메뉴 수와 무관하게 쿼리 수 고정)
+        $roleMenus = (new Menu)->roles();
+        $roleMenus->newPivotStatement()->whereIn($roleMenus->getForeignPivotKeyName(), $ids)->delete();
+        $menuPermissions = (new Menu)->permissions();
+        $menuPermissions->getRelated()->newQuery()->whereIn($menuPermissions->getForeignKeyName(), $ids)->delete();
+
+        // 같은 깊이끼리 묶어 깊은 자식부터 지운다 — 부모 행이 자식보다 먼저 사라지지 않게 해 FK 동작(CASCADE·RESTRICT)에 기대지 않는다
+        $deleted = 0;
+        foreach ($this->idsByDepthDesc($menus) as $levelIds) {
+            $deleted += Menu::query()->whereIn('id', $levelIds)->delete();
+        }
+
+        return $deleted;
+    }
+
+    /**
+     * 같은 묶음 안의 메뉴 ID 를 깊이별로 묶어 깊은 자식부터 돌려줍니다 (부모보다 자식이 먼저).
+     *
+     * @param  Collection<int, Menu>  $menus  메뉴 묶음
+     * @return array<int, array<int, int>> 깊은 단계부터의 메뉴 ID 묶음
+     */
+    private function idsByDepthDesc(Collection $menus): array
+    {
+        $byId = $menus->keyBy('id');
+        $depth = function (Menu $menu) use ($byId): int {
+            $d = 0;
+            $seen = [];
+            while ($menu->parent_id !== null && $byId->has($menu->parent_id) && ! isset($seen[$menu->id])) {
+                $seen[$menu->id] = true;
+                $menu = $byId->get($menu->parent_id);
+                $d++;
+            }
+
+            return $d;
+        };
+
+        return $menus
+            ->groupBy(fn (Menu $m) => $depth($m))
+            ->sortKeysDesc()
+            ->map(fn ($level) => $level->pluck('id')->all())
+            ->values()
+            ->all();
     }
 
     /**

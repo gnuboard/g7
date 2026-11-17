@@ -106,6 +106,14 @@ interface PermissionRepositoryInterface
     public function getRootsWithChildren(): Collection;
 
     /**
+     * 한 권한의 바로 아래 자식 권한을 조회합니다 (소유 확장과 무관).
+     *
+     * @param  int  $parentId  부모 권한 ID
+     * @return Collection 자식 권한 컬렉션
+     */
+    public function getChildrenByParent(int $parentId): Collection;
+
+    /**
      * 할당 가능한 권한 ID 목록을 반환합니다. (리프 노드만)
      *
      * @return array 할당 가능한 권한 ID 배열

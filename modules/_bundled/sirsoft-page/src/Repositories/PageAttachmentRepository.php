@@ -88,7 +88,7 @@ class PageAttachmentRepository implements PageAttachmentRepositoryInterface
     }
 
     /**
-     * 페이지의 모든 첨부파일을 삭제합니다 (소프트 삭제).
+     * 페이지의 모든 첨부파일 행을 영구 삭제합니다 (소프트 삭제 없음, 물리 파일은 지우지 않음).
      *
      * @param  int  $pageId  페이지 ID
      * @return int 삭제된 첨부파일 수
@@ -112,7 +112,7 @@ class PageAttachmentRepository implements PageAttachmentRepositoryInterface
     }
 
     /**
-     * 첨부파일을 삭제합니다 (소프트 삭제).
+     * 첨부파일 행을 영구 삭제합니다 (소프트 삭제 없음, 물리 파일은 지우지 않음).
      *
      * @param  PageAttachment  $attachment  첨부파일 모델
      * @return bool 삭제 성공 여부

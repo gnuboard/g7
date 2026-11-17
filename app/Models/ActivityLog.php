@@ -21,6 +21,12 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  */
 class ActivityLog extends Model
 {
+    /** @var list<string> 삭제 직전 기록 액션의 꼬리 — 영구 삭제(`*.force_deleted`)·선언 정리(`*.sync_deleted`) */
+    public const DELETION_SNAPSHOT_ACTION_SUFFIXES = ['.force_deleted', '.sync_deleted'];
+
+    /** @var list<string> 꼬리 규칙 밖의 삭제 직전 기록 액션 */
+    public const DELETION_SNAPSHOT_ACTIONS = ['template_custom_translation.deleted'];
+
     /**
      * 테이블명
      *
@@ -346,6 +352,39 @@ class ActivityLog extends Model
         return $query
             ->where('loggable_type', $model->getMorphClass())
             ->where('loggable_id', $model->getKey());
+    }
+
+    /**
+     * 삭제 직전 기록(영구 삭제·선언 정리·커스텀 번역 삭제)인 액션인지 판정합니다 — 목록의 펼침 요약과 「삭제 직전 기록만 보기」 필터가 함께 쓴다.
+     *
+     * @param  string  $action  액션 이름
+     * @return bool 삭제 직전 기록이면 true
+     */
+    public static function isDeletionSnapshotAction(string $action): bool
+    {
+        foreach (self::DELETION_SNAPSHOT_ACTION_SUFFIXES as $suffix) {
+            if (str_ends_with($action, $suffix)) {
+                return true;
+            }
+        }
+
+        return in_array($action, self::DELETION_SNAPSHOT_ACTIONS, true);
+    }
+
+    /**
+     * 삭제 직전 기록만 남기는 스코프 — {@see self::isDeletionSnapshotAction()} 와 같은 판정.
+     *
+     * @param  Builder  $query  쿼리 빌더
+     * @return Builder 필터링된 쿼리 빌더
+     */
+    public function scopeDeletionSnapshots(Builder $query): Builder
+    {
+        return $query->where(function (Builder $q): void {
+            foreach (self::DELETION_SNAPSHOT_ACTION_SUFFIXES as $suffix) {
+                $q->orWhere('action', 'like', '%'.addcslashes($suffix, '%_\\'));
+            }
+            $q->orWhereIn('action', self::DELETION_SNAPSHOT_ACTIONS);
+        });
     }
 
     /**

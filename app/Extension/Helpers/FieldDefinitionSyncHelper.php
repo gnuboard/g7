@@ -108,7 +108,18 @@ class FieldDefinitionSyncHelper
         // 건너뛴 선언(소유 확장이 꺼져 있음 등)의 기존 행은 지우지 않는다 — 소유 확장을 다시 켜면
         // 운영자가 바꿔 둔 값과 함께 돌아와야 한다. 등록소가 읽을 때 걸러 낸다.
         $keep = [...$result['synced'], ...array_keys($result['skipped'])];
-        foreach ($this->definitions->findStale($sourceType, $sourceIdentifier, $keep) as $stale) {
+        $staleRows = $this->definitions->findStale($sourceType, $sourceIdentifier, $keep);
+
+        // 검수 서버(stage)는 항목과 회원 입력값을 지우지 않고 미룬다 — 운영 서버가 extension:apply-deferred-cleanup 으로 그 서버 선언 기준으로 지운다
+        if (DeferredDeclarativeCleanup::shouldDefer()) {
+            if (count($staleRows) > 0) {
+                DeferredDeclarativeCleanup::deferOwner($sourceType, $sourceIdentifier);
+            }
+
+            return $result;
+        }
+
+        foreach ($staleRows as $stale) {
             $this->removeDefinition($stale);
             $result['removed']++;
         }
@@ -134,6 +145,13 @@ class FieldDefinitionSyncHelper
     public function removeSource(string $sourceType, string $sourceIdentifier): int
     {
         if (! $this->definitions->tableExists() || $sourceType === FieldSourceType::Custom->value) {
+            return 0;
+        }
+
+        // 검수 서버(stage)는 지우지 않고 미룬다 — 운영 서버 실행이 그 확장의 설치 여부·선언으로 다시 정한다
+        if (DeferredDeclarativeCleanup::shouldDefer()) {
+            DeferredDeclarativeCleanup::deferOwner($sourceType, $sourceIdentifier);
+
             return 0;
         }
 

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Contracts\Extension\ModuleManagerInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Enums\ExtensionStatus;
+use App\Enums\LayoutSyncMode;
 use App\Exceptions\ExtensionOperationLockException;
 use App\Exceptions\ModuleOperationException;
 use App\Exceptions\PackageIntegrityException;
@@ -18,6 +19,7 @@ use App\Extension\Integrity\ExtensionIntegrityRecorder;
 use App\Extension\Integrity\PackageAcquirer;
 use App\Extension\Integrity\PackageExpectation;
 use App\Extension\Integrity\PackageIntegrityOptions;
+use App\Extension\Layout\LayoutSyncOptions;
 use App\Extension\Vendor\VendorMode;
 use App\Helpers\PermissionHelper;
 use App\Models\Module;
@@ -501,6 +503,21 @@ class ModuleService
     public function getActiveModuleIdentifiers(): array
     {
         return $this->moduleRepository->getActiveModuleIdentifiers();
+    }
+
+    /**
+     * 이 서버가 불러온(활성 디렉터리에 파일이 있어 로드된) 모듈의 identifier 목록을 반환합니다.
+     *
+     * DB 상태와 무관하다 — 같은 DB 를 쓰는 다른 서버가 설치한 모듈은 DB 에 활성으로 있어도 이 서버에 파일이 없으면 빠진다.
+     *
+     * @return array<int, string> 로드된 모듈 identifier 배열
+     */
+    public function getLoadedModuleIdentifiers(): array
+    {
+        return array_values(array_map(
+            static fn ($module): string => (string) $module->getIdentifier(),
+            $this->moduleManager->getAllModules(),
+        ));
     }
 
     /**
@@ -1048,18 +1065,67 @@ class ModuleService
     /**
      * 모듈의 레이아웃을 파일에서 다시 읽어 DB에 갱신합니다.
      *
+     * 기본은 keep — 운영자가 고친 화면을 지킨다. 덮어쓰기는 `$mode = Overwrite` 로 명시할 때만이다.
+     *
      * @param  string  $moduleName  모듈명
+     * @param  LayoutSyncMode  $mode  갱신 전략 (기본 keep)
+     * @param  array<string, string>  $decisions  화면별 결정 ({@see LayoutSyncOptions})
+     * @return array|null 갱신 결과 또는 null (모듈 정보 + `layout_sync`·`layout_preview`·`layout_warnings`)
+     *
+     * @throws ValidationException 레이아웃 갱신 실패 시
+     */
+    public function refreshModuleLayouts(string $moduleName, LayoutSyncMode $mode = LayoutSyncMode::Keep, array $decisions = []): ?array
+    {
+        return $this->refreshModuleLayoutsWith($moduleName, $mode, $decisions);
+    }
+
+    /**
+     * 레이아웃 갱신을 미리 봅니다 — 실제 갱신과 같은 코드로 판정만 계산하고 DB·캐시는 그대로 둡니다.
+     *
+     * @param  string  $moduleName  모듈명
+     * @param  LayoutSyncMode  $mode  갱신 전략
+     * @param  array<string, string>  $decisions  화면별 결정
+     * @return array{strategy: string, entries: list<array<string, mixed>>, summary: array<string, int>, has_conflicts: bool, conflict_screens: list<string>} 미리보기
+     *
+     * @throws ValidationException 모듈을 찾을 수 없거나 레이아웃을 읽지 못할 때
+     */
+    public function previewModuleLayoutRefresh(string $moduleName, LayoutSyncMode $mode = LayoutSyncMode::Keep, array $decisions = []): array
+    {
+        try {
+            $this->moduleManager->loadModules();
+            $result = LayoutSyncOptions::run(
+                new LayoutSyncOptions(true, $decisions, null, 'refresh'),
+                fn () => $this->moduleManager->refreshModuleLayouts($moduleName, $mode)
+            );
+
+            return $result['layout_preview'];
+        } catch (\Exception $e) {
+            throw ValidationException::withMessages([
+                'module_name' => [__('modules.refresh_layouts_failed', ['error' => SafeExceptionMessage::for($e)])],
+            ]);
+        }
+    }
+
+    /**
+     * 레이아웃 갱신 본체 — 전략·결정을 실행 범위로 걸고 매니저를 부릅니다.
+     *
+     * @param  string  $moduleName  모듈명
+     * @param  LayoutSyncMode  $mode  갱신 전략
+     * @param  array<string, string>  $decisions  화면별 결정
      * @return array|null 갱신 결과 또는 null
      *
      * @throws ValidationException 레이아웃 갱신 실패 시
      */
-    public function refreshModuleLayouts(string $moduleName): ?array
+    private function refreshModuleLayoutsWith(string $moduleName, LayoutSyncMode $mode, array $decisions): ?array
     {
         HookManager::doAction('core.modules.before_refresh_layouts', $moduleName);
 
         try {
             $this->moduleManager->loadModules();
-            $result = $this->moduleManager->refreshModuleLayouts($moduleName);
+            $result = LayoutSyncOptions::run(
+                new LayoutSyncOptions(false, $decisions, null, 'refresh'),
+                fn () => $this->moduleManager->refreshModuleLayouts($moduleName, $mode)
+            );
 
             if ($result['success']) {
                 $moduleInfo = $this->moduleManager->getModuleInfo($moduleName);
@@ -1069,6 +1135,8 @@ class ModuleService
                 // 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 (#712)
                 if (is_array($moduleInfo)) {
                     $moduleInfo['layout_warnings'] = $result['layout_warnings'] ?? [];
+                    $moduleInfo['layout_sync'] = $result['layout_sync'] ?? null;
+                    $moduleInfo['layout_preview'] = $result['layout_preview'] ?? null;
                 }
 
                 return $moduleInfo;

@@ -955,7 +955,6 @@ return [
         'language_required' => 'Please select a default language.',
         'language_invalid' => 'Please select a valid language.',
         'currency_max' => 'Currency code may not be greater than 10 characters.',
-        'maintenance_mode_boolean' => 'Maintenance mode must be true or false.',
 
         // Security settings
         'force_https_required' => 'Please select the Force HTTPS setting.',
@@ -1425,6 +1424,10 @@ return [
         'embed_provider_id_rule' => 'id characters',
         'embed_provider_sample_url' => 'example URL',
         'layout_source' => 'layout install source',
+        'layout_strategy' => 'layout strategy',
+        'decisions' => 'per-screen decisions',
+        'decisions.*' => 'per-screen decision value',
+        'pending_token' => 'preview token',
         'layout_meta_icon' => 'menu icon',
         'layout_meta_editor_label' => 'editor label',
         'layout_meta_authoring_note' => 'authoring note',
@@ -1602,7 +1605,6 @@ return [
         'notification_channel_sort_order' => 'notification channel sort order',
         'currency' => 'currency',
         'default_currency' => 'default currency',
-        'maintenance_mode' => 'maintenance mode',
         'asset_url_mode' => 'asset URL mode',
         'site_logo' => 'site logo',
         'site_favicon' => 'site favicon',

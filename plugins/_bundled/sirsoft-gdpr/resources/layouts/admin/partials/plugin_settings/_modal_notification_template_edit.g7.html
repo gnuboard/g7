@@ -76,7 +76,7 @@
                   <div>
                     <label class="gdpr-text-secondary gdpr:block gdpr:text-xs gdpr:font-medium">$t:admin.settings.notification_definitions.recipients.type_label</label>
                     <!-- 선언된 relation 이 없는 정의에서 「관련 사용자」를 고르면 수신자가 **0명**이 되고 로그도 남지 않는다 — 그 정의가 지원하는 relation 키를 서버가 실어 줄 때만 이 선택지를 세운다. -->
-                    <select aria-label="$t:common.row_cell|row={{$t('admin.settings.notification_definitions.recipients.rule_label', {index: rcptIdx + 1})}}|column={{$t('admin.settings.notification_definitions.recipients.type_label')}}" value="{{rcpt.type ?? ''}}" class="gdpr:w-full gdpr:text-sm" options="{{[{ value: 'trigger_user', label: '$t:admin.settings.notification_definitions.recipients.types.trigger_user' }, ...(((_global.gdpr_notification_template_form_modal?.definition?.relations ?? []).length > 0) ? [{ value: 'related_user', label: '$t:admin.settings.notification_definitions.recipients.types.related_user' }] : []), { value: 'role', label: '$t:admin.settings.notification_definitions.recipients.types.role' }, { value: 'specific_users', label: '$t:admin.settings.notification_definitions.recipients.types.specific_users' }]}}">
+                    <select aria-label="$t:common.row_cell|row={{$t('admin.settings.notification_definitions.recipients.rule_label', {index: rcptIdx + 1})}}|column={{$t('admin.settings.notification_definitions.recipients.type_label')}}" value="{{rcpt.type ?? ''}}" class="gdpr:w-full gdpr:text-sm" options="{{[{ value: 'trigger_user', label: '$t:admin.settings.notification_definitions.recipients.types.trigger_user' }, ...(((_global.gdpr_notification_template_form_modal?.definition?.relations ?? []).length > 0) ? [{ value: 'related_user', label: '$t:admin.settings.notification_definitions.recipients.types.related_user' }] : []), { value: 'role', label: '$t:admin.settings.notification_definitions.recipients.types.role' }, { value: 'specific_users', label: '$t:admin.settings.notification_definitions.recipients.types.specific_users' }, { value: 'site_admin_email', label: '$t:admin.settings.notification_definitions.recipients.types.site_admin_email' }]}}">
                       <on type="change">
                         <!-- 규칙 종류 전환 — 이 줄을 **새 종류의 빈 규칙**으로 갈아 끼운다. 앞 종류의 값(`value`·`display_names`)과
                              관계(`relation`)는 새 종류에서 뜻을 잃는다: 회원 UUID 가 역할 칸에 남으면 그대로 역할 식별자로 저장돼
@@ -181,6 +181,8 @@
                     </on>
                   </searchable-dropdown>
                 </div>
+                <!-- 사이트 관리자 이메일(#888) — 값 칸이 없다. 환경설정 > 일반의 관리자 이메일 한 곳으로 메일만 가므로 그 사실과 빈 값의 결과를 밝힌다(코어 편집 창과 같은 규칙). -->
+                <p data-ref="rcpt_site_admin_email_hint_{{rcptIdx}}" data-if="{{rcpt.type === 'site_admin_email'}}" class="gdpr:text-xs gdpr:text-gray-500 gdpr:dark:text-gray-400">$t:admin.settings.notification_definitions.recipients.site_admin_email_hint</p>
                 <div data-if="{{rcpt.type === 'role' || rcpt.type === 'specific_users'}}" class="gdpr-flex-center gdpr:gap-2">
                   <!-- 스위치 이름은 label 로 준다 — 옆에 따로 둔 글자(span)는 스위치와 이어지지 않아 화면 읽기 프로그램에
                        이름 없는 스위치로 읽혔다(7.1.0 실측 M1-O14). label 이 스위치 옆 글자도 함께 그린다. -->

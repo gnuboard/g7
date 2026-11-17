@@ -32,6 +32,7 @@ use App\Services\LanguagePack\LanguagePackManifestValidator;
 use App\Services\LanguagePack\LanguagePackPhpArrayValidator;
 use App\Services\LanguagePack\LanguagePackRegistry;
 use App\Support\OutboundUrlValidator;
+use App\Support\RuntimeRole;
 use App\Support\SafeExceptionMessage;
 use App\Support\UploadedFileName;
 use Illuminate\Http\UploadedFile;
@@ -1100,7 +1101,13 @@ class LanguagePackService
         // 대상 확장을 켤 때(LanguagePackBundledRegistrar::activateAwaitingForExtension) 함께 켜진다.
         $awaitingHost = $autoActivate && $targetInactive;
 
-        $shouldActivate = $autoActivate
+        // 검수 서버(stage)가 이미 있는 팩을 다시 설치(업데이트·강제 재설치)할 때는 공유 DB 의 상태를 그대로 둔다 — 아래의
+        // installed 기록 → 다시 켜기를 거치면 그동안 운영 서버에서 이 로케일이 빠진다. 판·파일·매니페스트만 새로 한다.
+        // 켜기를 거치지 않으므로 활성화 훅의 엔티티 번역 재적용도 돌지 않는다 — 운영 서버의 업데이트가 한다.
+        $keepSharedStatus = $existing !== null && RuntimeRole::isStage();
+
+        $shouldActivate = ! $keepSharedStatus
+            && $autoActivate
             && ! $targetInactive
             && ! $this->repository->findActiveForSlot(
                 $manifest['scope'],
@@ -1109,10 +1116,15 @@ class LanguagePackService
                 $existing?->id
             );
 
-        $pack = DB::transaction(function () use ($existing, $manifest, $sourceType, $sourceUrl, $installedBy, $awaitingHost, $verification) {
+        $pack = DB::transaction(function () use ($existing, $manifest, $sourceType, $sourceUrl, $installedBy, $awaitingHost, $verification, $keepSharedStatus) {
             $data = $this->buildPackData($manifest, $sourceType, $sourceUrl, $installedBy);
             // 받은 패키지의 무결성 검증 결과 — 언어팩 상세의 서명 배지 (7.2.0, 결과가 없으면 기록을 비운다)
             $data += $this->integrityColumns($verification);
+
+            if ($keepSharedStatus) {
+                // 검수 서버의 재설치 — 상태·대기 표시는 공유 DB 의 값 그대로 둔다 (위 판정 참조)
+                return $this->repository->update($existing, $data);
+            }
 
             // 설치 트랜잭션은 항상 installed 로만 기록한다. 활성화는 아래에서 activate() 를
             // 경유해야 의존성 검사·대상 확장 존재 확인·슬롯 충돌 검사가 반드시 수행되고,
@@ -1895,7 +1907,7 @@ class LanguagePackService
     }
 
     /**
-     * GitHub 소스 언어팩의 latest_version 을 갱신합니다.
+     * GitHub 소스 언어팩의 latest_version 을 갱신합니다 (검수 서버(stage)에서는 갱신하지 않고 결과만 돌려준다).
      *
      * @param  string|null  $identifier  특정 언어팩만 확인 (옵션)
      * @return array{checked:int, updates:int, details:array<int, array<string, mixed>>}
@@ -1984,7 +1996,11 @@ class LanguagePackService
             ];
         }
 
-        $this->repository->update($pack, ['latest_version' => $latest]);
+        // 검수 서버(stage)는 확인 결과만 돌려주고 공유 DB 의 최신 버전 표시는 바꾸지 않는다 — 운영 서버 관리자 화면의
+        // 「업데이트 있음」 표시를 검수 서버의 번들 기준 판정으로 덮지 않게
+        if (! RuntimeRole::isStage()) {
+            $this->repository->update($pack, ['latest_version' => $latest]);
+        }
 
         return [
             'identifier' => $pack->identifier,
@@ -2185,9 +2201,13 @@ class LanguagePackService
         }
 
         // 1. 상태 → Updating (가드용)
-        $this->repository->update($pack, [
-            'status' => LanguagePackStatus::Updating->value,
-        ]);
+        // 검수 서버(stage)는 공유 상태 칸에 updating 을 쓰지 않는다 — 그동안 운영 서버에서 이 로케일이 빠진다.
+        // 같은 팩의 겹친 작업은 위의 작업 잠금이 막는다(확장 업데이트와 같은 원칙)
+        if (! RuntimeRole::isStage()) {
+            $this->repository->update($pack, [
+                'status' => LanguagePackStatus::Updating->value,
+            ]);
+        }
 
         try {
             // 2. 활성 디렉토리 백업 (롤백 대비)

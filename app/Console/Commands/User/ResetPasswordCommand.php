@@ -226,7 +226,8 @@ class ResetPasswordCommand extends Command
             return $this->generatePassword($email);
         }
 
-        if (! $this->input->isInteractive()) {
+        // 콘솔 없는 실행은 isInteractive() 가 참으로 남는 환경(Windows)이 있어 비밀값 입력을 무한히 기다린다 — 같은 판정을 쓴다
+        if (! $this->canAnswerConfirmation()) {
             $this->error('❌ '.__('user.commands.reset_password.no_source'));
 
             return null;

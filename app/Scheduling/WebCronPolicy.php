@@ -2,6 +2,7 @@
 
 namespace App\Scheduling;
 
+use App\Support\RuntimeRole;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -73,6 +74,11 @@ class WebCronPolicy
      */
     public function webCallAllowed(): bool
     {
+        // 이 서버의 스케줄이 꺼져 있으면(G7_SCHEDULER=off·stage 역할) 웹 크론·방문 트리거 모두 실행하지 않는다
+        if (! RuntimeRole::schedulerEnabled()) {
+            return false;
+        }
+
         return in_array($this->mode(), [self::MODE_AUTO, self::MODE_WEB, self::MODE_BOTH], true);
     }
 

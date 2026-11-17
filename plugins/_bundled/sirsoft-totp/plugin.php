@@ -349,12 +349,7 @@ class Plugin extends AbstractPlugin
             $settings->setSetting($key, null);
         }
 
-        // 메뉴 삭제 — 비활성화는 메뉴 행을 보존하므로 제거가 직접 지운다.
-        app(ExtensionMenuSyncHelper::class)->cleanupStaleMenus(
-            ExtensionOwnerType::Plugin,
-            $this->getIdentifier(),
-            currentSlugs: [],
-        );
+        // 메뉴는 「데이터도 함께 삭제」를 고른 제거에서 코어가 지운다(코어 7.2.0) — 데이터 보존 제거는 메뉴를 남긴다.
 
         return true;
     }

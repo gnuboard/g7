@@ -56,6 +56,7 @@ class ExecuteUpgradeStepsCommand extends Command
         {--from= : 시작 버전}
         {--to= : 대상 버전}
         {--force : 동일 버전 강제 실행 + 번들 확장 일괄 업데이트 prompt 스킵}
+        {--yes : 진행 확인만 「예」로 처리 — --force 의 다른 효과(같은 판 재실행·실행 대장 무시) 없이 비대화형 실행. 번들 확장 일괄 업데이트의 레이아웃 전략은 물을 수 없으면 기본 overwrite}
         {--steps-only : 업그레이드 스텝만 실행 — 권한 정상화·오토로드 재생성·마이그레이션·resync·버전 갱신·캐시 정리·번들 업데이트 등 모든 사전/사후 보조 단계 생략}
         {--skip-migrations : 마이그레이션 실행 생략 (CoreUpdateCommand spawn 시 부모 Step 9 가 이미 실행)}
         {--skip-resync : 코어 config 재로드 및 권한/메뉴/시더 동기화 생략 (동일 사유)}
@@ -95,6 +96,62 @@ class ExecuteUpgradeStepsCommand extends Command
 
             return self::INVALID;
         }
+
+        $isSpawnChild = $this->isSpawnChild();
+
+        // 운영자 단독 실행도 코어 업데이트와 같은 실행 잠금을 잡는다 — `core:update` 나 다른 단독 실행과 겹치면
+        // 같은 스텝이 두 번 돌거나 백업이 서로 덮어써진다. spawn 자식은 부모가 이미 잠금을 쥐고 있다(다른 프로세스라
+        // 여기서 잡으면 늘 실패한다).
+        if (! $isSpawnChild) {
+            if (! $service->acquireRunLock()) {
+                $this->error(__('common.console.core_execute_upgrade_steps.lock_held'));
+
+                return self::FAILURE;
+            }
+
+            foreach (CoreUpdateService::takeRunLockWarnings() as $warning) {
+                $this->warn('⚠ '.$warning);
+            }
+        }
+
+        try {
+            return $this->executeSteps($service, $from, $to, $force, $stepsOnly, $isSpawnChild);
+        } finally {
+            if (! $isSpawnChild) {
+                $service->releaseRunLock();
+            }
+        }
+    }
+
+    /**
+     * 이 실행이 `core:update` 의 spawn 자식인지 판정합니다.
+     *
+     * CoreUpdateCommand::spawnUpgradeStepsProcess 가 자식에 `G7_UPDATE_IN_PROGRESS=1` env 를 전달한다(beta.3 부터).
+     * `getenv` 가 막힌 호스팅에서도 판정은 성립해야 한다 — 부모는 `$_ENV`/`$_SERVER` 에도 같은 값을 심고,
+     * 서브프로세스 러너는 그 둘을 합쳐 자식에게 물려준다 (#609 D34). 단독 호출(운영자 수동) 시엔 env 미설정.
+     *
+     * @return bool spawn 자식이면 true
+     */
+    private function isSpawnChild(): bool
+    {
+        return ($_ENV['G7_UPDATE_IN_PROGRESS']
+            ?? $_SERVER['G7_UPDATE_IN_PROGRESS']
+            ?? (ExecutionEnvironment::hasFunction('getenv') ? getenv('G7_UPDATE_IN_PROGRESS') : false)) === '1';
+    }
+
+    /**
+     * 사전 단계 → 업그레이드 스텝 → 사후 단계를 실행합니다 (잠금은 호출자가 잡는다).
+     *
+     * @param  CoreUpdateService  $service  코어 업데이트 서비스
+     * @param  string  $from  시작 판
+     * @param  string  $to  대상 판
+     * @param  bool  $force  같은 판 강제 실행
+     * @param  bool  $stepsOnly  스텝만 실행
+     * @param  bool  $isSpawnChild  core:update spawn 자식 여부
+     * @return int 종료 코드
+     */
+    private function executeSteps(CoreUpdateService $service, string $from, string $to, bool $force, bool $stepsOnly, bool $isSpawnChild): int
+    {
 
         // spawn 자식 진입 시 활성 모듈/플러그인의 PSR-4 매핑을 fresh 등록.
         // 부모 프로세스의 autoload-extensions.php 가 stale 한 경우 upgrade step 안에서
@@ -171,9 +228,7 @@ class ExecuteUpgradeStepsCommand extends Command
         // 단독 호출 (운영자 수동) 시엔 env 미설정 → 모든 단계 정상 진행.
         // `getenv` 가 막힌 호스팅에서도 판정은 성립해야 한다 — 부모는 `$_ENV`/`$_SERVER`
         // 에도 같은 값을 심고, 서브프로세스 러너는 그 둘을 합쳐 자식에게 물려준다 (#609 D34).
-        $isSpawnChild = ($_ENV['G7_UPDATE_IN_PROGRESS']
-            ?? $_SERVER['G7_UPDATE_IN_PROGRESS']
-            ?? (ExecutionEnvironment::hasFunction('getenv') ? getenv('G7_UPDATE_IN_PROGRESS') : false)) === '1';
+        // (판정은 handle() 의 isSpawnChild())
 
         // 사전 단계 (단독 실행 안전성 보장).
         //
@@ -201,6 +256,7 @@ class ExecuteUpgradeStepsCommand extends Command
 
         $stepsExecuted = 0;
         $stepsDiscovered = 0;
+        $stepsSkipped = 0;
 
         try {
             $service->runUpgradeSteps(
@@ -213,6 +269,12 @@ class ExecuteUpgradeStepsCommand extends Command
                 $force,
                 function (int $discovered) use (&$stepsDiscovered): void {
                     $stepsDiscovered = $discovered;
+                },
+                freshProcess: true,
+                // 같은 DB 의 다른 서버·실행이 이미 끝낸 스텝 — 실행 건수와 따로 세어 종료 신호에 싣는다
+                onSkipped: function (string $version) use (&$stepsSkipped): void {
+                    $this->info(__('common.console.core_execute_upgrade_steps.step_already_run', ['version' => $version]));
+                    $stepsSkipped++;
                 },
             );
         } catch (UpgradeHandoffException $e) {
@@ -270,6 +332,8 @@ class ExecuteUpgradeStepsCommand extends Command
         $this->line('[STEPS_EXECUTED] '.json_encode([
             'count' => $stepsExecuted,
             'discovered' => $stepsDiscovered,
+            // 실행 대장에 이미 끝난 것으로 있어 건너뛴 스텝 수 — 구버전 부모는 모르는 필드라 무시한다
+            'skipped' => $stepsSkipped,
             'fromVersion' => $from,
             'toVersion' => $to,
         ], JSON_UNESCAPED_UNICODE));

@@ -5,6 +5,7 @@ namespace App\Extension;
 use App\Contracts\Extension\CacheableExtensionInterface;
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\StorageInterface;
+use App\Extension\Cache\CacheDriverFactory;
 use App\Extension\Cache\PluginCacheDriver;
 use App\Extension\Storage\PluginStorageDriver;
 use App\Support\PrivateAttachmentDisk;
@@ -137,7 +138,7 @@ final class InlinePluginExtensionAdapter implements CacheableExtensionInterface
      */
     public function getCache(): CacheInterface
     {
-        return $this->cache ??= new PluginCacheDriver($this->identifier);
+        return $this->cache ??= CacheDriverFactory::extension('plugin', $this->identifier);
     }
 
     /**

@@ -223,6 +223,7 @@ return [
     'fetch_success' => 'Template information retrieved successfully.',
     'license_not_found' => 'Template license file not found.',
     'refresh_layouts_success' => 'Template layouts have been refreshed successfully.',
+    'refresh_layouts_preview_success' => 'Layout refresh preview created.',
     'refresh_layouts_failed' => 'Failed to refresh template layouts: :error',
 
     // Update related messages
@@ -303,7 +304,7 @@ return [
             'custom_preserved' => 'Operator files (:directory) were archived to :archive.',
             'aborted' => 'Uninstall aborted.',
             'confirm_unavailable' => 'Template ":template" was not uninstalled because this run cannot answer the confirmation prompt (no terminal, or --no-interaction).',
-            'confirm_unavailable_hint' => 'To uninstall without confirmation from cron, CI or a remote command, run it again with the --force option. Example: php artisan template:uninstall :template --force',
+            'confirm_unavailable_hint' => 'To uninstall without confirmation from cron, CI or a remote command, run it again with --yes (skips only the confirmation) or --force. Example: php artisan template:uninstall :template --yes',
             'delete_data_notice' => '⚠️  --delete-data: Uninstalls as if "Also delete data" was chosen (passed to the activity log and to extensions that subscribe to uninstall).',
         ],
         'list' => [
@@ -359,9 +360,9 @@ return [
             'confirm_question' => 'Do you want to proceed with the update?',
             'aborted' => 'Update cancelled.',
             'confirm_unavailable' => 'The update of template ":template" was not started because this run cannot answer the confirmation prompt (no terminal, or --no-interaction). (The template was not changed.)',
-            'confirm_unavailable_hint' => 'To proceed without confirmation from cron, CI or a remote command, run it again with the --force option. --force also skips the version comparison and re-applies the same version. Example: php artisan template:update :template --force',
+            'confirm_unavailable_hint' => 'To proceed without confirmation from cron, CI or a remote command, run it again with --yes (skips only the confirmation). --force turns on six things together — (1) skip confirmation (2) re-apply the same version (3) allow downgrade (4) skip the core compatibility check (5) re-run upgrade steps of the same version (6) clean up a stalled update. Example: php artisan template:update :template --yes',
             'backup_restored' => 'Previous version has been restored from backup.',
-            'force_mode' => 'Force update mode: Skipping version comparison and reinstalling.',
+            'force_mode' => 'Force update mode (--force): turns on six things together — (1) skip confirmation (2) re-apply the same version (3) allow downgrade (4) skip the core compatibility check (5) re-run upgrade steps of the same version (6) clean up a stalled update.',
         ],
         // `template:build` command output
         'build' => [

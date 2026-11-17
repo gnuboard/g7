@@ -145,15 +145,25 @@ class LayoutVersionResource extends BaseApiResource
      * 배열일 수 있어 is_array 시 count() 로 보정한다. modified 는 라인 diff 에 대응 개념이
      * 없어 노출하지 않는다.
      *
+     * 레이아웃 동기화가 남긴 판은 그 판이 어디서 왔는지도 함께 노출한다 — [버전 기록] 창이 "덮기 전 운영자 판"·
+     * "병합 결과" 를 가려 보여 주는 근거다. `source` 는 동기화 출처(`extension_update`·`refresh`·
+     * `decision_take_theirs`·`upgrade_step`), `before_overwrite` 는 덮어쓰기 직전에 남긴 운영자 판인지,
+     * `conflict_count` 는 병합 결과 판의 충돌 수다. 출처를 적지 않던 옛 행·운영자 저장 판은 null/false/0 이다.
+     *
      * @param  array  $changesSummary  원본 changes_summary
-     * @return array{added_count: int, removed_count: int, char_diff: int}
+     * @return array{added_count: int, removed_count: int, char_diff: int, source: string|null, before_overwrite: bool, conflict_count: int}
      */
     private function formatChangesSummary(array $changesSummary): array
     {
+        $source = $changesSummary['source'] ?? null;
+
         return [
             'added_count' => $this->countValue($changesSummary['added'] ?? 0),
             'removed_count' => $this->countValue($changesSummary['removed'] ?? 0),
             'char_diff' => $changesSummary['char_diff'] ?? 0,
+            'source' => is_string($source) && $source !== '' ? $source : null,
+            'before_overwrite' => ($changesSummary['before_overwrite'] ?? false) === true,
+            'conflict_count' => $this->countValue($changesSummary['conflicts'] ?? 0),
         ];
     }
 

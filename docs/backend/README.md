@@ -66,6 +66,7 @@
 | [response-helper.md](response-helper.md) | API 응답 규칙 (ResponseHelper) | 모든 API 응답은 ResponseHelper 사용 |
 | [reverse-proxy.md](reverse-proxy.md) | 리버스 프록시 환경 (Reverse Proxy) | 프록시 뒤에서는 요청이 스스로 스킴·IP 를 증명하지 못한다 — 신뢰할 프록시를 지정... |
 | [routing.md](routing.md) | 라우트 네이밍 및 경로 | 모든 라우트는 name() 필수: ->name('api.users.index') |
+| [runtime-role.md](runtime-role.md) | 실행 역할과 서버별 스케줄 스위치 | - |
 | [scheduling.md](scheduling.md) | 스케줄 관리 (DB 스케줄 등록부) | 예약 작업은 전부 schedules 행이다 — 코어는 config/core.php 의... |
 | [search-system.md](search-system.md) | Scout 검색 엔진 시스템 (Search System) | Laravel Scout + DatabaseFulltextEngine: MySQL F... |
 | [seo-system.md](seo-system.md) | SEO 페이지 생성기 시스템 (SEO Page Generator) | SeoMiddleware: 봇 요청 감지 → ?locale= 파라미터 해석 → Seo... |
@@ -73,6 +74,7 @@
 | [service-repository.md](service-repository.md) | Service-Repository 패턴 | RepositoryInterface 주입 필수 (구체 클래스 직접 주입 금지) |
 | [settings-multilingual-enrichment.md](settings-multilingual-enrichment.md) | Settings 카탈로그 다국어 자동 보강 | settings JSON 의 다국어 카탈로그 라벨(_cached_name 등)은 카탈... |
 | [static-asset-publishing.md](static-asset-publishing.md) | 부트스트랩 리소스 정적 게시 (Static Asset Publishing) | 게시물: public/build/ext/{cache_version}/ — 수명주기 이... |
+| [storage-paths.md](storage-paths.md) | storage 경로 분류 | - |
 | [translatable-seeders.md](translatable-seeders.md) | 다국어 시더 인터페이스 (Translatable Seeders) | 다국어 JSON 컬럼(name 등)을 시드하는 확장 entity 시더는 Transla... |
 | [user-overrides.md](user-overrides.md) | 사용자 수정 보존 (HasUserOverrides Trait) | 모델에 `use HasUserOverrides;` + `protected array ... |
 | [validation.md](validation.md) | 검증 (Validation) | 필수: FormRequest에서 검증 (Service에 검증 로직 배치 금지) |

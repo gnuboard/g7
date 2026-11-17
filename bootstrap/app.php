@@ -22,12 +22,14 @@ use App\Http\Middleware\ContentSecurityPolicy;
 use App\Http\Middleware\Custom\RequireScreenAdmin;
 use App\Http\Middleware\Custom\RequireScreenUser;
 use App\Http\Middleware\DatabaseCredentialGuard;
+use App\Http\Middleware\DenyOnStageRole;
 use App\Http\Middleware\EnforceIdentityPolicy;
 use App\Http\Middleware\EnsureActiveUser;
 use App\Http\Middleware\EnsureDebugMode;
 use App\Http\Middleware\EnsureFieldSetPermission;
 use App\Http\Middleware\EnsureRequiredFieldsCompleted;
 use App\Http\Middleware\ExtensionMiddlewareGate;
+use App\Http\Middleware\ForceHttps;
 use App\Http\Middleware\GzipEncodeResponse;
 use App\Http\Middleware\MaintenanceModePage;
 use App\Http\Middleware\MarkBotRequest;
@@ -219,6 +221,12 @@ $app = Application::configure(basePath: dirname(__DIR__))
             $middleware->appendToGroup($extGroup, ExtensionMiddlewareGate::class.":{$extGroup},after_core");
         }
 
+        // HTTPS 강제 이동 (#888) — 관리자 환경설정 > 보안의 「HTTPS 강제 적용」이 켜져 있으면 http 요청을 같은 주소의 https 로 보낸다.
+        // web·api 그룹 **맨 앞**: prependToGroup 은 나중에 부른 것이 앞에 놓이므로 그룹 prepend 가운데 마지막에 부른다(확장 before_core
+        // 게이트보다도 앞). 점검 모드·신뢰 프록시는 전역 미들웨어라 이보다 먼저 판정이 끝난다.
+        $middleware->prependToGroup('web', ForceHttps::class);
+        $middleware->prependToGroup('api', ForceHttps::class);
+
         // 비인증 게스트 redirect 경로 가드 (공개#39).
         // Laravel 12 기본값은 `redirectGuestsTo(fn () => route('login'))` 인데,
         // 이 프로젝트엔 'login' 이름 라우트가 없어 Accept 헤더 없는 /api/* 비인증 요청이
@@ -239,6 +247,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
         // 권한 관련 미들웨어 등록
         $middleware->alias([
             'admin' => AdminMiddleware::class,
+            'deny.stage' => DenyOnStageRole::class,
             'check.user_status' => CheckUserStatus::class,
             // 공통 회원 상태 관문 통과 표식 — 가입 후 인증 대기 회원의 본인인증 경로(`api.identity.*`)에만 붙인다(7.2.0)
             'allow.inactive_user' => AllowInactiveUser::class,

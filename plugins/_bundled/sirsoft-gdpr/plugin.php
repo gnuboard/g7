@@ -356,12 +356,7 @@ class Plugin extends AbstractPlugin
      */
     public function uninstall(): bool
     {
-        app(ExtensionMenuSyncHelper::class)->cleanupStaleMenus(
-            ExtensionOwnerType::Plugin,
-            $this->getIdentifier(),
-            currentSlugs: [],
-        );
-
+        // 메뉴는 「데이터도 함께 삭제」를 고른 제거에서 코어가 지운다(코어 7.2.0) — 데이터 보존 제거는 메뉴를 남긴다.
         return true;
     }
 

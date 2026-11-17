@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Contracts\Extension\PluginManagerInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Enums\ExtensionStatus;
+use App\Enums\LayoutSyncMode;
 use App\Exceptions\ExtensionOperationLockException;
 use App\Exceptions\PackageIntegrityException;
 use App\Exceptions\PluginOperationException;
@@ -18,6 +19,7 @@ use App\Extension\Integrity\ExtensionIntegrityRecorder;
 use App\Extension\Integrity\PackageAcquirer;
 use App\Extension\Integrity\PackageExpectation;
 use App\Extension\Integrity\PackageIntegrityOptions;
+use App\Extension\Layout\LayoutSyncOptions;
 use App\Extension\Vendor\VendorMode;
 use App\Rules\AllowedPluginFileType;
 use App\Services\Concerns\ResolvesExtensionAssetType;
@@ -59,6 +61,21 @@ class PluginService
     public function getActivePluginIdentifiers(): array
     {
         return $this->pluginRepository->getActivePluginIdentifiers();
+    }
+
+    /**
+     * 이 서버가 불러온(활성 디렉터리에 파일이 있어 로드된) 플러그인의 identifier 목록을 반환합니다.
+     *
+     * DB 상태와 무관하다 — 같은 DB 를 쓰는 다른 서버가 설치한 플러그인은 DB 에 활성으로 있어도 이 서버에 파일이 없으면 빠진다.
+     *
+     * @return array<int, string> 로드된 플러그인 identifier 배열
+     */
+    public function getLoadedPluginIdentifiers(): array
+    {
+        return array_values(array_map(
+            static fn ($plugin): string => (string) $plugin->getIdentifier(),
+            $this->pluginManager->getAllPlugins(),
+        ));
     }
 
     /**
@@ -646,17 +663,66 @@ class PluginService
     /**
      * 플러그인의 레이아웃을 파일에서 다시 읽어 DB에 갱신합니다.
      *
+     * 기본은 keep — 운영자가 고친 화면을 지킨다. 덮어쓰기는 `$mode = Overwrite` 로 명시할 때만이다.
+     *
      * @param  string  $pluginName  플러그인명
-     * @return array{success: bool, layouts_refreshed: int} 갱신 결과 및 갱신된 레이아웃 개수
+     * @param  LayoutSyncMode  $mode  갱신 전략 (기본 keep)
+     * @param  array<string, string>  $decisions  화면별 결정 ({@see LayoutSyncOptions})
+     * @return array{success: bool, layouts_refreshed: int, layout_sync?: array<string, mixed>, layout_preview?: array<string, mixed>} 갱신 결과
      *
      * @throws ValidationException 플러그인을 찾을 수 없거나 갱신 실패 시
      */
-    public function refreshPluginLayouts(string $pluginName): array
+    public function refreshPluginLayouts(string $pluginName, LayoutSyncMode $mode = LayoutSyncMode::Keep, array $decisions = []): array
+    {
+        return $this->refreshPluginLayoutsWith($pluginName, $mode, $decisions);
+    }
+
+    /**
+     * 레이아웃 갱신을 미리 봅니다 — 실제 갱신과 같은 코드로 판정만 계산하고 DB·캐시는 그대로 둡니다.
+     *
+     * @param  string  $pluginName  플러그인명
+     * @param  LayoutSyncMode  $mode  갱신 전략
+     * @param  array<string, string>  $decisions  화면별 결정
+     * @return array{strategy: string, entries: list<array<string, mixed>>, summary: array<string, int>, has_conflicts: bool, conflict_screens: list<string>} 미리보기
+     *
+     * @throws ValidationException 플러그인을 찾을 수 없거나 레이아웃을 읽지 못할 때
+     */
+    public function previewPluginLayoutRefresh(string $pluginName, LayoutSyncMode $mode = LayoutSyncMode::Keep, array $decisions = []): array
+    {
+        try {
+            $this->pluginManager->loadPlugins();
+            $result = LayoutSyncOptions::run(
+                new LayoutSyncOptions(true, $decisions, null, 'refresh'),
+                fn () => $this->pluginManager->refreshPluginLayouts($pluginName, $mode)
+            );
+
+            return $result['layout_preview'];
+        } catch (\Exception $e) {
+            throw ValidationException::withMessages([
+                'plugin_name' => [__('plugins.refresh_layouts_failed', ['error' => SafeExceptionMessage::for($e)])],
+            ]);
+        }
+    }
+
+    /**
+     * 레이아웃 갱신 본체 — 전략·결정을 실행 범위로 걸고 매니저를 부릅니다.
+     *
+     * @param  string  $pluginName  플러그인명
+     * @param  LayoutSyncMode  $mode  갱신 전략
+     * @param  array<string, string>  $decisions  화면별 결정
+     * @return array 갱신 결과
+     *
+     * @throws ValidationException 플러그인을 찾을 수 없거나 갱신 실패 시
+     */
+    private function refreshPluginLayoutsWith(string $pluginName, LayoutSyncMode $mode, array $decisions): array
     {
         try {
             $this->pluginManager->loadPlugins();
 
-            return $this->pluginManager->refreshPluginLayouts($pluginName);
+            return LayoutSyncOptions::run(
+                new LayoutSyncOptions(false, $decisions, null, 'refresh'),
+                fn () => $this->pluginManager->refreshPluginLayouts($pluginName, $mode)
+            );
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
                 'plugin_name' => [__('plugins.refresh_layouts_failed', ['error' => SafeExceptionMessage::for($e)])],

@@ -232,6 +232,7 @@ sitemap.xml 재생성을 큐에 예약합니다. 관리자 수동 재생성은 �
 | --- | --- | --- |
 | 400 | `seo.sitemap_disabled` | SEO 설정에서 Sitemap 생성이 꺼져 있는 경우 |
 | 409 | `seo.sitemap_regenerate_in_progress` | 생성이 진행 중(`queued`·`running`·`writing`)이고 잠금이 잡혀 있는 경우 |
+| 409 | `errors.stage_role_locked_sitemap` | 검수 서버(실행 역할 `stage`)에서 요청한 경우 — 사이트맵은 운영 서버에서 다시 만든다 |
 | 409 | `seo.sitemap_regenerate_locked` | 진행 상태는 진행 중이 아닌데 잠금이 남아 있는 경우 — 다른 생성 작업이 큐에서 기다리는 중이거나, 큐 작업자가 강제 종료돼 이전 작업의 잠금만 남은 경우. 잠금은 최대 약 2시간 뒤 풀리며, 서버에서 `php artisan cache:clear` 로 즉시 풀 수 있습니다 |
 | 500 | `seo.sitemap_regenerate_failed` | 즉시 실행 큐에서 생성 잡이 실패한 경우(진행 상태 `failed`, 잠금은 풀려 다시 요청할 수 있음) |
 

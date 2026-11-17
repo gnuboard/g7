@@ -236,4 +236,20 @@ class ProductWishlistRepository implements ProductWishlistRepositoryInterface
     {
         return (int) $this->model->where('user_id', $userId)->count();
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function deleteByUserId(int $userId): int
+    {
+        return (int) $this->model->newQuery()->where('user_id', $userId)->delete();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function deleteByProductId(int $productId): int
+    {
+        return (int) $this->model->newQuery()->where('product_id', $productId)->delete();
+    }
 }

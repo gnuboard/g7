@@ -4,7 +4,7 @@ namespace App\Extension\Traits;
 
 use App\Contracts\Extension\CacheInterface;
 use App\Enums\ExtensionStatus;
-use App\Extension\Cache\CoreCacheDriver;
+use App\Extension\Cache\CacheDriverFactory;
 use App\Extension\Support\ExtensionStatusMemo;
 use App\Extension\Support\IntegrationReverseIndex;
 use App\Models\IdentityPolicy;
@@ -192,7 +192,7 @@ trait CachesModuleStatus
         try {
             return app(CacheInterface::class);
         } catch (\Throwable $e) {
-            return new CoreCacheDriver(config('cache.default', 'array'));
+            return CacheDriverFactory::core();
         }
     }
 }

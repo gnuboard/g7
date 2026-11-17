@@ -1,0 +1,624 @@
+{
+    "comment": "레이아웃 갱신·업데이트 창이 함께 쓰는 「화면별 처리 미리보기」.\n  여는 쪽이 _global.layoutPreviewRequest({url, body})를 정하고 페이지의 fetchLayoutPreview 액션을 부른다. 이 조각은\n  미리보기 결과(_global.layoutPreview — entries·summary·has_conflicts)를 그리고, 처리 방식(_global.layoutSyncStrategy)과\n  화면별 결정(_global.layoutDecisions — 키 => take-theirs|keep-ours, 키가 없으면 서버 기본 병합)을 고르게 한다. 적용 버튼은 여는 창이 갖고 이 두 값을\n  요청 본문에 싣는다. 판정식은 서버 한 곳(미리보기 API)에만 있다 — 여기서 다시 계산하지 않는다.",
+    "meta": {
+        "is_partial": true,
+        "description": "레이아웃 동기화 미리보기 (갱신·업데이트 창 공용)",
+        "editor_label": "$t:admin.layout_sync_preview.title"
+    },
+    "id": "layout_sync_preview",
+    "type": "basic",
+    "name": "Div",
+    "props": {
+        "className": "mt-4 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+            },
+            "text": "$t:admin.layout_sync_preview.strategy_title"
+        },
+        {
+            "id": "layout_sync_preview_strategy",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "row-stack"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Label",
+                    "props": {
+                        "className": "flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "수정 유지(기본) — 운영자가 고친 부분은 두고 손대지 않은 부분만 새 판으로. 판정이 달라지므로 다시 미리 본다.",
+                                    "type": "change",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "layoutSyncStrategy": "keep"
+                                            }
+                                        },
+                                        {
+                                            "actionRef": "fetchLayoutPreview"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "radio",
+                                "name": "layout_sync_strategy",
+                                "value": "keep",
+                                "checked": "{{(_global.layoutSyncStrategy ?? 'keep') === 'keep'}}",
+                                "disabled": "{{_global.layoutPreviewState === 'loading'}}",
+                                "className": "radio mt-0.5"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                    },
+                                    "text": "$t:admin.layout_sync_preview.strategy_keep"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-tertiary"
+                                    },
+                                    "text": "$t:admin.layout_sync_preview.strategy_keep_desc"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Label",
+                    "props": {
+                        "className": "flex-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "모두 교체 — 모든 화면을 새 판으로 덮는다. 화면별 결정은 의미가 없어지므로 비운다.",
+                                    "type": "change",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "global",
+                                                "layoutSyncStrategy": "overwrite",
+                                                "layoutDecisions": {}
+                                            }
+                                        },
+                                        {
+                                            "actionRef": "fetchLayoutPreview"
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "radio",
+                                "name": "layout_sync_strategy",
+                                "value": "overwrite",
+                                "checked": "{{_global.layoutSyncStrategy === 'overwrite'}}",
+                                "disabled": "{{_global.layoutPreviewState === 'loading'}}",
+                                "className": "radio mt-0.5"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-sm font-medium text-gray-700 dark:text-gray-300"
+                                    },
+                                    "text": "$t:admin.layout_sync_preview.strategy_overwrite"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-tertiary"
+                                    },
+                                    "text": "$t:admin.layout_sync_preview.strategy_overwrite_desc"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "layout_sync_preview_overwrite_warning",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_global.layoutSyncStrategy === 'overwrite'}}",
+            "props": {
+                "className": "alert-warning mt-2",
+                "role": "alert"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "exclamation-triangle",
+                        "className": "text-amber-600 dark:text-amber-400 flex-shrink-0"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "text-warning-soft"
+                    },
+                    "text": "$t:admin.layout_sync_preview.overwrite_warning"
+                }
+            ]
+        },
+        {
+            "id": "layout_sync_preview_loading",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_global.layoutPreviewState === 'loading'}}",
+            "props": {
+                "className": "flex-center gap-2 mt-3 text-label-subtle",
+                "role": "status"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "spinner",
+                        "className": "spinner-sm"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "text": "$t:admin.layout_sync_preview.loading"
+                }
+            ]
+        },
+        {
+            "id": "layout_sync_preview_error",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_global.layoutPreviewState === 'error'}}",
+            "props": {
+                "className": "alert-danger mt-3",
+                "role": "alert"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Icon",
+                    "props": {
+                        "name": "exclamation-circle",
+                        "className": "text-red-600 dark:text-red-400 flex-shrink-0"
+                    }
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-1 min-w-0"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-sm text-red-700 dark:text-red-300"
+                            },
+                            "text": "$t:admin.layout_sync_preview.error"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{!!_global.layoutPreviewError}}",
+                            "props": {
+                                "className": "text-xs text-red-600 dark:text-red-400 mt-1 break-words"
+                            },
+                            "text": "{{_global.layoutPreviewError}}"
+                        }
+                    ]
+                },
+                {
+                    "id": "layout_sync_preview_retry",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "comment": "같은 요청으로 다시 미리 본다.",
+                            "type": "click",
+                            "actionRef": "fetchLayoutPreview"
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "btn btn-secondary btn-sm shrink-0"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.layout_sync_preview.retry"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "layout_sync_preview_result",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{_global.layoutPreviewState === 'ready'}}",
+            "props": {
+                "className": "mt-3"
+            },
+            "children": [
+                {
+                    "comment": "업데이트 미리보기가 화면 판정을 건너뛴 까닭(layouts_skipped) — 꺼 둔 확장(inactive)·활성 디렉토리에 파일이 없는 설치본(files_missing).\n        이때 판정 목록이 비어 오므로 0개 요약·「바뀌는 화면이 없습니다」 대신 이 안내를 보인다. 지워질 선언 항목은 그대로 그린다.",
+                    "id": "layout_sync_preview_skipped",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!!_global.layoutUpdatePreview?.layouts_skipped}}",
+                    "props": {
+                        "className": "alert-info mb-2",
+                        "role": "status"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "info-circle",
+                                "className": "text-blue-600 dark:text-blue-400 flex-shrink-0"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.layoutUpdatePreview?.layouts_skipped === 'inactive'}}",
+                            "props": {
+                                "className": "text-sm text-blue-700 dark:text-blue-300"
+                            },
+                            "text": "$t:admin.layout_sync_preview.skipped_inactive"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_global.layoutUpdatePreview?.layouts_skipped === 'files_missing'}}",
+                            "props": {
+                                "className": "text-sm text-blue-700 dark:text-blue-300"
+                            },
+                            "text": "$t:admin.layout_sync_preview.skipped_files_missing"
+                        }
+                    ]
+                },
+                {
+                    "comment": "요약 세 수는 따로 번역한다 — 수마다 단수·복수가 갈리는 언어(en)가 있다.",
+                    "id": "layout_sync_preview_summary",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{!_global.layoutUpdatePreview?.layouts_skipped}}",
+                    "props": {
+                        "className": "flex flex-wrap items-center gap-x-1.5 text-xs text-gray-600 dark:text-gray-400 mb-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.layout_sync_preview.summary_changed|count={{(_global.layoutPreview?.entries ?? []).filter(e => e.verdict !== 'unchanged').length}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "aria-hidden": "true"
+                            },
+                            "text": "·"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.layout_sync_preview.summary_conflicts|count={{(_global.layoutPreview?.conflict_screens ?? []).length}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "aria-hidden": "true"
+                            },
+                            "text": "·"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.layout_sync_preview.summary_deleted|count={{(_global.layoutPreview?.entries ?? []).filter(e => e.will_delete).length}}"
+                        }
+                    ]
+                },
+                {
+                    "id": "layout_sync_preview_empty",
+                    "type": "basic",
+                    "name": "P",
+                    "if": "{{!_global.layoutUpdatePreview?.layouts_skipped && (_global.layoutPreview?.entries ?? []).filter(e => e.verdict !== 'unchanged').length === 0}}",
+                    "props": {
+                        "className": "text-xs text-green-700 dark:text-green-400"
+                    },
+                    "text": "$t:admin.layout_sync_preview.empty"
+                },
+                {
+                    "id": "layout_sync_preview_rows",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "space-y-1 max-h-64 overflow-y-auto"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "iteration": {
+                                "source": "{{(_global.layoutPreview?.entries ?? []).filter(e => e.verdict !== 'unchanged')}}",
+                                "item_var": "previewEntry"
+                            },
+                            "props": {
+                                "className": "flex flex-wrap items-center gap-2 text-xs px-2 py-1.5 bg-white dark:bg-gray-900 rounded border border-gray-100 dark:border-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "font-mono flex-1 min-w-0 break-all text-gray-700 dark:text-gray-300"
+                                    },
+                                    "text": "{{previewEntry.name}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{previewEntry.kind === 'extension'}}",
+                                    "props": {
+                                        "className": "badge badge-gray"
+                                    },
+                                    "text": "$t:admin.layout_sync_preview.kind_extension"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "badge {{previewEntry.verdict === 'deleted' ? 'badge-red' : (['conflict', 'kept_no_base', 'kept_invalid', 'updated'].includes(previewEntry.verdict) ? 'badge-yellow' : (['created', 'took_theirs', 'merged'].includes(previewEntry.verdict) ? 'badge-blue' : 'badge-gray'))}}"
+                                    },
+                                    "text": "{{$t('admin.layout_sync_preview.verdict.' + previewEntry.verdict)}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{(previewEntry.conflicts ?? []).length > 0}}",
+                                    "props": {
+                                        "className": "text-amber-700 dark:text-amber-400"
+                                    },
+                                    "text": "$t:admin.layout_sync_preview.conflict_units|count={{(previewEntry.conflicts ?? []).length}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(_global.layoutSyncStrategy ?? 'keep') === 'keep' && (['merged', 'conflict', 'kept', 'kept_no_base', 'kept_invalid'].includes(previewEntry.verdict) || !!(_global.layoutDecisions ?? {})[previewEntry.key])}}",
+                                    "props": {
+                                        "className": "flex flex-wrap items-center gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "comment": "결정이 없는 화면은 서버 기본(겹치지 않는 곳만 새 판, 겹친 곳은 운영자 판)으로 처리된다 — 화면도 그 선택지를 골라 둔다.",
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "flex items-center gap-1 cursor-pointer",
+                                                "title": "$t:admin.layout_sync_preview.decision_merge_hint"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "겹치지 않는 곳만 반영 — 이 화면의 결정을 지워 서버 기본 병합에 맡긴다. 깊은 병합은 키를 지우지 못하므로 최상위 키를 통째로 바꾼다.",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "merge": "shallow",
+                                                                "layoutDecisions": "{{Object.fromEntries(Object.entries(_global.layoutDecisions ?? {}).filter(e => e[0] !== previewEntry.key))}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "radio",
+                                                        "name": "{{'layout_decision_' + previewEntry.key}}",
+                                                        "value": "merge",
+                                                        "aria-label": "$t:common.row_cell|row={{previewEntry.name}}|column=$t:admin.layout_sync_preview.decision_merge",
+                                                        "checked": "{{!(_global.layoutDecisions ?? {})[previewEntry.key]}}",
+                                                        "className": "radio"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.layout_sync_preview.decision_merge"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "flex items-center gap-1 cursor-pointer",
+                                                "title": "$t:admin.layout_sync_preview.decision_keep_ours_hint"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "운영자 판 유지 — 이 화면은 새 판 변경을 하나도 받지 않고 운영자 판을 통째로 둔다.",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "layoutDecisions": "{{Object.assign({}, _global.layoutDecisions ?? {}, {[previewEntry.key]: 'keep-ours'})}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "radio",
+                                                        "name": "{{'layout_decision_' + previewEntry.key}}",
+                                                        "value": "keep-ours",
+                                                        "aria-label": "$t:common.row_cell|row={{previewEntry.name}}|column=$t:admin.layout_sync_preview.decision_keep_ours",
+                                                        "checked": "{{(_global.layoutDecisions ?? {})[previewEntry.key] === 'keep-ours'}}",
+                                                        "className": "radio"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.layout_sync_preview.decision_keep_ours"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "flex items-center gap-1 cursor-pointer",
+                                                "title": "$t:admin.layout_sync_preview.decision_take_theirs_hint"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Input",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "새 판 적용 — 이 화면만 새 판으로 덮는다. 덮기 전 운영자 판은 편집기 [버전 기록]에 남는다.",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "layoutDecisions": "{{Object.assign({}, _global.layoutDecisions ?? {}, {[previewEntry.key]: 'take-theirs'})}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "radio",
+                                                        "name": "{{'layout_decision_' + previewEntry.key}}",
+                                                        "value": "take-theirs",
+                                                        "aria-label": "$t:common.row_cell|row={{previewEntry.name}}|column=$t:admin.layout_sync_preview.decision_take_theirs",
+                                                        "checked": "{{(_global.layoutDecisions ?? {})[previewEntry.key] === 'take-theirs'}}",
+                                                        "className": "radio"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.layout_sync_preview.decision_take_theirs"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "layout_sync_preview_deletions",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(_global.layoutUpdatePreview?.declarative_deletions ?? []).length > 0}}",
+                    "props": {
+                        "className": "mt-3 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "text-xs font-medium text-red-700 dark:text-red-300 mb-1"
+                            },
+                            "text": "$t:admin.layout_sync_preview.deletions_title|count={{(_global.layoutUpdatePreview?.declarative_deletions ?? []).length}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "iteration": {
+                                "source": "{{_global.layoutUpdatePreview?.declarative_deletions ?? []}}",
+                                "item_var": "deletion"
+                            },
+                            "props": {
+                                "className": "flex flex-wrap items-center gap-2 text-xs py-0.5"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "badge badge-gray"
+                                    },
+                                    "text": "{{$t('admin.layout_sync_preview.deletion_type.' + deletion.type)}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "font-mono break-all text-gray-700 dark:text-gray-300"
+                                    },
+                                    "text": "{{deletion.key}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{deletion.has_operator_overrides === true}}",
+                                    "props": {
+                                        "className": "badge badge-red"
+                                    },
+                                    "text": "$t:admin.layout_sync_preview.deletion_operator"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -1,5 +1,5 @@
 {
-    "comment": "플러그인이 들고 온 화면 정의를 **다시 심는** 창. 경고를 앞세우는 이유는 지금 깔려 있는 것을\n  덮어쓰기 때문이다 — 그 화면을 편집기로 손봐 뒀다면 그 손질이 사라진다.\n  플러그인 판본은 그대로이고 화면 정의만 다시 읽으므로, 설치나 갱신과는 다른 조작이다.",
+    "comment": "플러그인이 들고 온 레이아웃을 다시 읽는 창(활성 플러그인만). 창을 열면 화면별 처리를 미리 보고(DB 는 바뀌지 않는다) 기본\n  「수정 유지」로 적용한다 — 편집기로 고친 화면은 고친 부분을 지킨다. 덮어쓰기는 창에서 「모두 교체」를 고를 때만이다(#888).",
     "meta": {
         "is_partial": true,
         "description": "플러그인 레이아웃 갱신 확인 모달",
@@ -10,7 +10,7 @@
     "name": "Modal",
     "props": {
         "title": "$t:admin.plugins.modals.refresh_layouts_title",
-        "size": "sm",
+        "size": "md",
         "footer": [
             {
                 "type": "basic",
@@ -35,6 +35,7 @@
                 ]
             },
             {
+                "id": "plugin_refresh_layouts_apply",
                 "type": "basic",
                 "name": "Button",
                 "actions": [
@@ -58,7 +59,9 @@
                                     "method": "POST",
                                     "body": {
                                         "plugin_name": "{{_global.selectedPlugin.identifier}}",
-                                        "layout_source": "{{_global.pluginLayoutSource ?? 'auto'}}"
+                                        "layout_source": "{{_global.pluginLayoutSource ?? 'auto'}}",
+                                        "layout_strategy": "{{_global.layoutSyncStrategy ?? 'keep'}}",
+                                        "decisions": "{{_global.layoutDecisions ?? {} }}"
                                     }
                                 },
                                 "onSuccess": [
@@ -91,7 +94,11 @@
                                             "target": "global",
                                             "selectedPlugin": null,
                                             "pluginLayoutSource": "auto",
-                                            "pluginLayoutSourceOpen": false
+                                            "pluginLayoutSourceOpen": false,
+                                            "layoutSyncStrategy": "keep",
+                                            "layoutDecisions": {},
+                                            "layoutPreview": null,
+                                            "layoutPreviewState": "idle"
                                         }
                                     },
                                     {
@@ -132,7 +139,7 @@
                 "props": {
                     "type": "button",
                     "className": "flex-center gap-2 px-4 py-2 bg-amber-700 dark:bg-amber-700 text-white rounded-lg hover:bg-amber-800 dark:hover:bg-amber-800 disabled:opacity-50 disabled:cursor-not-allowed",
-                    "disabled": "{{_global.isPluginRefreshingLayouts}}"
+                    "disabled": "{{_global.isPluginRefreshingLayouts || _global.layoutPreviewState !== 'ready'}}"
                 },
                 "children": [
                     {
@@ -163,31 +170,6 @@
             "children": [
                 {
                     "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "alert-warning"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "props": {
-                                "name": "exclamation-triangle",
-                                "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "P",
-                            "props": {
-                                "className": "text-warning-soft"
-                            },
-                            "text": "$t:admin.plugins.modals.refresh_layouts_warning"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
                     "name": "P",
                     "props": {
                         "className": "text-gray-700 dark:text-gray-300"
@@ -200,7 +182,10 @@
                     "props": {
                         "className": "mt-2 text-label-subtle"
                     },
-                    "text": "$t:admin.plugins.modals.refresh_layouts_description"
+                    "text": "$t:admin.layout_sync_preview.refresh_description"
+                },
+                {
+                    "partial": "partials/_shared/_layout_sync_preview.json"
                 }
             ]
         },

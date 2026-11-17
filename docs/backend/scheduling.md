@@ -119,6 +119,7 @@ module.php / plugin.php getSchedules() ─ Manager ──┼─▶ schedules 행
 - 순서: 30초 주기 → 바로 실행 → 큐로 보내기 (가벼운 작업이 먼저 돈다).
 - 행마다 `Schedule::call(...)->name("schedule:{id}")` 로 등록하고, 30초 주기는 `everyThirtySeconds()`, 그 밖은 `cron(expression)` 을 씁니다. `timezone` · `run_in_maintenance` · `on_one_server` · `enabled_condition` 을 이벤트 옵션으로 옮깁니다.
 - 이벤트 이름이 행마다 달라 같은 분에 도는 작업끼리 `onOneServer` 잠금을 공유하지 않습니다.
+- 이 서버에 없는 Artisan 명령·작업(Job) 클래스의 행은 실행 시점의 건너뛰기 필터로 실행하지 않습니다 — 같은 DB 를 쓰는 다른 서버(먼저 새 판을 받은 검수 서버)가 넣거나 바꾼 행이 이 서버에서 매 주기 실패하지 않게. 경고 로그는 행·대상마다 하루 한 번입니다([runtime-role.md](runtime-role.md) 「코드 판이 다른 서버가 같은 DB 를 볼 때」). 판정 자체가 예외면 건너뛰지 않고 실행합니다(같은 예외의 경고는 하루 한 번).
 - 설치 전(표 없음)이나 업그레이드 도중(7.2.0 컬럼 없음)에는 등록하지 않고 로그만 남깁니다. 한 행의 잘못된 값(깨진 cron 식 등)은 그 행만 건너뜁니다.
 
 ### 4.2 바로 실행 / 큐로 보내기 (ScheduleDispatcher)
@@ -195,6 +196,14 @@ job 유형을 바로 실행으로 두면 `Bus::dispatchSync()` 로 그 자리에
 
 - **중복 방지** — `without_overlapping > 0` 이면 실행기가 캐시 잠금 `schedule:run:{id}` 를 그 분만큼 잡습니다. 틱·수동·큐 모든 경로가 이 잠금 하나를 씁니다(Laravel `withoutOverlapping` 은 쓰지 않는다 — 큐 모드는 투입 직후 잠금이 풀리기 때문). 실행이 끝나면 잠금을 바로 풉니다. 앞 실행이 유지 시간 안에 끝나지 않으면 잠금이 만료로 풀립니다. 큐 워커가 실행 도중 죽으면(timeout·kill) 작업의 실패 처리(`RunScheduledTaskJob::failed()`)가 `ScheduleExecutor::markAbandoned()` 로 그 실행을 실패로 마감하면서 잠금을 강제로 풉니다. 캐시가 잠금을 주지 못하면(저장소 오류) 예약 실행은 잠금 없이 실행하고, 수동 실행은 실행하지 않습니다 — 바로 실행이면 503 으로 거절하고, 큐로 보낸 행이면(요청은 이미 202) 워커의 실행 잡이 경고 로그와 「거절됨」 이력 한 줄을 남기고 끝납니다. 어느 쪽이든 거절은 실패 마감(`markAbandoned()`)을 거치지 않으므로 실패 이력과 `last_result` 를 만들지 않고, 저장소가 돌아온 뒤에도 앞선 실행이 쥔 잠금을 풀지 않습니다.
 - **한 서버에서만 실행** — `on_one_server` 는 Laravel `onOneServer()` 입니다. 서버들이 같은 캐시(redis 등)를 써야 의미가 있습니다.
+- **어느 서버가 스케줄을 돌리는지** — 실행 방식 설정 `system.cron_mode` 는 DB·설정 파일을 함께 쓰는 서버 전체에 한 값이라, 서버 한 대만 스케줄을 돌리게 하려면 서버 로컬 스위치 `G7_SCHEDULER` 를 씁니다(7.2.0).
+
+  | 값 | 저장 위치·범위 | 정하는 것 | 꺼진 쪽의 동작 |
+  | --- | --- | --- | --- |
+  | `system.cron_mode` (`auto`·`web`·`cron`·`both`) | 공유 설정 — 모든 서버에 같은 값 | 스케줄을 무엇으로 깨울지(서버 cron·웹 크론 주소·방문 트리거) | `cron` 이면 웹 크론 주소·방문 트리거가 실행하지 않음(웹 크론 응답 `reason: web_call_disabled`) |
+  | `G7_SCHEDULER` (`on`·`off`, 기본 `on`) | 서버 로컬 `.env` — 서버마다 다르게 | 이 서버가 스케줄을 실행하는지 | `off` 면 `schedule:run`·`schedule:work`·`g7:schedule-run` 은 안내 후 종료 0, 웹 크론 주소·방문 트리거도 실행하지 않음(웹 크론 응답 `reason: scheduler_disabled_on_server`) |
+
+  두 값은 함께 적용됩니다 — `G7_SCHEDULER=off` 인 서버는 `system.cron_mode` 와 무관하게 실행하지 않습니다. 검수 서버(`G7_RUNTIME_ROLE=stage`)는 스위치와 무관하게 늘 꺼집니다. 자세한 내용은 [runtime-role.md](runtime-role.md) 「서버별 스케줄 스위치」를 봅니다.
 - **점검 모드** — `run_in_maintenance` 가 켜진 행만 점검 모드에서 돕니다.
 - **30초 주기** — `frequency = everyThirtySeconds` 행은 한 분에 두 번 돕니다. 대시보드 리소스·현재 접속자 브로드캐스트가 이 주기이고, 둘 다 「실패만 기록」으로 이력을 쌓지 않습니다.
 

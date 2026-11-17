@@ -3,6 +3,7 @@
 namespace App\Extension\Cache;
 
 use App\Contracts\Extension\CacheInterface;
+use App\Support\RuntimeRole;
 use Illuminate\Cache\Lock;
 use Illuminate\Cache\Repository;
 use Illuminate\Contracts\Cache\LockProvider;
@@ -21,6 +22,11 @@ use Illuminate\Support\Facades\Log;
  */
 abstract class AbstractCacheDriver implements CacheInterface
 {
+    /**
+     * 키 범위 고정값 (null 이면 키 이름으로 판정) — 7.2.0
+     */
+    protected ?CacheScope $scope = null;
+
     /**
      * 키 인덱스 조각 수
      *
@@ -62,7 +68,29 @@ abstract class AbstractCacheDriver implements CacheInterface
      */
     public function resolveKey(string $key): string
     {
-        return $this->getPrefix().':'.$key;
+        $prefix = $this->getPrefix();
+
+        // 검수 서버(stage)의 Code 범위 키는 `g7:stage:` 아래에 따로 둔다 — 운영 서버와 코드·레이아웃 판이 다를 수 있다.
+        // Data 범위(활성 목록·설정·잠금 등)는 공유한다. 범위는 명시값, 없으면 키 이름으로 판정(CacheScope::classify)
+        if (RuntimeRole::isStage() && ($this->scope ?? CacheScope::classify($key)) === CacheScope::Code) {
+            $prefix = preg_replace('/^g7:/', 'g7:stage:', $prefix, 1) ?? 'g7:stage:'.$prefix;
+        }
+
+        return $prefix.':'.$key;
+    }
+
+    /**
+     * 키 범위를 고정한 새 인스턴스를 돌려줍니다 (null 이면 키 이름으로 판정).
+     *
+     * @param  CacheScope|null  $scope  범위
+     * @return static 새 인스턴스
+     */
+    public function withScope(?CacheScope $scope): static
+    {
+        $clone = clone $this;
+        $clone->scope = $scope;
+
+        return $clone;
     }
 
     /**

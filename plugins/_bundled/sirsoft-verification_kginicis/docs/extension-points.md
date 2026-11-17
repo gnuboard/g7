@@ -31,6 +31,7 @@
 | `core.auth.after_register` | action (미선언) | `CompleteInicisRecordAfterRegister` | `handle` | 50 |
 | `core.auth.before_register` | action (미선언) | `AssertNoDuplicateInicisIdentity` | `handle` | 20 |
 | `core.identity.registered_providers` | filter | `RegisterInicisProviderListener` | `register` | 20 |
+| `core.identity_logs.before_purge` | action (미선언) | `CleanInicisChallengeMappingsOnLogPurge` | `handle` | 10 |
 | `core.plugin_settings.update_validation_rules` | filter | `ValidateInicisSettingsListener` | `addLiveModeRules` | 10 |
 | `core.user.after_withdraw` | action (미선언) | `CleanInicisRecordOnUserWithdraw` | `handle` | 50 |
 | `core.user.before_delete` | action (미선언) | `CleanInicisRecordOnUserDelete` | `handle` | 50 |
@@ -43,6 +44,12 @@
 `core.user.before_delete`는 `sync: true`로 동기 실행됩니다 — 이 시점 정리가 실패하면
 FK 제약(1451)으로 사용자 삭제 자체가 실패해야 하므로, 비동기 큐로 미뤄지면 삭제가 먼저
 끝나버릴 수 있습니다.
+`core.identity_logs.before_purge`(코어 7.2.0)는 코어가 보관주기 경과 본인확인 로그를 배치로
+지우기 **직전에** 그 배치의 로그 ID(UUID) 배열 하나로 발화합니다. `CleanInicisChallengeMappingsOnLogPurge`가
+이 훅을 `sync: true`로 구독해 그 로그를 참조하는 `inicis_challenge_mappings` 행을
+`InicisChallengeMappingRepositoryInterface::deleteByChallengeIds()`로 명시 삭제합니다 — 매핑
+테이블 외래키의 `cascadeOnDelete()`는 안전망일 뿐 삭제 경로가 아닙니다. 큐로 미뤄지면 로그가
+먼저 지워져 리스너가 할 일이 사라지므로 동기로 둡니다.
 <!-- @intent END -->
 
 ## 훅 리스너
@@ -51,6 +58,7 @@ FK 제약(1451)으로 사용자 삭제 자체가 실패해야 하므로, 비동�
 | 리스너 | 구독 훅 | 등록 방식 | HookListenerInterface | 파일 |
 |---|---|---|---|---|
 | `AssertNoDuplicateInicisIdentity` | 1개 | 명시 등록 | ✅ | `src/Listeners/AssertNoDuplicateInicisIdentity.php` |
+| `CleanInicisChallengeMappingsOnLogPurge` | 1개 | 명시 등록 | ✅ | `src/Listeners/CleanInicisChallengeMappingsOnLogPurge.php` |
 | `CleanInicisRecordOnUserDelete` | 1개 | 명시 등록 | ✅ | `src/Listeners/CleanInicisRecordOnUserDelete.php` |
 | `CleanInicisRecordOnUserWithdraw` | 1개 | 명시 등록 | ✅ | `src/Listeners/CleanInicisRecordOnUserWithdraw.php` |
 | `CompleteInicisRecordAfterRegister` | 1개 | 명시 등록 | ✅ | `src/Listeners/CompleteInicisRecordAfterRegister.php` |
@@ -59,10 +67,11 @@ FK 제약(1451)으로 사용자 삭제 자체가 실패해야 하므로, 비동�
 <!-- @generated:listeners END -->
 
 <!-- @intent START -->
-6개 리스너 중 3개(`CompleteInicisRecordAfterRegister`, `CleanInicisRecordOnUserWithdraw`,
+리스너 중 3개(`CompleteInicisRecordAfterRegister`, `CleanInicisRecordOnUserWithdraw`,
 `CleanInicisRecordOnUserDelete`)는 사용자 생명주기 각 단계(가입 완료·탈퇴·삭제)에 맞춰
 PII 레코드를 흡수하거나 정리하는 대칭 구조입니다 — 하나를 고칠 때 나머지 둘도 같은 PII
-필드를 다루고 있는지 확인해야 합니다.
+필드를 다루고 있는지 확인해야 합니다. `CleanInicisChallengeMappingsOnLogPurge`는 사용자
+생명주기가 아니라 코어 로그 보관주기 파기에 맞춰 challenge 매핑을 지웁니다(§구독 훅).
 <!-- @intent END -->
 
 ## 레이아웃 확장
@@ -113,9 +122,10 @@ _등록하는 스케줄이 없습니다._
 <!-- @generated:schedules END -->
 
 <!-- @intent START -->
-mTxId ↔ challenge_id 매핑(`inicis_challenge_mappings`)이나 pending PII 캐시는 만료된
-항목을 별도 배치로 청소하지 않습니다 — 캐시는 TTL 로 자연 소멸하고, 매핑 테이블의 정리는
-사용자 삭제/탈퇴 시점 리스너가 담당합니다(§훅 리스너).
+mTxId ↔ challenge_id 매핑(`inicis_challenge_mappings`)이나 pending PII 캐시는 이 플러그인이
+별도 스케줄로 청소하지 않습니다 — 캐시는 TTL 로 자연 소멸하고, 매핑 행은 코어의 본인확인
+로그 보관주기 파기가 그 로그를 지우기 직전 `core.identity_logs.before_purge` 리스너
+(`CleanInicisChallengeMappingsOnLogPurge`)가 명시 삭제합니다(§구독 훅).
 <!-- @intent END -->
 
 ## 알림 정의

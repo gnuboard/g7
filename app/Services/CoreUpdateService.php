@@ -34,6 +34,7 @@ use App\Extension\Integrity\PackageVerification;
 use App\Extension\Integrity\PackageVerificationStatus;
 use App\Extension\Integrity\UnsignedPackagePolicy;
 use App\Extension\Support\LifecycleWarnings;
+use App\Extension\Upgrade\UpgradeStepRunLedger;
 use App\Extension\UpgradeContext;
 use App\Extension\Vendor\EnvironmentDetector;
 use App\Extension\Vendor\VendorInstallContext;
@@ -43,6 +44,7 @@ use App\Extension\Vendor\VendorResolver;
 use App\Support\CoreVersionDiskReader;
 use App\Support\ExecutionEnvironment;
 use App\Support\PackageManifestCacheHelper;
+use App\Support\RuntimeRole;
 use App\Support\ScopedPermissionEnforcement;
 use Database\Seeders\CoreFieldDefinitionSeeder;
 use Database\Seeders\CoreScheduleSeeder;
@@ -153,6 +155,54 @@ class CoreUpdateService
      * 파일 자체가 남는 경우의 정리용이다.
      */
     private const RUN_LOCK_STALE_SECONDS = 3600;
+
+    /**
+     * spawn 실패 시 처리 방식 — `app.update.spawn_failure_mode` 하나만 읽는다(코드 쪽 폴백값을 따로 두지 않는다).
+     *
+     * 종전에는 config 기본값은 `abort` 인데 코드 두 곳의 폴백은 `fallback` 이라, config 캐시가 그 키를 모르는 판에서는
+     * 같은 설치가 다른 방식으로 움직였다. 값이 없거나 모르는 값이면 config 기본값과 같은 `abort` 다.
+     *
+     * @return string `abort` 또는 `fallback`
+     */
+    public static function spawnFailureMode(): string
+    {
+        $mode = config('app.update.spawn_failure_mode');
+
+        return in_array($mode, ['abort', 'fallback'], true) ? $mode : 'abort';
+    }
+
+    /**
+     * 업그레이드 스텝 수동 재개 명령 (POSIX 셸).
+     *
+     * 새 프로세스의 단독 실행은 낡은 메모리 가드에 걸리지 않지만, 옛 판 config 캐시로 부팅하는 환경을 위해
+     * `APP_VERSION=<대상 판>` 접두를 붙인다.
+     *
+     * @param  string  $fromVersion  시작 판
+     * @param  string  $toVersion  대상 판
+     * @return string 재개 명령
+     */
+    public static function resumeCommand(string $fromVersion, string $toVersion): string
+    {
+        return sprintf('APP_VERSION=%s php artisan core:execute-upgrade-steps --from=%s --to=%s --force', $toVersion, $fromVersion, $toVersion);
+    }
+
+    /**
+     * 업그레이드 스텝 수동 재개 안내 — POSIX 셸과 PowerShell 두 형식.
+     *
+     * @param  string  $fromVersion  시작 판
+     * @param  string  $toVersion  대상 판
+     * @return string 안내 문장
+     */
+    public static function resumeCommandForShells(string $fromVersion, string $toVersion): string
+    {
+        return sprintf(
+            '%s (PowerShell: $env:APP_VERSION=\'%s\'; php artisan core:execute-upgrade-steps --from=%s --to=%s --force)',
+            self::resumeCommand($fromVersion, $toVersion),
+            $toVersion,
+            $fromVersion,
+            $toVersion,
+        );
+    }
 
     /**
      * 코어 업데이트 실행을 직렬화합니다.
@@ -2904,10 +2954,16 @@ class CoreUpdateService
      * @param  \Closure|null  $onStep  각 스텝 실행 시 콜백 (버전 문자열 전달)
      * @param  bool  $force  true 시 fromVersion == toVersion이면 해당 버전 스텝도 포함
      * @param  \Closure|null  $onDiscovered  범위 내 발견된 스텝 파일 수를 실행 전 1회 통지 (int 전달)
+     * @param  bool  $freshProcess  새로 시작한 프로세스(`core:execute-upgrade-steps`)에서 부르면 true — 낡은 메모리 가드를 건너뛴다
+     * @param  \Closure|null  $onSkipped  실행 대장에 이미 끝난 것으로 남아(같은 DB 의 다른 서버·실행) 건너뛴 스텝마다 호출 (버전 문자열 전달)
      * @return void 반환값 없음
      */
-    public function runUpgradeSteps(string $fromVersion, string $toVersion, ?\Closure $onStep = null, bool $force = false, ?\Closure $onDiscovered = null): void
+    public function runUpgradeSteps(string $fromVersion, string $toVersion, ?\Closure $onStep = null, bool $force = false, ?\Closure $onDiscovered = null, bool $freshProcess = false, ?\Closure $onSkipped = null): void
     {
+        // 새로 시작한 프로세스(`core:execute-upgrade-steps` — spawn 자식이든 운영자 단독 실행이든)는 디스크의 새 코드를
+        // 읽으므로 아래 「낡은 메모리」 가드의 대상이 아니다. 가드는 옛 코드를 이미 메모리에 올린 `core:update` 부모가
+        // in-process 로 스텝을 돌릴 때만 의미가 있다. 종전에는 단독 실행도 .env 의 옛 APP_VERSION 으로 판정돼
+        // 「수동 재개」 안내대로 실행해도 가드가 다시 막았다(#888).
         // 부모 in-process fallback 진입 시 stale 메모리 가드.
         //
         // 현재 메모리의 `config('app.version')` 이 toVersion 보다 낮으면 부모는 stale 코드를
@@ -2930,8 +2986,8 @@ class CoreUpdateService
         // 부모 in-process fallback 에서는 env 가 .env 의 APP_VERSION(= 아직 fromVersion, Step 11 전)
         // 이므로 가드가 그대로 발동한다.
         $memoryVersion = CoreVersionChecker::getCoreVersion() ?: (string) config('app.version', $fromVersion);
-        if (version_compare($memoryVersion, $toVersion, '<')) {
-            $mode = config('app.update.spawn_failure_mode', 'fallback');
+        if (! $freshProcess && version_compare($memoryVersion, $toVersion, '<')) {
+            $mode = self::spawnFailureMode();
             $message = sprintf(
                 '[core-update] runUpgradeSteps 부모 메모리 stale 감지 — memory=%s, target=%s, mode=%s',
                 $memoryVersion,
@@ -2942,12 +2998,8 @@ class CoreUpdateService
             if ($mode === 'abort') {
                 throw new UpgradeHandoffException(
                     afterVersion: $fromVersion,
-                    reason: $message.' — fail-fast 모드. 수동 재개로 진행하세요.',
-                    resumeCommand: sprintf(
-                        'php artisan core:execute-upgrade-steps --from=%s --to=%s --force',
-                        $fromVersion,
-                        $toVersion,
-                    ),
+                    reason: $message.' — fail-fast 모드. 수동 재개로 진행하세요. '.self::resumeCommandForShells($fromVersion, $toVersion),
+                    resumeCommand: self::resumeCommand($fromVersion, $toVersion),
                 );
             }
 
@@ -3039,10 +3091,22 @@ class CoreUpdateService
 
         $context = new UpgradeContext($fromVersion, $toVersion);
 
+        // 실행 대장 — DB 를 함께 쓰는 다른 서버가 이미 끝낸 스텝은 건너뛰고, 실행 선점은 유니크 삽입으로 한다(7.2.0).
+        // 내용 지문을 함께 넘긴다 — 검수 서버의 같은 판 --force 재배포는 같은 내용으로 끝난 스텝을 건너뛴다(#888)
+        $ledger = app(UpgradeStepRunLedger::class);
+
         foreach ($steps as $version => $step) {
-            $onStep?->__invoke($version);
-            Log::channel('upgrade')->info("코어 업그레이드 스텝 실행: {$version}");
-            $step->run($context->withCurrentStep($version));
+            $ran = $ledger->run('core', '', (string) $version, UpgradeStepRunLedger::stepKey($step, (string) $version), $force, function () use ($onStep, $version, $step, $context): void {
+                $onStep?->__invoke($version);
+                Log::channel('upgrade')->info("코어 업그레이드 스텝 실행: {$version}");
+                $step->run($context->withCurrentStep($version));
+            }, fingerprint: UpgradeStepRunLedger::fingerprint($step, (string) $version));
+
+            // 다른 실행이 이미 끝낸 스텝은 실행 건수가 아니라 건너뜀으로 따로 알린다 — 부모의 「발견했는데 실행 0건」 가드가
+            // 공유 DB 의 두 번째 서버를 실패로 읽지 않게 한다(#888)
+            if (! $ran) {
+                $onSkipped?->__invoke((string) $version);
+            }
         }
     }
 
@@ -3499,6 +3563,11 @@ class CoreUpdateService
      */
     public function signalQueueRestart(): void
     {
+        // 검수 서버의 재시작 신호는 공유 캐시를 거쳐 운영 서버 워커까지 재시작시킨다
+        if (RuntimeRole::isStage()) {
+            return;
+        }
+
         try {
             Artisan::call('queue:restart');
         } catch (\Throwable $e) {

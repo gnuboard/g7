@@ -86,6 +86,8 @@ public function getSchedules(): array
 
 ### 모듈 관리 커맨드
 
+> 검수 서버(`G7_RUNTIME_ROLE=stage`)에서는 `module:activate`·`module:deactivate`·`module:uninstall`(플러그인도 같음)이 안내 후 종료 1 이다 — 공유 DB 의 확장 상태를 바꾼다. 설치·업데이트·레이아웃 갱신은 실행한다 ([runtime-role.md](../backend/runtime-role.md)).
+
 #### 모듈 목록 조회
 
 ```bash
@@ -171,10 +173,11 @@ php artisan module:uninstall [identifier]
 
 **옵션**:
 - `--force`: 확인 프롬프트 없이 즉시 삭제
+- `--yes`: 확인 질문만 생략 (7.2.0 — 자동화용)
 - `--delete-data`: 데이터도 함께 삭제 (동적 테이블 + 마이그레이션 롤백 + 스토리지)
 
 **수행 작업**:
-- 확인 프롬프트 표시 (--force 미사용 시). 확인에 답할 수 없는 실행(cron, CI, 원격 명령, `--no-interaction`)은 삭제하지 않은 사유와 `--force` 안내를 출력하고 종료 코드 1 로 끝남. 터미널에서 「아니오」를 답하면 취소 문구와 종료 코드 0
+- 확인 프롬프트 표시 (--force 미사용 시). 확인에 답할 수 없는 실행(cron, CI, 원격 명령, `--no-interaction`)은 삭제하지 않은 사유와 `--yes`·`--force` 안내를 출력하고 종료 코드 1 로 끝남. 터미널에서 「아니오」를 답하면 취소 문구와 종료 코드 0
 - `--delete-data` 사용 시 (트랜잭션 외부, DDL):
   - `getDynamicTables()` 반환 테이블 삭제 (Manager가 처리)
   - 마이그레이션 롤백 (정적 테이블 삭제)
@@ -271,7 +274,8 @@ php artisan module:update [identifier] [--force] [--source=auto|bundled|github] 
 - `identifier` (필수): 업데이트할 모듈 식별자
 
 **옵션**:
-- `--force`: 버전 비교 없이 강제 업데이트 (파일 손상, 수동 수정 복원 시 사용)
+- `--force`: 강제 업데이트 — 확인 생략·같은 판 재적용·다운그레이드 허용·코어 호환 검사 생략·같은 판 업그레이드 스텝 재실행·멈춘 업데이트 정리 (파일 손상, 수동 수정 복원 시 사용)
+- `--yes`: 확인 질문만 생략 (7.2.0 — `--force` 의 다른 효과 없음, 자동화용)
 - `--source`: 업데이트 소스 강제 (`auto` 기본 = GitHub·`_bundled` 중 높은 버전(같으면 GitHub, GitHub 조회 실패·URL 없음이면 `_bundled`), `bundled` = `_bundled` 단독(GitHub 안 봄), `github` = GitHub 단독(`_bundled` 폴백 없음))
 - `--zip`: 외부 ZIP 파일을 소스로 사용 (GitHub·번들 우회, `--source` 와 함께 쓸 수 없음 — [extension-update-system.md](extension-update-system.md#외부-zip-직접-지정---zip))
 - `--signature` (7.2.0): `--zip` 의 서명 파일(`.sig.json`) 경로. 생략하면 ZIP 옆 `<zip>.sig.json` 을 자동으로 쓴다
@@ -281,7 +285,7 @@ php artisan module:update [identifier] [--force] [--source=auto|bundled|github] 
 
 **수행 작업**:
 - 업데이트 가용 여부 확인 (없으면 info + SUCCESS, `--force` 시 무시하고 진행)
-- 확인 프롬프트 → 업데이트 실행 (`--force` 면 묻지 않음. 확인에 답할 수 없는 실행(cron, CI, 원격 명령, `--no-interaction`)은 시작하지 않은 사유와 `--force` 안내를 출력하고 종료 코드 1, 터미널에서 「아니오」를 답하면 종료 코드 0)
+- 확인 프롬프트 → 업데이트 실행 (`--force`·`--yes` 면 묻지 않음. 확인에 답할 수 없는 실행(cron, CI, 원격 명령, `--no-interaction`)은 시작하지 않은 사유와 `--yes` 안내를 출력하고 종료 코드 1, 터미널에서 「아니오」를 답하면 종료 코드 0)
 - GitHub·`--zip` 소스면 백업 전에 패키지 서명 검증 (7.2.0). 미서명이면 계속할지 한 번 더 묻고, 답할 수 없는 실행은 `--allow-unsigned` 없이 종료 코드 1 — `--force` 는 이 확인을 대신하지 않는다. 서명 불일치·신뢰하지 않는 키는 늘 실패. 상세: [패키지 서명](package-signing.md#artisan-명령)
 - 상태 가드 확인 → 백업 → status: Updating → 파일 교체 → 마이그레이션 → 업그레이드 스텝 → 복원
 - 실패 시 백업 복원 안내

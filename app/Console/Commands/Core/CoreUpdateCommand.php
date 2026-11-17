@@ -893,10 +893,8 @@ class CoreUpdateCommand extends Command
                 CoreBackupHelper::deleteBackup($backupPath);
             }
 
-            if ($maintenanceEnabled) {
-                $service->disableMaintenanceMode();
-                $maintenanceEnabled = false;
-            }
+            // 점검 모드는 번들 확장 일괄 업데이트까지 끝난 뒤에 푼다(아래 finally) — 종전에는 여기서 풀어, 새 코어와 옛 확장이
+            // 섞인 사이트가 일괄 업데이트 동안 열려 있었다(#888).
 
             // 모든 파일(코어 config/lang/vendor)이 안착한 뒤 config 캐시를 재생성한다.
             // clearAllCaches() 는 흐름 중간에서 stale 캐시를 비우기만 하므로, 여기서
@@ -936,12 +934,21 @@ class CoreUpdateCommand extends Command
             // storage/app/* 등이 sudo 컨텍스트에서 root 로 오염될 수 있다.
             // 실제 업데이트가 수행된 경우 restoreOwnership 을 한 번 더 호출해 재복원한다.
             $coreLock?->keepAlive(force: true);
-            $promptResult = $this->runBundledExtensionUpdatePrompt(
-                app(ModuleManager::class),
-                app(PluginManager::class),
-                app(TemplateManager::class),
-                (bool) $this->option('force'),
-            );
+            try {
+                $promptResult = $this->runBundledExtensionUpdatePrompt(
+                    app(ModuleManager::class),
+                    app(PluginManager::class),
+                    app(TemplateManager::class),
+                    (bool) $this->option('force'),
+                );
+            } finally {
+                // 번들 일괄 업데이트가 끝나거나 실패·예외로 멈춰도 점검 모드는 여기서 반드시 푼다
+                if ($maintenanceEnabled) {
+                    $service->disableMaintenanceMode();
+                    $maintenanceEnabled = false;
+                    $log('유지보수 모드 해제 (번들 확장 일괄 업데이트 뒤)');
+                }
+            }
 
             // 공식 번들 처리 결과 4구분 요약 (#146 제안 5)
             $this->summarizeBundledPlacement($bundledPlan, $promptResult);
@@ -1080,7 +1087,8 @@ class CoreUpdateCommand extends Command
             // 전면 500 차단 (7.0.9→7.0.10 실사례)
             app(CoreUpdateService::class)->normalizeRuntimeOwnershipAfterRootRun();
 
-            return Command::SUCCESS;
+            // 스텝이 남았다 — 성공(0)으로 끝내면 스크립트가 재개 명령을 건너뛴다(#888)
+            return $this->handoffExitCode();
 
         } catch (\Throwable $e) {
             $bar->finish();
@@ -1351,6 +1359,7 @@ class CoreUpdateCommand extends Command
         $handoffPayload = null;
         $stepsExecuted = null;
         $stepsDiscovered = null;
+        $stepsSkipped = null;
         while (! feof($pipes[1])) {
             $line = fgets($pipes[1]);
             if ($line !== false) {
@@ -1407,8 +1416,13 @@ class CoreUpdateCommand extends Command
                         if (isset($decoded['discovered']) && is_int($decoded['discovered']) && $decoded['discovered'] >= 0) {
                             $stepsDiscovered = $decoded['discovered'];
                         }
+                        // skipped 는 실행 대장이 「이미 실행됨」으로 건너뛴 스텝 수 — 7.2.0 이후 자식만 발행한다
+                        if (isset($decoded['skipped']) && is_int($decoded['skipped']) && $decoded['skipped'] >= 0) {
+                            $stepsSkipped = $decoded['skipped'];
+                        }
                         $log('[spawn] 실행된 step 수: '.$stepsExecuted
-                            .($stepsDiscovered !== null ? " (발견 {$stepsDiscovered})" : ''));
+                            .($stepsDiscovered !== null ? " (발견 {$stepsDiscovered})" : '')
+                            .($stepsSkipped ? " (이미 실행돼 건너뜀 {$stepsSkipped})" : ''));
 
                         continue;
                     }
@@ -1431,6 +1445,7 @@ class CoreUpdateCommand extends Command
             $fromVersion,
             $toVersion,
             $log,
+            $stepsSkipped,
         );
     }
 
@@ -1484,6 +1499,9 @@ class CoreUpdateCommand extends Command
      *    애초에 없는 릴리즈 (예: 데이터/설정 변경 없는 패치). from<to 여도 실패 아님 (케이스 B).
      *  - discovered 신호 부재 (`null`, 구버전 자식) + executed=0 + from<to → 레거시 판정 유지
      *    (fail-fast). 신버전 자식은 항상 discovered 를 발행하므로 이 경로는 구버전 자식 한정.
+     *  - executed=0 이고 skipped>0 이며 skipped >= discovered → 정상 통과. DB 를 함께 쓰는 다른 서버·실행이
+     *    범위 안 스텝을 이미 끝내 실행 대장이 건너뛴 경우다(#888). 실패로 읽고 `--force` 재개를 안내하면 안내를
+     *    따른 운영자가 끝난 스텝을 다시 돌린다.
      *
      * @param  int  $exitCode  자식 프로세스 종료 코드
      * @param  array|null  $handoffPayload  파싱된 [HANDOFF] 페이로드 (없으면 null)
@@ -1492,6 +1510,7 @@ class CoreUpdateCommand extends Command
      * @param  string  $fromVersion  업그레이드 시작 버전
      * @param  string  $toVersion  업그레이드 대상 버전
      * @param  \Closure  $log  로그 수집 콜백
+     * @param  int|null  $stepsSkipped  실행 대장이 「이미 실행됨」으로 건너뛴 스텝 수 (7.2.0 이전 자식은 null)
      * @return bool spawn 성공 여부 (mode=fallback 실패 시 false — 호출자 in-process fallback)
      *
      * @throws UpgradeHandoffException 핸드오프 수신 또는 mode=abort 실패 시
@@ -1504,6 +1523,7 @@ class CoreUpdateCommand extends Command
         string $fromVersion,
         string $toVersion,
         \Closure $log,
+        ?int $stepsSkipped = null,
     ): bool {
         if ($exitCode === UpgradeHandoffException::EXIT_CODE && $handoffPayload !== null) {
             $log("spawn 핸드오프 종료 (exit={$exitCode})");
@@ -1533,6 +1553,15 @@ class CoreUpdateCommand extends Command
             // 스텝이 필요 없는 릴리즈(데이터/설정 변경 없음)를 실패로 오판하지 않는다.
             if ($stepsExecuted === 0 && $stepsDiscovered === 0) {
                 $log("spawn 완료 (exit=0, 실행할 스텝 없음 — 범위 내 스텝 파일 부재, from={$fromVersion} to={$toVersion})");
+
+                return true;
+            }
+
+            // executed=0 이지만 범위 안 스텝을 전부 다른 서버·실행이 이미 끝냈다 → 정상 통과 (실행 대장이 건너뜀).
+            if ($stepsExecuted === 0 && $stepsSkipped !== null && $stepsSkipped > 0
+                && ($stepsDiscovered === null || $stepsSkipped >= $stepsDiscovered)) {
+                $this->info(trans_choice('settings.core_update.console.spawn.steps_already_run', $stepsSkipped, ['count' => $stepsSkipped]));
+                $log("spawn 완료 (exit=0, 실행 0 — 같은 DB 의 다른 서버·실행이 이미 끝낸 스텝 건너뜀 {$stepsSkipped}, from={$fromVersion} to={$toVersion})");
 
                 return true;
             }
@@ -1585,14 +1614,10 @@ class CoreUpdateCommand extends Command
      */
     private function failSpawnWithMode(string $reason, \Closure $log, string $fromVersion, string $toVersion): bool
     {
-        $mode = config('app.update.spawn_failure_mode', 'fallback');
+        $mode = CoreUpdateService::spawnFailureMode();
 
         if ($mode === 'abort') {
-            $resumeCommand = sprintf(
-                'php artisan core:execute-upgrade-steps --from=%s --to=%s --force',
-                $fromVersion,
-                $toVersion,
-            );
+            $resumeCommand = CoreUpdateService::resumeCommand($fromVersion, $toVersion);
 
             $log("spawn 자식 실패 — {$reason}. fail-fast 모드 abort.");
 
@@ -1956,6 +1981,13 @@ class CoreUpdateCommand extends Command
         if ($mode === 'non_root' || $mode === 'root_web_symmetric') {
             $this->line("  {$resumeCommand}");
 
+            // `APP_VERSION=<판> php artisan …` 접두는 POSIX 셸 문법이다 — PowerShell 에서는 명령 이름으로 읽혀 실행되지 않으므로
+            // 같은 명령의 PowerShell 형식도 함께 안내한다. sudo 분기(아래)는 POSIX 서버 전용이라 붙이지 않는다.
+            $powershell = self::powershellResumeCommand($resumeCommand);
+            if ($powershell !== null) {
+                $this->line('  '.__('settings.core_update.console.resume_command_powershell', ['command' => $powershell]));
+            }
+
             return;
         }
 
@@ -1973,6 +2005,21 @@ class CoreUpdateCommand extends Command
         $this->newLine();
         $this->warn('⚠ '.__('settings.core_update.console.resume_root_unknown_warning'));
         $this->warn('  '.__('settings.core_update.console.resume_root_unknown_hint'));
+    }
+
+    /**
+     * `APP_VERSION=<판> …` 접두가 붙은 재개 명령의 PowerShell 형식을 만듭니다 — 접두가 없으면 null(두 셸에서 같다).
+     *
+     * @param  string  $resumeCommand  POSIX 셸 재개 명령
+     * @return string|null `$env:APP_VERSION='<판>'; …` 형식, 접두가 없으면 null
+     */
+    private static function powershellResumeCommand(string $resumeCommand): ?string
+    {
+        if (! preg_match('/^APP_VERSION=(\S+)\s+(.+)$/', $resumeCommand, $m)) {
+            return null;
+        }
+
+        return sprintf("\$env:APP_VERSION='%s'; %s", $m[1], $m[2]);
     }
 
     /**
@@ -2120,5 +2167,21 @@ class CoreUpdateCommand extends Command
         $this->newLine();
 
         $log(sprintf('권한 정상화 실패 %d 건 — 운영자 수동 복구 필요', count($warnings)));
+    }
+
+    /**
+     * 업그레이드 스텝 핸드오프로 멈춘 실행의 종료 코드를 정하고 안내 1줄을 남깁니다.
+     *
+     * 파일·설정은 새 버전이지만 스텝이 남아 재개 명령이 필요하다 — 단독 `core:execute-upgrade-steps` 가 같은 상황에서
+     * 돌려주는 값({@see UpgradeHandoffException::EXIT_CODE}, 75)과 맞춘다. 종전에는 0 이라 비대화형 스크립트가 성공으로
+     * 읽고 재개 명령을 건너뛰었다.
+     *
+     * @return int `UpgradeHandoffException::EXIT_CODE` (75)
+     */
+    protected function handoffExitCode(): int
+    {
+        $this->warn(__('settings.core_update.console.handoff_exit_code', ['code' => UpgradeHandoffException::EXIT_CODE]));
+
+        return UpgradeHandoffException::EXIT_CODE;
     }
 }

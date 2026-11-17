@@ -630,6 +630,94 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
     }
 
     /**
+     * .env(메모리) 는 옛 판, 디스크는 새 판인 상태의 단독 실행 — 낡은 메모리 가드가 막지 않고(75 아님) 스텝을 돌린 뒤 판을 갱신한다.
+     *
+     * `runUpgradeSteps` 를 목으로 바꾸지 않는다. 종전에는 단독 실행도 .env 의 옛 판으로 판정돼 abort 모드에서 75 로 끝났고,
+     * 안내된 재개 명령을 그대로 실행해도 같은 가드가 다시 막았다.
+     *
+     * @scenario invocation_origin=standalone_operator, guard=memory_older_than_target
+     *
+     * @effects standalone_run_is_not_blocked_by_stale_memory_guard
+     *
+     * @return void 반환값 없음
+     */
+    public function test_standalone_with_old_memory_version_runs_real_steps_and_updates_env(): void
+    {
+        config(['app.version' => '0.9.0', 'app.update.spawn_failure_mode' => 'abort']);
+        $service = $this->bindPartialService();
+        $service->shouldReceive('updateVersionInEnv')->once()->with('0.9.1');
+
+        $exitCode = $this->runCommand(['--skip-bundled-updates' => true]);
+
+        $this->assertSame(0, $exitCode, '단독 실행은 새 프로세스라 낡은 메모리 가드(75)의 대상이 아니다');
+    }
+
+    /**
+     * 범위 안에 스텝 파일이 없는 단독 실행도 0 이다.
+     *
+     * @scenario invocation_origin=standalone_operator, guard=no_steps_in_range
+     *
+     * @effects standalone_run_is_not_blocked_by_stale_memory_guard
+     *
+     * @return void 반환값 없음
+     */
+    public function test_standalone_with_no_steps_in_range_exits_zero(): void
+    {
+        config(['app.version' => '9.9.8', 'app.update.spawn_failure_mode' => 'abort']);
+        $service = $this->bindPartialService();
+        $service->shouldReceive('updateVersionInEnv')->once()->with('9.9.9');
+
+        ob_start();
+        $exitCode = Artisan::call('core:execute-upgrade-steps', ['--from' => '9.9.8', '--to' => '9.9.9', '--force' => true, '--skip-bundled-updates' => true]);
+        ob_end_clean();
+
+        $this->assertSame(0, $exitCode);
+    }
+
+    /**
+     * 다른 코어 업데이트·스텝 실행이 잠금을 쥐고 있으면 단독 실행은 아무 단계도 돌리지 않고 1 로 끝난다.
+     *
+     * @scenario invocation_origin=standalone_operator, guard=run_lock_contended
+     *
+     * @effects standalone_run_takes_core_update_run_lock
+     *
+     * @return void 반환값 없음
+     */
+    public function test_standalone_run_fails_when_run_lock_is_held(): void
+    {
+        [$service] = $this->bindMocks();
+        $service->shouldReceive('acquireRunLock')->once()->andReturn(false);
+        $service->shouldNotReceive('runMigrations');
+        $service->shouldNotReceive('runUpgradeSteps');
+        $service->shouldNotReceive('releaseRunLock');
+
+        $this->assertSame(1, $this->runCommand([]));
+    }
+
+    /**
+     * 실제 `runUpgradeSteps` 를 쓰고 디스크·DB·.env 를 바꾸는 보조 단계만 막은 서비스 부분 대역을 컨테이너에 넣습니다.
+     *
+     * @return MockInterface 서비스 부분 대역
+     */
+    private function bindPartialService(): MockInterface
+    {
+        [, $module, $plugin, $template, $langPack] = $this->bindMocks();
+        $service = Mockery::mock(app()->build(CoreUpdateService::class))->makePartial();
+        $service->shouldReceive('acquireRunLock')->andReturn(true)->byDefault();
+        $service->shouldReceive('releaseRunLock')->andReturnNull()->byDefault();
+        $service->shouldReceive('runMigrations')->andReturnNull()->byDefault();
+        $service->shouldReceive('reloadCoreConfigAndResync')->andReturnNull()->byDefault();
+        $service->shouldReceive('clearAllCaches')->andReturnNull()->byDefault();
+        $service->shouldReceive('signalQueueRestart')->andReturnNull()->byDefault();
+        $service->shouldReceive('normalizeRuntimeOwnershipAfterRootRun')->andReturnNull()->byDefault();
+        $service->shouldReceive('sweepEmptyStagingDirectories')->andReturn(0)->byDefault();
+        $service->shouldReceive('ensureWritableDirectories')->andReturnNull()->byDefault();
+        $this->app->instance(CoreUpdateService::class, $service);
+
+        return $service;
+    }
+
+    /**
      * CoreUpdateService + 3개 Manager + LanguagePackService 를 컨테이너에 mock 으로 swap.
      *
      * @return array{0: MockInterface, 1: MockInterface, 2: MockInterface, 3: MockInterface, 4: MockInterface} 서비스, 모듈, 플러그인, 템플릿 매니저, 언어팩 서비스 대역
@@ -646,6 +734,9 @@ class ExecuteUpgradeStepsStandaloneTest extends TestCase
         // 캐시 정리 블록이 도는 경로에서는 상주 큐 워커 재시작 신호도 함께 나간다 (7.0.11 도입).
         // 전용 케이스가 once()/never() 로 단언하고, 나머지 케이스는 기본 허용.
         $service->shouldReceive('signalQueueRestart')->andReturnNull()->byDefault();
+        // 단독 실행은 코어 업데이트 실행 잠금을 잡고 놓는다(7.2.0) — 전용 케이스가 경합을 단언하고, 나머지는 기본 허용.
+        $service->shouldReceive('acquireRunLock')->andReturn(true)->byDefault();
+        $service->shouldReceive('releaseRunLock')->andReturnNull()->byDefault();
         $module = Mockery::mock(ModuleManager::class);
         $plugin = Mockery::mock(PluginManager::class);
         $template = Mockery::mock(TemplateManager::class);

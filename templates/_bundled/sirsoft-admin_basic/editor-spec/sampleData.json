@@ -5380,6 +5380,8 @@
     },
     "settings": {
       "data": {
+        "scheduler_enabled_on_this_server": true,
+        "runtime_role": "live",
         "general": {
           "site_name": "그누보드7",
           "site_url": "https://example.com",
@@ -5388,7 +5390,6 @@
           "timezone": "Asia/Seoul",
           "language": "ko",
           "currency": "KRW",
-          "maintenance_mode": false,
           "site_logo": [],
           "site_favicon": []
         },
@@ -6035,7 +6036,8 @@
           "read": []
         },
         "timezone": "UTC",
-        "server_time": "2026-05-31 08:40:37"
+        "server_time": "2026-05-31 08:40:37",
+        "extra_sections": []
       }
     },
     "template_info": {

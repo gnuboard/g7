@@ -2,9 +2,10 @@
 
 namespace Modules\Sirsoft\Board;
 
+use App\Contracts\Repositories\RoleRepositoryInterface;
+use App\Enums\ExtensionOwnerType;
 use App\Extension\AbstractModule;
 use App\Extension\Helpers\ExtensionLangTexts;
-use App\Models\Role;
 use App\Seo\Concerns\LocalizesSeoValues;
 use App\Services\AttachmentService;
 use App\Support\AssetUrl;
@@ -38,6 +39,7 @@ use Modules\Sirsoft\Board\Listeners\SeoBoardCacheListener;
 use Modules\Sirsoft\Board\Listeners\SeoBoardRegenerateListener;
 use Modules\Sirsoft\Board\Listeners\SeoBoardSettingsCacheListener;
 use Modules\Sirsoft\Board\Listeners\ThumbnailServingListener;
+use Modules\Sirsoft\Board\Listeners\UserDeleteCleanupListener;
 use Modules\Sirsoft\Board\Listeners\UserNotificationSettingsListener;
 use Modules\Sirsoft\Board\Listeners\UserReactionInfoListener;
 use Modules\Sirsoft\Board\Listeners\UserScrapInfoListener;
@@ -59,18 +61,14 @@ class Module extends AbstractModule
     public function uninstall(): bool
     {
         // 게시판별 동적 역할 정리 (sirsoft-board.*.manager, sirsoft-board.*.step)
-        // chunkById(키셋 순회) 필수 — each() 는 OFFSET 기반 청크(기본 1000건)라
-        // 콜백이 순회 대상을 삭제하면 다음 페이지의 OFFSET 이 줄어든 결과 집합을 지나쳐
-        // 1000건을 넘는 역할이 그대로 남는다.
-        Role::where('extension_type', 'module')
-            ->where('extension_identifier', 'sirsoft-board')
-            ->chunkById(100, function ($roles) {
-                foreach ($roles as $role) {
-                    $role->permissions()->detach();
-                    $role->users()->detach();
-                    $role->delete();
-                }
-            });
+        // 대상 역할을 먼저 모두 읽은 뒤 지운다 — OFFSET 기반 청크 순회 중에 순회 대상을 지우면
+        // 다음 페이지의 OFFSET 이 줄어든 결과 집합을 지나쳐 첫 청크(1000건)를 넘는 역할이 남는다.
+        // 역할 수는 게시판 수의 두 배 수준이라 한 번에 읽어도 된다.
+        $roleRepository = app(RoleRepositoryInterface::class);
+        foreach ($roleRepository->getByExtension(ExtensionOwnerType::Module, 'sirsoft-board') as $role) {
+            // 권한·메뉴·회원 연결과 메뉴 권한을 먼저 떼고 지운다 — DB 외래키 연쇄에 맡기지 않는다(#888)
+            $roleRepository->deleteWithRelations($role);
+        }
 
         // 반응 유형 아이콘 첨부 정리 — source_identifier 가 붙은 첨부는 코어 고아 정리
         // 대상이 아니므로(정리 대상은 source_identifier 가 NULL 인 행뿐) 여기서 지우지
@@ -760,6 +758,8 @@ class Module extends AbstractModule
             GuestAuthorFieldDefinitionListener::class,
             // 추가 정보를 입력하지 않은 회원에게도 비밀번호 확인 라우트를 열어 둔다
             ExemptRequiredFieldsRoutesListener::class,
+            // 회원 삭제 직전 게시판 알림 설정·반응·스크랩을 명시적으로 지우고 집계를 다시 맞춘다 (#888)
+            UserDeleteCleanupListener::class,
         ];
     }
 

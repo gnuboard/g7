@@ -153,7 +153,7 @@ class LayoutRepository implements LayoutRepositoryInterface
             return false;
         }
 
-        $layout->forceDelete();
+        $this->forceDelete($layout);
 
         return true;
     }
@@ -203,6 +203,8 @@ class LayoutRepository implements LayoutRepositoryInterface
      */
     public function forceDelete(TemplateLayout $layout): void
     {
+        // 버전 이력을 먼저 지운다 — DB CASCADE 는 안전망일 뿐 삭제 경로가 기대지 않는다.
+        $this->deleteVersionsOf([(int) $layout->id]);
         $layout->forceDelete();
     }
 
@@ -868,10 +870,12 @@ class LayoutRepository implements LayoutRepositoryInterface
      */
     public function forceDeleteBySource(string $identifier, LayoutSourceType $sourceType): int
     {
-        return TemplateLayout::withTrashed()
+        $query = TemplateLayout::withTrashed()
             ->where('source_type', $sourceType)
-            ->where('source_identifier', $identifier)
-            ->forceDelete();
+            ->where('source_identifier', $identifier);
+        $this->deleteVersionsOf((clone $query)->pluck('id')->all());
+
+        return $query->forceDelete();
     }
 
     /**
@@ -925,9 +929,10 @@ class LayoutRepository implements LayoutRepositoryInterface
      */
     public function deleteByTemplateId(int $templateId): int
     {
-        return TemplateLayout::withTrashed()
-            ->where('template_id', $templateId)
-            ->forceDelete();
+        $query = TemplateLayout::withTrashed()->where('template_id', $templateId);
+        $this->deleteVersionsOf((clone $query)->pluck('id')->all());
+
+        return $query->forceDelete();
     }
 
     /**
@@ -984,8 +989,41 @@ class LayoutRepository implements LayoutRepositoryInterface
      */
     public function deleteBySourceIdentifier(string $sourceIdentifier): int
     {
+        $query = TemplateLayout::withTrashed()->where('source_identifier', $sourceIdentifier);
+        $this->deleteVersionsOf((clone $query)->pluck('id')->all());
+
+        return $query->forceDelete();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getWithTrashedBySource(string $identifier, LayoutSourceType $sourceType): Collection
+    {
         return TemplateLayout::withTrashed()
-            ->where('source_identifier', $sourceIdentifier)
-            ->forceDelete();
+            ->where('source_type', $sourceType)
+            ->where('source_identifier', $identifier)
+            ->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getWithTrashedByTemplateId(int $templateId): Collection
+    {
+        return TemplateLayout::withTrashed()->where('template_id', $templateId)->get();
+    }
+
+    /**
+     * 레이아웃 행들의 버전 이력을 지웁니다.
+     *
+     * @param  array<int, int>  $layoutIds  레이아웃 ID 목록
+     * @return void 반환값 없음
+     */
+    private function deleteVersionsOf(array $layoutIds): void
+    {
+        foreach (array_chunk(array_values(array_filter($layoutIds)), 500) as $chunk) {
+            TemplateLayoutVersion::whereIn('layout_id', $chunk)->delete();
+        }
     }
 }

@@ -20,11 +20,13 @@ use Modules\Sirsoft\Board\Contracts\BoardDirectory;
 use Modules\Sirsoft\Board\DisplayName\BoardDisplayNames;
 use Modules\Sirsoft\Board\Fields\GuestAuthorFields;
 use Modules\Sirsoft\Board\Repositories\AttachmentRepository;
+use Modules\Sirsoft\Board\Repositories\BoardPermissionRepository;
 use Modules\Sirsoft\Board\Repositories\BoardRepository;
 use Modules\Sirsoft\Board\Repositories\BoardStatRepository;
 use Modules\Sirsoft\Board\Repositories\BoardTypeRepository;
 use Modules\Sirsoft\Board\Repositories\CommentRepository;
 use Modules\Sirsoft\Board\Repositories\Contracts\AttachmentRepositoryInterface;
+use Modules\Sirsoft\Board\Repositories\Contracts\BoardPermissionRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardStatRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardTypeRepositoryInterface;
@@ -111,6 +113,7 @@ class BoardServiceProvider extends BaseModuleServiceProvider
      */
     protected array $repositories = [
         AttachmentRepositoryInterface::class => AttachmentRepository::class,
+        BoardPermissionRepositoryInterface::class => BoardPermissionRepository::class,
         BoardRepositoryInterface::class => BoardRepository::class,
         BoardStatRepositoryInterface::class => BoardStatRepository::class,
         BoardTypeRepositoryInterface::class => BoardTypeRepository::class,

@@ -12,7 +12,11 @@ use App\Extension\HookManager;
  * `core.screen_url.filter_path` 로 주소 구조를 바꾼다(외부 화면 Next.js 등). 키 등록부는 없다.
  *
  * - 절대 주소의 베이스: `user` 범위 = 환경설정 「사용자 화면 URL」(비우면 사이트 URL), `admin` 범위 = 사이트 URL.
- *   필터가 절대 URL 을 돌려주면 그대로 쓴다.
+ *   필터가 절대 URL 을 돌려주면 그대로 쓴다. 결제·본인인증 뒤 브라우저가 돌아가는 주소, 사이트맵, 복귀 주소 출처
+ *   검사처럼 지금 요청을 받은 서버 기준의 주소는 이 베이스(`absolute()`·`toAbsolute()`·`userBase()`)다.
+ * - 메일·알림·문자에 싣는 링크는 `*ForLinks()` 변형(`absoluteForLinks()`·`toAbsoluteForLinks()`·`userLinkBase()`)을
+ *   쓴다 — 사이트 URL 자리에 `G7_PUBLIC_LINK_URL`({@see SiteUrl::forOutboundLinks()})을 쓴다. 같은 DB 를 쓰는
+ *   서버를 공개 주소와 다른 주소로 띄워도 그 서버가 보내는 링크가 공개 주소를 가리키게 하려는 것이다.
  * - 서버가 받는 주소(PG 콜백·웹훅·본인인증 브리지)는 이 헬퍼가 아니라 {@see SiteUrl} 이다 — 외부 화면 주소로
  *   콜백을 보내면 결제가 깨진다.
  * - G7 엔진 SEO 캐시 무효화처럼 G7 화면 자체의 주소가 필요한 곳은 필터를 거치지 않은 기본 경로를 쓴다.
@@ -73,11 +77,52 @@ final class ScreenUrl
      */
     public static function toAbsolute(string $pathOrUrl, string $scope = self::SCOPE_USER): string
     {
+        return self::join($pathOrUrl, $scope === self::SCOPE_ADMIN ? SiteUrl::base() : self::userBase());
+    }
+
+    /**
+     * 메일·알림·문자에 싣는 화면 절대 주소를 만듭니다.
+     *
+     * {@see self::absolute()} 와 같고 베이스만 {@see self::toAbsoluteForLinks()} 의 것이다.
+     *
+     * @param  string  $key  화면 키
+     * @param  string  $defaultPath  G7 기본 경로
+     * @param  array<string, scalar|null>  $params  자리 값
+     * @param  string  $scope  범위 (`user`|`admin`)
+     * @return string 절대 URL
+     */
+    public static function absoluteForLinks(string $key, string $defaultPath, array $params = [], string $scope = self::SCOPE_USER): string
+    {
+        return self::toAbsoluteForLinks(self::path($key, $defaultPath, $params, $scope), $scope);
+    }
+
+    /**
+     * 이미 만들어진 화면 경로(또는 절대 URL)를 메일·알림·문자 링크의 베이스로 절대화합니다.
+     *
+     * 베이스: `user` 범위 = {@see self::userLinkBase()}, `admin` 범위 = {@see SiteUrl::forOutboundLinks()}.
+     * 이 서버가 받아야 하는 주소(결제·본인인증 뒤 브라우저 복귀 등)에는 쓰지 않는다 — {@see self::toAbsolute()}.
+     *
+     * @param  string  $pathOrUrl  경로 또는 절대 URL
+     * @param  string  $scope  범위 (`user`|`admin`)
+     * @return string 절대 URL
+     */
+    public static function toAbsoluteForLinks(string $pathOrUrl, string $scope = self::SCOPE_USER): string
+    {
+        return self::join($pathOrUrl, $scope === self::SCOPE_ADMIN ? SiteUrl::forOutboundLinks() : self::userLinkBase());
+    }
+
+    /**
+     * 경로(또는 절대 URL)를 베이스에 붙입니다.
+     *
+     * @param  string  $pathOrUrl  경로 또는 절대 URL (절대 URL 은 그대로 돌려준다)
+     * @param  string  $base  끝 슬래시 없는 베이스 URL
+     * @return string 절대 URL
+     */
+    private static function join(string $pathOrUrl, string $base): string
+    {
         if (preg_match('#^https?://#i', $pathOrUrl) === 1) {
             return $pathOrUrl;
         }
-
-        $base = $scope === self::SCOPE_ADMIN ? SiteUrl::base() : self::userBase();
 
         $query = '';
         $position = strpos($pathOrUrl, '?');
@@ -100,9 +145,34 @@ final class ScreenUrl
      */
     public static function userBase(): string
     {
-        $configured = rtrim(trim((string) g7_core_settings('general.user_screen_url', '')), '/');
+        $configured = self::configuredUserScreenUrl();
 
         return $configured !== '' ? $configured : SiteUrl::base();
+    }
+
+    /**
+     * 메일·알림·문자에 싣는 회원용 링크의 베이스 URL 을 반환합니다.
+     *
+     * 환경설정 「사용자 화면 URL」 → `G7_PUBLIC_LINK_URL`(config `core.public_link_url`) → 사이트 URL 순서로
+     * 처음 정해진 값이다({@see SiteUrl::forOutboundLinks()}).
+     *
+     * @return string 끝 슬래시 없는 베이스 URL
+     */
+    public static function userLinkBase(): string
+    {
+        $configured = self::configuredUserScreenUrl();
+
+        return $configured !== '' ? $configured : SiteUrl::forOutboundLinks();
+    }
+
+    /**
+     * 환경설정 「사용자 화면 URL」 값을 반환합니다.
+     *
+     * @return string 끝 슬래시 없는 URL (비었으면 빈 문자열)
+     */
+    private static function configuredUserScreenUrl(): string
+    {
+        return rtrim(trim((string) g7_core_settings('general.user_screen_url', '')), '/');
     }
 
     /**

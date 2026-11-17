@@ -1519,11 +1519,13 @@ return [
             ],
         ],
         'shipping_carrier' => [
+            'entity_label' => '配送業者',
             'sync_start' => '配送業者の初期データ同期を開始します。',
             'created' => '配送業者を作成: :name (:code)',
             'sync_done' => '配送業者の同期完了: :created 件作成、:synced 件同期、stale :deleted 件削除、使用中 :preserved 件保持 (全 :total 件)',
         ],
         'shipping_type' => [
+            'entity_label' => '配送タイプ',
             'sync_start' => '配送タイプの初期データ同期を開始します。',
             'sync_done' => '配送タイプの同期完了: 定義 :defined 件 / DB :count 件 / stale 削除 :deleted 件 / 使用中 :preserved 件保持',
         ],
@@ -1674,6 +1676,7 @@ return [
             'created' => 'カテゴリーを作成: :name (depth: :depth)',
         ],
         'claim_reason' => [
+            'entity_label' => 'クレーム理由',
             'sync_start' => 'クレーム理由の初期データ同期を開始します。',
             'created' => 'クレーム理由を作成: :name (:code)',
             'preserved' => '使用中のため保持した理由: :count 件',

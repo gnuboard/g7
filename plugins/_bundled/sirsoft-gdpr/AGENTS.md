@@ -138,6 +138,8 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 `user_id`/IP/User-Agent 만 NULL 로 **익명화**하고 행 자체는 남깁니다(Art.17 삭제권과 Art.7(1)
 입증 의무 양립). 두 훅을 헷갈리면 탈퇴 시점에 신원이 조기 삭제되거나, 완전삭제 시점에 입증
 자료 행까지 통째로 사라집니다.
+**제거와 데이터(코어 7.2.0)**: `uninstall()` 은 데이터 보존 제거에서도 불린다 — 메뉴는 지우지 않는다. 메뉴·권한·역할·알림 정의·본인확인 정책·스케줄은 「데이터도 함께 삭제」를 고른 제거에서 코어가 지운다(운영자가 만든 자식 메뉴는 최상위로 올리고, 운영자가 고친 항목은 지우기 직전 활동 로그에 남긴다). 플러그인이 코어 행에 더한 데이터는 `uninstallData()` 에서 지운다.
+
 <!-- @intent END -->
 
 ## 4. 확장점
@@ -215,9 +217,9 @@ immutable append-only)으로 이중 기록합니다 — 지금 상태 조회와 
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 58개 | `plugins/_bundled/sirsoft-gdpr/tests` |
-| Vitest | 41개 | `vitest.config.ts` |
+| Vitest | 42개 | `vitest.config.ts` |
 | Playwright | 7개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 53개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 54개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

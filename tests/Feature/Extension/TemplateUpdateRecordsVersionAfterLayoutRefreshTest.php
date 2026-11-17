@@ -7,6 +7,7 @@ use App\Contracts\Repositories\LayoutRepositoryInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
+use App\Enums\LayoutSyncMode;
 use App\Extension\ExtensionManager;
 use App\Extension\Layout\LayoutRowSynchronizer;
 use App\Extension\TemplateManager;
@@ -95,11 +96,11 @@ class TemplateUpdateRecordsVersionAfterLayoutRefreshTest extends TestCase
              * 레이아웃을 다시 읽는 순간의 템플릿 버전·상태·업데이트 판정을 기록한 뒤 원래 갱신을 실행한다.
              *
              * @param  string  $identifier  템플릿 식별자
-             * @param  bool  $preserveModified  사용자가 고친 레이아웃 보존 여부
+             * @param  bool|LayoutSyncMode  $preserveModified  동기화 모드 (기본 keep)
              * @param  string|null  $backupPath  백업 경로
              * @return array<string, mixed> 원래 갱신 결과
              */
-            public function refreshTemplateLayouts(string $identifier, bool $preserveModified = false, ?string $backupPath = null): array
+            public function refreshTemplateLayouts(string $identifier, bool|LayoutSyncMode $preserveModified = LayoutSyncMode::Keep, ?string $backupPath = null): array
             {
                 $row = Template::where('identifier', $identifier)->firstOrFail();
                 $this->snapshot = [

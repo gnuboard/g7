@@ -28,6 +28,8 @@ return [
 
     // Action labels (last segment based)
     'action' => [
+        'force_deleted' => 'Permanently deleted (recorded)',
+        'sync_deleted' => 'Deleted by declaration sync (recorded)',
         'created' => 'Created',
         'create' => 'Created',
         'updated' => 'Updated',
@@ -131,6 +133,17 @@ return [
 
     // Description templates (used as description_key)
     'description' => [
+        'layout_force_deleted' => 'Recorded before permanent layout deletion: :name (:template, :reason)',
+        'layout_extension_force_deleted' => 'Recorded before permanent layout fragment deletion: :name (:template, :reason)',
+        'template_custom_translation_deleted' => 'Recorded before template custom translation deletion: :key',
+        'notification_definition_sync_deleted' => 'Recorded before notification definition cleanup: :key (:extension)',
+        'notification_template_sync_deleted' => 'Recorded before notification template cleanup: :key (:channel)',
+        'menu_sync_deleted' => 'Recorded before admin menu cleanup: :key (:extension)',
+        'permission_sync_deleted' => 'Recorded before permission cleanup: :key (:extension)',
+        'role_sync_deleted' => 'Recorded before role cleanup: :key (:extension)',
+        'identity_policy_sync_deleted' => 'Recorded before identity verification policy cleanup: :key (:extension)',
+        'entity_sync_deleted' => 'Recorded before :entity seed data cleanup: :key (:extension)',
+        'schedule_sync_deleted' => 'Recorded before schedule cleanup: :key (:extension)',
         // User management
         'user_index' => 'User list viewed',
         'user_create' => 'User created (ID: :user_id)',
@@ -407,5 +420,13 @@ return [
     // 확장 업데이트 레이아웃 병합 결과의 변경 내역 라벨 (#727)
     'layout_sync' => [
         'operator_modified' => 'Operator-modified',
+    ],
+    'deletion_reason' => [
+        'uninstall' => 'extension uninstalled',
+        'refresh_overwrite_removed' => 'not in the new version (overwrite refresh)',
+        'orphan_override' => 'orphan override cleanup',
+        'settings_layout_removed' => 'settings screen file removed',
+        'template_uninstall' => 'template uninstalled',
+        'declaration_removed' => 'removed from the new version declaration',
     ],
 ];

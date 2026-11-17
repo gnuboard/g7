@@ -9,6 +9,7 @@ use App\CoreUpdate\CoreUpdateRunState;
 use App\CoreUpdate\CoreUpdateStep;
 use App\CoreUpdate\CoreUpdateTimeBudget;
 use App\Execution\CommandRunnerResolver;
+use App\Extension\Integrity\PackageVerification;
 use App\Services\Core\PhpRequirementPreflight;
 use App\Services\CoreUpdateService;
 use App\Support\PhpExtensionProbe;
@@ -115,6 +116,45 @@ class CoreUpdateMaintenanceSecretTest extends TestCase
             (string) json_encode($captured, JSON_UNESCAPED_UNICODE),
             '로그 파일이 웹으로 열리는 서버에서는 그 값으로 점검 중인 사이트에 들어갈 수 있다',
         );
+    }
+
+    /**
+     * `core:update` 가 터미널에 안내하는 우회 주소가 실제로 점검 중인 사이트를 연다 — 비밀 경로 302 + 쿠키, 그 쿠키로 200.
+     *
+     * 점검 미들웨어를 바꾼 뒤로 비밀 경로가 쿠키를 발급하지 않아, 안내받은 주소로 들어가도 503 이었다(#888).
+     *
+     * @scenario request_time_limit=unlimited, secret_channel=cli_report
+     *
+     * @effects the_announced_bypass_address_opens_the_site
+     *
+     * @return void 반환값 없음
+     */
+    public function test_the_announced_bypass_address_lets_the_operator_in(): void
+    {
+        File::ensureDirectoryExists(storage_path('framework'));
+        $service = new CoreUpdateService;
+        $secret = $service->enableMaintenanceMode();
+
+        try {
+            $this->assertTrue(app()->isDownForMaintenance());
+            $this->get('/')->assertStatus(503);
+
+            // 터미널 안내(관리자 접근)가 보여 주는 값이 곧 비밀 경로다
+            $announced = (string) __('settings.core_update.console.admin_access', ['secret' => $secret]);
+            $this->assertStringContainsString($secret, $announced);
+
+            $response = $this->get('/'.$secret);
+            $response->assertRedirect('/');
+            $response->assertCookie('laravel_maintenance');
+
+            $cookie = collect($response->headers->getCookies())->first(fn ($c) => $c->getName() === 'laravel_maintenance');
+            $this->assertNotNull($cookie);
+            $this->withUnencryptedCookie('laravel_maintenance', (string) $cookie->getValue())->get('/')->assertStatus(200);
+        } finally {
+            $service->disableMaintenanceMode();
+        }
+
+        $this->assertFalse(app()->isDownForMaintenance());
     }
 
     /**
@@ -234,7 +274,7 @@ class CoreUpdateMaintenanceSecretTest extends TestCase
         $service->shouldReceive('generateFailureReport')->andReturn('report.log')->byDefault();
         // 패키지 서명 검증(7.2.0)은 이 시험의 관심사가 아니다 — 통과(미서명 확인됨)로 둔다
         $service->shouldReceive('preflightReleaseIntegrity')->byDefault();
-        $service->shouldReceive('verifyCoreZipIntegrity')->andReturn(\App\Extension\Integrity\PackageVerification::unsigned())->byDefault();
+        $service->shouldReceive('verifyCoreZipIntegrity')->andReturn(PackageVerification::unsigned())->byDefault();
         $service->shouldReceive('confirmCoreIntegrity')->andReturnUsing(fn ($verification) => $verification)->byDefault();
         $this->app->instance(CoreUpdateService::class, $service);
 

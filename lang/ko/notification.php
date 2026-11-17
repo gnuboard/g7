@@ -69,6 +69,7 @@ return [
         'related_user' => '관련 사용자(:relation)',
         'role' => '역할(:roles)',
         'specific_users' => '특정 사용자 :count명',
+        'site_admin_email' => '사이트 관리자 이메일',
         'exclude_trigger_user' => ':rule — 이벤트 유발자 제외',
         'legacy' => '정의의 기본 수신자',
     ],

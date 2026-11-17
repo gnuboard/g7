@@ -33,6 +33,7 @@ use App\Services\TrustedProxyProbe;
 use App\Support\Csp\CspPolicyBuilder;
 use App\Support\EnvPriority;
 use App\Support\FileServing\FileDelegation;
+use App\Support\RuntimeRole;
 use App\Support\SearchScopes;
 use App\Support\ThumbnailDiskOptions;
 use App\Support\TrustedProxyDiagnostic;
@@ -223,7 +224,11 @@ class SettingsController extends AdminBaseController
             $settings = $this->presentSettings($this->settingsService->getAllSettings());
 
             return $this->success('settings.fetch_success',
-                (new SettingsResource($settings))->toArray(request())
+                (new SettingsResource($settings))->toArray(request()) + [
+                    // 이 요청을 처리한 서버의 값 — 공유 설정이 아니다. 여러 서버라면 스케줄을 돌리는 서버를 확인하라는 안내에 쓴다
+                    'scheduler_enabled_on_this_server' => RuntimeRole::schedulerEnabled(),
+                    'runtime_role' => RuntimeRole::current(),
+                ]
             );
         } catch (\Exception $e) {
             return $this->error('settings.fetch_failed', 500, $e->getMessage());

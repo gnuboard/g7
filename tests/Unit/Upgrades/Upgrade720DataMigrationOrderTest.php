@@ -39,6 +39,7 @@ class Upgrade720DataMigrationOrderTest extends TestCase
             '07_BackfillNicknameNormalized',
             '08_SeedCoreFieldDefinitions',
             '09_BackfillMemberSettingsAreas',
+            '10_RemoveMaintenanceModeSetting',
         ], $names, '7.2.0 데이터 스텝 목록·순서가 바뀌었다 — 출시 뒤 동결 디렉토리다');
 
         $at = array_flip($names);

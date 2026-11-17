@@ -27,6 +27,7 @@ class UninstallTemplateCommand extends Command
     protected $signature = 'template:uninstall
         {identifier : 템플릿 식별자}
         {--force : 확인 없이 삭제}
+        {--yes : 확인 질문만 생략 (--force 의 다른 효과 없이)}
         {--delete-data : 「데이터도 삭제」를 선택한 것으로 제거 (활동 로그·제거 구독 확장에 전달)}';
 
     /**

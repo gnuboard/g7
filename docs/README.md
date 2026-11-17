@@ -9,7 +9,7 @@
 
 | 카테고리 | 문서 수 | 링크 상태 |
 |----------|---------|----------|
-| [백엔드](backend/) | 47개 | 정상 |
+| [백엔드](backend/) | 49개 | 정상 |
 | [프론트엔드](frontend/) | 50개 | 정상 |
 | [확장 시스템](extension/) | 46개 | 정상 |
 | 공통 | 22개 | 정상 |
@@ -130,7 +130,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 <!-- AUTO-GENERATED-START: docs-readme-full-list -->
 ## 카테고리별 전체 문서 목록
 
-### 백엔드 (47개)
+### 백엔드 (49개)
 
 | 문서 | 제목 |
 |------|------|
@@ -171,6 +171,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | [response-helper.md](backend/response-helper.md) | API 응답 규칙 (ResponseHelper) |
 | [reverse-proxy.md](backend/reverse-proxy.md) | 리버스 프록시 환경 (Reverse Proxy) |
 | [routing.md](backend/routing.md) | 라우트 네이밍 및 경로 |
+| [runtime-role.md](backend/runtime-role.md) | 실행 역할과 서버별 스케줄 스위치 |
 | [scheduling.md](backend/scheduling.md) | 스케줄 관리 (DB 스케줄 등록부) |
 | [search-system.md](backend/search-system.md) | Scout 검색 엔진 시스템 (Search System) |
 | [seo-system.md](backend/seo-system.md) | SEO 페이지 생성기 시스템 (SEO Page Generator) |
@@ -178,6 +179,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | [service-repository.md](backend/service-repository.md) | Service-Repository 패턴 |
 | [settings-multilingual-enrichment.md](backend/settings-multilingual-enrichment.md) | Settings 카탈로그 다국어 자동 보강 |
 | [static-asset-publishing.md](backend/static-asset-publishing.md) | 부트스트랩 리소스 정적 게시 (Static Asset Publishing) |
+| [storage-paths.md](backend/storage-paths.md) | storage 경로 분류 |
 | [translatable-seeders.md](backend/translatable-seeders.md) | 다국어 시더 인터페이스 (Translatable Seeders) |
 | [user-overrides.md](backend/user-overrides.md) | 사용자 수정 보존 (HasUserOverrides Trait) |
 | [validation.md](backend/validation.md) | 검증 (Validation) |
@@ -392,7 +394,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | `sirsoft-verification_nhnkcp` | 플러그인 | [AGENTS.md](../plugins/_bundled/sirsoft-verification_nhnkcp/AGENTS.md) | [docs/](../plugins/_bundled/sirsoft-verification_nhnkcp/docs/README.md) | 훅 0 · 라우트 2 · 모델 2 · 레이아웃 1 |
 | `gnuboard7-hello_admin_template` | 템플릿 | [AGENTS.md](../templates/_bundled/gnuboard7-hello_admin_template/AGENTS.md) | [docs/](../templates/_bundled/gnuboard7-hello_admin_template/docs/README.md) | 훅 0 · 라우트 1 · 모델 0 · 레이아웃 8 |
 | `gnuboard7-hello_user_template` | 템플릿 | [AGENTS.md](../templates/_bundled/gnuboard7-hello_user_template/AGENTS.md) | [docs/](../templates/_bundled/gnuboard7-hello_user_template/docs/README.md) | 훅 0 · 라우트 1 · 모델 0 · 레이아웃 8 |
-| `sirsoft-admin_basic` | 템플릿 | [AGENTS.md](../templates/_bundled/sirsoft-admin_basic/AGENTS.md) | [docs/](../templates/_bundled/sirsoft-admin_basic/docs/README.md) | 훅 0 · 라우트 45 · 모델 0 · 레이아웃 222 |
+| `sirsoft-admin_basic` | 템플릿 | [AGENTS.md](../templates/_bundled/sirsoft-admin_basic/AGENTS.md) | [docs/](../templates/_bundled/sirsoft-admin_basic/docs/README.md) | 훅 0 · 라우트 45 · 모델 0 · 레이아웃 223 |
 | `sirsoft-basic` | 템플릿 | [AGENTS.md](../templates/_bundled/sirsoft-basic/AGENTS.md) | [docs/](../templates/_bundled/sirsoft-basic/docs/README.md) | 훅 0 · 라우트 50 · 모델 0 · 레이아웃 201 |
 
 

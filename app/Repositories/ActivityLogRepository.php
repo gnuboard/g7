@@ -115,6 +115,11 @@ class ActivityLogRepository implements ActivityLogRepositoryInterface
             $query->where('loggable_type', $filters['loggable_type']);
         }
 
+        // 「삭제 직전 기록만 보기」 — 목록의 펼침 요약(ActivityLogResource)과 같은 판정이다
+        if (filter_var($filters['deletion_snapshot'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+            $query->deletionSnapshots();
+        }
+
         if (isset($filters['created_by'])) {
             $query->whereHas('user', function ($q) use ($filters) {
                 $q->where('uuid', $filters['created_by']);

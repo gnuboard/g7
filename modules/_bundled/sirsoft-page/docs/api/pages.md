@@ -414,6 +414,9 @@ HTTP/1.1 200
 
 
 ### DELETE /api/modules/sirsoft-page/admin/pages/{page}
+
+페이지를 영구 삭제한다(소프트 삭제 없음). 본문 미디어·첨부, 버전 이력을 페이지 행보다 먼저 명시적으로 지운다 — DB 연쇄 삭제에 기대지 않는다(#888).
+
 <!-- @generated:start:api.modules.sirsoft-page.admin.pages.destroy -->
 - **라우트명**: `api.modules.sirsoft-page.admin.pages.destroy`
 - **컨트롤러**: `Modules\Sirsoft\Page\Http\Controllers\Admin\PageController@destroy`

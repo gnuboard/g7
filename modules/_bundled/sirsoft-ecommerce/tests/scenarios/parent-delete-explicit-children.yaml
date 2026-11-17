@@ -1,0 +1,42 @@
+feature: 상위 데이터 삭제 시 하위 행 명시 삭제 (DB CASCADE 비의존) — #888
+
+description: |
+  회원·상품·상품 옵션·추가옵션·주문·카테고리를 지울 때 그에 묶인 하위 행을 서비스가 명시적으로 지운다.
+  DB 외래키의 연쇄 삭제는 안전망으로만 남긴다 — 외래키에 기대면 훅·파일·로그가 빠지고 파생값이 어긋난다.
+  시험은 외래키 검사를 끈 상태에서 삭제를 실행해, 하위 행이 하나도 남지 않는지(고아 0건)를 잰다.
+
+    - 회원 삭제(core.user.before_delete): 검색 프리셋·찜·장바구니·임시 주문·쿠폰 발급·배송지·리뷰(이미지 행·파일)·
+      이커머스 회원 프로필을 지운다. 쿠폰 발급 수량은 지워진 미취소 발급 건만큼 되돌린다. 주문 이력은 남긴다.
+    - 상품 삭제: 장바구니(선택 삭제 훅 발화)·찜·쿠폰 적용 상품 연결·리뷰(이미지 행·파일)를 지운다.
+    - 상품 옵션 동기화: 사라지는 옵션을 담은 장바구니 행을 먼저 지운다(선택 삭제 훅 발화).
+    - 추가옵션 동기화: 사라지는 추가옵션 그룹의 선택지를 그룹보다 먼저 지운다.
+    - 주문 삭제: 주문옵션을 지우기 전에 그 옵션의 리뷰를 이미지 행·파일째 지운다(개인정보 보유기간 삭제와 같은 경로).
+    - 카테고리 삭제: 쿠폰 적용 카테고리 연결을 지운다.
+
+axes:
+  case:
+    - user_delete              # 회원 완전 삭제
+    - product_delete           # 상품 삭제
+    - option_sync              # 상품 수정 중 옵션 제거
+    - additional_option_sync   # 상품 수정 중 추가옵션 그룹 제거
+    - order_delete             # 관리자 주문 삭제
+    - category_delete          # 카테고리 삭제
+
+effects:
+  - user_delete_leaves_no_owned_rows             # 회원 소유 행(프리셋·찜·장바구니·임시 주문·쿠폰 발급·배송지·리뷰·프로필) 고아 0건
+  - user_delete_keeps_order_history              # 주문 행은 남는다 (거래 기록)
+  - user_delete_releases_coupon_issued_count     # 지워진 미취소 발급 건만큼 쿠폰 발급 수량을 되돌린다
+  - user_delete_removes_review_image_files       # 리뷰 이미지 파일까지 지운다
+  - product_delete_leaves_no_child_rows          # 장바구니·찜·쿠폰 적용 상품·리뷰·리뷰 이미지 고아 0건
+  - product_delete_fires_cart_delete_hook        # 장바구니 선택 삭제 훅을 지운 행 ID 로 발화
+  - product_delete_removes_review_image_files    # 이관 후기 이미지 파일까지 지운다
+  - option_sync_removes_carts_of_removed_option  # 사라진 옵션을 담은 장바구니만 지우고 남은 옵션의 장바구니는 둔다
+  - additional_option_sync_removes_values        # 사라진 추가옵션 그룹의 선택지 고아 0건
+  - order_delete_removes_option_reviews_with_files  # 주문옵션 리뷰·이미지 행·파일 고아 0건
+  - category_delete_removes_coupon_category_links   # 쿠폰 적용 카테고리 연결 고아 0건
+
+# E2E axis 없음: 판정은 전부 서버측 삭제 경로이고 레이아웃 JSON, 컴포넌트 변경이 없다.
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Deletion/UserDeletionCleanupTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Deletion/ParentDeletionChildCleanupTest.php

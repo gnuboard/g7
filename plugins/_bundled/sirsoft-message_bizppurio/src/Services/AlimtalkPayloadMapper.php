@@ -277,9 +277,10 @@ class AlimtalkPayloadMapper
     /**
      * 버튼/링크 URL 필드를 치환하고, 프로토콜 중복을 방어합니다.
      *
-     * 코어 알림 data 의 `*_url` 계열 변수(action_url 등)는 항상 `config('app.url')` 기반의
-     * 프로토콜 포함 완전한 URL 이다(mail 채널이 href="{action_url}" 로 원문 그대로 소비하는
-     * 계약). 반면 카카오 알림톡 버튼은 `http://#{action_url}` 처럼 원문에 프로토콜 접두어를
+     * 코어 알림 data 의 `*_url` 계열 변수(action_url 등)는 프로토콜 포함 완전한 URL 이다(mail 채널이
+     * href="{action_url}" 로 원문 그대로 소비하는 계약). 베이스는 알림을 만든 쪽이 정한다 — 회원용 화면은
+     * 「사용자 화면 URL」, 그 밖은 밖으로 나가는 링크의 주소(`G7_PUBLIC_LINK_URL`, 비면 사이트 주소)이고,
+     * 문자·알림톡은 그 값을 다시 만들지 않고 그대로 싣는다. 반면 카카오 알림톡 버튼은 `http://#{action_url}` 처럼 원문에 프로토콜 접두어를
      * 직접 붙여 등록되는 경우가 있어, 단순 문자열 치환 시 `http://https://…` 형태로 프로토콜이
      * 중복될 수 있다.
      *

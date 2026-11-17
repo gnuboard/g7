@@ -208,6 +208,8 @@ MySQL 은 DDL 을 롤백하지 않으므로 한 파일이 컬럼 → 인덱스 �
 |---|---|---|
 | `AttachmentRepository` | 구현 | 게시판 첨부파일 Repository 구현체 |
 | `AttachmentRepositoryInterface` | 인터페이스 | 게시판 첨부파일 Repository 인터페이스 |
+| `BoardPermissionRepository` | 구현 | 게시판 동적 권한 Repository 구현체 |
+| `BoardPermissionRepositoryInterface` | 인터페이스 | 게시판 동적 권한 Repository 인터페이스 |
 | `BoardRepository` | 구현 | 게시판 Repository |
 | `BoardRepositoryInterface` | 인터페이스 | 게시판 Repository 인터페이스 |
 | `BoardStatRepository` | 구현 | 게시판 일별 집계 Repository |

@@ -30,6 +30,23 @@ final class SiteUrl
     }
 
     /**
+     * 메일·알림처럼 밖으로 나가는 링크의 베이스 주소(끝 슬래시 제거)를 반환합니다.
+     *
+     * `G7_PUBLIC_LINK_URL`(config `core.public_link_url`)을 정했으면 그 값, 비었으면 사이트 주소다.
+     * 같은 DB 를 쓰는 서버를 공개 주소와 다른 주소로 띄울 때 그 서버가 보내는 메일·알림의 링크가
+     * 공개 주소를 가리키게 한다. 결제·본인인증·소셜 로그인 콜백, 웹훅, 정식 주소 이동처럼 **이 서버가
+     * 받아야 하는 주소**는 이 메서드가 아니라 {@see self::base()}·{@see self::absolute()} 다.
+     *
+     * @return string 링크 베이스 주소 (예: `https://example.com`). 둘 다 비면 빈 문자열
+     */
+    public static function forOutboundLinks(): string
+    {
+        $public = rtrim(trim((string) config('core.public_link_url', '')), '/');
+
+        return $public !== '' ? $public : self::base();
+    }
+
+    /**
      * 경로를 사이트 주소 기준 절대 URL 로 바꿉니다.
      *
      * `url()` 과 같은 모양을 낸다 — 이미 완전한 URL(`https://`·`//`·`mailto:` 등)은 그대로 두고,

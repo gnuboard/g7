@@ -686,20 +686,20 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
             ->name('api.admin.language-packs.manifest-preview');
         Route::post('install-from-file', [AdminLanguagePackController::class, 'installFromFile'])
             ->middleware('permission:admin,core.language_packs.install')
-            ->name('api.admin.language-packs.install-from-file');
+            ->middleware('deny.stage')->name('api.admin.language-packs.install-from-file');
         Route::post('install-from-github', [AdminLanguagePackController::class, 'installFromGithub'])
             ->middleware('permission:admin,core.language_packs.install')
-            ->name('api.admin.language-packs.install-from-github');
+            ->middleware('deny.stage')->name('api.admin.language-packs.install-from-github');
         Route::post('install-from-url', [AdminLanguagePackController::class, 'installFromUrl'])
             ->middleware('permission:admin,core.language_packs.install')
-            ->name('api.admin.language-packs.install-from-url');
+            ->middleware('deny.stage')->name('api.admin.language-packs.install-from-url');
         Route::post('install-from-bundled', [AdminLanguagePackController::class, 'installFromBundled'])
             ->middleware('permission:admin,core.language_packs.install')
-            ->name('api.admin.language-packs.install-from-bundled');
+            ->middleware('deny.stage')->name('api.admin.language-packs.install-from-bundled');
         // 요구사항 #7: 호스트 확장 재활성화 시 cascade 비활성화됐던 언어팩 일괄 활성화
         Route::post('bulk-activate', [AdminLanguagePackController::class, 'bulkActivate'])
             ->middleware('permission:admin,core.language_packs.manage')
-            ->name('api.admin.language-packs.bulk-activate');
+            ->middleware('deny.stage')->name('api.admin.language-packs.bulk-activate');
         // 미설치 번들 행은 DB id 가 없으므로 정수/문자열(번들 식별자) 모두 수용
         Route::get('{id}', [AdminLanguagePackController::class, 'show'])
             ->where('id', '[A-Za-z0-9_\-]+')
@@ -712,19 +712,19 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('{id}/activate', [AdminLanguagePackController::class, 'activate'])
             ->whereNumber('id')
             ->middleware('permission:admin,core.language_packs.manage')
-            ->name('api.admin.language-packs.activate');
+            ->middleware('deny.stage')->name('api.admin.language-packs.activate');
         Route::post('{id}/deactivate', [AdminLanguagePackController::class, 'deactivate'])
             ->whereNumber('id')
             ->middleware('permission:admin,core.language_packs.manage')
-            ->name('api.admin.language-packs.deactivate');
+            ->middleware('deny.stage')->name('api.admin.language-packs.deactivate');
         Route::post('{id}/update', [AdminLanguagePackController::class, 'performUpdate'])
             ->whereNumber('id')
             ->middleware('permission:admin,core.language_packs.update')
-            ->name('api.admin.language-packs.update');
+            ->middleware('deny.stage')->name('api.admin.language-packs.update');
         Route::delete('{id}', [AdminLanguagePackController::class, 'uninstall'])
             ->whereNumber('id')
             ->middleware('permission:admin,core.language_packs.manage')
-            ->name('api.admin.language-packs.uninstall');
+            ->middleware('deny.stage')->name('api.admin.language-packs.uninstall');
     });
 
     // 모듈 관리
@@ -738,17 +738,19 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('{identifier}/license', [AdminModuleController::class, 'license'])->middleware('permission:admin,core.modules.read')->name('api.admin.modules.license');
         Route::get('{moduleName}/uninstall-info', [AdminModuleController::class, 'uninstallInfo'])->middleware('permission:admin,core.modules.uninstall')->name('api.admin.modules.uninstall-info');
         Route::get('{moduleName}/install-preview', [AdminModuleController::class, 'installPreview'])->middleware('permission:admin,core.modules.install')->name('api.admin.modules.install-preview');
-        Route::post('install', [AdminModuleController::class, 'install'])->middleware('permission:admin,core.modules.install')->name('api.admin.modules.install');
-        Route::post('install-from-file', [AdminModuleController::class, 'installFromFile'])->middleware('permission:admin,core.modules.install')->name('api.admin.modules.install-from-file');
+        Route::post('install', [AdminModuleController::class, 'install'])->middleware('permission:admin,core.modules.install')->middleware('deny.stage')->name('api.admin.modules.install');
+        Route::post('install-from-file', [AdminModuleController::class, 'installFromFile'])->middleware('permission:admin,core.modules.install')->middleware('deny.stage')->name('api.admin.modules.install-from-file');
         Route::post('manifest-preview', [AdminModuleController::class, 'manifestPreview'])->middleware('permission:admin,core.modules.install')->name('api.admin.modules.manifest-preview');
-        Route::post('install-from-github', [AdminModuleController::class, 'installFromGithub'])->middleware('permission:admin,core.modules.install')->name('api.admin.modules.install-from-github');
-        Route::post('activate', [AdminModuleController::class, 'activate'])->middleware('permission:admin,core.modules.activate')->name('api.admin.modules.activate');
-        Route::post('deactivate', [AdminModuleController::class, 'deactivate'])->middleware('permission:admin,core.modules.activate')->name('api.admin.modules.deactivate');
+        Route::post('install-from-github', [AdminModuleController::class, 'installFromGithub'])->middleware('permission:admin,core.modules.install')->middleware('deny.stage')->name('api.admin.modules.install-from-github');
+        Route::post('activate', [AdminModuleController::class, 'activate'])->middleware('permission:admin,core.modules.activate')->middleware('deny.stage')->name('api.admin.modules.activate');
+        Route::post('deactivate', [AdminModuleController::class, 'deactivate'])->middleware('permission:admin,core.modules.activate')->middleware('deny.stage')->name('api.admin.modules.deactivate');
         Route::post('check-updates', [AdminModuleController::class, 'checkUpdates'])->middleware('permission:admin,core.modules.install')->name('api.admin.modules.check-updates');
         Route::get('{moduleName}/check-modified-layouts', [AdminModuleController::class, 'checkModifiedLayouts'])->middleware('permission:admin,core.modules.read')->name('api.admin.modules.check-modified-layouts');
-        Route::post('{moduleName}/update', [AdminModuleController::class, 'performUpdate'])->middleware('permission:admin,core.modules.install')->name('api.admin.modules.update');
+        Route::post('{moduleName}/update', [AdminModuleController::class, 'performUpdate'])->middleware('permission:admin,core.modules.install')->middleware('deny.stage')->name('api.admin.modules.update');
+        Route::post('{moduleName}/update/preview', [AdminModuleController::class, 'performUpdatePreview'])->middleware('permission:admin,core.modules.install')->middleware('deny.stage')->name('api.admin.modules.update.preview');
         Route::post('refresh-layouts', [AdminModuleController::class, 'refreshLayouts'])->middleware('permission:admin,core.modules.activate')->name('api.admin.modules.refresh-layouts');
-        Route::delete('uninstall', [AdminModuleController::class, 'uninstall'])->middleware('permission:admin,core.modules.uninstall')->name('api.admin.modules.uninstall');
+        Route::post('refresh-layouts/preview', [AdminModuleController::class, 'refreshLayoutsPreview'])->middleware('permission:admin,core.modules.activate')->name('api.admin.modules.refresh-layouts.preview');
+        Route::delete('uninstall', [AdminModuleController::class, 'uninstall'])->middleware('permission:admin,core.modules.uninstall')->middleware('deny.stage')->name('api.admin.modules.uninstall');
     });
 
     // 플러그인 관리
@@ -761,17 +763,19 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('{identifier}/license', [AdminPluginController::class, 'license'])->middleware('permission:admin,core.plugins.read')->name('api.admin.plugins.license');
         Route::get('{pluginName}/install-preview', [AdminPluginController::class, 'installPreview'])->middleware('permission:admin,core.plugins.install')->name('api.admin.plugins.install-preview');
         Route::get('{pluginName}/uninstall-info', [AdminPluginController::class, 'uninstallInfo'])->middleware('permission:admin,core.plugins.uninstall')->name('api.admin.plugins.uninstall-info');
-        Route::post('install', [AdminPluginController::class, 'install'])->middleware('permission:admin,core.plugins.install')->name('api.admin.plugins.install');
-        Route::post('install-from-file', [AdminPluginController::class, 'installFromFile'])->middleware('permission:admin,core.plugins.install')->name('api.admin.plugins.install-from-file');
+        Route::post('install', [AdminPluginController::class, 'install'])->middleware('permission:admin,core.plugins.install')->middleware('deny.stage')->name('api.admin.plugins.install');
+        Route::post('install-from-file', [AdminPluginController::class, 'installFromFile'])->middleware('permission:admin,core.plugins.install')->middleware('deny.stage')->name('api.admin.plugins.install-from-file');
         Route::post('manifest-preview', [AdminPluginController::class, 'manifestPreview'])->middleware('permission:admin,core.plugins.install')->name('api.admin.plugins.manifest-preview');
-        Route::post('install-from-github', [AdminPluginController::class, 'installFromGithub'])->middleware('permission:admin,core.plugins.install')->name('api.admin.plugins.install-from-github');
-        Route::post('activate', [AdminPluginController::class, 'activate'])->middleware('permission:admin,core.plugins.activate')->name('api.admin.plugins.activate');
-        Route::post('deactivate', [AdminPluginController::class, 'deactivate'])->middleware('permission:admin,core.plugins.activate')->name('api.admin.plugins.deactivate');
+        Route::post('install-from-github', [AdminPluginController::class, 'installFromGithub'])->middleware('permission:admin,core.plugins.install')->middleware('deny.stage')->name('api.admin.plugins.install-from-github');
+        Route::post('activate', [AdminPluginController::class, 'activate'])->middleware('permission:admin,core.plugins.activate')->middleware('deny.stage')->name('api.admin.plugins.activate');
+        Route::post('deactivate', [AdminPluginController::class, 'deactivate'])->middleware('permission:admin,core.plugins.activate')->middleware('deny.stage')->name('api.admin.plugins.deactivate');
         Route::post('check-updates', [AdminPluginController::class, 'checkUpdates'])->middleware('permission:admin,core.plugins.install')->name('api.admin.plugins.check-updates');
         Route::get('{pluginName}/check-modified-layouts', [AdminPluginController::class, 'checkModifiedLayouts'])->middleware('permission:admin,core.plugins.read')->name('api.admin.plugins.check-modified-layouts');
-        Route::post('{pluginName}/update', [AdminPluginController::class, 'performUpdate'])->middleware('permission:admin,core.plugins.install')->name('api.admin.plugins.update');
+        Route::post('{pluginName}/update', [AdminPluginController::class, 'performUpdate'])->middleware('permission:admin,core.plugins.install')->middleware('deny.stage')->name('api.admin.plugins.update');
+        Route::post('{pluginName}/update/preview', [AdminPluginController::class, 'performUpdatePreview'])->middleware('permission:admin,core.plugins.install')->middleware('deny.stage')->name('api.admin.plugins.update.preview');
         Route::post('refresh-layouts', [AdminPluginController::class, 'refreshLayouts'])->middleware('permission:admin,core.plugins.activate')->name('api.admin.plugins.refresh-layouts');
-        Route::delete('uninstall', [AdminPluginController::class, 'uninstall'])->middleware('permission:admin,core.plugins.uninstall')->name('api.admin.plugins.uninstall');
+        Route::post('refresh-layouts/preview', [AdminPluginController::class, 'refreshLayoutsPreview'])->middleware('permission:admin,core.plugins.activate')->name('api.admin.plugins.refresh-layouts.preview');
+        Route::delete('uninstall', [AdminPluginController::class, 'uninstall'])->middleware('permission:admin,core.plugins.uninstall')->middleware('deny.stage')->name('api.admin.plugins.uninstall');
 
         // 플러그인 설정
         Route::get('{identifier}/settings', [AdminPluginSettingsController::class, 'show'])->middleware('permission:admin,core.plugins.read')->name('api.admin.plugins.settings.show');
@@ -794,11 +798,11 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
             ->where('type', 'module|plugin|template|language_pack')
             ->middleware('permission:admin,core.{type}s.read')
             ->name('api.admin.extensions.unplaced-bundled.dismiss');
-        // 복구·닫기는 그 확장 종류의 활성화 권한(core.{type}s.activate)을 요구한다.
+        // 복구·닫기는 그 확장 종류의 활성화 권한(core.{type}s.activate)을 요구한다. 복구는 확장을 다시 켜므로 검수 서버에서는 막는다(deny.stage).
         Route::post('{type}/{identifier}/recover', [AdminExtensionRecoveryController::class, 'recover'])
             ->where('type', 'plugin|module|template')
             ->middleware('permission:admin,core.{type}s.activate')
-            ->name('api.admin.extensions.recover');
+            ->middleware('deny.stage')->name('api.admin.extensions.recover');
         Route::post('{type}/{identifier}/dismiss', [AdminExtensionRecoveryController::class, 'dismiss'])
             ->where('type', 'plugin|module|template')
             ->middleware('permission:admin,core.{type}s.activate')
@@ -969,13 +973,13 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
             ->name('api.admin.core-update.status');
         Route::post('start', [AdminCoreUpdateController::class, 'start'])
             ->middleware('permission:admin,core.system.update')
-            ->name('api.admin.core-update.start');
+            ->middleware('deny.stage')->name('api.admin.core-update.start');
         Route::post('advance', [AdminCoreUpdateController::class, 'advance'])
             ->middleware('permission:admin,core.system.update')
-            ->name('api.admin.core-update.advance');
+            ->middleware('deny.stage')->name('api.admin.core-update.advance');
         Route::post('dismiss', [AdminCoreUpdateController::class, 'dismiss'])
             ->middleware('permission:admin,core.system.update')
-            ->name('api.admin.core-update.dismiss');
+            ->middleware('deny.stage')->name('api.admin.core-update.dismiss');
     });
 
     // 메뉴 관리
@@ -1101,7 +1105,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('stats', [AdminSeoCacheController::class, 'stats'])->middleware('permission:admin,core.settings.read')->name('api.admin.seo.stats');
         Route::post('clear-cache', [AdminSeoCacheController::class, 'clearCache'])->middleware('permission:admin,core.settings.update')->name('api.admin.seo.clear-cache');
         Route::post('warmup', [AdminSeoCacheController::class, 'warmup'])->middleware('permission:admin,core.settings.update')->name('api.admin.seo.warmup');
-        Route::post('sitemap/regenerate', [AdminSeoCacheController::class, 'regenerateSitemap'])->middleware('permission:admin,core.settings.update')->name('api.admin.seo.sitemap.regenerate');
+        Route::post('sitemap/regenerate', [AdminSeoCacheController::class, 'regenerateSitemap'])->middleware('permission:admin,core.settings.update')->middleware('deny.stage:sitemap')->name('api.admin.seo.sitemap.regenerate');
         Route::get('sitemap/status', [AdminSeoCacheController::class, 'sitemapStatus'])->middleware('permission:admin,core.settings.read')->name('api.admin.seo.sitemap.status');
         Route::get('cached-urls', [AdminSeoCacheController::class, 'cachedUrls'])->middleware('permission:admin,core.settings.read')->name('api.admin.seo.cached-urls');
     });
@@ -1213,13 +1217,14 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::get('/', [AdminTemplateController::class, 'index'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.index');
         Route::get('{templateName}', [AdminTemplateController::class, 'show'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.show');
         Route::get('{templateName}/install-preview', [AdminTemplateController::class, 'installPreview'])->middleware('permission:admin,core.templates.install')->name('api.admin.templates.install-preview');
-        Route::post('install', [AdminTemplateController::class, 'install'])->middleware('permission:admin,core.templates.install')->name('api.admin.templates.install');
-        Route::post('install-from-file', [AdminTemplateController::class, 'installFromFile'])->middleware('permission:admin,core.templates.install')->name('api.admin.templates.install-from-file');
+        Route::post('install', [AdminTemplateController::class, 'install'])->middleware('permission:admin,core.templates.install')->middleware('deny.stage')->name('api.admin.templates.install');
+        Route::post('install-from-file', [AdminTemplateController::class, 'installFromFile'])->middleware('permission:admin,core.templates.install')->middleware('deny.stage')->name('api.admin.templates.install-from-file');
         Route::post('manifest-preview', [AdminTemplateController::class, 'manifestPreview'])->middleware('permission:admin,core.templates.install')->name('api.admin.templates.manifest-preview');
-        Route::post('install-from-github', [AdminTemplateController::class, 'installFromGithub'])->middleware('permission:admin,core.templates.install')->name('api.admin.templates.install-from-github');
-        Route::post('activate', [AdminTemplateController::class, 'activate'])->middleware('permission:admin,core.templates.activate')->name('api.admin.templates.activate');
-        Route::post('deactivate', [AdminTemplateController::class, 'deactivate'])->middleware('permission:admin,core.templates.activate')->name('api.admin.templates.deactivate');
+        Route::post('install-from-github', [AdminTemplateController::class, 'installFromGithub'])->middleware('permission:admin,core.templates.install')->middleware('deny.stage')->name('api.admin.templates.install-from-github');
+        Route::post('activate', [AdminTemplateController::class, 'activate'])->middleware('permission:admin,core.templates.activate')->middleware('deny.stage')->name('api.admin.templates.activate');
+        Route::post('deactivate', [AdminTemplateController::class, 'deactivate'])->middleware('permission:admin,core.templates.activate')->middleware('deny.stage')->name('api.admin.templates.deactivate');
         Route::post('refresh-layouts', [AdminTemplateController::class, 'refreshLayouts'])->middleware('permission:admin,core.templates.activate')->name('api.admin.templates.refresh-layouts');
+        Route::post('refresh-layouts/preview', [AdminTemplateController::class, 'refreshLayoutsPreview'])->middleware('permission:admin,core.templates.activate')->name('api.admin.templates.refresh-layouts.preview');
         Route::post('check-updates', [AdminTemplateController::class, 'checkUpdates'])->middleware('permission:admin,core.templates.install')->name('api.admin.templates.check-updates');
         Route::get('{identifier}/changelog', [AdminTemplateController::class, 'changelog'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.changelog');
         Route::get('{identifier}/license', [AdminTemplateController::class, 'license'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.license');
@@ -1230,9 +1235,10 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('{identifier}/settings/reset', [AdminTemplateSettingsController::class, 'reset'])->middleware('permission:admin,core.templates.settings')->name('api.admin.templates.settings.reset');
         Route::get('{identifier}/settings/layout', [AdminTemplateSettingsController::class, 'layout'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.settings.layout');
         Route::get('{templateName}/check-modified-layouts', [AdminTemplateController::class, 'checkModifiedLayouts'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.check-modified-layouts');
-        Route::post('{templateName}/update', [AdminTemplateController::class, 'performUpdate'])->middleware('permission:admin,core.templates.install')->name('api.admin.templates.update');
+        Route::post('{templateName}/update', [AdminTemplateController::class, 'performUpdate'])->middleware('permission:admin,core.templates.install')->middleware('deny.stage')->name('api.admin.templates.update');
+        Route::post('{templateName}/update/preview', [AdminTemplateController::class, 'performUpdatePreview'])->middleware('permission:admin,core.templates.install')->middleware('deny.stage')->name('api.admin.templates.update.preview');
         Route::get('{templateName}/uninstall-info', [AdminTemplateController::class, 'uninstallInfo'])->middleware('permission:admin,core.templates.uninstall')->name('api.admin.templates.uninstall-info');
-        Route::delete('uninstall', [AdminTemplateController::class, 'uninstall'])->middleware('permission:admin,core.templates.uninstall')->name('api.admin.templates.uninstall');
+        Route::delete('uninstall', [AdminTemplateController::class, 'uninstall'])->middleware('permission:admin,core.templates.uninstall')->middleware('deny.stage')->name('api.admin.templates.uninstall');
 
         // 레이아웃 관리
         Route::get('{templateName}/layouts', [AdminLayoutController::class, 'index'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layouts.index');

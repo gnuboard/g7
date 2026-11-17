@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Database\Seeders;
 use App\Concerns\Seeder\HasTranslatableSeeder;
 use App\Contracts\Seeder\TranslatableSeederInterface;
 use App\Extension\Helpers\GenericEntitySyncHelper;
+use App\Support\LocalizedValue;
 use Illuminate\Database\Seeder;
 use Modules\Sirsoft\Ecommerce\Models\ShippingCarrier;
 use Modules\Sirsoft\Ecommerce\Services\ShippingCarrierService;
@@ -192,12 +193,15 @@ class ShippingCarrierSeeder extends Seeder implements TranslatableSeederInterfac
             ->pluck('code')
             ->all();
 
-        // 정리 대상은 시더가 만든 행(created_by IS NULL)뿐이다 — 운영자가 만든 미사용 택배사는 남긴다(#727 W7).
+        // 정리 대상은 시더가 만든 행(created_by IS NULL)뿐이다 — 운영자가 만든 미사용 택배사는 남긴다(#727).
         $deleted = $helper->cleanupStale(
             ShippingCarrier::class,
             ['created_by' => null],
             'code',
             [...$codes, ...$inUseCodes],
+            // 운영자가 고친 시드 행을 지우기 직전 남기는 활동 로그의 항목 이름 — 클래스 이름 대신, 로그를 볼 때의 언어로 나온다
+            entityLabel: LocalizedValue::translateAll(fn () => __('sirsoft-ecommerce::messages.seeders.shipping_carrier.entity_label')),
+            ownerIdentifier: 'sirsoft-ecommerce',
         );
 
         $preserved = count($inUseCodes);

@@ -8,7 +8,7 @@ use App\Contracts\Extension\ModuleInterface;
 use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Extension\UpgradeStepInterface;
 use App\DisplayName\Contracts\DisplayNameKindInterface;
-use App\Extension\Cache\ModuleCacheDriver;
+use App\Extension\Cache\CacheDriverFactory;
 use App\Extension\Exceptions\UpgradeStepClassMissingException;
 use App\Extension\Helpers\ExtensionScheduleSyncHelper;
 use App\Extension\Helpers\FieldDefinitionSyncHelper;
@@ -1789,10 +1789,7 @@ abstract class AbstractModule implements CacheableExtensionInterface, ModuleInte
     public function getCache(): CacheInterface
     {
         if ($this->cache === null) {
-            $this->cache = new ModuleCacheDriver(
-                $this->getIdentifier(),
-                $this->getCacheStore()
-            );
+            $this->cache = CacheDriverFactory::extension('module', $this->getIdentifier(), null, $this->getCacheStore());
         }
 
         return $this->cache;

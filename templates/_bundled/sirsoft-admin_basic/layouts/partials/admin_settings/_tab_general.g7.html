@@ -50,6 +50,8 @@
           </label>
           <input type="email" name="general.admin_email" placeholder="admin@example.com" disabled="{{_computed.isReadOnly}}" class="input {{_local.errors?.['general.admin_email'] ? 'input-error' : ''}}"/>
           <span data-if="{{_local.errors?.['general.admin_email']}}" class="form-error">{{_local.errors?.['general.admin_email']?.[0] ?? ''}}</span>
+          <!-- 이 주소의 쓰임새 — 알림 템플릿 받는 사람 「사이트 관리자 이메일」 규칙이 여기로 메일을 보낸다(#888). -->
+          <p data-ref="admin_email_desc" class="text-tertiary mt-1">$t:admin.settings.general.admin_email_desc</p>
         </div>
         <div data-ref="field_site_logo">
           <label class="form-label">$t:admin.settings.general.site_logo</label>

@@ -37,4 +37,15 @@ interface InicisChallengeMappingRepositoryInterface
      * @return InicisChallengeMapping|null
      */
     public function findByChallengeId(string $challengeId): ?InicisChallengeMapping;
+
+    /**
+     * 주어진 challenge_id 들에 이어진 매핑 행을 모두 삭제한다.
+     *
+     * 코어가 보관주기 경과 로그를 지우기 직전(`core.identity_logs.before_purge`)에 그 배치의 로그 ID 로 부른다 —
+     * 외래키 연쇄 삭제에 기대지 않고 이 플러그인이 자기 행을 명시적으로 지운다.
+     *
+     * @param  array<int, string>  $challengeIds  코어 IdentityVerificationLog UUID 목록
+     * @return int 삭제된 행 수
+     */
+    public function deleteByChallengeIds(array $challengeIds): int;
 }

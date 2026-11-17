@@ -3,6 +3,7 @@
 namespace App\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Support\RuntimeRole;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 
@@ -149,6 +150,11 @@ class ExtensionUpdateQueueListener implements HookListenerInterface
      */
     private function restartQueue(string $identifier, string $event): void
     {
+        // 검수 서버의 재시작 신호는 공유 캐시를 거쳐 운영 서버 워커까지 재시작시킨다
+        if (RuntimeRole::isStage()) {
+            return;
+        }
+
         try {
             Artisan::call('queue:restart');
 

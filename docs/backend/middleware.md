@@ -79,6 +79,17 @@ api 그룹 전체에 `EnsureActiveUser` 가 붙어 인증된 회원의 상태(�
 - 확장 라우트에 상태 검사 미들웨어를 따로 붙이지 않는다. 비활성 회원이 꼭 써야 하는 경로(가입 후 본인인증 등)만 표식 `allow.inactive_user` 를
   붙인다(코어는 `api.identity.*` 하나). 자세한 규칙은 [authentication.md](authentication.md#외부-인증-확장점-720) 공통 규칙.
 
+### HTTPS 강제 이동 (7.2.0)
+
+관리자 환경설정 > 보안의 「HTTPS 강제 적용」(`security.force_https`)이 켜져 있으면 `ForceHttps` 가 http 요청을 같은 호스트·경로·쿼리의
+https 주소로 보낸다(#888). GET·HEAD 는 301, 그 밖의 메서드는 308(메서드·본문 유지)이다.
+
+- web·api 그룹 **맨 앞**에 있다 — `prependToGroup` 은 나중에 부른 것이 앞에 놓이므로 확장 before_core 게이트 등록 뒤에 부른다.
+  점검 모드(`MaintenanceModePage`)·신뢰 프록시·신뢰 Host 는 전역이라 이보다 먼저 판정된다.
+- https 판정은 `$request->secure()` 다. 리버스 프록시·CDN 뒤에서는 `TRUSTED_PROXIES` 를 적어야 `X-Forwarded-Proto: https` 가
+  인정된다 — 적지 않으면 이동이 끝없이 반복된다. 잠겼을 때는 `php artisan settings:set security.force_https false` 로 끈다.
+- 콘솔 실행 안의 내부 요청(큐·스케줄)과 설치기(`public/install`, Laravel 밖)는 대상이 아니다.
+
 ---
 
 ## 미들웨어 등록 방식

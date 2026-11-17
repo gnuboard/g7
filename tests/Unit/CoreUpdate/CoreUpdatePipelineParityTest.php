@@ -62,6 +62,12 @@ class CoreUpdatePipelineParityTest extends TestCase
         'extractZipToPending' => '웹은 extractArchiveChunk() — 같은 SafeArchiveExtractor 안전 해제를 항목 순번 커서로 나눈다',
         'restoreOwnership' => '웹은 restoreOwnershipChunk() — restoreOwnership() 은 같은 함수를 멈춤 없이 부르는 래퍼',
         'getLastPermissionWarnings' => '웹은 restoreOwnershipChunk() 결과의 warnings 를 읽는다 — 요청을 넘어 진행분에 실려 온다',
+
+        // 명령줄 부모가 자식 프로세스를 못 띄웠을 때의 분기와 운영자 재개 명령. 웹은 단계마다 러너로 돌리고
+        // 스폰 실패 모드를 스스로 fallback 으로 고정한다(forceSpawnFailureFallback()) — 다음 요청이 곧 새 프로세스라
+        // 운영자에게 셸 재개 명령을 안내할 일이 없다.
+        'spawnFailureMode' => '명령줄 자식 스폰 실패 분기 전용 — 웹은 forceSpawnFailureFallback() 으로 fallback 고정',
+        'resumeCommand' => '명령줄 수동 재개 안내 전용 — 웹은 다음 요청이 이어 받는다(continueAfterHandoff())',
     ];
 
     /**

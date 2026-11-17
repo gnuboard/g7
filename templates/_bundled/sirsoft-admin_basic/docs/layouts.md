@@ -5,14 +5,14 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 222개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 223개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
 | `(root)` | 42개 |
 | `auth` | 1개 |
 | `errors` | 7개 |
-| `partials` | 172개 |
+| `partials` | 173개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -71,6 +71,7 @@
 | `_modal_lifecycle_warnings` | `partials` | partial | - |
 | `_modal_notification_delete_all_confirm` | `partials` | partial | - |
 | `_package_integrity_notice` | `partials` | partial | - |
+| `_layout_sync_preview` | `partials` | partial | - |
 | `_partial_datagrid` | `partials` | partial | - |
 | `_partial_filter` | `partials` | partial | - |
 | `_modal_purge_all` | `partials` | partial | - |
@@ -838,6 +839,7 @@ _admin_base.g7.html (베이스 레이아웃)
 │   ├── partials/_identity_challenge_modal.g7.html (2단계 인증 재확인 모달)
 │   ├── partials/_package_integrity_notice.g7.html (패키지 서명 확인 결과·미서명 경고 패널 — 모듈·플러그인·템플릿 설치·업데이트 창과 언어팩 설치·업데이트 창이 공유, 닫히면 결과 전역값을 지움)
 │   ├── partials/_modal_lifecycle_warnings.g7.html (확장 설치·활성화·업데이트 부분 실패 경고 결과 창 — 대시보드·모듈·플러그인·언어팩·환경설정 공유)
+│   ├── partials/_shared/_layout_sync_preview.g7.html (화면별 처리 미리보기 — 모듈·플러그인·템플릿 목록의 레이아웃 갱신·업데이트 창 공용. 처리 방식(수정 유지·모두 교체)과 화면별 결정을 고르고, 판정은 서버 미리보기 API 결과를 그대로 그린다)
 │   └── partials/_modal_notification_delete_all_confirm.g7.html
 │
 ├── 에러 페이지

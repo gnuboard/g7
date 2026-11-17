@@ -4,10 +4,13 @@ namespace App\Listeners;
 
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\HookListenerInterface;
+use App\Contracts\Extension\ModuleManagerInterface;
+use App\Contracts\Extension\PluginManagerInterface;
+use App\Contracts\Extension\TemplateManagerInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
-use App\Extension\Cache\CoreCacheDriver;
+use App\Extension\Cache\CacheDriverFactory;
 use App\Extension\CoreVersionChecker;
 use App\Helpers\TimezoneHelper;
 use App\Services\ExtensionCompatibilityAlertService;
@@ -61,6 +64,7 @@ class ExtensionCompatibilityAlertListener implements HookListenerInterface
      * 훅 이벤트 처리 (기본 핸들러).
      *
      * @param  mixed  ...$args  훅에서 전달된 인수들
+     * @return void 반환값 없음
      */
     public function handle(...$args): void
     {
@@ -130,7 +134,7 @@ class ExtensionCompatibilityAlertListener implements HookListenerInterface
                     ]),
                     'extension_type' => rtrim($type, 's'),
                     'identifier' => $entry['identifier'],
-                    'recover_endpoint' => "/api/admin/extensions/".rtrim($type, 's')."/{$entry['identifier']}/recover",
+                    'recover_endpoint' => '/api/admin/extensions/'.rtrim($type, 's')."/{$entry['identifier']}/recover",
                     'time' => $entry['deactivated_at']
                         ? TimezoneHelper::toUserCarbon(Carbon::parse($entry['deactivated_at']))?->diffForHumans()
                         : null,
@@ -220,14 +224,15 @@ class ExtensionCompatibilityAlertListener implements HookListenerInterface
      *
      * @param  string  $singularType  module|plugin|template
      * @param  string  $identifier  확장 식별자
+     * @return bool hidden 확장이면 true
      */
     protected function isHiddenExtension(string $singularType, string $identifier): bool
     {
         try {
             $manager = match ($singularType) {
-                'plugin' => app(\App\Contracts\Extension\PluginManagerInterface::class),
-                'module' => app(\App\Contracts\Extension\ModuleManagerInterface::class),
-                'template' => app(\App\Contracts\Extension\TemplateManagerInterface::class),
+                'plugin' => app(PluginManagerInterface::class),
+                'module' => app(ModuleManagerInterface::class),
+                'template' => app(TemplateManagerInterface::class),
                 default => null,
             };
 
@@ -257,13 +262,15 @@ class ExtensionCompatibilityAlertListener implements HookListenerInterface
 
     /**
      * CacheInterface 인스턴스를 lazy 조회합니다 (재호환 캐시 읽기 전용).
+     *
+     * @return CacheInterface 캐시 인스턴스
      */
     private static function resolveCache(): CacheInterface
     {
         try {
             return app(CacheInterface::class);
         } catch (\Throwable $e) {
-            return new CoreCacheDriver(config('cache.default', 'array'));
+            return CacheDriverFactory::core();
         }
     }
 }

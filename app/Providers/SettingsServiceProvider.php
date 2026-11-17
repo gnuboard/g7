@@ -9,6 +9,7 @@ use App\Support\ExtensionSettingsMirror;
 use App\Support\FileServing\FileDelegation;
 use App\Support\LocalizedValue;
 use App\Support\OutboundProxy;
+use App\Support\RuntimeRole;
 use App\Support\TrustedProxySetting;
 use App\Support\WorkerSettingsRefresher;
 use App\Thumbnails\ThumbnailConfig;
@@ -440,6 +441,11 @@ class SettingsServiceProvider extends ServiceProvider
         // 큐 드라이버 설정
         if (! $isTestingEnv && ! empty($driverSettings['queue_driver'])) {
             Config::set('queue.default', $driverSettings['queue_driver']);
+        }
+
+        // 검수 서버는 공유 큐에 잡을 넣지 않는다 — 운영 서버 워커가 검수 서버 코드 기준의 잡을 받게 된다. 공유 설정보다 우선
+        if (RuntimeRole::isStage()) {
+            Config::set('queue.default', 'sync');
         }
 
         // Redis 설정 (캐시, 세션, 큐에서 공통 사용)

@@ -288,6 +288,18 @@ return [
         'meta_key_missing' => '파일 서빙 메타에 필수 키가 없습니다: :key',
     ],
 
+    // 업그레이드 스텝 실행 대장 — 같은 DB 를 쓰는 다른 실행이 같은 스텝을 선점함 (콘솔·웹 업데이트 공통)
+    'upgrade_step_already_running' => '같은 업그레이드 스텝을 다른 실행이 진행 중입니다(:target :version :step) — 같은 DB 를 쓰는 다른 서버의 업데이트가 끝난 뒤 다시 실행하세요. 그 실행이 비정상 종료됐다면 업데이트를 --force 로 다시 실행하세요(시작한 지 :hours시간이 지난 실행 중 표시는 다음 실행이 자동으로 회수합니다).',
+
+    // 미뤄 둔 선언형 정리 — 대장 행의 정리 메서드가 허용 목록에 없음
+    'deferred_cleanup_helper_not_allowed' => '허용 목록에 없는 정리 메서드라 실행하지 않았습니다: :helper',
+    'deferred_cleanup_core_resync_failed' => '코어 선언 재동기화의 한 단계가 실패해 정리를 마치지 않았습니다(행을 남깁니다): :message',
+    'deferred_cleanup_seeder_failed' => '시드 정리 시더가 실패했습니다: :seeder (종료 코드 :code)',
+    'deferred_cleanup_target_not_allowed' => '실행할 수 없는 정리 대상이라 실행하지 않았습니다(확장이 선언하지 않은 시더이거나 알 수 없는 범위): :target',
+
+    // 실행 역할(stage/live)과 맞지 않는 레이아웃 테이블 쓰기
+    'stage_layout_write' => '실행 역할과 맞지 않는 레이아웃 테이블에 쓰려 했습니다: :table',
+
     'seo' => [
         'sitemap_write_failed' => 'Sitemap 파일 기록에 실패했습니다: :path',
         'sitemap_gzip_failed' => 'Sitemap 자식 파일 압축에 실패했습니다: :file',

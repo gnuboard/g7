@@ -1,0 +1,31 @@
+feature: 코어 업데이트의 미완료·결과 없음을 종료 코드로 드러낸다 (비대화형 실행)
+
+description: |
+  #888. 비대화형 실행(cron·스크립트)은 화면 문구가 아니라 종료 코드로 성공을 판단한다.
+  - `core:update` 가 업그레이드 스텝 핸드오프(새 프로세스 재진입 요청)로 멈추면 정리·재개 안내는 그대로 두고 종료 코드
+    75(`UpgradeHandoffException::EXIT_CODE`, 재개 필요)로 끝낸다. 단독 `core:execute-upgrade-steps` 와 같은 값이다. 종전에는 0.
+  - 번들 일괄 업데이트 자식(`core:execute-bundled-updates`)이 정상 종료(0)했는데 결과 줄(`[BUNDLED-RESULT]`)이 없으면 실패
+    1건 + 경고로 센다. 자식은 대상이 0건이어도 결과 줄을 늘 내므로 정상 0건은 실패로 잡히지 않는다.
+  - 회귀: 정상 종료 0, 번들 확장 실패 1, 비정상 종료 + 결과 없음 실패 1.
+  웹 코어 업데이트는 `core:update` 를 부르지 않고 `[HANDOFF]` 줄로 재개를 판정하므로 영향이 없다.
+
+# 축 의미:
+#   case — 종료 상황(핸드오프·정상·번들 실패·자식 결과 줄 유무·대상 0건).
+axes:
+  case:
+    - handoff_exit_code
+    - handoff_catch_contract
+    - normal_and_bundled_failure
+    - child_exit_zero_without_result
+    - child_result_regression
+    - zero_target_child_prints_result
+
+effects:
+  - core_update_handoff_returns_resume_exit_code
+  - core_update_normal_and_bundled_failure_exit_codes_unchanged
+  - bundled_child_without_result_counts_as_failure
+  - bundled_child_always_prints_result_line
+
+test_files:
+  - tests/Feature/Console/CoreUpdateHandoffExitCodeTest.php
+  - tests/Feature/Console/BundledSpawnNoResultTest.php

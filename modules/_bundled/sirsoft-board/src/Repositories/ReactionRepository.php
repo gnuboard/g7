@@ -34,6 +34,11 @@ class ReactionRepository implements ReactionRepositoryInterface
     use PaginatesWithDeferredJoin;
 
     /**
+     * 여러 대상 반응 카운트 재집계에서 한 번에 잠그고 세는 대상 수
+     */
+    private const RECALCULATE_CHUNK_SIZE = 1000;
+
+    /**
      * {@inheritDoc}
      */
     public function findByUserAndTarget(int $userId, string $targetType, int $targetId): ?Reaction
@@ -136,6 +141,61 @@ class ReactionRepository implements ReactionRepositoryInterface
         $target->save();
 
         return $counts;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function recalculateReactionCountsForTargets(string $targetType, array $targetIds): int
+    {
+        $targetIds = array_values(array_unique(array_map('intval', $targetIds)));
+        $recalculated = 0;
+
+        // 한 회원의 반응 대상은 그 회원의 반응 행위 수에 묶이지만 오래 활동한 회원은 수천 건이 될 수 있다 —
+        // 대상 잠금·집계 쿼리의 바인딩 수를 묶음 크기로 제한한다.
+        foreach (array_chunk($targetIds, self::RECALCULATE_CHUNK_SIZE) as $chunkIds) {
+            $query = $targetType === ReactionService::TARGET_COMMENT ? Comment::query() : Post::query();
+
+            // 대상을 ID 순으로 한 번에 잠근다 — 하드 삭제된 대상은 결과에 없어 자연히 건너뛴다
+            /** @var EloquentCollection<int, Post|Comment> $targets */
+            $targets = $query->withTrashed()
+                ->whereIn('id', $chunkIds)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get();
+
+            if ($targets->isEmpty()) {
+                continue;
+            }
+
+            /** @var array<int, array<string, int>> $actualByTarget 대상 ID → (유형 ID 문자열 → 건수) */
+            $actualByTarget = [];
+            Reaction::query()
+                ->where('target_type', $targetType)
+                ->whereIn('target_id', $targets->modelKeys())
+                ->selectRaw('target_id, reaction_type_id, COUNT(*) as total')
+                ->groupBy('target_id', 'reaction_type_id')
+                ->orderBy('target_id')
+                ->orderBy('reaction_type_id')
+                ->toBase()
+                ->get()
+                ->each(function ($row) use (&$actualByTarget) {
+                    $actualByTarget[(int) $row->target_id][(string) $row->reaction_type_id] = (int) $row->total;
+                });
+
+            foreach ($targets as $target) {
+                // recalculateReactionCounts() 와 같은 병합 — 등장했던 유형 키는 0 으로 남기고 실제 건수가 우선한다
+                $zeroed = array_fill_keys(array_keys($target->reaction_counts ?? []), 0);
+
+                $target->reaction_counts = ($actualByTarget[$target->getKey()] ?? []) + $zeroed;
+                $target->timestamps = false;
+                $target->save();
+
+                $recalculated++;
+            }
+        }
+
+        return $recalculated;
     }
 
     /**
@@ -407,6 +467,27 @@ class ReactionRepository implements ReactionRepositoryInterface
         }
 
         Reaction::query()->whereIn('id', $reactions->pluck('id')->all())->delete();
+
+        return $reactions;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function deleteByUser(int $userId): EloquentCollection
+    {
+        $reactions = Reaction::query()
+            ->where('user_id', $userId)
+            ->get(['id', 'user_id', 'target_type', 'target_id', 'reaction_type_id', 'board_id']);
+
+        if ($reactions->isEmpty()) {
+            return $reactions;
+        }
+
+        // 읽은 행만 지운다 — 조회 뒤에 생긴 행까지 지우면 반환 목록에 없어 카운트 재집계에서 빠진다
+        foreach ($reactions->pluck('id')->chunk(1000) as $ids) {
+            Reaction::query()->whereIn('id', $ids->all())->delete();
+        }
 
         return $reactions;
     }

@@ -16,6 +16,12 @@
 
 ---
 
+## 검수 서버(실행 역할 stage)에서의 응답
+
+`.env` 의 `G7_RUNTIME_ROLE=stage` 로 띄운 검수 서버에서는 설치·켜기/끄기·업데이트(업데이트 미리보기 포함 — GitHub 새 판을 내려받는다)·호환성 복구·제거처럼 확장을 바꾸는 요청이 **409** `{"success": false, "message": "검수 서버(실행 역할 stage)에서는 이 작업을 할 수 없습니다 — …"}` 로 거절됩니다(언어팩·코어 업데이트도 같음). 목록·상세·업데이트 확인·레이아웃 갱신(미리보기 포함)은 그대로 동작합니다. 자세한 내용은 [실행 역할](../runtime-role.md)을 봅니다.
+
+---
+
 
 ### GET /api/admin/modules
 <!-- @generated:start:api.admin.modules.index -->
@@ -332,6 +338,8 @@ _단건 응답: `data` 객체의 필드._
 | details[].current_version | string | `1.0.0` | 현재 설치된 버전 |
 | details[].latest_version | string | `1.0.1` | 감지된 최신 버전 |
 | details[].update_source | string | `github` | 업데이트 감지 출처 (`github` \| `bundled`) |
+| checked_count | integer | `5` | 확인한 모듈 수 |
+| failures | array | `[]` | GitHub 조회에 실패한 모듈 — 각 원소 `identifier`·`reason`(실패 사유). 실패한 모듈의 업데이트 정보는 「없음」으로 덮지 않고 그대로 둔다 |
 
 **응답 예시**
 
@@ -1116,6 +1124,8 @@ _단건 응답: `data` 객체의 필드._
 | --- | --- | --- | --- | --- | --- |
 | module_name | body | string | 예 | max 255 | module 이름 (식별자) |
 | layout_source | body | string | 아니오 | `auto`, `json` | 레이아웃 설치 소스 — 이 요청 동안만 적용 (auto: `.g7.html` 우선, json: 짝 `.json` 이 있으면 원본 JSON 으로 등록 — 문제 해결용). 생략하면 설정 `LAYOUT_INSTALL_SOURCE` 를 따른다 |
+| layout_strategy | body | string | 아니오 | `keep`, `overwrite` | 레이아웃 처리 방식 — 기본 `keep`(편집기로 고친 화면은 고친 부분을 지키고 손대지 않은 부분만 새 판으로). `overwrite` 는 파일 판으로 덮는다(덮기 전 운영자 판은 편집기 버전 이력에 남는다) |
+| decisions | body | object | 아니오 | 값 `take-theirs`·`keep-ours` | 화면별 결정 — 키는 미리보기 응답 `entries[].key`(레이아웃 `layout:{템플릿}:{이름}`, 조각 `extension:{템플릿}:{출처}:{조각 키}`). `take-theirs` 는 그 화면만 새 판으로 덮고, `keep-ours` 는 운영자 판을 통째로 둔다 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.module.refresh_layouts_validation_rules`).
 
@@ -1165,6 +1175,8 @@ _단건 응답: `data` 는 갱신된 모듈의 `ModuleResource` 객체 (목록 �
 | incompatible_required_version | string\|null | `null` | 요구 코어 버전 미충족 시 필요한 버전 |
 | abilities | object | `{"can_install":true,"can_activate":true,"can_uninstall":true}` | 현재 사용자가 수행 가능한 작업 불리언 맵 |
 | layout_warnings | array | `[]` | 7.0 JSON 레이아웃의 깨진 조각 참조를 빈 자리로 등록한 경고 목록. 각 항목: `file`(조각을 참조한 레이아웃 파일), `partial`(참조 경로), `reason`(`include_file_not_found`·`invalid_include_json`·`circular_include`), `message`(현재 로케일 문구). 없으면 빈 배열이며, 관리자 화면은 1건 이상이면 경고 알림을 띄운다 |
+| layout_preview | object | — | 판정별 결과 (7.2.0) — `strategy`, `entries[]`(`key`·`kind`·`template`·`name`·`verdict`·`applied`·`conflicts`·`will_delete`), `summary`(판정 → 화면 수), `has_conflicts`, `conflict_screens`. 미리보기 응답과 같은 모양이다 |
+| layout_sync | object | — | 운영자가 고친 화면만 모은 보고 (확장 업데이트 응답과 같은 모양) |
 | warnings | array | — | 부분 실패 경고 목록 (7.1.3+) — 작업은 성공으로 끝났지만 일부 항목(레이아웃 등록·시더 재실행·정리 단계 등)이 실패한 경우에만 실린다. 각 항목: `step`(실패한 단계), `target`(대상 — 파일명·확장 식별자·시더 클래스 등), `message`(사유, 현재 로케일). 경고가 없으면 키 자체가 없다. 관리자 화면은 노란 결과 창으로 보인다 |
 
 **응답 예시**
@@ -1216,6 +1228,76 @@ _단건 응답: `data` 는 갱신된 모듈의 `ModuleResource` 객체 (목록 �
 
 
 **설명** 모듈의 레이아웃 파일을 파일에서 다시 읽어 DB 에 동기화합니다. `core.modules.activate` 권한이 필요합니다. 파일에서 변경된 레이아웃은 갱신되고 삭제된 레이아웃은 DB 에서도 제거되며, 갱신된 모듈 정보를 반환합니다. 모듈의 `_bundled` 레이아웃 JSON 을 수정한 뒤 재빌드 없이 반영할 때 사용합니다.
+
+
+**레이아웃 처리 방식(7.2.0)** 전략을 생략하면 keep 이다 — 편집기로 고친 화면은 고친 부분을 지키고, 새 판에서 빠진 화면이라도 운영자가 고쳤으면 남긴다. 파일 판으로 덮으려면 `layout_strategy=overwrite` 를 보낸다. 관리자 [레이아웃 갱신] 창은 먼저 아래 미리보기를 부르고, 운영자가 고른 처리 방식·화면별 결정을 이 요청에 싣는다.
+
+
+### POST /api/admin/modules/refresh-layouts/preview
+<!-- @generated:start:api.admin.modules.refresh-layouts.preview -->
+- **라우트명**: `api.admin.modules.refresh-layouts.preview`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\ModuleController@refreshLayoutsPreview`
+- **인증/권한**: `auth:sanctum` + `permission:core.modules.activate`
+
+**요청 파라미터**
+
+`POST /api/admin/modules/refresh-layouts` 와 같다 (`module_name`·`layout_source`·`layout_strategy`·`decisions`).
+
+**요청 예시**
+
+```http
+POST /api/admin/modules/refresh-layouts/preview HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "module_name": "sirsoft-board",
+    "layout_strategy": "keep"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| strategy | string | `keep` | 계산에 쓴 처리 방식 |
+| entries | array | — | 화면·조각마다 한 항목 — `key`(화면별 결정 키), `kind`(`layout`·`extension`), `template`, `name`, `verdict`, `applied`(새 판을 반영한 단위), `conflicts`(운영자 수정과 겹쳐 운영자 판을 남긴 단위), `will_delete` |
+| summary | object | `{"merged":1,"unchanged":12,...}` | 판정 → 화면 수 (`created`·`updated`·`unchanged`·`took_theirs`·`kept`·`merged`·`conflict`·`kept_no_base`·`kept_invalid`·`kept_removed`·`kept_deleted_by_operator`·`kept_name_collision`·`deleted`) |
+| has_conflicts | boolean | `false` | 운영자 수정과 겹친 화면이 있는지 |
+| conflict_screens | array | `[]` | 겹친 화면 이름 목록 (`템플릿 · 화면`) |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "레이아웃 갱신 미리보기를 만들었습니다.",
+    "data": {
+        "strategy": "keep",
+        "entries": [
+            {"key": "layout:sirsoft-board:home", "kind": "layout", "template": "sirsoft-board", "name": "home", "verdict": "merged", "applied": [{"unit": "partials/home/_banner", "kind": "partial"}], "conflicts": [], "will_delete": false}
+        ],
+        "summary": {"merged": 1},
+        "has_conflicts": false,
+        "conflict_screens": []
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.activate`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터 검증 실패(알 수 없는 처리 방식·결정 값), 또는 모듈를 찾을 수 없거나 비활성 |
+| 500 | Internal Server Error | 판정 계산 중 예외 |
+
+<!-- @generated:end -->
+
+**설명** 레이아웃 갱신을 실제로 하지 않고, 같은 코드로 화면마다 어떻게 바뀔지만 계산합니다. DB·캐시는 바뀌지 않습니다. 같은 입력이면 이 응답의 `entries` 와 실제 갱신 응답의 `layout_preview.entries` 가 같습니다.
 
 
 ### DELETE /api/admin/modules/uninstall
@@ -2020,6 +2102,8 @@ _단건 응답: `data` 객체의 필드._
 | layout_source | body | string | 아니오 | `auto`, `json` | 레이아웃 설치 소스 — 이 요청 동안만 적용 (auto: `.g7.html` 우선, json: 짝 `.json` 이 있으면 원본 JSON 으로 등록 — 문제 해결용). 생략하면 설정 `LAYOUT_INSTALL_SOURCE` 를 따른다 |
 | allow_unsigned | body | boolean | 아니오 | — | 미서명·검증 불가 패키지를 확인하고 계속 (7.2.0). 409 `package_unsigned` 경고 창의 「미서명으로 계속」이 같은 요청을 `1` 로 다시 보낸다. 「미서명 패키지 차단」이 켜져 있으면 무시 |
 | integrity_aware | body | boolean | 아니오 | — | 패키지 서명 확인을 아는 관리자 화면의 표식 (7.2.0). 7.2.0 관리자 화면은 늘 `1` 을 보낸다. 이 칸이 없는 요청은 「미서명으로 계속」을 보여 줄 수 없는 옛 관리자 화면(7.1.x 템플릿을 복사해 쓰는 화면)으로 보고, 미서명·검증 불가 패키지를 확인 없이 진행한다(서버 경고 로그, 설치 행 `integrity_status=unsigned`). 「미서명 패키지 차단」·서명 불일치·신뢰하지 않는 키는 이 칸과 관계없이 거절한다 |
+| pending_token | body | string | 아니오 | 영숫자 40자 | 업데이트 미리보기가 GitHub 에서 내려받은 새 판을 다시 쓰는 토큰 (`…/update/preview` 응답의 `pending_token`, 1시간 유효). 미리보기로 본 파일을 그대로 적용한다 |
+| decisions | body | object | 아니오 | 값 `take-theirs`·`keep-ours` | 화면별 결정 — 미리보기 응답 `layouts.entries[].key` 기준 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.module.perform_update_validation_rules`).
 
@@ -2130,6 +2214,85 @@ _단건 응답: `data` 는 업데이트된 모듈의 `ModuleResource` 객체 (�
 
 **패키지 서명(7.2.0)** GitHub 출처는 그 판의 태그 릴리스 자산 짝으로 풀기 전에 검증하고, 짝이 없으면 ZIP 을 받기 전에 409 를 낸다(같은 요청을 `allow_unsigned=1` 로 다시 보내면 계속). 번들 출처(`_bundled`)는 코어 배포본 서명이 덮으므로 검증하지 않고 `bundled` 로 기록한다. 서명 불일치·신뢰하지 않는 키는 422 로 멈추며 백업 전에 끝나 설치본을 건드리지 않는다. 상세: [패키지 서명](../../extension/package-signing.md)
 
+
+### POST /api/admin/modules/{moduleName}/update/preview
+<!-- @generated:start:api.admin.modules.update.preview -->
+- **라우트명**: `api.admin.modules.update.preview`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\ModuleController@performUpdatePreview`
+- **인증/권한**: `auth:sanctum` + `permission:core.modules.install`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| moduleName | path | string | 예 | — | 모듈 식별자 |
+| layout_strategy | body | string | 아니오 | `keep`, `overwrite` | 판정에 쓸 처리 방식 (기본 `keep` — 창이 기본으로 보여 주는 값) |
+| decisions | body | object | 아니오 | 값 `take-theirs`·`keep-ours` | 화면별 결정 |
+| layout_source | body | string | 아니오 | `auto`, `json` | 레이아웃 설치 소스 |
+
+**요청 예시**
+
+```http
+POST /api/admin/modules/sirsoft-board/update/preview HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+Content-Type: application/json
+
+{
+    "layout_strategy": "keep"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| type | string | `module` | 확장 종류 |
+| identifier | string | `sirsoft-board` | 식별자 |
+| update_available | boolean | `true` | 적용할 업데이트가 있는지 (없으면 나머지는 비어 있다) |
+| update_source | string\|null | `bundled` | 새 판 출처 (`bundled`·`github`) |
+| from_version | string\|null | `1.0.0` | 지금 판 |
+| to_version | string\|null | `1.1.0` | 새 판 |
+| pending_token | string\|null | `null` | GitHub 소스면 내려받은 새 판(`_pending`)의 토큰 — 이어지는 업데이트 요청의 `pending_token` 으로 넘기면 다시 내려받지 않는다 (1시간 유효, 한 번만 쓴다) |
+| layouts_skipped | string\|null | `null` | `inactive` — 꺼 둔 확장은 업데이트 때 레이아웃을 갱신하지 않으므로 판정 목록이 비어 있다 |
+| layouts | object | — | 레이아웃 판정 — `refresh-layouts/preview` 응답과 같은 모양(새 판 파일 기준, 지금 활성 디렉토리를 병합 기준으로 쓴다) |
+| declarative_deletions | array | `[]` | 이 업데이트로 지워질 선언 항목 — 각 원소 `type`(`notification_definition`·`notification_template`·`menu`·`permission`·`role`·`identity_policy`·`schedule`)·`key`·`has_operator_overrides`(운영자 수정본이면 지우기 직전 활동 로그에 기록된다). `notification_template` 의 key 는 `{알림 type}:{발송 수단}` 이다 |
+| check_error | string\|null | `null` | GitHub 조회 실패 사유 — 조회에 실패하면 `update_available=false` 와 함께 사유가 실린다(「업데이트 없음」과 구분) |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "업데이트 미리보기를 만들었습니다.",
+    "data": {
+        "type": "module",
+        "identifier": "sirsoft-board",
+        "update_available": true,
+        "update_source": "bundled",
+        "from_version": "1.0.0",
+        "to_version": "1.1.0",
+        "pending_token": null,
+        "layouts_skipped": null,
+        "layouts": {"strategy": "keep", "entries": [], "summary": {}, "has_conflicts": false, "conflict_screens": []},
+        "declarative_deletions": []
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`core.modules.install`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터 검증 실패 |
+| 500 | Internal Server Error | 설치되지 않은 모듈, 새 판을 내려받지 못함 등 (`extensions.update_preview.failed`) |
+
+<!-- @generated:end -->
+
+**설명** 업데이트를 하지 않고, 새 판으로 바꾸면 화면마다 어떻게 되는지와 지워질 선언 항목을 계산합니다. DB·활성 파일은 바뀌지 않습니다. CLI `module:update {id} --dry-run --json` 이 같은 서비스를 부르므로 결과가 같습니다.
 
 ### GET /api/modules/assets/{identifier}
 <!-- @generated:start:api.public.modules.assets.extensionless -->

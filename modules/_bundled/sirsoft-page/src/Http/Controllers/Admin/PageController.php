@@ -159,7 +159,7 @@ class PageController extends AdminBaseController
     }
 
     /**
-     * 페이지를 삭제합니다 (소프트 삭제).
+     * 페이지를 영구 삭제합니다 (소프트 삭제 없음).
      *
      * @param  int  $id  페이지 ID
      * @return JsonResponse 삭제 결과 응답

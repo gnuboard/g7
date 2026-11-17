@@ -28,6 +28,8 @@ return [
 
     // 액션 라벨 (마지막 세그먼트 기준)
     'action' => [
+        'force_deleted' => '영구 삭제 (직전 기록)',
+        'sync_deleted' => '선언 정리로 삭제 (직전 기록)',
         'created' => '생성',
         'create' => '생성',
         'updated' => '수정',
@@ -133,6 +135,17 @@ return [
 
     // 설명 템플릿 (description_key로 사용)
     'description' => [
+        'layout_force_deleted' => '레이아웃 영구 삭제 직전 기록: :name (:template, :reason)',
+        'layout_extension_force_deleted' => '레이아웃 확장 조각 영구 삭제 직전 기록: :name (:template, :reason)',
+        'template_custom_translation_deleted' => '템플릿 커스텀 번역 삭제 직전 기록: :key',
+        'notification_definition_sync_deleted' => '알림 정의 선언 정리 직전 기록: :key (:extension)',
+        'notification_template_sync_deleted' => '알림 템플릿 선언 정리 직전 기록: :key (:channel)',
+        'menu_sync_deleted' => '관리자 메뉴 선언 정리 직전 기록: :key (:extension)',
+        'permission_sync_deleted' => '권한 선언 정리 직전 기록: :key (:extension)',
+        'role_sync_deleted' => '역할 선언 정리 직전 기록: :key (:extension)',
+        'identity_policy_sync_deleted' => '본인확인 정책 선언 정리 직전 기록: :key (:extension)',
+        'entity_sync_deleted' => ':entity 기본 데이터 선언 정리 직전 기록: :key (:extension)',
+        'schedule_sync_deleted' => '스케줄 선언 정리 직전 기록: :key (:extension)',
         // 사용자 관리
         'user_index' => '사용자 목록 조회',
         'user_create' => '사용자 생성 (ID: :user_id)',
@@ -409,5 +422,13 @@ return [
     // 확장 업데이트 레이아웃 병합 결과의 변경 내역 라벨 (#727)
     'layout_sync' => [
         'operator_modified' => '운영자 수정본',
+    ],
+    'deletion_reason' => [
+        'uninstall' => '확장 제거',
+        'refresh_overwrite_removed' => '덮어쓰기 갱신에서 새 판에 없음',
+        'orphan_override' => '고아 오버라이드 정리',
+        'settings_layout_removed' => '설정 화면 파일이 빠짐',
+        'template_uninstall' => '템플릿 제거',
+        'declaration_removed' => '새 판 선언에서 빠짐',
     ],
 ];

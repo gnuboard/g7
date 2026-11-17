@@ -123,4 +123,22 @@ interface CouponIssueRepositoryInterface
      * @return \Illuminate\Database\Eloquent\Collection
      */
     public function findByIds(array $ids): \Illuminate\Database\Eloquent\Collection;
+
+    /**
+     * 회원의 발급 건 가운데 회원 삭제 때 발급 수량에서 되돌릴(쓰지 않은) 건수를 쿠폰별로 셉니다 (회원 삭제 정리용).
+     *
+     * 발급 취소(`cancelled`)는 이미 쿠폰의 발급 수량에서 빠졌고, 사용(`used`)한 발급은 한정 수량을 실제로 소진했으므로 세지 않는다.
+     *
+     * @param  int  $userId  회원 ID
+     * @return array<int, int> 쿠폰 ID => 건수
+     */
+    public function countIssuedByCouponForUser(int $userId): array;
+
+    /**
+     * 회원의 쿠폰 발급 내역을 모두 삭제합니다 (회원 삭제 정리용).
+     *
+     * @param  int  $userId  회원 ID
+     * @return int 삭제된 행 수
+     */
+    public function deleteByUserId(int $userId): int;
 }
