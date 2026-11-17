@@ -40,8 +40,9 @@
 
         {{-- 확장 CSS 의미 클래스 칸 — 템플릿 CSS 링크 **뒤**에 선언한다. 템플릿의 층 규칙(예: Tailwind 초기화)보다
              위, 층 없는 규칙(확장 유틸리티·템플릿 층 없는 CSS·템플릿 확장 CSS 덮기 파일)보다 아래에 놓인다.
-             앞에 두면 템플릿 초기화(`*{margin:0}` 등)가 확장 의미 클래스를 이긴다. --}}
-        <style>@layer g7-extension;</style>
+             앞에 두면 템플릿 초기화(`*{margin:0}` 등)가 확장 의미 클래스를 이긴다.
+             순서 선언은 코어 정적 파일(g7-layers.css)로 싣는다 — 인라인 `<style>` 은 엄격한 스타일 정책에서 막힌다(#163). --}}
+        @include('partials.core-styles', ['sheet' => 'layers'])
     </head>
     <body>
         <!-- React 렌더링 루트 -->

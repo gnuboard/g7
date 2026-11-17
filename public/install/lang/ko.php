@@ -445,6 +445,7 @@ return [
     'log_finalize_env_merged' => '[finalize-env] .env 머지 완료 (권한 변경 없음, 기존 권한 보존): path=:path, perms=:perms, owner_uid=:owner, group_gid=:group, process_euser=:euser',
     'log_finalize_env_runtime_delete_failed' => '[finalize-env] runtime.php 삭제 실패: path=:path, last_error=:error. 파일이 남아 있어 임시 자격증명이 평문으로 보존됩니다 — 직접 지워 주세요.',
     'log_finalize_env_runtime_removed' => '[finalize-env] runtime.php 삭제 완료',
+    'log_finalize_env_runtime_neutralized' => '[finalize-env] runtime.php 를 지우지 못해 내용을 비움: path=:path, last_error=:error. 파일을 직접 지워 주세요.',
     'log_finalize_env_config_cache_delete_failed' => '[finalize-env] 설정 캐시 삭제 실패: path=:path, last_error=:error. 설치 이전 값이 남아 있으므로 이 파일을 직접 지우거나 `php artisan config:clear` 를 실행해 주세요.',
     'log_finalize_env_config_cache_removed' => '[finalize-env] 설정 캐시 삭제 완료 (다음 요청이 .env 로 재생성)',
     'log_finalize_env_config_cache_rebuilt' => '[finalize-env] 설정 캐시 다시 생성 완료',

@@ -1317,7 +1317,6 @@ return [
         'basic_info.privacy_officer_email' => '個人情報保護責任者メール',
         'basic_info.mail_order_number' => '通信販売業通知番号',
         'basic_info.telecom_number' => '付加通信事業者番号',
-        'basic_info.footer_business_info_enabled' => 'フッターに事業者情報を表示',
         'language_currency' => '言語·通貨設定',
         'language_currency.default_currency' => 'デフォルト通貨',
         'language_currency.currencies' => '通貨リスト',

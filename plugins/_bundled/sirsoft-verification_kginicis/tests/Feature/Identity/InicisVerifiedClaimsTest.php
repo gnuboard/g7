@@ -13,10 +13,13 @@ use App\Extension\HookManager;
 use App\Extension\IdentityVerification\DTO\VerifiedClaims;
 use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Models\FieldDefinition;
+use App\Models\IdentityPolicy;
 use App\Models\IdentityVerificationLog;
 use App\Models\User;
 use App\Services\IdentityClaimsService;
+use App\Services\IdentityTokenAcceptanceService;
 use Database\Seeders\CoreFieldDefinitionSeeder;
+use Database\Seeders\IdentityPolicySeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Support\Str;
 use Plugins\Sirsoft\VerificationKginicis\Identity\InicisIdentityProvider;
@@ -133,6 +136,26 @@ class InicisVerifiedClaimsTest extends PluginTestCase
     }
 
     /**
+     * 본인인증 결과로 가입을 마치는 요청을 흉내 냅니다.
+     *
+     * 가입 요청에서는 `core.auth.before_register` 단계가 토큰을 인정(1회 소비)한 뒤에야 `after_register` 가 그 결과를
+     * 회원 기록으로 옮긴다 — 같은 요청에서 인정하지 않은 토큰은 회원에게 붙이지 않는 것이 계약이다.
+     *
+     * @param  User  $user  가입한 회원
+     * @param  IdentityVerificationLog  $log  확인을 마친 요청 행
+     * @return void 반환값 없음
+     */
+    private function completeSignup(User $user, IdentityVerificationLog $log): void
+    {
+        $this->assertNotNull(
+            app(IdentityTokenAcceptanceService::class)->accept((string) $log->verification_token, 'signup'),
+            '가입 요청이 본인인증 결과를 인정하지 못했다',
+        );
+
+        HookManager::doAction('core.auth.after_register', $user, ['verification_token' => $log->verification_token]);
+    }
+
+    /**
      * 가입 전 요청 행은 회원이 없으므로 임시 저장 값에서 인증 값을 돌려준다.
      *
      * @scenario case=pending_cache
@@ -174,7 +197,7 @@ class InicisVerifiedClaimsTest extends PluginTestCase
         $log = $this->verifiedLog(null, ['userGender' => 'F']);
         $user = User::factory()->create();
 
-        HookManager::doAction('core.auth.after_register', $user, ['verification_token' => $log->verification_token]);
+        $this->completeSignup($user, $log);
 
         $this->assertNull($this->cache->get(InicisIdentityProvider::PENDING_RECORD_CACHE_PREFIX.$log->id), '가입 뒤에도 임시 저장 값이 남았다');
         $record = $this->recordRepository->findByUserId($user->id);
@@ -315,6 +338,10 @@ class InicisVerifiedClaimsTest extends PluginTestCase
     {
         $this->seed(RolePermissionSeeder::class);
         $this->seed(CoreFieldDefinitionSeeder::class);
+        // 가입 인증 값은 가입 전 본인인증 정책이 켜진 사이트에서만 쓴다(정책이 꺼지면 채움값을 주지 않는다 — 2026-11-17 결정)
+        $this->seed(IdentityPolicySeeder::class);
+        IdentityPolicy::query()->update(['enabled' => false]);
+        IdentityPolicy::where('key', 'core.auth.signup_before_submit')->update(['enabled' => true]);
 
         // 이름은 인증 값으로 채우고 잠근다. 휴대폰은 채우기만 한다. 생년월일은 운영자 추가 항목에 연결해 잠근다.
         FieldDefinition::where('field_set', 'core.user')->where('key', 'name')->update(['idv_lock' => true]);

@@ -3046,12 +3046,11 @@
                     ]
                 },
                 {
-                    "comment": "=== 푸터 (Footer 컴포넌트) ===",
+                    "comment": "=== 푸터 (Footer 컴포넌트) — 쇼핑몰 사업자 정보는 넘기지 않는다: 쇼핑몰 모듈이 바로 아래 user_global_footer 자리에 직접 그린다(한 곳에서만 그려 두 번 나오지 않게) ===",
                     "id": "footer",
                     "type": "composite",
                     "name": "Footer",
                     "props": {
-                        "businessInfo": "{{(_global.activeModules?.includes('sirsoft-ecommerce') ?? true) && _global.modules?.['sirsoft-ecommerce']?.basic_info?.show_business_footer !== false ? (_global.modules?.['sirsoft-ecommerce']?.basic_info ?? null) : null}}",
                         "boardEnabled": "{{_global.activeModules?.includes('sirsoft-board') ?? true}}",
                         "pageEnabled": "{{_global.activeModules?.includes('sirsoft-page') ?? true}}",
                         "siteName": "{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}",

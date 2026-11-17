@@ -30,7 +30,6 @@ return [
         'confirm_redirecting' => '에스크로 구매결정 페이지로 이동 중입니다...',
         'delivery_rejected' => '배송등록에 실패했습니다.',
         'delivery_failed' => '에스크로 배송 등록 중 오류가 발생해 등록을 마치지 못했습니다. 잠시 후 다시 시도하고, 계속 실패하면 서버 로그를 확인해 주세요.',
-        'deny_confirm_already_done' => '이미 구매거절확인이 완료되었습니다.',
         'deny_confirm_rejected' => '구매거절확인에 실패했습니다.',
         'deny_confirm_failed' => '구매거절확인 중 오류가 발생해 처리를 마치지 못했습니다. 잠시 후 다시 시도하고, 계속 실패하면 서버 로그를 확인해 주세요.',
     ],

@@ -8,7 +8,6 @@
  *
  * @scenario-manifest templates/_bundled/sirsoft-basic/tests/scenarios/content-inline-style-deferral.yaml
  */
-import React from 'react';
 import { render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 // @ts-ignore - DOMPurify 타입 정의 없음

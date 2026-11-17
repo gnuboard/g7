@@ -10,6 +10,7 @@ use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Models\IdentityVerificationLog;
 use App\Models\User;
 use App\Services\AuthService;
+use App\Services\IdentityVerificationService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Cache;
@@ -257,6 +258,8 @@ class LoginVerifiedUserTest extends TestCase
         $user = $this->makeMember(['email' => $this->email('resend')]);
 
         $first = $this->service()->loginVerifiedUser($user, ['login_method' => 'social:kakao']);
+        // 메일 재발송은 공개 인증 요청과 같은 대기 시간을 지킨다(7.1.6) — 대기가 끝난 뒤 다시 받는다
+        $this->travel(IdentityVerificationService::CHALLENGE_COOLDOWN_SECONDS + 1)->seconds();
         $second = $this->service()->resendTwoFactorChallenge($first['challenge_id']);
 
         $this->assertNotSame($first['challenge_id'], $second['challenge_id']);

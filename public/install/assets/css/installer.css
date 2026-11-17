@@ -5101,7 +5101,6 @@ body {
 .u-pointer { cursor: pointer !important; }
 .u-nowrap { white-space: nowrap !important; }
 .u-transition { transition: all 0.3s ease-out !important; }
-.u-note { font-size: 0.85rem !important; opacity: 0.75 !important; }
 .u-list-compact { margin: var(--spacing-xs) 0 !important; padding-left: var(--spacing-lg) !important; }
 
 /* 유틸리티의 display 가 초기 숨김(hidden)을 이기지 않게 뒤에서 한 번 더 선언한다 */

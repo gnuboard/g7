@@ -29,16 +29,33 @@ describe('PageSkeleton — 가로 줄 컨테이너', () => {
             },
         ];
 
-        const { container } = render(
-            <PageSkeleton components={components} options={defaultOptions} />
-        );
+        // 열 폭은 실제 줄(ProductRail)과 같은 판정(productRailColumnClass)으로 엔진 폭에 맞춰 고른다 — 한 화면 2·3·4장
+        const cases: ReadonlyArray<readonly [number, string]> = [
+            [375, 'auto-cols-[calc(50%_-_8px)]'],
+            [640, 'auto-cols-[calc(33.333%_-_11px)]'],
+            [1024, 'auto-cols-[calc(25%_-_12px)]'],
+        ];
+        const savedG7Core = (window as any).G7Core;
+        try {
+            for (const [width, expected] of cases) {
+                (window as any).G7Core = { ...(savedG7Core ?? {}), useResponsive: () => ({ width }) };
+                const { container, unmount } = render(
+                    <PageSkeleton components={components} options={defaultOptions} />
+                );
 
-        const track = container.querySelector('.grid-flow-col');
-        expect(track).toBeTruthy();
-        expect(track!.className).toContain('auto-cols-[calc(50%_-_8px)]');
-        expect(track!.className).toContain('lg:auto-cols-[calc(25%_-_12px)]');
-        // iteration_count(3)만큼 카드 뼈대가 같은 줄 안에
-        expect(track!.querySelectorAll('.h-48').length).toBe(3);
+                const track = container.querySelector('.grid-flow-col');
+                expect(track).toBeTruthy();
+                const cls = track!.className.split(/\s+/);
+                expect(cls, `${width}px`).toContain(expected);
+                // 창 폭(CSS 미디어)으로 갈리는 반응형 접두를 내지 않는다
+                expect(cls.filter((c) => /^(sm|md|lg|xl|2xl):/.test(c)), `${width}px`).toEqual([]);
+                // iteration_count(3)만큼 카드 뼈대가 같은 줄 안에
+                expect(track!.querySelectorAll('.h-48').length).toBe(3);
+                unmount();
+            }
+        } finally {
+            (window as any).G7Core = savedG7Core;
+        }
     });
 
     // @scenario case=c02

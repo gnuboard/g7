@@ -284,6 +284,17 @@ class InicisLoggedInDuplicateIdentityTest extends PluginTestCase
         return new class implements InicisChallengeMappingRepositoryInterface
         {
             /**
+             * 보관주기 정리 전 매핑 삭제 — 이 시험에서는 호출되지 않는다(7.2.0 이 인터페이스에 더한 메서드).
+             *
+             * @param  array<int, string>  $challengeIds  코어 IdentityVerificationLog UUID 목록
+             * @return int 늘 0
+             */
+            public function deleteByChallengeIds(array $challengeIds): int
+            {
+                return 0;
+            }
+
+            /**
              * 매핑 생성 — 이 흐름에서는 호출되면 안 됩니다.
              *
              * @param  string  $mtxid  거래 번호

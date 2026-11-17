@@ -73,6 +73,25 @@ class IdentityPolicyService
     }
 
     /**
+     * 가입 전 본인인증 정책(`core.auth.signup_before_submit` 등 가입 라우트의 before_submit 정책)이 켜져 있는지 반환합니다.
+     *
+     * 가입 전 확인(`AssertIdentityVerifiedBeforeRegister`)·가입 검증 규칙과 같은 해석이다. 꺼져 있으면 가입 요청의 본인인증
+     * 결과를 인정하지도 쓰지도 않는다 — 인증 값 채우기·잠금 항목 덮어쓰기·가입 뒤 기록 모두 없다(7.1.6 계약, 2026-11-17 결정).
+     *
+     * @return bool 켜져 있으면 true
+     */
+    public function isSignupVerificationEnabled(): bool
+    {
+        $policy = $this->resolve(
+            scope: 'route',
+            target: 'api.auth.register',
+            context: ['signup_stage' => 'before_submit', 'http_method' => 'POST'],
+        );
+
+        return $policy !== null && (bool) $policy->enabled;
+    }
+
+    /**
      * 수단이 등록돼 있고 목적을 지원하며 지금 쓸 수 있는지 판정합니다.
      *
      * @param  string  $providerId  수단 ID

@@ -1490,7 +1490,7 @@ Content-Type: application/json
 
 | 필드 | 타입 | 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| status | string | `applied` | `applied`(인증 값을 받음) 또는 `no_claims`(토큰은 유효하지만 이 수단은 인증 값을 주지 않음) |
+| status | string | `applied` | `applied`(인증 값을 받음), `no_claims`(토큰은 유효하지만 이 수단은 인증 값을 주지 않음), `disabled`(가입 목적인데 가입 전 본인인증 정책이 꺼져 있어 토큰을 보지 않음 — 나머지 값은 비어 있음) |
 | provider_id | string\|null | `nhnkcp` | 토큰을 발급한 본인인증 수단 |
 | claims | object | `{"name":"홍길동","mobile":"01012345678"}` | 인증 값. 키는 `name`, `mobile`, `birth_date`, `gender` 와 수단이 더한 키. 값이 없는 키는 오지 않습니다 |
 | fields | object | `{"name":"홍길동","mobile":"01012345678"}` | 회원 항목 키별 채움값. 항목의 「본인인증 연결」로 매핑하고 항목 유형의 모양으로 맞춘 값입니다 |

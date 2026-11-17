@@ -530,6 +530,10 @@
                                         {
                                             "type": "basic",
                                             "name": "P",
+                                            "blur_until_loaded": {
+                                                "enabled": true,
+                                                "data_sources": "memberNicknameEmptyCount"
+                                            },
                                             "props": {
                                                 "data-testid": "member-display-name-nickname-empty-count",
                                                 "className": "text-warning-soft break-words mt-1"
@@ -539,7 +543,7 @@
                                         {
                                             "type": "basic",
                                             "name": "Label",
-                                            "if": "{{_computed.memberDisplayNamePending?.level === 'all' && memberNicknameEmptyCount?.data?.nickname?.require_existing_members !== true}}",
+                                            "if": "{{memberNicknameEmptyCount !== undefined && _computed.memberDisplayNamePending?.level === 'all' && memberNicknameEmptyCount?.data?.nickname?.require_existing_members !== true}}",
                                             "props": {
                                                 "className": "flex items-start gap-2 mt-3 text-sm text-gray-700 dark:text-gray-300"
                                             },

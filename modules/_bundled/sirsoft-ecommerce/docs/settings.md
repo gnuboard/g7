@@ -473,7 +473,7 @@ IDV 정책의 라우트명 인덱스가 그 라우트를 찾지 못해, 보호�
 | `sirsoft-board` | 모듈 | `*` |
 | `sirsoft-hero_section` | 플러그인 | `>=1.4.0` |
 | `sirsoft-message_bizppurio` | 플러그인 | `*` |
-| `sirsoft-basic` | 템플릿 | `>=1.3.5` |
+| `sirsoft-basic` | 템플릿 | `>=1.4.0` |
 <!-- @generated:dependencies END -->
 
 <!-- @intent START -->

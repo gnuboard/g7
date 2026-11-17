@@ -185,7 +185,7 @@ class AdminEscrowDeliveryController extends AdminBaseController
         $report = $request->validated('report') ?? 'I';
 
         // 잠금 안에서 다시 읽은 메타 기준 — 이미 등록된 건에 신규 등록(I)을 또 보내지 않는다 (변경 U 는 정상 경로)
-        $currentMeta = $payment->payment_meta ? json_decode($payment->payment_meta, true) : [];
+        $currentMeta = $payment->paymentMeta;
         if ($report === 'I' && ! empty($currentMeta['escrow_delivery'])) {
             return ResponseHelper::pluginError('sirsoft-pay_kginicis', 'messages.errors.escrow_delivery_already_registered', 409, [
                 'message' => [__('sirsoft-pay_kginicis::messages.errors.escrow_delivery_already_registered')],

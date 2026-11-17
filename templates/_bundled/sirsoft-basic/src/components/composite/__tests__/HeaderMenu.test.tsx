@@ -36,13 +36,13 @@ const link = (id: string, extra: Partial<HeaderMenuItem> = {}): HeaderMenuItem =
 describe('Header 메뉴 (#434)', () => {
   // @scenario case=header_menu
   // @effects header_menu_renders_tree
-  it('메뉴가 없으면 기본 메뉴 순서(홈 → 인기글 → 쇼핑 → 게시판) — 지금 헤더와 같다', () => {
+  it('메뉴가 없으면 기본 메뉴 순서(홈 → 인기글 → 쇼핑·리뷰 → 게시판) — 쇼핑 항목이 7.1.6 의 리뷰 모아보기 탭을 바로 뒤에 함께 편다', () => {
     render(<Header siteName="사이트" boards={boards} maxVisibleBoards={3} />);
 
     const nav = screen.getByTestId('header-menu-nav');
     const texts = Array.from(nav.querySelectorAll('a, button')).map((el) => el.textContent?.trim());
 
-    expect(texts.slice(0, 6)).toEqual(['nav.home', '🔥nav.popular', '🛒nav.shop', '게시판1', '게시판2', '게시판3']);
+    expect(texts.slice(0, 7)).toEqual(['nav.home', '🔥nav.popular', '🛒nav.shop', 'nav.reviews', '게시판1', '게시판2', '게시판3']);
     expect(texts).toContain('nav.more');
     expect(DEFAULT_HEADER_MENU.map((item) => item.kind)).toEqual(['home', 'popular', 'shop', 'boards']);
   });

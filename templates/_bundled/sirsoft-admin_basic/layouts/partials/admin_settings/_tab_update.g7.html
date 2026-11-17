@@ -35,7 +35,7 @@
         </ul>
         <p class="text-secondary text-xs">$t:admin.settings.core_update.preflight_blocked_hint</p>
       </div>
-      <div data-ref="core_update_idle_actions" data-if="{{!_computed.coreUpdateRun}}" class="flex flex-wrap gap-2 mb-4">
+      <div data-ref="core_update_idle_actions" data-if="{{core_update_status !== undefined &amp;&amp; (!_computed.coreUpdateRun)}}" class="flex flex-wrap gap-2 mb-4">
         <!-- 새 버전 확인 — 서버가 배포처에 묻는다. 실패 사유는 _local.coreUpdateCheckError 에 남겨 위 오류 알림이 계속 보이게 하고(토스트는 곧 사라진다), 성공하면 그 사유를 지운다. -->
         <button data-ref="core_update_check_button" type="button" class="btn btn-secondary" disabled="{{_local.checkingCoreUpdate === true}}">
           <on type="click">
@@ -212,7 +212,7 @@
       </div>
     </div>
     <!-- 접기 카드는 이 템플릿의 `.admin-card-accordion` 자산(이커머스 상품 폼 13곳과 같은 모양)을 쓴다. `Accordion` 컴포넌트를 `admin-card` 안에 넣으면 카드 안에 테두리 상자가 한 번 더 그려지고, trigger 를 직접 넘기는 순간 컴포넌트가 꺾쇠를 그리지 않아 접힌다는 신호가 사라진다(실측 2026-09-13). -->
-    <div data-ref="card_core_update_advanced" data-if="{{!_computed.coreUpdateRun}}" class="admin-card-accordion">
+    <div data-ref="card_core_update_advanced" data-if="{{core_update_status !== undefined &amp;&amp; (!_computed.coreUpdateRun)}}" class="admin-card-accordion">
       <!-- 접기 카드 머리 — 운영자가 아직 펼치거나 접지 않았으면(값 없음) 올려 둔 ZIP 이 있을 때 펼친 것으로 본다. 누르면 지금 보이는 상태의 반대를 지역 상태에 적고, 그 뒤로는 운영자 선택을 따른다. 버튼 요소라 키보드(Enter·Space)로도 펼치고 접힌다. -->
       <button data-ref="core_update_advanced_trigger" type="button" class="card-header w-full text-left" aria-expanded="{{(_local.coreUpdateAdvancedOpen ?? ((_computed.coreUpdateManualSources ?? []).length > 0)) === true}}" aria-controls="core_update_advanced_content">
         <on type="click">

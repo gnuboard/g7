@@ -500,23 +500,23 @@ html[data-header-overlay-active="dark"] .g7-site-header :is(a, button):not([clas
 /* 좁은 화면 하단 구매바(`MobileBuyBar`)·바텀시트(`BottomSheet`).
    바가 있는 동안 본문 끝(푸터 마지막 줄)이 바에 가리지 않게 본문 아래 여백을 바 높이만큼 더하고, 화면 아래 가운데에
    뜨는 알림은 바 위로 올린다. 시트가 열려 있는 동안에는 본문 스크롤을 잠그고 바를 숨긴다(시트 바닥의 단추가 대신한다).
-   두 컴포넌트가 `body` 에 남기는 표시(`g7-has-mobile-buybar`·`g7-bottom-sheet-open`)에 의존한다 — 이름을 바꾸면 함께 바꾼다. */
-@media (max-width: 767.98px) {
-  body.g7-has-mobile-buybar {
-    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
-  }
+   두 컴포넌트가 `body` 에 남기는 표시(`g7-has-mobile-buybar`·`g7-bottom-sheet-open`)에 의존한다 — 이름을 바꾸면 함께 바꾼다.
+   폭 미디어로 감싸지 않는다 — 두 컴포넌트가 엔진 폭(편집기 미리보기에서는 기기 폭)으로 좁은 화면(768px 미만)일 때만
+   표시를 남기므로, 표시가 있다는 것이 곧 좁은 화면에서 보인다는 뜻이다(css-no-width-media-semantic-class). */
+body.g7-has-mobile-buybar {
+  padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+}
 
-  body.g7-has-mobile-buybar [data-toast-position='bottom-center'] {
-    bottom: calc(5rem + env(safe-area-inset-bottom));
-  }
+body.g7-has-mobile-buybar [data-toast-position='bottom-center'] {
+  bottom: calc(5rem + env(safe-area-inset-bottom));
+}
 
-  body.g7-bottom-sheet-open {
-    overflow: hidden;
-  }
+body.g7-bottom-sheet-open {
+  overflow: hidden;
+}
 
-  body.g7-bottom-sheet-open [data-mobile-buy-bar] {
-    display: none;
-  }
+body.g7-bottom-sheet-open [data-mobile-buy-bar] {
+  display: none;
 }
 
 /* 바텀시트가 아래에서 올라오는 움직임 — 컴포넌트의 `animate-[g7-sheet-up_…]` 이 이 이름에 의존한다. */

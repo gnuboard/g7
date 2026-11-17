@@ -37,7 +37,7 @@ effects:
   - rails_have_no_legacy_button_scroll
   - related_rail_loaded_on_product_detail
   - product_datasources_send_optional_auth
-  - ecommerce_requirement_is_1_3_5
+  - ecommerce_requirement_is_1_4_0
 
 test_files:
   - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/ProductRail.test.tsx

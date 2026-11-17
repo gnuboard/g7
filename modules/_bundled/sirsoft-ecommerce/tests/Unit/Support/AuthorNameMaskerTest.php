@@ -16,7 +16,9 @@ class AuthorNameMaskerTest extends ModuleTestCase
     /**
      * 글자 수 경계마다 가림 결과가 규칙과 같다.
      *
-     * @scenario surface=masker, name_length=boundary
+     * 케이스(마커 아님 — 평문): 이름 글자 수 경계 — 긴 이름·두 글자·한 글자·빈 이름.
+     *
+     * @scenario surface=masker, masking=middle, author=short_name
      *
      * @effects name_masked_by_length_rule
      *

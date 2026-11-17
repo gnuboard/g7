@@ -13,7 +13,7 @@
       <h3 class="section-title">$t:admin.identity.policies.page_title</h3>
       <p role="status" class="text-warning-soft mt-2">$t:admin.settings.permission_required.identity_policies</p>
     </div>
-    <div data-ref="page_root" data-if="{{_computed.canReadIdentityPolicies !== false}}" class="admin-card">
+    <div data-ref="page_root" data-if="{{current_user !== undefined &amp;&amp; (_computed.canReadIdentityPolicies !== false)}}" class="admin-card">
       <div class="card-description">$t:admin.identity.policies.purposes_section_description</div>
       <div data-ref="page_header" class="flex flex-col gap-2 mb-6">
         <responsive on="768-" class="flex gap-2 flex-row items-center justify-between mb-6"/>

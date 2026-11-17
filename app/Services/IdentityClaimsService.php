@@ -34,6 +34,9 @@ use Illuminate\Support\Collection;
  *
  * 인증 값은 회원 항목 값으로만 쓰고 다른 곳에 저장하지 않는다.
  *
+ * 가입(`signup` 목적)의 인증 값은 가입 전 본인인증 정책이 켜져 있을 때만 쓴다. 꺼진 사이트는 가입 요청의 본인인증 결과를
+ * 인정하지도 쓰지도 않으므로(7.1.6 계약) 채움·덮어쓰기·가입 뒤 기록이 모두 없다(2026-11-17 결정).
+ *
  * @since 7.2.0
  */
 class IdentityClaimsService
@@ -53,6 +56,9 @@ class IdentityClaimsService
     /** 토큰 상태: 알 수 없는 토큰이다 */
     public const STATUS_INVALID = 'invalid';
 
+    /** 토큰 상태: 가입 전 본인인증 정책이 꺼져 있어 가입 인증 값을 쓰지 않는다 */
+    public const STATUS_DISABLED = 'disabled';
+
     /**
      * @param  IdentityVerificationManager  $manager  본인인증 프로바이더 등록소
      * @param  IdentityVerificationLogRepositoryInterface  $logs  본인인증 요청 행 저장소
@@ -60,6 +66,8 @@ class IdentityClaimsService
      * @param  FieldRegistry  $registry  항목 등록소
      * @param  FieldValueService  $values  항목 값 Service
      * @param  FieldRuleFactory  $rules  항목 규칙 팩토리 (인증 값이 항목 유형에 맞는지 판정)
+     * @param  IdentityTokenAcceptanceService  $tokenAcceptance  같은 요청에서 인정한 본인인증 결과 조회
+     * @param  IdentityPolicyService  $policies  본인인증 정책 Service (가입 전 정책이 켜져 있는지)
      */
     public function __construct(
         protected IdentityVerificationManager $manager,
@@ -68,12 +76,30 @@ class IdentityClaimsService
         protected FieldRegistry $registry,
         protected FieldValueService $values,
         protected FieldRuleFactory $rules,
+        protected IdentityTokenAcceptanceService $tokenAcceptance,
+        protected IdentityPolicyService $policies,
     ) {}
+
+    /**
+     * 이 목적의 인증 값을 쓸 수 있는지 반환합니다.
+     *
+     * 가입 목적은 가입 전 본인인증 정책이 켜져 있을 때만 쓴다 — 꺼진 사이트는 가입 요청의 본인인증 결과를 인정하지도 쓰지도 않는다.
+     * 다른 목적(로그인 회원의 재인증 등)은 정책과 무관하다.
+     *
+     * @param  string  $purpose  본인인증 목적
+     * @return bool 쓸 수 있으면 true
+     */
+    public function claimsUsableFor(string $purpose): bool
+    {
+        return $purpose !== 'signup' || $this->policies->isSignupVerificationEnabled();
+    }
 
     /**
      * 유효한 본인인증 토큰이 가리키는 인증 값을 반환합니다.
      *
-     * 확인을 마쳤고 만료되지 않았으며 아직 쓰지 않은 토큰만 받는다.
+     * 확인을 마쳤고 만료되지 않았으며 아직 쓰지 않은 토큰, 또는 이 요청이 이미 인정(1회 소비)한 토큰만 받는다.
+     * 가입 정책이 켜져 있으면 정책 미들웨어가 요청 앞단에서 토큰을 인정해 소비하므로(7.1.6), 같은 요청의 가입
+     * 덮어쓰기(`signupOverrides()`)는 그 인정 결과를 읽어야 한다 — 다른 요청이 쓴 결과는 여전히 받지 않는다.
      *
      * @param  string  $token  본인인증 토큰 (`verification_token`)
      * @param  string  $purpose  본인인증 목적 (가입은 `signup`)
@@ -82,11 +108,12 @@ class IdentityClaimsService
      */
     public function forToken(string $token, string $purpose = 'signup', ?User $user = null): ?VerifiedClaims
     {
-        if ($token === '') {
+        if ($token === '' || ! $this->claimsUsableFor($purpose)) {
             return null;
         }
 
-        $log = $this->logs->findVerifiedForToken($token, $purpose);
+        $log = $this->tokenAcceptance->acceptedInRequest($token, $purpose)
+            ?? $this->logs->findVerifiedForToken($token, $purpose);
 
         return $log !== null ? $this->forLog($log, $user) : null;
     }
@@ -182,6 +209,11 @@ class IdentityClaimsService
     {
         $empty = ['status' => self::STATUS_INVALID, 'provider_id' => null, 'claims' => [], 'fields' => [], 'locked' => []];
 
+        // 가입 전 본인인증 정책이 꺼진 사이트는 가입 인증 값으로 칸을 채우지 않는다 — 토큰을 조회하지도 않는다
+        if (! $this->claimsUsableFor($purpose)) {
+            return [...$empty, 'status' => self::STATUS_DISABLED];
+        }
+
         $log = $token !== '' ? $this->logs->findVerifiedForToken($token, $purpose) : null;
         if ($log === null) {
             $known = $token !== '' && $this->logs->findVerifiedByToken($token, $purpose) !== null;
@@ -276,12 +308,13 @@ class IdentityClaimsService
      */
     public function recordSignupVerification(User $user, string $token): bool
     {
-        if ($token === '' || ! $user->exists) {
+        if ($token === '' || ! $user->exists || ! $this->claimsUsableFor('signup')) {
             return false;
         }
 
-        // 가입 처리 중에 토큰이 이미 소비됐을 수 있어 소비 여부와 무관하게 찾는다.
-        $log = $this->logs->findVerifiedByToken($token, 'signup');
+        // 이 가입 요청이 인정(결박 확인 + 1회 소비)한 결과만 쓴다. 토큰으로 바로 찾으면 다른 요청이 이미 쓴 결과나
+        // 이 가입에 결박되지 않은 결과도 새 회원의 본인인증으로 남는다(7.1.6 의 「같은 요청에서 인정한 결과만」 계약).
+        $log = $this->tokenAcceptance->acceptedInRequest($token, 'signup');
         if ($log === null || $this->claimsProvider((string) $log->provider_id) === null) {
             return false;
         }

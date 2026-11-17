@@ -2,6 +2,8 @@
 
 namespace Plugins\Sirsoft\SocialLogin\Support;
 
+use App\Extension\PluginManager;
+use App\Support\AssetUrl;
 use Illuminate\Http\Response;
 
 /**
@@ -14,6 +16,12 @@ use Illuminate\Http\Response;
  */
 final class HtmlPage
 {
+    /** 플러그인 식별자 */
+    private const PLUGIN_IDENTIFIER = 'sirsoft-social_login';
+
+    /** 단독 페이지 스타일시트 (플러그인 루트 기준) */
+    public const STYLESHEET_PATH = 'assets/pages/html-page.css';
+
     /**
      * HTML 응답을 만듭니다.
      *
@@ -26,6 +34,9 @@ final class HtmlPage
     {
         $lang = e(str_replace('_', '-', app()->getLocale()));
         $title = e($title);
+        // 모양은 같은 출처 정적 파일로 싣는다 — 사이트가 스타일 보안 정책(`style-src 'self'`)을 걸면 `<style>` 요소가 막혀
+        // 화면이 무스타일로 떴다(코어 #163, 7.1.6). 페이지에는 `<link>` 만 둔다
+        $stylesheet = '<link rel="stylesheet" href="'.e(self::stylesheetUrl()).'">';
 
         $html = <<<HTML
 <!doctype html>
@@ -35,22 +46,7 @@ final class HtmlPage
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>{$title}</title>
-<style>
-:root { color-scheme: light dark; --bg: #f9fafb; --fg: #111827; --card: #ffffff; --muted: #6b7280; --line: #e5e7eb; --ok: #047857; --bad: #b91c1c; --btn: #2563eb; }
-@media (prefers-color-scheme: dark) { :root { --bg: #111827; --fg: #f9fafb; --card: #1f2937; --muted: #9ca3af; --line: #374151; --ok: #34d399; --bad: #f87171; --btn: #3b82f6; } }
-body { margin: 0; padding: 24px 16px; background: var(--bg); color: var(--fg); font: 15px/1.6 system-ui, -apple-system, sans-serif; }
-main { max-width: 560px; margin: 0 auto; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 24px; }
-h1 { font-size: 20px; margin: 0 0 16px; }
-dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; margin: 0; }
-dt { color: var(--muted); } dd { margin: 0; overflow-wrap: anywhere; }
-.ok { color: var(--ok); font-weight: 600; } .bad { color: var(--bad); font-weight: 600; }
-label { display: block; margin: 12px 0 4px; color: var(--muted); }
-select, input { width: 100%; box-sizing: border-box; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--fg); }
-.actions { display: flex; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
-button { padding: 10px 16px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--fg); cursor: pointer; }
-button.primary { background: var(--btn); border-color: var(--btn); color: #fff; }
-p.note { color: var(--muted); font-size: 13px; }
-</style>
+{$stylesheet}
 </head>
 <body><main><h1>{$title}</h1>{$bodyHtml}</main></body>
 </html>
@@ -60,6 +56,26 @@ HTML;
             ->header('Content-Type', 'text/html; charset=UTF-8')
             ->header('Cache-Control', 'no-store, private')
             ->header('X-Robots-Tag', 'noindex, nofollow');
+    }
+
+    /**
+     * 단독 페이지 스타일시트 URL 을 만듭니다 (플러그인 자산 경로 + 플러그인 버전 캐시 무효화).
+     *
+     * 파일은 플러그인 루트의 손작성 정적 파일(`assets/pages/html-page.css`)이다 — 빌드 산출물 폴더 `dist/` 는 빌드가 지운다.
+     *
+     * @return string 같은 출처 자산 URL
+     */
+    public static function stylesheetUrl(): string
+    {
+        $version = null;
+
+        try {
+            $version = app(PluginManager::class)->getPlugin(self::PLUGIN_IDENTIFIER)?->getVersion();
+        } catch (\Throwable) {
+            // 버전을 못 읽어도 자산 URL 자체는 만든다 (캐시 무효화만 빠진다)
+        }
+
+        return AssetUrl::pluginAsset(self::PLUGIN_IDENTIFIER, self::STYLESHEET_PATH, $version);
     }
 
     /**

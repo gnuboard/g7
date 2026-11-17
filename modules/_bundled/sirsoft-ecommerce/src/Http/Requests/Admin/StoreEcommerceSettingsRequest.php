@@ -401,9 +401,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'basic_info.privacy_officer_email' => ['nullable', 'email', 'max:255'],
             'basic_info.mail_order_number' => ['nullable', 'string', 'max:100'],
             'basic_info.telecom_number' => ['nullable', 'string', 'max:100'],
-            // 푸터 사업자 정보 표시 (#434 — 쇼핑몰이 사용자 템플릿 user_global_footer 자리에 그린다, 기본 켜짐)
-            'basic_info.footer_business_info_enabled' => ['nullable', 'boolean'],
-            // 사용자 화면 푸터의 사업자 정보: 호스팅 제공자(법정 표시 항목) · 표시 여부
+            // 사용자 화면 푸터의 사업자 정보: 호스팅 제공자(법정 표시 항목) · 표시 여부(기본 켜짐 — 쇼핑몰이 사용자 템플릿 user_global_footer 자리에 그린다)
             'basic_info.hosting_provider' => ['nullable', 'string', 'max:255'],
             'basic_info.show_business_footer' => ['nullable', 'boolean'],
             // 공개 자산 디스크 — 빈 값은 코어 공개 자산 디스크 설정을 따른다.

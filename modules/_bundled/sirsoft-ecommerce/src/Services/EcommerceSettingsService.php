@@ -29,7 +29,10 @@ use Modules\Sirsoft\Ecommerce\Support\CurrencySettingsCache;
 class EcommerceSettingsService implements ModuleSettingsInterface
 {
     /**
-     * 사용자 화면 푸터에 싣는 법정 사업자 항목 (전자상거래법 사이버몰 표시 항목)
+     * 사용자 화면 푸터에 싣는 사업자 항목 — 푸터 사업자 정보 조각(user_global_footer)이 그리는 칸 전부
+     *
+     * 전자상거래법 사이버몰 표시 항목에 조각이 함께 보이는 팩스·부가통신사업 신고번호·개인정보 보호책임자를 더했다.
+     * 「사업자 정보 표시」(show_business_footer)를 끄면 이 칸들을 공개 설정에서 뺀다.
      *
      * @var array<int, string>
      */
@@ -40,9 +43,13 @@ class EcommerceSettingsService implements ModuleSettingsInterface
         'base_address',
         'detail_address',
         'phone',
+        'fax',
         'email',
         'business_number',
         'mail_order_number',
+        'telecom_number',
+        'privacy_officer',
+        'privacy_officer_email',
         'hosting_provider',
     ];
 

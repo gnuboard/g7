@@ -8,6 +8,7 @@ use App\Contracts\Repositories\UserRepositoryInterface;
 use App\Extension\IdentityVerification\Providers\MailIdentityProvider;
 use App\Models\IdentityVerificationLog;
 use App\Models\User;
+use App\Services\IdentityTokenAcceptanceService;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -28,10 +29,12 @@ class RecordVerifiedSignupEmail implements HookListenerInterface
      *
      * @param  IdentityVerificationLogRepositoryInterface  $logRepository  본인확인 요청 행 저장소
      * @param  UserRepositoryInterface  $userRepository  회원 저장소
+     * @param  IdentityTokenAcceptanceService  $tokenAcceptance  같은 요청에서 인정한 본인인증 결과 조회
      */
     public function __construct(
         protected IdentityVerificationLogRepositoryInterface $logRepository,
         protected UserRepositoryInterface $userRepository,
+        protected IdentityTokenAcceptanceService $tokenAcceptance,
     ) {}
 
     /**
@@ -74,8 +77,9 @@ class RecordVerifiedSignupEmail implements HookListenerInterface
         }
 
         try {
-            // 가입 전 확인 리스너가 이 요청에서 토큰을 이미 소비했으므로 소비 여부와 무관하게 찾는다.
-            $log = $this->logRepository->findVerifiedByToken($token, 'signup');
+            // 가입 전 확인 리스너가 이 요청에서 인정(결박 확인 + 1회 소비)한 결과만 쓴다 — 토큰으로 바로 찾으면
+            // 다른 요청이 이미 쓴 결과로도 이메일 인증이 기록된다(7.1.6 의 「같은 요청에서 인정한 결과만」 계약).
+            $log = $this->tokenAcceptance->acceptedInRequest($token, 'signup');
             if ($log !== null && $this->confirmsEmailOf($log, $user)) {
                 $this->userRepository->markEmailVerified($user);
             }

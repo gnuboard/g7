@@ -82,7 +82,10 @@ if (! function_exists('neutralizeInstallerRuntime')) {
      */
     function neutralizeInstallerRuntime(): bool
     {
-        return @file_put_contents(INSTALLER_RUNTIME_PATH, "<?php\n\nreturn [];\n", LOCK_EX) !== false;
+        // 잘린 쓰기는 비운 것이 아니다 — 끝까지 쓴 경우만 성공(부분 쓰기 판정, 7.2.0 설치기 계약)
+        $empty = "<?php\n\nreturn [];\n";
+
+        return installerWroteFully(@file_put_contents(INSTALLER_RUNTIME_PATH, $empty, LOCK_EX), $empty);
     }
 }
 
@@ -214,11 +217,10 @@ if (! function_exists('installer_finalize_env')) {
             if ($runtimeCleanup === 'deleted') {
                 $log(lang('log_finalize_env_runtime_removed'));
             } elseif ($runtimeCleanup === 'neutralized') {
-                $log(sprintf(
-                    '[finalize-env] runtime.php 를 지우지 못해 내용을 비움: path=%s, last_error=%s. 파일을 직접 지워 주세요.',
-                    INSTALLER_RUNTIME_PATH,
-                    (error_get_last()['message'] ?? 'unknown'),
-                ));
+                $log(lang('log_finalize_env_runtime_neutralized', [
+                    'path' => INSTALLER_RUNTIME_PATH,
+                    'error' => (error_get_last()['message'] ?? 'unknown'),
+                ]));
             } else {
                 // 지우지도 비우지도 못함 — 평문 자격증명이 남는다
                 $log(lang('log_finalize_env_runtime_delete_failed', [

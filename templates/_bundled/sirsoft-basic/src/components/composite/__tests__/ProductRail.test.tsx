@@ -7,7 +7,6 @@
  * @scenario-manifest tests/scenarios/shop-product-rail.yaml
  */
 
-import React from 'react';
 import { act, fireEvent, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ProductRail } from '../ProductRail';
@@ -151,15 +150,30 @@ describe('ProductRail', () => {
 
   // @scenario case=c16
   // @effects rail_shows_two_three_four_cards_per_screen
-  it('한 화면 카드 수는 좁은 화면 2·중간 3·넓은 화면 4장이다', () => {
-    const { container } = renderRail();
-    const track = container.querySelector('[data-product-rail-track]') as HTMLElement;
-    const cls = track.className.split(/\s+/);
-    // 간격 gap-4(16px) 를 장수로 나눠 뺀 열 폭 — 2장: 50% - 8px, 3장: 33.333% - 11px, 4장: 25% - 12px
-    expect(cls).toContain('grid-flow-col');
-    expect(cls).toContain('gap-4');
-    expect(cls).toContain('auto-cols-[calc(50%_-_8px)]');
-    expect(cls).toContain('sm:auto-cols-[calc(33.333%_-_11px)]');
-    expect(cls).toContain('lg:auto-cols-[calc(25%_-_12px)]');
+  it('한 화면 카드 수는 좁은 화면 2·중간 3·넓은 화면 4장이다 — 창 폭이 아니라 엔진 폭으로 고른다', () => {
+    // 간격 gap-4(16px) 를 장수로 나눠 뺀 열 폭 — 2장: 50% - 8px, 3장: 33.333% - 11px, 4장: 25% - 12px.
+    // 경계는 Tailwind sm(640)·lg(1024)와 같고, 폭은 G7Core.useResponsive().width(편집기 미리보기에서는 기기 폭)다.
+    const COLS = ['auto-cols-[calc(50%_-_8px)]', 'auto-cols-[calc(33.333%_-_11px)]', 'auto-cols-[calc(25%_-_12px)]'];
+    const cases: ReadonlyArray<readonly [number, string]> = [
+      [375, COLS[0]], [639, COLS[0]], [640, COLS[1]], [1023, COLS[1]], [1024, COLS[2]], [1280, COLS[2]],
+    ];
+    const savedG7Core = (window as any).G7Core;
+    try {
+      for (const [width, expected] of cases) {
+        (window as any).G7Core = { ...(savedG7Core ?? {}), useResponsive: () => ({ width }) };
+        const { container, unmount } = renderRail();
+        const track = container.querySelector('[data-product-rail-track]') as HTMLElement;
+        const cls = track.className.split(/\s+/);
+        expect(cls).toContain('grid-flow-col');
+        expect(cls).toContain('gap-4');
+        expect(cls, `${width}px`).toContain(expected);
+        for (const other of COLS.filter((c) => c !== expected)) expect(cls, `${width}px`).not.toContain(other);
+        // 창 폭(CSS 미디어)으로 갈리는 반응형 접두를 내지 않는다
+        expect(cls.filter((c) => /^(sm|md|lg|xl|2xl):/.test(c)), `${width}px`).toEqual([]);
+        unmount();
+      }
+    } finally {
+      (window as any).G7Core = savedG7Core;
+    }
   });
 });

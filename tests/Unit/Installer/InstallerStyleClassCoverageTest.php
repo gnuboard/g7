@@ -59,7 +59,6 @@ class InstallerStyleClassCoverageTest extends TestCase
         'env-hardening-hint-option' => '동상',
         'env-hardening-hint-note' => '동상',
         'cron-hint' => '예약 작업 안내 블록의 식별 이름 — 함께 붙은 env-hardening-hint 규칙이 담당 (7.2.0 합류)',
-        'hint' => 'showAlertAndRedirect 의 이동 안내 페이지 — installer.css 를 싣지 않는 독립 문서라 그 문서 <head> 의 <style> 이 .hint 를 담당 (7.2.0 합류)',
 
         // ③ 소비처 0 — 종전 코드에 남아 있는 표식. 제거는 이 검사와 별개 결정이라 여기서는 고정만 한다
         'execution-mode-cards' => '소비처 0 (스타일은 vendor-mode-cards) — 제거는 별개 결정',
@@ -73,7 +72,6 @@ class InstallerStyleClassCoverageTest extends TestCase
         'log-separator' => '소비처 0 — HEAD 기원',
         'result-version' => '소비처 0 — HEAD 기원',
         'btn-sm' => '소비처 0 — HEAD 기원',
-        'btn-close' => '소비처 0 — HEAD 기원',
         // classList 채널을 모집단에 넣으면서 드러난 항목 (9차 #G5)
         'single-select' => '소비처 0 — 단일 선택 카드 표식만, 스타일·선택자 소비 없음 (HEAD 기원)',
     ];
@@ -171,7 +169,7 @@ class InstallerStyleClassCoverageTest extends TestCase
      * 마크업이 실제로 붙이는 클래스 이름 → 그 이름이 나온 파일 목록.
      *
      * 제외 대상:
-     *  - `403-forbidden.php` — 자체 `<style>` 을 가진 독립 페이지다
+     *  - `403-forbidden.php` — installer.css 가 아니라 독립 페이지 CSS(`installerStandaloneCssUrl()`)를 싣는 페이지다
      *  - Font Awesome (`fa`/`fas`/`far`/`fab`/`fa-*`) — 외부 스타일시트 소유
      *  - `-` 로 끝나는 토큰 — `'alert alert-' + kind` 같은 문자열 조립의 앞조각
      *  - **주석 속** 클래스 — 소스는 주석을 지운 뒤 읽는다(`sourceWithoutComments()`, G3 회차 14

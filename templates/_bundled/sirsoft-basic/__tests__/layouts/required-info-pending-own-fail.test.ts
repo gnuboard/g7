@@ -80,7 +80,7 @@ const TARGETS: Target[] = [
   { screen: '찜 목록에서 삭제', file: 'partials/mypage/wishlist/_list.json', target: `${SHOP}/wishlist/{{item.id}}`, method: 'DELETE', count: 1, toast: true },
   // 장바구니
   { screen: '장바구니 수량 변경', file: 'partials/shop/_cart_item.json', target: `${SHOP}/cart/{{item.id}}/quantity`, method: 'PATCH', count: 1, toast: true },
-  { screen: '장바구니에서 주문하기', file: 'partials/shop/_cart_summary.json', target: `${SHOP}/checkout`, method: 'POST', count: 1, toast: true },
+  { screen: '장바구니에서 주문하기', file: 'shop/cart.json', target: `${SHOP}/checkout`, method: 'POST', count: 1, toast: true },
   { screen: '장바구니 선택 삭제', file: 'partials/shop/_modal_cart_delete_confirm.json', target: `${SHOP}/cart`, method: 'DELETE', count: 1, toast: true },
   { screen: '장바구니 옵션 변경', file: 'partials/shop/_modal_cart_option_change.json', target: `${SHOP}/cart/{{$parent._local.optionModal.targetItem?.id}}/option`, method: 'PUT', count: 1, toast: false },
   // 주문서
@@ -92,19 +92,20 @@ const TARGETS: Target[] = [
   { screen: '주문서 배송지 삭제', file: 'partials/shop/_modal_address_manage.json', target: `${SHOP}/user/addresses/{{addr.id}}`, method: 'DELETE', count: 1, toast: true },
   { screen: '주문서 배송지 저장', file: 'partials/shop/_modal_address_manage.json', target: ADDRESS_SAVE('_global.checkoutAddressModal?.editing'), method: "{{_global.checkoutAddressModal?.editing?.id ? 'PUT' : 'POST'}}", count: 1, toast: true },
   { screen: '주문서 쿠폰 받기', file: 'partials/shop/_modal_coupon_download.json', target: `${SHOP}/user/coupons/{{coupon.coupon_id}}/download`, method: 'POST', count: 1, toast: true },
-  { screen: '주문서 쿠폰 받은 뒤 다시 계산', file: 'partials/shop/_modal_coupon_download.json', target: `${SHOP}/checkout`, method: 'PUT', count: 1, toast: true },
+  { screen: '주문서 쿠폰 받은 뒤 다시 계산', file: 'partials/shop/_modal_coupon_download.json', target: `${SHOP}/checkout`, method: 'PUT', count: 2, toast: true },
+  { screen: '주문서 쿠폰 모두 받기', file: 'partials/shop/_modal_coupon_download.json', target: `${SHOP}/user/coupons/bulk-download`, method: 'POST', count: 1, toast: true },
   { screen: '주문 완료 화면 배송지 저장', file: 'shop/order_complete.json', target: `${SHOP}/user/addresses`, method: 'POST', count: 1, toast: true },
   { screen: '다시 주문', file: 'shop/reorder.json', target: `${SHOP}/user/orders/{{route.id}}/reorder`, method: 'POST', count: 1, toast: true },
   // 상품 상세
-  { screen: '상품 찜', file: 'partials/shop/detail/_header.json', target: `${SHOP}/wishlist/toggle`, method: 'POST', count: 1, toast: false },
+  { screen: '상품 찜', file: 'shop/show.json', target: `${SHOP}/wishlist/toggle`, method: 'POST', count: 1, toast: false },
   { screen: '상품 쿠폰 받기', file: 'partials/shop/detail/_modal_coupon_download_confirm.json', target: `${SHOP}/user/coupons/{{$parent._local.selectedCouponForDownload?.coupon_id}}/download`, method: 'POST', count: 1, toast: true },
   { screen: '상품 문의와 답변 삭제', file: 'partials/shop/detail/_modal_inquiry_delete.json', target: `{{(_global.qnaDeleteIsAdmin ?? false) ? ((_global.qnaDeleteIsReply ?? false) ? '${SHOP}/admin/inquiries/' + _global.qnaDeleteId + '/reply' : '${SHOP}/admin/inquiries/' + _global.qnaDeleteId) : ((_global.qnaDeleteIsReply ?? false) ? '${SHOP}/user/inquiries/' + _global.qnaDeleteId + '/reply' : '${SHOP}/user/inquiries/' + _global.qnaDeleteId)}}`, method: 'DELETE', count: 1, toast: true },
   { screen: '상품 문의 답변 수정(창)', file: 'partials/shop/detail/_modal_qna_reply.json', target: `${SHOP}/user/inquiries/{{_global.qnaReplyEditId}}/reply`, method: 'PUT', count: 1, toast: true },
   { screen: '상품 문의 답변 등록(창)', file: 'partials/shop/detail/_modal_qna_reply.json', target: `${SHOP}/user/inquiries/{{_global.qnaReplyTargetId}}/reply`, method: 'POST', count: 1, toast: true },
   { screen: '상품 문의 수정', file: 'partials/shop/detail/_modal_qna_write.json', target: `${SHOP}/user/inquiries/{{_global.qnaEditId}}`, method: 'PUT', count: 1, toast: true },
   { screen: '상품 문의 등록', file: 'partials/shop/detail/_modal_qna_write.json', target: `${SHOP}/products/{{_global.qnaProductId}}/inquiries`, method: 'POST', count: 1, toast: true },
-  { screen: '바로 구매', file: 'partials/shop/detail/_purchase_card.json', target: `${SHOP}/checkout`, method: 'POST', count: 1, toast: true },
-  { screen: '장바구니 담기', file: 'partials/shop/detail/_purchase_card.json', target: `${SHOP}/cart`, method: 'POST', count: 1, toast: true },
+  { screen: '바로 구매', file: 'shop/show.json', target: `${SHOP}/checkout`, method: 'POST', count: 1, toast: true },
+  { screen: '장바구니 담기', file: 'shop/show.json', target: `${SHOP}/cart`, method: 'POST', count: 1, toast: true },
   { screen: '상품 문의 답변 수정(목록)', file: 'partials/shop/detail/_tab_qna.json', target: `${SHOP}/user/inquiries/{{item.id}}/reply`, method: 'PUT', count: 1, toast: true },
 ];
 

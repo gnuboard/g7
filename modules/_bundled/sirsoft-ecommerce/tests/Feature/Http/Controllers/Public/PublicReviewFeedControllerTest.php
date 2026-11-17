@@ -78,7 +78,7 @@ class PublicReviewFeedControllerTest extends ModuleTestCase
     /**
      * 숨김 상품·삭제된 상품의 후기와 비노출 후기는 빠진다.
      *
-     * @scenario surface=review_feed, visibility=hidden_product_or_review
+     * 케이스(마커 아님 — 평문): sub_flow review_feed_listing, 노출 조건 — 숨김 상품·삭제 상품·비노출 후기.
      *
      * @effects feed_excludes_hidden_product_reviews, feed_excludes_deleted_product_reviews, feed_excludes_hidden_reviews
      *
@@ -105,7 +105,7 @@ class PublicReviewFeedControllerTest extends ModuleTestCase
     /**
      * 사진 후기만·별점 필터.
      *
-     * @scenario surface=review_feed, filter=photo_only_and_rating
+     * 케이스(마커 아님 — 평문): sub_flow review_feed_listing, 목록 질의 — 사진 후기만·별점 필터.
      *
      * @effects feed_filters_photo_only, feed_filters_rating
      *
@@ -127,7 +127,7 @@ class PublicReviewFeedControllerTest extends ModuleTestCase
     /**
      * 정렬 네 가지.
      *
-     * @scenario surface=review_feed, filter=sort
+     * 케이스(마커 아님 — 평문): sub_flow review_feed_listing, 목록 질의 — 정렬 네 가지.
      *
      * @effects feed_sorts_by_four_orders
      *
@@ -153,7 +153,7 @@ class PublicReviewFeedControllerTest extends ModuleTestCase
     /**
      * 페이지 크기 상한과 잘못된 값.
      *
-     * @scenario surface=review_feed, filter=invalid
+     * 케이스(마커 아님 — 평문): sub_flow review_feed_listing, 목록 질의 — 잘못된 값 거부.
      *
      * @effects feed_rejects_invalid_params
      *
@@ -170,7 +170,7 @@ class PublicReviewFeedControllerTest extends ModuleTestCase
     /**
      * 확장이 검증 규칙을 더할 수 있다.
      *
-     * @scenario surface=review_feed, filter=extension_rule
+     * 케이스(마커 아님 — 평문): sub_flow review_feed_listing, 목록 질의 — 확장 검증 규칙.
      *
      * @effects feed_validation_rules_are_filterable
      *

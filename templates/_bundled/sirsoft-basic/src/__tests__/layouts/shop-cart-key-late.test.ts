@@ -10,7 +10,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import purchaseCard from '../../../layouts/partials/shop/detail/_purchase_card.json';
+// 담기와 바로 구매 요청은 7.1.6 부터 상품 상세 화면 레이아웃의 named action(purchaseAddToCart·purchaseBuyNow)에 있다
+import purchaseCard from '../../../layouts/shop/show.json';
 import userBase from '../../../layouts/_user_base.json';
 
 /**

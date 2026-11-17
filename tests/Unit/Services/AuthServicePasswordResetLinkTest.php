@@ -70,13 +70,21 @@ class AuthServicePasswordResetLinkTest extends TestCase
      */
     public function test_reset_url_follows_the_configured_site_url_without_double_slash(): void
     {
-        $user = new User(['name' => '홍길동', 'email' => 'hong@example.com']);
+        // 관리자 재설정 화면 주소는 관리자 계정에만 보낸다(7.1.6) — 두 경로를 다 재려면 관리자 계정이어야 한다
+        $user = Mockery::mock(User::class)->makePartial();
+        $user->forceFill(['name' => '홍길동', 'email' => 'hong@example.com']);
+        $user->shouldReceive('isAdmin')->andReturn(true);
 
         $users = Mockery::mock(UserRepositoryInterface::class);
         $users->shouldReceive('findByEmail')->with('hong@example.com')->andReturn($user);
 
         $tokens = Mockery::mock(PasswordResetTokenRepositoryInterface::class);
+        // 재요청 대기(7.1.6) 판정용 직전 발송 기록 — 없으면 바로 보낸다
+        $tokens->shouldReceive('findByEmail')->with('hong@example.com')->andReturn(null);
         $tokens->shouldReceive('updateOrCreateByEmail')->twice();
+
+        // 재설정 훅은 응답 뒤로 미뤄 발화한다(7.1.6) — 시험에서는 바로 돌린다
+        $this->withoutDefer();
 
         $service = new AuthService(
             $users,

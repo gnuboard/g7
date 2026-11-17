@@ -30,7 +30,6 @@ return [
         'default_confirmer' => 'Administrator',
         'delivery_rejected' => 'Failed to register the delivery.',
         'delivery_failed' => 'An error occurred and the escrow delivery registration could not be completed. Please try again later, and check the server log if it keeps failing.',
-        'deny_confirm_already_done' => 'The purchase rejection has already been confirmed.',
         'deny_confirm_rejected' => 'Failed to confirm the purchase rejection.',
         'deny_confirm_failed' => 'An error occurred and the purchase rejection confirmation could not be completed. Please try again later, and check the server log if it keeps failing.',
     ],

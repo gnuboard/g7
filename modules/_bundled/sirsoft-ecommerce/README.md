@@ -273,7 +273,7 @@ _별도의 관리자 설정 항목이 없습니다._
 | `sirsoft-board` | 모듈 | `*` |
 | `sirsoft-hero_section` | 플러그인 | `>=1.4.0` |
 | `sirsoft-message_bizppurio` | 플러그인 | `*` |
-| `sirsoft-basic` | 템플릿 | `>=1.3.5` |
+| `sirsoft-basic` | 템플릿 | `>=1.4.0` |
 <!-- @generated:integrations END -->
 
 ## 문서

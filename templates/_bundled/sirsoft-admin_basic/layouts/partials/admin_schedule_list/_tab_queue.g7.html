@@ -55,15 +55,15 @@
           <span class="text-label-subtle">$t:admin.schedules.queue.status.failed</span>
           <icon name="circle-xmark" class="{{(queue_status?.data?.failed_count ?? 0) &gt; 0 ? 'text-xl text-red-500' : 'text-xl text-gray-400 dark:text-gray-500'}}"/>
         </div>
-        <div class="{{(queue_status?.data?.failed_count ?? 0) &gt; 0 ? 'mt-2 text-2xl font-bold text-red-600 dark:text-red-400' : 'text-page-heading mt-2'}}">$t:admin.schedules.queue.status.count|count={{queue_status?.data?.failed_count ?? 0}}</div>
+        <div class="{{(queue_status?.data?.failed_count ?? 0) &gt; 0 ? 'mt-2 text-2xl font-bold text-red-600 dark:text-red-400' : 'text-page-heading mt-2'}}"><blur-until-loaded sources="queue_status"/>$t:admin.schedules.queue.status.count|count={{queue_status?.data?.failed_count ?? 0}}</div>
       </div>
       <div data-ref="queue_status_workers" class="admin-card">
         <div class="flex-between">
           <span class="text-label-subtle">$t:admin.schedules.queue.status.workers</span>
           <icon name="gears" class="text-xl text-gray-400 dark:text-gray-500"/>
         </div>
-        <div class="text-page-heading mt-2">{{queue_status?.data?.workers?.alive ?? 0}}/{{queue_status?.data?.workers?.registered ?? 0}}</div>
-        <p data-if="{{!((queue_status?.data?.workers?.warning_count ?? 0) &gt; 0)}}" class="text-tertiary mt-1">$t:admin.schedules.queue.status.workers_hint</p>
+        <div class="text-page-heading mt-2"><blur-until-loaded sources="queue_status"/>{{queue_status?.data?.workers?.alive ?? 0}}/{{queue_status?.data?.workers?.registered ?? 0}}</div>
+        <p data-if="{{queue_status !== undefined &amp;&amp; (!((queue_status?.data?.workers?.warning_count ?? 0) &gt; 0))}}" class="text-tertiary mt-1">$t:admin.schedules.queue.status.workers_hint</p>
         <p data-if="{{(queue_status?.data?.workers?.warning_count ?? 0) &gt; 0}}" class="mt-1 flex-center gap-1 text-xs font-medium text-yellow-700 dark:text-yellow-300">
           <icon name="triangle-exclamation" class="text-xs"/>
           <span>$t:admin.schedules.queue.status.worker_warnings|count={{queue_status?.data?.workers?.warning_count}}</span>

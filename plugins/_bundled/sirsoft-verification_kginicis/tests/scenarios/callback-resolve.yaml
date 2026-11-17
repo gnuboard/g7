@@ -37,6 +37,7 @@ axes:
     - happy_path                           # 정상 흐름
     - token_consumed_by_core               # 코어 리스너(priority 10)가 consumed_at 을 찍은 뒤 이 리스너(priority 50)가 처리
     - backfill_throws                      # 기록 저장 뒤 로그 user_id backfill 이 예외
+    - consumed_by_other_request            # 다른 요청이 이미 소비한(이 요청이 인정하지 않은) 결과 — 토큰이 맞아도 붙이지 않음 (1.1.4)
 
 exclusions:
   - { callback_outcome: success, registration_context: missing_token, reason: "callback resolve 성공 시점과 register 흐름은 독립" }

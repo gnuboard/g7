@@ -381,7 +381,7 @@
                                             {
                                                 "type": "basic",
                                                 "name": "Button",
-                                                "if": "{{_computed.memberFieldsReadOnly || !!_global.memberFieldBusy}}",
+                                                "if": "{{memberFieldDefs !== undefined && (_computed.memberFieldsReadOnly || !!_global.memberFieldBusy)}}",
                                                 "props": {
                                                     "data-testid": "{{'member-field-table-handle-disabled-' + row.key}}",
                                                     "type": "button",

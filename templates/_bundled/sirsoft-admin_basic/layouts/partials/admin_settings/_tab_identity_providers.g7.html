@@ -27,7 +27,7 @@
       <h3 class="card-title">$t:admin.settings.identity.providers.title</h3>
       <div class="card-description">$t:admin.settings.identity.providers.desc</div>
       <p data-ref="identity_providers_permission_denied" data-if="{{_computed.canReadIdentityProviders === false}}" role="status" class="text-warning-soft py-4 text-center">$t:admin.settings.permission_required.identity_providers</p>
-      <div data-ref="provider_cards" data-if="{{_computed.canReadIdentityProviders !== false}}" class="card-stack">
+      <div data-ref="provider_cards" data-if="{{current_user !== undefined &amp;&amp; (_computed.canReadIdentityProviders !== false)}}" class="card-stack">
         <div data-each="provider in identityProviders?.data ?? []" class="card-stack-item">
           <div class="flex-between mb-2">
             <div>
@@ -41,7 +41,7 @@
           </div>
         </div>
       </div>
-      <div data-if="{{_computed.canReadIdentityProviders !== false &amp;&amp; identityProviders !== undefined &amp;&amp; (identityProviders?.data ?? []).length === 0}}" class="text-label-subtle py-4 text-center">$t:admin.settings.identity.providers.empty</div>
+      <div data-if="{{current_user !== undefined &amp;&amp; _computed.canReadIdentityProviders !== false &amp;&amp; identityProviders !== undefined &amp;&amp; (identityProviders?.data ?? []).length === 0}}" class="text-label-subtle py-4 text-center">$t:admin.settings.identity.providers.empty</div>
     </div>
   </div>
 </partial>

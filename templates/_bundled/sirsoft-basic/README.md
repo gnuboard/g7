@@ -191,7 +191,7 @@ php artisan template:update sirsoft-basic --force
 | 확장 | 유형 | 버전 제약 | 번들 |
 |---|---|---|---|
 | `sirsoft-board` | 모듈 | `>=1.2.1` | ✅ |
-| `sirsoft-ecommerce` | 모듈 | `>=1.3.5` | ✅ |
+| `sirsoft-ecommerce` | 모듈 | `>=1.4.0` | ✅ |
 | `sirsoft-page` | 모듈 | `>=1.2.0` | ✅ |
 | `sirsoft-daum_postcode` | 플러그인 | `>=1.2.0` | ✅ |
 <!-- @generated:integrations END -->

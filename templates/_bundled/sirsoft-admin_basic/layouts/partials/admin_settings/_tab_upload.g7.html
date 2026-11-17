@@ -134,7 +134,7 @@
               </p>
               <p data-ref="thumbnail_prune_schedule_notice_inactive" data-if="{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'thumbnails-prune')?.is_active === false}}" class="text-label-subtle">$t:admin.settings.schedule_link.inactive</p>
               <div class="flex-center flex-wrap gap-3">
-                <a data-ref="thumbnail_prune_schedule_notice_link" data-if="{{_computed.canReadSchedules !== false}}" href="/admin/schedules?extension_type=core&amp;search_field=identifier&amp;search_keyword=thumbnails-prune" class="text-link">$t:admin.settings.schedule_link.change</a>
+                <a data-ref="thumbnail_prune_schedule_notice_link" data-if="{{current_user !== undefined &amp;&amp; (_computed.canReadSchedules !== false)}}" href="/admin/schedules?extension_type=core&amp;search_field=identifier&amp;search_keyword=thumbnails-prune" class="text-link">$t:admin.settings.schedule_link.change</a>
               </div>
             </div>
           </div>
@@ -539,7 +539,7 @@
               </p>
               <p data-ref="orphan_cleanup_schedule_notice_inactive" data-if="{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'attachments-prune-orphans')?.is_active === false}}" class="text-label-subtle">$t:admin.settings.schedule_link.inactive</p>
               <div class="flex-center flex-wrap gap-3">
-                <a data-ref="orphan_cleanup_schedule_notice_link" data-if="{{_computed.canReadSchedules !== false}}" href="/admin/schedules?extension_type=core&amp;search_field=identifier&amp;search_keyword=attachments-prune-orphans" class="text-link">$t:admin.settings.schedule_link.change</a>
+                <a data-ref="orphan_cleanup_schedule_notice_link" data-if="{{current_user !== undefined &amp;&amp; (_computed.canReadSchedules !== false)}}" href="/admin/schedules?extension_type=core&amp;search_field=identifier&amp;search_keyword=attachments-prune-orphans" class="text-link">$t:admin.settings.schedule_link.change</a>
               </div>
             </div>
           </div>

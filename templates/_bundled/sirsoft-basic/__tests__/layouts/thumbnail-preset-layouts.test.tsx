@@ -35,6 +35,8 @@ import { withThumbnailSize } from '@/core/support/thumbnailUrl';
 import cartItem from '../../layouts/partials/shop/_cart_item.json';
 import cardIndex from '../../layouts/partials/board/types/card/index.json';
 import tabReviews from '../../layouts/partials/shop/detail/_tab_reviews.json';
+import reviewCard from '../../layouts/partials/shop/detail/_review_card.json';
+import shopReviews from '../../layouts/shop/reviews.json';
 import modalReviewImage from '../../layouts/partials/shop/detail/_modal_review_image.json';
 import shopShow from '../../layouts/shop/show.json';
 import shopCategory from '../../layouts/shop/category.json';
@@ -239,11 +241,17 @@ describe('게시판 카드형 목록 (types/card/index.json)', () => {
 });
 
 describe('상품 상세 (shop/show.json · 리뷰 탭 · 리뷰 확대 창)', () => {
-  const reviewImages = findNode(tabReviews, (n) => n.if === '{{review.image_count > 0}}');
+  // 후기 카드(작성자·별점·본문·사진)는 상품 상세 리뷰 탭과 후기 모아보기 화면이 함께 쓰는 조각이다(7.1.6 에서 리뷰 탭
+  // 안에 있던 카드를 `_review_card` 로 뽑았다) — 사진 칸은 그 조각에서 꺼내고, 리뷰 탭이 그 조각을 넣는지 함께 본다.
+  const reviewImages = findNode(reviewCard, (n) => n.if === '{{review.image_count > 0}}');
+  const includesReviewCard = (layout: unknown) =>
+    !!findNode(layout, (n) => n.partial === 'partials/shop/detail/_review_card.json');
 
   // @scenario screen=product_detail_reviews
   // @effects layout_img_requests_thumbnail_size
   it('리뷰 탭의 80px 사진 칸이 sm 규격 주소를 요청한다', async () => {
+    expect(includesReviewCard(tabReviews)).toBe(true);
+    expect(includesReviewCard(shopReviews)).toBe(true);
     expect(reviewImages).toBeDefined();
     const utils = createLayoutTest(probe(reviewImages!, '{{reviews.data.reviews.data ?? []}}', 'review', 'reviews') as any, {
       componentRegistry: registry as any,

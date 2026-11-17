@@ -7,8 +7,14 @@
  * @since engine-v1.50.0
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useDevicePreview, CUSTOM_WIDTH_MIN, CUSTOM_WIDTH_MAX } from '../hooks/useDevicePreview';
+import {
+  applyEditorStyle,
+  removeEditorStyle,
+  DEVICE_TOOLBAR_STYLE_CSS,
+  DEVICE_TOOLBAR_STYLE_KEY,
+} from '../utils/editorRuntimeStyles';
 import { useDeviceList } from '../hooks/useDeviceList';
 import { useTranslation } from '../../TranslationContext';
 import { LocaleSwitcher } from './LocaleSwitcher';
@@ -39,6 +45,12 @@ export function DevicePreviewToolbar(): React.ReactElement {
   // 캔버스 토글/스타일 세부탭 공유 디바이스 목록(프리셋 + 레이아웃 동적 커스텀 키) —
   const deviceKeys = useDeviceList();
 
+  // 묶음 압착 차단 규칙 — 런타임 시트로 붙이고 언마운트 때 뗀다(#163, 종전 JSX <style> 자식은 엄격한 스타일 정책에서 막힌다)
+  useEffect(() => {
+    applyEditorStyle(DEVICE_TOOLBAR_STYLE_KEY, DEVICE_TOOLBAR_STYLE_CSS);
+    return () => removeEditorStyle(DEVICE_TOOLBAR_STYLE_KEY);
+  }, []);
+
   return (
     <div
       className="g7le-device-toolbar"
@@ -47,7 +59,7 @@ export function DevicePreviewToolbar(): React.ReactElement {
         display: 'inline-flex',
         alignItems: 'center',
         // 기기 툴바도 툴바처럼 줄 단위로 감는다(설계 확정 2026-11-08). 기기 줄의 폭을 넘지 않게 두고
-        // (maxWidth), 묶음(기기 단추·색 테마·줌·언어)은 아래 규칙으로 줄지 않는다.
+        // (maxWidth), 묶음(기기 단추·색 테마·줌·언어)은 위 DEVICE_TOOLBAR_STYLE_CSS 규칙으로 줄지 않는다.
         flexWrap: 'wrap',
         maxWidth: '100%',
         boxSizing: 'border-box',
@@ -58,7 +70,6 @@ export function DevicePreviewToolbar(): React.ReactElement {
         borderRadius: 6,
       }}
     >
-      <style>{'.g7le-device-toolbar > * { flex-shrink: 0; white-space: nowrap; }'}</style>
       <div role="group" aria-label={t('layout_editor.device.group_label')}>
         {deviceKeys.map((key) => {
           const active = device === key;

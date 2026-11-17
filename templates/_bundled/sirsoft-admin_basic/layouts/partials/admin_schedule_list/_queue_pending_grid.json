@@ -39,7 +39,7 @@
         {
             "type": "basic",
             "name": "Div",
-            "if": "{{queue_pending?.data?.meta?.measurable !== false}}",
+            "if": "{{queue_pending === undefined || queue_pending?.data?.meta?.measurable !== false}}",
             "children": [
                 {
                     "id": "queue_pending_list_info",
@@ -53,6 +53,10 @@
                             "type": "basic",
                             "name": "Span",
                             "if": "{{!_dataSourceErrors?.queue_pending && queue_pending?.data?.pagination?.total_is_exact !== false}}",
+                            "blur_until_loaded": {
+                                "enabled": true,
+                                "data_sources": "queue_pending"
+                            },
                             "props": {
                                 "className": "text-label"
                             },

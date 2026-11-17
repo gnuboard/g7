@@ -90,7 +90,7 @@ class FrontendSchemaExposureTest extends PureTestCase
     }
 
     /**
-     * 사업자 정보는 푸터에 쓰는 법정 표시 항목과 표시 여부만 내려보낸다 — 팩스·개인정보 책임자 같은 칸은 내려보내지 않는다.
+     * 사업자 정보는 푸터 사업자 정보 조각(user_global_footer)이 그리는 항목과 표시 여부만 내려보낸다 — 조각이 그리지 않는 상점 이름·업종·업태·내부 설정은 내려보내지 않는다.
      *
      * @effects ecommerce_exposes_business_footer_fields_to_frontend
      *
@@ -99,13 +99,25 @@ class FrontendSchemaExposureTest extends PureTestCase
     public function test_frontend_schema_exposes_business_footer_fields_only(): void
     {
         $fields = $this->loadFrontendSchema()['basic_info']['fields'] ?? [];
-        $isExposed = static fn (string $key): bool => (bool) ($fields[$key]['expose'] ?? false);
+        $exposed = array_keys(array_filter($fields, static fn (array $field): bool => (bool) ($field['expose'] ?? false)));
+        sort($exposed);
 
-        foreach (['company_name', 'business_number', 'ceo_name', 'zipcode', 'base_address', 'detail_address', 'phone', 'email', 'mail_order_number', 'hosting_provider', 'show_business_footer'] as $key) {
-            $this->assertTrue($isExposed($key), "basic_info.{$key} 는 푸터 사업자 정보에 쓰이므로 내려보내야 한다");
-        }
-        foreach (['fax', 'privacy_officer', 'privacy_officer_email', 'telecom_number', 'business_type', 'business_category', 'public_asset_disk'] as $key) {
-            $this->assertFalse($isExposed($key), "basic_info.{$key} 는 사용자 화면에 내려보내지 않는다");
+        $expected = [
+            // 경로 계산
+            'route_path', 'no_route',
+            // 조각이 그리는 사업자 항목
+            'company_name', 'ceo_name', 'zipcode', 'base_address', 'detail_address', 'business_number', 'mail_order_number',
+            'telecom_number', 'phone', 'fax', 'email', 'privacy_officer', 'privacy_officer_email', 'hosting_provider',
+            // 표시 여부
+            'show_business_footer',
+        ];
+        sort($expected);
+
+        $this->assertSame($expected, $exposed, '공개 항목은 조각이 그리는 칸과 경로·표시 여부뿐이어야 한다');
+
+        foreach (['shop_name', 'business_type', 'business_category', 'public_asset_disk', 'export_retention_days'] as $key) {
+            $this->assertArrayHasKey($key, $fields, "basic_info.{$key} 의 공개 여부를 선언해야 한다");
+            $this->assertFalse((bool) ($fields[$key]['expose'] ?? false), "basic_info.{$key} 는 사용자 화면에 내려보내지 않는다");
         }
     }
 

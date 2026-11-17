@@ -15,6 +15,8 @@ import { render, screen, cleanup, act } from '@testing-library/react';
 import { LayoutEditorChrome, EDITOR_MIN_WIDTH } from '../../LayoutEditorChrome';
 import { TranslationProvider } from '../../../TranslationContext';
 import { TranslationEngine } from '../../../TranslationEngine';
+import { getCssText } from '../../../../style/RuntimeStyleSheet';
+import { DEVICE_ROW_STYLE_KEY, DEVICE_TOOLBAR_STYLE_KEY, TOOLBAR_STYLE_KEY } from '../../utils/editorRuntimeStyles';
 
 const observers: Array<{ cb: ResizeObserverCallback; targets: Element[] }> = [];
 class FakeResizeObserver {
@@ -75,10 +77,14 @@ describe('[case:wysiwyg-11] 툴바 두 줄로 감기', () => {
   /** @effects editor_toolbar_wraps_lines_without_squish */
   it('감겨도 항목은 줄지 않는다 — 툴바·기기 줄·기기 툴바 직접 자식 모두 flex-shrink:0', () => {
     renderShell();
-    const styles = Array.from(document.querySelectorAll('style')).map((s) => s.textContent ?? '');
-    expect(styles.some((t) => t.includes('.g7le-toolbar > *') && t.includes('flex-shrink: 0') && t.includes('white-space: nowrap'))).toBe(true);
-    expect(styles.some((t) => t.includes('.g7le-chrome__device-toolbar > *') && t.includes('flex-shrink: 0'))).toBe(true);
-    expect(styles.some((t) => t.includes('.g7le-device-toolbar > *') && t.includes('flex-shrink: 0') && t.includes('white-space: nowrap'))).toBe(true);
+    // 규칙은 JSX <style> 자식이 아니라 런타임 시트(RuntimeStyleSheet)로 붙는다 — 엄격한 스타일 정책에서 <style> 이 막힌다(#163)
+    const toolbarCss = getCssText(TOOLBAR_STYLE_KEY) ?? '';
+    const rowCss = getCssText(DEVICE_ROW_STYLE_KEY) ?? '';
+    const deviceCss = getCssText(DEVICE_TOOLBAR_STYLE_KEY) ?? '';
+    expect(toolbarCss.includes('.g7le-toolbar > *') && toolbarCss.includes('flex-shrink: 0') && toolbarCss.includes('white-space: nowrap')).toBe(true);
+    expect(rowCss.includes('.g7le-chrome__device-toolbar > *') && rowCss.includes('flex-shrink: 0')).toBe(true);
+    expect(deviceCss.includes('.g7le-device-toolbar > *') && deviceCss.includes('flex-shrink: 0') && deviceCss.includes('white-space: nowrap')).toBe(true);
+    expect(screen.getByTestId('g7le-chrome-device-toolbar').querySelector('style')).toBeNull();
   });
 
   /** @effects editor_canvas_height_follows_wrapped_header */

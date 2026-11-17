@@ -1,5 +1,3 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 끝점마다 보는 사람 축의 의미가 달라(쿼리 수·확장 훅은 따로 잠그는 축) 전수 곱이 아니라 끝점별 경로를 잠근다.
-
 feature: 공개 상품 목록 응답 보강(카드 단추용) + 관련·최근 본 상품 확장 지점
 
 description: |
@@ -11,6 +9,14 @@ description: |
 axes:
   endpoint: [index, popular_new_recent_related, related, admin_index, search]
   viewer: [member, guest, member_query_count, extension_hooks, admin]
+
+exclusions:
+  - { endpoint: admin_index, viewer: [member, guest, member_query_count, extension_hooks], reason: "관리자 목록은 관리자만 본다 — 보는 사람 키가 없다는 사실 하나를 잰다" }
+  - { endpoint: [index, popular_new_recent_related, related, search], viewer: admin, reason: "공개 끝점에서 관리자는 보는 회원 한 명이다 — member 경로와 같다" }
+  - { endpoint: [index, search, related], viewer: extension_hooks, reason: "확장 지점(훅 세 개·검증 규칙 필터)은 관련·최근 본 상품 묶음에만 있다" }
+  - { endpoint: [related, search], viewer: member_query_count, reason: "행마다 쿼리를 늘리지 않는 계약은 공개 목록(index)과 나머지 공개 목록 묶음(popular_new_recent_related, 관련 포함)이 잰다" }
+  - { endpoint: [popular_new_recent_related, related], viewer: guest, reason: "비회원 판정(찜 false·찜 쿼리 없음)은 공개 목록 리소스 한 곳이다 — index×guest 가 잰다" }
+  - { endpoint: search, viewer: member, reason: "통합검색은 공개 목록과 같은 카드 리소스를 거친다 — 보는 회원 판정은 index×member 가 재고, 검색은 카드 필드가 실리는지를 잰다" }
 
 effects:
   - list_marks_wishlisted_products_for_member

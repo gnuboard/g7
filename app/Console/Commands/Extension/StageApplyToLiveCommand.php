@@ -102,7 +102,7 @@ class StageApplyToLiveCommand extends Command
             if (! $this->unifiedConfirm(__('common.console.stage_apply.confirm_question'), false)) {
                 $this->info(__('common.console.stage_apply.aborted'));
 
-                return self::SUCCESS;
+                return $this->confirmAbortExitCode(); // 대화형에서 직접 답한 「아니오」는 0(답할 수 없는 실행은 위에서 실패로 끝났다)
             }
         }
 

@@ -787,7 +787,7 @@
                                                     "id": "cron_last_run_empty",
                                                     "type": "basic",
                                                     "name": "P",
-                                                    "if": "{{!(_local.cronLastRun ?? system_status?.data?.cron?.last_run)}}",
+                                                    "if": "{{system_status !== undefined && (!(_local.cronLastRun ?? system_status?.data?.cron?.last_run))}}",
                                                     "props": {
                                                         "className": "text-secondary text-xs"
                                                     },
@@ -926,7 +926,7 @@
                                                     "id": "cron_history_empty",
                                                     "type": "basic",
                                                     "name": "P",
-                                                    "if": "{{!(system_status?.data?.cron?.recent_history?.length)}}",
+                                                    "if": "{{system_status !== undefined && (!(system_status?.data?.cron?.recent_history?.length))}}",
                                                     "props": {
                                                         "className": "text-secondary text-xs mt-1"
                                                     },

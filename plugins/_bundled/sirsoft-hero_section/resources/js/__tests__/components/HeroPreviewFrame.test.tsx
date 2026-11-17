@@ -316,6 +316,24 @@ describe('미리보기 구좌 틀', () => {
       document.documentElement.removeAttribute('data-g7-color-scheme');
     }
   });
+
+  // @scenario surface=preview_frame_slot_inside_device_viewport
+  // @effects preview_matches_site_slot
+  it('미리보기 문서 바탕(16px·여백 0·스크롤 숨김)은 <style> 이 아니라 CSSOM 대입이다 — 엄격한 스타일 정책에서도 적용된다(공개 #163)', () => {
+    const { doc } = mountFrame(<HeroBannerPreview banners={banners} device="pc" frame={frame} position="home_hero" />);
+
+    // about:blank 문서는 바깥 정책을 물려받아 `<style>` 요소가 막힌다 — 미리보기가 직접 만든 `<style>` 이 없어야 한다
+    expect(doc.head.querySelectorAll('style').length).toBe(0);
+    expect(doc.documentElement.style.fontSize).toBe('16px');
+    for (const el of [doc.documentElement, doc.body]) {
+      expect(el.style.margin).toBe('0px');
+      expect(el.style.padding).toBe('0px');
+      expect(el.style.overflow).toBe('hidden');
+    }
+    // 템플릿 CSS 는 복사한 바깥 CSS 뒤에 붙는다
+    const links = [...doc.head.querySelectorAll('link')];
+    expect(links[links.length - 1].hasAttribute('data-hs-template-css')).toBe(true);
+  });
 });
 
 /**

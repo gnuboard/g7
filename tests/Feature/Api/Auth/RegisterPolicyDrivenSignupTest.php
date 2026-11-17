@@ -474,6 +474,31 @@ class RegisterPolicyDrivenSignupTest extends TestCase
     }
 
     /**
+     * 이 가입 요청이 인정하지 않은 인증 결과(다른 요청이 이미 쓴 결과)는 가입 뒤 이메일 인증·본인인증으로 기록하지 않는다.
+     *
+     * 가입 전 확인 정책이 꺼져 있으면 토큰은 인정 단계를 거치지 않는다. 가입 뒤 기록 리스너가 토큰으로 바로 결과를 찾으면
+     * 다른 요청이 이미 소비한 결과로도 새 회원의 이메일 인증·본인인증이 남았다(7.1.6 「같은 요청에서 인정한 결과만」 계약과 7.2.0 기록 리스너의 접합).
+     *
+     * @scenario case=no_policy
+     *
+     * @effects signup_without_policy_active_email_unverified
+     *
+     * @return void 반환값 없음
+     */
+    public function test_signup_does_not_record_verification_not_accepted_in_this_request(): void
+    {
+        $token = $this->verifiedSignupToken('reuse@example.com');
+        IdentityVerificationLog::where('verification_token', $token)->update(['consumed_at' => now()->subMinute()]);
+
+        $this->postJson('/api/auth/register', $this->signupBody('reuse@example.com', $token))->assertStatus(201);
+
+        $user = User::where('email', 'reuse@example.com')->firstOrFail();
+        $this->assertNull($user->email_verified_at, '다른 요청이 쓴 메일 인증 결과로 이메일 인증을 기록하지 않는다');
+        $this->assertNull($user->identity_verified_provider, '다른 요청이 쓴 인증 결과로 본인인증을 기록하지 않는다');
+        $this->assertNull($user->identity_verified_at);
+    }
+
+    /**
      * 가입이 입력 오류(422)로 끝나면 인증 결과를 돌려줘 고쳐서 다시 가입할 수 있다.
      *
      * @effects signup_failure_releases_token

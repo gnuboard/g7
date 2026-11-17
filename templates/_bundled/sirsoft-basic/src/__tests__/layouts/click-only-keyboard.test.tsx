@@ -16,8 +16,7 @@
  * 통화 목록 덮개 — 여닫기 단추) ② 안에 같은 동작의 라디오가 있다 ③ 안에 같은 상태를 펴는 `aria-expanded` 단추가 있다(문의 카드)
  * ④ 안에 자기 동작 없는 `aria-pressed` 대리 단추가 있다(배송지 관리 카드).
  *
- * @scenario surface=user_page
- * @effects click_only_regions_are_keyboard_buttons
+ * 마킹은 각 it 바로 앞에 있다(파일 머리말의 마킹은 어느 시험이 재는지 가리키지 않는다).
  *
  * @vitest-environment jsdom
  */

@@ -79,6 +79,9 @@ class ZeroPriceProductTest extends ModuleTestCase
         $this->assertTrue($errors->has('selling_price'));
     }
 
+    // 아래 메서드가 함께 재는 두 번째 조합 (docblock 은 @scenario 를 1건만 인식하므로 라인 주석으로 병기).
+    // @scenario surface=bulk_request, price=negative
+
     /**
      * 일괄 수정 규칙도 0 을 받고 음수는 막는다.
      *

@@ -131,6 +131,17 @@ describe('주문서 — 운영자 설정을 따르는 항목', () => {
 
     /**
      * @scenario case=defaults
+     * @effects defaults_match_legacy_screen_without_order_fields
+     */
+    it('회원 정보를 받는 중(currentUser 가 아직 없음)에는 이메일 기본값이 필수가 아니다 — 회원에게 별표가 잠깐 보이지 않는다(7.1.6 받는 중 가드)', () => {
+      const loading = { currentUser: undefined };
+      const ctx = screen(undefined, loading);
+      expect(ctx._computed.checkoutFields.orderer_email).toEqual({ enabled: true, required: false });
+      expect(evaluate(byId(ordererNodes, 'checkout_field_orderer_email_required').if, ctx)).toBe(false);
+    });
+
+    /**
+     * @scenario case=defaults
      * @effects defaults_draw_same_fields_and_stars_as_before
      */
     it('기본값에서 세 칸이 모두 그려지고 별표는 종전과 같다 (이메일은 비회원만, 상세 주소는 늘, 배송 메모는 없음)', () => {

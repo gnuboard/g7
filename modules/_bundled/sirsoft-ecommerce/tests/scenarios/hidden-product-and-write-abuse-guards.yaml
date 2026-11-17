@@ -1,5 +1,3 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 방어선마다 주체가 정해져 있어(하위 API 는 비회원·회원, 찜·요청 제한은 회원, 직접 발급은 관리자) 전수 곱이 아니라 방어선별로 잠근다.
-
 feature: 숨김 상품 노출·쓰기 API 남용 막기
 
 description: |
@@ -12,6 +10,11 @@ description: |
 axes:
   guard: [hidden_product_subresource, wishlist_visibility, write_rate_limit, direct_issue_reason_code]
   actor: [guest, member, admin]
+
+exclusions:
+  - { guard: hidden_product_subresource, actor: admin, reason: "관리자 화면은 공개 하위 API 를 거치지 않는다 — 숨김 판정(EnsuresPublicProduct)은 공개 끝점의 방어선이다" }
+  - { guard: [wishlist_visibility, write_rate_limit], actor: [guest, admin], reason: "찜·회원 쓰기 API 는 회원 인증 라우트다 — 비회원은 인증 단계에서 막히고 관리자 주체 경로가 없다" }
+  - { guard: direct_issue_reason_code, actor: [guest, member], reason: "직접 발급은 관리자 API 다" }
 
 effects:
   - hidden_product_subresources_return_404

@@ -155,7 +155,7 @@
                                 "id": "required_info_loading",
                                 "type": "basic",
                                 "name": "Div",
-                                "if": "{{!profileFields?.data}}",
+                                "if": "{{profileFields === undefined || !profileFields?.data}}",
                                 "props": {
                                     "className": "flex items-center gap-3 py-6 text-sm text-gray-600 dark:text-gray-300",
                                     "role": "status",

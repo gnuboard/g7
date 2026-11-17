@@ -43,7 +43,7 @@ class UploadClaimImageRequest extends FormRequest
             // 같은 php 차단을 경유하므로, 여기서 `mimes` 가 더하는 것은 bmp 를 받지 않는 것이다.
             //
             // 저장 경로의 확장자 방어는 이 룰이 아니라 저장 지점이 맡는다
-            // (`ClaimAttachmentService` 의 `storedExtension()` — 내용 기준으로 정한다).
+            // (`ClaimAttachmentService` 가 코어 `StoredFileExtension::resolve()` 로 내용 기준으로 정한다).
             'image' => ['required', 'file', 'image', 'mimes:'.implode(',', ClaimAttachmentService::ALLOWED_EXTENSIONS), 'max:'.$this->maxSizeKb()],
         ];
     }

@@ -41,7 +41,7 @@
             "id": "page_root",
             "type": "basic",
             "name": "Div",
-            "if": "{{_computed.canReadIdentityPolicies !== false}}",
+            "if": "{{current_user !== undefined && (_computed.canReadIdentityPolicies !== false)}}",
             "props": {
                 "className": "admin-card"
             },

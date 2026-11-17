@@ -242,6 +242,8 @@ class IdentityVerificationController extends PublicBaseController
      *
      * 가입 화면이 본인인증을 마친 뒤 이름, 휴대폰 같은 칸을 인증 값으로 채울 때 부른다. 인증 값을 주지 않는 수단(메일 인증번호 등)이면
      * `status: no_claims` 와 빈 값이 온다(200). 만료됐거나 알 수 없는 토큰은 422 이고 `errors.status` 로 `expired`, `invalid` 를 알린다.
+     * 가입 목적(`signup`)인데 가입 전 본인인증 정책이 꺼진 사이트면 토큰을 보지 않고 `status: disabled` 와 빈 값이 온다(200) —
+     * 정책이 꺼진 사이트는 가입 요청의 본인인증 결과를 인정하지도 쓰지도 않는다.
      *
      * @param  VerifiedClaimsRequest  $request  검증된 요청 (verification_token, purpose)
      * @return JsonResponse 토큰 상태, 인증 값, 항목 키별 채움값, 잠글 항목 키

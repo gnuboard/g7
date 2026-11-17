@@ -7,7 +7,7 @@
 <partial name="queue_logs_grid">
   <div data-ref="queue_logs_section">
     <div data-ref="queue_logs_list_info" class="flex-between flex-wrap gap-3 mb-4">
-      <span data-if="{{!_dataSourceErrors?.queue_logs &amp;&amp; queue_logs?.data?.pagination?.total_is_exact !== false}}" class="text-label">$t:admin.schedules.total_count|count={{queue_logs?.data?.pagination?.total ?? 0}}</span>
+      <span data-if="{{!_dataSourceErrors?.queue_logs &amp;&amp; queue_logs?.data?.pagination?.total_is_exact !== false}}" class="text-label"><blur-until-loaded sources="queue_logs"/>$t:admin.schedules.total_count|count={{queue_logs?.data?.pagination?.total ?? 0}}</span>
       <span data-if="{{!_dataSourceErrors?.queue_logs &amp;&amp; queue_logs?.data?.pagination?.total_is_exact === false}}" class="text-label">$t:admin.schedules.total_at_least|count={{queue_logs?.data?.pagination?.total ?? 0}}</span>
       <div class="flex-center gap-3">
         <select name="queue_logs_sort" class="w-40" value="{{query.sort_by ? query.sort_by + '_' + (query.sort_order || 'desc') : 'finished_at_desc'}}" aria-label="$t:admin.schedules.sort.label">

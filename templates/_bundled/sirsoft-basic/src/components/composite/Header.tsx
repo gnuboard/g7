@@ -833,7 +833,15 @@ const Header: React.FC<HeaderProps> = ({
             {userLoading ? (
               <Div role="status" aria-label={t('common.loading')} className="flex items-center gap-2 p-2" data-testid="header-user-skeleton">
                 <Span aria-hidden="true" data-skeleton="avatar" className="block w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse" />
-                <Span aria-hidden="true" data-skeleton="name" className="hidden sm:block h-4 w-20 max-w-32 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+                <Span
+                  aria-hidden="true"
+                  data-skeleton="name"
+                  className={
+                    viewportWidth >= BREAKPOINTS.sm
+                      ? 'block h-4 w-20 max-w-32 rounded bg-gray-200 dark:bg-gray-700 animate-pulse'
+                      : 'hidden h-4 w-20 max-w-32 rounded bg-gray-200 dark:bg-gray-700 animate-pulse'
+                  }
+                />
                 <Span aria-hidden="true" className="block w-4 h-4" />
               </Div>
             ) : user?.uuid ? (

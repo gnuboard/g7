@@ -39,7 +39,6 @@
             "telecom_number": "",
             "hosting_provider": "",
             "show_business_footer": true,
-            "footer_business_info_enabled": true,
             "public_asset_disk": "",
             "export_retention_days": 7
         },
@@ -679,7 +678,7 @@
     "frontend_schema": {
         "basic_info": {
             "expose": true,
-            "_comment": "route_path·no_route 는 사용자 화면 경로 계산에, 법정 사업자 항목(상호·대표자·주소·전화·전자우편·사업자등록번호·통신판매업 신고번호·호스팅 제공자·개인정보 보호책임자)은 사용자 화면 푸터에 쓴다 — 기본 템플릿 푸터는 show_business_footer, 푸터 사업자 정보 조각(user_global_footer)은 footer_business_info_enabled 를 읽는다. show_business_footer 가 꺼지면 사업자 항목은 응답에서 빠진다. 업종·업태·공개 자산 디스크·보관 기간은 비공개",
+            "_comment": "route_path·no_route 는 사용자 화면 경로 계산에, 사업자 항목은 이 모듈의 푸터 사업자 정보 조각(user_global_footer)이 그리는 것만 공개한다 — 상호·대표자·주소(우편번호 포함)·사업자등록번호·통신판매업 신고번호·부가통신사업 신고번호·전화·팩스·전자우편·개인정보 보호책임자(와 그 전자우편)·호스팅 서비스 제공자. 조각은 show_business_footer(기본 켜짐)를 읽고, 꺼지면 서버가 사업자 항목을 응답에서 뺀다(EcommerceSettingsService::BUSINESS_FOOTER_FIELDS). 상점 이름·업종·업태·공개 자산 디스크·보관 기간은 비공개",
             "fields": {
                 "shop_name": {
                     "expose": false
@@ -733,9 +732,6 @@
                     "expose": true
                 },
                 "telecom_number": {
-                    "expose": true
-                },
-                "footer_business_info_enabled": {
                     "expose": true
                 },
                 "hosting_provider": {

@@ -207,7 +207,7 @@
                     "id": "core_update_idle_actions",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{!_computed.coreUpdateRun}}",
+                    "if": "{{core_update_status !== undefined && (!_computed.coreUpdateRun)}}",
                     "props": {
                         "className": "flex flex-wrap gap-2 mb-4"
                     },
@@ -1053,7 +1053,7 @@
             "id": "card_core_update_advanced",
             "type": "basic",
             "name": "Div",
-            "if": "{{!_computed.coreUpdateRun}}",
+            "if": "{{core_update_status !== undefined && (!_computed.coreUpdateRun)}}",
             "props": {
                 "className": "admin-card-accordion"
             },

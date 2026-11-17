@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#901 |
 #   경합(동시 요청)은 단일 프로세스 PHPUnit 이 진짜로 만들 수 없어 「낡은 모델을 돌려주는 Repository」·
 #   「같은 요청 안 재진입」으로 결정론적으로 재현한다. 진짜 동시성은 브라우저 Promise.all 실측이 덮는다.
 #   축 조합 전개는 다른 시나리오와 같은 fallback YAML 파서 한계로 자동 검출하지 않는다.

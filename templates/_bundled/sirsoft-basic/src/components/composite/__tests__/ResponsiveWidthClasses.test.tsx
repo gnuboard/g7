@@ -8,6 +8,9 @@ import { Pagination } from '../Pagination';
 import { VisitorCounter } from '../VisitorCounter';
 import { PageSkeleton } from '../PageSkeleton';
 import { FileList } from '../FileUploader/FileList';
+import { ProductRail } from '../ProductRail';
+import { MobileBuyBar } from '../MobileBuyBar';
+import { BottomSheet } from '../BottomSheet';
 import { Grid } from '../../layout/Grid';
 
 /**
@@ -53,6 +56,21 @@ const padding = (width: number) => {
   const has = width >= 1024 ? 'px-8' : width >= 640 ? 'px-6' : 'px-4';
   return { has: ['max-w-7xl', 'mx-auto', has], not: all.filter((c) => c !== has) };
 };
+
+/** 옛 `auto-cols-[calc(50%_-_8px)] sm:auto-cols-[calc(33.333%_-_11px)] lg:auto-cols-[calc(25%_-_12px)]` — 한 화면 2·3·4장 */
+const railCols = (width: number) => {
+  const all = ['auto-cols-[calc(50%_-_8px)]', 'auto-cols-[calc(33.333%_-_11px)]', 'auto-cols-[calc(25%_-_12px)]'];
+  const has = width >= 1024 ? all[2] : width >= 640 ? all[1] : all[0];
+  return { has: ['grid', 'grid-flow-col', 'gap-4', has], not: all.filter((c) => c !== has) };
+};
+
+/**
+ * 옛 `fixed … md:hidden` — 768px 미만에서만 화면 아래에 고정되고, 이상에서는 숨는다.
+ *
+ * @param narrowExtra 좁은 화면에서 함께 있어야 할 배치 클래스
+ */
+const narrowOnly = (narrowExtra: string[]) => (width: number) =>
+  width < 768 ? { has: ['fixed', ...narrowExtra], not: ['hidden'] } : { has: ['hidden'], not: ['fixed', ...narrowExtra] };
 
 const USER_NAME = '홍길동';
 
@@ -139,6 +157,53 @@ const CASES: WidthCase[] = [
     ui: () => <PageSkeleton components={[{ name: 'Footer' }]} options={{ animation: 'none', iteration_count: 1 }} />,
     target: (c) => c.querySelector('footer .max-w-7xl'),
     expectAt: (width) => ({ ...padding(width), has: [...padding(width).has, 'py-8'] }),
+  },
+  {
+    name: 'Header 회원 자리 뼈대의 이름 막대 (옛 hidden sm:block)',
+    ui: () => <Header siteName="사이트" userLoading availableLocales={['ko', 'en']} currentLocale="ko" />,
+    target: (c) => c.querySelector('[data-skeleton="name"]'),
+    expectAt: (width) =>
+      width >= 640
+        ? { has: ['block', 'h-4', 'w-20', 'max-w-32'], not: ['hidden'] }
+        : { has: ['hidden', 'h-4', 'w-20', 'max-w-32'], not: ['block'] },
+  },
+  {
+    name: 'ProductRail 한 화면 카드 수 (옛 auto-cols-[50%] sm:auto-cols-[33%] lg:auto-cols-[25%])',
+    ui: () => (
+      <ProductRail title="인기상품">
+        <div>A</div>
+        <div>B</div>
+      </ProductRail>
+    ),
+    target: (c) => c.querySelector('[data-product-rail-track]'),
+    expectAt: railCols,
+  },
+  {
+    name: 'PageSkeleton 가로 상품 줄 뼈대 카드 수 (옛 auto-cols-[50%] sm:auto-cols-[33%] lg:auto-cols-[25%])',
+    ui: () => (
+      <PageSkeleton
+        components={[{ name: 'ProductRail', type: 'composite', children: [{ name: 'ProductCard', type: 'composite' }] }]}
+        options={{ animation: 'none', iteration_count: 1 }}
+      />
+    ),
+    target: (c) => c.querySelector('.grid-flow-col'),
+    expectAt: railCols,
+  },
+  {
+    name: 'MobileBuyBar 좁은 화면 전용 (옛 fixed … md:hidden)',
+    ui: () => <MobileBuyBar variant="product" priceText="1,000원" />,
+    target: (c) => c.querySelector('[data-mobile-buy-bar]'),
+    expectAt: narrowOnly(['bottom-0', 'z-30']),
+  },
+  {
+    name: 'BottomSheet 좁은 화면 전용 (옛 fixed … md:hidden)',
+    ui: () => (
+      <BottomSheet open title="옵션 선택">
+        <button type="button">안쪽</button>
+      </BottomSheet>
+    ),
+    target: (c) => c.querySelector('[data-bottom-sheet]'),
+    expectAt: narrowOnly(['inset-0', 'z-40']),
   },
 ];
 

@@ -844,7 +844,7 @@
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Span",
-                                                                "if": "{{user?.data?.has_password !== false}}",
+                                                                "if": "{{user !== undefined && (user?.data?.has_password !== false)}}",
                                                                 "props": {
                                                                     "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                                                                 },
@@ -1562,7 +1562,7 @@
                             {
                                 "type": "basic",
                                 "name": "Div",
-                                "if": "{{user?.data?.has_password !== false}}",
+                                "if": "{{user !== undefined && (user?.data?.has_password !== false)}}",
                                 "responsive": {
                                     "768-": {
                                         "props": {

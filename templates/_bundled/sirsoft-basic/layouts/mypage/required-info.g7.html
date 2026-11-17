@@ -50,7 +50,7 @@
           $t:member.required_info.title
         </h1>
         <!-- 불러오는 중 — 항목을 받기 전에는 폼 대신 진행 표시만 둔다. -->
-        <div data-if="{{!profileFields?.data}}" data-ref="required_info_loading" class="flex items-center gap-3 py-6 text-sm text-gray-600 dark:text-gray-300" role="status" aria-live="polite">
+        <div data-if="{{profileFields === undefined || !profileFields?.data}}" data-ref="required_info_loading" class="flex items-center gap-3 py-6 text-sm text-gray-600 dark:text-gray-300" role="status" aria-live="polite">
           <div class="w-5 h-5 border-2 border-gray-300 dark:border-gray-600 border-t-blue-500 rounded-full animate-spin"/>
           <span>$t:member.required_info.loading</span>
         </div>

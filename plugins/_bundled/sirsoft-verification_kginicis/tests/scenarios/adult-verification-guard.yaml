@@ -30,6 +30,7 @@ effects:
   - adult_passes_with_verified_status_and_token              # purpose=adult, is_adult=true → success, 토큰 발급, status=verified
   - non_adult_purpose_unaffected_by_guard                    # purpose=non_adult → is_adult 무관 success 유지 (회귀 방지)
   - adult_purpose_blocks_when_birthday_absent                # purpose=adult, is_adult=missing → failure(NOT_ADULT)
+  - non_adult_purpose_blocked_by_incomplete_identity_guard   # purpose=non_adult, is_adult=missing → failure(INCOMPLETE_IDENTITY), status=failed (신원 가드가 성인 가드보다 먼저)
   # (3 표시) verify 실패 안내 toast (프론트)
   - verify_failure_dispatches_error_toast_with_i18n_key      # identity_error 수신 시 $t: 키로 toast 발행
   - verified_result_does_not_dispatch_toast                  # 성공 경로는 toast 미발화 (회귀 방지)

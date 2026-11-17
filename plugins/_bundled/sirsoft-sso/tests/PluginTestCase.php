@@ -65,6 +65,8 @@ abstract class PluginTestCase extends TestCase
         parent::setUp();
 
         $this->app->register(SsoServiceProvider::class);
+        // 플러그인 사전 — 설치하지 않은 환경에서도 `sirsoft-sso::` 문구가 풀리게 번들 디렉토리 lang 을 건다(다른 번들 플러그인 시험과 같은 방식)
+        $this->app['translator']->addNamespace('sirsoft-sso', dirname(__DIR__).'/lang');
         $this->registerPluginRoutes();
         $this->registerPluginMiddleware();
 

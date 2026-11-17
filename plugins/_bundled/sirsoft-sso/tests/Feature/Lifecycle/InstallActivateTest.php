@@ -123,15 +123,18 @@ class InstallActivateTest extends PluginTestCase
     }
 
     /**
-     * 활성화가 메뉴를 맞추고 비활성은 보존하며 삭제가 메뉴를 지우는지 확인한다.
+     * 활성화가 메뉴를 맞추고 비활성은 보존하며, 플러그인의 uninstall() 도 메뉴를 남기는지 확인한다.
+     *
+     * uninstall() 은 데이터 보존 제거에서도 불리므로 메뉴를 지우지 않는다 — 메뉴는 「데이터도 함께 삭제」 제거에서
+     * 코어(PluginManager)가 지운다(코어 7.2.0). 코어 쪽 계약은 tests/Feature/Extension/PluginUninstallKeepsMenusTest.php.
      *
      * @scenario lifecycle=activate|uninstall
      *
-     * @effects menus_synced, menus_removed
+     * @effects menus_synced, plugin_uninstall_hook_keeps_menus
      *
      * @return void 반환값 없음
      */
-    public function test_activate_syncs_menus_and_uninstall_removes(): void
+    public function test_activate_syncs_menus_and_uninstall_hook_keeps_menus(): void
     {
         $plugin = app(PluginManager::class)->getPlugin('sirsoft-sso') ?? $this->plugin();
 
@@ -147,6 +150,6 @@ class InstallActivateTest extends PluginTestCase
         $this->assertSame(3, Menu::query()->where('extension_identifier', 'sirsoft-sso')->count(), '비활성은 메뉴 보존');
 
         $this->assertTrue($plugin->uninstall());
-        $this->assertSame(0, Menu::query()->where('extension_identifier', 'sirsoft-sso')->count());
+        $this->assertSame(3, Menu::query()->where('extension_identifier', 'sirsoft-sso')->count(), '데이터 보존 제거에서도 불리는 훅이라 메뉴를 남긴다');
     }
 }

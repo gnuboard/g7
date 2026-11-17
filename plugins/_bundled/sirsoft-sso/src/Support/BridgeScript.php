@@ -31,6 +31,21 @@ final class BridgeScript
     }
 
     /**
+     * 독립 페이지의 스타일시트 `<link>` 태그를 만듭니다.
+     *
+     * 사이트가 스타일 보안 정책(`style-src 'self'; style-src-attr 'none'`)을 걸면 `<style>` 요소와 `style="…"` 속성이
+     * 막힌다(코어 #163, 7.1.6). 이 플러그인이 직접 내는 HTML 페이지(자동 제출·테스트 결과·모의 IdP 승인 화면)의 모양은
+     * 같은 출처 정적 파일(`assets/bridge/*.css`)로 싣는다.
+     *
+     * @param  string  $file  `assets/bridge/` 아래 파일명 (예: `test-result.css`)
+     * @return string 스타일시트 링크 태그 HTML
+     */
+    public static function stylesheetTag(string $file): string
+    {
+        return '<link rel="stylesheet" href="'.e(self::url($file)).'">';
+    }
+
+    /**
      * 브리지 스크립트 URL 을 만듭니다 (플러그인 자산 경로 + 플러그인 버전 캐시 무효화).
      *
      * @param  string  $file  `assets/bridge/` 아래 파일명

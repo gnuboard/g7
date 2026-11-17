@@ -183,7 +183,7 @@
                                                     "id": "activity_log_schedule_notice_link",
                                                     "type": "basic",
                                                     "name": "A",
-                                                    "if": "{{_computed.canReadSchedules !== false}}",
+                                                    "if": "{{current_user !== undefined && (_computed.canReadSchedules !== false)}}",
                                                     "props": {
                                                         "href": "/admin/schedules?extension_type=core&search_field=identifier&search_keyword=activity-log-prune",
                                                         "className": "text-link"

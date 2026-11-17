@@ -3,11 +3,12 @@
  *
  * @description 푸터가 쇼핑몰 설정의 법정 사업자 항목을 값이 있는 것만 「라벨: 값」 줄로 그리고,
  *   값이 하나도 없거나 정보가 오지 않으면 블록을 그리지 않는지 잠근다.
+ *   기본 레이아웃(_user_base)은 이 속성을 넘기지 않는다(쇼핑몰 모듈이 user_global_footer 자리에 직접 그림) —
+ *   여기서 잠그는 것은 속성을 바인딩한 레이아웃을 위해 남겨 둔 컴포넌트 계약이다.
  *
  * @scenario-manifest tests/scenarios/footer-business-info.yaml
  */
 
-import React from 'react';
 import { render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Footer from '../Footer';

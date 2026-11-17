@@ -13,6 +13,7 @@ use Illuminate\Support\Str;
 use Plugins\Sirsoft\Sso\Drivers\Saml\SamlDriver;
 use Plugins\Sirsoft\Sso\Models\IdentityProvider;
 use Plugins\Sirsoft\Sso\Services\SafeRedirect;
+use Plugins\Sirsoft\Sso\Support\BridgeScript;
 
 /**
  * 모의 SAML IdP — 메타데이터, 로그인 승인 화면(SP-initiated, IdP-initiated), 로그아웃.
@@ -262,9 +263,8 @@ class MockSamlController extends Controller
         }
 
         $html = '<!doctype html><html lang="'.e(app()->getLocale()).'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-            .'<title>Mock SAML IdP</title><style>body{font-family:system-ui,sans-serif;max-width:28rem;margin:2rem auto;padding:0 1rem}'
-            .'label{display:block;margin:.75rem 0 .25rem}input,select{width:100%;padding:.5rem;box-sizing:border-box}'
-            .'button{margin-top:1rem;padding:.6rem 1rem}</style></head><body>'
+            // 모양은 정적 파일이 준다 — 인라인 <style> 은 스타일 보안 정책(style-src 'self')에서 막힌다(#163)
+            .'<title>Mock SAML IdP</title>'.BridgeScript::stylesheetTag('mock-idp.css').'</head><body>'
             .'<h1>Mock SAML IdP</h1><p>'.e(__('sirsoft-sso::saml.mock.notice')).'</p>'
             .'<form method="post" action="'.e(self::entityId().'/approve').'">'.$fields
             .'<label for="variant">variant</label><select id="variant" name="variant">'.$options.'</select>'

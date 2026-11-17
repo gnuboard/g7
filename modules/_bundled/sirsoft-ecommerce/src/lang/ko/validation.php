@@ -1516,7 +1516,6 @@ return [
         'basic_info.privacy_officer_email' => '개인정보 책임자 이메일',
         'basic_info.mail_order_number' => '통신판매업 신고번호',
         'basic_info.telecom_number' => '부가통신 사업자번호',
-        'basic_info.footer_business_info_enabled' => '푸터 사업자 정보 표시',
         // 내보내기(#787)
         'basic_info.export_retention_days' => '내보내기 파일 보관 기간',
 

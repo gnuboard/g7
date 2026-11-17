@@ -1,5 +1,3 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 요청 모양과 결과 축이 짝으로만 의미가 있어(번호 없음 → 전체, 잘못된 요청 → 거부) 전수 곱이 아니라 경로별로 잠근다.
-
 feature: 쿠폰 일괄 받기 API
 
 description: |
@@ -11,6 +9,12 @@ description: |
 axes:
   request: [explicit_ids, no_ids, invalid]
   outcome: [mixed, all_downloadable, over_limit, none_issued, rejected, query_count, concurrent_limit, english_plural]
+
+exclusions:
+  - { request: invalid, outcome: [mixed, all_downloadable, over_limit, none_issued, query_count, concurrent_limit, english_plural], reason: "잘못된 요청(비로그인·잘못된 번호)은 발급 단계에 닿지 않고 거부 하나로 끝난다" }
+  - { request: [explicit_ids, no_ids], outcome: rejected, reason: "올바른 요청은 요청 단계에서 거부되지 않는다 — 쿠폰별 실패는 mixed·none_issued 의 사유 코드로 잰다" }
+  - { request: explicit_ids, outcome: [all_downloadable, over_limit], reason: "「받을 수 있는 전체」「한도까지 아직 안 받은 것 우선」은 번호를 주지 않은 요청의 대상 선정 결과다" }
+  - { request: no_ids, outcome: [mixed, none_issued, query_count, concurrent_limit, english_plural], reason: "요청 모양은 대상 목록을 고르는 단계만 가른다 — 쿠폰별 발급(검사·잠금·사유 코드·집계·문구)은 같은 경로라 번호 지정 요청으로 잰다" }
 
 effects:
   - bulk_issues_downloadable_coupons

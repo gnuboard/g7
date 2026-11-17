@@ -1,6 +1,6 @@
 import React from 'react';
 import { gridColsClass, resolveGridCols } from '../layout/gridColumns';
-import { BREAKPOINTS, containerPaddingClass, resolveViewportWidth } from '../layout/viewportWidth';
+import { BREAKPOINTS, containerPaddingClass, productRailColumnClass, resolveViewportWidth } from '../layout/viewportWidth';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
 const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
@@ -641,7 +641,7 @@ function renderSkeletonNode(
         return (
             <section key={index} className={className}>
                 <div className={`h-6 w-40 mb-4 bg-gray-200 dark:bg-gray-700 rounded ${animClass}`} />
-                <div className="grid grid-flow-col auto-cols-[calc(50%_-_8px)] sm:auto-cols-[calc(33.333%_-_11px)] lg:auto-cols-[calc(25%_-_12px)] gap-4 overflow-hidden">
+                <div className={`grid grid-flow-col ${productRailColumnClass(width)} gap-4 overflow-hidden`}>
                     {renderChildren(children, animClass, iterCount, width)}
                 </div>
             </section>

@@ -628,11 +628,19 @@ class AdminTemplateAssetControllerTest extends TestCase
 
         $this->assertSame('@property --tw-x{syntax:"*";inherits:false}@layer g7-preview{*{border:0 solid}}@layer g7-preview{.p-4{padding:1rem}.q{top:0}}.own{color:red}', $out);
 
+        // 순서 선언은 인라인 `<style>` 이 아니라 코어 정적 파일(g7-layers-admin.css) 링크다 — 엄격한 스타일 정책에서
+        // `<style>` 이 막히면 선언이 사라져 프리뷰 템플릿 초기화가 다시 확장 의미 칸을 이긴다(#163)
         $blade = (string) file_get_contents(resource_path('views/admin.blade.php'));
         $links = strpos($blade, '@foreach($templateStylesheets');
-        $order = strpos($blade, '<style>@layer g7-preview, g7-extension;</style>');
+        $order = strpos($blade, "@include('partials.core-styles', ['sheet' => 'layers-admin'])");
         $this->assertNotFalse($order, '관리자 화면 머리가 프리뷰 층을 확장 의미 칸 앞에 선언한다');
         $this->assertGreaterThan($links, $order, '층 순서 선언은 관리자 템플릿 CSS 링크 뒤에 온다');
+        $this->assertStringNotContainsString('<style>@layer', $blade, '층 순서 선언을 인라인 <style> 로 두지 않는다');
+        $this->assertStringContainsString(
+            '@layer g7-preview, g7-extension;',
+            (string) file_get_contents(public_path('assets/core/css/g7-layers-admin.css')),
+            '정적 파일이 프리뷰 층을 확장 의미 칸 앞에 선언한다',
+        );
     }
 
     /**

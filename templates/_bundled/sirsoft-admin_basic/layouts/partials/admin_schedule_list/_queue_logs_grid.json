@@ -20,6 +20,10 @@
                     "type": "basic",
                     "name": "Span",
                     "if": "{{!_dataSourceErrors?.queue_logs && queue_logs?.data?.pagination?.total_is_exact !== false}}",
+                    "blur_until_loaded": {
+                        "enabled": true,
+                        "data_sources": "queue_logs"
+                    },
                     "props": {
                         "className": "text-label"
                     },

@@ -94,3 +94,24 @@ export function pickByWidth<T>(width: number, base: T, steps: Partial<Record<Bre
 export function containerPaddingClass(width: number): 'px-4' | 'px-6' | 'px-8' {
   return pickByWidth<'px-4' | 'px-6' | 'px-8'>(width, 'px-4', { sm: 'px-6', lg: 'px-8' });
 }
+
+/** 가로 상품 줄 열 폭 클래스 */
+export type ProductRailColumnClass =
+  | 'auto-cols-[calc(50%_-_8px)]'
+  | 'auto-cols-[calc(33.333%_-_11px)]'
+  | 'auto-cols-[calc(25%_-_12px)]';
+
+/**
+ * 가로 상품 줄(`ProductRail`)의 열 폭 — 줄과 그 화면 뼈대(PageSkeleton)가 함께 쓴다.
+ *
+ * 한 화면 카드 수는 640px 미만 2장, 640px 이상 3장, 1024px 이상 4장이다. 열 폭은 간격 gap-4(16px)를 장수로 나눠 뺀 값이다.
+ *
+ * @param width 판정 폭(px)
+ * @returns 열 폭 클래스
+ */
+export function productRailColumnClass(width: number): ProductRailColumnClass {
+  return pickByWidth<ProductRailColumnClass>(width, 'auto-cols-[calc(50%_-_8px)]', {
+    sm: 'auto-cols-[calc(33.333%_-_11px)]',
+    lg: 'auto-cols-[calc(25%_-_12px)]',
+  });
+}

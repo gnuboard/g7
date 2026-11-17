@@ -9,13 +9,14 @@
 
 ### Fixed
 
-- (engine-v1.95.3) 레이아웃 편집기 [버전 기록] 창에서 맨 위 판이 동기화가 덮기 직전에 남긴 운영자 판(`changes_summary.before_overwrite`)이면 최신이어도 [복원] 단추를 보입니다. 종전에는 맨 위 판을 늘 「지금 적용된 판」으로 보고 단추를 숨겨, 「레이아웃 갱신」·확장 업데이트가 운영자 판을 새 판으로 덮은 직후 그 판으로 되돌릴 길이 없었습니다(관리자 코드 편집기 버전 창은 같은 조건으로 이미 보임). 저장한 사람 없이 동기화가 남긴 판(출처 `source` 있음)의 저장자는 「알 수 없음」 대신 「시스템」으로 보입니다(새 문구 `layout_editor.version_history.system_author`). 발생 시점: 덮기 전 판 기록이 생긴 이번 7.2.0 개발 중(#888). 회귀 잠금 `layout-editor/__tests__/components/VersionHistoryModal.test.tsx` (수정 전 2건 red) (layout-editor/components/VersionHistoryModal.tsx, hooks/useLayoutVersions.ts `LayoutVersionChangesSummary`)
+- (engine-v1.96.3) 레이아웃 편집기 [버전 기록] 창에서 맨 위 판이 동기화가 덮기 직전에 남긴 운영자 판(`changes_summary.before_overwrite`)이면 최신이어도 [복원] 단추를 보입니다. 종전에는 맨 위 판을 늘 「지금 적용된 판」으로 보고 단추를 숨겨, 「레이아웃 갱신」·확장 업데이트가 운영자 판을 새 판으로 덮은 직후 그 판으로 되돌릴 길이 없었습니다(관리자 코드 편집기 버전 창은 같은 조건으로 이미 보임). 저장한 사람 없이 동기화가 남긴 판(출처 `source` 있음)의 저장자는 「알 수 없음」 대신 「시스템」으로 보입니다(새 문구 `layout_editor.version_history.system_author`). 발생 시점: 덮기 전 판 기록이 생긴 이번 7.2.0 개발 중(#888). 회귀 잠금 `layout-editor/__tests__/components/VersionHistoryModal.test.tsx` (수정 전 2건 red) (layout-editor/components/VersionHistoryModal.tsx, hooks/useLayoutVersions.ts `LayoutVersionChangesSummary`)
+- (engine-v1.96.3) 레이아웃 편집기의 기기 미리보기 줄·기기 툴바·운영 화면의 편집 진입 단추 규칙을 `<style>` 요소 대신 런타임 스타일 시트(`RuntimeStyleSheet`)로 붙입니다 — 엄격한 스타일 정책(`style-src 'self'`)에서도 배치와 다크 모드가 유지됩니다. 기본 스피너 덮개는 다크 모드에서 수식 클래스 `g7-spinner-overlay--dark`(`g7-core.css`)로 어두운 배경을 씁니다. 발생 시점: 이번 7.2.0 개발 중(6차 develop 병합 후속). 회귀 잠금 `layout-editor/__tests__/noInlineStyleElement.test.tsx`, `transitionOverlay.test.ts` (layout-editor/utils/editorRuntimeStyles.ts, LayoutEditorChrome.tsx, components/DevicePreviewToolbar.tsx, components/EditEntryFab.tsx, TemplateApp.ts)
 
 ## [engine-v1.96.2] - 2026-11-16
 
 ### Fixed
 
-- (engine-v1.95.2) 액션 `target` 의 `{{_global.*}}` 를 params 와 같이 지금의 전역 상태로 풉니다. 종전에는 params·body 는 저장소 값을, target 만 이벤트 때 잡은 전역 사본을 읽어, sequence 에서 `setState target="global"` 다음 apiCall 의 target 이 빈 값이 됐습니다 — 관리자 템플릿 목록 「레이아웃 갱신」 첫 열기에서 미리보기 요청이 현재 페이지 주소로 나가 405(다시 시도는 정상). 단계 `if`·`conditions` 분기 판정은 바꾸지 않았습니다(이벤트 때 값) — 로그인 폼의 1·2단계 상호배타, 게시판·문의 삭제 onSuccess 의 「상태 비우기 → 분기」 가 그 동작에 기댑니다. 회귀 잠금 `ActionDispatcher.sequenceGlobalFreshness.test.tsx`, 트러블슈팅 state-setstate 사례 57 (ActionDispatcher.ts)
+- (engine-v1.96.2) 액션 `target` 의 `{{_global.*}}` 를 params 와 같이 지금의 전역 상태로 풉니다. 종전에는 params·body 는 저장소 값을, target 만 이벤트 때 잡은 전역 사본을 읽어, sequence 에서 `setState target="global"` 다음 apiCall 의 target 이 빈 값이 됐습니다 — 관리자 템플릿 목록 「레이아웃 갱신」 첫 열기에서 미리보기 요청이 현재 페이지 주소로 나가 405(다시 시도는 정상). 단계 `if`·`conditions` 분기 판정은 바꾸지 않았습니다(이벤트 때 값) — 로그인 폼의 1·2단계 상호배타, 게시판·문의 삭제 onSuccess 의 「상태 비우기 → 분기」 가 그 동작에 기댑니다. 회귀 잠금 `ActionDispatcher.sequenceGlobalFreshness.test.tsx`, 트러블슈팅 state-setstate 사례 57 (ActionDispatcher.ts)
 
 ## [engine-v1.96.1] - 2026-11-16
 

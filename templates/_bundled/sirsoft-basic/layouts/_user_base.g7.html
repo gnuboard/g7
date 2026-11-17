@@ -843,8 +843,8 @@
         <responsive on="desktop" class="min-h-fit max-w-7xl mx-auto px-8"/>
       </container>
     </div>
-    <!-- === 푸터 (Footer 컴포넌트) === -->
-    <footer data-type="composite" data-ref="footer" businessInfo="{{(_global.activeModules?.includes('sirsoft-ecommerce') ?? true) &amp;&amp; _global.modules?.['sirsoft-ecommerce']?.basic_info?.show_business_footer !== false ? (_global.modules?.['sirsoft-ecommerce']?.basic_info ?? null) : null}}" boardEnabled="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" pageEnabled="{{_global.activeModules?.includes('sirsoft-page') ?? true}}" siteName="{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" siteDescription="{{_global.settings?.general?.site_description ?? ''}}" copyrightText="{{$localized(_global.templateSettings?.footer?.copyright ?? {}) ?? ''}}" defaultCopyrightText="$t:footer.copyright|siteName={{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" showPoweredBy="{{_global.templateSettings?.footer?.show_powered_by ?? true}}">
+    <!-- === 푸터 (Footer 컴포넌트) — 쇼핑몰 사업자 정보는 넘기지 않는다: 쇼핑몰 모듈이 바로 아래 user_global_footer 자리에 직접 그린다(한 곳에서만 그려 두 번 나오지 않게) === -->
+    <footer data-type="composite" data-ref="footer" boardEnabled="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" pageEnabled="{{_global.activeModules?.includes('sirsoft-page') ?? true}}" siteName="{{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" siteDescription="{{_global.settings?.general?.site_description ?? ''}}" copyrightText="{{$localized(_global.templateSettings?.footer?.copyright ?? {}) ?? ''}}" defaultCopyrightText="$t:footer.copyright|siteName={{_global.settings?.general?.site_name ?? $t('user.base_layout_title')}}" showPoweredBy="{{_global.templateSettings?.footer?.show_powered_by ?? true}}">
       <prop name="socialLinks">
         <field name="youtube" value="{{_global.templateSettings?.footer?.social_youtube ?? ''}}"/>
         <field name="instagram" value="{{_global.templateSettings?.footer?.social_instagram ?? ''}}"/>

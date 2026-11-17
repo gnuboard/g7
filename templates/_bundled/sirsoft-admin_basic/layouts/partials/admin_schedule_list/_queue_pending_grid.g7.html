@@ -13,9 +13,9 @@
       <icon name="circle-info" class="text-blue-600 dark:text-blue-400 flex-shrink-0"/>
       <p class="text-info-soft">$t:admin.schedules.queue.notice.unmeasurable|driver={{queue_pending?.data?.meta?.driver ?? '-'}}</p>
     </div>
-    <div data-if="{{queue_pending?.data?.meta?.measurable !== false}}">
+    <div data-if="{{queue_pending === undefined || queue_pending?.data?.meta?.measurable !== false}}">
       <div data-ref="queue_pending_list_info" class="flex-between flex-wrap gap-3 mb-4">
-        <span data-if="{{!_dataSourceErrors?.queue_pending &amp;&amp; queue_pending?.data?.pagination?.total_is_exact !== false}}" class="text-label">$t:admin.schedules.total_count|count={{queue_pending?.data?.pagination?.total ?? 0}}</span>
+        <span data-if="{{!_dataSourceErrors?.queue_pending &amp;&amp; queue_pending?.data?.pagination?.total_is_exact !== false}}" class="text-label"><blur-until-loaded sources="queue_pending"/>$t:admin.schedules.total_count|count={{queue_pending?.data?.pagination?.total ?? 0}}</span>
         <span data-if="{{!_dataSourceErrors?.queue_pending &amp;&amp; queue_pending?.data?.pagination?.total_is_exact === false}}" class="text-label">$t:admin.schedules.total_at_least|count={{queue_pending?.data?.pagination?.total ?? 0}}</span>
         <div class="flex-center gap-3">
           <select name="queue_pending_sort" class="w-40" value="{{query.sort_by ? query.sort_by + '_' + (query.sort_order || 'desc') : 'created_at_desc'}}" aria-label="$t:admin.schedules.sort.label">

@@ -205,19 +205,9 @@
                 <label class="ecommerce-form-label">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.show_business_footer</label>
                 <p class="ecommerce-form-hint">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.show_business_footer_hint</p>
               </div>
-              <toggle data-type="composite" name="basic_info.show_business_footer" value="{{_local.form?.basic_info?.show_business_footer ?? true}}" disabled="{{_computed.isReadOnly}}"/>
+              <toggle data-type="composite" name="basic_info.show_business_footer" value="{{_local.form?.basic_info?.show_business_footer ?? true}}" ariaLabel="$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.show_business_footer" disabled="{{_computed.isReadOnly}}"/>
             </div>
           </div>
-        </div>
-        <!-- 푸터 사업자 정보 표시 (#434) — 켜면 이 모듈이 사용자 템플릿의 공용 자리(user_global_footer)에 위 값을 그린다(전자상거래법 첫 화면 표시).
-             어느 사용자 템플릿이든 그 자리만 있으면 같다. 기본 켜짐 — 값이 비어 있으면 그리지 않는다 -->
-        <div data-ref="field_footer_business_info_enabled" class="ecommerce-form-group ecommerce:mt-4">
-          <div class="ecommerce-flex-center ecommerce:justify-between ecommerce:gap-4">
-            <label class="ecommerce-form-label ecommerce:mb-0">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.footer_display</label>
-            <toggle data-type="composite" name="basic_info.footer_business_info_enabled" value="{{_local.form?.basic_info?.footer_business_info_enabled ?? true}}" ariaLabel="$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.footer_display" disabled="{{_computed.isReadOnly}}"/>
-          </div>
-          <p class="ecommerce-form-hint ecommerce:mt-1">$t:sirsoft-ecommerce.admin.settings.basic_info.business_info.footer_display_help</p>
-          <span data-if="{{_local.errors?.['basic_info.footer_business_info_enabled']}}" class="ecommerce-form-error">{{_local.errors?.['basic_info.footer_business_info_enabled']?.[0] ?? ''}}</span>
         </div>
       </div>
     </div>
@@ -281,7 +271,7 @@
             </on>
           </select>
           <p class="ecommerce:w-full ecommerce-form-hint">$t:sirsoft-ecommerce.admin.settings.display_name.inquiry_description</p>
-          <p data-ref="inquiry_display_name_effective" data-if="{{(_local.form?.display_name?.inquiry?.mode ?? 'inherit') === 'inherit' &amp;&amp; (settings?.data?.display_name?.inquiry?.mode ?? 'inherit') === 'inherit' &amp;&amp; !!_local.form?.display_name_options?.effective?.inquiry?.kind_label}}" class="ecommerce:w-full ecommerce-form-hint">{{_local.form?.display_name_options?.effective?.inquiry?.source_label ? $t('sirsoft-ecommerce.admin.settings.display_name.effective_with_source', { kind: _local.form?.display_name_options?.effective?.inquiry?.kind_label, source: _local.form?.display_name_options?.effective?.inquiry?.source_label }) : $t('sirsoft-ecommerce.admin.settings.display_name.effective', { kind: _local.form?.display_name_options?.effective?.inquiry?.kind_label })}}</p>
+          <p data-ref="inquiry_display_name_effective" data-if="{{settings !== undefined &amp;&amp; ((_local.form?.display_name?.inquiry?.mode ?? 'inherit') === 'inherit' &amp;&amp; (settings?.data?.display_name?.inquiry?.mode ?? 'inherit') === 'inherit' &amp;&amp; !!_local.form?.display_name_options?.effective?.inquiry?.kind_label)}}" class="ecommerce:w-full ecommerce-form-hint">{{_local.form?.display_name_options?.effective?.inquiry?.source_label ? $t('sirsoft-ecommerce.admin.settings.display_name.effective_with_source', { kind: _local.form?.display_name_options?.effective?.inquiry?.kind_label, source: _local.form?.display_name_options?.effective?.inquiry?.source_label }) : $t('sirsoft-ecommerce.admin.settings.display_name.effective', { kind: _local.form?.display_name_options?.effective?.inquiry?.kind_label })}}</p>
           <p data-ref="inquiry_display_name_nickname_hint" data-if="{{(_local.form?.display_name?.inquiry?.mode ?? 'inherit') === 'fixed' &amp;&amp; (_local.form?.display_name_options?.kinds ?? []).find(k => k.key === _local.form?.display_name?.inquiry?.kind)?.requires_nickname === true}}" class="ecommerce:w-full ecommerce-form-hint">$t:sirsoft-ecommerce.admin.settings.display_name.requires_nickname_hint</p>
           <span data-ref="inquiry_display_name_mode_error" data-if="{{_local.errors?.['display_name.inquiry.mode']}}" class="ecommerce-form-error-xs ecommerce:w-full ecommerce:mt-1">{{_local.errors?.['display_name.inquiry.mode']?.[0] ?? ''}}</span>
           <span data-ref="inquiry_display_name_kind_error" data-if="{{_local.errors?.['display_name.inquiry.kind']}}" class="ecommerce-form-error-xs ecommerce:w-full ecommerce:mt-1">{{_local.errors?.['display_name.inquiry.kind']?.[0] ?? ''}}</span>

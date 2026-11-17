@@ -56,6 +56,11 @@ class InicisPartialDataStorageTest extends PluginTestCase
 
     private InicisIdentityRecordRepositoryInterface $recordRepository;
 
+    /**
+     * 로그·record 저장소를 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -65,9 +70,13 @@ class InicisPartialDataStorageTest extends PluginTestCase
     }
 
     /**
+     * 이름이 없으면 INCOMPLETE_IDENTITY 로 실패하고 토큰이 발급되지 않는다.
+     *
      * @scenario case=name_absent
      *
      * @effects incomplete_identity_blocked_no_token
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_when_user_name_missing(): void
     {
@@ -86,9 +95,13 @@ class InicisPartialDataStorageTest extends PluginTestCase
     }
 
     /**
+     * 생년월일이 없으면 INCOMPLETE_IDENTITY 로 실패한다.
+     *
      * @scenario case=birthday_absent
      *
      * @effects incomplete_identity_blocked_no_token
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_when_birthday_missing(): void
     {
@@ -102,9 +115,13 @@ class InicisPartialDataStorageTest extends PluginTestCase
     }
 
     /**
+     * DI 기준 설정에서 DI 가 없으면(CI 만 있음) INCOMPLETE_IDENTITY 로 실패한다.
+     *
      * @scenario case=di_setting_di_absent
      *
      * @effects incomplete_identity_blocked_no_token
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_when_di_setting_and_di_missing(): void
     {
@@ -122,9 +139,13 @@ class InicisPartialDataStorageTest extends PluginTestCase
     }
 
     /**
+     * CI 기준 설정에서 CI 가 없으면(DI 만 있음) INCOMPLETE_IDENTITY 로 실패한다.
+     *
      * @scenario case=ci_setting_ci_absent
      *
      * @effects incomplete_identity_blocked_no_token
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_when_ci_setting_and_ci_missing(): void
     {
@@ -142,9 +163,13 @@ class InicisPartialDataStorageTest extends PluginTestCase
     }
 
     /**
+     * 식별값(DI·CI)이 모두 없으면 INCOMPLETE_IDENTITY 로 실패한다.
+     *
      * @scenario case=both_identifiers_absent
      *
      * @effects incomplete_identity_blocked_no_token
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_when_both_identifiers_missing(): void
     {
@@ -161,9 +186,13 @@ class InicisPartialDataStorageTest extends PluginTestCase
     }
 
     /**
+     * 휴대폰 번호가 없으면 INCOMPLETE_IDENTITY 로 실패하고 로그가 failed 가 된다.
+     *
      * @scenario case=phone_absent
      *
      * @effects incomplete_identity_blocked_no_token
+     *
+     * @return void 반환값 없음
      */
     public function test_blocks_when_phone_missing(): void
     {
@@ -188,6 +217,8 @@ class InicisPartialDataStorageTest extends PluginTestCase
      * @scenario case=aux_field_absent
      *
      * @effects success_with_aux_field_stored_as_null
+     *
+     * @return void 반환값 없음
      */
     public function test_passes_and_stores_null_for_optional_field(): void
     {
@@ -206,9 +237,13 @@ class InicisPartialDataStorageTest extends PluginTestCase
     }
 
     /**
+     * 모든 필드가 있으면 통과하고 토큰 발급과 함께 암호화 저장된다.
+     *
      * @scenario case=all_present
      *
      * @effects success_with_encrypted_storage
+     *
+     * @return void 반환값 없음
      */
     public function test_passes_and_encrypts_when_all_present(): void
     {
@@ -227,9 +262,13 @@ class InicisPartialDataStorageTest extends PluginTestCase
     }
 
     /**
+     * DI 기준 설정이라도 CI 가 함께 오면 두 식별값을 모두 저장한다.
+     *
      * @scenario case=both_identifiers_present
      *
      * @effects success_stores_both_identifiers
+     *
+     * @return void 반환값 없음
      */
     public function test_stores_both_identifiers_even_with_di_setting(): void
     {
@@ -252,7 +291,8 @@ class InicisPartialDataStorageTest extends PluginTestCase
     /**
      * 설정값을 주입한 provider 인스턴스 — 외부 gateway/mapping 은 더미.
      *
-     * @param  string  $duplicateField  'di' | 'ci'
+     * @param  string  $duplicateField  중복 판정 기준 식별값('di' | 'ci')
+     * @return InicisIdentityProvider 설정을 주입한 provider
      */
     private function provider(string $duplicateField): InicisIdentityProvider
     {
@@ -268,8 +308,8 @@ class InicisPartialDataStorageTest extends PluginTestCase
     /**
      * STEP3 성공 페이로드 mockup — overrides 로 특정 필드만 교체/제거.
      *
-     * @param  array<string, mixed>  $overrides
-     * @return array<string, mixed>
+     * @param  array<string, mixed>  $overrides  교체·제거할 필드
+     * @return array<string, mixed> 이니시스 STEP3 결과 페이로드
      */
     private function validInput(array $overrides = []): array
     {
@@ -290,6 +330,12 @@ class InicisPartialDataStorageTest extends PluginTestCase
         ], $overrides);
     }
 
+    /**
+     * verify 직전 상태(sent)의 이니시스 본인인증 로그를 만든다.
+     *
+     * @param  int  $userId  대상 회원 ID
+     * @return IdentityVerificationLog 만든 로그
+     */
     private function createPendingLog(int $userId): IdentityVerificationLog
     {
         return $this->logRepository->create([
@@ -311,20 +357,44 @@ class InicisPartialDataStorageTest extends PluginTestCase
         ]);
     }
 
+    /**
+     * verify 경로에서 쓰이지 않는 더미 gateway 를 만든다.
+     *
+     * @return InicisGatewayInterface 호출되지 않는 더미 gateway
+     */
     private function makeNullGateway(): InicisGatewayInterface
     {
         return new class implements InicisGatewayInterface
         {
+            /**
+             * 인증 URL 검증 더미 — 이 시험 경로에서는 쓰이지 않아 늘 거부한다.
+             *
+             * @param  string  $url  검사할 인증 URL
+             * @return bool 늘 false
+             */
             public function validateAuthUrl(string $url): bool
             {
                 return false;
             }
 
+            /**
+             * 결과 조회 더미 — 이 시험 경로에서 호출되면 안 되므로 예외를 던진다.
+             *
+             * @param  string  $authRequestUrl  결과 조회 URL
+             * @param  string  $txId  이니시스 거래 ID
+             * @param  string  $token  인증 토큰
+             * @return array<string, mixed> 반환하지 않음(늘 예외)
+             */
             public function verifyResult(string $authRequestUrl, string $txId, string $token): array
             {
                 throw new \LogicException('not used in partial data test');
             }
 
+            /**
+             * 거래 ID 생성 더미 — 빈 문자열을 돌려준다.
+             *
+             * @return string 늘 빈 문자열
+             */
             public function generateMTxId(): string
             {
                 return '';
@@ -332,20 +402,55 @@ class InicisPartialDataStorageTest extends PluginTestCase
         };
     }
 
+    /**
+     * verify 경로에서 쓰이지 않는 더미 challenge 매핑 저장소를 만든다.
+     *
+     * @return InicisChallengeMappingRepositoryInterface 호출되지 않는 더미 매핑 저장소
+     */
     private function makeNullMappingRepository(): InicisChallengeMappingRepositoryInterface
     {
         return new class implements InicisChallengeMappingRepositoryInterface
         {
+            /**
+             * 보관주기 정리 전 매핑 삭제 — 이 시험에서는 호출되지 않는다(7.2.0 이 인터페이스에 더한 메서드).
+             *
+             * @param  array<int, string>  $challengeIds  코어 IdentityVerificationLog UUID 목록
+             * @return int 늘 0
+             */
+            public function deleteByChallengeIds(array $challengeIds): int
+            {
+                return 0;
+            }
+
+            /**
+             * 매핑 생성 더미 — 이 시험 경로에서 호출되면 안 되므로 예외를 던진다.
+             *
+             * @param  string  $mtxid  이니시스 거래 ID
+             * @param  string  $challengeId  코어 challenge UUID
+             * @return InicisChallengeMapping 반환하지 않음(늘 예외)
+             */
             public function create(string $mtxid, string $challengeId): InicisChallengeMapping
             {
                 throw new \LogicException('not used in partial data test');
             }
 
+            /**
+             * mTxId 로 challenge ID 를 찾는 더미 — 늘 찾지 못한다.
+             *
+             * @param  string  $mtxid  이니시스 거래 ID
+             * @return string|null 늘 null
+             */
             public function findChallengeIdByMtxid(string $mtxid): ?string
             {
                 return null;
             }
 
+            /**
+             * challenge ID 로 매핑을 찾는 더미 — 늘 찾지 못한다.
+             *
+             * @param  string  $challengeId  코어 challenge UUID
+             * @return InicisChallengeMapping|null 늘 null
+             */
             public function findByChallengeId(string $challengeId): ?InicisChallengeMapping
             {
                 return null;

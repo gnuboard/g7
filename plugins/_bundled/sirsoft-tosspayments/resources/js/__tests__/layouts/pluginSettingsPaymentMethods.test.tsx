@@ -7,8 +7,9 @@
  * responsive.portable 을 검증한다.
  *
  * @scenario toss_payment_methods_vbank_escrow
- * @effects escrow_operation_notice_shown_when_escrow_enabled
- * @effects webhook_url_display_and_copy_use_absolute_url
+ *
+ * 효과 요약(마커 아님 — 평문): 에스크로 운영 안내 노출 조건, 웹훅 URL 표시·복사의 전체 주소 사용.
+ * 마킹은 그 효과를 재는 각 it 앞에 있다.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -195,7 +196,7 @@ describe('plugin_settings — 가상계좌 섹션', () => {
 
   /**
    * @scenario use_escrow=on
-   * @effects admin_payment_methods_layout_contract
+   * @effects admin_payment_methods_layout_contract, escrow_operation_notice_shown_when_escrow_enabled
    */
   it('에스크로 운영 안내(부분취소 불가 · 배송정보 등록)가 use_escrow !== off 일 때만 노출된다 (W-6)', () => {
     const notice = findById(pluginSettingsLayout, 'escrow_operation_notice');
@@ -247,7 +248,7 @@ describe('plugin_settings — 가상계좌 섹션', () => {
 
   /**
    * @scenario use_escrow=on
-   * @effects admin_payment_methods_layout_contract
+   * @effects admin_payment_methods_layout_contract, webhook_url_display_and_copy_use_absolute_url
    */
   it('웹훅 URL 은 서버가 만든 전체 주소(webhook_info 데이터소스)를 받아 쓴다', () => {
     // 레이아웃에 경로만 적어 두면 운영자가 사이트 주소를 손으로 붙여야 했다.
@@ -264,7 +265,7 @@ describe('plugin_settings — 가상계좌 섹션', () => {
 
   /**
    * @scenario use_escrow=on
-   * @effects admin_payment_methods_layout_contract
+   * @effects admin_payment_methods_layout_contract, webhook_url_display_and_copy_use_absolute_url
    */
   it('웹훅 URL 표시와 복사는 같은 전체 주소 값을 쓴다 (경로 문자열 하드코딩 금지)', () => {
     const field = findById(pluginSettingsLayout, 'field_webhook_url');

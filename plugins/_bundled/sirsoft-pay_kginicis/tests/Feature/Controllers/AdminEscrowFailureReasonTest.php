@@ -175,7 +175,7 @@ class AdminEscrowFailureReasonTest extends PluginTestCase
     }
 
     /**
-     * 이미 구매거절확인을 마친 결제는 번역된 안내로 막는다(종전 한국어 하드코딩).
+     * 이미 구매거절확인을 마친 결제는 번역된 안내와 409 로 막는다(7.1.6 의 주문 잠금 뒤 재확인 계약, 종전 한국어 하드코딩).
      *
      * @scenario flow=escrow_deny_confirm
      *
@@ -189,7 +189,7 @@ class AdminEscrowFailureReasonTest extends PluginTestCase
         $this->mockApi('denyConfirmEscrow', new \LogicException('PG 를 부르면 안 된다'));
 
         $this->denyConfirm('ORD-858-DNCF-3')
-            ->assertStatus(422)
+            ->assertStatus(409)
             ->assertJsonPath('errors.message.0', '이미 구매거절확인이 완료되었습니다.');
     }
 

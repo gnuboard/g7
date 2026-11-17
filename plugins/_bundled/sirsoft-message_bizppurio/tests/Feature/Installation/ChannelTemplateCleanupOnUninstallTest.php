@@ -14,12 +14,22 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
  * 배경: SeedChannelTemplatesListener 는 코어 소유 알림 정의(welcome 등)에 필터 훅으로
  * sms·alimtalk template 을 증강한다. 플러그인을 제거해도 그 정의는 우리 소유가 아니므로
  * PluginManager 의 범용 알림 정의 정리(extension_identifier 기준)에 걸리지 않아, 채널
- * 잔재가 고아로 남는 문제가 있었다. Plugin::uninstall() 이 자체적으로 정리하도록 수정했다.
+ * 잔재가 고아로 남는 문제가 있었다. 플러그인이 자체적으로 정리하도록 수정했다.
+ *
+ * 코어 7.2.0 부터 `uninstall()` 은 데이터 보존 제거에서도 불리므로 채널 템플릿을 지우지 않고, 「데이터도 함께 삭제」를
+ * 고른 제거에서만 부르는 `uninstallData()` 가 지운다. 시험은 그 두 단계를 코어 제거 흐름과 같은 순서로 부른다.
+ *
+ * @scenario-manifest plugins/_bundled/sirsoft-message_bizppurio/tests/scenarios/uninstall-channel-cleanup.yaml
  */
 class ChannelTemplateCleanupOnUninstallTest extends PluginTestCase
 {
     private Plugin $plugin;
 
+    /**
+     * 플러그인 진입 클래스를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -28,16 +38,24 @@ class ChannelTemplateCleanupOnUninstallTest extends PluginTestCase
     }
 
     /**
-     * activate() 로 채널이 증강된 상태에서 uninstall() 을 호출하면, 코어 알림 정의는
-     * 보존한 채 sms·alimtalk template 과 channels 배열의 우리 채널만 제거된다.
+     * activate() 로 채널이 증강된 상태에서 데이터 보존 제거(uninstall())는 채널 템플릿을 그대로 두고,
+     * 「데이터도 함께 삭제」(uninstallData())는 코어 알림 정의는 보존한 채 sms·alimtalk template 과
+     * channels 배열의 우리 채널만 제거한다.
+     *
+     * @scenario owner=core
+     *
+     * @effects uninstall_keeps_channel_templates, uninstall_data_removes_channel_templates, definition_kept_with_own_channels
+     *
+     * @return void 반환값 없음
      */
     public function test_uninstall_시_sms_alimtalk_템플릿이_정리되고_코어_정의는_보존된다(): void
     {
         $this->plugin->activate();
 
+        $seeded = NotificationTemplate::whereIn('channel', ['sms', 'alimtalk'])->count();
         $this->assertGreaterThan(
             0,
-            NotificationTemplate::whereIn('channel', ['sms', 'alimtalk'])->count(),
+            $seeded,
             '사전조건: activate() 후 sms·alimtalk 템플릿이 존재해야 한다.'
         );
 
@@ -48,9 +66,17 @@ class ChannelTemplateCleanupOnUninstallTest extends PluginTestCase
         $this->plugin->uninstall();
 
         $this->assertSame(
+            $seeded,
+            NotificationTemplate::whereIn('channel', ['sms', 'alimtalk'])->count(),
+            '데이터 보존 제거(uninstall())는 sms·alimtalk 채널 템플릿을 지우지 않는다.'
+        );
+
+        $this->plugin->uninstallData();
+
+        $this->assertSame(
             0,
             NotificationTemplate::whereIn('channel', ['sms', 'alimtalk'])->count(),
-            'uninstall() 후에는 sms·alimtalk 채널 템플릿이 하나도 남으면 안 된다.'
+            'uninstallData() 후에는 sms·alimtalk 채널 템플릿이 하나도 남으면 안 된다.'
         );
 
         $welcome->refresh();
@@ -77,6 +103,12 @@ class ChannelTemplateCleanupOnUninstallTest extends PluginTestCase
      * 가진 정의" 를 대상으로 하므로, 실제 모듈 설치 여부에 의존하지 않고 모듈 소유 정의를
      * 직접 구성해 검증한다 — 모듈이 활성화된 환경에서만 실행되는 조건부 테스트였다면 이
      * 경로가 대부분의 실행에서 미검증으로 남는다(#597 브랜치 검증에서 교정).
+     *
+     * @scenario owner=module
+     *
+     * @effects uninstall_data_removes_channel_templates, definition_kept_with_own_channels
+     *
+     * @return void 반환값 없음
      */
     public function test_uninstall_시_모듈_소유_알림도_채널만_정리되고_정의는_보존된다(): void
     {
@@ -107,6 +139,7 @@ class ChannelTemplateCleanupOnUninstallTest extends PluginTestCase
         }
 
         $this->plugin->uninstall();
+        $this->plugin->uninstallData();
 
         $moduleDefinition->refresh();
         $this->assertNotContains('sms', $moduleDefinition->channels);
@@ -132,11 +165,18 @@ class ChannelTemplateCleanupOnUninstallTest extends PluginTestCase
 
     /**
      * 제거 후 재설치(재활성화)하면 activate() 의 재시딩 경로로 채널이 다시 생성된다(회귀 방지).
+     *
+     * @scenario owner=core
+     *
+     * @effects reactivate_reseeds_channel_templates
+     *
+     * @return void 반환값 없음
      */
     public function test_제거_후_재활성화하면_채널이_다시_생성된다(): void
     {
         $this->plugin->activate();
         $this->plugin->uninstall();
+        $this->plugin->uninstallData();
 
         $this->assertSame(0, NotificationTemplate::whereIn('channel', ['sms', 'alimtalk'])->count());
 
@@ -159,8 +199,14 @@ class ChannelTemplateCleanupOnUninstallTest extends PluginTestCase
     }
 
     /**
-     * 채널 증강이 전혀 없는 상태(activate 를 호출하지 않은 상태)에서 uninstall() 을
+     * 채널 증강이 전혀 없는 상태(activate 를 호출하지 않은 상태)에서 uninstall()·uninstallData() 를
      * 호출해도 예외 없이 안전하게 통과해야 한다(정리 대상 0건).
+     *
+     * @scenario owner=none
+     *
+     * @effects cleanup_without_contributions_is_noop
+     *
+     * @return void 반환값 없음
      */
     public function test_증강된_채널이_없는_상태에서_uninstall해도_안전하다(): void
     {
@@ -171,6 +217,7 @@ class ChannelTemplateCleanupOnUninstallTest extends PluginTestCase
         $result = $this->plugin->uninstall();
 
         $this->assertTrue($result);
+        $this->plugin->uninstallData();
         $this->assertSame(0, NotificationTemplate::whereIn('channel', ['sms', 'alimtalk'])->count());
     }
 }

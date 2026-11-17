@@ -1,0 +1,24 @@
+feature: sso_standalone_pages_no_inline_style
+
+description: |
+  독립 HTML 페이지가 인라인 스타일을 쓰지 않는다 — 스타일 보안 정책 호환 (코어 #163, 7.1.6).
+
+  사이트가 `style-src 'self'; style-src-attr 'none'` 을 걸면 `<style>` 요소와 `style="…"` 속성이 막힌다. 이 플러그인이
+  엔진 셸 밖에서 직접 내는 화면 넷(SAML 자동 제출, 연결 테스트 결과, 모의 OIDC·SAML IdP 승인 화면)이 `<style>` 블록으로
+  모양을 실어 그 정책에서 무스타일로 떴다. 규칙은 같은 출처 정적 파일(`assets/bridge/saml-autosubmit.css`·`test-result.css`·
+  `mock-idp.css`, 빌드 대상 아님)로 옮기고 페이지에는 `<head>` 의 `<link rel="stylesheet">` 만 둔다(`BridgeScript::stylesheetTag()`).
+
+axes:
+  page:
+    - saml_autosubmit    # SAML POST 바인딩 자동 제출 화면
+    - test_result        # 연결 테스트 결과 화면
+    - mock_idp_consent   # 모의 OIDC·SAML IdP 승인 화면
+    - stylesheet_files   # 옮긴 CSS 파일
+
+effects:
+  - standalone_page_has_no_inline_style        # <style> 요소·style 속성 0건
+  - standalone_page_links_stylesheet_in_head   # <head> 에 CSS 링크 1건
+  - stylesheet_files_keep_original_rules       # CSS 파일에 종전 규칙이 그대로 있다
+
+test_files:
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Mock/StandalonePagesNoInlineStyleTest.php

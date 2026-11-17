@@ -34,6 +34,7 @@ axes:
   storage_target: [logs, framework_cache, framework_sessions, app_modules, app_attachments, app_settings]
   seed_perms: [0700, 0755, 0775]
   sudo_simulation: [no_change, root_chown_subset, root_chown_all]
+  umask: ["0027", "0077"]   # 프로세스 umask — 웹서버 직접 서빙 파일·폴더의 새 권한 (7.1.6 재릴리즈, WebServedFileModeUnderUmaskTest)
 
 exclusions:
   - { parent_code_version: beta4_fix, sudo_simulation: root_chown_all, reason: "fix 된 부모는 storage/app 을 chown 자체 안 함 — sudo 시뮬레이션 의미 없음" }

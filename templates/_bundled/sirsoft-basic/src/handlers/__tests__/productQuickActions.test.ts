@@ -87,13 +87,15 @@ describe('곧바로 담기', () => {
   // @scenario case=c11
   // @effects quick_add_issues_cart_key_first
   it('장바구니 키가 없으면 기존 발급 경로로 먼저 받고 그 키로 담는다', async () => {
+    // 저장된 키는 서버 형식(`ck_` + 영숫자 32자)이어야 그대로 쓴다 — 형식이 망가진 키는 initCartKey 가 버리고 새로 발급한다(#869)
+    const storedKey = 'ck_' + 'Stored0'.repeat(4) + 'Key0';
     globalState.cartKey = null;
-    localStorage.setItem('g7_cart_key', 'ck_stored');
+    localStorage.setItem('g7_cart_key', storedKey);
 
     await quickAddToCartHandler({ handler: 'x', params: { product: { id: 7, has_options: false, has_additional_options: false } } });
 
     const call = dispatch.mock.calls.find((c) => c[0].target === CART)![0];
-    expect(call.params.headers['X-Cart-Key']).toBe('ck_stored');
+    expect(call.params.headers['X-Cart-Key']).toBe(storedKey);
     localStorage.removeItem('g7_cart_key');
   });
 

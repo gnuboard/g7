@@ -140,10 +140,15 @@
             ]
         },
         {
+            "comment": "항목 정의를 받는 동안에는 표를 흐린 채 그린다(받기 전 빈 표·켜짐 스위치가 확정값처럼 보이지 않게, #915). 받은 뒤 0건 안내는 아래 checkout_fields_empty 가 맡는다.",
             "id": "checkout_fields_body",
             "type": "basic",
             "name": "Div",
             "if": "{{!_computed.checkoutFieldsNoReadPermission}}",
+            "blur_until_loaded": {
+                "enabled": true,
+                "data_sources": "checkoutFieldDefs"
+            },
             "children": [
                 {
                     "id": "checkout_fields_instant_notice",

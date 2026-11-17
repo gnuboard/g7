@@ -1086,8 +1086,8 @@ class SamlDriver implements ProtocolDriverInterface
         return '<!doctype html><html lang="'.e(app()->getLocale()).'"><head><meta charset="utf-8">'
             .'<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">'
             .'<title>'.e(__('sirsoft-sso::saml.autosubmit.title')).'</title>'
-            .'<style>body{font-family:system-ui,sans-serif;max-width:28rem;margin:3rem auto;padding:0 1rem;text-align:center}'
-            .'button{margin-top:1rem;padding:.6rem 1.2rem}</style></head>'
+            // 모양은 정적 파일이 준다 — 인라인 <style> 은 스타일 보안 정책(style-src 'self')에서 막힌다(#163)
+            .BridgeScript::stylesheetTag('saml-autosubmit.css').'</head>'
             .'<body><p>'.e(__('sirsoft-sso::saml.autosubmit.message')).'</p>'
             .'<form method="post" action="'.e($action).'">'.$inputs
             .'<noscript><button type="submit">'.e(__('sirsoft-sso::saml.autosubmit.continue')).'</button></noscript>'

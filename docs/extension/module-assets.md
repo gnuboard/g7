@@ -374,7 +374,7 @@ manifest 는 배포물), 코어가 활성 확장 전체의 선언을 모아 allo
 
 ```text
 템플릿 CSS <link>
-<style>@layer g7-extension;</style>          ← 코어가 템플릿 CSS 바로 뒤에 선언
+<link href="…/g7-layers.css">              ← 코어가 템플릿 CSS 바로 뒤에 싣는 층 순서 선언(`@layer g7-extension;`, 관리자 셸은 g7-layers-admin.css)
 ── 부팅 뒤 ──
 모듈 번들 CSS → 플러그인 번들 CSS → 템플릿의 확장 CSS 덮기 파일 → 운영자 추가 자산(custom/)
 ```

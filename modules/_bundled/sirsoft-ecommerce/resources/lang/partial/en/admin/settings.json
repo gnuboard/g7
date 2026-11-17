@@ -77,12 +77,10 @@
       "telecom_number": "Telecom Business Number",
       "telecom_number_placeholder": "Telecom business number",
       "postcode_plugin_required": "Daum Postcode plugin is not installed or inactive. Please activate it in Admin > Plugins.",
-      "footer_display": "Show business information in the footer",
-      "footer_display_help": "Shows the company name, representative, address, contacts, business registration number, mail-order business number and privacy officer at the bottom of user screens (a legal display duty for online stores in Korea). Nothing is shown while the company name and the business registration number are both empty.",
       "hosting_provider": "Hosting provider",
       "hosting_provider_placeholder": "e.g. the hosting company name",
       "show_business_footer": "Show business information at the bottom of the storefront",
-      "show_business_footer_hint": "When on, the storefront footer shows whichever of these have a value: company name, representative, business address, phone, email, business registration number, mail-order registration number, hosting provider. When off, these values are not sent to the storefront."
+      "show_business_footer_hint": "When on, the bottom of user screens shows whichever of these have a value: company name, representative, business address, business registration number, mail-order business number, value-added telecom number, phone, fax, email, privacy officer, hosting provider (a legal display duty for online stores in Korea). Nothing is shown while the company name and the business registration number are both empty. When off, these values are not sent to user screens."
     },
     "public_asset_storage": {
       "title": "Public Asset Storage",

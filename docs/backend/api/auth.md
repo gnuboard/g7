@@ -1562,7 +1562,7 @@ Accept-Language: ko
 | fields[].files | array\|null | `null` | 파일, 이미지 항목에 올라가 있는 파일(가입에서는 빈 배열). 그 밖의 유형은 null |
 | fields[].file_rules | object\|null | `null` | 파일, 이미지 항목의 업로드 제한(`extensions`, `max_count`, `max_size_mb`). 그 밖의 유형은 null |
 | fields_version | string | `55e0c42db93a` | 항목 정의 버전. 가입 요청에 실어 보냅니다 |
-| verified_claims | object\|null | `{"status":"applied","filled":["name","mobile"],"locked":["name"]}` | 본인인증 채움 결과. `verification_token` 없이 부르면 null. `status` 는 `applied`(채움), `no_claims`(이 수단은 인증 값을 주지 않음), `expired`(만료됐거나 이미 쓴 토큰), `invalid`(알 수 없는 토큰). `applied` 가 아니면 `filled`, `locked` 는 빈 배열이고 항목은 잠기지 않습니다. 화면은 `expired`, `invalid` 를 칸에 속하지 않는 오류로 안내합니다 |
+| verified_claims | object\|null | `{"status":"applied","filled":["name","mobile"],"locked":["name"]}` | 본인인증 채움 결과. `verification_token` 없이 부르거나 가입 전 본인인증 정책이 꺼져 있으면 null(정책이 꺼진 사이트는 가입 요청의 본인인증 결과를 쓰지 않는다). `status` 는 `applied`(채움), `no_claims`(이 수단은 인증 값을 주지 않음), `expired`(만료됐거나 이미 쓴 토큰), `invalid`(알 수 없는 토큰). `applied` 가 아니면 `filled`, `locked` 는 빈 배열이고 항목은 잠기지 않습니다. 화면은 `expired`, `invalid` 를 칸에 속하지 않는 오류로 안내합니다 |
 | display_name.can_choose | boolean | `true` | 종류 선택 칸을 보일지 (권한이 있고 고를 종류가 둘 이상) |
 | display_name.value | string\|null | `nickname` | 회원이 고른 종류. 고르지 않았거나 고른 종류가 허용에서 빠졌으면 null (가입 화면은 항상 null) |
 | display_name.value_unavailable | boolean | `false` | 전에 고른 종류가 허용에서 빠졌는지. true 면 화면이 「종류를 다시 골라 주세요」를 보인다 |

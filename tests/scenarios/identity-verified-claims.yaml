@@ -6,11 +6,13 @@ description: |
   「인증 값으로 채우고 잠금」을 켠 항목은 가입 요청에서 서버가 덮어쓰며 내 정보 수정에서 잠긴다.
   로그인 회원의 재인증은 잠금 항목을 새 인증 값으로 맞춘다.
   계약을 구현하지 않은 수단, 만료된 토큰, 항목 유형에 맞지 않는 값에서는 채움도 잠금도 일어나지 않는다.
+  가입 인증 값은 가입 전 본인인증 정책이 켜진 사이트에서만 쓴다. 정책이 꺼진 사이트는 가입 요청의 본인인증 결과를 인정하지도
+  쓰지도 않는다 — 채움값 API 는 `disabled`, 가입 항목 API 는 채움 없음, 가입은 입력 그대로, 기록 없음, 토큰 미소비(2026-11-17 결정).
 
 coverage_strategy: full
 
 axes:
-  case: [fill, overwrite, lock, lock_value_mismatch, resync, provider_without_claims, token_expired, value_rejected_by_type]
+  case: [fill, overwrite, lock, lock_value_mismatch, resync, provider_without_claims, token_expired, value_rejected_by_type, policy_off]
 
 effects:
   - claims_api_returns_claims_and_field_values
@@ -32,6 +34,11 @@ effects:
   - member_bound_token_hidden_from_others
   - claims_not_matching_field_type_are_skipped
   - lock_applies_only_when_value_matches_latest_claims
+  - policy_off_claims_api_disabled
+  - policy_off_signup_fields_not_prefilled
+  - policy_off_signup_input_kept
+  - policy_off_nothing_recorded
+  - policy_off_token_not_consumed
 
 test_files:
   - tests/Feature/Identity/VerifiedClaimsTest.php

@@ -5,7 +5,8 @@
  * 의사 요소, 자손 선택자)은 번들 안 상수로 두고 `RuntimeStyleSheet` 로 문서에 붙인다 —
  * `<style>` 요소를 만들지 않으므로 엄격한 스타일 정책(`style-src 'self'`)에서도 적용된다.
  *
- * 저장 content·운영 렌더에는 영향이 없다(`g7le-*` 네임스페이스, 편집기 생존 동안만 존재).
+ * 저장 content·운영 렌더에는 영향이 없다(`g7le-*` 네임스페이스, 편집기 생존 동안만 존재). 예외는 운영 화면에
+ * 붙는 편집 진입 단추 규칙(`EDIT_ENTRY_FAB_STYLE_CSS`)으로, 그 단추가 보이는 동안만 존재한다.
  *
  * @since engine-v1.91.0
  */
@@ -26,6 +27,66 @@ export const TOOLBAR_STYLE_KEY = 'g7le-toolbar-style';
 export const TOOLBAR_STYLE_CSS =
   '@keyframes g7le-spin { to { transform: rotate(360deg); } }' +
   '.g7le-toolbar > * { flex-shrink: 0; white-space: nowrap; }';
+
+/** 기기 줄(기기 툴바·페이지 상태 전환기를 담는 셸 줄) 규칙 묶음 키 */
+export const DEVICE_ROW_STYLE_KEY = 'g7le-device-row-style';
+
+/** 기기 줄 항목도 툴바처럼 줄 단위로 감고 줄이지 않는다(설계 확정 2026-11-08 「두 줄로 감기」) */
+export const DEVICE_ROW_STYLE_CSS = '.g7le-chrome__device-toolbar > * { flex-shrink: 0; }';
+
+/** 기기 툴바 규칙 묶음 키 */
+export const DEVICE_TOOLBAR_STYLE_KEY = 'g7le-device-toolbar-style';
+
+/** 기기 툴바 묶음(기기 단추·색 테마·줌·언어)은 줄지 않고 글자 단위로 줄바꿈되지 않는다 */
+export const DEVICE_TOOLBAR_STYLE_CSS = '.g7le-device-toolbar > * { flex-shrink: 0; white-space: nowrap; }';
+
+/** 편집 진입 단추(운영 화면 플로팅 단추) 규칙 묶음 키 */
+export const EDIT_ENTRY_FAB_STYLE_KEY = 'g7le-edit-entry-fab-style';
+
+/** 편집 진입 단추 클래스 — 인쇄·다크·포커스 규칙이 이 이름을 쓴다 */
+export const EDIT_ENTRY_FAB_CLASS = 'g7le-edit-entry-fab';
+
+/**
+ * 편집 진입 단추 규칙 — 인라인 style 로 줄 수 없는 규칙(인쇄, 다크, 포커스 표시, 눌림).
+ * 이 단추만은 편집기 밖(운영 화면)에 붙는다 — 단추가 보이는 동안만 붙고 사라지면 뗀다.
+ * 다크 선택자는 ColorSchemeSignal 규격(다크 안의 라이트 제외)을 따른다.
+ */
+export const EDIT_ENTRY_FAB_STYLE_CSS =
+  `.${EDIT_ENTRY_FAB_CLASS}{position:fixed;z-index:39;display:inline-flex;align-items:center;justify-content:center;gap:6px;` +
+  'border:1px solid transparent;border-radius:999px;background:#0f172a;color:#ffffff;' +
+  'box-shadow:0 2px 12px rgba(15,23,42,.25);cursor:pointer;font-size:13px;font-weight:600;line-height:1;' +
+  'font-family:inherit;transition:transform .12s ease,box-shadow .12s ease}' +
+  `.${EDIT_ENTRY_FAB_CLASS}:hover{box-shadow:0 4px 16px rgba(15,23,42,.35)}` +
+  `.${EDIT_ENTRY_FAB_CLASS}:active{transform:translateY(1px)}` +
+  `.${EDIT_ENTRY_FAB_CLASS}:focus{outline:none}` +
+  `.${EDIT_ENTRY_FAB_CLASS}:focus-visible{outline:3px solid #60a5fa;outline-offset:2px}` +
+  `.${EDIT_ENTRY_FAB_CLASS}:is([data-g7-color-scheme="dark"] *):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *)){` +
+  'background:#f8fafc;color:#0f172a;border-color:#cbd5e1;box-shadow:0 2px 12px rgba(0,0,0,.5)}' +
+  `@media print{.${EDIT_ENTRY_FAB_CLASS}{display:none !important}}`;
+
+/**
+ * 키 하나의 정적 규칙 묶음을 붙입니다(같은 키는 교체). 컴포넌트가 마운트 효과에서 부르고 정리 함수에서
+ * `removeEditorStyle` 로 뗀다 — 종전 JSX `<style>` 자식과 같은 생존 범위다.
+ *
+ * @param key 규칙 묶음 키 (`g7le-*`)
+ * @param css 규칙 본문
+ * @returns 반환값 없음
+ */
+export function applyEditorStyle(key: string, css: string): void {
+  if (typeof document === 'undefined') return;
+  setRules(key, css);
+}
+
+/**
+ * 키 하나의 규칙 묶음을 뗍니다.
+ *
+ * @param key 규칙 묶음 키
+ * @returns 반환값 없음
+ */
+export function removeEditorStyle(key: string): void {
+  if (typeof document === 'undefined') return;
+  remove(key);
+}
 
 /** 공통 레이아웃 슬롯 가시화 규칙 묶음 키 */
 export const BASE_SLOT_STYLE_KEY = 'g7le-base-slot-style';

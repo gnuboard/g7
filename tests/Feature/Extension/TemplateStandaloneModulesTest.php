@@ -116,7 +116,7 @@ class TemplateStandaloneModulesTest extends TestCase
 
         $this->assertSame([
             'sirsoft-board' => '>=1.2.1',
-            'sirsoft-ecommerce' => '>=1.3.5',
+            'sirsoft-ecommerce' => '>=1.4.0',
             'sirsoft-page' => '>=1.2.0',
         ], $this->manifest['integrations']['modules'] ?? null);
         $this->assertSame(['sirsoft-daum_postcode' => '>=1.2.0'], $this->manifest['integrations']['plugins'] ?? null);

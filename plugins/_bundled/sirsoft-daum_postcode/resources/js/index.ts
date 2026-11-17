@@ -4,12 +4,11 @@
  * 플러그인 활성화 시 자동으로 로드되어 핸들러를 등록합니다.
  */
 
-// 주소 검색 창(펼치기 영역·전체 화면 창·레이어) 스타일 — 빌드가 dist/css/plugin.css 로 뽑아낸다
+// 플러그인 화면 스타일(daumpostcode-*·daumpostcode:* — 주소 검색 창의 펼치기 영역·전체 화면 창·레이어 포함)
+// — 빌드가 dist/css/plugin.css 로 뽑아낸다
 import '../css/main.css';
 // 핸들러 맵 임포트
 import { handlerMap } from './handlers';
-// 플러그인 화면 스타일(daumpostcode-*·daumpostcode:*) — 빌드가 dist/css/plugin.css 로 뽑아낸다
-import '../css/main.css';
 
 // 플러그인 식별자
 const PLUGIN_IDENTIFIER = 'sirsoft-daum_postcode';

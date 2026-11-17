@@ -57,6 +57,25 @@ type Overflow = 'alone' | 'controls' | false;
 export const PREVIEW_STYLES_TIMEOUT_MS = 8000;
 
 /**
+ * 미리보기 문서 바탕 — 글자 크기 16px(rem 기준을 사이트와 맞춘다), html·body 여백 0, 스크롤 숨김(축소 표시라 스크롤바가
+ * 자리를 먹지 않게). 종전에는 `<style>` 요소였으나 엄격한 스타일 정책(`style-src 'self'; style-src-attr 'none'`)에서
+ * 막히므로 CSSOM 대입(`el.style.x = …` — 정책이 막지 않는다)으로 준다. 요소 인라인 서식이라 템플릿 CSS 보다 우선한다.
+ *
+ * @param doc 미리보기 iframe 문서
+ * @returns 반환값 없음
+ */
+export function applyPreviewDocumentReset(doc: Document): void {
+  const html = doc.documentElement;
+  html.style.fontSize = '16px';
+  for (const el of [html, doc.body]) {
+    if (!el) continue;
+    el.style.margin = '0';
+    el.style.padding = '0';
+    el.style.overflow = 'hidden';
+  }
+}
+
+/**
  * 독립 문서에서 실제 기기 viewport로 렌더한 뒤 전체를 축소합니다. 스크립트는 복사하지 않습니다.
  *
  * 기기 viewport(iframe 폭)와 안쪽 구좌 폭을 구분한다 — vw·미디어쿼리·글자 크기는 viewport 기준이어야 실제 사이트와 같고,
@@ -138,9 +157,9 @@ function Viewport({ banners, settings, device, chain, content, stylesheets, onOv
       doc.head.appendChild(copy);
     }
     copySwiperStyles(doc);
-    const reset = doc.createElement('style');
-    reset.textContent = 'html{font-size:16px}html,body{margin:0;padding:0;overflow:hidden}';
-    doc.head.appendChild(reset);
+    // 미리보기 문서 바탕(글자 크기 16px·여백 0·스크롤 숨김)은 CSSOM 대입으로 준다 — `<style>` 요소는 엄격한 스타일 정책
+    // (`style-src 'self'`, about:blank 문서는 바깥 정책을 물려받는다)에서 막힌다. 요소 인라인 서식이라 템플릿 CSS 보다 우선한다
+    applyPreviewDocumentReset(doc);
     doc.documentElement.lang = document.documentElement.lang;
     doc.documentElement.className = document.documentElement.className;
     // 확장 CSS 의 다크 규칙은 템플릿 .dark 대신 코어 중립 표식만 본다 — 바깥 문서 표식을 함께 옮긴다
@@ -182,14 +201,14 @@ function Viewport({ banners, settings, device, chain, content, stylesheets, onOv
     const current = [...doc.head.querySelectorAll<HTMLLinkElement>('link[data-hs-template-css]')];
     if (current.map((l) => l.getAttribute('href')).join('\n') === sheets) return;
     current.forEach((l) => l.remove());
-    const reset = doc.head.querySelector('style:last-of-type');
+    // 템플릿 CSS 는 복사한 바깥 CSS 뒤에 붙인다(종전에는 바탕 `<style>` 앞이었다 — 바탕은 이제 요소 인라인 서식이라 순서와 무관하다)
     for (const href of sheets ? sheets.split('\n') : []) {
       const link = doc.createElement('link');
       link.rel = 'stylesheet';
       link.href = href;
       link.setAttribute('data-hs-template-css', '');
       link.addEventListener('load', () => measure());
-      doc.head.insertBefore(link, reset);
+      doc.head.appendChild(link);
     }
     trackStyles();
   }, [body, sheets]);

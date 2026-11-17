@@ -32,6 +32,17 @@ effects:
   - web_route_classified_into_domain_group
   - core_web_routes_not_collected
   - other_plugin_web_routes_not_mixed
+  # 같은 시험의 효과 이름(7.2.0 쪽 쌍둥이 api-route-inventory-collection.yaml 을 6차 병합 후속에서 합침) — 각 시험 메서드가 위 이름과 함께 마킹한다.
+  - plugin_webhook_web_routes_collected
+  - plugin_payment_callback_web_routes_collected
+  - web_route_owner_and_uri_preserved
+  - web_route_domain_group_classified
+  - core_web_routes_excluded
+  - extension_admin_screen_web_routes_excluded
+  - uninstalled_module_routes_collected_from_bundle
+  - fallback_routes_follow_provider_conventions
+  - fallback_excludes_web_admin_routes
+  - missing_route_file_returns_empty
 
 test_files:
   - tests/Unit/Support/ApiDoc/ApiRouteInventoryFallbackTest.php

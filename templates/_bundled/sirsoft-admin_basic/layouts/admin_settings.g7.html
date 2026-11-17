@@ -14,7 +14,9 @@
   <!-- 언어팩 목록 — 언어팩 탭에서만 받는다(빌려 온 조각이 이 id 를 그대로 읽는다).
        이 화면의 레이아웃 권한은 설정 조회뿐이라 언어팩 조회(core.language_packs.read)가 없는 관리자도 들어온다 — 그 403 은 조용히 넘기고
        (fallback 이 빈 목록을 싣는다), 탭 항목·본문은 계산값 `canReadLanguagePacks` 로 가려 「설치된 언어팩이 없습니다」 대신 권한 안내를 보인다.
-       아래 미배치 번들 안내·본인인증 제공자·정책 소스도 같은 방식이다(각 조각이 자기 계산값을 본다). -->
+       아래 미배치 번들 안내·본인인증 제공자·정책 소스도 같은 방식이다(각 조각이 자기 계산값을 본다).
+       권한 계산값은 로그인 관리자 정보(current_user)를 받기 전에는 null 이다 — 그 동안 탭 항목·본문·「스케줄 관리에서 변경」 링크를 그리지 않도록
+       current_user 를 받았는지 먼저 본다(#915). 받기에 실패하면(null) 종전처럼 보인다. -->
   <data-source id="language_packs" label_key="$t:editor.data_source.language_packs" type="api" endpoint="/api/admin/language-packs" method="GET" if="{{(query.tab || _global.activeSettingsTab || 'general') === 'language_packs'}}" :auto_fetch="true" :auth_required="true">
     <error-handling>
       <on-code code="403">
@@ -781,7 +783,7 @@
             <item id="drivers" href="/admin/settings?tab=drivers" label="$t:admin.settings.tabs.drivers"/>
             <item id="advanced" href="/admin/settings?tab=advanced" label="$t:admin.settings.tabs.advanced"/>
             <item id="notification_definitions" href="/admin/settings?tab=notification_definitions" label="$t:admin.settings.tabs.notification_definitions"/>
-            <item id="language_packs" href="/admin/settings?tab=language_packs" label="$t:admin.settings.tabs.language_packs" if="{{_computed.canReadLanguagePacks !== false}}"/>
+            <item id="language_packs" href="/admin/settings?tab=language_packs" label="$t:admin.settings.tabs.language_packs" if="{{current_user !== undefined &amp;&amp; (_computed.canReadLanguagePacks !== false)}}"/>
             <item id="identity" href="/admin/settings?tab=identity" label="$t:admin.settings.tabs.identity"/>
             <item id="privacy" href="/admin/settings?tab=privacy" label="$t:admin.settings.tabs.privacy"/>
             <item id="system" href="/admin/settings?tab=system" label="$t:admin.settings.tabs.system"/>

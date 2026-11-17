@@ -167,7 +167,7 @@ class ResetPasswordCommand extends Command
         if (! $this->unifiedConfirm(__('user.commands.reset_password.confirm_super_admin'), false)) {
             $this->info(__('user.commands.reset_password.aborted'));
 
-            return self::SUCCESS; // 대화형에서 운영자가 직접 답한 「아니오」는 의도한 취소라 0
+            return $this->confirmAbortExitCode(); // 대화형에서 운영자가 직접 답한 「아니오」는 의도한 취소라 0
         }
 
         return $user;

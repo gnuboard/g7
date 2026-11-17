@@ -368,7 +368,7 @@
                             "id": "review_display_name_effective",
                             "type": "basic",
                             "name": "P",
-                            "if": "{{(_local.form?.display_name?.review?.mode ?? 'inherit') === 'inherit' && (settings?.data?.display_name?.review?.mode ?? 'inherit') === 'inherit' && !!_local.form?.display_name_options?.effective?.review?.kind_label}}",
+                            "if": "{{settings !== undefined && ((_local.form?.display_name?.review?.mode ?? 'inherit') === 'inherit' && (settings?.data?.display_name?.review?.mode ?? 'inherit') === 'inherit' && !!_local.form?.display_name_options?.effective?.review?.kind_label)}}",
                             "props": {
                                 "className": "ecommerce:w-full ecommerce-form-hint"
                             },

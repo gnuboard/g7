@@ -1,0 +1,8 @@
+/*
+ * SAML POST 바인딩 자동 제출 화면 (`Drivers\Saml\SamlDriver::autoSubmitHtml`)
+ *
+ * 사이트가 스타일 보안 정책(`style-src 'self'; style-src-attr 'none'`)을 걸면 `<style>` 요소가 막힌다(코어 #163, 7.1.6).
+ * 같은 출처 정적 파일(빌드 대상 아님 — `dist/` 는 빌드가 지운다)로 싣고 페이지에는 `<link>` 만 둔다.
+ */
+body{font-family:system-ui,sans-serif;max-width:28rem;margin:3rem auto;padding:0 1rem;text-align:center}
+button{margin-top:1rem;padding:.6rem 1.2rem}

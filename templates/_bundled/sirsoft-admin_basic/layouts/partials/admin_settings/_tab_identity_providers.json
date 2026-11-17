@@ -173,7 +173,7 @@
                     "id": "provider_cards",
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{_computed.canReadIdentityProviders !== false}}",
+                    "if": "{{current_user !== undefined && (_computed.canReadIdentityProviders !== false)}}",
                     "props": {
                         "className": "card-stack"
                     },
@@ -256,7 +256,7 @@
                 {
                     "type": "basic",
                     "name": "Div",
-                    "if": "{{_computed.canReadIdentityProviders !== false && identityProviders !== undefined && (identityProviders?.data ?? []).length === 0}}",
+                    "if": "{{current_user !== undefined && _computed.canReadIdentityProviders !== false && identityProviders !== undefined && (identityProviders?.data ?? []).length === 0}}",
                     "props": {
                         "className": "text-label-subtle py-4 text-center"
                     },

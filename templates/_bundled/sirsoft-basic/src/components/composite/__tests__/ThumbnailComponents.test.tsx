@@ -283,6 +283,15 @@ describe('HtmlContent 본문 이미지', () => {
     expect(c1.getAttribute('aria-label')).toBe('common.zoom_image_named:첫 그림');
     expect(c2.hasAttribute('role')).toBe(false);
     expect(ext.getAttribute('role')).toBe('button');
+    // 확대 커서는 CSS 규칙([data-g7-zoom])이 준다 — 표식 처리가 style 속성을 만들거나 작성자 서식을 바꾸지 않는다
+    // (직렬화한 HTML 의 style 속성은 엄격한 스타일 정책 style-src-attr 'none' 에서 버려진다, 공개 #163)
+    expect(c1.hasAttribute('style')).toBe(false);
+    expect(ext.hasAttribute('style')).toBe(false);
+    const authored = render(<HtmlContent content={'<img src="/api/attachment/s1" style="width: 50%">'} />);
+    const styled = authored.container.querySelector('img')!;
+    expect(styled.getAttribute('role')).toBe('button');
+    expect(styled.getAttribute('style') ?? '').not.toContain('cursor');
+    expect(styled.style.width).toBe('50%');
   });
 
   // @scenario component=html_content

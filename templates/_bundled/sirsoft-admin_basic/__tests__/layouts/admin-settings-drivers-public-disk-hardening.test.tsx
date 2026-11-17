@@ -111,8 +111,7 @@ function renderCard(hardening: unknown) {
   );
 }
 
-// @scenario case=self_check__not_exportable
-// @effects drivers_tab_warns_only_when_self_check_fails
+// 마킹은 각 it 바로 앞에 있다(describe 바깥의 조합은 어느 시험이 재는지 가리키지 않는다).
 describe('드라이버 탭 공개 디스크 보호 규칙 경고', () => {
   let registry: ComponentRegistry;
 

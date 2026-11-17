@@ -44,6 +44,8 @@ trait HasUnifiedConfirm
      *
      * Laravel 은 시그니처 옵션을 이 `configure()` 뒤에 정의에 넣는다. 그래서 정의(`hasOption`)로는 시그니처 선언을 볼 수 없고,
      * 선언한 명령에 또 붙이면 시그니처 옵션을 넣을 때 「이미 있는 옵션」 오류가 난다 — 시그니처 문자열로 선언 여부를 본다.
+     *
+     * @return void
      */
     protected function configure(): void
     {
@@ -57,7 +59,7 @@ trait HasUnifiedConfirm
     }
 
     /**
-     * 명령 시그니처가 `--yes` 옵션을 직접 선언했는지 판정합니다 (`{--yes}`·`{--y|yes}`·`{--yes : 설명}` 등).
+     * 명령 시그니처가 `--yes` 옵션을 직접 선언했는지 판정합니다 (축약 `-y` 를 함께 둔 선언, 축약 없는 선언, 설명 붙은 선언 모두).
      *
      * @return bool 선언했으면 true
      */

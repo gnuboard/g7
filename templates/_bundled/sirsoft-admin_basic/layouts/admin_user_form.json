@@ -982,7 +982,7 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Span",
-                                                        "if": "{{!!route?.id ? user?.data?.has_password !== false : _local.form?.create_without_password !== true}}",
+                                                        "if": "{{!!route?.id ? (user !== undefined && user?.data?.has_password !== false) : (_local.form !== undefined && _local.form?.create_without_password !== true)}}",
                                                         "props": {
                                                             "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                                                         },
@@ -1128,7 +1128,7 @@
                                                 "id": "field_password_group",
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "if": "{{!!route?.id ? user?.data?.password_status?.can_set !== false : !_local.form?.create_without_password}}",
+                                                "if": "{{!!route?.id ? (user !== undefined && user?.data?.password_status?.can_set !== false) : (_local.form !== undefined && !_local.form?.create_without_password)}}",
                                                 "responsive": {
                                                     "768-": {
                                                         "props": {
@@ -1236,7 +1236,7 @@
                                                 "id": "password_rules_hint",
                                                 "type": "basic",
                                                 "name": "P",
-                                                "if": "{{!!route?.id ? user?.data?.password_status?.can_set !== false : !_local.form?.create_without_password}}",
+                                                "if": "{{!!route?.id ? (user !== undefined && user?.data?.password_status?.can_set !== false) : (_local.form !== undefined && !_local.form?.create_without_password)}}",
                                                 "props": {
                                                     "className": "flex flex-wrap gap-x-1 text-xs text-gray-500 dark:text-gray-400 -mt-2"
                                                 },
@@ -1368,7 +1368,7 @@
                                                 "id": "password_reauth_verification",
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "if": "{{!!route?.id && route?.id === current_user?.data?.uuid && !!_local.form?.password && user?.data?.has_password === false && user?.data?.password_status?.can_set !== false}}",
+                                                "if": "{{!!route?.id && current_user !== undefined && route?.id === current_user?.data?.uuid && !!_local.form?.password && user?.data?.has_password === false && user?.data?.password_status?.can_set !== false}}",
                                                 "props": {
                                                     "className": "space-y-2"
                                                 },

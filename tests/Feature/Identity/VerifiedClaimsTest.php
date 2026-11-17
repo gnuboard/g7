@@ -14,12 +14,14 @@ use App\Extension\IdentityVerification\IdentityVerificationManager;
 use App\Fields\FieldContext;
 use App\Fields\FieldValueService;
 use App\Models\FieldDefinition;
+use App\Models\IdentityPolicy;
 use App\Models\IdentityVerificationLog;
 use App\Models\User;
 use App\Services\IdentityClaimsService;
 use App\Services\IdentityVerificationService;
 use App\Services\UserLockedFieldsService;
 use Database\Seeders\CoreFieldDefinitionSeeder;
+use Database\Seeders\IdentityPolicySeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -70,6 +72,9 @@ class VerifiedClaimsTest extends TestCase
             'options' => [['value' => 'male', 'label' => ['ko' => '남']], ['value' => 'female', 'label' => ['ko' => '여']]],
         ]);
         app(FieldDefinitionRepositoryInterface::class)->forgetMemo();
+
+        // 가입 인증 값은 가입 전 본인인증 정책이 켜진 사이트에서만 쓴다 — 정책 꺼짐은 test_policy_off_* 가 잰다
+        $this->enableSignupVerificationPolicy();
     }
 
     /**
@@ -134,6 +139,23 @@ class VerifiedClaimsTest extends TestCase
         ], $attributes));
 
         return $token;
+    }
+
+    /**
+     * 가입 전 본인인증 정책을 켭니다.
+     *
+     * 가입 인증 값(채움·덮어쓰기)과 가입 뒤 회원 본인인증 기록은 가입 전 본인인증 정책이 켜진 사이트에서만 쓴다. 기록은 그 가입
+     * 요청이 인정(결박 확인 + 1회 소비)한 결과만 쓰고(7.1.6 「같은 요청에서 인정한 결과만」), 정책이 꺼진 사이트는 결과를 인정하지도
+     * 쓰지도 않는다(2026-11-17 결정).
+     *
+     * @return void 반환값 없음
+     */
+    private function enableSignupVerificationPolicy(): void
+    {
+        $this->seed(IdentityPolicySeeder::class);
+        // 이 시험이 재는 것은 가입 전 확인 하나다 — 기본으로 켜진 다른 정책(내 정보 수정 등)은 끈다
+        IdentityPolicy::query()->update(['enabled' => false]);
+        IdentityPolicy::where('key', 'core.auth.signup_before_submit')->update(['enabled' => true]);
     }
 
     /**
@@ -363,9 +385,10 @@ class VerifiedClaimsTest extends TestCase
         $this->assertNull($name['locked_reason']);
         $this->assertNull($name['default']);
 
-        // 만료된 토큰으로는 입력을 덮어쓰지 않는다.
-        $this->postJson('/api/auth/register', $this->signupPayload(['verification_token' => $expired]))->assertStatus(201);
-        $this->assertSame('입력한이름', User::where('email', 'signup@example.com')->firstOrFail()->name);
+        // 만료된 토큰으로는 입력을 덮어쓰지 않는다 — 가입 전 본인인증 정책이 켜져 있으니 가입 자체가 토큰 검증 오류(422)로 막힌다.
+        $this->postJson('/api/auth/register', $this->signupPayload(['verification_token' => $expired]))
+            ->assertStatus(422)->assertJsonValidationErrors(['verification_token']);
+        $this->assertDatabaseMissing('users', ['email' => 'signup@example.com']);
 
         // 회원에게 묶인 토큰은 그 회원으로 로그인한 요청만 값을 받는다.
         $owner = User::factory()->create();
@@ -375,6 +398,53 @@ class VerifiedClaimsTest extends TestCase
             ->assertStatus(422)->assertJsonPath('errors.status', 'invalid');
         $this->actingAs($owner, 'sanctum')->postJson('/api/identity/claims', ['verification_token' => $bound, 'purpose' => 'sensitive_action'])
             ->assertOk()->assertJsonPath('data.status', 'applied');
+    }
+
+    /**
+     * 가입 전 본인인증 정책이 꺼진 사이트는 가입 요청의 본인인증 결과를 인정하지도 쓰지도 않는다.
+     *
+     * 인증 값을 주는 수단의 유효한 토큰이라도 채움값 API·가입 항목 API 는 채우지 않고, 가입은 입력 그대로 받으며 회원 본인인증과
+     * 이메일 인증을 기록하지 않고, 토큰은 소비되지 않는다(7.1.6 계약 — 정책 꺼짐 ⇒ 결과를 인정·소비하지 않음, 2026-11-17 결정).
+     *
+     * @scenario case=policy_off
+     *
+     * @effects policy_off_claims_api_disabled, policy_off_signup_fields_not_prefilled, policy_off_signup_input_kept, policy_off_nothing_recorded, policy_off_token_not_consumed
+     *
+     * @return void 반환값 없음
+     */
+    public function test_policy_off_signup_ignores_verification_result(): void
+    {
+        IdentityPolicy::where('key', 'core.auth.signup_before_submit')->update(['enabled' => false]);
+        $token = $this->verifiedToken();
+
+        $data = $this->postJson('/api/identity/claims', ['verification_token' => $token])->assertOk()->json('data');
+        $this->assertSame('disabled', $data['status']);
+        $this->assertNull($data['provider_id']);
+        $this->assertSame([], $data['claims']);
+        $this->assertSame([], $data['fields']);
+        $this->assertSame([], $data['locked']);
+
+        $signup = $this->getJson('/api/auth/register/fields?verification_token='.$token)->assertOk()->json('data');
+        $this->assertNull($signup['verified_claims']);
+        $name = array_column($signup['fields'], null, 'key')['name'];
+        $this->assertFalse($name['readonly']);
+        $this->assertNull($name['locked_reason']);
+        $this->assertNull($name['default']);
+
+        $this->postJson('/api/auth/register', $this->signupPayload([
+            'verification_token' => $token,
+            'custom_fields' => ['vc_birth' => '2001-01-01'],
+        ]))->assertStatus(201);
+
+        $user = User::where('email', 'signup@example.com')->firstOrFail();
+        $this->assertSame('입력한이름', $user->name, '정책이 꺼졌는데 잠금 항목을 인증 값으로 덮어썼다');
+        $this->assertSame('2001-01-01', app(FieldValueService::class)->read($user, 'core.user')['vc_birth'] ?? null);
+        $this->assertNull($user->identity_verified_provider, '정책이 꺼졌는데 본인인증을 기록했다');
+        $this->assertNull($user->identity_verified_at);
+        $this->assertNull($user->email_verified_at, '정책이 꺼졌는데 이메일 인증을 기록했다');
+        $this->assertSame([], app(IdentityClaimsService::class)->lockedKeysFor($user));
+        $this->assertNull(IdentityVerificationLog::where('verification_token', $token)->value('consumed_at'), '정책이 꺼졌는데 토큰을 소비했다');
+        $this->assertNull(IdentityVerificationLog::where('verification_token', $token)->value('user_id'));
     }
 
     /**

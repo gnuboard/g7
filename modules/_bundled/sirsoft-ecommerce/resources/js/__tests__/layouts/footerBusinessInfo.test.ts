@@ -3,8 +3,10 @@
  * @description 쇼핑몰 푸터 사업자 정보 조각(user_global_footer)을 잠근다 (#434).
  *
  * - 사용자 템플릿 공용 자리 `user_global_footer` 에 붙는다(어느 템플릿이든 그 자리만 있으면 같다)
- * - 쇼핑몰 설정 「푸터에 사업자 정보 표시」(기본 켜짐)가 꺼지거나 상호·사업자번호가 둘 다 비면 그리지 않는다
+ * - 쇼핑몰 설정 「사용자 화면 하단에 사업자 정보 표시」(show_business_footer, 기본 켜짐)가 꺼지거나 상호·사업자번호가 둘 다 비면 그리지 않는다
+ *   (같은 뜻의 두 번째 토글 footer_business_info_enabled 는 읽지 않는다)
  * - 빈 항목은 줄을 만들지 않고, 사업자번호가 있으면 공정위 조회를 새 창(opener 차단)으로 연다
+ * - 호스팅 서비스 제공자도 값이 있으면 줄을 만든다
  * - 스타일은 모듈 앞글자(ecommerce:) 클래스만 쓴다
  *
  * 시나리오: case=fragment
@@ -52,9 +54,11 @@ describe('푸터 사업자 정보 조각 (#434)', () => {
     // @scenario case=fragment
     // @effects footer_business_info_rendered_when_enabled
     it.each([
-        [{ company_name: 'SIR', footer_business_info_enabled: true }, true],
+        [{ company_name: 'SIR', show_business_footer: true }, true],
         [{ business_number: '123-45-67890' }, true],
-        [{ company_name: 'SIR', footer_business_info_enabled: false }, false],
+        [{ company_name: 'SIR', show_business_footer: false }, false],
+        // 지워진 토글은 판정에 쓰지 않는다
+        [{ company_name: 'SIR', footer_business_info_enabled: false }, true],
         [{ company_name: '', business_number: '' }, false],
         [undefined, false],
     ])('기본정보 %j 이면 표시 %s', (basicInfo, shown) => {
@@ -67,6 +71,11 @@ describe('푸터 사업자 정보 조각 (#434)', () => {
         const company = all.find((n) => n.id === 'ecommerceFooterBiz_company')!;
         expect(evaluate(company.if, { company_name: '' })).toBe(false);
         expect(evaluate(company.if, { company_name: 'SIR' })).toBe(true);
+
+        const hosting = all.find((n) => n.id === 'ecommerceFooterBiz_hosting_provider')!;
+        expect(evaluate(hosting.if, { hosting_provider: '' })).toBe(false);
+        expect(evaluate(hosting.if, { hosting_provider: '시험 호스팅' })).toBe(true);
+        expect(JSON.stringify(hosting)).toContain('$t:sirsoft-ecommerce.shop.footer_business_info.hosting_provider');
 
         const verify = all.find((n) => n.id === 'ecommerceFooterBiz_verify')!;
         expect(verify.props.target).toBe('_blank');

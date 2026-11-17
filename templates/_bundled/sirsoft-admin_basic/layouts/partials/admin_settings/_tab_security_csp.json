@@ -265,10 +265,17 @@
                         {
                             "type": "basic",
                             "name": "Select",
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "w-80"
+                                    }
+                                }
+                            },
                             "props": {
                                 "name": "security.csp_style_mode",
                                 "disabled": "{{_computed.isReadOnly || !!_local.form?._meta?.csp?.style_override}}",
-                                "className": "w-full sm:w-80",
+                                "className": "w-full",
                                 "error": "{{_local.errors?.['security.csp_style_mode']?.[0] ?? ''}}",
                                 "options": "{{[{value: 'off', label: $t('admin.settings.security.csp.mode_off')}, {value: 'report_only', label: $t('admin.settings.security.csp.mode_report_only')}, {value: 'enforce', label: $t('admin.settings.security.csp.mode_enforce')}]}}"
                             }
@@ -323,10 +330,17 @@
                         {
                             "type": "basic",
                             "name": "Select",
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "w-80"
+                                    }
+                                }
+                            },
                             "props": {
                                 "name": "security.csp_style_level",
                                 "disabled": "{{_computed.isReadOnly}}",
-                                "className": "w-full sm:w-80",
+                                "className": "w-full",
                                 "error": "{{_local.errors?.['security.csp_style_level']?.[0] ?? ''}}",
                                 "options": "{{[{value: 'basic', label: $t('admin.settings.security.csp.style.level_basic')}, {value: 'strict', label: $t('admin.settings.security.csp.style.level_strict')}]}}"
                             }

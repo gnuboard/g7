@@ -26,7 +26,7 @@ effects:
   - listeners_implement_contract
   - declared_shape
   - menus_synced
-  - menus_removed
+  - plugin_uninstall_hook_keeps_menus
   - collation_utf8mb4_bin
   - idp_subject_and_idp_user_unique
   - no_cascade

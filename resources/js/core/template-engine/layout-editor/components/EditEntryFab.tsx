@@ -20,8 +20,15 @@
  * @since engine-v1.50.0
  */
 
-import React from 'react';
+import React, { useLayoutEffect } from 'react';
 import { useTranslation } from '../../TranslationContext';
+import {
+  applyEditorStyle,
+  removeEditorStyle,
+  EDIT_ENTRY_FAB_CLASS,
+  EDIT_ENTRY_FAB_STYLE_CSS,
+  EDIT_ENTRY_FAB_STYLE_KEY,
+} from '../utils/editorRuntimeStyles';
 import {
   buildEditEntryUrl,
   shouldRenderEditEntryFab,
@@ -54,25 +61,7 @@ export interface EditEntryFabProps {
 }
 
 /** 단추 클래스 — 인쇄·다크·포커스 규칙이 이 이름을 쓴다 */
-const FAB_CLASS = 'g7le-edit-entry-fab';
-
-/**
- * 인라인 style 로 줄 수 없는 규칙(인쇄, 다크, 포커스 표시, 눌림). 코어 번들에는 CSS 파일이 없어 컴포넌트가 함께 싣는다.
- * 다크 선택자는 ColorSchemeSignal 규격(다크 안의 라이트 제외)을 따른다.
- */
-const FAB_STYLE = `
-.${FAB_CLASS}{position:fixed;z-index:39;display:inline-flex;align-items:center;justify-content:center;gap:6px;
-  border:1px solid transparent;border-radius:999px;background:#0f172a;color:#ffffff;
-  box-shadow:0 2px 12px rgba(15,23,42,.25);cursor:pointer;font-size:13px;font-weight:600;line-height:1;
-  font-family:inherit;transition:transform .12s ease,box-shadow .12s ease}
-.${FAB_CLASS}:hover{box-shadow:0 4px 16px rgba(15,23,42,.35)}
-.${FAB_CLASS}:active{transform:translateY(1px)}
-.${FAB_CLASS}:focus{outline:none}
-.${FAB_CLASS}:focus-visible{outline:3px solid #60a5fa;outline-offset:2px}
-.${FAB_CLASS}:is([data-g7-color-scheme="dark"] *):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *)){
-  background:#f8fafc;color:#0f172a;border-color:#cbd5e1;box-shadow:0 2px 12px rgba(0,0,0,.5)}
-@media print{.${FAB_CLASS}{display:none !important}}
-`;
+const FAB_CLASS = EDIT_ENTRY_FAB_CLASS;
 
 export function EditEntryFab(props: EditEntryFabProps): React.ReactElement | null {
   const { t } = useTranslation();
@@ -82,6 +71,15 @@ export function EditEntryFab(props: EditEntryFabProps): React.ReactElement | nul
     isAuthenticated: props.isAuthenticated,
     hasLayoutEditPermission: props.hasLayoutEditPermission,
   });
+
+  // 인라인 style 로 줄 수 없는 규칙(인쇄, 다크, 포커스 표시, 눌림)은 단추가 보이는 동안만 런타임 시트로 붙인다.
+  // 종전 JSX <style> 자식은 엄격한 스타일 정책(style-src 'self')에서 막혀 단추가 고정 위치를 잃고 문서 흐름에 그려졌다(#163).
+  // 그리기 전에 붙여야 첫 화면에 무스타일 단추가 비치지 않는다(useLayoutEffect).
+  useLayoutEffect(() => {
+    if (!shouldShow) return undefined;
+    applyEditorStyle(EDIT_ENTRY_FAB_STYLE_KEY, EDIT_ENTRY_FAB_STYLE_CSS);
+    return () => removeEditorStyle(EDIT_ENTRY_FAB_STYLE_KEY);
+  }, [shouldShow]);
 
   if (!shouldShow) return null;
 
@@ -102,7 +100,6 @@ export function EditEntryFab(props: EditEntryFabProps): React.ReactElement | nul
 
   return (
     <>
-      <style data-g7le-edit-entry-fab-style="">{FAB_STYLE}</style>
       <button
         ref={props.buttonRef}
         type="button"

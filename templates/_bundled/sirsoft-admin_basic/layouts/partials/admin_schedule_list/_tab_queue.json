@@ -228,6 +228,10 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "blur_until_loaded": {
+                                "enabled": true,
+                                "data_sources": "queue_status"
+                            },
                             "props": {
                                 "className": "{{(queue_status?.data?.failed_count ?? 0) > 0 ? 'mt-2 text-2xl font-bold text-red-600 dark:text-red-400' : 'text-page-heading mt-2'}}"
                             },
@@ -271,6 +275,10 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "blur_until_loaded": {
+                                "enabled": true,
+                                "data_sources": "queue_status"
+                            },
                             "props": {
                                 "className": "text-page-heading mt-2"
                             },
@@ -279,7 +287,7 @@
                         {
                             "type": "basic",
                             "name": "P",
-                            "if": "{{!((queue_status?.data?.workers?.warning_count ?? 0) > 0)}}",
+                            "if": "{{queue_status !== undefined && (!((queue_status?.data?.workers?.warning_count ?? 0) > 0))}}",
                             "props": {
                                 "className": "text-tertiary mt-1"
                             },

@@ -49,6 +49,11 @@ class InicisAdultVerificationGuardTest extends PluginTestCase
 
     private IdentityVerificationLogRepositoryInterface $logRepository;
 
+    /**
+     * 로그 저장소와, 더미 gateway·매핑 저장소를 끼운 DI 기준 provider 를 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -68,8 +73,12 @@ class InicisAdultVerificationGuardTest extends PluginTestCase
     }
 
     /**
+     * 성인인증 목적에서 미성년자는 NOT_ADULT 로 실패하고 토큰이 발급되지 않는다.
+     *
      * @scenario purpose=adult,is_adult=false
      * @effects minor_blocked_with_not_adult_failure_and_no_token
+     *
+     * @return void 반환값 없음
      */
     public function test_adult_purpose_blocks_minor_with_not_adult_failure(): void
     {
@@ -88,8 +97,12 @@ class InicisAdultVerificationGuardTest extends PluginTestCase
     }
 
     /**
+     * 성인인증 목적에서 성인은 통과하고 로그가 verified 가 된다.
+     *
      * @scenario purpose=adult,is_adult=true
      * @effects adult_passes_with_verified_status_and_token
+     *
+     * @return void 반환값 없음
      */
     public function test_adult_purpose_passes_for_adult(): void
     {
@@ -106,8 +119,12 @@ class InicisAdultVerificationGuardTest extends PluginTestCase
     }
 
     /**
+     * 성인인증이 아닌 목적은 미성년자여도 성인 가드에 막히지 않는다.
+     *
      * @scenario purpose=non_adult,is_adult=true
      * @effects non_adult_purpose_unaffected_by_guard
+     *
+     * @return void 반환값 없음
      */
     public function test_non_adult_purpose_is_not_affected_by_minor(): void
     {
@@ -124,8 +141,12 @@ class InicisAdultVerificationGuardTest extends PluginTestCase
     }
 
     /**
+     * 성인인증이 아닌 목적이라도 생년월일이 없으면 신원 가드가 INCOMPLETE_IDENTITY 로 막는다.
+     *
      * @scenario purpose=non_adult,is_adult=missing
      * @effects non_adult_purpose_blocked_by_incomplete_identity_guard
+     *
+     * @return void 반환값 없음
      */
     public function test_non_adult_purpose_blocked_when_birthday_missing(): void
     {
@@ -144,8 +165,12 @@ class InicisAdultVerificationGuardTest extends PluginTestCase
     }
 
     /**
+     * 성인인증 목적에서 생년월일이 없으면 성인 가드보다 먼저 신원 가드가 INCOMPLETE_IDENTITY 로 막는다.
+     *
      * @scenario purpose=adult,is_adult=missing
      * @effects adult_purpose_blocks_when_birthday_absent
+     *
+     * @return void 반환값 없음
      */
     public function test_adult_purpose_blocks_when_birthday_missing(): void
     {
@@ -166,7 +191,8 @@ class InicisAdultVerificationGuardTest extends PluginTestCase
     /**
      * STEP3 성공 페이로드 mockup — birthday 만 파라미터화.
      *
-     * @return array<string, mixed>
+     * @param  string  $birthday  생년월일(Ymd, 빈 문자열이면 누락)
+     * @return array<string, mixed> 이니시스 STEP3 결과 페이로드
      */
     private function validInput(string $birthday): array
     {
@@ -187,6 +213,13 @@ class InicisAdultVerificationGuardTest extends PluginTestCase
         ];
     }
 
+    /**
+     * verify 직전 상태(sent)의 이니시스 본인인증 로그를 만든다.
+     *
+     * @param  int  $userId  대상 회원 ID
+     * @param  string  $purpose  인증 목적(purpose)
+     * @return IdentityVerificationLog 만든 로그
+     */
     private function createPendingLog(int $userId, string $purpose): IdentityVerificationLog
     {
         return $this->logRepository->create([
@@ -208,20 +241,44 @@ class InicisAdultVerificationGuardTest extends PluginTestCase
         ]);
     }
 
+    /**
+     * verify 경로에서 쓰이지 않는 더미 gateway 를 만든다.
+     *
+     * @return InicisGatewayInterface 호출되지 않는 더미 gateway
+     */
     private function makeNullGateway(): InicisGatewayInterface
     {
         return new class implements InicisGatewayInterface
         {
+            /**
+             * 인증 URL 검증 더미 — 이 시험 경로에서는 쓰이지 않아 늘 거부한다.
+             *
+             * @param  string  $url  검사할 인증 URL
+             * @return bool 늘 false
+             */
             public function validateAuthUrl(string $url): bool
             {
                 return false;
             }
 
+            /**
+             * 결과 조회 더미 — 이 시험 경로에서 호출되면 안 되므로 예외를 던진다.
+             *
+             * @param  string  $authRequestUrl  결과 조회 URL
+             * @param  string  $txId  이니시스 거래 ID
+             * @param  string  $token  인증 토큰
+             * @return array<string, mixed> 반환하지 않음(늘 예외)
+             */
             public function verifyResult(string $authRequestUrl, string $txId, string $token): array
             {
                 throw new \LogicException('not used in adult guard test');
             }
 
+            /**
+             * 거래 ID 생성 더미 — 빈 문자열을 돌려준다.
+             *
+             * @return string 늘 빈 문자열
+             */
             public function generateMTxId(): string
             {
                 return '';
@@ -229,20 +286,55 @@ class InicisAdultVerificationGuardTest extends PluginTestCase
         };
     }
 
+    /**
+     * verify 경로에서 쓰이지 않는 더미 challenge 매핑 저장소를 만든다.
+     *
+     * @return InicisChallengeMappingRepositoryInterface 호출되지 않는 더미 매핑 저장소
+     */
     private function makeNullMappingRepository(): InicisChallengeMappingRepositoryInterface
     {
         return new class implements InicisChallengeMappingRepositoryInterface
         {
+            /**
+             * 보관주기 정리 전 매핑 삭제 — 이 시험에서는 호출되지 않는다(7.2.0 이 인터페이스에 더한 메서드).
+             *
+             * @param  array<int, string>  $challengeIds  코어 IdentityVerificationLog UUID 목록
+             * @return int 늘 0
+             */
+            public function deleteByChallengeIds(array $challengeIds): int
+            {
+                return 0;
+            }
+
+            /**
+             * 매핑 생성 더미 — 이 시험 경로에서 호출되면 안 되므로 예외를 던진다.
+             *
+             * @param  string  $mtxid  이니시스 거래 ID
+             * @param  string  $challengeId  코어 challenge UUID
+             * @return \Plugins\Sirsoft\VerificationKginicis\Models\InicisChallengeMapping 반환하지 않음(늘 예외)
+             */
             public function create(string $mtxid, string $challengeId): \Plugins\Sirsoft\VerificationKginicis\Models\InicisChallengeMapping
             {
                 throw new \LogicException('not used in adult guard test');
             }
 
+            /**
+             * mTxId 로 challenge ID 를 찾는 더미 — 늘 찾지 못한다.
+             *
+             * @param  string  $mtxid  이니시스 거래 ID
+             * @return string|null 늘 null
+             */
             public function findChallengeIdByMtxid(string $mtxid): ?string
             {
                 return null;
             }
 
+            /**
+             * challenge ID 로 매핑을 찾는 더미 — 늘 찾지 못한다.
+             *
+             * @param  string  $challengeId  코어 challenge UUID
+             * @return \Plugins\Sirsoft\VerificationKginicis\Models\InicisChallengeMapping|null 늘 null
+             */
             public function findByChallengeId(string $challengeId): ?\Plugins\Sirsoft\VerificationKginicis\Models\InicisChallengeMapping
             {
                 return null;

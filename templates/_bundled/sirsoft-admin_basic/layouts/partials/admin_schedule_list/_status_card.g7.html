@@ -3,6 +3,7 @@
      서버 cron 에 스케줄러가 걸려 있지 않은 것이라 등록 안내를 띄운다 — 등록된 작업이 있어도 이게 멈추면 아무것도 돌지 않는다.
   ② ③ 은 목록 응답의 통계(`schedules.data.statistics`), ④ 는 상태 응답의 큐 요약이다. 큐 탭의 큐 현황 카드도 같은 4칸 틀이다.
      대기 건수는 database 드라이버일 때만 셀 수 있다(그 밖이면 「측정 불가」).
+     상태를 받기 전에는 「멈춤」·「측정 불가」를 그리지 않고 큐 숫자는 흐린다(#915 — 받기 전 값은 undefined 라 「없음」으로 읽힌다).
   넓은 화면은 4칸, 태블릿은 2×2. 휴대폰은 상태를 한 줄로 요약하고(시안 「모바일: 상태 한 줄」), 「자세히」를 눌러야
   카드 넷이 한 칸씩 펼쳐진다 — 카드 넷이 세로로 쌓이면 목록이 화면 두 장 아래에서 시작했다. -->
 <partial name="status_card">
@@ -13,7 +14,7 @@
       <div class="flex items-center gap-2">
         <icon name="heart-pulse" class="{{schedule_status?.data?.heartbeat?.healthy ? 'text-green-500' : 'text-red-500'}}"/>
         <span data-if="{{schedule_status?.data?.heartbeat?.healthy}}" class="text-sm font-bold text-green-600 dark:text-green-400">$t:admin.schedules.status_card.healthy</span>
-        <span data-if="{{!schedule_status?.data?.heartbeat?.healthy}}" class="text-sm font-bold text-red-600 dark:text-red-400">$t:admin.schedules.status_card.stopped</span>
+        <span data-if="{{schedule_status !== undefined &amp;&amp; (!schedule_status?.data?.heartbeat?.healthy)}}" class="text-sm font-bold text-red-600 dark:text-red-400">$t:admin.schedules.status_card.stopped</span>
       </div>
       <p data-if="{{schedule_status?.data?.heartbeat?.minutes_ago !== null &amp;&amp; schedule_status?.data?.heartbeat?.minutes_ago !== undefined}}" class="text-tertiary mt-1">$t:admin.schedules.status_card.mobile_summary|minutes={{schedule_status?.data?.heartbeat?.minutes_ago}}|alive={{schedule_status?.data?.queue?.workers?.alive ?? 0}}|registered={{schedule_status?.data?.queue?.workers?.registered ?? 0}}|failed={{schedules?.data?.statistics?.failed ?? 0}}</p>
       <p data-if="{{schedule_status?.data?.heartbeat?.minutes_ago === null || schedule_status?.data?.heartbeat?.minutes_ago === undefined}}" class="text-tertiary mt-1">$t:admin.schedules.status_card.mobile_summary_never|alive={{schedule_status?.data?.queue?.workers?.alive ?? 0}}|registered={{schedule_status?.data?.queue?.workers?.registered ?? 0}}|failed={{schedules?.data?.statistics?.failed ?? 0}}</p>
@@ -39,7 +40,7 @@
         <div class="text-2xl font-bold text-green-600 dark:text-green-400">$t:admin.schedules.status_card.healthy</div>
         <p class="text-tertiary mt-1">$t:admin.schedules.status_card.last_tick|minutes={{schedule_status?.data?.heartbeat?.minutes_ago ?? 0}}</p>
       </div>
-      <div data-if="{{!schedule_status?.data?.heartbeat?.healthy}}" class="mt-2">
+      <div data-if="{{schedule_status !== undefined &amp;&amp; (!schedule_status?.data?.heartbeat?.healthy)}}" class="mt-2">
         <div class="text-2xl font-bold text-red-600 dark:text-red-400">$t:admin.schedules.status_card.stopped</div>
         <p data-if="{{schedule_status?.data?.heartbeat?.minutes_ago !== null &amp;&amp; schedule_status?.data?.heartbeat?.minutes_ago !== undefined}}" class="text-tertiary mt-1">$t:admin.schedules.status_card.last_tick|minutes={{schedule_status?.data?.heartbeat?.minutes_ago}}</p>
         <p data-if="{{schedule_status?.data?.heartbeat?.minutes_ago === null || schedule_status?.data?.heartbeat?.minutes_ago === undefined}}" class="text-tertiary mt-1">$t:admin.schedules.status_card.never_ticked</p>
@@ -69,8 +70,8 @@
         <icon name="layer-group" class="text-xl text-blue-500"/>
       </div>
       <div data-if="{{schedule_status?.data?.queue?.measurable}}" class="text-page-heading mt-2">$t:admin.schedules.status_card.pending_count|count={{schedule_status?.data?.queue?.pending_count ?? 0}}</div>
-      <div data-if="{{!schedule_status?.data?.queue?.measurable}}" class="mt-2 text-lg font-semibold text-gray-500 dark:text-gray-400">$t:admin.schedules.status_card.pending_unmeasurable</div>
-      <p class="text-tertiary mt-1">$t:admin.schedules.status_card.queue_detail|failed={{schedule_status?.data?.queue?.failed_count ?? 0}}|alive={{schedule_status?.data?.queue?.workers?.alive ?? 0}}|registered={{schedule_status?.data?.queue?.workers?.registered ?? 0}}</p>
+      <div data-if="{{schedule_status !== undefined &amp;&amp; (!schedule_status?.data?.queue?.measurable)}}" class="mt-2 text-lg font-semibold text-gray-500 dark:text-gray-400">$t:admin.schedules.status_card.pending_unmeasurable</div>
+      <p class="text-tertiary mt-1"><blur-until-loaded sources="schedule_status"/>$t:admin.schedules.status_card.queue_detail|failed={{schedule_status?.data?.queue?.failed_count ?? 0}}|alive={{schedule_status?.data?.queue?.workers?.alive ?? 0}}|registered={{schedule_status?.data?.queue?.workers?.registered ?? 0}}</p>
     </div>
   </div>
 </div>

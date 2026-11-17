@@ -8,7 +8,6 @@
  *
  * @scenario-manifest templates/_bundled/sirsoft-basic/tests/scenarios/content-inline-style-deferral.yaml
  */
-import React from 'react';
 import { render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 // @ts-ignore - DOMPurify 타입 정의 없음
@@ -134,7 +133,7 @@ describe('HtmlContent 본문 서식 지연 적용', () => {
     );
     const p = container.querySelector('p') as HTMLElement;
 
-    expect(mock.sanitize.mock.calls[0][2].FORBID_ATTR).toContain('style');
+    expect(mock.sanitize.mock.calls[0][2]!.FORBID_ATTR).toContain('style');
     expect(p.style.color).toBe('');
     expect(p.hasAttribute(DEFERRED_ATTR)).toBe(false);
   });

@@ -1,0 +1,22 @@
+feature: 제거 때 알림 채널 template 정리
+
+description: |
+  이 플러그인은 코어·모듈 소유 알림 정의에 sms·alimtalk 채널 template 을 더한다. 그 정의는 플러그인 소유가 아니라
+  코어의 범용 알림 정의 정리에 걸리지 않으므로 플러그인이 스스로 정리한다.
+
+  코어 7.2.0 부터 `uninstall()` 은 데이터 보존 제거에서도 불리므로 채널 template 을 지우지 않는다. 「데이터도 함께 삭제」를
+  고른 제거에서만 부르는 `uninstallData()` 가 우리 채널 template 과 정의의 channels 배열에서 우리 채널만 지우고, 정의 자체와
+  원래 채널(mail·database)은 남긴다. 다시 활성화하면 재시드로 채널 template 이 다시 생긴다.
+
+axes:
+  owner: [core, module, none]
+
+effects:
+  - uninstall_keeps_channel_templates
+  - uninstall_data_removes_channel_templates
+  - definition_kept_with_own_channels
+  - reactivate_reseeds_channel_templates
+  - cleanup_without_contributions_is_noop
+
+test_files:
+  - plugins/_bundled/sirsoft-message_bizppurio/tests/Feature/Installation/ChannelTemplateCleanupOnUninstallTest.php

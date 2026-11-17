@@ -5,8 +5,7 @@
  * 남은 시간이 처음부터 「만료」 로 보이고 [재전송] 대기가 줄지 않았다. `stopAllIntervals` 를 부르는 곳이 없어 화면을 떠나도
  * 타이머가 돌며 다음 화면 `_local` 에 앞 화면 키를 썼다. 비회원으로 질의값만(`expires_at`) 준 전체화면을 열어 서버 쓰기 없이 잰다.
  *
- * @scenario case=fullpage_countdown
- * @effects tick_reads_live_local, tick_stops_after_route_change
+ * 마킹은 시험 바로 앞에 있다(파일 머리말의 마킹은 어느 시험이 재는지 가리키지 않는다).
  */
 import { test, expect } from '../fixtures/auth';
 

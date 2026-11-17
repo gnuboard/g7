@@ -17,6 +17,8 @@ import { initTemplateEngine, renderTemplate, updateTemplateData, destroyTemplate
 import { Router } from '../routing/Router';
 import { AuthManager } from '../auth/AuthManager';
 import { useResponsive } from '../template-engine/ResponsiveContext';
+import { getCssText } from '../style/RuntimeStyleSheet';
+import { EDIT_ENTRY_FAB_STYLE_KEY } from '../template-engine/layout-editor/utils/editorRuntimeStyles';
 
 const flush = async (): Promise<void> => {
   await act(async () => {
@@ -212,7 +214,9 @@ describe('template-engine — 운영 화면 편집 진입 단추', () => {
     expect(button.getAttribute('data-compact')).toBe('true');
     expect(button.getAttribute('aria-label')).toBe('layout_editor.chrome.fab.label');
     expect(button.tagName).toBe('BUTTON');
-    const style = document.querySelector('style[data-g7le-edit-entry-fab-style]')?.textContent ?? '';
+    // 규칙은 JSX <style> 자식이 아니라 런타임 시트(RuntimeStyleSheet)로 붙는다 — 엄격한 스타일 정책에서 <style> 이 막힌다(#163)
+    expect(document.querySelector('style[data-g7le-edit-entry-fab-style]')).toBeNull();
+    const style = getCssText(EDIT_ENTRY_FAB_STYLE_KEY) ?? '';
     expect(style).toContain('@media print');
     expect(style).toContain('data-g7-color-scheme="dark"');
     expect(style).toContain(':focus-visible');

@@ -164,7 +164,7 @@
               <span class="text-label-subtle">$t:admin.settings.system.cron_last_run</span>
               <!-- 서버는 ISO 8601(`2026-09-12T21:52:21+09:00`)을 준다. 화면에서는 `T` 를 빈칸으로 바꾸고 앞 19자(날짜와 시각)만 남겨 오프셋을 떼어 낸다 — 시간대 변환은 하지 않으므로 서버가 준 시각 그대로다. `T` 와 오프셋이 그대로 보이면 운영자가 읽을 수 없는 문자열이 된다. -->
               <p data-ref="cron_last_run_value" data-if="{{_local.cronLastRun ?? system_status?.data?.cron?.last_run}}" class="text-heading">{{(function () { const r = _local.cronLastRun ?? system_status?.data?.cron?.last_run; return String(r?.finished_at ?? '').replace('T', ' ').slice(0, 19) + ' · ' + $t('admin.schedules.queue.duration_ms', { ms: r?.duration_ms ?? 0 }) + ' · ' + (r?.executed ?? 0) + ' / ' + (r?.failed ?? 0); })()}}</p>
-              <p data-ref="cron_last_run_empty" data-if="{{!(_local.cronLastRun ?? system_status?.data?.cron?.last_run)}}" class="text-secondary text-xs">$t:admin.settings.system.cron_last_run_none</p>
+              <p data-ref="cron_last_run_empty" data-if="{{system_status !== undefined &amp;&amp; (!(_local.cronLastRun ?? system_status?.data?.cron?.last_run))}}" class="text-secondary text-xs">$t:admin.settings.system.cron_last_run_none</p>
               <p data-ref="cron_last_run_legend" class="form-hint">$t:admin.settings.system.cron_last_run_legend</p>
               <!-- 상태 파일을 쓰지 못하면 점검 시각이 남지 않아 다음 호출의 소급 창이 상한까지 열리고 창 안의 예약이 매번 전부 다시 실행된다. 오류가 아니라 부하로만 나타나므로 여기서 사유를 알린다. -->
               <p data-ref="cron_state_persist_failed" data-if="{{system_status?.data?.cron?.state_persist_failed}}" class="text-xs text-red-600 dark:text-red-400 mt-1">$t:admin.settings.system.cron_state_persist_failed</p>
@@ -191,7 +191,7 @@
             <!-- 실행 이력 (A-5). 위의 '마지막 실행'은 직전 1회만 담고 다음 호출에 덮이므로, 지난 실행을 되짚으려면 누적 목록이 따로 있어야 한다. 서버가 스케줄 관리에 등록된 작업과 코드 예약의 이력을 시각 역순으로 함께 내려보내고, 작업 이름은 스케줄 관리 화면과 같은 표시 명칭으로 준다. 큐로 보낸 작업은 워커가 끝내기 전까지 실행 중으로 남으므로 성공·실패·실행 중 세 갈래로 그린다. -->
             <div data-ref="cron_history_block" class="w-full mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
               <span class="text-label-subtle">$t:admin.settings.system.cron_history</span>
-              <p data-ref="cron_history_empty" data-if="{{!(system_status?.data?.cron?.recent_history?.length)}}" class="text-secondary text-xs mt-1">$t:admin.settings.system.cron_history_none</p>
+              <p data-ref="cron_history_empty" data-if="{{system_status !== undefined &amp;&amp; (!(system_status?.data?.cron?.recent_history?.length))}}" class="text-secondary text-xs mt-1">$t:admin.settings.system.cron_history_none</p>
               <div data-ref="cron_history_list" data-if="{{system_status?.data?.cron?.recent_history?.length}}" class="mt-2 max-h-[400px] overflow-y-auto">
                 <!-- 좁은 폭에서는 이름 줄이 한 줄을 다 쓰고 시각·결과가 다음 줄로 내려간다 — 세 칸을 한 줄에 우겨 넣으면 이름이 두세 글자만 남는다. -->
                 <div data-ref="cron_history_row_{{$hidx}}" data-each="entry, $hidx in {{system_status?.data?.cron?.recent_history ?? []}}" class="flex flex-wrap items-start justify-between gap-x-3 gap-y-0.5 py-1 border-b border-gray-100 dark:border-gray-700">

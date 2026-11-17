@@ -291,7 +291,7 @@
               <label class="form-label">$t:admin.users.detail.password.state</label>
               <!-- 수정 모드는 서버 값, 추가 모드는 「비밀번호 없이 만들기」(7.2.0)를 따른다 — 켜면 비밀번호 없이 만들어지므로 「미설정」 -->
               <span data-if="{{!!route?.id ? user?.data?.has_password === false : _local.form?.create_without_password === true}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">$t:admin.users.detail.password.not_set</span>
-              <span data-if="{{!!route?.id ? user?.data?.has_password !== false : _local.form?.create_without_password !== true}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">$t:admin.users.detail.password.set</span>
+              <span data-if="{{!!route?.id ? (user !== undefined &amp;&amp; user?.data?.has_password !== false) : (_local.form !== undefined &amp;&amp; _local.form?.create_without_password !== true)}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">$t:admin.users.detail.password.set</span>
             </div>
             <!-- 이메일 인증 여부 — 읽기 전용이다. 이 값은 회원이 받은 메일의 링크를 눌러야 서는
                  것이라 운영자가 「인증됨」 으로 바꿔 줄 성질이 아니다. 그래도 상세와 같은 자리에
@@ -327,7 +327,7 @@
             <div data-ref="password_unsettable_notice" data-if="{{!!route?.id &amp;&amp; user?.data?.password_status?.can_set === false}}" class="alert-warning" role="status">
               <p class="text-warning-soft">{{user?.data?.password_status?.set_blocked_message ?? ''}}</p>
             </div>
-            <div class="grid grid-cols-1 gap-4" data-ref="field_password_group" data-if="{{!!route?.id ? user?.data?.password_status?.can_set !== false : !_local.form?.create_without_password}}">
+            <div class="grid grid-cols-1 gap-4" data-ref="field_password_group" data-if="{{!!route?.id ? (user !== undefined &amp;&amp; user?.data?.password_status?.can_set !== false) : (_local.form !== undefined &amp;&amp; !_local.form?.create_without_password)}}">
               <responsive on="768-" class="grid grid-cols-2 gap-4"/>
               <div data-ref="field_password">
                 <label class="form-label">
@@ -347,7 +347,7 @@
             </div>
             <!-- 켜진 비밀번호 규칙을 한 줄로 안내한다(보안 환경설정 값 — 서버가 같은 규칙으로 검사한다). 재사용 금지는 본인 계정일 때만
                  검사하므로(다른 회원에게 정해 주는 비밀번호는 검사하지 않는다) 본인일 때만 붙인다. -->
-            <p data-ref="password_rules_hint" data-if="{{!!route?.id ? user?.data?.password_status?.can_set !== false : !_local.form?.create_without_password}}" class="flex flex-wrap gap-x-1 text-xs text-gray-500 dark:text-gray-400 -mt-2">
+            <p data-ref="password_rules_hint" data-if="{{!!route?.id ? (user !== undefined &amp;&amp; user?.data?.password_status?.can_set !== false) : (_local.form !== undefined &amp;&amp; !_local.form?.create_without_password)}}" class="flex flex-wrap gap-x-1 text-xs text-gray-500 dark:text-gray-400 -mt-2">
               <span>$t:auth.password_rules.min_length|count={{_global.settings?.security?.password_min_length ?? 8}}</span>
               <span data-if="{{!!_global.settings?.security?.require_password_special_char}}">$t:auth.password_rules.special</span>
               <span data-if="{{!!_global.settings?.security?.password_require_char_types}}">$t:auth.password_rules.char_types</span>
@@ -374,7 +374,7 @@
             </div>
             <!-- 비밀번호가 없는 관리자(외부 인증 전용)가 자기 비밀번호를 처음 정할 때 — 현재 비밀번호 대신 이메일 인증번호로 본인을 확인한다.
                  확인해 받은 토큰을 폼 값(`verification_token`)에 넣어 저장 요청에 함께 보낸다. 서버가 본인 것인지·한 번만 쓰는지 확인한다. -->
-            <div data-ref="password_reauth_verification" data-if="{{!!route?.id &amp;&amp; route?.id === current_user?.data?.uuid &amp;&amp; !!_local.form?.password &amp;&amp; user?.data?.has_password === false &amp;&amp; user?.data?.password_status?.can_set !== false}}" class="space-y-2">
+            <div data-ref="password_reauth_verification" data-if="{{!!route?.id &amp;&amp; current_user !== undefined &amp;&amp; route?.id === current_user?.data?.uuid &amp;&amp; !!_local.form?.password &amp;&amp; user?.data?.has_password === false &amp;&amp; user?.data?.password_status?.can_set !== false}}" class="space-y-2">
               <!-- 메일을 받을 수 없는 관리자(대체 이메일)에게는 「이메일로 받은 인증번호」 대신 일반 안내 — 서버가 회사 계정 다시 로그인 등을 고른다 -->
               <p data-if="{{(user?.data?.email_deliverable ?? current_user?.data?.email_deliverable) !== false}}" class="text-xs text-gray-500 dark:text-gray-400">$t:admin.users.form.password_policy.reauth_notice</p>
               <p data-if="{{(user?.data?.email_deliverable ?? current_user?.data?.email_deliverable) === false}}" class="text-xs text-gray-500 dark:text-gray-400">$t:admin.users.form.password_policy.reauth_notice_other</p>

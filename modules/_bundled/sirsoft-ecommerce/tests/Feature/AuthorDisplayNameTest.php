@@ -344,7 +344,8 @@ class AuthorDisplayNameTest extends ModuleTestCase
     }
 
     /**
-     * 표시 이름 설정을 바꾸지 않은 사이트의 상품 후기 작성자는 수정 전과 같이 회원 이름이고, 회원 없는 후기는 저장된 이름이다.
+     * 표시 이름 설정을 바꾸지 않은 사이트의 상품 후기 작성자는 수정 전(7.1.6)과 같이 회원 이름을 작성자 이름 가림 설정(기본 「가운데
+     * 가림」)대로 가린 값이고, 회원 없는 후기는 저장된 이름이다. 가림을 끄면 회원 이름 그대로다.
      *
      * @scenario case=default_review_author_is_member_name
      *
@@ -360,10 +361,15 @@ class AuthorDisplayNameTest extends ModuleTestCase
 
         $rows = $this->publicReviews();
 
-        $this->assertSame('홍길동', $rows[$review->id]['author_name']);
-        $this->assertSame('홍길동', $rows[$review->id]['user']['name']);
+        $this->assertSame('홍*동', $rows[$review->id]['author_name']);
+        $this->assertSame('홍*동', $rows[$review->id]['user']['name']);
         $this->assertSame('김*수', $rows[$imported->id]['author_name']);
         $this->assertNull($rows[$imported->id]['user']);
+
+        app(EcommerceSettingsService::class)->setSetting('review_settings.author_name_masking', 'none');
+        $rows = $this->publicReviews();
+        $this->assertSame('홍길동', $rows[$review->id]['author_name']);
+        $this->assertSame('홍길동', $rows[$review->id]['user']['name']);
     }
 
     /**
@@ -440,8 +446,35 @@ class AuthorDisplayNameTest extends ModuleTestCase
             'display_name_areas' => ['sirsoft-ecommerce:review' => ['mode' => 'member']],
         ]);
         $rows = $this->publicReviews();
-        $this->assertSame('홍길동', $rows[$review->id]['author_name'], '고르지 않은 회원은 회원 기본 종류로 보인다');
+        // 회원 이름 종류는 작성자 이름 가림(기본 가운데 가림)을 받고, 닉네임은 실명이 아니라 그대로다
+        $this->assertSame('홍*동', $rows[$review->id]['author_name'], '고르지 않은 회원은 회원 기본 종류로 보인다');
         $this->assertSame('춘향이', $rows[$chosen->id]['author_name']);
+    }
+
+    /**
+     * 공개 후기의 작성자 이름 가림은 표시 이름 안의 회원 실명만 가린다 — 이미 가린 종류는 다시 가리지 않고,
+     * 이름과 닉네임 종류는 이름 부분만 가린다.
+     *
+     * @scenario case=review_masking_composes_with_display_kind
+     *
+     * @effects review_masking_masks_real_name_only, review_masked_kind_not_masked_twice
+     *
+     * @return void 반환값 없음
+     */
+    public function test_review_masking_masks_real_name_part_only(): void
+    {
+        $member = $this->member('남궁민수', '민수짱');
+        $review = $this->review($member);
+
+        $this->areas(['sirsoft-ecommerce:review' => ['mode' => 'fixed', 'kind' => 'masked_id']]);
+        $maskedId = app(DisplayNameResolver::class)->computeAs($member, 'masked_id');
+        $this->assertNotNull($maskedId);
+        $this->assertSame($maskedId, $this->publicReviews()[$review->id]['author_name'], '이미 가린 아이디를 다시 가렸다');
+
+        $this->areas(['sirsoft-ecommerce:review' => ['mode' => 'fixed', 'kind' => 'name_nickname']]);
+        $row = $this->publicReviews()[$review->id];
+        $this->assertSame('남**수(민수짱)', $row['author_name']);
+        $this->assertSame('남**수(민수짱)', $row['user']['name']);
     }
 
     /**

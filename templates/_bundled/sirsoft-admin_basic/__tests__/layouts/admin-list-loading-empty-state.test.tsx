@@ -116,7 +116,8 @@ const CASES: Case[] = [
   { screen: '본인인증 정책 · 코어 목적 없음', file: 'partials/admin_settings/_tab_identity_policies.json', find: { name: 'Span', ifIncludes: 'identityPurposes' }, source: 'identityPurposes', kind: 'node', empty: { data: [] }, rows: { data: [{ id: 'a', source_type: 'core' }] } },
   { screen: '본인인증 정책 · 정책 없음', file: 'partials/admin_settings/_tab_identity_policies.json', find: { name: 'Div', ifIncludes: 'policies?.data?.data' }, source: 'policies', kind: 'node', empty: list([]), rows: list([{ key: 'a' }]) },
   { screen: '본인인증 제공자 · 목적 없음', file: 'partials/admin_settings/_tab_identity_providers.json', find: { name: 'Div', ifIncludes: 'identityPurposes' }, source: 'identityPurposes', kind: 'node', empty: { data: [] }, rows: { data: [{ id: 'a' }] } },
-  { screen: '본인인증 제공자 · 제공자 없음', file: 'partials/admin_settings/_tab_identity_providers.json', find: { name: 'Div', ifIncludes: 'identityProviders' }, source: 'identityProviders', kind: 'node', empty: { data: [] }, rows: { data: [{ id: 'a' }] } },
+  // 제공자 빈 안내는 조회 권한(로그인 관리자 정보 current_user 로 만든 계산값)을 안 뒤에만 판정한다 — 권한을 받은 상태로 그린다
+  { screen: '본인인증 제공자 · 제공자 없음', file: 'partials/admin_settings/_tab_identity_providers.json', find: { name: 'Div', ifIncludes: 'identityProviders' }, source: 'identityProviders', kind: 'node', empty: { data: [] }, rows: { data: [{ id: 'a' }] }, initialData: { current_user: { data: { permissions: ['core.admin.identity.providers.read'] } } } },
   { screen: '알림 정의 · 없음', file: 'partials/admin_settings/_tab_notification_definitions.json', find: { id: 'notif_empty' }, source: 'notificationDefinitions', kind: 'node', empty: list([]), rows: list([{ id: 1 }]) },
 
   // ── 카드 그리드·알림 센터 ──

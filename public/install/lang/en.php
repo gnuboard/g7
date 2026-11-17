@@ -445,6 +445,7 @@ return [
     'log_finalize_env_merged' => '[finalize-env] .env merge complete (permissions untouched): path=:path, perms=:perms, owner_uid=:owner, group_gid=:group, process_euser=:euser',
     'log_finalize_env_runtime_delete_failed' => '[finalize-env] Failed to delete runtime.php: path=:path, last_error=:error. The file remains, so temporary credentials stay in plain text - please delete it manually.',
     'log_finalize_env_runtime_removed' => '[finalize-env] runtime.php deleted',
+    'log_finalize_env_runtime_neutralized' => '[finalize-env] Could not delete runtime.php, so its contents were emptied: path=:path, last_error=:error. Please delete the file manually.',
     'log_finalize_env_config_cache_delete_failed' => '[finalize-env] Failed to delete the config cache: path=:path, last_error=:error. It still holds pre-install values - delete the file manually or run `php artisan config:clear`.',
     'log_finalize_env_config_cache_removed' => '[finalize-env] Config cache deleted (the next request rebuilds it from .env)',
     'log_finalize_env_config_cache_rebuilt' => '[finalize-env] Config cache rebuilt',

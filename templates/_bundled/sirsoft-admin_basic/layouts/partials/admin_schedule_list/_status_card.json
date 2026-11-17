@@ -1,5 +1,5 @@
 {
-    "comment": "예약 작업 탭 위의 상태 카드 넷 — 스케줄러 · 작업 수 · 최근 결과 · 큐.\n  ① 스케줄러는 **하트비트**(매분 찍히는 마지막 틱)로 판정한다. 3분 안에 찍혔으면 정상, 넘었거나 한 번도 없으면\n     서버 cron 에 스케줄러가 걸려 있지 않은 것이라 등록 안내를 띄운다 — 등록된 작업이 있어도 이게 멈추면 아무것도 돌지 않는다.\n  ② ③ 은 목록 응답의 통계(`schedules.data.statistics`), ④ 는 상태 응답의 큐 요약이다. 큐 탭의 큐 현황 카드도 같은 4칸 틀이다.\n     대기 건수는 database 드라이버일 때만 셀 수 있다(그 밖이면 「측정 불가」).\n  넓은 화면은 4칸, 태블릿은 2×2. 휴대폰은 상태를 한 줄로 요약하고(시안 「모바일: 상태 한 줄」), 「자세히」를 눌러야\n  카드 넷이 한 칸씩 펼쳐진다 — 카드 넷이 세로로 쌓이면 목록이 화면 두 장 아래에서 시작했다.",
+    "comment": "예약 작업 탭 위의 상태 카드 넷 — 스케줄러 · 작업 수 · 최근 결과 · 큐.\n  ① 스케줄러는 **하트비트**(매분 찍히는 마지막 틱)로 판정한다. 3분 안에 찍혔으면 정상, 넘었거나 한 번도 없으면\n     서버 cron 에 스케줄러가 걸려 있지 않은 것이라 등록 안내를 띄운다 — 등록된 작업이 있어도 이게 멈추면 아무것도 돌지 않는다.\n  ② ③ 은 목록 응답의 통계(`schedules.data.statistics`), ④ 는 상태 응답의 큐 요약이다. 큐 탭의 큐 현황 카드도 같은 4칸 틀이다.\n     대기 건수는 database 드라이버일 때만 셀 수 있다(그 밖이면 「측정 불가」).\n     상태를 받기 전에는 「멈춤」·「측정 불가」를 그리지 않고 큐 숫자는 흐린다(#915 — 받기 전 값은 undefined 라 「없음」으로 읽힌다).\n  넓은 화면은 4칸, 태블릿은 2×2. 휴대폰은 상태를 한 줄로 요약하고(시안 「모바일: 상태 한 줄」), 「자세히」를 눌러야\n  카드 넷이 한 칸씩 펼쳐진다 — 카드 넷이 세로로 쌓이면 목록이 화면 두 장 아래에서 시작했다.",
     "meta": {
         "is_partial": true
     },
@@ -56,7 +56,7 @@
                                 {
                                     "type": "basic",
                                     "name": "Span",
-                                    "if": "{{!schedule_status?.data?.heartbeat?.healthy}}",
+                                    "if": "{{schedule_status !== undefined && (!schedule_status?.data?.heartbeat?.healthy)}}",
                                     "props": {
                                         "className": "text-sm font-bold text-red-600 dark:text-red-400"
                                     },
@@ -204,7 +204,7 @@
                         {
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{!schedule_status?.data?.heartbeat?.healthy}}",
+                            "if": "{{schedule_status !== undefined && (!schedule_status?.data?.heartbeat?.healthy)}}",
                             "props": {
                                 "className": "mt-2"
                             },
@@ -418,7 +418,7 @@
                         {
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{!schedule_status?.data?.queue?.measurable}}",
+                            "if": "{{schedule_status !== undefined && (!schedule_status?.data?.queue?.measurable)}}",
                             "props": {
                                 "className": "mt-2 text-lg font-semibold text-gray-500 dark:text-gray-400"
                             },
@@ -427,6 +427,10 @@
                         {
                             "type": "basic",
                             "name": "P",
+                            "blur_until_loaded": {
+                                "enabled": true,
+                                "data_sources": "schedule_status"
+                            },
                             "props": {
                                 "className": "text-tertiary mt-1"
                             },

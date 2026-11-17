@@ -199,7 +199,7 @@
               <div data-ref="field_has_password">
                 <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.password.state</label>
                 <span data-if="{{user?.data?.has_password === false}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">$t:admin.users.detail.password.not_set</span>
-                <span data-if="{{user?.data?.has_password !== false}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">$t:admin.users.detail.password.set</span>
+                <span data-if="{{user !== undefined &amp;&amp; (user?.data?.has_password !== false)}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">$t:admin.users.detail.password.set</span>
               </div>
               <div data-ref="field_email_verified">
                 <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.email_verification</label>
@@ -338,7 +338,7 @@
         </div>
         <!-- 비밀번호가 없는 회원은 만료 정책 대상이 아니다 — 변경일·만료·변경 요구 대신 안내 한 줄만 보인다. -->
         <p data-ref="password_not_set_notice" data-if="{{user?.data?.has_password === false}}" class="text-sm text-secondary">$t:admin.users.detail.password.not_set_hint</p>
-        <div data-if="{{user?.data?.has_password !== false}}" class="grid grid-cols-1 gap-4">
+        <div data-if="{{user !== undefined &amp;&amp; (user?.data?.has_password !== false)}}" class="grid grid-cols-1 gap-4">
           <responsive on="768-" class="grid grid-cols-2 gap-4"/>
           <div data-ref="field_password_changed_at">
             <label class="text-label-subtle block font-medium mb-1">$t:admin.users.detail.password.changed_at</label>

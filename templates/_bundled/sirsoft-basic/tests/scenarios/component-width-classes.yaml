@@ -2,7 +2,8 @@ feature: 사용자 템플릿 부품의 폭 분기 — Tailwind 반응형 접두 
 
 description: |
   헤더·푸터 본문 여백, 헤더 회원 이름, 쪽 이동의 맨 앞·맨 끝 단추, 첨부 썸네일 열 수, 방문자 카운터 열 수,
-  화면 뼈대의 헤더·푸터가 Tailwind 반응형 접두(창 폭 판정) 대신 엔진 폭(G7Core.useResponsive().width,
+  화면 뼈대의 헤더·푸터, 헤더 회원 자리 뼈대의 이름 막대, 가로 상품 줄(ProductRail)과 그 뼈대의 한 화면 카드 수(2·3·4장),
+  좁은 화면 전용 하단 구매바(MobileBuyBar)·바텀시트(BottomSheet)가 Tailwind 반응형 접두(창 폭 판정) 대신 엔진 폭(G7Core.useResponsive().width,
   편집기 미리보기에서는 기기 폭)으로 접두 없는 클래스를 고르는지 잠근다. 경계는 Tailwind 와 같아(sm 640,
   md 768, lg 1024) 일반 화면은 바뀌지 않는다. 판정은 src/components/layout/viewportWidth.ts 한 곳이며,
   폭을 전혀 모를 때는 엔진 기본 폭(1024, 검색 봇 렌더 폭)으로 고르고 Grid·PageSkeleton 도 같은 값을 쓴다. 시험 하나가 시나리오 하나다.

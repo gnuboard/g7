@@ -34,7 +34,8 @@ function byId(node: unknown, id: string): Node | undefined {
 
 describe('관리자 헤더 사용자 사진·로고 썸네일', () => {
   /**
-   * 사진은 응답의 avatar 필드를 쓰고, 사진이 없을 때만 대신 그림이 나온다.
+   * 사진은 응답의 avatar 필드를 쓰고, 사진이 없을 때만 대신 그림이 나온다. 대신 그림은 사용자 정보를 받은 뒤에만
+   * 판정한다 — 받기 전(`current_user` 가 undefined)에는 사진이 없는 것으로 읽지 않는다(#915, 7.1.6 받는 중 노출 규칙).
    *
    * @scenario target=header_avatar
    * @effects avatar_reads_response_field
@@ -45,7 +46,7 @@ describe('관리자 헤더 사용자 사진·로고 썸네일', () => {
     expect(img?.props?.src).toBe('{{current_user.data?.avatar}}');
     expect(img?.if).toBe('{{current_user.data?.avatar}}');
     expect(img?.props?.thumbPreset).toBe('xs');
-    expect(fallback?.if).toBe('{{!current_user.data?.avatar}}');
+    expect(fallback?.if).toBe('{{current_user !== undefined && (!current_user.data?.avatar)}}');
     expect(JSON.stringify(layout)).not.toMatch(/\{\{[^}]*avatar_url/);
   });
 

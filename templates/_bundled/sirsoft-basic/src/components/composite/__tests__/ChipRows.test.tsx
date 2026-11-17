@@ -7,7 +7,6 @@
  * @scenario-manifest tests/scenarios/shop-category-chip-rows.yaml
  */
 
-import React from 'react';
 import { render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ChipRows } from '../ChipRows';

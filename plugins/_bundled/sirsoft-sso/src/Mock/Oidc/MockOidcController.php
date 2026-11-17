@@ -11,6 +11,7 @@ use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Str;
 use Plugins\Sirsoft\Sso\Services\SafeRedirect;
+use Plugins\Sirsoft\Sso\Support\BridgeScript;
 
 /**
  * 모의 OIDC IdP — 디스커버리, 인가 화면, 토큰, JWKS, 로그아웃.
@@ -263,9 +264,8 @@ class MockOidcController extends Controller
         }
 
         $html = '<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-            .'<title>Mock OIDC IdP</title><style>body{font-family:system-ui,sans-serif;max-width:28rem;margin:2rem auto;padding:0 1rem}'
-            .'label{display:block;margin:.75rem 0 .25rem}input,select{width:100%;padding:.5rem;box-sizing:border-box}'
-            .'button{margin-top:1rem;padding:.6rem 1rem}</style></head><body>'
+            // 모양은 정적 파일이 준다 — 인라인 <style> 은 스타일 보안 정책(style-src 'self')에서 막힌다(#163)
+            .'<title>Mock OIDC IdP</title>'.BridgeScript::stylesheetTag('mock-idp.css').'</head><body>'
             .'<h1>Mock OIDC IdP</h1><p>'.e(__('sirsoft-sso::oidc.mock.notice')).'</p>'
             .'<form method="post" action="'.e(self::issuer().'/authorize').'">'.$hidden
             .'<label for="variant">variant</label><select id="variant" name="variant">'.$options.'</select>'

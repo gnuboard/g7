@@ -81,7 +81,7 @@
 | `sirsoft-ecommerce.cart.update_quantity_validation_rules` | filter | — | `src/Http/Requests/Public/UpdateCartQuantityRequest.php:37` |
 | `sirsoft-ecommerce.cash_receipt.cancel` | filter | — | `src/Services/CashReceiptService.php:310` |
 | `sirsoft-ecommerce.cash_receipt.issue` | filter | — | `src/Services/CashReceiptService.php:186` |
-| `sirsoft-ecommerce.cash_receipt.registered_providers` | filter | — | `src/Services/EcommerceSettingsService.php:1337` |
+| `sirsoft-ecommerce.cash_receipt.registered_providers` | filter | — | `src/Services/EcommerceSettingsService.php:1344` |
 | `sirsoft-ecommerce.category-image.after_delete` | action | — | `src/Services/CategoryImageService.php:305` 외 1곳 |
 | `sirsoft-ecommerce.category-image.after_reorder` | action | — | `src/Services/CategoryImageService.php:421` |
 | `sirsoft-ecommerce.category-image.after_update` | action | — | `src/Services/CategoryImageService.php:497` |
@@ -237,8 +237,8 @@
 | `sirsoft-ecommerce.coupon.user_available_validation_rules` | filter | — | `src/Http/Requests/User/UserCouponAvailableRequest.php:35` |
 | `sirsoft-ecommerce.coupon.user_downloadable_validation_rules` | filter | — | `src/Http/Requests/User/UserCouponDownloadableRequest.php:34` |
 | `sirsoft-ecommerce.coupon.user_list_validation_rules` | filter | — | `src/Http/Requests/User/UserCouponListRequest.php:35` |
-| `sirsoft-ecommerce.currency.after_apply_rates` | action | 환율 적용 후 | `src/Services/EcommerceSettingsService.php:1308` |
-| `sirsoft-ecommerce.currency.registered_rate_providers` | filter | 환율 제공자 목록 | `src/Services/EcommerceSettingsService.php:1239` |
+| `sirsoft-ecommerce.currency.after_apply_rates` | action | 환율 적용 후 | `src/Services/EcommerceSettingsService.php:1315` |
+| `sirsoft-ecommerce.currency.registered_rate_providers` | filter | 환율 제공자 목록 | `src/Services/EcommerceSettingsService.php:1246` |
 | `sirsoft-ecommerce.exchange.store_validation_rules` | filter | — | `src/Http/Requests/User/StoreExchangeRequest.php:106` |
 | `sirsoft-ecommerce.export.after_complete` | action | 내보내기 파일 생성 완료 후 (완료 알림 발송) | `src/Services/ExportService.php:720` |
 | `sirsoft-ecommerce.export.after_delete` | action | 내보내기 작업 삭제 후 | `src/Services/ExportService.php:1094` |
@@ -547,7 +547,7 @@
 | `sirsoft-ecommerce.sequence.after_generate` | action | — | `src/Services/SequenceService.php:61` 외 1곳 |
 | `sirsoft-ecommerce.sequence.before_generate` | action | — | `src/Services/SequenceService.php:48` |
 | `sirsoft-ecommerce.settings.after_save` | action | — | `src/Http/Controllers/Admin/EcommerceSettingsController.php:179` |
-| `sirsoft-ecommerce.settings.filter_available_payment_methods` | filter | — | `src/Services/EcommerceSettingsService.php:1226` |
+| `sirsoft-ecommerce.settings.filter_available_payment_methods` | filter | — | `src/Services/EcommerceSettingsService.php:1233` |
 | `sirsoft-ecommerce.shipping.calculate_fee` | filter | — | `src/Services/OrderCalculationService.php:2293` |
 | `sirsoft-ecommerce.shipping_carrier.after_create` | action | — | `src/Services/ShippingCarrierService.php:156` |
 | `sirsoft-ecommerce.shipping_carrier.after_delete` | action | — | `src/Services/ShippingCarrierService.php:343` |

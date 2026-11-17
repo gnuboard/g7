@@ -52,7 +52,7 @@ class MemberFieldSchemaService
      * 토큰이 만료됐으면 잠금 없이 `status: expired` 가 온다.
      *
      * @param  array<string, mixed>  $params  검증된 조회 인자
-     * @return array{fields: array<int, array<string, mixed>>, fields_version: string, display_name: array<string, mixed>, verified_claims: array{status: string, filled: array<int, string>, locked: array<int, string>}|null} 항목 계약 목록, 정의 버전, 표시 이름 종류 선택 묶음, 본인인증 채움 결과(토큰이 없으면 null)
+     * @return array{fields: array<int, array<string, mixed>>, fields_version: string, display_name: array<string, mixed>, verified_claims: array{status: string, filled: array<int, string>, locked: array<int, string>}|null} 항목 계약 목록, 정의 버전, 표시 이름 종류 선택 묶음, 본인인증 채움 결과(토큰이 없거나 가입 전 본인인증 정책이 꺼져 있으면 null)
      */
     public function forSignup(array $params = []): array
     {
@@ -73,7 +73,7 @@ class MemberFieldSchemaService
             'fields_version' => $this->registry->version(FieldSet::CORE_USER),
             // 표시 이름 종류 선택 칸 — 고를 수 있는지, 고를 수 있는 종류와 종류별 미리보기
             'display_name' => $this->displayNameChoice->bundle(null, $params),
-            // 본인인증 채움 결과 — 토큰 없이 부르면 null
+            // 본인인증 채움 결과 — 토큰 없이 부르거나 가입 전 본인인증 정책이 꺼져 있으면 null
             'verified_claims' => $verifiedClaims,
         ];
     }
@@ -84,7 +84,7 @@ class MemberFieldSchemaService
      * @param  array<int, array<string, mixed>>  $fields  항목 계약 목록 (제자리에서 고친다)
      * @param  mixed  $token  조회 인자의 본인인증 토큰
      * @param  FieldContext  $context  가입 표면 문맥
-     * @return array{status: string, filled: array<int, string>, locked: array<int, string>}|null 채움 결과 (토큰이 없으면 null)
+     * @return array{status: string, filled: array<int, string>, locked: array<int, string>}|null 채움 결과 (토큰이 없거나 가입 전 본인인증 정책이 꺼져 있으면 null)
      */
     protected function applyVerifiedClaims(array &$fields, mixed $token, FieldContext $context): ?array
     {
@@ -93,6 +93,11 @@ class MemberFieldSchemaService
         }
 
         $result = app(IdentityClaimsService::class)->describeForToken($token, 'signup', null, $context);
+
+        // 가입 전 본인인증 정책이 꺼진 사이트 — 가입 인증 값을 쓰지 않으므로 토큰이 없는 것과 같게 응답한다
+        if ($result['status'] === IdentityClaimsService::STATUS_DISABLED) {
+            return null;
+        }
 
         foreach ($fields as $index => $field) {
             $key = $field['key'] ?? null;

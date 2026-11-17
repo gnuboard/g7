@@ -6,6 +6,7 @@ namespace Plugins\Sirsoft\PayKginicis\Tests\Feature\Controllers;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderAddressFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderFactory;
 use Modules\Sirsoft\Ecommerce\Database\Factories\OrderPaymentFactory;
@@ -50,8 +51,8 @@ class EscrowDeliveryLockTest extends PluginTestCase
 
         $this->adminUser = $this->createAdminUser(['sirsoft-ecommerce.orders.update']);
 
-        $this->app->bind(AdminEscrowDeliveryController::class, fn ($app) => $this->deliveryControllerWithoutWait($app->make(KgInicisApiService::class)));
-        $this->app->bind(AdminEscrowDenyConfirmController::class, fn ($app) => $this->denyConfirmControllerWithoutWait($app->make(KgInicisApiService::class)));
+        $this->app->bind(AdminEscrowDeliveryController::class, fn ($app) => $this->deliveryControllerWithoutWait($app->make(KgInicisApiService::class), $app->make(PaymentGatewayBridge::class)));
+        $this->app->bind(AdminEscrowDenyConfirmController::class, fn ($app) => $this->denyConfirmControllerWithoutWait($app->make(KgInicisApiService::class), $app->make(PaymentGatewayBridge::class)));
     }
 
     /**
@@ -321,11 +322,12 @@ class EscrowDeliveryLockTest extends PluginTestCase
      * 잠금을 기다리지 않는 배송등록 컨트롤러를 만듭니다.
      *
      * @param  KgInicisApiService  $api  PG API 서비스
+     * @param  PaymentGatewayBridge  $bridge  이커머스 결제 공개 계약
      * @return AdminEscrowDeliveryController 대기 0초 컨트롤러
      */
-    private function deliveryControllerWithoutWait(KgInicisApiService $api): AdminEscrowDeliveryController
+    private function deliveryControllerWithoutWait(KgInicisApiService $api, PaymentGatewayBridge $bridge): AdminEscrowDeliveryController
     {
-        return new class($api) extends AdminEscrowDeliveryController
+        return new class($api, $bridge) extends AdminEscrowDeliveryController
         {
             /**
              * 잠금 대기 시간(초)
@@ -343,11 +345,12 @@ class EscrowDeliveryLockTest extends PluginTestCase
      * 잠금을 기다리지 않는 구매거절확인 컨트롤러를 만듭니다.
      *
      * @param  KgInicisApiService  $api  PG API 서비스
+     * @param  PaymentGatewayBridge  $bridge  이커머스 결제 공개 계약
      * @return AdminEscrowDenyConfirmController 대기 0초 컨트롤러
      */
-    private function denyConfirmControllerWithoutWait(KgInicisApiService $api): AdminEscrowDenyConfirmController
+    private function denyConfirmControllerWithoutWait(KgInicisApiService $api, PaymentGatewayBridge $bridge): AdminEscrowDenyConfirmController
     {
-        return new class($api) extends AdminEscrowDenyConfirmController
+        return new class($api, $bridge) extends AdminEscrowDenyConfirmController
         {
             /**
              * 잠금 대기 시간(초)
