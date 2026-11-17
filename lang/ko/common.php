@@ -521,7 +521,7 @@ return [
             'confirm_prune' => '위 후보를 활성 디렉토리에서 정리하시겠습니까?',
             'cancelled' => '취소되었습니다.',
             'confirm_unavailable' => '확인 질문에 답할 수 없는 실행(터미널 없음 또는 --no-interaction)이라 잔존 파일을 정리하지 않았습니다. (파일은 지워지지 않았습니다)',
-            'confirm_unavailable_hint' => '이 명령에는 확인 없이 정리하는 옵션이 없습니다. 서버 터미널에서 php artisan hotfix:rollback-stale-files --prune 을 실행하고 질문에 답하세요. --prune 없이 실행하면 진단만 합니다.',
+            'confirm_unavailable_hint' => '서버 터미널에서 php artisan hotfix:rollback-stale-files --prune 을 실행하고 질문에 답하거나, cron, CI, 원격 명령처럼 확인 없이 정리해야 하면 --yes 를 함께 붙여 다시 실행하세요. 예: php artisan hotfix:rollback-stale-files --prune --yes. --prune 없이 실행하면 진단만 합니다.',
             'done' => '정리 완료: 파일 :files개, 디렉토리 :dirs개 제거. 보호 :protected건, symlink skip :symlinks건, 실패 :failed건.',
             'log_path' => '로그: :path',
         ],

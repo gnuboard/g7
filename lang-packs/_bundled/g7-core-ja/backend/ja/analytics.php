@@ -343,7 +343,7 @@ return [
             'confirm' => '訪問者統計の記録と集計をすべて削除します。元に戻せません。続行しますか？',
             'cancelled' => 'キャンセルしました。',
             'confirm_unavailable' => '確認の質問に答えられない実行（端末なし、または --no-interaction）のため、訪問者統計を削除しませんでした。--confirm はこの確認の代わりにはなりません。',
-            'confirm_unavailable_hint' => 'このコマンドは削除の前に端末で直接確認する必要があり、確認なしで削除する方法は提供していません。サーバーの端末で php artisan analytics:purge --confirm を実行し、質問に答えてください。',
+            'confirm_unavailable_hint' => '元に戻せない削除のため、削除の前に確認します。サーバーの端末で php artisan analytics:purge --confirm を実行して質問に答えるか、cron、CI、リモートコマンドのように確認なしで削除する必要がある場合は --yes も付けて再実行してください。例: php artisan analytics:purge --confirm --yes',
             'headers' => [
                 'target' => '対象',
                 'deleted' => '削除',
@@ -358,7 +358,7 @@ return [
             'confirm' => ':type :identifier の訪問者統計のコンバージョン・ディメンション集計を削除します。元に戻せません。続行しますか？',
             'cancelled' => 'キャンセルしました。',
             'confirm_unavailable' => '確認の質問に答えられない実行（端末なし、または --no-interaction）のため、:type :identifier の統計を削除しませんでした。--confirm はこの確認の代わりにはなりません。',
-            'confirm_unavailable_hint' => 'このコマンドは削除の前に端末で直接確認する必要があり、確認なしで削除する方法は提供していません。サーバーの端末で php artisan analytics:purge-extension :type :identifier --confirm を実行し、質問に答えてください。',
+            'confirm_unavailable_hint' => '元に戻せない削除のため、削除の前に確認します。サーバーの端末で php artisan analytics:purge-extension :type :identifier --confirm を実行して質問に答えるか、cron、CI、リモートコマンドのように確認なしで削除する必要がある場合は --yes も付けて再実行してください。例: php artisan analytics:purge-extension :type :identifier --confirm --yes',
             'failed' => '整理に失敗しました。診断画面の実行履歴とアプリケーションログで原因を確認してください。',
             'headers' => [
                 'target' => '対象',

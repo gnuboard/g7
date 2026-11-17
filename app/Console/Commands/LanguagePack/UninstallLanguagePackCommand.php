@@ -28,7 +28,7 @@ class UninstallLanguagePackCommand extends Command
         {identifier : 언어팩 식별자}
         {--cascade : 코어 팩 제거 시 동일 locale 의 module/plugin/template 팩도 inactive 로 강등}
         {--force : 확인 없이 즉시 제거}
-        {--yes : 확인 질문만 생략 (--force 의 다른 효과 없이)}';
+        {--y|yes : 확인 질문만 생략 (--force 의 다른 효과 없이)}';
 
     /**
      * @param  LanguagePackService  $service  언어팩 Service

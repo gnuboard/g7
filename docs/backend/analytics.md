@@ -341,7 +341,8 @@ SEO 캐시 통계(`seo_cache_stats`)도 봇 요청을 세지만 목적이 다릅
 
 `analytics:purge --confirm`, `analytics:purge-extension … --confirm` 은 지우기 전에 터미널에서 한 번 더 묻습니다.
 `--confirm` 은 필수 동의 표식일 뿐 이 확인을 대신하지 않아, 확인에 답할 수 없는 실행(cron, CI, 원격 명령,
-`--no-interaction`)은 지우지 않고 사유를 출력한 뒤 종료 코드 1 로 끝납니다. 확인 없이 지우는 방법은 제공하지 않습니다.
+`--no-interaction`)은 지우지 않고 사유를 출력한 뒤 종료 코드 1 로 끝납니다. 확인 없이 지워야 하면 `--yes`(`-y`)를 함께
+붙입니다(예: `php artisan analytics:purge --confirm --yes`).
 소급 익명화 `analytics:anonymize` 도 같은 실행에서는 익명화하지 않고 종료 코드 1 로 끝나며, 확인 없이 진행하려면
 `--force` 를 붙입니다.
 

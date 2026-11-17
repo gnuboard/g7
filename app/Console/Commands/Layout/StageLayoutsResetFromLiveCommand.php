@@ -31,7 +31,7 @@ class StageLayoutsResetFromLiveCommand extends Command
      * @var string 명령 시그니처
      */
     protected $signature = 'stage-layouts:reset-from-live
-        {--yes : 확인 질문에 「예」로 답하고 진행 (운영 → 검수 서버 방향. 검수 서버의 레이아웃 편집본과 그 버전 기록이 지워진다)}';
+        {--y|yes : 확인 질문에 「예」로 답하고 진행 (운영 → 검수 서버 방향. 검수 서버의 레이아웃 편집본과 그 버전 기록이 지워진다)}';
 
     /**
      * @var string 명령 설명 (LocalizesDescription 이 다국어로 바꾼다)

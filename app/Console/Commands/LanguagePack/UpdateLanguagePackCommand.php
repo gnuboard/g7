@@ -20,6 +20,9 @@ use Throwable;
  * 옵션:
  *  --force                       버전이 동일해도 강제 재적용 (확장 update --force 와 동일 의미)
  *  --source=auto|bundled|github  업데이트 소스 우선순위. auto(기본): force 시 bundled, 외 GitHub
+ *  --yes                         확인 질문만 생략 — 이 명령은 진행 확인을 묻지 않아 효과가 없다. 다른 `{type}:update` 와
+ *                                같은 형태(`-y`)로 부르는 일괄 갱신 스크립트가 언어팩에서만 「옵션 없음」으로 실패하지 않게 받는다.
+ *                                미서명 패키지 확인은 대신하지 않는다(`--allow-unsigned`)
  */
 class UpdateLanguagePackCommand extends Command
 {
@@ -35,7 +38,8 @@ class UpdateLanguagePackCommand extends Command
         {identifier : 언어팩 식별자}
         {--force : 버전 변경이 없어도 강제 재적용 (_bundled 우선)}
         {--source=auto : 업데이트 소스 (auto|bundled|github)}
-        {--allow-unsigned : GitHub 에서 받은 새 판이 서명되지 않았어도(또는 이 서버에서 검증할 수 없어도) 확인 없이 계속 — 답할 수 없는 실행은 이 옵션이 없으면 실패. --force 는 이 확인을 대신하지 않음}';
+        {--y|yes : 확인 질문만 생략 — 이 명령은 진행 확인을 묻지 않음. module·plugin·template:update 와 같은 형태로 부르는 스크립트를 위해 받음}
+        {--allow-unsigned : GitHub 에서 받은 새 판이 서명되지 않았어도(또는 이 서버에서 검증할 수 없어도) 확인 없이 계속 — 답할 수 없는 실행은 이 옵션이 없으면 실패. --force·--yes 는 이 확인을 대신하지 않음}';
 
     /**
      * @param  LanguagePackService  $service  언어팩 Service

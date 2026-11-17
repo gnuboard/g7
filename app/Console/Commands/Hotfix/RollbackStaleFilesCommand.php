@@ -39,7 +39,8 @@ class RollbackStaleFilesCommand extends Command
 
     protected $signature = 'hotfix:rollback-stale-files
         {--backup= : 특정 백업 디렉토리 경로 지정 (미지정 시 가장 최근 백업 자동 선택)}
-        {--prune : 진단만이 아닌 실제 정리 수행 (확인 프롬프트 동반)}';
+        {--prune : 진단만이 아닌 실제 정리 수행 (확인 프롬프트 동반)}
+        {--y|yes : --prune 의 확인 질문에 「예」로 답하고 정리 (터미널 없는 실행용)}';
 
     /**
      * 백업 기준으로 잔존 파일 후보를 진단하고, `--prune` 이면 확인 후 정리합니다.
@@ -184,7 +185,7 @@ class RollbackStaleFilesCommand extends Command
         //      아닌** 백업을 고른다(조회 실패는 「아주 오래됐다」가 아니다).
         //   ② 마지막 결정자로 경로를 세워 **전순서**를 만든다 — `filemtime` 은 초 해상도라
         //      같은 초에 만들어진 두 백업의 순서가 열거 순서에 좌우된다. 롤백 대상이
-        //      디렉토리 나열 순서로 갈리면 재현되지 않는 복구가 된다 (23차 G3 라운드 D23-10).
+        //      디렉토리 나열 순서로 갈리면 재현되지 않는 복구가 된다.
         $mtime = static function (string $path): int {
             $t = @filemtime($path);
 

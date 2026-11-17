@@ -23,7 +23,8 @@ class MigrateSettingsToJsonCommand extends Command
      * @var string
      */
     protected $signature = 'settings:migrate-to-json
-                            {--force : 기존 JSON 파일이 있어도 덮어쓰기}';
+                            {--force : 기존 JSON 파일이 있어도 덮어쓰기}
+                            {--y|yes : 덮어쓰기 확인 질문에 「예」로 답하고 진행 (터미널 없는 실행용)}';
 
     /**
      * 설정 키와 카테고리 매핑

@@ -29,8 +29,8 @@ use Tests\TestCase;
  * `analytics:anonymize`, `analytics:purge`, `analytics:purge-extension`, `hotfix:rollback-stale-files --prune`,
  * `settings:migrate-to-json` 은 작업 전에 확인을 묻는다. cron, CI, 원격 명령, `--no-interaction` 은 답할 수 없어
  * 종전에는 기본값 「아니오」로 「취소」 한 줄을 내고 종료 코드 0 으로 끝났다. 지금은 작업하지 않은 사유와 안내를
- * 출력하고 종료 코드 1 로 끝난다. 확인 생략 옵션(`--force`)이 있는 명령은 그 옵션을 안내하고, 없는 명령은 터미널에서
- * 직접 확인해야 한다는 사실을 안내한다. `analytics:purge` 두 명령의 `--confirm` 은 필수 동의 표식일 뿐 비대화형
+ * 출력하고 종료 코드 1 로 끝난다. 확인 생략 옵션(`--force`)이 있는 명령은 그 옵션을 안내하고, 없는 명령은 `--yes`
+ * (확인만 생략, 7.1.6 부터)를 안내한다. `analytics:purge` 두 명령의 `--confirm` 은 필수 동의 표식일 뿐 비대화형
  * 동의가 아니다. 대화형에서 운영자가 직접 「아니오」를 답한 취소는 종전처럼 0 이다.
  *
  * 분석 서비스는 목으로 바꾸고, 파일을 지우거나 쓰는 두 명령은 임시 폴더의 표식 파일로 작업 여부를 잰다.
@@ -45,9 +45,9 @@ class IrreversibleCommandNonInteractiveConfirmTest extends TestCase
     private const REACHED_WORK = 'fx-test: reached the work step after confirmation';
 
     /**
-     * 확인 없이 지우는 방법이 없다는 안내(삭제 명령 두 개)에 반드시 들어가야 하는 구절의 번역 키 접두사.
+     * `--force` 가 없어 `--yes` 만을 확인 생략 수단으로 안내하는 명령(되돌릴 수 없는 삭제·정리).
      */
-    private const PURGE_COMMANDS = ['analytics:purge', 'analytics:purge-extension'];
+    private const YES_ONLY_COMMANDS = ['analytics:purge', 'analytics:purge-extension', 'hotfix:rollback-stale-files'];
 
     /**
      * 임시 폴더(정리 대상 표식, 설정 파일)와 원래 storage 경로.
@@ -190,6 +190,51 @@ class IrreversibleCommandNonInteractiveConfirmTest extends TestCase
             $this->fail('확인을 통과해 작업 단계에 닿아야 한다');
         } catch (\RuntimeException $e) {
             // 익명화: 목이 던진 표식. 설정 이전: 확인 뒤 첫 작업(SystemConfig 조회)이 시험 DB 에 없는 표에 닿은 것.
+            $reached = $e->getMessage() === self::REACHED_WORK
+                || ($e instanceof QueryException && str_contains($e->getMessage(), 'system_configs'));
+            $this->assertTrue($reached, '확인 뒤 작업 단계의 예외여야 한다: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * `--yes`(확인만 생략)는 다섯 명령 모두 비대화형에서 확인을 건너뛰고 작업 단계에 닿는다 — 7.1.6 에서 이 옵션을 붙인
+     * 스크립트가 그대로 돈다. 되돌릴 수 없는 삭제(`analytics:purge` 두 명령, `hotfix:rollback-stale-files --prune`)도
+     * `--yes` 를 비대화형 동의로 받는다(7.1.6 과 같은 형태). 삭제 명령의 `--confirm` 만으로는 여전히 동의가 아니다.
+     *
+     * @scenario input=yes_option
+     *
+     * @effects yes_option_passes_the_confirmation
+     *
+     * @param  string  $command  명령 이름
+     * @return void 반환값 없음
+     */
+    #[DataProvider('commandProvider')]
+    public function test_yes_option_passes_the_confirmation(string $command): void
+    {
+        $this->prepare($command, workExpected: true);
+
+        if ($command === 'hotfix:rollback-stale-files') {
+            // 정리 명령은 목이 없다 — 확인을 통과하면 정리 결과 요약을 출력한다(표식은 보호 경로 storage 아래라 지워지지 않는다).
+            // 정리 기록 파일이 실제 storage/logs 에 남지 않게 storage 를 임시 폴더로 돌린다(tearDown 이 되돌리고 지운다).
+            app()->useStoragePath($this->tempRoot);
+            $donePrefix = strstr(__('common.console.hotfix_rollback_stale_files.done', ['files' => "\0", 'dirs' => "\0", 'protected' => "\0", 'symlinks' => "\0", 'failed' => "\0"]), "\0", true);
+
+            $this->artisan($command, $this->arguments($command, ['--no-interaction' => true, '--yes' => true]))
+                ->expectsOutputToContain($donePrefix)
+                ->doesntExpectOutputToContain($this->unavailableMessage($command))
+                ->doesntExpectOutputToContain($this->cancelledMessage($command))
+                ->assertExitCode(Command::SUCCESS)
+                ->run();
+
+            return;
+        }
+
+        try {
+            $this->artisan($command, $this->arguments($command, ['--no-interaction' => true, '--yes' => true]))
+                ->doesntExpectOutputToContain($this->unavailableMessage($command))
+                ->run();
+            $this->fail('확인을 통과해 작업 단계에 닿아야 한다');
+        } catch (\RuntimeException $e) {
             $reached = $e->getMessage() === self::REACHED_WORK
                 || ($e instanceof QueryException && str_contains($e->getMessage(), 'system_configs'));
             $this->assertTrue($reached, '확인 뒤 작업 단계의 예외여야 한다: '.$e->getMessage());
@@ -506,8 +551,8 @@ class IrreversibleCommandNonInteractiveConfirmTest extends TestCase
     /**
      * 사유와 안내의 번역 키가 실제로 있고, 안내가 명령의 확인 생략 수단을 사실대로 알리는지 확인합니다.
      *
-     * 키가 없으면 키 문자열 자체가 출력과 맞는 일을 막는다. `--force` 가 있는 명령은 그 옵션을, 삭제 명령은
-     * 「확인 없이 지우는 방법은 제공하지 않는다」를 담아야 한다.
+     * 키가 없으면 키 문자열 자체가 출력과 맞는 일을 막는다. `--force` 가 있는 명령은 그 옵션을, 삭제·정리 명령은
+     * `--yes` 를 담아야 한다 — 7.2.0 초기의 「확인 없이 지우는 방법은 제공하지 않는다」는 7.1.6 과 같은 `--yes` 수용으로 바뀌었다.
      *
      * @param  string  $command  명령 이름
      * @return void 반환값 없음
@@ -528,8 +573,9 @@ class IrreversibleCommandNonInteractiveConfirmTest extends TestCase
             $this->assertStringNotContainsString('--force', $hint, '확인 생략 수단이 없는 명령은 --force 를 안내하지 않는다');
         }
 
-        if (in_array($command, self::PURGE_COMMANDS, true)) {
-            $this->assertStringContainsString('확인 없이 지우는 방법은 제공하지 않습니다', $hint);
+        if (in_array($command, self::YES_ONLY_COMMANDS, true)) {
+            $this->assertStringContainsString('--yes', $hint, '확인 생략 수단 --yes 를 안내한다');
+            $this->assertStringNotContainsString('제공하지 않습니다', $hint, '--yes 가 있는데 확인 생략 수단이 없다고 안내하지 않는다');
         }
     }
 }

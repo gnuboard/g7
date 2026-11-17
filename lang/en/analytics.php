@@ -386,7 +386,7 @@ return [
             'confirm' => 'This deletes all visitor statistics records and aggregates. This cannot be undone. Continue?',
             'cancelled' => 'Cancelled.',
             'confirm_unavailable' => 'The visitor statistics were not deleted because this run cannot answer the confirmation prompt (no terminal, or --no-interaction). --confirm does not stand in for this confirmation.',
-            'confirm_unavailable_hint' => 'This command must be confirmed directly in a terminal before it deletes anything, and there is no way to delete without that confirmation. Run php artisan analytics:purge --confirm in a server terminal and answer the prompt.',
+            'confirm_unavailable_hint' => 'This deletion cannot be undone, so it asks for confirmation first. Run php artisan analytics:purge --confirm in a server terminal and answer the prompt, or, when it must delete without confirmation (cron, CI, remote commands), run it again with --yes as well. Example: php artisan analytics:purge --confirm --yes',
             'headers' => [
                 'target' => 'Target',
                 'deleted' => 'Deleted',
@@ -401,7 +401,7 @@ return [
             'confirm' => 'This deletes the visitor statistics conversions and dimension aggregates of :type :identifier. This cannot be undone. Continue?',
             'cancelled' => 'Cancelled.',
             'confirm_unavailable' => 'The statistics of :type :identifier were not deleted because this run cannot answer the confirmation prompt (no terminal, or --no-interaction). --confirm does not stand in for this confirmation.',
-            'confirm_unavailable_hint' => 'This command must be confirmed directly in a terminal before it deletes anything, and there is no way to delete without that confirmation. Run php artisan analytics:purge-extension :type :identifier --confirm in a server terminal and answer the prompt.',
+            'confirm_unavailable_hint' => 'This deletion cannot be undone, so it asks for confirmation first. Run php artisan analytics:purge-extension :type :identifier --confirm in a server terminal and answer the prompt, or, when it must delete without confirmation (cron, CI, remote commands), run it again with --yes as well. Example: php artisan analytics:purge-extension :type :identifier --confirm --yes',
             'failed' => 'The purge failed. Check the run history on the diagnostics screen and the application log for the reason.',
             'headers' => [
                 'target' => 'Target',

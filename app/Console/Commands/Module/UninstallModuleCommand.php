@@ -29,7 +29,7 @@ class UninstallModuleCommand extends Command
     protected $signature = 'module:uninstall
         {identifier : 제거할 모듈 식별자}
         {--force : 확인 없이 삭제}
-        {--yes : 확인 질문만 생략 (--force 의 다른 효과 없이)}
+        {--y|yes : 확인 질문만 생략 (--force 의 다른 효과 없이)}
         {--delete-data : 모듈 데이터(테이블, 환경설정) 함께 삭제}';
 
     /**

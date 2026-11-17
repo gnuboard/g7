@@ -51,7 +51,7 @@ class CoreUpdateCommand extends Command
     use ReportsLifecycleWarnings;
 
     protected $signature = 'core:update
-        {--yes : 진행 확인을 「예」로 처리 (cron·CI·원격 명령처럼 확인에 답할 수 없는 실행용. 없으면 그런 실행은 사유를 출력하고 실패 코드로 끝남)}
+        {--y|yes : 진행 확인을 「예」로 처리 (cron·CI·원격 명령처럼 확인에 답할 수 없는 실행용. 없으면 그런 실행은 사유를 출력하고 실패 코드로 끝남)}
         {--force : 버전 비교 없이 강제 업데이트 (진행 확인은 건너뛰지 않음 — --yes 참조)}
         {--no-backup : 백업 생성 건너뛰기}
         {--prune : 코어가 제거한 파일 정리 + targets 전체 덮어쓰기(기존 방식). 미지정 시 코어가 실제 변경/추가한 파일만 적용하고 나머지는 보존}
@@ -1306,8 +1306,7 @@ class CoreUpdateCommand extends Command
         // G7_UPDATE_IN_PROGRESS: CoreServiceProvider::validateAndDeactivate 가드가 참조.
         // `getenv` 자신도 하드닝 프로필이 막을 수 있다 — 그리고 이 자리는 `proc_open`
         // 가드 **안쪽**이라 「proc_open 은 살아 있는데 getenv 만 막힌」 조합에서 그대로
-        // 치명 종료한다. 판정과 `$_SERVER` 폴백은 형제 러너가 SSoT 로 갖고 있다
-        // (7차 G3 라운드 D-8).
+        // 치명 종료한다. 판정과 `$_SERVER` 폴백은 형제 러너가 SSoT 로 갖고 있다.
         $env = array_merge(SubprocessCommandRunner::inheritedEnvironment(), [
             'APP_VERSION' => $toVersion,
             'G7_UPDATE_IN_PROGRESS' => '1',
@@ -1796,7 +1795,7 @@ class CoreUpdateCommand extends Command
     private function saveUpdateLog(array $entries, string $fromVersion, string $toVersion, bool $success): void
     {
         // 이름은 생산자 단일 지점이 만든다 — 정리 주체(`StorageLeftoverPruneService`)가
-        // 같은 규칙을 읽어야 이 로그가 회수 모집단에 든다 (11차 G3 라운드 E11-4).
+        // 같은 규칙을 읽어야 이 로그가 회수 모집단에 든다.
         $logPath = CoreUpdateService::updateReportPath($success ? 'success' : 'failed');
 
         $header = implode("\n", [
@@ -2084,7 +2083,7 @@ class CoreUpdateCommand extends Command
      * 여기서 중단하면 중간 상태가 남는다. 대신 **반드시 보이게** 한다: 종전에는 갱신기가
      * 실패를 판정하고도 그 값을 호출부가 버려, 콘솔에는 「코어 파일 적용 완료」만 뜨고
      * 보호 규칙은 구버전으로 남았다. `$log()` 로도 흘려 업데이트 기록에 남긴다 — 콘솔은
-     * 스크롤로 사라지지만 그 기록은 남는다 (3차 G3 라운드 H4).
+     * 스크롤로 사라지지만 그 기록은 남는다.
      *
      * @param  CoreUpdateService  $service  경고를 누적한 서비스
      * @param  callable  $log  업데이트 기록 기록기

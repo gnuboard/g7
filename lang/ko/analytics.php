@@ -386,7 +386,7 @@ return [
             'confirm' => '방문자 통계 기록과 집계를 모두 지웁니다. 되돌릴 수 없습니다. 진행할까요?',
             'cancelled' => '취소했습니다.',
             'confirm_unavailable' => '확인 질문에 답할 수 없는 실행(터미널 없음 또는 --no-interaction)이라 방문자 통계를 지우지 않았습니다. --confirm 은 이 확인을 대신하지 않습니다.',
-            'confirm_unavailable_hint' => '이 명령은 지우기 전에 터미널에서 직접 확인해야 하며, 확인 없이 지우는 방법은 제공하지 않습니다. 서버 터미널에서 php artisan analytics:purge --confirm 을 실행하고 질문에 답하세요.',
+            'confirm_unavailable_hint' => '되돌릴 수 없는 삭제라 지우기 전에 확인합니다. 서버 터미널에서 php artisan analytics:purge --confirm 을 실행하고 질문에 답하거나, cron, CI, 원격 명령처럼 확인 없이 지워야 하면 --yes 를 함께 붙여 다시 실행하세요. 예: php artisan analytics:purge --confirm --yes',
             'headers' => [
                 'target' => '대상',
                 'deleted' => '삭제',
@@ -401,7 +401,7 @@ return [
             'confirm' => ':type :identifier 의 방문자 통계 전환·차원 집계를 지웁니다. 되돌릴 수 없습니다. 진행할까요?',
             'cancelled' => '취소했습니다.',
             'confirm_unavailable' => '확인 질문에 답할 수 없는 실행(터미널 없음 또는 --no-interaction)이라 :type :identifier 의 통계를 지우지 않았습니다. --confirm 은 이 확인을 대신하지 않습니다.',
-            'confirm_unavailable_hint' => '이 명령은 지우기 전에 터미널에서 직접 확인해야 하며, 확인 없이 지우는 방법은 제공하지 않습니다. 서버 터미널에서 php artisan analytics:purge-extension :type :identifier --confirm 을 실행하고 질문에 답하세요.',
+            'confirm_unavailable_hint' => '되돌릴 수 없는 삭제라 지우기 전에 확인합니다. 서버 터미널에서 php artisan analytics:purge-extension :type :identifier --confirm 을 실행하고 질문에 답하거나, cron, CI, 원격 명령처럼 확인 없이 지워야 하면 --yes 를 함께 붙여 다시 실행하세요. 예: php artisan analytics:purge-extension :type :identifier --confirm --yes',
             'failed' => '정리에 실패했습니다. 진단 화면의 실행 이력과 애플리케이션 로그에서 사유를 확인하세요.',
             'headers' => [
                 'target' => '대상',

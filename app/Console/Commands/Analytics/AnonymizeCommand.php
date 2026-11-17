@@ -32,7 +32,8 @@ class AnonymizeCommand extends Command
                             {--hash : 주소를 지우고 해시만 남긴다}
                             {--from= : 시작일 (Y-m-d)}
                             {--to= : 종료일 (Y-m-d)}
-                            {--force : 확인 없이 진행}';
+                            {--force : 확인 없이 진행}
+                            {--y|yes : 확인 질문에 「예」로 답하고 진행 (터미널 없는 실행용, 7.1.6 과 같은 형태)}';
 
     /**
      * 커맨드 실행

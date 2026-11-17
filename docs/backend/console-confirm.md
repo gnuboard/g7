@@ -141,11 +141,11 @@ if (! $this->option('force')) {
 | `refuseUnanswerableConfirmation(string $reason, string $hint): int` | 사유를 오류로, 안내를 한 줄로 출력하고 `Command::FAILURE` 를 돌려준다 |
 
 확인 외의 질문(`choice()`·`ask()`·`secret()`)은 `canShowPrompt()` 로 먼저 가른다 — 콘솔 없는 실행에서 그 질문을 띄우면 위와 같은 이유로 영영 끝나지 않는다.
-`canAnswerConfirmation()` 은 `--yes` 를 준 실행도 「답할 수 있음」으로 보므로 이 갈래에 쓰지 않는다.
+`canAnswerConfirmation()` 은 `--yes` 를 준 실행도 「답할 수 있음」으로 보므로 이 갈래에 쓰지 않는다. 미서명 패키지 확인(`HandlesPackageIntegrity::runWithIntegrityConsent()`)도 `--yes` 가 답하지 않는 질문이라 `canShowPrompt()`·`optionalConfirm()` 으로 묻는다 — 동의는 `--allow-unsigned` 하나로만 한다.
 답할 수 없으면 기본값을 쓰거나(일괄 업데이트의 레이아웃 전략은 overwrite, 확장별 덮어쓰기·검색 인덱스 재생성은 묻지 않음) 거절한다
 (`user:reset-password`·`settings:set` 의 비밀값 입력은 출처 옵션 안내와 함께 실패).
 
-`--yes` 는 **확인 질문에만** 「예」로 답한다(7.2.0, `module|plugin|template:update`·`:uninstall`·`language-pack:uninstall`). 업데이트의 `--force` 는
+`--yes`(`-y`) 는 **확인 질문에만** 「예」로 답한다(`module|plugin|template:update`·`:uninstall`·`language-pack:update`·`language-pack:uninstall`·`core:update`·`core:execute-upgrade-steps`·`stage:apply-to-live`·`stage-layouts:reset-from-live`·`settings:migrate-to-json`·`search:index`·`analytics:anonymize`·`analytics:purge`·`analytics:purge-extension`·`hotfix:rollback-stale-files`). 7.1.6 에서 `--yes` 를 받던 명령은 7.2.0 에서도 모두 받는다 — 7.1.6 스크립트가 「옵션 없음」으로 실패하지 않게 한다. 선언은 `{--y|yes : …}` 로 `-y` 축약을 함께 둔다 — `{--yes}` 만 두면 `-y` 가 「옵션 없음」으로 실패한다. 확인 질문이 없는 `language-pack:update` 도 다른 `{type}:update` 와 같은 형태로 부를 수 있게 받는다(효과 없음). 업데이트의 `--force` 는
 확인 생략에 더해 ① 같은 판 재적용 ② 다운그레이드 허용 ③ 코어 호환 검사 생략 ④ 같은 판 업그레이드 스텝 재실행 ⑤ 멈춘 업데이트 정리를 함께 켜므로,
 비대화형 자동화가 확인만 건너뛰려면 `--yes` 를 쓴다.
 
@@ -154,7 +154,7 @@ if (! $this->option('force')) {
 
 안내 문구는 사실대로 쓴다. 확인 생략 옵션이 있는 명령은 그 옵션(`--yes`, 같은 판 재적용이 필요할 때만 `--force`)을 안내하고,
 없는 명령은 터미널에서 실행해 질문에 답하라고 안내한다. 되돌릴 수 없는 삭제(`analytics:purge` 등)의 필수 동의
-표식(`--confirm`)은 비대화형 동의가 아니다. 이 규칙을 따르는 명령: `core:update`, `module:update`, `plugin:update`,
+표식(`--confirm`)은 비대화형 동의가 아니다 — 비대화형 동의는 `--yes` 하나다. 이 규칙을 따르는 명령: `core:update`, `module:update`, `plugin:update`,
 `template:update`, `module:uninstall`, `plugin:uninstall`, `template:uninstall`, `language-pack:uninstall`,
 `user:reset-password`(이메일을 생략해 최고관리자를 대상으로 할 때 — 확인 생략 옵션 대신 이메일 지정을 안내),
 `analytics:anonymize`, `analytics:purge`, `analytics:purge-extension`, `hotfix:rollback-stale-files --prune`,

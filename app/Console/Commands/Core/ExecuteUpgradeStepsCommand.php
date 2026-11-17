@@ -56,7 +56,7 @@ class ExecuteUpgradeStepsCommand extends Command
         {--from= : 시작 버전}
         {--to= : 대상 버전}
         {--force : 동일 버전 강제 실행 + 번들 확장 일괄 업데이트 prompt 스킵}
-        {--yes : 진행 확인만 「예」로 처리 — --force 의 다른 효과(같은 판 재실행·실행 대장 무시) 없이 비대화형 실행. 번들 확장 일괄 업데이트의 레이아웃 전략은 물을 수 없으면 기본 overwrite}
+        {--y|yes : 진행 확인만 「예」로 처리 — --force 의 다른 효과(같은 판 재실행·실행 대장 무시) 없이 비대화형 실행. 번들 확장 일괄 업데이트의 레이아웃 전략은 물을 수 없으면 기본 overwrite}
         {--steps-only : 업그레이드 스텝만 실행 — 권한 정상화·오토로드 재생성·마이그레이션·resync·버전 갱신·캐시 정리·번들 업데이트 등 모든 사전/사후 보조 단계 생략}
         {--skip-migrations : 마이그레이션 실행 생략 (CoreUpdateCommand spawn 시 부모 Step 9 가 이미 실행)}
         {--skip-resync : 코어 config 재로드 및 권한/메뉴/시더 동기화 생략 (동일 사유)}

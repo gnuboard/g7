@@ -43,12 +43,12 @@ class UpdateModuleCommand extends Command
     protected $signature = 'module:update
         {identifier : 업데이트할 모듈 식별자}
         {--force : 버전 비교 없이 강제 업데이트}
-        {--yes : 확인 질문만 생략 (--force 의 다른 효과 없이)}
+        {--y|yes : 확인 질문만 생략 (--force 의 다른 효과 없이)}
         {--vendor-mode=auto : Vendor 설치 모드 (auto|composer|bundled)}
         {--layout-strategy=overwrite : 레이아웃 전략 (overwrite|keep)}
         {--source=auto : 업데이트 소스 (auto|bundled|github) — bundled 는 _bundled 만 사용(GitHub 우회)}
         {--zip= : 외부 ZIP 파일 경로 (지정 시 GitHub/번들 우회 + 버전은 module.json 기준)}
-        {--allow-unsigned : 서명되지 않은 패키지(또는 이 서버에서 서명을 검증할 수 없는 패키지)를 확인 없이 계속 — 답할 수 없는 실행(cron·CI)은 이 옵션이 없으면 실패. --force 는 이 확인을 대신하지 않음. 환경설정 「미서명 패키지 차단」이 켜져 있으면 무시}
+        {--allow-unsigned : 서명되지 않은 패키지(또는 이 서버에서 서명을 검증할 수 없는 패키지)를 확인 없이 계속 — 답할 수 없는 실행(cron·CI)은 이 옵션이 없으면 실패. --force·--yes 는 이 확인을 대신하지 않음. 환경설정 「미서명 패키지 차단」이 켜져 있으면 무시}
         {--signature= : --zip 의 서명 파일(.sig.json) 경로 — 생략하면 ZIP 옆 <zip>.sig.json 을 자동으로 씀}
         {--layout-source= : 레이아웃 설치 소스 (auto|json) — 생략하면 설정(LAYOUT_INSTALL_SOURCE)을 따름. json 은 짝 .json 이 있으면 .g7.html 대신 원본 JSON 으로 등록(진단·복구용)}
         {--dry-run : 업데이트하지 않고 레이아웃 판정과 지워질 선언 항목만 출력 (DB·파일 무변경)}

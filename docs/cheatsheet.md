@@ -193,7 +193,7 @@ php artisan template:check-updates [identifier?]
 php artisan template:update [identifier] [--layout-strategy=overwrite|keep] [--yes] [--force] [--source=auto|bundled|github] [--dry-run [--json]] [--decisions=<파일>]
 php artisan template:refresh-layout [identifier?] [--layout-strategy=keep|overwrite] [--dry-run [--json]] [--decisions=<파일>]   # 기본 keep(운영자 수정 유지)
 # --dry-run: 화면별 판정(유지·새 판 적용·병합·삭제 예정)과 새 판에서 빠져 지워질 선언 항목을 무변경으로 출력. --decisions 는 화면별 take_theirs|keep_mine JSON
-# --yes: 확인 질문만 생략. --force(같은 판 재적용·다운그레이드·호환 검사 생략·같은 판 스텝 재실행·멈춘 업데이트 정리)와 별개
+# --yes(-y): 확인 질문만 생략. --force(같은 판 재적용·다운그레이드·호환 검사 생략·같은 판 스텝 재실행·멈춘 업데이트 정리)와 별개
 # 같은 판 스텝 재실행: 검수 서버(G7_RUNTIME_ROLE=stage)의 --force 는 같은 내용(지문)으로 이미 끝난 스텝을 건너뛰고 고친 스텝만 다시 돈다. 운영 서버는 늘 다시 돈다
 # 이 서버의 업데이트가 끝나지 않은 채 남았으면(DB 판 기록 뒤 프로세스 종료) --force 없는 update 는 「업데이트 없음」 대신 안내 후 종료 코드 1 — --force 로 이어받는다
 # --layout-strategy=keep: 운영자가 고친 부분은 유지하고 손대지 않은 조각·설정에 새 버전을 병합 + 결과 표 (3종 공통)
@@ -207,7 +207,7 @@ php artisan language-pack:deactivate [identifier]
 php artisan language-pack:uninstall [identifier] [--cascade] [--yes] [--force]
 php artisan language-pack:cache-clear
 php artisan language-pack:check-updates [identifier?]
-php artisan language-pack:update [identifier] [--force] [--source=auto|bundled|github]
+php artisan language-pack:update [identifier] [--force] [--source=auto|bundled|github] [--yes|-y]   # 확인 질문 없음 — -y 는 다른 {type}:update 와 같은 형태로 부르기 위해 받음(효과 없음)
 
 # 설치 상태 조회 (DB·캐시·파일 무변경, GitHub 조회 없음 — 스크립트는 --json, schema 1)
 php artisan extension:list [--type=all|module|plugin|template|language-pack] [--json]
