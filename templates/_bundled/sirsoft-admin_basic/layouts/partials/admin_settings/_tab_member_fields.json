@@ -595,6 +595,13 @@
                                                                                 }
                                                                             },
                                                                             {
+                                                                                "handler": "updateDataSource",
+                                                                                "params": {
+                                                                                    "dataSourceId": "memberFieldDefs",
+                                                                                    "data": "{{ { ...(memberFieldDefs ?? { }), data: { ...(memberFieldDefs?.data ?? { }), fields_version: response?.data?.fields_version ?? memberFieldDefs?.data?.fields_version ?? null } } }}"
+                                                                                }
+                                                                            },
+                                                                            {
                                                                                 "handler": "refetchDataSource",
                                                                                 "params": {
                                                                                     "dataSourceId": "memberFieldDefs"
@@ -712,6 +719,13 @@
                                                                                             }
                                                                                         },
                                                                                         {
+                                                                                            "handler": "updateDataSource",
+                                                                                            "params": {
+                                                                                                "dataSourceId": "memberFieldDefs",
+                                                                                                "data": "{{ { ...(memberFieldDefs ?? { }), data: { ...(memberFieldDefs?.data ?? { }), fields_version: response?.data?.fields_version ?? memberFieldDefs?.data?.fields_version ?? null } } }}"
+                                                                                            }
+                                                                                        },
+                                                                                        {
                                                                                             "handler": "refetchDataSource",
                                                                                             "params": {
                                                                                                 "dataSourceId": "memberFieldDefs"
@@ -807,6 +821,13 @@
                                                                                                             "params": {
                                                                                                                 "type": "success",
                                                                                                                 "message": "$t:admin.settings.member.fields.saved"
+                                                                                                            }
+                                                                                                        },
+                                                                                                        {
+                                                                                                            "handler": "updateDataSource",
+                                                                                                            "params": {
+                                                                                                                "dataSourceId": "memberFieldDefs",
+                                                                                                                "data": "{{ { ...(memberFieldDefs ?? { }), data: { ...(memberFieldDefs?.data ?? { }), fields_version: response?.data?.fields_version ?? memberFieldDefs?.data?.fields_version ?? null } } }}"
                                                                                                             }
                                                                                                         },
                                                                                                         {
@@ -942,6 +963,13 @@
                                                                                 "params": {
                                                                                     "type": "success",
                                                                                     "message": "$t:admin.settings.member.fields.saved"
+                                                                                }
+                                                                            },
+                                                                            {
+                                                                                "handler": "updateDataSource",
+                                                                                "params": {
+                                                                                    "dataSourceId": "memberFieldDefs",
+                                                                                    "data": "{{ { ...(memberFieldDefs ?? { }), data: { ...(memberFieldDefs?.data ?? { }), fields_version: response?.data?.fields_version ?? memberFieldDefs?.data?.fields_version ?? null } } }}"
                                                                                 }
                                                                             },
                                                                             {
@@ -1251,6 +1279,13 @@
                                                     "params": {
                                                         "type": "success",
                                                         "message": "$t:admin.settings.member.fields.order_saved"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "updateDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "memberFieldDefs",
+                                                        "data": "{{ { ...(memberFieldDefs ?? { }), data: { ...(memberFieldDefs?.data ?? { }), fields_version: response?.data?.fields_version ?? memberFieldDefs?.data?.fields_version ?? null } } }}"
                                                     }
                                                 },
                                                 {

@@ -84,9 +84,9 @@
             <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/mileage-transactions/{{_global.mileageEdit?.id}}" method="PATCH" body="{{(_global.mileageEdit?.canEditExpiry === true ? { memo: _global.mileageEdit?.memo ?? '', expires_at: (_global.mileageEdit?.expiresAt || null) } : { memo: _global.mileageEdit?.memo ?? '' })}}">
               <success>
                 <close-modal/>
+                <set-state target="global" :mileageEdit="null"/>
                 <refetch-data-source dataSourceId="transactions"/>
                 <toast type="success" message="$t:sirsoft-ecommerce.admin.mileage_transactions.message.edit_success"/>
-                <set-state target="global" :mileageEdit="null"/>
               </success>
               <fail>
                 <set-state target="global" :mileageEdit.isSaving="false" mileageEdit.errors="{{error}}"/>

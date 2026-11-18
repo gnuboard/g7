@@ -6,6 +6,7 @@ use App\Console\RuntimeRoleCommandGuard;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Extension\HookManager;
 use App\Extension\ModuleManager;
+use App\Http\Middleware\RedirectToCanonicalHost;
 use App\Jobs\GenerateSitemapJob;
 use App\Models\Module;
 use App\Providers\SettingsServiceProvider;
@@ -182,6 +183,55 @@ class RuntimeRoleStageTest extends TestCase
         (new \ReflectionMethod($provider, 'applyDriverConfig'))->invoke($provider, app(JsonConfigRepository::class));
 
         $this->assertSame('sync', config('queue.default'));
+    }
+
+    /**
+     * ③-2 사이트 주소 — stage 가 `.env` 에 APP_URL 을 적었으면 공유 설정 「사이트 URL」(운영 주소)이 덮지 않는다.
+     *
+     * 종전에는 검수 서버를 자기 주소(`APP_URL=http://127.0.0.1:8733`)로 띄워도 공유 설정의 운영 주소가 사이트 주소가 되어,
+     * 정규 주소 이동(RedirectToCanonicalHost)이 모든 화면을 운영 주소로 301 시켰다. 사이트 주소는 요청 Host 가 아니라 서버 로컬
+     * `.env` 에서 오므로 Host 신뢰 범위는 넓어지지 않는다. live 와 APP_URL 을 적지 않은 stage 는 종전대로 공유 설정이 이긴다.
+     *
+     * @scenario case=site_url
+     *
+     * @effects stage_site_url_from_local_env
+     *
+     * @return void 반환값 없음
+     */
+    public function test_stage_site_url_comes_from_local_app_url(): void
+    {
+        $live = 'http://127.0.0.1:8731';
+        $stage = 'http://127.0.0.1:8733';
+        $apply = function (bool $appUrlExplicit) use ($live, $stage): void {
+            config([
+                'app.url' => $stage,
+                'env-priority.enabled' => false,
+                'env-priority.explicit' => $appUrlExplicit ? ['APP_URL' => true] : [],
+            ]);
+            $repository = $this->createMock(JsonConfigRepository::class);
+            $repository->method('getCategory')->willReturnCallback(fn (string $c): array => $c === 'general' ? ['site_url' => $live.'/'] : []);
+            $provider = new SettingsServiceProvider($this->app);
+            (new \ReflectionMethod($provider, 'applyAppConfig'))->invoke($provider, $repository);
+        };
+        $page = function () use ($stage): int {
+            config(['app.installer_completed' => true, 'trustedhosts.canonical_redirect' => true]);
+            $request = Request::create($stage.'/admin/login', 'GET');
+
+            return (new RedirectToCanonicalHost)->handle($request, fn () => response('next', 200))->getStatusCode();
+        };
+
+        $this->role('stage');
+        $apply(true);
+        $this->assertSame($stage, config('app.url'), '검수 서버의 사이트 주소를 공유 설정(운영 주소)이 덮었다');
+        $this->assertSame(200, $page(), '검수 서버 자기 주소의 화면이 운영 주소로 이동했다');
+
+        $apply(false);
+        $this->assertSame($live, config('app.url'), 'APP_URL 을 적지 않은 stage 는 종전대로 공유 설정');
+
+        $this->role('live');
+        $apply(true);
+        $this->assertSame($live, config('app.url'), 'live 는 종전대로 공유 설정이 이긴다');
+        $this->assertSame(301, $page());
     }
 
     /**

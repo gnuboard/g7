@@ -31,9 +31,12 @@ class StoragePathsCommand extends Command
     {
         $categories = [];
         foreach (StoragePaths::lists() as $category => $paths) {
+            // 접두사 항목(`-`·`_` 로 끝남)은 그 이름으로 시작하는 파일·폴더를 뜻한다 — 표에는 `*` 를 붙여 보이고,
+            // 있음 여부도 접두사로 시작하는 이름이 있는지로 본다.
             $categories[$category] = array_map(static fn (string $path): array => [
                 'path' => $path,
-                'exists' => file_exists(storage_path($path)),
+                'prefix' => StoragePaths::isPrefixEntry($path),
+                'exists' => StoragePaths::entryExists($path),
             ], $paths);
         }
 
@@ -55,7 +58,7 @@ class StoragePathsCommand extends Command
             foreach ($entries as $entry) {
                 $rows[] = [
                     __('common.console.storage_paths.categories.'.$category),
-                    $entry['path'],
+                    $entry['prefix'] ? $entry['path'].'*' : $entry['path'],
                     $entry['exists'] ? __('common.console.storage_paths.exists_yes') : __('common.console.storage_paths.exists_no'),
                 ];
             }

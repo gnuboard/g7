@@ -61,6 +61,8 @@ export interface ExtensionCardItem {
     checked: boolean;
     disabled?: boolean;
     label?: string;
+    /** 마우스를 올렸을 때 보일 안내 — 잠긴 이유(검수 서버 등)를 설치·업데이트·제거 단추와 같은 문구로 알린다 */
+    title?: string;
   };
   primaryAction?: {
     label: string;
@@ -490,6 +492,7 @@ const ControlRow: React.FC<{
           name={item.toggle.label ?? item.name}
           // 이름을 명시한다 — 비워 두면 곁 글자를 찾아 바로 앞 「업데이트」·「레이아웃 편집」 단추 글자를 집었다.
           ariaLabel={item.toggle.label ?? item.name}
+          title={item.toggle.title}
           onChange={(next: any) => {
             const value = typeof next === 'boolean' ? next : Boolean(next?.target?.checked);
             setPending(true);

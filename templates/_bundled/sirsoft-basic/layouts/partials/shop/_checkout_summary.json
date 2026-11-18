@@ -833,8 +833,8 @@
                                     "target": "/api/modules/sirsoft-ecommerce/user/orders",
                                     "auth_mode": "optional",
                                     "identity_target": {
-                                        "email": "{{_computed.ordererDefaults?.email || _local.orderer?.email || ''}}",
-                                        "phone": "{{_local.orderer?.phone || _global.currentUser?.phone || _local.shipping?.recipient_phone || ''}}"
+                                        "email": "{{_computed.ordererDefaults?.email || ''}}",
+                                        "phone": "{{_computed.ordererDefaults?.phone || _local.shipping?.recipient_phone || ''}}"
                                     },
                                     "params": {
                                         "method": "POST",
@@ -964,7 +964,7 @@
                                     },
                                     "onError": [
                                         {
-                                            "comment": "추가 정보가 비어 있어 거부된 요청(403, error_code 가 required_fields_pending)이면 일반 오류 알림 대신 「추가 정보 필요」 안내 창을 연다",
+                                            "comment": "추가 정보가 비어 있어 거부된 요청(403, error_code 가 required_fields_pending)이면 일반 오류 알림 대신 「추가 정보 필요」 안내 창을 연다.\n                     그 거부면 인라인 오류 문구도 세우지 않는다 — 안내 창과 같은 문장이 두 번 보였다",
                                             "handler": "openModal",
                                             "target": "required_info_pending_modal",
                                             "if": "{{error.error_code === 'required_fields_pending'}}"
@@ -975,7 +975,7 @@
                                                 "target": "local",
                                                 "isSubmittingOrder": false,
                                                 "errors": "{{error.response?.errors ?? error.errors ?? null}}",
-                                                "orderError": "{{error.response?.message ?? error.message ?? $t:shop.checkout.order_failed}}"
+                                                "orderError": "{{error.error_code === 'required_fields_pending' ? null : (error.response?.message ?? error.message ?? $t:shop.checkout.order_failed)}}"
                                             }
                                         },
                                         {

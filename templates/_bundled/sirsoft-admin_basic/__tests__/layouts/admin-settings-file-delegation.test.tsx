@@ -98,6 +98,8 @@ const translations = {
                     probe_button: '실제 전송 확인',
                     probe_ok: '웹서버가 파일을 보냈습니다.',
                     probe_failed: '파일 본문을 받지 못했습니다.',
+                    probe_inactive: '적용 중인 방식이 「사용 안 함」이라 PHP 가 보냈습니다.',
+                    probe_skipped: '이 파일은 위임 경로 밖이라 PHP 가 보냈습니다.',
                     recover_hint: '복구 안내',
                 },
             },
@@ -250,6 +252,8 @@ describe('드라이버 탭 웹서버 파일 위임 카드 — 계약', () => {
         expect(probe.target).toBe('/api/admin/settings/file-delegation-probe');
         expect(probe.params.method).toBe('GET');
         expect(JSON.stringify(probe.onSuccess)).toContain("result?.data?.probe === 'g7-file-delegation'");
+        // 위임 없이 PHP 가 보냈다는 서버 응답(reason)을 상태에 싣는다 — 본문 수신만으로 성공을 정하지 않는다
+        expect(JSON.stringify(probe.onSuccess)).toContain('result?.data?.reason');
     });
 
     // @scenario case=admin_layout
@@ -342,6 +346,23 @@ describe('드라이버 탭 웹서버 파일 위임 카드 — 렌더링', () => 
         expect(container.textContent ?? '').toContain('웹서버가 파일을 보냈습니다.');
         // X-Sendfile 은 매핑을 쓰지 않으므로 매핑 줄이 없다
         expect(container.querySelector('[data-testid="file-delegation-test-mapping"]')).toBeNull();
+    });
+
+    // @scenario case=admin_layout
+    // @effects drivers_tab_renders_file_delegation_card, probe_reports_php_delivery_instead_of_success
+    it.each([
+        ['inactive', '적용 중인 방식이 「사용 안 함」이라 PHP 가 보냈습니다.'],
+        ['skipped', '이 파일은 위임 경로 밖이라 PHP 가 보냈습니다.'],
+    ])('실제 전송 확인이 위임 없이 PHP 가 보낸 결과(%s)면 성공 문구 대신 그 사유를 보인다', async (reason, message) => {
+        testUtils = makeUtils({ file_delegation: 'x-accel-redirect' }, 'none', {
+            fileDelegationProbe: { success: false, reason },
+        });
+        const { container } = await testUtils.render();
+        const text = container.textContent ?? '';
+
+        expect(text).toContain(message);
+        expect(text).not.toContain('웹서버가 파일을 보냈습니다.');
+        expect(text).not.toContain('파일 본문을 받지 못했습니다.');
     });
 
     // @scenario case=admin_layout

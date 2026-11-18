@@ -4,8 +4,6 @@ namespace Tests\Feature\Auth;
 
 use App\Enums\UserStatus;
 use App\Models\IdentityVerificationLog;
-use App\Models\Permission;
-use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
@@ -245,7 +243,6 @@ class TwoFactorAccountLockTest extends TestCase
     #[Test]
     public function a_locked_account_cannot_refresh_its_token(): void
     {
-        $this->grantRefreshPermission();
         $token = $this->user->createToken('test-token')->plainTextToken;
 
         $this->lockAccount();
@@ -276,7 +273,6 @@ class TwoFactorAccountLockTest extends TestCase
     #[Test]
     public function an_unlocked_account_can_still_refresh_its_token(): void
     {
-        $this->grantRefreshPermission();
         $token = $this->user->createToken('test-token')->plainTextToken;
 
         $response = $this->withHeader('Authorization', 'Bearer '.$token)
@@ -284,38 +280,6 @@ class TwoFactorAccountLockTest extends TestCase
 
         $response->assertStatus(200);
         $this->assertNotEmpty($response->json('data.token'));
-    }
-
-    /**
-     * 테스트 사용자에게 토큰 재발급 권한을 부여합니다.
-     *
-     * 재발급 라우트는 `permission:user,core.auth.refresh` 미들웨어를 거치므로, 권한이 없으면
-     * 잠금 게이트에 닿기 전에 403 이 되어 측정 대상이 바뀐다.
-     *
-     * @return void 반환값 없음
-     */
-    private function grantRefreshPermission(): void
-    {
-        $permission = Permission::firstOrCreate(
-            ['identifier' => 'core.auth.refresh'],
-            [
-                'name' => json_encode(['ko' => '토큰 재발급', 'en' => 'Refresh Token']),
-                'description' => json_encode(['ko' => '토큰 재발급', 'en' => 'Refresh Token']),
-                'extension_type' => 'core',
-                'extension_identifier' => 'core',
-                'type' => 'user',
-            ]
-        );
-
-        $role = Role::create([
-            'identifier' => 'two_factor_lock_test_'.uniqid(),
-            'name' => json_encode(['ko' => '테스트', 'en' => 'Test']),
-            'is_active' => true,
-        ]);
-        $role->permissions()->sync([$permission->id]);
-
-        $this->user->roles()->attach($role->id, ['assigned_at' => now()]);
-        $this->user = $this->user->fresh();
     }
 
     /**

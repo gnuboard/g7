@@ -39,6 +39,11 @@
 
 `resources/extensions/` 도 비어 있습니다 — 다른 확장의 레이아웃에 조각을 주입하지
 않습니다. 관리자 템플릿을 고치지 않으므로 플러그인을 끄면 메뉴와 화면이 함께 사라집니다.
+
+설정 화면이 스스로 받는 소스는 모두 403 을 소스의 `error-handling` 에서 받아 끊습니다 — 기본 오류 알림을 띄우지 않습니다.
+알림 발송 수단(`totpNotificationChannels`, `core.settings.read`)은 `suppress` 로 목록만 비우고, 같은 권한의 알림 정의 소스가 남긴
+`totpNotificationsError` 로 보안 알림 카드에 「권한 없음」 안내를 그립니다. 새 자동 받기 소스를 더하면 403 처리도 함께 둡니다
+(`plugin-settings-read-only.test.ts` 가 전수 검사).
 <!-- @intent END -->
 
 ## 액션 핸들러

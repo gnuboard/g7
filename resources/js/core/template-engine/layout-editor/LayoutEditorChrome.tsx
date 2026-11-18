@@ -36,6 +36,7 @@ import { collectReferencedCustomKeys } from './utils/customTranslations';
 import { useEditorShortcuts, type ShortcutHandlers } from './hooks/useEditorShortcuts';
 import { SaveFeedbackBanner } from './components/SaveFeedbackBanner';
 import { SpecLoadErrorBanner } from './components/SpecLoadErrorBanner';
+import { StageRoleBanner } from './components/StageRoleBanner';
 import type { SaveResult, UseLayoutDocumentResult } from './hooks/useLayoutDocument';
 import { RouteTreePanel } from './components/RouteTreePanel';
 import { PreviewCanvas } from './components/PreviewCanvas';
@@ -1069,6 +1070,8 @@ function LayoutEditorChromeBody({
             onLoadLatest={handleConcurrentLoadLatest}
           />
           <SpecLoadErrorBanner failed={specLoadFailed} retrying={specLoading} onRetry={handleSpecRetry} />
+          {/* 검수 서버(stage)면 이 편집기의 저장이 검수 서버 표에만 남는다는 안내 */}
+          <StageRoleBanner />
           {/* 캔버스 제목 배너 제거 — 제목/설명 편집은 [페이지 설정] 모달 단일
               진입(툴바 ⚙ 페이지 설정)으로 일원화. 배너의 인라인 편집/표현식 고급 배지 폐기. */}
           <div

@@ -368,16 +368,17 @@ class SeoRenderer implements SeoRendererInterface
 
         // 5.95. meta.seo.vars를 해석하여 ComponentHtmlMapper에 전달 (format 모드용)
         $seoVarsDecl = $seoConfig['vars'] ?? [];
-        if (! empty($seoVarsDecl)) {
-            $resolvedVars = $this->resolveSeoVars($seoVarsDecl, $context, $moduleIdentifier, $pluginIdentifier);
-            $this->htmlMapper->setSeoVars($resolvedVars);
-        }
+        $resolvedVars = ! empty($seoVarsDecl)
+            ? $this->resolveSeoVars($seoVarsDecl, $context, $moduleIdentifier, $pluginIdentifier)
+            : [];
+        // vars 가 없는 화면도 비운다 — 매퍼는 렌더러와 함께 재사용되므로(캐시 재굽기 순회) 앞 화면의 vars 가 남으면 안 된다
+        $this->htmlMapper->setSeoVars($resolvedVars);
 
         // 5.96. meta.seo.extensions 기반 _seo context 주입
         // extensions 배열에 선언된 확장의 seoVariables()를 수집하고
         // 자동 해석 변수(setting/core_setting/query/route) + data 변수(vars 매핑)를 처리하여
         // 설정 템플릿(meta_{page_type}_title/description)에 적용한 결과를 _seo.{page_type}에 주입
-        $this->resolveSeoContext($seoConfig, $context, $routeParams, $resolvedVars ?? []);
+        $this->resolveSeoContext($seoConfig, $context, $routeParams, $resolvedVars);
 
         // 6. SeoMetaResolver로 3계층 캐스케이드 메타 해석 (배열 형태)
         $meta = $this->metaResolver->resolve($seoConfig, $context, $moduleIdentifier, $pluginIdentifier, $routeParams, $routeTitle);

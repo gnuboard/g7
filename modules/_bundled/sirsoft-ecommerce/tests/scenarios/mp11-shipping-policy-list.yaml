@@ -37,6 +37,7 @@ effects:
   - product_form_uses_active_endpoint
   - active_list_includes_form_fields     # country_settings/fee_summary/is_default
   - active_list_excludes_inactive_for_new
+  - admin_list_without_filter_keeps_inactive   # 필터 없는 관리 목록은 비활성 정책도 싣는다(관리 목록 동작 불변)
   - inactive_assigned_policy_union_shown  # 비활성 부여 정책 칩/요약 유지
   - inactive_policy_warning_displayed     # 안내 문구
   - inactive_policy_save_preserved        # 강제 변경 안 함

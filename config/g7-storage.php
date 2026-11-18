@@ -62,6 +62,7 @@ return [
         'app/extension_backups',
         'app/extension-custom-backups',
         'app/extension_update_journal',
+        'app/extension-carried-class-files.json',
         'app/extension_update_previews',
         'app/core_pending',
         'app/core_backups',

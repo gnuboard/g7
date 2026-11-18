@@ -52,7 +52,10 @@
 "로그는 있는데 취소는 실패"가 생깁니다. `RegisterEasyPayMethodsListener`가 8종의 간편결제
 방식을 하나의 필터 훅에서 한 번에 주입하는 이유는 §settings.md 의 설정 스키마와 대칭을
 맞추기 위함입니다 — 설정 키가 8개인데 훅 등록이 여러 곳으로 흩어지면 한쪽만 갱신되는
-사각이 생깁니다.
+사각이 생깁니다. 싣는 이름·설명은 `LocalizedValue::translateAll()` 로 지원 언어(`app.supported_locales`
+= 활성 언어팩) 전부를 채웁니다 — ko·en 만 실으면 일본어 화면에 번역이 있는데도 한국어 이름이 보입니다.
+이커머스가 설정을 읽을 때마다 이 정의로 `_cached_name`·`_cached_description` 을 새로 채우므로 저장된
+설정을 다시 저장하지 않아도 반영됩니다.
 
 `sirsoft-ecommerce.claim_payment.approve` / `.refund` 두 필터는 클레임 추가결제(`CP` 채번)의
 승인·환급을 이 플러그인이 맡는 접합면입니다. 콜백 컨트롤러는 결제번호가 `CP` 로 시작하면 주문

@@ -7,7 +7,7 @@ description: |
   없어 기본 문구가 영어 대체 문구(「add」 등)로 나온다.
 
 axes:
-  area: [render, disabled, on_change, menu_portal, before_remove, creatable, select_only, max_items, filter, a11y_role, delimiter, no_options_prop, grouping, input_change, editor_attrs]
+  area: [render, disabled, on_change, menu_portal, before_remove, creatable, select_only, max_items, filter, a11y_role, delimiter, no_options_prop, grouping, input_change, editor_attrs, style_csp]
 
 effects:
   - tag_input_renders_values_and_counts
@@ -25,6 +25,11 @@ effects:
   - tag_input_groups_options
   - tag_input_input_change_callback
   - tag_input_editor_attrs_reach_root
+  # 스타일 정책 강제 — emotion 규칙을 생성형 시트로 싣는다(utils/adoptedEmotionCache.ts)
+  - tag_input_emotion_rules_in_adopted_sheet
+  - tag_input_creates_no_style_element
+  - tag_input_emotion_fallback_without_adopted
 
 test_files:
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/TagInput.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/TagInput.styleCsp.test.tsx

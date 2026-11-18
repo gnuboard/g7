@@ -2,6 +2,7 @@
 
 namespace App\Extension;
 
+use App\Console\Helpers\ArtisanCommandRunner;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Exceptions\PackageIntegrityException;
@@ -14,6 +15,7 @@ use App\Extension\Integrity\PackageExpectation;
 use App\Extension\Integrity\PackageIntegrityOptions;
 use App\Extension\Integrity\PackageReleaseNotFoundException;
 use App\Extension\Integrity\PackageVerification;
+use App\Extension\Support\CarriedClassFileLedger;
 use App\Extension\Support\ExtensionFingerprint;
 use App\Extension\Support\LifecycleWarnings;
 use App\Rules\ValidExtensionIdentifier;
@@ -45,7 +47,7 @@ class ExtensionManager
      * 이 디렉토리는 composer 가 채우고 아무도 비우지 않는다 — 정리 커맨드의 형제 대상군
      * (`storage/app/temp`)과 경로가 달라 그 스캔의 모집단 밖이었다. 회수는
      * `StorageLeftoverPruneService` 의 `storage_temp` 대상군이 맡고, 두 곳이 같은 값을
-     * 보도록 여기를 SSoT 로 둔다 (11차 G3 라운드 E11-9).
+     * 보도록 여기를 SSoT 로 둔다.
      */
     public const COMPOSER_FALLBACK_TEMP_DIR = 'temp';
 
@@ -71,6 +73,13 @@ class ExtensionManager
      * @var array<string, array<int, string>> 네임스페이스 접두사(끝 `\` 포함) → 디렉터리 절대 경로 목록
      */
     private static array $lateRegisteredPsr4 = [];
+
+    /**
+     * 부팅 오토로드가 실은 진입 파일(`module.php`·`plugin.php`)의 정의 지문 — 싣는 사이 파일이 바뀌었으면 `?`.
+     *
+     * @var array<string, string> 정규화한 절대 경로 → 지문
+     */
+    private static array $entryFileLoadHashes = [];
 
     /**
      * 확장 관리자를 생성합니다.
@@ -159,6 +168,78 @@ class ExtensionManager
             ]);
             LifecycleWarnings::current()->add('hook_cache', 'hooks.php', $e->getMessage());
         }
+    }
+
+    /**
+     * 교체가 남겨 둔 옛 클래스 파일을 정리 대기 목록에 적고, 훅 캐시를 새 프로세스로 다시 굽습니다.
+     *
+     * 업데이트·같은 판 강제 재적용 끝의 오토로드·훅 캐시 재생성 **뒤에** 부른다. 파일은 바로 지우지 않는다 — 재생성 전에 부팅해
+     * 옛 훅 목록·옛 소스 classmap 을 쥔 요청이 지운 뒤에 발화하면 같은 include 실패가 나기 때문이다(부하 시 정리 뒤 수 초 안에 실패).
+     * {@see CarriedClassFileLedger} 가 최장 요청 시간보다 충분히 뒤의 안전 지점(예약 `storage:prune-leftovers`, 다음 교체 기록)에서 지운다.
+     * 남아 있는 동안은 새 판 선언이 그 클래스를 부르지 않아 무해하다.
+     *
+     * 훅 캐시는 새 PHP 프로세스(`hooks:cache`)로 다시 굽는다 — 같은 판 강제 재적용은 이 프로세스가 부팅 때 읽은 옛 진입 클래스
+     * (같은 FQCN, 지운 리스너를 아직 등록)를 들고 있어, 이 프로세스로 구우면 지운 리스너가 `hooks.php` 에 남았다.
+     * 새 프로세스를 띄울 수 없는 호스팅은 이 프로세스로 굽는다(파일이 아직 있어 include 실패는 없다). 실패해도 업데이트는 끝난 것으로
+     * 둔다(경고).
+     *
+     * @param  string  $activePath  새 판 활성 디렉토리
+     * @param  array<int, string>  $carried  실어 둔 파일의 상대 경로
+     * @return void 반환값 없음
+     */
+    public function finishCarriedOverClassFiles(string $activePath, array $carried): void
+    {
+        try {
+            $ledger = app(CarriedClassFileLedger::class);
+            // 이 확장의 항목을 먼저 새 목록으로 바꾸고(빈 목록이면 지운다 — 새 판이 다시 출하한 파일은 목록에 없다) 그다음 안전 지점이
+            // 지난 다른 항목을 정리한다. 순서를 바꾸면 이 확장의 옛 항목이 새 판이 막 설치한 파일까지 지운다.
+            $ledger->record($activePath, $carried);
+            if ($ledger->sweep() !== []) {
+                // 지운 파일의 소스 classmap 항목을 걷는다
+                $this->generateAutoloadFile();
+            }
+
+            if ($carried === []) {
+                return;
+            }
+
+            $this->regenerateHookCacheInFreshProcess();
+
+            Log::info('확장 교체: 옛 클래스 파일을 정리 대기 목록에 적음 — 안전 지점에서 지운다', ['active' => $activePath, 'files' => $carried]);
+        } catch (\Throwable $e) {
+            Log::warning('확장 업데이트: 옛 클래스 파일 정리 실패 (파일이 남아도 동작 영향 없음)', [
+                'active' => $activePath,
+                'error' => $e->getMessage(),
+            ]);
+            LifecycleWarnings::current()->add('carried_class_files', basename($activePath), $e->getMessage());
+        }
+    }
+
+    /**
+     * 훅 매핑 캐시를 새 PHP 프로세스(`hooks:cache`)로 다시 굽습니다 — 띄울 수 없으면 이 프로세스로.
+     *
+     * 시험 환경에서는 실 캐시를 덮지 않도록 실행기를 바꿔 끼운 시험만 새 프로세스 경로를 탄다({@see regenerateHookCache()} 와 같은 원칙).
+     *
+     * @return void 반환값 없음
+     */
+    private function regenerateHookCacheInFreshProcess(): void
+    {
+        $runner = app(ArtisanCommandRunner::class);
+        $swapped = get_class($runner) !== ArtisanCommandRunner::class;
+
+        if (app()->environment('testing') && ! $swapped) {
+            return;
+        }
+
+        if ($swapped || $this->canSpawnProcess()) {
+            $result = $runner->runFresh('hooks:cache');
+            if ($result['exit_code'] === 0) {
+                return;
+            }
+            Log::warning('훅 캐시를 새 프로세스로 굽지 못해 이 프로세스로 굽습니다', ['output' => mb_substr($result['output'], 0, 500)]);
+        }
+
+        $this->regenerateHookCache();
     }
 
     /**
@@ -636,7 +717,11 @@ PHP;
             foreach ($autoloads['classmap'] as $file) {
                 $absolutePath = base_path($file);
                 if (file_exists($absolutePath) && ! self::isEntryClassDeclared($file)) {
+                    // 실은 정의의 지문을 싣기 전·후로 떠 둔다 — 그 사이 파일이 교체되면 실은 정의를 알 수 없다(「알 수 없음」).
+                    // 매니저가 이 클래스로 선언(훅 리스너 등)을 모을 때 옛 정의를 지금 정의로 보지 않게 한다.
+                    $before = @md5_file($absolutePath);
                     require_once $absolutePath;
+                    self::rememberEntryFileLoad($absolutePath, is_string($before) ? $before : null);
                 }
             }
         }
@@ -1115,7 +1200,7 @@ PHP;
      *
      * 나열 규칙을 한 곳에 두는 이유: 종전에는 같은 루프가 네 벌이었고 그중 하나만
      * `scandir` 로 옮겨져 있었다 — 옮긴 쪽이 읽히기 **전에** 옮기지 않은 쪽이 죽으므로
-     * 그 회피는 도달조차 하지 못했다 (11차 G3 라운드).
+     * 그 회피는 도달조차 하지 못했다.
      *
      * `.` 로 시작하는 항목은 배제한다. `glob('*.php')` 가 걸러 주던 에디터 잔해·AppleDouble
      * (`._Foo.php`)이 `require_once` 대상이 되면 정렬상 가장 먼저 로드된다.
@@ -1135,8 +1220,8 @@ PHP;
         // 테이블에서 지우므로 그 호출은 `Error`(치명)다. 이 두 나열기는 **웹 요청 안에서**
         // 도는 소비처(잔여물 정리 예약 작업 6대상군 · 확장 스캔)가 부르는 공용 지점이라,
         // 여기가 무가드면 그 소비처들이 자기 가드를 갖춰도 이 자리에서 함께 죽는다 —
-        // 실제로 프루너는 자기 안을 전부 대칭으로 갖춰 놓고 이 전이 지점을 타고 있었다
-        // (23차 G3 라운드 D23-6). 나열할 수 없으면 「없음」이 아니라 **빈 목록**이며,
+        // 실제로 프루너는 자기 안을 전부 대칭으로 갖춰 놓고 이 전이 지점을 타고 있었다.
+        // 나열할 수 없으면 「없음」이 아니라 **빈 목록**이며,
         // 그 판정은 형제 가드(`StorageLeftoverPruneService`)와 같은 방향이다.
         if (! ExecutionEnvironment::hasFunction('scandir')) {
             return [];
@@ -1192,8 +1277,8 @@ PHP;
         // 테이블에서 지우므로 그 호출은 `Error`(치명)다. 이 두 나열기는 **웹 요청 안에서**
         // 도는 소비처(잔여물 정리 예약 작업 6대상군 · 확장 스캔)가 부르는 공용 지점이라,
         // 여기가 무가드면 그 소비처들이 자기 가드를 갖춰도 이 자리에서 함께 죽는다 —
-        // 실제로 프루너는 자기 안을 전부 대칭으로 갖춰 놓고 이 전이 지점을 타고 있었다
-        // (23차 G3 라운드 D23-6). 나열할 수 없으면 「없음」이 아니라 **빈 목록**이며,
+        // 실제로 프루너는 자기 안을 전부 대칭으로 갖춰 놓고 이 전이 지점을 타고 있었다.
+        // 나열할 수 없으면 「없음」이 아니라 **빈 목록**이며,
         // 그 판정은 형제 가드(`StorageLeftoverPruneService`)와 같은 방향이다.
         if (! ExecutionEnvironment::hasFunction('scandir')) {
             return [];
@@ -1454,6 +1539,45 @@ PHP;
 
         // 긴 접두사부터 본다 — `…\Database\Seeders\` 가 `…\` 보다 먼저 맞아야 Composer 와 같은 파일을 고른다
         uksort(self::$lateRegisteredPsr4, static fn (string $a, string $b): int => strlen($b) <=> strlen($a));
+    }
+
+    /**
+     * 진입 파일을 실은 정의의 지문을 기록합니다 — 싣기 전 지문과 실은 뒤 지문이 다르면 `?`(알 수 없음).
+     *
+     * @param  string  $absolutePath  진입 파일 절대 경로
+     * @param  string|null  $hashBeforeLoad  싣기 전 지문
+     * @return void 반환값 없음
+     */
+    public static function rememberEntryFileLoad(string $absolutePath, ?string $hashBeforeLoad): void
+    {
+        $after = @md5_file($absolutePath);
+        if (! is_string($after)) {
+            return;
+        }
+
+        self::$entryFileLoadHashes[self::normalizeEntryPath($absolutePath)] = ($hashBeforeLoad === $after) ? $after : '?';
+    }
+
+    /**
+     * 부팅 오토로드가 그 진입 파일을 실을 때의 정의 지문을 돌려줍니다 (기록이 없으면 null, 알 수 없으면 `?`).
+     *
+     * @param  string  $absolutePath  진입 파일 절대 경로
+     * @return string|null 지문
+     */
+    public static function entryFileLoadHash(string $absolutePath): ?string
+    {
+        return self::$entryFileLoadHashes[self::normalizeEntryPath($absolutePath)] ?? null;
+    }
+
+    /**
+     * 진입 파일 경로를 비교용으로 정규화합니다.
+     *
+     * @param  string  $path  경로
+     * @return string 정규화한 경로
+     */
+    private static function normalizeEntryPath(string $path): string
+    {
+        return strtolower(str_replace('\\', '/', $path));
     }
 
     /**

@@ -20,6 +20,7 @@ readonly class SearchIndexRepairReport
      * @param  array<int, string>  $remaining  재생성 후에도 색인 누락으로 남은 식별자
      * @param  bool  $available  이 엔진에서 점검을 수행할 수 있었는지
      * @param  string|null  $reason  수행 불가 사유 (available=false 일 때)
+     * @param  array<int, array{target: string, command: string}>  $advice  재생성 뒤에도 남은 누락의 조치 안내 — 대상(표 이름 등)과 운영자가 직접 실행할 명령. 엔진이 안내를 주지 않으면 빈 배열
      */
     public function __construct(
         public string $driver,
@@ -29,6 +30,7 @@ readonly class SearchIndexRepairReport
         public array $remaining = [],
         public bool $available = true,
         public ?string $reason = null,
+        public array $advice = [],
     ) {}
 
     /**
@@ -99,6 +101,31 @@ readonly class SearchIndexRepairReport
     }
 
     /**
+     * 재생성 뒤에도 남은 누락의 조치 안내를 콘솔·로그용 문장으로 반환합니다.
+     *
+     * 안내가 없으면 빈 배열입니다. 첫 줄은 사유, 대상마다 「대상 — 명령」 한 줄, 끝 줄은 잠금·소요 경고입니다.
+     * 안내는 실행하지 않습니다 — 운영자가 유지보수 시간에 직접 실행합니다.
+     *
+     * @return array<int, string> 출력할 문장들
+     */
+    public function adviceLines(): array
+    {
+        if ($this->advice === []) {
+            return [];
+        }
+
+        $lines = [__('search.index.persistent_stale.title')];
+
+        foreach ($this->advice as $item) {
+            $lines[] = __('search.index.persistent_stale.item', ['target' => $item['target'], 'command' => $item['command']]);
+        }
+
+        $lines[] = __('search.index.persistent_stale.caution');
+
+        return $lines;
+    }
+
+    /**
      * 기계 판독용 배열로 반환합니다.
      *
      * @return array<string, mixed>
@@ -113,6 +140,7 @@ readonly class SearchIndexRepairReport
             'repaired' => $this->repaired,
             'failed' => $this->failed,
             'remaining' => $this->remaining,
+            'advice' => $this->advice,
             'summary' => $this->summary(),
         ];
     }

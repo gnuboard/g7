@@ -21,7 +21,9 @@
             <api-call :auth_required="true" target="/api/admin/language-packs/check-updates" method="POST">
               <success>
                 <set-state target="global" :isLanguagePackCheckingUpdates="false"/>
-                <toast type="success" message="{{response.data?.updates > 0 ? '$t:admin.language_packs.messages.check_updates_done|count=' + response.data.updates : '$t:admin.language_packs.messages.check_updates_none'}}"/>
+                <!-- GitHub 최신 판 조회에 실패한 팩(details[].error)은 「확인하지 못함」이다 — 있으면 「모두 최신」을 띄우지 않고 경고로 알린다. -->
+                <toast if="{{!(response.data?.details ?? []).some(d =&gt; d.error) || response.data?.updates > 0}}" type="success" message="{{response.data?.updates > 0 ? '$t:admin.language_packs.messages.check_updates_done|count=' + response.data.updates : '$t:admin.language_packs.messages.check_updates_none'}}"/>
+                <toast if="{{(response.data?.details ?? []).some(d =&gt; d.error)}}" type="warning" message="$t:admin.language_packs.messages.check_updates_github_failed|count={{(response.data?.details ?? []).filter(d =&gt; d.error).length}}|names={{(response.data?.details ?? []).filter(d =&gt; d.error).map(d =&gt; d.identifier).join(', ')}}|reason={{(response.data?.details ?? []).filter(d =&gt; d.error)[0]?.error ?? ''}}"/>
                 <refetch-data-source dataSourceId="language_packs"/>
               </success>
               <fail>
@@ -62,7 +64,9 @@
             <api-call :auth_required="true" target="/api/admin/language-packs/check-updates" method="POST">
               <success>
                 <set-state target="global" :isLanguagePackCheckingUpdates="false"/>
-                <toast type="success" message="{{response.data?.updates > 0 ? '$t:admin.language_packs.messages.check_updates_done|count=' + response.data.updates : '$t:admin.language_packs.messages.check_updates_none'}}"/>
+                <!-- GitHub 최신 판 조회에 실패한 팩(details[].error)은 「확인하지 못함」이다 — 있으면 「모두 최신」을 띄우지 않고 경고로 알린다. -->
+                <toast if="{{!(response.data?.details ?? []).some(d =&gt; d.error) || response.data?.updates > 0}}" type="success" message="{{response.data?.updates > 0 ? '$t:admin.language_packs.messages.check_updates_done|count=' + response.data.updates : '$t:admin.language_packs.messages.check_updates_none'}}"/>
+                <toast if="{{(response.data?.details ?? []).some(d =&gt; d.error)}}" type="warning" message="$t:admin.language_packs.messages.check_updates_github_failed|count={{(response.data?.details ?? []).filter(d =&gt; d.error).length}}|names={{(response.data?.details ?? []).filter(d =&gt; d.error).map(d =&gt; d.identifier).join(', ')}}|reason={{(response.data?.details ?? []).filter(d =&gt; d.error)[0]?.error ?? ''}}"/>
                 <refetch-data-source dataSourceId="language_packs"/>
               </success>
               <fail>
@@ -247,7 +251,7 @@
           ...(p.files_missing === true ? [{ label: '$t:admin.language_packs.badge.files_missing', tone: 'danger' }] : []),
           ...(p.has_update === true &amp;&amp; p.status !== 'uninstalled' ? [{ label: '$t:admin.language_packs.badge.update_available', tone: 'danger' }] : [])
         ],
-        toggle: p.status !== 'uninstalled' ? { checked: p.status === 'active', disabled: _global.appConfig?.runtime_role === 'stage' || p.is_protected === true || (p.abilities?.can_activate !== true &amp;&amp; p.abilities?.can_deactivate !== true), label: p.name ?? p.identifier } : null,
+        toggle: p.status !== 'uninstalled' ? { checked: p.status === 'active', title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined, disabled: _global.appConfig?.runtime_role === 'stage' || p.is_protected === true || (p.abilities?.can_activate !== true &amp;&amp; p.abilities?.can_deactivate !== true), label: p.name ?? p.identifier } : null,
         secondaryAction: p.files_missing === true &amp;&amp; p.bundled_source_available === true &amp;&amp; p.abilities?.can_install === true
           ? { label: '$t:admin.language_packs.actions.reinstall', icon: 'refresh', disabled: _global.appConfig?.runtime_role === 'stage', title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined }
           : (p.has_update === true &amp;&amp; p.status !== 'uninstalled' &amp;&amp; language_packs?.data?.abilities?.can_update ? { label: '$t:admin.language_packs.actions.update', icon: 'refresh', disabled: _global.appConfig?.runtime_role === 'stage', title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined } : null),

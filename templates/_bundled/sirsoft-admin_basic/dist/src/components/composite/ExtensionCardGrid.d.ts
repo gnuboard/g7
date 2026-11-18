@@ -47,6 +47,8 @@ export interface ExtensionCardItem {
         checked: boolean;
         disabled?: boolean;
         label?: string;
+        /** 마우스를 올렸을 때 보일 안내 — 잠긴 이유(검수 서버 등)를 설치·업데이트·제거 단추와 같은 문구로 알린다 */
+        title?: string;
     };
     primaryAction?: {
         label: string;

@@ -25,6 +25,10 @@ return [
         'popup_image_update' => 'ポップアップ「:popup_title」の :device 画像を置換しました。',
         'popup_image_remove' => 'ポップアップ「:popup_title」の :device 画像を削除しました。',
     ],
+    'devices' => [
+        'pc' => 'PC',
+        'mobile' => 'モバイル',
+    ],
     'fields' => [
         'title' => '管理用タイトル',
         'is_active' => '使用有無',

@@ -10,6 +10,7 @@ use App\Models\Attachment;
 use App\Rules\SafeLinkRule;
 use App\Rules\TranslatableField;
 use App\Services\TemplateSettingsService;
+use App\Support\LocalizedValue;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Lang;
@@ -186,11 +187,22 @@ class UpdateTemplateSettingsRequest extends FormRequest
     {
         $locale = app()->getLocale();
         $attributes = [];
+        $labels = app(TemplateSettingsService::class)->fieldLabels((string) $this->route('identifier'));
 
-        foreach (app(TemplateSettingsService::class)->fieldLabels((string) $this->route('identifier')) as $path => $label) {
+        foreach ($labels as $path => $label) {
             $translationKey = 'validation.attributes.'.$path;
 
-            $resolved = Lang::has($translationKey, $locale, false) ? Lang::get($translationKey, [], $locale) : $label;
+            if (Lang::has($translationKey, $locale, false)) {
+                $resolved = Lang::get($translationKey, [], $locale);
+            } elseif (str_contains($path, '.*.')) {
+                // 목록 칸의 행 칸 — 「칸 N번째 항목의 행 칸」. `:position` 은 검증기가 오류 위치의 1부터 센 자리로 바꾼다
+                [$listPath, $itemKey] = explode('.*.', $path, 2);
+                $listLabel = $labels[$listPath] ?? $listPath;
+                $itemLabel = str_starts_with($label, $listLabel.' · ') ? substr($label, strlen($listLabel) + 3) : $itemKey;
+                $resolved = __('templates.settings.item_attributes.row', ['field' => $listLabel, 'position' => ':position', 'key' => $itemLabel], $locale);
+            } else {
+                $resolved = $label;
+            }
 
             $attributes[$path] = $resolved;
 
@@ -199,7 +211,54 @@ class UpdateTemplateSettingsRequest extends FormRequest
             }
         }
 
+        // 메뉴 칸 항목 — 보낸 트리를 따라 자리마다 「칸 N번째 항목(이름)의 키」 를 단다(하위 메뉴는 상위 항목 이름 아래 자리)
+        $schema = $this->schema();
+        foreach ($schema === null ? [] : $schema->flatFields() as $path => $field) {
+            if (($field['type'] ?? null) === 'menu' && is_array($items = Arr::get($this->all(), $path))) {
+                $this->menuItemAttributes($attributes, $path, null, $labels[$path] ?? $path, $items, $locale);
+            }
+        }
+
         return $attributes;
+    }
+
+    /**
+     * 메뉴 항목 자리마다 검증 오류 표시 이름을 답니다 (하위 메뉴까지).
+     *
+     * @param  array<string, string>  $attributes  표시 이름 목록 (채운다)
+     * @param  string  $path  이 단계 항목 목록의 경로 (`header.menu` · `header.menu.2.children`)
+     * @param  string|null  $parent  상위 항목 표시 이름 (최상위면 null)
+     * @param  string  $fieldLabel  칸 표시 이름 (「섹션 · 칸」)
+     * @param  array<int|string, mixed>  $items  이 단계 항목 목록 (요청 입력)
+     * @param  string  $locale  로케일
+     * @return void 반환값 없음
+     */
+    private function menuItemAttributes(array &$attributes, string $path, ?string $parent, string $fieldLabel, array $items, string $locale): void
+    {
+        $keys = (array) __('templates.settings.item_attributes.keys', [], $locale);
+
+        foreach ($items as $index => $item) {
+            if (! is_int($index) || ! is_array($item)) {
+                continue;
+            }
+
+            $name = LocalizedValue::pick($item['label'] ?? null, $locale);
+            $name = is_string($name) ? trim($name) : '';
+            $replace = ['field' => $fieldLabel, 'parent' => (string) $parent, 'position' => $index + 1, 'name' => $name];
+            $line = ($parent === null ? 'item' : 'child').($name !== '' ? '_named' : '');
+            $itemLabel = __('templates.settings.item_attributes.'.$line, $replace, $locale);
+            $at = $path.'.'.$index;
+
+            $attributes[$at] = $itemLabel;
+            foreach ($keys as $key => $keyLabel) {
+                $attributes[$at.'.'.$key] = __('templates.settings.item_attributes.key', ['item' => $itemLabel, 'key' => $keyLabel], $locale);
+            }
+            $attributes[$at.'.roles.*'] = $attributes[$at.'.roles'] ?? $itemLabel;
+
+            if (is_array($item['children'] ?? null)) {
+                $this->menuItemAttributes($attributes, $at.'.children', $itemLabel, $fieldLabel, $item['children'], $locale);
+            }
+        }
     }
 
     /**

@@ -153,6 +153,11 @@ API 가 그 자리에서 환불하므로 `true` 입니다. 예외는 `kginicis_j
 가 이 플러그인의 "등록" 축입니다 — 이 셋이 없으면 플러그인을 활성화해도 이커머스 화면에서
 KG 이니시스가 보이지 않습니다. 나머지는 전부 부가 UI(`Ensure*LayoutListener`)나 정합성
 검증(`ValidateCbtSettingsListener`)입니다.
+
+`RegisterEasyPayMethodsListener` 가 싣는 결제수단 이름·설명은 `LocalizedValue::translateAll()` 로
+지원 언어(`app.supported_locales` = 활성 언어팩) 전부를 채웁니다. ko·en 만 실으면 일본어 언어팩을 켠
+사이트의 일본어 화면에 번역이 있는데도 한국어 이름이 보입니다. 이커머스는 설정을 읽을 때마다 이 정의로
+`_cached_name`·`_cached_description` 을 새로 채우므로, 저장된 설정을 다시 저장하지 않아도 반영됩니다.
 <!-- @intent END -->
 
 ## 레이아웃 확장

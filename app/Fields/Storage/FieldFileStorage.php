@@ -97,6 +97,32 @@ class FieldFileStorage
     }
 
     /**
+     * 한 항목에 첨부를 올린 소유자 수를 셉니다 (DB 집계 — 첨부 모델을 올리지 않는다).
+     *
+     * 컬렉션은 항목 키로만 이어지므로, 같은 키를 다른 소유자 종류가 쓰더라도 섞이지 않게 소유자 클래스로 거른다.
+     *
+     * @param  FieldDefinition|string  $definition  항목 정의 또는 항목 키
+     * @param  string  $ownerClass  소유자 모델 클래스 (attachmentable_type)
+     * @return int 소유자 수
+     */
+    public function ownersCount(FieldDefinition|string $definition, string $ownerClass): int
+    {
+        return $this->attachments->countAttachmentablesByTypeAndCollection($ownerClass, self::collectionFor($definition));
+    }
+
+    /**
+     * 한 항목에 소유자들이 올린 첨부의 ID 를 반환합니다 (항목 삭제 때 지울 대상 — ID 만).
+     *
+     * @param  FieldDefinition|string  $definition  항목 정의 또는 항목 키
+     * @param  string  $ownerClass  소유자 모델 클래스 (attachmentable_type)
+     * @return array<int, int> 첨부 ID 목록
+     */
+    public function attachmentIds(FieldDefinition|string $definition, string $ownerClass): array
+    {
+        return $this->attachments->idsByAttachmentableTypeAndCollection($ownerClass, self::collectionFor($definition));
+    }
+
+    /**
      * 소유자에게 달린 항목 첨부 전부를 반환합니다 (탈퇴·삭제 때 지울 대상).
      *
      * @param  Model  $owner  소유자

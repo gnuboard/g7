@@ -9,7 +9,7 @@ import React from 'react';
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, cleanup, fireEvent, act } from '@testing-library/react';
 import { PopupPreview } from '../../components/composite/PopupPreview';
-import { installCore, setViewportMobile } from './core';
+import { installCore, recordInlineStyle, setViewportMobile } from './core';
 
 describe('PopupPreview', () => {
   afterEach(() => {
@@ -59,6 +59,7 @@ describe('PopupPreview', () => {
   });
 
   // @scenario surface=preview_mobile_shows_mobile_image
+  // @effects popup_image_matches_device
   it('모바일 미리보기는 관리자 창이 넓어도 모바일 이미지를 보인다', () => {
     setViewportMobile(false);
     installCore();
@@ -78,6 +79,7 @@ describe('PopupPreview', () => {
   });
 
   // @scenario surface=preview_body_height_from_frame
+  // @effects preview_sample_slides
   it('미리보기 본문 높이는 틀 높이(--g7pp-frame-h)로 잰다 — 100% 는 높이 없는 대화상자에서 풀리지 않아 0px 로 접힌다', async () => {
     installCore();
     window.matchMedia = vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }) as any;
@@ -94,6 +96,7 @@ describe('PopupPreview', () => {
   });
 
   // @scenario surface=preview_pager_overlays_body
+  // @effects preview_sample_slides, accessible_modal_carousel
   it('미리보기도 넘김 컨트롤을 본문 안 아래 가운데 캡슐로 그린다 — 별도 띠가 없고, 본문 높이 몫에도 띠가 빠져 있다', async () => {
     installCore();
     window.matchMedia = vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }) as any;
@@ -120,6 +123,7 @@ describe('PopupPreview', () => {
   });
 
   // @scenario surface=preview_follows_editor_body_written_without_render
+  // @effects popup_content_rendered_safely
   it('편집기가 화면을 다시 그리지 않고 쓴 본문도 다른 칸을 건드리지 않고 바로 미리보기에 보인다', () => {
     // CKEditor 5 는 타이핑마다 setLocal({ render: false }) 로 `_local.form.body_html` 만 바꾼다 — props 는 그대로이고 상태 구독만 알림을 받는다
     let global: Record<string, any> = { _local: { form: { content_type: 'html', body_html: { ko: '<p>Notice three</p>' } } } };
@@ -148,8 +152,11 @@ describe('PopupPreview', () => {
 
     write({ ko: '<p>Notice four</p>' });
     expect(body()).toBe('Notice four');
-    write({ ko: '<p>Notice five</p>' });
+    write({ ko: '<p>Notice five</p><script>window.__g7ppXss = 1</script><img src="x" onerror="window.__g7ppXss = 1">' });
     expect(body()).toBe('Notice five');
+    // 편집기가 바로 쓴 본문도 DOMPurify 를 거친다 — script·이벤트 속성이 남지 않는다
+    expect(container.querySelector('.g7pp-html script')).toBeNull();
+    expect(container.querySelector('.g7pp-html img')?.hasAttribute('onerror')).toBe(false);
 
     // 본문과 무관한 상태 변경은 본문을 되돌리지 않는다
     act(() => listeners.forEach((listener) => listener(global)));
@@ -164,15 +171,18 @@ describe('PopupPreview', () => {
   });
 
   // @scenario surface=preview_mounts_with_latest_editor_body
+  // @effects popup_content_rendered_safely
   it('새로 그려지는 미리보기(실제 크기 창)는 props 스냅숏이 옛 본문이어도 마운트할 때 상태의 최신 본문을 그린다 — 알림을 기다리지 않는다', () => {
     // 편집기는 이미 상태에만 최신 본문을 써 두었고(알림은 지나갔다), 창은 부모 `_local` 스냅숏(옛 본문)을 props 로 받는다
-    const global = { _local: { form: { content_type: 'html', body_html: { ko: '<p>Typed now</p>', en: '<p>Typed en</p>' } } } };
+    const global = { _local: { form: { content_type: 'html', body_html: { ko: '<p>Typed now</p><script>window.__g7ppXss = 1</script>', en: '<p>Typed en</p>' } } } };
     installCore({ state: { get: () => global, subscribe: () => () => {} } });
     window.matchMedia = vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }) as any;
     const stale = { content_type: 'html' as const, body_html: { ko: '<p>Saved before</p>' } };
 
     const { container, unmount } = render(<PopupPreview device="pc" locale="ko" defaultLocale="ko" form={stale} actualSize />);
     expect(container.querySelector('.g7pp-html')?.textContent).toBe('Typed now');
+    // 상태에서 바로 읽은 본문도 DOMPurify 를 거친다
+    expect(container.querySelector('.g7pp-html script')).toBeNull();
     unmount();
 
     // 미리보기 언어를 바꿔 열어도 같은 최신 본문의 그 언어
@@ -186,6 +196,7 @@ describe('PopupPreview', () => {
   });
 
   // @scenario surface=preview_actual_size_scrolls_to_dialog
+  // @effects preview_sample_slides, popup_window_placed_in_viewport
   it('실제 크기 틀이 칸보다 크면 열릴 때 팝업이 칸 가운데 오도록 스크롤한다(좁은 휴대폰에서 PC 실제 크기)', () => {
     window.matchMedia = vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }) as any;
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => { cb(0); return 0; });
@@ -213,6 +224,7 @@ describe('PopupPreview', () => {
   });
 
   // @scenario surface=preview_actual_size_frame
+  // @effects preview_sample_slides
   it('실제 크기로 보면 틀을 줄이지 않고(배율 1) 기기 크기 그대로 두며, 넘치는 부분은 감싼 칸이 스크롤한다', () => {
     window.matchMedia = vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }) as any;
     for (const [device, width, height] of [['pc', 1280, 800], ['mobile', 390, 780]] as const) {
@@ -233,17 +245,24 @@ describe('PopupPreview', () => {
   });
 
   // @scenario surface=preview_coerces_numeric_settings_from_form
+  // @effects preview_sample_slides, popup_window_placed_in_viewport
   it('표시 방식 입력칸의 문자열 숫자를 수로 바꾸고, 비었거나 숫자가 아니면 기본값을 쓴다(환경설정 입력 값을 그대로 넘겨도 된다)', () => {
     window.matchMedia = vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }) as any;
-    const { container } = render(<PopupPreview device="pc" settings={{ pc_position: 'coords', pc_left: '40' as any, pc_top: '' as any, pc_width: '600' as any, pc_height: 'x' as any }} />);
-    const dialog = container.querySelector('.g7pp-dialog') as HTMLElement;
+    // jsdom 27 은 단위가 섞인 min()·max() 를 인라인 스타일에서 버린다 — 레이어가 써 넣는 값을 본다
+    const written = recordInlineStyle(['left', 'top']);
+    try {
+      const { container } = render(<PopupPreview device="pc" settings={{ pc_position: 'coords', pc_left: '40' as any, pc_top: '' as any, pc_width: '600' as any, pc_height: 'x' as any }} />);
+      const dialog = container.querySelector('.g7pp-dialog') as HTMLElement;
 
-    expect(dialog.style.left).toContain('min(40px');
-    expect(dialog.style.left).toContain('600px');
-    // 빈 칸은 기본값(120) — 0 으로 읽지 않는다. 숫자가 아니면 기본 높이(520)
-    expect(dialog.style.top).toContain('min(120px');
-    expect(dialog.style.top).toContain('- 520px');
-    expect(dialog.style.width).toBe('600px');
+      expect(written.of(dialog, 'left')).toContain('min(40px');
+      expect(written.of(dialog, 'left')).toContain('600px');
+      // 빈 칸은 기본값(120) — 0 으로 읽지 않는다. 숫자가 아니면 기본 높이(520)
+      expect(written.of(dialog, 'top')).toContain('min(120px');
+      expect(written.of(dialog, 'top')).toContain('- 520px');
+      expect(dialog.style.width).toBe('600px');
+    } finally {
+      written.restore();
+    }
   });
 
   /** @effects preview_sample_slides */

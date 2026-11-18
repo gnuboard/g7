@@ -40,7 +40,7 @@
 ### GET /api/plugins/sirsoft-pay_nhnkcp/admin/vbank-notify-url
 <!-- @generated:start:api.plugins.sirsoft-pay_nhnkcp.admin.vbank.notify.url -->
 - **라우트명**: `api.plugins.sirsoft-pay_nhnkcp.admin.vbank.notify.url`
-- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.settings.read`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.settings.read|core.plugins.read,false` (OR — 플러그인 설정 화면 안내라 「플러그인 보기」로도 읽는다)
 
 **요청 파라미터**
 
@@ -87,7 +87,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.settings.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.settings.read`·`core.plugins.read`)이 모두 없는 경우 |
 
 <!-- @generated:end -->
 

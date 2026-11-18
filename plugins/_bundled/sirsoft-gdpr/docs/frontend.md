@@ -39,6 +39,11 @@
 - 받기 실패(null): 동의 여부를 모르므로 띄워 동의를 다시 받습니다.
 - 신원 불일치: 동의 상태의 `is_member` 가 지금 로그인 여부(`_global.currentUser?.uuid`)와 다르면 판정하지 않습니다 — 로그인 직후 앞 게스트의 값을 이어 쓰는 동안, 사용자 정보를 받는 동안 숨깁니다.
 
+설정 화면(`plugin_settings`)이 스스로 받는 소스는 모두 403 을 소스의 `error-handling` 에서 받아 끊습니다 — 기본 오류 알림을 띄우지 않습니다.
+설정(`gdprSettings`)은 `privacy.view` 또는 「플러그인 보기」(`core.plugins.read`)로 열려 보기 권한만 있으면 읽기 전용(`abilities.can_update=false`)으로 보이고, 그래도 403 이면 본문을 권한 오류 화면으로 바꿉니다. 연간 통지 건수·현재 방침 판·알림 발송 수단은 `suppress` 로
+그 칸만 숨기거나 비웁니다. 알림 발송 수단(`core.settings.read`)은 같은 권한의 알림 정의 소스가 남긴 `gdprNotificationDefinitionsError`
+로 「권한 없음」 안내를 그립니다. 새 자동 받기 소스를 더하면 403 처리도 함께 둡니다(`plugin-settings-read-only.test.ts` 가 전수 검사).
+
 화면 모양은 이 플러그인 CSS(`resources/css/main.css` → `dist/css/plugin.css`, 앞글자 `gdpr`)가 싣습니다. 레이아웃은
 접두 유틸리티(`gdpr:flex` 등)와 관리자 템플릿 의미 클래스의 플러그인 판본(`gdpr-row-stack`·`gdpr-kv-row`
 등, 생성 파일 `resources/css/g7-extension.generated.css`)만 씁니다 — 템플릿이 그 규칙을 만들었는지와 무관하게 보입니다.

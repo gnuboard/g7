@@ -251,7 +251,10 @@ export const UserInfo: React.FC<UserInfoProps> = ({
   // 명시적 props > author 추출값 순서로 결정
   const actualUserId = userId ?? author?.uuid;
   const actualIsGuest = isGuest || author?.is_guest || false;
-  const actualIsWithdrawn = isWithdrawn || author?.status === 'withdrawn';
+  // 회원 번호는 남았는데 계정이 지워진 작성자 — 서버가 `{uuid: null, is_guest: false}` 로 준다(관리자가 삭제한 회원의 글·댓글).
+  // uuid 가 없다고 비회원으로 보면 이름 빈 칸 + 「비회원」 배지가 된다 — 탈퇴한 사용자처럼 그린다.
+  const accountGone = !isGuest && author?.is_guest === false && !actualUserId;
+  const actualIsWithdrawn = isWithdrawn || author?.status === 'withdrawn' || accountGone;
 
   // 이름 우선순위: text > name > author.name
   // 탈퇴한 사용자는 "탈퇴한 사용자" 텍스트 표시
@@ -386,7 +389,7 @@ export const UserInfo: React.FC<UserInfoProps> = ({
 
   // 비회원인 경우 — 이름은 회원 이름과 같이 한 줄 … (최대 8rem), 「비회원」 배지는 줄지 않는다. 좁은 줄(320px 인기글)에서
   // 이름·배지가 「관리/자」「비회/원」 으로 글자 단위로 접혔다(7.1.1).
-  if (actualIsGuest || !actualUserId) {
+  if ((actualIsGuest || !actualUserId) && !accountGone) {
     return (
       <Div className={containerClass} id={id} {...editorAttrs}>
         <Div className="flex items-center gap-1.5 min-w-0 text-gray-500 dark:text-gray-400">

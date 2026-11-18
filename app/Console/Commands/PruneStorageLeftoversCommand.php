@@ -52,6 +52,7 @@ class PruneStorageLeftoversCommand extends Command
         'stale_swap_files' => 'common.console.storage_prune_leftovers.groups.stale_swap_files',
         'env_backups' => 'common.console.storage_prune_leftovers.groups.env_backups',
         'legacy_browser_log' => 'common.console.storage_prune_leftovers.groups.legacy_browser_log',
+        'carried_class_files' => 'common.console.storage_prune_leftovers.groups.carried_class_files',
     ];
 
     /**

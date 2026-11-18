@@ -58,9 +58,9 @@
                 <set-state target="global" :_local.selectedItems="[]"/>
                 <set-state target="$parent._local" :selectedItems="[]"/>
                 <close-modal/>
+                <set-state target="global" :mileageExtend="null"/>
                 <refetch-data-source dataSourceId="transactions"/>
                 <toast type="success" message="$t:sirsoft-ecommerce.admin.mileage_transactions.message.extend_success"/>
-                <set-state target="global" :mileageExtend="null"/>
               </success>
               <fail>
                 <set-state target="global" :mileageExtend.isSaving="false" mileageExtend.errors="{{error}}"/>

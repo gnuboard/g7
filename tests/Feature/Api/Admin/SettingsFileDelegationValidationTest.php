@@ -300,21 +300,40 @@ class SettingsFileDelegationValidationTest extends TestCase
      */
     public function test_probe_route_serves_the_probe_file(): void
     {
-        $response = $this->authRequest()->get('/api/admin/settings/file-delegation-probe');
-
-        $response->assertOk();
-        $this->assertStringStartsWith('application/json', (string) $response->headers->get('Content-Type'));
-        $this->assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
-
-        ob_start();
-        $response->baseResponse->sendContent();
-        $body = json_decode((string) ob_get_clean(), true);
-        $this->assertSame('g7-file-delegation', $body['data']['probe'] ?? null, '화면은 이 값으로 본문 수신을 판정한다');
-
         config(['core.file_serving.delegation' => FileDelegation::MODE_X_SENDFILE]);
         $delegated = $this->authRequest()->get('/api/admin/settings/file-delegation-probe');
 
         $delegated->assertOk();
+        $this->assertStringStartsWith('application/json', (string) $delegated->headers->get('Content-Type'));
+        $this->assertStringContainsString('no-store', (string) $delegated->headers->get('Cache-Control'));
         $this->assertSame(realpath(resource_path('probes/file-delegation-probe.json')), $delegated->headers->get('X-Sendfile'));
+        $this->assertSame('applied', $delegated->headers->get(FileDelegation::DIAGNOSTIC_HEADER));
+
+        // 웹서버가 위임 헤더를 소비하면 받는 본문 — 화면은 이 값으로 본문 수신을 판정한다
+        $probe = json_decode((string) file_get_contents(resource_path('probes/file-delegation-probe.json')), true);
+        $this->assertSame('g7-file-delegation', $probe['data']['probe'] ?? null);
+    }
+
+    /**
+     * 적용 중인 방식이 「사용 안 함」이면 프로브는 파일을 PHP 로 보내지 않고 「위임 없음」을 알린다 — 본문을 PHP 가 보내면
+     * 화면이 「웹서버가 파일을 보냈습니다」로 오판한다.
+     *
+     * @scenario case=probe_route
+     *
+     * @effects probe_reports_php_delivery_instead_of_success
+     *
+     * @return void 반환값 없음
+     */
+    public function test_probe_route_reports_inactive_delegation_instead_of_sending_the_probe_body(): void
+    {
+        config(['core.file_serving.delegation' => FileDelegation::MODE_NONE]);
+
+        $response = $this->authRequest()->get('/api/admin/settings/file-delegation-probe');
+
+        $response->assertOk();
+        $this->assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
+        $response->assertJsonPath('data.probe', null);
+        $response->assertJsonPath('data.delegated', false);
+        $response->assertJsonPath('data.reason', 'inactive');
     }
 }

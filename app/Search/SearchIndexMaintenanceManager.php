@@ -3,6 +3,7 @@
 namespace App\Search;
 
 use App\Extension\HookManager;
+use App\Search\Contracts\ProvidesPersistentStaleAdvice;
 use App\Search\Contracts\SearchIndexMaintainer;
 use App\Search\DTO\SearchIndexHealth;
 use App\Search\DTO\SearchIndexRepairReport;
@@ -208,10 +209,22 @@ class SearchIndexMaintenanceManager
         }
 
         $after = $maintainer->inspect($filters);
-        $remaining = array_values(array_map(
-            fn (SearchIndexHealth $h) => $h->identifier,
-            array_filter($after, fn (SearchIndexHealth $h) => $h->needsRebuild())
-        ));
+        $stillStale = array_values(array_filter($after, fn (SearchIndexHealth $h) => $h->needsRebuild()));
+        $remaining = array_map(fn (SearchIndexHealth $h) => $h->identifier, $stillStale);
+
+        // 재생성으로 고쳐지지 않는 손상(InnoDB FTS_DOC_ID 매핑 어긋남 등)은 엔진이 다음 조치를 안내한다.
+        // 실행하지 않는다 — 표 재구축은 오래 걸리고 쓰기를 잠그므로 운영자가 유지보수 시간에 직접 실행한다.
+        $advice = ($stillStale !== [] && $maintainer instanceof ProvidesPersistentStaleAdvice)
+            ? $maintainer->persistentStaleAdvice($stillStale)
+            : [];
+
+        if ($advice !== []) {
+            Log::warning('검색 인덱스 재생성 뒤에도 색인 누락 잔존 — 표 재구축 필요(자동 실행 안 함)', [
+                'driver' => $this->driver(),
+                'remaining' => $remaining,
+                'advice' => $advice,
+            ]);
+        }
 
         Log::info('검색 인덱스 재생성 수행', [
             'driver' => $this->driver(),
@@ -227,6 +240,7 @@ class SearchIndexMaintenanceManager
             repaired: $repaired,
             failed: $failed,
             remaining: $remaining,
+            advice: $advice,
         );
     }
 }

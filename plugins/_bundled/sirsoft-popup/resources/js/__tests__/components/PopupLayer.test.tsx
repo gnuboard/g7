@@ -12,7 +12,7 @@ import { PopupLayer, GDPR_BANNER_ID, SLIDE_MS, MAX_DOTS, MAX_DOTS_MOBILE } from 
 import { resetClosedThisPage } from '../../lib/popupVisibility';
 import { DISMISS_COOKIE } from '../../lib/dismissCookie';
 import type { PopupDisplaySettings, PublicPopup } from '../../lib/types';
-import { installCore, setViewportMobile } from './core';
+import { installCore, recordInlineStyle, setViewportMobile } from './core';
 
 /** 화면 폭·움직임 줄이기 흉내 상태 — 폭은 `window.innerWidth`(레이어가 엔진 훅 없이 읽는 값)로 흉내 낸다 */
 const media = {
@@ -145,6 +145,21 @@ describe('PopupLayer', () => {
 
     const { container: routed } = show([htmlPopup(1, '<p>a</p>', { page_scope: 'routes', routes: ['/shop'] })], {}, '/board');
     expect(routed.innerHTML).toBe('');
+  });
+
+  // @scenario surface=hidden_in_layout_editor
+  // @effects editor_canvas_not_covered
+  it('레이아웃 편집기 미리보기(편집 모드 — editorAttrs 를 받음)에서는 창과 배경을 그리지 않는다', () => {
+    const popups = [htmlPopup(1, '<p>a</p>')];
+    const { container } = render(
+      <PopupLayer popups={popups} settings={{ autoplay: false, dim_background: true }} path="/" editorAttrs={{ 'data-editor-id': 'x' }} />,
+    );
+    // 편집 모드의 클릭은 노드 선택이다 — 경로 없는 배경·창이 캔버스를 덮으면 그 아래 노드(푸터 등)를 고를 수 없다
+    expect(container.innerHTML).toBe('');
+
+    // 대조: 같은 팝업이 사이트 화면에서는 뜬다
+    const { container: site } = show(popups);
+    expect(site.querySelector('[role="dialog"]')).not.toBeNull();
   });
 
   // @scenario surface=filters_by_route_on_path_change
@@ -592,15 +607,21 @@ describe('PopupLayer', () => {
   // @scenario surface=pc_coords_layout_clamped_to_viewport
   // @effects accessible_modal_carousel, popup_window_placed_in_viewport
   it('PC 좌표는 left·top 을 쓰고, 창보다 크면 화면 안으로 끌어들이는 식이 붙는다', () => {
-    const { container } = show([htmlPopup(1)], { pc_position: 'coords', pc_left: 80, pc_top: 120, pc_width: 480, pc_height: 520 });
-    const dialog = container.querySelector('[role="dialog"]') as HTMLElement;
+    // jsdom 27 은 단위가 섞인 min()·max() 를 인라인 스타일에서 버린다 — 레이어가 써 넣는 값을 본다
+    const written = recordInlineStyle(['left', 'top']);
+    try {
+      const { container } = show([htmlPopup(1)], { pc_position: 'coords', pc_left: 80, pc_top: 120, pc_width: 480, pc_height: 520 });
+      const dialog = container.querySelector('[role="dialog"]') as HTMLElement;
 
-    expect(dialog.className).toContain('g7pp-dialog--pc-coords');
-    expect(dialog.getAttribute('style')).toContain('min(80px');
-    expect(dialog.getAttribute('style')).toContain('calc(100vw - 480px - 16px)');
-    expect(dialog.getAttribute('style')).toContain('min(120px');
-    // 화면 아래 몫은 하단 바·여백(76px)뿐 — 넘김 컨트롤 띠 몫이 남지 않는다
-    expect(dialog.getAttribute('style')).toContain('calc(100vh - 520px - 76px)');
+      expect(dialog.className).toContain('g7pp-dialog--pc-coords');
+      expect(written.of(dialog, 'left')).toContain('min(80px');
+      expect(written.of(dialog, 'left')).toContain('calc(100vw - 480px - 16px)');
+      expect(written.of(dialog, 'top')).toContain('min(120px');
+      // 화면 아래 몫은 하단 바·여백(76px)뿐 — 넘김 컨트롤 띠 몫이 남지 않는다
+      expect(written.of(dialog, 'top')).toContain('calc(100vh - 520px - 76px)');
+    } finally {
+      written.restore();
+    }
   });
 
   // @scenario surface=mobile_center_layout
@@ -1658,7 +1679,9 @@ describe('PopupLayer', () => {
       header.style.position = 'sticky';
       header.style.zIndex = '50';
       document.body.appendChild(header);
-      const headerRect = vi.spyOn(header, 'getBoundingClientRect').mockReturnValue({ top: 0, bottom: 114, left: 0, right: 1280, width: 1280, height: 114, x: 0, y: 0, toJSON: () => ({}) } as DOMRect);
+      // 헤더 자리는 그 요소에만 둔다 — 원형(HTMLElement.prototype)에 이미 spy 가 있으면 Vitest 4 의 vi.spyOn(header, …) 는
+      // 그 spy 를 그대로 돌려줘 mockReturnValue 가 창의 자리까지 덮는다
+      header.getBoundingClientRect = () => ({ top: 0, bottom: 114, left: 0, right: 1280, width: 1280, height: 114, x: 0, y: 0, toJSON: () => ({}) } as DOMRect);
       (document as any).elementsFromPoint = vi.fn(() => [header, document.body, document.documentElement]);
 
       try {
@@ -1682,7 +1705,6 @@ describe('PopupLayer', () => {
         const low = show([htmlPopup(1)]);
         expect(moved(low.container)).toEqual(['', '']);
       } finally {
-        headerRect.mockRestore();
         delete (document as any).elementsFromPoint;
         header.remove();
       }
@@ -1789,7 +1811,8 @@ describe('PopupLayer', () => {
       header.style.position = 'sticky';
       header.style.zIndex = '50';
       document.body.appendChild(header);
-      vi.spyOn(header, 'getBoundingClientRect').mockReturnValue({ top: 0, bottom: 114, left: 0, right: 1280, width: 1280, height: 114, x: 0, y: 0, toJSON: () => ({}) } as DOMRect);
+      // 헤더 요소에만 둔다 — vi.spyOn(header, …) 는 Vitest 4 에서 원형의 창 자리 spy 를 덮는다(위 헤더 시험 참조)
+      header.getBoundingClientRect = () => ({ top: 0, bottom: 114, left: 0, right: 1280, width: 1280, height: 114, x: 0, y: 0, toJSON: () => ({}) } as DOMRect);
       let headerShown = false;
       (document as any).elementsFromPoint = vi.fn(() => (headerShown ? [header, document.body] : [document.body]));
 

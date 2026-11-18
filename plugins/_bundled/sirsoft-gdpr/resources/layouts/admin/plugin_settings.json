@@ -71,6 +71,12 @@
                     "count": null
                 }
             },
+            "errorHandling": {
+                "comment": "권한(privacy.view)이 없으면 건수 줄만 숨는다(fallback count=null) — 오류 알림은 띄우지 않는다. 「플러그인 보기」만 있는 운영자는\n         설정을 읽기 전용으로 보고 이 줄만 빈다",
+                "403": {
+                    "handler": "suppress"
+                }
+            },
             "comment": "연간 통지 대상 건수 — 발송 판정과 같은 조건이며 꺼져 있어도 센다(켜기 전에 규모를 본다, #636). 저장 뒤 다시 받는다"
         },
         {
@@ -165,6 +171,12 @@
             "auto_fetch": true,
             "auth_required": true,
             "refetchOnMount": true,
+            "errorHandling": {
+                "comment": "권한(privacy.view)이 없으면 배지만 비운다 — 「플러그인 보기」만 있는 운영자는 설정을 읽기 전용으로 보고 오류 알림은 띄우지 않는다",
+                "403": {
+                    "handler": "suppress"
+                }
+            },
             "comment": "현재 유효한 정책 버전 — 화면 상단 배지의 근거"
         },
         {
@@ -200,6 +212,12 @@
             "fallback": {
                 "data": {
                     "channels": []
+                }
+            },
+            "errorHandling": {
+                "comment": "권한(core.settings.read)이 없으면 채널 목록만 비운다 — 같은 권한의 알림 정의 소스가 그 칸에 「권한 없음」 안내를 보이므로\n         여기서 오류 알림을 또 띄우지 않는다",
+                "403": {
+                    "handler": "suppress"
                 }
             },
             "comment": "알림 정의·채널 — 코어 「알림 정의」 화면은 extension_identifier=core 로 코어 정의만 받는다.\n       확장이 들인 정의는 그 확장의 설정 화면이 보여 준다는 것이 저장소 규약이라(형제: 게시판·\n       이커머스·환율) 여기서 자기 정의만 받아 그린다."
@@ -2061,7 +2079,7 @@
                                                 "id": "blocked_domains_off_hint",
                                                 "type": "basic",
                                                 "name": "Div",
-                                                "if": "{{gdprSettings !== undefined && !_local.form?.banner_enabled}}",
+                                                "if": "{{gdprSettings !== undefined && !(_local.form?.banner_enabled ?? gdprSettings?.data?.settings?.banner_enabled)}}",
                                                 "props": {
                                                     "className": "gdpr:bg-blue-50 gdpr:dark:bg-gray-900 gdpr:border gdpr:border-gray-200 gdpr:dark:border-gray-700 gdpr:border-l-4 gdpr-accent-info gdpr:rounded-lg gdpr:p-4 gdpr-flex-center gdpr:gap-2"
                                                 },

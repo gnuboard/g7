@@ -83,6 +83,9 @@ class LanguagePackController extends AdminBaseController
 
             return $this->success('language_packs.fetch_success', $payload);
         } catch (\Throwable $e) {
+            // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
+            report($e);
+
             return $this->error('language_packs.fetch_failed', 500, $e);
         }
     }
@@ -144,6 +147,9 @@ class LanguagePackController extends AdminBaseController
             // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
             return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
+            // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
+            report($e);
+
             return $this->error('language_packs.install_failed', 500, $e);
         }
     }
@@ -183,6 +189,9 @@ class LanguagePackController extends AdminBaseController
             // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
             return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
+            // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
+            report($e);
+
             return $this->error('language_packs.install_failed', 500, $e);
         }
     }
@@ -217,6 +226,9 @@ class LanguagePackController extends AdminBaseController
             // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
             return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
+            // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
+            report($e);
+
             return $this->error('language_packs.install_failed', 500, $e);
         }
     }
@@ -258,6 +270,9 @@ class LanguagePackController extends AdminBaseController
             // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
             return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
+            // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
+            report($e);
+
             return $this->error('language_packs.install_failed', 500, $e);
         }
     }
@@ -299,6 +314,9 @@ class LanguagePackController extends AdminBaseController
             // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
             return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
+            // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
+            report($e);
+
             return $this->error('language_packs.activate_failed', 500, $e);
         }
     }
@@ -346,6 +364,9 @@ class LanguagePackController extends AdminBaseController
             // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
             return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
+            // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
+            report($e);
+
             return $this->error('language_packs.deactivate_failed', 500, $e);
         }
     }
@@ -376,6 +397,9 @@ class LanguagePackController extends AdminBaseController
             // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
             return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
+            // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
+            report($e);
+
             return $this->error('language_packs.uninstall_failed', 500, $e);
         }
     }
@@ -392,6 +416,9 @@ class LanguagePackController extends AdminBaseController
 
             return $this->success('language_packs.check_updates_success', $result);
         } catch (\Throwable $e) {
+            // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
+            report($e);
+
             return $this->error('language_packs.check_updates_failed', 500, $e);
         }
     }
@@ -427,6 +454,9 @@ class LanguagePackController extends AdminBaseController
             // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
             return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
+            // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
+            report($e);
+
             return $this->error('language_packs.update_failed', 500, $e);
         }
     }
@@ -445,6 +475,9 @@ class LanguagePackController extends AdminBaseController
         } catch (\Throwable $e) {
             // 예외 원문을 응답에 싣지 않는다 — 디버그 노출은 ResponseHelper 가
             // app.debug 에서만 Throwable 을 펼치는 기존 메커니즘에 위임한다.
+            // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
+            report($e);
+
             return $this->error('language_packs.refresh_cache_failed', 500, $e);
         }
     }
@@ -496,6 +529,9 @@ class LanguagePackController extends AdminBaseController
                 'has_changelog' => $entries !== [] || $rawContent !== '',
             ]);
         } catch (\Throwable $e) {
+            // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
+            report($e);
+
             return $this->error('language_packs.fetch_failed', 500, $e);
         }
     }

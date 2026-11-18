@@ -153,11 +153,19 @@
                                 ]
                             },
                             {
-                                "comment": "설정 저장 — 먼저 고른 파일을 올리라는 신호를 보내고(칸마다 업로더가 받아 올린 뒤 폼 값을 바꾼다, 신호는 업로더 전부를 기다린다)\n               지금 탭 섹션의 폼 값만 보낸다. 성공하면 설정을 다시 받아 서버가 정규화한 값으로 화면을 맞춘다",
+                                "comment": "설정 저장 — 먼저 고른 파일을 올리라는 신호를 보내고(칸마다 업로더가 받아 올린 뒤 폼 값을 바꾼다, 신호는 업로더 전부를 기다린다)\n               지금 탭 섹션의 폼 값만 보낸다. 성공하면 설정을 다시 받아 서버가 정규화한 값으로 화면을 맞춘다.\n               업로더는 신호의 결과로 실패 수(`{ failedCount, message? }`)를 돌려준다 — 하나라도 실패하면 PUT 을 보내지 않고 실패 문구를 남긴다\n               (실패한 파일 없이 「저장했습니다」 로 덮지 않는다). 지난 결과 안내는 올리기 전에 걷어 올리기 실패 문구를 지우지 않는다",
                                 "type": "custom",
                                 "event": "onSave",
                                 "handler": "sequence",
                                 "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "errors": null,
+                                            "saveStatus": null
+                                        }
+                                    },
                                     {
                                         "handler": "emitEvent",
                                         "params": {
@@ -168,14 +176,29 @@
                                         "handler": "setState",
                                         "params": {
                                             "target": "local",
-                                            "isSaving": true,
-                                            "errors": null,
-                                            "saveStatus": null
+                                            "uploadFailedCount": "{{[].concat(_local._eventResult?.data ?? []).reduce((n, r) => n + (r?.failedCount ?? 0), 0)}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "if": "{{(_local.uploadFailedCount ?? 0) > 0}}",
+                                        "params": {
+                                            "target": "local",
+                                            "saveStatus": "{{ { type: 'error', message: [].concat(_local._eventResult?.data ?? []).find(r => (r?.failedCount ?? 0) > 0)?.message ?? $t('core.template_settings.upload_failed_save_stopped') } }}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "if": "{{(_local.uploadFailedCount ?? 0) === 0}}",
+                                        "params": {
+                                            "target": "local",
+                                            "isSaving": true
                                         }
                                     },
                                     {
                                         "handler": "apiCall",
                                         "target": "/api/admin/templates/{{route.identifier}}/settings",
+                                        "if": "{{(_local.uploadFailedCount ?? 0) === 0}}",
                                         "auth_required": true,
                                         "params": {
                                             "method": "PUT",

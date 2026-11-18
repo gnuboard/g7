@@ -162,6 +162,7 @@ return [
                 'stale_swap_files' => '拡張同期ロックの残骸',
                 'env_backups' => 'finalize が残した .env 保存コピー',
                 'legacy_browser_log' => 'レガシーブラウザログ',
+                'carried_class_files' => '拡張機能の置き換えで残った旧クラスファイル',
             ],
             'group_count' => ':label: :count 件',
             'dry_run_total' => '削除対象の合計 :count 件 (dry-run — 実際の削除なし)',

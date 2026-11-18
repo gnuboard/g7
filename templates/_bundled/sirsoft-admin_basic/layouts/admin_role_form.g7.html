@@ -245,7 +245,7 @@
         <div data-ref="permissions_section" class="admin-card">
           <h3 class="card-title card-title-aside">
             <span>$t:admin.roles.form.permissions_section</span>
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">{{(_local.form.permission_values ?? []).length}}$t:admin.roles.form.permissions_selected_suffix</span>
+            <span data-ref="permissions_selected_count" data-blur-until-loaded="{{!!query?.clone_from &amp;&amp; !route?.id &amp;&amp; clone_source === undefined}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">{{(_local.form.permission_values ?? []).length}}$t:admin.roles.form.permissions_selected_suffix</span>
           </h3>
           <div class="card-description">$t:admin.roles.form.permissions_hint</div>
           <tab-navigation data-type="composite" data-ref="permission_tabs" tabs="{{(permissions?.data?.data?.types ?? []).map(type => ({ id: type, label: permissions?.data?.data?.permissions?.[type]?.label ?? type, iconName: permissions?.data?.data?.permissions?.[type]?.icon ?? 'shield' }))}}" activeTabId="{{_global.activePermissionTab || permissions?.data?.data?.default_type || 'admin'}}" variant="underline">

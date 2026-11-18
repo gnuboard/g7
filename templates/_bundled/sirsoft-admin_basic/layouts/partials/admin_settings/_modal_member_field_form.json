@@ -174,7 +174,7 @@
                 "if": "{{_global.member_field_form_modal?.confirmClose !== true && _global.member_field_form_modal?.step !== 'type' && _global.member_field_form_modal?.readOnly !== true}}",
                 "actions": [
                     {
-                        "comment": "저장. 추가는 POST, 수정은 PUT 으로 주소와 메서드가 함께 갈린다. 본문은 항목의 출처에 맞는 값만 싣는다(선언 항목은 이름, 안내, 공통 옵션만.\n               운영자 항목은 유형별 옵션, 선택지, 표시 이름 사용, 본인인증 연결까지. 추가일 때만 키와 유형). 지우기로 표시한 선택지는 빼고 보낸다.\n               성공하면 창을 닫고 표를 다시 받은 뒤 창 상태를 비운다. 다른 관리자가 먼저 바꿨으면(409) 저장하지 않고 알린 뒤 표를 다시 받고,\n               창의 버전을 비운다(다음 저장은 다시 받은 항목 정의의 버전을 싣는다). 그 밖의 실패는 오류 응답을 통째로 담아 상단 상자와 각 칸 아래가 같은 값에서 읽는다.",
+                        "comment": "저장. 추가는 POST, 수정은 PUT 으로 주소와 메서드가 함께 갈린다. 본문은 항목의 출처에 맞는 값만 싣는다(선언 항목은 이름, 안내, 공통 옵션만.\n               운영자 항목은 유형별 옵션, 선택지, 표시 이름 사용, 본인인증 연결까지. 추가일 때만 키와 유형). 지우기로 표시한 선택지는 빼고 보낸다.\n               성공하면 창을 닫고 곧바로 창 상태를 비운 뒤 표를 다시 받는다(다시 받기는 응답을 기다리므로 그 뒤에 비우면 그동안 다시 연 창을 지운다). 다시 받기 전에 응답의 새 정의 버전을 표 데이터 소스에 먼저 싣는다 — 그동안 연 다음 창이 옛 버전을 복사해 거짓 409 가 나지 않게. 다른 관리자가 먼저 바꿨으면(409) 저장하지 않고 알린 뒤 표를 다시 받고,\n               창의 버전을 비운다(다음 저장은 다시 받은 항목 정의의 버전을 싣는다). 그 밖의 실패는 오류 응답을 통째로 담아 상단 상자와 각 칸 아래가 같은 값에서 읽는다.",
                         "type": "click",
                         "handler": "sequence",
                         "actions": [
@@ -207,16 +207,23 @@
                                         "target": "member_field_form_modal"
                                     },
                                     {
-                                        "handler": "refetchDataSource",
-                                        "params": {
-                                            "dataSourceId": "memberFieldDefs"
-                                        }
-                                    },
-                                    {
                                         "handler": "setState",
                                         "params": {
                                             "target": "global",
                                             "member_field_form_modal": null
+                                        }
+                                    },
+                                    {
+                                        "handler": "updateDataSource",
+                                        "params": {
+                                            "dataSourceId": "memberFieldDefs",
+                                            "data": "{{ { ...(memberFieldDefs ?? { }), data: { ...(memberFieldDefs?.data ?? { }), fields_version: response?.data?.fields_version ?? memberFieldDefs?.data?.fields_version ?? null } } }}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "memberFieldDefs"
                                         }
                                     }
                                 ],
@@ -445,7 +452,7 @@
                                                             "props": {
                                                                 "className": "inline-block whitespace-nowrap px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900 text-warning-soft"
                                                             },
-                                                            "text": "{{t.owner}}"
+                                                            "text": "{{t.owner_label ?? t.owner}}"
                                                         },
                                                         {
                                                             "type": "basic",

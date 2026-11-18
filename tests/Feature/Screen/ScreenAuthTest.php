@@ -523,24 +523,8 @@ PHP);
             'is_super' => in_array('admin', $roles, true),
         ]);
 
-        // 회원 역할: 로그아웃·갱신 권한 (시험 DB 에는 시드 역할이 없다)
-        $permissionIds = [];
-        foreach (['core.auth.logout', 'core.auth.refresh', 'core.auth.user'] as $identifier) {
-            $permissionIds[] = Permission::firstOrCreate(['identifier' => $identifier], [
-                'name' => json_encode(['ko' => $identifier, 'en' => $identifier]),
-                'description' => json_encode(['ko' => $identifier, 'en' => $identifier]),
-                'extension_type' => 'core',
-                'extension_identifier' => 'core',
-                'type' => 'user',
-            ])->id;
-        }
-        $memberRole = Role::create([
-            'identifier' => 'screen_test_'.uniqid(),
-            'name' => json_encode(['ko' => '시험', 'en' => 'Test']),
-            'is_active' => true,
-        ]);
-        $memberRole->permissions()->sync($permissionIds);
-        $user->roles()->attach($memberRole->id, ['assigned_at' => now()]);
+        // 본인 토큰 갱신·조회·로그아웃(/api/user/auth/*)은 로그인만 요구한다 — 역할 권한을 따로 주지 않는다.
+        // 예전에는 코어가 선언한 적 없는 core.auth.* 권한을 여기서 만들어 줘 운영과 달리 통과했다.
 
         if (in_array('admin', $roles, true)) {
             // 관리자 판정(User::isAdmin)은 관리자 유형 권한 보유다

@@ -21,7 +21,7 @@ description: |
 #   contract — 등록 데이터가 지키는 계약 갈래. 간편결제 5종은 같은 등록 코드를 지나므로 수단별로
 #              곱하지 않고, 각 계약을 5종 전체에 대해 단언한다.
 axes:
-  contract: [catalog_position, hook_wiring, method_defaults, display_labels]
+  contract: [catalog_position, hook_wiring, method_defaults, display_labels, payment_label_snapshot]
 
 effects:
   - easy_pay_methods_follow_phone_and_other_pg_easy_pay    # 휴대폰·타 PG 간편결제 뒤, 포인트 앞
@@ -29,6 +29,10 @@ effects:
   - easy_pay_methods_locked_to_own_pg                      # pg_provider=nhnkcp, pg_locked, needs_pg, 환불수단 pg
   - easy_pay_methods_installed_inactive_with_payment_complete_timing # 설치 직후 비활성, 차감 시점 결제 완료
   - easy_pay_labels_match_language_pack                    # 이름·설명이 언어팩 문구와 일치
+  - easy_pay_labels_cover_supported_locales              # 이름·설명이 ko·en 고정이 아니라 지원 언어(활성 언어팩) 전부로 채워짐
+  - easy_pay_payment_label_snapshots_all_locales       # 결제 meta 에 남기는 간편결제 라벨을 지원 언어 전부로 저장(이후 저장분부터)
+  - stored_easy_pay_label_kept_as_is                   # 이미 저장된 ko·en 라벨은 고치지 않고 그대로 표시(현재 언어 → 대체 언어)
 
 test_files:
   - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Listeners/RegisterEasyPayMethodsListenerTest.php
+  - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Unit/Concerns/ResolvesEasyPayDisplayTest.php

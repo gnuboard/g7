@@ -34,16 +34,17 @@
               <success>
                 <toast type="success" message="$t:sirsoft-ecommerce.admin.settings.checkout_fields.delete.success"/>
                 <close-modal target="checkout_field_delete_modal"/>
-                <refetch-data-source dataSourceId="checkoutFieldDefs"/>
                 <set-state target="global" :checkout_field_delete_modal="null"/>
+                <update-data-source dataSourceId="checkoutFieldDefs" data="{{ { ...(checkoutFieldDefs ?? { }), data: { ...(checkoutFieldDefs?.data ?? { }), fields_version: response?.data?.fields_version ?? checkoutFieldDefs?.data?.fields_version ?? null } } }}"/>
+                <refetch-data-source dataSourceId="checkoutFieldDefs"/>
               </success>
               <fail>
                 <conditions>
                   <when if="{{error.error_code === 'fields_changed'}}">
                     <toast type="error" message="$t:sirsoft-ecommerce.admin.settings.checkout_fields.changed_by_other"/>
                     <close-modal target="checkout_field_delete_modal"/>
-                    <refetch-data-source dataSourceId="checkoutFieldDefs"/>
                     <set-state target="global" :checkout_field_delete_modal="null"/>
+                    <refetch-data-source dataSourceId="checkoutFieldDefs"/>
                   </when>
                   <else>
                     <set-state target="global" :checkout_field_delete_modal.isDeleting="false"/>

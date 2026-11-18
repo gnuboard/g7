@@ -811,6 +811,8 @@
       "protected_badge": "🔒 Protected",
       "check_updates_done": "Update check complete ({{count}} available).",
       "check_updates_none": "All language packs are up to date.",
+      "check_updates_github_failed": "Could not check GitHub for the latest version of {{count}} language packs ({{names}}) — they were not marked as up to date and their latest version info was left unchanged. Reason: {{reason}}",
+      "check_updates_github_failed_one": "Could not check GitHub for the latest version of {{count}} language pack ({{names}}) — it was not marked as up to date and its latest version info was left unchanged. Reason: {{reason}}",
       "check_updates_failed": "Failed to check for updates.",
       "activate_success": "Language pack activated.",
       "deactivate_success": "Language pack deactivated.",
@@ -2525,8 +2527,8 @@
           "level_strict": "Strict — Basic plus block style attributes on tags",
           "level_desc": "Basic keeps most screens working as they are. Strict also blocks style attributes that third-party libraries add themselves, so more screens break.",
           "enforce_warning": "Check storage/logs/csp-*.log with 'Report only' first and switch to Enforce only when there are no violations.",
-          "known_issues_basic": "Enforcing breaks these screens: tag inputs and multi-selects (including the allowed-host input on this card) — the field layout collapses and screen-reader-only helper text becomes visible; the layout code editor — syntax colors and the background theme are lost; the color picker in the post editor (CKEditor) — the free-form picker collapses (color swatches and the hex input still work). If your site uses these screens, keep this on 'Report only'.",
-          "known_issues_strict": "Enforcing breaks these screens: tag inputs and multi-selects (including the allowed-host input on this card) — the field layout collapses and screen-reader-only helper text becomes visible; the layout code editor — syntax colors, the background theme and line highlights are lost; the color picker in the post editor (CKEditor) — the free-form picker collapses (color swatches and the hex input still work). If your site uses these screens, keep this on 'Report only'.",
+          "known_issues_basic": "Enforcing breaks these screens: the layout code editor — syntax colors and the background theme are lost; the color picker in the post editor (CKEditor) — the free-form picker collapses (color swatches and the hex input still work). If your site uses these screens, keep this on 'Report only'.",
+          "known_issues_strict": "Enforcing breaks these screens: the layout code editor — syntax colors, the background theme and line highlights are lost; the color picker in the post editor (CKEditor) — the free-form picker collapses (color swatches and the hex input still work). If your site uses these screens, keep this on 'Report only'.",
           "override_notice": "G7_CSP_STYLE_MODE={{mode}} in .env takes precedence over this setting. To change it, edit .env and run php artisan config:clear.",
           "extra_hosts": "Additional allowed style hosts (press Enter after each)",
           "extra_hosts_placeholder": "fonts.example.com",
@@ -2945,6 +2947,8 @@
         "probe_button": "Check actual delivery",
         "probe_ok": "The web server sent the file. Delegation is working.",
         "probe_failed": "The file body was not received. Check the web server configuration or set the delegation method back to \"Disabled\".",
+        "probe_inactive": "The applied method is \"Disabled\", so PHP sends the file, not the web server. Save a delegation method and check again.",
+        "probe_skipped": "Delegation is on, but this file is outside the delegation path, so PHP sent it. Check that the install location (including symbolic links) matches the delegation mapping.",
         "recover_hint": "If screen assets or images stop loading after turning this on, save the delegation method as \"Disabled\". If you cannot reach the admin screen, change file_delegation to none in storage/app/settings/drivers.json on the server."
       },
       "cache": {
@@ -2960,6 +2964,7 @@
         "redis_port": "Redis Port",
         "redis_password": "Redis Password",
         "redis_database": "Redis Database",
+        "redis_shared_hint": "Shown because sessions or queues use Redis. Cache, sessions and queues share these connection settings.",
         "memcached_host": "Memcached Host",
         "memcached_port": "Memcached Port"
       },
@@ -2974,7 +2979,7 @@
         },
         "lifetime": "Session Lifetime",
         "minutes": "minutes",
-        "redis_shared_notice": "Uses Redis settings from cache when Redis is selected."
+        "redis_shared_notice": "When Redis is selected, the Redis connection settings in the cache card are shared. The settings and the connection test are in the cache card."
       },
       "queue": {
         "title": "Queue",
@@ -2986,7 +2991,7 @@
           "redis": "Redis"
         },
         "worker_notice": "Queue worker must be running when using database or redis.",
-        "redis_shared_notice": "Uses Redis settings from cache when Redis is selected.",
+        "redis_shared_notice": "When Redis is selected, the Redis connection settings in the cache card are shared. The settings and the connection test are in the cache card.",
         "worker": {
           "title": "Queue workers",
           "not_required": "The sync driver runs jobs inside the request, so no queue worker is needed.",
@@ -3597,7 +3602,7 @@
       "view_log": "View log",
       "hide_log": "Hide log",
       "resume": "Continue",
-      "completed_desc": "The current version is {{version}}.",
+      "completed_desc": "The update to {{version}} has finished.",
       "failed_title": "Failed during {{step}}. {{detail}}",
       "rolled_back": "Restored from the backup. The site is working normally.",
       "rolled_back_not_applied": "Stopped before any file was changed. The site is untouched.",

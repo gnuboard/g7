@@ -9,11 +9,12 @@ description: |
 coverage_strategy: pairwise
 
 axes:
-  case: [no_policy, before_submit_no_token, before_submit_mail_token, before_submit_non_mail_token, before_submit_token_past_grace, before_submit_target_mismatch, after_create_pending, after_create_mail_verify, after_create_generic_enforcer, repository_mark_twice, before_submit_mark_fails]
+  case: [no_policy, before_submit_no_token, before_submit_mail_token, before_submit_non_mail_token, before_submit_token_past_grace, before_submit_target_mismatch, after_create_pending, after_create_mail_verify, after_create_generic_enforcer, repository_mark_twice, before_submit_mark_fails, before_submit_input_errors_first]
 
 effects:
   - signup_without_policy_active_email_unverified
   - signup_before_submit_requires_token
+  - signup_before_submit_reports_input_errors_before_verification
   - signup_before_submit_mail_token_activates_and_marks_email
   - signup_email_marked_verified_only_for_mail_channel
   - signup_token_bypasses_grace_window

@@ -255,8 +255,9 @@ class PluginManager implements PluginManagerInterface
                 if (! class_exists($pluginClass, false)) {
                     // 오토로드 캐시에 없는 폴더(고아 사본)는 자기 PSR-4 를 먼저 등록한다 — 진입 클래스가 자기 소스를 상속하면 부팅이 죽는다 (#159)
                     ExtensionManager::registerAutoloadIfMissing($directory, 'plugins:'.$pluginName);
+                    $hashBeforeLoad = md5_file($pluginFile) ?: null;
                     require_once $pluginFile;
-                    $this->rememberLoadedExtensionClassFile($pluginClass, $pluginFile);
+                    $this->rememberLoadedExtensionClassFile($pluginClass, $pluginFile, $hashBeforeLoad);
                 }
 
                 if (class_exists($pluginClass)) {
@@ -395,6 +396,28 @@ class PluginManager implements PluginManagerInterface
     }
 
     /**
+     * 이 프로세스가 쓴 진입 정의가 지금 디스크와 다른 플러그인 식별자 목록을 돌려줍니다.
+     *
+     * 훅 캐시 쓰기 직전에 본다 — 확장 파일 교체 중에 부팅해 옛 진입 클래스를 쥔 프로세스(요청 끝 재생성 등)가 새 선언으로 이미
+     * 구운 캐시를 옛 선언(지운 리스너 포함)으로 덮지 않게 한다.
+     *
+     * @return array<int, string> 옛 정의를 쓴 식별자
+     */
+    public function staleDeclarationIdentifiers(): array
+    {
+        $stale = [];
+        foreach (array_keys($this->plugins) as $identifier) {
+            $class = "Plugins\\".$this->convertDirectoryToNamespace((string) $identifier)."\\Plugin";
+            $path = $this->pluginsPath.DIRECTORY_SEPARATOR.$identifier.DIRECTORY_SEPARATOR.'plugin.php';
+            if (! $this->usedDeclarationIsCurrent($class, $path)) {
+                $stale[] = (string) $identifier;
+            }
+        }
+
+        return $stale;
+    }
+
+    /**
      * 활성화된 플러그인들만 반환합니다.
      *
      * @return array 활성화된 플러그인 배열
@@ -503,7 +526,7 @@ class PluginManager implements PluginManagerInterface
         $onProgress?->__invoke('copy', __('extensions.progress.copy_files'));
         // 무결성 기록용 원본 판별 — `_bundled` 는 번들, `_pending` 은 ZIP·GitHub 설치 서비스가 검증 결과를 적는다 (7.2.0)
         $integritySource = ExtensionIntegrityRecorder::installSourceOf($this->pluginsPath, $pluginName, $force || ! File::isDirectory($this->pluginsPath.DIRECTORY_SEPARATOR.$pluginName));
-        $this->copyFromPendingOrBundled($pluginName, $onProgress, $force);
+        $forceCarriedClassFiles = $this->copyFromPendingOrBundled($pluginName, $onProgress, $force);
 
         // 설치 시점에는 autoload-extensions.php 가 아직 갱신되지 않았다. plugin.php 의
         // getConfigValues()/getSettingsSchema() 등이 자기 src/ 클래스를 호출하면 그 클래스가
@@ -724,6 +747,9 @@ class PluginManager implements PluginManagerInterface
             // Phase 5: 오토로드 병합 실행 (트랜잭션 외부)
             $onProgress?->__invoke('autoload', __('extensions.progress.autoload'));
             $this->extensionManager->updateComposerAutoload();
+
+            // 같은 판 강제 재복사가 남겨 둔 옛 클래스 파일 정리 — 오토로드·훅 캐시를 새 판 기준으로 다시 구운 뒤
+            $this->extensionManager->finishCarriedOverClassFiles($this->pluginsPath.DIRECTORY_SEPARATOR.$pluginName, $forceCarriedClassFiles);
 
             // Phase 6: 플러그인 상태 캐시 무효화
             self::invalidatePluginStatusCache();
@@ -4446,33 +4472,37 @@ class PluginManager implements PluginManagerInterface
      * @param  string  $pluginName  플러그인명 (identifier)
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
      * @param  bool  $force  true 면 활성 디렉토리가 이미 있어도 원본으로 덮어쓴다
-     * @return void 반환값 없음
+     * @return array<int, string> 강제 재복사가 남긴 옛 클래스 파일 (훅 캐시 재생성 뒤 정리)
      */
-    protected function copyFromPendingOrBundled(string $pluginName, ?\Closure $onProgress = null, bool $force = false): void
+    protected function copyFromPendingOrBundled(string $pluginName, ?\Closure $onProgress = null, bool $force = false): array
     {
         $activePath = $this->pluginsPath.DIRECTORY_SEPARATOR.$pluginName;
 
         // force=false 시 활성 디렉토리 존재하면 스킵.
         // force=true 시 불완전 활성 디렉토리(manifest 누락 등)를 원본으로 덮어씀.
         if (! $force && File::isDirectory($activePath)) {
-            return;
+            return [];
         }
 
         // _pending 우선 확인
         if (ExtensionPendingHelper::isPending($this->pluginsPath, $pluginName)) {
             $sourcePath = ExtensionPendingHelper::getPendingPath($this->pluginsPath, $pluginName);
-            ExtensionPendingHelper::copyToActive($sourcePath, $activePath, $onProgress);
+            $carried = ExtensionPendingHelper::copyToActive($sourcePath, $activePath, $onProgress, retainRemovedClassFiles: $force);
             Log::info('플러그인을 _pending에서 활성 디렉토리로 복사', ['plugin' => $pluginName, 'force' => $force]);
 
-            return;
+            return $carried;
         }
 
         // _bundled 확인
         if (ExtensionPendingHelper::isBundled($this->pluginsPath, $pluginName)) {
             $sourcePath = ExtensionPendingHelper::getBundledPath($this->pluginsPath, $pluginName);
-            ExtensionPendingHelper::copyToActive($sourcePath, $activePath, $onProgress);
+            $carried = ExtensionPendingHelper::copyToActive($sourcePath, $activePath, $onProgress, retainRemovedClassFiles: $force);
             Log::info('플러그인을 _bundled에서 활성 디렉토리로 복사', ['plugin' => $pluginName, 'force' => $force]);
+
+            return $carried;
         }
+
+        return [];
     }
 
     /**
@@ -4534,8 +4564,9 @@ class PluginManager implements PluginManagerInterface
                 $this->rememberFreshExtensionInstance($pluginClass, $pluginFile, $plugin);
             }
         } else {
+            $hashBeforeLoad = md5_file($pluginFile) ?: null;
             require_once $pluginFile;
-            $this->rememberLoadedExtensionClassFile($pluginClass, $pluginFile);
+            $this->rememberLoadedExtensionClassFile($pluginClass, $pluginFile, $hashBeforeLoad);
             if (class_exists($pluginClass)) {
                 $plugin = new $pluginClass;
             }
@@ -5256,6 +5287,8 @@ class PluginManager implements PluginManagerInterface
         $recordedColumns = [];
         $filesRestored = false;
         $journal = null;
+        // 새 판에 없는 옛 클래스 파일 — 교체 전에 새 트리에 싣고 훅 캐시 재생성 뒤 지운다
+        $carriedClassFiles = [];
 
         try {
             // 1. 백업 생성
@@ -5344,6 +5377,9 @@ class PluginManager implements PluginManagerInterface
                 if ($stagingPath) {
                     $targetPath = $this->pluginsPath.DIRECTORY_SEPARATOR.$identifier;
                     $journal->markFilesTouched();
+                    // 새 판이 지운 옛 클래스 파일(훅 리스너 등)을 새 트리에 함께 실어 교체한다 — 교체~훅 캐시 재생성 사이 요청이 옛 훅 캐시·
+                    // 옛 소스 classmap 으로 그 파일을 include 해 500 이 나지 않게. 훅 캐시를 다시 구운 뒤 지운다.
+                    $carriedClassFiles = ExtensionPendingHelper::carryOverRemovedClassFiles($targetPath, $stagingPath);
                     ExtensionPendingHelper::copyToActive($stagingPath, $targetPath, $onProgress);
                 }
             } finally {
@@ -5497,6 +5533,9 @@ class PluginManager implements PluginManagerInterface
             // 상태를 복원하고 상태 캐시를 비운 지금 다시 구워야 그 누락이 교정된다.
             // updateComposerAutoload() 전체를 재호출하지 않는다 — composer autoload 병합은 이미 끝났고 비싸다.
             $this->extensionManager->regenerateHookCache();
+
+            // 실어 둔 옛 클래스 파일 정리 — 새 판 기준 훅 캐시를 구운 뒤라 이제 지워도 옛 구독이 그 파일을 찾지 않는다
+            $this->extensionManager->finishCarriedOverClassFiles($this->pluginsPath.DIRECTORY_SEPARATOR.$identifier, $carriedClassFiles);
 
             // 훅 발행: 플러그인 업데이트 완료 (Artisan 직접 호출 시에도 리스너 트리거)
             // @deprecated 'core.plugins.updated' — identifier 1개만 전달하는 구훅. 정규 훅은 after_update.

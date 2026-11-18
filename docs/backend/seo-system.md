@@ -1552,11 +1552,11 @@ data_source 정의에 `params` 필드가 있으면 해당 값을 해석하여 AP
     "type": "fields",
     "source": "$props_source",
     "link": {
-        "href": "/products/{id}",
-        "base_url": "$global:shopBase"
+        "href": "/products/{product_code|id}",
+        "base_url": "$prop:shopBase"
     },
     "fields": [
-        { "tag": "img", "attrs": { "src": "{thumbnail_url}", "alt": "{name_localized|name}" } },
+        { "tag": "img", "thumbPreset": "md", "attrs": { "src": "{thumbnail_url}", "alt": "{name_localized|name}", "loading": "lazy" } },
         { "tag": "h3", "content": "{name_localized|name}" },
         {
             "tag": "p",
@@ -1585,7 +1585,7 @@ data_source 정의에 `params` 필드가 있으면 해당 값을 해석하여 AP
 |----|------|------|
 | `link` | object | 모든 필드를 `<a>` 태그로 래핑 |
 | `link.href` | string | 링크 URL 패턴 — `{field}` 플레이스홀더 사용 (미해석 시 링크 미생성) |
-| `link.base_url` | string | URL 접두사 — `$global:key` 패턴으로 globalResolver 해석 가능 |
+| `link.base_url` | string | URL 접두사. `$prop:name` — 그 컴포넌트가 받은 prop 을 화면처럼 평가한 값(빈 문자열도 값 — 상점을 루트에 붙인 사이트). `$global:key` — 렌더 문맥 `_global.key`, 없으면 globalResolver(모듈·플러그인 설정 식). `$var:name` — 그 화면 `meta.seo.vars` 값. 그 밖은 글자 그대로 |
 
 **필드 속성**:
 
@@ -1594,6 +1594,7 @@ data_source 정의에 `params` 필드가 있으면 해당 값을 해석하여 AP
 | `tag` | string | HTML 태그 |
 | `content` | string | `{field\|alt}` 패턴으로 값 추출 (리터럴 혼합 가능: `{discount_rate}%`) |
 | `attrs` | object | 속성 기반 렌더링 (img 등) — `{field}` 패턴 |
+| `thumbPreset` | string | `tag: "img"` 항목의 썸네일 규격 — 템플릿 Img 의 `thumbPreset` 과 같은 계약. src 가 `?size=` 주소, srcset 이 2배 밀도 후보가 된다(같은 출처 + 등록된 서빙 경로만, `attrs.srcset` 을 적으면 그 값 유지). 속성으로는 나가지 않는다 |
 | `children` | array | 중첩 필드 그룹 — 자식 필드를 재귀 렌더링, 모든 자식이 빈 결과면 래퍼 태그 미출력 |
 | `if` | string | 조건부 렌더링 — `{field}` 값이 비어있으면 스킵 |
 | `class` | string | CSS class 속성 |
@@ -1605,8 +1606,8 @@ data_source 정의에 `params` 필드가 있으면 해당 값을 해석하여 AP
 **기대 출력** (위 설정 기준):
 ```html
 <article>
-  <a href="/shop/products/123">
-    <img src="/storage/thumb.jpg" alt="상품명">
+  <a href="/shop/products/P123">
+    <img src="https://example.com/api/modules/sirsoft-ecommerce/product-image/abc?size=md" srcset="https://example.com/api/modules/sirsoft-ecommerce/product-image/abc?size=md 1x, https://example.com/api/modules/sirsoft-ecommerce/product-image/abc?size=lg 2x" alt="상품명" loading="lazy">
     <h3>상품명</h3>
     <p><span>의류</span><span>나이키</span></p>
     <p><span>10,000원</span><del>15,000원</del><span>33%</span></p>
@@ -2162,7 +2163,7 @@ vars는 "정의 주체"에 따라 두 갈래로 나뉘며, 소비처도 분리�
 | 레이아웃 `meta.seo.vars` | `resolveSeoVars` → `htmlMapper->setSeoVars` | seo-config.json의 `format`/`fields` 렌더 모드 컴포넌트 |
 
 - **확장 SEO 설정 탭** ← 모듈 `seoVariables()` 기준. 운영자가 입력한 `meta_{page_type}_title` 등의 `{key}` 빈칸을 채움 (`data` 소스 변수가 여기로)
-- **seo-config.json** ← 레이아웃 `meta.seo.vars` 기준. `format` 모드 `{key}` 치환(ComponentHtmlMapper)과 `fields` 모드 link `base_url`(`$var:xxx`)에 사용
+- **seo-config.json** ← 레이아웃 `meta.seo.vars` 기준. `format` 모드 `{key}` 치환(ComponentHtmlMapper)과 `fields` 모드 link `base_url`(`$var:xxx`)에 사용. 화면 컴포넌트가 prop 으로 받는 값(상품 카드의 `shopBase`)은 `$prop:xxx` 로 읽어 화면마다 vars 를 두지 않는다
 
 겹치는 경우는 같은 변수를 **양쪽에 모두 선언**했을 때뿐입니다. 모듈이 정의한 변수는 레이아웃 `vars`에도 적지 않는 한 seo-config.json에서 쓸 수 없고, 레이아웃 임의 변수는 확장 SEO 탭에서 쓸 수 없습니다.
 

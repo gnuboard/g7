@@ -16,7 +16,7 @@ class ComponentHtmlMapper
      * `{"tag":"a"}` 로 치환하고 `href` 를 날 문자열로 전개하기 때문이다. 그래서
      * 하위 폴더 배치(`https://host/g7/`)에서는 같은 레이아웃의 같은 링크가 화면에서는
      * 사이트 안을, 봇에게는 **사이트 밖**을 가리켰다. 오류가 나지 않으므로 증상은
-     * 검색 색인이 조용히 사이트 밖 주소로 쌓이는 것뿐이다 (15차 G3 라운드).
+     * 검색 색인이 조용히 사이트 밖 주소로 쌓이는 것뿐이다.
      *
      * 루트 상대(`/…`)만 대상이다. 절대 URL·프로토콜 상대(`//`)·조각(`#`)·상대 경로는
      * 사이트 경로가 아니므로 손대지 않는다. 이미 접두사를 가진 값도 그대로 둔다
@@ -24,7 +24,7 @@ class ComponentHtmlMapper
      *
      * 그 규칙 자체는 `AssetUrl::sitePath()` 가 소유한다. 종전에는 같은 규칙이 이
      * 파일 두 곳과 `SeoMetaResolver` 에 세 벌의 독립 사본으로 살아 있었고, 갈려도
-     * 오류가 나지 않아 대조할 장치가 없었다 (16차 G3 라운드 A-9).
+     * 오류가 나지 않아 대조할 장치가 없었다.
      *
      * @param  string  $href  해석이 끝난 링크 목적지
      * @return string 접두사가 붙은 링크 목적지
@@ -42,7 +42,7 @@ class ComponentHtmlMapper
      * (`ProductImage::apiDownloadUrl()` 등이 `AssetUrl::basePrefix().'/api/…'` 를
      * 돌려준다). 그래서 하위 폴더 배치에서 `https://host/g7/g7/api/…` 가 나가고,
      * 그 주소는 404 다. 오류가 아니라 **이미지가 안 나오는 것**이 유일한 증상이라
-     * 봇 화면을 열어 보기 전에는 드러나지 않는다 (10차 G3 라운드 X-1).
+     * 봇 화면을 열어 보기 전에는 드러나지 않는다.
      *
      * 그렇다고 오리진만 붙이면 반대쪽이 깨진다 — 레이아웃이 리터럴로 적은 사이트
      * 경로(`/images/logo.png`)에는 접두사를 붙일 주체가 여기밖에 없다. 두 입력이
@@ -50,7 +50,7 @@ class ComponentHtmlMapper
      * 이미 접두사가 있으면 `siteHref()` 가 그대로 두고, 없으면 채운다.
      *
      * 그 규칙 자체는 `AssetUrl::siteAbsolute()` 가 소유하고, 절대 주소의 본체는 사이트 주소 기준
-     * `SiteUrl::absolute()`(`SeoUrl::absolute()` 와 같은 출처 — 요청 Host 비의존)다 (16차 G3 라운드 A-9).
+     * `SiteUrl::absolute()`(`SeoUrl::absolute()` 와 같은 출처 — 요청 Host 비의존)다.
      *
      * @param  string  $value  해석이 끝난 자산 경로
      * @return string 절대 URL (판정 대상이 아니면 원본 그대로)
@@ -963,7 +963,7 @@ class ComponentHtmlMapper
             // 속성 이름을 자유롭게 선언하므로(`item_attrs: {href: "/board/{slug}"}`)
             // 이 루프에 링크가 온다. 형제 두 지점은 `href`·`src` 를 **둘 다** 배선하는데
             // 여기만 `src` 뿐이라, 이 경로로 나간 링크는 하위 폴더 배치에서 사이트 밖을
-            // 가리켰다 — A-1 의 반대 방향 비대칭이다 (16차 G3 라운드 A-2).
+            // 가리켰다 — `href` 만 배선하던 형제 지점과 반대 방향의 비대칭이다.
             if ($attrName === 'href') {
                 $value = $this->siteHref($value);
             }
@@ -1143,7 +1143,7 @@ class ComponentHtmlMapper
 
             // link 래핑: 모든 필드를 <a> 태그로 감쌈
             if ($html !== '' && isset($modeConfig['link']['href'])) {
-                $linkHref = $this->resolveFieldsLink($modeConfig['link'], $data);
+                $linkHref = $this->resolveFieldsLink($modeConfig['link'], $data, $props, $context, $evaluator);
                 if ($linkHref !== null) {
                     $html = '<a href="'.e($this->siteHref($linkHref)).'">'."\n".$html.'</a>'."\n";
                 }
@@ -1311,7 +1311,7 @@ class ComponentHtmlMapper
                             // 다루고 여기만 빠져 있었다 — 그래서 이 경로로 나간 이미지는
                             // 하위 폴더 배치에서 접두사 없는 주소가 되고, 봇이 그것을
                             // 페이지 주소가 아니라 **오리진 루트**에 붙여 해석한다
-                            // (10차 G3 라운드 — X-1 을 고치다 드러난 형제).
+                            // (사이트 밖 주소 결함을 고치다 드러난 형제 경로).
                             if ($attrName === 'src') {
                                 $attrValue = $this->siteAssetUrl($attrValue);
                             }
@@ -1364,14 +1364,22 @@ class ComponentHtmlMapper
     /**
      * fields 모드의 link 설정을 해석하여 URL을 반환합니다.
      *
-     * href 패턴에서 {field} 를 데이터 값으로 치환하고,
-     * base_url이 있으면 앞에 붙입니다. $global: 접두사는 globalResolver로 해석합니다.
+     * href 패턴에서 {field} 를 데이터 값으로 치환하고, base_url이 있으면 앞에 붙입니다.
+     *
+     * base_url 참조:
+     * - `$prop:name` — 그 컴포넌트가 받은 prop 을 화면처럼 평가한 값(빈 문자열도 값, prop 이 없으면 빈 값).
+     *   화면 컴포넌트(ProductCard 의 `shopBase`)와 같은 출처라 화면마다 meta.seo.vars 를 두지 않아도 같다.
+     * - `$global:key` — 렌더 문맥 `_global.key`(빈 문자열도 값), 문맥에 없으면 globalResolver.
+     * - `$var:name` — 그 화면 meta.seo.vars 값.
      *
      * @param  array  $linkConfig  link 설정 (href, base_url 등)
      * @param  array  $data  소스 객체 데이터
+     * @param  array  $props  컴포넌트 props (`$prop:` 해석용)
+     * @param  array  $context  데이터 컨텍스트 (`$prop:`·`$global:` 해석용)
+     * @param  ExpressionEvaluator|null  $evaluator  표현식 평가기 (`$prop:` 해석용)
      * @return string|null 해석된 URL (null이면 링크 미생성)
      */
-    private function resolveFieldsLink(array $linkConfig, array $data): ?string
+    private function resolveFieldsLink(array $linkConfig, array $data, array $props = [], array $context = [], ?ExpressionEvaluator $evaluator = null): ?string
     {
         $hrefPattern = $linkConfig['href'] ?? '';
         if ($hrefPattern === '') {
@@ -1380,14 +1388,28 @@ class ComponentHtmlMapper
 
         $baseUrl = '';
         if (isset($linkConfig['base_url'])) {
-            $ref = $linkConfig['base_url'];
-            if (str_starts_with($ref, '$var:')) {
+            $ref = (string) $linkConfig['base_url'];
+            if (str_starts_with($ref, '$prop:')) {
+                // 화면 컴포넌트가 받는 그 prop — 예: ProductCard `shopBase="{{_global.shopBase ?? '/shop'}}"`
+                $propName = substr($ref, strlen('$prop:'));
+                $propValue = $props[$propName] ?? null;
+                if (is_string($propValue) && $evaluator !== null) {
+                    $baseUrl = $evaluator->evaluate($propValue, $context, false);
+                } elseif (is_scalar($propValue)) {
+                    $baseUrl = (string) $propValue;
+                }
+            } elseif (str_starts_with($ref, '$var:')) {
                 // SEO vars에서 해석 (meta.seo.vars로 정의된 변수)
                 $varName = substr($ref, strlen('$var:'));
                 $baseUrl = $this->seoVars[$varName] ?? '';
             } elseif (str_starts_with($ref, '$global:')) {
                 $globalKey = substr($ref, strlen('$global:'));
-                if ($this->globalResolver) {
+                // 렌더 문맥의 _global 이 먼저다 — `_user_base` init 이 푼 값(예: shopBase)이 여기 있다
+                $missing = new \stdClass;
+                $fromContext = data_get($context['_global'] ?? [], $globalKey, $missing);
+                if ($fromContext !== $missing && $fromContext !== null && is_scalar($fromContext)) {
+                    $baseUrl = (string) $fromContext;
+                } elseif ($this->globalResolver) {
                     $resolved = ($this->globalResolver)('_global.'.$globalKey);
                     $baseUrl = $resolved ?? '';
                 }
@@ -1443,6 +1465,15 @@ class ComponentHtmlMapper
      */
     private function renderFieldWithAttrs(array $field, array $data, string $tag): string
     {
+        // 이미지 썸네일 규격 — 템플릿 Img 의 `thumbPreset` 과 같은 계약(buildAttributes 와 같은 규칙).
+        // 필드 항목 키라 속성으로 나가지 않는다. 컴포지트(ProductCard 등)가 fields 로 그려지면 Img props 경로를
+        // 지나지 않으므로 이 자리에서 따로 받아야 화면과 같은 썸네일 주소가 나간다.
+        $thumbPreset = '';
+        if ($tag === 'img' && isset($field['thumbPreset']) && is_string($field['thumbPreset'])) {
+            $thumbPreset = trim($this->resolveFieldContent($field['thumbPreset'], $data));
+        }
+        $hasExplicitSrcset = array_key_exists('srcset', $field['attrs']) || array_key_exists('srcSet', $field['attrs']);
+
         $attrStr = '';
         foreach ($field['attrs'] as $attrName => $fieldPattern) {
             // `{shopBase}/products` 처럼 값과 글자가 섞인 패턴도 치환한다(item_attrs 와 같은 규칙).
@@ -1452,6 +1483,22 @@ class ComponentHtmlMapper
                 // src 속성의 상대 경로를 절대 경로로 변환 (마운트 접두사 인지 — `siteAssetUrl` 독블록)
                 if ($attrName === 'src') {
                     $value = $this->siteAssetUrl($value);
+
+                    // 같은 출처 + 등록된 서빙 경로만 바뀐다(외부·정적·data: 는 그대로). 명시한 srcset 은 존중한다.
+                    if ($thumbPreset !== '') {
+                        $original = $value;
+                        $value = ThumbnailUrl::for($original, $thumbPreset);
+
+                        if (! $hasExplicitSrcset && in_array('srcset', $this->allowedAttrs)) {
+                            $srcset = ThumbnailUrl::srcset($original, $thumbPreset);
+
+                            if ($srcset !== '') {
+                                $attrStr .= ' src="'.e($value).'" srcset="'.e($srcset).'"';
+
+                                continue;
+                            }
+                        }
+                    }
                 }
                 // `href` 는 브라우저가 그대로 여는 사이트 경로다 — 마운트 접두사를 거친다.
                 //
@@ -1459,7 +1506,7 @@ class ComponentHtmlMapper
                 // 헤더·푸터 앵커를 그린다. 형제 지점(속성 매핑·link 래핑·페이지네이션·
                 // item_attrs·navigate 주입)을 배선하고도 여기만 남아, 같은 봇 응답 안에
                 // `/g7/page/about` 와 `/page/about` 이 **동시에** 나갔다. 단위 테스트는
-                // 형제 경로만 세워 초록이었고 **P0 하위 폴더 실측이 잡았다** (15차 G3 라운드).
+                // 형제 경로만 세워 초록이었고 **P0 하위 폴더 실측이 잡았다**.
                 if ($attrName === 'href') {
                     $value = $this->siteHref($value);
                 }
@@ -1968,7 +2015,7 @@ class ComponentHtmlMapper
                 // 링크 목적지는 브라우저가 그대로 여는 사이트 경로다 — 봇 화면에서도
                 // 마운트 접두사를 거쳐야 한다. 레이아웃 JSON 의 `A` 컴포넌트 `href` 와
                 // `seo-config.json` 이 자기 소유로 선언한 앵커가 전부 이 지점을 지난다
-                // (화면 경로는 템플릿 `A` 컴포넌트가 같은 일을 한다 — 15차 G3 라운드).
+                // (화면 경로는 템플릿 `A` 컴포넌트가 같은 일을 한다).
                 if ($htmlAttr === 'href') {
                     $evaluated = $this->siteHref($evaluated);
                 }
@@ -1982,7 +2029,7 @@ class ComponentHtmlMapper
                 //
                 // 종전 소스 계약 검사가 이것을 못 본 이유는 모집단이 「`'src'` 리터럴이
                 // 있는 줄」이었기 때문이다 — 배선되지 않은 지점에는 그 리터럴이 없으므로
-                // 이미 배선된 셋만 스스로를 확인하는 자기충족이었다 (16차 G3 라운드 A-1).
+                // 이미 배선된 셋만 스스로를 확인하는 자기충족이었다.
                 if ($htmlAttr === 'src') {
                     $evaluated = $this->siteAssetUrl($evaluated);
 

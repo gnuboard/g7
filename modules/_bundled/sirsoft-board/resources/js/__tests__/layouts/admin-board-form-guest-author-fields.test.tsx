@@ -474,6 +474,24 @@ describe('게시판 설정 폼 — 비회원 작성자 항목 표 (#490)', () =>
         expect(sw('password', 'post', 'required').getAttribute('aria-label')).toBe(`비밀번호 ${gaf.columns.post_required}`);
     });
 
+    // @scenario case=guest_fields_accessible_names
+    // @effects guest_fields_delete_button_has_accessible_name
+    it('아이콘만 있는 지우기 단추는 「{항목} 항목 삭제」로 읽힌다(표와 좁은 화면 카드 모두)', async () => {
+        await draw([section]);
+
+        // basic Button 은 받은 속성을 그대로 DOM 에 넘긴다 — 카멜 `ariaLabel` 은 비표준 `arialabel` 이 되어 이름이 없다
+        const del = document.getElementById('guest_field_delete_memo')!;
+        expect(del.getAttribute('aria-label')).toBe('메모 항목 삭제');
+        expect(del.hasAttribute('arialabel')).toBe(false);
+
+        // 좁은 화면 카드의 지우기 단추도 같은 이름 속성을 쓴다
+        for (const id of ['guest_field_delete_{{row.key}}', 'guest_field_card_delete_{{row.key}}']) {
+            const props = (findNode(section, id) as any)?.props ?? {};
+            expect(props['aria-label'], id).toBe('$t:sirsoft-board.admin.form.guest_author_fields.delete|label={{row.label}}');
+            expect(props.ariaLabel, id).toBeUndefined();
+        }
+    });
+
     // @scenario case=guest_fields_read_only
     // @effects guest_fields_locked_for_read_only
     it('수정 권한이 없는 운영자에게는 모든 스위치가 잠긴다', async () => {

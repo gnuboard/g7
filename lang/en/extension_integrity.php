@@ -35,6 +35,8 @@ return [
     'errors' => [
         'package_unsigned' => 'This package is not signed. If you have reviewed it, choose "Continue unsigned" to install it. :reason',
         'package_unverifiable' => 'This server cannot verify the package signature. If you have reviewed it, choose "Continue unsigned" to install it. :reason',
+        'package_unsigned_cli' => 'This package is not signed. :reason',
+        'package_unverifiable_cli' => 'This server cannot verify the package signature. :reason',
         'package_unsigned_blocked' => 'Unsigned packages cannot be installed because Settings > Security "Block unsigned packages" is on. :reason',
         'package_signature_invalid' => 'Installation stopped because the package signature does not match. :reason',
         'package_signer_untrusted' => 'Installation stopped because the package is signed with an untrusted key. :reason',

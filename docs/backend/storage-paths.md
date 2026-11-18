@@ -34,8 +34,10 @@
 
 ```bash
 php artisan storage:paths          # 분류·경로·존재 여부 표
-php artisan storage:paths --json   # {"storage_root": "...", "categories": {"shared_data": [{"path": "app/settings", "exists": true}, ...], ...}}
+php artisan storage:paths --json   # {"storage_root": "...", "categories": {"shared_data": [{"path": "app/settings", "prefix": false, "exists": true}, ...], ...}}
 ```
+
+접두사 항목(`-`·`_` 로 끝남)은 표에 `*` 를 붙여(예: `app/public-storage-broken-*`) 보이고, JSON 은 `"prefix": true` 다. 이때 「있음」은 그 이름으로 시작하는 파일·폴더가 하나라도 있는지다.
 
 파일·설정을 바꾸지 않으며 종료 코드는 언제나 0 이다. 코드에서는 `App\Support\StoragePaths::lists()`(분류별 목록)·`StoragePaths::classify($relativePath)`(경로가 드는 분류)로 읽는다.
 

@@ -114,9 +114,11 @@ class ExtensionFileSyncService
         try {
             $basesFilled = $this->stashLayoutBases($type, $identifier);
 
-            ExtensionPendingHelper::copyToActive($this->bundledPath($type, $identifier), $this->activePath($type, $identifier));
+            // 같은 판 번호로 번들 내용이 바뀌어 리스너 클래스가 지워졌어도, 교체~훅 캐시 재생성 사이 요청이 옛 클래스를 찾을 수 있게 남겨 둔다
+            $carried = ExtensionPendingHelper::copyToActive($this->bundledPath($type, $identifier), $this->activePath($type, $identifier), null, retainRemovedClassFiles: true);
 
             app(ExtensionManager::class)->updateComposerAutoload();
+            app(ExtensionManager::class)->finishCarriedOverClassFiles($this->activePath($type, $identifier), $carried);
             RouteCacheHelper::rebuild();
             if (function_exists('opcache_reset')) {
                 @opcache_reset();

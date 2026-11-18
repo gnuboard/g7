@@ -3,6 +3,8 @@
 namespace App\Fields;
 
 use App\Contracts\Repositories\FieldDefinitionRepositoryInterface;
+use App\Contracts\Repositories\ModuleRepositoryInterface;
+use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\DisplayName\NicknameRequirement;
 use App\Enums\FieldEditScope;
 use App\Enums\FieldSourceType;
@@ -14,6 +16,7 @@ use App\Fields\Contracts\FieldTypeInterface;
 use App\Models\FieldDefinition;
 use App\Support\LocalizedValue;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 /**
  * 항목 등록소 — 집합의 항목 목록을 「지금 쓸 수 있는 모습」으로 돌려준다.
@@ -25,6 +28,9 @@ use Illuminate\Support\Collection;
  */
 class FieldRegistry
 {
+    /** @var array<string, array<string, string>|string|null> 확장 이름 원값 메모 (`{종류}:{식별자}` => 이름) — 요청 범위 */
+    protected array $extensionNames = [];
+
     /**
      * @param  FieldDefinitionRepositoryInterface  $definitions  항목 정의 저장소
      * @param  FieldSetRegistry  $sets  집합 등록소
@@ -166,22 +172,76 @@ class FieldRegistry
      */
     public function sourceLabel(FieldDefinition $definition, ?string $locale = null): ?string
     {
-        $extension = match ($definition->source_type) {
-            'module' => app(ModuleManager::class)->getModule($definition->source_identifier),
-            'plugin' => app(PluginManager::class)->getPlugin($definition->source_identifier),
-            default => null,
-        };
-
         if (! in_array($definition->source_type, ['module', 'plugin'], true)) {
             return null;
         }
 
-        $name = $extension?->getName();
+        return $this->extensionLabel((string) $definition->source_type, (string) $definition->source_identifier, $locale);
+    }
+
+    /**
+     * 확장(모듈·플러그인)의 사람이 읽는 이름을 요청 언어로 반환합니다 (항목 출처, 확장 입력 유형의 배지).
+     *
+     * 설치 기록의 다국어 이름을 먼저 쓴다 — 설치·동기화 때 활성 언어팩(ja 등)이 manifest 이름에 병합돼 저장되므로
+     * ko·en 만 있는 manifest 보다 언어가 넓다(레이아웃 확장 출처 이름 `LayoutExtensionService::resolveSourceLabel` 과 같은 규칙).
+     * 기록이 없으면 manifest 이름, 그것도 없으면 식별자다. 한 요청 안에서는 확장마다 한 번만 읽는다.
+     *
+     * @param  string  $type  확장 종류 (module|plugin)
+     * @param  string  $identifier  확장 식별자
+     * @param  string|null  $locale  로케일 (생략하면 현재 로케일)
+     * @return string 확장 이름
+     */
+    public function extensionLabel(string $type, string $identifier, ?string $locale = null): string
+    {
+        $key = $type.':'.$identifier;
+        if (! array_key_exists($key, $this->extensionNames)) {
+            $this->extensionNames[$key] = $this->extensionNameValue($type, $identifier);
+        }
+
+        $name = $this->extensionNames[$key];
         if (is_array($name)) {
             $name = LocalizedValue::pick($name, $locale);
         }
 
-        return is_string($name) && $name !== '' ? $name : $definition->source_identifier;
+        return is_string($name) && $name !== '' ? $name : $identifier;
+    }
+
+    /**
+     * 확장 이름의 원값(다국어 배열 또는 글자)을 읽습니다 — 설치 기록 → manifest 순.
+     *
+     * @param  string  $type  확장 종류 (module|plugin)
+     * @param  string  $identifier  확장 식별자
+     * @return array<string, string>|string|null 이름 원값 (못 찾으면 null)
+     */
+    protected function extensionNameValue(string $type, string $identifier): array|string|null
+    {
+        try {
+            $record = match ($type) {
+                'module' => app(ModuleRepositoryInterface::class)->findByIdentifier($identifier),
+                'plugin' => app(PluginRepositoryInterface::class)->findByIdentifier($identifier),
+                default => null,
+            };
+            $recorded = $record?->name;
+            if (is_string($recorded) && str_starts_with($recorded, '{')) {
+                $decoded = json_decode($recorded, true);
+                $recorded = is_array($decoded) ? $decoded : $recorded;
+            }
+            if ((is_array($recorded) && $recorded !== []) || (is_string($recorded) && $recorded !== '')) {
+                return $recorded;
+            }
+
+            $extension = match ($type) {
+                'module' => app(ModuleManager::class)->getModule($identifier),
+                'plugin' => app(PluginManager::class)->getPlugin($identifier),
+                default => null,
+            };
+
+            return $extension?->getName();
+        } catch (\Throwable $e) {
+            Log::debug('항목 출처: 확장 이름을 읽지 못했습니다', ['extension' => $type.':'.$identifier, 'error' => $e->getMessage()]);
+
+            return null;
+        }
     }
 
     /**

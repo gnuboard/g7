@@ -29,7 +29,7 @@
         }
     ],
     "props": {
-        "data": "{{identityLogs?.data?.data}}",
+        "data": "{{raw:identityLogs?.data?.data}}",
         "pagination": true,
         "serverSidePagination": true,
         "pageHref": "/admin/identity/logs?page={page}",
@@ -160,7 +160,7 @@
                                 "props": {
                                     "className": "admin-card"
                                 },
-                                "text": "{{JSON.stringify(row.properties ?? {}, null, 2)}}"
+                                "text": "{{raw:JSON.stringify(row.properties ?? {}, null, 2)}}"
                             }
                         ]
                     },
@@ -183,7 +183,7 @@
                                 "props": {
                                     "className": "admin-card"
                                 },
-                                "text": "{{JSON.stringify(row.metadata ?? {}, null, 2)}}"
+                                "text": "{{raw:JSON.stringify(row.metadata ?? {}, null, 2)}}"
                             }
                         ]
                     },

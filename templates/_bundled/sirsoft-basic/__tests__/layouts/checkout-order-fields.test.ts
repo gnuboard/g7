@@ -556,6 +556,47 @@ describe('주문서 — 운영자 설정을 따르는 항목', () => {
     });
   });
 
+  describe('주문자 칸에 보이는 값과 보내는 값', () => {
+    const orderCall = findDeep(summaryPartial, (n) => n.handler === 'apiCall' && typeof n.target === 'string' && n.target.includes('/user/orders') && n.params?.method === 'POST');
+    const inputs = [['orderer_name', 'name'], ['orderer_phone', 'phone'], ['orderer_email', 'email']] as const;
+    const filled = { shipping: { recipient_name: '홍길동', zipcode: '06236', address: '서울 강남구', address_detail: '101호' } };
+
+    /**
+     * @scenario case=orderer_cleared
+     * @effects orderer_initial_values_from_account
+     */
+    it('칸을 건드리기 전에는 계정의 이름·연락처·이메일을 칸에 채워 보이고 같은 값을 보낸다', () => {
+      const ctx = screen({ builtin: builtin(), orderer: [], shipping: [] }, member, filled);
+      const sent = evaluate(orderCall.params.body, ctx);
+      expect(sent.orderer).toEqual({ name: '홍길동', phone: '01012345678', email: 'hong@example.com' });
+      for (const [name, key] of inputs) {
+        expect(evaluate(inputByName(ordererNodes, name).props.value, ctx)).toBe(sent.orderer[key]);
+      }
+    });
+
+    /**
+     * @scenario case=orderer_cleared
+     * @effects orderer_cleared_value_sent_as_shown
+     */
+    it('회원이 칸을 비우면 칸에 보이는 빈 값을 그대로 보내고 계정 값으로 되채우지 않는다 (필수 설정이면 서버가 422 로 막는다)', () => {
+      for (const required of [false, true]) {
+        const ctx = screen({ builtin: builtin({ orderer_email: { enabled: true, required } }), orderer: [], shipping: [] }, member, { ...filled, orderer: { name: '', phone: '', email: '' } });
+        const sent = evaluate(orderCall.params.body, ctx);
+        expect(sent.orderer).toEqual({ name: '', phone: '', email: '' });
+        for (const [name, key] of inputs) {
+          expect(evaluate(inputByName(ordererNodes, name).props.value, ctx)).toBe(sent.orderer[key]);
+        }
+        // 본인인증 대상 이메일도 계정 이메일로 되돌아가지 않는다
+        expect(evaluate(orderCall.identity_target.email, ctx)).toBe('');
+        // 입금자명을 따로 적지 않았으면 비운 주문자 이름을 따른다(계정 이름이 아니다)
+        expect(sent.depositor_name).toBe('');
+      }
+      // 이메일 하나만 비우면 이메일만 빈 값이다
+      const onlyEmail = screen({ builtin: builtin(), orderer: [], shipping: [] }, member, { ...filled, orderer: { email: '' } });
+      expect(evaluate(orderCall.params.body, onlyEmail).orderer).toEqual({ name: '홍길동', phone: '01012345678', email: '' });
+    });
+  });
+
   describe('주문 완료 화면', () => {
     const ordererBlock = byId(completeNodes, 'order_complete_extra_fields_orderer');
     const shippingBlock = byId(completeNodes, 'order_complete_extra_fields_shipping');

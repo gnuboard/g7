@@ -844,11 +844,13 @@ slots.content:
 - `_redirect_if_logged_in.g7.html`: 이미 로그인한 사용자를 홈으로 리다이렉트하는 partial
 - 로그인 화면은 폼 아래에 확장점 `auth_login_extensions`, 회원가입 화면은 폼 위에 `auth_register_extensions` 를 둔다 — 소셜 로그인 버튼처럼 다른 로그인·가입 수단은 확장이 이 자리에 붙인다(템플릿은 소셜 로그인 부품을 갖지 않는다)
 - 마이페이지 정보 수정의 본인 확인 칸(`_password_verify_section`)과 비밀번호 변경 화면은 메일을 받을 수 없는 비밀번호 없는 회원(`has_password === false` · `email_deliverable === false` — 대체 이메일로 가입)에게 인증번호 대신 확장점 `mypage_reauth_methods`·`mypage_change_password_reauth` 를 보인다. 기본 내용은 관리자 문의 안내이고(비밀번호 변경 화면은 코어가 고를 재확인 수단 `reauth_provider` 가 있으면 「저장하면 그 방법으로 확인」 안내), 다른 확인 수단(예: 소셜 재로그인)을 가진 확장이 `mode="replace"` 로 바꾼다. 비밀번호 변경 화면은 회원 응답의 `can_set_password` 가 false 면(비밀번호 인증 정책이 막는 회원) 칸·처음 설정 안내·본인 확인 자리 대신 `password_set_blocked_message` 와 내 정보로 돌아가는 길을 보인다(7.2.0). 정보 수정 본인 확인은 그 확장점 위에 「본인 확인 계속하기」(`reauth_continue_button`)를 두어 메일 받는 칸과 같은 요청(`POST /api/identity/challenges`, 수단 비움)으로 서버가 그 회원에게 쓸 수 있는 수단을 고르게 한다(7.2.0) — 외부 수단이면 그 화면으로 이동, 인증번호 수단이면 인증번호 칸이 열린다
+- 같은 본인 확인 칸의 비밀번호 확인이 횟수 초과(429)·잠김(423)으로 실패하면 고정 문구(`mypage.profile.verify_password_error`) 대신 서버 문구(`verifyPasswordErrorMessage`, 남은 시간 포함)를 보인다. 게시판 비밀번호 확인 창 둘(`partials/board/form/_password_verify_modal`, `partials/board/show/modals/_password_verify_modal`)도 같은 규칙이다
 - 같은 본인 확인 칸의 제목과 안내는 비밀번호 없는 회원(`has_password === false`)에게 「본인 확인 / 내 정보를 수정하려면 본인 확인이 필요합니다」(`mypage.profile.verify_identity_*`), 비밀번호가 있는 회원에게 「비밀번호 확인」으로 갈린다
 - 로그인 화면은 `?login_handoff={코드}` 로 들어오면 진입 시 코드를 교환한다(`loginHandoff`) — 외부 인증 확장이 본인 확인을 마친 회원을 넘기는 통로이며, 응답 분기(2단계 인증·비밀번호 변경·로그인 완료)는 비밀번호 로그인과 같은 명명 액션 `applyLoginResult` 를 쓴다
 - 이메일 판정(`POST /api/auth/login/discover`)이 외부 수단이면 비밀번호 칸 대신 「… 계정으로 계속」과 함께 「… 계정으로 로그인하는 이메일입니다」 안내(`login_discovery_notice`)를 보인다. `?local=1`(비상 계정 진입로)로 들어오면 카드 맨 위에 비상 계정 로그인 화면 안내(`login_local_notice`)를 둔다. 비밀번호 변경 화면은 403 `auth.password_auth_disabled` 로 폼이 숨으면 「내 정보로 돌아가기」(`password_blocked_back`)를 따로 보인다(폼 안의 취소 링크가 함께 숨기 때문)
 - 가입을 받는지는 서버가 계산한 실효값 `_global.appConfig.auth.registration_open`(환경설정 「일반 회원가입 받기」 + 확장 필터 `core.auth.self_registration_open` — 예: 사이트 전체 회사 계정 강제)을 먼저 보고, 없을 때만 원 설정값 `_global.settings.security.registration_enabled` 를 본다. 닫히면 `/register` 는 안내 카드(`registration_closed_card`), 로그인 화면·모바일 드로어·홈 환영 카드의 가입 링크와 헤더 가입 버튼(`registrationEnabled` prop)이 숨는다
-- 회원가입 폼은 `PasswordInput` 사용 (비밀번호 규칙 검증, 확인 일치)
+- 회원가입 폼은 `PasswordInput` 사용 (비밀번호 규칙 검증, 확인 일치). 서버 칸 오류는 컴포넌트의 `error` 속성(text-sm) 대신 다른 칸과 같은 `text-xs` 줄로 칸 아래에 그린다
+- 가입 실패 처리: 칸 오류(`errors`)가 실린 응답이면 응답 요약 문구를 `registerError` 에 넣지 않는다 — 위쪽 상자(`register_error_box`)는 칸 오류가 없는 실패의 문구(본인 확인 필요 428, 요청 제한, 서버 오류)와 어느 칸에도 속하지 않는 오류(`$computed.registerOrphanErrors`)가 있을 때만 뜬다
 - 약관 동의 모달: `_modal_terms.g7.html`, `_modal_privacy.g7.html`
 - `blur_until_loaded`: 현재 사용자 정보 로드 전까지 폼 블러 처리
 

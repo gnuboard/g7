@@ -256,10 +256,20 @@
                                                         }
                                                     },
                                                     {
+                                                        "comment": "GitHub 최신 판 조회에 실패한 확장(응답 failures)은 「최신」이 아니라 「확인하지 못함」이다 — 실패가 있으면\n                       「모두 최신」을 띄우지 않고 경고로 개수·식별자·첫 사유를 알린다. 새 판을 찾았으면 그 성공 문구는 함께 띄운다.",
                                                         "handler": "toast",
+                                                        "if": "{{(response.data?.failures ?? []).length === 0 || response.data?.updated_count > 0}}",
                                                         "params": {
                                                             "type": "success",
                                                             "message": "{{response.data?.updated_count > 0 ? '$t:admin.templates.check_updates_success|count=' + response.data.updated_count : '$t:admin.templates.check_updates_no_updates'}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "if": "{{(response.data?.failures ?? []).length !== 0}}",
+                                                        "params": {
+                                                            "type": "warning",
+                                                            "message": "$t:extensions.alerts.check_updates_github_failed|count={{(response.data?.failures ?? []).length}}|names={{(response.data?.failures ?? []).map(f => f.identifier).join(', ')}}|reason={{response.data?.failures?.[0]?.reason ?? ''}}"
                                                         }
                                                     }
                                                 ],

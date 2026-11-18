@@ -70,16 +70,17 @@
               <success>
                 <toast type="success" message="$t:admin.settings.member.fields.delete.success"/>
                 <close-modal target="member_field_delete_modal"/>
-                <refetch-data-source dataSourceId="memberFieldDefs"/>
                 <set-state target="global" :member_field_delete_modal="null"/>
+                <update-data-source dataSourceId="memberFieldDefs" data="{{ { ...(memberFieldDefs ?? { }), data: { ...(memberFieldDefs?.data ?? { }), fields_version: response?.data?.fields_version ?? memberFieldDefs?.data?.fields_version ?? null } } }}"/>
+                <refetch-data-source dataSourceId="memberFieldDefs"/>
               </success>
               <fail>
                 <conditions>
                   <when if="{{error.error_code === 'fields_changed'}}">
                     <toast type="error" message="$t:admin.settings.member.fields.changed_by_other"/>
                     <close-modal target="member_field_delete_modal"/>
-                    <refetch-data-source dataSourceId="memberFieldDefs"/>
                     <set-state target="global" :member_field_delete_modal="null"/>
+                    <refetch-data-source dataSourceId="memberFieldDefs"/>
                   </when>
                   <when if="{{error.error_code === 'field_in_use'}}">
                     <set-state target="global" :member_field_delete_modal.isDeleting="false" :member_field_delete_modal.confirmed="false" member_field_delete_modal.usages="{{error.errors?.usages ?? []}}"/>

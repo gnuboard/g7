@@ -743,5 +743,10 @@ trait BundledExtensionUpdatePrompt
         foreach ($report->failed as $identifier => $message) {
             $this->warn('  '.__('search.index.rebuild_failed_item', ['index' => $identifier, 'error' => $message]));
         }
+
+        // 재생성으로 고쳐지지 않는 손상은 표 재구축 명령을 안내한다(실행하지 않음)
+        foreach ($report->adviceLines() as $line) {
+            $this->warn('  '.$line);
+        }
     }
 }

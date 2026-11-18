@@ -286,6 +286,39 @@ class ExtensionUpdateSignatureTest extends TestCase
     }
 
     /**
+     * 명령줄의 미서명 거절 출력에는 화면 단추 안내(「미서명으로 계속」을 눌러)가 섞이지 않는다 — 명령줄 문장과
+     * `--allow-unsigned` 안내만 나온다. 거절 문장은 `runWithIntegrityConsent()` 가 다시 던지는 예외에서 오므로
+     * `core:update`·언어팩 명령도 같은 경로다.
+     *
+     * @scenario case=update_command_unsigned_noninteractive
+     *
+     * @effects console_unsigned_refusal_has_no_screen_wording
+     *
+     * @return void 반환값 없음
+     */
+    public function test_update_command_unsigned_refusal_has_no_screen_wording(): void
+    {
+        Module::factory()->create(['identifier' => 'glitter-upd', 'version' => '1.0.0', 'status' => 'active']);
+        $zip = $this->makePackageZip('module', 'glitter-upd', '1.1.0');
+
+        $manager = Mockery::mock(ModuleManager::class)->shouldIgnoreMissing();
+        $manager->shouldReceive('updateModule')->andReturnUsing(function (...$args) {
+            app(UnsignedPackagePolicy::class)->decide(PackageVerification::unsigned(), $args[8]->allowUnsigned);
+
+            return ['success' => true];
+        });
+        $this->app->instance(ModuleManager::class, $manager);
+
+        $screenWording = (string) __('extension_integrity.errors.package_unsigned', ['reason' => (string) __('extension_integrity.reasons.unsigned')]);
+
+        $this->artisan('module:update', ['identifier' => 'glitter-upd', '--zip' => $zip, '--force' => true, '--yes' => true, '--no-interaction' => true])
+            ->expectsOutputToContain((string) __('extension_integrity.errors.package_unsigned_cli', ['reason' => (string) __('extension_integrity.reasons.unsigned')]))
+            ->doesntExpectOutputToContain($screenWording)
+            ->expectsOutputToContain('--allow-unsigned')
+            ->assertExitCode(1);
+    }
+
+    /**
      * 가짜 GitHub 릴리스를 등록합니다 (glitter/upd v1.1.0).
      *
      * @param  bool  $signed  서명 자산을 올릴지

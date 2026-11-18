@@ -170,10 +170,10 @@
             "source": "$props_source",
             "link": {
                 "href": "/products/{product_code|id}",
-                "base_url": "$var:shopBase"
+                "base_url": "$prop:shopBase"
             },
             "fields": [
-                { "tag": "img", "attrs": { "src": "{thumbnail_url}", "alt": "{name_localized|name}" } },
+                { "tag": "img", "thumbPreset": "md", "attrs": { "src": "{thumbnail_url}", "alt": "{name_localized|name}", "loading": "lazy" } },
                 { "tag": "h3", "content": "{name_localized|name}" },
                 {
                     "tag": "p",

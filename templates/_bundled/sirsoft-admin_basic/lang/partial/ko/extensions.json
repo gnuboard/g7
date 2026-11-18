@@ -6,6 +6,7 @@
   },
   "alerts": {
     "language_pack_install_failed": "함께 고른 언어팩을 설치하지 못했습니다({{names}}): {{reason}}",
+    "check_updates_github_failed": "GitHub 최신 판을 확인하지 못한 확장 {{count}}개({{names}}) — 최신으로 판정하지 않았고 업데이트 정보도 그대로 두었습니다. 사유: {{reason}}",
     "language_pack_awaiting_host": "함께 고른 언어팩({{names}})은 이 확장이 꺼져 있어 꺼진 채 설치했습니다. 확장을 켜면 함께 켜집니다.",
     "incompatible_deactivated": "{{type}} \"{{name}}\" 자동 비활성화됨",
     "incompatible_message": "필요 버전: {{required}}, 현재 설치됨: {{installed}}",

@@ -3,7 +3,7 @@
   줄을 펼치면 목록에 못 싣는 것들이 나온다(대상 해시 전문, 인증을 건 자리, 제공자가 남긴
   부가 정보). 부가 정보 두 덩이는 정해진 모양이 없어 원문 그대로 펼쳐 보여 준다. -->
 <partial description="Identity Logs DataGrid">
-  <data-grid data-type="composite" data-ref="identity_log_datagrid" data="{{identityLogs?.data?.data}}" :pagination="true" :serverSidePagination="true" pageHref="/admin/identity/logs?page={page}" :pageHrefMergeQuery="true" serverCurrentPage="{{identityLogs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{identityLogs?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{identityLogs?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="false" :expandable="true" emptyMessage="{{identityLogs === undefined ? '' : $t('common.no_data')}}">
+  <data-grid data-type="composite" data-ref="identity_log_datagrid" data="{{raw:identityLogs?.data?.data}}" :pagination="true" :serverSidePagination="true" pageHref="/admin/identity/logs?page={page}" :pageHrefMergeQuery="true" serverCurrentPage="{{identityLogs?.data?.pagination?.current_page ?? 1}}" serverTotalPages="{{identityLogs?.data?.pagination?.last_page ?? null}}" serverHasMorePages="{{identityLogs?.data?.pagination?.has_more_pages ?? false}}" pageSize="{{+(query.per_page || 20)}}" :alwaysShowPagination="true" idField="id" :selectable="false" :expandable="true" emptyMessage="{{identityLogs === undefined ? '' : $t('common.no_data')}}">
     <blur-until-loaded sources="identityLogs"/>
     <expand>
       <div class="p-4 bg-gray-50 dark:bg-gray-900 space-y-3">
@@ -25,11 +25,11 @@
         </div>
         <div data-if="{{row.properties}}">
           <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">$t:admin.identity.logs.detail.expanded.properties_label</span>
-          <pre class="admin-card">{{JSON.stringify(row.properties ?? {}, null, 2)}}</pre>
+          <pre class="admin-card">{{raw:JSON.stringify(row.properties ?? {}, null, 2)}}</pre>
         </div>
         <div data-if="{{row.metadata}}">
           <span class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">$t:admin.identity.logs.detail.expanded.metadata_label</span>
-          <pre class="admin-card">{{JSON.stringify(row.metadata ?? {}, null, 2)}}</pre>
+          <pre class="admin-card">{{raw:JSON.stringify(row.metadata ?? {}, null, 2)}}</pre>
         </div>
         <div class="flex justify-end">
           <button type="button" class="px-3 py-1.5 text-body font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">

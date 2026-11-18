@@ -50,6 +50,22 @@ use App\Extension\AbstractUpgradeStep;
  *         저장된 일반 설정에서 읽히지 않던 점검 모드 키(`general.maintenance_mode`)를 지운다(#888). 점검 모드는
  *         `php artisan down` / `php artisan up` 이 맡는다. 키가 없으면 아무것도 쓰지 않는다(멱등).
  *
+ *   아래 11~13 은 7.1.x 부모 프로세스의 파일 적용(Step 7)이 남긴 결과를 바로잡는다 — 그 적용은 7.1.x 코드가 해서
+ *   7.2.0 이 고친 판정이 이 전환에서는 돌지 않는다. 셋 다 번들 확장 일괄 업데이트·백업 삭제·배포본 정리보다 먼저 돈다.
+ *       11_PruneStaleBundledFiles.php
+ *         7.2.0 에서 지운 번들 파일(`{modules,plugins,templates,lang-packs}/_bundled/{id}/…`) 가운데 본문이 이전 배포본과
+ *         같은 것만 지운다(동결 목록 `stale_bundled_files.snapshot.json`). 남기면 확장 갱신이 옛 조각을 활성 디렉토리로
+ *         옮겨 다시 등록해, 가입·회원 화면에 지워진 문구 키와 중복 칸이 보인다. 활성 디렉토리는 건드리지 않는다.
+ *       12_RestoreOperatorFaviconFromBackup.php
+ *         7.1.x 증분 적용이 7.2.0 기본 아이콘으로 덮은 운영자 `public/favicon.ico` 를 이번 업데이트 백업(`core_backups`)
+ *         에서 되살린다. 백업 파일이 비어 있으면(7.1.x 기본값) 새 기본 아이콘을 둔다.
+ *       13_ReconcileRootFilesPlacedByLegacyUpdate.php
+ *         설치가 끝난 사이트 루트에 놓인 압축 풀기 파일 `g7-setup.php` 를 지우고, 루트 `index.php` 만 있고 `.htaccess` 가
+ *         빠졌으면 이번 배포본 압축 해제본에서 루트 `.htaccess` 를 놓는다(있는 파일은 건드리지 않는다).
+ *       14_SeedBundledShippedManifest.php
+ *         번들 출하 목록(`storage/app/core-update/bundled-shipped.json`)이 없으면 이번 배포본 압축 해제본에서 만들어 남긴다 —
+ *         7.2.0 부터 코어 업데이트가 그 목록으로 새 판이 지운 번들 파일을 정리하는데, 7.1.x 의 파일 적용은 목록을 남기지 않는다.
+ *
  * 직접 등록 스케줄(화면에서 운영자가 만든 행)은 손대지 않는다. 신규 테이블(`queue_job_logs`)·컬럼은 일반 마이그레이션이
  * 만들고, 설정 기본값(큐 처리 기록 보관 기간 등)은 코어 업데이트 흐름의 비파괴 동기화가 반영한다.
  *

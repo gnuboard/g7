@@ -1691,7 +1691,7 @@
                                             "name": "Button",
                                             "actions": [
                                                 {
-                                                    "comment": "2단계 실제 전송 확인. 저장된(적용 중인) 위임 설정으로 작은 JSON 파일을 받는다. 웹서버가 위임 헤더를 소비하지 않으면\n                     본문이 비어 result 가 null 이 되고, nginx internal 위치가 없으면 404 로 fail 갈래에 온다 — 둘 다 실패다.",
+                                                    "comment": "2단계 실제 전송 확인. 저장된(적용 중인) 위임 설정으로 작은 JSON 파일을 받는다. 웹서버가 위임 헤더를 소비하지 않으면\n                     본문이 비어 result 가 null 이 되고, nginx internal 위치가 없으면 404 로 fail 갈래에 온다 — 둘 다 실패다.\n                     위임이 꺼져 있거나(inactive) 파일이 매핑 밖(skipped)이라 PHP 가 보낼 응답이면 서버는 본문 대신 data.reason 을\n                     준다 — 웹서버가 보낸 것이 아니므로 성공으로 보이지 않고 그 사유를 보인다.",
                                                     "type": "click",
                                                     "handler": "sequence",
                                                     "actions": [
@@ -1722,15 +1722,16 @@
                                                                     "params": {
                                                                         "target": "local",
                                                                         "fileDelegationProbe": {
-                                                                            "success": "{{result?.data?.probe === 'g7-file-delegation'}}"
+                                                                            "success": "{{result?.data?.probe === 'g7-file-delegation'}}",
+                                                                            "reason": "{{result?.data?.probe === 'g7-file-delegation' ? null : (result?.data?.reason ?? null)}}"
                                                                         }
                                                                     }
                                                                 },
                                                                 {
                                                                     "handler": "toast",
                                                                     "params": {
-                                                                        "type": "{{result?.data?.probe === 'g7-file-delegation' ? 'success' : 'error'}}",
-                                                                        "message": "{{result?.data?.probe === 'g7-file-delegation' ? '$t:admin.settings.drivers.file_delegation.probe_ok' : '$t:admin.settings.drivers.file_delegation.probe_failed'}}"
+                                                                        "type": "{{result?.data?.probe === 'g7-file-delegation' ? 'success' : (result?.data?.reason === 'inactive' ? 'info' : 'error')}}",
+                                                                        "message": "{{result?.data?.probe === 'g7-file-delegation' ? '$t:admin.settings.drivers.file_delegation.probe_ok' : (result?.data?.reason === 'inactive' ? '$t:admin.settings.drivers.file_delegation.probe_inactive' : (result?.data?.reason === 'skipped' ? '$t:admin.settings.drivers.file_delegation.probe_skipped' : '$t:admin.settings.drivers.file_delegation.probe_failed'))}}"
                                                                     }
                                                                 },
                                                                 {
@@ -1847,14 +1848,14 @@
                                     "name": "Div",
                                     "if": "{{_local.fileDelegationProbe}}",
                                     "props": {
-                                        "className": "{{_local.fileDelegationProbe.success ? 'flex-start gap-2 text-green-700 dark:text-green-400' : 'flex-start gap-2 text-red-600 dark:text-red-400'}}"
+                                        "className": "{{_local.fileDelegationProbe.success ? 'flex-start gap-2 text-green-700 dark:text-green-400' : (_local.fileDelegationProbe.reason === 'inactive' ? 'flex-start gap-2 text-warning-soft' : 'flex-start gap-2 text-red-600 dark:text-red-400')}}"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Icon",
                                             "props": {
-                                                "name": "{{_local.fileDelegationProbe.success ? 'check-circle' : 'circle-xmark'}}",
+                                                "name": "{{_local.fileDelegationProbe.success ? 'check-circle' : (_local.fileDelegationProbe.reason === 'inactive' ? 'circle-info' : 'circle-xmark')}}",
                                                 "className": "text-xl flex-shrink-0"
                                             }
                                         },
@@ -1864,7 +1865,7 @@
                                             "props": {
                                                 "className": "text-sm font-medium"
                                             },
-                                            "text": "{{_local.fileDelegationProbe.success ? '$t:admin.settings.drivers.file_delegation.probe_ok' : '$t:admin.settings.drivers.file_delegation.probe_failed'}}"
+                                            "text": "{{_local.fileDelegationProbe.success ? '$t:admin.settings.drivers.file_delegation.probe_ok' : (_local.fileDelegationProbe.reason === 'inactive' ? '$t:admin.settings.drivers.file_delegation.probe_inactive' : (_local.fileDelegationProbe.reason === 'skipped' ? '$t:admin.settings.drivers.file_delegation.probe_skipped' : '$t:admin.settings.drivers.file_delegation.probe_failed'))}}"
                                         }
                                     ]
                                 },
@@ -2040,14 +2041,39 @@
                             ]
                         },
                         {
+                            "comment": "Redis 접속 칸은 캐시·세션·큐가 함께 쓰는 한 벌이다(서버가 같은 값을 세 자리에 주입하고, 연결 시험도 세 자리 중\n             하나만 redis 면 Redis 를 시험한다). 그래서 셋 중 하나라도 redis 면 보인다 — 캐시가 파일이어도 세션·큐용 접속값을\n             확인·시험할 수 있어야 한다. S3 칸(s3_settings)과 같은 규칙이다.",
                             "id": "redis_settings",
                             "type": "basic",
                             "name": "Div",
-                            "if": "{{_local.form?.drivers?.cache_driver === 'redis'}}",
+                            "if": "{{_local.form?.drivers?.cache_driver === 'redis' || _local.form?.drivers?.session_driver === 'redis' || _local.form?.drivers?.queue_driver === 'redis'}}",
                             "props": {
                                 "className": "ml-4 pl-4 border-l-2 border-blue-200 dark:border-blue-800 space-y-4"
                             },
                             "children": [
+                                {
+                                    "id": "redis_shared_hint",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{_local.form?.drivers?.cache_driver !== 'redis'}}",
+                                    "props": {
+                                        "className": "flex-center text-xs text-blue-600 dark:text-blue-400 gap-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "info-circle",
+                                                "className": "text-xs"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:admin.settings.drivers.cache.redis_shared_hint"
+                                        }
+                                    ]
+                                },
                                 {
                                     "type": "basic",
                                     "name": "Div",

@@ -155,8 +155,8 @@
       <button data-ref="checkout_field_form_save" type="button" disabled="{{_global.checkout_field_form_modal?.isSaving === true || checkoutFieldDefs?.data?.abilities?.can_update !== true}}" class="ecommerce-flex-center ecommerce:gap-2 ecommerce:px-4 ecommerce:py-2 ecommerce:text-sm ecommerce:font-medium ecommerce:bg-indigo-600 ecommerce:dark:bg-indigo-500 ecommerce:hover:bg-indigo-700 ecommerce:dark:hover:bg-indigo-600 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed ecommerce:text-white ecommerce:rounded-lg">
         <on type="click">
           <!-- 저장. 추가는 POST, 수정은 PUT 으로 주소와 메서드가 함께 갈린다. 본문은 이름, 안내, 사용, 필수, 구획과 정의 버전이고,
-               추가일 때만 키와 유형을, 선택 유형일 때만 선택지를 더 싣는다(새 줄 표식은 뺀다). 성공하면 창을 닫고 표를 다시 받은 뒤
-               창 상태를 비운다. 다른 관리자가 먼저 바꿨으면(409) 저장하지 않고 알린 뒤 표를 다시 받고 창의 버전을 비운다.
+               추가일 때만 키와 유형을, 선택 유형일 때만 선택지를 더 싣는다(새 줄 표식은 뺀다). 성공하면 창을 닫고 곧바로 창 상태를 비운 뒤
+               표를 다시 받는다(다시 받기는 응답을 기다리므로 그 뒤에 비우면 그동안 다시 연 창을 지운다). 다시 받기 전에 응답의 새 정의 버전을 표 데이터 소스에 먼저 싣는다(그동안 연 다음 창의 거짓 409 방지). 다른 관리자가 먼저 바꿨으면(409) 저장하지 않고 알린 뒤 표를 다시 받고 창의 버전을 비운다.
                그 밖의 실패는 오류 응답을 통째로 담아 상단 상자와 각 칸 아래가 같은 값에서 읽는다. -->
           <sequence>
             <set-state target="global" :checkout_field_form_modal.isSaving="true" :checkout_field_form_modal.errors="null"/>
@@ -164,8 +164,9 @@
               <success>
                 <toast type="success" message="$t:sirsoft-ecommerce.admin.settings.checkout_fields.saved"/>
                 <close-modal target="checkout_field_form_modal"/>
-                <refetch-data-source dataSourceId="checkoutFieldDefs"/>
                 <set-state target="global" :checkout_field_form_modal="null"/>
+                <update-data-source dataSourceId="checkoutFieldDefs" data="{{ { ...(checkoutFieldDefs ?? { }), data: { ...(checkoutFieldDefs?.data ?? { }), fields_version: response?.data?.fields_version ?? checkoutFieldDefs?.data?.fields_version ?? null } } }}"/>
+                <refetch-data-source dataSourceId="checkoutFieldDefs"/>
               </success>
               <fail>
                 <conditions>

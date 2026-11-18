@@ -33,6 +33,10 @@ return [
         'hero_banner_video_update' => 'ヒーローセクションバナー「:banner_title」の:device動画を置き換えました。',
         'hero_banner_video_remove' => 'ヒーローセクションバナー「:banner_title」の:device動画を削除しました。',
     ],
+    'devices' => [
+        'pc' => 'PC',
+        'mobile' => 'モバイル',
+    ],
     'fields' => [
         'position' => '表示位置',
         'is_active' => '使用の可否',

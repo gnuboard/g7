@@ -446,7 +446,7 @@
                             "props": {
                                 "className": "mt-1 max-h-48 overflow-auto whitespace-pre-wrap break-all text-xs font-mono bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 p-3 rounded-lg"
                             },
-                            "text": "{{JSON.stringify(_global.queueJobDetail?.payload_meta ?? {}, null, 2)}}"
+                            "text": "{{raw:JSON.stringify(_global.queueJobDetail?.payload_meta ?? {}, null, 2)}}"
                         }
                     ]
                 }

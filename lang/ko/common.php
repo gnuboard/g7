@@ -205,6 +205,7 @@ return [
                 'stale_swap_files' => '확장 동기화 잠금 잔해',
                 'env_backups' => 'finalize 가 남긴 .env 보존 사본',
                 'legacy_browser_log' => '레거시 브라우저 로그',
+                'carried_class_files' => '확장 교체가 남긴 옛 클래스 파일',
             ],
             'group_count' => ':label: :count건',
             'dry_run_total' => '삭제 대상 합계 :count건 (dry-run — 실제 삭제 없음)',

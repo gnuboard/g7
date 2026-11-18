@@ -280,6 +280,8 @@ test('① 가입 화면에 그 칸이 별표와 함께 나오고, 비우면 칸 
   await expect(input).toHaveAttribute('aria-invalid', 'true');
   // 칸에 속한 오류는 위쪽 상자에 다시 뜨지 않는다.
   await expect(page.locator('#register_orphan_errors', { hasText: message })).toHaveCount(0);
+  // 응답 요약 문구(「… (외 N개 오류)」)도 위쪽 상자에 뜨지 않는다 — 칸 오류만 있는 422 면 상자 자체가 없다.
+  await expect(page.locator('#register_error_box')).toHaveCount(0);
   // 422 뒤에도 입력값이 남아 있다.
   await expect(page.locator('#registerForm input[name="email"]')).toHaveValue(signupEmail);
 

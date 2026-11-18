@@ -204,6 +204,7 @@ return [
                 'stale_swap_files' => 'Leftover extension sync locks',
                 'env_backups' => '.env copies kept by finalize',
                 'legacy_browser_log' => 'Legacy browser log',
+                'carried_class_files' => 'Old class files left by extension replacement',
             ],
             'group_count' => ':label: :count',
             'dry_run_total' => 'Total to delete: :count (dry-run — nothing deleted)',

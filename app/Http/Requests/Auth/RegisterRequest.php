@@ -2,6 +2,9 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Contracts\Http\DefersIdentityPolicyUntilValidated;
+use App\Exceptions\IdentityPolicyProviderUnavailableException;
+use App\Exceptions\IdentityVerificationRequiredException;
 use App\Extension\HookManager;
 use App\Fields\FieldContext;
 use App\Fields\FieldRegistry;
@@ -12,12 +15,20 @@ use App\Http\Requests\Concerns\ValidatesDisplayNameChoice;
 use App\Models\User;
 use App\Rules\PasswordPolicy;
 use App\Services\IdentityClaimsService;
+use App\Services\IdentityPolicyService;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
-class RegisterRequest extends FormRequest
+/**
+ * 공개 가입 요청 검증.
+ *
+ * 가입 전 본인확인 정책(`core.auth.signup_before_submit`)은 입력 검증을 통과한 뒤 강제한다(`DefersIdentityPolicyUntilValidated`, 7.2.0) —
+ * 빈 칸이나 틀린 입력은 본인 확인 요구(428)보다 먼저 칸별 오류(422)로 알린다.
+ */
+class RegisterRequest extends FormRequest implements DefersIdentityPolicyUntilValidated
 {
     use UsesMemberFields;
     use ValidatesDisplayNameChoice;
@@ -51,8 +62,8 @@ class RegisterRequest extends FormRequest
             'agree_privacy' => 'accepted',
             // 화면이 받은 가입 항목의 정의 버전 — 낡은 화면 판정에만 쓰고 저장하지 않는다.
             'fields_version' => ['nullable', 'string', 'max:64'],
-            // 본인인증을 마치고 온 가입의 토큰 — 가입 전 본인인증 정책을 켠 사이트에서는 아래 필터가 필수 규칙으로 바꾼다.
-            // 정책을 켜지 않은 사이트에서도 받아 두어, 인증 값으로 채운 항목의 잠금 기록이 가입 뒤에 남게 한다.
+            // 본인인증을 마치고 온 가입의 토큰 — 가입 전 본인인증 정책을 켠 사이트에서 토큰이 없거나 맞지 않으면 검증을 통과한 뒤
+            // 정책 강제가 428 로 알린다(입력 오류가 먼저다). 정책을 켜지 않은 사이트에서도 받아 두어, 인증 값으로 채운 항목의 잠금 기록이 가입 뒤에 남게 한다.
             'verification_token' => ['nullable', 'string', 'max:255'],
         ], self::LEGACY_RULE_ORDER);
 
@@ -88,12 +99,21 @@ class RegisterRequest extends FormRequest
     }
 
     /**
-     * 검증을 마친 뒤 옛 화면 호환으로 건너뛴 항목을 로그에 남깁니다.
+     * 검증을 마친 뒤 미뤄 둔 가입 전 본인확인 정책을 강제하고, 옛 화면 호환으로 건너뛴 항목을 로그에 남깁니다.
+     *
+     * 정책 판정은 라우트 미들웨어가 받은 원래 요청으로 한다 — 이 폼 요청은 그 사본이라, 사본에 남긴 인정 기록은
+     * 실패한 가입의 소비 되돌림(미들웨어)에 닿지 않는다.
      *
      * @return void 반환값 없음
+     *
+     * @throws IdentityVerificationRequiredException 가입 전 본인확인 정책이 켜져 있고 인정할 인증 결과가 없을 때(428)
+     * @throws IdentityPolicyProviderUnavailableException 가입 전 본인확인 정책이 지정한 수단을 지금 쓸 수 없을 때(503)
      */
     protected function passedValidation(): void
     {
+        $original = app('request');
+        app(IdentityPolicyService::class)->enforceDeferredRoutePolicies($original instanceof Request ? $original : $this);
+
         $this->noteLegacyMemberFieldScreen();
     }
 

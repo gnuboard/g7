@@ -3,6 +3,7 @@
 namespace App\Search\Engines\Maintenance;
 
 use App\Enums\SearchIndexStatus;
+use App\Search\Contracts\ProvidesPersistentStaleAdvice;
 use App\Search\Contracts\SearchIndexMaintainer;
 use App\Search\DTO\FulltextIndexDefinition;
 use App\Search\DTO\SearchIndexHealth;
@@ -19,7 +20,7 @@ use App\Search\FulltextIndexInspector;
  * 다른 엔진(Meilisearch 등)은 이 클래스를 상속하지 않고 계약을 각자 구현합니다 —
  * 인덱스의 실체가 다르므로 공유할 구현이 없습니다.
  */
-class FulltextIndexMaintainer implements SearchIndexMaintainer
+class FulltextIndexMaintainer implements ProvidesPersistentStaleAdvice, SearchIndexMaintainer
 {
     /** 이 유지보수기가 담당하는 Scout 드라이버명 */
     public const DRIVER = 'mysql-fulltext';
@@ -86,6 +87,33 @@ class FulltextIndexMaintainer implements SearchIndexMaintainer
             columns: (array) ($context['columns'] ?? []),
             parser: isset($context['parser']) ? (string) $context['parser'] : null,
         ));
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * InnoDB 는 숨은 문서 번호(FTS_DOC_ID) 매핑이 어긋난 표를 FULLTEXT 인덱스 DROP/ADD 로 고치지 못한다 —
+     * 표를 복사해 다시 만들어야(`ALTER TABLE … ENGINE=InnoDB, ALGORITHM=COPY`) 숨은 매핑이 새로 생긴다.
+     * 인덱스가 여럿 남은 표도 재구축 한 번이면 되므로 표마다 명령 하나다. 표 이름은 물리명(프리픽스 포함)이다.
+     */
+    public function persistentStaleAdvice(array $remaining): array
+    {
+        $advice = [];
+
+        foreach ($remaining as $health) {
+            $table = (string) ($health->context['table'] ?? '');
+
+            if ($table === '' || isset($advice[$table])) {
+                continue;
+            }
+
+            $advice[$table] = [
+                'target' => $table,
+                'command' => 'ALTER TABLE `'.str_replace('`', '``', $table).'` ENGINE=InnoDB, ALGORITHM=COPY;',
+            ];
+        }
+
+        return array_values($advice);
     }
 
     /**

@@ -280,7 +280,7 @@ $t:sirsoft-ecommerce.admin.product.filter.display_status</span>
           <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-32"/>
 $t:sirsoft-ecommerce.admin.product.filter.brand</span>
         <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-4">
-          <select name="brandId" class="ecommerce:w-48 ecommerce:px-3 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg" value="{{_local.filter.brandId || ''}}" options="{{_computed.brandOptions ?? []}}" placeholder="$t:common.select_placeholder">
+          <select name="brandId" aria-label="$t:sirsoft-ecommerce.admin.product.filter.brand" class="ecommerce:w-48 ecommerce:px-3 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg" value="{{_local.filter.brandId || ''}}" options="{{_computed.brandOptions ?? []}}" placeholder="$t:common.select_placeholder">
             <on type="change">
               <!-- 브랜드는 목록이 설치마다 다르므로 선택지를 서버에서 받는다. 값으로 이름이 아니라 id 를 담는 이유는 브랜드명이 바뀌어도 저장한 프리셋이 같은 브랜드를 가리켜야 하기 때문이다. -->
               <set-state target="_local" filter.brandId="{{$event.target.value}}"/>

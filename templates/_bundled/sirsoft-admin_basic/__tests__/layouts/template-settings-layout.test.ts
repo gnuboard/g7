@@ -171,6 +171,30 @@ describe('템플릿이 공급한 설정 화면 (#434 D28·D32)', () => {
             expect(action('onChange').params.hasChanges).toBe(true);
             expect(JSON.stringify(action('onBack'))).toContain('/admin/templates');
         });
+
+        // @scenario case=settings_layout
+        // @effects settings_save_stops_on_upload_failure
+        it(`${id} — 올리기가 하나라도 실패하면 PUT 을 보내지 않고 실패 문구를 남긴다(성공 안내로 덮지 않는다)`, () => {
+            const screen = find(settingsLayout(id), (n) => n.id === 'template_settings_screen');
+            const save = (screen!.actions as any[]).find((a) => a.event === 'onSave');
+            const list: any[] = save.actions ?? save.params?.actions ?? [];
+            const emit = list.findIndex((a) => a.handler === 'emitEvent');
+            const count = list.findIndex((a, i) => i > emit && a.handler === 'setState' && typeof a.params?.uploadFailedCount === 'string');
+            const put = list.findIndex((a) => a.handler === 'apiCall');
+
+            // 지난 결과 안내는 올리기 전에 걷는다 — 올리기 실패 문구를 뒤에서 지우지 않게
+            const clearIdx = list.findIndex((a) => a.handler === 'setState' && Object.prototype.hasOwnProperty.call(a.params ?? {}, 'saveStatus') && a.params.saveStatus === null);
+            expect(clearIdx).toBeGreaterThanOrEqual(0);
+            expect(clearIdx).toBeLessThan(emit);
+            // 업로더 결과(`_eventResult.data[].failedCount`)를 세고, 실패가 있으면 PUT 을 건너뛴다
+            expect(count).toBeGreaterThan(emit);
+            expect(list[count].params.uploadFailedCount).toContain('failedCount');
+            expect(put).toBeGreaterThan(count);
+            expect(list[put].if).toBe('{{(_local.uploadFailedCount ?? 0) === 0}}');
+            const stop = list.find((a, i) => i > count && i < put && a.handler === 'setState' && a.if === '{{(_local.uploadFailedCount ?? 0) > 0}}');
+            expect(stop?.params?.saveStatus).toContain("type: 'error'");
+            expect(stop?.params?.saveStatus).toContain('core.template_settings.upload_failed_save_stopped');
+        });
     }
 });
 

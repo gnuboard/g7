@@ -8,7 +8,7 @@
  *
  * 시나리오: case=settings_layout
  *
- * 효과: settings_layout_saves_template_settings
+ * 효과: settings_layout_saves_template_settings, settings_save_stops_on_upload_failure
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -26,7 +26,7 @@ const data = {
 };
 
 describe('학습용 설정 화면 (#434)', () => {
-  let listener: (() => Promise<void>) | null = null;
+  let listener: (() => Promise<unknown>) | null = null;
   const post = vi.fn();
 
   beforeEach(() => {
@@ -35,7 +35,7 @@ describe('학습용 설정 화면 (#434)', () => {
     (window as any).G7Core = {
       api: { post },
       componentEvent: {
-        on: (_event: string, callback: () => Promise<void>) => {
+        on: (_event: string, callback: () => Promise<unknown>) => {
           listener = callback;
 
           return () => undefined;
@@ -87,6 +87,34 @@ describe('학습용 설정 화면 (#434)', () => {
       await listener?.();
     });
     expect(onUploadError).toHaveBeenCalledWith('형식이 맞지 않습니다');
+  });
+
+  // @scenario case=settings_layout
+  // @effects settings_save_stops_on_upload_failure
+  it('저장 신호의 결과로 실패 수를 돌려준다 — 레이아웃이 실패면 PUT 을 멈추고 실패 문구를 남긴다', async () => {
+    render(<TemplateSettingsScreen data={data} value={{}} activeSection="branding" readOnly={false} />);
+
+    // 고른 파일이 없으면 실패 0
+    let result: any;
+    await act(async () => {
+      result = await listener?.();
+    });
+    expect(result).toEqual({ failedCount: 0 });
+
+    // 서버가 거절하면 실패 1 과 서버 문구
+    post.mockRejectedValueOnce({ response: { data: { message: '형식이 맞지 않습니다' } } });
+    fireEvent.change(screen.getByLabelText('파비콘'), { target: { files: [new File(['x'], 'fake.png')] } });
+    await act(async () => {
+      result = await listener?.();
+    });
+    expect(result).toEqual({ failedCount: 1, message: '형식이 맞지 않습니다' });
+    // 실패한 파일은 고른 채로 남는다 — 다시 저장하면 다시 올리고, 올리면 실패 0
+    post.mockResolvedValueOnce({ data: { id: 7, hash: 'h', original_filename: 'fake.png' } });
+    await act(async () => {
+      result = await listener?.();
+    });
+    expect(result).toEqual({ failedCount: 0 });
+    expect(post).toHaveBeenCalledTimes(2);
   });
 
   // @scenario case=settings_layout

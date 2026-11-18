@@ -49,6 +49,7 @@ class FieldDefinitionService
      * @param  FieldRegistry  $registry  항목 등록소
      * @param  FieldTypeRegistry  $types  유형 등록소
      * @param  ColumnFieldStorage  $columnStorage  컬럼 저장소 (미입력 회원 수 계산)
+     * @param  MemberFieldFileService  $memberFiles  회원 파일 항목 첨부 (항목 삭제 때 세고 지운다)
      */
     public function __construct(
         protected FieldDefinitionRepositoryInterface $definitions,
@@ -57,6 +58,7 @@ class FieldDefinitionService
         protected FieldRegistry $registry,
         protected FieldTypeRegistry $types,
         protected ColumnFieldStorage $columnStorage,
+        protected MemberFieldFileService $memberFiles,
     ) {}
 
     /**
@@ -215,8 +217,11 @@ class FieldDefinitionService
      * 삭제 전 필터 `core.field_definition.filter_usages` 로 사용처를 모아, 다른 설정이 이 항목을 쓰고 있으면
      * 삭제하지 않고 충돌로 알린다(표시 이름 종류로 쓰이는 항목 등).
      *
+     * 파일·이미지 항목의 값은 값 테이블이 아니라 첨부(`field:{키}`)라, 회원들이 올린 첨부도 함께 지운다. 파일 삭제는
+     * 되돌릴 수 없으므로 대상을 먼저 모아 두고 항목 행이 지워진 트랜잭션이 커밋된 뒤 첨부 삭제 경로(저장 파일·썸네일 정리 포함)로 지운다.
+     *
      * @param  FieldDefinition  $definition  항목 (운영자 항목)
-     * @return int 함께 지운 값 행 수
+     * @return int 함께 지운 값 수 (값 행 + 파일 항목의 첨부)
      *
      * @throws FieldDefinitionConflictException 다른 설정이 이 항목을 쓰고 있을 때
      */
@@ -228,12 +233,16 @@ class FieldDefinitionService
         }
 
         $snapshot = clone $definition;
+        // 지울 첨부는 ID 만 모은다 — 회원 수만큼 첨부 모델을 메모리에 올리지 않는다
+        $attachmentIds = $this->memberFiles->attachmentIdsForDefinition($definition);
         $removed = DB::transaction(function () use ($definition) {
             $count = $this->values->deleteForDefinition($definition->id);
             $this->definitions->delete($definition);
 
             return $count;
         });
+
+        $removed += $this->memberFiles->purgeAttachmentIds($attachmentIds);
 
         HookManager::doAction('core.field_definition.after_delete', $snapshot);
 
@@ -276,14 +285,37 @@ class FieldDefinitionService
     /**
      * 항목에 값이 있는 소유자 수를 반환합니다.
      *
+     * 파일·이미지 항목은 값이 첨부라 파일을 올린 소유자 수를 센다(값 테이블에는 행이 없다). 유형을 준 확장이 빠져 유형을
+     * 알 수 없어도 값 행이 없으면 첨부를 센다 — 삭제({@see delete()})는 유형과 무관하게 그 항목의 첨부를 지우므로 안내와 맞춘다.
+     * 첨부 수는 DB 집계로 센다(회원 수만큼 모델을 올리지 않는다).
+     *
      * @param  FieldDefinition  $definition  항목
-     * @return int 값 행 수 (값 테이블 저장이 아니면 0)
+     * @return int 값 행 수 또는 파일을 올린 소유자 수 (값 테이블 저장이 아니면 0)
      */
     public function valuesCount(FieldDefinition $definition): int
     {
-        return $definition->storage === FieldStorageType::Value->value
-            ? $this->values->countForDefinition($definition->id)
-            : 0;
+        if ($definition->storage !== FieldStorageType::Value->value) {
+            return 0;
+        }
+        if ($this->registry->typeOf($definition)?->renderer() === 'file') {
+            return $this->memberFiles->ownersCountForDefinition($definition);
+        }
+
+        $rows = $this->values->countForDefinition($definition->id);
+
+        return $rows > 0 ? $rows : $this->memberFiles->ownersCountForDefinition($definition);
+    }
+
+    /**
+     * 확장(모듈·플러그인)의 이름을 요청 언어로 반환합니다 (확장이 준 입력 유형의 출처 배지).
+     *
+     * @param  string  $type  확장 종류 (module|plugin)
+     * @param  string  $identifier  확장 식별자
+     * @return string 확장 이름 (못 찾으면 식별자)
+     */
+    public function extensionLabel(string $type, string $identifier): string
+    {
+        return $this->registry->extensionLabel($type, $identifier);
     }
 
     /**

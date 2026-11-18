@@ -5,6 +5,7 @@ namespace App\Console\Commands\Core;
 use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\RendersLayoutSyncResult;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
+use App\CoreUpdate\BundledChildMarker;
 use App\Exceptions\ExtensionOperationLockUnavailableException;
 use App\Extension\ExtensionManager;
 use App\Extension\ModuleManager;
@@ -130,6 +131,29 @@ class ExecuteBundledUpdatesCommand extends Command
             return self::FAILURE;
         }
 
+        // 관리자 화면 코어 업데이트가 항목마다 표식 경로를 싣는다 — 이 프로세스가 끝날 때까지 잡고 있어, 기다리던 요청이
+        // 시간 제한으로 죽어도 다음 요청이 이 프로세스의 끝을 확인한 뒤 진행한다. 끝나면(정상·예외) 놓고 치운다.
+        $childMarker = is_string($manifest['child_marker'] ?? null) ? $manifest['child_marker'] : null;
+        $markerHandle = $childMarker !== null ? BundledChildMarker::hold($childMarker) : null;
+
+        try {
+            return $this->runManifest($manifest, $isItemProcess);
+        } finally {
+            if ($childMarker !== null) {
+                BundledChildMarker::release($markerHandle, $childMarker);
+            }
+        }
+    }
+
+    /**
+     * 매니페스트의 항목들을 업데이트하고 결과 표식 라인을 출력합니다.
+     *
+     * @param  array<string, mixed>  $manifest  매니페스트
+     * @param  bool  $isItemProcess  항목 하나를 맡은 자식 프로세스인지
+     * @return int 1건 이상 실패 시 FAILURE, 전부 성공 시 SUCCESS
+     */
+    private function runManifest(array $manifest, bool $isItemProcess): int
+    {
         // 부모(core:update)가 운영자 선택을 매니페스트에 실어 보낸다 — 자식이 임의로 정하지 않는다
         $rebuildSearchIndex = (bool) $this->option('rebuild-search-index') || (bool) ($manifest['rebuild_search_index'] ?? false);
 
@@ -192,6 +216,11 @@ class ExecuteBundledUpdatesCommand extends Command
 
                 foreach ($report->failed as $identifier => $message) {
                     $this->warn('  '.__('search.index.rebuild_failed_item', ['index' => $identifier, 'error' => $message]));
+                }
+
+                // 재생성으로 고쳐지지 않는 손상은 표 재구축 명령을 안내한다(실행하지 않음)
+                foreach ($report->adviceLines() as $line) {
+                    $this->warn('  '.$line);
                 }
             }
 

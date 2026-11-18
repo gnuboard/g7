@@ -1,0 +1,15 @@
+feature: 레이아웃 편집기 — 검수 서버(실행 역할 stage)의 「검수용 저장」 안내 띠
+
+description: |
+  검수 서버에서 시각 편집기로 저장한 레이아웃은 검수 서버 표(`stage_template_layouts`)에만 남고 운영 사이트에 반영되지
+  않는다. 관리자 화면 상단 띠·코드 편집 화면 안내는 관리자 템플릿 레이아웃이 그리고, 시각 편집기 셸(LayoutEditorChrome)은
+  셸 설정 `G7Config.appConfig.runtime_role` 이 `stage` 일 때만 편집기 머리에 같은 뜻의 띠를 그린다.
+
+axes:
+  case: [stage_role, live_role]
+
+effects:
+  - editor_stage_banner_only_on_stage
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/components/LayoutEditorChrome.stageBanner.test.tsx

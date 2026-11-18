@@ -1,0 +1,27 @@
+# 시나리오 매니페스트 — 계정이 지워진 회원 작성자 표시
+# 참조: modules/_bundled/sirsoft-board/tests/scenarios/board-deleted-account-author-display.yaml (서버 계약: uuid null, is_guest false)
+
+feature: userinfo_deleted_member_author
+
+description: >-
+  관리자가 삭제한 회원의 글·댓글은 서버가 작성자를 {uuid: null, name: null, is_guest: false} 로 준다(회원 번호는 남고 계정이 없음).
+  사용자 화면 UserInfo 부품은 uuid 가 없으면 비회원으로 보아 이름 빈 칸과 「비회원」 배지를 그렸다. 비회원 배지 없이
+  탈퇴한 사용자처럼(「탈퇴한 사용자」, 기존 문구 userinfo.withdrawn_user) 그린다. 진짜 비회원(is_guest true)은 종전대로다.
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/UserInfoDeletedMemberAuthor.test.tsx
+
+axes:
+  author:
+    - deleted_member   # is_guest false + uuid 없음
+    - guest            # is_guest true (대조군)
+
+effects:
+  - deleted_member_author_shown_without_guest_badge   # 「탈퇴한 사용자」 로 보이고 비회원 배지가 없다
+  - guest_author_keeps_badge                          # 비회원 글은 이름과 「비회원」 배지 그대로
+
+validation:
+  audit_rule: frontend-change-requires-e2e
+  browser_check: — 관리자가 삭제한 회원의 글 목록·상세 작성자 칸이 「탈퇴한 사용자」, 「비회원」 배지 없음
+  note: |
+    수정 전 red(2026-11-18): 1 failed / 2 — 「탈퇴한 사용자」 없음(이름 빈 칸 + 비회원 배지). 수정 후 green 2 / 2.

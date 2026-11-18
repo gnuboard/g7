@@ -1,0 +1,18 @@
+feature: 번호 자리에 숫자가 아닌 값이 오면 404
+
+description: |
+  컨트롤러가 번호 인자를 int 로 받는데 라우트에 숫자 제약(whereNumber)이 없으면, 숫자 아닌 주소(예: …/abc)가 권한 판정을 지나
+  컨트롤러 호출에서 TypeError 로 500 이 되고 오류 로그가 쌓였다(7.1.6 부터). 라우트 제약이 표준(코어·같은 파일 선례)이다 —
+  제약에 맞지 않는 주소는 라우트가 없는 것과 같아 404 다. 라우트 계약 검사가 새 라우트의 누락을 이름으로 알린다.
+
+axes:
+  case:
+    - route_contract        # 모듈의 모든 라우트에서 int 로 받는 번호 자리에 숫자 제약이 있다
+    - non_numeric_id_404    # 숫자 아닌 번호 요청이 권한이 있어도 404 로 끝난다
+
+effects:
+  - int_route_params_have_numeric_constraint
+  - non_numeric_id_returns_404
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/NonNumericRouteIdNotFoundTest.php

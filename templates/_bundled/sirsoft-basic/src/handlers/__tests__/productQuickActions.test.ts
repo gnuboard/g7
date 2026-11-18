@@ -5,7 +5,7 @@
  * @scenario-manifest tests/scenarios/product-card-quick-actions.yaml
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { quickAddToCartHandler, openQuickOptionHandler, toggleWishlistQuickHandler } from '../productQuickActions';
 import { getWishlistOverride, clearWishlistOverrides } from '../../support/wishlistOverrides';
 
@@ -240,5 +240,81 @@ describe('카드 찜', () => {
     // 다른 회원으로 바뀌면 앞 회원의 결과를 버린다
     globalState.currentUser = { uuid: 'u-2' };
     expect(getWishlistOverride(7)).toBeUndefined();
+  });
+});
+
+describe('추가 정보 미입력 거부(403 required_fields_pending)', () => {
+  const PENDING_MODAL = 'required_info_pending_modal';
+  let engineGlobal: Record<string, any>;
+
+  /**
+   * 카드 핸들러의 요청을 실제 엔진(ActionDispatcher·ErrorHandlingResolver)으로 보낸다.
+   * 화면 레이아웃 수준 403 처리(상품 상세의 오류 화면, 목록의 접근 거부 표시)가 걸린 상태를 그대로 만든다 —
+   * 자기 오류 처리가 없는 요청은 그 화면 처리가 템플릿 수준 「추가 정보 필요」 처리보다 먼저라 창이 뜨지 않았다.
+   */
+  async function withEngine(layout: 'shop/show' | 'shop/index', status: number, body: Record<string, unknown>) {
+    const { ActionDispatcher } = await import('@core/template-engine/ActionDispatcher');
+    const { ErrorHandlingResolver, getErrorHandlingResolver } = await import('@core/error/ErrorHandlingResolver');
+    const templateManifest = (await import('../../../template.json')).default as any;
+    const layoutJson = (layout === 'shop/show'
+      ? (await import('../../../layouts/shop/show.json')).default
+      : (await import('../../../layouts/shop/index.json')).default) as any;
+
+    ErrorHandlingResolver.resetInstance();
+    engineGlobal = { ...globalState, toasts: [], modalStack: [] };
+    const dispatcher = new ActionDispatcher({ navigate: vi.fn() });
+    dispatcher.setGlobalStateUpdater((updates: any) => {
+      const next = typeof updates === 'function' ? updates(engineGlobal) : updates;
+      engineGlobal = { ...engineGlobal, ...next };
+    });
+    (window as any).G7Core.state.get = () => engineGlobal;
+    (window as any).G7Core.state.getLocal = () => ({});
+    (window as any).G7Core.state.setLocal = () => {};
+    (window as any).G7Core.dispatch = (action: any) => dispatcher.dispatchAction(action, { data: {} } as any);
+    (window as any).__templateApp = { getRouter: () => ({ match: () => ({ route: {} }) }) };
+    getErrorHandlingResolver().setTemplateConfig(templateManifest.errorHandling);
+    getErrorHandlingResolver().setLayoutConfig(layoutJson.errorHandling);
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => new Response(JSON.stringify(body), { status }));
+  }
+
+  const pendingBody = {
+    success: false,
+    message: '추가 정보를 입력해야 이용할 수 있습니다.',
+    error_code: 'required_fields_pending',
+    data: { pending_required_fields: ['homepage'] },
+  };
+
+  afterEach(async () => {
+    vi.restoreAllMocks();
+    const { ErrorHandlingResolver } = await import('@core/error/ErrorHandlingResolver');
+    ErrorHandlingResolver.resetInstance();
+    delete (window as any).__templateApp;
+  });
+
+  // @scenario case=c32
+  // @effects card_actions_open_required_info_modal_on_pending
+  it.each(['shop/show', 'shop/index'] as const)('%s 화면의 카드 찜·곧바로 담기가 그 거부를 받으면 오류 알림 대신 「추가 정보 필요」 창을 연다', async (layout) => {
+    globalState.currentUser = { uuid: 'u-1' };
+    await withEngine(layout, 403, pendingBody);
+    expect(await toggleWishlistQuickHandler({ handler: 'x', params: { product: { id: 7, is_wishlisted: false } } })).toBeNull();
+    expect(engineGlobal.modalStack).toEqual([PENDING_MODAL]);
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(engineGlobal.toasts ?? []).toEqual([]);
+
+    engineGlobal.modalStack = [];
+    expect(await quickAddToCartHandler({ handler: 'x', params: { product: { id: 7, options_count: 1, has_additional_options: false } } })).toBe(false);
+    expect(engineGlobal.modalStack).toEqual([PENDING_MODAL]);
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(engineGlobal.toasts ?? []).toEqual([]);
+  });
+
+  // @scenario case=c33
+  // @effects card_actions_keep_toast_for_other_403
+  it('다른 403 은 창을 열지 않고 서버 문구를 알린다(화면 수준 403 처리로 넘어가지 않는다)', async () => {
+    globalState.currentUser = { uuid: 'u-1' };
+    await withEngine('shop/show', 403, { success: false, message: '권한이 없습니다.' });
+    await toggleWishlistQuickHandler({ handler: 'x', params: { product: { id: 7, is_wishlisted: false } } });
+    expect(engineGlobal.modalStack ?? []).not.toContain(PENDING_MODAL);
+    expect(toast.error).toHaveBeenCalledWith('권한이 없습니다.');
   });
 });

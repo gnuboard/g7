@@ -419,13 +419,15 @@ modals 섹션 모달은 React Portal 로 외부 마운트되어 페이지 단위
   "<modal_namespace>.form.X": "{{$event.target.value}}"
 }}
 
-// 저장 onSuccess — 명시적 정리
+// 저장 onSuccess — 명시적 정리 (닫기 → 비우기 → 다시 받기)
 [
   { "handler": "closeModal" },
-  { "handler": "refetchDataSource", "params": { "dataSourceId": "..." } },
-  { "handler": "setState", "params": { "target": "global", "<modal_namespace>": null } }
+  { "handler": "setState", "params": { "target": "global", "<modal_namespace>": null } },
+  { "handler": "refetchDataSource", "params": { "dataSourceId": "..." } }
 ]
 ```
+
+**성공 갈래의 비우기는 다시 받기 앞**: `refetchDataSource` 는 응답을 기다리는 액션이라, 비우기를 그 뒤에 두면 창이 닫힌 뒤 목록을 다시 받는 몇 초 동안 비우기가 늦어진다. 그 사이 관리자가 같은 창을 다시 열면 늦게 도는 비우기가 **새 창의 상태를 지운다**(빈 수정 창이 `…/undefined` 로 저장을 보내거나, 확인 창 문구가 `{{name}}` 자리표시로 남는다). 그래서 성공 갈래(409 충돌로 닫는 갈래 포함)는 `closeModal` 바로 뒤에 비우고 다시 받기는 그 뒤에 둔다. 다시 받기 뒤 동작이 그 값을 읽어야 하면 이름 공간이 아니라 값을 먼저 다른 키로 옮기거나 응답 값을 쓴다.
 
 **여는 순간 비우기**: `setState` 의 기본 병합은 deep 이라, 객체를 써도 이번 객체에 없는 앞 키(앞 창의 `id`·입력값·오류)는 지워지지 않습니다. 새로 만들기 창이 수정 창과 같은 키를 쓰면 앞 `id` 가 남아 「수정」 으로 열리고 저장이 그 항목을 덮어씁니다. 그래서 여는 동작은 같은 액션 목록에서 그 키를 먼저 `null` 로 쓰고 객체를 씁니다(`null` 은 그 키만 덮어쓰고 다른 `_global` 키는 그대로 둡니다). 전역 대상에 `merge: "replace"` 를 쓰는 방식은 쓰지 않습니다.
 
@@ -1332,3 +1334,4 @@ ZIP 파일을 업로드해 백엔드에 multipart/form-data 로 전송하는 모
 | 2026-04-28 | 1.4 | ZIP 파일 업로드 모달/드로어 패턴 섹션 추가 (FileInput, contentType, body 표현식, _global, sequence 로딩) |
 | 2026-10-18 | 1.5 | 「창을 닫을 때 이름 공간 비우기」 추가 — 개인정보·비밀값을 담은 창 이름 공간은 닫히는 모든 갈래에서 비우고, X·바깥 클릭·Esc 는 창 본문 노드의 unmount 로 덮는다 |
 | 2026-10-20 | 1.6 | 「창을 닫을 때 이름 공간 비우기」 보강 — 창이 닫힌 뒤 도착한 응답이 이름 공간을 되살리지 않게 값 식에서 null 을 가른다 |
+| 2026-11-18 | 1.7 | 「저장 onSuccess — 명시적 정리」 순서를 닫기 → 비우기 → 다시 받기로 고침 — 다시 받기 뒤 비우기가 그동안 다시 연 창 상태를 지우던 결함(회원 항목 추가·삭제 창 외 12곳) |

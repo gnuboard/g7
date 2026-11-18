@@ -7,9 +7,13 @@ use App\Enums\ExtensionOwnerType;
 use App\Enums\PermissionType;
 use App\Extension\HookManager;
 use App\Fields\FieldContext;
+use App\Fields\FieldRegistry;
+use App\Fields\FieldTypeRegistry;
 use App\Fields\FieldValueService;
+use App\Fields\Types\TextType;
 use App\Models\FieldDefinition;
 use App\Models\FieldValue;
+use App\Models\Module;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -557,5 +561,50 @@ class FieldDefinitionControllerTest extends TestCase
         $this->getJson(self::BASE, ['Accept' => 'application/json'])->assertStatus(401);
         $this->getJson('/api/admin/field-sets/no.such.set/fields', $this->auth())->assertStatus(404);
         $this->getJson(self::BASE.'/999999', $this->auth())->assertStatus(404);
+    }
+
+    /**
+     * 확장 항목의 출처 이름과 확장 유형의 출처 이름은 설치 기록의 다국어 이름(언어팩이 채운 ja 포함)에서 요청 언어로 고른다.
+     * 확장 manifest 는 ko·en 뿐이라 manifest 에서 고르면 일본어 화면에 한국어가 남는다.
+     *
+     * @scenario action=index
+     *
+     * @effects admin_field_source_label_follows_installed_name_locale
+     *
+     * @return void 반환값 없음
+     */
+    public function test_source_and_type_owner_labels_use_installed_localized_name(): void
+    {
+        Module::factory()->create([
+            'identifier' => 'test-srclabel',
+            'name' => ['ko' => '시험 모듈', 'en' => 'Test Module', 'ja' => 'テストモジュール'],
+        ]);
+        $definition = FieldDefinition::create([
+            'field_set' => 'core.user', 'key' => 'srclabel_x', 'type' => 'text', 'source_type' => 'module',
+            'source_identifier' => 'test-srclabel', 'storage' => 'value', 'name' => ['ko' => '시험'],
+        ]);
+        $registry = app(FieldRegistry::class);
+
+        $this->assertSame('テストモジュール', $registry->sourceLabel($definition, 'ja'));
+        $this->assertSame('Test Module', $registry->sourceLabel($definition, 'en'));
+        $this->assertSame('시험 모듈', $registry->sourceLabel($definition, 'ko'));
+
+        // 확장이 준 입력 유형의 타일 배지도 식별자가 아니라 같은 이름을 싣는다.
+        app(FieldTypeRegistry::class)->register(new class extends TextType
+        {
+            /**
+             * 시험용 확장 유형 키를 반환합니다.
+             *
+             * @return string 유형 키
+             */
+            public function key(): string
+            {
+                return 'srclabel_text';
+            }
+        }, 'module', 'test-srclabel');
+        $types = array_column($this->getJson(self::BASE, $this->auth())->assertOk()->json('data.types'), null, 'key');
+        $this->assertSame('test-srclabel', $types['srclabel_text']['owner'] ?? null);
+        $this->assertSame('시험 모듈', $types['srclabel_text']['owner_label'] ?? null);
+        $this->assertNull($types['text']['owner_label'] ?? null);
     }
 }

@@ -51,7 +51,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
     Route::post('/banner-images', [BannerImageController::class, 'store'])->middleware($update)->name('banner-images.store');
     Route::delete('/banner-images/{image}', [BannerImageController::class, 'destroy'])->whereNumber('image')->middleware($update)->name('banner-images.destroy');
 
-    Route::get('/position-settings', [PositionSettingController::class, 'index'])->middleware($read)->name('position-settings.index');
+    // 플러그인 설정 화면(업로드 한도 안내)이 「플러그인 보기」(core.plugins.read)로도 읽는다(OR) — 읽기 전용 진입 때 403 알림 방지
+    Route::get('/position-settings', [PositionSettingController::class, 'index'])->middleware('permission:admin,sirsoft-hero_section.banners.read|core.plugins.read,false')->name('position-settings.index');
     Route::put('/position-settings/{position}', [PositionSettingController::class, 'update'])->middleware($update)->name('position-settings.update');
     // 동적 위치 대상별 재정의 — 대상 키는 해석기의 정규 키(최대 100자, 경로 구분자 제외)
     Route::get('/position-settings/{position}/targets/{target}', [TargetSettingController::class, 'show'])

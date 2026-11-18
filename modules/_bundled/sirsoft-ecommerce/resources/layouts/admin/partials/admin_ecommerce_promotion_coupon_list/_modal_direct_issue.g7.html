@@ -85,10 +85,10 @@
               <success>
                 <set-state target="global" :directIssueSubmitting="false"/>
                 <close-modal/>
-                <refetch-data-source dataSourceId="coupons"/>
-                <toast type="success" message="{{response.message}}"/>
                 <!-- 발급 성공 — 창을 닫고 안내를 띄운 뒤 회원 이름 공간을 비운다 -->
                 <set-state target="global" :directIssueSearchResults="null" :directIssueSelectedUsers="null" :directIssueSearchKeyword="null" :directIssueSearchResultsKeyword="null"/>
+                <refetch-data-source dataSourceId="coupons"/>
+                <toast type="success" message="{{response.message}}"/>
               </success>
               <fail>
                 <set-state target="global" :directIssueSubmitting="false"/>

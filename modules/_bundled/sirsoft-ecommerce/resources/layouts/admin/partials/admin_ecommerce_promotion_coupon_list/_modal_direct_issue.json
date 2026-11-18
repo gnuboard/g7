@@ -86,6 +86,17 @@
                                         "handler": "closeModal"
                                     },
                                     {
+                                        "comment": "발급 성공 — 창을 닫고 안내를 띄운 뒤 회원 이름 공간을 비운다",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "directIssueSearchResults": null,
+                                            "directIssueSelectedUsers": null,
+                                            "directIssueSearchKeyword": null,
+                                            "directIssueSearchResultsKeyword": null
+                                        }
+                                    },
+                                    {
                                         "handler": "refetchDataSource",
                                         "params": {
                                             "dataSourceId": "coupons"
@@ -96,17 +107,6 @@
                                         "params": {
                                             "type": "success",
                                             "message": "{{response.message}}"
-                                        }
-                                    },
-                                    {
-                                        "comment": "발급 성공 — 창을 닫고 안내를 띄운 뒤 회원 이름 공간을 비운다",
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "global",
-                                            "directIssueSearchResults": null,
-                                            "directIssueSelectedUsers": null,
-                                            "directIssueSearchKeyword": null,
-                                            "directIssueSearchResultsKeyword": null
                                         }
                                     }
                                 ],

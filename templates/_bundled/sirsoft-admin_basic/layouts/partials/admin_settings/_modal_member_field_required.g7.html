@@ -40,14 +40,15 @@
               <success>
                 <toast type="success" message="$t:admin.settings.member.fields.saved"/>
                 <close-modal target="member_field_required_modal"/>
-                <refetch-data-source dataSourceId="memberFieldDefs"/>
                 <set-state target="global" :member_field_required_modal="null"/>
+                <update-data-source dataSourceId="memberFieldDefs" data="{{ { ...(memberFieldDefs ?? { }), data: { ...(memberFieldDefs?.data ?? { }), fields_version: response?.data?.fields_version ?? memberFieldDefs?.data?.fields_version ?? null } } }}"/>
+                <refetch-data-source dataSourceId="memberFieldDefs"/>
               </success>
               <fail>
                 <toast type="error" message="{{error.error_code === 'fields_changed' ? '$t:admin.settings.member.fields.changed_by_other' : (error.message ?? '$t:admin.settings.member.fields.save_failed')}}"/>
                 <close-modal target="member_field_required_modal"/>
-                <refetch-data-source dataSourceId="memberFieldDefs"/>
                 <set-state target="global" :member_field_required_modal="null"/>
+                <refetch-data-source dataSourceId="memberFieldDefs"/>
               </fail>
             </api-call>
           </sequence>

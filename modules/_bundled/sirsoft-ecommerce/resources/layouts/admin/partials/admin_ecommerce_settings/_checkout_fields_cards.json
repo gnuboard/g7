@@ -188,6 +188,13 @@
                                                             }
                                                         },
                                                         {
+                                                            "handler": "updateDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "checkoutFieldDefs",
+                                                                "data": "{{ { ...(checkoutFieldDefs ?? { }), data: { ...(checkoutFieldDefs?.data ?? { }), fields_version: response?.data?.fields_version ?? checkoutFieldDefs?.data?.fields_version ?? null } } }}"
+                                                            }
+                                                        },
+                                                        {
                                                             "handler": "refetchDataSource",
                                                             "params": {
                                                                 "dataSourceId": "checkoutFieldDefs"
@@ -296,6 +303,13 @@
                                                             "params": {
                                                                 "type": "success",
                                                                 "message": "$t:sirsoft-ecommerce.admin.settings.checkout_fields.saved"
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "updateDataSource",
+                                                            "params": {
+                                                                "dataSourceId": "checkoutFieldDefs",
+                                                                "data": "{{ { ...(checkoutFieldDefs ?? { }), data: { ...(checkoutFieldDefs?.data ?? { }), fields_version: response?.data?.fields_version ?? checkoutFieldDefs?.data?.fields_version ?? null } } }}"
                                                             }
                                                         },
                                                         {

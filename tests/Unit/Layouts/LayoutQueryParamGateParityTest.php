@@ -56,6 +56,7 @@ class LayoutQueryParamGateParityTest extends TestCase
             $admin.'/admin_role_form.json' => ['with_children' => $deadMenuParams, 'hierarchical' => $deadMenuParams],
             'templates/_bundled/sirsoft-basic/layouts/search/index.json' => [
                 'board_slug' => '게시판 모듈이 core.search 검증 규칙 훅으로 더한다 — 코어 스위트에서는 모듈 비활성이라 보이지 않는다',
+                'exclude_sold_out' => '쇼핑몰 모듈이 core.search 검증 규칙 훅으로 더한다(SearchProductsListener) — 코어 스위트에서는 모듈 비활성이라 보이지 않는다',
             ],
         ];
     }

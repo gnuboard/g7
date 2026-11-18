@@ -19,6 +19,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { dataBindingEngine } from '@core/template-engine/DataBindingEngine';
+import { evaluateIfCondition } from '@core/template-engine/helpers/RenderHelpers';
 import layout from '../../../layouts/admin/plugin_settings.json';
 import publishModal from '../../../layouts/admin/partials/plugin_settings/_policy_version_publish_modal.json';
 import snapshotModal from '../../../layouts/admin/partials/_shared/_policy_version_snapshot_modal.json';
@@ -570,6 +572,26 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(sub?.if).toBe('{{_local.form?.banner_enabled === true}}');
         });
 
+        /**
+         * 설정을 받은 직후, 받은 값이 폼(initLocal)에 들어오기 전 한 박자에도 쿠키 배너를 켠 사이트에는 「OFF 안내」가
+         * 보이지 않는다. 종전 조건은 그 박자에 `!undefined` 로 참이 되어 안내가 번쩍였다(받는 중 결함군).
+         *
+         * @scenario surface=admin_show
+         * @effects blocked_domains_off_hint_not_flashed_before_form_filled
+         */
+        it('쿠키 배너 OFF 안내는 폼 채우기 전 한 박자에도 받은 설정 값으로 판단한다', () => {
+            const offHint = findById(root, 'blocked_domains_off_hint');
+            const shows = (gdprSettings: unknown, form: unknown): boolean => {
+                const ctx: any = { gdprSettings, _local: form === undefined ? {} : { form }, _global: {}, _computed: {}, query: {}, route: {} };
+                return evaluateIfCondition(offHint?.if as string, ctx, dataBindingEngine);
+            };
+            expect(shows(undefined, undefined)).toBe(false);
+            expect(shows({ data: { settings: { banner_enabled: true } } }, undefined)).toBe(false);
+            expect(shows({ data: { settings: { banner_enabled: false } } }, undefined)).toBe(true);
+            expect(shows({ data: { settings: { banner_enabled: true } } }, { banner_enabled: false })).toBe(true);
+            expect(shows({ data: { settings: { banner_enabled: false } } }, { banner_enabled: true })).toBe(false);
+        });
+
         // @scenario area=auto_blocking_policy
         // @effects blocked_domains_gated_by_banner_toggle_with_off_hint
         /**
@@ -580,7 +602,7 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             const offHint = findById(root, 'blocked_domains_off_hint');
             expect(offHint).toBeTruthy();
             // 단일 토글 통합 — banner_enabled OFF (= !banner_enabled) 일 때 안내 표시
-            expect(offHint?.if).toBe('{{gdprSettings !== undefined && !_local.form?.banner_enabled}}');
+            expect(offHint?.if).toBe('{{gdprSettings !== undefined && !(_local.form?.banner_enabled ?? gdprSettings?.data?.settings?.banner_enabled)}}');
             const serialized = JSON.stringify(offHint);
             // 안내 텍스트
             expect(serialized).toContain('blocked_domains.auto_blocking_off_hint');

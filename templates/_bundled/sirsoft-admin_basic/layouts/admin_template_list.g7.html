@@ -116,7 +116,10 @@
                 <success>
                   <set-state target="global" :isCheckingTemplateUpdates="false"/>
                   <refetch-data-source dataSourceId="templates"/>
-                  <toast type="success" message="{{response.data?.updated_count > 0 ? '$t:admin.templates.check_updates_success|count=' + response.data.updated_count : '$t:admin.templates.check_updates_no_updates'}}"/>
+                  <!-- GitHub 최신 판 조회에 실패한 확장(응답 failures)은 「최신」이 아니라 「확인하지 못함」이다 — 실패가 있으면
+                       「모두 최신」을 띄우지 않고 경고로 개수·식별자·첫 사유를 알린다. 새 판을 찾았으면 그 성공 문구는 함께 띄운다. -->
+                  <toast if="{{(response.data?.failures ?? []).length === 0 || response.data?.updated_count > 0}}" type="success" message="{{response.data?.updated_count > 0 ? '$t:admin.templates.check_updates_success|count=' + response.data.updated_count : '$t:admin.templates.check_updates_no_updates'}}"/>
+                  <toast if="{{(response.data?.failures ?? []).length !== 0}}" type="warning" message="$t:extensions.alerts.check_updates_github_failed|count={{(response.data?.failures ?? []).length}}|names={{(response.data?.failures ?? []).map(f =&gt; f.identifier).join(', ')}}|reason={{response.data?.failures?.[0]?.reason ?? ''}}"/>
                 </success>
                 <fail>
                   <set-state target="global" :isCheckingTemplateUpdates="false"/>

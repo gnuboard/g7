@@ -95,6 +95,15 @@ class ActivityLogDescriptionResolver implements HookListenerInterface
         $targetKey = (string) ($params['target_key'] ?? '');
         $target = $this->text($properties['target'] ?? null);
         $params['target_note'] = $targetKey === '' ? '' : ' ('.__('sirsoft-hero_section::activity_log.fields.target_key').': '.($target !== '' ? $target : $targetKey).')';
+        // 「이 대상 설정」 저장·되돌리기 문구는 `:target_key` 자리에 대상을 적는다 — 게시판 id 같은 내부 키 대신 기록 시점 대상 이름
+        if ($targetKey !== '' && $target !== '') {
+            $params['target_key'] = $target;
+        }
+
+        // 이미지·영상 교체·삭제 문구의 기기 키(pc·mobile)는 기기 이름으로 — 모르는 키는 그대로
+        if (is_string($params['device'] ?? null) && Lang::has('sirsoft-hero_section::activity_log.devices.'.$params['device'])) {
+            $params['device'] = (string) __('sirsoft-hero_section::activity_log.devices.'.$params['device']);
+        }
 
         return $params;
     }

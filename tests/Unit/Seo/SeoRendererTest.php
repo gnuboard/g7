@@ -1811,13 +1811,16 @@ class SeoRendererTest extends TestCase
     }
 
     /**
-     * meta.seo.vars가 없으면 setSeoVars()가 호출되지 않습니다.
+     * meta.seo.vars가 없으면 setSeoVars([]) 로 매퍼의 vars 를 비웁니다.
      *
-     * @effects renderer_no_seo_vars_does_not_call_set_seo_vars
+     * 매퍼는 렌더러와 함께 재사용된다(캐시 재굽기 순회) — 앞 화면(상점 목록)의 vars 가 vars 없는 화면(홈)에 남으면
+     * 그 화면의 결과가 렌더 순서에 따라 달라진다(대조 중 발견).
+     *
+     * @effects renderer_no_seo_vars_resets_mapper_seo_vars
      *
      * @return void 반환값 없음
      */
-    public function test_no_seo_vars_does_not_call_set_seo_vars(): void
+    public function test_no_seo_vars_resets_mapper_seo_vars(): void
     {
         $request = Request::create('/products');
 
@@ -1841,10 +1844,11 @@ class SeoRendererTest extends TestCase
             ->once()
             ->andReturn($mergedLayout);
 
-        // setSeoVars가 호출되지 않아야 함
+        // 빈 vars 로 한 번 — 앞 렌더의 값을 지운다
         $this->htmlMapper
             ->shouldReceive('setSeoVars')
-            ->never();
+            ->once()
+            ->with([]);
 
         $this->metaResolver
             ->shouldReceive('resolve')
@@ -4487,7 +4491,7 @@ class SeoRendererTest extends TestCase
      * `AssetUrl::siteAbsolute()` 로 설정 오리진을 실으므로, TLS 를 앞단에서 끝내는
      * 프록시나 내부 호스트명으로 도착하는 크롤러 요청에서 한 페이지 안의 정본 주소와
      * 이미지 주소가 **서로 다른 오리진**을 가리켰다. 크롤러는 그것을 오류 없이 다른
-     * 사이트로 색인한다 (15차 G3 라운드 W4-1).
+     * 사이트로 색인한다.
      *
      * 접두사는 한 번만 실린다 — `url()` 은 요청 루트(오리진 + 마운트 접두사)를 붙이는데
      * `siteAbsolute()` 는 접두사를 멱등으로 채운 뒤 오리진만 붙인다.

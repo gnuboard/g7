@@ -274,8 +274,9 @@ class ModuleManager implements ModuleManagerInterface
                 if (! class_exists($moduleClass, false)) {
                     // 오토로드 캐시에 없는 폴더(고아 사본)는 자기 PSR-4 를 먼저 등록한다 — 진입 클래스가 자기 소스를 상속하면 부팅이 죽는다 (#159)
                     ExtensionManager::registerAutoloadIfMissing($directory, 'modules:'.$moduleName);
+                    $hashBeforeLoad = md5_file($moduleFile) ?: null;
                     require_once $moduleFile;
-                    $this->rememberLoadedExtensionClassFile($moduleClass, $moduleFile);
+                    $this->rememberLoadedExtensionClassFile($moduleClass, $moduleFile, $hashBeforeLoad);
                 }
 
                 if (class_exists($moduleClass)) {
@@ -415,6 +416,28 @@ class ModuleManager implements ModuleManagerInterface
     }
 
     /**
+     * 이 프로세스가 쓴 진입 정의가 지금 디스크와 다른 모듈 식별자 목록을 돌려줍니다.
+     *
+     * 훅 캐시 쓰기 직전에 본다 — 확장 파일 교체 중에 부팅해 옛 진입 클래스를 쥔 프로세스(요청 끝 재생성 등)가 새 선언으로 이미
+     * 구운 캐시를 옛 선언(지운 리스너 포함)으로 덮지 않게 한다.
+     *
+     * @return array<int, string> 옛 정의를 쓴 식별자
+     */
+    public function staleDeclarationIdentifiers(): array
+    {
+        $stale = [];
+        foreach (array_keys($this->modules) as $identifier) {
+            $class = "Modules\\".$this->convertDirectoryToNamespace((string) $identifier)."\\Module";
+            $path = $this->modulesPath.DIRECTORY_SEPARATOR.$identifier.DIRECTORY_SEPARATOR.'module.php';
+            if (! $this->usedDeclarationIsCurrent($class, $path)) {
+                $stale[] = (string) $identifier;
+            }
+        }
+
+        return $stale;
+    }
+
+    /**
      * 활성화된 모듈들만 반환합니다.
      *
      * @return array 활성화된 모듈 배열
@@ -525,7 +548,7 @@ class ModuleManager implements ModuleManagerInterface
         $onProgress?->__invoke('copy', __('extensions.progress.copy_files'));
         // 무결성 기록용 원본 판별 — `_bundled` 는 번들, `_pending` 은 ZIP·GitHub 설치 서비스가 검증 결과를 적는다 (7.2.0)
         $integritySource = ExtensionIntegrityRecorder::installSourceOf($this->modulesPath, $moduleName, $force || ! File::isDirectory($activePath));
-        $this->copyFromPendingOrBundled($moduleName, $onProgress, $force);
+        $forceCarriedClassFiles = $this->copyFromPendingOrBundled($moduleName, $onProgress, $force);
 
         // 설치 시점에는 autoload-extensions.php 가 아직 갱신되지 않았다. module.php 의
         // getConfigValues()/getSettingsSchema() 등이 자기 src/ 클래스를 호출하면 그 클래스가
@@ -747,6 +770,9 @@ class ModuleManager implements ModuleManagerInterface
             // Phase 5: 오토로드 병합 실행 (트랜잭션 외부)
             $onProgress?->__invoke('autoload', __('extensions.progress.autoload'));
             $this->extensionManager->updateComposerAutoload();
+
+            // 같은 판 강제 재복사가 남겨 둔 옛 클래스 파일 정리 — 오토로드·훅 캐시를 새 판 기준으로 다시 구운 뒤
+            $this->extensionManager->finishCarriedOverClassFiles($this->modulesPath.DIRECTORY_SEPARATOR.$moduleName, $forceCarriedClassFiles);
 
             // 모듈 상태 캐시 무효화
             self::invalidateModuleStatusCache();
@@ -4493,9 +4519,9 @@ class ModuleManager implements ModuleManagerInterface
      * @param  string  $moduleName  모듈명 (identifier)
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
      * @param  bool  $force  이미 활성 디렉터리에 있어도 덮어쓸지 여부
-     * @return void 반환값 없음
+     * @return array<int, string> 강제 재복사가 남긴 옛 클래스 파일 (훅 캐시 재생성 뒤 정리)
      */
-    protected function copyFromPendingOrBundled(string $moduleName, ?\Closure $onProgress = null, bool $force = false): void
+    protected function copyFromPendingOrBundled(string $moduleName, ?\Closure $onProgress = null, bool $force = false): array
     {
         $activePath = $this->modulesPath.DIRECTORY_SEPARATOR.$moduleName;
 
@@ -4503,24 +4529,28 @@ class ModuleManager implements ModuleManagerInterface
         // force=true 시: 활성 디렉토리가 불완전(manifest 누락 등)하거나 재복구 목적으로
         // _bundled/_pending 에서 원본을 덮어쓴다. copyToActive() 가 원자적 교체를 수행한다.
         if (! $force && File::isDirectory($activePath)) {
-            return;
+            return [];
         }
 
         // _pending 우선 확인
         if (ExtensionPendingHelper::isPending($this->modulesPath, $moduleName)) {
             $sourcePath = ExtensionPendingHelper::getPendingPath($this->modulesPath, $moduleName);
-            ExtensionPendingHelper::copyToActive($sourcePath, $activePath, $onProgress);
+            $carried = ExtensionPendingHelper::copyToActive($sourcePath, $activePath, $onProgress, retainRemovedClassFiles: $force);
             Log::info('모듈을 _pending에서 활성 디렉토리로 복사', ['module' => $moduleName, 'force' => $force]);
 
-            return;
+            return $carried;
         }
 
         // _bundled 확인
         if (ExtensionPendingHelper::isBundled($this->modulesPath, $moduleName)) {
             $sourcePath = ExtensionPendingHelper::getBundledPath($this->modulesPath, $moduleName);
-            ExtensionPendingHelper::copyToActive($sourcePath, $activePath, $onProgress);
+            $carried = ExtensionPendingHelper::copyToActive($sourcePath, $activePath, $onProgress, retainRemovedClassFiles: $force);
             Log::info('모듈을 _bundled에서 활성 디렉토리로 복사', ['module' => $moduleName, 'force' => $force]);
+
+            return $carried;
         }
+
+        return [];
     }
 
     /**
@@ -4584,8 +4614,9 @@ class ModuleManager implements ModuleManagerInterface
             }
         } else {
             // 최초 로드 (클래스가 아직 없는 경우)
+            $hashBeforeLoad = md5_file($moduleFile) ?: null;
             require_once $moduleFile;
-            $this->rememberLoadedExtensionClassFile($moduleClass, $moduleFile);
+            $this->rememberLoadedExtensionClassFile($moduleClass, $moduleFile, $hashBeforeLoad);
 
             if (class_exists($moduleClass)) {
                 $module = new $moduleClass;
@@ -5285,6 +5316,8 @@ class ModuleManager implements ModuleManagerInterface
         $recordedColumns = [];
         $filesRestored = false;
         $journal = null;
+        // 새 판에 없는 옛 클래스 파일 — 교체 전에 새 트리에 싣고 훅 캐시 재생성 뒤 지운다
+        $carriedClassFiles = [];
 
         try {
             // 1. 백업 생성
@@ -5371,6 +5404,9 @@ class ModuleManager implements ModuleManagerInterface
                 if ($stagingPath) {
                     $targetPath = $this->modulesPath.DIRECTORY_SEPARATOR.$identifier;
                     $journal->markFilesTouched();
+                    // 새 판이 지운 옛 클래스 파일(훅 리스너 등)을 새 트리에 함께 실어 교체한다 — 교체~훅 캐시 재생성 사이 요청이 옛 훅 캐시·
+                    // 옛 소스 classmap 으로 그 파일을 include 해 500 이 나지 않게. 훅 캐시를 다시 구운 뒤 지운다.
+                    $carriedClassFiles = ExtensionPendingHelper::carryOverRemovedClassFiles($targetPath, $stagingPath);
                     ExtensionPendingHelper::copyToActive($stagingPath, $targetPath, $onProgress);
                 }
             } finally {
@@ -5523,6 +5559,9 @@ class ModuleManager implements ModuleManagerInterface
             // 상태를 복원하고 상태 캐시를 비운 지금 다시 구워야 그 누락이 교정된다.
             // updateComposerAutoload() 전체를 재호출하지 않는다 — composer autoload 병합은 이미 끝났고 비싸다.
             $this->extensionManager->regenerateHookCache();
+
+            // 실어 둔 옛 클래스 파일 정리 — 새 판 기준 훅 캐시를 구운 뒤라 이제 지워도 옛 구독이 그 파일을 찾지 않는다
+            $this->extensionManager->finishCarriedOverClassFiles($this->modulesPath.DIRECTORY_SEPARATOR.$identifier, $carriedClassFiles);
 
             // 훅 발행: 모듈 업데이트 완료 (Artisan 직접 호출 시에도 리스너 트리거)
             // @deprecated 'core.modules.updated' — identifier 1개만 전달하는 구훅. 정규 훅은 after_update.

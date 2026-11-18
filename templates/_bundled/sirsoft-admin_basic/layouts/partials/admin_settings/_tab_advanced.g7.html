@@ -356,7 +356,7 @@
         <div class="flex flex-col gap-0.5">
           <responsive on="640-" class="flex flex-row gap-3 items-center justify-between"/>
           <span class="text-label">$t:admin.settings.advanced.trusted_proxy_forwarded_headers</span>
-          <span class="text-heading">{{(trustedProxy?.data?.forwarded_headers ?? []).length > 0 ? trustedProxy?.data.forwarded_headers.join(', ') : $t('admin.settings.advanced.trusted_proxy_forwarded_headers_none')}}</span>
+          <span class="text-heading"><blur-until-loaded sources="trustedProxy"/>{{(trustedProxy?.data?.forwarded_headers ?? []).length > 0 ? trustedProxy?.data.forwarded_headers.join(', ') : $t('admin.settings.advanced.trusted_proxy_forwarded_headers_none')}}</span>
         </div>
         <div class="flex flex-col gap-0.5">
           <responsive on="640-" class="flex flex-row gap-3 items-center justify-between"/>

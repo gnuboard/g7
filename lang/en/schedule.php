@@ -224,6 +224,8 @@ return [
         'invalid_token' => 'The call number is not valid.',
         'ip_not_allowed' => 'This call came from an address that is not allowed.',
         'disabled' => 'Scheduled tasks are set to server cron only, so this URL call did not run them.',
+        'disabled_on_server' => 'Schedule execution is turned off on this server (G7_SCHEDULER=off), so this URL call did not run it. Call the URL on the server that runs schedules.',
+        'disabled_stage' => 'This is a review server (G7_RUNTIME_ROLE=stage), so this URL call did not run schedules. Schedules run only on the production server.',
         'throttled' => 'The minimum interval has not elapsed, so this call did not run. Pending tasks are handled on the next call.',
         'completed' => 'Scheduled tasks finished running.',
         'run_failed' => 'Failed to run scheduled tasks.',

@@ -40,6 +40,11 @@ return [
         'product_hero' => '상품 상세',
         'category_hero' => '카테고리 목록',
     ],
+    // 이미지·영상 교체·삭제 문구의 :device 자리에 들어가는 기기 이름
+    'devices' => [
+        'pc' => 'PC',
+        'mobile' => '모바일',
+    ],
     'fields' => [
         'position' => '노출 위치',
         'target_key' => '대상',

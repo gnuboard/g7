@@ -1,0 +1,21 @@
+feature: 나이스페이먼츠 설정 화면 보조 경로의 권한
+
+description: |
+  플러그인 설정 화면은 「플러그인 보기」(core.plugins.read)로 열린다 — 수정 권한이 없으면 읽기 전용이다.
+  화면이 함께 부르는 가상계좌 입금통보 주소 조회(`admin/vbank-notify-url`)가 쇼핑몰 설정 읽기 권한만 받으면
+  보기 권한만 있는 운영자가 들어갈 때마다 「해당 권한이 없습니다」 알림이 뜨고 주소 칸이 빈다.
+  주소는 운영자가 PG 관리자에 등록할 안내일 뿐이라 쇼핑몰 설정 읽기 또는 플러그인 보기 권한(OR)으로 연다.
+  둘 다 없는 관리자는 계속 거부된다.
+
+# axis 의미:
+#   요청한 관리자가 보유한 권한. none 은 관리자 역할만 있고 두 권한이 모두 없는 경우다.
+axes:
+  permission: [none, settings_read, plugins_read]
+
+effects:
+  - vbank_notify_url_declares_settings_or_plugin_view_permission  # 라우트 선언이 settings.read|core.plugins.read (OR)
+  - plugin_view_admin_reaches_vbank_notify_url                    # 플러그인 보기 권한만 → 200 + 주소
+  - admin_without_settings_or_plugin_view_is_denied               # 두 권한 모두 없음 → 403
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_nicepayments/tests/Feature/Controllers/AdminRoutePermissionTest.php

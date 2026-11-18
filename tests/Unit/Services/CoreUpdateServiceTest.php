@@ -2134,7 +2134,7 @@ MD;
     }
 
     // ========================================================================
-    // applyUpdate() — deploy/ 서버 설정 조각의 운영자 수정본 보존 (G3 회차 15 W2-1)
+    // applyUpdate() — deploy/ 서버 설정 조각의 운영자 수정본 보존
     // ========================================================================
 
     /**
@@ -2157,7 +2157,7 @@ MD;
     {
         [$source, $fakeBase, $restore] = $this->prepareApplyUpdateEnv(['deploy']);
         // 원장은 `storage_path()` 아래에 쓰인다 — 격리하지 않으면 실 저장소의 원장이 이 테스트의
-        // 픽스처 해시로 덮인다 (형제 `test_unmodified_deploy_fragment_…` 와 같은 격리) (G3 회차 16 W2 A11).
+        // 픽스처 해시로 덮인다 (형제 `test_unmodified_deploy_fragment_…` 와 같은 격리).
         $originalStoragePath = app()->storagePath();
         app()->useStoragePath($fakeBase.DIRECTORY_SEPARATOR.'storage');
 
@@ -2285,7 +2285,7 @@ MD;
 
         $originalBasePath = base_path();
         $originalLangPath = app()->langPath();
-        // 원장 삭제는 `storage_path()` 를 본다 — 격리하지 않으면 실 저장소의 원장이 지워진다 (G3 회차 16 W2 A11).
+        // 원장 삭제는 `storage_path()` 를 본다 — 격리하지 않으면 실 저장소의 원장이 지워진다.
         $originalStoragePath = app()->storagePath();
         app()->setBasePath($sandbox);
         app()->useLangPath($originalLangPath);
@@ -2613,7 +2613,7 @@ MD;
     }
 
     /**
-     * 교체 직전 루트 진입 파일 사본의 디렉토리 이름은 백업 이름 SSoT 가 만든다 (G3 회차 15 W2-5).
+     * 교체 직전 루트 진입 파일 사본의 디렉토리 이름은 백업 이름 SSoT 가 만든다.
      *
      * 생산자가 `date()` 를 직접 부르면 정리자의 판정 정규식과 갈릴 수 있고, 그 상태는
      * 오류가 아니라 **정리 대상에서 조용히 빠지는 것**으로만 나타난다 — 코어 백업이 실제로
@@ -2682,13 +2682,13 @@ MD;
      * @return array{0:string, 1:string, 2:\Closure} [source 경로, fakeBase 경로, 복원 클로저]
      */
     // ========================================================================
-    // applyUpdate() — 루트 진입·보호 파일 갱신 실패의 도달 (3차 G3 라운드 H4)
+    // applyUpdate() — 루트 진입·보호 파일 갱신 실패의 도달
     // ========================================================================
 
     /**
      * 루트 `.htaccess` 를 쓰지 못하면 그 사실이 **호출부까지 올라온다**.
      *
-     * 2차 라운드가 갱신기에 실패 판정을 넣었지만 두 호출부가 모두 반환값을 버렸고, 게다가
+     * 앞선 수정이 갱신기에 실패 판정을 넣었지만 두 호출부가 모두 반환값을 버렸고, 게다가
      * 「블록이 같아 쓸 필요가 없었다」와 「쓰기가 실패했다」가 같은 `false` 여서 소비하려
      * 해도 실패를 가려낼 수 없었다. 콘솔에는 「코어 파일 적용 완료」만 뜨고 보호 규칙은
      * 구버전으로 남는다 — 다른 코어 파일은 전부 신 버전인 채로.
@@ -2798,7 +2798,7 @@ MD;
     }
 
     /**
-     * 롤백 뒤 루트 보호 파일 소실도 **콘솔에 도달**해야 합니다 (5차 G3).
+     * 롤백 뒤 루트 보호 파일 소실도 **콘솔에 도달**해야 합니다.
      *
      * 종전에는 `Log::warning` 한 줄이 전부였다 — 업데이트 경로에는 콘솔 배선이 있는데
      * 롤백 경로에만 없었다(형제 불균형). 그 결과 「백업에서 복원되었습니다」만 보고 창을
@@ -2808,7 +2808,7 @@ MD;
      * 판정 자체도 manifest 가 있을 때만 돌던 것을 떼어냈다 — manifest 가 없어 prune 을
      * 건너뛴 경우에도 파일이 없을 수 있다.
      *
-     * 대상은 루트 진입·보호 파일 **3종 전부**다 (14차 G3 라운드). 종전에는 `index.php` 와
+     * 대상은 루트 진입·보호 파일 **3종 전부**다. 종전에는 `index.php` 와
      * `.htaccess` 둘만 봤는데, IIS 로 압축을 푼 사이트에서 실제로 보호를 수행하는 것은
      * `web.config` 이고 그 배치에서 `.htaccess` 는 아무 의미가 없다. 즉 그 서버에서는
      * 유일한 보호 수단이 사라져도 경고가 발화하지 않았고, 증상은 「경고가 없다」뿐이라
@@ -2867,16 +2867,17 @@ MD;
         $rollbackBlock = (string) strstr($command, '$service->restoreFromBackup(');
         $this->assertNotSame('', $rollbackBlock, '롤백 호출부를 찾지 못했다');
         // 롤백 경로는 반환값(`root_file_warnings`)을 같은 출력 통로(`surfaceWarnings`)에 넘긴다 —
-        // 게터 경유(`surfaceRootFileWarnings`)는 예외 경로 전용이다 (G3 회차 16 W2 C-6).
+        // 게터 경유(`surfaceRootFileWarnings`)는 예외 경로 전용이다.
         $this->assertStringContainsString(
             "surfaceWarnings(\$restoreResult['root_file_warnings']",
-            substr($rollbackBlock, 0, 2000),
+            // 복원 뒤 알림·줄바꿈 처리가 그 사이에 들어가 창을 넓혔다 — 같은 롤백 블록 안인지만 본다
+            substr($rollbackBlock, 0, 4000),
             '롤백 경로도 업데이트 경로와 같은 통로로 경고를 출력해야 한다'
         );
     }
 
     /**
-     * 롤백이 문서 루트 **안**에 되살린 공개 파일 사본도 콘솔에 도달해야 합니다 (8차 G3).
+     * 롤백이 문서 루트 **안**에 되살린 공개 파일 사본도 콘솔에 도달해야 합니다.
      *
      * 백업은 업데이트 이전 스냅샷이라 그 시점의 `public/storage.broken.*`(공개 업로드 전량
      * 사본)을 그대로 되돌려 놓는다. 7.1.0 스텝이 이미 문서 루트 밖으로 옮긴 뒤라면 같은

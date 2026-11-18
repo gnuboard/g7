@@ -29,6 +29,7 @@ axes:
     - perform_update_without_source
     - check_updates_manifest_github_url
     - check_updates_blank_github_url
+    - check_updates_github_failure
     - refresh_cache
     - install_real_bundled_core
     - reinstall_real_bundled_core
@@ -50,6 +51,7 @@ effects:
   - list_and_find_return_packs
   - install_blocked_reason_resolved
   - update_check_targets_github_sources_only
+  - update_check_reports_github_failure_without_overwrite
   - refresh_cache_reports_status
   - bundled_core_install_activates
   - downgrade_guard_respects_force

@@ -152,4 +152,55 @@ class ActivityLogDescriptionResolverTest extends PluginTestCase
         // 위치를 더한 확장이 꺼져 이름을 모르는 위치는 키를 그대로 둔다
         $this->assertSame('gone_hero', $resolver->resolveDescriptionParams(['position' => 'gone_hero'], $key.'hero_position_update', [])['position']);
     }
+
+    /**
+     * 「이 대상 설정」 저장·되돌리기 로그가 대상 키(게시판 id 등) 대신 기록 시점 대상 이름을 보이는지 확인합니다.
+     *
+     * 종전에는 문구가 `:target_key` 를 그대로 끼워 「게시판 목록 위치의 대상 5 슬라이더 설정을 바꿨습니다」로 보였다.
+     * 이름 스냅샷이 없는 기록(대상 해석 실패·지워진 대상)은 대상 키를 그대로 둔다.
+     *
+     * @scenario surface=target_setting_names_target
+     *
+     * @effects internal_keys_shown_as_names
+     *
+     * @return void 반환값 없음
+     */
+    public function test_target_setting_logs_name_the_target(): void
+    {
+        $resolver = new ActivityLogDescriptionResolver;
+        $key = 'sirsoft-hero_section::activity_log.description.';
+
+        $update = $resolver->resolveDescriptionParams(['position' => 'board_hero', 'target_key' => '5'], $key.'hero_target_setting_update', ['target' => 'Q&A']);
+        $this->assertSame('히어로섹션 게시판 목록 위치의 대상 Q&A 슬라이더 설정을 바꿨습니다.', __($key.'hero_target_setting_update', $update));
+
+        $reset = $resolver->resolveDescriptionParams(['position' => 'board_hero', 'target_key' => '5'], $key.'hero_target_setting_reset', ['target' => 'Q&A']);
+        $this->assertSame('히어로섹션 게시판 목록 위치의 대상 Q&A 를 위치 기본값으로 되돌렸습니다.', __($key.'hero_target_setting_reset', $reset));
+
+        $unknown = $resolver->resolveDescriptionParams(['position' => 'gone_hero', 'target_key' => '9'], $key.'hero_target_setting_reset', []);
+        $this->assertSame('9', $unknown['target_key']);
+    }
+
+    /**
+     * 기기별 이미지·영상 교체·삭제 로그가 기기 키(pc·mobile) 대신 기기 이름을 보이는지 확인합니다.
+     *
+     * @scenario surface=device_named_in_summary
+     *
+     * @effects internal_keys_shown_as_names
+     *
+     * @return void 반환값 없음
+     */
+    public function test_device_logs_name_the_device(): void
+    {
+        $resolver = new ActivityLogDescriptionResolver;
+        $key = 'sirsoft-hero_section::activity_log.description.';
+
+        $image = $resolver->resolveDescriptionParams(['banner_id' => 1, 'device' => 'mobile'], $key.'hero_banner_image_update', ['name' => '가을 신상품']);
+        $this->assertSame('히어로섹션 배너 「가을 신상품」의 모바일 이미지를 교체했습니다.', __($key.'hero_banner_image_update', $image));
+
+        $video = $resolver->resolveDescriptionParams(['banner_id' => 1, 'device' => 'pc'], $key.'hero_banner_video_remove', ['name' => '가을 신상품']);
+        $this->assertSame('히어로섹션 배너 「가을 신상품」의 PC 영상을 뺐습니다.', __($key.'hero_banner_video_remove', $video));
+
+        // 모르는 기기 키는 그대로 둔다
+        $this->assertSame('tablet', $resolver->resolveDescriptionParams(['banner_id' => 1, 'device' => 'tablet'], $key.'hero_banner_image_update', ['name' => 'x'])['device']);
+    }
 }

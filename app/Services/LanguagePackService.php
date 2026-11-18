@@ -11,6 +11,7 @@ use App\Enums\LanguagePackStatus;
 use App\Exceptions\LanguagePackOperationException;
 use App\Exceptions\LanguagePackSlotConflictException;
 use App\Exceptions\PackageIntegrityException;
+use App\Extension\Concerns\TracksGithubVersionCheckError;
 use App\Extension\Helpers\ExtensionBackupHelper;
 use App\Extension\Helpers\ExtensionOperationLock;
 use App\Extension\Helpers\ExtensionPendingHelper;
@@ -35,6 +36,7 @@ use App\Support\OutboundUrlValidator;
 use App\Support\RuntimeRole;
 use App\Support\SafeExceptionMessage;
 use App\Support\UploadedFileName;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
@@ -68,6 +70,7 @@ class LanguagePackService
     public const PENDING_EXTRACT_NAME_PATTERN = '/^(?:preview-)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/';
 
     use ClearsTemplateCaches;
+    use TracksGithubVersionCheckError;
 
     /**
      * @param  LanguagePackRepositoryInterface  $repository  언어팩 Repository
@@ -934,7 +937,17 @@ class LanguagePackService
             File::ensureDirectoryExists($tempPath);
             $zipPath = $tempPath.DIRECTORY_SEPARATOR.'pack.zip';
 
-            $response = Http::timeout(120)->get($url);
+            try {
+                $response = Http::timeout(120)->get($url);
+            } catch (ConnectionException $e) {
+                // 이름 해석 실패·연결 거부·시간 초과 — 응답 자체가 없다. HTTP 오류 응답과 같은 문구로 사유를 싣는다.
+                // 그대로 올리면 컨트롤러의 마지막 catch 에서 사유 없는 500 이 된다.
+                throw new LanguagePackOperationException('language_packs.errors.download_failed', [
+                    'url' => $url,
+                    // 다른 관리 작업 실패 사유와 같은 거름망을 거친다 — 내부 예외 원문은 운영 모드에서 일반 문구로 바뀐다.
+                    'error' => SafeExceptionMessage::for($e, ['operation' => 'language_pack.install_from_url']),
+                ]);
+            }
             if (! $response->successful()) {
                 // 응답 상태를 사유로 싣는다 — 비우면 치환 자리가 남아 관리자 화면에
                 // 리터럴 ':error' 가 그대로 노출된다.
@@ -1817,7 +1830,7 @@ class LanguagePackService
      *
      * 다섯 생산 지점이 각자 `base_path()` 안에서 `_pending/` 경로를 리터럴로 조립하고 있었다. 정리
      * 주체(`StorageLeftoverPruneService`)가 `PENDING_EXTRACT_NAME_PATTERN` 으로 같은 이름을
-     * 보므로, 한 지점만 규칙이 바뀌어도 그 잔해는 모집단 밖이 된다 (13차 G3 W1-4).
+     * 보므로, 한 지점만 규칙이 바뀌어도 그 잔해는 모집단 밖이 된다.
      *
      * @param  string  $name  디렉토리 이름 (UUID 또는 `preview-<UUID>`)
      * @return string 절대 경로
@@ -1909,6 +1922,9 @@ class LanguagePackService
     /**
      * GitHub 소스 언어팩의 latest_version 을 갱신합니다 (검수 서버(stage)에서는 갱신하지 않고 결과만 돌려준다).
      *
+     * GitHub 최신 판 조회에 실패한 팩(연결 실패·404 가 아닌 실패 응답)은 `details[].error` 에 사유를 싣고 latest_version 을
+     * 덮지 않는다 — 관리자 [업데이트 확인]은 이 값으로 「확인하지 못함」을 알린다.
+     *
      * @param  string|null  $identifier  특정 언어팩만 확인 (옵션)
      * @return array{checked:int, updates:int, details:array<int, array<string, mixed>>}
      */
@@ -1966,7 +1982,9 @@ class LanguagePackService
                 $release = GithubHelper::fetchLatestRelease($owner, $repo);
                 // 헬퍼는 `version`(태그의 v 를 뗀 값)을 돌려준다 — 종전에는 `tag_name` 을 읽어 늘 비어 번들로 폴백했다.
                 $githubLatest = ltrim((string) ($release['version'] ?? $release['tag_name'] ?? ''), 'v') ?: null;
-                $error = $release['error'] ?? null;
+                // 연결 실패뿐 아니라 404 가 아닌 실패 응답(요청 한도 초과 403·인증 401·5xx)도 「확인하지 못함」이다 —
+                // 모듈·플러그인·템플릿과 같은 판정
+                $error = $githubLatest === null ? $this->githubReleaseCheckError($release) : null;
             } catch (Throwable $e) {
                 $error = $e->getMessage();
                 Log::warning('language-pack github update check failed', [
@@ -1997,8 +2015,10 @@ class LanguagePackService
         }
 
         // 검수 서버(stage)는 확인 결과만 돌려주고 공유 DB 의 최신 버전 표시는 바꾸지 않는다 — 운영 서버 관리자 화면의
-        // 「업데이트 있음」 표시를 검수 서버의 번들 기준 판정으로 덮지 않게
-        if (! RuntimeRole::isStage()) {
+        // 「업데이트 있음」 표시를 검수 서버의 번들 기준 판정으로 덮지 않게.
+        // GitHub 조회에 실패했으면 번들 판이 후보여도 DB 는 덮지 않고 결과에만 싣는다 — 지난 확인에서 알아 둔 GitHub 최신 판이
+        // 조회 실패 한 번으로 번들 판으로 바뀌지 않게(모듈·플러그인·템플릿 일괄 확인과 같은 규칙)
+        if (! RuntimeRole::isStage() && $error === null) {
             $this->repository->update($pack, ['latest_version' => $latest]);
         }
 
@@ -2008,7 +2028,7 @@ class LanguagePackService
             'latest' => $latest,
             'source' => $source,
             'has_update' => version_compare($latest, $pack->version, '>'),
-            'error' => null,
+            'error' => $error,
         ];
     }
 

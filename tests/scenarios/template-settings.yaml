@@ -36,6 +36,7 @@ effects:
   - uninstall_delete_data_purges_settings
   - template_settings_exposed_to_global
   - settings_layout_saves_template_settings
+  - settings_save_stops_on_upload_failure   # 저장 신호의 업로더 결과 failedCount 가 있으면 PUT 을 보내지 않고 실패 문구를 남긴다 — 번들 4종 설정 화면, hello 예제 업로더도 같은 결과 모양
   - sensitive_masked_and_hidden
   - renamed_key_migrated
   - standard_attributes_rendered
@@ -55,6 +56,7 @@ effects:
   - home_sections_toggle_with_module_guard
   - menu_saved_normalized
   - menu_structure_validated
+  - menu_item_errors_name_position_and_label   # 메뉴·목록 칸 항목 규칙 오류는 내부 키 대신 칸 이름·1부터 센 자리·항목 이름으로 말한다
   - menu_descriptor_for_editor
   - menu_declaration_validated
   - menu_editor_tree_rules

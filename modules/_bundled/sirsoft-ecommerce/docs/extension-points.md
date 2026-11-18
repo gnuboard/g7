@@ -5,7 +5,7 @@
 ## 발행 훅
 
 <!-- @generated:hooks-published START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-발행 훅 643종 / 호출 지점 753곳. 이 중 610종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다. 훅 이름이 상수·변수로 조립된 호출이 23곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
+발행 훅 643종 / 호출 지점 754곳. 이 중 610종은 `getHooks()` 선언에 없어 소스에서 자동 감지한 것입니다 — 선언에 추가하면 유형과 설명이 함께 실립니다. 훅 이름이 상수·변수로 조립된 호출이 23곳 있어 호출 위치가 표에 다 실리지 않을 수 있습니다.
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
@@ -509,7 +509,7 @@
 | `sirsoft-ecommerce.product.related_validation_rules` | filter | — | `src/Http/Requests/Public/PublicProductRelatedRequest.php:37` |
 | `sirsoft-ecommerce.product.show_for_copy_validation_rules` | filter | — | `src/Http/Requests/Admin/ProductShowForCopyRequest.php:58` |
 | `sirsoft-ecommerce.product.store_validation_rules` | filter | — | `src/Http/Requests/Admin/StoreProductRequest.php:197` |
-| `sirsoft-ecommerce.product.update_validation_rules` | filter | — | `src/Http/Requests/Admin/UpdateProductRequest.php:70` |
+| `sirsoft-ecommerce.product.update_validation_rules` | filter | — | `src/Http/Requests/Admin/UpdateProductRequest.php:72` |
 | `sirsoft-ecommerce.product_inquiry.after_bulk_delete` | action | — | `src/Services/ProductInquiryService.php:810` |
 | `sirsoft-ecommerce.product_inquiry.after_create` | action | — | `src/Services/ProductInquiryService.php:325` |
 | `sirsoft-ecommerce.product_inquiry.after_reply` | action | — | `src/Services/ProductInquiryService.php:750` |
@@ -568,28 +568,28 @@
 | `sirsoft-ecommerce.shipping_carrier.filter_show_result` | filter | — | `src/Services/ShippingCarrierService.php:91` |
 | `sirsoft-ecommerce.shipping_carrier.filter_update_data` | filter | — | `src/Services/ShippingCarrierService.php:183` |
 | `sirsoft-ecommerce.shipping_carrier.update_validation_rules` | filter | — | `src/Http/Requests/Admin/UpdateShippingCarrierRequest.php:46` |
-| `sirsoft-ecommerce.shipping_policy.after_bulk_delete` | action | — | `src/Services/ShippingPolicyService.php:530` |
-| `sirsoft-ecommerce.shipping_policy.after_bulk_toggle_active` | action | — | `src/Services/ShippingPolicyService.php:558` |
-| `sirsoft-ecommerce.shipping_policy.after_create` | action | — | `src/Services/ShippingPolicyService.php:151` |
-| `sirsoft-ecommerce.shipping_policy.after_delete` | action | — | `src/Services/ShippingPolicyService.php:475` |
-| `sirsoft-ecommerce.shipping_policy.after_read` | action | — | `src/Services/ShippingPolicyService.php:97` |
-| `sirsoft-ecommerce.shipping_policy.after_set_default` | action | — | `src/Services/ShippingPolicyService.php:598` |
-| `sirsoft-ecommerce.shipping_policy.after_toggle_active` | action | — | `src/Services/ShippingPolicyService.php:496` |
-| `sirsoft-ecommerce.shipping_policy.after_update` | action | — | `src/Services/ShippingPolicyService.php:217` 외 1곳 |
-| `sirsoft-ecommerce.shipping_policy.before_bulk_delete` | action | — | `src/Services/ShippingPolicyService.php:519` |
-| `sirsoft-ecommerce.shipping_policy.before_bulk_toggle_active` | action | — | `src/Services/ShippingPolicyService.php:553` |
-| `sirsoft-ecommerce.shipping_policy.before_create` | action | — | `src/Services/ShippingPolicyService.php:112` |
-| `sirsoft-ecommerce.shipping_policy.before_delete` | action | — | `src/Services/ShippingPolicyService.php:458` |
-| `sirsoft-ecommerce.shipping_policy.before_set_default` | action | — | `src/Services/ShippingPolicyService.php:584` |
-| `sirsoft-ecommerce.shipping_policy.before_toggle_active` | action | — | `src/Services/ShippingPolicyService.php:491` |
-| `sirsoft-ecommerce.shipping_policy.before_update` | action | — | `src/Services/ShippingPolicyService.php:168` 외 1곳 |
+| `sirsoft-ecommerce.shipping_policy.after_bulk_delete` | action | — | `src/Services/ShippingPolicyService.php:546` |
+| `sirsoft-ecommerce.shipping_policy.after_bulk_toggle_active` | action | — | `src/Services/ShippingPolicyService.php:574` |
+| `sirsoft-ecommerce.shipping_policy.after_create` | action | — | `src/Services/ShippingPolicyService.php:167` |
+| `sirsoft-ecommerce.shipping_policy.after_delete` | action | — | `src/Services/ShippingPolicyService.php:491` |
+| `sirsoft-ecommerce.shipping_policy.after_read` | action | — | `src/Services/ShippingPolicyService.php:113` |
+| `sirsoft-ecommerce.shipping_policy.after_set_default` | action | — | `src/Services/ShippingPolicyService.php:614` |
+| `sirsoft-ecommerce.shipping_policy.after_toggle_active` | action | — | `src/Services/ShippingPolicyService.php:512` |
+| `sirsoft-ecommerce.shipping_policy.after_update` | action | — | `src/Services/ShippingPolicyService.php:233` 외 1곳 |
+| `sirsoft-ecommerce.shipping_policy.before_bulk_delete` | action | — | `src/Services/ShippingPolicyService.php:535` |
+| `sirsoft-ecommerce.shipping_policy.before_bulk_toggle_active` | action | — | `src/Services/ShippingPolicyService.php:569` |
+| `sirsoft-ecommerce.shipping_policy.before_create` | action | — | `src/Services/ShippingPolicyService.php:128` |
+| `sirsoft-ecommerce.shipping_policy.before_delete` | action | — | `src/Services/ShippingPolicyService.php:474` |
+| `sirsoft-ecommerce.shipping_policy.before_set_default` | action | — | `src/Services/ShippingPolicyService.php:600` |
+| `sirsoft-ecommerce.shipping_policy.before_toggle_active` | action | — | `src/Services/ShippingPolicyService.php:507` |
+| `sirsoft-ecommerce.shipping_policy.before_update` | action | — | `src/Services/ShippingPolicyService.php:184` 외 1곳 |
 | `sirsoft-ecommerce.shipping_policy.bulk_delete_validation_rules` | filter | — | `src/Http/Requests/Admin/ShippingPolicyBulkDeleteRequest.php:38` |
 | `sirsoft-ecommerce.shipping_policy.bulk_toggle_active_validation_rules` | filter | — | `src/Http/Requests/Admin/ShippingPolicyBulkToggleActiveRequest.php:39` |
-| `sirsoft-ecommerce.shipping_policy.filter_create_data` | filter | — | `src/Services/ShippingPolicyService.php:115` |
-| `sirsoft-ecommerce.shipping_policy.filter_list_params` | filter | — | `src/Services/ShippingPolicyService.php:45` |
-| `sirsoft-ecommerce.shipping_policy.filter_update_data` | filter | — | `src/Services/ShippingPolicyService.php:174` |
-| `sirsoft-ecommerce.shipping_policy.list_validation_messages` | filter | — | `src/Http/Requests/Admin/ShippingPolicyListRequest.php:129` |
-| `sirsoft-ecommerce.shipping_policy.list_validation_rules` | filter | — | `src/Http/Requests/Admin/ShippingPolicyListRequest.php:96` |
+| `sirsoft-ecommerce.shipping_policy.filter_create_data` | filter | — | `src/Services/ShippingPolicyService.php:131` |
+| `sirsoft-ecommerce.shipping_policy.filter_list_params` | filter | — | `src/Services/ShippingPolicyService.php:45` 외 1곳 |
+| `sirsoft-ecommerce.shipping_policy.filter_update_data` | filter | — | `src/Services/ShippingPolicyService.php:190` |
+| `sirsoft-ecommerce.shipping_policy.list_validation_messages` | filter | — | `src/Http/Requests/Admin/ShippingPolicyListRequest.php:142` |
+| `sirsoft-ecommerce.shipping_policy.list_validation_rules` | filter | — | `src/Http/Requests/Admin/ShippingPolicyListRequest.php:109` |
 | `sirsoft-ecommerce.shipping_policy.store_validation_rules` | filter | — | `src/Http/Requests/Admin/StoreShippingPolicyRequest.php:122` |
 | `sirsoft-ecommerce.shipping_policy.update_validation_rules` | filter | — | `src/Http/Requests/Admin/UpdateShippingPolicyRequest.php:24` |
 | `sirsoft-ecommerce.shipping_type.after_create` | action | — | `src/Services/ShippingTypeService.php:123` 외 1곳 |

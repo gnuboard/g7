@@ -16,6 +16,27 @@ import { setWishlistOverride } from '../support/wishlistOverrides';
 
 const API_BASE = '/api/modules/sirsoft-ecommerce';
 
+/** 추가 정보 미입력 거부의 오류 코드 (서버 403 응답의 error_code) */
+export const REQUIRED_FIELDS_PENDING = 'required_fields_pending';
+
+/** 「추가 정보가 필요합니다」 안내 창 이름 (사용자 화면 상속원 `_user_base` 의 창) */
+export const REQUIRED_INFO_PENDING_MODAL_ID = 'required_info_pending_modal';
+
+/**
+ * 카드 요청의 403 처리 — 추가 정보 미입력 거부면 안내 창을 열고, 다른 403 은 아무것도 하지 않는다(이 핸들러가 서버 문구를 알린다).
+ *
+ * 자기 오류 처리가 없는 요청은 화면 레이아웃 수준 403 처리(상품 상세의 오류 화면, 목록의 접근 거부 표시)가
+ * 템플릿 수준 「추가 정보 필요」 처리보다 먼저라, 카드 단추에서는 창이 뜨지 않고 오류 알림만 나왔다.
+ * 레이아웃의 실패 처리(`<fail>` 맨 앞의 open-modal)와 같은 일을 요청 수준 403 처리로 한다. 401 등 다른 상태는
+ * 종전대로 엔진의 기본 처리로 간다.
+ */
+const PENDING_403_HANDLING = {
+  403: {
+    handler: 'conditions',
+    conditions: [{ if: `{{error.error_code === '${REQUIRED_FIELDS_PENDING}'}}`, then: { handler: 'openModal', target: REQUIRED_INFO_PENDING_MODAL_ID } }],
+  },
+};
+
 /** 옵션 선택 창 이름 (레이아웃 `partials/shop/_modal_quick_option` 의 창) */
 export const QUICK_OPTION_MODAL_ID = 'quick_option_modal';
 
@@ -49,6 +70,8 @@ interface ApiOutcome {
   response?: any;
   /** 알릴 문구 */
   message?: string;
+  /** 추가 정보 미입력 거부인가 (안내 창은 엔진이 이미 열었다 — 오류 알림을 띄우지 않는다) */
+  pending?: boolean;
 }
 
 const g7 = (): any => (window as any).G7Core;
@@ -58,13 +81,15 @@ const t = (key: string): string => g7()?.t?.(key) ?? key;
 /**
  * 엔진 `apiCall` 로 요청을 보내고 결과를 읽기 쉬운 모양으로 돌려준다.
  *
+ * 403 은 요청 수준 처리(`PENDING_403_HANDLING`)로 받는다 — 추가 정보 미입력 거부면 안내 창이 열리고 `pending` 이 참이다.
+ *
  * @param target 요청 주소
  * @param authMode 인증 방식
  * @param params 요청 인자 (method · body · headers)
  * @returns 요청 결과
  */
 async function callApi(target: string, authMode: 'required' | 'optional', params: Record<string, unknown>): Promise<ApiOutcome> {
-  const result = await g7()?.dispatch?.({ handler: 'apiCall', target, auth_mode: authMode, params });
+  const result = await g7()?.dispatch?.({ handler: 'apiCall', target, auth_mode: authMode, params, errorHandling: PENDING_403_HANDLING });
   if (result && result.success !== false) {
     const body = result.data;
     return { ok: true, data: body?.data ?? body };
@@ -77,6 +102,7 @@ async function callApi(target: string, authMode: 'required' | 'optional', params
     status: error?.status,
     response,
     message: response?.errors?.message ?? response?.message ?? error?.message ?? '',
+    pending: response?.error_code === REQUIRED_FIELDS_PENDING,
   };
 }
 
@@ -113,7 +139,7 @@ export async function openQuickOptionHandler(action: QuickActionDefinition, _con
   const outcome = await callApi(`${API_BASE}/products/${product.product_code ?? product.id}`, 'optional', { method: 'GET' });
   if (!outcome.ok || !outcome.data) {
     G7Core.state.set({ quickOptionModal: null });
-    if (outcome.message) G7Core.toast?.error?.(outcome.message);
+    if (outcome.message && !outcome.pending) G7Core.toast?.error?.(outcome.message);
     return false;
   }
 
@@ -199,7 +225,7 @@ export async function quickAddToCartHandler(action: QuickActionDefinition, _cont
     return false;
   }
 
-  if (outcome.message) G7Core.toast?.error?.(outcome.message);
+  if (outcome.message && !outcome.pending) G7Core.toast?.error?.(outcome.message);
   return false;
 }
 
@@ -223,7 +249,7 @@ export async function toggleWishlistQuickHandler(action: QuickActionDefinition, 
 
   const outcome = await callApi(`${API_BASE}/wishlist/toggle`, 'required', { method: 'POST', body: { product_id: product.id } });
   if (!outcome.ok) {
-    if (outcome.message) G7Core.toast?.error?.(outcome.message);
+    if (outcome.message && !outcome.pending) G7Core.toast?.error?.(outcome.message);
     return null;
   }
 

@@ -101,6 +101,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | types[].category | string | `text` | 분류(text, number, datetime, choice, contact, address, file, extension) |
 | types[].renderer | string | `builtin` | 그리기 갈래(builtin, address, file, extension) |
 | types[].owner | string | `core` | 유형을 제공한 쪽 |
+| types[].owner_label | string\|null | `null` | 유형을 제공한 확장의 이름(설치 기록의 다국어 이름에서 요청 언어로 고른다 — 언어팩이 채운 일본어 포함). 코어 유형은 null |
 | abilities.can_update | boolean | `true` | 요청자가 이 집합을 바꿀 수 있는지 |
 | notices.signup_layout_modified | boolean | `false` | 가입 화면 레이아웃이 운영자 수정본으로 유지되고 있고 그 안에 항목 반복 구획이 없는 경우 true (회원 집합만. 그 밖의 집합은 항상 false) |
 
@@ -219,7 +220,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | field | object | — | 목록의 항목과 같은 필드에 아래 세 필드가 더해집니다 |
-| field.values_count | integer | `0` | 이 항목에 값이 있는 소유자 수(값 테이블 저장 항목. 그 밖은 0) |
+| field.values_count | integer | `0` | 이 항목에 값이 있는 소유자 수(값 테이블 저장 항목. 파일·이미지 항목은 파일을 올린 소유자 수. 그 밖은 0) |
 | field.options[].usage_count | integer | `0` | 그 선택지를 고른 소유자 수 |
 | field.other_usage_count | integer | `0` | 「기타(직접 입력)」를 고른 소유자 수 |
 | fields_version | string | `7924fdac78bf` | 정의 버전 |
@@ -516,7 +517,7 @@ Authorization: Bearer {YOUR_TOKEN}
 
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
-| removed_values | integer | `0` | 함께 지운 값 행 수 |
+| removed_values | integer | `0` | 함께 지운 값 수(값 행 + 파일·이미지 항목에 회원들이 올린 첨부. 첨부는 저장 파일과 썸네일까지 지운다) |
 | fields_version | string | `b6e22c94dfe3` | 새 정의 버전 |
 
 **응답 예시**

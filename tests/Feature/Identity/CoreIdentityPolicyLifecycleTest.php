@@ -72,7 +72,7 @@ class CoreIdentityPolicyLifecycleTest extends TestCase
 
         $policy = $this->enableSignupPolicy('core.auth.signup_before_submit');
 
-        // 1단계 — 보호된 register 호출은 428 (정책 위반)
+        // 1단계 — 보호된 register 호출은 428 (정책 위반). 가입은 입력 검증(422)을 먼저 하므로 바른 입력이어야 428 에 닿는다(7.2.0).
         $email = 'newuser_'.uniqid().'@example.test';
 
         $payload = $this->assertProtectedRouteIssues428(
@@ -87,7 +87,8 @@ class CoreIdentityPolicyLifecycleTest extends TestCase
                 'email' => $email,
                 'password' => 'StrongPass!23',
                 'password_confirmation' => 'StrongPass!23',
-                'agreement' => true,
+                'agree_terms' => true,
+                'agree_privacy' => true,
             ],
         );
 
@@ -106,7 +107,8 @@ class CoreIdentityPolicyLifecycleTest extends TestCase
             'email' => $email,
             'password' => 'StrongPass!23',
             'password_confirmation' => 'StrongPass!23',
-            'agreement' => true,
+            'agree_terms' => true,
+            'agree_privacy' => true,
         ]);
 
         // verify 직후라 정책 미들웨어는 통과해야 한다 — 응답 코드는 register 비즈니스 로직 결과에 따라

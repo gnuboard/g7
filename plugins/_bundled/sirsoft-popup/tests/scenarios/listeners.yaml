@@ -19,6 +19,7 @@ axes:
     - resolver_uses_snapshot_name
     - resolver_falls_back_to_db_then_id
     - resolver_ignores_other_extension_keys
+    - resolver_names_device   # 이미지 교체·삭제 로그의 기기 키(pc·mobile)를 기기 이름으로
     - cache_cleared_on_save
     - cache_cleared_on_delete
     - cache_cleared_on_bulk_change

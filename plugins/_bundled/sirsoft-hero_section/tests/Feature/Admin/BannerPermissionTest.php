@@ -72,6 +72,29 @@ class BannerPermissionTest extends PluginTestCase
     }
 
     /**
+     * 「플러그인 보기」(core.plugins.read)만 있는 관리자 — 플러그인 설정 화면이 받는 위치 설정(업로드 한도)은 읽고,
+     * 배너 업무 조회는 계속 403.
+     *
+     * 설정 화면은 코어 계약대로 `core.plugins.read` 로 읽기 전용 진입하는데 이 조회가 `banners.read` 만 받아,
+     * 들어갈 때마다 「해당 권한이 없습니다」 알림이 떴다.
+     *
+     * @scenario permission_level=read, actor=plugin_viewer
+     *
+     * @effects plugin_viewer_reads_settings_screen_upload_limit
+     *
+     * @return void 반환값 없음
+     */
+    public function test_plugin_viewer_reads_position_settings_only(): void
+    {
+        $viewer = $this->adminWith(['core.plugins.read']);
+
+        $this->actingAs($viewer)->getJson($this->api('/admin/position-settings'))
+            ->assertOk()
+            ->assertJsonStructure(['data' => ['upload' => ['max_mb', 'server_limit_mb', 'effective_mb']]]);
+        $this->actingAs($viewer)->getJson($this->api('/admin/banners?position=home_hero'))->assertForbidden();
+    }
+
+    /**
      * 조회 묶음 엔드포인트 전부 — 조회+등록·수정 관리자 → 성공.
      *
      * @scenario permission_level=read, actor=editor

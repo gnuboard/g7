@@ -9,6 +9,7 @@ use App\Extension\Helpers\ExtensionPendingHelper;
 use App\Extension\Helpers\RootHtaccessUpdater;
 use App\Extension\Helpers\RootWebConfigUpdater;
 use App\Extension\Helpers\StorageLinkHelper;
+use App\Extension\Support\CarriedClassFileLedger;
 use App\Support\ExecutionEnvironment;
 use Illuminate\Support\Facades\File;
 
@@ -73,7 +74,7 @@ class StorageLeftoverPruneService
      *
      * 같은 파일이 40행 위에서 이 실패 모드를 이름 붙여 금지하고 있다: 이름 판정을
      * 리터럴로 다시 적으면 그 상태는 오류가 아니라 **모집단이 조용히 비는 것**으로만
-     * 나타난다 (10차 G3 라운드 F10-5).
+     * 나타난다.
      */
     private const INSTALLER_PROBE_PREFIXES = ['exposure-probe-', 'symlink-probe-'];
 
@@ -82,7 +83,7 @@ class StorageLeftoverPruneService
      *
      * 형제 두 접두사와 달리 **점 파일**이라 `listDirectoryFiles()` 통로로는 영원히 0건이다
      * (그 헬퍼는 점으로 시작하는 항목을 전부 건너뛴다) — 그래서 별도 스캔이 필요했고 종전에는
-     * 그 스캔이 없어 어느 정리 주체의 모집단에도 없었다 (13차 G3 W1-6).
+     * 그 스캔이 없어 어느 정리 주체의 모집단에도 없었다.
      */
     private const INSTALLER_WRITE_PROBE_PREFIX = '.installer-write-probe-';
 
@@ -115,7 +116,7 @@ class StorageLeftoverPruneService
     /**
      * 파손 상태 사본 이름 규칙 — 생산자 `installer-state.php` 의 `INSTALLER_STATE_CORRUPT_*` 와
      * 같은 값이어야 한다(인스톨러는 코어 상수를 참조할 수 없어 값이 두 곳에 있고, 그 일치는
-     * 계약 테스트가 잠근다). 생산자는 상한 5 로 만들기만 하고 지우는 지점이 0 이었다 (13차 G3 W1-2).
+     * 계약 테스트가 잠근다). 생산자는 상한 5 로 만들기만 하고 지우는 지점이 0 이었다.
      */
     private const INSTALLER_STATE_CORRUPT_INFIX = '.corrupt.';
 
@@ -125,7 +126,7 @@ class StorageLeftoverPruneService
      * 원자 교체 임시 파일이 생기는 루트 진입·보호 파일 → **그 파일을 갱신하는 클래스** 매핑.
      *
      * 이름 규칙(`TEMP_INFIX`·`TEMP_SUFFIX_PATTERN`)과 링크 대상 도출(`resolveWriteTarget`)을
-     * **각 대상의 갱신기 클래스에서** 읽는다 (17차 D-6). 종전에는 세 대상 전부를
+     * **각 대상의 갱신기 클래스에서** 읽는다. 종전에는 세 대상 전부를
      * `RootHtaccessUpdater` 상수로 판정했는데, `web.config` 의 생산자는 `RootWebConfigUpdater` 다 —
      * 지금은 두 클래스가 그 규칙을 공통 추상화에서 상속해 값이 같지만, web.config 갱신기가 그 규칙을
      * 재정의하는 순간 프루너가 잘못된 규칙으로 그 잔해를 판정하게 된다(모집단이 조용히 어긋난다).
@@ -157,7 +158,7 @@ class StorageLeftoverPruneService
      * 상태 파일 배타 구간의 잠금 파일 접미사 — 생산자 `installer-state.php` 의
      * `INSTALLER_STATE_LOCK_SUFFIX` 와 같다(계약 테스트가 대조). `installerWithStateLock` 이
      * `fopen(…, 'c')` 로 만들고 finalize 가 상태 파일과 함께 지우는데, 설치를 포기한 사이트에서는
-     * finalize 가 돌지 않아 상태 파일과 같은 이유로 영구 잔존했다 (15차 G3 W1-4).
+     * finalize 가 돌지 않아 상태 파일과 같은 이유로 영구 잔존했다.
      */
     private const INSTALLER_STATE_LOCK_SUFFIX = '.lock';
 
@@ -178,7 +179,7 @@ class StorageLeftoverPruneService
      * finalize 를 다시 돌 때마다 한 벌씩 늘어나는데 **정리 주체가 없었다** — 저장소 전체에서
      * 이 이름을 지우는 지점이 0 이었다. 백업 자산이므로 임시 등급(3일)이 아니라 **백업
      * 등급**(30일 + 최신 1개 보존)으로 걷는다: 운영자가 되찾을 값을 담고 있어 공격적으로
-     * 지우면 그 안전망 자체가 사라진다. (12차 G3 C-7)
+     * 지우면 그 안전망 자체가 사라진다.
      */
     private const ENV_BACKUP_PREFIX = '.env.bak.';
 
@@ -267,6 +268,7 @@ class StorageLeftoverPruneService
             'stale_swap_files' => $this->pruneStaleSwapFiles($cutoff, $dryRun),
             'env_backups' => $this->pruneEnvBackups($backupCutoff, $dryRun),
             'legacy_browser_log' => $this->pruneLegacyBrowserLog($dryRun),
+            'carried_class_files' => $this->pruneCarriedClassFiles($dryRun),
         ];
     }
 
@@ -283,7 +285,7 @@ class StorageLeftoverPruneService
 
         // 언어팩 `_pending` 도 같은 대상군이다 — 추출 디렉토리(UUID · `preview-<UUID>`)의 정리
         // 주체가 생산자의 `catch`/`finally` 뿐이라 강제 종료 시 영구 잔존했고, 이 스캔은 확장
-        // 세 종만 봤다 (13차 G3 W1-4). 이름 판정은 **생산자 상수**에서 도출한다.
+        // 세 종만 봤다. 이름 판정은 **생산자 상수**에서 도출한다.
         $targets = [
             'modules'.DIRECTORY_SEPARATOR.'_pending' => [self::STAGING_TIMESTAMP_PATTERN, self::SWAP_LEFTOVER_PATTERN],
             'plugins'.DIRECTORY_SEPARATOR.'_pending' => [self::STAGING_TIMESTAMP_PATTERN, self::SWAP_LEFTOVER_PATTERN],
@@ -352,7 +354,7 @@ class StorageLeftoverPruneService
      *
      * Windows 에서 시스템 TEMP 를 쓸 수 없을 때 `ExtensionManager` 가 composer 에 넘기는
      * 자리다. composer 가 채우고 **아무도 비우지 않는다** — 형제 대상군(`storage/app/temp`)과
-     * 경로가 한 단계 다를 뿐인데 그 차이로 스캔 모집단 밖이었다 (11차 G3 라운드 E11-9).
+     * 경로가 한 단계 다를 뿐인데 그 차이로 스캔 모집단 밖이었다.
      *
      * @param  int  $cutoff  이 시각(Unix time) 이전 mtime 만 삭제
      * @param  bool  $dryRun  삭제 없이 목록만
@@ -373,7 +375,7 @@ class StorageLeftoverPruneService
      *
      * `storage/app/core_pending/bundled-updates-manifest_*.json` — 정리 주체가 생산자의
      * `finally` 하나뿐이라, FPM 타임아웃·OOM-kill 로 그 코드가 돌지 않으면 영구히 남는다.
-     * 이 서비스의 독블록이 정의한 실패 모드가 정확히 그것이다 (11차 G3 라운드 E11-9).
+     * 이 서비스의 독블록이 정의한 실패 모드가 정확히 그것이다.
      *
      * 접두사로 좁힌다 — 같은 디렉토리에는 코어 업데이트가 쓰는 다른 산출물이 있다.
      *
@@ -477,8 +479,7 @@ class StorageLeftoverPruneService
      *
      * 이 파일들은 daily 로테이션 **밖**이라 프레임워크가 걷지 않고, 이 서비스의 10개
      * 대상군 어디에도 없어 **정리 주체가 0** 이었다 — 업데이트할 때마다 하나씩 영구히
-     * 쌓인다. 같은 서비스가 형제 로그(`logs/browser.log`)는 대상으로 삼는다
-     * (11차 G3 라운드 E11-4).
+     * 쌓인다. 같은 서비스가 형제 로그(`logs/browser.log`)는 대상으로 삼는다.
      *
      * 보존 등급은 **백업군과 같다**(보존일 + 최신 1개는 나이 무관 보존). 실패 리포트는
      * 진단 자산이라, 운영자가 며칠 뒤 원인을 물을 때 마지막 하나는 남아 있어야 한다.
@@ -555,7 +556,7 @@ class StorageLeftoverPruneService
      * 생산자(`ExtensionPendingHelper`)는 치운 직후 삭제를 시도하고, 실패하면 「다음 제자리
      * 동기화가 다시 지운다」에 기댄다 — 그 확장을 다시 업데이트하지 않는 사이트에서는
      * 영구 잔존한다. 그 잔해는 **활성 확장 디렉토리 안**에 생기고, 배포 레이아웃 ②에서는
-     * 그 자리가 문서 루트 안이다 (11차 G3 라운드 E11-9).
+     * 그 자리가 문서 루트 안이다.
      *
      * @param  int  $cutoff  이 시각(Unix time) 이전 mtime 만 삭제
      * @param  bool  $dryRun  삭제 없이 목록만
@@ -602,7 +603,7 @@ class StorageLeftoverPruneService
         // 표준 차단 목록에 있고, PHP 8 은 차단 함수를 함수 테이블에서 지우므로 그 호출은
         // 치명 오류다 — 이 서비스는 웹 요청 안의 예약 작업으로 도는데, 한 수집기만 무가드면
         // 그 호스팅에서 정리 작업 전체가 그 자리에서 죽는다. 같은 클래스 안에서 가드가
-        // 갈려 있던 상태였다 (22차 G3 라운드 D3).
+        // 갈려 있던 상태였다.
         if (! ExecutionEnvironment::hasFunction('scandir')) {
             return [];
         }
@@ -698,7 +699,7 @@ class StorageLeftoverPruneService
      *
      * 종전에는 어느 대상군에도 없어 **정리 주체가 0** 이었다 — G3 이 이 백업을 문서 루트
      * 안에서 밖으로 옮기면서 위치만 바꾸고 회수 주체는 만들지 않았다. 형제
-     * `core_update_preserved` 가 정확히 같은 사유로 편입된 선례다 (10차 G3 라운드 F10-1).
+     * `core_update_preserved` 가 정확히 같은 사유로 편입된 선례다.
      *
      * 보존 등급은 **백업군과 같다**(보존일 + 최신 1개는 나이 무관 보존). 자동 삭제가
      * 데이터 손실이라는 판단(생산자 독블록)은 그대로 존중한다 — 여기서 바꾸는 것은
@@ -728,7 +729,7 @@ class StorageLeftoverPruneService
      * 링크 복구가 쓰는 폴백 위치이고, 7.0.x 에서는 이쪽이 **정상 경로**였다. 형제
      * (`storage/app` 쪽)만 회수 주체를 얻는 동안 이쪽은 **정리 주체가 0** 이었다:
      * 7.1.0 이설 마이그레이션은 1회성이라 그 뒤에 새로 생기는 것을 잡지 못하고, 누적 경고도
-     * `storage/app` 만 세어 발화하지 않았다 (11차 G3 라운드 E11-1).
+     * `storage/app` 만 세어 발화하지 않았다.
      *
      * 이 사본은 형제와 달리 **지금 웹에서 열린다** — 그래서 회수의 필요는 더 크다. 그래도
      * 등급은 형제와 같은 백업 등급이다(보존일 + 최신 1개 상시 보존): 링크가 깨져 있던 창에
@@ -797,7 +798,7 @@ class StorageLeftoverPruneService
      * 없다는 사실은 그대로).
      *
      * 형제 대상군 전부가 「생산자의 자기 스윕 + 정리 커맨드」 두 주체 구조인데 이
-     * 자리만 하나였다 (10차 G3 라운드 F10-8).
+     * 자리만 하나였다.
      *
      * 이름 판정은 **생성 규칙과 같은 형태**(16진 접미사)로 좁힌다 — 운영자가 같은 이름
      * 공간에 둔 파일을 지우지 않기 위해서다.
@@ -826,7 +827,7 @@ class StorageLeftoverPruneService
             // 놓인 디렉토리만 보면 그 잔해는 어느 정리 주체의 모집단에도 들지 않아 영구 잔존한다.
             // 도출은 **그 대상의 갱신기**(`$updater`)의 `resolveWriteTarget()` 을 그대로 쓴다 —
             // 둘이 갈리면 모집단이 조용히 빈다. 링크 자리도 함께 본다(구판 생산자가 남긴 잔해)
-            // (G3 회차 16 W2 C-5 · 17차 D-6 — web.config 는 RootWebConfigUpdater 가 판정한다).
+            // (web.config 는 RootWebConfigUpdater 가 판정한다).
             $prefixes = [$rootFile.$updater::TEMP_INFIX];
             $writeTarget = $updater::resolveWriteTarget($rootFile);
             if ($writeTarget !== null && $writeTarget !== $rootFile) {
@@ -893,11 +894,11 @@ class StorageLeftoverPruneService
         // (`storage/installer/`) 밖이었다. 지우는 주체가 finalize 하나뿐인데, 이 공정이
         // 대상으로 삼은 배치의 흔한 종착점은 **요구사항 화면에서 막혀 설치를 포기하는
         // 것**이다 — 그러면 이 파일은 영구 잔존한다. 버킷이 자기 만료를 갖더라도 파일
-        // 자체를 지우는 주체는 있어야 한다 (10차 G3 라운드 F10-4).
+        // 자체를 지우는 주체는 있어야 한다.
         $rateFile = $this->storagePath(self::INSTALLER_PROBE_RATE_FILE);
 
         // 나이는 헬퍼로 잰다 — `filemtime()` 실패(false)를 직접 `<` 에 넣으면 `false < int`
-        // 가 참이라 조회 실패가 곧 삭제(fail-open)였다 (14차 G3 W2-5).
+        // 가 참이라 조회 실패가 곧 삭제(fail-open)였다.
         if (is_file($rateFile) && ! $this->isFresh($rateFile, $cutoff)) {
             $pruned[] = $rateFile;
 
@@ -919,7 +920,7 @@ class StorageLeftoverPruneService
      *
      * 생산자 스윕은 **다음 쓰기 때만** 돈다 — 설치를 포기한 사이트에서는 다시 쓰지 않으므로
      * 영구 잔존한다. `runtime.php.tmp.*` 는 DB 자격증명·APP_KEY 를 담고 확장자가 `.php` 가
-     * 아니라 배포 레이아웃 ②에서 평문으로 나간다 (13차 G3 W1-1).
+     * 아니라 배포 레이아웃 ②에서 평문으로 나간다.
      *
      * 이 tmp 는 설치를 재개해도 **다시 읽히지 않는다** — 그래서 형제(상태 파일 · 런타임 파일)와
      * 달리 설치 미완 사이트에서도 임시 등급 그대로 걷는다. 이름 판정은 생산자와 같은 규칙
@@ -963,7 +964,7 @@ class StorageLeftoverPruneService
      *
      * 생산자(`installerDirectoryIsWritable`)는 만든 직후 지우지만 fopen 과 unlink 사이에서
      * 프로세스가 죽으면 남는다. 인스톨러가 점검하는 디렉토리 전부에 생길 수 있어 모집단이
-     * 넓고, 점 파일이라 형제 통로(`listDirectoryFiles`)로는 잡히지 않는다 (13차 G3 W1-6).
+     * 넓고, 점 파일이라 형제 통로(`listDirectoryFiles`)로는 잡히지 않는다.
      *
      * @param  int  $cutoff  이 시각(Unix time) 이전 mtime 만 삭제
      * @param  bool  $dryRun  삭제 없이 목록만
@@ -1002,7 +1003,7 @@ class StorageLeftoverPruneService
 
             // `glob` 이 막힌 호스팅에서는 `scandir` 로 잇는다 — 종전에는 그 환경에서 통째로
             // 빈 배열이라 11개 디렉토리의 프로브 잔해에 정리 주체가 0 이었고, 그 호스팅이 곧
-            // 이 프루너가 대상으로 삼는 배치다 (14차 G3 W2-6).
+            // 이 프루너가 대상으로 삼는 배치다.
             foreach ($this->listFilesByPrefix($directory, self::INSTALLER_WRITE_PROBE_PREFIX) as $path) {
                 // 생성 규칙(16진 접미사)과 같은 형태만 — 코어 형제와 같은 값이다.
                 if (preg_match(RootHtaccessUpdater::TEMP_SUFFIX_PATTERN, substr($path, strlen($prefix))) !== 1) {
@@ -1102,7 +1103,7 @@ class StorageLeftoverPruneService
      *
      * 생산자(`installerPreserveCorruptState`)는 상한 5 로 만들기만 하고 지우는 지점이 0 이었다.
      * 마스킹 전 비밀(구버전 상태 파일)을 담을 수 있으므로 누적은 노출 문제다. 다만 진단
-     * 자산이라 **백업 등급**(보존일 + 최신 1개 보존)으로 걷는다 (13차 G3 W1-2).
+     * 자산이라 **백업 등급**(보존일 + 최신 1개 보존)으로 걷는다.
      *
      * @param  int  $backupCutoff  이 시각(Unix time) 이전 mtime 만 삭제 (최신 1개는 예외)
      * @param  bool  $dryRun  삭제 없이 목록만
@@ -1130,7 +1131,7 @@ class StorageLeftoverPruneService
      *
      * 셋 다 정리 주체가 finalize 하나뿐인데, 이 공정이 대상으로 삼은 배치의 흔한 종착점은
      * **요구사항 화면에서 막혀 설치를 포기하는 것**이다 — 그러면 영구 잔존한다. 레이트리밋
-     * 파일만 같은 사유로 먼저 편입되고 형제 셋이 남아 있었다 (11차 G3 라운드 E11-10).
+     * 파일만 같은 사유로 먼저 편입되고 형제 셋이 남아 있었다.
      *
      * 등급 판단의 근거는 저장 공간이 아니라 **노출**이다. `storage/installer/runtime.php`
      * 는 DB 접속 정보와 APP_KEY 를 담고, 배포 레이아웃 ②에서는 `storage/` 가 문서 루트
@@ -1188,7 +1189,6 @@ class StorageLeftoverPruneService
         // `storage/logs` · `storage/installer` · 시스템 임시 디렉토리. 앞의 둘만 걷으면
         // 세 번째에 예약된 출력 로그가 두 번째 정리 주체의 모집단 밖에 남는다(생산자 스윕은
         // 설치가 끝나면 다시 돌지 않는다). 두 주체의 모집단은 같아야 한다.
-        // (12차 G3 라운드 C-10)
         if (ExecutionEnvironment::hasFunction('sys_get_temp_dir')) {
             $systemTemp = sys_get_temp_dir();
 
@@ -1308,6 +1308,46 @@ class StorageLeftoverPruneService
     }
 
     /**
+     * 확장 교체가 남겨 둔 옛 클래스 파일을 정리 대기 목록에서 지웁니다 — 기록 뒤 최장 요청 시간보다 충분히 지난 항목만.
+     *
+     * 교체 직후에는 그 전에 부팅해 옛 훅 목록을 쥔 요청이 그 파일을 열 수 있어 바로 지우지 않는다({@see CarriedClassFileLedger}).
+     * 이 예약 작업은 크론이 없는 호스팅에서도 웹 크론 주소·방문 트리거로 돈다. 지웠으면 소스 classmap 항목을 걷으려고 오토로드 파일을 다시 쓴다.
+     *
+     * @param  bool  $dryRun  삭제 없이 목록만
+     * @return list<string> 지운(지울) 파일 경로 목록
+     */
+    private function pruneCarriedClassFiles(bool $dryRun): array
+    {
+        $ledger = app(CarriedClassFileLedger::class);
+
+        if ($dryRun) {
+            $due = [];
+            foreach ($ledger->read() as $entry) {
+                if ((time() - (int) ($entry['recorded_at'] ?? 0)) >= CarriedClassFileLedger::MIN_AGE_SECONDS) {
+                    foreach (array_keys((array) ($entry['files'] ?? [])) as $relative) {
+                        $due[] = rtrim((string) $entry['active'], '/\\').'/'.$relative;
+                    }
+                }
+            }
+
+            return $due;
+        }
+
+        $paths = [];
+        foreach ($ledger->sweep() as $active => $files) {
+            foreach ($files as $relative) {
+                $paths[] = rtrim($active, '/\\').'/'.$relative;
+            }
+        }
+
+        if ($paths !== []) {
+            app(ExtensionManager::class)->generateAutoloadFile();
+        }
+
+        return $paths;
+    }
+
+    /**
      * 레거시 단일 `storage/logs/browser.log` 를 정리합니다.
      *
      * 브라우저 로그가 daily 드라이버로 전환되어 이 파일에 쓰는 코드는 더 이상 없다 —
@@ -1358,18 +1398,18 @@ class StorageLeftoverPruneService
         // 1개를 보존한다」는 약속이 그 구간에서만 성립하지 않는다.
         //
         // 그래서 시각 부분이 같으면 **mtime** 으로 가른다 — 난수가 아니라 내용에서
-        // 나온 값이다. (13차 G3 라운드: 같은 초 두 항목을 재는 회귀가 이 구간을 처음으로
+        // 나온 값이다. (같은 초 두 항목을 재는 회귀 시험이 이 구간을 처음으로
         // 밟았다.)
         //
         // **다만 그것만으로 전순서가 서지 않는다.** `filemtime()` 도 stamp 와 같은 **초
         // 해상도**라, 같은 초에 만들어진 둘은 mtime 까지 같아지는 것이 이 구간의 *정상*
         // 상태다. 그때 비교자가 0 을 돌리면 안정 정렬이 입력 순서를 남기고, 그 입력은 다시
-        // 디렉토리 열거 순서다 — 11차가 없앴다고 적은 그 임의성이 한 겹 아래에서 그대로
+        // 디렉토리 열거 순서다 — 위에서 없앴다고 적은 그 임의성이 한 겹 아래에서 그대로
         // 살아난다. 그래서 마지막 결정자로 **이름 전체**를 둔다: 그 순서가 「진짜 최신」을
         // 뜻하지는 않지만(같은 초의 둘 중 어느 쪽이 나중인지는 초 해상도로는 알 수 없다),
         // 적어도 **열거 순서와 무관하게 언제나 같은 하나가 살아남는다**. 「최신 1개 보존」이
-        // 실행마다 다른 대상을 지우는 일은 이것으로 사라진다. (12차 G3 라운드 C-1)
-        // 조회 실패는 **보존** 방향이다 (15차 G3 W1-13). `0` 으로 접으면 그 항목이 「가장 오래됨」
+        // 실행마다 다른 대상을 지우는 일은 이것으로 사라진다.
+        // 조회 실패는 **보존** 방향이다. `0` 으로 접으면 그 항목이 「가장 오래됨」
         // 으로 맨 뒤에 정렬돼 「최신 1개 보존」의 밖이 된다 — `isFresh()` 가 실패를 보존으로
         // 읽는 것과 반대 방향이다. 최신으로 읽어 보존 쪽(맨 앞)에 둔다.
         $mtime = static function (string $path): int {
@@ -1432,7 +1472,7 @@ class StorageLeftoverPruneService
      * 종전에는 `File::glob($pattern)` 이었다. 이 서비스는 예약 작업으로 도는데 무CLI
      * 환경에서 그 스케줄은 **웹 요청 안에서** 실행되므로, `glob` 이 막힌 호스팅에서는
      * 이 자리가 치명 오류가 된다(PHP 8 은 차단 함수를 함수 테이블에서 제거한다).
-     * 나열은 형제 지점들과 같은 단일 지점을 쓴다 (12차 G3 라운드).
+     * 나열은 형제 지점들과 같은 단일 지점을 쓴다.
      *
      * @param  string  $directory  나열할 디렉토리 절대 경로
      * @param  string  $prefix  항목명 시작 (빈 문자열이면 전부)

@@ -164,6 +164,8 @@ Authorization: Bearer {YOUR_TOKEN}
 **활성 상태일 때만** 존재합니다. 비활성화·제거된 확장의 엔드포인트는 404 를 반환하며, 이는 권한
 문제가 아니라 라우트가 등록되지 않은 상태입니다. 확장을 업데이트하는 동안에도 잠시 같은 상태가 됩니다.
 
+경로의 숫자 번호 자리(`{id}`·`{historyId}`·`{version}` 등)는 라우트 제약(`whereNumber`)으로 숫자만 받습니다. 숫자가 아닌 값은 라우트가 없는 것과 같아 404 입니다 — 새 라우트도 컨트롤러가 `int` 로 받는 자리에는 제약을 둡니다(라우트 계약 시험 `tests/Feature/Routing/NonNumericRouteIdNotFoundTest.php`).
+
 위 상태코드를 포함해 `api/*` 의 HTTP 예외(404·403·503 등)는 요청의 `Accept` 헤더와 무관하게
 언제나 같은 JSON 봉투(`{ "success": false, "message": … }`)로 응답합니다 — 자산 요청처럼
 `Accept: image/*` 로 오는 경우에도 HTML 오류 페이지가 아니라 JSON 이며, 예외가 지정한 응답 헤더

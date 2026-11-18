@@ -830,6 +830,29 @@ class CoreThumbnailServingTest extends TestCase
     }
 
     /**
+     * og 규격은 원본이 작아도 SEO 탭 크기(선언한 `og:image:width/height`)로 낸다 — 메타는 원본 크기를 모른 채
+     * SEO 탭 크기를 선언하므로, 한쪽만 작은 원본(800×800)도 통째로 작은 원본(800×600)도 1200×630 이어야 한다.
+     *
+     * @scenario serving_point=core_attachment, request_param=size
+     *
+     * @effects og_preset_follows_seo_size
+     *
+     * @return void 반환값 없음
+     */
+    public function test_og_preset_always_matches_the_declared_seo_size(): void
+    {
+        foreach ([[800, 800], [800, 600]] as [$w, $h]) {
+            $fixture = $this->fixture('core_attachment', TestImages::solid($w, $h, 'jpeg'));
+
+            $response = $this->get($fixture['url'].'?size=og');
+
+            $response->assertOk();
+            $this->assertSame('miss', $response->headers->get(ThumbnailResponder::HEADER), "{$w}×{$h} 원본");
+            $this->assertSame([1200, 630], array_slice(getimagesizefromstring($this->body($response)), 0, 2), "{$w}×{$h} 원본");
+        }
+    }
+
+    /**
      * 기능을 끄면 파라미터가 있어도 원본(`bypass:disabled`).
      *
      * @scenario serving_point=core_attachment, request_param=size

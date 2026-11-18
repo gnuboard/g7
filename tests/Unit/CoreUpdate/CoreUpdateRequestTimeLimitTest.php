@@ -440,6 +440,32 @@ class CoreUpdateRequestTimeLimitTest extends TestCase
     }
 
     /**
+     * 완료된 웹 실행 기록이 남아 있어도, 그 뒤 다른 경로(명령줄·같은 DB 의 다른 서버)로 올라간 판이 더 높으면 그 판을 알린다.
+     *
+     * 종전에는 완료 기록의 대상 판(7.2.1)을 무조건 돌려줘, 명령줄로 7.2.3 까지 올린 뒤에도 「현재 버전 7.2.1」 로 보였다
+     *. 완료 기록을 쓰는 이유(마무리 요청이 한 판 낮은 옛 설정을 들고 있음)는 그대로 두고, 둘 중 높은 판을 고른다.
+     *
+     * @scenario request_time_limit=short, run_state=finished
+     *
+     * @effects the_status_reports_the_installed_version
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function test_a_newer_installed_version_wins_over_a_stale_completed_run(): void
+    {
+        $state = $this->state();
+        $state->start(new CoreUpdateOptions, '7.2.0', '7.2.1', 1);
+        $state->patch(['status' => CoreUpdateRunState::STATUS_COMPLETED, 'next_step' => null]);
+
+        config(['app.version' => '7.2.3']);
+
+        $status = $this->orchestrator($state, new CoreUpdateTimeBudget(null, 300))->status();
+
+        $this->assertSame('7.2.3', $status['current_version']);
+    }
+
+    /**
      * 사전 점검의 트리 훑기는 정해진 시간에서 멈추고 그 사실을 알린다.
      *
      * @scenario request_time_limit=short, scan=time_truncated

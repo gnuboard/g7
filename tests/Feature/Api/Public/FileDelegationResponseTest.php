@@ -346,6 +346,37 @@ class FileDelegationResponseTest extends TestCase
     }
 
     /**
+     * ⑥-2 보내기 전에 위임 결과(꺼짐·적용·매핑 밖)를 미리 알 수 있다 — 2단계 프로브가 「PHP 가 보낸 본문」을 웹서버 전송으로
+     * 오판하지 않게 쓴다. 미리 보기는 응답 자신의 헤더를 바꾸지 않는다.
+     *
+     * @scenario case=outside_mapping
+     *
+     * @effects probe_reports_php_delivery_instead_of_success
+     *
+     * @return void 반환값 없음
+     */
+    public function test_delegation_outcome_is_known_before_sending(): void
+    {
+        $inside = $this->fixtureInsideBase('outcome.txt', 'inside');
+        $outside = $this->fixtureOutsideBase('outside');
+        $request = $this->bindRequest();
+
+        $off = $this->controller()->serve($inside, 'text/plain');
+        $this->assertSame(DelegatedFileResponse::OUTCOME_INACTIVE, $off->delegationOutcome($request));
+
+        config(['core.file_serving.delegation' => FileDelegation::MODE_X_ACCEL_REDIRECT]);
+
+        $applied = $this->controller()->serve($inside, 'text/plain');
+        $this->assertSame(DelegatedFileResponse::OUTCOME_APPLIED, $applied->delegationOutcome($request));
+        $this->assertFalse($applied->headers->has('X-Accel-Redirect'), '미리 보기가 응답 헤더를 바꿨다');
+        $this->assertFalse($applied->headers->has(FileDelegation::DIAGNOSTIC_HEADER));
+
+        $skipped = $this->controller()->serve($outside, 'text/plain');
+        $this->assertSame(DelegatedFileResponse::OUTCOME_SKIPPED, $skipped->delegationOutcome($request));
+        $this->assertFalse((new ReflectionProperty(BinaryFileResponse::class, 'trustXSendfileTypeHeader'))->getValue(), '신뢰 플래그가 새었다');
+    }
+
+    /**
      * ⑦ 신뢰 플래그는 응답 하나의 준비 동안만 켜진다 — 연속 두 응답 뒤에도 꺼져 있고, 일반 파일 응답은 위조 헤더를 믿지 않는다.
      *
      * @scenario case=trust_flag_restore

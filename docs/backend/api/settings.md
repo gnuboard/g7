@@ -1948,7 +1948,8 @@ Cache-Control: no-store, private
 
 - 본문이 비어 있다(헤더에 `X-Sendfile`·`X-Accel-Redirect` 가 그대로 보인다) → 웹서버가 위임 헤더를 모른다(Apache `mod_xsendfile` 미설치·`XSendFile Off`).
 - 404 → nginx internal location 이 없거나 경로가 다르다.
-- 본문의 `data.probe` 가 `g7-file-delegation` → 위임이 동작한다(위임이 꺼져 있어도 이 값이 오며, 그때는 PHP 가 보낸 것이다).
+- 본문의 `data.probe` 가 `g7-file-delegation` → 위임이 동작한다(웹서버가 보낸 본문).
+- 이 응답이 위임되지 않으면(PHP 가 보낼 파일이면) 파일 대신 `{"probe": null, "delegated": false, "reason": "inactive"|"skipped"}` 를 `data` 로 낸다 — `inactive` 는 적용 중인 방식이 「사용 안 함」, `skipped` 는 위임이 켜져 있지만 프로브 파일 실경로가 nginx 매핑 밖(설치 위치 심볼릭 링크 등)이다. 화면은 이때 성공으로 보이지 않고 그 사유를 보인다(PHP 가 보낸 본문을 웹서버 전송으로 오판하지 않게).
 
 응답은 매번 새로 받아야 하므로 `Cache-Control: no-store` 입니다. 서버가 자기 자신에게 요청을 보내 판정하는 방식은 아웃바운드 정책·공유 호스팅 제약 때문에 쓰지 않고, 관리자 브라우저가 직접 받습니다. 설정 방법: [file-serving-delegation.md](../file-serving-delegation.md).
 

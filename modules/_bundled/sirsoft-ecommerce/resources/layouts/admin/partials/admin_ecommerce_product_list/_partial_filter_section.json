@@ -1117,6 +1117,7 @@
                                     ],
                                     "props": {
                                         "name": "brandId",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.product.filter.brand",
                                         "className": "ecommerce:w-48 ecommerce:px-3 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-700 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg",
                                         "value": "{{_local.filter.brandId || ''}}",
                                         "options": "{{_computed.brandOptions ?? []}}",

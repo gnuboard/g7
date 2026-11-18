@@ -8,11 +8,12 @@
 
 ### Added
 
+- [업데이트 확인]에서 GitHub 최신 판을 확인하지 못한 확장·언어팩을 알리는 경고 문구(`extensions.alerts.check_updates_github_failed`·`admin.language_packs.messages.check_updates_github_failed`)를 일본어로 추가했습니다.
 - 확장 설치와 업데이트의 패키지 무결성 안내 패널(`package_integrity.*`), 환경설정 > 보안 탭 「신뢰 키」 구획과 키 추가 및 삭제 창(`settings.security.extension_trust.*`, `settings.extension_trust_key_modal.*`, `modal_label.admin_settings.extension_trust_key_*`), 언어팩 설치 창의 URL 탭(`language_packs.install_modal.*`), 스케줄 편집 창의 `--allow-unsigned` 도움말(`schedules.form.allow_unsigned_hint`), 편집기 데이터 소스 이름(`data_source.extensionTrustKeys`)의 일본어 번역을 추가했습니다.
 - 확장 상세 창 「공개 API」 칸(`extension_public_api.*`)과 환경설정 > 드라이버 「비공개 첨부 저장소」 카드(`settings.drivers.private_attachment.*`)의 일본어 번역을 추가했습니다.
 - 환경설정 > 업로드 「저장 위치」에서 권한이 걸린 이미지 썸네일과 공개 자산 디스크가 둘 다 Amazon S3 일 때 나오는 같은 버킷 경고(`admin.settings.upload.thumbnail.storage.same_bucket_warning`)의 일본어 번역을 추가했습니다.
 - 레이아웃 갱신·업데이트 창 화면별 결정의 「겹치지 않는 곳만 반영 (권장)」 선택지와 세 선택지의 설명(`admin.layout_sync_preview.decision_merge`·`decision_merge_hint`·`decision_keep_ours_hint`·`decision_take_theirs_hint`), 활동 로그 필터 「삭제 직전 기록만 보기」(`admin.activity_log.filter.deletion_snapshot_*`), 버전 이력의 동기화 판 저장자 「시스템」(`admin.templates.modals.version_history.saved_by_system`) 일본어 번역을 추가했습니다.
-- 환경설정 > 드라이버 「웹서버 파일 위임」 카드(위임 방식·내부 위치 접두사·Apache/nginx 설정 안내·설정 점검(nginx 매핑 표시 포함)·실제 전송 확인·복구 안내, `admin.settings.drivers.file_delegation.*`)의 일본어 번역을 추가했습니다 (#878).
+- 환경설정 > 드라이버 「웹서버 파일 위임」 카드(위임 방식·내부 위치 접두사·Apache/nginx 설정 안내·설정 점검(nginx 매핑 표시 포함)·실제 전송 확인(위임 없이 PHP 가 보낸 사유 포함)·복구 안내, `admin.settings.drivers.file_delegation.*`)의 일본어 번역을 추가했습니다 (#878).
 - 태그 입력 칸의 기본 안내(「検索または入力...」), 결과 없음, 새 항목 추가 문장(「{값}を追加」) 문구를 일본어로 추가했습니다.
 - 이 템플릿 설정 화면의 목록 칸 문구를 설정 화면 묶음(`settings.screen.fields`)으로 옮겼습니다.
 - 템플릿 목록 「설정」 메뉴의 「설정 (읽기 전용)」 표시와 설정 화면을 열 수 없을 때의 사유 문구를 일본어로 추가했습니다.
@@ -59,10 +60,13 @@
 
 ### Changed
 
+- 환경설정 > 업데이트 탭 완료 알림 문구(`admin.settings.core_update.completed_desc`)를 「現在のバージョンは … です」에서 「… へのアップデートが完了しました」로 바꿨습니다 — 그 뒤 명령줄로 더 올린 사이트에서 지난 업데이트의 판을 현재 판이라 말하지 않습니다.
+- 스타일 정책 강제 경고(`admin.settings.security.csp.style.known_issues_basic`·`known_issues_strict`)에서 태그 입력·복수 선택 칸 항목을 걷어 냈습니다. 원문(관리자 템플릿 1.2.0)에서 고쳐져 더 이상 깨지지 않습니다.
 - 신뢰 프록시 설명에서 「값은 .env 로만 변경할 수 있습니다」 문장을 걷어냈습니다. 화면에서 저장할 수 있게 되어 더 이상 사실이 아닙니다.
 - 스케줄 검색 대상 「名称」과 편집 창 「識別名」의 번역을 바뀐 원문에 맞췄습니다.
 - 스케줄·큐 화면의 용어를 바뀐 원문에 맞췄습니다(タスク名·識別子·コマンド·制限時間·未実行·有効/無効·コピー·一括適用·選択削除·キュージョブ·「~日時」 등). 환경설정의 비밀번호 만료·활동 로그·GeoIP·탈퇴 회원 파기·고아 첨부·처리 기록, 방문자 통계 리포트 안내에서 고정 실행 시각을 뺐습니다.
 - 환경설정 SEO 탭의 타이틀 접미사·메타 키워드 자리표시자 번역이 두 번 선언돼 있던 것을 하나로 정리했습니다. 화면에 보이는 값(「グヌボード7」)은 그대로입니다.
+- 환경설정 > 드라이버의 세션·큐 Redis 공유 안내(`admin.settings.drivers.session.redis_shared_notice`·`queue.redis_shared_notice`) 번역을 바뀐 원문(접속 정보와 연결 테스트는 캐시 카드에 있음)에 맞추고, 세션·큐가 Redis 일 때 캐시 카드 접속 칸 위에 붙는 안내(`admin.settings.drivers.cache.redis_shared_hint`)의 일본어 번역을 추가했습니다.
 
 ### Removed
 

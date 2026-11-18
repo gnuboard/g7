@@ -139,6 +139,26 @@ class GdImageProcessorTest extends TestCase
     }
 
     /**
+     * 확대를 끈 자르기 규격은 원본이 한쪽만 규격보다 작아도 규격 비율을 지킨다 — 원본 안에서 규격 비율로 가장 크게
+     * 잘라 1:1 로 낸다. 두 변을 따로 줄이면(800×800 → 1200×630 규격에서 800×630) 비율이 깨진다.
+     *
+     * @effects fit_produces_declared_geometry
+     *
+     * @return void 반환값 없음
+     */
+    public function test_cover_without_upscale_keeps_the_preset_ratio_when_source_is_smaller_on_one_side(): void
+    {
+        [$wide] = $this->make(TestImages::solid(800, 800), 'image/png', $this->spec(['width' => 1200, 'height' => 630, 'fit' => 'cover']));
+        $this->assertSame([800, 420], TestImages::size($wide), '1.91:1 규격');
+
+        [$square] = $this->make(TestImages::solid(50, 100), 'image/png', $this->spec(['width' => 64, 'height' => 64, 'fit' => 'cover']));
+        $this->assertSame([50, 50], TestImages::size($square), '정사각 규격');
+
+        [$tall] = $this->make(TestImages::solid(300, 100), 'image/png', $this->spec(['width' => 100, 'height' => 200, 'fit' => 'cover']));
+        $this->assertSame([50, 100], TestImages::size($tall), '세로형 규격');
+    }
+
+    /**
      * 기준점 표 — 원본을 두 색으로 반씩 칠하고 잘린 결과의 색으로 어느 쪽을 남겼는지 잰다.
      *
      * @return array<string, array{0:string,1:string,2:array{0:int,1:int},3:array{0:int,1:int,2:int},4:array{0:int,1:int},5:array{0:int,1:int,2:int}}> 기준점, 나눔, 점1, 기대색1, 점2, 기대색2

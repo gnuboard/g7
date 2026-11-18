@@ -4,6 +4,7 @@ namespace Tests\Feature\Scheduling;
 
 use App\Console\RuntimeRoleCommandGuard;
 use App\Scheduling\ScheduleRunState;
+use App\Scheduling\WebCronPolicy;
 use App\Scheduling\WebCronTokenStore;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\Console\Kernel as ConsoleKernelContract;
@@ -136,5 +137,46 @@ class SchedulerSwitchEntryPointTest extends TestCase
         config(['core.scheduler.enabled' => true]);
         $this->getJson('/api/system/cron/run?token='.$token)->assertOk()->assertJsonPath('data.ran', true);
         $this->assertSame(['every-minute'], $this->executed);
+    }
+
+    /**
+     * 웹 크론 주소의 거절 문구는 사유마다 다르다 — 서버 스위치(`G7_SCHEDULER=off`)·검수 서버를 「서버 크론 전용」으로 안내하지 않는다
+     *.
+     *
+     * 종전에는 사유(`reason`)는 갈렸지만 문구는 늘 `schedule.cron.disabled`(「서버 크론 전용으로 설정되어 있어」)라, 실행 방식이
+     * 「자동」인 사이트에서도 외부 크론 로그를 보는 운영자가 엉뚱한 설정(`system.cron_mode`)을 고치게 됐다.
+     *
+     * @scenario case=scheduler_switch
+     *
+     * @effects web_cron_refusal_message_matches_reason
+     *
+     * @return void 반환값 없음
+     */
+    public function test_web_cron_refusal_message_matches_reason(): void
+    {
+        $token = app(WebCronTokenStore::class)->rotate();
+
+        config(['core.scheduler.enabled' => false, 'core.runtime_role' => 'live']);
+        $this->getJson('/api/system/cron/run?token='.$token)
+            ->assertOk()
+            ->assertJsonPath('data.reason', 'scheduler_disabled_on_server')
+            ->assertJsonPath('message', (string) __('schedule.cron.disabled_on_server'));
+
+        config(['core.scheduler.enabled' => true, 'core.runtime_role' => 'stage']);
+        $this->getJson('/api/system/cron/run?token='.$token)
+            ->assertOk()
+            ->assertJsonPath('data.reason', 'scheduler_disabled_on_server')
+            ->assertJsonPath('message', (string) __('schedule.cron.disabled_stage'));
+
+        // 실행 방식 「서버 크론만」 은 종전 문구
+        config(['core.runtime_role' => 'live']);
+        config(['g7_settings.core.system.cron_mode' => WebCronPolicy::MODE_CRON]);
+        $this->getJson('/api/system/cron/run?token='.$token)
+            ->assertOk()
+            ->assertJsonPath('data.reason', 'web_call_disabled')
+            ->assertJsonPath('message', (string) __('schedule.cron.disabled'));
+
+        $this->assertNotSame((string) __('schedule.cron.disabled'), (string) __('schedule.cron.disabled_on_server'));
+        $this->assertSame([], $this->executed);
     }
 }

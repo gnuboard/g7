@@ -9,7 +9,7 @@
     "dataKey": "registerForm",
     "actions": [
         {
-            "comment": "가입 요청 — 본인인증을 거쳐 왔다면 URL 에 남은 인증 토큰을, 그리고 화면이 받은 가입 항목의 정의 버전(fields_version)을 폼 값에 얹어 보낸다.\n           실패 응답의 오류는 칸별로 갈라 각 입력 아래에 붙고, 칸에 속하지 않는 것(플러그인이 낸 오류 등)은 위쪽 안내 상자에 모인다.\n           그 사이 운영자가 가입 항목을 바꿨으면 서버가 409(fields_changed)로 알린다 — 항목을 다시 받고 안내만 띄운다(입력한 값은 그대로 둔다).",
+            "comment": "가입 요청 — 본인인증을 거쳐 왔다면 URL 에 남은 인증 토큰을, 그리고 화면이 받은 가입 항목의 정의 버전(fields_version)을 폼 값에 얹어 보낸다.\n           실패 응답의 오류는 칸별로 갈라 각 입력 아래에 붙고, 칸에 속하지 않는 것(플러그인이 낸 오류 등)은 위쪽 안내 상자에 모인다.\n           칸 오류가 실린 응답(422)이면 응답 요약 문구(「이름은 필수입니다. (외 4개 오류)」)는 위쪽 상자에 넣지 않는다 — 같은 오류가 칸 아래와 위에 두 번 뜬다.\n           칸 오류가 없는 실패(본인 확인 필요 428, 요청 제한, 서버 오류)만 그 문구를 위쪽 상자에 보인다.\n           그 사이 운영자가 가입 항목을 바꿨으면 서버가 409(fields_changed)로 알린다 — 항목을 다시 받고 안내만 띄운다(입력한 값은 그대로 둔다).",
             "type": "submit",
             "handler": "sequence",
             "actions": [
@@ -59,7 +59,7 @@
                                 "target": "local",
                                 "isRegistering": false,
                                 "errors": "{{error.response?.errors ?? error.errors}}",
-                                "registerError": "{{error.response?.message ?? error.message}}"
+                                "registerError": "{{Object.keys(error.response?.errors ?? error.errors ?? {}).length > 0 ? null : (error.response?.message ?? error.message)}}"
                             }
                         },
                         {
@@ -127,17 +127,19 @@
             ]
         },
         {
-            "comment": "API 에러 메시지 표시 — 전체 응답 message + form field 외 errors (identity/verification_token 등 plugin 기여 에러)",
+            "comment": "위쪽 안내 상자 — 칸 오류가 없는 실패의 응답 문구(registerError)와 어느 칸에도 속하지 않는 오류(본인인증 만료 등 확장이 낸 오류)만 모은다. 둘 다 없으면 뜨지 않는다.",
+            "id": "register_error_box",
             "type": "basic",
             "name": "Div",
-            "if": "{{_local?.registerError}}",
+            "if": "{{_local?.registerError || ($computed.registerOrphanErrors ?? []).length > 0}}",
             "props": {
-                "className": "p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+                "className": "p-4 space-y-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "P",
+                    "if": "{{_local?.registerError}}",
                     "props": {
                         "className": "text-sm font-medium text-red-700 dark:text-red-400"
                     },
@@ -150,7 +152,7 @@
                     "name": "Ul",
                     "if": "{{($computed.registerOrphanErrors ?? []).length > 0}}",
                     "props": {
-                        "className": "mt-2 list-disc list-inside space-y-1"
+                        "className": "list-disc list-inside space-y-1"
                     },
                     "children": [
                         {
@@ -214,7 +216,7 @@
                     "name": "Span",
                     "if": "{{_local.errors?.email}}",
                     "props": {
-                        "className": "text-red-600 dark:text-red-400 text-xs mt-1"
+                        "className": "block text-red-600 dark:text-red-400 text-xs mt-1"
                     },
                     "text": "{{_local.errors?.email?.[0] ?? ''}}"
                 }
@@ -260,9 +262,18 @@
                         "disabled": "{{_local?.isRegistering}}",
                         "showToggle": true,
                         "showValidation": true,
-                        "enableRules": "{{['minLength:' + (_global.settings?.security?.password_min_length ?? 8)].concat(_global.settings?.security?.require_password_special_char ? ['hasSpecial'] : [], _global.settings?.security?.password_require_char_types ? ['minTypes:2'] : [])}}",
-                        "error": "{{_local.errors?.password?.[0] ?? ''}}"
+                        "enableRules": "{{['minLength:' + (_global.settings?.security?.password_min_length ?? 8)].concat(_global.settings?.security?.require_password_special_char ? ['hasSpecial'] : [], _global.settings?.security?.password_require_char_types ? ['minTypes:2'] : [])}}"
                     }
+                },
+                {
+                    "comment": "칸 아래 서버 오류 — 비밀번호 입력 컴포넌트의 자체 오류 줄(error 속성)은 글자가 한 단계 커서(text-sm) 다른 칸(text-xs)과 크기가 달랐다. 이 폼의 다른 칸과 같은 줄로 그린다.",
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{_local.errors?.password}}",
+                    "props": {
+                        "className": "block text-red-600 dark:text-red-400 text-xs mt-1"
+                    },
+                    "text": "{{_local.errors?.password?.[0] ?? ''}}"
                 },
                 {
                     "comment": "화면이 미리 확인할 수 없는 규칙(서버만 판정)은 작은 글로 알린다 — 켜진 것만 보인다(#736).",
@@ -339,9 +350,17 @@
                         "disabled": "{{_local?.isRegistering}}",
                         "showToggle": true,
                         "isConfirmField": true,
-                        "confirmTarget": "{{_local.registerForm?.password ?? ''}}",
-                        "error": "{{_local.errors?.password_confirmation?.[0] ?? ''}}"
+                        "confirmTarget": "{{_local.registerForm?.password ?? ''}}"
                     }
+                },
+                {
+                    "type": "basic",
+                    "name": "Span",
+                    "if": "{{_local.errors?.password_confirmation}}",
+                    "props": {
+                        "className": "block text-red-600 dark:text-red-400 text-xs mt-1"
+                    },
+                    "text": "{{_local.errors?.password_confirmation?.[0] ?? ''}}"
                 }
             ]
         },

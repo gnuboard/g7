@@ -16,6 +16,7 @@
 | 스케줄 | 등록 0건. `schedule:run`·`schedule:work`·`g7:schedule-run` 은 안내 후 종료 0 (cron 을 지우지 않아도 된다) |
 | 큐 워커·신호 | `queue:work`·`queue:listen`·`reverb:start`·`queue:restart` 는 안내 후 종료 1. 설정 저장·코어/확장 업데이트의 내부 재시작 신호도 건너뛴다 — 공유 캐시 신호가 다른 서버의 워커까지 재시작시킨다 |
 | 큐 연결 | `queue.default=sync` 강제 (공유 설정보다 우선) |
+| 사이트 주소 | `.env` 의 `APP_URL` 을 적었으면 그 값이 사이트 주소다 — 공유 설정 「사이트 URL」(운영 주소)이 덮지 않는다(`G7_ENV_PRIORITY` 와 무관, 판정 `RuntimeRole::siteUrlFromLocalEnv()`). 검수 서버는 `APP_URL` 에 자기 주소를 적는다 — 적지 않으면 사이트 주소가 운영 주소가 되어 정규 주소 이동(`CANONICAL_HOST_REDIRECT`)이 검수 서버 화면을 모두 운영 주소로 301 시킨다. 신뢰 Host 와 정규 주소 이동·결제/본인인증 콜백은 이 주소를 따른다(요청 Host 를 믿는 범위는 넓어지지 않는다). 메일·알림 링크가 공개 주소를 가리키게 하려면 `G7_PUBLIC_LINK_URL` 에 운영 주소를 적는다([routing.md](routing.md) 「밖으로 나가는 링크의 주소」) |
 | 사이트맵 | 공개 사이트맵 요청은 생성 잡을 넣지 않는다. 관리자 재생성은 미들웨어 `deny.stage:sitemap` 이 409 `errors.stage_role_locked_sitemap`(사이트맵 전용 안내), `seo:generate-sitemap` 은 종료 1, 생성 잡은 무동작 |
 | SEO | 봇 판정 false, SEO 캐시 쓰기 무동작 |
 | 방문 분석 | 수집 무동작(수집 주소는 같은 204) |
@@ -35,7 +36,8 @@
 | `G7_SCHEDULER` | 서버 로컬 `.env` | 이 서버가 스케줄을 실행하는지 |
 
 `G7_SCHEDULER=off` 인 서버는 `schedule:run`·`schedule:work`·`g7:schedule-run` 을 안내 후 종료 0 으로 끝내고, 웹 크론 주소와 방문 트리거
-(`WebCronPolicy::webCallAllowed()`)도 실행하지 않는다 — 웹 크론 응답은 `schedule.cron.disabled` 에 `reason: scheduler_disabled_on_server`.
+(`WebCronPolicy::webCallAllowed()`)도 실행하지 않는다 — 웹 크론 응답은 `reason: scheduler_disabled_on_server` 에 문구 `schedule.cron.disabled_on_server`
+(검수 서버면 `schedule.cron.disabled_stage`). 공유 설정 `system.cron_mode=cron` 으로 막힌 경우(`reason: web_call_disabled`)의 문구 `schedule.cron.disabled`(「서버 크론 전용」)와 다르다.
 관리자 설정 API(`GET /api/admin/settings`)는 그 요청을 처리한 서버의 값 `scheduler_enabled_on_this_server` 를 싣는다.
 두 값의 비교(꺼진 쪽의 동작·웹 크론 응답 `reason`)는 [scheduling.md](scheduling.md) 「5. 중복 방지·다중 서버·점검 모드」의 표를 본다.
 

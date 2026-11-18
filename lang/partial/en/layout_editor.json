@@ -74,6 +74,7 @@
       },
       "empty": "No routes to display"
     },
+    "stage_banner": "Saved for review only — changes saved in this editor stay on this review (stage) server, are not applied to the live site, and are discarded on the next deployment.",
     "spec_load_error": {
       "title": "Could not load editor information.",
       "message": "The component palette, style controls and state switcher are unavailable. Please try again.",

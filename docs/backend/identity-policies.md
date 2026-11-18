@@ -141,8 +141,10 @@ scope=hook 정책은 훅 인자에서 바뀐 항목을 직접 계산한다(`Enfo
 
 | 단계 | 정책 KEY | scope/target | enabled 시 동작 |
 |------|----------|--------------|---------------|
-| 가입 제출 전 | `core.auth.signup_before_submit` | `route` / `api.auth.register` | `verification_token` 검증 룰 자동 주입 + 미들웨어 enforce |
+| 가입 제출 전 | `core.auth.signup_before_submit` | `route` / `api.auth.register` | `verification_token` 검증 룰(실렸을 때만) 자동 주입 + 입력 검증을 통과한 뒤 enforce(아래) |
 | 가입 후 활성화 전 | `core.auth.signup_after_create` | `hook` / `core.auth.after_register` | 사용자를 `PendingVerification` 으로 생성 + challenge 자동 발행 |
+
+**입력 검증 먼저(7.2.0)** — 라우트 정책은 보통 미들웨어가 컨트롤러보다 먼저 강제하지만, 컨트롤러가 `App\Contracts\Http\DefersIdentityPolicyUntilValidated` 표식을 단 폼 요청을 받으면 미들웨어는 강제할 정책을 요청 속성(`IdentityPolicyService::DEFERRED_ROUTE_POLICIES_ATTRIBUTE`)에 맡겨 두고, 폼 요청이 검증을 통과한 뒤(`passedValidation()`) `IdentityPolicyService::enforceDeferredRoutePolicies()` 가 같은 판정(`enforcePolicyForRequest()`)으로 강제한다. 가입(`RegisterRequest`)이 이 표식을 단다 — 빈 칸·틀린 입력은 칸별 422 로 먼저 알리고, 입력이 맞을 때만 428(인증 창, 대상 이메일 포함)을 낸다. 전에는 빈 칸 제출도 428 이라 화면이 대상 없는 인증을 시작했다가 실패했고, 사용자는 인증을 마친 뒤에야 입력 오류를 보았다. 판정은 미들웨어가 받은 원래 요청으로 해 실패한 작업의 소비 되돌림이 그대로 맞물린다. 현재 비밀번호 확인처럼 검증 자체가 민감한 판정인 작업(비밀번호 변경·탈퇴)에는 달지 않는다.
 
 두 정책 모두 비활성이면 일반 가입 흐름 (Active 사용자 즉시 생성, IDV 없음).
 

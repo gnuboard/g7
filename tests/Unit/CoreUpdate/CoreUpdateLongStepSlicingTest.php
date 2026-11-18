@@ -487,7 +487,7 @@ class CoreUpdateLongStepSlicingTest extends TestCase
     }
 
     /**
-     * 번들 확장 한 항목이 시간 초과로 끊기면 코어를 되돌리지 않고 그 항목만 실패로 세고 다음 항목으로 넘어간다.
+     * 번들 확장 한 항목이 시간 초과로 끊기면 코어를 되돌리지 않고 그 항목을 「끊긴 항목」으로 적어 둔 채 다음 항목으로 넘어간다.
      *
      * @scenario long_step=bundled_updates, slicing=interrupted
      *
@@ -515,7 +515,9 @@ class CoreUpdateLongStepSlicingTest extends TestCase
         $this->assertSame(CoreUpdateRunState::STATUS_RUNNING, $after->status(), '확장 하나가 끊겼다고 정상 반영된 코어를 되돌리면 안 된다');
         $this->assertSame(CoreUpdateStep::Bundled, $after->nextStep());
         $this->assertSame(1, $after->context('bundled_progress')['index']);
-        $this->assertSame(1, $after->context('bundled_progress')['failed']);
+        // 끊긴 것은 요청이지 항목 자식이 아니다 — 실패로 세지 않고 「끊긴 항목」으로 적어 두었다가 단계 끝에서 판을 확인한다.
+        $this->assertSame(0, $after->context('bundled_progress')['failed']);
+        $this->assertSame(['vendor-heavy'], array_column($after->context('bundled_progress')['interrupted'] ?? [], 'identifier'));
         $this->assertNull($after->claimSummary());
     }
 

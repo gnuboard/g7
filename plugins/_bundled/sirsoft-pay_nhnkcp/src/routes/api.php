@@ -53,7 +53,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
 });
 
 Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->group(function () {
-    // 가상계좌 입금통보 URL 조회 (관리자 설정 페이지 표시용)
+    // 가상계좌 입금통보 URL 조회 (관리자 설정 페이지 표시용).
+    // 플러그인 설정 화면이 보여 주는 안내라 화면 권한(core.plugins.read)으로도 읽는다(OR) — 「플러그인 보기」만
+    // 있는 운영자가 읽기 전용 화면에 들어갈 때 403 알림이 뜨고 주소 칸이 비지 않게.
     Route::get('/vbank-notify-url', fn () => response()->json([
         'success' => true,
         'data' => [
@@ -61,7 +63,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
             'url' => SiteUrl::absolute('/plugins/sirsoft-pay_nhnkcp/payment/vbank-notify'),
             'escrow_common_notify_url' => SiteUrl::absolute('/plugins/sirsoft-pay_nhnkcp/payment/escrow-common-notify'),
         ],
-    ]))->middleware('permission:admin,sirsoft-ecommerce.settings.read')
+    ]))->middleware('permission:admin,sirsoft-ecommerce.settings.read|core.plugins.read,false')
         ->name('vbank.notify.url');
 
     Route::get('/settings/test-mode-status', [AdminSettingsStatusController::class, 'testMode'])

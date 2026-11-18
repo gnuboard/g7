@@ -52,7 +52,7 @@
     </define>
   </defines>
   <init>
-    <set-state target="local" :isPasswordVerified="false" verifyPassword="" :isVerifyingPassword="false" :verifyPasswordError="false" :displayNamePreviews="null"/>
+    <set-state target="local" :isPasswordVerified="false" verifyPassword="" :isVerifyingPassword="false" :verifyPasswordError="false" verifyPasswordErrorMessage="" :displayNamePreviews="null"/>
     <!-- 외부 수단(회사 계정 다시 로그인 등)으로 재확인하고 돌아왔다(7.2.0) — 받은 확인 토큰으로 재확인을 마치고 주소에서 토큰을 지운다 -->
     <sequence if="{{!!query?.verification_token}}">
       <api-call :auth_required="true" target="/api/me/verify-password" method="POST">

@@ -525,7 +525,7 @@ $t:sirsoft-ecommerce.admin.claim.filter.charge_payment_method</span>
           <responsive on="768-" class="ecommerce:text-sm ecommerce:text-gray-600 ecommerce:dark:text-gray-400 ecommerce:mb-0 ecommerce:shrink-0 ecommerce:flex ecommerce:items-center ecommerce:w-20"/>
 $t:sirsoft-ecommerce.admin.claim.filter.claim_flags</span>
         <div class="ecommerce-flex-center ecommerce:flex-wrap ecommerce:gap-4">
-          <select data-ref="f_630_request_source_select" data-if="{{(query.type || 'exchange') !== 'cancel'}}" name="requestSource" class="ecommerce:w-36" value="{{_local.filter.requestSource || ''}}">
+          <select data-ref="f_630_request_source_select" data-if="{{(query.type || 'exchange') !== 'cancel'}}" name="requestSource" aria-label="$t:sirsoft-ecommerce.admin.claim.filter.request_source" class="ecommerce:w-36" value="{{_local.filter.requestSource || ''}}">
             <options>
               <option value="">$t:sirsoft-ecommerce.admin.claim.filter.request_source_option.all</option>
               <option value="admin">$t:sirsoft-ecommerce.admin.claim.filter.request_source_option.admin</option>

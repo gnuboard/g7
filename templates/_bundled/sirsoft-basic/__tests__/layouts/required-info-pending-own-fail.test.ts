@@ -98,6 +98,8 @@ const TARGETS: Target[] = [
   { screen: '다시 주문', file: 'shop/reorder.json', target: `${SHOP}/user/orders/{{route.id}}/reorder`, method: 'POST', count: 1, toast: true },
   // 상품 상세
   { screen: '상품 찜', file: 'shop/show.json', target: `${SHOP}/wishlist/toggle`, method: 'POST', count: 1, toast: false },
+  { screen: '상품 상세 쿠폰 모두 받기', file: 'partials/shop/detail/_info_summary.json', target: `${SHOP}/user/coupons/bulk-download`, method: 'POST', count: 1, toast: true },
+  { screen: '상품 카드 옵션 선택 창 담기', file: 'partials/shop/_modal_quick_option.json', target: `${SHOP}/cart`, method: 'POST', count: 1, toast: true },
   { screen: '상품 쿠폰 받기', file: 'partials/shop/detail/_modal_coupon_download_confirm.json', target: `${SHOP}/user/coupons/{{$parent._local.selectedCouponForDownload?.coupon_id}}/download`, method: 'POST', count: 1, toast: true },
   { screen: '상품 문의와 답변 삭제', file: 'partials/shop/detail/_modal_inquiry_delete.json', target: `{{(_global.qnaDeleteIsAdmin ?? false) ? ((_global.qnaDeleteIsReply ?? false) ? '${SHOP}/admin/inquiries/' + _global.qnaDeleteId + '/reply' : '${SHOP}/admin/inquiries/' + _global.qnaDeleteId) : ((_global.qnaDeleteIsReply ?? false) ? '${SHOP}/user/inquiries/' + _global.qnaDeleteId + '/reply' : '${SHOP}/user/inquiries/' + _global.qnaDeleteId)}}`, method: 'DELETE', count: 1, toast: true },
   { screen: '상품 문의 답변 수정(창)', file: 'partials/shop/detail/_modal_qna_reply.json', target: `${SHOP}/user/inquiries/{{_global.qnaReplyEditId}}/reply`, method: 'PUT', count: 1, toast: true },
@@ -279,6 +281,32 @@ describe('스스로 실패 처리를 정한 쓰기 요청의 「추가 정보 �
           expect(guardedBySelf || guardedByBranch, target.screen).toBe(true);
         }
       }
+    }
+  });
+
+  /**
+   * @scenario case=no_inline_duplicate
+   * @effects pending_rejection_sets_no_inline_error
+   */
+  it('그 거부면 화면·창 안의 인라인 오류 문구를 세우지 않는다 — 안내 창과 같은 문장이 두 번 보였다', async () => {
+    const { DataBindingEngine } = await import('@core/template-engine/DataBindingEngine');
+    const engine = new DataBindingEngine();
+    // 실패 처리에서 문구를 그대로 보이는 인라인 오류 상태 — 파일, 요청 주소, 메서드, 상태 키
+    const inline: Array<[string, string, string, string]> = [
+      ['partials/shop/_checkout_summary.json', `${SHOP}/user/orders`, 'POST', 'orderError'],
+      ['partials/shop/_modal_cart_option_change.json', `${SHOP}/cart/{{$parent._local.optionModal.targetItem?.id}}/option`, 'PUT', 'optionErrors'],
+      ['partials/board/show/modals/_modal_delete.json', '{{_global.deleteModal.apiEndpoint}}', 'DELETE', 'deleteError'],
+    ];
+    const pending = { message: '추가 정보를 입력해야 이용할 수 있습니다.', error_code: PENDING, data: { pending_required_fields: ['job'] } };
+    const other = { message: '권한이 없습니다.', error_code: 'forbidden' };
+    for (const [file, target, method, key] of inline) {
+      const [request] = requestsOf({ screen: key, file, target, method, count: 1, toast: true });
+      expect(request, file).toBeDefined();
+      const setter = actionsIn(request.onError).find((action) => action.handler === 'setState' && typeof action.params?.[key] === 'string');
+      expect(setter, file).toBeDefined();
+      const value = (error: unknown) => engine.evaluateExpression(String(setter!.params[key]).slice(2, -2), { error, $t: (k: string) => k } as any);
+      expect(value(pending) || null, file).toBeNull();
+      expect(value(other), file).toBeTruthy();
     }
   });
 

@@ -55,6 +55,13 @@
         <field name="channels" :value="[]"/>
       </field>
     </fallback>
+    <!-- 권한(core.settings.read)이 없으면 채널 목록만 비운다 — 같은 권한의 알림 정의 소스가 보안 알림 카드에 「권한 없음」 안내를
+         보이므로 여기서 오류 알림을 또 띄우지 않는다 -->
+    <error-handling>
+      <on-code code="403">
+        <suppress/>
+      </on-code>
+    </error-handling>
   </data-source>
   <!-- 이 플러그인 소유 알림 정의 — 켠 채널 전부의 템플릿을 한 번에 그리려고 template_channel=all 로 받는다(이 인자가 없으면 templates 가 비어 편집 버튼이 그려지지 않는다) -->
   <data-source id="totpNotificationDefinitions" label_key="$t:sirsoft-totp.editor.data_source.totpNotificationDefinitions" type="api" endpoint="/api/admin/notification-definitions?extension_type=plugin&amp;extension_identifier=sirsoft-totp" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">

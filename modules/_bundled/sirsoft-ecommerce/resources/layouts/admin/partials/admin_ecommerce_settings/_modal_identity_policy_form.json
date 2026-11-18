@@ -88,16 +88,16 @@
                                         "target": "identity_policy_form_modal"
                                     },
                                     {
-                                        "handler": "refetchDataSource",
-                                        "params": {
-                                            "dataSourceId": "ecommerceIdentityPolicies"
-                                        }
-                                    },
-                                    {
                                         "handler": "setState",
                                         "params": {
                                             "target": "global",
                                             "identity_policy_form_modal": null
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "ecommerceIdentityPolicies"
                                         }
                                     }
                                 ],

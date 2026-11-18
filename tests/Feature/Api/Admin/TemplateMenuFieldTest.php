@@ -71,6 +71,56 @@ class TemplateMenuFieldTest extends TestCase
     }
 
     /**
+     * 메뉴·목록 칸 항목의 규칙 오류 문구는 내부 키(`header.menu.5.url`)가 아니라 칸 이름·1부터 센 자리·항목 이름으로 말한다
+     *. 하위 메뉴는 상위 자리와 하위 자리를 함께, 목록 칸 행은 자리를 함께 말한다.
+     *
+     * @scenario case=menu_api
+     *
+     * @effects menu_item_errors_name_position_and_label
+     *
+     * @return void 반환값 없음
+     */
+    public function test_menu_item_rule_errors_use_field_label_position_and_item_name(): void
+    {
+        $declaration = $this->menuDeclaration();
+        $declaration['schema']['header']['links'] = [
+            'type' => 'list',
+            'max_items' => 5,
+            'label' => '바로가기',
+            'item_fields' => ['url' => ['type' => 'link', 'label' => '주소', 'required' => true]],
+        ];
+        $declaration['defaults']['header']['links'] = [];
+        $this->makeSettingsTemplate('qa434-menu', declaration: $declaration);
+        $admin = $this->makeAdmin();
+        app()->setLocale('ko');
+
+        $errors = $this->actingAs($admin)->putJson('/api/admin/templates/qa434-menu/settings', ['header' => ['menu' => [
+            $this->link('a'),
+            $this->link('b', ['label' => ['ko' => 'qa 메뉴'], 'url' => 'javascript:alert(1)']),
+            $this->link('p', ['url' => '', 'children' => [$this->link('c1'), $this->link('c2', ['label' => ['ko' => '하위'], 'url' => 'javascript:x'])]]),
+        ], 'links' => [['url' => '/ok'], ['url' => 'javascript:y']]]])->assertStatus(422)->json('errors');
+
+        $top = $errors['header.menu.1.url'][0] ?? '';
+        $this->assertStringNotContainsString('header.menu', $top);
+        $this->assertStringContainsString('헤더 메뉴', $top);
+        $this->assertStringContainsString('2번째', $top);
+        $this->assertStringContainsString('qa 메뉴', $top);
+        $this->assertStringContainsString('이동할 주소', $top);
+
+        $child = $errors['header.menu.2.children.1.url'][0] ?? '';
+        $this->assertStringNotContainsString('header.menu', $child);
+        $this->assertStringContainsString('3번째', $child);
+        $this->assertStringContainsString('2번째', $child);
+        $this->assertStringContainsString('하위', $child);
+
+        $row = $errors['header.links.1.url'][0] ?? '';
+        $this->assertStringNotContainsString('header.links', $row);
+        $this->assertStringContainsString('바로가기', $row);
+        $this->assertStringContainsString('2번째', $row);
+        $this->assertStringContainsString('주소', $row);
+    }
+
+    /**
      * 2단 트리를 저장하면 알려진 키만 남기고 정리한다 — 자동 항목의 주소·새 창은 버리고, 역할은 「특정 역할」일 때만 남는다.
      *
      * @scenario case=menu_api

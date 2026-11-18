@@ -230,6 +230,12 @@ class SettingsServiceProvider extends ServiceProvider
         // .env 우선 모드: `.env` 가 소유한 키 제거 (스위치 OFF 면 무동작).
         $generalSettings = EnvPriority::filterLocked('general', $generalSettings);
 
+        // 검수 서버(stage)가 `.env` 에 자기 주소(APP_URL)를 적었으면 공유 설정의 사이트 URL(운영 주소)로 덮지 않는다 —
+        // 덮으면 정규 주소 이동이 검수 서버 화면을 모두 운영 주소로 보낸다. 공유 설정보다 우선
+        if (RuntimeRole::siteUrlFromLocalEnv()) {
+            unset($generalSettings['site_url']);
+        }
+
         if (! empty($generalSettings['site_name'])) {
             // site_name 이 다국어 JSON array 일 수 있으므로 현재/폴백 로케일 string 으로 정규화한다
             // (공개#49). raw array 를 config('app.name') 에 넣으면 app.blade.php 의

@@ -35,14 +35,29 @@ class PackageIntegrityException extends \RuntimeException
      * @param  string  $integrityCode  표지 코드 (CODE_* 중 하나)
      * @param  bool  $canContinue  운영자 확인으로 계속할 수 있는지
      * @param  bool  $blockedByPolicy  「미서명 패키지 차단」 스위치로 막혔는지
+     * @param  bool  $console  명령줄 출력용 문장인지 — 화면 단추 안내(「미서명으로 계속」을 눌러)를 뺀 문장을 쓴다
      */
     public function __construct(
         public readonly PackageVerification $verification,
         public readonly string $integrityCode,
         public readonly bool $canContinue = false,
         public readonly bool $blockedByPolicy = false,
+        public readonly bool $console = false,
     ) {
         parent::__construct((string) __($this->getMessageKey(), $this->getMessageParams()));
+    }
+
+    /**
+     * 같은 거절을 명령줄 문장으로 다시 만듭니다.
+     *
+     * 화면 응답(409) 문장은 경고 창의 「미서명으로 계속」 단추를 누르라고 안내한다. 명령줄에는 그 단추가 없고, 진행 방법은
+     * 따로 출력하는 `--allow-unsigned` 안내다 — 화면 문장을 그대로 찍으면 누를 수 없는 단추를 안내한다.
+     *
+     * @return self 명령줄 문장의 예외 (판정·표지·페이로드는 같다)
+     */
+    public function forConsole(): self
+    {
+        return $this->console ? $this : new self($this->verification, $this->integrityCode, $this->canContinue, $this->blockedByPolicy, console: true);
     }
 
     /**
@@ -63,11 +78,15 @@ class PackageIntegrityException extends \RuntimeException
     public function getMessageKey(): string
     {
         if ($this->integrityCode === self::CODE_UNSIGNED) {
-            return $this->blockedByPolicy
-                ? 'extension_integrity.errors.package_unsigned_blocked'
-                : ($this->verification->status === PackageVerificationStatus::Unverifiable
-                    ? 'extension_integrity.errors.package_unverifiable'
-                    : 'extension_integrity.errors.package_unsigned');
+            if ($this->blockedByPolicy) {
+                return 'extension_integrity.errors.package_unsigned_blocked';
+            }
+
+            $key = $this->verification->status === PackageVerificationStatus::Unverifiable
+                ? 'extension_integrity.errors.package_unverifiable'
+                : 'extension_integrity.errors.package_unsigned';
+
+            return $this->console ? $key.'_cli' : $key;
         }
 
         return 'extension_integrity.errors.'.$this->integrityCode;

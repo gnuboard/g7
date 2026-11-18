@@ -2,12 +2,14 @@
 
 namespace App\Http\Middleware;
 
+use App\CoreUpdate\CoreUpdateMaintenanceAccess;
 use App\Http\Middleware\Concerns\DetectsRequestLocale;
 use App\Support\SiteUrl;
 use Closure;
 use Illuminate\Foundation\Http\MaintenanceModeBypassCookie;
 use Illuminate\Http\Middleware\TrustProxies;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\IpUtils;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -71,6 +73,15 @@ class MaintenanceModePage
             return $next($request);
         }
 
+        // 우회 쿠키가 없는 관리자의 이어 가기 통로 — 웹 코어 업데이트가 진행·되돌리기·복구 중일 때만 연다.
+        // 비밀 경로와 같이 이 미들웨어가 직접 답한다: 라우트(web 그룹)로 보내면 쿠키 암호화가 우회 쿠키를 감싸 이 미들웨어(복호화 전)가
+        // 읽지 못하고, 점검 화면은 세션 전에 그려져 CSRF 토큰도 실을 수 없다. 이 요청은 로그인 세션을 만들지 않고, 코어 업데이트 권한
+        // 관리자에게 우회 쿠키만 준다(위조 요청이 얻는 것은 그 브라우저의 점검 화면 통과뿐).
+        $resumeAccess = $this->coreUpdateResumeAccessAvailable();
+        if ($resumeAccess && $request->isMethod('POST') && $request->is(CoreUpdateMaintenanceAccess::PATH)) {
+            return $this->handleCoreUpdateResumeAccess($request);
+        }
+
         // 통과 경로(G7_MAINTENANCE_EXCEPT — down 파일에 except 가 있으면 함께)와 허용 IP(G7_MAINTENANCE_ALLOW_IPS)는 통과
         $except = array_merge((array) ($data['except'] ?? []), (array) config('core.maintenance.except', []));
         if ($this->inExceptArray($request, $except) || $this->fromAllowedIp($request)) {
@@ -102,7 +113,56 @@ class MaintenanceModePage
         }
 
         // 정적 메인터넌스 페이지 렌더링 (DB/API/JS 무의존)
-        return response()->view('maintenance', [], $status, $headers);
+        // 웹 코어 업데이트가 진행·되돌리기·복구 중이면 관리자 확인 칸을 함께 그린다 — 브라우저를 닫은 운영자가 다른 기기에서 이어 간다.
+        $accessResult = (string) $request->query('maintenance_access', '');
+
+        return response()->view('maintenance', [
+            'coreUpdateResumeAccess' => $resumeAccess,
+            'coreUpdateAccessPath' => '/'.CoreUpdateMaintenanceAccess::PATH,
+            'coreUpdateAccessResult' => in_array($accessResult, [CoreUpdateMaintenanceAccess::RESULT_FAILED, CoreUpdateMaintenanceAccess::RESULT_THROTTLED], true) ? $accessResult : null,
+        ], $status, $headers);
+    }
+
+    /**
+     * 점검 화면 관리자 확인 칸의 제출을 처리합니다 — 확인되면 우회 쿠키를 주고 업데이트 탭으로, 아니면 점검 화면으로 돌려보냅니다.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @return Response 이동 응답
+     */
+    protected function handleCoreUpdateResumeAccess(Request $request): Response
+    {
+        try {
+            $outcome = app(CoreUpdateMaintenanceAccess::class)->attempt(
+                (string) $request->input('email', ''),
+                (string) $request->input('password', ''),
+                (string) app(TrustProxies::class)->handle($request, static fn (Request $trusted): ?string => $trusted->ip()),
+                $request->userAgent(),
+            );
+        } catch (\Throwable $e) {
+            // 점검 중이라 오류 화면을 낼 수 없다 — 실패로 돌려보내되 원인은 남긴다
+            Log::warning('점검 화면 관리자 확인 처리 중 오류', ['error' => $e->getMessage(), 'exception' => $e::class]);
+            $outcome = ['result' => CoreUpdateMaintenanceAccess::RESULT_FAILED, 'cookie' => null];
+        }
+
+        if ($outcome['result'] === CoreUpdateMaintenanceAccess::RESULT_GRANTED && $outcome['cookie'] !== null) {
+            return redirect(SiteUrl::absolute('/admin/settings?tab=update'))->withCookie($outcome['cookie']);
+        }
+
+        return redirect(SiteUrl::absolute('/').'?maintenance_access='.$outcome['result']);
+    }
+
+    /**
+     * 우회 쿠키가 없는 관리자의 코어 업데이트 이어 가기 통로가 열려 있는지 판정합니다 — 실패하면 닫힌 것으로 본다.
+     *
+     * @return bool 열려 있으면 true
+     */
+    protected function coreUpdateResumeAccessAvailable(): bool
+    {
+        try {
+            return app(CoreUpdateMaintenanceAccess::class)->available();
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     /**

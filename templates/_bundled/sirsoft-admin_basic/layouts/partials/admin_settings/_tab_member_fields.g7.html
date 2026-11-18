@@ -133,6 +133,7 @@
                           <body enabled="{{!row.enabled}}" fields_version="{{_computed.memberFieldsVersion}}"/>
                           <success>
                             <toast type="success" message="$t:admin.settings.member.fields.saved"/>
+                            <update-data-source dataSourceId="memberFieldDefs" data="{{ { ...(memberFieldDefs ?? { }), data: { ...(memberFieldDefs?.data ?? { }), fields_version: response?.data?.fields_version ?? memberFieldDefs?.data?.fields_version ?? null } } }}"/>
                             <refetch-data-source dataSourceId="memberFieldDefs"/>
                           </success>
                           <fail>
@@ -161,6 +162,7 @@
                               <body required="{{!row.required}}" fields_version="{{_computed.memberFieldsVersion}}"/>
                               <success>
                                 <toast type="success" message="$t:admin.settings.member.fields.saved"/>
+                                <update-data-source dataSourceId="memberFieldDefs" data="{{ { ...(memberFieldDefs ?? { }), data: { ...(memberFieldDefs?.data ?? { }), fields_version: response?.data?.fields_version ?? memberFieldDefs?.data?.fields_version ?? null } } }}"/>
                                 <refetch-data-source dataSourceId="memberFieldDefs"/>
                               </success>
                               <fail>
@@ -195,6 +197,7 @@
                                       <body :required="true" fields_version="{{_computed.memberFieldsVersion}}"/>
                                       <success>
                                         <toast type="success" message="$t:admin.settings.member.fields.saved"/>
+                                        <update-data-source dataSourceId="memberFieldDefs" data="{{ { ...(memberFieldDefs ?? { }), data: { ...(memberFieldDefs?.data ?? { }), fields_version: response?.data?.fields_version ?? memberFieldDefs?.data?.fields_version ?? null } } }}"/>
                                         <refetch-data-source dataSourceId="memberFieldDefs"/>
                                       </success>
                                       <fail>
@@ -231,6 +234,7 @@
                           <body show_on_signup="{{!row.show_on_signup}}" fields_version="{{_computed.memberFieldsVersion}}"/>
                           <success>
                             <toast type="success" message="$t:admin.settings.member.fields.saved"/>
+                            <update-data-source dataSourceId="memberFieldDefs" data="{{ { ...(memberFieldDefs ?? { }), data: { ...(memberFieldDefs?.data ?? { }), fields_version: response?.data?.fields_version ?? memberFieldDefs?.data?.fields_version ?? null } } }}"/>
                             <refetch-data-source dataSourceId="memberFieldDefs"/>
                           </success>
                           <fail>
@@ -324,6 +328,7 @@
                 <body order="{{$sortedItems.map(f =&gt; f.id)}}" fields_version="{{_computed.memberFieldsVersion}}"/>
                 <success>
                   <toast type="success" message="$t:admin.settings.member.fields.order_saved"/>
+                  <update-data-source dataSourceId="memberFieldDefs" data="{{ { ...(memberFieldDefs ?? { }), data: { ...(memberFieldDefs?.data ?? { }), fields_version: response?.data?.fields_version ?? memberFieldDefs?.data?.fields_version ?? null } } }}"/>
                   <refetch-data-source dataSourceId="memberFieldDefs"/>
                 </success>
                 <fail>

@@ -68,16 +68,23 @@
                                         "target": "checkout_field_delete_modal"
                                     },
                                     {
-                                        "handler": "refetchDataSource",
-                                        "params": {
-                                            "dataSourceId": "checkoutFieldDefs"
-                                        }
-                                    },
-                                    {
                                         "handler": "setState",
                                         "params": {
                                             "target": "global",
                                             "checkout_field_delete_modal": null
+                                        }
+                                    },
+                                    {
+                                        "handler": "updateDataSource",
+                                        "params": {
+                                            "dataSourceId": "checkoutFieldDefs",
+                                            "data": "{{ { ...(checkoutFieldDefs ?? { }), data: { ...(checkoutFieldDefs?.data ?? { }), fields_version: response?.data?.fields_version ?? checkoutFieldDefs?.data?.fields_version ?? null } } }}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "checkoutFieldDefs"
                                         }
                                     }
                                 ],
@@ -99,16 +106,16 @@
                                                     "target": "checkout_field_delete_modal"
                                                 },
                                                 {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "checkoutFieldDefs"
-                                                    }
-                                                },
-                                                {
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "global",
                                                         "checkout_field_delete_modal": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "checkoutFieldDefs"
                                                     }
                                                 }
                                             ]

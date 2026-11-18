@@ -11,11 +11,12 @@ description: |
     _local.checkoutForm.extra_fields.{키} 에 담아 주문 요청의 extra_fields 로 보낸다. 사용이 꺼진 내장 항목은 보내지 않는다.
   - 검증 오류(422)의 키 extra_fields.{키}(묶음 유형은 하위 경로)는 그 칸 아래에 그린다.
   - 주문자 이름의 초깃값은 회원의 표시 이름이 아니라 실명이다.
+  - 주문자 이름·연락처·이메일은 칸에 보이는 값을 그대로 보낸다 — 건드리기 전에는 계정 값을 채워 보이고, 사용자가 지운 칸은 빈 값으로 보낸다(계정 값으로 되채우지 않는다).
   - 주문 완료 화면은 주문 응답의 extra_fields 를 구획별로 「라벨: 값」으로 보인다.
 
 # 축은 하나(case)로 편다 — 화면의 어느 부분을 재는지다. 부분끼리 교차하지 않는다.
 axes:
-  case: [defaults, orderer_email, address_detail, shipping_memo, extra_fields, request_body, validation_errors, orderer_name, order_complete]
+  case: [defaults, orderer_email, address_detail, shipping_memo, extra_fields, request_body, validation_errors, orderer_name, orderer_cleared, order_complete]
 
 effects:
   - defaults_match_legacy_screen_without_order_fields
@@ -40,6 +41,8 @@ effects:
   - extra_field_error_drawn_under_its_field
   - extra_field_error_collects_sub_paths
   - orderer_name_defaults_to_real_name_not_display_name
+  - orderer_initial_values_from_account
+  - orderer_cleared_value_sent_as_shown
   - order_complete_lists_extra_fields_by_section
 
 test_files:

@@ -15,6 +15,7 @@ use App\Extension\Custom\CustomUpdatePreflight;
 use App\Extension\Exceptions\UpgradeStepClassMissingException;
 use App\Extension\Helpers\AbstractRootMarkerFileUpdater;
 use App\Extension\Helpers\BackupDirectoryName;
+use App\Extension\Helpers\BundledShippedManifest;
 use App\Extension\Helpers\ChangelogParser;
 use App\Extension\Helpers\CoreBackupHelper;
 use App\Extension\Helpers\ExtensionMenuSyncHelper;
@@ -25,6 +26,7 @@ use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\RootIndexShim;
 use App\Extension\Helpers\SafeArchiveExtractor;
 use App\Extension\Helpers\UpdateReservedPaths;
+use App\Extension\HookManager;
 use App\Extension\Integrity\AcquiredPackage;
 use App\Extension\Integrity\PackageAcquirer;
 use App\Extension\Integrity\PackageExpectation;
@@ -1647,9 +1649,12 @@ class CoreUpdateService
      * @param  array<int, string>  $skipPaths  이번 업데이트가 배치하지 않는 경로(base 상대, 예 `plugins/_bundled/{id}`).
      *                                         증분·prune·백업 부재 세 모드 모두에서 복사와 orphan 정리를 건너뛴다 —
      *                                         설치되지 않았고 디스크에도 없는 공식 번들을 새로 깔지 않기 위함(#146).
-     * @return array{root_file_warnings: list<string>} 이 호출에서 누적된 루트 진입·보호 파일 경고 — `getLastRootFileWarnings()` 와 같은 값이다. 콘솔 커맨드가 아닌 소비처(무CLI 웹 워커)가 그 게터를 모르면 통보가 통째로 사라지므로 반환값에도 싣는다.
+     * @param  array<string, string>|null  $shippedFiles  이번 배포본의 번들 출하 목록(경로 → md5, `BundledShippedManifest`). 주면 증분 모드에서
+     *                                                    사이트의 직전 목록에는 있고 이 목록에는 없는 번들 파일을 지우고(운영자가 고친 파일·확장 클래스
+     *                                                    파일은 남김) 이 목록을 기록한다. null 이면 종전 동작.
+     * @return array{root_file_warnings: list<string>, bundled_prune: array{removed: list<string>, kept_modified: list<string>, retained_classes: list<string>, recorded: bool}} 이 호출에서 누적된 루트 진입·보호 파일 경고 — `getLastRootFileWarnings()` 와 같은 값이다(콘솔 커맨드가 아닌 소비처가 그 게터를 모르면 통보가 통째로 사라지므로 반환값에도 싣는다) — 와 번들 출하 목록 대조 결과
      */
-    public function applyUpdate(string $sourcePath, ?\Closure $onProgress = null, bool $prune = false, ?array $applyList = null, array $skipPaths = []): array
+    public function applyUpdate(string $sourcePath, ?\Closure $onProgress = null, bool $prune = false, ?array $applyList = null, array $skipPaths = [], ?array $shippedFiles = null): array
     {
         $targets = config('app.update.targets', []);
         $excludes = config('app.update.excludes', []);
@@ -1778,7 +1783,70 @@ class CoreUpdateService
         // applyUpdate 는 이미 디스크에 반영된 신버전 config 의 targets 로 정상 처리한다.
         $this->applyDiscoveredTopLevelPaths($sourcePath, $applied, $excludes, $onProgress, $skipPaths);
 
-        return ['root_file_warnings' => $this->lastRootFileWarnings];
+        $bundledPrune = $this->reconcileBundledShippedFiles($shippedFiles, $incremental, self::readSourceVersion($sourcePath));
+
+        return ['root_file_warnings' => $this->lastRootFileWarnings, 'bundled_prune' => $bundledPrune];
+    }
+
+    /**
+     * 번들 디렉토리의 출하 목록을 대조해 새 판이 지운 파일을 정리하고, 이번 출하 목록을 기록합니다 (7.2.0).
+     *
+     * 증분 모드에서만 지운다(`--prune` 은 이미 소스에 없는 파일을 지운다). 사이트에 직전 목록이 없으면(설치 씨앗 전·7.2.0 으로
+     * 올리는 첫 업데이트) 지우지 않고 목록만 남긴다 — 그 전환의 잔존 파일은 판별 업그레이드 스텝의 동결 목록이 맡는다.
+     * 목록을 만들지 못한 실행(`$shippedFiles === null`)은 아무것도 하지 않는다.
+     *
+     * @param  array<string, string>|null  $shippedFiles  이번 배포본의 출하 목록 (경로 → md5)
+     * @param  bool  $incremental  증분 모드인지
+     * @param  string|null  $version  이번 배포본의 판 (목록에 적는다)
+     * @return array{removed: list<string>, kept_modified: list<string>, retained_classes: list<string>, recorded: bool} 정리 결과
+     */
+    private function reconcileBundledShippedFiles(?array $shippedFiles, bool $incremental, ?string $version = null): array
+    {
+        $report = ['removed' => [], 'kept_modified' => [], 'retained_classes' => [], 'recorded' => false];
+
+        if ($shippedFiles === null) {
+            return $report;
+        }
+
+        try {
+            $previous = BundledShippedManifest::read();
+
+            if ($incremental && $previous !== null) {
+                $report = array_merge($report, BundledShippedManifest::pruneRemoved(base_path(), $previous, $shippedFiles));
+            }
+
+            $report['recorded'] = BundledShippedManifest::write($shippedFiles, $version);
+        } catch (\Throwable $e) {
+            Log::warning('[core-update] 번들 출하 목록 대조 실패 (계속 진행)', ['error' => $e->getMessage()]);
+        }
+
+        return $report;
+    }
+
+    /**
+     * 소스(배포본)의 `config/app.php` 에서 판 번호를 읽습니다.
+     *
+     * `env()` 를 우회해 기본값 리터럴을 직접 읽는다 — 소스의 `.env` 는 이 사이트의 것이 아니므로 `include` 결과가 이 사이트
+     * 값으로 오염될 수 있다. 관리자 화면 업데이트(직접 올린 ZIP 의 판 판독)와 출하 목록의 판 기록이 같은 판독을 쓴다.
+     *
+     * @param  string  $sourcePath  소스 루트
+     * @return string|null 판 (읽지 못하면 null)
+     */
+    public static function readSourceVersion(string $sourcePath): ?string
+    {
+        $configPath = $sourcePath.DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'app.php';
+
+        if (! is_file($configPath)) {
+            return null;
+        }
+
+        $contents = (string) @file_get_contents($configPath);
+
+        if (preg_match('/[\'"]version[\'"]\s*=>\s*env\s*\(\s*[\'"]APP_VERSION[\'"]\s*,\s*[\'"]([^\'"]+)[\'"]\s*\)/', $contents, $matches) === 1) {
+            return $matches[1];
+        }
+
+        return null;
     }
 
     /**
@@ -3313,6 +3381,9 @@ class CoreUpdateService
         // 적용 단계가 `deploy/**` 옆에 둔 `.dist` 는 백업에 없어 복원만으로는 남는다.
         $this->removeDeployFragmentSidecars(base_path());
 
+        // 번들 출하 목록도 업데이트 전 것으로 — 지운 번들 파일은 위 백업 복원이 되살렸다.
+        BundledShippedManifest::restorePrevious();
+
         // 되돌린 뒤 루트 진입·보호 파일이 없으면 그 사실을 콘솔 통로에 싣는다.
         //
         // 되돌리기 자체는 의도된 동작이다(그 파일이 없던 버전으로 돌아가는 것이 목적). 문제는
@@ -4470,32 +4541,38 @@ class CoreUpdateService
     }
 
     /**
-     * 코어 권한 정의를 반환합니다.
+     * 코어 권한 정의를 반환합니다 — 활성 코어 언어팩 번역을 더한 형태.
+     *
+     * 시더(RolePermissionSeeder)와 같은 필터 `core.permissions.config` 를 거친다. 거치지 않으면 재동기화가 name 을 ko·en 묶음으로
+     * 덮어 활성 언어팩의 로케일(ja 등)이 지워진다 — 언어팩 판이 오르지 않는 코어만 패치·`core:resync-declarations` 에서 드러났다
+     * (1차 캠페인 E17).
      *
      * @return array 권한 정의 배열
      */
     protected function getCorePermissionDefinitions(): array
     {
-        return config('core.permissions', []);
+        return HookManager::applyFilters('core.permissions.config', config('core.permissions', []));
     }
 
     /**
-     * 코어 역할 정의를 반환합니다.
+     * 코어 역할 정의를 반환합니다 — 활성 코어 언어팩 번역을 더한 형태(시더와 같은 필터 `core.roles.config`).
      *
      * @return array 역할 정의 배열
      */
     protected function getCoreRoleDefinitions(): array
     {
-        return config('core.roles', []);
+        return HookManager::applyFilters('core.roles.config', config('core.roles', []));
     }
 
     /**
-     * 코어 메뉴 정의를 반환합니다.
+     * 코어 메뉴 정의를 반환합니다 — 활성 코어 언어팩 번역을 더한 형태(시더와 같은 필터 `core.menus.config`).
+     *
+     * 운영자가 고친 메뉴 이름은 동기화 도우미가 user_overrides 로 보존한다(필터와 무관).
      *
      * @return array 메뉴 정의 배열
      */
     protected function getCoreMenuDefinitions(): array
     {
-        return config('core.menus', []);
+        return HookManager::applyFilters('core.menus.config', config('core.menus', []));
     }
 }

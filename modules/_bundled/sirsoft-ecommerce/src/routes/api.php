@@ -510,6 +510,7 @@ Route::prefix('wishlist')->middleware('auth:sanctum')->group(function () {
         ->name('wishlist.index');
 
     Route::delete('/{id}', [WishlistController::class, 'destroy'])
+        ->whereNumber('id')
         ->middleware('throttle:sirsoft-ecommerce.wishlist-write')
         ->name('wishlist.destroy');
 });
@@ -919,6 +920,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
             ->name('admin.mileage-transactions.update');
 
         Route::get('{id}/linked', [MileageTransactionController::class, 'linked'])
+            ->whereNumber('id')
             ->middleware('permission:admin,sirsoft-ecommerce.mileage.read')
             ->name('admin.mileage-transactions.linked');
     });
@@ -1365,10 +1367,12 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
             ->name('admin.categories.reorder');
 
         Route::put('/{category}', [CategoryController::class, 'update'])
+            ->whereNumber('category')
             ->middleware('permission:admin,sirsoft-ecommerce.categories.update')
             ->name('admin.categories.update');
 
         Route::delete('/{category}', [CategoryController::class, 'destroy'])
+            ->whereNumber('category')
             ->middleware('permission:admin,sirsoft-ecommerce.categories.delete')
             ->name('admin.categories.destroy');
 
@@ -1421,10 +1425,12 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
             ->name('admin.brands.show');
 
         Route::put('/{brand}', [BrandController::class, 'update'])
+            ->whereNumber('brand')
             ->middleware('permission:admin,sirsoft-ecommerce.brands.update')
             ->name('admin.brands.update');
 
         Route::delete('/{brand}', [BrandController::class, 'destroy'])
+            ->whereNumber('brand')
             ->middleware('permission:admin,sirsoft-ecommerce.brands.delete')
             ->name('admin.brands.destroy');
 

@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
  *
  *  - 코어 고정 슬롯 xs·sm·md·lg·xl: 기본 표는 `config/settings/defaults.json` 의 `upload.thumbnail_presets`
  *    에서만 읽는다(하드코딩 금지). 운영자가 고친 값은 저장 목록의 같은 이름 행이 덮는다.
- *  - 코어 등록 `og`: 크기는 SEO 탭 `og_image_default_width/height`, 자르기·가운데. 업로드 탭에서 못 고친다.
+ *  - 코어 등록 `og`: 크기는 SEO 탭 `og_image_default_width/height`, 자르기·가운데·작은 원본 확대. 업로드 탭에서 못 고친다.
  *  - 확장 규격: 필터 `core.thumbnail.filter_presets`(값: 행 목록). 이름은 `{확장 식별자}.{키}` 만 받는다.
  *    비활성 확장은 필터를 걸지 않으므로 빠지고, 운영자가 고친 값은 저장 목록에 남아 재활성 때 되살아난다.
  *    행의 `label`(사람이 읽는 이름, 다국어 키)은 `extensionDefaults()` 가 그대로 넘기고 관리자 표만 쓴다(규격 값 아님).
@@ -368,6 +368,10 @@ class ThumbnailPresetRegistry
             height: $height,
             fit: ThumbnailSpec::FIT_COVER,
             anchor: 'center',
+            // 작은 원본도 확대한다 — og 메타(`SeoMetaResolver::renderOgHtml`)는 원본 크기를 모른 채 SEO 탭 크기를
+            // `og:image:width/height` 로 선언하므로, 확대를 끄면 작은 원본은 원본 그대로·한쪽만 작은 원본은 작게 나가
+            // 선언과 어긋난다.
+            upscale: true,
             locked: true,
         );
     }

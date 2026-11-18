@@ -12,13 +12,15 @@ description: |
 # 축 의미:
 #   case — 진입점.
 axes:
-  case: [role_resolution, schedule_registration, command_guard, queue_restart_signal, queue_connection, sitemap, seo_analytics, boot_payload, lifecycle_api, update_check, scheduler_switch]
+  case: [role_resolution, schedule_registration, command_guard, queue_restart_signal, queue_connection, site_url, sitemap, seo_analytics, boot_payload, lifecycle_api, update_check, scheduler_switch]
 
 effects:
   - runtime_role_single_judgment
   - stage_registers_no_schedules
   - stage_blocks_workers_and_schedules
   - stage_forces_sync_queue
+  - stage_site_url_from_local_env
+  - web_cron_refusal_message_matches_reason
   - stage_skips_sitemap_seo_and_analytics
   - stage_role_exposed_to_admin_ui
   - stage_locks_lifecycle_api

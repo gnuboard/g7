@@ -10,6 +10,7 @@ use App\Enums\FieldStorageType;
 use App\Fields\FieldSetRegistry;
 use App\Fields\FieldTypeRegistry;
 use App\Models\FieldDefinition;
+use App\Services\MemberFieldFileService;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -274,12 +275,24 @@ class FieldDefinitionSyncHelper
     /**
      * 항목과 그 값을 지웁니다.
      *
+     * 파일·이미지 항목의 값은 첨부(`field:{키}`)라 회원들이 올린 첨부도 함께 지운다. 유형을 준 확장이 먼저 빠져 유형을 알 수
+     * 없어도 컬렉션으로 찾는다. 파일 삭제는 되돌릴 수 없으므로 대상을 먼저 모으고, 바깥 트랜잭션(확장 삭제 등)이 커밋된 뒤
+     * 첨부 삭제 경로(저장 파일·썸네일 정리 포함)로 지운다 — 트랜잭션 밖이면 바로 지운다.
+     *
      * @param  FieldDefinition  $definition  지울 항목
      * @return void 반환값 없음
      */
     protected function removeDefinition(FieldDefinition $definition): void
     {
+        // 지울 첨부는 ID 만 모은다 — 회원 수만큼 첨부 모델을 메모리에 올리지 않는다
+        $files = app(MemberFieldFileService::class);
+        $attachmentIds = $files->attachmentIdsForDefinition($definition);
+
         $this->values->deleteForDefinition($definition->id);
         $this->definitions->delete($definition);
+
+        if ($attachmentIds !== []) {
+            StorageTransaction::afterCommit(fn () => $files->purgeAttachmentIds($attachmentIds));
+        }
     }
 }

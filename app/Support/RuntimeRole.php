@@ -54,6 +54,21 @@ final class RuntimeRole
     }
 
     /**
+     * 사이트 주소(`app.url`)를 서버 로컬 `.env` 의 `APP_URL` 이 정하는지 — 검수 서버이고 `APP_URL` 을 적었을 때 true.
+     *
+     * 검수 서버는 운영과 같은 공유 설정을 읽으므로 공유 설정 「사이트 URL」(운영 주소)이 사이트 주소가 되면, 자기 주소로 들어온
+     * 화면 요청을 정규 주소 이동이 운영 주소로 301 시키고 결제·본인인증 콜백도 운영 주소를 가리킨다. 그래서 검수 서버에서는
+     * 서버 로컬 `APP_URL` 이 이긴다(`G7_ENV_PRIORITY` 와 무관). 값은 요청이 아니라 `.env` 에서 오므로 Host 신뢰 범위는 넓어지지
+     * 않는다. 명시 여부는 설정 캐시 때 잡아 둔 `env-priority.explicit` 로 본다(`env()` 는 캐시 환경에서 null).
+     *
+     * @return bool 검수 서버이고 `.env` 에 APP_URL 이 있으면 true
+     */
+    public static function siteUrlFromLocalEnv(): bool
+    {
+        return self::isStage() && (config('env-priority.explicit.APP_URL') ?? false) === true;
+    }
+
+    /**
      * 이 서버가 스케줄을 실행하는지 — 스케줄 실행 판정의 단일 지점.
      *
      * stage 역할이면 false, 아니면 서버 로컬 스위치 `core.scheduler.enabled`(`G7_SCHEDULER=on|off`, 기본 on).

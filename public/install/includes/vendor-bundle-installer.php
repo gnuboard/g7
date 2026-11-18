@@ -176,7 +176,7 @@ function extractVendorBundle(string $sourceDir, string $targetDir, ?callable $on
     //    묶음으로 나눠 그 사이에 호출자가 「아직 살아 있다」를 알릴 수 있게 한다. 번들 추출은 설치에서
     //    가장 오래 걸리는 태스크(P0 실측 ≈10~15s)인데 그 구간에 emit 이 하나도 없으면 워커 heartbeat 가
     //    멈춰, 새로고침한 요청이 아직 살아 있는 이 요청을 stale 로 보고 탈취해 **두 요청이 같은 vendor/ 를
-    //    동시에 옮기고 푼다** (10차 #M2). vendor/ 는 백업으로 비워졌거나 새로 만들어졌으므로 미리 있던
+    //    동시에 옮기고 푼다**. vendor/ 는 백업으로 비워졌거나 새로 만들어졌으므로 미리 있던
     //    링크가 없다.
     $zip = new ZipArchive;
     $openResult = $zip->open($zipPath);
@@ -355,7 +355,7 @@ function vendorBundleHasBackslashEntries(ZipArchive $zip): bool
  * 열린 아카이브를 묶음 단위로 추출하고 묶음마다 진행 콜백을 부릅니다.
  *
  * `extractTo($dir)` 한 번은 수천 개 파일을 푸는 동안 호출자에게 아무 제어도 돌려주지 않는다.
- * 그 사이 워커 heartbeat 가 멈추면 살아 있는 요청이 stale 로 판정되므로(10차 #M2), 항목 이름을
+ * 그 사이 워커 heartbeat 가 멈추면 살아 있는 요청이 stale 로 판정되므로, 항목 이름을
  * 묶어 여러 번 나눠 부른다 — `extractTo($dir, $names)` 는 디렉토리 구조를 그대로 유지하므로
  * 결과물은 한 번에 푼 것과 같다. zip slip 검증은 호출부가 이미 마쳤다.
  *
@@ -445,7 +445,7 @@ function moveVendorContentsToBackup(string $vendorDir, string $backupDir, string
         }
         @rmdir($backupDir);
 
-        // 되돌리기 자체가 실패하면 원본 일부가 백업 디렉토리에 남는다 (19차 F6).
+        // 되돌리기 자체가 실패하면 원본 일부가 백업 디렉토리에 남는다.
         // 호출부의 경고는 「백업 실패」만 말하므로, **원본이 흩어졌다**는 사실은 여기서만
         // 남길 수 있다. 이 사실 없이 in-place 덮어쓰기로 넘어가면 그 조각들은 영영 미아가 된다.
         if ($stranded !== []) {
@@ -466,7 +466,7 @@ function moveVendorContentsToBackup(string $vendorDir, string $backupDir, string
  */
 function restoreVendorFromBackup(string $vendorDir, string $backupDir, string $backupDirName): bool
 {
-    // 복원 실패는 조용히 지나가지 않는다 (19차 F7). 종전에는 반환값이 없어 호출부가 확인할
+    // 복원 실패는 조용히 지나가지 않는다. 종전에는 반환값이 없어 호출부가 확인할
     // 방법 자체가 없었고, 복원에 실패하면 운영자는 **원래 실패 사유만** 보는데 vendor/ 는
     // 백업 디렉토리에 원본이 남은 채 비어 있었다.
     $restored = true;
@@ -527,7 +527,7 @@ function deleteVendorBundleDirectory(string $dir): bool
         return false;
     }
 
-    // 열거 실패는 삭제 실패다 (19차 F2 형제) — `false` 를 순회하면 PHP 8 에서 TypeError 다.
+    // 열거 실패는 삭제 실패다 — `false` 를 순회하면 PHP 8 에서 TypeError 다.
     $items = @scandir($dir);
     if ($items === false) {
         return false;
@@ -539,7 +539,7 @@ function deleteVendorBundleDirectory(string $dir): bool
         }
         $path = $dir.DIRECTORY_SEPARATOR.$item;
 
-        // 재귀 안에서도 심볼릭 링크를 따라가지 않는다 (19차 F4).
+        // 재귀 안에서도 심볼릭 링크를 따라가지 않는다.
         //
         // 최상위 후보에는 이미 `is_link` 가드가 있는데(그 함수의 호출부) 재귀 내부에는 없었다.
         // 백업으로 옮겨진 링크가 있으면 그 **대상**의 내용이 지워진다 — 삭제 경계가
@@ -585,6 +585,51 @@ function clearLaravelCompiledCache(string $basePath): array
         $path = $cacheDir.DIRECTORY_SEPARATOR.$filename;
         if (is_file($path) && @unlink($path)) {
             $cleared[] = $filename;
+        }
+    }
+
+    return $cleared;
+}
+
+/**
+ * 앞 설치가 남긴 확장 캐시를 지웁니다 — 기존 설치 DB 를 비우고 다시 설치할 때(웹 마법사 [강제 진행]).
+ *
+ * 훅·오토로드·예약 명령·라우트 매핑(`bootstrap/cache`)과 활성 확장 목록을 담은 애플리케이션 파일 캐시
+ * (`storage/framework/cache/data`, `.gitignore` 보존)가 남으면, 빈 DB 위에서도 앞 설치의 확장이 켜진 것으로 보여
+ * 아직 설치 전인 플러그인의 리스너가 등록되고 모듈 활성화가 그 리스너를 만들다 「… is not instantiable」 로 실패한다
+ *. 대상은 CLI 재설치(`installer_cli_reinstall_targets()`)와 같다. 지운 캐시는 확장 설치가 다시 만든다.
+ *
+ * @param  string  $basePath  프로젝트 루트
+ * @return array<int, string> 지운 항목 이름 (bootstrap/cache 파일명, 파일 캐시는 `cache-data`)
+ */
+function clearStaleExtensionCaches(string $basePath): array
+{
+    $base = rtrim($basePath, '/\\');
+    $cleared = [];
+
+    foreach (['hooks.php', 'autoload-extensions.php', 'extension-schedule-commands.php', 'routes-v7.php'] as $filename) {
+        $path = $base.'/bootstrap/cache/'.$filename;
+        if (is_file($path) && @unlink($path)) {
+            $cleared[] = $filename;
+        }
+    }
+
+    $dataDir = $base.'/storage/framework/cache/data';
+    if (is_dir($dataDir)) {
+        $removed = false;
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($dataDir, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST
+        );
+        foreach ($iterator as $entry) {
+            $path = $entry->getPathname();
+            if ($entry->getFilename() === '.gitignore' && $iterator->getDepth() === 0) {
+                continue;
+            }
+            $removed = ($entry->isDir() ? @rmdir($path) : @unlink($path)) || $removed;
+        }
+        if ($removed) {
+            $cleared[] = 'cache-data';
         }
     }
 

@@ -42,6 +42,9 @@ class CoreUpdateRunState
     /** 적용 대상 산출 진행분 사이드카 파일 이름 (나눠 처리하는 단계의 중간 결과). */
     public const PLAN_PROGRESS_FILENAME = 'web-run-plan-progress.json';
 
+    /** 이번 배포본의 번들 출하 목록 사이드카 파일 이름 (적용 단계가 사이트 목록과 대조한다) */
+    public const SHIPPED_FILES_FILENAME = 'web-run.shipped.json';
+
     /**
      * 점유가 만료 창을 선언하지 않았을 때(구 상태 파일, 실행 제한 없음) 쓰는 기본 창.
      *
@@ -101,6 +104,66 @@ class CoreUpdateRunState
     public function applyListPath(): string
     {
         return dirname($this->path).DIRECTORY_SEPARATOR.self::APPLY_LIST_FILENAME;
+    }
+
+    /**
+     * 이번 배포본의 번들 출하 목록 사이드카 경로.
+     *
+     * @return string 절대 경로
+     */
+    public function shippedFilesPath(): string
+    {
+        return dirname($this->path).DIRECTORY_SEPARATOR.self::SHIPPED_FILES_FILENAME;
+    }
+
+    /**
+     * 번들 항목 자식 프로세스의 새 표식 경로 (실행 상태 디렉토리 안, 항목마다 다른 이름).
+     *
+     * @return string 절대 경로
+     */
+    public function newBundledChildMarkerPath(): string
+    {
+        return dirname($this->path).DIRECTORY_SEPARATOR.'bundled-child_'.bin2hex(random_bytes(8)).'.lock';
+    }
+
+    /**
+     * 이번 배포본의 번들 출하 목록을 씁니다 (상태 JSON 에 싣기엔 크다 — 적용 목록과 같은 이유).
+     *
+     * @param  array<string, string>|null  $files  경로 → md5 (null 이면 파일 삭제)
+     * @return void 반환값 없음
+     */
+    public function storeShippedFiles(?array $files): void
+    {
+        $path = $this->shippedFilesPath();
+
+        if ($files === null) {
+            if (is_file($path)) {
+                @unlink($path);
+            }
+
+            return;
+        }
+
+        File::ensureDirectoryExists(dirname($path), 0755, true);
+        $this->writeAtomically($path, (string) json_encode($files, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+    }
+
+    /**
+     * 이번 배포본의 번들 출하 목록을 읽습니다.
+     *
+     * @return array<string, string>|null 없으면 null (= 출하 목록 대조 없이 적용)
+     */
+    public function loadShippedFiles(): ?array
+    {
+        $path = $this->shippedFilesPath();
+
+        if (! is_file($path)) {
+            return null;
+        }
+
+        $decoded = json_decode((string) @file_get_contents($path), true);
+
+        return is_array($decoded) ? array_filter($decoded, static fn ($hash, $key): bool => is_string($key) && is_string($hash), ARRAY_FILTER_USE_BOTH) : null;
     }
 
     /**
@@ -340,6 +403,34 @@ class CoreUpdateRunState
     public function appendWarnings(array $messages): void
     {
         $this->appendMessages('warnings', $messages);
+    }
+
+    /**
+     * 더는 사실이 아닌 경고를 걷습니다 (예: 되돌리기가 원래대로 돌려놓은 파일에 대한 적용 단계 안내).
+     *
+     * 같은 문구의 경고만 지운다 — 다른 단계가 낸 경고는 그대로 둔다.
+     *
+     * @param  array<int, string>  $messages  걷을 경고 문구
+     * @return int 실제로 걷은 경고 수
+     */
+    public function withdrawWarnings(array $messages): int
+    {
+        $messages = array_values(array_filter($messages, static fn ($m): bool => is_string($m) && $m !== ''));
+        $state = $this->read();
+
+        if ($messages === [] || $state === []) {
+            return 0;
+        }
+
+        $existing = is_array($state['warnings'] ?? null) ? array_values($state['warnings']) : [];
+        $kept = array_values(array_filter($existing, static fn ($w): bool => ! in_array($w, $messages, true)));
+        $withdrawn = count($existing) - count($kept);
+
+        if ($withdrawn > 0) {
+            $this->patch(['warnings' => $kept]);
+        }
+
+        return $withdrawn;
     }
 
     /**
@@ -607,7 +698,7 @@ class CoreUpdateRunState
     {
         $this->state = [];
 
-        foreach ([$this->path, $this->applyListPath(), $this->planProgressPath()] as $path) {
+        foreach ([$this->path, $this->applyListPath(), $this->planProgressPath(), $this->shippedFilesPath()] as $path) {
             if (is_file($path)) {
                 @unlink($path);
             }
@@ -616,6 +707,11 @@ class CoreUpdateRunState
             foreach (glob($path.'.tmp.*') ?: [] as $leftover) {
                 @unlink($leftover);
             }
+        }
+
+        // 번들 항목 자식 표식 — 실행이 끝났으면 더 볼 일이 없다.
+        foreach (glob(dirname($this->path).DIRECTORY_SEPARATOR.'bundled-child_*') ?: [] as $marker) {
+            @unlink($marker);
         }
     }
 

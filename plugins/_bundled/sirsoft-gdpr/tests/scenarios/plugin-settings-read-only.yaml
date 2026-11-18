@@ -10,6 +10,8 @@ test_files:
 axes:
   case:
     - plugin_settings_without_update
+    - aux_source_forbidden
 
 effects:
   - plugin_settings_locked_read_only
+  - aux_source_forbidden_handled_without_toast   # 화면이 스스로 받는 보조 소스의 403 은 소스에서 끊는다(오류 알림 없음) — 그 칸은 숨거나 같은 권한 소스의 「권한 없음」 안내로 대신

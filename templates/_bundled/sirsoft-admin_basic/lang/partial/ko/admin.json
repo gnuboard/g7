@@ -802,6 +802,7 @@
       "protected_badge": "🔒 보호됨",
       "check_updates_done": "업데이트 확인을 완료했습니다 ({{count}}건 가능).",
       "check_updates_none": "모든 언어팩이 최신 상태입니다.",
+      "check_updates_github_failed": "GitHub 최신 판을 확인하지 못한 언어팩 {{count}}개({{names}}) — 최신으로 판정하지 않았고 최신 버전 정보도 그대로 두었습니다. 사유: {{reason}}",
       "check_updates_failed": "업데이트 확인에 실패했습니다.",
       "activate_success": "언어팩을 활성화했습니다.",
       "deactivate_success": "언어팩을 비활성화했습니다.",
@@ -2488,8 +2489,8 @@
           "level_strict": "엄격 — 기본 + 태그의 style 속성도 차단",
           "level_desc": "기본은 대부분의 화면이 그대로 동작합니다. 엄격은 외부 라이브러리가 직접 넣는 style 속성까지 막으므로 깨지는 화면이 더 많습니다.",
           "enforce_warning": "먼저 '점검만'으로 storage/logs/csp-*.log 에 위반이 없는지 확인한 뒤 강제로 바꾸세요.",
-          "known_issues_basic": "강제하면 다음 화면이 깨집니다: 태그 입력·다중 선택 칸(이 카드의 허용 호스트 입력 포함) — 칸 안 배치가 흐트러지고 화면 낭독용 안내 문구가 그대로 보임; 레이아웃 코드 편집기 — 구문 색과 배경 테마가 빠짐; 글쓰기 편집기(CKEditor)의 색상 선택기 — 임의 색을 끌어 고르는 판이 접힘(색 타일과 16진수 입력으로는 고를 수 있음). 이 화면을 쓰는 사이트는 '점검만'으로 두세요.",
-          "known_issues_strict": "강제하면 다음 화면이 깨집니다: 태그 입력·다중 선택 칸(이 카드의 허용 호스트 입력 포함) — 칸 안 배치가 흐트러지고 화면 낭독용 안내 문구가 그대로 보임; 레이아웃 코드 편집기 — 구문 색·배경 테마·줄 강조가 빠짐; 글쓰기 편집기(CKEditor)의 색상 선택기 — 임의 색을 끌어 고르는 판이 접힘(색 타일과 16진수 입력으로는 고를 수 있음). 이 화면을 쓰는 사이트는 '점검만'으로 두세요.",
+          "known_issues_basic": "강제하면 다음 화면이 깨집니다: 레이아웃 코드 편집기 — 구문 색과 배경 테마가 빠짐; 글쓰기 편집기(CKEditor)의 색상 선택기 — 임의 색을 끌어 고르는 판이 접힘(색 타일과 16진수 입력으로는 고를 수 있음). 이 화면을 쓰는 사이트는 '점검만'으로 두세요.",
+          "known_issues_strict": "강제하면 다음 화면이 깨집니다: 레이아웃 코드 편집기 — 구문 색·배경 테마·줄 강조가 빠짐; 글쓰기 편집기(CKEditor)의 색상 선택기 — 임의 색을 끌어 고르는 판이 접힘(색 타일과 16진수 입력으로는 고를 수 있음). 이 화면을 쓰는 사이트는 '점검만'으로 두세요.",
           "override_notice": ".env 의 G7_CSP_STYLE_MODE={{mode}} 가 이 설정보다 우선합니다. 바꾸려면 .env 를 고친 뒤 php artisan config:clear 를 실행하세요.",
           "extra_hosts": "추가 스타일 허용 호스트 (입력 후 Enter)",
           "extra_hosts_placeholder": "fonts.example.com",
@@ -2904,6 +2905,8 @@
         "probe_button": "실제 전송 확인",
         "probe_ok": "웹서버가 파일을 보냈습니다. 위임이 동작합니다.",
         "probe_failed": "파일 본문을 받지 못했습니다. 웹서버 설정을 확인하거나 위임 방식을 「사용 안 함」으로 되돌리세요.",
+        "probe_inactive": "적용 중인 방식이 「사용 안 함」이라 웹서버가 아니라 PHP 가 파일을 보냅니다. 위임 방식을 저장한 뒤 다시 확인하세요.",
+        "probe_skipped": "위임은 켜져 있지만 이 파일은 위임 경로 밖이라 PHP 가 보냈습니다. 설치 위치(심볼릭 링크 포함)가 위임 매핑과 맞는지 확인하세요.",
         "recover_hint": "켠 뒤 화면 자산이나 이미지가 열리지 않으면 위임 방식을 「사용 안 함」으로 저장하세요. 관리 화면에 들어갈 수 없으면 서버의 storage/app/settings/drivers.json 에서 file_delegation 값을 none 으로 고치세요."
       },
       "cache": {
@@ -2919,6 +2922,7 @@
         "redis_port": "Redis 포트",
         "redis_password": "Redis 비밀번호",
         "redis_database": "Redis 데이터베이스",
+        "redis_shared_hint": "세션·큐가 Redis 를 쓰므로 보이는 접속 정보입니다. 캐시·세션·큐가 이 한 벌을 함께 씁니다.",
         "memcached_host": "Memcached 호스트",
         "memcached_port": "Memcached 포트"
       },
@@ -2933,7 +2937,7 @@
         },
         "lifetime": "세션 유효시간",
         "minutes": "분",
-        "redis_shared_notice": "Redis 선택 시 캐시의 Redis 설정을 공유합니다."
+        "redis_shared_notice": "Redis 를 고르면 캐시 카드의 Redis 접속 정보를 함께 씁니다. 접속 정보와 연결 테스트는 캐시 카드에 있습니다."
       },
       "queue": {
         "title": "큐",
@@ -2945,7 +2949,7 @@
           "redis": "Redis"
         },
         "worker_notice": "database 또는 redis 사용 시 큐 워커를 실행해야 합니다.",
-        "redis_shared_notice": "Redis 선택 시 캐시의 Redis 설정을 공유합니다.",
+        "redis_shared_notice": "Redis 를 고르면 캐시 카드의 Redis 접속 정보를 함께 씁니다. 접속 정보와 연결 테스트는 캐시 카드에 있습니다.",
         "worker": {
           "title": "큐 워커",
           "not_required": "동기(sync) 드라이버는 요청 안에서 바로 처리하므로 큐 워커가 필요 없습니다.",
@@ -3550,7 +3554,7 @@
       "view_log": "기록 보기",
       "hide_log": "기록 접기",
       "resume": "이어서 진행",
-      "completed_desc": "현재 버전은 {{version}} 입니다.",
+      "completed_desc": "{{version}} 버전으로 업데이트를 마쳤습니다.",
       "failed_title": "{{step}} 단계에서 실패했습니다. {{detail}}",
       "rolled_back": "백업본으로 되돌렸습니다. 사이트는 정상 동작합니다.",
       "rolled_back_not_applied": "파일을 바꾸기 전에 멈췄습니다. 사이트는 그대로입니다.",

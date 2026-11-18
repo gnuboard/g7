@@ -3,10 +3,12 @@
 namespace Tests\Feature\User;
 
 use App\Contracts\Repositories\FieldDefinitionRepositoryInterface;
+use App\Extension\Helpers\FieldDefinitionSyncHelper;
 use App\Models\Attachment;
 use App\Models\FieldDefinition;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\MemberFieldFileService;
 use App\Services\UserService;
 use Database\Seeders\CoreFieldDefinitionSeeder;
 use Database\Seeders\RolePermissionSeeder;
@@ -302,5 +304,86 @@ class FieldAttachmentAccessTest extends TestCase
         $this->actingAs($this->admin);
         app(UserService::class)->deleteUser($this->other->fresh());
         $this->assertSame(0, Attachment::where('collection', 'field:t490_doc')->count(), '삭제한 회원의 파일이 남았다');
+    }
+
+    /**
+     * 파일 항목을 지우면 그 항목에 회원들이 올린 첨부(행과 저장 파일)가 함께 지워지고, 삭제 창의 값 수는 파일을 올린 회원 수다.
+     * 다른 항목의 파일은 남는다(같은 키로 다시 만든 항목에 옛 파일이 붙지 않는다).
+     *
+     * @scenario case=field_delete
+     *
+     * @effects deleting_file_field_counts_and_removes_member_files
+     *
+     * @return void 반환값 없음
+     */
+    public function test_deleting_file_field_counts_and_removes_member_files(): void
+    {
+        $gone = $this->custom('t490_gone', 'file', ['constraints' => ['max_count' => 2]]);
+        $this->custom('t490_keep');
+        $first = $this->upload('t490_gone', UploadedFile::fake()->create('a.pdf', 10, 'application/pdf'))->assertCreated()->json('data.file.id');
+        $this->upload('t490_gone', UploadedFile::fake()->create('b.pdf', 10, 'application/pdf'))->assertCreated();
+        $this->upload('t490_gone', UploadedFile::fake()->create('c.pdf', 10, 'application/pdf'), $this->other)->assertCreated();
+        $kept = $this->upload('t490_keep', UploadedFile::fake()->create('k.pdf', 10, 'application/pdf'))->assertCreated()->json('data.file.id');
+        $path = Attachment::findOrFail($first)->path;
+        Storage::disk('attachments')->assertExists($path);
+
+        $base = '/api/admin/field-sets/core.user/fields/'.$gone->id;
+        $this->as($this->admin)->getJson($base)->assertOk()->assertJsonPath('data.field.values_count', 2);
+
+        $this->as($this->admin)->deleteJson($base)->assertOk();
+
+        $this->assertSame(0, Attachment::withTrashed()->where('collection', 'field:t490_gone')->count(), '지운 항목의 첨부 행이 남았다');
+        Storage::disk('attachments')->assertMissing($path);
+        $this->assertDatabaseHas('attachments', ['id' => $kept, 'collection' => 'field:t490_keep']);
+
+        // 같은 키로 다시 만들어도 옛 파일이 붙지 않는다.
+        $this->custom('t490_gone');
+        $this->assertSame([], $this->as($this->member)->getJson('/api/me')->assertOk()->json('data.custom_fields.t490_gone') ?? []);
+    }
+
+    /**
+     * 유형을 준 확장이 빠져 유형을 알 수 없게 된 파일 항목도, 삭제 창의 값 수는 회원들이 올린 파일(첨부를 올린 회원 수)을 센다 —
+     * 실제 삭제는 유형과 무관하게 그 항목의 첨부를 지우므로, 「값 0건」 으로 안내하면 안내와 삭제가 어긋난다.
+     *
+     * @scenario case=field_delete
+     *
+     * @effects deleting_file_field_counts_and_removes_member_files
+     *
+     * @return void 반환값 없음
+     */
+    public function test_values_count_includes_files_when_field_type_is_gone(): void
+    {
+        $field = $this->custom('t490_orphan_doc');
+        $this->upload('t490_orphan_doc', UploadedFile::fake()->create('o.pdf', 10, 'application/pdf'))->assertCreated();
+
+        // 유형을 준 확장이 빠진 상태 — 등록소가 모르는 유형
+        FieldDefinition::whereKey($field->id)->update(['type' => 'qa_gone_file_type']);
+        app(FieldDefinitionRepositoryInterface::class)->forgetMemo();
+
+        $this->as($this->admin)->getJson('/api/admin/field-sets/core.user/fields/'.$field->id)
+            ->assertOk()->assertJsonPath('data.field.values_count', 1);
+    }
+
+    /**
+     * 확장이 선언한 파일 항목이 확장 삭제(또는 선언에서 빠짐)로 정리되면 회원들이 올린 첨부도 함께 지워진다.
+     *
+     * @scenario case=extension_removal
+     *
+     * @effects declared_file_field_removal_removes_member_files
+     *
+     * @return void 반환값 없음
+     */
+    public function test_removing_declared_file_field_removes_member_files(): void
+    {
+        $declared = $this->custom('t490_ext_doc', 'file', ['source_type' => 'plugin', 'source_identifier' => 'test-fieldfiles']);
+        $service = app(MemberFieldFileService::class);
+        $attachment = $service->upload($this->member, $declared, UploadedFile::fake()->create('e.pdf', 10, 'application/pdf'))['file'];
+        $path = Attachment::findOrFail($attachment['id'])->path;
+
+        $this->assertSame(1, app(FieldDefinitionSyncHelper::class)->removeSource('plugin', 'test-fieldfiles'));
+
+        $this->assertDatabaseMissing('field_definitions', ['id' => $declared->id]);
+        $this->assertSame(0, Attachment::withTrashed()->where('collection', 'field:t490_ext_doc')->count(), '정리된 선언 항목의 첨부 행이 남았다');
+        Storage::disk('attachments')->assertMissing($path);
     }
 }

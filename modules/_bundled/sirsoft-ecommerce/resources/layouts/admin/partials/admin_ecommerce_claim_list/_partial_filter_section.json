@@ -2184,6 +2184,7 @@
                                     ],
                                     "props": {
                                         "name": "requestSource",
+                                        "aria-label": "$t:sirsoft-ecommerce.admin.claim.filter.request_source",
                                         "className": "ecommerce:w-36",
                                         "value": "{{_local.filter.requestSource || ''}}",
                                         "options": [

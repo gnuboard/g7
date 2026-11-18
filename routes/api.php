@@ -478,20 +478,21 @@ Route::prefix('auth')->group(function () {
 // 사용자 API (권한 기반 인증, 속도 제한 적용)
 // optional.sanctum: Bearer 토큰이 있으면 인증, 없으면 guest로 통과
 Route::prefix('user')->middleware(['optional.sanctum', 'check.user_status', 'throttle:'.config('auth.throttle.user'), RefreshTokenExpiration::class])->group(function () {
-    // 사용자 인증
-    Route::prefix('auth')->group(function () {
+    // 사용자 인증 — 로그인한 본인의 토큰 갱신·조회·로그아웃이라 로그인만 요구한다(auth:sanctum). 공용 경로 `/api/auth/user`·`/api/auth/logout`,
+    // 관리자 경로 `/api/admin/auth/*` 와 같은 보호다. 예전에는 역할 권한(core.auth.refresh·user·logout)을 요구했지만 그 권한은 코어가 선언한 적이
+    // 없어 어떤 회원도 가질 수 없었다 — 갱신이 늘 403 이었다. 회원이 하지 못하게 막을 행위도 아니다.
+    Route::prefix('auth')->middleware('auth:sanctum')->group(function () {
         Route::post('logout', [UserAuthController::class, 'logout'])
-            ->middleware(['start.api.session', 'permission:user,core.auth.logout', 'allow.pending_required_fields'])
+            ->middleware(['start.api.session', 'allow.pending_required_fields'])
             ->name('api.user.auth.logout');
         Route::post('logout-all-devices', [UserAuthController::class, 'logoutFromAllDevices'])
-            ->middleware(['permission:user,core.auth.logout', 'allow.pending_required_fields'])
+            ->middleware('allow.pending_required_fields')
             ->name('api.user.auth.logout-all-devices');
         Route::get('user', [UserAuthController::class, 'user'])
-            ->middleware('permission:user,core.auth.user')
             ->name('api.user.auth.user');
         // 갱신도 세션을 연다 — 세션의 개발자 화면 짝 토큰을 새 토큰으로 바꾼다(#792 F6-2)
         Route::post('refresh', [UserAuthController::class, 'refresh'])
-            ->middleware(['start.api.session', 'permission:user,core.auth.refresh', 'allow.pending_required_fields'])
+            ->middleware(['start.api.session', 'allow.pending_required_fields'])
             ->name('api.user.auth.refresh');
     });
 
@@ -614,12 +615,15 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
                 ->middleware('permission:admin,core.admin.identity.policies.update')
                 ->name('api.admin.identity.policies.store');
             Route::put('{id}', [AdminIdentityPolicyController::class, 'update'])
+                ->whereNumber('id')
                 ->middleware('permission:admin,core.admin.identity.policies.update')
                 ->name('api.admin.identity.policies.update');
             Route::delete('{id}', [AdminIdentityPolicyController::class, 'destroy'])
+                ->whereNumber('id')
                 ->middleware('permission:admin,core.admin.identity.policies.update')
                 ->name('api.admin.identity.policies.destroy');
             Route::post('{id}/reset-field', [AdminIdentityPolicyController::class, 'resetField'])
+                ->whereNumber('id')
                 ->middleware('permission:admin,core.admin.identity.policies.update')
                 ->name('api.admin.identity.policies.reset-field');
         });
@@ -1104,7 +1108,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
         Route::post('{schedule}/run', [AdminScheduleController::class, 'run'])->middleware('permission:admin,core.schedules.run')->name('api.admin.schedules.run');
         Route::post('{schedule}/duplicate', [AdminScheduleController::class, 'duplicate'])->middleware('permission:admin,core.schedules.create')->name('api.admin.schedules.duplicate');
         Route::get('{schedule}/history', [AdminScheduleController::class, 'history'])->middleware('permission:admin,core.schedules.read')->name('api.admin.schedules.history');
-        Route::delete('history/{historyId}', [AdminScheduleController::class, 'deleteHistory'])->middleware('permission:admin,core.schedules.delete')->name('api.admin.schedules.delete-history');
+        Route::delete('history/{historyId}', [AdminScheduleController::class, 'deleteHistory'])->whereNumber('historyId')->middleware('permission:admin,core.schedules.delete')->name('api.admin.schedules.delete-history');
     });
 
     // SEO 캐시 관리
@@ -1258,8 +1262,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'check.user_status', 'admin'
 
         // 레이아웃 버전 관리 (show보다 먼저 등록 — {name}의 / 허용으로 인한 라우트 충돌 방지)
         Route::get('{templateName}/layouts/{name}/versions', [AdminLayoutController::class, 'versions'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layouts.versions.index')->where('name', '[a-zA-Z0-9_/\.\-]+');
-        Route::get('{templateName}/layouts/{name}/versions/{version}', [AdminLayoutController::class, 'showVersion'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layouts.versions.show')->where('name', '[a-zA-Z0-9_/\.\-]+');
-        Route::post('{templateName}/layouts/{name}/versions/{versionId}/restore', [AdminLayoutController::class, 'restoreVersion'])->middleware('permission:admin,core.templates.layouts.edit')->name('api.admin.templates.layouts.versions.restore')->where('name', '[a-zA-Z0-9_/\.\-]+');
+        Route::get('{templateName}/layouts/{name}/versions/{version}', [AdminLayoutController::class, 'showVersion'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layouts.versions.show')->where('name', '[a-zA-Z0-9_/\.\-]+')->whereNumber('version');
+        Route::post('{templateName}/layouts/{name}/versions/{versionId}/restore', [AdminLayoutController::class, 'restoreVersion'])->middleware('permission:admin,core.templates.layouts.edit')->name('api.admin.templates.layouts.versions.restore')->where('name', '[a-zA-Z0-9_/\.\-]+')->whereNumber('versionId');
 
         // 레이아웃 미리보기
         Route::post('{templateName}/layouts/{name}/preview', [AdminLayoutController::class, 'storePreview'])->middleware('permission:admin,core.templates.read')->name('api.admin.templates.layouts.preview.store')->where('name', '[a-zA-Z0-9_/\.\-]+');

@@ -14,9 +14,12 @@ axes:
     - ignores_other_extension_keys
     - keeps_already_resolved_title
     - placement_named_in_summary
+    - target_setting_names_target   # 「이 대상 설정」 저장·되돌리기 로그가 대상 키 대신 기록 시점 대상 이름
+    - device_named_in_summary       # 이미지·영상 교체·삭제 로그가 기기 키(pc·mobile) 대신 기기 이름
 
 effects:
   - banner_title_resolved
+  - internal_keys_shown_as_names   # 대상 키·기기 키 같은 내부 키가 목록 한 줄에 그대로 나가지 않음
 
 test_files:
   - plugins/_bundled/sirsoft-hero_section/tests/Unit/Listeners/ActivityLogDescriptionResolverTest.php

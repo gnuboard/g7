@@ -9,6 +9,7 @@ use App\Listeners\CoreNotificationDataListener;
 use App\Listeners\CorePrivacyNotificationDataListener;
 use App\Listeners\SeoNotificationDataListener;
 use App\Models\IdentityPolicy;
+use App\Models\Role;
 use App\Models\User;
 use App\Seo\SitemapGenerator;
 use App\Services\AuthService;
@@ -115,7 +116,15 @@ class CoreScreenUrlConsumersTest extends TestCase
      */
     public function test_reset_password_link(): void
     {
+        // 7.1.6 의 재설정 요청 규칙: 관리자 화면 주소는 관리자 계정에만 보내고, 같은 주소의 재요청은 대기 시간 안이면 조용히 끝나며,
+        // 훅은 응답 뒤로 미뤄 발화한다. 한 회원으로 두 갈래를 잇달아 재므로 관리자 계정·대기 0·즉시 발화로 세운다.
+        $this->seed(RolePermissionSeeder::class);
+        config(['auth.passwords.users.throttle' => 0]);
+        $this->withoutDefer();
+
         $user = User::factory()->create(['email' => 'reset792_'.uniqid().'@example.com']);
+        $user->roles()->attach(Role::where('identifier', 'admin')->value('id'), ['assigned_at' => now(), 'assigned_by' => null]);
+        $user = $user->fresh();
         $captured = [];
         $extras = [];
         HookManager::addAction('core.auth.after_reset_password_request', function ($u, array $extra) use (&$captured, &$extras) {
@@ -266,9 +275,11 @@ class CoreScreenUrlConsumersTest extends TestCase
         });
         $this->app->instance(IdentityMessageDispatcher::class, $dispatcher);
 
-        $email = 'scope792_'.uniqid().'@example.test';
+        // 같은 주소·같은 목적의 재요청은 대기 시간 안이면 429 다(메일 확인 재발송 대기) — 요청마다 다른 주소를 쓴다
+        $fresh = static fn (): string => 'scope792_'.str_replace('.', '', uniqid('', true)).'@example.test';
+        $email = $fresh();
         $this->postJson('/api/identity/challenges', ['purpose' => 'password_reset', 'target' => ['email' => $email], 'scope' => 'admin'])->assertCreated();
-        $this->postJson('/api/identity/challenges', ['purpose' => 'password_reset', 'target' => ['email' => $email]])->assertCreated();
+        $this->postJson('/api/identity/challenges', ['purpose' => 'password_reset', 'target' => ['email' => $fresh()]])->assertCreated();
 
         $this->assertStringStartsWith('https://site.example.test/identity/verify?challenge=', (string) ($captured[0]['action_url'] ?? ''), '관리자 화면에서 시작한 확인 링크는 사이트 자체의 확인 화면');
         $this->assertSame('https://site.example.test', $captured[0]['site_url'] ?? null);
@@ -278,9 +289,9 @@ class CoreScreenUrlConsumersTest extends TestCase
         // 정책 키 없이 관리자 화면에서 시작하는 인증번호 확인(앱 키 재생성 창, 관리자 본인 정보 수정)이 보내는 본문 —
         // 화면이 싣는 범위로 가른다. 서버는 `return_path` 로 관리자 여부를 짐작하지 않는다(범위 없는 `/admin` 경로는 회원 기준).
         $this->postJson('/api/identity/challenges', ['purpose' => 'sensitive_action', 'target' => ['email' => $email], 'return_path' => '/admin/settings?tab=security&reauth=app_key', 'scope' => 'admin'])->assertCreated();
-        $this->postJson('/api/identity/challenges', ['purpose' => 'sensitive_action', 'target' => ['email' => $email], 'return_path' => '/admin/users/1/edit', 'scope' => 'admin'])->assertCreated();
+        $this->postJson('/api/identity/challenges', ['purpose' => 'sensitive_action', 'target' => ['email' => $fresh()], 'return_path' => '/admin/users/1/edit', 'scope' => 'admin'])->assertCreated();
         // 대조: 회원 마이페이지 정보 수정(비밀번호 없는 회원)의 본문은 범위가 없어 「사용자 화면 URL」 그대로
-        $this->postJson('/api/identity/challenges', ['purpose' => 'sensitive_action', 'target' => ['email' => $email], 'return_path' => '/mypage/profile/edit'])->assertCreated();
+        $this->postJson('/api/identity/challenges', ['purpose' => 'sensitive_action', 'target' => ['email' => $fresh()], 'return_path' => '/mypage/profile/edit'])->assertCreated();
 
         $this->assertSame('https://site.example.test', $captured[2]['site_url'] ?? null, '앱 키 재생성 창의 인증번호 메일은 사이트 주소');
         $this->assertSame('https://site.example.test', $captured[3]['site_url'] ?? null, '관리자 본인 정보 수정의 인증번호 메일은 사이트 주소');

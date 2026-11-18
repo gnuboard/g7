@@ -30,6 +30,40 @@ use Symfony\Component\HttpFoundation\Request;
  */
 class DelegatedFileResponse extends BinaryFileResponse
 {
+    /** 위임이 꺼져 있다 — PHP 가 본문을 보낸다 */
+    public const OUTCOME_INACTIVE = 'inactive';
+
+    /** 위임 헤더를 세운다 — 웹서버가 본문을 보내야 한다 */
+    public const OUTCOME_APPLIED = 'applied';
+
+    /** 위임이 켜져 있지만 이 파일은 매핑 밖이다 — PHP 가 본문을 보낸다 */
+    public const OUTCOME_SKIPPED = 'skipped';
+
+    /**
+     * 보내기 전에 이 응답이 위임될지 미리 판정합니다 — 복제본을 준비해 보고 이 응답은 건드리지 않습니다.
+     *
+     * 2단계 프로브(`SettingsController::fileDelegationProbe`)가 쓴다. 본문을 PHP 가 보내는 경우(꺼짐·매핑 밖)를
+     * 그대로 내보내면 화면은 본문 수신만 보고 「웹서버가 보냈다」로 오판한다.
+     *
+     * @param  Request  $request  현재 요청
+     * @return string `OUTCOME_INACTIVE`·`OUTCOME_APPLIED`·`OUTCOME_SKIPPED`
+     */
+    public function delegationOutcome(Request $request): string
+    {
+        $type = FileDelegation::sendfileType();
+
+        if ($type === null) {
+            return self::OUTCOME_INACTIVE;
+        }
+
+        $probe = clone $this;
+        $probe->prepare($request);
+
+        return $probe->headers->get(FileDelegation::DIAGNOSTIC_HEADER) === self::OUTCOME_SKIPPED
+            ? self::OUTCOME_SKIPPED
+            : self::OUTCOME_APPLIED;
+    }
+
     /**
      * 요청에 맞춰 응답을 준비합니다 — 위임이 켜져 있으면 웹서버 위임 헤더를 세웁니다.
      *

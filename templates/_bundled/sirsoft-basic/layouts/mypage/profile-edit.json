@@ -114,6 +114,7 @@
                 "verifyPassword": "",
                 "isVerifyingPassword": false,
                 "verifyPasswordError": false,
+                "verifyPasswordErrorMessage": "",
                 "displayNamePreviews": null
             }
         },

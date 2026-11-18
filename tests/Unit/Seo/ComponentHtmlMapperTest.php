@@ -307,7 +307,7 @@ class ComponentHtmlMapperTest extends TestCase
      * 화면(React)은 접두사를 붙이는 자리를 템플릿 `A` 컴포넌트 한 곳으로 모았는데,
      * 봇 경로는 `component_map` 이 `A` 를 `{"tag":"a"}` 로 치환하므로 그 자리를
      * 거치지 않는다. 접두사가 빠지면 하위 폴더 배치에서 **검색 색인이 사이트 밖
-     * 주소로 쌓이고**, 오류가 나지 않아 아무도 모른다 (15차 G3 라운드).
+     * 주소로 쌓이고**, 오류가 나지 않아 아무도 모른다.
      *
      * @scenario render_concern=mount_prefix
      *
@@ -396,7 +396,7 @@ class ComponentHtmlMapperTest extends TestCase
      * **동시에** 나갔다. 단위 테스트는 초록이었고 P0 하위 폴더 실측이 잡았다.
      *
      * 그래서 「그 파일에서 `href` 속성을 조립하는 자리가 전부 헬퍼를 거치는가」를
-     * 소스로 잠근다 — 새 방출 지점이 생기면 이 검사가 즉시 요구한다 (15차 G3 라운드).
+     * 소스로 잠근다 — 새 방출 지점이 생기면 이 검사가 즉시 요구한다.
      *
      * @scenario render_concern=mount_prefix
      *
@@ -461,8 +461,7 @@ class ComponentHtmlMapperTest extends TestCase
      * `AssetUrl::basePrefix()` 를 붙여 주는데 종전 코드는 그 위에 `url()` 을 태웠다 —
      * `url()` 은 오리진과 접두사를 함께 붙이므로 `https://host/g7/g7/api/…` 가 나갔고
      * 그 주소는 404 다. 오류가 아니라 **봇 화면에서 이미지가 안 나오는 것**이 유일한
-     * 증상이라, 같은 함수의 `href` 를 세 줄 아래에서 고치고도 남아 있었다
-     * (10차 G3 라운드 X-1).
+     * 증상이라, 같은 함수의 `href` 를 세 줄 아래에서 고치고도 남아 있었다.
      *
      * 반대 방향도 함께 잰다 — 레이아웃이 리터럴로 적은 사이트 경로에는 접두사를
      * 붙일 주체가 이 자리밖에 없다.
@@ -545,7 +544,7 @@ class ComponentHtmlMapperTest extends TestCase
      *
      * 형제 축(`href`)이 정확히 이 형태의 검사를 갖고 있었고, 그 덕에 여섯 번째 방출
      * 지점이 드러났다. `src` 축에는 그 검사가 없어서 세 지점 중 둘만 변환하고 하나는
-     * **아무 변환도 하지 않는** 상태가 유지되고 있었다 (10차 G3 라운드).
+     * **아무 변환도 하지 않는** 상태가 유지되고 있었다.
      *
      * @scenario render_concern=mount_prefix
      *
@@ -599,7 +598,7 @@ class ComponentHtmlMapperTest extends TestCase
      * 보면 어디든 한 번만 나오면 통과해 아무것도 재지 못한다. 메서드가 그 중간이다.
      *
      * 이 도출을 세 검사가 공유한다 — 종전에는 같은 스캐너가 두 벌의 사본이었고,
-     * 한쪽만 고쳐지면 두 축의 판정 범위가 조용히 갈린다 (16차 G3 라운드 A-3).
+     * 한쪽만 고쳐지면 두 축의 판정 범위가 조용히 갈린다.
      *
      * @param  array  $lines  주석을 걷어낸 소스의 줄 배열 (0-based)
      * @param  int  $lineNo  대상 줄 번호 (1-based)
@@ -640,7 +639,7 @@ class ComponentHtmlMapperTest extends TestCase
      * src 축 검사의 모집단 밖이었고, `src` 는 허용 속성이며 `component_map` 에 `Img` 가
      * 있어 레이아웃 JSON 의 모든 `Img` 가 그 자리를 지난다 — 즉 봇 화면의 그 이미지는
      * **아무 변환도 없이** 나갔다. 반대 방향으로 `buildIterateItemAttributes()` 는
-     * `href` 가 빠져 있었다 (16차 G3 라운드 A-1·A-2·A-3).
+     * `href` 가 빠져 있었다.
      *
      * 그래서 모집단을 이름이 아니라 **구조**에서 도출한다: 속성 이름을 변수로 받아
      * `이름="값"` 을 이어 붙이는 루프. 그 형태의 루프는 어떤 속성이든 실어 낼 수 있으므로
@@ -713,7 +712,7 @@ class ComponentHtmlMapperTest extends TestCase
      *
      * 이 경로(`buildAttributes`)는 레이아웃 JSON 이 선언한 `Img` 를 그린다 —
      * `component_map` 에 `Img` 가 있고 `src` 가 허용 속성이므로 가장 흔한 통로인데,
-     * 형제 셋만 자산 헬퍼를 거치고 이 지점은 **아무 변환도 없었다** (16차 G3 라운드 A-1).
+     * 형제 셋만 자산 헬퍼를 거치고 이 지점은 **아무 변환도 없었다**.
      *
      * @scenario render_concern=mount_prefix
      *
@@ -746,9 +745,8 @@ class ComponentHtmlMapperTest extends TestCase
     /**
      * iterate 모드 `item_attrs` 의 `href` 가 봇 화면에서 접두사를 얻는다 (동작 회귀).
      *
-     * 이 지점(`buildIterateItemAttributes`)은 `src` 만 배선돼 있었다 — A-1 의 반대 방향
-     * 비대칭이며, `item_attrs` 는 속성 이름을 자유롭게 선언하므로 링크가 온다
-     * (16차 G3 라운드 A-2).
+     * 이 지점(`buildIterateItemAttributes`)은 `src` 만 배선돼 있었다 — 같은 함수의 `href` 쪽과 반대 방향
+     * 비대칭이며, `item_attrs` 는 속성 이름을 자유롭게 선언하므로 링크가 온다.
      *
      * @scenario render_concern=mount_prefix
      *
@@ -3450,7 +3448,7 @@ class ComponentHtmlMapperTest extends TestCase
         // 쓰는데, 봇에게 나가는 자산 주소는 요청 호스트가 아니라 사이트가 선언한 오리진
         // (`config('app.url')`)이어야 한다 — 대체 호스트명으로 들어온 봇이 그 호스트의
         // 주소를 색인해 가면 안 되기 때문이다. 그래서 절대화 주체가
-        // `AssetUrl::absolute()` 로 바뀌었다 (10차 G3 라운드 X-1).
+        // `AssetUrl::absolute()` 로 바뀌었다.
         //
         // 기대값은 두 헬퍼 어느 쪽에도 기대지 않고 **성질**로 적는다 — 그래야 절대화
         // 주체가 또 바뀌어도 이 단언이 자기충족으로 통과하지 않는다.
@@ -5467,6 +5465,154 @@ class ComponentHtmlMapperTest extends TestCase
 
         // base_url 해석 불가 → href만 사용
         $this->assertStringContainsString('<a href="/products/5">', $html);
+    }
+
+    /**
+     * fields 모드: link base_url `$prop:shopBase` 는 그 컴포넌트가 받은 shopBase prop 을 화면처럼 평가해 쓴다.
+     *
+     * 화면 ProductCard 는 `shopBase` prop 으로 상세 경로 앞머리를 정한다. 봇 화면이 화면마다 meta.seo.vars 를
+     * 따로 두어야만 맞던 것(홈·검색은 vars 가 없어 `/products/…` 404)을 컴포넌트 prop 하나로 맞춘다.
+     * 빈 문자열(상점을 루트에 붙인 사이트)도 값이고, prop 이 없으면 앞머리 없이 href 만 쓴다.
+     *
+     * @scenario render_concern=fields_mode
+     *
+     * @effects fields_render_mode_renders_labelled_values
+     *
+     * @return void 반환값 없음
+     */
+    public function test_fields_mode_link_prop_base_url_uses_component_prop(): void
+    {
+        $this->mapper->setRenderModes([
+            'test_link_prop' => [
+                'type' => 'fields',
+                'source' => '$props_source',
+                'link' => ['href' => '/products/{product_code|id}', 'base_url' => '$prop:shopBase'],
+                'fields' => [
+                    ['tag' => 'h3', 'content' => '{name}'],
+                ],
+            ],
+        ]);
+        $this->mapper->setComponentMap([
+            'TestComp' => ['tag' => 'article', 'render' => 'test_link_prop', 'props_source' => 'item'],
+        ]);
+
+        $withProp = [
+            ['type' => 'composite', 'name' => 'TestComp', 'props' => ['item' => '{{item}}', 'shopBase' => "{{_global.shopBase ?? '/shop'}}"]],
+        ];
+        $item = ['id' => 1, 'product_code' => 'P1', 'name' => '상품'];
+
+        $this->assertStringContainsString('<a href="/mall/products/P1">', $this->render($withProp, ['item' => $item, '_global' => ['shopBase' => '/mall']]));
+        $this->assertStringContainsString('<a href="/products/P1">', $this->render($withProp, ['item' => $item, '_global' => ['shopBase' => '']]));
+        $this->assertStringContainsString('<a href="/shop/products/P1">', $this->render($withProp, ['item' => $item, '_global' => []]));
+
+        // seoVars 가 다른 값을 들고 있어도 컴포넌트 prop 이 우선이다(같은 렌더 안의 한 출처)
+        $this->mapper->setSeoVars(['shopBase' => 'stale']);
+        $this->assertStringContainsString('<a href="/mall/products/P1">', $this->render($withProp, ['item' => $item, '_global' => ['shopBase' => '/mall']]));
+
+        $withoutProp = [
+            ['type' => 'composite', 'name' => 'TestComp', 'props' => ['item' => '{{item}}']],
+        ];
+        $this->assertStringContainsString('<a href="/products/P1">', $this->render($withoutProp, ['item' => $item]));
+    }
+
+    /**
+     * fields 모드: link base_url `$global:key` 는 렌더 문맥의 `_global.key` 를 먼저 읽는다(빈 문자열도 값).
+     *
+     * 종전에는 globalResolver(모듈·플러그인 설정 식 전용)만 봐서 문서 예시 `$global:shopBase` 가 언제나 빈 값이었다.
+     *
+     * @scenario render_concern=fields_mode
+     *
+     * @effects fields_render_mode_renders_labelled_values
+     *
+     * @return void 반환값 없음
+     */
+    public function test_fields_mode_link_global_base_url_reads_render_context(): void
+    {
+        $this->mapper->setRenderModes([
+            'test_link_global' => [
+                'type' => 'fields',
+                'source' => '$props_source',
+                'link' => ['href' => '/products/{id}', 'base_url' => '$global:shopBase'],
+                'fields' => [
+                    ['tag' => 'h3', 'content' => '{name}'],
+                ],
+            ],
+        ]);
+        $this->mapper->setComponentMap([
+            'TestComp' => ['tag' => 'div', 'render' => 'test_link_global', 'props_source' => 'item'],
+        ]);
+        $this->mapper->setGlobalResolver(fn (string $expr): ?string => 'resolver');
+
+        $components = [
+            ['type' => 'composite', 'name' => 'TestComp', 'props' => ['item' => '{{item}}']],
+        ];
+        $item = ['id' => 7, 'name' => '상품'];
+
+        $this->assertStringContainsString('<a href="/mall/products/7">', $this->render($components, ['item' => $item, '_global' => ['shopBase' => '/mall']]));
+        $this->assertStringContainsString('<a href="/products/7">', $this->render($components, ['item' => $item, '_global' => ['shopBase' => '']]));
+        // 문맥에 키가 없으면 종전처럼 globalResolver
+        $this->assertStringContainsString('<a href="/resolver/products/7">', $this->render($components, ['item' => $item, '_global' => []]));
+    }
+
+    /**
+     * fields 모드: img 항목의 `thumbPreset` 은 템플릿 Img 와 같이 src 를 썸네일 주소로, srcset 을 2배 밀도로 낸다.
+     *
+     * ProductCard 처럼 fields 로 그리는 컴포지트는 Img props 경로(buildAttributes)를 지나지 않아 원본 주소가
+     * 나갔다. 그 자체는 속성으로 나가지 않고, 레이아웃이 srcset 을 직접 적었으면 그 값을 존중한다.
+     *
+     * @scenario render_concern=fields_mode
+     *
+     * @effects img_thumb_preset_renders_thumbnail_src
+     *
+     * @return void 반환값 없음
+     */
+    public function test_fields_mode_img_thumb_preset_renders_thumbnail_src_and_srcset(): void
+    {
+        $this->prepareThumbnailRendering();
+
+        $this->mapper->setRenderModes([
+            'test_thumb' => [
+                'type' => 'fields',
+                'source' => '$props_source',
+                'fields' => [
+                    ['tag' => 'img', 'thumbPreset' => 'md', 'attrs' => ['src' => '{thumbnail_url}', 'alt' => '{name}']],
+                ],
+            ],
+            'test_thumb_explicit' => [
+                'type' => 'fields',
+                'source' => '$props_source',
+                'fields' => [
+                    ['tag' => 'img', 'thumbPreset' => 'md', 'attrs' => ['src' => '{thumbnail_url}', 'srcset' => '/x.png 2x']],
+                ],
+            ],
+        ]);
+        $this->mapper->setComponentMap([
+            'TestComp' => ['tag' => 'article', 'render' => 'test_thumb', 'props_source' => 'item'],
+            'TestExplicit' => ['tag' => 'article', 'render' => 'test_thumb_explicit', 'props_source' => 'item'],
+            'TestExternal' => ['tag' => 'article', 'render' => 'test_thumb', 'props_source' => 'item'],
+        ]);
+
+        $html = $this->render([
+            ['type' => 'composite', 'name' => 'TestComp', 'props' => ['item' => '{{item}}']],
+        ], ['item' => ['thumbnail_url' => '/api/attachment/abc', 'name' => '상품']]);
+
+        $this->assertStringContainsString(
+            '<img src="http://localhost/api/attachment/abc?size=md" srcset="http://localhost/api/attachment/abc?size=md 1x, http://localhost/api/attachment/abc?size=lg 2x" alt="상품">',
+            $html
+        );
+        $this->assertStringNotContainsString('thumbPreset', $html);
+
+        // 명시한 srcset 은 그대로, src 만 규격이 붙는다
+        $explicit = $this->render([
+            ['type' => 'composite', 'name' => 'TestExplicit', 'props' => ['item' => '{{item}}']],
+        ], ['item' => ['thumbnail_url' => '/api/attachment/abc']]);
+        $this->assertStringContainsString('<img src="http://localhost/api/attachment/abc?size=md" srcset="/x.png 2x">', $explicit);
+
+        // 패턴 밖(외부) 주소는 원본 그대로, srcset 없음
+        $external = $this->render([
+            ['type' => 'composite', 'name' => 'TestExternal', 'props' => ['item' => '{{item}}']],
+        ], ['item' => ['thumbnail_url' => 'https://cdn.test/a.jpg', 'name' => '상품']]);
+        $this->assertStringContainsString('<img src="https://cdn.test/a.jpg" alt="상품">', $external);
     }
 
     /**

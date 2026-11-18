@@ -62,7 +62,7 @@
       </div>
       <div data-if="{{_global.queueJobDetailKind === 'failed' &amp;&amp; !_global.queueJobDetailLoading &amp;&amp; Object.keys(_global.queueJobDetail?.payload_meta ?? {}).length &gt; 0}}">
         <span class="text-label-subtle">$t:admin.schedules.queue.detail.payload</span>
-        <pre data-ref="queue_job_detail_payload" class="mt-1 max-h-48 overflow-auto whitespace-pre-wrap break-all text-xs font-mono bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 p-3 rounded-lg">{{JSON.stringify(_global.queueJobDetail?.payload_meta ?? {}, null, 2)}}</pre>
+        <pre data-ref="queue_job_detail_payload" class="mt-1 max-h-48 overflow-auto whitespace-pre-wrap break-all text-xs font-mono bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 p-3 rounded-lg">{{raw:JSON.stringify(_global.queueJobDetail?.payload_meta ?? {}, null, 2)}}</pre>
       </div>
     </div>
     <footer>

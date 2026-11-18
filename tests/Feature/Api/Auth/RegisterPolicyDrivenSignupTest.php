@@ -499,6 +499,65 @@ class RegisterPolicyDrivenSignupTest extends TestCase
     }
 
     /**
+     * 가입 전 확인 정책을 켜도 입력 오류(422)를 본인 확인 요구(428)보다 먼저 알린다 —.
+     *
+     * 정책 강제(라우트 미들웨어)가 입력 검증보다 앞서 빈 칸으로 제출해도 428 만 받았다. 화면은 428 을 받아 인증을 시작하지만
+     * 이메일이 비어 있어 인증 대상 없는 challenge 가 422 로 끝나고, 칸 아래 오류는 하나도 뜨지 않았다.
+     *
+     * @scenario case=before_submit_input_errors_first
+     *
+     * @effects signup_before_submit_reports_input_errors_before_verification
+     *
+     * @return void 반환값 없음
+     */
+    public function test_signup_before_submit_policy_reports_input_errors_before_requiring_verification(): void
+    {
+        $this->enablePolicy('core.auth.signup_before_submit');
+
+        // 아무것도 적지 않은 제출 — 칸별 필수 오류가 422 로 온다. 인증 토큰은 칸 오류가 아니다.
+        $empty = $this->postJson('/api/auth/register', []);
+        $empty->assertStatus(422);
+        $empty->assertJsonValidationErrors(['email', 'password', 'name', 'agree_terms', 'agree_privacy']);
+        $empty->assertJsonMissingValidationErrors(['verification_token']);
+
+        // 인증 전이라도 비밀번호 확인이 틀리면 그 오류를 먼저 알린다 — 인증을 마친 뒤에야 입력 오류를 보지 않게.
+        $mismatch = $this->signupBody('first@example.com', '');
+        unset($mismatch['verification_token']);
+        $mismatch['password_confirmation'] = 'mismatch-value';
+        $this->postJson('/api/auth/register', $mismatch)
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['password'])
+            ->assertJsonMissingValidationErrors(['verification_token']);
+
+        $this->assertDatabaseMissing('users', ['email' => 'first@example.com']);
+    }
+
+    /**
+     * 입력이 맞으면 그때 본인 확인을 요구하고(428), 인증 창이 쓸 대상(가입 이메일)을 함께 준다.
+     *
+     * @scenario case=before_submit_no_token
+     *
+     * @effects signup_before_submit_requires_token
+     *
+     * @return void 반환값 없음
+     */
+    public function test_signup_before_submit_policy_requires_verification_after_valid_input(): void
+    {
+        $this->enablePolicy('core.auth.signup_before_submit');
+
+        $body = $this->signupBody('valid-first@example.com', '');
+        unset($body['verification_token']);
+
+        $this->postJson('/api/auth/register', $body)
+            ->assertStatus(428)
+            ->assertJsonPath('error_code', 'identity_verification_required')
+            ->assertJsonPath('verification.policy_key', 'core.auth.signup_before_submit')
+            ->assertJsonPath('verification.target.email', 'valid-first@example.com');
+
+        $this->assertDatabaseMissing('users', ['email' => 'valid-first@example.com']);
+    }
+
+    /**
      * 가입이 입력 오류(422)로 끝나면 인증 결과를 돌려줘 고쳐서 다시 가입할 수 있다.
      *
      * @effects signup_failure_releases_token

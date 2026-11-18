@@ -68,6 +68,10 @@ class CoreUpdatePipelineParityTest extends TestCase
         // 운영자에게 셸 재개 명령을 안내할 일이 없다.
         'spawnFailureMode' => '명령줄 자식 스폰 실패 분기 전용 — 웹은 forceSpawnFailureFallback() 으로 fallback 고정',
         'resumeCommand' => '명령줄 수동 재개 안내 전용 — 웹은 다음 요청이 이어 받는다(continueAfterHandoff())',
+
+        // root(sudo)로 돌린 명령줄 업데이트가 끝난 뒤 root 소유로 새로 생긴 런타임 파일을 웹 소유로 되돌리는 단계다.
+        // 웹 업데이트는 웹 서버 사용자로 돌아 root 소유 파일을 만들지 않고, 메서드도 euid 가 root 가 아니면 바로 돌아온다.
+        'normalizeRuntimeOwnershipAfterRootRun' => 'root 실행 명령줄 전용 — 웹 프로세스는 root 가 아니라 정상화할 root 소유 파일이 생기지 않는다',
     ];
 
     /**

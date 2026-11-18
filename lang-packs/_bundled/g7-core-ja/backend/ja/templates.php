@@ -413,6 +413,26 @@ return [
             'roles_required' => '「特定のロールのみ」を選んだ場合はロールを1つ以上選択してください。',
             'too_many' => 'メニュー項目はサブメニューを含めて最大:max個までです。',
         ],
+        // メニュー・リスト欄の項目の検証エラーに使う表示名 — 内部キーの代わりに欄名・1 から数えた位置・項目名で伝える
+        'item_attributes' => [
+            'item' => ':fieldの:position番目の項目',
+            'item_named' => ':fieldの:position番目の項目(:name)',
+            'child' => ':parentの:position番目のサブ項目',
+            'child_named' => ':parentの:position番目のサブ項目(:name)',
+            'key' => ':itemの:key',
+            'row' => ':fieldの:position番目の項目の:key',
+            'keys' => [
+                'id' => '識別子',
+                'kind' => '種類',
+                'label' => 'メニュー名',
+                'url' => 'リンク先',
+                'new_tab' => '新しいタブで開く',
+                'is_active' => '使用',
+                'visibility' => '表示設定',
+                'roles' => 'ロール',
+                'children' => 'サブメニュー',
+            ],
+        ],
     ],
     'refresh_layouts_preview_success' => 'レイアウト更新プレビューを作成しました。',
 ];

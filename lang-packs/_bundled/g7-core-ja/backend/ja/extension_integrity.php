@@ -35,6 +35,8 @@ return [
     'errors' => [
         'package_unsigned' => '署名されていないパッケージです。内容を確認した場合は「未署名で続行」を押してインストールしてください。:reason',
         'package_unverifiable' => 'このサーバーではパッケージの署名を確認できません。内容を確認した場合は「未署名で続行」を押してインストールしてください。:reason',
+        'package_unsigned_cli' => '署名されていないパッケージです。:reason',
+        'package_unverifiable_cli' => 'このサーバーではパッケージの署名を確認できません。:reason',
         'package_unsigned_blocked' => '環境設定 > セキュリティの「未署名パッケージのブロック」がオンになっているため、署名されていないパッケージはインストールできません。:reason',
         'package_signature_invalid' => 'パッケージの署名が一致しないため、インストールを中止しました。:reason',
         'package_signer_untrusted' => '信頼していない鍵で署名されたパッケージのため、インストールを中止しました。:reason',

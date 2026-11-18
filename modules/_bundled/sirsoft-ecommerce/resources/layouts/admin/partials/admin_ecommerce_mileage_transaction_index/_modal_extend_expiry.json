@@ -80,6 +80,13 @@
                                         "handler": "closeModal"
                                     },
                                     {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "mileageExtend": null
+                                        }
+                                    },
+                                    {
                                         "handler": "refetchDataSource",
                                         "params": {
                                             "dataSourceId": "transactions"
@@ -90,13 +97,6 @@
                                         "params": {
                                             "type": "success",
                                             "message": "$t:sirsoft-ecommerce.admin.mileage_transactions.message.extend_success"
-                                        }
-                                    },
-                                    {
-                                        "handler": "setState",
-                                        "params": {
-                                            "target": "global",
-                                            "mileageExtend": null
                                         }
                                     }
                                 ],

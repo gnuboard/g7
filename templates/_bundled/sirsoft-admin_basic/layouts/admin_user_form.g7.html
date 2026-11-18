@@ -631,10 +631,11 @@
           </div>
         </div>
         <!-- 최근 검색어 — 회원이 남긴 기록이라 운영자가 고칠 값이 없다. 상세와 같은 자리에 잠긴 채로 세운다(자동 저장 여부는
-             회원 본인이 검색창에서 정한다). 확장 범위(상품·게시글 검색)는 상세의 확장 탭에만 있다. -->
+             회원 본인이 검색창에서 정한다). 확장 범위(상품·게시글 검색)는 상세의 확장 탭에만 있다. 받기 전에는 목록 줄을 흐린다(#915 받는 중 계약). -->
         <div data-ref="section_search_history_info" data-if="{{route?.id}}" id="search_history_info" class="admin-card">
           <h3 class="card-title">$t:admin.users.detail.tabs.search_history_info</h3>
           <div class="row-stack">
+            <blur-until-loaded sources="user"/>
             <div data-ref="search_history_feature_off" data-if="{{user?.data?.search_history?.enabled === false}}" class="alert-info">
               <span class="text-sm">$t:admin.users.detail.search_history.feature_off</span>
             </div>

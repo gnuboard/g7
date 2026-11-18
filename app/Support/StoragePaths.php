@@ -81,7 +81,48 @@ final class StoragePaths
             return true;
         }
 
-        return (str_ends_with($entry, '-') || str_ends_with($entry, '_')) && str_starts_with($path, $entry);
+        return self::isPrefixEntry($entry) && str_starts_with($path, $entry);
+    }
+
+    /**
+     * 분류 항목이 이름 접두사(`-`·`_` 로 끝남 — 시각이 붙는 파일·폴더)인지 판정합니다.
+     *
+     * @param  string  $entry  정규화한 분류 항목
+     * @return bool 접두사 항목이면 true
+     */
+    public static function isPrefixEntry(string $entry): bool
+    {
+        return str_ends_with($entry, '-') || str_ends_with($entry, '_');
+    }
+
+    /**
+     * 분류 항목에 해당하는 파일·폴더가 지금 storage 에 있는지 판정합니다.
+     *
+     * 접두사 항목은 그 이름으로 시작하는 파일·폴더가 하나라도 있으면 있음으로 봅니다.
+     *
+     * @param  string  $entry  정규화한 분류 항목
+     * @return bool 있으면 true
+     */
+    public static function entryExists(string $entry): bool
+    {
+        if (! self::isPrefixEntry($entry)) {
+            return file_exists(storage_path($entry));
+        }
+
+        $dir = dirname(storage_path($entry));
+        $name = basename($entry);
+
+        if (! is_dir($dir)) {
+            return false;
+        }
+
+        foreach (scandir($dir) ?: [] as $child) {
+            if ($child !== $name && str_starts_with($child, $name)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

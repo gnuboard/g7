@@ -13,43 +13,46 @@ trait ResolvesEasyPayDisplay
     private const EASY_PAY_METHODS = [
         'nicepay_naverpay' => [
             'provider' => 'naverpay',
-            'label' => ['ko' => '네이버페이', 'en' => 'NaverPay'],
+            'label_key' => 'naverpay',
         ],
         'nicepay_kakaopay' => [
             'provider' => 'kakaopay',
-            'label' => ['ko' => '카카오페이', 'en' => 'KakaoPay'],
+            'label_key' => 'kakaopay',
         ],
         'nicepay_samsungpay' => [
             'provider' => 'samsungpay',
-            'label' => ['ko' => '삼성페이', 'en' => 'Samsung Pay'],
+            'label_key' => 'samsungpay',
         ],
         'nicepay_applepay' => [
             'provider' => 'applepay',
-            'label' => ['ko' => '애플페이', 'en' => 'Apple Pay'],
+            'label_key' => 'applepay',
         ],
         'nicepay_payco' => [
             'provider' => 'payco',
-            'label' => ['ko' => 'PAYCO (페이코)', 'en' => 'PAYCO'],
+            'label_key' => 'payco',
         ],
         'nicepay_skpay' => [
             'provider' => 'skpay',
-            'label' => ['ko' => 'SK pay', 'en' => 'SK pay'],
+            'label_key' => 'skpay',
         ],
         'nicepay_ssgpay' => [
             'provider' => 'ssgpay',
-            'label' => ['ko' => 'SSG PAY', 'en' => 'SSG PAY'],
+            'label_key' => 'ssgpay',
         ],
         'nicepay_lpay' => [
             'provider' => 'lpay',
-            'label' => ['ko' => 'L.pay', 'en' => 'L.pay'],
+            'label_key' => 'lpay',
         ],
     ];
 
     /**
      * 페이로드가 고른 나이스 간편결제 수단을 결제 meta 에 남길 값으로 해석합니다.
      *
+     * 라벨은 지원 언어(활성 언어팩) 전부로 만든다 — 결제 meta 에 그대로 남아 주문 상세·영수증·주문 목록이 화면 언어로 고른다.
+     * 이미 저장된 결제 기록의 라벨(종전 ko·en)은 고치지 않는다(데이터 수정 없음).
+     *
      * @param  array<string, mixed>  $payload  PG 승인 응답·요청 페이로드
-     * @return array{method: string, provider: string, label: array{ko: string, en: string}}|array{} 간편결제 값 (간편결제가 아니면 빈 배열)
+     * @return array{method: string, provider: string, label: array<string, string>}|array{} 간편결제 값 (간편결제가 아니면 빈 배열)
      */
     protected function resolveEasyPayMeta(array $payload): array
     {
@@ -63,7 +66,7 @@ trait ResolvesEasyPayDisplay
         return [
             'method' => $method,
             'provider' => $definition['provider'],
-            'label' => $definition['label'],
+            'label' => $this->easyPayLabel($definition),
         ];
     }
 
@@ -205,7 +208,7 @@ trait ResolvesEasyPayDisplay
 
         foreach (self::EASY_PAY_METHODS as $definition) {
             if (($definition['provider'] ?? null) === $provider) {
-                return $this->localizedLabel($definition['label'] ?? null);
+                return $this->localizedLabel($this->easyPayLabel($definition));
             }
         }
 
@@ -267,6 +270,19 @@ trait ResolvesEasyPayDisplay
 
         // 현재 로케일 → 사이트 기본 언어 → 영어 (#148)
         return $this->stringOrNull(LocalizedValue::pick($label, anyAsLast: false));
+    }
+
+    /**
+     * 간편결제 정의의 표시 라벨을 지원 언어 전부로 만듭니다.
+     *
+     * @param  array<string, mixed>  $definition  EASY_PAY_METHODS 의 한 항목
+     * @return array<string, string> 언어 코드 => 라벨 (`app.supported_locales` 순서)
+     */
+    private function easyPayLabel(array $definition): array
+    {
+        $key = 'sirsoft-pay_nicepayments::payment_methods.'.($definition['label_key'] ?? '').'.label';
+
+        return LocalizedValue::translateAll(fn () => __($key));
     }
 
     /**

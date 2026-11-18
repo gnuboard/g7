@@ -1379,6 +1379,39 @@ function stripInheritedNode(node: EditorNode | undefined | null): EditorNode[] {
 }
 
 /**
+ * 머지 트리에서 슬롯 래퍼(`__slot` 표식이 있는 base 노드)의 children 을 슬롯 이름별로 모은다.
+ *
+ * 서버 `LayoutService::replaceSlots` 가 편집 모드에서만 슬롯 래퍼에 `__slot` 을 단다. 래퍼 안의 route 콘텐츠는
+ * 그 슬롯의 편집분이다. 래퍼는 base 노드의 children 아래에만 있으므로 base 노드의 children 만 내려간다
+ * (route 노드 안에는 부모 레이아웃의 슬롯이 없다). 같은 이름이 여러 번이면 순서대로 잇는다.
+ *
+ * @param components 머지된 편집 트리
+ * @returns 슬롯 이름 → 래퍼 children(마스킹 전)
+ * @since engine-v1.96.5
+ */
+function collectSlotWrapperContents(components: EditorNode[]): Map<string, EditorNode[]> {
+  const found = new Map<string, EditorNode[]>();
+  const visit = (nodes: unknown): void => {
+    if (!Array.isArray(nodes)) return;
+    for (const node of nodes as EditorNode[]) {
+      if (!node || typeof node !== 'object') continue;
+      const rec = node as Record<string, unknown>;
+      const slotName = rec.__slot;
+      if (typeof slotName === 'string' && slotName !== '') {
+        const kids = Array.isArray(node.children) ? (node.children as EditorNode[]) : [];
+        found.set(slotName, [...(found.get(slotName) ?? []), ...kids]);
+        continue;
+      }
+      if (node.__source?.kind === 'base' || rec._fromBase === true) {
+        visit(node.children);
+      }
+    }
+  };
+  visit(components);
+  return found;
+}
+
+/**
  * 저장 페이로드 마스킹 — 편집 모드 응답에서 저장에 사용할 content 를 추출.
  *
  * 백엔드 `LayoutService::loadAndMergeLayout` 가 편집 모드(`withSourceMeta=true`)
@@ -1402,7 +1435,8 @@ function stripInheritedNode(node: EditorNode | undefined | null): EditorNode[] {
  * **slots 재구성 (extends 자식 레이아웃)**:
  * `__editor.original.slots` 의 각 슬롯 이름을 키로 두고, 값은 마스킹된 components 의
  * 자식 트리에서 추출한다. 단일 슬롯(`content`) 레이아웃은 마스킹된 components 전체를
- * 그 슬롯에 매핑. 다중 슬롯은 슬롯별 매핑이 모호하므로 폴백 — 원본 slots 보존.
+ * 그 슬롯에 매핑. 다중 슬롯은 서버가 슬롯 래퍼에 단 `__slot` 으로 슬롯별 매핑(engine-v1.96.5) —
+ * 표식이 없는 슬롯만 원본 slots 보존.
  *
  * @since engine-v1.50.0
  */
@@ -1465,12 +1499,18 @@ export function stripInheritedFromLayoutContent(
       // 슬롯 정의 부재 — base 머지 결과에서 슬롯 이름을 알 수 없음. 안전 폴백: 'content' 슬롯에 매핑
       skeleton.slots = { content: maskedComponents };
     } else {
-      // Path B 다중 슬롯: 슬롯별 매핑 불가 — 각 슬롯의 마스킹된 원본 보존 (사용자 편집 손실 방지를 위한 차선)
+      // Path B 다중 슬롯: 서버가 편집 모드 슬롯 래퍼에 단 `__slot`(슬롯 이름)으로 슬롯별 편집분을 모은다.
+      // 표식이 있는 슬롯은 머지 트리의 편집분, 없는 슬롯(옛 서버 응답·트리에 래퍼가 없는 슬롯)은 마스킹된 원본 보존.
+      const marked = collectSlotWrapperContents(mergedComponents);
       const nextSlots: Record<string, unknown> = {};
       for (const [slotName, slotValue] of Object.entries(skeletonSlots)) {
-        nextSlots[slotName] = Array.isArray(slotValue)
-          ? stripInheritedNodes(slotValue as EditorNode[])
-          : slotValue;
+        if (marked.has(slotName)) {
+          nextSlots[slotName] = stripInheritedNodes(marked.get(slotName));
+        } else {
+          nextSlots[slotName] = Array.isArray(slotValue)
+            ? stripInheritedNodes(slotValue as EditorNode[])
+            : slotValue;
+        }
       }
       skeleton.slots = nextSlots;
     }

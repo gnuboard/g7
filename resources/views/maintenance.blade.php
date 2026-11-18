@@ -23,6 +23,29 @@
                 <h1 class="maintenance-title">{{ __('maintenance.title') }}</h1>
                 <p class="maintenance-message">{{ __('maintenance.message') }}</p>
                 <p class="maintenance-description">{{ __('maintenance.description') }}</p>
+
+                {{-- 관리자 화면 코어 업데이트가 진행·되돌리기·복구 중일 때만 — 브라우저를 닫은 관리자가 다른 기기에서 이어 간다.
+                     확인되면 점검 우회 쿠키만 받고, 업데이트 탭에서 평소처럼 로그인한다. --}}
+                @if ($coreUpdateResumeAccess ?? false)
+                    <form class="maintenance-admin-access" method="POST" action="{{ $coreUpdateAccessPath }}">
+                        <p class="maintenance-admin-access-title">{{ __('maintenance.admin_access.title') }}</p>
+                        <p class="maintenance-admin-access-hint">{{ __('maintenance.admin_access.hint') }}</p>
+                        @if (($coreUpdateAccessResult ?? null) === 'failed')
+                            <p class="maintenance-admin-access-error" role="alert">{{ __('maintenance.admin_access.failed') }}</p>
+                        @elseif (($coreUpdateAccessResult ?? null) === 'throttled')
+                            <p class="maintenance-admin-access-error" role="alert">{{ __('maintenance.admin_access.throttled') }}</p>
+                        @endif
+                        <label class="maintenance-admin-access-label">
+                            <span>{{ __('maintenance.admin_access.email') }}</span>
+                            <input type="email" name="email" autocomplete="username" required>
+                        </label>
+                        <label class="maintenance-admin-access-label">
+                            <span>{{ __('maintenance.admin_access.password') }}</span>
+                            <input type="password" name="password" autocomplete="current-password" required>
+                        </label>
+                        <button type="submit" class="maintenance-admin-access-submit">{{ __('maintenance.admin_access.submit') }}</button>
+                    </form>
+                @endif
             </div>
         </div>
     </body>

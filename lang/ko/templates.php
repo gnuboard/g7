@@ -454,5 +454,25 @@ return [
             'roles_required' => '「특정 역할만」을 고르면 역할을 하나 이상 선택해야 합니다.',
             'too_many' => '메뉴 항목은 하위 메뉴를 합쳐 최대 :max개까지 둘 수 있습니다.',
         ],
+        // 메뉴·목록 칸 항목의 검증 오류에 쓸 표시 이름 — 내부 키(header.menu.5.url) 대신 칸 이름·1부터 센 자리·항목 이름으로 말한다
+        'item_attributes' => [
+            'item' => ':field :position번째 항목',
+            'item_named' => ':field :position번째 항목(:name)',
+            'child' => ':parent의 :position번째 하위 항목',
+            'child_named' => ':parent의 :position번째 하위 항목(:name)',
+            'key' => ':item의 :key',
+            'row' => ':field :position번째 항목의 :key',
+            'keys' => [
+                'id' => '식별값',
+                'kind' => '종류',
+                'label' => '메뉴 이름',
+                'url' => '이동할 주소',
+                'new_tab' => '새 창으로 열기',
+                'is_active' => '사용',
+                'visibility' => '보이기',
+                'roles' => '역할',
+                'children' => '하위 메뉴',
+            ],
+        ],
     ],
 ];

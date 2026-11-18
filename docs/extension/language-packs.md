@@ -274,9 +274,9 @@ foreach ($config['categories'] as $cat) { ... }
 
 | 필터명 | 적용 위치 |
 |---|---|
-| `core.permissions.config` | RolePermissionSeeder |
-| `core.roles.config` | RolePermissionSeeder |
-| `core.menus.config` | CoreAdminMenuSeeder |
+| `core.permissions.config` | RolePermissionSeeder · `CoreUpdateService::syncCoreRolesAndPermissions()`(코어 업데이트·`core:resync-declarations` 재동기화 — 7.2.0~) |
+| `core.roles.config` | RolePermissionSeeder · `CoreUpdateService::syncCoreRolesAndPermissions()` |
+| `core.menus.config` | CoreAdminMenuSeeder · `CoreUpdateService::syncCoreMenus()` — 하위 메뉴(`children`)까지 병합 |
 | `core.schedules.config` | CoreScheduleSeeder — 코어 스케줄 카탈로그(`config/core.php` `schedules`)의 `label`·`description` 에 로케일 키 병합 (7.2.0~) |
 | `seed.notifications.translations` | NotificationDefinitionSeeder (본인인증 알림 `identity.*` 정의 포함 — type 키) |
 | `seed.{vendor-module}.{entity}.translations` | 모듈 시더 (예: `seed.sirsoft-ecommerce.shipping_types.translations`, `seed.sirsoft-ecommerce.notifications.translations`, `seed.sirsoft-board.board_types.translations`) |

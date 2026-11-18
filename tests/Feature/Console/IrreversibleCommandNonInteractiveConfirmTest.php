@@ -19,6 +19,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Mockery;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -363,11 +364,11 @@ class IrreversibleCommandNonInteractiveConfirmTest extends TestCase
      */
     private function prepareExistingSettingsFile(): \Closure
     {
+        // 설정 파일은 설정 디스크(시험에서는 페이크)에 둔다 — 명령이 그 디스크로 기존 설정 파일을 판정한다.
         $this->tempRoot = storage_path('test_fx_migrate_'.uniqid());
-        $general = $this->tempRoot.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'settings'.DIRECTORY_SEPARATOR.'general.json';
-        File::ensureDirectoryExists(dirname($general));
-        File::put($general, '{"marker":"keep"}');
-        app()->useStoragePath($this->tempRoot);
+        File::ensureDirectoryExists($this->tempRoot);
+        Storage::disk('settings')->put('general.json', '{"marker":"keep"}');
+        $general = Storage::disk('settings')->path('general.json');
 
         $real = Schema::getFacadeRoot();
         $schema = Mockery::mock(get_class($real), [DB::connection()])->makePartial();

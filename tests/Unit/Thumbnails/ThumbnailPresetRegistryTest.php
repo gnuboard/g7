@@ -263,6 +263,7 @@ class ThumbnailPresetRegistryTest extends TestCase
         $this->assertSame([800, 400, 'cover', 'center'], [$og->width, $og->height, $og->fit, $og->anchor]);
         $this->assertTrue($og->locked);
         $this->assertFalse($og->numeric, 'og 는 숫자 요청 대상이 아니다');
+        $this->assertTrue($og->upscale, 'og 는 작은 원본도 선언 크기로 낸다');
 
         // 값이 비면 1200×630 기본
         Config::set('g7_settings.core.seo.og_image_default_width', 0);

@@ -373,6 +373,7 @@
     "currency_all": "すべて",
     "charge_payment_method": "請求決済方法",
     "claim_flags": "追加条件",
+    "request_source": "受付元",
     "request_source_option": {
       "all": "受付元全体",
       "admin": "販売者受付",

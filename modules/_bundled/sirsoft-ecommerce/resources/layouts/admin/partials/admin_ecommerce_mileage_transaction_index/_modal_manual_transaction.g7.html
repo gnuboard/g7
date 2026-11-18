@@ -178,9 +178,9 @@
             <api-call :auth_required="true" target="/api/modules/sirsoft-ecommerce/admin/mileage-transactions" method="POST" body="{{({ user_id: _global.mileageManual?.selectedMember?.uuid, action: _global.mileageManual?.action ?? 'earn', amount: Number(_global.mileageManual?.amount ?? 0), currency: _global.mileageManual?.currency ?? 'KRW', memo: _global.mileageManual?.reason, use_default_expiry: _global.mileageManual?.useDefaultExpiry ?? true, expires_at: (_global.mileageManual?.useDefaultExpiry === false ? _global.mileageManual?.expiresAt : null) })}}">
               <success>
                 <close-modal/>
+                <set-state target="global" :mileageManual="null"/>
                 <refetch-data-source dataSourceId="transactions"/>
                 <toast type="success" message="$t:sirsoft-ecommerce.admin.mileage_transactions.message.manual_success"/>
-                <set-state target="global" :mileageManual="null"/>
               </success>
               <fail>
                 <set-state target="global" :mileageManual.isSaving="false" mileageManual.errors="{{error}}"/>

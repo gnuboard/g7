@@ -21,7 +21,7 @@
 <!-- @generated:start:api.plugins.sirsoft-hero_section.admin.position-settings.index -->
 - **라우트명**: `api.plugins.sirsoft-hero_section.admin.position-settings.index`
 - **컨트롤러**: `Plugins\Sirsoft\HeroSection\Http\Controllers\Admin\PositionSettingController@index`
-- **인증/권한**: `auth:sanctum` + `permission:sirsoft-hero_section.banners.read`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-hero_section.banners.read|core.plugins.read,false` (OR — 플러그인 설정 화면이 받는 조회라 「플러그인 보기」로도 읽는다)
 
 **요청 파라미터**
 
@@ -119,7 +119,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-hero_section.banners.read`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-hero_section.banners.read`·`core.plugins.read`)이 모두 없는 경우 |
 
 <!-- @generated:end -->
 

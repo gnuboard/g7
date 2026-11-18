@@ -204,7 +204,8 @@ class AdminAbilitiesGateLayoutTest extends TestCase
         foreach (['top_alert', 'alert'] as $prefix) {
             $recover = $this->findNodes($tree, fn (array $n) => ($n['id'] ?? null) === $prefix.'_recover_button_{{$idx}}');
             $this->assertCount(1, $recover, $prefix);
-            $this->assertSame('{{alert.abilities?.can_recover !== true}}', $recover[0]['props']['disabled'] ?? null);
+            // 검수 서버(stage)는 복구 조작 자체를 막는다(#888) — 권한이 있어도 잠긴다
+            $this->assertSame("{{alert.abilities?.can_recover !== true || _global.appConfig?.runtime_role === 'stage'}}", $recover[0]['props']['disabled'] ?? null);
 
             $dismiss = $this->findNodes($tree, fn (array $n) => ($n['id'] ?? null) === $prefix.'_dismiss_button_{{$idx}}');
             $this->assertCount(1, $dismiss, $prefix);

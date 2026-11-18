@@ -4,8 +4,7 @@
  * `html-editor.json` 이 `mode: "replace"` 라 코어 HtmlEditor 가 렌더되지 않는다.
  * 편집기를 못 세우면 사용자에게는 빈 div 만 남아 글을 쓸 방법이 없었다.
  *
- * @scenario asset_class=vendored, outcome=failed
- * @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice, retry_recovers_editor
+ * 시나리오 조합(자체 호스팅 자산 실패 → 평문 입력 폴백·재시도 안내·편집기 복구)은 각 시험 앞 주석에 단다.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -39,21 +38,41 @@ describe('CKEditor5 textarea 폴백', () => {
         // @scenario asset_class=vendored, outcome=failed
         // @effects failed_asset_falls_back_to_plain_input, failed_asset_shows_retry_notice, retry_recovers_editor
         it('textarea 를 세우고 초기 내용을 채운다', () => {
-            renderTextareaFallback({
+            // jsdom 27(cssstyle 5)은 `border` 단축 속성이 섞인 cssText 를 통째로 버린다(브라우저는 정상).
+            // 그래서 읽힌 style 이 아니라 폴백이 써 넣은 cssText 를 쓰는 순간에 기록해 단언한다.
+            const proto = window.CSSStyleDeclaration.prototype;
+            const original = Object.getOwnPropertyDescriptor(proto, 'cssText')!;
+            const written: string[] = [];
+            Object.defineProperty(proto, 'cssText', {
+                configurable: true,
+                get() {
+                    return original.get!.call(this);
+                },
+                set(value: string) {
+                    written.push(value);
+                    original.set!.call(this, value);
+                },
+            });
+
+            try {
+                renderTextareaFallback({
                 container,
                 name: 'content',
                 height: 400,
                 readOnly: false,
                 multilingual: false,
                 initialContent: '기존 본문',
-            });
+                });
+            } finally {
+                Object.defineProperty(proto, 'cssText', original);
+            }
 
             const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
 
             expect(textarea).not.toBeNull();
             expect(textarea.name).toBe('content');
             expect(textarea.value).toBe('기존 본문');
-            expect(textarea.style.height).toBe('400px');
+            expect(written.some((css) => css.split(';').includes('height:400px'))).toBe(true);
         });
 
         // @scenario asset_class=vendored, outcome=failed

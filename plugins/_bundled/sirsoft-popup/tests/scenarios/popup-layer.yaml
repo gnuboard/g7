@@ -28,6 +28,7 @@ axes:
     - image_src_carries_site_mount_prefix
     - image_url_carries_site_mount_prefix
     - renders_nothing_when_no_visible_popup
+    - hidden_in_layout_editor
     - filters_by_route_on_path_change
     - filters_by_device_on_viewport_change
     - filters_dismissed_ids_until_expiry
@@ -133,6 +134,7 @@ effects:
   - dismiss_cookie_written
   - gdpr_banner_not_covered
   - preview_sample_slides
+  - editor_canvas_not_covered
   - hidden_slide_media_deferred
   - popup_filtered_for_visitor
   - popup_image_matches_device

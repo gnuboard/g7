@@ -147,7 +147,7 @@ if (! function_exists('checkAbortStatusSSE')) {
 
             // 중단 전이는 API 경로와 같은 SSoT 를 쓴다 (재로드 · 워커 lock 흔적 정리 · 비밀 제거) —
             // 두 경로가 다른 규칙을 쓰면 한쪽에서만 죽은 워커의 시간 예산이 남거나,
-            // 롤백이 도는 동안 워커가 남긴 완료 마커가 사라진다 (12차 #A1).
+            // 롤백이 도는 동안 워커가 남긴 완료 마커가 사라진다.
             $rollbackFailure = (isset($rollbackResult) && ! $rollbackResult['success'])
                 ? [
                     'task' => $currentTask,
@@ -375,7 +375,7 @@ if (! function_exists('probeComposerForInstall')) {
         if (! is_dir($composerHome)) {
             @mkdir($composerHome, 0755, true);
         }
-        // 무가드 putenv 는 disable_functions 환경에서 Error 다 (13차 환경#2) — 단일 지점 경유.
+        // 무가드 putenv 는 disable_functions 환경에서 Error 다 — 단일 지점 경유.
         installerPutEnv('COMPOSER_HOME', $composerHome);
         installerPutEnv('HOME', $composerHome);
         applyInstallerComposerEnvVars();
@@ -442,7 +442,7 @@ if (! function_exists('checkComposerSSE')) {
             $errorMessage = implode("\n", $output);
 
             // auto 모드: composer 미설치 시 번들 폴백 가능하면 비치명적 처리.
-            // 「번들이 있다」가 아니라 「풀 수 있다」를 본다 (13차 환경#4) — ZipArchive 가 없는
+            // 「번들이 있다」가 아니라 「풀 수 있다」를 본다 — ZipArchive 가 없는
             // 호스팅에서 파일 존재만으로 넘어가면 composer 부재를 초록으로 지나친 뒤 다음
             // 태스크가 풀 수 없는 번들 앞에서 멈춘다. 판정은 installerVendorBundleUsable() 소유.
             if ($vendorMode === 'auto' && installerVendorBundleUsable()) {
@@ -605,7 +605,7 @@ if (! function_exists('installVendorBundleSSE')) {
 
         // 추출은 설치에서 가장 오래 걸리는 태스크다(P0 실측 ≈10~15s). 그 구간에 emit 이 하나도
         // 없으면 워커 heartbeat 가 멈춰, 새로고침한 요청이 아직 살아 있는 이 요청을 stale 로 보고
-        // 탈취한다 — 두 요청이 같은 vendor/ 를 동시에 옮기고 푼다 (10차 #M2). heartbeat 이벤트는
+        // 탈취한다 — 두 요청이 같은 vendor/ 를 동시에 옮기고 푼다. heartbeat 이벤트는
         // 클라이언트가 화면 변화 없이 흘려보내므로(installation-monitor `_replay` 기본 분기)
         // 진행 기록을 어지럽히지 않으면서 점유가 살아 있음만 갱신한다.
         $result = extractVendorBundle(BASE_PATH, BASE_PATH, static function (int $done, int $total): void {
@@ -671,7 +671,7 @@ if (! function_exists('installComposerDependenciesSSE')) {
             // 기록한 composer_available(probeComposerForInstall 결과)을 읽고, 기록이 없으면 직접
             // `composer --version` 을 실행해 본다. 두 단계가 같은 답을 쓰게 하는 지점이라 여기서 다시 재지 않는다.
             if (! canExecuteComposerForInstall($composerBinary, $phpBinary)) {
-                // composer 사용 불가 → 번들을 **쓸 수 있을 때만** 폴백 (13차 환경#4)
+                // composer 사용 불가 → 번들을 **쓸 수 있을 때만** 폴백
                 if (installerVendorBundleUsable()) {
                     sendSSEEvent('log', ['message' => lang('log_composer_unavailable_fallback_bundle')]);
 
@@ -1129,7 +1129,7 @@ if (! function_exists('installerDependentsOfSkippedTarget')) {
      * 의존하는 쪽이 **이미 설치된 뒤**에 그 대상이 실패한다. 그 경우는 되돌릴 수 없으므로
      * 운영자에게 알리고(already), 아직 실행되지 않은 것은 함께 지나간다(pending).
      *
-     * 파급은 **고정점까지** 간다 (12차 #A10). 직접 의존 1단계만 보면 A → B → C 사슬에서
+     * 파급은 **고정점까지** 간다. 직접 의존 1단계만 보면 A → B → C 사슬에서
      * C 를 건너뛸 때 B 는 지나가지만 A 는 그대로 설치·활성화되어, 의존이 깨진 확장이
      * 「완료」된 채 남는다. 현행 번들 확장이 전부 깊이 1 이라 잠복해 있었을 뿐이다.
      * 다만 **이미 설치가 끝난** 의존 확장(already)에서는 멈춘다 — 그 확장은 지나간 것이
@@ -1275,6 +1275,19 @@ if (! function_exists('cleanupExistingTablesSSE')) {
         $state = getInstallationState();
         $action = $state['existing_db_action'] ?? 'skip';
 
+        // 앞 설치가 남긴 확장 캐시(활성 확장 목록 파일 캐시·훅·오토로드·예약 명령·라우트 매핑)를 비운다 — 테이블 유무와 무관하게,
+        // 설치 완료 표식이 없는 설치 시작마다. 남으면 빈 DB 위에서 앞 설치의 플러그인이 켜진 것으로 보여, 아직 설치 전인 플러그인의
+        // 리스너 때문에 모듈 활성화가 「… is not instantiable」 로 실패한다([강제 진행] 재설치, 새 DB + 앞 설치 폴더
+        // 모두). CLI 재설치와 같은 대상이고, 지운 캐시는 확장 설치가 다시 만든다. 파일이 아닌 캐시 드라이버(redis 등)의 상태 캐시는
+        // 지우지 못한다(CLI 재설치와 같은 한계).
+        if (! is_file(BASE_PATH.'/storage/app/g7_installed')) {
+            require_once __DIR__.'/vendor-bundle-installer.php';
+            $clearedCaches = clearStaleExtensionCaches(BASE_PATH);
+            if ($clearedCaches !== []) {
+                addLog('[db_cleanup] 앞 설치의 확장 캐시 정리: '.implode(', ', $clearedCaches));
+            }
+        }
+
         if ($action !== 'drop_tables') {
             sendSSEEvent('log', ['message' => lang('log_db_cleanup_skipped')]);
             sendSSEEvent('log', ['message' => lang('log_separator')]);
@@ -1353,7 +1366,7 @@ if (! function_exists('cleanupExistingTablesSSE')) {
             // 이미 이어받아 진행 중인 승자 요청 위에 실패 상태를 덮어쓴다.
             throw $e;
         } catch (Throwable $e) {
-            // Throwable 로 받는다 (12차 #A9) — in-process 실행에서는 Error/TypeError 가 정상
+            // Throwable 로 받는다 — in-process 실행에서는 Error/TypeError 가 정상
             // 범위라, Exception 만 잡으면 그 경우 handleInstallationTaskFailure 를 통째로
             // 건너뛰어 상태가 running 인 채 남는다.
             logInstallationError(lang('error_db_cleanup_failed'), $e);
@@ -1370,7 +1383,7 @@ if (! function_exists('cleanupExistingTablesSSE')) {
 
 if (! function_exists('installerRecordMigrationBatchBaseline')) {
     /**
-     * migrate 직전의 최대 batch 를 기록한다 — 롤백이 되돌릴 범위의 기준선이다 (13차 #D9).
+     * migrate 직전의 최대 batch 를 기록한다 — 롤백이 되돌릴 범위의 기준선이다.
      *
      * 배치 지정 없는 `migrate:rollback` 은 마지막 배치를 되돌린다. 기존 스키마가 있는 DB 에서
      * 이번 실행이 0건 적용하고 실패하면 그 마지막 배치는 **운영자의 것**이므로, 되돌릴 범위를
@@ -1441,13 +1454,13 @@ if (! function_exists('runDatabaseSeedingSSE')) {
 
         // 이름/이메일/언어는 비밀이 아니므로 state.config 에 그대로 둔다.
         // 주입은 installerPutEnv 단일 지점이 맡는다 — putenv 가 차단된 호스팅에서도 in-process
-        // 시더가 값을 볼 수 있도록 $_ENV/$_SERVER 를 함께 채운다 (13차 환경#3).
+        // 시더가 값을 볼 수 있도록 $_ENV/$_SERVER 를 함께 채운다.
         installerPutEnv('INSTALLER_ADMIN_NAME', (string) ($config['admin_name'] ?? 'Administrator'));
         installerPutEnv('INSTALLER_ADMIN_EMAIL', (string) $config['admin_email']);
         installerPutEnv('INSTALLER_ADMIN_PASSWORD', (string) $adminPassword);
         installerPutEnv('INSTALLER_ADMIN_LANGUAGE', (string) ($config['admin_language'] ?? $state['g7_locale'] ?? 'ko'));
 
-        // ENV 해제는 성공·실패와 무관하다 (13차 보안#12). in-process 는 putenv 가 FPM 워커
+        // ENV 해제는 성공·실패와 무관하다. in-process 는 putenv 가 FPM 워커
         // 수명 동안 유지되므로, 실패 경로에서 남으면 이후 **다른 요청**의 자식 프로세스가
         // 평문 비밀번호를 상속한다. 성공 시에만 지우던 종전 배선이 그 창을 열어 두고 있었다.
         //
@@ -1502,7 +1515,7 @@ if (! function_exists('purgeAdminPasswordAfterSeeding')) {
         // redact 한다 (스냅샷을 덮어쓰면 completed 마커가 유실됨).
         //
         // 저장 실패를 버리면 **관리자 비밀번호가 state.json 에 그대로 남는다** — 다른 두 지점과
-        // 달리 이쪽은 보안 결과다. 지울 수는 없어도 남았다는 사실은 보여야 한다 (17차 #C2).
+        // 달리 이쪽은 보안 결과다. 지울 수는 없어도 남았다는 사실은 보여야 한다.
         installerSaveStateOrReport(
             redactInstallationStateSecrets(getInstallationState()),
             'admin_secret_purge'
@@ -1514,7 +1527,7 @@ if (! function_exists('purgeAdminPasswordAfterSeeding')) {
 
 if (! function_exists('purgeAdminCredentialsFromEnv')) {
     /**
-     * 관리자 자격증명을 이 프로세스의 환경에서만 해제한다 (13차 보안#12).
+     * 관리자 자격증명을 이 프로세스의 환경에서만 해제한다.
      *
      * runtime.php·state 의 잔존처는 건드리지 않는다 — 실패한 db_seed 의 재시도가 그 값을
      * 읽기 때문이다. 여기서 지우는 것은 「이 요청 이후 자식 프로세스로의 상속」뿐이다.
@@ -1575,7 +1588,7 @@ if (! function_exists('reserveCommandOutputFile')) {
                 @mkdir($dir, 0755, true);
             }
             if (is_dir($dir) && is_writable($dir)) {
-                // 이름을 추측 불가능하게 만든다 (19차 F10).
+                // 이름을 추측 불가능하게 만든다.
                 //
                 // 세 후보 중 마지막은 **시스템 temp** 이고, 그 디렉토리는 같은 호스트의 다른
                 // 계정과 공유된다. `uniqid('', true)` 는 microtime + lcg 라 값의 범위가 좁아
@@ -1596,7 +1609,7 @@ if (! function_exists('reserveCommandOutputFile')) {
 
         // 후보가 전부 막힌 환경(open_basedir 가 /tmp 까지 차단) — 쓸 수 없는 경로를 그대로
         // 돌려주면 리다이렉트가 실패하고, 호출부는 파일 부재를 「출력 없음」으로 읽어 실패
-        // 사유가 통째로 사라진다 (13차 환경#12). 예약 실패를 명시해 파이프 경로로 넘긴다.
+        // 사유가 통째로 사라진다. 예약 실패를 명시해 파이프 경로로 넘긴다.
         return null;
     }
 }
@@ -1607,7 +1620,7 @@ if (! function_exists('installerCleanupCommandOutputFiles')) {
      *
      * 정상 경로는 출력을 읽은 직후 지우지만, 요청이 강제 종료되면(타임아웃·OOM·프로세스 kill)
      * 파일이 남는다. 파일명이 `uniqid` 라 재시도마다 새로 쌓이고, 그것을 지우는 주체가
-     * 어디에도 없었다 (9차 #L9). 예약과 같은 후보 디렉토리를 본다.
+     * 어디에도 없었다. 예약과 같은 후보 디렉토리를 본다.
      *
      * @return int 지운 파일 수
      */
@@ -1747,7 +1760,7 @@ if (! function_exists('executeDbCommandSSE')) {
                 if ($taskId === 'db_migrate') {
                     removeTaskCompleted('db_migrate');
                 }
-                // 중단 경로와 같은 규칙 — 실제로 되돌렸을 때만 마커를 지운다 (19차 R3).
+                // 중단 경로와 같은 규칙 — 실제로 되돌렸을 때만 마커를 지운다.
                 // 이 경로에서는 마커가 애초에 없어 결과가 같지만, 두 경로에 다른 규칙을 두면
                 // 나중에 한쪽만 옳은 상태가 생긴다.
                 if (($rollbackResult['reverted'] ?? true) === true) {
@@ -1787,7 +1800,7 @@ if (! function_exists('executeDbCommandSSE')) {
             addLog(lang('db_task_completed_abort_detected', ['task' => $taskName, 'reason' => $reason]));
             sendSSEEvent('log', ['message' => lang('db_task_completed_rollback_start', ['task' => $taskName])]);
 
-            // 실패 경로와 같은 규칙으로 디스패치한다 (13차 #D4). 종전에는 이 분기만
+            // 실패 경로와 같은 규칙으로 디스패치한다. 종전에는 이 분기만
             // `rollbackDbMigrate()` 하드코딩이라, db_seed 가 끝난 뒤 [중단]/연결끊김이면
             // 시드가 아니라 **스키마 전체**가 되돌려지고 두 마커가 함께 지워졌다 — 같은 실패가
             // 「실패로 끝났을 때」와 「중단으로 끝났을 때」 서로 다른 DB 상태를 남긴다.
@@ -1800,7 +1813,7 @@ if (! function_exists('executeDbCommandSSE')) {
                     removeTaskCompleted('db_migrate');
                 }
 
-                // 마커는 **실제로 되돌렸을 때만** 지운다 (19차 R3).
+                // 마커는 **실제로 되돌렸을 때만** 지운다.
                 //
                 // 이 분기는 `markTaskCompleted($taskId)` **뒤**에 있다. 그래서 db_seed 가 성공한
                 // 직후의 중단·연결끊김에서는 `rollbackDbSeed()` 가 방금 세운 그 마커를 보고
@@ -2118,7 +2131,7 @@ if (! function_exists('optimizeConfigCacheSSE')) {
      * 이 지점이 없으면 설치는 config:cache 가 꺼진(매 요청 config 재파싱) 상태로 종료된다.
      * best_effort — 실패해도 설치 자체는 완료 처리한다(비캐시 부팅은 정상 동작).
      *
-     * 주의 (13차 #D7/E2): 이 태스크는 finalize 의 `.env` 머지 **앞**에서 돈다. 이 캐시는 병합 전 값
+     * 주의: 이 태스크는 finalize 의 `.env` 머지 **앞**에서 돈다. 이 캐시는 병합 전 값
      * (병합 전 .env + runtime.php 주입)으로 만들어져 `installer_completed=false` 와 평문 DB 비밀번호가
      * 박힌다. 완료 화면이 부르는 finalize-env.php 가 이 워커의 lock 해제를 기다린 뒤 병합하고, 이 캐시를
      * 지운 뒤 병합된 .env 로 다시 만든다(다시 만들 수 없는 환경이면 지운 채 둔다).
@@ -2211,10 +2224,10 @@ if (! function_exists('createSettingsJsonSSE')) {
         try {
             $settingsDir = BASE_PATH.'/storage/app/settings';
 
-            // 생성 결과를 확인한다 (19차 F1). 반환값을 버리면 storage/app 이 쓰기 불가일 때도
+            // 생성 결과를 확인한다. 반환값을 버리면 storage/app 이 쓰기 불가일 때도
             // 아래 쓰기가 전부 조용히 실패하고 「설정 파일 생성 완료」가 보고된다 — 사이트는
             // 기본 설정이 하나도 없는 채로 뜬다. 같은 파일의 형제(`complete_flag` 의
-            // `g7_installed` 쓰기)는 13차 #D12 로 이미 검사하고 있었다.
+            // `g7_installed` 쓰기)는 이미 검사하고 있었다.
             if (! is_dir($settingsDir) && ! @mkdir($settingsDir, 0755, true) && ! is_dir($settingsDir)) {
                 logInstallationError(lang('error_settings_dir_create_failed', ['path' => $settingsDir]));
 
@@ -2315,7 +2328,7 @@ if (! function_exists('createSettingsJsonSSE')) {
                 $json = installer_json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
                 $filePath = $settingsDir.'/'.$category.'.json';
 
-                // 쓰기 결과를 확인한다 (19차 F1) — 버리면 한 카테고리도 저장되지 않은 채
+                // 쓰기 결과를 확인한다 — 버리면 한 카테고리도 저장되지 않은 채
                 // 「생성 완료」가 보고되고, 그 사실은 어디에도 남지 않는다.
                 // 부분 쓰기는 `false` 가 아니라 쓴 바이트 수다 — 잘린 설정 JSON 이
                 // 「생성 완료」로 보고되면 그 카테고리의 설정이 통째로 깨진 채 설치가 끝난다.
@@ -2329,7 +2342,7 @@ if (! function_exists('createSettingsJsonSSE')) {
                         'message_params' => ['path' => $filePath],
                     ];
                 }
-                // 비밀이 실린 파일은 소유자 전용으로 좁힌다 (19차 R10).
+                // 비밀이 실린 파일은 소유자 전용으로 좁힌다.
                 //
                 // `core_update.json` 에는 프라이빗 저장소 GitHub PAT 가 들어간다. R3 이
                 // `runtime.php` 로 세운 규칙(「비밀은 0600 채널에만」)이 이 사본에는 적용되지
@@ -2354,7 +2367,7 @@ if (! function_exists('createSettingsJsonSSE')) {
             // lock 손실은 태스크 실패가 아니다 — 위 db_cleanup 과 같은 이유로 그대로 올린다.
             throw $e;
         } catch (Throwable $e) {
-            // Throwable 로 받는다 (12차 #A9) — 위 db_cleanup 과 같은 이유다.
+            // Throwable 로 받는다 — 위 db_cleanup 과 같은 이유다.
             logInstallationError(lang('error_settings_json_failed'), $e);
 
             return [
@@ -2393,7 +2406,7 @@ if (! function_exists('setInstallationCompleteSSE')) {
                 @mkdir($installedFlagDir, 0775, true);
             }
 
-            // 쓰기 결과를 확인한다 (13차 #D12). 반환값을 버리면 storage/app 이 쓰기 불가일 때도
+            // 쓰기 결과를 확인한다. 반환값을 버리면 storage/app 이 쓰기 불가일 때도
             // 「설치 완료」가 보고되고, 그 뒤 부팅은 g7_installed 부재를 보고 다시 인스톨러로 간다
             // — 운영자에게는 완료 화면을 본 직후 설치가 처음부터 다시 뜨는 것으로만 보인다.
             // 부분 쓰기도 실패로 읽는다 — 이 파일의 **존재**가 설치 완료 판정 근거이므로,
@@ -2446,7 +2459,8 @@ if (! function_exists('setInstallationCompleteSSE')) {
             // 갓 설치한 사이트가 새 보호 규칙을 못 받는 형태다. 설치 직후 디스크는 곧 릴리즈
             // 판본이라 이 시점이 유일하게 확실한 기준선이다. 실패해도 설치를 막지 않는다 —
             // 원장이 없으면 다음 업데이트가 보존 쪽(잃지 않는 쪽)으로 떨어질 뿐이다.
-            $ledgerResult = installerRunArtisan('core:deploy-ledger-seed');
+            // `--fresh-install`: 설치 직후 디스크로 번들 출하 목록도 씨앗한다(손으로 돌리는 실행은 하지 않는다).
+            $ledgerResult = installerRunArtisan('core:deploy-ledger-seed', ['--fresh-install' => true]);
             sendSSEEvent('log', [
                 'message' => $ledgerResult['exit_code'] === 0
                     ? lang('log_deploy_ledger_seeded')
@@ -2471,7 +2485,7 @@ if (! function_exists('setInstallationCompleteSSE')) {
                 }
             }
 
-            // 명령 출력 임시 로그도 함께 정리한다 (9차 #L9). 정상 경로는 읽은 뒤 지우지만,
+            // 명령 출력 임시 로그도 함께 정리한다. 정상 경로는 읽은 뒤 지우지만,
             // 요청이 강제 종료되면(타임아웃·OOM) 파일이 남고 이름이 uniqid 라 재시도마다
             // 누적된다 — 청소 주체가 없으면 storage/logs 에 조용히 쌓인다.
             installerCleanupCommandOutputFiles();
@@ -2589,7 +2603,7 @@ if (! function_exists('buildInstallationTaskList')) {
         $tasks[] = ['id' => 'create_settings_json', 'function' => 'createSettingsJsonSSE'];
         $tasks[] = ['id' => 'cache_clear', 'function' => 'clearCacheSSE'];
         $tasks[] = ['id' => 'complete_flag', 'function' => 'setInstallationCompleteSSE'];
-        // 이 순서의 전제는 사실이 아니다 (13차 #D7/E2 — 조치 완료, 소유는 finalize).
+        // 이 순서의 전제는 사실이 아니다 (조치 완료, 소유는 finalize).
         //
         // 종전 주석은 「complete_flag(installer_completed=true) 이후이므로 설치가 config:cache
         // 켜진 상태로 시작한다」고 적었으나, complete_flag 은 `.env` 를 건드리지 않는다
@@ -2599,7 +2613,7 @@ if (! function_exists('buildInstallationTaskList')) {
         // 그래서 여기서 구운 `bootstrap/cache/config.php` 에는 `app.installer_completed=false`
         // 가 박히고 runtime.php 의 평문 DB 비밀번호가 캐시로 복제된다.
         //
-        // 제품 결정(13차): 굽는 것 자체는 그대로 두고, **finalize 가 마지막에 그 캐시 파일을
+        // 제품 결정: 굽는 것 자체는 그대로 두고, **finalize 가 마지막에 그 캐시 파일을
         // 지운다** (`finalize-env.php` 의 runtime.php 정리 구간). 목록에서 빼는 것은 계약
         // 변경(매니페스트 `task` 축·뷰 파리티)이라 선택하지 않았다. finalize 는 이 워커가 lock 을
         // 풀 때까지 기다린 뒤 병합하고, 지운 캐시를 병합된 `.env` 로 다시 만든다(다시 만들 수
@@ -2753,7 +2767,7 @@ if (! function_exists('handleInstallationTaskFailure')) {
         $state['manual_commands'] = $manualCommands;
 
         // 저장 실패를 버리면 status 가 running 인 채 failed_task 가 비어 [건너뛰고 계속] 이
-        // 원리상 불가능해진다 — 그 상태가 오류 없이 남는 것이 이 결함의 실체다 (17차 #C2).
+        // 원리상 불가능해진다 — 그 상태가 오류 없이 남는 것이 이 결함의 실체다.
         installerSaveStateOrReport($state, 'task_failure');
 
         addLog(lang('log_installation_task_failed', [
@@ -2763,7 +2777,7 @@ if (! function_exists('handleInstallationTaskFailure')) {
 
         // 수동 복구 명령은 **진행 기록에 넣지 않는다** — §12.0 W3 「진행 기록은 사람 말로 쓴다
         // (명령·클래스 이름 금지)」. 목록은 아래 error 이벤트의 `manual_commands` 로 그대로
-        // 나가고, 실패 화면이 접기 영역에 그린다 (10차). 필요한 사람은 펼쳐서 복사한다.
+        // 나가고, 실패 화면이 접기 영역에 그린다. 필요한 사람은 펼쳐서 복사한다.
 
         sendSSEEvent('error', [
             'message' => $result['message'] ?? lang('log_installation_failed'),
@@ -2872,7 +2886,7 @@ if (! function_exists('runSingleInstallationTask')) {
             return ['outcome' => 'failed', 'task' => $taskId, 'target' => $target, 'result' => $result];
         }
 
-        // 완료 마커가 실제로 남았는지 확인한다 (11차 #A5).
+        // 완료 마커가 실제로 남았는지 확인한다.
         //
         // markTaskCompleted() 는 저장 성공 여부를 돌려주는데 호출부 19곳이 전부 그 값을
         // 버렸다. 디스크가 차거나 부분 쓰기가 나면 태스크는 성공했는데 마커만 없는 상태가
@@ -2909,12 +2923,12 @@ if (! function_exists('finalizeInstallationRun')) {
      */
     function finalizeInstallationRun(): void
     {
-        // 세션 단계 쓰기는 여기에 두지 않는다 (13차 #F3). 세 모드 모두 이 시점에는 응답이
+        // 세션 단계 쓰기는 여기에 두지 않는다. 세 모드 모두 이 시점에는 응답이
         // 이미 나갔거나(폴링·SSE) 세션이 이 요청의 것이 아니라 쓰기가 화면에 반영되지 않는다.
         // 실제 보장은 install-process.php(`$_SESSION['installer_current_step'] = 5`)와
         // request-handler.php 의 단계 보정이 한다.
 
-        // 완료 상태를 여기서도 멱등 기록한다 (11차 #A6).
+        // 완료 상태를 여기서도 멱등 기록한다.
         //
         // `installation_status = 'completed'` 를 쓰는 지점은 complete_flag 태스크 본문
         // 하나뿐인데, best-effort 인 config_cache 가 **그 뒤**에 온다. config_cache 만
@@ -3004,7 +3018,7 @@ if (! function_exists('recordInstallationRunException')) {
         $manualCommands = $failedId !== null ? getManualCommands($failedId, $failedTarget) : [];
         $state['manual_commands'] = $manualCommands;
 
-        // 실패 기록 경로와 같은 이유로 결과를 확인한다 (17차 #C2).
+        // 실패 기록 경로와 같은 이유로 결과를 확인한다.
         installerSaveStateOrReport($state, 'run_exception');
 
         addLog(lang('log_installation_exception', ['error' => $e->getMessage()]));
@@ -3031,7 +3045,7 @@ if (! function_exists('installerResetTaskTimeLimit')) {
      * 제한이 되어, 확장을 많이 고른 설치가 중간 작업에서 "Maximum execution time" 으로 죽는다
      * (Windows 의 PHP 는 명령 대기·파일 복사 시간까지 경과 시간으로 잰다).
      *
-     * 막힌 호스팅에서는 부르지 않는다 — `@` 는 차단 함수의 Error 를 삼키지 않는다 (13차 환경#1).
+     * 막힌 호스팅에서는 부르지 않는다 — `@` 는 차단 함수의 Error 를 삼키지 않는다.
      *
      * 제한이 없는 실행(터미널 설치는 진입 때 set_time_limit(0))은 그대로 둔다 — 같은 작업 루프를 쓰는
      * 터미널 설치에 작업당 제한을 새로 걸면 종전에 끝까지 돌던 긴 작업이 끊긴다.
@@ -3077,7 +3091,7 @@ if (! function_exists('runInstallationTasks')) {
             //
             // 건너뜀 목록($skippedTasks)에는 넣지 않는다 — 그 목록은 「운영자가 건너뛴 것」
             // 전용이고, 표시 판정(runSingleInstallationTask)은 best_effort_failed_tasks 를
-            // 먼저 본다. 여기서 넣어 봐야 그 값은 정의상 읽히지 않는다 (12차 #A12).
+            // 먼저 본다. 여기서 넣어 봐야 그 값은 정의상 읽히지 않는다.
             foreach ($bestEffortTasks as $bestEffortKey) {
                 if (! in_array($bestEffortKey, $completedTasks, true)) {
                     $completedTasks[] = $bestEffortKey;
@@ -3124,7 +3138,7 @@ if (! function_exists('runInstallationTasks')) {
 
 if (! function_exists('installerRemainingTaskCount')) {
     /**
-     * 이 요청 뒤에 남는 태스크 수 — `remaining` 응답 필드의 유일한 계산 지점 (13차 F1/F2).
+     * 이 요청 뒤에 남는 태스크 수 — `remaining` 응답 필드의 유일한 계산 지점.
      *
      * 종전에는 분기마다 기준이 달랐다: 실행 전 중단은 `count($pending)`, 실행 후는 성공·실패·
      * 중단을 가리지 않고 `count($pending) - 1`. 같은 이름이 「아직 남은 수」와 「하나를 시도한
@@ -3220,7 +3234,7 @@ if (! function_exists('runNextInstallationTask')) {
         } catch (Throwable $e) {
             recordInstallationRunException($e);
 
-            // 상태를 **다시 읽어** 돌려준다 (9차 #L6). `$state` 는 이 요청 진입 시점의 스냅샷이라
+            // 상태를 **다시 읽어** 돌려준다. `$state` 는 이 요청 진입 시점의 스냅샷이라
             // updateCurrentTask() 가 파일에만 쓴 갱신이 반영돼 있지 않다 — 그대로 쓰면 응답의
             // `task` 는 직전 태스크를 가리키고, 같은 예외를 기록한 state 는 현재 태스크를 가리켜
             // 두 값이 서로 다른 태스크를 말한다. 정상 분기가 돌려주는 것과 같은 bare id 로 맞춘다.

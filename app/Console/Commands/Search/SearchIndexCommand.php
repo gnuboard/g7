@@ -87,6 +87,7 @@ class SearchIndexCommand extends Command
             ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
         } else {
             $this->render($driver, $results, $report?->summary());
+            $this->renderAdvice($report?->adviceLines() ?? []);
         }
 
         $remaining = array_filter($results, fn (SearchIndexHealth $h) => $h->needsRebuild());
@@ -190,6 +191,26 @@ class SearchIndexCommand extends Command
 
         if ($counts[SearchIndexStatus::Degraded->value] > 0) {
             $this->line('  <comment>'.__('search.index.degraded_hint').'</comment>');
+        }
+    }
+
+    /**
+     * 재생성 뒤에도 남은 누락의 조치 안내(표 재구축 명령)를 출력합니다. 실행하지는 않습니다.
+     *
+     * @param  array<int, string>  $lines  안내 문장들 (SearchIndexRepairReport::adviceLines)
+     * @return void
+     */
+    private function renderAdvice(array $lines): void
+    {
+        if ($lines === []) {
+            return;
+        }
+
+        $this->newLine();
+        $this->components->warn(array_shift($lines));
+
+        foreach ($lines as $line) {
+            $this->line('  '.$line);
         }
     }
 }

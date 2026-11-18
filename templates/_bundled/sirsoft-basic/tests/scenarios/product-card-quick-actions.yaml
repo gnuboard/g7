@@ -15,7 +15,7 @@ description: |
   시험 하나가 시나리오 하나다 — 각 case 는 아래 주석의 시험 이름과 짝이다.
 
 axes:
-  case: [c01, c02, c03, c04, c05, c06, c07, c08, c09, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31]
+  case: [c01, c02, c03, c04, c05, c06, c07, c08, c09, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32, c33]
   # c01: 단추가 카드 링크 밖 형제이고 이름·눌림 상태·다크 짝을 갖는다
   # c02: showActions 를 끄면 단추가 없다
   # c03: 찜 여부를 모르는 응답이면 찜 단추를 그리지 않는다
@@ -47,6 +47,8 @@ axes:
   # c29: 두 조합을 쌓으면 한 번의 담기 요청에 두 줄이 실리고, 줄 계산은 구매 카드의 식과 같다
   # c30: 필수 추가옵션을 고르지 않은 줄이 있으면 요청 대신 안내하고 그 줄에 사유를 표시한다
   # c31: 찜 목록의 카드는 같은 자리에 찜 해제 단추가 있어 카드 단추를 끈다
+  # c32: %s 화면의 카드 찜·곧바로 담기가 추가 정보 미입력 거부(403 required_fields_pending)를 받으면 오류 알림 대신 「추가 정보 필요」 창을 연다
+  # c33: 다른 403 은 창을 열지 않고 서버 문구를 알린다(화면 수준 403 처리로 넘어가지 않는다)
 
 effects:
   - card_actions_sit_outside_link
@@ -75,6 +77,8 @@ effects:
   - quick_option_modal_posts_all_rows
   - quick_option_modal_blocks_missing_required_additional_option
   - wishlist_list_card_has_no_quick_actions
+  - card_actions_open_required_info_modal_on_pending
+  - card_actions_keep_toast_for_other_403
 
 test_files:
   - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/ProductCard.quickActions.test.tsx

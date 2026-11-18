@@ -72,16 +72,23 @@
                                         "target": "member_field_required_modal"
                                     },
                                     {
-                                        "handler": "refetchDataSource",
-                                        "params": {
-                                            "dataSourceId": "memberFieldDefs"
-                                        }
-                                    },
-                                    {
                                         "handler": "setState",
                                         "params": {
                                             "target": "global",
                                             "member_field_required_modal": null
+                                        }
+                                    },
+                                    {
+                                        "handler": "updateDataSource",
+                                        "params": {
+                                            "dataSourceId": "memberFieldDefs",
+                                            "data": "{{ { ...(memberFieldDefs ?? { }), data: { ...(memberFieldDefs?.data ?? { }), fields_version: response?.data?.fields_version ?? memberFieldDefs?.data?.fields_version ?? null } } }}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "memberFieldDefs"
                                         }
                                     }
                                 ],
@@ -98,16 +105,16 @@
                                         "target": "member_field_required_modal"
                                     },
                                     {
-                                        "handler": "refetchDataSource",
-                                        "params": {
-                                            "dataSourceId": "memberFieldDefs"
-                                        }
-                                    },
-                                    {
                                         "handler": "setState",
                                         "params": {
                                             "target": "global",
                                             "member_field_required_modal": null
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "memberFieldDefs"
                                         }
                                     }
                                 ]

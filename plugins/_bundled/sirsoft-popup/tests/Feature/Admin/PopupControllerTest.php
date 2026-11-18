@@ -191,6 +191,28 @@ class PopupControllerTest extends PluginTestCase
     }
 
     /**
+     * 「플러그인 보기」(core.plugins.read)만 있는 관리자도 플러그인 설정 화면이 받는 노출 설정(업로드 한도)을 읽고,
+     * 팝업 목록 같은 업무 조회는 계속 거부된다.
+     *
+     * 설정 화면은 코어 계약대로 `core.plugins.read` 로 읽기 전용 진입하는데 이 조회가 `popups.read` 만 받아,
+     * 들어갈 때마다 「해당 권한이 없습니다」 알림이 떴다.
+     *
+     * @scenario surface=display_settings_open_to_plugin_viewers
+     *
+     * @effects display_settings_readable_with_plugin_view_permission
+     *
+     * @return void 반환값 없음
+     */
+    public function test_display_settings_is_readable_with_plugin_view_permission(): void
+    {
+        $viewer = $this->adminWith(['core.plugins.read']);
+
+        $this->actingAs($viewer)->getJson($this->api('/admin/display-settings'))->assertOk();
+        $this->actingAs($viewer)->getJson($this->api('/admin/popups'))->assertForbidden();
+        $this->actingAs($this->adminWith([]))->getJson($this->api('/admin/display-settings'))->assertForbidden();
+    }
+
+    /**
      * 「지금 노출 중」은 노출중 팝업만 캐러셀 순서대로 싣는다(썸네일·기기 포함).
      *
      * @scenario surface=summary_returns_active_in_sort_order

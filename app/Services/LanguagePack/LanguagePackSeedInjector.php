@@ -85,13 +85,8 @@ class LanguagePackSeedInjector
             if (! $seed) {
                 continue;
             }
-            foreach ($menus as $idx => $menu) {
-                $slug = $menu['slug'] ?? null;
-                if (! $slug || ! isset($seed[$slug]['name'])) {
-                    continue;
-                }
-                $menus[$idx]['name'][$locale] = $seed[$slug]['name'];
-            }
+            // 하위 메뉴(children)까지 — 종전에는 최상위만 넣어, 코어 재동기화가 하위 메뉴의 로케일을 지웠다
+            $menus = $this->mergeMenuTranslations($menus, $seed, $locale);
         }
 
         return $menus;

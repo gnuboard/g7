@@ -103,6 +103,7 @@ effects:
   - toss_provider_registration_works_with_empty_list
   - toss_client_config_ignores_other_providers
   - enabled_methods_exposed_with_core_mapping
+  - toss_method_labels_cover_supported_locales # 이름·설명이 ko·en 고정이 아니라 지원 언어(활성 언어팩) 전부로 채워짐
   - vbank_account_stored_without_completing
   - vbank_issue_clears_ordered_cart_items   # 가상계좌 계좌 발급 시 주문한 장바구니 항목 정리(입금 전) — KG·KCP·나이스와 같은 처리
   - vbank_secret_stored_for_webhook
@@ -149,10 +150,12 @@ effects:
   - escrow_products_absent_for_card
   # 에스크로 운영 안내 (W-6)
   - escrow_operation_notice_shown_when_escrow_enabled
+  - escrow_operation_notice_not_flashed_before_form_filled # 설정을 받은 직후 폼(initLocal)이 채워지기 전 한 박자에도 에스크로 off 면 안내가 보이지 않음(#915 결함군)
   # 설정 화면 입금통보 웹훅 URL — 경로만이 아니라 사이트 주소까지 붙은 전체 주소로 표시·복사
   - webhook_url_returned_as_absolute_url
   - webhook_url_display_and_copy_use_absolute_url
   - webhook_url_lookup_requires_settings_read
+  - webhook_url_lookup_open_to_plugin_settings_viewers # 「플러그인 보기」(core.plugins.read)만 있는 운영자도 읽기 전용 설정 화면의 웹훅 주소를 받음(403 알림 없음)
   # KVE-2026-2434 — 결제창 닫힘 보고·재결제 준비·결제 인증 콜백의 주문 소유자 확인과 승인-주문 결속
   - skips_when_settings_json_is_malformed
   - skips_when_settings_file_is_missing

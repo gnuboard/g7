@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Contracts\Http\DefersIdentityPolicyUntilValidated;
 use App\Contracts\Repositories\IdentityPolicyRepositoryInterface;
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Exceptions\IdentityPolicyProviderUnavailableException;
@@ -12,6 +13,7 @@ use App\Services\IdentityTokenAcceptanceService;
 use App\Support\Auth\SystemOperation;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Route;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -34,6 +36,9 @@ use Symfony\Component\HttpFoundation\Response;
  *     (IdentityGuardInterceptor 의 verify 직후 재시도 흐름)
  *   - 토큰 미동봉/무효 → IdentityPolicyService::enforce() 가 grace_minutes 윈도우 검사 후
  *     통과 또는 IdentityVerificationRequiredException throw
+ *
+ * 컨트롤러가 `DefersIdentityPolicyUntilValidated` 표식을 단 폼 요청을 받으면(가입) 정책을 여기서 강제하지 않고
+ * 그 폼 요청이 입력 검증을 통과한 뒤 강제한다 — 입력 오류(422)를 본인 확인 요구(428)보다 먼저 알린다(7.2.0).
  *
  * @since 7.0.0-beta.4
  */
@@ -74,10 +79,17 @@ class EnforceIdentityPolicy
         }
 
         $policies = $this->resolvePolicies($request, $policyKey);
+        $policies = is_array($policies) ? array_values($policies) : iterator_to_array($policies, false);
 
         try {
-            foreach ($policies as $policy) {
-                $this->enforcePolicy($policy, $request);
+            if ($this->defersUntilValidated($request, $policies)) {
+                // 입력 검증을 먼저 하는 폼 요청(7.2.0) — 정책은 그 요청이 검증을 통과한 뒤 같은 판정으로 강제한다.
+                // 입력 오류(422)를 본인 확인 요구(428)보다 먼저 알리기 위해서다. 소비 되돌림은 아래 응답 판정이 그대로 맡는다.
+                $request->attributes->set(IdentityPolicyService::DEFERRED_ROUTE_POLICIES_ATTRIBUTE, $policies);
+            } else {
+                foreach ($policies as $policy) {
+                    $this->enforcePolicy($policy, $request);
+                }
             }
 
             $response = $next($request);
@@ -133,6 +145,34 @@ class EnforceIdentityPolicy
         $index = $this->policyRepository->getRouteScopeIndex();
 
         return $index[$routeName] ?? [];
+    }
+
+    /**
+     * 이 라우트의 정책 강제를 폼 요청의 입력 검증 뒤로 미룰지 판정합니다.
+     *
+     * 컨트롤러가 `DefersIdentityPolicyUntilValidated` 표식을 단 폼 요청을 받을 때만 미룬다 — 폼 요청은 컨트롤러에 닿기 전에
+     * 반드시 검증되므로, 검증을 통과한 요청은 빠짐없이 정책 판정을 거친다.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @param  array<int, IdentityPolicy>  $policies  강제할 정책 목록
+     * @return bool 미룰지 여부 (강제할 정책이 없으면 false)
+     */
+    protected function defersUntilValidated(Request $request, array $policies): bool
+    {
+        if ($policies === []) {
+            return false;
+        }
+
+        $route = $request->route();
+        if (! $route instanceof Route) {
+            return false;
+        }
+
+        try {
+            return $route->signatureParameters(['subClass' => DefersIdentityPolicyUntilValidated::class]) !== [];
+        } catch (\ReflectionException) {
+            return false;
+        }
     }
 
     /**

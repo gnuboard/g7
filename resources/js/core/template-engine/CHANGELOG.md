@@ -5,6 +5,18 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.96.5] - 2026-11-18
+
+### Fixed
+
+- (engine-v1.96.5) 레이아웃 편집기에서 슬롯이 둘 이상인 자식 레이아웃(홈·게시판 목록·쇼핑 목록·상품 상세·카테고리 — 7.2.0 에 `page_top` 슬롯이 생김)을 편집해 저장하면 「저장됨」(PUT 200)인데 편집분이 하나도 저장되지 않던 문제를 고쳤습니다. 저장 마스킹(`stripInheritedFromLayoutContent`)이 슬롯 래퍼의 슬롯 이름을 몰라 슬롯이 둘 이상이면 원본 slots 를 그대로 보냈습니다. 서버가 편집 모드 응답의 슬롯 래퍼에 `__slot` 을 달고(`LayoutService::replaceSlots`), 저장 마스킹이 래퍼별로 편집분을 모읍니다. 표식이 없는 응답(옛 서버)은 종전 폴백. 발생 시점: 다중 슬롯 화면이 생긴 이번 7.2.0 개발 중. 회귀 잠금 `layout-editor/__tests__/utils/multiSlotSave.test.ts`(수정 전 1건 red — `expected 'lg' to be 'md'`)·`tests/Unit/Services/LayoutServiceSlotMarkerTest.php` (layout-editor/utils/layoutTreeUtils.ts, app/Services/LayoutService.php)
+
+## [engine-v1.96.4] - 2026-11-18
+
+### Fixed
+
+- (engine-v1.96.4) 검수 서버(실행 역할 stage)에서 시각 레이아웃 편집기 머리에 「검수용 저장」 안내 띠를 보입니다 — 이 편집기에서 저장한 레이아웃은 검수 서버 표에만 남고 운영 사이트에 반영되지 않습니다. 종전에는 관리자 화면 상단 띠와 코드 편집 화면에만 안내가 있고 시각 편집기 셸은 실행 역할을 읽지 않았습니다. 셸 설정 `G7Config.appConfig.runtime_role` 을 읽는 표시 전용 부품이라 상태 저장소를 거치지 않습니다(새 문구 `layout_editor.chrome.stage_banner`). 발생 시점: 검수 서버 역할이 생긴 이번 7.2.0 개발 중(#888). 회귀 잠금 `layout-editor/__tests__/components/LayoutEditorChrome.stageBanner.test.tsx` (수정 전 stage 1건 red) (layout-editor/components/StageRoleBanner.tsx, LayoutEditorChrome.tsx)
+
 ## [engine-v1.96.3] - 2026-11-16
 
 ### Fixed

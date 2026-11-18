@@ -109,6 +109,40 @@ class AttachmentRepository implements AttachmentRepositoryInterface
     }
 
     /**
+     * 한 종류의 첨부 대상 전체에서 지정한 컬렉션에 첨부를 가진 대상 수를 셉니다 (항목 삭제 창의 「값 N건」 — DB 집계).
+     *
+     * @param  string  $type  attachmentable_type
+     * @param  string  $collection  컬렉션 이름
+     * @return int 첨부를 가진 대상(attachmentable_id) 수
+     */
+    public function countAttachmentablesByTypeAndCollection(string $type, string $collection): int
+    {
+        return (int) Attachment::where('attachmentable_type', $type)
+            ->whereNotNull('attachmentable_id')
+            ->where('collection', $collection)
+            ->distinct()
+            ->count('attachmentable_id');
+    }
+
+    /**
+     * 한 종류의 첨부 대상 전체에서 지정한 컬렉션의 첨부 ID 만 조회합니다 (항목 삭제 때 지울 대상 — 모델을 올리지 않는다).
+     *
+     * @param  string  $type  attachmentable_type
+     * @param  string  $collection  컬렉션 이름
+     * @return array<int, int> 첨부 ID 목록 (오름차순)
+     */
+    public function idsByAttachmentableTypeAndCollection(string $type, string $collection): array
+    {
+        return Attachment::where('attachmentable_type', $type)
+            ->whereNotNull('attachmentable_id')
+            ->where('collection', $collection)
+            ->orderBy('id')
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
+    /**
      * 첨부파일 생성
      *
      * @param  array<string, mixed>  $data  생성 데이터

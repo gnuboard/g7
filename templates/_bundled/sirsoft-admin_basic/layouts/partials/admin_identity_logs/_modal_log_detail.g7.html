@@ -62,11 +62,11 @@
       </div>
       <div data-if="{{_global.identity_log_modal_data?.properties}}">
         <span class="text-tertiary block font-semibold uppercase tracking-wide mb-1">$t:admin.identity.logs.detail.expanded.properties_label</span>
-        <pre class="p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-800 dark:text-gray-200 overflow-x-auto">{{JSON.stringify(_global.identity_log_modal_data?.properties ?? {}, null, 2)}}</pre>
+        <pre class="p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-800 dark:text-gray-200 overflow-x-auto">{{raw:JSON.stringify(_global.identity_log_modal_data?.properties ?? {}, null, 2)}}</pre>
       </div>
       <div data-if="{{_global.identity_log_modal_data?.metadata}}">
         <span class="text-tertiary block font-semibold uppercase tracking-wide mb-1">$t:admin.identity.logs.detail.expanded.metadata_label</span>
-        <pre class="p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-800 dark:text-gray-200 overflow-x-auto">{{JSON.stringify(_global.identity_log_modal_data?.metadata ?? {}, null, 2)}}</pre>
+        <pre class="p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-800 dark:text-gray-200 overflow-x-auto">{{raw:JSON.stringify(_global.identity_log_modal_data?.metadata ?? {}, null, 2)}}</pre>
       </div>
     </div>
     <footer>

@@ -759,6 +759,9 @@ class LayoutService
                 // 슬롯 래퍼 자체는 base 출처(레이아웃이 정의한 컴포넌트). slot children 은 route 출처
                 if ($sourceMeta !== null) {
                     $resultComponent['__source'] = $sourceMeta;
+                    // 슬롯 이름 — 편집기 저장 마스킹이 슬롯이 둘 이상인 화면의 편집분을 슬롯별로 되돌리는 열쇠.
+                    // 편집 모드에만 단다(공개 렌더 트리에는 없음). 저장 시 래퍼째 버려져 레이아웃에 남지 않는다.
+                    $resultComponent['__slot'] = $component['slot'];
                     $resultComponent['children'] = $this->markSourceMeta(
                         $resultComponent['children'],
                         ['kind' => 'route', 'layout' => $sourceMeta['layout'] ?? '']

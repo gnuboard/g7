@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Core;
 
 use App\Console\Commands\Traits\LocalizesDescription;
+use App\Extension\Helpers\BundledShippedManifest;
 use App\Services\CoreUpdateService;
 use Illuminate\Console\Command;
 
@@ -33,7 +34,8 @@ class CoreDeployLedgerSeedCommand extends Command
 {
     use LocalizesDescription;
 
-    protected $signature = 'core:deploy-ledger-seed';
+    protected $signature = 'core:deploy-ledger-seed
+        {--fresh-install : 설치기 전용 — 설치 직후 디스크로 번들 출하 목록도 씨앗한다}';
 
     /**
      * 원장을 씨앗하고 결과를 출력합니다.
@@ -50,6 +52,20 @@ class CoreDeployLedgerSeedCommand extends Command
      */
     public function handle(CoreUpdateService $service): int
     {
+        // 번들 출하 목록도 같은 시점(설치 직후 디스크 = 배포본)을 기준선으로 씨앗한다 — 다음 코어 업데이트가 새 판이 지운
+        // 번들 파일을 정리하는 근거다. 설치기(`--fresh-install`)만 한다: 손으로 돌리는 시점의 디스크에는 운영자가 넣은 파일·
+        // 이전 판 잔존이 있을 수 있고, 그것이 「출하했던 파일」로 기록되면 다음 업데이트가 지울 수 있다(목록이 없으면 다음
+        // 업데이트는 지우지 않고 목록만 남긴다 — 그쪽이 안전하다). 이미 있으면 건드리지 않는다. 실패해도 설치를 막지 않는다.
+        if ($this->option('fresh-install') && BundledShippedManifest::read() === null) {
+            try {
+                if (BundledShippedManifest::write(BundledShippedManifest::collect(base_path()), (string) config('app.version'), keepPrevious: false)) {
+                    $this->info(__('settings.core_update.console.bundled_manifest_seeded'));
+                }
+            } catch (\Throwable $e) {
+                $this->warn(__('settings.core_update.console.bundled_manifest_seed_failed', ['error' => $e->getMessage()]));
+            }
+        }
+
         $seeded = $service->seedDeployFragmentLedger(base_path());
         $warnings = $service->getLastRootFileWarnings();
 

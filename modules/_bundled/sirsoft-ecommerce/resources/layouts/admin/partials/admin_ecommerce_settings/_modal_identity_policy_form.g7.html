@@ -184,8 +184,8 @@
               <success>
                 <toast message="$t:admin.identity.policies.save_success" type="success"/>
                 <close-modal target="identity_policy_form_modal"/>
-                <refetch-data-source dataSourceId="ecommerceIdentityPolicies"/>
                 <set-state target="global" :identity_policy_form_modal="null"/>
+                <refetch-data-source dataSourceId="ecommerceIdentityPolicies"/>
               </success>
               <fail>
                 <set-state target="global" :identity_policy_form_modal.isSaving="false" identity_policy_form_modal.errors="{{error}}"/>

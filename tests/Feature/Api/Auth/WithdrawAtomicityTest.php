@@ -5,6 +5,7 @@ namespace Tests\Feature\Api\Auth;
 use App\Enums\AttachmentSourceType;
 use App\Enums\PermissionType;
 use App\Enums\UserStatus;
+use App\Helpers\TimezoneHelper;
 use App\Models\Attachment;
 use App\Models\Permission;
 use App\Models\Role;
@@ -245,7 +246,8 @@ class WithdrawAtomicityTest extends TestCase
      */
     private function bindFailingWithdraw(User $user): User
     {
-        $suffix = '_deleted_'.now()->format('Ymd').'_'.$user->id;
+        // 탈퇴 접미사 날짜는 사이트 시간대 기준이다(User::withdraw) — UTC 날짜로 만들면 한국 시간 자정 뒤(UTC 15시~)에 어긋나 미끼가 빗나간다
+        $suffix = '_deleted_'.now()->setTimezone(TimezoneHelper::getSiteTimezone())->format('Ymd').'_'.$user->id;
 
         // 미끼 유저가 같은 접미사 이메일을 선점 → withdraw() 저장이 unique 위반으로 실패
         User::factory()->create(['email' => $user->email.$suffix]);

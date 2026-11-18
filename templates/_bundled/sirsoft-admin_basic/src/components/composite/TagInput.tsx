@@ -1,10 +1,24 @@
-// e2e:allow #887 화면 읽기 알림의 항목 이름 추출만 고침(만들기 행 label 이 요소라 「[object Object] 선택됨」) — 보이는 화면 변화 없음, 실제 react-select 경로 회귀는 TagInput.a11yCreateAnnounce.test.tsx. 종전: 편집기 선택 결함#6 수정(react-select Fragment 루트에 id/editorAttrs 미도달 → 4개 렌더분기 Div 래핑). 라이브 검증은 Chrome MCP T1~T7(에디터 추가/선택/속성편집/저장200/reload/게스트 사용자화면)로 수행, 단위 회귀는 TagInput.test.tsx editorAttrs/id passthrough describe.
+// e2e:allow 스타일 정책 강제 시 react-select(emotion) 규칙을 생성형 시트로 — 브라우저 회귀는 tests/Playwright/specs/smoke/strict-csp.spec.ts (S) 태그 입력, 단위는 TagInput.styleCsp.test.tsx. 종전: #887 화면 읽기 알림의 항목 이름 추출만 고침(만들기 행 label 이 요소라 「[object Object] 선택됨」) — 보이는 화면 변화 없음, 실제 react-select 경로 회귀는 TagInput.a11yCreateAnnounce.test.tsx. 종전: 편집기 선택 결함#6 수정(react-select Fragment 루트에 id/editorAttrs 미도달 → 4개 렌더분기 Div 래핑). 라이브 검증은 Chrome MCP T1~T7(에디터 추가/선택/속성편집/저장200/reload/게스트 사용자화면)로 수행, 단위 회귀는 TagInput.test.tsx editorAttrs/id passthrough describe.
 import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import { linkAdjacentLabel } from '../../hooks/useAdjacentLabel';
 import Select, { components, MultiValue, SingleValue, ActionMeta, InputActionMeta } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
+import { CacheProvider } from '@emotion/react';
 import { Div } from '../basic/Div';
 import type { EditorAttrs } from '../../types';
+import { getTagInputEmotionCache } from '../../utils/adoptedEmotionCache';
+
+/**
+ * react-select 의 emotion 규칙을 생성형 스타일시트로 싣는 범위.
+ *
+ * emotion 기본 캐시는 `<style data-emotion>` 요소를 만들고, 스타일 정책(기본 `style-src-elem 'self'`, 엄격
+ * `style-src 'self'; style-src-attr 'none'`)이 그 요소를 막아 목록이 문서 흐름에 펼쳐지고 화면 낭독용 안내 문구가
+ * 보였다. 생성형 시트를 지원하지 않는 환경이면 감싸지 않는다(emotion 기본 캐시 — 종전과 같다).
+ */
+const EmotionScope: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const cache = getTagInputEmotionCache();
+  return cache ? <CacheProvider value={cache}>{children}</CacheProvider> : <>{children}</>;
+};
 
 // G7Core.t() 번역 함수 참조 — 화면 읽기 안내문·태그 지우기 버튼 이름을 화면 언어로 낸다
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -829,13 +843,15 @@ export const TagInput: React.FC<TagInputProps> = ({
       return (
         <Div ref={rootRef} id={id} {...editorAttrs}>
           {name && <input type="hidden" name={name} value={hiddenValue} />}
-          <CreatableSelect<TagOption, false>
-            {...singleProps}
-            onCreateOption={handleCreate}
-            formatCreateLabel={createLabelFormatter}
-            isValidNewOption={isValidNewOption}
-            createOptionPosition="first"
-          />
+          <EmotionScope>
+            <CreatableSelect<TagOption, false>
+              {...singleProps}
+              onCreateOption={handleCreate}
+              formatCreateLabel={createLabelFormatter}
+              isValidNewOption={isValidNewOption}
+              createOptionPosition="first"
+            />
+          </EmotionScope>
         </Div>
       );
     }
@@ -843,7 +859,9 @@ export const TagInput: React.FC<TagInputProps> = ({
     return (
       <Div ref={rootRef} id={id} {...editorAttrs}>
         {name && <input type="hidden" name={name} value={hiddenValue} />}
-        <Select<TagOption, false> {...singleProps} />
+        <EmotionScope>
+          <Select<TagOption, false> {...singleProps} />
+        </EmotionScope>
       </Div>
     );
   }
@@ -873,13 +891,15 @@ export const TagInput: React.FC<TagInputProps> = ({
     return (
       <Div ref={rootRef} id={id} {...editorAttrs} onPaste={handlePaste}>
         {name && <input type="hidden" name={name} value={hiddenValue} />}
-        <CreatableSelect<TagOption, true>
-          {...multiProps}
-          onCreateOption={handleCreate}
-          formatCreateLabel={createLabelFormatter}
-          isValidNewOption={isValidNewOption}
-          createOptionPosition="first"
-        />
+        <EmotionScope>
+          <CreatableSelect<TagOption, true>
+            {...multiProps}
+            onCreateOption={handleCreate}
+            formatCreateLabel={createLabelFormatter}
+            isValidNewOption={isValidNewOption}
+            createOptionPosition="first"
+          />
+        </EmotionScope>
       </Div>
     );
   }
@@ -887,7 +907,9 @@ export const TagInput: React.FC<TagInputProps> = ({
   return (
     <Div ref={rootRef} id={id} {...editorAttrs}>
       {name && <input type="hidden" name={name} value={hiddenValue} />}
-      <Select<TagOption, true> {...multiProps} />
+      <EmotionScope>
+        <Select<TagOption, true> {...multiProps} />
+      </EmotionScope>
     </Div>
   );
 };

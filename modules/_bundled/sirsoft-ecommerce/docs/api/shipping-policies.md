@@ -124,7 +124,7 @@
 | with_country_settings | query | boolean | 아니오 | 기본 `false` | 국가별 설정을 **전체 컬럼**으로 포함할지. 기본값에서도 `country_settings` 는 내려가지만 목록 표시용 필드만 담깁니다(구간 설정·도서산간 설정·계산 API 설정 제외). 편집 폼처럼 전체 값이 필요한 호출자만 켜세요 |
 | sort_by | query | string | 아니오 | `id`, `name`, `is_active`, `sort_order`, `created_at`, `updated_at` | 정렬 기준 필드명 |
 | sort_order | query | string | 아니오 | `asc`, `desc` | 정렬 방향 (asc 오름차순 / desc 내림차순) |
-| per_page | query | integer | 아니오 | min 10, max 100 | 페이지당 항목 수 |
+| per_page | query | integer 또는 `all` | 아니오 | min 10, max 100, 또는 `all` | 페이지당 항목 수. `all` 이면 쪽 나눔 없이 조건에 맞는 정책 전부(`pagination` 없음) — 상품 등록·수정 화면의 배송정책 선택지가 쓴다 |
 | page | query | integer | 아니오 | min 1 | 조회할 페이지 번호 (1부터 시작) |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-ecommerce.shipping_policy.list_validation_rules`, `sirsoft-ecommerce.shipping_policy.list_validation_messages`).

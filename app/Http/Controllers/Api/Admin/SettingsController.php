@@ -18,6 +18,7 @@ use App\Http\Requests\Settings\TestOutboundProxyRequest;
 use App\Http\Requests\Settings\TestTrustedProxyRequest;
 use App\Http\Requests\Settings\UpdateSettingRequest;
 use App\Http\Resources\SettingsResource;
+use App\Http\Responses\DelegatedFileResponse;
 use App\Privacy\DormantAccountService;
 use App\Privacy\PrivacyRetentionManager;
 use App\Services\DriverConnectionTester;
@@ -377,11 +378,14 @@ class SettingsController extends AdminBaseController
      * 화면은 받은 본문의 `data.probe` 값으로 판정한다 — 본문이 비었거나(웹서버가 헤더를 무시) 404(nginx internal 위치 없음)면
      * 미구성이다. 서버가 자기 자신에게 요청을 보내는 판정은 아웃바운드 정책·공유 호스팅 제약 때문에 쓰지 않는다.
      *
+     * 이 응답이 위임되지 않으면(적용 중인 방식이 「사용 안 함」이거나 파일이 매핑 밖) 파일을 PHP 가 보내게 되므로 본문을
+     * 내지 않고 `data.reason`(`inactive`·`skipped`)으로 알린다 — 본문이 도착하면 화면이 「웹서버가 보냈다」로 오판한다.
+     *
      * 판정이 매번 새 응답이어야 하므로 `Cache-Control: no-store` 로 덮는다. 입력을 받지 않는 읽기 전용 조회다.
      *
-     * @return BinaryFileResponse|Response 프로브 파일 응답 또는 304 응답
+     * @return BinaryFileResponse|Response|JsonResponse 프로브 파일 응답, 304 응답, 또는 위임 없음 결과
      */
-    public function fileDelegationProbe(): BinaryFileResponse|Response
+    public function fileDelegationProbe(): BinaryFileResponse|Response|JsonResponse
     {
         $response = $this->fileResponse(
             resource_path('probes/file-delegation-probe.json'),
@@ -390,6 +394,11 @@ class SettingsController extends AdminBaseController
             immutable: false,
             skipCompression: true
         );
+
+        if ($response instanceof DelegatedFileResponse
+            && ($outcome = $response->delegationOutcome(request())) !== DelegatedFileResponse::OUTCOME_APPLIED) {
+            $response = $this->success('common.success', ['probe' => null, 'delegated' => false, 'reason' => $outcome]);
+        }
 
         $response->headers->set('Cache-Control', 'no-store');
 

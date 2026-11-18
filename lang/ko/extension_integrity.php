@@ -35,6 +35,8 @@ return [
     'errors' => [
         'package_unsigned' => '서명되지 않은 패키지입니다. 내용을 확인했다면 「미서명으로 계속」을 눌러 설치하세요. :reason',
         'package_unverifiable' => '이 서버에서 패키지 서명을 확인할 수 없습니다. 내용을 확인했다면 「미서명으로 계속」을 눌러 설치하세요. :reason',
+        'package_unsigned_cli' => '서명되지 않은 패키지입니다. :reason',
+        'package_unverifiable_cli' => '이 서버에서 패키지 서명을 확인할 수 없습니다. :reason',
         'package_unsigned_blocked' => '환경설정 > 보안 「미서명 패키지 차단」이 켜져 있어 서명되지 않은 패키지를 설치할 수 없습니다. :reason',
         'package_signature_invalid' => '패키지 서명이 맞지 않아 설치를 멈췄습니다. :reason',
         'package_signer_untrusted' => '신뢰하지 않는 키로 서명된 패키지라 설치를 멈췄습니다. :reason',

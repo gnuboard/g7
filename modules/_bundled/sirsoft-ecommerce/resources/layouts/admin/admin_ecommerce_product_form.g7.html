@@ -151,9 +151,9 @@
       </default>
     </error-handling>
   </data-source>
-  <!-- 공통정보 선택지 — 여러 상품이 함께 쓰는 안내문을 골라 붙인다 -->
+  <!-- 공통정보 선택지 — 여러 상품이 함께 쓰는 안내문을 골라 붙인다. 쪽 하나만 받으면 101번째 이후를 고를 수 없어 상품정보고시처럼 전부(per_page=all) 받는다 -->
   <data-source id="common_infos" label_key="$t:sirsoft-ecommerce.editor.data_source.common_infos" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/product-common-infos" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
-    <params :active_only="true" :per_page="100"/>
+    <params :active_only="true" per_page="all"/>
     <field name="cache">
       <field name="ttl" :value="300"/>
     </field>
@@ -183,7 +183,7 @@
   </data-source>
   <!-- 배송정책 선택지. 신규 진입에서 기본 정책을 미리 골라 두어야 해 blocking 이다. 사용 중인 것만 받으므로, 이미 붙어 있던 정책이 나중에 꺼지면 목록에서 사라진다 — 아래 computed 가 그 한 건을 도로 끼워 넣어 화면에서 조용히 빠지는 것을 막는다 -->
   <data-source id="shipping_policies" label_key="$t:sirsoft-ecommerce.editor.data_source.shipping_policies" type="api" endpoint="/api/modules/sirsoft-ecommerce/admin/shipping-policies" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="blocking">
-    <params :is_active="true" :per_page="100"/>
+    <params :is_active="true" per_page="all"/>
     <field name="cache">
       <field name="ttl" :value="300"/>
     </field>

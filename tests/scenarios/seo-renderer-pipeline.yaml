@@ -53,7 +53,7 @@ effects:
   - renderer_vars_passed_to_meta_resolver
   - renderer_seo_vars_core_settings_passed_to_html_mapper
   - renderer_seo_vars_module_settings_passed_to_html_mapper
-  - renderer_no_seo_vars_does_not_call_set_seo_vars
+  - renderer_no_seo_vars_resets_mapper_seo_vars
   - renderer_render_returns_null_when_plugin_seo_disabled
   - renderer_render_plugin_seo_enabled_with_toggle_setting
   - renderer_resolve_seo_vars_with_plugin_settings_prefix

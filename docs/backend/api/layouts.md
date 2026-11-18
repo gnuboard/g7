@@ -366,6 +366,7 @@ _단건 응답: `data` 는 병합된 레이아웃 JSON 객체입니다 (상속 �
 | lock_version | integer | `3` | 낙관적 잠금 버전. `with_source_meta=1` 일 때만 부착 (편집기 저장 시 `expected_lock_version` 으로 되돌려 보냄) |
 | __editor | object | `{"original": { ... }}` | 자식 레이아웃의 저장 원본 content. `with_source_meta=1` 일 때만 부착 (편집기 전용) |
 | __source (각 노드 내부) | object | `{"kind":"base","layout":"_user_base"}` | 각 컴포넌트/데이터소스 노드의 출처 메타 (`base` / `extension` / `partial` / `route`). `with_source_meta=1` 일 때만 부착. `extension` 출처가 overlay 주입이면 `injectionIndex`(그 확장 content 의 `injections[]` 순번)를 함께 실어 편집기가 저장 시 원래 injection 으로 되돌린다 |
+| __slot (슬롯 래퍼 노드) | string | `"content"` | 부모 레이아웃의 슬롯 자리에 자식 slots 를 끼운 래퍼 노드의 슬롯 이름. `with_source_meta=1` 일 때만 부착(공개 렌더 트리에는 없음). 편집기 저장이 슬롯이 둘 이상인 자식 레이아웃의 편집분을 슬롯별로 되돌리는 데 쓴다(engine-v1.96.5) |
 
 응답 헤더: `ETag`(본문 md5), `Cache-Control: public, max-age=3600`, `Vary: Accept-Encoding, Accept-Language`. 클라이언트 `If-None-Match` 가 일치하면 본문 없이 `304 Not Modified` 를 반환합니다.
 

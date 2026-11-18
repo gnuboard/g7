@@ -12,4 +12,5 @@ return [
     'cache_listener_hooks_failed' => 'フックキャッシュ生成: getSubscribedHooks() エラー — 項目を除外',
     'cache_listener_interface_missing' => 'フックキャッシュ生成: リスナーが HookListenerInterface を実装していないため除外します',
     'cache_stale_extension_changed' => '有効な拡張のファイルが変更されたためフックキャッシュが古くなりました — スキャンにフォールバックし、このリクエストの最後に再生成します',
+    'cache_write_skipped_stale_declaration' => 'このプロセスが保持する拡張のエントリ定義が現在のファイルと異なるため、フックキャッシュを書き込みませんでした — 次のリクエストが新しい定義で生成します',
 ];

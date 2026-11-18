@@ -261,7 +261,7 @@
                     <p data-if="{{row.fixed !== true &amp;&amp; row.available !== false &amp;&amp; !!(row.post?.lock_reason ?? row.comment?.lock_reason)}}" class="board-form-hint">{{row.post?.lock_reason ?? row.comment?.lock_reason ?? ''}}</p>
                   </div>
                   <span class="board:inline-flex board:items-center board:px-2 board:py-0.5 board:rounded board:text-xs board:font-medium board:bg-gray-100 board:text-gray-800 board:dark:bg-gray-700 board:dark:text-gray-200 board:shrink-0">{{row.source_label ? row.source_label : (row.source_type === 'custom' ? $t('sirsoft-board.admin.form.guest_author_fields.source.custom') : $t('sirsoft-board.admin.form.guest_author_fields.source.board'))}}</span>
-                  <button data-ref="guest_field_card_delete_{{row.key}}" data-if="{{row.is_custom === true &amp;&amp; !_computed.isReadOnly}}" type="button" ariaLabel="$t:sirsoft-board.admin.form.guest_author_fields.delete|label={{row.label}}" class="board:p-1 board:shrink-0 board:text-gray-500 board:dark:text-gray-400 board:hover:text-red-600 board:dark:hover:text-red-400">
+                  <button data-ref="guest_field_card_delete_{{row.key}}" data-if="{{row.is_custom === true &amp;&amp; !_computed.isReadOnly}}" type="button" aria-label="$t:sirsoft-board.admin.form.guest_author_fields.delete|label={{row.label}}" class="board:p-1 board:shrink-0 board:text-gray-500 board:dark:text-gray-400 board:hover:text-red-600 board:dark:hover:text-red-400">
                     <on type="click">
                       <!-- 확인을 받고 지운다. 항목은 모든 게시판에서 사라지고 받은 값도 지워진다. 성공하면 이 표에서 행과 값을 뺀다(게시판 저장과 따로 즉시 반영) -->
                       <sequence confirm="$t:sirsoft-board.admin.form.guest_author_fields.delete_confirm|label={{row.label}}">
@@ -341,7 +341,7 @@
                 </td>
                 <!-- 운영자가 만든 항목만 지울 수 있다 -->
                 <td class="board:px-4 board:py-2 board:text-center">
-                  <button data-ref="guest_field_delete_{{row.key}}" data-if="{{row.is_custom === true &amp;&amp; !_computed.isReadOnly}}" type="button" ariaLabel="$t:sirsoft-board.admin.form.guest_author_fields.delete|label={{row.label}}" class="board:p-1 board:text-gray-500 board:dark:text-gray-400 board:hover:text-red-600 board:dark:hover:text-red-400">
+                  <button data-ref="guest_field_delete_{{row.key}}" data-if="{{row.is_custom === true &amp;&amp; !_computed.isReadOnly}}" type="button" aria-label="$t:sirsoft-board.admin.form.guest_author_fields.delete|label={{row.label}}" class="board:p-1 board:text-gray-500 board:dark:text-gray-400 board:hover:text-red-600 board:dark:hover:text-red-400">
                     <on type="click">
                       <!-- 확인을 받고 지운다. 항목은 모든 게시판에서 사라지고 받은 값도 지워진다. 성공하면 이 표에서 행과 값을 뺀다(게시판 저장과 따로 즉시 반영) -->
                       <sequence confirm="$t:sirsoft-board.admin.form.guest_author_fields.delete_confirm|label={{row.label}}">

@@ -119,7 +119,7 @@
           ...(p.update_available &amp;&amp; p.status !== 'uninstalled' &amp;&amp; p.status !== 'updating' ? [{ label: '$t:admin.templates.update_available', tone: 'danger' }] : []),
           ...(p.is_compatible === false || p.core_compatible === false ? [{ label: '$t:extensions.badges.incompatible', tone: 'warning', icon: 'exclamation-triangle' }] : [])
         ],
-        toggle: p.status !== 'uninstalled' ? { checked: p.status === 'active', disabled: _global.appConfig?.runtime_role === 'stage' || p.status === 'active' || (['installing', 'uninstalling', 'updating'].includes(p.status) &amp;&amp; p.stuck_update !== true) || p.abilities?.can_activate !== true || p.core_compatible === false, label: p.name ?? p.identifier } : null,
+        toggle: p.status !== 'uninstalled' ? { checked: p.status === 'active', title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined, disabled: _global.appConfig?.runtime_role === 'stage' || p.status === 'active' || (['installing', 'uninstalling', 'updating'].includes(p.status) &amp;&amp; p.stuck_update !== true) || p.abilities?.can_activate !== true || p.core_compatible === false, label: p.name ?? p.identifier } : null,
         secondaryAction: p.stuck_update === true
           ? { label: '$t:admin.templates.actions.recover_update', icon: 'refresh', title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : '$t:admin.templates.stuck_update_hint', disabled: _global.appConfig?.runtime_role === 'stage' || p.abilities?.can_install !== true }
           : p.update_available &amp;&amp; p.status !== 'uninstalled'

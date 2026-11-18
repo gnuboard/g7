@@ -20,6 +20,30 @@ class ActivityLogDescriptionResolverTest extends PluginTestCase
     private const KEY = 'sirsoft-popup::activity_log.description.popup_update';
 
     /**
+     * 기기별 이미지 교체·삭제 로그가 기기 키(pc·mobile) 대신 기기 이름을 보인다 — 종전에는 「팝업 「x」의 mobile 이미지를 교체했습니다」.
+     * 모르는 기기 키는 그대로 둔다.
+     *
+     * @scenario surface=resolver_names_device
+     *
+     * @effects activity_log_recorded
+     *
+     * @return void 반환값 없음
+     */
+    public function test_names_device_in_image_logs(): void
+    {
+        $key = 'sirsoft-popup::activity_log.description.';
+        $resolver = new ActivityLogDescriptionResolver;
+
+        $update = $resolver->resolveDescriptionParams(['popup_id' => 1, 'device' => 'mobile'], $key.'popup_image_update', ['name' => '가을 감사 이벤트']);
+        $this->assertSame('팝업 「가을 감사 이벤트」의 모바일 이미지를 교체했습니다.', __($key.'popup_image_update', $update));
+
+        $remove = $resolver->resolveDescriptionParams(['popup_id' => 1, 'device' => 'pc', 'popup_title' => '이미 해석됨'], $key.'popup_image_remove', []);
+        $this->assertSame('팝업 「이미 해석됨」의 PC 이미지를 뺐습니다.', __($key.'popup_image_remove', $remove));
+
+        $this->assertSame('tablet', $resolver->resolveDescriptionParams(['popup_id' => 1, 'device' => 'tablet'], $key.'popup_image_update', ['name' => 'x'])['device']);
+    }
+
+    /**
      * 필터 훅으로 등록돼 코어 필터 호출이 해석기를 거친다.
      *
      * @scenario surface=resolver_registered_on_core_filter

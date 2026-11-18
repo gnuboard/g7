@@ -288,6 +288,13 @@ export interface PopupLayerProps {
    * 미리보기 틀(`PopupPreview`) 안에서만 쓴다.
    */
   preview?: 'pc' | 'mobile';
+
+  /**
+   * 레이아웃 편집기 표식 — 엔진이 편집 모드에서만 컴포지트에 넘긴다(`data-editor-*`·선택 처리기).
+   * 받으면 창과 배경을 그리지 않는다: 편집 모드의 클릭은 노드 선택이고, 경로 없는 고정 레이어가 캔버스를 덮으면
+   * 그 아래 노드(푸터 등)를 고를 수 없다. 팝업 모양은 관리자 팝업 화면의 미리보기 틀(`preview`)에서 본다.
+   */
+  editorAttrs?: Record<string, unknown> | null;
 }
 
 /**
@@ -398,7 +405,8 @@ function useGdprBannerHeight(active: boolean): number {
  * @param props 레이어 props
  * @returns 팝업 레이어 (보일 팝업이 없으면 null)
  */
-export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path = '/', className = '', preview, refreshAt, serverTime }) => {
+export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path = '/', className = '', preview, refreshAt, serverTime, editorAttrs }) => {
+  const inEditor = editorAttrs !== undefined && editorAttrs !== null;
   usePopupRefresh(refreshAt, serverTime, !preview);
   const config: PopupDisplaySettings = { ...DEFAULT_SETTINGS, ...(settings ?? {}) };
   const viewportWidth = useViewportWidth();
@@ -444,6 +452,9 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
   const renderedRef = useRef<Set<number>>(new Set());
 
   const visible = useMemo(() => {
+    if (inEditor) {
+      return [];
+    }
     if (preview) {
       return Array.isArray(popups) ? popups : [];
     }
@@ -457,7 +468,7 @@ export const PopupLayer: React.FC<PopupLayerProps> = ({ popups, settings, path =
     });
     // dismissVersion: 닫기·보지 않기 뒤 다시 거른다
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [popups, path, isMobile, dismissVersion, preview]);
+  }, [popups, path, isMobile, dismissVersion, preview, inEditor]);
 
   const visibleKey = visible.map((p) => p.id).join(',');
   const count = visible.length;

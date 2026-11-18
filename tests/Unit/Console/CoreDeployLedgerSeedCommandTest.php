@@ -6,7 +6,7 @@ use App\Services\CoreUpdateService;
 use Tests\TestCase;
 
 /**
- * `core:deploy-ledger-seed` — 인스톨러 마무리 단계가 부르는 원장 씨앗 통로 (G3 회차 16).
+ * `core:deploy-ledger-seed` — 인스톨러 마무리 단계가 부르는 원장 씨앗 통로.
  *
  * 인스톨러는 Laravel 부팅 전이라 서비스를 직접 부를 수 없고 `installerRunArtisan()` 단일 지점으로만
  * Artisan 을 실행한다. 그 통로가 서비스의 씨앗 메서드를 **프로젝트 루트**로 부르고, 결과와 무관하게
@@ -38,7 +38,7 @@ class CoreDeployLedgerSeedCommandTest extends TestCase
     }
 
     /**
-     * 원장 쓰기 실패는 「기록했습니다」로 위장되지 않고 비-0 + 사유 방출로 드러난다 (17차 B-1).
+     * 원장 쓰기 실패는 「기록했습니다」로 위장되지 않고 비-0 + 사유 방출로 드러난다.
      *
      * 씨앗기는 쓰기 실패 시 반환값을 `[]` 로 주고 경고 통로에 사유를 싣는다. 종전 커맨드는 반환값의
      * `[]` 만 보고 「건너뜀(=정상)」으로 SUCCESS 를 냈다 — `storage/app` 이 쓰기 불가인 사이트는
@@ -96,8 +96,9 @@ class CoreDeployLedgerSeedCommandTest extends TestCase
     {
         $source = (string) file_get_contents(base_path('public/install/includes/task-runner.php'));
 
+        // 설치기만 `--fresh-install` 로 번들 출하 목록까지 씨앗한다(손으로 돌리는 실행은 원장만)
         $this->assertMatchesRegularExpression(
-            "/installerRunArtisan\\('core:deploy-ledger-seed'\\)/",
+            "/installerRunArtisan\\('core:deploy-ledger-seed', \\['--fresh-install' => true\\]\\)/",
             $source,
             '인스톨러 마무리 단계가 원장 씨앗 커맨드를 단일 Artisan 러너로 불러야 한다'
         );

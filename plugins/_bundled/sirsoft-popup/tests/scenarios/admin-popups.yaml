@@ -20,6 +20,7 @@ axes:
     - list_search_admin_title
     - list_statistics_by_status
     - list_collection_abilities
+    - display_settings_open_to_plugin_viewers   # 설정 화면 보조 조회는 「플러그인 보기」로도 읽힘
     - summary_returns_active_in_sort_order
     - order_list_returns_all
     - store_appends_to_end
@@ -83,6 +84,7 @@ effects:
   - hooks_dispatched
   - files_created_or_removed
   - response_shape_with_abilities
+  - display_settings_readable_with_plugin_view_permission  # core.plugins.read 만 → 노출 설정 200, 팝업 목록 403
   - validation_messages_name_languages
 
 test_files:

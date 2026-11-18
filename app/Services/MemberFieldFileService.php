@@ -181,6 +181,64 @@ class MemberFieldFileService
     }
 
     /**
+     * 한 회원 항목에 회원들이 올린 첨부의 ID 를 반환합니다 (항목 삭제 전에 지울 대상을 모아 둘 때 — 모델을 올리지 않는다).
+     *
+     * 유형을 보지 않고 컬렉션(`field:{키}`)으로 모은다 — 파일 유형을 준 확장이 먼저 빠져 유형을 알 수 없어도 남은 파일을 찾는다.
+     *
+     * @param  FieldDefinition  $definition  회원 항목
+     * @return array<int, int> 첨부 ID 목록 (회원 집합이 아니면 빈 배열)
+     */
+    public function attachmentIdsForDefinition(FieldDefinition $definition): array
+    {
+        if ($definition->field_set !== FieldSet::CORE_USER) {
+            return [];
+        }
+
+        return $this->files->attachmentIds($definition, User::class);
+    }
+
+    /**
+     * 한 회원 항목에 파일을 올린 회원 수를 반환합니다 (삭제 창의 「회원 N명이 입력한 값」 — DB 집계).
+     *
+     * 유형을 보지 않고 컬렉션으로 센다 — 삭제({@see attachmentIdsForDefinition()})와 같은 대상을 센다.
+     *
+     * @param  FieldDefinition  $definition  회원 항목
+     * @return int 파일을 올린 회원 수 (회원 집합이 아니면 0)
+     */
+    public function ownersCountForDefinition(FieldDefinition $definition): int
+    {
+        if ($definition->field_set !== FieldSet::CORE_USER) {
+            return 0;
+        }
+
+        return $this->files->ownersCount($definition, User::class);
+    }
+
+    /**
+     * ID 로 받은 항목 첨부를 지웁니다 (항목 삭제 — 첨부 삭제 경로로 저장 파일·썸네일까지).
+     *
+     * 파일 삭제는 되돌릴 수 없으므로 호출자가 트랜잭션 커밋 뒤에 부른다. 한 건이 실패해도 나머지를 계속 지운다.
+     *
+     * @param  array<int, int>  $attachmentIds  첨부 ID 목록
+     * @return int 지운 첨부 수
+     */
+    public function purgeAttachmentIds(array $attachmentIds): int
+    {
+        $removed = 0;
+        foreach ($attachmentIds as $attachmentId) {
+            try {
+                if ($this->attachments->delete((int) $attachmentId)) {
+                    $removed++;
+                }
+            } catch (Exception $e) {
+                Log::warning('회원 항목 첨부 삭제 실패', ['attachment_id' => $attachmentId, 'error' => $e->getMessage()]);
+            }
+        }
+
+        return $removed;
+    }
+
+    /**
      * 회원이 지금 가진 항목 첨부를 반환합니다 (삭제 전에 모아 둘 때).
      *
      * @param  User  $owner  회원

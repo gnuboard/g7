@@ -7,6 +7,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Services\Screen\InternalApiClient;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -193,7 +194,7 @@ PHP);
         Route::middleware('api')->get('/api/t792/cookies', fn () => response()->json(array_keys(request()->cookies->all())));
         app('router')->getRoutes()->refreshNameLookups();
 
-        $outer = \Illuminate\Http\Request::create('http://localhost/x', 'GET', [], ['laravel_maintenance' => 'bypass', 'g7-session' => 'secret', 'other' => '1']);
+        $outer = Request::create('http://localhost/x', 'GET', [], ['laravel_maintenance' => 'bypass', 'g7-session' => 'secret', 'other' => '1']);
         app()->instance('request', $outer);
 
         $res = app(InternalApiClient::class)->get('/api/t792/cookies');
@@ -242,7 +243,7 @@ PHP);
             'password' => bcrypt(self::PASSWORD),
         ]);
         $ids = [];
-        foreach (['core.auth.user', 'core.profile.read', 'core.profile.update'] as $identifier) {
+        foreach (['core.profile.read', 'core.profile.update'] as $identifier) {
             $ids[] = Permission::firstOrCreate(['identifier' => $identifier], [
                 'name' => json_encode(['ko' => $identifier, 'en' => $identifier]),
                 'description' => json_encode(['ko' => $identifier, 'en' => $identifier]),

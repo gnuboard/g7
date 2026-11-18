@@ -174,7 +174,7 @@
                 }
             ],
             "props": {
-                "data": "{{queue_logs?.data?.data}}",
+                "data": "{{raw:queue_logs?.data?.data}}",
                 "pagination": true,
                 "serverSidePagination": true,
                 "pageHref": "/admin/schedules/queue?page={page}",

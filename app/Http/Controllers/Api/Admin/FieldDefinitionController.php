@@ -300,6 +300,10 @@ class FieldDefinitionController extends AdminBaseController
                 'renderer' => $type->renderer(),
                 'owner_type' => $ownerType,
                 'owner' => $owner,
+                // 확장이 준 유형의 타일 배지 — 설치 기록의 다국어 이름에서 요청 언어로 고른다(코어 유형은 null)
+                'owner_label' => in_array($ownerType, ['module', 'plugin'], true)
+                    ? $this->service->extensionLabel($ownerType, (string) $owner)
+                    : null,
                 'available' => true,
                 // 추가 창이 고른 유형에서 켤 수 있는 옵션을 가린다 (항목의 `supports` 와 같은 키)
                 'supports' => [

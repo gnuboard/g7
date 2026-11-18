@@ -1,0 +1,21 @@
+feature: 확장 업데이트가 리스너 클래스를 지운 판일 때 교체~훅 캐시 재생성 창의 요청 보호
+
+description: |
+  모듈·플러그인 새 판이 훅 리스너 클래스를 지운 판이면, 폴더 교체부터 훅 캐시 재생성까지 들어온 요청이 옛 훅 캐시·옛 소스
+  classmap 으로 지워진 파일을 include 해 일시 500 이었다(FX-U 잔여). 업데이트는 새 판에 없는 옛
+  `src/**.php` 를 스테이징(새 트리)에 함께 실어 교체하고, 훅 캐시를 다시 구운 뒤 그 파일을 지우고 오토로드·훅 캐시를 다시 만든다.
+  템플릿은 PHP 클래스·훅 리스너가 없어 대상이 아니다.
+
+axes:
+  case: [listener_removed_in_new_version, manager_order, same_version_force_order, in_flight_after_cleanup, reshipped_after_safe_age]
+
+effects:
+  - window_dispatch_does_not_fail
+  - carried_files_removed_after_regeneration
+  - managers_carry_before_swap_and_clean_after_regeneration
+  - in_flight_request_after_cleanup_does_not_fail
+  - hook_cache_regenerated_in_fresh_process
+  - reshipped_file_survives_ledger_sweep
+
+test_files:
+  - tests/Feature/Extension/UpdateRemovedListenerWindowTest.php

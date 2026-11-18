@@ -58,6 +58,14 @@
 화면이 필요로 하는 클라이언트 설정값"이 같은 리스너의 책임이기 때문입니다 — 등록과 설정
 노출이 다른 리스너로 갈라지면 한쪽만 갱신되는 사각이 생깁니다.
 
+`RegisterEasyPayMethodsListener` 가 싣는 간편결제 이름·설명은 `LocalizedValue::translateAll()` 로 지원
+언어(`app.supported_locales` = 활성 언어팩) 전부를 채웁니다. ko·en 만 실으면 일본어 언어팩을 켠 사이트의
+일본어 화면에 번역이 있는데도 한국어 이름이 보입니다. 이커머스는 설정을 읽을 때마다 이 정의로
+`_cached_name`·`_cached_description` 을 새로 채우므로, 저장된 설정을 다시 저장하지 않아도 반영됩니다.
+주문에 남는 간편결제 라벨(`ResolvesEasyPayDisplay`, 결제 meta `nhnkcp_easy_pay_label`)도 언어 키
+(`payment_methods.*.label`)를 `translateAll()` 로 풀어 지원 언어 전부로 저장합니다. 이미 저장된 결제 기록(ko·en)은 고치지
+않고 표시 때 현재 언어 → 사이트 기본 언어 → 영어 순으로 고릅니다(저장된 데이터는 바꾸지 않음).
+
 `ProvidePaymentMethodDisplayLabelListener` 는 관리자 주문 목록의 결제수단 이름을 채웁니다. 이커머스는
 PG 를 모르므로 간편결제(PAYCO·네이버페이 등)로 결제한 주문도 기본 결제수단 이름만 압니다. 이 리스너가
 필터 훅 `sirsoft-ecommerce.order.filter_payment_method_display_label` 로 **자기 결제(`pg_provider`)의

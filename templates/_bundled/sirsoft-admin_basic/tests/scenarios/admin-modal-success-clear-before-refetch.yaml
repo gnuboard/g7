@@ -1,0 +1,30 @@
+# 시나리오 매니페스트 — 창을 닫는 성공 갈래는 창 상태를 다시 받기보다 먼저 비운다
+# 참조: docs/frontend/modal-usage.md 「편집 모달의 form 데이터 — _global namespace 패턴」(저장 onSuccess — 명시적 정리)
+
+feature: admin_modal_success_clear_before_refetch
+
+description: >-
+  회원 항목 추가·수정 창, 항목 삭제 창, 필수로 바꾸기 창, 본인인증 정책 창의 성공(과 409 충돌로 닫는) 갈래가
+  「창 닫기 → 표 다시 받기 → 창 상태 비우기」 순서였다. 다시 받기는 응답을 기다리므로 그 몇 초 동안 다시 연 창의 상태가
+  늦은 비우기에 지워져, 빈 「항목 설정」 창(저장하면 PUT …/fields/undefined)과 「「{{name}}」 항목을 삭제합니다」 창이 남았다.
+  비우기를 창 닫기 바로 뒤(다시 받기 앞)로 옮긴다. 템플릿 활성화 창은 다시 받기 뒤 새로 고침 판정이 읽는 종류를 별도 키(`activatedTemplateType`)로 옮겨 두고 `selectedTemplate` 을 창 닫기 바로 뒤에 비운다.
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-modal-success-clear-before-refetch.test.ts
+
+axes:
+  surface:
+    - member_field_modal      # 회원 항목 추가·수정·삭제·필수로 바꾸기 창(성공 갈래와 409 fields_changed 로 닫는 갈래 — 레이아웃 전체 스캔이 함께 덮는다)
+    - identity_policy_modal   # 환경설정 본인인증 정책 추가·편집 창(저장 성공 갈래. 실패 시에는 창을 닫지 않는다)
+
+effects:
+  - modal_state_cleared_before_refetch   # closeModal → refetchDataSource 뒤에 창 상태를 비우는 액션 목록이 레이아웃 전체에 없다
+  - modal_state_cleared_after_close      # 비우기는 여전히 창 닫기 뒤다(닫히기 전 빈 값으로 다시 그려지지 않게)
+  - modal_success_carries_new_fields_version_before_refetch   # 항목 창 성공 갈래는 다시 받기 전에 응답의 새 정의 버전을 표 데이터 소스에 싣는다 — 다시 받기 응답 전에 연 창의 거짓 409 방지
+
+validation:
+  audit_rule: frontend-change-requires-e2e
+  browser_check: — 항목 저장·삭제 직후(표 다시 받는 동안) [항목 추가]·[삭제]를 다시 눌러 창 상태(`G7Core.state.get().member_field_form_modal`)가 유지되는지
+  note: |
+    수정 전 red(2026-11-18): 2 failed / 3 — 위반 6건(_modal_identity_policy_form · _modal_member_field_delete ×2 · _modal_member_field_form · _modal_member_field_required ×2),
+    회원 항목 저장 갈래 [close<clear, clear<refetch] = [true, false]. 수정 후 green 4 / 4(본인인증 정책 창 단언을 따로 나눔).

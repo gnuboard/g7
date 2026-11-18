@@ -4,6 +4,7 @@ namespace Tests\Unit\Seo;
 
 use App\Contracts\Extension\ModuleManagerInterface;
 use App\Contracts\Extension\PluginManagerInterface;
+use App\Extension\HookManager;
 use App\Seo\ComponentHtmlMapper;
 use App\Seo\DataSourceResolver;
 use App\Seo\ExpressionEvaluator;
@@ -15,6 +16,8 @@ use App\Services\LayoutService;
 use App\Services\PluginSettingsService;
 use App\Services\SettingsService;
 use App\Services\TemplateService;
+use App\Thumbnails\ThumbnailPresetRegistry;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use Mockery;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -452,6 +455,89 @@ class SeoGlobalActiveExtensionsTest extends TestCase
         $this->assertStringContainsString('href="/boards/popular"', $legacy);
         $this->assertStringContainsString('href="/shop/products"', $legacy);
         $this->assertStringContainsString('href="/page/terms"', $legacy);
+    }
+
+    /**
+     * 실제 번들 seo-config 의 상품 카드(product_card_view)와 번들 ProductCard 노드 그대로 봇 화면을 그리면 상세 링크·이미지가 화면과 같다.
+     *
+     * 홈·검색처럼 meta.seo.vars 에 shopBase 를 두지 않은 화면에서도 링크 앞머리는 화면 ProductCard 가 받는 `shopBase` prop
+     * (`_global.shopBase` — `_user_base` 가 이커머스 경로 설정에서 푼다)과 같아야 한다(종전 `/products/…` 404).
+     * 이미지는 화면 ProductCard 의 Img `thumbPreset="md"` 와 같은 썸네일 주소·srcset 이다(종전 원본).
+     *
+     * @scenario case=bot_shop_base
+     *
+     * @effects bot_shop_base_matches_browser
+     *
+     * @return void 반환값 없음
+     */
+    public function test_bundle_product_card_follows_shop_base_and_thumbnail(): void
+    {
+        Config::set('app.url', 'http://localhost');
+        Config::set('core.thumbnail.presets', null);
+        Config::set('core.thumbnail.enabled', true);
+        HookManager::clearFilter('core.thumbnail.filter_presets');
+        HookManager::clearFilter('core.thumbnail.filter_url');
+        HookManager::clearFilter('core.thumbnail.filter_url_patterns');
+        app(ThumbnailPresetRegistry::class)->flush();
+        // 이커머스 모듈이 등록하는 서빙 경로(ThumbnailSourcesListener)와 같은 패턴
+        HookManager::addFilter('core.thumbnail.filter_url_patterns', fn (array $patterns) => [...$patterns, '/api/modules/sirsoft-ecommerce/product-image/*']);
+
+        try {
+            $config = json_decode((string) file_get_contents(base_path('templates/_bundled/sirsoft-basic/seo-config.json')), true);
+            $mapper = new ComponentHtmlMapper;
+            $mapper->setComponentMap(array_intersect_key($config['component_map'], ['ProductCard' => true]));
+            $mapper->setRenderModes($config['render_modes']);
+            $mapper->setSelfClosing($config['self_closing']);
+            $mapper->setAllowedAttrs($config['allowed_attrs']);
+            $mapper->setAttrMap($config['attr_map']);
+            // 홈·검색 화면처럼 meta.seo.vars 가 없다
+            $mapper->setSeoVars([]);
+
+            $node = $this->bundleProductCardNode('templates/_bundled/sirsoft-basic/layouts/partials/shop/list/_popular_products.json');
+            $product = ['id' => 3, 'product_code' => 'P3', 'name' => '상품', 'thumbnail_url' => '/api/modules/sirsoft-ecommerce/product-image/abc123'];
+            $render = fn (array $global): string => $mapper->render([$node], ['product' => $product, '_global' => $global], new ExpressionEvaluator);
+
+            $default = $render(['shopBase' => '/shop']);
+            $this->assertStringContainsString('<a href="/shop/products/P3">', $default);
+            $this->assertStringContainsString('src="http://localhost/api/modules/sirsoft-ecommerce/product-image/abc123?size=md"', $default);
+            $this->assertStringContainsString('srcset="http://localhost/api/modules/sirsoft-ecommerce/product-image/abc123?size=md 1x, http://localhost/api/modules/sirsoft-ecommerce/product-image/abc123?size=lg 2x"', $default);
+
+            $this->assertStringContainsString('<a href="/mall/products/P3">', $render(['shopBase' => '/mall']));
+            // 상점을 루트에 붙인 사이트(no_route) — 화면 ProductCard 와 같이 앞머리 없음
+            $this->assertStringContainsString('<a href="/products/P3">', $render(['shopBase' => '']));
+        } finally {
+            HookManager::clearFilter('core.thumbnail.filter_url_patterns');
+            app(ThumbnailPresetRegistry::class)->flush();
+        }
+    }
+
+    /**
+     * 번들 레이아웃 파일에서 첫 ProductCard 노드를 찾습니다.
+     *
+     * @param  string  $relativePath  base_path 기준 레이아웃 JSON 경로
+     * @return array<string, mixed> 노드(type·name·props)
+     */
+    private function bundleProductCardNode(string $relativePath): array
+    {
+        $layout = json_decode((string) file_get_contents(base_path($relativePath)), true);
+        $found = null;
+        $walk = function (mixed $node) use (&$walk, &$found): void {
+            if ($found !== null || ! is_array($node)) {
+                return;
+            }
+            if (($node['name'] ?? null) === 'ProductCard') {
+                $found = ['type' => 'composite', 'name' => 'ProductCard', 'props' => $node['props'] ?? []];
+
+                return;
+            }
+            foreach ($node as $child) {
+                $walk($child);
+            }
+        };
+        $walk($layout);
+        $this->assertIsArray($found, "{$relativePath} 에 ProductCard 가 없다");
+
+        return $found;
     }
 
     /**

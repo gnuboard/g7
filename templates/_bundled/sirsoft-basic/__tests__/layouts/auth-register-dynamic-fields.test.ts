@@ -240,6 +240,62 @@ describe('가입 화면 — 운영자 설정을 따르는 항목', () => {
     });
 
     /**
+     * — 빈 칸으로 제출한 422 에서 칸 아래 오류와 함께 위쪽 상자에 「이름은 필수입니다. (외 4개 오류)」 요약이 떴다.
+     * 실패 처리가 칸 오류(errors)가 있어도 응답 message 를 늘 registerError 에 넣었기 때문이다.
+     *
+     * @scenario part=orphan_errors
+     * @effects field_errors_are_not_repeated_in_top_box
+     */
+    it('칸 오류가 실린 실패 응답이면 위쪽 상자에 응답 요약 문구를 넣지 않고, 칸 오류가 없는 실패(본인 확인 필요 등)만 문구를 넣는다', () => {
+      const submit = (form.actions as Node[]).find((action) => action.type === 'submit')!;
+      const apiCall = (submit.actions as Node[]).find((action) => action.handler === 'apiCall')!;
+      const failSet = (apiCall.onError as Node[]).find((action) => action.handler === 'setState' && String(action.if).includes("!== 'fields_changed'"))!;
+
+      const withFieldErrors = { error: { response: { message: '이름은 필수입니다. (외 4개 오류)', errors: { name: ['이름은 필수입니다.'], email: ['이메일은 필수입니다.'] } } } };
+      expect(evaluate(failSet.params.registerError, withFieldErrors) ?? null).toBeNull();
+
+      const withoutFieldErrors = { error: { response: { message: '본인 확인이 필요합니다.' } } };
+      expect(evaluate(failSet.params.registerError, withoutFieldErrors)).toBe('본인 확인이 필요합니다.');
+      // 엔진이 응답을 풀어 둔 모양(error.errors, error.message)도 같다
+      expect(evaluate(failSet.params.registerError, { error: { message: '요약', errors: { name: ['이름'] } } }) ?? null).toBeNull();
+      expect(evaluate(failSet.params.registerError, { error: { message: '서버 오류', errors: {} } })).toBe('서버 오류');
+    });
+
+    /**
+     * @scenario part=orphan_errors
+     * @effects non_field_errors_listed_in_top_box
+     */
+    it('위쪽 상자는 요약 문구가 없어도 칸 밖 오류가 있으면 뜨고, 둘 다 없으면 뜨지 않는다', () => {
+      const box = formNodes.find((node) => node.id === 'register_error_box')!;
+      expect(box).toBeDefined();
+      const shown = (registerError: unknown, orphans: string[]) => !!evaluate(box.if, { _local: { registerError }, $computed: { registerOrphanErrors: orphans } });
+      expect(shown(null, ['인증이 만료되었습니다'])).toBe(true);
+      expect(shown('본인 확인이 필요합니다.', [])).toBe(true);
+      expect(shown(null, [])).toBe(false);
+
+      const summary = collect(box).find((node) => JSON.stringify(node.text ?? '').includes('_local.registerError'))!;
+      expect(summary).toBeDefined();
+      expect(!!evaluate(summary.if, { _local: { registerError: null } })).toBe(false);
+    });
+
+    /**
+     * 덧붙임 — 비밀번호 칸 오류만 컴포넌트가 text-sm 으로 그려 다른 칸(text-xs)보다 컸다.
+     *
+     * @scenario part=orphan_errors
+     * @effects field_errors_share_one_text_size
+     */
+    it('고정 칸의 칸 아래 오류는 모두 같은 글자 크기(text-xs)로 그린다 — 비밀번호 입력 컴포넌트의 자체 오류 줄(text-sm)을 쓰지 않는다', () => {
+      for (const key of ['email', 'password', 'password_confirmation', 'agree_terms', 'agree_privacy', 'display_name_kind']) {
+        const line = formNodes.find((node) => typeof node.if === 'string' && node.if === `{{_local.errors?.${key}}}`);
+        expect(line, `${key} 오류 줄`).toBeDefined();
+        expect(String(line!.props?.className)).toContain('text-xs');
+      }
+      for (const input of formNodes.filter((node) => node.name === 'PasswordInput')) {
+        expect(input.props?.error).toBeUndefined();
+      }
+    });
+
+    /**
      * @scenario part=orphan_errors
      * @effects no_hardcoded_field_name_array
      */
@@ -496,8 +552,9 @@ describe('가입 화면 — 운영자 설정을 따르는 항목', () => {
 
       expect(notices).toHaveLength(2);
       // 폼 위쪽 상자는 registerError 가 있으면 뜬다 — 어느 칸 아래도 아니다
-      const box = formNodes.find((node) => node.if === '{{_local?.registerError}}');
+      const box = formNodes.find((node) => node.id === 'register_error_box');
       expect(box).toBeDefined();
+      expect(evaluate(box!.if, { _local: { registerError: '$t:member.required_info.identity.expired' }, $computed: {} })).toBeTruthy();
       expect(JSON.stringify(box)).toContain('{{_local.registerError}}');
     });
 

@@ -31,7 +31,8 @@ final readonly class ThumbnailGeometry
     /**
      * 규격과 원본 크기로 영역을 계산합니다.
      *
-     * 확대를 끈 규격(`upscale=false`)은 배율을 1 로 묶는다 — 원본보다 큰 결과를 만들지 않는다.
+     * 확대를 끈 규격(`upscale=false`)은 배율을 1 로 묶는다 — 원본보다 큰 결과를 만들지 않는다. 자르기(cover)는
+     * 그때도 규격 비율을 지킨다(원본 안 규격 비율 최대 영역을 1:1 로).
      *
      * @param  int  $width  원본 가로
      * @param  int  $height  원본 세로
@@ -48,15 +49,28 @@ final readonly class ThumbnailGeometry
         if ($spec->fit === ThumbnailSpec::FIT_COVER && $targetH > 0) {
             $scale = max($targetW / $width, $targetH / $height);
 
-            if (! $spec->upscale) {
-                $scale = min($scale, 1.0);
-            }
+            if ($spec->upscale || $scale <= 1.0) {
+                // 결과 크기는 규격 그대로
+                $dstW = $targetW;
+                $dstH = $targetH;
+                $cropW = max(1, min($width, (int) round($dstW / $scale)));
+                $cropH = max(1, min($height, (int) round($dstH / $scale)));
+            } else {
+                // 확대 금지로 배율이 1 에 묶이면 원본 안에서 규격 비율로 가장 크게 잘라 1:1 로 낸다 — 두 변을 따로
+                // 줄이면(800×800 → 1200×630 규격에서 800×630) 결과가 규격 비율을 잃는다.
+                $ratio = $targetW / $targetH;
 
-            // 결과 크기는 규격이되, 확대 금지로 배율이 묶이면 원본 안에서 가능한 만큼만
-            $dstW = max(1, min($targetW, (int) round($width * $scale)));
-            $dstH = max(1, min($targetH, (int) round($height * $scale)));
-            $cropW = max(1, min($width, (int) round($dstW / $scale)));
-            $cropH = max(1, min($height, (int) round($dstH / $scale)));
+                if ($width / $height > $ratio) {
+                    $cropH = $height;
+                    $cropW = max(1, min($width, (int) round($height * $ratio)));
+                } else {
+                    $cropW = $width;
+                    $cropH = max(1, min($height, (int) round($width / $ratio)));
+                }
+
+                $dstW = $cropW;
+                $dstH = $cropH;
+            }
 
             [$x, $y] = self::anchorOffset($spec->anchor, $width - $cropW, $height - $cropH);
 

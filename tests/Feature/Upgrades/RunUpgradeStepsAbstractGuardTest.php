@@ -24,6 +24,11 @@ class RunUpgradeStepsAbstractGuardTest extends TestCase
 
     private ?string $originalEnvVersion = null;
 
+    /**
+     * 메모리 버전(env APP_VERSION)을 비워 두고 원래 값을 기억합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -34,6 +39,11 @@ class RunUpgradeStepsAbstractGuardTest extends TestCase
         $this->setMemoryVersion(null);
     }
 
+    /**
+     * 스텁 스텝 파일을 지우고 메모리 버전을 되돌립니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         foreach ($this->stubStepFiles as $file) {
@@ -49,6 +59,7 @@ class RunUpgradeStepsAbstractGuardTest extends TestCase
      * 가드가 읽는 "메모리 버전" 을 env 와 config 양쪽에 세운다 (null 이면 env 만 비운다).
      *
      * @param  string|null  $version  세울 버전
+     * @return void 반환값 없음
      */
     private function setMemoryVersion(?string $version): void
     {
@@ -65,14 +76,25 @@ class RunUpgradeStepsAbstractGuardTest extends TestCase
         config(['app.version' => $version]);
     }
 
+    /**
+     * beta.5 이후 판의 코어 스텝이 AbstractUpgradeStep 을 상속하지 않으면 러너가 즉시 막습니다.
+     *
+     * @scenario extension_type=core, step_version=post_beta_5, step_class_inheritance=implements_only
+     *
+     * @effects core_beta_5_or_later_step_without_abstract_inheritance_throws
+     *
+     * @return void 반환값 없음
+     */
     public function test_throws_when_beta5_step_does_not_extend_abstract(): void
     {
         // stale 메모리 가드 우회를 위해 메모리 버전을 target 이상으로
-        $this->setMemoryVersion('7.9.9');
+        $this->setMemoryVersion('9.9.9');
 
-        // 7.9.9-test.guard.a 는 7.0.0-beta.5 보다 명확히 큼 (version_compare 의 pre-release
+        // 9.9.9-test.guard.a 는 7.0.0-beta.5 보다 명확히 큼 (version_compare 의 pre-release
         // 해석에 영향 받지 않음). stub 은 AbstractUpgradeStep 미상속 → fatal 가드 발동.
-        $version = '7_9_9_test_guard_a';
+        // 구간을 9.9.8 부터 잡는 이유: 실제 스텝(upgrades/Upgrade_7_*)이 구간에 들어오면 저장소 루트를
+        // 대상으로 실행된다 — 7.2.0 스텝 13 이 설치 완료 사이트로 보고 루트 g7-setup.php 를 지웠다.
+        $version = '9_9_9_test_guard_a';
         $className = 'Upgrade_'.$version;
         $path = base_path('upgrades/'.$className.'.php');
         $this->stubStepFiles[] = $path;
@@ -94,14 +116,23 @@ PHP);
         $this->expectExceptionMessageMatches('/must extend App\\\\Extension\\\\AbstractUpgradeStep/');
 
         $service = app(CoreUpdateService::class);
-        $service->runUpgradeSteps('7.0.0-beta.4', '7.9.9-test.guard.a');
+        $service->runUpgradeSteps('9.9.8', '9.9.9-test.guard.a');
     }
 
+    /**
+     * beta.5 이후 판의 코어 스텝이 AbstractUpgradeStep 을 상속하면 그대로 실행됩니다 — 구간 안의 스텁만 돈다.
+     *
+     * @scenario extension_type=core, step_version=post_beta_5, step_class_inheritance=extends_abstract
+     *
+     * @effects core_beta_5_or_later_step_with_inheritance_runs
+     *
+     * @return void 반환값 없음
+     */
     public function test_passes_when_beta5_step_extends_abstract(): void
     {
-        $this->setMemoryVersion('7.9.9');
+        $this->setMemoryVersion('9.9.9');
 
-        $version = '7_9_9_test_guard_b';
+        $version = '9_9_9_test_guard_b';
         $className = 'Upgrade_'.$version;
         $path = base_path('upgrades/'.$className.'.php');
         $this->stubStepFiles[] = $path;
@@ -120,16 +151,26 @@ PHP);
         $executed = [];
         $service = app(CoreUpdateService::class);
         $service->runUpgradeSteps(
-            '7.0.0-beta.4',
-            '7.9.9-test.guard.b',
+            '9.9.8',
+            '9.9.9-test.guard.b',
             function (string $v) use (&$executed): void {
                 $executed[] = $v;
             },
         );
 
-        $this->assertContains('7.9.9-test.guard.b', $executed);
+        // 스텁만 실행돼야 한다 — 실제 스텝이 섞이면 저장소 루트의 파일을 지우거나 놓는다.
+        $this->assertSame(['9.9.9-test.guard.b'], $executed, '실제 업그레이드 스텝이 시험 구간에 들어왔다');
     }
 
+    /**
+     * beta.4 이하 판의 옛 스텝은 상속하지 않아도 가드를 지나갑니다(호환).
+     *
+     * @scenario extension_type=core, step_version=pre_beta_5_legacy, step_class_inheritance=implements_only
+     *
+     * @effects core_legacy_beta_4_or_earlier_step_passes_without_inheritance
+     *
+     * @return void 반환값 없음
+     */
     public function test_legacy_pre_beta5_step_bypasses_guard(): void
     {
         // legacy beta.4 이하 step 은 AbstractUpgradeStep 미상속이어도 통과 (호환)

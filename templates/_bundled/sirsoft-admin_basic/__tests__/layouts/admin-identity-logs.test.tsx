@@ -227,7 +227,8 @@ describe('본인인증 이력 — 알림 발송 이력과 동일 수준 UI 회�
          * @effects datagrid_binds_logs_data_and_pagination
          */
         it('데이터 바인딩 경로가 identityLogs?.data?.data / pagination 형식', () => {
-            expect(datagridPartial.props.data).toBe('{{identityLogs?.data?.data}}');
+            // 줄 데이터는 번역 단계를 건너뛴다(요청·응답 원문의 `$t:` 보존)
+            expect(datagridPartial.props.data).toBe('{{raw:identityLogs?.data?.data}}');
             expect(datagridPartial.props.serverCurrentPage).toContain('pagination?.current_page');
             expect(datagridPartial.props.serverTotalPages).toContain('pagination?.last_page');
         });

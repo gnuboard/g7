@@ -125,6 +125,7 @@ effects:
   - style_csp_spa_navigation_without_violation         # 링크 클릭 화면 이동 뒤에도 위반 0
   - error_screen_styled_under_style_csp                # 레이아웃 API 500 오류 화면 제목 24px
   - editor_formatting_visible_under_style_csp          # 글쓰기 편집기의 가운데 정렬이 편집 화면에 보이고 저장 형식은 그대로다
+  - tag_input_layout_under_style_csp                   # 태그 입력(react-select) 칸 flex·목록 absolute·안내 문구 1px 클립, <style data-emotion> 0
 
 test_files:
   - resources/js/core/style/__tests__/RuntimeStyleSheet.test.ts
@@ -154,7 +155,9 @@ notes: |
 
   브라우저 실측(style_csp_*)은 Chromium 만 돈다(Firefox·Safari 미측정). 문서 응답에 정책 헤더를 덧붙여 재현하므로
   활성 템플릿·플러그인 사본이 수정된 번들이어야 통과한다. 스스로 스타일을 넣는 외부 라이브러리 화면(CKEditor 5 색상 선택기·Monaco 코드 편집기·
-  react-select 태그 입력·다음 우편번호)은 고칠 수 없어 spec 의 상수 목록에 사유와 함께 두고 fixme 로 건다. CKEditor 5 편집 화면의
+  다음 우편번호)은 고칠 수 없어 spec 의 상수 목록에 사유와 함께 두고 fixme 로 건다. react-select 태그 입력은
+  관리자 템플릿이 emotion 규칙을 생성형 시트로 실어 고쳤고 tag_input_layout_under_style_csp 가 잠근다
+  (템플릿 쪽 단위 계약: sirsoft-admin_basic tag-input-component-baseline.yaml 의 style_csp). CKEditor 5 편집 화면의
   서식(정렬·색·표·이미지 크기)은 편집기 플러그인이 CSSOM 으로 입혀 고쳤고 editor_formatting_visible_under_style_csp 가 잠근다
   (플러그인 쪽 단위 계약: sirsoft-ckeditor5 editor-editing-view-style.yaml).
 

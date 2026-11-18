@@ -8,6 +8,16 @@
 
 ### Added
 
+- 검수 서버에서 시각 레이아웃 편집기 머리에 보이는 「검수용 저장」 안내 문구(`layout_editor.chrome.stage_banner`)를 일본어로 추가했습니다.
+- 옛 확장 선언을 쥔 프로세스가 훅 캐시 쓰기를 건너뛸 때의 로그 문구(`hooks.cache_write_skipped_stale_declaration`)를 일본어로 추가했습니다.
+- 업데이트 잔존물 정리 명령의 「확장 교체가 남긴 옛 클래스 파일」 대상군 이름(`common.console.storage_prune_leftovers.groups.carried_class_files`)을 일본어로 추가했습니다.
+- 스케줄 실행이 꺼진 서버·검수 서버의 웹 크론 주소 응답 문구(`schedule.cron.disabled_on_server`·`schedule.cron.disabled_stage`)를 일본어로 추가했습니다.
+- 코어 업데이트가 실패해 되돌린 뒤 「파일 적용 단계에서 알린 루트 진입·보호 파일과 서버 설정 조각 안내는 더는 해당하지 않는다」고 알리는 문구(`settings.core_update.rollback_apply_warnings_withdrawn`)의 일본어 번역을 추가했습니다.
+- 관리자 화면 코어 업데이트가 사이트를 점검 모드로 둔 동안 다른 브라우저·기기의 관리자가 점검 화면에서 이어 가는 확인 칸 문구(`maintenance.admin_access.*`)의 일본어 번역을 추가했습니다.
+- `settings:migrate-to-json` 이 기존 설정 파일을 그대로 둘 때의 안내, 기본값으로 되돌리기 확인·거절·사본 문구(`settings.console.migrate_to_json.existing_kept`·`confirm_reset`·`reset_unavailable`·`reset_unavailable_hint`·`copy_created`·`copy_failed`)와, 명령줄 미서명 거절 문장(`extension_integrity.errors.package_unsigned_cli`·`package_unverifiable_cli` — 화면 단추 안내 없음)의 일본어 번역을 추가했습니다.
+- 관리자 화면 코어 업데이트가 끊긴 번들 확장 업데이트 작업을 기다릴 때의 진행 기록(`settings.core_update.web.log_bundled_child_waiting`·`log_bundled_child_finished`·`log_bundled_child_orphaned`·`log_bundled_child_orphan_recovered`)과 기다림 상한 경고(`web.bundled_child_wait_timeout`)의 일본어 번역을 추가했습니다.
+- 코어 업데이트가 새 판에서 빠진 번들 파일을 정리했다는 안내와 운영자가 고쳐 남긴 파일 경고, 출하 목록 기록 결과 문구(`settings.core_update.console.bundled_pruned`·`bundled_prune_kept_modified`·`bundled_manifest_seeded`·`bundled_manifest_seed_failed`)의 일본어 번역을 추가했습니다.
+- 관리자 화면 코어 업데이트의 번들 항목이 요청 시간 제한으로 끊겼을 때의 문구(완료 여부 확인 안내 `settings.core_update.web.bundled_interrupted_unconfirmed`, 반영 확인 기록 `web.log_bundled_item_interrupted_applied`, 끊김 기록 `web.log_bundled_item_interrupted` 문장 수정)와, 번들 일부 실패 뒤 코어를 되돌린 경우의 경고(`web.bundled_partial_failure_rolled_back`)의 일본어 번역을 추가했습니다.
 - 확장 신뢰 키를 등록하거나 삭제했을 때 활동 로그에 남는 문구(`activity_log.description.extension_trust_key_create`·`extension_trust_key_delete`)의 일본어 번역을 추가했습니다.
 - 설치와 업데이트 요청의 「패키지 서명 확인 화면 표식」 검증 문구와 항목 이름(`extension_integrity.validation.integrity_aware_boolean`·`extension_integrity.attributes.integrity_aware`)의 일본어 번역을 추가했습니다.
 - 확장 패키지 서명 검증 문구(확장 설치와 업데이트의 서명 상태, 거절 사유, 신뢰 키 관리, `extension_integrity.*`), 서명 명령 설명(`commands.descriptions.extension:keygen`, `extension:sign`, `extension:trust-key`), GitHub 저장소에 태그 릴리스가 없을 때의 오류(`common.errors.github_release_not_found`)의 일본어 번역을 추가했습니다.
@@ -18,7 +28,9 @@
 - 스케줄 실행 이력의 「거절됨」 상태와 거절 사유 3종(`schedule.result.rejected`, `schedule.reject_reason.*`)의 일본어 번역을 추가했습니다.
 - 관리자 화면 코어 업데이트가 긴 단계를 여러 요청으로 나눠 이어 갈 때와 요청 시간 제한으로 끊겨 되돌릴 때의 진행 기록 문구(`settings.core_update.web.*` 19개, 끊김 사유 문구는 결과 안내와 분리)의 일본어 번역을 추가했습니다.
 - 템플릿 설정 화면 「저장 중」 문구를 일본어로 추가했습니다.
+- 템플릿 설정 화면에서 파일을 올리지 못해 저장을 멈췄다는 안내(`template_settings.upload_failed_save_stopped`)를 일본어로 추가했습니다.
 - 템플릿 설정 메뉴 칸의 저장 검증 문구(자동 항목 중복·하위 메뉴 깊이·항목 수·주소·역할 선택 등)를 일본어로 추가했습니다.
+- 템플릿 설정 메뉴·목록 칸 항목의 검증 오류 표시 이름(「〇〇の2番目の項目(名前)のリンク先」 — `templates.settings.item_attributes`)을 일본어로 추가했습니다.
 - 레이아웃 편집기의 「템플릿 설정에 연결된 값」 안내 옆 「설정 열기」 링크와, 템플릿 설정 칸이 파일을 받지 않을 때의 업로드 거부 문구를 일본어로 추가했습니다.
 - 템플릿 환경설정 화면(저장하지 않은 변경의 탭 이동 확인 창 포함)·기본값 되돌리기·링크 검증·칸 크기 제한·설치 경고·레이아웃 편집기 「템플릿 설정에 연결된 값」 안내 문구의 일본어 번역을 추가했습니다 (#434)
 - 템플릿 환경설정·파비콘 문구(설정 화면 공통 문구·「템플릿 설정」 권한·검증 항목명·업로드 오류·명령줄 안내·활동 로그)를 일본어로 추가했습니다.
@@ -83,6 +95,7 @@
 - 「표시 이름 직접 선택」 권한(`core.profile.display_name.choose`)의 이름과 설명 일본어 번역을 추가했습니다.
 - 확장 목록·미뤄 둔 정리 명령의 표 머리글과 상태 이름, 검수 서버 레이아웃 테이블의 DB 드라이버 안내, 업데이트 미리보기의 「활성 파일 없음」 안내, 예외 문구(검수 서버 테이블 쓰기·실행 중인 업그레이드 스텝·허용되지 않은 정리 메서드)의 일본어 번역을 추가했습니다.
 - 이 서버에서 끝나지 않은 확장 업데이트를 `--force` 로 이어받으라는 안내(`extensions.commands.update.unfinished_update_needs_force`)의 일본어 번역을 추가했습니다.
+- 검색 인덱스를 다시 만든 뒤에도 색인 누락이 남은 표의 재구축 안내(`search.index.persistent_stale.*`)의 일본어 번역을 추가했습니다.
 - 운영 서버 마무리 명령 `stage:apply-to-live` 의 설명·방향·단계·확인·결과 문구(`common.console.stage_apply.*`, `commands.descriptions.stage:apply-to-live`), 검수 서버의 확장 수명주기 명령 거절 안내(`common.console.runtime_role.lifecycle_stage`), 미뤄 둔 정리의 「기다림」 상태·안내와 정리 종류 이름(`apply_deferred_cleanup.status_labels.waiting`·`waiting_hint`·`waiting_reasons`·`kind_labels`), 코어 선언 재동기화 명령(`commands.descriptions.core:resync-declarations`, `common.console.core_resync_declarations.*`)과 「파일 내용이 다름」 기다림 사유(`waiting_reasons.code_differs`), 정리 실패 예외(`exceptions.deferred_cleanup_target_not_allowed`·`deferred_cleanup_core_resync_failed`·`deferred_cleanup_seeder_failed`)의 일본어 번역을 추가했습니다. 미뤄 둔 정리 명령의 설명·실행 전 안내·결과 요약(「기다림」 건수)·표 머리글은 지울 대상을 운영 서버의 지금 선언으로 다시 정하는 동작에, 파일 맞추기 명령의 설명·종류 안내는 언어팩까지 다루는 동작에 맞춘 번역입니다 (`commands.descriptions.extension:apply-deferred-cleanup`·`extension:reset-files-from-bundled`, `apply_deferred_cleanup.description`·`about_to_apply`·`summary`·`columns`, `sync_files.description`·`invalid_type`).
 
 ### Changed

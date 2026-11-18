@@ -30,6 +30,7 @@ effects:
   - admin_field_permission_gate
   - admin_field_lifecycle_actions_fire
   - admin_field_lookup_is_scoped_to_set
+  - admin_field_source_label_follows_installed_name_locale   # 확장 항목 출처 이름·확장 유형 배지(owner_label)는 설치 기록 다국어 이름(언어팩 ja 포함)에서 요청 언어로 고른다
 
 test_files:
   - tests/Feature/Api/Admin/FieldDefinitionControllerTest.php

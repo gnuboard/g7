@@ -38,7 +38,10 @@
 플래그가 실제로 체크아웃 화면의 개별 버튼 노출 여부를 결정합니다(§AGENTS.md "이 확장은
 무엇인가"). `vbank_valid_hours`(1~2160시간)와 `use_escrow`(`off`/`on`/`buyer_choice`)는
 `ValidateTossSettingsListener`가 저장 시점에 범위를 강제합니다 — UI 의 input 힌트만으로는
-관리자 설정 저장 API 직접 호출을 막을 수 없기 때문입니다. `webhook_secret_verify`를 끄면
+관리자 설정 저장 API 직접 호출을 막을 수 없기 때문입니다. 설정 화면의 에스크로 운영 안내는
+`(_local.form?.use_escrow ?? settings?.data?.use_escrow ?? 'off') !== 'off'` 일 때만 보입니다 — 폼 값
+(initLocal)은 받은 설정을 그린 다음 박자에 들어오므로, 폼 값만 보면 그 한 박자에 `undefined !== 'off'` 로
+안내가 번쩍입니다. `webhook_secret_verify`를 끄면
 가상계좌 웹훅의 유일한 위조 방지 수단이 사라지므로 기본값 `true`를 유지해야 합니다.
 끄면 주문번호만 아는 사람도 입금 없이 주문을 결제완료로 만들 수 있고, 끈 상태에서 생긴 보안 사고는 운영자 책임입니다(스위치는 운영자 선택으로 남겨 둡니다 — 2026-09-29 결정).
 <!-- @intent END -->

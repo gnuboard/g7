@@ -152,6 +152,7 @@ php artisan core:update [--yes] [--force] [--no-backup] [--no-maintenance] [--ve
 php artisan core:bundled-sources list|place <id…>|prune [--force] [--include-modified] [--source=|--zip=]   # 공식 번들 소스 보고·배치·정리 (7.1.1+, prune 기본 미리보기)
 php artisan core:execute-upgrade-steps --from=X.Y.Z --to=A.B.C [--yes|--force]   # 업그레이드 스텝 단독 실행 (HANDOFF 안내 또는 수동 복구용 — 단독 호출 시 migration·resync·.env·캐시·번들 확장 일괄 업데이트 자동 수행. CoreUpdateCommand 내부 spawn 은 --skip-* 5개 옵션 자동 전달)
 php artisan core:deploy-ledger-seed                               # deploy/** 서버 설정 조각의 해시 원장을 지금 디스크 내용으로 씨앗 (이미 있는 항목은 유지)
+                                                                  # 번들 출하 목록은 씨앗하지 않음 — 설치기만 --fresh-install 로 설치 직후 디스크에서 씨앗
 
 # 관리자 계정 복구 (메일 없이 서버 터미널에서)
 php artisan user:reset-password [email] [--password-file=<파일>] [--generate] [--require-change]   # 이메일 생략 시 최고관리자, --generate 는 무작위 비밀번호를 한 번만 출력(다음 로그인 때 변경 강제)

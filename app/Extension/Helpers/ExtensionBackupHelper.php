@@ -2,7 +2,9 @@
 
 namespace App\Extension\Helpers;
 
+use App\Extension\Support\CarriedClassFileLedger;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 
 /**
  * 확장 백업/복원 헬퍼
@@ -60,6 +62,9 @@ class ExtensionBackupHelper
 
         // 파일별 복사로 진행 상세 보고
         self::copyDirectoryWithProgress($sourcePath, $backupPath, $sourcePath, $onProgress);
+
+        // 정리 대기 목록의 이 확장 항목을 백업 사본으로 둔다 — 이 백업으로 되돌리면 그 항목도 되돌린다
+        self::withLedger(fn (CarriedClassFileLedger $ledger) => $ledger->snapshotFor($sourcePath, $backupPath));
 
         return $backupPath;
     }
@@ -129,6 +134,9 @@ class ExtensionBackupHelper
 
         // 원자적 복원: ExtensionPendingHelper의 안전한 교체 로직 사용
         ExtensionPendingHelper::copyToActive($backupPath, $targetPath, $onProgress);
+
+        // 교체가 대기 목록에서 먼저 뺀 항목(실패한 업데이트가 남긴 파일 포함)을 백업 시점으로 되살린다 — 빼진 채로 두면 복원 폴더에 영구히 남는다
+        self::withLedger(fn (CarriedClassFileLedger $ledger) => $ledger->restoreSnapshot($targetPath, $backupPath));
     }
 
     /**
@@ -141,6 +149,23 @@ class ExtensionBackupHelper
     {
         if (File::isDirectory($backupPath)) {
             File::deleteDirectory($backupPath);
+        }
+
+        self::withLedger(fn (CarriedClassFileLedger $ledger) => $ledger->dropSnapshot($backupPath));
+    }
+
+    /**
+     * 정리 대기 목록 작업을 실행합니다 — 실패해도 백업·복원 자체는 막지 않는다(경고만).
+     *
+     * @param  callable(CarriedClassFileLedger): mixed  $action  목록 작업
+     * @return void 반환값 없음
+     */
+    private static function withLedger(callable $action): void
+    {
+        try {
+            $action(app(CarriedClassFileLedger::class));
+        } catch (\Throwable $e) {
+            Log::warning('확장 백업: 정리 대기 목록 갱신 실패', ['error' => $e->getMessage()]);
         }
     }
 }

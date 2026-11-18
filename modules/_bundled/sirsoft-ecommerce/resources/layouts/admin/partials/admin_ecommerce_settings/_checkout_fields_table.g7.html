@@ -98,6 +98,7 @@
                           <body enabled="{{!row.enabled}}" fields_version="{{_computed.checkoutFieldsVersion}}"/>
                           <success>
                             <toast type="success" message="$t:sirsoft-ecommerce.admin.settings.checkout_fields.saved"/>
+                            <update-data-source dataSourceId="checkoutFieldDefs" data="{{ { ...(checkoutFieldDefs ?? { }), data: { ...(checkoutFieldDefs?.data ?? { }), fields_version: response?.data?.fields_version ?? checkoutFieldDefs?.data?.fields_version ?? null } } }}"/>
                             <refetch-data-source dataSourceId="checkoutFieldDefs"/>
                           </success>
                           <fail>
@@ -124,6 +125,7 @@
                           <body required="{{!row.required}}" fields_version="{{_computed.checkoutFieldsVersion}}"/>
                           <success>
                             <toast type="success" message="$t:sirsoft-ecommerce.admin.settings.checkout_fields.saved"/>
+                            <update-data-source dataSourceId="checkoutFieldDefs" data="{{ { ...(checkoutFieldDefs ?? { }), data: { ...(checkoutFieldDefs?.data ?? { }), fields_version: response?.data?.fields_version ?? checkoutFieldDefs?.data?.fields_version ?? null } } }}"/>
                             <refetch-data-source dataSourceId="checkoutFieldDefs"/>
                           </success>
                           <fail>

@@ -6,7 +6,8 @@
  * 어느 관리자 템플릿이 켜져 있든 뜨도록 관리자 템플릿 부품을 쓰지 않고, 모양은 이 묶음 CSS(`settings.css`, `.hello-settings` 안)로만 잡는다.
  *
  * - 받기·저장·되돌리기는 레이아웃 몫이다. 이 부품은 값을 그리고 사용자의 뜻을 이벤트(onChange·onSave·onReset·onTabChange·onBack)로 알린다.
- * - 첨부 칸(파비콘)은 파일만 골라 두고 저장 때 올린다 — 레이아웃이 저장 전에 `uploadTriggerEvent` 를 보내면 여기서 받아 올린 뒤 값을 바꾼다.
+ * - 첨부 칸(파비콘)은 파일만 골라 두고 저장 때 올린다 — 레이아웃이 저장 전에 `uploadTriggerEvent` 를 보내면 여기서 받아 올린 뒤 값을 바꾸고,
+ *   실패 수(`{ failedCount, message? }`)를 돌려준다. 레이아웃은 실패가 있으면 저장을 멈추고 실패 문구를 남긴다.
  * - 이 템플릿이 선언한 칸 종류(첨부)만 그린다. 다른 종류를 선언하려면 그 종류를 그리는 부품도 함께 공급한다.
  */
 
@@ -101,11 +102,13 @@ const AttachmentField: React.FC<{
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const core = (window as any).G7Core;
+    // 저장 신호의 결과로 실패 수를 돌려준다(`{ failedCount, message? }` — 관리자 템플릿 FileUploader 와 같은 모양).
+    // 레이아웃은 신호의 결과(`_local._eventResult.data`)를 세어 실패가 있으면 PUT 을 보내지 않는다 — 실패한 파일 없이 저장된 줄 알게 하지 않는다.
     const unsubscribe = core?.componentEvent?.on?.(uploadTriggerEvent, async () => {
       const file = pickedRef.current;
 
       if (!file || !field.collection) {
-        return;
+        return { failedCount: 0 };
       }
 
       const form = new FormData();
@@ -117,8 +120,14 @@ const AttachmentField: React.FC<{
         const attachment = response?.data?.data ?? response?.data;
         setPicked(null);
         onUploaded(attachment ? [attachment] : []);
+
+        return { failedCount: 0 };
       } catch (error: any) {
-        onError(error?.response?.data?.message ?? error?.message ?? t('settings.screen.upload_failed', 'Upload failed'));
+        // 고른 파일은 그대로 둔다 — 고치거나 다른 파일을 고른 뒤 다시 저장하면 다시 올린다
+        const message = error?.response?.data?.message ?? error?.message ?? t('settings.screen.upload_failed', 'Upload failed');
+        onError(message);
+
+        return { failedCount: 1, message };
       }
     });
 

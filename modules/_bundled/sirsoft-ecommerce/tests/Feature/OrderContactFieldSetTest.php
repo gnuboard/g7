@@ -656,6 +656,10 @@ class OrderContactFieldSetTest extends ModuleTestCase
         $this->memberOrder($required, [], ['orderer.email'])
             ->assertStatus(422)
             ->assertJsonValidationErrors(['orderer.email']);
+        // 주문서에서 칸을 비워 빈 문자열로 보내도 같다 — 서버는 회원 계정 이메일로 채우지 않고 422 로 막는다
+        $this->memberOrder($required, ['orderer' => ['name' => '홍길동', 'phone' => '010-1234-5678', 'email' => '']])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['orderer.email']);
         $this->assertSame(['required', 'email', 'max:255'], $this->orderRules($required)['orderer.email']);
 
         // 꺼짐: 회원이 보낸 이메일은 규칙에서 빠지고 저장하지 않는다

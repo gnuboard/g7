@@ -20,7 +20,7 @@
 ### GET /api/plugins/sirsoft-tosspayments/admin/webhook-url
 <!-- @generated:start:api.plugins.sirsoft-tosspayments.admin.webhook-url -->
 - **라우트명**: `api.plugins.sirsoft-tosspayments.admin.webhook-url`
-- **인증/권한**: `auth:sanctum`, `permission:admin,sirsoft-ecommerce.settings.read`
+- **인증/권한**: `auth:sanctum`, `permission:admin,sirsoft-ecommerce.settings.read|core.plugins.read,false` (OR — 플러그인 설정 화면 안내라 「플러그인 보기」로도 읽는다)
 
 **요청 파라미터**
 
@@ -59,7 +59,7 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 관리자가 아니거나 `sirsoft-ecommerce.settings.read` 권한이 없는 경우 |
+| 403 | Forbidden | 관리자가 아니거나 `sirsoft-ecommerce.settings.read`·`core.plugins.read` 권한이 모두 없는 경우 |
 
 <!-- @generated:end -->
 

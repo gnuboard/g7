@@ -16,6 +16,7 @@ use App\Extension\CoreVersionChecker;
 use App\Extension\Custom\CustomPackageConflictChecker;
 use App\Extension\Custom\CustomUpdatePreflight;
 use App\Extension\Custom\CustomVendorService;
+use App\Extension\Helpers\BundledShippedManifest;
 use App\Extension\Helpers\CoreBackupHelper;
 use App\Extension\Helpers\ExtensionOperationLock;
 use App\Extension\Helpers\FilePermissionHelper;
@@ -104,6 +105,9 @@ class CoreUpdateCommand extends Command
             $this->warn('⚠ '.$warning);
         }
 
+        // 지난 실행이 남긴 번들 출하 목록 사본을 버린다 — 이번 실행이 파일 적용 전에 실패해 되돌릴 때 목록이 후퇴하지 않게.
+        BundledShippedManifest::beginRun();
+
         try {
             return $this->runUpdate($service);
         } finally {
@@ -144,6 +148,8 @@ class CoreUpdateCommand extends Command
         $bundledPlan = null;
         $bundledRecordBackup = null;
         $bundledRecordWritten = false;
+        // 파일 적용 단계가 출력한 루트 진입·보호 파일·서버 설정 조각 안내 — 되돌리면 더는 사실이 아니므로 그 사실을 알린다
+        $applyRootFileWarnings = [];
         $planner = app(BundledSourcePlanner::class);
         $bundledOption = is_string($this->option('bundled-sources')) ? $this->option('bundled-sources') : null;
         // PHP 확장 사전점검(#151 D9) — --source/--zip 은 유지보수 전, 그 밖에는 Step 4 다운로드 직후
@@ -669,6 +675,8 @@ class CoreUpdateCommand extends Command
                         $vendorResult->packageCount,
                     ));
                 } catch (VendorInstallException $e) {
+                    // vendor 설치 진행 표시가 개행 없이 끝난다 — 실패 문장이 막대 끝에 붙지 않게 한다
+                    $this->newLine();
                     $this->error(__('settings.core_update.console.vendor_install_failed', ['error' => $e->getMessage()]));
                     throw $e;
                 }
@@ -764,9 +772,20 @@ class CoreUpdateCommand extends Command
 
             // 반환값이 계약이다 — 게터(`getLastRootFileWarnings()`)는 예외 경로(아래 catch)처럼
             // 반환값을 손에 쥘 수 없는 자리의 편의다 (G3 회차 16 W2 C-6).
-            $applyResult = $service->applyUpdate($pendingPath, $onProgress, prune: $prune, applyList: $applyList, skipPaths: $bundledSkipPaths);
+            // 번들 출하 목록 — 이번 배포본이 놓는 번들 파일과 본문 해시. 증분 적용이 사이트의 직전 목록과 대조해 새 판이 지운
+            // 번들 파일을 정리하고 이 목록을 기록한다. 만들지 못하면 종전처럼 정리 없이 진행한다.
+            try {
+                $shippedFiles = BundledShippedManifest::collect($pendingPath, $bundledSkipPaths);
+            } catch (\Throwable $shippedError) {
+                $shippedFiles = null;
+                $log('번들 출하 목록 산출 실패 (정리 없이 진행): '.$shippedError->getMessage());
+            }
+
+            $applyResult = $service->applyUpdate($pendingPath, $onProgress, prune: $prune, applyList: $applyList, skipPaths: $bundledSkipPaths, shippedFiles: $shippedFiles);
             $log(sprintf('코어 파일 적용 완료 (미배치 공식 번들 %d개 건너뜀)', count($bundledSkipPaths)));
             $this->surfaceWarnings($applyResult['root_file_warnings'], $log);
+            $applyRootFileWarnings = $applyResult['root_file_warnings'];
+            $this->surfaceBundledPrune((array) ($applyResult['bundled_prune'] ?? []), $log);
 
             // 미배치 공식 번들 기록 — 관리자 목록 안내와 core:bundled-sources 의 근거. 롤백 시 이전 기록으로 되돌린다.
             $bundledRecordBackup = is_file($planner->recordPath()) ? (string) file_get_contents($planner->recordPath()) : null;
@@ -1122,7 +1141,7 @@ class CoreUpdateCommand extends Command
             // 경고 버퍼를 비우므로 그 뒤에만 출력하면 사라진다. 또 종전에는 이 출력이
             // `if ($backupPath)` 블록 **안**에만 있어, `--no-backup` 으로 돈 실행은 롤백도
             // 없는 부분 적용 상태가 남는데 그 사실이 통보에서만 빠졌다.
-            $this->surfaceRootFileWarnings($service, $log);
+            $applyRootFileWarnings = array_values(array_unique(array_merge($applyRootFileWarnings, $this->surfaceRootFileWarnings($service, $log, $applyRootFileWarnings))));
 
             // 노출 통보도 같은 자리에서 낸다. 자식(`core:execute-upgrade-steps`)이 실어 보낸
             // 것을 부모가 버퍼에 담아 두는데, 실패 경로에 배수 지점이 없으면 그 통보는
@@ -1158,7 +1177,17 @@ class CoreUpdateCommand extends Command
 
                 try {
                     $restoreResult = $service->restoreFromBackup($backupPath, $onProgress);
+                    // 복원 진행 표시($onProgress → $bar->display())는 개행 없이 끝난다 — 다음 줄이 막대 끝에 붙지 않게 한다
+                    $this->newLine();
                     $failedTargets = $restoreResult['failed_targets'];
+
+                    // 적용 단계에서 찍은 루트·서버 설정 조각 안내는 복원으로 해당 없어졌다 — 그 파일은 백업으로 돌아갔고
+                    // `.dist` 사본과 해시 원장은 복원이 걷었다. 위에 찍힌 「.dist 를 합친 뒤 지우세요」를 따르지 않게 알린다.
+                    if ($applyRootFileWarnings !== []) {
+                        $withdrawn = trans_count('settings.core_update.rollback_apply_warnings_withdrawn', ['count' => count($applyRootFileWarnings)]);
+                        $this->line($withdrawn);
+                        $log('[root-files] '.$withdrawn);
+                    }
 
                     if (empty($failedTargets)) {
                         $log('백업 복원 완료');
@@ -1171,6 +1200,7 @@ class CoreUpdateCommand extends Command
                     }
                 } catch (\Throwable $restoreError) {
                     $log("백업 복원 실패: {$restoreError->getMessage()}");
+                    $this->newLine();
                     $this->error(__('settings.core_update.console.restore_failed', ['error' => $restoreError->getMessage()]));
                 }
 
@@ -2203,14 +2233,48 @@ class CoreUpdateCommand extends Command
      *
      * @param  CoreUpdateService  $service  경고를 누적한 서비스
      * @param  callable  $log  업데이트 기록 기록기
-     * @return void 반환값 없음
+     * @param  list<string>  $alreadySurfaced  적용 단계가 이미 출력한 경고 — 다시 찍지 않는다
+     * @return list<string> 경고 버퍼 전체 — 뒤이은 되돌리기가 「해당 없어졌다」를 알릴 때 쓴다
      */
-    private function surfaceRootFileWarnings(CoreUpdateService $service, callable $log): void
+    private function surfaceRootFileWarnings(CoreUpdateService $service, callable $log, array $alreadySurfaced = []): array
     {
         // 예외 경로 전용 — 적용이 예외로 끊기면 반환값이 없어 게터로만 그 실행의 판정 결과를
         // 되찾을 수 있다. 정상 경로·롤백 경로는 반환값(`root_file_warnings`)을 `surfaceWarnings()`
         // 에 직접 넘긴다 (G3 회차 16 W2 C-6).
-        $this->surfaceWarnings($service->getLastRootFileWarnings(), $log);
+        // 적용이 끝난 뒤의 실패(마이그레이션 등)에서는 버퍼가 적용 단계가 이미 찍은 안내를 그대로 들고 있다 — 같은 내용을
+        // 두 번 찍지 않도록 새 것만 출력한다(`.dist` 안내가 2회 찍히던 문제).
+        $warnings = array_values(array_filter($service->getLastRootFileWarnings(), 'is_string'));
+        $this->surfaceWarnings(array_values(array_diff($warnings, $alreadySurfaced)), $log);
+
+        return $warnings;
+    }
+
+    /**
+     * 번들 출하 목록 대조 결과(새 판이 지운 번들 파일 정리)를 콘솔과 업데이트 기록에 출력합니다.
+     *
+     * @param  array<string, mixed>  $report  `applyUpdate()` 반환값의 `bundled_prune`
+     * @param  callable  $log  업데이트 기록 기록기
+     * @return void 반환값 없음
+     */
+    private function surfaceBundledPrune(array $report, callable $log): void
+    {
+        $removed = array_values((array) ($report['removed'] ?? []));
+        $kept = array_values((array) ($report['kept_modified'] ?? []));
+
+        if ($removed !== []) {
+            $this->newLine();
+            $this->line(trans_count('settings.core_update.console.bundled_pruned', ['count' => count($removed)]));
+            $log(sprintf('새 판이 지운 번들 파일 %d개 정리: %s', count($removed), implode(', ', $removed)));
+        }
+
+        if ($kept !== []) {
+            $this->newLine();
+            $this->warn(trans_count('settings.core_update.console.bundled_prune_kept_modified', ['count' => count($kept)]));
+            foreach ($kept as $path) {
+                $this->warn('  - '.$path);
+            }
+            $log('새 판이 지운 번들 파일 중 고쳐진 것은 남김: '.implode(', ', $kept));
+        }
     }
 
     /**

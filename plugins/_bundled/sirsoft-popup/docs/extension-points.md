@@ -91,7 +91,7 @@
 <!-- @generated:listeners END -->
 
 <!-- @intent START -->
-리스너는 모두 `plugin.php` 의 `getHookListeners()` 에 올라 있다. 활동 로그는 항목별(일괄 처리는 건마다 한 줄), 캐시 비우기는 `sync` — 큐로 미루면 저장 직후 사용자 화면에 옛 팝업이 보인다.
+리스너는 모두 `plugin.php` 의 `getHookListeners()` 에 올라 있다. 활동 로그는 항목별(일괄 처리는 건마다 한 줄)이고, 표시 때 팝업 id 는 이름으로, 이미지 교체·삭제 문구의 기기 키(`pc`·`mobile`)는 `activity_log.devices.*` 이름으로 바꾼다(내부 키가 목록 한 줄에 그대로 나가지 않게). 캐시 비우기는 `sync` — 큐로 미루면 저장 직후 사용자 화면에 옛 팝업이 보인다.
 <!-- @intent END -->
 
 ## 활동 로그 훅

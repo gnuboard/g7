@@ -50,5 +50,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
     Route::post('/popup-images', [PopupImageController::class, 'store'])->middleware($update)->name('popup-images.store');
     Route::delete('/popup-images/{image}', [PopupImageController::class, 'destroy'])->whereNumber('image')->middleware($update)->name('popup-images.destroy');
 
-    Route::get('/display-settings', [DisplaySettingsController::class, 'show'])->middleware($read)->name('display-settings.show');
+    // 플러그인 설정 화면(업로드 한도 안내)이 「플러그인 보기」(core.plugins.read)로도 읽는다(OR) — 읽기 전용 진입 때 403 알림 방지
+    Route::get('/display-settings', [DisplaySettingsController::class, 'show'])->middleware('permission:admin,sirsoft-popup.popups.read|core.plugins.read,false')->name('display-settings.show');
 });

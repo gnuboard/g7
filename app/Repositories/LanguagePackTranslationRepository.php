@@ -156,6 +156,18 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
                 $query->where('identifier', $pack->target_identifier);
             }
 
+            // 코어 팩은 넣을 때와 같은 범위(코어 소유 — core|NULL)에서만 걷는다. 종전에는 전 행에서 걷어, 같은 로케일의 확장 팩이
+            // 넣은 확장 메뉴·권한·역할·알림 번역까지 지웠고 코어 팩을 다시 켜도 코어 행만 채워 확장 이름이 원문으로 남았다
+            if ($pack->scope === LanguagePackScope::Core->value) {
+                if ($modelClass === NotificationTemplate::class) {
+                    $definitionQuery = NotificationDefinition::query();
+                    $this->scopeOwnership($definitionQuery, $pack);
+                    $query->whereIn('definition_id', $definitionQuery->select('id'));
+                } else {
+                    $this->scopeOwnership($query, $pack);
+                }
+            }
+
             $query->get()->each(function (Model $row) use ($columns, $locale, &$audit) {
                 $this->stripLocaleColumns($row, $locale, $columns, $audit);
             });

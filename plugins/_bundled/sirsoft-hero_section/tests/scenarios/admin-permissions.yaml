@@ -5,15 +5,25 @@ description: |
   기대 응답(401·403·성공)을 잠근다. 한 테스트가 그 묶음의 엔드포인트 전부를 데이터 공급자로 돈다.
   권한은 owner_key 범위가 없으므로(설계 결정) 범위 원장 대상이 아니다 — 범위 판정 케이스는 두지 않는다.
   editor 는 read+update, deleter 는 read+delete 를 가진 역할이다.
+  plugin_viewer 는 「플러그인 보기」(core.plugins.read)만 가진 역할 — 플러그인 설정 화면 보조 조회(위치 설정·업로드 한도)만 읽는다.
 
 axes:
   permission_level: [read, update, delete]
-  actor: [guest, no_permission, read_only, editor, deleter]
+  actor: [guest, no_permission, read_only, editor, deleter, plugin_viewer]
+
+exclusions:
+  - actor: plugin_viewer
+    permission_level: update
+    reason: "플러그인 보기 권한은 설정 화면의 읽기 전용 열람만 연다 — 등록·수정 묶음은 no_permission 과 같은 403 이라 따로 곱하지 않는다"
+  - actor: plugin_viewer
+    permission_level: delete
+    reason: "삭제 묶음도 no_permission 과 같은 403 이라 따로 곱하지 않는다"
 
 effects:
   - unauthenticated_returns_401
   - missing_permission_returns_403
   - granted_permission_succeeds
+  - plugin_viewer_reads_settings_screen_upload_limit   # core.plugins.read 만 → 위치 설정 200, 배너 목록 403
 
 test_files:
   - plugins/_bundled/sirsoft-hero_section/tests/Feature/Admin/BannerPermissionTest.php

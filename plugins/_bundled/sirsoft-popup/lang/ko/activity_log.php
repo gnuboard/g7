@@ -25,6 +25,11 @@ return [
         'popup_image_update' => '팝업 「:popup_title」의 :device 이미지를 교체했습니다.',
         'popup_image_remove' => '팝업 「:popup_title」의 :device 이미지를 뺐습니다.',
     ],
+    // 이미지·영상 교체·삭제 문구의 :device 자리에 들어가는 기기 이름
+    'devices' => [
+        'pc' => 'PC',
+        'mobile' => '모바일',
+    ],
     'fields' => [
         'title' => '관리용 제목',
         'is_active' => '사용 여부',

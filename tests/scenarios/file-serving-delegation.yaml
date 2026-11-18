@@ -14,7 +14,8 @@ description: |
     - 매핑 밖 실경로 → 위임 없이 PHP 전송 + X-G7-File-Delegation: skipped.
     - 위임 응답은 앱 gzip 에서 빠진다(헬퍼 선언 + 미들웨어 응답 모양 가드).
     - 미구성 감지: 1단계 DriverConnectionTester::testFileDelegation(정적 판정) · 2단계 GET /api/admin/settings/
-      file-delegation-probe(실물 JSON 을 fileResponse 로 내고 화면이 본문 수신으로 판정).
+      file-delegation-probe(실물 JSON 을 fileResponse 로 내고 화면이 본문 수신으로 판정). 위임이 꺼져 있거나 매핑 밖이라
+      PHP 가 보낼 응답이면(DelegatedFileResponse::delegationOutcome) 본문 대신 reason(inactive·skipped)을 JSON 으로 알린다.
 
   한계: 웹서버가 위임 헤더를 실제로 소비하는지는 PHPUnit 런타임 밖이다 — 로컬 nginx 실측(계획서 §8.4)과
   운영 서버 확인(문서 curl 절차·2단계 프로브)이 담당한다.
@@ -63,6 +64,7 @@ effects:
   - delegation_catalog_and_meta_exposed_to_admin         # available_drivers.file_delegation 3종 + _meta.file_delegation
   - driver_test_reports_static_delegation_hint           # 1단계 시험 결과 모양(success·message·details)
   - probe_route_serves_json_through_file_helper          # 2단계 프로브가 fileResponse 로 JSON 을 no-store 로 낸다
+  - probe_reports_php_delivery_instead_of_success        # 위임 꺼짐·매핑 밖이면 프로브가 본문 대신 reason(inactive·skipped)을 알리고 화면은 성공으로 보이지 않는다
   - drivers_tab_renders_file_delegation_card             # 관리자 드라이버 탭 카드(선택·접두사·안내·시험·프로브)
 
 test_files:

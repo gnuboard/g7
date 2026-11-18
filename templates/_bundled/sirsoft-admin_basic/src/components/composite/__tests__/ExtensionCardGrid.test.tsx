@@ -408,6 +408,20 @@ describe('ExtensionCardGrid — 콜백은 원본 행을 되돌려 준다', () =>
     expect(onToggle.mock.calls[0][1]).toBe(item.row);
   });
 
+  // 검수 서버처럼 잠긴 스위치에도 마우스를 올리면 잠긴 이유가 보여야 한다 — 설치·업데이트·제거 단추처럼 title 로 안내한다
+  // (스위치와 조상 6단계 모두 title 없음).
+  // @scenario view=gallery, install_state=active
+  // @effects gallery_actions_parity_with_list
+  it('잠긴 스위치는 toggle.title 을 스위치의 마우스 올림 안내(title)로 보인다', () => {
+    setContainerWidth(1072);
+    const item = baseItem({ toggle: { checked: true, disabled: true, label: 'CKEditor 5', title: '검수 서버에서는 바꿀 수 없습니다.' } });
+    const { container } = render(<ExtensionCardGrid items={[item]} />);
+
+    const sw = container.querySelector('[role="switch"]') as HTMLElement;
+    expect(sw.getAttribute('aria-disabled')).toBe('true');
+    expect(sw.getAttribute('title')).toBe('검수 서버에서는 바꿀 수 없습니다.');
+  });
+
   // 스위치는 서버 작업이 끝날 때까지 원래 값에 머물고 진행 중(aria-busy)으로 잠긴다 — 서버가 거절해(실패·의존 충돌 창
   // 취소·409) 화면이 재동기 신호를 올리면 진행 표시만 꺼지고 값은 서버 값 그대로다(#703 의 「꺼진 채 남음」도 생기지 않는다, #882).
   // @scenario view=gallery, install_state=active

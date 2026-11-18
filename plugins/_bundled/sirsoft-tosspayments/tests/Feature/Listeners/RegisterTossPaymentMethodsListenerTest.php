@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\Tosspayments\Tests\Feature\Listeners;
 
 use App\Services\PluginSettingsService;
+use Illuminate\Support\Arr;
 use Plugins\Sirsoft\Tosspayments\Listeners\RegisterPgProviderListener;
 use Plugins\Sirsoft\Tosspayments\Listeners\RegisterTossPaymentMethodsListener;
 use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
@@ -116,6 +117,52 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
         $this->assertContains('toss_card', $ids);
         $this->assertContains('toss_virtual_account', $ids);
         $this->assertNotContains('toss_transfer', $ids);
+    }
+
+    /**
+     * 토스 결제수단 이름·설명이 ko·en 두 언어로 고정되지 않고 지원 언어(활성 언어팩) 전부로 채워지는지 검증한다.
+     *
+     * 종전에는 두 언어만 실려 일본어 언어팩을 켠 사이트의 일본어 화면(쇼핑몰 환경설정 결제수단 목록·주문서)에
+     * 언어팩 번역이 있는데도 한국어 이름이 보였다.
+     *
+     * @scenario order_sheet_mode=true, payment_method=toss_card
+     *
+     * @effects toss_method_labels_cover_supported_locales
+     *
+     * @return void 반환값 없음
+     */
+    public function test_method_labels_cover_every_supported_locale(): void
+    {
+        $this->mockSettings([
+            'order_sheet_mode' => true,
+            'method_card' => true,
+            'method_kakaopay' => true,
+        ]);
+        $this->app['translator']->addNamespace(
+            'sirsoft-tosspayments',
+            base_path('plugins/_bundled/sirsoft-tosspayments/lang')
+        );
+        config(['app.supported_locales' => ['ko', 'en', 'ja']]);
+        $this->app['translator']->addLines(
+            Arr::dot(['payment_methods' => require base_path('lang-packs/_bundled/g7-plugin-sirsoft-tosspayments-ja/backend/ja/payment_methods.php')]),
+            'ja',
+            'sirsoft-tosspayments',
+        );
+        $localeBefore = app()->getLocale();
+
+        $methods = collect($this->listener->injectTossMethods($this->builtinMethods()))
+            ->filter(fn (array $method): bool => str_starts_with((string) $method['id'], 'toss_'));
+
+        $this->assertNotEmpty($methods);
+        foreach ($methods as $method) {
+            $this->assertSame(['ko', 'en', 'ja'], array_keys($method['name']), $method['id']);
+            $this->assertSame(['ko', 'en', 'ja'], array_keys($method['description']), $method['id']);
+        }
+
+        $card = $methods->firstWhere('id', 'toss_card');
+        $this->assertSame('クレジットカード (Toss Payments)', $card['name']['ja']);
+        $this->assertSame('クレジット·デビットカードで決済 — Toss Paymentsを通じて処理', $card['description']['ja']);
+        $this->assertSame($localeBefore, app()->getLocale(), '번역하는 동안 바꾼 앱 언어는 되돌려야 한다');
     }
 
     /**

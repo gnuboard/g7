@@ -3,6 +3,11 @@
 namespace App\CoreUpdate;
 
 use App\Console\Commands\Core\ExecuteBundledUpdatesCommand;
+use App\Contracts\Repositories\LanguagePackRepositoryInterface;
+use App\Contracts\Repositories\ModuleRepositoryInterface;
+use App\Contracts\Repositories\PluginRepositoryInterface;
+use App\Contracts\Repositories\TemplateRepositoryInterface;
+use App\Enums\LanguagePackStatus;
 use App\Exceptions\CoreUpdateOperationException;
 use App\Exceptions\PackageIntegrityException;
 use App\Execution\CommandRunnerResolver;
@@ -11,9 +16,12 @@ use App\Execution\Exceptions\CommandExecutionException;
 use App\Execution\InProcessCommandRunner;
 use App\Extension\CoreVersionChecker;
 use App\Extension\Custom\CustomUpdatePreflight;
+use App\Extension\Helpers\BundledShippedManifest;
 use App\Extension\Helpers\CoreBackupHelper;
+use App\Extension\Helpers\ExtensionOperationLock;
 use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\Helpers\StorageLinkHelper;
+use App\Extension\Helpers\StuckUpdateRecovery;
 use App\Extension\HookManager;
 use App\Extension\Integrity\PackageVerification;
 use App\Extension\ModuleManager;
@@ -74,6 +82,14 @@ class CoreUpdateOrchestrator
      * 복구 안내를 연다.
      */
     public const MAX_ROLLBACK_ATTEMPTS = 3;
+
+    /**
+     * 끊긴 번들 항목의 자식 프로세스를 기다리는 상한(초).
+     *
+     * 확장 하나의 업데이트는 보통 수십 초, 큰 마이그레이션이 있어도 몇 분이다. 이 시간을 넘겨도 끝나지 않으면 멈춘 것으로 보고
+     * 더 기다리지 않는다 — 사이트를 점검 모드에 무한히 가두지 않는다(그 항목은 「완료 여부 확인 불가」로 알린다).
+     */
+    public const BUNDLED_CHILD_WAIT_SECONDS = 900;
 
     /** 점유에 기록하는 되돌리기 구간 이름 (단계 값과 겹치지 않는다). */
     public const PHASE_ROLLBACK = 'rollback';
@@ -203,12 +219,16 @@ class CoreUpdateOrchestrator
      */
     private function currentVersionFor(array $raw): string
     {
+        $installed = CoreVersionChecker::getCoreVersion();
+
         if (($raw['status'] ?? null) === CoreUpdateRunState::STATUS_COMPLETED
             && is_string($raw['to_version'] ?? null) && $raw['to_version'] !== '') {
-            return $raw['to_version'];
+            // 완료 기록이 남아 있는 동안 명령줄·같은 DB 의 다른 서버로 더 높은 판이 올라갔을 수 있다 —
+            // 둘 중 높은 판을 고른다(기록 7.2.1, 실제 7.2.3).
+            return version_compare($raw['to_version'], $installed, '>=') ? $raw['to_version'] : $installed;
         }
 
-        return CoreVersionChecker::getCoreVersion();
+        return $installed;
     }
 
     /**
@@ -537,11 +557,19 @@ class CoreUpdateOrchestrator
         }
 
         // 번들 확장 한 항목이 끊긴 것은 코어를 되돌릴 사유가 아니다(그 단계의 실패 규칙과 같다) — 코어는
-        // 이미 새 판으로 정상 반영됐다. 그 항목을 실패로 세고 다음 항목으로 넘어간다.
+        // 이미 새 판으로 정상 반영됐다. 그 항목을 건너뛰고 다음 항목으로 넘어간다.
+        //
+        // 끊긴 것은 **이 요청**이지 항목 자식 프로세스가 아니다 — 자식은 부모가 죽은 뒤에도 끝까지 돌아 그 확장을 새 판으로
+        // 반영할 수 있다(30초 호스팅에서 「업데이트되지 않았습니다」 안내 뒤 DB·활성 폴더는 새 판). 그래서 여기서는
+        // 실패로 세지 않고 「끊긴 항목」으로만 적어 두고, 단계 끝에서 실제 판을 확인해 성공·확인 불가로 가른다.
         if ($step === CoreUpdateStep::Bundled && is_array($progress = $this->state->context('bundled_progress'))) {
             $items = array_values((array) ($progress['items'] ?? []));
             $index = (int) ($progress['index'] ?? 0);
-            $progress['failed'] = (int) ($progress['failed'] ?? 0) + 1;
+            if (isset($items[$index]) && is_array($items[$index])) {
+                $progress['interrupted'] = array_values(array_merge((array) ($progress['interrupted'] ?? []), [$items[$index]]));
+            } else {
+                $progress['failed'] = (int) ($progress['failed'] ?? 0) + 1;
+            }
             $progress['index'] = $index + 1;
             $this->state->mergeContext(['bundled_progress' => $progress]);
             $this->state->appendLog((string) __('settings.core_update.web.log_bundled_item_interrupted', [
@@ -969,6 +997,10 @@ class CoreUpdateOrchestrator
         // 에 싣는다 — 반쪽 백업을 되돌리기가 복원 원본으로 쓰면 안 된다.
         if (($progress['phase'] ?? 'copy') === 'copy') {
             if (! is_string($progress['copy']['backup_path'] ?? null)) {
+                // 지난 실행이 남긴 번들 출하 목록 사본을 버린다 — 이번 실행이 파일 적용 전에 실패해 되돌릴 때 목록이 후퇴하지
+                // 않게(실행 잠금 안, 파일 적용 전).
+                BundledShippedManifest::beginRun();
+
                 // 백업 폴더 경로를 복사 전에 저장한다 — 첫 요청이 복사 중에 끊기면 그 반쪽 폴더를 되돌리기가 지워야 한다.
                 $progress = ['phase' => 'copy', 'copy' => ['backup_path' => CoreBackupHelper::prepareBackupDirectory()]];
                 $this->state->mergeContext(['backup_progress' => $progress]);
@@ -1149,44 +1181,73 @@ class CoreUpdateOrchestrator
             }
         }
 
-        try {
-            $chunk = CoreBackupHelper::computeApplyListChunk(
-                $backupPath,
-                $pendingPath,
-                $targets,
-                $protected,
-                $excludes,
-                $skipPaths,
-                (array) ($progress['apply'] ?? []),
-                $shouldPause,
-            );
+        if (($progress['phase'] ?? 'apply') === 'apply') {
+            try {
+                $chunk = CoreBackupHelper::computeApplyListChunk(
+                    $backupPath,
+                    $pendingPath,
+                    $targets,
+                    $protected,
+                    $excludes,
+                    $skipPaths,
+                    (array) ($progress['apply'] ?? []),
+                    $shouldPause,
+                );
 
-            if (! $chunk['done']) {
-                $progress['apply'] = $chunk;
-                $this->pausePlan($progress, (int) $chunk['visited']);
+                if (! $chunk['done']) {
+                    $progress['apply'] = $chunk;
+                    $this->pausePlan($progress, (int) $chunk['visited']);
+
+                    return;
+                }
+
+                $this->state->storeApplyList($chunk['apply']);
+                $this->state->mergeContext(['apply_stats' => [
+                    'added_count' => count($chunk['added']),
+                    'changed_count' => count($chunk['changed']),
+                    'total' => count($chunk['apply']),
+                ]]);
+
+                $this->state->appendLog((string) __('settings.core_update.web.log_apply_list', [
+                    'added' => (string) count($chunk['added']),
+                    'changed' => (string) count($chunk['changed']),
+                ]));
+            } catch (\Throwable $applyError) {
+                // 산출 실패 시 안전하게 전체 덮어쓰기로 회귀 (CLI 와 동일).
+                $this->state->storeApplyList(null);
+                $this->state->mergeContext(['apply_stats' => null]);
+                $this->state->appendLog((string) __('settings.core_update.web.log_apply_list_failed', [
+                    'error' => $applyError->getMessage(),
+                ]));
+                Log::warning('웹 코어 업데이트: 증분 적용 대상 산출 실패', ['error' => $applyError->getMessage()]);
+            }
+
+            $progress['phase'] = 'shipped';
+            $progress['apply'] = [];
+
+            if ($shouldPause()) {
+                $this->pausePlan($progress, 0);
+
+                return;
+            }
+        }
+
+        // 이번 배포본의 번들 출하 목록(경로·본문 해시) — 적용 단계가 사이트의 직전 목록과 대조해 새 판이 지운 번들 파일을
+        // 정리하고 이 목록을 기록한다. 수만 파일의 해시라 요청 몫 안에서 나눠 만든다. 실패해도 업데이트는 종전처럼 간다.
+        try {
+            $shipped = BundledShippedManifest::collectChunk($pendingPath, (array) ($progress['shipped'] ?? []), $shouldPause, $skipPaths);
+
+            if (! $shipped['done']) {
+                $progress['shipped'] = $shipped;
+                $this->pausePlan($progress, (int) $shipped['index']);
 
                 return;
             }
 
-            $this->state->storeApplyList($chunk['apply']);
-            $this->state->mergeContext(['apply_stats' => [
-                'added_count' => count($chunk['added']),
-                'changed_count' => count($chunk['changed']),
-                'total' => count($chunk['apply']),
-            ]]);
-
-            $this->state->appendLog((string) __('settings.core_update.web.log_apply_list', [
-                'added' => (string) count($chunk['added']),
-                'changed' => (string) count($chunk['changed']),
-            ]));
-        } catch (\Throwable $applyError) {
-            // 산출 실패 시 안전하게 전체 덮어쓰기로 회귀 (CLI 와 동일).
-            $this->state->storeApplyList(null);
-            $this->state->mergeContext(['apply_stats' => null]);
-            $this->state->appendLog((string) __('settings.core_update.web.log_apply_list_failed', [
-                'error' => $applyError->getMessage(),
-            ]));
-            Log::warning('웹 코어 업데이트: 증분 적용 대상 산출 실패', ['error' => $applyError->getMessage()]);
+            $this->state->storeShippedFiles($shipped['files']);
+        } catch (\Throwable $shippedError) {
+            $this->state->storeShippedFiles(null);
+            Log::warning('웹 코어 업데이트: 번들 출하 목록 산출 실패 (정리 없이 진행)', ['error' => $shippedError->getMessage()]);
         }
 
         $this->state->storePlanProgress(null);
@@ -1232,9 +1293,11 @@ class CoreUpdateOrchestrator
             prune: false,
             applyList: $this->state->loadApplyList(),
             skipPaths: $bundledPlan->skipPaths(),
+            shippedFiles: $this->state->loadShippedFiles(),
         );
 
-        $this->state->appendWarnings((array) ($result['root_file_warnings'] ?? []));
+        $this->appendApplyWarnings((array) ($result['root_file_warnings'] ?? []));
+        $this->reportBundledPrune((array) ($result['bundled_prune'] ?? []));
         $this->state->appendLog((string) __('settings.core_update.web.log_applied'));
 
         // 미배치 공식 번들 기록 — 관리자 목록 안내와 `core:bundled-sources` 의 근거. 되돌리기는 이전 기록으로 돌려놓는다.
@@ -1396,6 +1459,13 @@ class CoreUpdateOrchestrator
             return;
         }
 
+        // 앞 요청이 항목을 기다리다 끊겼으면 그 자식이 아직 돌 수 있다 — 끝난 것을 확인하기 전에는 다음 항목·마무리로 가지 않는다.
+        if (! $this->awaitInterruptedBundledChild()) {
+            $this->repeatCurrentStep = true;
+
+            return;
+        }
+
         // 확장 하나의 업데이트(파일 교체·마이그레이션·캐시)가 수십 초다. 수십 개를 한 요청에 돌리면 요청 시간
         // 제한에 걸리므로 한 요청에 한 항목씩 돈다 — 명령줄의 「항목마다 새 프로세스」와 같은 경계이고, 웹에서는
         // 다음 요청이 곧 새 프로세스다. 순서는 명령줄과 같은 정렬(의존 순서 → 템플릿 → 언어팩)이다.
@@ -1430,7 +1500,22 @@ class CoreUpdateOrchestrator
 
         if ($index < $total) {
             $item = (array) $items[$index];
-            $manifestPath = $this->writeBundledItemManifest($item, $index === $total - 1 && $options->rebuildSearchIndex);
+            $marker = $this->state->newBundledChildMarkerPath();
+            $manifestPath = $this->writeBundledItemManifest($item, $index === $total - 1 && $options->rebuildSearchIndex, $marker);
+
+            // 자식이 잡을 표식을 **돌리기 전에** 실행 상태에 적는다 — 이 요청이 시간 제한으로 죽으면 다음 요청이 이것으로 기다린다.
+            // 업데이트 전 확장 상태와 매니페스트 경로도 함께 — 자식이 죽은 것을 확인하면 그 확장의 `updating`·잠금을 정리하고,
+            // 이 요청이 끊겨 지우지 못한 매니페스트를 치운다.
+            $childContext = [
+                'marker' => $marker,
+                'type' => (string) ($item['type'] ?? ''),
+                'identifier' => (string) ($item['identifier'] ?? '?'),
+                'prior_status' => $this->bundledItemStatus((string) ($item['type'] ?? ''), (string) ($item['identifier'] ?? '')),
+                'manifest' => $manifestPath,
+                'started_at' => time(),
+                'parent_pid' => ExecutionEnvironment::hasFunction('getmypid') ? (int) getmypid() : null,
+            ];
+            $this->state->mergeContext(['bundled_child' => $childContext]);
 
             try {
                 $result = $this->runArtisan('core:execute-bundled-updates', [
@@ -1447,6 +1532,18 @@ class CoreUpdateOrchestrator
                 if (is_file($manifestPath)) {
                     @unlink($manifestPath);
                 }
+
+                // 돌아왔으면 자식 프로세스는 끝났다. 표식에 완료 없이 잠금 기록이 남았으면 도중에 죽은 것이다(강제 종료·신호) —
+                // 다음 요청의 고아 판정과 같은 정리를 지금 한다(같은 함수 — 두 경로가 갈라지지 않게). 결과 줄이 없어도 표식이
+                // 없거나 완료가 적혔으면(표식을 잡기 전에 끝남·스스로 정리하고 끝남) 그 확장의 잠금·상태가 자식 것이라는 근거가
+                // 없어 건드리지 않는다.
+                $probe = BundledChildMarker::inspect($marker, null, $childContext['parent_pid']);
+
+                if ($probe['state'] === BundledChildMarker::ORPHAN) {
+                    $this->recoverOrphanedBundledItem($childContext, $probe['locks']);
+                }
+
+                $this->state->mergeContext(['bundled_child' => null]);
             }
 
             $progress['index'] = ++$index;
@@ -1463,11 +1560,14 @@ class CoreUpdateOrchestrator
             return;
         }
 
+        $unconfirmed = $this->resolveInterruptedBundledItems($progress);
+
         $this->state->mergeContext([
             'bundled_progress' => null,
             'bundled_result' => [
                 'success' => (int) $progress['success'],
                 'failed' => (int) $progress['failed'],
+                'unconfirmed' => count($unconfirmed),
                 'planned' => (int) $progress['planned'],
             ],
         ]);
@@ -1480,11 +1580,295 @@ class CoreUpdateOrchestrator
         if ((int) $progress['failed'] > 0) {
             // 확장 일괄 업데이트의 실패는 코어 적용을 되돌릴 사유가 아니다 — 코어는
             // 이미 정상 반영되어 있고, 되돌리면 오히려 성공한 확장 업데이트와
-            // 어긋난다. 사실만 통보하고 진행한다.
-            $this->state->appendWarnings([(string) __('settings.core_update.web.bundled_partial_failure', [
+            // 어긋난다. 사실만 통보하고 진행한다. 나중에 코어를 되돌리면 이 문구의
+            // 「코어는 정상 반영」이 거짓이 되므로 되돌리기가 바꿔 쓸 수 있게 기억한다.
+            $failureWarning = trans_count('settings.core_update.web.bundled_partial_failure', [
                 'failed' => (string) ((int) $progress['failed']),
+                'count' => (int) $progress['failed'],
+            ]);
+            $this->state->appendWarnings([$failureWarning]);
+            $this->state->mergeContext(['bundled_failure_warning' => ['message' => $failureWarning, 'failed' => (int) $progress['failed']]]);
+        }
+
+        if ($unconfirmed !== []) {
+            $this->state->appendWarnings([trans_count('settings.core_update.web.bundled_interrupted_unconfirmed', [
+                'count' => count($unconfirmed),
+                'identifiers' => implode(', ', $unconfirmed),
             ])]);
         }
+    }
+
+    /**
+     * 앞 요청이 기다리다 끊긴 번들 항목 자식이 끝났는지 확인합니다.
+     *
+     * 자식은 실행 상태 디렉토리의 표식을 잠근 채 돈다({@see BundledChildMarker}). 아직 잡고 있으면 이 요청 몫의 절반까지 기다려
+     * 보고, 그래도 돌면 false — 같은 단계를 다음 요청에서 다시 한다. 처음 기다리기 시작할 때 자식 PID 와 시각을 실행 상태에 적고
+     * 안내한다. 상한({@see self::BUNDLED_CHILD_WAIT_SECONDS})을 넘기면 경고를 남기고 진행한다. 표식이 없거나(끝남·옛 자식) 잡은
+     * 프로세스가 없으면(고아 — 강제 종료·재부팅) 치우고 진행한다.
+     *
+     * @return bool 진행해도 되면 true
+     */
+    private function awaitInterruptedBundledChild(): bool
+    {
+        $child = $this->state->context('bundled_child');
+
+        if (! is_array($child) || ! is_string($child['marker'] ?? null)) {
+            return true;
+        }
+
+        $marker = $child['marker'];
+        $identifier = (string) ($child['identifier'] ?? '?');
+        $shouldPause = $this->budget->pauser(0.5);
+
+        while (true) {
+            $probe = BundledChildMarker::inspect(
+                $marker,
+                isset($child['started_at']) ? (int) $child['started_at'] : null,
+                isset($child['parent_pid']) ? (int) $child['parent_pid'] : null,
+            );
+            $pid = $probe['pid'] ?? ($child['pid'] ?? null);
+
+            if ($probe['state'] !== BundledChildMarker::RUNNING) {
+                break;
+            }
+
+            if (! isset($child['waiting_since'])) {
+                $child['waiting_since'] = time();
+                $child['pid'] = $pid;
+                $this->state->mergeContext(['bundled_child' => $child]);
+                $this->state->appendLog((string) __('settings.core_update.web.log_bundled_child_waiting', [
+                    'identifier' => $identifier,
+                    'pid' => (string) ($pid ?? '?'),
+                ]));
+            } elseif (($child['pid'] ?? null) === null && $pid !== null) {
+                $child['pid'] = $pid;
+                $this->state->mergeContext(['bundled_child' => $child]);
+            }
+
+            if (time() - (int) $child['waiting_since'] >= self::BUNDLED_CHILD_WAIT_SECONDS) {
+                Log::warning('웹 코어 업데이트: 끊긴 번들 항목 자식 기다림 상한 초과', ['identifier' => $identifier, 'pid' => $pid]);
+                $this->state->appendWarnings([(string) __('settings.core_update.web.bundled_child_wait_timeout', [
+                    'identifier' => $identifier,
+                    'pid' => (string) ($pid ?? '?'),
+                    'minutes' => (string) intdiv(self::BUNDLED_CHILD_WAIT_SECONDS, 60),
+                ])]);
+                $this->forgetInterruptedItemManifest($child);
+                $this->state->mergeContext(['bundled_child' => null]);
+
+                return true;
+            }
+
+            if ($shouldPause()) {
+                return false;
+            }
+
+            usleep(500_000);
+        }
+
+        if ($probe['state'] === BundledChildMarker::ORPHAN) {
+            $this->state->appendLog((string) __('settings.core_update.web.log_bundled_child_orphaned', [
+                'identifier' => $identifier,
+                'pid' => (string) ($pid ?? '?'),
+            ]));
+            $this->recoverOrphanedBundledItem($child, $probe['locks']);
+        } elseif (isset($child['waiting_since'])) {
+            $this->state->appendLog((string) __('settings.core_update.web.log_bundled_child_finished', [
+                'identifier' => $identifier,
+            ]));
+        }
+
+        $this->forgetInterruptedItemManifest($child);
+        $this->state->mergeContext(['bundled_child' => null]);
+
+        return true;
+    }
+
+    /**
+     * 끊긴 요청이 지우지 못한 항목 매니페스트를 지웁니다.
+     *
+     * 항목을 돌린 요청은 `finally` 에서 매니페스트를 지우지만, 시간 초과·강제 종료로 죽으면 그 자리가 돌지 않는다. 자식은 시작할 때
+     * 한 번 읽으므로 이 시점(자식이 끝났거나 사라졌거나 기다림을 포기함)에는 쓸모가 없다. 생산자 이름 규약의 파일만 지운다.
+     *
+     * @param  array<string, mixed>  $child  `context.bundled_child`
+     * @return void 반환값 없음
+     */
+    private function forgetInterruptedItemManifest(array $child): void
+    {
+        $manifest = $child['manifest'] ?? null;
+
+        if (is_string($manifest) && str_starts_with(basename($manifest), 'bundled-updates-manifest_') && is_file($manifest)) {
+            @unlink($manifest);
+        }
+    }
+
+    /**
+     * 번들 항목 확장의 지금 상태를 읽습니다 (업데이트 전 상태 기록용).
+     *
+     * @param  string  $type  항목 종류 (module|plugin|template|lang_pack)
+     * @param  string  $identifier  식별자
+     * @return string|null 상태 (행이 없거나 읽지 못하면 null)
+     */
+    private function bundledItemStatus(string $type, string $identifier): ?string
+    {
+        try {
+            $record = match ($type) {
+                'module' => app(ModuleRepositoryInterface::class)->findByIdentifier($identifier),
+                'plugin' => app(PluginRepositoryInterface::class)->findByIdentifier($identifier),
+                'template' => app(TemplateRepositoryInterface::class)->findByIdentifier($identifier),
+                'lang_pack' => app(LanguagePackRepositoryInterface::class)->findByIdentifier($identifier),
+                default => null,
+            };
+        } catch (\Throwable $e) {
+            Log::warning('웹 코어 업데이트: 번들 항목 상태 판독 실패', ['type' => $type, 'identifier' => $identifier, 'error' => $e->getMessage()]);
+
+            return null;
+        }
+
+        $status = $record?->status ?? null;
+
+        return $status instanceof \BackedEnum ? (string) $status->value : (is_string($status) ? $status : null);
+    }
+
+    /**
+     * 죽은 것을 확인한 자식이 남긴 확장 작업 잠금과 `updating` 상태를 정리합니다.
+     *
+     * 자식은 확장 작업 잠금(10분)을 쥐고 행을 `updating` 으로 둔 채 죽었다. 그대로 두면 안내대로 개별 업데이트를 해도 잠금 만료까지
+     * 거절되고, 그 뒤에도 `--force` 정리·활성화가 필요했다. 고아 판정은 그 자식이 사라졌다는 확인이므로 잠금을 풀고, 멈춘
+     * 업데이트 정리({@see StuckUpdateRecovery::recover()})를 시간 조건 없이 적용한다 — 파일을 바꾸기 전이면 업데이트 전 상태로,
+     * 바꾼 뒤면 시작 판·「업데이트 있음」·비활성으로 둔다(반쯤 바뀐 파일로 켜지 않는다). 언어팩은 `updating` 이면 업데이트 전
+     * 상태로 되돌린다(언어팩 업데이트 실패 처리와 같다). 실패는 기록만 한다 — 업데이트 진행을 막지 않는다.
+     *
+     * 잠금은 자식이 표식에 적어 둔 소유자로만 푼다 — 그새 다른 작업이 같은 잠금을 잡았으면 소유자가 달라 건드리지 않는다. 그
+     * 확장의 잠금 기록이 없으면(표식을 못 잡은 자식·잠금을 잡기 전에 죽은 자식) 그 확장의 `updating`·잠금이 자식 것이라는 근거가
+     * 없으므로 아무것도 하지 않는다 — 다른 작업(운영자의 명령줄 업데이트 등)의 것일 수 있고, 잠금은 만료된다.
+     *
+     * 다음 요청의 고아 판정과, 부모가 자식의 비정상 종료(결과 없음·표식에 완료 없음)를 직접 받은 경우가 함께 쓴다.
+     *
+     * @param  array<string, mixed>  $child  `context.bundled_child`
+     * @param  array<string, string>  $locks  자식이 표식에 적은 잠금 (키 → 소유자)
+     * @return void 반환값 없음
+     */
+    private function recoverOrphanedBundledItem(array $child, array $locks = []): void
+    {
+        $type = (string) ($child['type'] ?? '');
+        $identifier = (string) ($child['identifier'] ?? '');
+        $priorStatus = is_string($child['prior_status'] ?? null) ? $child['prior_status'] : null;
+
+        if ($identifier === '' || ! in_array($type, ['module', 'plugin', 'template', 'lang_pack'], true)) {
+            return;
+        }
+
+        $lockType = $type === 'lang_pack' ? 'language_pack' : $type;
+        $itemKey = ExtensionOperationLock::key($lockType, $identifier);
+
+        foreach ($locks as $key => $owner) {
+            if (is_string($key) && is_string($owner) && $owner !== '') {
+                ExtensionOperationLock::releaseAbandonedKey($key, $owner);
+            }
+        }
+
+        if (! isset($locks[$itemKey])) {
+            return;
+        }
+
+        try {
+            $restored = null;
+
+            if ($type === 'lang_pack') {
+                $repository = app(LanguagePackRepositoryInterface::class);
+                $pack = $repository->findByIdentifier($identifier);
+                $current = $pack?->status instanceof \BackedEnum ? $pack->status->value : $pack?->status;
+
+                if ($pack !== null && $current === LanguagePackStatus::Updating->value && $priorStatus !== null && $priorStatus !== $current) {
+                    $repository->update($pack, ['status' => $priorStatus]);
+                    $restored = $priorStatus;
+                }
+            } else {
+                $repository = match ($type) {
+                    'module' => app(ModuleRepositoryInterface::class),
+                    'plugin' => app(PluginRepositoryInterface::class),
+                    default => app(TemplateRepositoryInterface::class),
+                };
+                $record = $repository->findByIdentifier($identifier);
+
+                if ($record !== null) {
+                    $restored = StuckUpdateRecovery::recover(
+                        $type,
+                        $identifier,
+                        $record,
+                        fn (array $attributes) => $repository->updateByIdentifier($identifier, $attributes),
+                        lockHeld: true,
+                        holderGone: true,
+                        restoreStatus: $priorStatus,
+                    );
+                    StuckUpdateRecovery::takeRecovered();
+                }
+            }
+
+            if ($restored !== null) {
+                $this->state->appendLog((string) __('settings.core_update.web.log_bundled_child_orphan_recovered', [
+                    'identifier' => $identifier,
+                    'status' => $restored,
+                ]));
+            }
+        } catch (\Throwable $e) {
+            Log::warning('웹 코어 업데이트: 고아 번들 항목의 확장 상태 정리 실패', ['type' => $type, 'identifier' => $identifier, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * 요청 시간 제한으로 끊긴 번들 항목이 실제로 새 판으로 반영됐는지 확인해 성공으로 세고, 확인하지 못한 항목을 돌려줍니다.
+     *
+     * 끊긴 것은 그 항목을 기다리던 요청이지 항목 자식 프로세스가 아니다 — 자식은 끝까지 돌 수 있다. 단계 끝(적어도 한
+     * 요청 뒤)에 「번들에 아직 새 판이 남아 있는가」(코어 업데이트 화면이 업데이트 대상을 고를 때와 같은 판정)로 확인한다:
+     * 남아 있지 않으면 반영된 것이므로 성공, 남아 있으면 자식이 실패했거나 아직 도는 중이라 단정할 수 없어 「확인 불가」다.
+     * 판정 자체가 실패하면 모두 확인 불가로 둔다.
+     *
+     * @param  array<string, mixed>  $progress  번들 진행분 (`success` 를 고친다)
+     * @return list<string> 확인하지 못한 항목 식별자
+     */
+    private function resolveInterruptedBundledItems(array &$progress): array
+    {
+        $interrupted = array_values(array_filter((array) ($progress['interrupted'] ?? []), 'is_array'));
+
+        if ($interrupted === []) {
+            return [];
+        }
+
+        try {
+            $pending = [];
+            $updates = $this->service->collectBundledExtensionUpdates();
+            $updates['lang_packs'] = app(LanguagePackService::class)->collectBundledLangPackUpdates();
+
+            foreach (['modules' => 'module', 'plugins' => 'plugin', 'templates' => 'template', 'lang_packs' => 'lang_pack'] as $key => $type) {
+                foreach ((array) ($updates[$key] ?? []) as $entry) {
+                    $pending[$type.':'.(string) (is_array($entry) ? ($entry['identifier'] ?? '') : '')] = true;
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('웹 코어 업데이트: 끊긴 번들 항목 판 확인 실패', ['error' => $e->getMessage()]);
+
+            return array_values(array_map(static fn (array $item): string => (string) ($item['identifier'] ?? '?'), $interrupted));
+        }
+
+        $unconfirmed = [];
+
+        foreach ($interrupted as $item) {
+            $identifier = (string) ($item['identifier'] ?? '?');
+
+            if (isset($pending[(string) ($item['type'] ?? '').':'.$identifier])) {
+                $unconfirmed[] = $identifier;
+
+                continue;
+            }
+
+            $progress['success'] = (int) ($progress['success'] ?? 0) + 1;
+            $this->state->appendLog((string) __('settings.core_update.web.log_bundled_item_interrupted_applied', [
+                'identifier' => $identifier,
+            ]));
+        }
+
+        return $unconfirmed;
     }
 
     /**
@@ -1492,13 +1876,18 @@ class CoreUpdateOrchestrator
      *
      * @param  array<string, mixed>  $item  `ExecuteBundledUpdatesCommand::flattenItems()` 항목
      * @param  bool  $rebuildSearchIndex  이 항목 뒤에 검색 인덱스를 다시 만들지 (마지막 항목만)
+     * @param  string|null  $childMarker  자식이 잡을 표식 경로
      * @return string 매니페스트 경로
      */
-    private function writeBundledItemManifest(array $item, bool $rebuildSearchIndex): string
+    private function writeBundledItemManifest(array $item, bool $rebuildSearchIndex, ?string $childMarker = null): string
     {
         // 항목 하나짜리 매니페스트 모양은 명령 쪽이 소유한다 — 같은 함수를 써서 두 곳이 갈리지 않게 한다.
         $manifest = ExecuteBundledUpdatesCommand::manifestForItem($item);
         $manifest['rebuild_search_index'] = $rebuildSearchIndex;
+
+        if ($childMarker !== null) {
+            $manifest['child_marker'] = $childMarker;
+        }
 
         $directory = storage_path('app'.DIRECTORY_SEPARATOR.'core_pending');
         File::ensureDirectoryExists($directory, 0770, true);
@@ -1734,7 +2123,7 @@ class CoreUpdateOrchestrator
 
         // 되돌리기 **이전**에 루트 진입·보호 파일 결과를 배수한다 — `restoreFromBackup()`
         // 이 경고 버퍼를 비우므로 그 뒤에만 읽으면 사라진다.
-        $this->state->appendWarnings($this->service->getLastRootFileWarnings());
+        $this->appendApplyWarnings($this->service->getLastRootFileWarnings());
 
         $this->state->patch([
             'status' => CoreUpdateRunState::STATUS_ROLLING_BACK,
@@ -1879,6 +2268,11 @@ class CoreUpdateOrchestrator
                 // 요청이 끊기면 다음 요청이 복원부터 다시 해 같은 자리에서 또 끊겨 재시도 상한에 닿는다.
                 $save('ownership', ['caches_dropped' => false]);
 
+                // 적용 단계가 낸 루트 진입·보호 파일·서버 설정 조각 안내는 복원이 끝난 지금 더는 사실이 아니다 — 그 파일은
+                // 백업으로 돌아갔고 `.dist` 사본과 해시 원장은 복원이 걷었다. 남겨 두면 결과 화면이 없는 `.dist` 를 합치라고
+                // 한다. 복원 자신의 경고는 아래에서 새로 싣는다. 서비스의 경고 버퍼가 복원 전에 비워지는 것과 같은 규약.
+                $this->withdrawApplyWarnings();
+                $this->restateBundledFailureAfterRollback();
                 $this->state->appendWarnings((array) ($result['root_file_warnings'] ?? []));
                 $this->state->appendLog($restored
                     ? (string) __('settings.core_update.web.log_restored')
@@ -1955,6 +2349,94 @@ class CoreUpdateOrchestrator
 
         $this->state->mergeContext(['rollback_progress' => null]);
         $this->finishRollback($restored, $failedTargets);
+    }
+
+    /**
+     * 번들 출하 목록 대조 결과를 진행 기록·경고에 싣습니다.
+     *
+     * @param  array<string, mixed>  $report  `applyUpdate()` 반환값의 `bundled_prune`
+     * @return void 반환값 없음
+     */
+    private function reportBundledPrune(array $report): void
+    {
+        $removed = array_values((array) ($report['removed'] ?? []));
+        $kept = array_values((array) ($report['kept_modified'] ?? []));
+
+        if ($removed !== []) {
+            $this->state->appendLog(trans_count('settings.core_update.console.bundled_pruned', ['count' => count($removed)]));
+        }
+
+        if ($kept !== []) {
+            $this->state->appendWarnings([trans_count('settings.core_update.console.bundled_prune_kept_modified', ['count' => count($kept)]).' '.implode(', ', $kept)]);
+        }
+    }
+
+    /**
+     * 파일 적용 단계의 루트 진입·보호 파일·서버 설정 조각 안내를 경고로 싣고, 되돌리기가 걷을 수 있게 따로 기억합니다.
+     *
+     * @param  array<int, mixed>  $warnings  `applyUpdate()` 의 `root_file_warnings` (또는 적용이 끊겼을 때의 서비스 경고 버퍼)
+     * @return void 반환값 없음
+     */
+    private function appendApplyWarnings(array $warnings): void
+    {
+        $warnings = array_values(array_filter($warnings, static fn ($w): bool => is_string($w) && $w !== ''));
+
+        if ($warnings === []) {
+            return;
+        }
+
+        $this->state->appendWarnings($warnings);
+
+        $recorded = array_values(array_filter((array) ($this->state->context('apply_warnings') ?? []), 'is_string'));
+        $this->state->mergeContext(['apply_warnings' => array_values(array_unique(array_merge($recorded, $warnings)))]);
+    }
+
+    /**
+     * 되돌리기 복원이 끝난 뒤 적용 단계 안내를 경고에서 걷고, 걷었으면 그 사실을 통보로 남깁니다.
+     *
+     * @return void 반환값 없음
+     */
+    private function withdrawApplyWarnings(): void
+    {
+        $recorded = array_values(array_filter((array) ($this->state->context('apply_warnings') ?? []), 'is_string'));
+
+        if ($recorded === []) {
+            return;
+        }
+
+        $withdrawn = $this->state->withdrawWarnings($recorded);
+        $this->state->mergeContext(['apply_warnings' => null]);
+
+        if ($withdrawn > 0) {
+            $this->state->appendNotices([trans_count('settings.core_update.rollback_apply_warnings_withdrawn', ['count' => $withdrawn])]);
+        }
+    }
+
+    /**
+     * 되돌린 실행의 「번들 확장 일부 실패 — 코어는 정상 반영」 경고를 「코어는 되돌렸고 이미 갱신된 확장은 그대로」로 바꿉니다.
+     *
+     * 번들 단계 뒤(마무리 준비 구간)에서 실패해 되돌리면 코어 파일만 백업으로 돌아가고 이미 갱신된 확장은 그대로다. 실패한
+     * 확장이 있다는 사실은 남겨야 운영자가 확장 상태를 확인하므로, 거짓이 된 「코어는 정상 반영」만 고친다.
+     *
+     * @return void 반환값 없음
+     */
+    private function restateBundledFailureAfterRollback(): void
+    {
+        $recorded = $this->state->context('bundled_failure_warning');
+
+        if (! is_array($recorded) || ! is_string($recorded['message'] ?? null)) {
+            return;
+        }
+
+        $this->state->mergeContext(['bundled_failure_warning' => null]);
+
+        if ($this->state->withdrawWarnings([$recorded['message']]) > 0) {
+            $failed = (int) ($recorded['failed'] ?? 0);
+            $this->state->appendWarnings([trans_count('settings.core_update.web.bundled_partial_failure_rolled_back', [
+                'failed' => (string) $failed,
+                'count' => $failed,
+            ])]);
+        }
     }
 
     /**
@@ -2317,19 +2799,7 @@ class CoreUpdateOrchestrator
      */
     private function readSourceVersion(string $sourcePath): ?string
     {
-        $configPath = $sourcePath.DIRECTORY_SEPARATOR.'config'.DIRECTORY_SEPARATOR.'app.php';
-
-        if (! is_file($configPath)) {
-            return null;
-        }
-
-        $contents = (string) @file_get_contents($configPath);
-
-        if (preg_match('/[\'"]version[\'"]\s*=>\s*env\s*\(\s*[\'"]APP_VERSION[\'"]\s*,\s*[\'"]([^\'"]+)[\'"]\s*\)/', $contents, $matches) === 1) {
-            return $matches[1];
-        }
-
-        return null;
+        return CoreUpdateService::readSourceVersion($sourcePath);
     }
 
     /**

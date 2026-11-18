@@ -16,8 +16,7 @@ import jaAdmin from '../../../../../lang-packs/_bundled/g7-template-sirsoft-admi
  * 3. 착수 액션이 웹에 없는 선택(force·prune·백업 생략)을 싣지 않는가 (D27)
  * 4. 화면이 쓰는 다국어 키가 ko·en 양쪽에 있는가
  *
- * @scenario actor=with_permission, run_state=idle
- * @effects update_tab_is_hidden_without_permission, start_sends_only_safe_options
+ * 효과 요약(마커 아님 — 평문): 권한 없으면 탭 미표시, 착수는 안전한 선택만 싣는다. 시나리오 마커는 각 시험 바로 위에 단다.
  */
 
 type Json = Record<string, unknown>;
@@ -245,6 +244,31 @@ describe('환경설정 업데이트 탭 — W6 상태 분리·진단·이어받�
 
     const computed = (settings as Json).computed as Json;
     expect(Object.keys(computed)).toContain('coreUpdateStatus');
+  });
+
+  // @scenario actor=with_permission, run_state=finished
+  // @effects the_completed_card_states_the_finished_version_not_the_current_one
+  it('완료 카드는 지난 실행이 올린 판을 「현재 버전」이라 하지 않는다 (그 뒤 명령줄로 더 올리면 한 화면에 두 판이 보인다)', () => {
+    // 완료 기록을 닫지 않은 채 명령줄로 더 올리면 현재 버전 칸은 실제 판(7.2.2), 완료 카드는 지난 실행의 `to_version`(7.2.1)
+    // 이다. 카드는 그 실행이 마친 사실만 말하고 현재 판은 현재 버전 칸이 말한다.
+    const card = collect(updateTab, (obj) => obj.id === 'core_update_completed')[0];
+
+    expect(card, '완료 카드를 찾지 못했다').toBeDefined();
+    expect(JSON.stringify(card)).toContain('completed_desc|version={{_computed.coreUpdateRun?.to_version');
+
+    const completedDesc = (pack: unknown): unknown => (((pack as Json).settings as Json | undefined)?.core_update as Json | undefined)?.completed_desc;
+    const messages: Record<string, unknown> = {
+      ko: completedDesc(koAdmin),
+      en: completedDesc(enAdmin),
+      ja: completedDesc(jaAdmin),
+    };
+    const presentTense: Record<string, RegExp> = { ko: /현재 버전/, en: /current version/i, ja: /現在のバージョン/ };
+
+    for (const [locale, message] of Object.entries(messages)) {
+      expect(typeof message, `${locale} 완료 문구가 없다`).toBe('string');
+      expect(message as string, `${locale} 완료 문구가 지난 실행의 판을 현재 버전이라 말한다`).not.toMatch(presentTense[locale]);
+      expect(message as string, `${locale} 완료 문구에 판 자리표시자가 없다`).toContain('{{version}}');
+    }
   });
 
   // @scenario actor=with_permission, run_state=idle, failing_step=preflight

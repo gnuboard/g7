@@ -329,7 +329,7 @@
             "loading_strategy": "progressive",
             "params": {
                 "active_only": true,
-                "per_page": 100
+                "per_page": "all"
             },
             "cache": {
                 "ttl": 300
@@ -371,7 +371,7 @@
                     ]
                 }
             },
-            "comment": "공통정보 선택지 — 여러 상품이 함께 쓰는 안내문을 골라 붙인다"
+            "comment": "공통정보 선택지 — 여러 상품이 함께 쓰는 안내문을 골라 붙인다. 쪽 하나만 받으면 101번째 이후를 고를 수 없어 상품정보고시처럼 전부(per_page=all) 받는다"
         },
         {
             "id": "shipping_policies",
@@ -384,7 +384,7 @@
             "loading_strategy": "blocking",
             "params": {
                 "is_active": true,
-                "per_page": 100
+                "per_page": "all"
             },
             "cache": {
                 "ttl": 300

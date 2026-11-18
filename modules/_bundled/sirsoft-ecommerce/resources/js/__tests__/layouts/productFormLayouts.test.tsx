@@ -819,6 +819,18 @@ describe('productFormLayouts', () => {
             const noticeDs = findDataSource(productFormLayout, 'notice_templates');
             expect(commonDs.params.active_only).toBe(noticeDs.params.active_only);
         });
+
+        // @scenario section=common_info
+        // @effects product_form_selectors_fetch_every_row
+        // 선택지 소스가 쪽 하나(per_page=100)만 받으면 101번째 이후 공통정보·배송정책을 고를 수 없다.
+        // 같은 화면의 상품정보고시 템플릿처럼 전체 조회(per_page=all)로 받는다. 브랜드·라벨·카테고리 API 는 쪽 나눔이 없다.
+        it('공통정보·배송정책·상품정보고시 선택지는 쪽 하나가 아니라 전부(per_page=all)를 받는다', () => {
+            for (const id of ['common_infos', 'shipping_policies', 'notice_templates']) {
+                const ds = findDataSource(productFormLayout, id);
+                expect(ds, id).not.toBeNull();
+                expect(ds.params.per_page, id).toBe('all');
+            }
+        });
     });
 
     describe('마스터-디테일 그리드 비율', () => {

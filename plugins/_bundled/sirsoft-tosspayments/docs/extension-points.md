@@ -58,7 +58,10 @@
 설정 저장 시점에 서버측 범위 검증(`vbank_valid_hours`, `use_escrow`)을 강제합니다
 (§AGENTS.md "핵심 흐름"). `RegisterTossPaymentMethodsListener`가 `order_sheet_mode`가
 꺼져 있으면 아무것도 주입하지 않는 것은 결제창형에서는 토스 결제수단 전부가 통합결제창
-카드 하나로 처리되기 때문입니다 — 개별 버튼을 만들 필요가 없습니다. 3종의 현금영수증 훅
+카드 하나로 처리되기 때문입니다 — 개별 버튼을 만들 필요가 없습니다. 주입하는 이름·설명은
+`LocalizedValue::translateAll()` 로 지원 언어(`app.supported_locales` = 활성 언어팩) 전부를 채웁니다 —
+ko·en 만 실으면 일본어 화면에 번역이 있는데도 한국어 이름이 보입니다(이커머스가 설정을 읽을 때마다
+`_cached_name` 을 이 정의로 새로 채우므로 다시 저장하지 않아도 반영됩니다). 3종의 현금영수증 훅
 (`cash_receipt.*`)은 카드/계좌이체 발급, 취소, 프로바이더 등록을 각각 담당하며 모두
 `RegisterCashReceiptProviderListener` 하나가 처리합니다 — PG 선택과 현금영수증 발급사
 선택이 이커머스에서 독립적인 개념이라 별도 등록입니다.

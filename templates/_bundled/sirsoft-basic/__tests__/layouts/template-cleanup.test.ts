@@ -56,7 +56,38 @@ describe('기본 템플릿 정리', () => {
     const link = seo.render_modes.product_card_view.link;
 
     expect(link.href).toBe('/products/{product_code|id}');
-    expect(link.base_url).toBe('$var:shopBase');
+    // 앞머리는 화면 ProductCard 가 받는 shopBase prop 그대로 — 화면마다 meta.seo.vars 를 두지 않는다
+    expect(link.base_url).toBe('$prop:shopBase');
+  });
+
+  // @scenario case=c05
+  // @effects seo_product_card_matches_screen_card
+  it('상품 카드를 쓰는 모든 레이아웃이 shopBase 를 넘기고, 검색 엔진용 카드 이미지가 화면 카드와 같은 썸네일 규격이다', () => {
+    const offenders: string[] = [];
+    let cards = 0;
+    const walk = (node: unknown, file: string): void => {
+      if (Array.isArray(node)) return node.forEach((child) => walk(child, file));
+      if (!node || typeof node !== 'object') return;
+      const n = node as { name?: string; props?: Record<string, unknown> };
+      if (n.name === 'ProductCard') {
+        cards++;
+        if (typeof n.props?.shopBase !== 'string') offenders.push(path.relative(templateDir, file));
+      }
+      Object.values(node).forEach((child) => walk(child, file));
+    };
+    for (const file of listFiles(layoutsDir).filter((f) => f.endsWith('.json'))) {
+      walk(JSON.parse(fs.readFileSync(file, 'utf-8')), file);
+    }
+    expect(cards).toBeGreaterThan(0);
+    expect(offenders).toEqual([]);
+
+    // 화면 ProductCard 의 Img thumbPreset 과 봇 카드 img 항목의 thumbPreset 이 같다
+    const seo = JSON.parse(fs.readFileSync(path.join(templateDir, 'seo-config.json'), 'utf-8'));
+    const img = seo.render_modes.product_card_view.fields.find((f: { tag?: string }) => f.tag === 'img');
+    const source = fs.readFileSync(path.join(templateDir, 'src/components/composite/ProductCard.tsx'), 'utf-8');
+    const screenPreset = source.match(/thumbPreset="([^"]+)"/)?.[1];
+    expect(screenPreset).toBeTruthy();
+    expect(img.thumbPreset).toBe(screenPreset);
   });
 
   // @scenario case=c03

@@ -1549,7 +1549,7 @@
                                                                     ],
                                                                     "props": {
                                                                         "type": "button",
-                                                                        "ariaLabel": "$t:sirsoft-board.admin.form.guest_author_fields.delete|label={{row.label}}",
+                                                                        "aria-label": "$t:sirsoft-board.admin.form.guest_author_fields.delete|label={{row.label}}",
                                                                         "className": "board:p-1 board:shrink-0 board:text-gray-500 board:dark:text-gray-400 board:hover:text-red-600 board:dark:hover:text-red-400"
                                                                     },
                                                                     "children": [
@@ -1959,7 +1959,7 @@
                                                                     ],
                                                                     "props": {
                                                                         "type": "button",
-                                                                        "ariaLabel": "$t:sirsoft-board.admin.form.guest_author_fields.delete|label={{row.label}}",
+                                                                        "aria-label": "$t:sirsoft-board.admin.form.guest_author_fields.delete|label={{row.label}}",
                                                                         "className": "board:p-1 board:text-gray-500 board:dark:text-gray-400 board:hover:text-red-600 board:dark:hover:text-red-400"
                                                                     },
                                                                     "children": [

@@ -28,6 +28,8 @@ effects:
   - admin_show_returns_saved_settings
   # 설정 응답이 저장 권한(privacy.update) 판정을 싣는다 — 설정 화면 읽기 전용의 근거(7.1.0 abilities 게이트)
   - admin_show_reports_update_ability
+  - admin_show_open_to_plugin_viewers_read_only   # 「플러그인 보기」만 있는 운영자도 설정 조회 200(can_update=false), 저장은 403 — 읽기 전용 화면
+  - blocked_domains_off_hint_not_flashed_before_form_filled   # 설정 받은 직후 폼 채우기 전 한 박자에도 배너 ON 사이트에 OFF 안내가 번쩍이지 않음
   - admin_update_persists_validated_settings
   - admin_update_strips_removed_toggle_keys
   - admin_update_rejects_invalid_banner_position

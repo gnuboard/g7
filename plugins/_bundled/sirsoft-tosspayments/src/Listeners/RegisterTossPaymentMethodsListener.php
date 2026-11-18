@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\Tosspayments\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Support\LocalizedValue;
 use Plugins\Sirsoft\Tosspayments\Concerns\MapsTossPaymentMethods;
 
 /**
@@ -148,14 +149,10 @@ class RegisterTossPaymentMethodsListener implements HookListenerInterface
 
         $entry = [
             'id' => $id,
-            'name' => [
-                'ko' => __($nameKey, [], 'ko'),
-                'en' => __($nameKey, [], 'en'),
-            ],
-            'description' => [
-                'ko' => __($descriptionKey, [], 'ko'),
-                'en' => __($descriptionKey, [], 'en'),
-            ],
+            // 이름·설명은 지원 언어(활성 언어팩) 전부로 채운다 — ko·en 만 실으면 일본어 등 언어팩을 켠 사이트의
+            // 그 언어 화면에 번역이 있는데도 사이트 기본 언어 이름이 보인다.
+            'name' => LocalizedValue::translateAll(fn () => __($nameKey)),
+            'description' => LocalizedValue::translateAll(fn () => __($descriptionKey)),
             'icon' => self::METHOD_PRESENTATION[$id]['icon'] ?? 'credit-card',
             'source' => 'plugin:sirsoft-tosspayments',
             'defaults' => [

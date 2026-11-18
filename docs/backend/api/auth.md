@@ -1545,7 +1545,7 @@ Accept-Language: ko
 | fields[].renderer | string | `builtin` | 그리기 갈래(builtin, address, file, extension) |
 | fields[].owner | string | `core` | 항목을 선언한 쪽. 운영자 추가 항목은 `custom` |
 | fields[].owner_type | string | `core` | 출처(core, module, plugin, custom) |
-| fields[].source_label | string\|null | `null` | 항목을 선언한 확장의 이름. 화면이 확장별 묶음 제목으로 쓴다. 코어 항목과 운영자 추가 항목은 null |
+| fields[].source_label | string\|null | `null` | 항목을 선언한 확장의 이름(설치 기록의 다국어 이름에서 요청 언어로 고른다). 화면이 확장별 묶음 제목으로 쓴다. 코어 항목과 운영자 추가 항목은 null |
 | fields[].label | string | `이름` | 요청 로케일로 풀린 항목 이름 |
 | fields[].placeholder | string\|null | `이름을 입력하세요` | 예시 글 |
 | fields[].help | string\|null | `null` | 안내 문구 |
@@ -2002,7 +2002,7 @@ HTTP/1.1 200
 
 프론트(사용자) 레이아웃 전역 부트스트랩 엔드포인트. `_user_base.g7.html` 의 `current_user` data_source 가 모든 페이지 진입 시 호출한다. 관리자 `user` 와 달리 응답을 `UserResource::toAuthArray()` 로 만들어 `core.user.filter_resource_data` 필터를 적용하므로, marketing 플러그인·ecommerce 모듈이 훅으로 병합한 필드(`notify_*`, `marketing_consent*`, `channels`, `ecommerce_*` 등)가 함께 내려온다. 이 필드들은 확장 소유이므로 상세 설명은 각 확장 문서를 따른다. 로그인 시 이 응답이 계정 영속 통화를 덮어쓰는 계약(D-LOGIN-CUR)의 출처다.
 
-**인증 계약**: 이 경로(`api.auth.user`)는 `auth:sanctum` 으로 인증이 필수다. 인증 여부와 무관하게 게스트 컨텍스트가 필요한 화면은 `optional.sanctum` 이 걸린 `/api/user/auth/user`(`api.user.auth.user`)를 사용해야 한다 — 프론트 `data_source` 의 `auth_mode: "optional"` 이 이 경로에 대응한다. 두 경로의 미들웨어 차이가 곧 `auth_required`/`auth_mode` 계약이므로 변경 시 프론트와 함께 검토한다(이슈 #64).
+**인증 계약**: 이 경로(`api.auth.user`)는 `auth:sanctum` 으로 인증이 필수다. `/api/user/auth/user`(`api.user.auth.user`)도 로그인을 요구한다(7.2.0, 그 그룹은 `optional.sanctum` 이지만 본인 토큰 경로는 `auth:sanctum`) — 비로그인 문맥이 필요한 화면은 사용자 조회를 부르지 않고 `auth_mode: "optional"` 데이터소스로 401 을 견딘다. 두 경로의 미들웨어 차이가 곧 `auth_required`/`auth_mode` 계약이므로 변경 시 프론트와 함께 검토한다(이슈 #64).
 
 **계정 상태**: 이 경로는 `check.user_status:core.profile.read` 를 건다 — 활성이 아닌 회원(비활성·차단·탈퇴·가입대기·휴면)이 이미 가진 토큰으로 부르면 그 회원 역할에 `core.profile.read`(내 정보 조회) 권한이 있을 때만 200, 없으면 403 과 상태 사유다. 라우트 `auth_required` 판정이 이 응답을 보므로, 403 이면 마이페이지 대신 로그인 화면으로 간다. 같은 판정이 `GET /api/me` 에도 걸리고(`me.md` 「계정 상태와 조회」), `POST /api/auth/logout` 등 쓰기는 권한과 무관하게 상태로 403 이다.
 
@@ -2083,7 +2083,7 @@ HTTP/1.1 200
 <!-- @generated:start:api.user.auth.logout -->
 - **라우트명**: `api.user.auth.logout`
 - **컨트롤러**: `App\Http\Controllers\Api\Auth\AuthController@logout`
-- **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근) + `permission:core.auth.logout`
+- **인증/권한**: `auth:sanctum`
 
 **요청 파라미터**
 
@@ -2095,7 +2095,7 @@ _요청 파라미터 없음._
 POST /api/user/auth/logout HTTP/1.1
 Host: api.example.com
 Accept: application/json
-Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생략 가능)
+Authorization: Bearer {YOUR_TOKEN}
 ```
 
 **응답 필드** (`data` 내부)
@@ -2121,7 +2121,6 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.auth.logout`)이 없는 경우 |
 
 <!-- @generated:end -->
 
@@ -2129,14 +2128,16 @@ HTTP/1.1 200
 
 **설명**
 
-`/user` prefix 그룹의 사용자 로그아웃. 공용 경로 `/api/auth/logout` 과 동일하게 현재 토큰을 폐기하되, `permission:core.auth.logout` 권한 게이트를 추가로 통과해야 한다. 세션 시작(`start.api.session`)이 걸린 공용 경로와 달리 권한 기반 접근 제어가 필요한 흐름에서 사용한다.
+`/user` prefix 그룹의 사용자 로그아웃. 공용 경로 `/api/auth/logout` 과 동일하게 현재 토큰을 폐기한다. 로그인한 본인의 행위라 로그인(`auth:sanctum`)만 요구한다.
+
+> 7.2.0: 이 그룹의 본인 토큰 경로(`logout`·`logout-all-devices`·`user`·`refresh`)는 역할 권한(`core.auth.logout`·`core.auth.user`·`core.auth.refresh`)을 요구하지 않는다. 그 권한은 코어가 선언한 적이 없어 어떤 회원도 가질 수 없었고, 경로가 모든 회원에게 403 이었다(사용자 화면 토큰 갱신이 늘 실패). 비로그인 요청은 401 이다.
 
 
 ### POST /api/user/auth/logout-all-devices
 <!-- @generated:start:api.user.auth.logout-all-devices -->
 - **라우트명**: `api.user.auth.logout-all-devices`
 - **컨트롤러**: `App\Http\Controllers\Api\Auth\AuthController@logoutFromAllDevices`
-- **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근) + `permission:core.auth.logout`
+- **인증/권한**: `auth:sanctum`
 
 **요청 파라미터**
 
@@ -2148,7 +2149,7 @@ _요청 파라미터 없음._
 POST /api/user/auth/logout-all-devices HTTP/1.1
 Host: api.example.com
 Accept: application/json
-Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생략 가능)
+Authorization: Bearer {YOUR_TOKEN}
 ```
 
 **응답 필드** (`data` 내부)
@@ -2174,7 +2175,6 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.auth.logout`)이 없는 경우 |
 
 <!-- @generated:end -->
 
@@ -2188,7 +2188,7 @@ HTTP/1.1 200
 <!-- @generated:start:api.user.auth.refresh -->
 - **라우트명**: `api.user.auth.refresh`
 - **컨트롤러**: `App\Http\Controllers\Api\Auth\AuthController@refresh`
-- **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근) + `permission:core.auth.refresh`
+- **인증/권한**: `auth:sanctum`
 
 **요청 파라미터**
 
@@ -2200,7 +2200,7 @@ _요청 파라미터 없음._
 POST /api/user/auth/refresh HTTP/1.1
 Host: api.example.com
 Accept: application/json
-Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생략 가능)
+Authorization: Bearer {YOUR_TOKEN}
 ```
 
 **응답 필드** (`data` 내부)
@@ -2252,7 +2252,6 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.auth.refresh`)이 없는 경우 |
 | 423 | Locked | 계정이 잠긴 경우. 응답 형태는 로그인 엔드포인트의 423 과 동일하다 (`auth.account_locked` / `auth.account_locked_permanently` — `errors.locked_until`, `errors.retry_after_seconds`, `errors.permanent`). 잠긴 계정은 기존 세션으로도 토큰을 연장할 수 없으며, 차단 시 기존 토큰도 폐기되지 않는다 |
 
 <!-- @generated:end -->
@@ -2261,14 +2260,14 @@ HTTP/1.1 200
 
 **설명**
 
-`/user` prefix 그룹의 토큰 갱신. 공용 `refresh` 와 동작은 같으나 `permission:core.auth.refresh` 권한 게이트를 추가로 통과해야 한다. 이 그룹(`routes/api.php:271`)은 `optional.sanctum` + `RefreshTokenExpiration` 미들웨어 아래 있어 토큰 만료 정책 갱신과 함께 동작한다.
+`/user` prefix 그룹의 토큰 갱신(엔진 `AuthManager` 의 사용자 갱신 주소). 로그인한 본인의 행위라 로그인(`auth:sanctum`)만 요구한다(7.2.0 — 그 전에는 선언된 적 없는 `core.auth.refresh` 권한을 요구해 모든 회원이 403 이었다). 이 그룹은 `RefreshTokenExpiration` 미들웨어 아래 있어 토큰 만료 정책 갱신과 함께 동작한다.
 
 
 ### GET /api/user/auth/user
 <!-- @generated:start:api.user.auth.user -->
 - **라우트명**: `api.user.auth.user`
 - **컨트롤러**: `App\Http\Controllers\Api\Auth\AuthController@user`
-- **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근) + `permission:core.auth.user`
+- **인증/권한**: `auth:sanctum`
 
 **요청 파라미터**
 
@@ -2280,7 +2279,7 @@ _요청 파라미터 없음._
 GET /api/user/auth/user HTTP/1.1
 Host: api.example.com
 Accept: application/json
-Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생략 가능)
+Authorization: Bearer {YOUR_TOKEN}
 ```
 
 **응답 필드** (`data` 내부)
@@ -2302,7 +2301,7 @@ _단건 응답: `data` 객체의 필드. 컨트롤러 메서드가 공용 `GET /
 | abilities | object | `{"can_read":true,"can_update":true, …}` | 이 리소스에 수행 가능한 작업 불리언 맵 |
 | (확장 병합 필드) | — | `notify_*`, `marketing_consent*`, `ecommerce_*` 등 | marketing 플러그인·ecommerce 모듈이 `core.user.filter_resource_data` 필터로 병합 — 전수는 `GET /api/auth/user` 응답 필드 표 참조 |
 
-> 필드 전수(코어 + 확장 병합)는 `GET /api/auth/user` 의 응답 필드 표와 동일하므로 그 표를 SSoT 로 참조합니다. 게스트(비인증) 요청은 `optional.sanctum` 을 통과하지만 `request()->user()` 가 없으므로 이 경로는 인증 사용자 컨텍스트에서만 사용자 객체를 반환합니다.
+> 필드 전수(코어 + 확장 병합)는 `GET /api/auth/user` 의 응답 필드 표와 동일하므로 그 표를 SSoT 로 참조합니다. 비로그인 요청은 `auth:sanctum` 에서 401 입니다(7.2.0 — 그 전에는 선언된 적 없는 `core.auth.user` 권한 판정으로 모든 요청이 막혔습니다).
 
 **응답 예시**
 
@@ -2355,7 +2354,6 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.auth.user`)이 없는 경우 |
 
 <!-- @generated:end -->
 
@@ -2363,7 +2361,7 @@ HTTP/1.1 200
 
 **설명**
 
-`/user` prefix 그룹(`routes/api.php:271`)의 현재 사용자 정보. 이 그룹은 `optional.sanctum` 미들웨어 아래 있어 **비인증(게스트) 요청도 통과**하며, 게스트 컨텍스트가 필요한 프론트 화면의 `data_source`(`auth_mode: "optional"`)가 이 경로를 소비한다. 응답 필드는 인증된 경우 공용 `/api/auth/user` 와 동일 형태(`toAuthArray` 병합 포함)이며, 이 경로에는 추가로 `permission:core.auth.user` 권한 게이트가 걸린다. 실측이 `403` 으로 제외된 것은 샘플 사용자에 해당 권한이 없었기 때문으로, 응답 shape 은 공용 `user` 경로를 참조한다.
+`/user` prefix 그룹의 현재 사용자 정보. 그룹은 `optional.sanctum` 이지만 이 경로는 로그인(`auth:sanctum`)을 요구한다 — 비로그인 요청은 401 이다. 응답 필드는 공용 `/api/auth/user` 와 동일 형태(`toAuthArray` 병합 포함)다. 7.2.0 전에는 선언된 적 없는 `core.auth.user` 권한을 요구해 모든 요청이 403 이었다(실측이 403 으로 빠졌던 이유).
 
 > **인증 계약 요약(이슈 #64)**: `api.auth.user`(`auth:sanctum`, 필수) ↔ `api.user.auth.user`(`optional.sanctum`, 선택). 프론트 `data_source` 의 `auth_required: true` 는 전자에, `auth_mode: "optional"` 은 후자에 대응한다. 어느 한쪽 미들웨어를 바꾸면 프론트 소비 계약이 침묵 속에서 깨지므로 반드시 양쪽 문서를 함께 갱신한다.
 

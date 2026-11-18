@@ -51,6 +51,8 @@ trait HandlesPackageIntegrity
      *
      * 작업(`$run`)은 무결성 거절을 아무것도 바꾸기 전에 던져야 한다(설치·업데이트 매니저는 백업 전에 검증한다).
      * 거절 문장 자체는 출력하지 않는다 — 다시 던진 예외를 받는 명령의 실패 처리가 낸다. 여기서는 안내 줄만 더한다.
+     * 다시 던지는 예외는 명령줄 문장(`PackageIntegrityException::forConsole()`)이다 — 화면 응답 문장의 「미서명으로 계속」
+     * 단추 안내가 명령줄 출력에 섞이지 않게 한다.
      *
      * @template T
      *
@@ -69,7 +71,7 @@ trait HandlesPackageIntegrity
                 if ($e->blockedByPolicy) {
                     $this->line(__('extension_integrity.commands.unsigned_blocked_hint'));
                 }
-                throw $e;
+                throw $e->forConsole();
             }
 
             // `--yes` 는 진행 확인에만 「예」로 답한다 — 미서명 동의는 `--allow-unsigned` 하나로만 한다.
@@ -78,11 +80,11 @@ trait HandlesPackageIntegrity
             // 패키지를 묻지도 않고 받아들였다(#918).
             if (! $this->canShowPrompt()) {
                 $this->line(__('extension_integrity.commands.unsigned_noninteractive_hint'));
-                throw $e;
+                throw $e->forConsole();
             }
 
             if (! $this->optionalConfirm(__('extension_integrity.commands.unsigned_confirm', ['reason' => (string) $e->verification->reasonMessage()]), false)) {
-                throw $e;
+                throw $e->forConsole();
             }
 
             return $run($options->allowingUnsigned());
@@ -138,7 +140,7 @@ trait HandlesPackageIntegrity
      */
     protected function reportPackageIntegrityRefusal(PackageIntegrityException $e): void
     {
-        $this->error('❌ '.$e->getMessage());
+        $this->error('❌ '.$e->forConsole()->getMessage());
 
         if ($e->blockedByPolicy) {
             $this->line(__('extension_integrity.commands.unsigned_blocked_hint'));

@@ -56,6 +56,12 @@ return [
         'rebuilt_item' => 'Rebuilt: :index',
         'rebuild_failed_item' => 'Rebuild failed: :index — :error',
         'still_stale_item' => 'Still not indexed after rebuild: :index',
+        // Damage a rebuild cannot fix — table rebuild advice (never run automatically)
+        'persistent_stale' => [
+            'title' => 'Some tables still have unindexed rows after the rebuild. This happens when the table\'s hidden document-ID mapping (FTS_DOC_ID) is out of sync; rebuilding the index does not fix it — the table itself must be rebuilt. The commands below are not run automatically.',
+            'item' => ':target — :command',
+            'caution' => 'A table rebuild copies the whole table, so large tables take a long time and writes to that table are blocked meanwhile. Back up the database, run it from a database client during a maintenance window, then re-check with `php artisan search:index`.',
+        ],
         'degraded_hint' => '"Partial" may come from the engine tokenizer, so it is not rebuilt automatically. Inspect individually if needed.',
 
         'report' => [

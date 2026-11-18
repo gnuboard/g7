@@ -122,4 +122,43 @@ class StoragePathsConfigTest extends TestCase
         $this->assertStringContainsString('app/settings', $text);
         $this->assertStringContainsString(__('common.console.storage_paths.categories.update_state'), $text);
     }
+
+    /**
+     * `-`·`_` 로 끝나는 접두사 항목은 접두사로 표시되고, 그 이름으로 시작하는 파일·폴더가 있으면 「있음」입니다.
+     *
+     * 종전에는 접두사 문자열 자체를 `file_exists` 로 봐서, 깨진 링크 보관 폴더
+     * (`app/public-storage-broken-<시각>-<해시>`)가 있어도 늘 「아니오」였다.
+     *
+     * @scenario case=command
+     *
+     * @effects command_json_lists_categories
+     *
+     * @return void 반환값 없음
+     */
+    public function test_command_marks_prefix_entries_and_matches_existing_names(): void
+    {
+        $prefix = 'app/public-storage-broken-';
+        $this->assertContains($prefix, StoragePaths::lists()['server_local']);
+
+        $made = storage_path($prefix.'20990101000000-qa'.bin2hex(random_bytes(4)));
+        mkdir($made, 0775, true);
+
+        try {
+            $this->assertSame(0, Artisan::call('storage:paths', ['--json' => true]));
+            $payload = json_decode(Artisan::output(), true);
+            $entry = collect($payload['categories']['server_local'])->firstWhere('path', $prefix);
+
+            $this->assertNotNull($entry);
+            $this->assertTrue($entry['prefix']);
+            $this->assertTrue($entry['exists'], '접두사로 시작하는 폴더가 있으면 있음이어야 합니다.');
+
+            $plain = collect($payload['categories']['shared_data'])->firstWhere('path', 'app/settings');
+            $this->assertFalse($plain['prefix']);
+
+            $this->assertSame(0, Artisan::call('storage:paths'));
+            $this->assertStringContainsString($prefix.'*', Artisan::output());
+        } finally {
+            @rmdir($made);
+        }
+    }
 }

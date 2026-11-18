@@ -69,11 +69,19 @@ class WebCronController extends PublicBaseController
             return $this->error('schedule.cron.ip_not_allowed', 403);
         }
 
-        // 실행 방식이 "서버 크론만" 이면 인증을 통과해도 실행하지 않는다.
+        // 실행 방식이 "서버 크론만" 이거나 이 서버의 스케줄이 꺼져 있으면(G7_SCHEDULER=off·검수 서버) 인증을 통과해도 실행하지 않는다.
+        // 문구는 사유마다 다르다 — 서버 스위치를 「서버 크론 전용」으로 안내하면 운영자가 엉뚱한 설정을 고친다.
         if (! $this->policy->webCallAllowed()) {
-            return $this->success('schedule.cron.disabled', [
+            $serverOff = ! RuntimeRole::schedulerEnabled();
+            $message = match (true) {
+                ! $serverOff => 'schedule.cron.disabled',
+                RuntimeRole::isStage() => 'schedule.cron.disabled_stage',
+                default => 'schedule.cron.disabled_on_server',
+            };
+
+            return $this->success($message, [
                 'ran' => false,
-                'reason' => RuntimeRole::schedulerEnabled() ? 'web_call_disabled' : 'scheduler_disabled_on_server',
+                'reason' => $serverOff ? 'scheduler_disabled_on_server' : 'web_call_disabled',
                 'mode' => $this->policy->mode(),
             ]);
         }

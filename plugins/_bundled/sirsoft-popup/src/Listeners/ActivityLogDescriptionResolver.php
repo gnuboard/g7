@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\Popup\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use Illuminate\Support\Facades\Lang;
 use Plugins\Sirsoft\Popup\Repositories\Contracts\PopupRepositoryInterface;
 
 /**
@@ -54,6 +55,11 @@ class ActivityLogDescriptionResolver implements HookListenerInterface
     {
         if (! str_starts_with($descriptionKey, self::KEY_PREFIX)) {
             return $params;
+        }
+
+        // 이미지 교체·삭제 문구의 기기 키(pc·mobile)는 기기 이름으로 — 모르는 키는 그대로
+        if (is_string($params['device'] ?? null) && Lang::has('sirsoft-popup::activity_log.devices.'.$params['device'])) {
+            $params['device'] = (string) __('sirsoft-popup::activity_log.devices.'.$params['device']);
         }
 
         if (! empty($params['popup_title']) || ! array_key_exists('popup_id', $params)) {

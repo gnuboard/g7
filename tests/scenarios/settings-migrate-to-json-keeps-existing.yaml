@@ -1,0 +1,22 @@
+feature: settings_migrate_to_json_keeps_existing
+
+description: |
+  `settings:migrate-to-json` 이 옮길 이전 설정(system_configs 표 없음 또는 빈 표)이 없을 때 기존 설정 JSON 을 기본값으로
+  덮지 않는다. 종전에는 표가 없으면 기존 파일·--force·확인을 보지 않고 전 설정을 기본값으로 저장하고 종료 0 이었다.
+  설정 파일이 없으면(새 설치) 종전처럼 기본값을 만든다. 기본값으로 되돌리기는 --force 와 확인이 함께 있을 때만 하고,
+  확인에 답할 수 없으면 거절(종료 1), 덮기 전에 사본을 남긴다.
+
+coverage_strategy: full
+
+axes:
+  case: [no_table_existing_settings, empty_table_existing_settings, no_table_no_settings, force_reset]
+
+effects:
+  - existing_settings_kept_when_nothing_to_migrate   # 옮길 것이 없고 설정 파일이 있으면 아무것도 쓰지 않는다
+  - kept_notice_printed                              # 바꾸지 않은 사실과 되돌리는 방법을 알린다
+  - defaults_created_on_fresh_install                # 설정 파일이 없으면 기본값 파일을 만든다
+  - force_reset_requires_confirmation                # --force 만으로 답할 수 없는 실행은 거절(종료 1)
+  - reset_keeps_a_copy_before_overwrite              # 되돌리기 전 기존 파일 사본을 남긴다
+
+test_files:
+  - tests/Feature/Console/MigrateSettingsToJsonKeepsExistingSettingsTest.php

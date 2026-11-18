@@ -102,6 +102,36 @@ class GdprAdminSettingsControllerTest extends PluginTestCase
     }
 
     /**
+     * 「플러그인 보기」(core.plugins.read)만 있는 운영자도 설정을 읽기 전용으로 받는다 — 저장 권한 판정은 false.
+     *
+     * 화면은 코어 플러그인 설정 계약대로 `core.plugins.read` 로 열리는데(#434) 설정 조회가 `privacy.view` 만 받아,
+     * 본문이 403 오류 화면으로 바뀌고 읽기 전용 화면이 뜨지 않았다. 저장은 계속 `privacy.update` 만.
+     *
+     * @scenario surface=admin_show
+     *
+     * @effects admin_show_open_to_plugin_viewers_read_only
+     *
+     * @return void 반환값 없음
+     */
+    public function test_show_is_readable_with_plugin_view_permission_only(): void
+    {
+        $viewer = User::factory()->create();
+        $role = Role::create(['identifier' => 'plugin_viewer_'.uniqid(), 'name' => ['ko' => '플러그인 보기', 'en' => 'Plugin viewer'], 'is_active' => true]);
+        $role->permissions()->attach(Permission::firstOrCreate(
+            ['identifier' => 'core.plugins.read'],
+            ['name' => ['ko' => '플러그인 조회', 'en' => 'View Plugins'], 'type' => PermissionType::Admin]
+        )->id);
+        $viewer->roles()->attach($role->id);
+
+        $this->actingAs($viewer)->getJson('/api/plugins/sirsoft-gdpr/admin/settings')
+            ->assertOk()
+            ->assertJsonPath('data.abilities.can_update', false);
+
+        $this->actingAs($viewer)->putJson('/api/plugins/sirsoft-gdpr/admin/settings', ['banner_enabled' => true])
+            ->assertForbidden();
+    }
+
+    /**
      * 마이페이지 카드 노출 토글 제거 회귀 — GDPR Art.7(3) 대칭성 의무에 따라
      * mypage_privacy_tab_visible 키는 settings 스키마에서 완전히 제거되었다.
      * 운영자가 PUT 으로 해당 키를 보내도 검증을 통과하지만 저장되지 않으며,

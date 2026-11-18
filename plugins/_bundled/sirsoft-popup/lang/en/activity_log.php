@@ -25,6 +25,11 @@ return [
         'popup_image_update' => 'Replaced the :device image of popup ":popup_title".',
         'popup_image_remove' => 'Removed the :device image of popup ":popup_title".',
     ],
+    // 이미지·영상 교체·삭제 문구의 :device 자리에 들어가는 기기 이름
+    'devices' => [
+        'pc' => 'PC',
+        'mobile' => 'mobile',
+    ],
     'fields' => [
         'title' => 'Admin title',
         'is_active' => 'Enabled',

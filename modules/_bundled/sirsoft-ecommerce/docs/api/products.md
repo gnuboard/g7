@@ -258,8 +258,8 @@ HTTP/1.1 200
 | category_ids | body | array | 예 | min 1, max 5 | category 식별자 배열 |
 | primary_category_id | body | integer | 아니오 | — | primary category 식별자 |
 | brand_id | body | integer | 아니오 | — | brand 식별자 |
-| list_price | body | integer | 예 | min 0.01 | 정가 (기본통화 기준, 소수 통화는 소수 입력 허용) |
-| selling_price | body | integer | 예 | min 0.01 | 판매가 (기본통화 기준, 정가 이하여야 함) |
+| list_price | body | integer | 예 | min 0 | 정가 (기본통화 기준, 소수 통화는 소수 입력 허용) |
+| selling_price | body | integer | 예 | min 0 | 판매가 (기본통화 기준, 정가 이하여야 함) |
 | stock_quantity | body | integer | 예 | min 0 | 재고 수량 (옵션 사용 시 옵션 재고 합계로 관리) |
 | safe_stock_quantity | body | integer | 아니오 | min 0 | 안전재고 수량 (이 값 미만이면 재고 부족 표시) |
 | sales_status | body | string | 예 | — | 판매상태 (on_sale 판매중 / suspended 판매중지 / sold_out 품절 / coming_soon 출시예정) |
@@ -923,14 +923,14 @@ HTTP/1.1 200
 | --- | --- | --- | --- | --- | --- |
 | code | path | string | 예 | — | 대상 리소스의 코드 |
 | name | body | array | 아니오 | — | 대상의 이름/명칭 |
-| product_code | body | string | 예 | max 50, 코드를 바꿀 때 영문·숫자·`-`·`_` 만 | 상품코드 (상품 고유 관리 식별자, 상품 간 중복 불가). 이미지 저장 폴더 이름에 쓰이므로 다른 값으로 바꿀 때 그 밖의 문자(`/`·`\`·`.`·`%`·공백 등)는 422 — 현재 코드를 그대로 보내면 이 규칙을 적용하지 않음(규칙 이전 코드의 상품도 수정 가능) |
+| product_code | body | string | 예 | max 50, 코드를 바꿀 때 영문·숫자·`-`·`_` 만 | 상품코드 (상품 고유 관리 식별자, 상품 간 중복 불가). 이미지 저장 폴더 이름에 쓰이므로 다른 값으로 바꿀 때 그 밖의 문자(`/`·`\`·`.`·`%`·공백 등)는 422 — 현재 코드를 그대로 보내면 이 규칙을 적용하지 않음(규칙 이전 코드의 상품도 수정 가능). 중복 검사는 `{product}`·by-code 경로 모두 그 상품 자신을 뺀다 |
 | sales_product_code | body | string | 아니오 | max 50 | 판매자 상품코드 (판매자가 직접 입력하는 관리용 코드) |
 | sku | body | string | 아니오 | max 100 | 재고관리코드(SKU) |
 | category_ids | body | array | 아니오 | min 1, max 5 | category 식별자 배열 |
 | primary_category_id | body | integer | 아니오 | — | primary category 식별자 |
 | brand_id | body | integer | 아니오 | — | brand 식별자 |
-| list_price | body | integer | 아니오 | min 0.01 | 정가 (기본통화 기준, 소수 통화는 소수 입력 허용) |
-| selling_price | body | integer | 아니오 | min 0.01 | 판매가 (기본통화 기준, 정가 이하여야 함) |
+| list_price | body | integer | 아니오 | min 0 | 정가 (기본통화 기준, 소수 통화는 소수 입력 허용) |
+| selling_price | body | integer | 아니오 | min 0 | 판매가 (기본통화 기준, 정가 이하여야 함) |
 | stock_quantity | body | integer | 아니오 | min 0 | 재고 수량 (옵션 사용 시 옵션 재고 합계로 관리) |
 | safe_stock_quantity | body | integer | 아니오 | min 0 | 안전재고 수량 (이 값 미만이면 재고 부족 표시) |
 | sales_status | body | string | 아니오 | — | 판매상태 (on_sale 판매중 / suspended 판매중지 / sold_out 품절 / coming_soon 출시예정) |
@@ -1860,14 +1860,14 @@ HTTP/1.1 200
 | --- | --- | --- | --- | --- | --- |
 | product | path | string | 예 | — | 대상 product의 식별자 |
 | name | body | array | 아니오 | — | 대상의 이름/명칭 |
-| product_code | body | string | 예 | max 50, 코드를 바꿀 때 영문·숫자·`-`·`_` 만 | 상품코드 (상품 고유 관리 식별자, 상품 간 중복 불가). 이미지 저장 폴더 이름에 쓰이므로 다른 값으로 바꿀 때 그 밖의 문자(`/`·`\`·`.`·`%`·공백 등)는 422 — 현재 코드를 그대로 보내면 이 규칙을 적용하지 않음(규칙 이전 코드의 상품도 수정 가능) |
+| product_code | body | string | 예 | max 50, 코드를 바꿀 때 영문·숫자·`-`·`_` 만 | 상품코드 (상품 고유 관리 식별자, 상품 간 중복 불가). 이미지 저장 폴더 이름에 쓰이므로 다른 값으로 바꿀 때 그 밖의 문자(`/`·`\`·`.`·`%`·공백 등)는 422 — 현재 코드를 그대로 보내면 이 규칙을 적용하지 않음(규칙 이전 코드의 상품도 수정 가능). 중복 검사는 `{product}`·by-code 경로 모두 그 상품 자신을 뺀다 |
 | sales_product_code | body | string | 아니오 | max 50 | 판매자 상품코드 (판매자가 직접 입력하는 관리용 코드) |
 | sku | body | string | 아니오 | max 100 | 재고관리코드(SKU) |
 | category_ids | body | array | 아니오 | min 1, max 5 | category 식별자 배열 |
 | primary_category_id | body | integer | 아니오 | — | primary category 식별자 |
 | brand_id | body | integer | 아니오 | — | brand 식별자 |
-| list_price | body | integer | 아니오 | min 0.01 | 정가 (기본통화 기준, 소수 통화는 소수 입력 허용) |
-| selling_price | body | integer | 아니오 | min 0.01 | 판매가 (기본통화 기준, 정가 이하여야 함) |
+| list_price | body | integer | 아니오 | min 0 | 정가 (기본통화 기준, 소수 통화는 소수 입력 허용) |
+| selling_price | body | integer | 아니오 | min 0 | 판매가 (기본통화 기준, 정가 이하여야 함) |
 | stock_quantity | body | integer | 아니오 | min 0 | 재고 수량 (옵션 사용 시 옵션 재고 합계로 관리) |
 | safe_stock_quantity | body | integer | 아니오 | min 0 | 안전재고 수량 (이 값 미만이면 재고 부족 표시) |
 | sales_status | body | string | 아니오 | — | 판매상태 (on_sale 판매중 / suspended 판매중지 / sold_out 품절 / coming_soon 출시예정) |

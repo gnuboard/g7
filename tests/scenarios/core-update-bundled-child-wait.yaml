@@ -1,0 +1,42 @@
+feature: core_update_bundled_child_wait
+
+description: |
+  관리자 화면 코어 업데이트가 끊긴 번들 항목의 자식 프로세스를 기다리는 규칙 (7.2.0).
+  요청 시간 제한으로 기다리던 요청이 죽어도 자식(`core:execute-bundled-updates`)은 끝까지 돌 수 있다. 자식은 실행 상태
+  디렉토리의 표식 파일을 잠근 채 PID 를 적고, 다음 조각은 그 잠금(못 쓰면 OS 의 PID 생존 확인)으로 종료를 확인한 뒤
+  다음 항목·마무리로 간다. 고아 표식(강제 종료·재부팅)은 치우고, 기다림에는 상한이 있다.
+
+coverage_strategy: full
+
+axes:
+  case: [child_running, child_finished, orphan_marker, wait_timeout, marker_wiring, marker_lifecycle, orphan_extension_recovery, child_died_while_parent_alive, child_reported_failure]
+
+effects:
+  - next_item_not_started_while_child_alive            # 자식이 표식을 잡고 있으면 다음 항목을 돌리지 않고 같은 단계를 다시 한다
+  - child_pid_recorded_in_run_state                     # 기다리기 시작할 때 자식 PID·시각을 실행 상태에 적는다
+  - waiting_notice_logged                               # 기다림을 진행 기록에 알린다
+  - proceeds_after_child_finished                       # 자식이 끝났으면 다음 항목으로 진행한다
+  - marker_removed_after_check                          # 확인 뒤 표식·정보 파일을 치운다
+  - orphan_marker_cleared_without_waiting               # 잡은 프로세스가 없는 표식은 기다리지 않고 치운다
+  - proceeds_with_warning_after_wait_limit              # 상한을 넘기면 경고를 남기고 진행한다
+  - marker_path_passed_to_child_and_cleared_on_return   # 표식 경로를 실행 상태와 자식 매니페스트에 싣고, 돌아오면 지운다
+  - hold_reports_running_release_reports_finished       # 잡는 동안은 도는 중, 놓으면 끝남
+  - pid_liveness_detects_current_process                # PID 생존 확인(Windows tasklist · posix_kill · /proc)
+  - child_command_releases_marker_on_exit               # 자식 명령이 끝나며 표식을 놓고 치운다
+  - interrupted_item_manifest_removed                   # 끊긴 요청이 남긴 항목 매니페스트를 다음 조각이 치운다
+  - orphan_releases_extension_lock                      # 고아 자식이 쥔 확장 작업 잠금을 푼다
+  - orphan_restores_prior_status_when_files_untouched   # 파일을 바꾸기 전에 죽었으면 업데이트 전 상태로 되돌린다
+  - orphan_reverts_version_and_deactivates_when_files_touched  # 파일을 바꾼 뒤 죽었으면 시작 판·업데이트 있음·비활성
+  - orphan_recovery_logged                              # 확장 상태 정리를 진행 기록에 알린다
+  - abnormal_child_exit_releases_its_lock               # 부모가 받은 자식의 비정상 종료 — 자식이 쥔 확장 작업 잠금을 푼다
+  - abnormal_child_exit_restores_status                 # 비정상 종료 — `updating` 을 업데이트 전 상태로 되돌린다
+  - abnormal_child_exit_clears_marker                   # 비정상 종료 — 자식 표식을 치운다
+  - reported_failure_leaves_lock_and_status_alone       # 정상 종료하며 실패를 보고했으면 잠금·상태를 건드리지 않는다
+  - child_records_lock_owner_in_marker                  # 자식이 잡은 작업 잠금의 소유자를 표식에 적는다
+  - no_lock_record_leaves_lock_and_status_alone         # 잠금 기록이 없으면 잠금·상태를 건드리지 않는다
+  - child_start_grace_waits_before_marker_appears       # 띄운 직후 표식이 아직 없으면 잠시 기다린다
+  - other_host_or_live_pid_not_judged_orphan            # 다른 호스트·살아 있는 PID 의 자식은 고아로 단정하지 않는다
+  - lock_with_other_owner_not_released                  # 기록한 소유자와 지금 소유자가 다르면 풀지 않는다
+
+test_files:
+  - tests/Unit/CoreUpdate/CoreUpdateBundledChildWaitTest.php

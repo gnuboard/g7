@@ -1,0 +1,20 @@
+feature: core_update_bundled_interrupted_item
+
+description: |
+  관리자 화면 코어 업데이트의 번들 항목이 요청 시간 제한으로 끊겼을 때의 결과 판정.
+  끊긴 것은 항목 자식 프로세스를 기다리던 요청이지 자식이 아니다 — 자식은 끝까지 돌아 확장을 새 판으로 반영할 수 있다.
+  끊긴 항목은 실패로 세지 않고 번들 단계 끝에서 실제 판(번들에 새 판이 남았는가)을 확인해 반영됐으면 성공,
+  남았으면 「완료 여부 확인 불가」로 알린다.
+
+coverage_strategy: full
+
+axes:
+  case: [interrupted_item_applied, interrupted_item_still_pending]
+
+effects:
+  - interrupted_item_counted_as_success_when_applied   # 끝까지 돌아 반영된 끊긴 항목은 성공으로 센다
+  - no_not_updated_warning_for_applied_item           # 반영된 항목을 「업데이트되지 않았습니다」로 알리지 않는다
+  - interrupted_item_reported_as_unconfirmed          # 아직 새 판이 남은 끊긴 항목은 「완료 여부 확인 불가」로 알린다
+
+test_files:
+  - tests/Unit/CoreUpdate/CoreUpdateBundledInterruptedItemTest.php

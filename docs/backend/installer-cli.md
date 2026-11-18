@@ -64,6 +64,11 @@
 
 항상 지우는 대상에 애플리케이션 파일 캐시(`storage/framework/cache/data`, `.gitignore` 보존)가 들어 있다 — 확장 상태 목록 캐시(`ext.modules.active_identifiers` 등)는 G7 설정의 캐시 드라이버(기본 file)에 있어 DB 를 비워도 남는다. 남으면 이번 설치에 넣지 않은 확장이 켜진 것으로 보여 그 라우트를 오토로드 없이 싣고 artisan 부팅이 죽는다(설치 단계의 롤백도 같은 오류로 실패).
 
+웹 마법사도 같은 대상을 지운다 — 설치 완료 표식(`storage/app/g7_installed`)이 없으면 db_cleanup 단계 진입부에서(테이블 삭제 여부와 무관, [강제 진행] 재설치·새 DB 위 재설치 모두)
+`clearStaleExtensionCaches()`(`public/install/includes/vendor-bundle-installer.php`)가 `bootstrap/cache` 의 훅·오토로드·예약 명령·라우트 매핑과 애플리케이션 파일 캐시를 비운다.
+남기면 아직 설치 전인 플러그인 리스너가 등록돼 모듈 활성화가 「… is not instantiable」 로 실패했다.
+한계(CLI·웹 공통): G7 설정의 캐시 드라이버가 파일이 아니면(redis·memcached 등) 확장 상태 목록 캐시는 이 정리로 지워지지 않는다 — 그런 사이트는 재설치 전에 그 캐시 저장소를 비운다.
+
 ## 운영 명령 (설치 뒤)
 
 | 명령 | 저장 경로 (웹과 같음) |

@@ -46,6 +46,8 @@ class LanguagePackService
 }
 ```
 
+`installFromUrl()` 은 받기 단계의 실패(HTTP 오류 응답, 연결 실패 — 이름 해석·연결 거부·시간 초과)를 모두 `LanguagePackOperationException('language_packs.errors.download_failed', [url, error])` 로 바꿔 컨트롤러가 422 와 사유 문구로 답한다. 컨트롤러의 마지막 `catch (Throwable)` 는 500 으로 답하기 전에 `report($e)` 로 원인을 로그에 남긴다(운영 모드 응답에는 사유를 싣지 않으므로).
+
 ## 설치 흐름 (finalizeInstall)
 
 ```

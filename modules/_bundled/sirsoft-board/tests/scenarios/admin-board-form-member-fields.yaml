@@ -36,7 +36,7 @@ axes:
     - guest_fields_add_delete           # 「항목 추가」가 추가 창을 열고 운영자 행만 지울 수 있음, 추가와 지우기가 표 상태에 반영
     - guest_fields_module_defaults      # 「게시판 기본 설정」의 같은 표가 basic_defaults 아래 값을 바꿈
     - guest_fields_admin_detail         # 관리자 글 상세와 댓글이 비회원 항목 값을 보임
-    - guest_fields_accessible_names     # 스위치가 행 이름과 열 이름으로 읽힘
+    - guest_fields_accessible_names     # 스위치가 행 이름과 열 이름으로, 지우기 단추가 「{항목} 항목 삭제」로 읽힘
     - guest_fields_read_only            # 수정 권한 없는 운영자에게 잠김
     - guest_fields_validation_error     # 서버 검증 오류가 표 아래에 보임
     - guest_fields_mobile_cards         # 좁은 화면 카드가 표와 같은 값, 같은 규칙
@@ -68,6 +68,7 @@ effects:
   - module_defaults_table_writes_basic_defaults
   - admin_detail_shows_guest_values
   - guest_fields_switch_reads_row_and_column
+  - guest_fields_delete_button_has_accessible_name
   - guest_fields_locked_for_read_only
   - guest_fields_error_shows_under_table
   - guest_fields_cards_share_values_and_rules

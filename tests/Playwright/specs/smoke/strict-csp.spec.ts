@@ -20,6 +20,8 @@
  *   (S) 스타일 정책 2강도(기본·엄격) × 화면(진입 3종 · 로그인 후 환경설정 · 링크 클릭 화면 이동 · 레이아웃 API 500 오류 화면)
  *       — 위반 0, 지연 안내 `display: none`, 오류 화면 제목 `24px`
  *       + 글쓰기 편집기(CKEditor 5)의 가운데 정렬이 편집 화면에 보인다(계산된 text-align center, 저장 형식 불변)
+ *       + 태그 입력(react-select)의 칸이 flex, 목록이 칸 아래 떠 있는 상자, 화면 낭독용 안내 문구가 1px 클립으로 숨는다
+ *         (emotion 규칙을 생성형 시트로 싣는다 — `templates/_bundled/sirsoft-admin_basic/src/utils/adoptedEmotionCache.ts`)
  *
  * 소유 매니페스트: tests/scenarios/strict-csp-compat.yaml (A·B·C), tests/scenarios/strict-style-csp-compat.yaml (S).
  * 조합·효과는 테스트별 마킹에 적는다.
@@ -70,10 +72,6 @@ const EXTERNAL_LIBRARY_SCREENS: ReadonlyArray<{ name: string; reason: string }> 
   {
     name: '레이아웃 코드 편집기 (Monaco Editor)',
     reason: '두 강도 모두 깨진다 — Monaco Editor 의 <style> 요소 3개가 막혀 구문 색·배경 테마가 빠진다(style-src-elem 3건). 엄격은 style 속성 위반 127건이 더해진다',
-  },
-  {
-    name: '태그 입력 (react-select — 환경설정 CSP 카드의 허용 호스트 입력 포함)',
-    reason: '두 강도 모두 깨진다 — react-select 의 스타일 엔진(emotion)이 만드는 <style> 요소가 막혀 칸 배치가 흐트러지고(컨트롤 flex → block) 화면 낭독용 문구가 보인다(style-src-elem 1건). 입력·삭제는 된다',
   },
   {
     name: '주소 검색 (다음 우편번호 SDK)',
@@ -375,6 +373,54 @@ test.describe('엄격한 스타일 CSP 호환 (#163)', () => {
 
       // 편집 화면(문서에 붙은 편집 영역 안 요소)에서 난 위반은 없어야 한다 — 저장용 HTML 생성 때 나는 위반은 재지 않는다
       expect(await page.evaluate(() => (window as any).__cspEditable ?? 0)).toBe(0);
+    });
+
+    // @scenario case=style_csp_basic_enforced
+    // @effects tag_input_layout_under_style_csp
+    // @scenario case=style_csp_strict_enforced
+    // @effects tag_input_layout_under_style_csp
+    test(`(S) [스타일 ${level.label}] 태그 입력(react-select) 목록이 칸 아래 떠 있고 안내 문구가 숨는다 — 환경설정 보안 탭 허용 호스트 칸`, async ({ page, request }) => {
+      // 종전에는 react-select(emotion)가 만드는 <style data-emotion> 이 막혀 목록이 문서 흐름에 펼쳐지고(1438×1606)
+      // 화면 낭독용 안내 문구가 칸 위에 그대로 보였다. 정책을 되돌리는 이 칸 자체가 깨졌다.
+      // 환경설정은 칸이 그려진 뒤에도 데이터 소스(일정·신뢰 키·개인정보 처리 등)를 받는 동안 받는 중 덮개
+      // (`#g7-skeleton-overlay`)가 클릭을 받는다. 이 화면은 첫 진입에 API 16개를 받아, 서버 부하 때는 정책과 무관하게(끔에서도)
+      // 칸이 뜨기까지 30초 가까이, 덮개가 걷히기까지 다시 10초 남짓 걸려 기본 30초 제한을 넘긴다(FX-C 단독 재현).
+      test.setTimeout(150_000);
+      const token = await adminToken(request, 'core.settings.read', 'core.settings.update');
+      await authenticatePage(page, token);
+      await injectCsp(page, policy);
+
+      const response = await page.goto('/admin/settings?tab=security');
+      expect(response?.headers()['content-security-policy']).toBe(policy);
+      await waitForShell(page);
+
+      const field = page.locator('#csp_extra_script_hosts');
+      const combobox = field.getByRole('combobox');
+      await expect(combobox, '보안 탭의 추가 스크립트 허용 호스트 칸이 뜨지 않았다').toBeVisible({ timeout: 60_000 });
+      await expect(page.locator('#g7-skeleton-overlay'), '받는 중 덮개가 걷히지 않았다(데이터 소스 대기)').toHaveCount(0, { timeout: 60_000 });
+      // 칸은 flex — 규칙이 막히면 block 으로 내려간다
+      expect(await field.locator('.tag-input__control').evaluate((el) => getComputedStyle(el).display)).toBe('flex');
+
+      await combobox.click();
+      await page.keyboard.type('cdn.example.com');
+      const menu = page.locator('.tag-input__menu');
+      await expect(menu).toBeVisible({ timeout: 10_000 });
+      expect(await menu.evaluate((el) => getComputedStyle(el).position)).toBe('absolute');
+
+      // 화면 낭독용 안내 문구(라이브 영역)는 1px 클립으로 숨는다
+      const live = await field.locator('[id$="-live-region"]').evaluate((el) => {
+        const rect = el.getBoundingClientRect();
+
+        return { position: getComputedStyle(el).position, width: rect.width, height: rect.height };
+      });
+      expect(live.position).toBe('absolute');
+      expect(live.width).toBeLessThanOrEqual(1);
+      expect(live.height).toBeLessThanOrEqual(1);
+
+      // 규칙은 생성형 시트로 실린다 — 정책에 막히는 <style data-emotion> 요소가 없다
+      expect(await page.locator('style[data-emotion]').count()).toBe(0);
+      expect(await violations(page)).toEqual([]);
+      await page.keyboard.press('Escape');
     });
 
     for (const external of EXTERNAL_LIBRARY_SCREENS) {

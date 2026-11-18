@@ -26,6 +26,7 @@ effects:
   - extension_anchors_kept
   - extension_agreements_drawn_below_privacy_with_shared_partial
   - field_errors_are_not_repeated_in_top_box
+  - field_errors_share_one_text_size
   - non_field_errors_listed_in_top_box
   - no_hardcoded_field_name_array
   - submit_sends_fields_version
