@@ -6,7 +6,7 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * 인스톨러 화면의 마크업 계약 (12차 #B28 · #B32 · #B33 · #B34 · #B36).
+ * 인스톨러 화면의 마크업 계약.
  *
  * 여기서 잠그는 것들은 전부 **정상 화면에서 아무 증상도 내지 않는다** — 텍스트는 그대로
  * 보이고, 오류도 로그도 남지 않는다. 사람이 스크린샷을 봐도 지나간다. 그래서 정적 검사다.
@@ -388,7 +388,7 @@ class InstallerViewAccessibilityContractTest extends TestCase
      *
      * 판정은 **도출한다.** 종전에는 리터럴 `role="alert"` 한 형태만 셌는데, `role="status"`
      * 는 암묵 polite 라 polite-in-polite 3곳과 `setAttribute` 형태의 alert-in-polite 1곳이
-     * 그 계수 밖에 있었다 (11차 G3 라운드 F-1 · 10차 F10-13 의 미완).
+     * 그 계수 밖에 있었다.
      *
      * @scenario a11y_axis=live_region, nesting=none
      *

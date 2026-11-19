@@ -12,7 +12,7 @@ use Tests\Support\CompilesFragmentMarkup;
 /**
  * 확장점 주입 리스너 테스트.
  *
- * Laravel 부팅이 필요한 이유와 그것이 30차까지 드러나지 않은 사유는
+ * Laravel 부팅이 필요한 이유와 그것이 오랫동안 드러나지 않은 사유는
  * {@see EnsureAdminOrderDetailPaymentQueryLayoutListenerTest} 독블록 참조.
  */
 class EnsureAdminOrderDetailTestModeLayoutListenerTest extends PluginTestCase

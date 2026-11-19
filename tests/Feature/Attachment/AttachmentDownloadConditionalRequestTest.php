@@ -12,7 +12,7 @@ use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 /**
- * 코어 비이미지 첨부 다운로드의 조건부 요청 계약 테스트 (14차 G3 라운드).
+ * 코어 비이미지 첨부 다운로드의 조건부 요청 계약 테스트.
  *
  * 같은 라우트(`GET /api/attachment/{hash}`)가 이미지는 `streamedFileResponse()` 를 지나
  * 304 로 재검증되는데, 문서·압축 파일 같은 비이미지는 `AttachmentService::download()` 의

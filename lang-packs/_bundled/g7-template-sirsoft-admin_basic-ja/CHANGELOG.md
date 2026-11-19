@@ -4,61 +4,84 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [1.2.0] - 2026-11-19
+## [1.2.0] - 2026-11-20
 
 ### Added
 
+#### 환경설정
+
 - 환경설정 > 일반 「레이아웃 편집 단추」 카드(제목·설명·켜기 칸 이름과 도움말, `admin.settings.general.layout_edit_button*`)의 일본어 번역을 추가했습니다.
+- 환경설정 > 드라이버 「웹서버 파일 위임」 카드(위임 방식·내부 위치 접두사·Apache/nginx 설정 안내·설정 점검(nginx 매핑 표시 포함)·실제 전송 확인(위임 없이 PHP 가 보낸 사유 포함)·복구 안내, `admin.settings.drivers.file_delegation.*`)의 일본어 번역을 추가했습니다.
+- 알림 설정의 「빈 템플릿이 만들어졌습니다」 안내와 「빈 템플릿을 만들었습니다」 알림 문구 일본어 번역을 추가했습니다.
+- 환경설정 → 일반 탭 「사용자 화면 URL」 칸의 이름·도움말과, 코어 업데이트 확인 창의 custom 사전 검사 중단 영역(충돌 표·예약 파일·해결 순서) 문구의 일본어 번역을 추가했습니다.
+- 환경설정 SEO 탭의 타이틀 접미사·메타 키워드 칸 예시 문구 2건의 일본어 번역을 추가했습니다.
+- 환경설정 > 고급의 신뢰 프록시 편집 화면 문구 일본어 번역을 추가했습니다 (`settings.advanced.trusted_proxy_*` 19건) — 신뢰 범위 3모드·주소 목록 입력·위조 경고·저장 전 검사 결과를 포함하며, 용어는 패키지 글로서리를 따릅니다.
+- 환경설정 > 정보 탭에서 메모리·디스크 사용량을 측정할 수 없을 때 표시되는 「측정 불가」 문구의 일본어 번역을 추가했습니다 (`settings.info.not_measurable`).
+- 환경설정 > 일반 탭 사이트 URL 안내 문구의 일본어 번역을 추가했습니다 (`settings.general.site_url_help`).
+
+#### 확장 관리·레이아웃 갱신·검수 서버
+
 - [업데이트 확인]에서 GitHub 최신 판을 확인하지 못한 확장·언어팩을 알리는 경고 문구(`extensions.alerts.check_updates_github_failed`·`admin.language_packs.messages.check_updates_github_failed`)를 일본어로 추가했습니다.
 - 확장 설치와 업데이트의 패키지 무결성 안내 패널(`package_integrity.*`), 환경설정 > 보안 탭 「신뢰 키」 구획과 키 추가 및 삭제 창(`settings.security.extension_trust.*`, `settings.extension_trust_key_modal.*`, `modal_label.admin_settings.extension_trust_key_*`), 언어팩 설치 창의 URL 탭(`language_packs.install_modal.*`), 스케줄 편집 창의 `--allow-unsigned` 도움말(`schedules.form.allow_unsigned_hint`), 편집기 데이터 소스 이름(`data_source.extensionTrustKeys`)의 일본어 번역을 추가했습니다.
 - 확장 상세 창 「공개 API」 칸(`extension_public_api.*`)과 환경설정 > 드라이버 「비공개 첨부 저장소」 카드(`settings.drivers.private_attachment.*`)의 일본어 번역을 추가했습니다.
-- 환경설정 > 업로드 「저장 위치」에서 권한이 걸린 이미지 썸네일과 공개 자산 디스크가 둘 다 Amazon S3 일 때 나오는 같은 버킷 경고(`admin.settings.upload.thumbnail.storage.same_bucket_warning`)의 일본어 번역을 추가했습니다.
 - 레이아웃 갱신·업데이트 창 화면별 결정의 「겹치지 않는 곳만 반영 (권장)」 선택지와 세 선택지의 설명(`admin.layout_sync_preview.decision_merge`·`decision_merge_hint`·`decision_keep_ours_hint`·`decision_take_theirs_hint`), 활동 로그 필터 「삭제 직전 기록만 보기」(`admin.activity_log.filter.deletion_snapshot_*`), 버전 이력의 동기화 판 저장자 「시스템」(`admin.templates.modals.version_history.saved_by_system`) 일본어 번역을 추가했습니다.
-- 환경설정 > 드라이버 「웹서버 파일 위임」 카드(위임 방식·내부 위치 접두사·Apache/nginx 설정 안내·설정 점검(nginx 매핑 표시 포함)·실제 전송 확인(위임 없이 PHP 가 보낸 사유 포함)·복구 안내, `admin.settings.drivers.file_delegation.*`)의 일본어 번역을 추가했습니다 (#878).
+- 레이아웃 갱신·확장 업데이트 창의 미리보기·화면별 결정, 활동 로그의 삭제 직전 기록 펼쳐 보기, 정보 탭 확장 카드, 알림 받는 사람 「사이트 관리자 이메일」, HTTPS 강제 적용 주의 문구의 일본어 번역을 추가했습니다.
+- 검수 서버 안내 띠·편집기 「검수용 저장」 안내·잠긴 단추 안내(`stage_role.*`)와 예약 작업 카드의 스케줄 꺼짐 안내(`settings.system.scheduler_off_on_this_server`) 일본어 번역을 추가했습니다.
+- 업데이트 창의 판정 건너뜀 안내(꺼 둔 확장·활성 파일 없음)와 판정 요약 항목별 문구의 일본어 번역을 추가했습니다(옛 한 줄 요약 문구는 뺐습니다).
+- 레이아웃 편집 화면 버전 이력 창의 판 출처 문구 8건(덮기 전 운영자 판·병합 결과, `admin.templates.modals.version_history.source_labels.*`)의 일본어 번역을 추가했습니다.
+
+#### 업로드·썸네일·공통 화면 요소
+
+- 환경설정 > 업로드 「저장 위치」에서 권한이 걸린 이미지 썸네일과 공개 자산 디스크가 둘 다 Amazon S3 일 때 나오는 같은 버킷 경고(`admin.settings.upload.thumbnail.storage.same_bucket_warning`)의 일본어 번역을 추가했습니다.
 - 태그 입력 칸의 기본 안내(「検索または入力...」), 결과 없음, 새 항목 추가 문장(「{값}を追加」) 문구를 일본어로 추가했습니다.
+- 환경설정 썸네일 카드(움직이는 이미지 원본 사용 스위치 포함)·썸네일 규격 표·이미지 처리 카드, 본문 이미지 확대 보기 버튼 이름, 편집기 썸네일 규격 선택·썸네일 저장 위치별 사용량 데이터 소스 이름의 일본어 번역을 추가했습니다.
+- 환경설정 업로드 탭 썸네일 카드의 「고급 — 서버 보호 값」 칸 여섯(라벨, 안내, 단위)과 설명 문구 일본어 번역을 추가했습니다.
+- 업로더의 이미지 압축 실패 안내와 업로드 실패로 저장을 멈췄다는 안내(`attachment.compression_failed`, `attachment.upload_failed_save_stopped`)의 일본어 번역을 추가했습니다.
+- 공통 오류 화면(전용 오류 화면이 없는 400·422·429·502·504 등)의 제목·안내·새로고침 단추 일본어 번역을 추가했습니다(`errors.default.*`).
+
+#### 템플릿 설정
+
 - 이 템플릿 설정 화면의 목록 칸 문구를 설정 화면 묶음(`settings.screen.fields`)으로 옮겼습니다.
 - 템플릿 목록 「설정」 메뉴의 「설정 (읽기 전용)」 표시와 설정 화면을 열 수 없을 때의 사유 문구를 일본어로 추가했습니다.
-- 템플릿 설정(포인트 색·기본 화면 모드·관리자 로고)과 설정 화면 목록 행 단추의 일본어 번역을 추가했습니다 (#434)
+- 템플릿 설정(포인트 색·기본 화면 모드·관리자 로고)과 설정 화면 목록 행 단추의 일본어 번역을 추가했습니다
 - 환경설정 일반 탭 파비콘 칸·우선순위 안내, 템플릿 목록 「설정」, 템플릿 환경설정 파비콘 칸 문구를 일본어로 추가했습니다.
-- 알림 설정의 「빈 템플릿이 만들어졌습니다」 안내와 「빈 템플릿을 만들었습니다」 알림 문구 일본어 번역을 추가했습니다.
+
+#### 시스템 탭·예약 작업·큐
+
 - 큐 모니터링·환경설정 권한 안내 일본어 번역을 추가했습니다 — 「큐 작업 조회」 권한이 없을 때의 안내(`admin.schedules.queue.notice.no_permission`), 목록·상태를 불러오지 못했을 때의 안내(`admin.schedules.queue.errors.list_load_failed`·`status_load_failed`), 언어팩·본인인증 구획을 볼 권한이 없을 때의 안내(`admin.settings.permission_required.*`).
-- 환경설정 → 일반 탭 「사용자 화면 URL」 칸의 이름·도움말과, 코어 업데이트 확인 창의 custom 사전 검사 중단 영역(충돌 표·예약 파일·해결 순서) 문구의 일본어 번역을 추가했습니다.
 - 모듈·플러그인 제거 창의 「함께 지워지는 공유 데이터」에 예약 작업(スケジュール) 항목 이름의 일본어 번역을 추가했습니다.
 - 환경설정 > 알림 정의의 새 알림 유형 「예약 작업 실패」(予約タスク失敗) 이름의 일본어 번역을 추가했습니다.
 - 스케줄 관리 화면의 새 문구(검색 틀·소유 필터·상태 카드·편집 창의 실행 방식/실행 이력/잠금 시간/실패 알림·즉시 실행 창 안내 등 73건)와 편집기 데이터 소스 이름 6건의 일본어 번역을 추가했습니다.
 - 스케줄 관리 > 큐 탭(대기·실패·처리 기록, 재시도·삭제 확인 창, 작업 상세)과 환경설정 SEO 탭의 스케줄 관리 안내·드라이버 탭의 처리 기록 설정 문구의 일본어 번역을 추가했습니다.
 - 스케줄 관리 상태 카드의 휴대폰 요약 줄(마지막 실행·워커·실패 건수)과 자세히/접기 문구 4건의 일본어 번역을 추가했습니다.
-- 환경설정 SEO 탭의 타이틀 접미사·메타 키워드 칸 예시 문구 2건의 일본어 번역을 추가했습니다.
 - 스케줄 관리 화면의 상태 일괄 변경 확인 창·스케줄 보안 정책(읽기 전용) 창·큐 탭 정렬과 현황 카드, 환경설정 탭의 「스케줄 관리에서 변경」 안내(다음 실행 일시·비활성 안내)와 편집기 데이터 소스 이름의 일본어 번역을 추가했습니다.
+- 예약 작업 편집 창의 제한 시간 자리 표시 「デフォルト」와, 비워 둘 때 작업 유형과 실행 방식별 실제 기본값 안내 5종(`admin.schedules.form.timeout_placeholder`, `admin.schedules.form.timeout_default.*`)의 일본어 번역을 추가했습니다.
+- 환경설정 「시스템」 탭의 일본어 번역을 추가했습니다 (`settings.system.*` 46건) — 실행 방식 판정·재감지, 예약 작업 호출 주소·허용 주소·최소 간격·방문 트리거 폴백·마지막 실행 표시를 포함합니다.
+- 호출 번호 재발급 확인 모달의 일본어 번역을 추가했습니다 (`modal_label.admin_settings.cron_token_rotate_modal`).
+- 탭 이름과 복사 버튼, 실행 방식·예약 작업 상태 데이터소스 라벨의 일본어 번역을 추가했습니다 (`settings.tabs.system`, `common.copy`, `editor.data_source.system_status`).
+- 예약 작업 실행 이력 목록과 실행 기록 저장 실패 안내의 일본어 번역을 추가했습니다 (`settings.system.cron_history*`, `cron_state_persist_failed` 5건).
+
+#### 로그인·외부 인증·비밀번호 없는 관리자
+
 - 회원 상세 「비밀번호」 배지(`admin.users.detail.password.state`·`set`·`not_set`·`not_set_hint`)와, 비밀번호 없는 관리자의 이메일 인증번호 확인 문구(앱 키 재생성 창 `admin.settings.modals.reauth_*`, 자기 정보 수정 `admin.users.form.password_policy.reauth_*`)의 일본어 번역을 추가했습니다.
 - 비밀번호 없는 관리자에게 보이는 앱 키 재생성 창 제목(`admin.settings.modals.identity_confirm_title`)의 일본어 번역을 추가했습니다.
 - 외부 인증(회사 계정 로그인)과 회원 관리 문구의 일본어 번역을 추가했습니다 — 관리자 로그인 화면의 이메일 먼저 입력·「{수단}(으)로 계속」(`auth.login.external.*`), 회원 추가 「비밀번호 없이 만들기」(`admin.users.form.fields.create_without_password*`), 회사 계정이 관리하는 항목 안내(`admin.users.form.fields.locked_by_company`), 환경설정 > 보안 「회원가입」 카드(`admin.settings.security.registration.*`), 회원 상세 「모든 기기에서 로그아웃」과 확인 창(`admin.users.detail.revoke_sessions.*`).
 - 외부 수단으로 본인을 확인하는 관리자의 안내 일본어 번역을 추가했습니다 — 본인 확인 화면으로 이동하지 못했을 때(`admin.settings.modals.reauth_external_failed`·`admin.users.form.password_policy.reauth_external_failed`), 확인을 마치고 앱 키 재생성 창으로 돌아왔을 때(`admin.settings.modals.reauth_verified`).
 - 이메일로 인증번호를 받을 수 없는 비밀번호 없는 관리자가 회사 계정 등 다른 수단으로 본인 확인을 시작하는 버튼과 안내의 일본어 번역을 추가했습니다(앱 키 재생성 창 `admin.settings.modals.reauth_start`·`reauth_notice_other`·`reauth_code_sent_generic`, 자기 정보 수정 `admin.users.form.password_policy.` 같은 세 키).
 - 관리자 로그인 화면의 회사 계정 이메일 판정 안내와 비상 계정 로그인(`?local=1`) 안내 일본어 번역을 추가했습니다(`auth.login.external.discovered_notice`·`auth.login.external.discovered_notice_company`·`auth.login.external.local_notice`).
-- 예약 작업 편집 창의 제한 시간 자리 표시 「デフォルト」와, 비워 둘 때 작업 유형과 실행 방식별 실제 기본값 안내 5종(`admin.schedules.form.timeout_placeholder`, `admin.schedules.form.timeout_default.*`)의 일본어 번역을 추가했습니다.
-- 환경설정 > 고급의 신뢰 프록시 편집 화면 문구 일본어 번역을 추가했습니다 (`settings.advanced.trusted_proxy_*` 19건) — 신뢰 범위 3모드·주소 목록 입력·위조 경고·저장 전 검사 결과를 포함하며, 용어는 패키지 글로서리를 따릅니다.
-- 환경설정 > 정보 탭에서 메모리·디스크 사용량을 측정할 수 없을 때 표시되는 「측정 불가」 문구의 일본어 번역을 추가했습니다 (`settings.info.not_measurable`).
-- 환경설정 「시스템」 탭의 일본어 번역을 추가했습니다 (`settings.system.*` 46건) — 실행 방식 판정·재감지, 예약 작업 호출 주소·허용 주소·최소 간격·방문 트리거 폴백·마지막 실행 표시를 포함합니다.
-- 호출 번호 재발급 확인 모달의 일본어 번역을 추가했습니다 (`modal_label.admin_settings.cron_token_rotate_modal`).
-- 탭 이름과 복사 버튼, 실행 방식·예약 작업 상태 데이터소스 라벨의 일본어 번역을 추가했습니다 (`settings.tabs.system`, `common.copy`, `editor.data_source.system_status`).
-- 환경설정 > 일반 탭 사이트 URL 안내 문구의 일본어 번역을 추가했습니다 (`settings.general.site_url_help`).
-- 예약 작업 실행 이력 목록과 실행 기록 저장 실패 안내의 일본어 번역을 추가했습니다 (`settings.system.cron_history*`, `cron_state_persist_failed` 5건).
+
+#### 코어 업데이트
+
 - 환경설정 「업데이트」 탭의 일본어 번역을 추가했습니다 (`settings.core_update.*` 48건) — 버전 표시, 함께 처리할 항목, 레이아웃 처리 방식, 진행률·기록, 실패와 되돌리기 결과, 사전 조건 진단·확인 실패 안내·조치 방법 보기, 고급 접기의 수동 ZIP·명령어 안내를 포함합니다.
 - 탭 이름과 업데이트 상태 데이터소스 라벨의 일본어 번역을 추가했습니다 (`settings.tabs.update`, `editor.data_source.core_update_status`).
 - 되돌리기 실패 시의 수동 복구 안내 일본어 문구를 FTP 기준 절차로 다시 썼습니다 (`settings.core_update.rollback_manual`). 명령어 절차는 SSH 를 쓸 수 있는 경우로 조건을 달아 병기합니다.
 - [조치 방법 보기] 안내 모달의 일본어 제목·머리말을 「コマンドでアップデート (SSH がある場合)」로 다시 썼습니다 (`settings.info.update_guide_title`, `update_guide_warning`). 종전 문구는 명령줄이 유일한 수단이라고 단정해, 관리자 화면 업데이트가 실패한 운영자가 그 창에서 길이 끊겼습니다.
-- 환경설정 썸네일 카드(움직이는 이미지 원본 사용 스위치 포함)·썸네일 규격 표·이미지 처리 카드, 본문 이미지 확대 보기 버튼 이름, 편집기 썸네일 규격 선택·썸네일 저장 위치별 사용량 데이터 소스 이름의 일본어 번역을 추가했습니다.
-- 환경설정 업로드 탭 썸네일 카드의 「고급 — 서버 보호 값」 칸 여섯(라벨, 안내, 단위)과 설명 문구 일본어 번역을 추가했습니다.
-- 업로더의 이미지 압축 실패 안내와 업로드 실패로 저장을 멈췄다는 안내(`attachment.compression_failed`, `attachment.upload_failed_save_stopped`)의 일본어 번역을 추가했습니다.
-- 공통 오류 화면(전용 오류 화면이 없는 400·422·429·502·504 등)의 제목·안내·새로고침 단추 일본어 번역을 추가했습니다(`errors.default.*`).
-- 환경설정 「회원」 탭의 일본어 번역을 추가했습니다 — 가입 항목 표와 항목 추가, 수정, 삭제, 필수 전환 확인 창(`admin.settings.member.fields.*`), 닉네임 정책(`admin.settings.member.nickname.*`), 창 이름 3건과 편집기 데이터 소스 이름 2건, 회원 폼과 회원 상세의 회원 항목 문구(`admin.users.member_fields.*` — 범위와 잠금 안내, 파일 추가와 삭제, 「추가 항목」과 「확장 항목」 구획, 닉네임 변경 정보, 비어 있는 필수 항목), 회원 목록의 「미입력」 열과 「필수 항목 미입력」, 「닉네임 중복」 필터(`admin.users.list_member_fields.*`), 편집기의 「회원 항목 입력칸」 이름 (#490)
-- 환경설정 「회원」 탭 「표시 이름」 설정의 일본어 번역을 추가했습니다 — 회원이 고를 수 있는 종류와 회원 기본 종류, 영역별 방식 표, 닉네임 고정 안내와 「로그인 시 닉네임 입력 요구」, 항목 삭제를 막는 사용처 안내(`admin.settings.member.display_name.*`), 회원 상세의 표시 이름 정보 7건(`admin.users.member_fields.status.display_name_*`), 회원 목록 「보이는 이름」 열, 「실명」 표기 2건(`admin.common.real_name.*`), 알림 템플릿 편집 창의 회원 항목 변수 안내와 없는 변수 경고 5건(`admin.settings.notification_definitions.edit_modal.*`) (#490)
+
+#### 회원 항목과 표시 이름
+
+- 환경설정 「회원」 탭의 일본어 번역을 추가했습니다 — 가입 항목 표와 항목 추가, 수정, 삭제, 필수 전환 확인 창(`admin.settings.member.fields.*`), 닉네임 정책(`admin.settings.member.nickname.*`), 창 이름 3건과 편집기 데이터 소스 이름 2건, 회원 폼과 회원 상세의 회원 항목 문구(`admin.users.member_fields.*` — 범위와 잠금 안내, 파일 추가와 삭제, 「추가 항목」과 「확장 항목」 구획, 닉네임 변경 정보, 비어 있는 필수 항목), 회원 목록의 「미입력」 열과 「필수 항목 미입력」, 「닉네임 중복」 필터(`admin.users.list_member_fields.*`), 편집기의 「회원 항목 입력칸」 이름
+- 환경설정 「회원」 탭 「표시 이름」 설정의 일본어 번역을 추가했습니다 — 회원이 고를 수 있는 종류와 회원 기본 종류, 영역별 방식 표, 닉네임 고정 안내와 「로그인 시 닉네임 입력 요구」, 항목 삭제를 막는 사용처 안내(`admin.settings.member.display_name.*`), 회원 상세의 표시 이름 정보 7건(`admin.users.member_fields.status.display_name_*`), 회원 목록 「보이는 이름」 열, 「실명」 표기 2건(`admin.common.real_name.*`), 알림 템플릿 편집 창의 회원 항목 변수 안내와 없는 변수 경고 5건(`admin.settings.notification_definitions.edit_modal.*`)
 - 「표시 이름」 구획의 회원 기본 종류를 쓰는 영역 안내(`admin.settings.member.display_name.member_default_kind_usage`·`member_default_kind_usage_more`·`member_default_kind_unused`)의 일본어 번역을 추가했습니다.
-- 레이아웃 갱신·확장 업데이트 창의 미리보기·화면별 결정, 활동 로그의 삭제 직전 기록 펼쳐 보기, 정보 탭 확장 카드, 알림 받는 사람 「사이트 관리자 이메일」, HTTPS 강제 적용 주의 문구의 일본어 번역을 추가했습니다.
-- 검수 서버 안내 띠·편집기 「검수용 저장」 안내·잠긴 단추 안내(`stage_role.*`)와 예약 작업 카드의 스케줄 꺼짐 안내(`settings.system.scheduler_off_on_this_server`) 일본어 번역을 추가했습니다.
-- 업데이트 창의 판정 건너뜀 안내(꺼 둔 확장·활성 파일 없음)와 판정 요약 항목별 문구의 일본어 번역을 추가했습니다(옛 한 줄 요약 문구는 뺐습니다).
-- 레이아웃 편집 화면 버전 이력 창의 판 출처 문구 8건(덮기 전 운영자 판·병합 결과, `admin.templates.modals.version_history.source_labels.*`)의 일본어 번역을 추가했습니다.
 
 ### Changed
 
@@ -76,7 +99,7 @@
 - 스케줄 관리 화면에서 없어진 문구 10건(옛 통계 카드·모듈 필터·점검 모드 필터·일괄 실행 등)을 정리했습니다.
 - 환경설정 SEO 탭에서 없어진 사이트맵 생성 주기·시각 입력 문구 6건을 정리했습니다.
 - 스케줄 관리 화면에서 쓰지 않게 된 문구(옛 필터 이름공간·일괄 버튼·쪽당 개수 개별 키 등)와 SEO 탭의 옛 사이트맵 링크 문구를 정리했습니다.
-- 회원 등록, 수정, 상세 화면이 회원 항목 계약으로 칸을 그리게 되면서 쓰지 않게 된 칸 이름 10건(이름, 닉네임, 휴대폰, 전화, 홈페이지, 국가, 언어, 시간대, 서명, 자기소개, `admin.users.form.fields.*`)과 회원 상세의 게시판 알림 사용 여부 표시 2건(`admin.users.detail.enabled`, `disabled`)을 정리했습니다 (#490)
+- 회원 등록, 수정, 상세 화면이 회원 항목 계약으로 칸을 그리게 되면서 쓰지 않게 된 칸 이름 10건(이름, 닉네임, 휴대폰, 전화, 홈페이지, 국가, 언어, 시간대, 서명, 자기소개, `admin.users.form.fields.*`)과 회원 상세의 게시판 알림 사용 여부 표시 2건(`admin.users.detail.enabled`, `disabled`)을 정리했습니다
 
 ## [1.1.5] - 2026-11-15
 

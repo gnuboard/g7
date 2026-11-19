@@ -160,7 +160,7 @@ if (! function_exists('installer_finalize_env')) {
 
             $envContent = mergeRuntimeIntoEnv($envBase, $runtime);
 
-            // 쓰기 직전 원본 보존 (13차 #D8).
+            // 쓰기 직전 원본 보존.
             //
             // `.env` 는 `.env.example` 템플릿에서 새로 만들어져 **통째로 대체**된다 — 운영자가 설치
             // 전에 넣어 둔 값(메일·큐·레디스·서드파티 키)은 설치가 **성공해도** 사라지고 되돌릴 방법이
@@ -229,7 +229,7 @@ if (! function_exists('installer_finalize_env')) {
                 ]));
             }
 
-            // 다시 만들기 직전에 한 번 더 지운다 (제품 결정 13차 D7/E2) — 병합 전 삭제와 이 지점 사이에 남이 다시
+            // 다시 만들기 직전에 한 번 더 지운다 (제품 결정) — 병합 전 삭제와 이 지점 사이에 남이 다시
             // 구웠을 수 있다(워커 대기 상한 초과 등). 그 캐시는 runtime.php 주입 값(평문 DB 비밀번호)과
             // `app.installer_completed=false` 를 담는다. 같은 이름의 디렉토리처럼 지울 수 없는 것이 그 자리에
             // 있으면 운영자가 직접 치우도록 기록한다. 삭제 실패는 설치를 중단시키지 않는다.
@@ -263,8 +263,8 @@ if (! function_exists('installer_finalize_env')) {
             // state.json 삭제 — 남는 모든 경로에서는 비밀 필드를 제거해 재저장한다 (이슈 #465).
             // .env 머지가 이미 성공한 뒤라 state.config 가 더는 필요하지 않다.
             // 경로 리터럴을 두 곳에 두면 STATE_PATH 를 먼저 정의하는 진입점(테스트 하네스)이나
-            // 배치가 달라졌을 때 finalize 만 조용히 다른 파일을 지운다 — session.php 가 10차에
-            // 같은 이유로 리터럴을 걷어냈다 (11차 #A11).
+            // 배치가 달라졌을 때 finalize 만 조용히 다른 파일을 지운다 — session.php 가 앞서
+            // 같은 이유로 리터럴을 걷어냈다.
             $stateFilePath = STATE_PATH;
             $stateDeleted = false;
 
@@ -280,7 +280,7 @@ if (! function_exists('installer_finalize_env')) {
                         $log(lang('log_finalize_env_state_removed'));
                     }
                     // 워커 lock 판정용 파일(installerWithStateLock 의 flock 대상) — 상태 파일과 함께 치운다.
-                    // 이름은 생산자 상수다 — 리터럴이면 갈려도 아무것도 울리지 않는다 (15차 G3 W1-4).
+                    // 이름은 생산자 상수다 — 리터럴이면 갈려도 아무것도 울리지 않는다.
                     if (is_file($stateFilePath.INSTALLER_STATE_LOCK_SUFFIX)) {
                         @unlink($stateFilePath.INSTALLER_STATE_LOCK_SUFFIX);
                     }

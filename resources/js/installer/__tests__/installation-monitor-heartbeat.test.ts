@@ -1,5 +1,5 @@
 /**
- * SSE `heartbeat` 소비 회귀 테스트 (12차 #B27 · #B35).
+ * SSE `heartbeat` 소비 회귀 테스트.
  *
  * 서버는 번들 추출 구간(`public/install/includes/task-runner.php`)에서 **`heartbeat` 만** 내보낸다. 그 구간은
  * 10~15초 이상 걸리는 최장 태스크인데, 화면의 침묵 감지(기본 90초)는 살아 있음의 증거로 세는

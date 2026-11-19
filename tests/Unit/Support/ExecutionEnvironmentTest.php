@@ -190,7 +190,7 @@ class ExecutionEnvironmentTest extends TestCase
     /**
      * 운영자가 **명시**한 바이너리가 비-CLI SAPI 면 CLI 후보를 먼저 찾는다.
      *
-     * 자동 탐색 경로는 CLI 우선 정렬로 이미 닫혔지만(3차 라운드), 명시 경로는 그대로였다 —
+     * 자동 탐색 경로는 CLI 우선 정렬로 이미 닫혔지만, 명시 경로는 그대로였다 —
      * Step 3 이나 process.php_binary 에 FPM/CGI 를 넣으면 판정은 subprocess 인데 태스크는
      * 전부 실패하는 조합이 남는다.
      *

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * `installerExtensionIsInstalled` 의 테스트 스텁 (16차 C-1).
+ * `installerExtensionIsInstalled` 의 테스트 스텁.
  *
  * 실제 판정기는 `public/install/api/rollback-functions.php` 소유이고 DB 를 조회한다.
  * `InstallerSkipPairedActivateTest` 가 고정하려는 계약은 **DB 조회 방법**이 아니라
@@ -33,7 +33,7 @@ if (! function_exists('installerExtensionIsInstalled')) {
 }
 
 /**
- * `installerDependentsOfSkippedTarget` 의 테스트 스텁 (16차 C-1 재귀).
+ * `installerDependentsOfSkippedTarget` 의 테스트 스텁 (재귀).
  *
  * 실제 구현은 `task-runner.php` 소유인데, 그 파일은 `rollback-functions.php` 를 끌어와
  * 위 판정기와 재선언 충돌을 일으킨다. 여기서 고정하려는 것은 **파급 목록을 어떻게 만드는가**

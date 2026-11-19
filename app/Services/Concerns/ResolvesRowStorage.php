@@ -11,7 +11,7 @@ use App\Contracts\Extension\StorageInterface;
  * 위치를 향하도록, 행에 기록된 disk 의 스토리지를 돌려준다. 사용 서비스는
  * `protected StorageInterface $storage` 주입을 전제로 한다.
  *
- * 왜 코어에도 두는가 (12차 G3 라운드 B12-1):
+ * 왜 코어에도 두는가:
  *   같은 판정이 번들 확장 넷(board·page·ecommerce·ckeditor5)에는 있고 **코어 두 서비스
  *   에만 없었다.** 코어는 행 `disk` 를 존재 검증 없이 `withDisk()` 에 넘겼는데,
  *   `withDisk()` 는 clone 후 대입만 할 뿐 검증하지 않으므로 예외는 그 뒤 `exists()`·

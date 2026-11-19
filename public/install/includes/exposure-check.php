@@ -53,7 +53,7 @@ if (! function_exists('installerListExposureProbeFiles')) {
      * 전부 무동작이었다. 그런데 **sentinel 생성은 그 조건과 무관하게 계속되므로**,
      * 무인증 `?action=requirements` 반복이 `storage/installer` 에 상한 없이 쌓였다.
      * 총량 방어를 「진입 스윕」에 맡긴다고 적어 두고 그 스윕이 바로 그 환경에서
-     * 사문이었다 — 그리고 그 호스팅이 곧 G3 가 대상으로 삼는 배치다 (15차 G3 라운드).
+     * 사문이었다 — 그리고 그 호스팅이 곧 G3 가 대상으로 삼는 배치다.
      *
      * 대상 이름이 전부 고정 접두사 + 난수라 패턴 매칭이 필요 없다. `scandir` 도 막히면
      * 그때는 나열 수단이 없으므로 「쓸지 못했다」를 호출부가 보고한다.
@@ -77,7 +77,7 @@ if (! function_exists('installerListExposureProbeFiles')) {
             return ['files' => [], 'listed' => false];
         }
 
-        // 쓰기 실측 프로브(`functions.php` 소유)도 같은 디렉토리에 남을 수 있다 (13차 G3 W1-6).
+        // 쓰기 실측 프로브(`functions.php` 소유)도 같은 디렉토리에 남을 수 있다.
         $prefixes = [INSTALLER_EXPOSURE_PROBE_PREFIX, INSTALLER_SYMLINK_PROBE_PREFIX, INSTALLER_WRITE_PROBE_PREFIX];
         $files = [];
 
@@ -208,7 +208,7 @@ if (! function_exists('installerExposureAbsentControl')) {
      * 인증 가로채기(oauth2-proxy·캡티브 포털)가 전 주소에 200 로그인 화면을 내리는 배치는
      * 이 대조로 통과하지 않는다 — 그런 서버에서는 **양성 대조**(반드시 200 + 마커여야 하는
      * 인스톨러 자산)가 먼저 실패해 측정 전체가 판정 불능으로 떨어지기 때문이다. 두 대조가
-     * 함께 서야 자동 판정이 성립한다 (14차 G3 라운드).
+     * 함께 서야 자동 판정이 성립한다.
      *
      * @return array{path: string, label: string} 음성 대조 대상 (마커 없음 — 형태만 잰다)
      */
@@ -226,8 +226,7 @@ if (! function_exists('installerExposureAbsentControl')) {
             // 무가드 `random_bytes()` 를 직접 부르면 안 되는 자리다: 이 함수는 형제 경로의
             // `no_random` **catch 블록 안에서도** 불리므로, CSPRNG 를 못 얻는 호스팅에서는
             // 그 두 번째 던짐을 받을 곳이 없어 요구사항 응답 전체가 500 이 되고, 일부러
-            // 만든 `no_random` 강등 경로와 그 다국어 문구가 통째로 사문이 된다
-            // (15차 G3 라운드).
+            // 만든 `no_random` 강등 경로와 그 다국어 문구가 통째로 사문이 된다.
             'path' => '/g7-exposure-absent-'.installerUniqueSuffix(8),
             'label' => 'absent',
         ];
@@ -276,7 +275,7 @@ if (! function_exists('installerExposureProbePlan')) {
 
         // 0) 프록시가 알려 준 접두사(`X-Forwarded-Prefix`)를 정제기가 버렸다면 기준 주소가
         // 마운트 밖일 수 있다 — 그 상태의 프로브는 전부 404 를 받아 「보호 확인됨」으로
-        // 수렴한다. 버린 사실은 종전에 어디에도 남지 않았다 (15차 G3 W1-2). 사유·길이만
+        // 수렴한다. 버린 사실은 종전에 어디에도 남지 않았다. 사유·길이만
         // 기록하고 값은 싣지 않는다. 브라우저가 기준 주소를 잡는 축이라 `label` 은 헤더명이다.
         if (function_exists('installerForwardedPrefixRejection') && installerForwardedPrefixRejection() !== null) {
             $unmeasured[] = ['label' => 'X-Forwarded-Prefix', 'reason' => 'forwarded_prefix_rejected'];
@@ -378,13 +377,13 @@ if (! function_exists('installerExposureProbePlan')) {
             return ['targets' => $targets, 'unmeasured' => $unmeasured, 'controls' => $controls, 'absent_control' => installerExposureAbsentControl()];
         }
 
-        // 이 계열은 요청마다 파일을 **만든다.** 설치 창에는 인증이 없으므로(13차 보안#6·#7)
+        // 이 계열은 요청마다 파일을 **만든다.** 설치 창에는 인증이 없으므로(#7)
         // 그 쓰기는 두 방향으로 묶는다:
         //  ① 진입 스윕 — **오래된** sentinel 만 걷는다. 잔여물이 호출 수에 비례해 쌓이지 않고,
         //     설치를 도중에 포기해도 다음 점검이 앞의 것을 정리한다.
         //     나이 제한이 필요한 이유: 무조건 걷으면 탭 두 개나 [다시 검사] 중복 호출에서
         //     **뒤 호출이 앞 호출의 대상을 지운다.** 그러면 앞 화면의 프로브가 404 를 받아
-        //     「보호 확인됨」이 되는데, 그 파일은 서빙되고 있었을 수도 있다 — 3차 라운드가
+        //     「보호 확인됨」이 되는데, 그 파일은 서빙되고 있었을 수도 있다 — 앞서
         //     고유 파일명으로 닫은 D3 판정 반전이 정리 쪽으로 되살아난다.
         //  ② 창당 상한 — 넘으면 **429 로 화면을 깨뜨리지 않고** 이 계열만 재지 못한 것으로
         //     보고한다. 요구사항 화면은 정상 설치의 통로라 상한 때문에 막히면 안 되고,
@@ -407,7 +406,7 @@ if (! function_exists('installerExposureProbePlan')) {
         // 이 분기는 **전역** 창을 세지 않는다. 대신 총량 방어를 원격 주소 창
         // (`$limit * 10`)이 맡는다 — 세션 번호는 요청하는 쪽이 정하는 값이라 그것
         // 하나만으로는 쿠키를 갈아 끼우는 것만으로 상한이 사라지기 때문이다
-        // (11차가 전역 창을 뺄 때 함께 열린 구멍, 12차 G3 라운드에서 닫음).
+        // (전역 창을 뺄 때 함께 열린 구멍이었다).
         // 그 주소 창을 채워 남을 강등시키려면 그 사람과 같은 egress IP 여야 하므로,
         // 전역 창과 달리 임의의 제3자가 이 판정을 깎을 수 없다. 쓰기 총량은 그 창에
         // 더해 진입 스윕(TTL 300초)과 finalize 정리가 함께 걷는다.
@@ -449,7 +448,7 @@ if (! function_exists('installerExposureProbePlan')) {
         // 쓴 **바이트 수**까지 본다. 디스크가 차거나 quota 에 걸리면 `file_put_contents` 는
         // false 가 아니라 「일부만 썼다」를 돌려주는데, 그것을 성공으로 통과시키면 전체 토큰을
         // 마커로 내려보내게 된다. 그러면 그 파일이 **실제로 서빙되는데도** 브라우저는 마커
-        // 불일치를 보고 「보호 확인됨」으로 읽는다 — 3차가 고유 파일명으로, 4차가 나이 제한
+        // 불일치를 보고 「보호 확인됨」으로 읽는다 — 고유 파일명과 나이 제한
         // 스윕으로 닫은 D3 판정 반전이 부분 쓰기 축으로 되살아난다. 형제
         // (`RootHtaccessUpdater::writeAtomically`)가 정확히 이 축을 같은 방식으로 막는다.
         $sentinelBody = $token."\n";
@@ -643,7 +642,7 @@ if (! function_exists('installerSweepStaleExposureProbe')) {
      * **오래된** 노출 점검 잔여 파일만 걷습니다 (점검 진입 시 호출).
      *
      * 이 계열은 요청마다 파일을 만든다. 설치 창에는 인증이 없으므로 그 쓰기를 묶어야 하는데,
-     * 무조건 전부 걷으면 동시 점검이 서로의 대상을 지워 앞 화면의 판정이 뒤집힌다(3차 라운드가
+     * 무조건 전부 걷으면 동시 점검이 서로의 대상을 지워 앞 화면의 판정이 뒤집힌다(앞서
      * 고유 파일명으로 닫은 축이 정리 쪽으로 되살아난다). 그래서 진행 중일 수 없을 만큼 오래된
      * 것만 지운다 — 형제 선례(`installer-state.php` 의 tmp 스윕)와 같은 규칙이다.
      *
@@ -705,10 +704,10 @@ if (! function_exists('installerCleanupExposureProbe')) {
      * (중단·초기화)는 **갓 만들어진 sentinel 을 남긴다** — 그 둘은 요구사항 화면이
      * 열려 있는 동안에도 부를 수 있는 무인증 POST 이고, 진행 중인 점검의 sentinel 을
      * 지우면 그 화면의 프로브가 404 를 받아 **「그 파일은 막혀 있다」로 확정**한다.
-     * 4차 라운드가 진입 스윕에 대해 세운 판정(뒤 호출이 앞 호출의 대상을 지우면 앞
+     * 앞서 진입 스윕에 대해 세운 판정(뒤 호출이 앞 호출의 대상을 지우면 앞
      * 화면이 404 를 보호로 읽는다)이 이 정리 쪽에는 적용되지 않은 채였다.
      * 레이트리밋 상태도 같은 이유로 finalize 에서만 지운다 — 그러지 않으면 무인증
-     * 요청 하나로 상한이 초기화되어 4·5차가 만든 상한이 그 자리에서 사라진다.
+     * 요청 하나로 상한이 초기화되어 앞서 만든 상한이 그 자리에서 사라진다.
      *
      * @param  string|null  $basePath  프로젝트 루트 (기본 BASE_PATH)
      * @param  bool  $finalizing  설치 마무리 정리인지 여부 (false 면 최근 파일·상한 보존)
@@ -747,7 +746,7 @@ if (! function_exists('installerCleanupExposureProbe')) {
         // **앞에서 지운 레이트 파일의 회계를 덮지 않는다.** 종전에는 이 분기가
         // `removed: 0, failed: 0` 을 하드코딩해, 그 위에서 지웠거나 지우지 못한 사실이
         // 통째로 사라졌다(이 함수 자신이 「쓸지 못했다는 사실은 남긴다」고 적어 둔 규율과
-        // 어긋난다 — 15차 G3 라운드).
+        // 어긋난다).
         $listing = installerListExposureProbeFiles($dir);
 
         if (! $listing['listed']) {
@@ -759,8 +758,8 @@ if (! function_exists('installerCleanupExposureProbe')) {
             // `time() - 0` 을 언제나 하한 초과로 읽어 나이 게이트를 통째로 무력화했고,
             // 그러면 **진행 중인 점검의 sentinel 을 지운다**(fail-open) — 그 점검은
             // 404 를 받아 「그 파일은 막혀 있다」로 확정하므로 노출 점검이 거짓 안전을
-            // 보고한다. 형제 둘(`:661` 의 `$mtime !== false &&`, 11차가 고친
-            // `installer-state.php`)은 이미 정반대다. (12차 G3 C-5)
+            // 보고한다. 형제 둘(`:661` 의 `$mtime !== false &&`, 앞서 고친
+            // `installer-state.php`)은 이미 정반대다.
             if ($minimumAge > 0) {
                 $mtime = @filemtime($path);
 

@@ -20,7 +20,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 /**
  * 페이지 첨부 서빙 계약 테스트 (형제 sirsoft-board · 코어와의 강도 패리티)
  *
- * 세 축을 고정합니다 (11차 G3 라운드 B11-1 · B11-2 · B11-3).
+ * 세 축을 고정합니다.
  *
  * 1) 다운로드의 파일 이름 선언은 **스토리지 단일 지점**이 만든다. 원문
  *    `Content-Disposition` 을 넘기면 Flysystem 어댑터가 자기 `makeDisposition()` 을
@@ -152,7 +152,7 @@ class PageAttachmentServeContractTest extends ModuleTestCase
     }
 
     /**
-     * 다운로드 서빙 정보는 미리보기와 **같은 검증자 소스**를 싣는다 (15차 G3 라운드).
+     * 다운로드 서빙 정보는 미리보기와 **같은 검증자 소스**를 싣는다.
      *
      * 컨트롤러가 이 값을 코어 헬퍼에 넘겨 ETag·304 를 판정한다. 통로마다 사본으로 만들면
      * 같은 첨부가 통로에 따라 다른 ETag 를 갖는다.
@@ -264,7 +264,7 @@ class PageAttachmentServeContractTest extends ModuleTestCase
      * 축소는 제자리 덮어쓰기이고 `ImageResizer::resizeInPlace()` 는 쓰기 전에
      * `is_file()` 로 그 경로를 stat 하므로, `clearstatcache()` 없이 읽는 `getSize()` 는
      * 축소 **전** 크기를 돌려준다. 그 값이 행에 남으면 서빙의 `Content-Length` 선언이
-     * 실제 전송량보다 커져 응답이 잘린다 (11차 G3 라운드 B11-4 형제 축).
+     * 실제 전송량보다 커져 응답이 잘린다 (형제 축).
      *
      * 스토리지에 실제로 넘어간 바이트를 잡아 비교하므로 파일시스템에 의존하지 않는다.
      *

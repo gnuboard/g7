@@ -76,7 +76,7 @@ class MovePublicStorageBrokenBackupsOutOfDocroot implements DataMigration
         // 옮길 곳이 없어도 **노출 사실은 통보한다.** 종전에는 `storage/app` 부재를 info 한
         // 줄로 넘기고 반환했는데, 잔해가 있는 사이트에서 옮길 곳이 없다는 것은 정리가
         // 끝났다는 뜻이 아니라 노출이 **계속된다**는 뜻이다 — 아래 옮기기 실패 경로와 같은
-        // 등급의 사실이 이 갈래에서만 로그 파일에서 끝났다 (13차 G3 라운드 W4-3).
+        // 등급의 사실이 이 갈래에서만 로그 파일에서 끝났다.
         if (! is_dir($destinationDir)) {
             $exposed = array_merge($candidates, $this->skipped);
 
@@ -169,8 +169,7 @@ class MovePublicStorageBrokenBackupsOutOfDocroot implements DataMigration
         //
         // 형제 생산자(링크 복구 폴백)는 백업을 하나 만들 때마다 누적 판정을 부르는데,
         // 이 스텝은 문서 루트 안의 N 개를 한꺼번에 옮겨 놓고 「이동 N건」만 남겼다.
-        // 임계도 판정 규칙도 형제와 같은 것을 써야 두 경로의 안내가 갈리지 않는다
-        // (10차 G3 라운드 F10-3).
+        // 임계도 판정 규칙도 형제와 같은 것을 써야 두 경로의 안내가 갈리지 않는다.
         if ($moved > 0) {
             if ($this->storageLinkHelperHas('warnOnAccumulatedBackups')) {
                 StorageLinkHelper::warnOnAccumulatedBackups($context->logger);
@@ -276,12 +275,11 @@ class MovePublicStorageBrokenBackupsOutOfDocroot implements DataMigration
             // 이 클래스의 독블록은 「7.1.x 이하의 `storage.broken.<YmdHis>` 와 그 뒤 판본의
             // 유일화 접미사」를 받는다고 적었는데, 코드는 접두사만 봤다 — 운영자가 손으로
             // 둔 `storage.broken.메모` 같은 디렉토리까지 말없이 옮겼다. 형제 정리 주체는
-            // 같은 상황에서 이름 패턴 통과분만 모집단에 넣고 그 사유를 적어 두었다
-            // (10차 G3 라운드 F10-12).
+            // 같은 상황에서 이름 패턴 통과분만 모집단에 넣고 그 사유를 적어 두었다.
             // 이름 형식 판정은 **생산자 상수와 같은 값**으로 한다 (`StorageLinkHelper`). 종전에는
             // 여기와 정리 주체가 각자 리터럴을 들고 있었고, 접미사 그룹을 하나만 받아
             // 아래 `uniqueDestination()` 이 만든 이름(접미사 두 겹)이 정리 모집단 밖으로
-            // 나갔다 — 공개 파일 전량 사본이 영원히 남는 형태다 (11차 G3 라운드 E11-3).
+            // 나갔다 — 공개 파일 전량 사본이 영원히 남는 형태다.
             // V-1 안전 때문에 헬퍼 상수를 직접 읽지 않고 이 클래스의 비공개 상수로 옮겨 두었으며,
             // 값 일치는 테스트가 대조한다.
             if (preg_match(self::docrootBrokenNamePattern(), $entry) !== 1) {
@@ -335,7 +333,7 @@ class MovePublicStorageBrokenBackupsOutOfDocroot implements DataMigration
         // 벌어져 두 실행이 겹치면 같은 이름을 고른다. 뒤 실행의 `rename` 은 대상이 비어
         // 있지 않아 실패하므로 손실은 없지만, 「옮기지 못했다」의 사유가 경합인지 권한인지
         // 구분되지 않는다. 형제 `StorageLinkHelper` 는 같은 문제를 난수로 풀고 그 사유를
-        // 독블록에 적어 두었다 (10차 G3 라운드 F10-11).
+        // 독블록에 적어 두었다.
         for ($attempt = 0; $attempt < 8; $attempt++) {
             $candidate = $base.'-'.self::uniqueSuffix();
 

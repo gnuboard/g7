@@ -166,9 +166,8 @@ class AttachmentService
         //
         // 아래에서 읽는 `getSize()` 는 PHP 의 공유 stat 캐시를 그대로 쓰는데, 그 값이
         // 축소 전 크기면 행의 `size` 가 실제 저장 바이트보다 커진다. 그 값은 서빙에서
-        // `Content-Length` 로 **선언**되므로(8차 B-6) 어긋나는 순간 응답이 잘린다.
-        // 종전에는 정합이 「캐시가 아직 안 찼다」는 호출 순서의 우연에 걸려 있었다
-        // (10차 G3 라운드 B10-6).
+        // `Content-Length` 로 **선언**되므로 어긋나는 순간 응답이 잘린다.
+        // 종전에는 정합이 「캐시가 아직 안 찼다」는 호출 순서의 우연에 걸려 있었다.
         clearstatcache(true, $file->getRealPath());
 
         // 스토리지에 파일 저장 (category: 'attachments') — 글 저장 트랜잭션 안(파일 함께 보낸 업로드)이면
@@ -322,7 +321,7 @@ class AttachmentService
             // 건너뛰면서 **DB `path` 는 아래에서 갱신**됐다 — 행은 최종 경로를 가리키는데
             // 파일은 임시 경로에 남거나 아예 없어, 첨부가 오류도 로그도 없이 영구 유실된다.
             // 디스크를 옮긴 사이트에서는 그 읽기가 **항상** 실패하므로 그 창의 모든 신규
-            // 글 첨부가 전멸한다 (11차 G3 라운드 B11-9).
+            // 글 첨부가 전멸한다.
             $storage = $this->storageForRow($attachment->disk);
 
             if (! StorageTransaction::move($storage, 'attachments', $attachment->path, $newPath)) {
@@ -1181,8 +1180,8 @@ class AttachmentService
      * 미리보기 통로(`getFileInfo()`)와 **같은 서빙 메타**(ETag 소스·수정 시각)를 돌려준다.
      * 종전에는 다운로드가 `download()` 하나로 끝나 검증자가 하나도 없었다 — 같은 첨부가
      * 미리보기로는 304 로 재검증되고 내려받기로는 매번 전문을 받아 갔다. 오류도 로그도
-     * 없이 대역폭으로만 나타나고, 정적 서빙(링크가 되는 서버)은 두 통로를 가리지 않는다
-     * (14차 G3 라운드). 권한·상태 게이트·훅 순서는 종전 `download()` 와 같다.
+     * 없이 대역폭으로만 나타나고, 정적 서빙(링크가 되는 서버)은 두 통로를 가리지 않는다.
+     *권한·상태 게이트·훅 순서는 종전 `download()` 와 같다.
      *
      * @param  string  $slug  게시판 식별자
      * @param  int  $id  첨부파일 ID
@@ -1231,11 +1230,11 @@ class AttachmentService
         // Flysystem 어댑터는 그 헤더가 이미 있으면 자기 `makeDisposition()` 을 통째로
         // 건너뛴다. 그래서 원문 파일명이 그대로 헤더에 실렸고, 이름에 따옴표가 들어간
         // 업로드(`getClientOriginalName()` 은 basename 만 하고 따옴표를 지우지 않는다)는
-        // 헤더 구조를 깨뜨렸다. 형제 `preview()` 는 8차에 스토리지 단일 지점으로
+        // 헤더 구조를 깨뜨렸다. 형제 `preview()` 는 앞서 스토리지 단일 지점으로
         // 위임됐는데 이 메서드만 남아 있었다 — 코어 형제도 헤더를 넘기지 않고
-        // `download()` 를 쓴다 (10차 G3 라운드 B10-2).
+        // `download()` 를 쓴다.
         //
-        // 디스크도 행이 정한다(B10-3).
+        // 디스크도 행이 정한다.
         $response = $this->storageForRow($attachment->disk)->download(
             'attachments',
             $attachment->path,
@@ -1272,7 +1271,7 @@ class AttachmentService
      * 종전에는 `(string) $attachment->updated_at`(Carbon 의 `__toString`,
      * `2026-08-28 12:54:00`)이라 같은 값이 두 통로에서 다른 문자열이 됐다. 무해하지만
      * 「코어 형제와 같은 형태다」가 사실이 아니었고, 형제 대조를 그 문장에 기대는 다음
-     * 회차가 오판한다 (10차 G3 라운드 E-08). 배포 시 게시판 첨부 ETag 가 1회 무효화된다
+     * 회차가 오판한다. 배포 시 게시판 첨부 ETag 가 1회 무효화된다
      * (내용은 그대로, 검증자만 바뀐다).
      *
      * @param  Attachment  $attachment  첨부 행
@@ -1408,7 +1407,7 @@ class AttachmentService
         // 갔다. 그러면서 바로 아래 `etag_source` 는 `disk` 를 **싣는다** — 검증자는
         // 디스크가 표현을 가른다고 선언하고 서빙은 그것을 부정하는 자기모순이었다.
         // 증상은 404 + 로그 한 줄이라, 디스크를 옮긴 사이트에서 썸네일이 조용히
-        // 전멸한다 (10차 G3 라운드 B10-3).
+        // 전멸한다.
         $storage = $this->storageForRow($attachment->disk);
 
         if (! $storage->exists('attachments', $attachment->path)) {
@@ -1426,7 +1425,7 @@ class AttachmentService
         // `filemtime`/`filesize` 전제라 원격 디스크(S3 등) 행에서 그대로 죽고, 이 통로는
         // 그 실패를 404 로 접어 **게시판 썸네일이 오류 없이 전부 사라진다**. 코어는 같은
         // 사유로 이미 스트림 서빙(`StorageInterface::response()` + `streamedFileResponse()`)
-        // 으로 옮겼는데 이 모듈만 남아 있었다 (8차 G3 라운드 C-2).
+        // 으로 옮겼는데 이 모듈만 남아 있었다.
         //
         // `path` 는 **디스크 상대 경로**다(종전에는 절대 경로였다). 서빙은 컨트롤러가
         // 스토리지에 위임하므로 이 자리에서 경로를 조립할 이유가 없다.

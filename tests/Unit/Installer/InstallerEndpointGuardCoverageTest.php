@@ -32,7 +32,7 @@ class InstallerEndpointGuardCoverageTest extends TestCase
         'finalize-env.php' => 'complete_flag 직후 .env 머지 (KVE-2026-1056 자가 차단 회귀)',
         'state-management.php' => 'complete_flag 직후 폴링/상태 조회 구간',
         'run-task.php' => 'complete_flag 다음 태스크(config_cache)가 같은 단계별 흐름에서 이어진다',
-        // 복구 진입점 — 이 창에서 막히면 운영자가 실패 화면에서 나갈 수 없다 (9차 #M5)
+        // 복구 진입점 — 이 창에서 막히면 운영자가 실패 화면에서 나갈 수 없다
         'install-process.php' => 'complete_flag 이후의 재시작·[다시 시도]·[건너뛰고 계속]',
         'install-worker.php' => 'complete_flag 이후 SSE 재연결',
     ];
@@ -83,8 +83,7 @@ class InstallerEndpointGuardCoverageTest extends TestCase
      * 인스톨러의 `includes/` PHP 파일 전수 (결정 헬퍼 도출 모집단).
      *
      * 한 파일 고정으로 두면 형제 파일에 새 결정 헬퍼가 생겨도 도출이 그것을 모른다 —
-     * 그러면 그 헬퍼를 부르는 엔드포인트가 배선 대조에서 통째로 빠진다
-     * (10차 G3 라운드 C10-10).
+     * 그러면 그 헬퍼를 부르는 엔드포인트가 배선 대조에서 통째로 빠진다.
      *
      * @return array<int, string> 절대 경로 목록
      */
@@ -124,8 +123,7 @@ class InstallerEndpointGuardCoverageTest extends TestCase
         // 종전에는 `public/install/includes/execution-mode.php` 한 파일만 읽었다. 그런데 같은 이름
         // 규칙에 걸리는 결정 헬퍼가 형제 파일에도 있다(`installerRecordBusyRejection`
         // — `public/install/includes/installer-state.php`). 그러면 그 헬퍼를 부르는 엔드포인트는
-        // 배선 표 대조에서 통째로 빠지고, 새 파일이 생겨도 아무것도 울지 않는다
-        // (10차 G3 라운드 C10-10).
+        // 배선 표 대조에서 통째로 빠지고, 새 파일이 생겨도 아무것도 울지 않는다.
         $names = [];
 
         foreach ($this->installerIncludeFiles() as $file) {
@@ -180,7 +178,7 @@ class InstallerEndpointGuardCoverageTest extends TestCase
         foreach ($this->endpoints() as $file) {
             // 주석을 지운 뒤에 찾는다 — 호출을 `//` 로 감싸도 문자열은 남으므로 원문 검색만으로는
             // 「가드가 살아 있다」를 증명하지 못한다. 같은 파일의 형제 검사(배선 표)는 이미 그렇게
-            // 하고 있었고, 이 두 검사만 원문 정규식이라 한 파일 안에서 규칙이 갈려 있었다 (10차 #G4).
+            // 하고 있었고, 이 두 검사만 원문 정규식이라 한 파일 안에서 규칙이 갈려 있었다.
             $src = $this->stripComments((string) file_get_contents($this->apiDir().'/'.$file));
 
             $this->assertMatchesRegularExpression(
@@ -226,7 +224,7 @@ class InstallerEndpointGuardCoverageTest extends TestCase
     }
 
     /**
-     * complete_flag 이후의 복구 진입점이 그 창에서 열려 있다 (9차 #M5).
+     * complete_flag 이후의 복구 진입점이 그 창에서 열려 있다.
      *
      * `complete_flag` 태스크가 `storage/app/g7_installed` 를 먼저 만들고 그 뒤에
      * `config_cache` 와 `.env` 머지(finalize)가 온다. 그 창에서 재시작·SSE 재연결·
@@ -298,7 +296,7 @@ class InstallerEndpointGuardCoverageTest extends TestCase
     public function test_run_task_endpoint_uses_token_not_session(): void
     {
         // 주석을 지운 뒤에 본다 — 이 두 검사만 원문 대조라 한 파일 안에서 규칙이 갈려 있었다.
-        // 실측(12차 GI-3): 토큰 판정 호출을 주석 처리해도 7개 단언이 전부 초록이었고,
+        // 실측: 토큰 판정 호출을 주석 처리해도 7개 단언이 전부 초록이었고,
         // 그 상태의 결과는 stepwise 의 run-task·중단·초기화·건너뛰기가 전부 무인증이 되는 것이다.
         $src = $this->stripComments((string) file_get_contents($this->apiDir().'/run-task.php'));
 
@@ -308,7 +306,7 @@ class InstallerEndpointGuardCoverageTest extends TestCase
         // (InstallerExecutionModeHelperTest::test_stepwise_token_judgment_...).
         // 여기서 보는 축은 「그 판정을 실제로 부르고 있다」 — 호출이 지워지면 화면이
         // 아니라 인증이 사라지므로, 두 축을 각자 고정한다.
-        // 11차 #A10 이 「보관본 없음」과 「값 불일치」를 나누면서 호출부가 부르는 이름이
+        // 「보관본 없음」과 「값 불일치」를 나누면서 호출부가 부르는 이름이
         // installerStepwiseTokenRejection() 으로 바뀌었다 — 그 함수가 내부에서
         // installerStepwiseTokenAccepted() 를 부른다. 축(「판정을 실제로 부른다」)은 그대로다.
         // 배선 축은 문자열 채널까지 벗긴 소스로 잰다 (G3 회차 15) — 위의 문자열 리터럴 단언은 $src 그대로.
@@ -335,7 +333,7 @@ class InstallerEndpointGuardCoverageTest extends TestCase
      */
     public function test_skip_task_endpoint_uses_the_same_token_judgment(): void
     {
-        // 형제 검사와 같은 규칙 — 주석 제거 후 대조 (12차 GI-3)
+        // 형제 검사와 같은 규칙 — 주석 제거 후 대조
         $src = $this->stripComments((string) file_get_contents($this->apiDir().'/state-management.php'));
 
         $this->assertStringContainsString(
@@ -401,27 +399,27 @@ class InstallerEndpointGuardCoverageTest extends TestCase
             ['api/state-management.php', 'installerRequiresStepwiseToken(', 'stepwise 설치의 상태 변경이 무인증이 된다', 'requireStepwiseTokenOrReject'],
             // 상태를 바꾸는 세 액션이 **전부** 같은 게이트를 거쳐야 한다 — 건너뛰기 하나에만
             // 걸어 두면 그보다 파괴적인 중단(진행 중 태스크 롤백)과 초기화(완료 기록 전소거)가
-            // 무인증으로 남는다 (10차 #M10).
+            // 무인증으로 남는다.
             ['api/state-management.php', 'requireStepwiseTokenOrReject(', 'stepwise 설치의 [건너뛰고 계속] 이 무인증이 된다', 'skipFailedTask'],
             ['api/state-management.php', 'requireStepwiseTokenOrReject(', 'stepwise 설치의 중단이 무인증이 되어 진행 중 태스크 롤백을 아무나 부를 수 있다', 'abortInstallation'],
             ['api/state-management.php', 'requireStepwiseTokenOrReject(', 'stepwise 설치의 초기화가 무인증이 되어 완료 기록을 아무나 지울 수 있다', 'resetState'],
             // 진행 방식 확정 — inprocess 강제(A-2·R1)와 composer 조합 차단(#M3)의 배선.
-            // 이 호출이 사라지면 inprocess 설치가 한 요청에 전 태스크를 연속 실행한다 (10차 #G1).
+            // 이 호출이 사라지면 inprocess 설치가 한 요청에 전 태스크를 연속 실행한다.
             ['api/install-process.php', 'installerResolveInstallationMode(', 'inprocess 설치가 단계별 실행으로 강제되지 않아 한 요청에 전 태스크를 돌린다', null],
-            // 실행 모드·PHP 경로 확정값을 state 에 박는 **생산** 지점 (10차 #G2·#G3).
+            // 실행 모드·PHP 경로 확정값을 state 에 박는 **생산** 지점.
             // 소비 축은 테스트가 state 를 직접 seed 해 덮고 있어, 심는 줄은 아무도 보지 않았다.
             ['api/install-process.php', 'installerResolveExecutionMode(', '모드가 진입 1회로 확정되지 않아 요청마다 재판정된다 (R1 파기)', null],
             ['api/install-process.php', 'installerResolvedPhpBinary(', '자동 탐색된 PHP 경로가 실행에 도달하지 못해 전 태스크가 `php` 로 스폰된다 (D35)', null],
-            // 11차가 신설한 두 **파괴적** 가드 — 판정 함수는 행위 테스트가 덮는데 그것을 부르는
-            // 줄은 이 표에 없어, 대입을 `= null` 로 바꿔도 인스톨러 전 스위트가 초록이었다
-            // (12차 GI-2). 그 상태의 결과는 GET·무토큰·설치 진행 중 finalize 가 다시 열려
-            // 10차 fail-closed 가 요청 하나로 우회되는 것이다.
+            // 앞서 신설한 두 **파괴적** 가드 — 판정 함수는 행위 테스트가 덮는데 그것을 부르는
+            // 줄은 이 표에 없어, 대입을 `= null` 로 바꿔도 인스톨러 전 스위트가 초록이었다.
+            //그 상태의 결과는 GET·무토큰·설치 진행 중 finalize 가 다시 열려
+            // 종전의 fail-closed 가 요청 하나로 우회되는 것이다.
             ['api/finalize-env.php', 'installerFinalizeRejection(', '끝나지 않은 설치의 완료 표식·runtime.php 삭제를 아무나 GET 으로 부를 수 있다', null],
-            ['api/install-process.php', 'installerStartRejection(', '진행 중 stepwise 설치에 무인증으로 새 토큰을 발급해 10차의 토큰 게이트가 요청 하나로 우회된다', null],
-            // 10차 #M3(단계별 + composer 조합 차단)의 **화면 절반**. 서버 절반
+            ['api/install-process.php', 'installerStartRejection(', '진행 중 stepwise 설치에 무인증으로 새 토큰을 발급해 앞서 건 토큰 게이트가 요청 하나로 우회된다', null],
+            // 단계별 + composer 조합 차단의 **화면 절반**. 서버 절반
             // (installerResolveInstallationMode)만 이 표에 있었고, 화면은 이 표의 모집단이
             // api/·includes/ 뿐이라 아무도 보지 않았다 — 호출을 지우면 고를 수 없는 조합의
-            // 라디오가 사유 없이 활성으로 돌아온다 (12차 GI-6).
+            // 라디오가 사유 없이 활성으로 돌아온다.
             ['views/5-installation.php', 'installerStepwiseBlockedByVendorMode(', '한 요청 수명보다 오래 걸리는 조합(단계별 + composer)이 화면에서 다시 선택 가능해진다', null],
             ['views/5-installation.php', 'installerEffectiveExecutionMode(', '화면이 확정 실행 모드를 읽지 않아 stepwise 강제·조합 차단 표시가 통째로 사라진다', null],
             // 같은 결함 형태의 **서버측 사슬** (12차 재귀 조사). 순수 함수 테스트는 4단언이
@@ -437,13 +435,12 @@ class InstallerEndpointGuardCoverageTest extends TestCase
             // 아래는 대조 단위를 (파일, 헬퍼) 쌍으로 내리면서 드러났다. 이 호출은 형제
             // 검사(`InstallerServerJudgmentReachesScreenTest`)가 **손 목록**으로 덮고
             // 있었지만, 도출은 그 사실을 알 수 없다 — 표에 없으면 「배선 표가 이 쌍을
-            // 모른다」가 사실이고, 손 목록이 줄어드는 날 그 사각이 조용히 열린다
-            // (10차 G3 라운드 C10-9).
+            // 모른다」가 사실이고, 손 목록이 줄어드는 날 그 사각이 조용히 열린다.
             ['api/check-configuration.php', 'installerExecutionModeRejection(', '화면의 「고를 수 있는가」가 서버 저장 게이트와 다른 규칙을 쓰게 되어, 서버가 받아들이는 선택을 화면이 잠근다', null],
             // 아래 아홉은 같은 전환이 드러낸 나머지다. 여섯은 형제 검사
             // (`InstallerEntryGateWiringTest`)의 **손 목록**이 덮고 있었고, 셋은
             // **어느 검사도 보지 않았다** — 그중 `run-task.php` 의 출처 확인은 단계별
-            // 실행 엔드포인트라, 지우면 그 통로가 교차 출처로 열린다 (10차 G3 라운드 C10-9).
+            // 실행 엔드포인트라, 지우면 그 통로가 교차 출처로 열린다.
             ['api/finalize-env.php', 'installerCrossOriginRejection(', '완료 표식 기록·runtime.php 삭제를 다른 사이트가 부를 수 있다', null],
             ['api/install-process.php', 'installerCrossOriginRejection(', '설치 시작 + 단계별 토큰 발급을 다른 사이트가 부를 수 있다', null],
             ['api/install-process.php', 'installerRecordBusyRejection(', '진행 중 판정의 기록이 사라져 동시 시작이 조용히 통과한다 (형제 검사에도 없던 자리)', null],
@@ -456,7 +453,7 @@ class InstallerEndpointGuardCoverageTest extends TestCase
         ];
 
         // 배선 표는 api/·includes/ 뿐 아니라 **views/** 도 모집단으로 삼는다 — 판정이 화면에서
-        // 소비되는 절반은 종전에 통째로 사각이었다 (12차 GI-6).
+        // 소비되는 절반은 종전에 통째로 사각이었다.
         $this->assertNotEmpty(
             array_filter($expectations, static fn (array $row): bool => str_starts_with($row[0], 'views/')),
             '화면에서 소비되는 판정도 배선이다 — views/ 가 모집단에서 빠지면 그 절반이 사각이 된다'
@@ -472,7 +469,7 @@ class InstallerEndpointGuardCoverageTest extends TestCase
             array_filter($wiredFiles, static fn (string $path): bool => str_starts_with($path, 'api/')),
         )));
 
-        // (파일, 헬퍼) 쌍 — 대조 단위를 파일에서 쌍으로 내린다 (10차 G3 라운드 C10-9).
+        // (파일, 헬퍼) 쌍 — 대조 단위를 파일에서 쌍으로 내린다.
         $wiredPairs = [];
 
         foreach ($expectations as [$relative, $call]) {
@@ -670,7 +667,7 @@ class InstallerEndpointGuardCoverageTest extends TestCase
     }
 
     /**
-     * 토큰 판정 배선 검사도 주석 채널을 구분한다 (12차 GI-3 부정 픽스처).
+     * 토큰 판정 배선 검사도 주석 채널을 구분한다 (부정 픽스처).
      *
      * 위 두 검사(run-task·skip_task)는 종전에 `file_get_contents` **원문**을 봤다 —
      * 형제 2검사만 `stripComments()` 를 쓰고 있어 한 파일 안에서 규칙이 갈려 있었다.
@@ -713,7 +710,7 @@ require_once __DIR__.'/../includes/execution-mode.php';
     }
 
     /**
-     * 판정 정규식의 **부정 분기**를 합성 입력으로 태운다 (9차 #G14).
+     * 판정 정규식의 **부정 분기**를 합성 입력으로 태운다.
      *
      * 실 엔드포인트가 전부 준수 상태라 위 검사들은 늘 통과한다 — 정규식이 무엇이든 통과시키게
      * 망가져도 red 가 나지 않는다. 「가드가 없는 엔드포인트」를 실제로 만들어 잡히는지 본다.
@@ -757,7 +754,7 @@ $x = 1;
         $this->assertDoesNotMatchRegularExpression($callPattern, $lookalike, '이름만 언급한 주석은 호출이 아니다');
 
         // 주석 채널 — 괄호까지 포함해 주석으로 감싼 호출은 원문 정규식을 **통과한다**.
-        // 그래서 검사는 반드시 주석을 지운 뒤에 돌아야 한다 (10차 #G4).
+        // 그래서 검사는 반드시 주석을 지운 뒤에 돌아야 한다.
         $commentedOut = "<?php
 require_once __DIR__.'/_guard.php';
 // installer_guard_or_410();

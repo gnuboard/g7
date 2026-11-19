@@ -468,7 +468,7 @@ class ProductImageServiceTest extends ModuleTestCase
      * 종전에는 falsy 를 조용히 접고도 `path` 를 최종 경로로 갱신했다 — 행은 옮겨진 자리를
      * 가리키는데 파일은 임시 경로에 남고, 이 메서드 끝의 임시 디렉토리 정리가 그 임시본을
      * 지운다. 결과는 **상품 이미지의 영구 유실**이고 오류도 로그도 남지 않는다.
-     * 형제 둘(게시판·페이지)은 11차에 같은 자리를 고쳤다 (12차 G3 라운드 D4).
+     * 형제 둘(게시판·페이지)은 앞서 같은 자리를 고쳤다.
      *
      * @scenario operation=link_temp
      *

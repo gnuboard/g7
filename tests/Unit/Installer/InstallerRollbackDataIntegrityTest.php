@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\CleansTemporaryBasePath;
 
 /**
- * 롤백이 남의 데이터를 지우거나 복구 수단을 없애지 않는다는 계약 (13차 #D1·#D3·#D9).
+ * 롤백이 남의 데이터를 지우거나 복구 수단을 없애지 않는다는 계약.
  *
  * 고정하는 계약:
  *
@@ -370,7 +370,7 @@ class InstallerRollbackDataIntegrityTest extends TestCase
     }
 
     /**
-     * 19차 R2 — 마이그레이션 기준선은 `completed_tasks` 와 같은 수명을 갖는다.
+     * 마이그레이션 기준선은 `completed_tasks` 와 같은 수명을 갖는다.
      *
      * 기준선은 「이번 실행 직전의 최대 배치」라 실행이 바뀌면 뜻을 잃는다. 그런데
      * `installerRecordMigrationBatchBaseline()` 은 값이 있으면 **다시 기록하지 않으므로**,
@@ -417,7 +417,7 @@ class InstallerRollbackDataIntegrityTest extends TestCase
     }
 
     /**
-     * 19차 R5 — 표식을 지우지 못했으면 「되돌렸다」고 답하지 않는다.
+     * 표식을 지우지 못했으면 「되돌렸다」고 답하지 않는다.
      *
      * 이 태스크가 되돌리는 두 표식(`.env` 의 `INSTALLER_COMPLETED` · `storage/app/g7_installed`)은
      * **인스톨러 진입 가드의 근거**다. 종전에는 두 제거가 모두 실패해도 `success:true` 를
@@ -453,7 +453,7 @@ class InstallerRollbackDataIntegrityTest extends TestCase
     }
 
     /**
-     * 19차 R4 — `.env` 를 읽지 못하면 **쓰지 않는다**.
+     * `.env` 를 읽지 못하면 **쓰지 않는다**.
      *
      * 종전에는 `file_get_contents` 의 false 를 검사하지 않았다. `preg_replace` 가 그것을 빈
      * 문자열로 다루므로 이어지는 `file_put_contents` 가 `.env` 를 **통째로 비운다** —
@@ -486,7 +486,7 @@ class InstallerRollbackDataIntegrityTest extends TestCase
     }
 
     /**
-     * 19차 R1 — 범위를 확정하지 못하면 `migrate:rollback` 을 **한 번도 부르지 않는다**.
+     * 범위를 확정하지 못하면 `migrate:rollback` 을 **한 번도 부르지 않는다**.
      *
      * 위 소스 검사는 `'--step'` 리터럴의 존재만 본다. 그래서 「`$step === null` 일 때만
      * `--step` 없이 내려간다」는 형태를 잡지 못했고, 그 분기가 R1 의 실제 모습이었다 —

@@ -81,18 +81,18 @@ class ImageServeController extends PublicBaseController
         // 판정은 코어 단일 지점(`streamedFileResponse()`)이 소유한다 — `-gzip` 접미사·
         // 다중값·`W/` 약한 검증자 흡수, 304 에 200 의 `Cache-Control`/`Expires`/
         // `Last-Modified` 동반, 라우터가 벗기는 `Last-Modified` 복원까지 그 한 곳이 한다.
-        // 형제 게시판(`sirsoft-board` AttachmentController)과 같은 형태다 (13차 G3 라운드).
+        // 형제 게시판(`sirsoft-board` AttachmentController)과 같은 형태다.
         //
         // `immutable` 은 `false` 고정 — 이 URL 에는 `?v=` 가 없고 같은 주소의 내용이
         // 교체될 수 있다(코어 파일 서빙 계약).
         //
         // 사용자가 올린 파일이라 크기·건수가 유계가 아니다 — 압축 제외를 응답 클래스에
-        // 기대지 않고 **선언**한다(공개 스토리지 통로와 같은 형태, 14차 G3 라운드).
+        // 기대지 않고 **선언**한다(공개 스토리지 통로와 같은 형태).
         $validators = $this->imageServeService->cacheValidators($image);
 
         //
         // MIME 은 행 컬럼이 SSoT — 종전에는 이 통로만 `mimeType` 을 넘기지 않아 스토리지
-        // 어댑터의 추정(사본)에 기댔다 (16차 G3 라운드 E-2). 키 검증은 코어 헬퍼
+        // 어댑터의 추정(사본)에 기댔다. 키 검증은 코어 헬퍼
         // (`streamedFileResponseFromMeta()`)가 한다 (같은 라운드 E-6).
         $served = $this->streamedFileResponseFromMeta(
             [

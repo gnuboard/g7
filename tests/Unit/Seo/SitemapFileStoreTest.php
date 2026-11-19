@@ -121,7 +121,7 @@ class SitemapFileStoreTest extends TestCase
      *
      * 그 모드를 고른 사이트는 정적 최적화 블록이 `.xml` 을 가로채는 서버다 — 확장자
      * 형태를 그대로 적으면 봇이 따라간 자식이 전부 404 가 되고 색인이 조용히 빈다.
-     * gzip 여부는 manifest 가 정하므로 두 형태가 같은 주소로 모인다 (7차 G3 라운드 B-6).
+     * gzip 여부는 manifest 가 정하므로 두 형태가 같은 주소로 모인다.
      *
      * @scenario asset_url_mode=extensionless
      *
@@ -173,7 +173,7 @@ class SitemapFileStoreTest extends TestCase
      * 자식 항목의 `<loc>` 은 `AssetUrl::siteAbsolute()` 로 설정 오리진·접두사를 싣는데, 색인의
      * 자식 주소만 `url()` 로 만들면 요청 호스트(또는 콘솔의 `http://localhost`)를 실어 **한
      * 사이트맵 안에서 부모와 자식의 오리진이 갈린다**. 크롤러는 그것을 오류 없이 다른 사이트로
-     * 따라간다 (16차 G3 라운드 B-1).
+     * 따라간다.
      *
      * @scenario base_path=subpath, navigation_direction=request
      *

@@ -113,8 +113,7 @@ trait ResolvesPublicUrl
         // `PublicStorageService::rootPath()` 가 `!== null && !== 'local'` 이라
         // **미설정(`null`)을 서로 반대로** 읽었다: 서빙 루트는 운영자 값을 신뢰하는데
         // URL 은 `/storage` 로 나가는, 두 독블록이 각각 「막으려 한다」고 적어 둔 바로
-        // 그 반쪽 상태다. 미설정은 Laravel 기본값(로컬)이므로 로컬로 읽는다
-        // (15차 G3 라운드).
+        // 그 반쪽 상태다. 미설정은 Laravel 기본값(로컬)이므로 로컬로 읽는다.
         if (! PublicStorageService::isLocalDriver(config('filesystems.disks.public.driver'))) {
             return false;
         }
@@ -139,8 +138,7 @@ trait ResolvesPublicUrl
         // 파생값이 `https://example.com//storage` 가 되어 경로가 `//storage` 로 오고,
         // 접기 전에는 `=== '/storage'` 가 거짓이라 **대체 서빙이 켜지지 않았다** —
         // 링크를 만들 수 없는 호스팅에서 그 사이트의 공개 이미지가 전부 404 가 되는데
-        // 오류도 로그도 남지 않는다. 슬래시 하나가 기능 전체를 끄는 형태였다
-        // (14차 G3 라운드).
+        // 오류도 로그도 남지 않는다. 슬래시 하나가 기능 전체를 끄는 형태였다.
         $normalized = preg_replace('#/{2,}#', '/', $this->stripSiteBasePrefix($path)) ?? '';
 
         return rtrim($normalized, '/') === '/storage';

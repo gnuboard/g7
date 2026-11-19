@@ -238,7 +238,7 @@ class InstallerArtisanExecutorTest extends TestCase
     }
 
     /**
-     * 서브프로세스 스폰도 선언한 stale 창만큼 자기 요청 수명을 먼저 올린다 (9차 #M9).
+     * 서브프로세스 스폰도 선언한 stale 창만큼 자기 요청 수명을 먼저 올린다.
      *
      * 선언(`worker_stale_after`)과 요청 수명은 같이 움직여야 한다 — stepwise 요청은 180초로
      * 들어오는데 선언만 600 으로 올리면, 그 요청이 비정상 종료했을 때 이미 죽은 점유가 최대

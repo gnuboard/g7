@@ -259,7 +259,7 @@ describe('SseMonitor 연결 끊김 뒤 결말 판정', () => {
         expect(callbacks.onTaskComplete).toHaveBeenCalledWith('module_activate', 'done', 'sirsoft-board', false);
 
         // 이어 받는 동안에는 상태를 묻지 않고, 멈춤으로 판정하지도 않는다
-        // 살아 있는 워커는 작업 사이에도 heartbeat 를 보낸다 — 무응답 30초는 멈춤으로 판정한다(12차 #B27)
+        // 살아 있는 워커는 작업 사이에도 heartbeat 를 보낸다 — 무응답 30초는 멈춤으로 판정한다
         const calls = fetchMock.mock.calls.length;
         for (let i = 0; i < 6; i++) {
             es2.emit('heartbeat', {});

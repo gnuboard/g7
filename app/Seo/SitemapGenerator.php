@@ -174,8 +174,7 @@ class SitemapGenerator
      * 절대화한다 — 설정 주소(「사용자 화면 URL」, 비면 사이트 주소) 기준이고 요청 Host 는 쓰지 않으며,
      * 접두사는 **멱등**으로 실린다(`SiteUrl::join()`). 종전에는
      * 증분 색인(`SitemapIndexer`)이 같은 규칙을 `url()` 사본으로 갖고 있어, 같은 리소스의
-     * `<loc>` 이 생성 경로(전체 재생성 vs 리스너 경유 증분)에 따라 오리진·접두사가 갈렸다
-     * (16차 G3 라운드 B-3).
+     * `<loc>` 이 생성 경로(전체 재생성 vs 리스너 경유 증분)에 따라 오리진·접두사가 갈렸다.
      *
      * @param  array<string, mixed>  $entry  URL 항목
      * @return string|null 절대 URL (해석 불가 시 null)

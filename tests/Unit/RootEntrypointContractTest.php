@@ -201,8 +201,7 @@ class RootEntrypointContractTest extends TestCase
         //
         // 판정은 런타임과 **같은 지점**(`RootIndexShim`)을 쓴다. 종전에는 이 축이 자기
         // 정규식을 갖고 있었고 런타임은 공백까지 고정한 리터럴을 봤다 — 표기가 갈리면
-        // 이 게이트는 초록인데 매 코어 업데이트마다 거짓 경고 + 쓸모없는 사본이 쌓였다
-        // (14차 G3 라운드).
+        // 이 게이트는 초록인데 매 코어 업데이트마다 거짓 경고 + 쓸모없는 사본이 쌓였다.
         $this->assertTrue(
             RootIndexShim::matches($shim),
             '루트 shim 은 public/index.php 로 위임해야 한다'
@@ -372,7 +371,7 @@ class RootEntrypointContractTest extends TestCase
         //     위치가 아니다 — 운영자가 문서 루트 **밖**을 `Alias` 로 여는 배치에서는 두
         //     조회가 함께 빗나가 판정이 거짓이 되고 (B)(C)(D) 가 통째로 꺼진다. 별칭 대상이
         //     문서 루트와 **같은** 디렉토리이면 우연히 성립하므로, 그 형태로만 재면 통과한다
-        //     (16차 실측이 그 배치였다). 4마운트 실측: 문서 루트·물리 하위 폴더·별칭(안)은
+        // (실측이 그 배치였다). 4마운트 실측: 문서 루트·물리 하위 폴더·별칭(안)은
         //     301, 별칭(밖)만 200 — 제2 주소가 열린 상태.
         //
         //     지금은 mod_rewrite 가 per-directory 규칙에 넘겨 주는 **매치 문자열**로 가른다.
@@ -491,7 +490,7 @@ class RootEntrypointContractTest extends TestCase
         //     **2선 방어**다 — 이 축이 유일한 방어선이 되는 경우는 ① 새로 추가되는
         //     `%{THE_REQUEST}` 조건 ② 리터럴 목록을 함께 고치는 편집 두 가지이고, 후자가
         //     정확히 이 축을 만든 이유다. 다음 라운드가 「사문」으로 오독하지 않도록
-        //     그 판정을 여기 남긴다 (7차 G3 라운드 E14).
+        //     그 판정을 여기 남긴다.
         //
         //       * 백레퍼런스는 `/` 로 시작하는 형태만 받는다. RFC 9112 는 서버가
         //         `GET http://호스트/경로 HTTP/1.1`(absolute-form)도 받아들이게 하므로,
@@ -729,7 +728,7 @@ class RootEntrypointContractTest extends TestCase
      * 걸었다 — 필터가 `RewriteRule !^public/` · `^(?!public/)` 로 시작하는 줄만 보므로,
      * 그 형태가 아닌 301 은 앵커·`NE`·`!//` 어느 축에도 걸리지 않았다. 그래서 같은 파일의
      * 스톡 슬래시 보정 (E)(`RewriteRule ^ %1 [L,R=301]`)이 모집단 밖이었고, 형제 (B) 가
-     * 실측 근거까지 적어 둔 그 가드가 (E) 에만 없었다 (9차 G3 라운드 D-2·D-3).
+     * 실측 근거까지 적어 둔 그 가드가 (E) 에만 없었다.
      *
      * 증상은 형제와 같다 — `%{REQUEST_URI} (.+)/$` 는 탐욕·무앵커라 `//evil.example/p/`
      * 에서 `%1` 이 `//evil.example/p` 가 되고, `Location: //evil.example/p` 는 브라우저가
@@ -753,7 +752,7 @@ class RootEntrypointContractTest extends TestCase
         // 축 이름은 「목적지를 `%{REQUEST_URI}` 캡처에서 만드는 301 **전부**」인데
         // 종전 모집단은 `public/.htaccess` 한 파일이었다. 루트 파일에 같은 형태의
         // 301 이 생기면 그 축이 통째로 밖에 남는다 — 지금은 루트에 그런 301 이 0건이라
-        // 위반이 없지만, 「없다」를 고정하는 것이 없었다 (10차 G3 라운드 D10-5).
+        // 위반이 없지만, 「없다」를 고정하는 것이 없었다.
         $files = ['public/.htaccess', '.htaccess'];
         $directives = [];
 
@@ -957,7 +956,7 @@ class RootEntrypointContractTest extends TestCase
         // 위임 자체가 없어 프로젝트 루트가 디렉토리 요청의 응답 주체가 된다 — 그 자리에 목록
         // 차단이 없으면 `.env`·`composer.json` 등 **파일 이름**이 통째로 나열되고, 확장자
         // 차단을 우회할 이름을 그대로 알려 준다. 종전에는 `public/` 만 잰 채 루트가 이 축
-        // 밖이었다 (13차 G3 라운드 W4-1). 이 주석은 한때 「루트가 `DirectorySlash Off` 를
+        // 밖이었다. 이 주석은 한때 「루트가 `DirectorySlash Off` 를
         // 켠다」고 적었는데 같은 메서드가 바로 아래에서 그 지시어를 **금지**한다 — 서사가
         // 규칙과 어긋나 있던 자리다 (G3 회차 14 W4-3).
         $this->assertContains('IndexIgnore *', $root, '프로젝트 루트의 디렉토리 목록 차단이 없다');
@@ -1183,7 +1182,7 @@ class RootEntrypointContractTest extends TestCase
      * `Require` 는 제한 `AllowOverride` 에서 전 요청을 500 으로 만든다) 남는 것은 **선언**
      * 뿐인데, 선언되지 않은 잔여 위험은 다음 사람에게 「없는 것」으로 읽힌다. 실제로 그
      * 상태였다 — 완화책(인스톨러 노출 점검)은 `.htaccess` 무시 축에만 적혀 있었고 모듈
-     * 부재 축에는 없었다 (7차 G3 라운드 A6·A7).
+     * 부재 축에는 없었다.
      *
      * 이 검사는 선언의 **존재**를 잠근다. 선언을 지우면 red 가 된다.
      *
@@ -1241,7 +1240,7 @@ class RootEntrypointContractTest extends TestCase
         // 1차가 만들 때 `lang-packs` 가 빠졌고(2차가 발견), 3차에는 `docs` 가 빠져 있었다.
         // 원인은 결함 하나가 아니라 **도출 근거의 부재**다: 배포 트리에 최상위 디렉토리가
         // 하나 늘 때 이 목록과 저 목록을 사람이 같이 고쳐야 한다는 사실을 아무것도 강제하지
-        // 않았다. 그래서 배포 대상의 SSoT(`update.targets`)에서 도출한다 (3차 G3 라운드 M3).
+        // 않았다. 그래서 배포 대상의 SSoT(`update.targets`)에서 도출한다.
         //
         // `storage`·`vendor`·`node_modules` 는 targets 에 없지만(각각 런타임 데이터·별도
         // 파이프라인 산출물·개발 의존성) 배포본에 실재하고 노출되면 가장 위험하므로 더한다.
@@ -1251,7 +1250,7 @@ class RootEntrypointContractTest extends TestCase
         // 디렉토리가 늘어나는 경우」는 영원히 보이지 않고, 그것을 손으로 더한 셋이 메우고
         // 있었다 — 즉 파일 축이 이미 갖고 있던 「실제 트리에서 도출」이 디렉토리 축에만
         // 없었다. 그 사각으로 테스트 산출물 둘이 열려 있었다. 트리 도출은 아래 개발
-        // 체크아웃 전용 블록이 담당한다 (14차 G3 라운드).
+        // 체크아웃 전용 블록이 담당한다.
         $deployedDirs = collect((array) config('app.update.targets'))
             ->map(static fn ($target) => explode('/', trim((string) $target, '/'))[0])
             ->filter(static fn (string $top) => $top !== '' && is_dir(base_path($top)))
@@ -1318,7 +1317,7 @@ class RootEntrypointContractTest extends TestCase
             ->reject(static fn (string $target) => strtolower((string) pathinfo($target, PATHINFO_EXTENSION)) === 'php')
             // 이름이 점으로 시작하는 파일은 블록 밖 `RedirectMatch 403`(mod_alias) 이 이미 막는다.
             // 종전에는 `<FilesMatch "^\.">` + `Require` 였는데, `Require` 는 AuthConfig 등급을
-            // 요구해 제한 AllowOverride 호스팅에서 전 요청 500 을 냈다(8차 라운드 실측).
+            // 요구해 제한 AllowOverride 호스팅에서 전 요청 500 을 냈다(실측).
             ->reject(static fn (string $target) => str_starts_with($target, '.'))
             ->unique()
             ->values();
@@ -1416,7 +1415,7 @@ class RootEntrypointContractTest extends TestCase
         // 그래서 롤백 소실 판정은 상수를 순회하는데(`CoreBackupHelper::ROOT_PROTECTION_FILES`)
         // 「배포 대상인가 / 보호 경로가 아닌가」 축은 그 상수를 소비하지 않았고, 네 번째
         // 보호 파일을 상수에 더하면 롤백 경고만 따라오고 **업데이트가 그 파일을 배포하지
-        // 않아도 아무것도 울지 않는** 반쪽 상태였다 (15차 G3 라운드).
+        // 않아도 아무것도 울지 않는** 반쪽 상태였다.
         $this->assertNotEmpty(CoreBackupHelper::ROOT_PROTECTION_FILES);
 
         foreach (CoreBackupHelper::ROOT_PROTECTION_FILES as $rootFile) {
@@ -2049,7 +2048,7 @@ class RootEntrypointContractTest extends TestCase
      * 미설치 안내는 **스크립트 없는 302** 로 보내고, 그 목적지는 사이트 안의 같은 호스트 경로로만 조립된다.
      *
      * 종전에는 alert + `window.location.href` 인라인 스크립트로 보냈고, 그 자리의 인코더(JSON_HEX_*)를
-     * 이 검사가 쟀다(10차 G3 라운드 D10-8 — `<script>` 안에서 `htmlspecialchars()` 는 보호도 되지 않고
+     * 이 검사가 쟀다(`<script>` 안에서 `htmlspecialchars()` 는 보호도 되지 않고
      * 값만 바꾼다). 지금은 strict CSP(`script-src 'self'`)에서 인라인 스크립트가 실행되지 않아 흰 화면이
      * 되므로 `Location` 헤더로 보낸다. 출력 문맥이 JS 문자열에서 HTTP 헤더로 바뀌었으니 재는 것도
      * 그 문맥의 탈출 통로다:

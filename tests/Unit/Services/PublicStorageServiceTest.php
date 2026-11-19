@@ -170,7 +170,7 @@ class PublicStorageServiceTest extends TestCase
     }
 
     /**
-     * 실재하지만 읽을 수 없는 파일은 `file_not_readable` 로 돌려준다 (15차 G3 라운드).
+     * 실재하지만 읽을 수 없는 파일은 `file_not_readable` 로 돌려준다.
      *
      * 종전에는 존재·realpath 판정만 하고 성공을 돌려줘, 뒤이은 `BinaryFileResponse` 가
      * `File must be readable` 로 던져 무인증 표면이 500 이었다. 정적 서빙은 같은 파일에
@@ -289,7 +289,7 @@ class PublicStorageServiceTest extends TestCase
     /**
      * 운영자가 옮긴 공개 디스크 루트를 따른다 — 파일을 쓰는 쪽과 읽는 쪽의 기준이 같아야 한다.
      *
-     * 6차 라운드가 형제 키 `url` 에 세운 「운영자 설정이 우선」 규칙의 같은 축이다.
+     * 앞서 형제 키 `url` 에 세운 「운영자 설정이 우선」 규칙의 같은 축이다.
      * 이 값이 갈리면 링크가 없는 그 사이트의 공개 자산이 통째로 404 가 된다.
      *
      * @effects configured_public_disk_root_is_the_single_source_for_serving
@@ -401,7 +401,7 @@ class PublicStorageServiceTest extends TestCase
         $this->assertFalse($result['success'], '링크를 경유한 접근은 대상이 루트 안이어도 거부된다');
         // 거부 코드는 **404** 다 — `..`·점 세그먼트·realpath 실패 세 분기가 이미 그 기준을
         // 세웠고(「403 이 『존재한다』를 뜻하면 파일 존재 여부가 샌다」), 링크 분기만 403 이면
-        // 무인증 프로버가 응답 코드로 「그 경로에 링크가 있다」를 알아낸다 (7차 G3 라운드 C4).
+        // 무인증 프로버가 응답 코드로 「그 경로에 링크가 있다」를 알아낸다.
         $this->assertSame('file_not_found', $result['error']);
     }
 
@@ -434,7 +434,7 @@ class PublicStorageServiceTest extends TestCase
      * `rootPath()` 는 자산 요청마다 불린다(서빙 + FormRequest 규칙 생성). 접지 않으면
      * 무인증·무상한 표면의 요청 수만큼 같은 줄이 쌓인다.
      *
-     * 이 게이트가 필요한 이유: 9차 라운드가 이 접기를 **지역 클로저 안의 `static $seen`**
+     * 이 게이트가 필요한 이유: 앞서 이 접기를 **지역 클로저 안의 `static $seen`**
      * 으로 넣었는데, 클로저가 호출마다 새로 만들어져 매번 초기화됐다 — 코드는 있는데
      * 접기가 성립하지 않는 상태였고 어떤 검사도 그것을 보지 않았다.
      *
@@ -474,7 +474,7 @@ class PublicStorageServiceTest extends TestCase
      * 나가는 반쪽 상태이고, 링크 없는 사이트의 공개 자산이 전량 404 가 되며 로그도
      * 남지 않는다. 두 독블록이 각각 그 상태를 막겠다고 적어 두고 만들고 있었다.
      *
-     * 형태만 맞추면 다시 갈리므로 **같은 답을 내는지**를 계약으로 고정한다 (15차 G3).
+     * 형태만 맞추면 다시 갈리므로 **같은 답을 내는지**를 계약으로 고정한다.
      *
      * @effects public_disk_locality_predicates_agree
      *
@@ -537,8 +537,8 @@ class PublicStorageServiceTest extends TestCase
      *
      * 종전에는 `config/filesystems.php` 안에서 두 자리가 각각 리터럴이었다. 운영자가
      * `disks.public.root` 만 옮기면 링크는 옛 위치를 가리키고, 파일을 쓰는 쪽·서빙하는 쪽은
-     * 새 루트를 본다 — 공개 자산이 오류도 로그도 없이 전부 404 다. 코어 복구기가 22·23차에
-     * 걸쳐 닫은 결함의 **세 번째 출처**였다 (23차 G3 라운드 D23-3).
+     * 새 루트를 본다 — 공개 자산이 오류도 로그도 없이 전부 404 다. 코어 복구기가 두 차례에
+     * 걸쳐 닫은 결함의 **세 번째 출처**였다.
      *
      * 링크 키(`public/storage`)도 함께 잰다 — 그 자리가 바뀌면 판정기가 보는 경로와 갈린다.
      *
@@ -573,9 +573,9 @@ class PublicStorageServiceTest extends TestCase
         // 통과하고, 운영자가 root 를 옮긴 사이트에서만 갈린다. 그 상황은 이 테스트가 만들 수
         // 없다(`links` 는 설정 로드 시점에 평가되므로 런타임 오버라이드가 재평가되지 않는다).
         //
-        // 그래서 **소스가 한 출처에서 파생하는지**를 함께 잰다. 22차의 D23-1 이 정확히 이
+        // 그래서 **소스가 한 출처에서 파생하는지**를 함께 잰다. 앞선 수정이 정확히 이
         // 형태로 거짓 green 이었다 — 픽스처가 그 상황을 한 번도 만들지 않았다
-        // (24차 G3 라운드 R24-C M6: 리터럴로 되돌려도 이 클래스가 전부 초록이었다).
+        // (R24-C M6: 리터럴로 되돌려도 이 클래스가 전부 초록이었다).
         $source = file_get_contents(config_path('filesystems.php'));
 
         $this->assertMatchesRegularExpression(

@@ -335,7 +335,7 @@ class InstallerWindowsCommandsTest extends TestCase
     }
 
     /**
-     * 두 OS 분기를 **같은 프로세스에서** 태운다 (11차 #D16).
+     * 두 OS 분기를 **같은 프로세스에서** 태운다.
      *
      * 종전에는 `if (isWindows())` 로 갈라져 그 머신의 분기 하나만 평가됐다 — Windows 에서
      * 돌리면 `chmod` 계열이, Linux 에서 돌리면 `icacls` 계열이 한 번도 실행되지 않았고,

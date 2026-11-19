@@ -333,8 +333,7 @@ class ExtensionBundleServingTest extends TestCase
      *
      * 파일이 있는 응답은 `fileResponse()` 가 그 헤더를 붙이는데, 빈 응답만 손으로
      * 조립하면 같은 주소가 활성 확장 유무에 따라 다른 헤더를 공표한다. 종전에는 그
-     * 전환(회차 20)을 재는 테스트가 없어, 되돌려도 전 스위트가 초록이었다
-     * (22차 G3 라운드 B6).
+     * 전환(회차 20)을 재는 테스트가 없어, 되돌려도 전 스위트가 초록이었다.
      *
      * @scenario ext_type=module, asset_kind=both, active_combo=none
      *

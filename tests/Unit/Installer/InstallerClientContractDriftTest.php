@@ -6,7 +6,7 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * 화면 배선이 서버 계약에서 갈라진 지점들 (13차 E1·E7·보안#10·F4·F5).
+ * 화면 배선이 서버 계약에서 갈라진 지점들 (E7·보안#10·F4·F5).
  *
  * 여기서 잠그는 것은 전부 **한 모드에서만 드러나는 비대칭**이다. 어느 것도 예외나 로그를
  * 남기지 않고, 다른 모드에서는 정상으로 보이기 때문에 사람 눈으로는 발견되지 않는다.
@@ -417,7 +417,7 @@ class InstallerClientContractDriftTest extends TestCase
     }
 
     /**
-     * 요구사항 응답에 실린 항목은 **전부** 화면에 그려진다 (13차 환경#8).
+     * 요구사항 응답에 실린 항목은 **전부** 화면에 그려진다.
      *
      * 값이 화면에 없으면 그 검사는 존재하지 않는 것과 같다. 실제로 `php_limits`(memory_limit ·
      * max_execution_time)가 응답에만 실리고 렌더 분기가 없었다 — 128M 공유호스팅에서 in-process

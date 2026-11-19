@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\CleansTemporaryBasePath;
 
 /**
- * 상태 파일·로그·워커 판정이 조용히 데이터를 잃지 않는다는 계약 (13차 #D13 · 환경#11·#16·#19).
+ * 상태 파일·로그·워커 판정이 조용히 데이터를 잃지 않는다는 계약 (환경#11·#16·#19).
  *
  * 고정하는 계약:
  *
@@ -185,7 +185,7 @@ class InstallerStateIntegrityTest extends TestCase
 
     /**
      * 파손 사본 상한(5)에 닿으면 **가장 오래된 것을 내보내고 새 것을 남긴다** — 그리고 그 사실을
-     * 로그에 남긴다 (14차 G3 W2-2·W2-8).
+     * 로그에 남긴다.
      *
      * 종전에는 상한에서 조용히 `return` 했다. 사본 다섯이 차면 그 뒤 최대 30일(프루너의
      * 백업 등급)동안 **새 파손의 근거가 0** 이고, 그 침묵은 로그에도 없었다. 상한의 목적은
@@ -267,7 +267,7 @@ class InstallerStateIntegrityTest extends TestCase
     }
 
     /**
-     * 같은 초 안의 사본 다섯은 **결정적으로** 정렬되고, 상한 소진 시 새 사본이 보존된다 (15차 G3 W1-8).
+     * 같은 초 안의 사본 다섯은 **결정적으로** 정렬되고, 상한 소진 시 새 사본이 보존된다.
      *
      * 정렬 키는 파일명(`<YmdHis>.<sha8>`)이라 같은 초 안에서는 sha8 사전순이다 — 생성 순서와
      * 무관하지만 열거 순서에는 좌우되지 않는다. 종전 주석은 이 구간을 「가장 오래된 것」으로
@@ -324,7 +324,7 @@ class InstallerStateIntegrityTest extends TestCase
     }
 
     /**
-     * 파손 원문은 로그에 싣지 않는다 — 길이·digest 만 (15차 G3 W1-9).
+     * 파손 원문은 로그에 싣지 않는다 — 길이·digest 만.
      *
      * 비밀은 상태 파일에 없어야 하지만(이슈 #465) 레거시 상태 파일이 남아 있을 수 있다. 종전에는
      * 파싱 실패 메시지가 원문 200 바이트를 무마스킹으로 진행 기록과 PHP 오류 로그에 실었다.
@@ -365,7 +365,7 @@ class InstallerStateIntegrityTest extends TestCase
     }
 
     /**
-     * `BASE_PATH` 폴백의 `realpath` 가드가 세 파일에서 같은 형태다 (15차 G3 W1-10).
+     * `BASE_PATH` 폴백의 `realpath` 가드가 세 파일에서 같은 형태다.
      *
      * `realpath` 는 하드닝 프로필이 막을 수 있고, 이 줄은 단독 로드 경로에서 그 파일이 실행하는
      * 첫 코드다. `config.php` 만 가드를 갖고 형제 둘(`installer-state.php` · `progress-emitter.php`)
@@ -514,15 +514,15 @@ class InstallerStateIntegrityTest extends TestCase
     }
 
     /**
-     * 17차 #C1 — 상태 저장의 인코딩 방어가 인스톨러의 다른 json_encode 와 같은 강도여야 한다.
+     * 상태 저장의 인코딩 방어가 인스톨러의 다른 json_encode 와 같은 강도여야 한다.
      *
      * `error_detail` 은 `exec()` 원출력을 담는다 (`task-runner.php` 의 `implode("\n", $output)`).
      * 그 경로에는 `mb_scrub` 이 없다 — 스트리밍 루프에만 있다. Windows CP949 콘솔 한 줄이나
      * 진행바 `\r` 이 바이트 경계에서 잘리면 잘못된 UTF-8 이 그대로 상태에 실린다.
      *
      * 치환 플래그가 없으면 `json_encode` 가 false 를 돌려 **실패 기록 자체가 저장되지 않는다**.
-     * 그러면 `installation_status` 는 `running` 인 채 `failed_task` 가 비어, 12차 #A2 와
-     * 13차 환경#10 이 각각 닫은 「[건너뛰고 계속] 이 원리상 불가능한」 고착 상태가 재현된다.
+     * 그러면 `installation_status` 는 `running` 인 채 `failed_task` 가 비어, 앞선 두
+     * 수정이 각각 닫은 「[건너뛰고 계속] 이 원리상 불가능한」 고착 상태가 재현된다.
      *
      * @scenario state_file=valid, text_encoding=invalid_utf8
      *
@@ -554,9 +554,9 @@ class InstallerStateIntegrityTest extends TestCase
     }
 
     /**
-     * 17차 #C5 — 파손된 상태에서 운영자가 스스로 빠져나올 수 있다.
+     * 파손된 상태에서 운영자가 스스로 빠져나올 수 있다.
      *
-     * 13차 #D13 이 「파손 원본 위에 덮어쓰지 않는다」를 세운 뒤로, 파손이 나면 초기화·재시작·
+     * 「파손 원본 위에 덮어쓰지 않는다」를 세운 뒤로, 파손이 나면 초기화·재시작·
      * 중단이 전부 500 이 됐다. `STATE_PATH` 를 지우는 제품 코드는 finalize(설치 완료 게이트 뒤)
      * 하나뿐이라, 운영자는 **파일 시스템 접근 없이는 복구할 수 없었다** — 회귀 테스트조차
      * 복구를 `unlink()` 로만 했다(제품 경로가 없다는 것을 테스트가 인정한 셈).
@@ -574,12 +574,12 @@ class InstallerStateIntegrityTest extends TestCase
     {
         file_put_contents(self::$base.'/storage/installer-state.json', '{"completed_tasks": ["db_migrate"');
 
-        // 읽기가 파손을 감지하고 사본을 남긴다 (13차 #D13, 종전 동작).
+        // 읽기가 파손을 감지하고 사본을 남긴다 (종전 동작).
         getInstallationState();
         $this->assertTrue(installerStateIsCorrupt());
         $this->assertFalse(
             saveInstallationState(DEFAULT_INSTALLATION_STATE),
-            '덮어쓰기 거부는 유지되어야 한다 — 이 변경이 13차 #D13 을 되돌려선 안 된다',
+            '덮어쓰기 거부는 유지되어야 한다 — 이 변경이 「파손 원본 위에 덮어쓰지 않는다」를 되돌려선 안 된다',
         );
 
         $this->assertTrue(
@@ -600,7 +600,7 @@ class InstallerStateIntegrityTest extends TestCase
     }
 
     /**
-     * 17차 #C5 — 파손이 아닐 때는 아무것도 하지 않는다 (자동 삭제 금지).
+     * 파손이 아닐 때는 아무것도 하지 않는다 (자동 삭제 금지).
      *
      * @scenario state_file=valid
      *
@@ -622,10 +622,10 @@ class InstallerStateIntegrityTest extends TestCase
     }
 
     /**
-     * 17차 #C2 — 저장 실패가 조용히 지나가지 않는다.
+     * 저장 실패가 조용히 지나가지 않는다.
      *
      * 이 결함의 실체는 「되돌릴 수 없음」이 아니라 「보이지 않음」이다. 파손 거부는 의도된
-     * 동작이므로(13차 #D13) 우회해서는 안 되고, 디스크·권한은 인스톨러가 고칠 수 없다.
+     * 동작이므로 우회해서는 안 되고, 디스크·권한은 인스톨러가 고칠 수 없다.
      * 그래서 헬퍼는 재시도하지 않고 기록만 남기며, 호출부가 반환값으로 판단할 수 있게 한다.
      *
      * @scenario state_file=corrupt
@@ -640,7 +640,7 @@ class InstallerStateIntegrityTest extends TestCase
         $ok = DEFAULT_INSTALLATION_STATE;
         $this->assertTrue(installerSaveStateOrReport($ok, 'unit_ok'));
 
-        // 파손 상태에서는 저장이 거부된다 (13차 #D13). 그 거부가 보여야 한다.
+        // 파손 상태에서는 저장이 거부된다. 그 거부가 보여야 한다.
         installerStateIsCorrupt(true);
 
         $this->assertFalse(
@@ -659,7 +659,7 @@ class InstallerStateIntegrityTest extends TestCase
     }
 
     /**
-     * 17차 #C2 — 결과를 버리면 나쁜 상태가 남는 세 지점이 헬퍼를 경유한다.
+     * 결과를 버리면 나쁜 상태가 남는 세 지점이 헬퍼를 경유한다.
      *
      * 나머지 저장 지점은 버려져도 회복 가능하거나 다른 검증이 덮는다(완료 마커는
      * 오케스트레이터가 재조회로 확인한다) — 여기서 고정하는 것은 그 셋뿐이다.
@@ -687,7 +687,7 @@ class InstallerStateIntegrityTest extends TestCase
     }
 
     /**
-     * 17차 #C1 — 그 방어가 형제 지점과 같은 수단이어야 한다 (SSoT).
+     * 그 방어가 형제 지점과 같은 수단이어야 한다 (SSoT).
      *
      * 값 단언만 두면 다른 수단(사전 scrub 등)으로 통과시킨 뒤 형제와 강도가 갈릴 수 있다.
      *

@@ -36,14 +36,14 @@ require_once __DIR__.'/execution-mode.php';
 if (! defined('INSTALLER_RUNTIME_TMP_INFIX')) {
     // tmp 이름의 **생성 규칙**을 상수가 소유한다 — 스윕이 같은 규칙으로만 지우도록
     // 형제(`installer-state.php` 의 `INSTALLER_STATE_TMP_INFIX`)와 같은 규율을 쓴다.
-    // 값은 이름 생성 SSoT(`functions.php` 의 `INSTALLER_TMP_INFIX`)를 그대로 가리킨다 (14차 G3 W2-4).
+    // 값은 이름 생성 SSoT(`functions.php` 의 `INSTALLER_TMP_INFIX`)를 그대로 가리킨다.
     define('INSTALLER_RUNTIME_TMP_INFIX', INSTALLER_TMP_INFIX);
 }
 
 if (! defined('INSTALLER_RUNTIME_TMP_SUFFIX_PATTERN')) {
     // 판정 패턴은 이름 생성 SSoT 곁의 상수를 **그대로** 가리킨다. 종전에는 여기 리터럴
     // `{8}` 이 있었는데 생성 이름은 16진 16자라 영원히 매치되지 않았다 — 스윕이 돌아도
-    // 모집단이 0 이었고 오류도 경고도 없었다 (13차 G3 W1-1).
+    // 모집단이 0 이었고 오류도 경고도 없었다.
     define('INSTALLER_RUNTIME_TMP_SUFFIX_PATTERN', INSTALLER_TMP_SUFFIX_PATTERN);
 }
 
@@ -56,7 +56,7 @@ if (! defined('INSTALLER_ENV_BACKUP_INFIX')) {
      * finalize 가 남기는 `.env` 원본 보존 사본 이름의 중간 조각 (`.env.bak.<Ymd_His>[_N]`).
      *
      * 정리 주체(`StorageLeftoverPruneService::ENV_BACKUP_PREFIX`)가 같은 이름을 봐야 한다 —
-     * 종전에는 양쪽 다 리터럴이라 어느 쪽이 바뀌어도 아무것도 red 가 되지 않았다 (13차 G3 W1-7).
+     * 종전에는 양쪽 다 리터럴이라 어느 쪽이 바뀌어도 아무것도 red 가 되지 않았다.
      * 인스톨러는 Laravel 부팅 전 코드라 코어 상수를 참조할 수 없어 값이 두 곳에 있고,
      * 그 일치는 `StorageLeftoverPruneServiceTest` 가 잠근다.
      */
@@ -123,7 +123,7 @@ if (! function_exists('installerSweepStaleRuntimeTmpFiles')) {
      * 생성 규칙과 **같은 형태만** 지운다 — 형제 두 지점과 같은 규율이다. 그리고 mtime 을
      * 읽지 못하면 **보존한다**: `(int) @filemtime()` 은 실패 시 `0` 이라 `time() - 0` 이
      * 언제나 하한을 넘어 「아주 오래됨」으로 읽히고, 그러면 **진행 중인 다른 요청의 tmp 를
-     * 지운다**(fail-open). 형제 `installer-state.php` 가 11차에 같은 자리를 고쳤다.
+     * 지운다**(fail-open). 형제 `installer-state.php` 가 앞서 같은 자리를 고쳤다.
      *
      * 요청당 한 번만 훑는다.
      *
@@ -176,7 +176,7 @@ if (! function_exists('writeInstallerRuntime')) {
 
         $php = "<?php\n\nreturn ".var_export($data, true).";\n";
 
-        // 임시 파일 이름에 pid+uniqid 를 붙이고 rename **전에** 0600 을 건다 (11차 #A7).
+        // 임시 파일 이름에 pid+uniqid 를 붙이고 rename **전에** 0600 을 건다.
         //
         // 이 파일은 DB·관리자 비밀번호와 stepwise 토큰을 담는다(R3 — 비밀은 0600 채널로만).
         // 고정 이름 `.tmp` 를 기본 umask 로 만들면 그 비밀이 예측 가능한 경로에 0644 로 잠깐
@@ -186,13 +186,13 @@ if (! function_exists('writeInstallerRuntime')) {
         //
         // `getmypid()` 는 쓰지 않는다 — 하드닝 프로필의 차단 대상이라 막힌 호스팅에서
         // PHP 8 은 함수 테이블에서 지우고, 그 호출은 Error(치명)가 되어 이 비밀 채널
-        // 자체가 무너진다. 고유성만 필요한 자리다 (3차 G3 라운드).
+        // 자체가 무너진다. 고유성만 필요한 자리다.
         // 남겨진 tmp 를 치운다. 쓰기 성공과 rename 사이에서 프로세스가 죽으면(FPM 타임아웃
         // · OOM-kill · 재시작) tmp 가 남는데 **정리 주체가 없었다** — 형제 둘
         // (`installer-state.php` · `RootHtaccessUpdater`)은 스윕을 갖는데 이것만 빠져 있었다.
         // 이 파일은 DB 자격증명 + APP_KEY + 토큰을 담으므로 형제(상태 파일)보다 등급이
         // 높고, 확장자가 `.php` 가 아니라 배포 레이아웃 ②에서 웹서버가 평문으로 내보낼 수
-        // 있다. 요청당 한 번만 훑는다. (12차 G3 C-4)
+        // 있다. 요청당 한 번만 훑는다.
         installerSweepStaleRuntimeTmpFiles();
 
         $tmp = INSTALLER_RUNTIME_PATH.INSTALLER_RUNTIME_TMP_INFIX.installerUniqueSuffix(INSTALLER_TMP_SUFFIX_BYTES);
@@ -279,7 +279,7 @@ if (! function_exists('deleteInstallerRuntime')) {
         $deleted = @unlink(INSTALLER_RUNTIME_PATH);
 
         // 쓰기 경로와 같은 규약 — 지운 뒤 revalidate 창 안의 다음 요청이 stale 항목을 include 해
-        // 이미 삭제된 비밀을 읽지 않도록 (15차 G3 W1-11).
+        // 이미 삭제된 비밀을 읽지 않도록.
         installerInvalidateRuntimeOpcache();
 
         return $deleted;

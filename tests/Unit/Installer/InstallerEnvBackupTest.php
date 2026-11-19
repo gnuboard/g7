@@ -7,7 +7,7 @@ use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 use PHPUnit\Framework\TestCase;
 
 /**
- * 설치 마무리가 기존 `.env` 를 보존하는지 실측한다 (13차 #D8).
+ * 설치 마무리가 기존 `.env` 를 보존하는지 실측한다.
  *
  * `.env` 는 `.env.example` 템플릿에서 **새로 만들어져 통째로 대체**된다. 그래서 운영자가
  * 설치 전에 넣어 둔 값(메일·큐·레디스·서드파티 키)은 설치가 **성공해도** 사라지고, 되돌릴

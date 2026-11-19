@@ -12,7 +12,7 @@ use Tests\TestCase;
  *
  * URL 중복 조립 정리(#100) 후에도 응답 문자열이 기존과 동일함을 고정합니다.
  *
- * 왜 앱을 부팅하는가 (12차 G3 라운드):
+ * 왜 앱을 부팅하는가:
  *   이 클래스는 종전에 `PHPUnit\Framework\TestCase` 를 그대로 상속해 앱 없이 돌았다.
  *   그 뒤 `urlForHash()` 가 마운트 접두사를 얻으려 `AssetUrl::basePrefix()` 를 부르게
  *   되면서 `config` 바인딩이 없어 **워킹트리에 red 가 상주**했다 — 프로덕션은 정상이고

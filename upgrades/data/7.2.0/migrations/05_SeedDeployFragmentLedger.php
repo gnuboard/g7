@@ -22,7 +22,7 @@ use Throwable;
  * 씨앗하지 않는다 — 씨앗하면 운영자 수정본이 「코어가 쓴 그대로」로 읽혀 다음 업데이트가 덮어쓴다.
  *
  * idempotent: 완전한 원장에는 아무것도 더하지 않는다. 부분 원장(부모 프로세스의 부분 적용이 남긴)에는
- * 원장에 없는 키만 채우는 병합이다 (17차 C-4). 조각이 없으면 no-op.
+ * 원장에 없는 키만 채우는 병합이다. 조각이 없으면 no-op.
  *
  * V-1 안전(경로 C 규율): 기존 클래스의 **신규 메서드**(`CoreUpdateService::seedDeployFragmentLedger()`)를
  * 부르지 않고 네이티브 파일시스템 함수로 같은 일을 로컬에서 한다. 원장 이름·사이드카 접미사는 아래
@@ -62,7 +62,7 @@ class SeedDeployFragmentLedger implements DataMigration
     {
         $ledgerPath = storage_path('app'.DIRECTORY_SEPARATOR.'core-update'.DIRECTORY_SEPARATOR.self::LEDGER_FILE);
 
-        // 원장이 있어도 조기 반환하지 않는다 — **없는 키만 채우는 병합**이다 (17차 C-4). 부모
+        // 원장이 있어도 조기 반환하지 않는다 — **없는 키만 채우는 병합**이다. 부모
         // 프로세스의 부분 적용이 남긴 부분 원장에는 빠진 조각을 채우고, 완전한 원장에는 아무것도
         // 더하지 않아 멱등이다. 서비스 씨앗기(`CoreUpdateService::seedDeployFragmentLedger`)와
         // 같은 병합 규칙을 로컬에 둔다 — 두 구현의 일치는 계약 테스트가 대조한다.
@@ -122,7 +122,7 @@ class SeedDeployFragmentLedger implements DataMigration
             // 무CLI 업그레이드 동선의 운영자는 `storage/logs/*.log` 를 열 수단이 없다 —
             // 형제 서비스 판본(`CoreUpdateService::writeDeployFragmentLedger`)이 같은 실패를
             // `lastRootFileWarnings[]` 에 실어 콘솔·화면까지 보내는 것과 갈려 있었다. 같은
-            // 결함이 어느 통로로 도느냐에 따라 보이거나 보이지 않는다 (23차 G3 라운드 D23-13).
+            // 결함이 어느 통로로 도느냐에 따라 보이거나 보이지 않는다.
             //
             // 형제 스텝(`04_MovePublicStorageBrokenBackupsOutOfDocroot`)과 같은 통로를 쓴다 —
             // `ExecuteUpgradeStepsCommand` 가 스텝 종료 시 이 버퍼를 비워 운영자에게 낸다.
@@ -172,7 +172,7 @@ class SeedDeployFragmentLedger implements DataMigration
         foreach ($entries as $entry) {
             // 점으로 시작하는 항목(`.`·`..`·dot 파일/디렉토리)은 건너뛴다 — 서비스 씨앗기가 쓰는
             // `File::allFiles()` 는 `ignoreDotFiles(true)` 라 점 파일/디렉토리를 모집단에서 뺀다.
-            // 종전에는 이 스텝만 `scandir` 로 점 파일을 포함해 두 구현의 모집단이 갈렸다 (17차 C-1).
+            // 종전에는 이 스텝만 `scandir` 로 점 파일을 포함해 두 구현의 모집단이 갈렸다.
             if (str_starts_with($entry, '.')) {
                 continue;
             }
@@ -191,7 +191,7 @@ class SeedDeployFragmentLedger implements DataMigration
 
             $key = $relativePrefix.$entry;
             if (isset($ledger[$key])) {
-                continue; // 원장에 이미 있는 키는 채우지 않는다 (17차 C-4)
+                continue; // 원장에 이미 있는 키는 채우지 않는다
             }
 
             if (is_file($path.self::DIST_SUFFIX) || is_file($path.self::DIST_NEW_SUFFIX)) {

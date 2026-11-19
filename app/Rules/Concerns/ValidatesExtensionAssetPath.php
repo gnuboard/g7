@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
  * 확장 자산 경로 검증의 공통 규칙 (템플릿·모듈·플러그인 3통로 공유).
  *
  * 세 규칙 클래스(`SafeTemplatePath`·`SafeModulePath`·`SafePluginPath`)는 주석까지 같은
- * 사본이었다. 사본이 셋이면 한쪽만 고쳐지고, 실제로 그렇게 됐다 — 8차 라운드가
+ * 사본이었다. 사본이 셋이면 한쪽만 고쳐지고, 실제로 그렇게 됐다 — 앞서
  * `SafeTemplatePath` 에만 넣은 두 보강(구분자 정규화 · 접두 비교의 후행 구분자)이 형제
  * 둘에는 반영되지 않아, Windows 에서 **부재 파일이 404 가 아니라 422** 로 나가고
  * (`base_path()` 가 만드는 혼합 구분자 때문) 형제 디렉토리 접두 일치도 그 둘에만 남았다.
@@ -105,7 +105,7 @@ trait ValidatesExtensionAssetPath
         // 경로 정규화를 **분할보다 먼저** 한다. 구분자 정의가 한 벌이어야 하기 때문이다 —
         // 아래 봉쇄 판정은 `\` 와 `/` 를 모두 구분자로 취급하는데(`$normalizedPath`),
         // 분할만 `/` 로 하면 `dist\.hidden/app.js` 의 숨김 세그먼트를 못 본 채 봉쇄는
-        // 통과시켜 그 파일이 그대로 나간다. 9차 라운드가 이 규칙을 넣으며 분할 정규식을
+        // 통과시켜 그 파일이 그대로 나간다. 이 규칙을 처음 넣을 때 분할 정규식을
         // `'#[\\/]+#'` 로 적었는데 그것은 PHP 파싱 후 `#[\/]+#` 라 클래스 원소가 `/` 뿐이다.
         $normalizedPath = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $decodedPath);
 
@@ -137,7 +137,7 @@ trait ValidatesExtensionAssetPath
         //
         // realpath 산출물은 OS 구분자로 정규화되지만 폴백 경로는 호출부가 넘긴 basePath 의
         // 구분자를 그대로 갖는다. `base_path('modules/foo')` 는 Windows 에서 **반드시**
-        // 혼합 구분자(`C:\…\g7_3\modules/foo`)라, 정규화 없이 비교하면 부재 파일이 전부
+        // 혼합 구분자(`C:\…\g7\modules/foo`)라, 정규화 없이 비교하면 부재 파일이 전부
         // 「기준 밖」으로 오판되어 404 대신 422 가 된다.
         //
         // 접두 비교에는 구분자를 붙인다 — 붙이지 않으면 `/base` 기준에서 형제 디렉토리

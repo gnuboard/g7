@@ -1,5 +1,5 @@
 # audit:allow test-scenario-coverage[cross_product,effects,test_files] reason: issue:#609 본 시나리오는 코어 i18n 인프라 도입 회귀 가드. effects 는 5계층 병합 우선순위 + 업그레이드 스텝 멱등성 + 캐시 bump 트리거 카테고리별로 enumerate. 개별 axis cross-product 는 test_files 의 Feature/Unit 테스트가 cover.
-# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 #   test-files 면제 사유: TemplateServiceCoreFrontendI18n / PublicTemplateLanguageCoreMerge / CoreBuildBumpsCacheVersion / TemplateEngineError.i18n 미작성 (#383 이월)
 
 feature: 코어 프론트엔드 다국어 인프라 (lang/{ko,en}.json + lang/partial/)

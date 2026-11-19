@@ -539,7 +539,7 @@ class TemplateAssetServingTest extends TestCase
         $this->assertNotNull($etag, 'ETag header should be present');
         // RFC 9110 §8.8.3 의 entity-tag 는 큰따옴표로 감싼 형태다 — 정적 서빙(Apache·nginx)도
         // 항상 따옴표를 붙이고, 따옴표 없는 값은 중간 프록시·CDN 이 버리거나 다시 쓸 수 있다.
-        // 값 자체는 종전대로 파일에서 파생된 MD5 다 (3차 G3 라운드 L2).
+        // 값 자체는 종전대로 파일에서 파생된 MD5 다.
         $this->assertMatchesRegularExpression('/^"[a-f0-9]{32}"$/', $etag, 'ETag should be a quoted 32-character MD5 hash');
     }
 
@@ -629,8 +629,7 @@ class TemplateAssetServingTest extends TestCase
         // 압축본의 표현 접미사(`-gzip`)를 200 에만 붙이고 304 에는 identity 값을 실으면,
         // 공유 캐시가 gzip 본문을 identity 검증자로 갱신한다 — 200 에서 표현을 갈라 놓은
         // 이유가 그 자리에서 사라진다. 종전에는 `notModified()` 가 접미사 이전 값을 싣고
-        // 압축 미들웨어는 304 를 아예 건너뛰어(본문이 없으므로) 이 축이 비어 있었다
-        // (7차 G3 라운드 C5).
+        // 압축 미들웨어는 304 를 아예 건너뛰어(본문이 없으므로) 이 축이 비어 있었다.
         $this->assertSame(
             $etag,
             (string) $second->headers->get('ETag'),
@@ -648,8 +647,7 @@ class TemplateAssetServingTest extends TestCase
      * identity 본문을 갖고 있는데 그 항목이 압축 표현의 검증자로 갱신된다. C5 가
      * 막으려던 「두 표현을 뒤섞는다」의 정확한 거울상이다.
      *
-     * 단일값만 보내는 왕복으로는 두 해석이 같은 답을 내 이 축이 드러나지 않는다
-     * (8차 G3 라운드 C-1).
+     * 단일값만 보내는 왕복으로는 두 해석이 같은 답을 내 이 축이 드러나지 않는다.
      *
      * @scenario case=caching
      *
@@ -696,9 +694,8 @@ class TemplateAssetServingTest extends TestCase
      * 무확장자 모드에서 URL 의 마지막 세그먼트는 `{identifier}` 다 — 이름 선언이 없으면
      * 내려받기가 `sirsoft-basic` 같은 이름으로 저장되어, 같은 파일이 자산 URL 모드에
      * 따라 다른 이름을 갖고 링크가 되는 서버의 정적 서빙과도 어긋난다. 공개 스토리지
-     * 통로는 정확히 이 사유로 6차에서 이름 선언을 넣었는데 형제 세 통로(template ·
-     * module · plugin)에는 반영되지 않았다 — 「한쪽에만 있는 성질」 형태다
-     * (7차 G3 라운드 C2).
+     * 통로는 정확히 이 사유로 앞서 이름 선언을 넣었는데 형제 세 통로(template ·
+     * module · plugin)에는 반영되지 않았다 — 「한쪽에만 있는 성질」 형태다.
      *
      * @scenario asset_url_mode=extensionless, channel=template
      *
@@ -800,7 +797,7 @@ class TemplateAssetServingTest extends TestCase
      *
      * 종전 이 테스트는 **버전 없는 주소**를 요청하고 `immutable` 이 있어야 통과라고
      * 단언했다. 즉 규정 위반 상태가 곧 green 이었고, 그 계약이 서 있는 한 결함을 고치면
-     * 테스트가 red 가 되는 구조였다. 계약을 판정 기준 자체로 교체한다 (11차 G3 라운드).
+     * 테스트가 red 가 되는 구조였다. 계약을 판정 기준 자체로 교체한다.
      *
      * @scenario case=caching
      *

@@ -6,9 +6,9 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * 22차 스윕 회귀 가드 — 「한 사실, 두 판정기」와 「참→거짓 전이를 소비자가 놓침」 축
+ * 스윕 회귀 가드 — 「한 사실, 두 판정기」와 「참→거짓 전이를 소비자가 놓침」 축
  *
- * 22차가 연 축의 반복 형태: 판정 함수는 SSoT 로 모여 있는데, 그 함수를 부를지 말지를
+ * 이 축의 반복 형태: 판정 함수는 SSoT 로 모여 있는데, 그 함수를 부를지 말지를
  * 정하는 조건과 결과를 **되돌릴 때**의 처리가 지점마다 달랐다. 이 클래스는 그 어긋남을
  * 소스 계약으로 잠근다 (행위 재현이 세션·DOM·리다이렉트에 결합된 지점들이라 소스 계약이
  * 실효 지점이다 — 각 항목의 행위 근거는 계획서 §16.28 기록).
@@ -17,12 +17,12 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  *   에서 두 규칙(존재+쓰기 vs 존재만)으로 갈렸다 — 재검사 버튼이 자기 게이트를 무력화하고,
  *   설치가 완주하고도 finalize 의 `.env` 머지가 조용히 실패해 인스톨러가 영구히 열린다.
  * - **#22-3**: 재개 어휘 목록이 [초기화]가 실제로 기록하는 `not_started` 를 빠뜨렸다
- *   (19차 S-5 와 같은 결함이 다른 값에서 잔존).
+ *   (앞서 고친 것과 같은 결함이 다른 값에서 잔존).
  * - **#22-4**: 서버는 완료 마커를 **되돌릴 수 있는 사실**로 다루는데(removeTaskCompleted),
  *   화면의 완료 표시는 단조 증가만 했다 — 롤백된 태스크가 초록으로 남는다.
  * - **#22-5**: 실행(getPhpBinary — 형태 검사+폴백)과 `.env` 기록(generateEnvContent —
  *   무검사 원문)이 같은 값을 다르게 판정했다.
- * - **#22-7**: 언어 변경의 상태 저장 실패가 무음 폐기됐다 (17차 #C2 규율 미적용 지점).
+ * - **#22-7**: 언어 변경의 상태 저장 실패가 무음 폐기됐다 (규율 미적용 지점).
  * - **#22-8**: SSE 입구의 두 모드 게이트 중 한쪽만 message_key 를 실었다.
  * - **#22-9**: 합성 키(taskId:target) 분해가 JS 안에서 두 규칙(첫 콜론 vs 전체 split)이었다.
  * - **N-5**: 디스크 여유 경고 문구가 카드 값 슬롯 계약(짧은 라벨)을 깼다.
@@ -144,7 +144,7 @@ class InstallerStateTransitionConsistencyTest extends TestCase
         $this->assertNotFalse($start);
         $body = substr($functions, $start, 1600);
 
-        $this->assertStringContainsString('installerSaveStateOrReport(', $body, '저장 실패가 무음이면 화면·워커 로그·설치본 기본 언어가 서로 다른 언어를 쓴다 (#22-7, 17차 #C2 규율)');
+        $this->assertStringContainsString('installerSaveStateOrReport(', $body, '저장 실패가 무음이면 화면·워커 로그·설치본 기본 언어가 서로 다른 언어를 쓴다 (#22-7, 저장 실패 보고 규율)');
     }
 
     /**
@@ -242,7 +242,7 @@ class InstallerStateTransitionConsistencyTest extends TestCase
         $this->assertNotFalse($start);
         $body = substr($state, $start, 1600);
 
-        $this->assertStringContainsString('?? null', $body, 'current_task 를 ?? 없이 읽으면 파싱 성공한 구형 상태에서 notice 가 난다 (17차 #C8 형제)');
+        $this->assertStringContainsString('?? null', $body, 'current_task 를 ?? 없이 읽으면 파싱 성공한 구형 상태에서 notice 가 난다 (형제)');
         $this->assertStringContainsString(', true)', $body, 'in_array 비엄격 비교는 형제 함수의 방어와 갈린다');
     }
 }

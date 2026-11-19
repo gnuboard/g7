@@ -12,14 +12,13 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * (`ETag` · `Last-Modified`)를 하나도 싣지 않았습니다. 그러면 만료 전에는 재검증 자체가
  * 불가능하고(운영자가 파일을 갈아 끼워도 클라이언트는 1년간 옛것을 본다), 만료 뒤에는
  * 내용이 그대로여도 매번 전문을 받아 갑니다 — 304 로 끝날 왕복이 하나도 없습니다.
- * 오류도 로그도 남지 않고 대역폭과 신선도 양쪽에서만 조용히 손해가 납니다
- * (11차 G3 라운드 B11-12).
+ * 오류도 로그도 남지 않고 대역폭과 신선도 양쪽에서만 조용히 손해가 납니다.
  *
  * 검증자는 **행 메타**에서 만듭니다 — 파일 stat 이 없으므로 원격 디스크(S3 등)에서도
  * 결정적이고, 코어 형제(`App\Services\AttachmentService::getFileInfo()`)가 쓰는 소스 구성
  * (disk|path|updated_at|size)과 같습니다.
  *
- * **캐시 계약은 이 trait 이 만들지 않습니다.** 13차까지는 여기서 `Cache-Control`·`ETag` 를
+ * **캐시 계약은 이 trait 이 만들지 않습니다.** 종전에는 여기서 `Cache-Control`·`ETag` 를
  * 직접 세우고 Symfony `isNotModified()` 로 판정한 뒤 자체 304 객체를 돌려줬는데, 그것은
  * 코어 단일 지점(`BaseApiController::streamedFileResponse()`)의 **사본**이었고 세 축에서
  * 이미 갈려 있었습니다 — ① `Cache-Control` 이 환경과 무관하게 고정(코어는 비운영 환경에서
@@ -27,8 +26,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * 클라이언트가 되보내면 영원히 전문 200), ③ `Expires` 부재(코어는 200·304 모두 싣는다).
  * 사본은 갈리는 것이 정상이므로 계약을 여기에 두지 않고, 이 trait 은 코어 형제와 같은
  * 형태의 **서빙 정보**(스트림 + 검증자 메타)만 돌려주며 컨트롤러가 그것을 코어 지점에
- * 넘깁니다 — 형제 `sirsoft-page`·`sirsoft-ckeditor5` 가 13차에 택한 형태입니다
- * (14차 G3 라운드).
+ * 넘깁니다 — 형제 `sirsoft-page`·`sirsoft-ckeditor5` 가 택한 형태입니다.
  *
  * 사용 서비스는 `ResolvesRowStorage`(행 disk 해석)를 함께 씁니다.
  */
@@ -50,7 +48,7 @@ trait ServesImageWithRowValidators
      * `Cache-Control`/`Expires`/`Vary` 동반은 코어 지점이 하며, 그 지점은 `Last-Modified`
      * 를 스스로 세우므로 여기서 세운 값은 같은 값으로 덮입니다(형제 통로와 같은 상태).
      *
-     * 13차 기록 정정 — 종전 독블록은 「`StreamedResponse` 는 상태가 304 여도 `sendContent()`
+     * 기록 정정 — 종전 독블록은 「`StreamedResponse` 는 상태가 304 여도 `sendContent()`
      * 가 콜백을 그대로 실행해 본문이 실렸다」고 적었는데 **사실이 아닙니다.** Symfony
      * `Response::setNotModified()` 는 `setContent(null)` 을 부르고, `StreamedResponse::setContent()`
      * 는 `null` 이 아닌 값에만 예외를 던지며 `streamed = true` 로 표시하므로, 그 뒤의

@@ -30,7 +30,7 @@ class RootWebConfigUpdater extends AbstractRootMarkerFileUpdater
     protected const MESSAGE_KEY_PREFIX = 'root_web_config_';
 
     /**
-     * IIS 관리 도구가 web.config 를 저장하며 자식 요소를 들여쓰므로, 마커에 선행 공백을 허용한다 (17차 D-2).
+     * IIS 관리 도구가 web.config 를 저장하며 자식 요소를 들여쓰므로, 마커에 선행 공백을 허용한다.
      *
      * XML 주석은 중첩할 수 없어(`<!-- ... -->` 안에 `<!--` 를 둘 수 없다) 선행 공백을 허용해도
      * 블록 경계가 모호해지지 않는다. `.htaccess`(형제)는 이 기본값(불허)을 그대로 쓴다.
@@ -43,7 +43,7 @@ class RootWebConfigUpdater extends AbstractRootMarkerFileUpdater
     }
 
     /**
-     * 교체 결과가 적형 XML 인지 판정합니다 (17차 D-3).
+     * 교체 결과가 적형 XML 인지 판정합니다.
      *
      * 운영자가 블록 **밖**에 닫히지 않은 태그를 두면 교체 결과가 파싱 불가가 되고, IIS 는
      * web.config 파싱에 실패하면 사이트 전체를 500 으로 만든다 — 손상본을 디스크에 쓰기 전에 막는다.

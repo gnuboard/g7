@@ -9,7 +9,7 @@ use Tests\Concerns\CleansTemporaryBasePath;
 use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * 워커 lock 에 선언하는 시간 예산은 **실제로 허용된 값**이어야 한다 (제품 결정 13차 환경#9).
+ * 워커 lock 에 선언하는 시간 예산은 **실제로 허용된 값**이어야 한다 (제품 결정).
  *
  * `set_time_limit()` 은 요청한 값을 항상 얻어내지 못한다 — `disable_functions` 로 막혀 있거나
  * 호스팅이 ini 를 잠그면 호출은 조용히 무시된다. 그런데 워커 lock 은 **선언한 값**을 그대로

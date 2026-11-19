@@ -1182,7 +1182,7 @@ class ModuleService
         // `base_path()` 가 돌려준 `/` 구간과 섞여 `modules/x\dist/js/a.js` 같은 혼합
         // 경로가 되고, 그 값을 그대로 돌려받는 소비처·계약 테스트가 어긋난다.
         // 봉쇄 판정(`extensionAssetPathIsContained`)은 `realpath()` 로 정규화한 뒤
-        // 비교하므로 이 자리의 구분자에 영향받지 않는다 (14차 G3 라운드).
+        // 비교하므로 이 자리의 구분자에 영향받지 않는다.
         $filePath = $basePath.'/'.$safePath;
 
         // 4. 파일 존재 확인

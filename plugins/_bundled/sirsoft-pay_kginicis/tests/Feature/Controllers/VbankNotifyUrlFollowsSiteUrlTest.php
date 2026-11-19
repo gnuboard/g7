@@ -11,7 +11,7 @@ use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
  *
  * `url()` 은 요청의 호스트·접두사를 싣는다 — 앞단 프록시가 접두사를 벗기거나 내부 호스트명으로
  * 도착하는 배치에서 운영자가 PG 에 등록하는 통보 주소가 사이트 밖이 되고, 입금 통보는 오류 없이
- * 도착하지 않는다 (16차 G3 라운드 B-5).
+ * 도착하지 않는다.
  */
 class VbankNotifyUrlFollowsSiteUrlTest extends PluginTestCase
 {

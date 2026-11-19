@@ -158,7 +158,7 @@ class InstallerBaseUrlDerivationTest extends TestCase
      *
      * 종전 데이터 제공자는 인자를 하나만 넘겨(`installerDeriveBaseUrl($scriptName)`) 이 분기가
      * **한 번도 실행되지 않았다.** 레이아웃 ② 노출 프로브의 기준점을 정하는 것이 바로 이
-     * 분기인데, 그 근거가 무게이트였다 (14차 G3 라운드).
+     * 분기인데, 그 근거가 무게이트였다.
      *
      * @param  string  $scriptName  서버가 넘기는 SCRIPT_NAME
      * @param  string  $requestUri  브라우저가 친 REQUEST_URI
@@ -215,7 +215,7 @@ class InstallerBaseUrlDerivationTest extends TestCase
      *
      * 프록시가 `/g7/install/` 을 `/install/` 로 벗겨 넘기면 `REQUEST_URI` 도 `SCRIPT_NAME` 도
      * 접두사를 모른다 — 노출 프로브 기준점이 사이트 밖(`/install`)이 되어 판정이 상시
-     * 「측정 불가」로 강등된다 (13차 G3 W1-11). 헤더가 있으면 그것을 앞에 붙이되, 값은
+     * 「측정 불가」로 강등된다. 헤더가 있으면 그것을 앞에 붙이되, 값은
      * 경로 접두사로만 받는다(`/` 시작 · `//` 아님 · 제어문자 없음). 요청 경로가 이미 그
      * 접두사로 시작하면(프록시가 벗기지 않는 배치) 두 번 붙이지 않는다.
      *
@@ -235,7 +235,7 @@ class InstallerBaseUrlDerivationTest extends TestCase
             '제어문자 포함은 무시' => ['/public/install/index.php', '/install/', "/g7\r\nX-Injected: 1", '/install'],
             '공백 포함은 무시' => ['/public/install/index.php', '/install/', '/g 7', '/install'],
             '루트 접두사(/)는 무접두와 같다' => ['/public/install/index.php', '/install/', '/', '/install'],
-            // 14차 G3 W2-1 — 값의 **형태**만 신뢰한다. 직결 배치에서는 이 헤더를 클라이언트가
+            // 값의 **형태**만 신뢰한다. 직결 배치에서는 이 헤더를 클라이언트가
             // 보낼 수 있고, 그 값은 `Location:` 과 `<script src>` 에 그대로 실린다.
             '역슬래시는 무시(WHATWG 가 /\evil 을 //evil 로 정규화한다)' => ['/public/install/index.php', '/install/', '/\evil.com', '/install'],
             '상위 디렉토리 세그먼트(/../)는 무시' => ['/public/install/index.php', '/install/', '/../', '/install'],
@@ -246,14 +246,14 @@ class InstallerBaseUrlDerivationTest extends TestCase
             '점을 품은 세그먼트 이름(g7%2e%2e → g7..)은 디렉토리 이동이 아니다' => ['/public/install/index.php', '/install/', '/g7%2e%2e', '/g7../install'],
             '허용 문자로만 된 정상 접두사' => ['/public/install/index.php', '/install/', '/g7/sub-dir_1', '/g7/sub-dir_1/install'],
             '점·물결표를 품은 정상 접두사' => ['/public/install/index.php', '/install/', '/~user/site.v2', '/~user/site.v2/install'],
-            // 15차 G3 W1-1 — 비ASCII 마운트(`/한글/`)와 그것을 퍼센트 인코딩한 형태는 **정상 배치**다.
+            // 비ASCII 마운트(`/한글/`)와 그것을 퍼센트 인코딩한 형태는 **정상 배치**다.
             // 종전 화이트리스트는 둘 다 버려 `INSTALLER_BASE_URL` 이 마운트 밖(`/install`)이 됐고,
             // 화면이 조립하는 `${origin}${INSTALLER_BASE_URL}/api/*.php` 가 전부 404 라 인스톨러
             // 자체가 불능이었다. 출력은 브라우저·`Location:`·`<script src>` 에 실리므로 정규화된
             // 퍼센트 인코딩 한 형태로만 돌려준다.
             '퍼센트 인코딩된 비ASCII 접두사는 그대로(대문자 정규화)' => ['/public/install/index.php', '/install/', '/%ed%95%9c%ea%b8%80', '/%ED%95%9C%EA%B8%80/install'],
             '원시 UTF-8 접두사는 퍼센트 인코딩해 돌려준다' => ['/public/install/index.php', '/install/', '/한글/site', '/%ED%95%9C%EA%B8%80/site/install'],
-            // 16차 G3 A6 — 계약 변경. 종전 「인코딩된 공백은 감춘 공백이니 버린다」는 원시 공백을
+            // 계약 변경. 종전 「인코딩된 공백은 감춘 공백이니 버린다」는 원시 공백을
             // 거부하는 이유(헤더 값의 형태)를 인코딩 표기에까지 옮긴 것인데, 출력은 언제나
             // 정규형이라 감출 것이 없고 디렉토리 이름에 공백이 든 마운트는 정상 배치다.
             '인코딩된 공백(%20)은 정상 마운트' => ['/public/install/index.php', '/install/', '/g%207', '/g%207/install'],
@@ -267,7 +267,7 @@ class InstallerBaseUrlDerivationTest extends TestCase
     }
 
     /**
-     * 접두사를 **버린 사실이 관측된다** (15차 G3 W1-2).
+     * 접두사를 **버린 사실이 관측된다**.
      *
      * 종전에는 값을 버리고 `''` 로 떨어질 뿐이라, 프록시 뒤에서 인스톨러가 통째로 404 가 되는데
      * 운영자에게 닿는 단서가 없었다. 사유·길이만 기록한다 — 값 자체는 신뢰 경계 밖에서 온
@@ -304,7 +304,7 @@ class InstallerBaseUrlDerivationTest extends TestCase
     public static function forwardedPrefixNormalizationProvider(): array
     {
         return [
-            // 16차 G3 A1 — 정제기는 접두사를 정규형(`/%ED%95%9C%EA%B8%80`)으로 만드는데,
+            // 정제기는 접두사를 정규형(`/%ED%95%9C%EA%B8%80`)으로 만드는데,
             // 「이미 그 접두사로 시작하는가」 대조는 요청 경로의 **원문 표기**와 했다. 비ASCII
             // 마운트에서 프록시가 접두사를 벗기지 않는 배치는 두 표기가 달라 대조가 언제나
             // 불일치 → 접두사가 두 번 붙어 `/%ED%95%9C%EA%B8%80/한글/install` 이 됐다. 그 값은
@@ -325,7 +325,7 @@ class InstallerBaseUrlDerivationTest extends TestCase
     }
 
     /**
-     * 「이미 그 접두사로 시작한다」 대조는 **같은 정규형**끼리 한다 (16차 G3 A1).
+     * 「이미 그 접두사로 시작한다」 대조는 **같은 정규형**끼리 한다.
      *
      * @param  string  $requestUri  브라우저가 친 요청 경로 (원문 표기)
      * @param  string  $forwardedPrefix  프록시가 넘긴 접두사
@@ -358,7 +358,7 @@ class InstallerBaseUrlDerivationTest extends TestCase
     public static function forwardedPrefixSpellingProvider(): array
     {
         return [
-            // 16차 G3 A6 — 원시 허용 집합이 unreserved 뿐이라 `/g7,x` 는 버리고 `/g7%2Cx` 는
+            // 원시 허용 집합이 unreserved 뿐이라 `/g7,x` 는 버리고 `/g7%2Cx` 는
             // 통과했다. 출력은 언제나 정규형(세그먼트별 rawurlencode)이라 두 표기의 결과는
             // 같아야 하는데, 어느 표기로 헤더를 보내느냐에 따라 인스톨러가 404 가 되기도 했다.
             // 허용 폭은 RFC 3986 pchar(unreserved · sub-delims · `:` · `@`)까지다.
@@ -385,7 +385,7 @@ class InstallerBaseUrlDerivationTest extends TestCase
             '역슬래시 — 인코딩' => ['/a%5Cb', ''],
             '제어문자 — 인코딩' => ['/a%01b', ''],
             '삭제문자 — 인코딩' => ['/a%7Fb', ''],
-            // 16차 G3 A14 — 중간 빈 세그먼트는 접는다. `//` 로 **시작**하는 값(프로토콜 상대)은
+            // 중간 빈 세그먼트는 접는다. `//` 로 **시작**하는 값(프로토콜 상대)은
             // 그 전에 버려지므로 이 접기는 오리진을 바꾸지 못한다.
             '중간 빈 세그먼트는 접는다' => ['/a//b', '/a/b'],
             '연속 빈 세그먼트' => ['/a///b/', '/a/b'],
@@ -394,7 +394,7 @@ class InstallerBaseUrlDerivationTest extends TestCase
     }
 
     /**
-     * 원시 표기와 인코딩 표기의 판정이 같고, 빈 세그먼트는 접힌다 (16차 G3 A6 · A14).
+     * 원시 표기와 인코딩 표기의 판정이 같고, 빈 세그먼트는 접힌다.
      *
      * @param  string  $forwardedPrefix  프록시가 넘긴 접두사 (원시 또는 인코딩 표기)
      * @param  string  $expected  기대 정제 결과 (빈 문자열은 거부)
@@ -416,7 +416,7 @@ class InstallerBaseUrlDerivationTest extends TestCase
     }
 
     /**
-     * `APP_URL` 의 호스트는 `Host` 헤더가 없으면 `SERVER_NAME` 으로 떨어진다 (16차 G3 D-8).
+     * `APP_URL` 의 호스트는 `Host` 헤더가 없으면 `SERVER_NAME` 으로 떨어진다.
      *
      * HTTP/1.0 클라이언트·일부 프록시는 `Host` 를 싣지 않는다. 그때 `$_SERVER['HTTP_HOST']`
      * 직접 참조는 경고와 함께 빈 호스트를 만들고, 그 값은 `.env` 에 `APP_URL=http://` 로
@@ -590,7 +590,7 @@ class InstallerBaseUrlDerivationTest extends TestCase
     }
 
     /**
-     * 요청 경로에 dot-segment(`.`·`..`, 인코딩 포함)가 있으면 그 분기를 버린다 (17차 A-2).
+     * 요청 경로에 dot-segment(`.`·`..`, 인코딩 포함)가 있으면 그 분기를 버린다.
      *
      * 접두사 정제기는 세그먼트를 디코딩해 `..`/`.` 를 거부하는데, 요청 경로 축에는 그 판정이
      * 없어 `installerNormalizePathEncoding()` 이 `%2E%2E` 를 실제 `..` 로 되살렸다 —
@@ -641,7 +641,7 @@ class InstallerBaseUrlDerivationTest extends TestCase
     }
 
     /**
-     * 역슬래시 치환이 만든 프로토콜 상대(`//evil.com`)는 그 분기를 버린다 (17차 A-4).
+     * 역슬래시 치환이 만든 프로토콜 상대(`//evil.com`)는 그 분기를 버린다.
      *
      * `str_replace('\\','/')` 는 `parse_url` 뒤라 앞머리 역슬래시 두 개를 `//` 로 바꾼다 —
      * 그 값은 `<script src>`·`Location:` 에 실려 외부 오리진을 가리킨다. 접두사 정제기의
@@ -671,13 +671,13 @@ class InstallerBaseUrlDerivationTest extends TestCase
     }
 
     /**
-     * `showAlertAndRedirect()` 의 안내 문구와 이동 주소는 **실리는 문맥(HTML 텍스트·속성)에 맞는 인코딩**을 지난다 (17차 A-6).
+     * `showAlertAndRedirect()` 의 안내 문구와 이동 주소는 **실리는 문맥(HTML 텍스트·속성)에 맞는 인코딩**을 지난다.
      *
      * 이동 안내는 인라인 `<script>`(alert + location) 대신 문구, 「바로 이동」 링크, meta refresh 로
      * 바뀌었다 — strict CSP(`script-src 'self'`)에서 인라인 스크립트가 실행되지 않아 흰 화면에 머물렀기
      * 때문이다. 그래서 두 값의 출력 문맥은 JS 문자열이 아니라 HTML 이다: `$message` 는 본문 텍스트,
      * `$redirectUrl` 은 meta refresh 의 `content` 속성과 `<a href>` 속성(둘 다 큰따옴표). 그 문맥의 탈출
-     * 통로는 `<`·`&`·따옴표이므로 `htmlspecialchars(…, ENT_QUOTES)` 가 맞는 인코더이고, 17차 A-6 의 취지
+     * 통로는 `<`·`&`·따옴표이므로 `htmlspecialchars(…, ENT_QUOTES)` 가 맞는 인코더이고, 앞선 조치의 취지
      * (출력 문맥과 인코더를 맞춘다)는 그대로다. 인라인 스크립트가 되살아나면 JS 문맥 인코딩이 다시
      * 필요하므로 그것도 함께 막는다.
      *
@@ -761,7 +761,7 @@ class InstallerBaseUrlDerivationTest extends TestCase
      * `app.url` 의 경로를 접두사 폴백으로 읽고 큐·콘솔·예약 작업·**메일 본문**이 그것을
      * 탄다. 하위 폴더 설치에서 접두사를 빠뜨리면 그 문맥의 주소가 전부 사이트 밖을
      * 가리키는데 화면(요청 기반)은 정상이라 드러나지 않는다 — 그 폴백이 막으려고 만든
-     * 실패를 인스톨러가 심고 있었다. P0 하위 폴더 실측에서 발견 (15차 G3 라운드).
+     * 실패를 인스톨러가 심고 있었다. P0 하위 폴더 실측에서 발견.
      *
      * 파생은 형제 SSoT(`installerDeriveBaseUrl`)를 경유해야 한다. 여기서 다시 조립하면
      * Alias·API 컨텍스트 흡수가 사본으로 갈린다.
@@ -803,7 +803,7 @@ class InstallerBaseUrlDerivationTest extends TestCase
     }
 
     /**
-     * `APP_URL` 파생도 프록시가 벗긴 접두사(`X-Forwarded-Prefix`)를 **같이** 받는다 (15차 G3 W1-3).
+     * `APP_URL` 파생도 프록시가 벗긴 접두사(`X-Forwarded-Prefix`)를 **같이** 받는다.
      *
      * 기준 URL(`config.php`)은 그 헤더를 넘기는데 `APP_URL` 파생(`index.php`)만 두 인자로
      * 불러, 접두사를 벗기는 프록시 뒤에서는 `.env` 에 접두사 없는 `APP_URL` 이 **영구 저장**됐다.
@@ -858,8 +858,8 @@ class InstallerBaseUrlDerivationTest extends TestCase
      *
      * 같은 저장소에 프록시를 아는 `installerRequestIsHttps()` 가 이미 있고 형제 둘
      * (`session.php` · `public/install/api/check-configuration.php`)이 쓴다. 값을 영구화하는 이 지점만
-     * 안 쓰고 있었다 — 판정이 갈리면 같은 요청을 두 곳이 다르게 읽는다 (12차 G3 라운드
-     * A12-3, 제품 결정 「같은 저장소의 공용 판정으로 통일」).
+     * 안 쓰고 있었다 — 판정이 갈리면 같은 요청을 두 곳이 다르게 읽는다
+     * (제품 결정 「같은 저장소의 공용 판정으로 통일」).
      *
      * @scenario base_path=root
      *

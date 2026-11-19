@@ -9,15 +9,15 @@ use Tests\Concerns\CleansTemporaryBasePath;
 use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * 시그널로 죽은 워커의 고착 상태를 「다음 요청」이 실패로 승격하는지에 대한 회귀 테스트 (13차 환경#10).
+ * 시그널로 죽은 워커의 고착 상태를 「다음 요청」이 실패로 승격하는지에 대한 회귀 테스트.
  *
  * 배경:
- *   12차 #A2 가 `installerPromoteFatalShutdownToFailure()` 로 「요청이 갑자기 죽으면 상태가
+ *   앞서 `installerPromoteFatalShutdownToFailure()` 로 「요청이 갑자기 죽으면 상태가
  *   running 에 고착한다」를 닫았다고 기록했다. 그러나 그 승격은 `error_get_last()` 의 타입이
  *   E_ERROR / E_PARSE / E_CORE_ERROR / E_COMPILE_ERROR 일 때만 발동한다. 프로세스가 **시그널로**
  *   죽는 경우 — php-fpm 의 `request_terminate_timeout`(SIGTERM/SIGKILL), LiteSpeed 의
  *   `lsapi_max_process_time`, 컨테이너 cgroup OOM-kill — 는 shutdown 함수 자체가 돌지 않고
- *   `error_get_last()` 도 없다. 즉 mod_php 밖에서는 12차가 닫았다고 적은 구멍이 그대로 열려 있다.
+ *   `error_get_last()` 도 없다. 즉 mod_php 밖에서는 앞서 닫았다고 적은 구멍이 그대로 열려 있다.
  *
  *   증상은 오류가 아니라 **선택지의 부재**다: `installation_status` 가 running 인 채
  *   `failed_task` 가 비어 남으므로 `markInstallationTaskSkipped()` 의 요구(failed + failed_task)가
@@ -335,7 +335,7 @@ class InstallerKilledWorkerRecoveryTest extends TestCase
     public function test_a_clock_rollback_does_not_promote(): void
     {
         // 시계가 뒤로 가면(NTP 보정·컨테이너 시각 점프) 경과가 음수가 된다 — 워커가 죽은 것이
-        // 아니라 시계가 튄 것이므로 승격하지 않는다 (13차 환경#19 와 같은 규칙).
+        // 아니라 시계가 튄 것이므로 승격하지 않는다 (미래 heartbeat 를 신뢰하지 않는 기존 규칙과 같다).
         $now = time();
         $this->seedKilledWorker([
             'worker_started_at' => $now + 5000,

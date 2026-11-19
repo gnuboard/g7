@@ -369,7 +369,7 @@ test.describe('관리자 클레임 상세 골격 (#599 S9a)', () => {
     await waitForDetail(page);
 
     // 응답이 도착해 능력이 반영된 뒤에 본다 — 도착 전 상태를 보면 게이트가 아니라
-    // 로딩 때문에 잠긴 컨트롤을 보고 초록이 된다 (S8b 2차 F6 과 같은 함정).
+    // 로딩 때문에 잠긴 컨트롤을 보고 초록이 된다 (앞서 겪은 것과 같은 함정).
     await expect(page.locator('[data-section-id="claim_info"]')).toBeVisible({ timeout: 30_000 });
 
     const applyButton = page.locator('#ci_004_item_bulk_apply');

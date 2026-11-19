@@ -10,7 +10,7 @@ use Tests\TestCase;
  *
  * 운영자가 `https://example.com/g7/` 로 적으면 그 값을 `.'/path'` 로 잇는 모든 소비처가
  * `//` 를 만든다. 정규화를 소비처마다 두면 한 곳이 빠지고, 저장 경로 진입 전 한 곳에서 걷어내면
- * 그 형태가 설정 파일에 남지 않는다 (16차 G3 라운드 B-4).
+ * 그 형태가 설정 파일에 남지 않는다.
  */
 class SaveSettingsRequestSiteUrlTest extends TestCase
 {

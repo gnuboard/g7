@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\CleansTemporaryBasePath;
 
 /**
- * [건너뛰고 계속] 의 의존성 파급 회귀 테스트 (9차 #M3).
+ * [건너뛰고 계속] 의 의존성 파급 회귀 테스트.
  *
  * 의존성 사전 검증(dependency_precheck)은 「선택된 확장의 의존 대상이 함께 선택되었는가」를
  * **설치 시작 전 한 번** 판정한다. 그 뒤 운영자가 실패한 확장을 [건너뛰고 계속] 으로 지나가면

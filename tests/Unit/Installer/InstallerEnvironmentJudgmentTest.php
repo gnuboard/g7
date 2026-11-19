@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\CleansTemporaryBasePath;
 
 /**
- * 13차가 신설한 환경·출처·진입 전제 판정 헬퍼(includes/execution-mode.php) 단위 테스트.
+ * 환경·출처·진입 전제 판정 헬퍼(includes/execution-mode.php) 단위 테스트.
  *
  * 여기 있는 판정은 전부 「엔드포인트 안의 `if` 로 두면 조건이 뒤집혀도 아무도 모르는」 종류다.
  * 그래서 판정을 한 파일이 소유하고, 그 판정 자체를 부른다 (소스 대조는 배선만 본다).
@@ -324,7 +324,7 @@ class InstallerEnvironmentJudgmentTest extends TestCase
      * 차단(D3)이 수동 확인(D21)으로 강등된다 — 화면에는 아무 이상이 없다.
      *
      * 종전 테스트는 `REMOTE_ADDR` 만 심어 「IP = 클라이언트」를 전제로 쟀으므로 이 축을
-     * 볼 수 없었다 (11차 G3 라운드).
+     * 볼 수 없었다.
      *
      * @scenario rate_limit=client_identity, deployment=reverse_proxy_shared_ip
      *
@@ -501,7 +501,7 @@ class InstallerEnvironmentJudgmentTest extends TestCase
     /**
      * 신원(세션)을 갈아 끼워도 **원격 주소 창**이 총량을 막는다.
      *
-     * 11차는 클라이언트 식별을 `REMOTE_ADDR` 에서 `session_id()` 로 옮기면서 이 분기의
+     * 앞선 수정은 클라이언트 식별을 `REMOTE_ADDR` 에서 `session_id()` 로 옮기면서 이 분기의
      * 총량 방어(전역 창)를 함께 뺐다. 그런데 `session_id()` 는 **요청하는 쪽이 정하는
      * 값**이다 — 쿠키를 보내지 않으면 매 요청이 새 세션이고, 아무 값이나 보내면 그
      * 값이 된다. 그래서 그 두 버킷(`probe_exposure_sentinel`·`probe_symlink`)은 쿠키를
@@ -551,7 +551,7 @@ class InstallerEnvironmentJudgmentTest extends TestCase
             );
 
             // 그런데 **다른 주소**의 운영자는 여전히 자기 창을 쓴다 — 이 성질이
-            // 깨지면 원격자가 남을 강등시킬 수 있고, 그것이 11차가 전역 창을 뺀 이유다.
+            // 깨지면 원격자가 남을 강등시킬 수 있고, 그것이 앞서 전역 창을 뺀 이유다.
             $_SERVER['REMOTE_ADDR'] = '198.51.100.5';
             session_id('operator-'.bin2hex(random_bytes(4)));
 

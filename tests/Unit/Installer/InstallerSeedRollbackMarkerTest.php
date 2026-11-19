@@ -164,7 +164,7 @@ class InstallerSeedRollbackMarkerTest extends TestCase
         $this->assertTrue($result['success']);
         $this->assertSame(lang('rollback_seed_already_done'), $result['message']);
 
-        // 19차 R3 — `success` 와 「되돌렸는가」는 다른 사실이다.
+        // `success` 와 「되돌렸는가」는 다른 사실이다.
         $this->assertFalse(
             $result['reverted'],
             '아무것도 되돌리지 않았는데 되돌렸다고 답하면, 호출부가 그 답으로 완료 마커를 지운다',
@@ -172,7 +172,7 @@ class InstallerSeedRollbackMarkerTest extends TestCase
     }
 
     /**
-     * 19차 R3 — 되돌리지 않은 갈래가 「되돌렸다」로 답하지 않는다.
+     * 되돌리지 않은 갈래가 「되돌렸다」로 답하지 않는다.
      *
      * `executeSeedTruncate()` 는 아무것도 되돌리지 않고 `success:true` 를 돌려주는 갈래를
      * 넷 갖는다(마커로 이미 끝남 · DB 설정 없음 · 대상 테이블 없음 · 접속 실패 스킵).
@@ -198,7 +198,7 @@ class InstallerSeedRollbackMarkerTest extends TestCase
     }
 
     /**
-     * 19차 R3 — 두 호출부가 「되돌렸을 때만」 마커를 지운다.
+     * 두 호출부가 「되돌렸을 때만」 마커를 지운다.
      *
      * 중단 경로는 `markTaskCompleted($taskId)` **뒤**에 있어, db_seed 성공 직후의 중단에서는
      * 방금 세운 마커가 곧바로 「이미 끝났다」 단락을 성립시킨다. 그 갈래의 `success:true` 로

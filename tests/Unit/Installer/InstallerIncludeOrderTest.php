@@ -561,11 +561,11 @@ class InstallerIncludeOrderTest extends TestCase
      * 가드 **존재** 축의 모집단을 인스톨러 전수에서 도출한다.
      *
      * 형제 검사(`test_functions_shared_with_runtime_are_all_guarded`)는 두 파일
-     * (`functions.php` ↔ `installer-runtime.php`)만 본다. 그런데 8차가 가드 **블록 내용**
+     * (`functions.php` ↔ `installer-runtime.php`)만 본다. 그런데 앞서 가드 **블록 내용**
      * 축의 모집단을 `public/install/**` 전수로 넓히면서, 그 옆의 「가드가 아예 없는
      * 중복 선언」 축은 두 파일 고정으로 남았다 — `public/install/api/_guard.php` 처럼 나중에 생긴
      * 파일에 중복 선언이 들어와도 아무것도 울지 않는다(변이 실측: 가드 래퍼를
-     * 통째로 지워도 초록) (10차 G3 라운드 B10-5).
+     * 통째로 지워도 초록).
      *
      * 판정: **두 파일 이상에서 최상위 선언되는 함수**는 그 선언 지점마다
      * `function_exists` 가드를 가져야 한다. 현재 위반 0 이므로 지금 넣으면 초록으로
@@ -573,8 +573,8 @@ class InstallerIncludeOrderTest extends TestCase
      *
      * 「선언 지점마다」는 **그 이름의 가드 블록 안에 그 선언이 들어 있는가**로 잰다.
      * 파일 단위로 재면(그 이름의 `function_exists` 가 파일 어딘가에 있으면 통과) 선언이
-     * 가드 밖으로 나가도 같은 파일의 **사용 여부 검사** 하나가 그 자리를 메워 초록이 된다
-     * (14차 B11-7). 판정 대상 집합이 비면 이 검사 자체가 공허해지므로 그 크기도 함께 잰다.
+     * 가드 밖으로 나가도 같은 파일의 **사용 여부 검사** 하나가 그 자리를 메워 초록이 된다.
+     *판정 대상 집합이 비면 이 검사 자체가 공허해지므로 그 크기도 함께 잰다.
      *
      * @scenario guard_population=installer_sources
      *
@@ -605,7 +605,7 @@ class InstallerIncludeOrderTest extends TestCase
         //
         // 종전 비공허성 단언은 전체 함수 집합(`$sites`)만 봤다 — 그 집합은 332 개라 언제나
         // 비지 않으므로, 실제로 판정되는 중복 집합이 0 이 되어도 초록이었다. 현재 실측
-        // 모집단은 함수 2 × 지점 2 = 4 다 (14차 B11-6).
+        // 모집단은 함수 2 × 지점 2 = 4 다.
         $this->assertGreaterThanOrEqual(
             2,
             count($duplicated),
@@ -624,7 +624,7 @@ class InstallerIncludeOrderTest extends TestCase
                 // 것이다 — 선언이 가드 밖으로 나가도, 같은 파일에 그 이름의 **사용 여부
                 // 검사**(`if (… && function_exists('X')) { X(…); }`)가 하나만 있으면 초록이다.
                 // 그 형태는 실물에 존재한다(`functions.php`·`artisan-executor.php`).
-                // 형제 헬퍼가 이미 블록 단위로 자르므로 그것을 재사용한다 (14차 B11-7).
+                // 형제 헬퍼가 이미 블록 단위로 자르므로 그것을 재사용한다.
                 $guarded = false;
 
                 foreach ($this->functionExistsGuardBlocks($this->stripComments((string) file_get_contents($file))) as [$guardName, $defined]) {
@@ -660,7 +660,7 @@ class InstallerIncludeOrderTest extends TestCase
      * 호출부가 `Call to undefined function` 으로 죽는다. 실제로
      * `installerDetectServerKind()` 가 형제(`installerExposureProbeTargets`)의 가드 안에
      * 중첩돼 있었고, 그 유일한 호출부는 요구사항 응답 조립 한복판이라 그 화면이 통째로
-     * 500 봉투가 되는 형태였다 (8차 G3 라운드 D-r1).
+     * 500 봉투가 되는 형태였다 (D-r1).
      *
      * 판정은 **PHP 토크나이저**로 한다. 중괄호를 문자열로 세면 문자열 리터럴 안의 `{`·`}`
      * 가 깊이를 흔들어 엉뚱한 블록을 하나로 읽는다 — 이 검사를 처음 쓸 때 실제로 그렇게
@@ -777,8 +777,7 @@ class InstallerIncludeOrderTest extends TestCase
      * 그 뒤에 중첩된 형제 선언이 이 검사에서 영원히 사라진다. 인스톨러 코드는 보간을
      * 상시로 쓰므로 실물 10블록이 이미 그 상태였다.
      *
-     * 실 소스가 준수 상태라 red 로 드러나지 않으므로 합성 입력으로 고정한다
-     * (10차 G3 라운드 B10-4).
+     * 실 소스가 준수 상태라 red 로 드러나지 않으므로 합성 입력으로 고정한다.
      *
      * @scenario guard_population=synthetic_source
      *
@@ -927,7 +926,7 @@ class InstallerIncludeOrderTest extends TestCase
                 // 평문 `}` 다. 여는 쪽만 세지 않으면 깊이가 한 칸 내려가 블록이 **거기서
                 // 끝난 것으로** 측정되고, 그 뒤에 중첩된 형제 선언이 이 검사에서 영원히
                 // 사라진다. 인스톨러 코드는 보간을 상시로 쓰므로 실물 10블록이 이미 그
-                // 상태였다 (10차 G3 라운드 B10-4).
+                // 상태였다.
                 if (is_array($tokens[$j]) && in_array($tokens[$j][0], [T_CURLY_OPEN, T_DOLLAR_OPEN_CURLY_BRACES], true)) {
                     $depth++;
 

@@ -6,7 +6,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
 use Tests\TestCase;
 
 /**
- * PHP probe 사유 키가 사전에 실재하는지 고정합니다 (7차 G3 라운드 D-5).
+ * PHP probe 사유 키가 사전에 실재하는지 고정합니다.
  *
  * `ExecutionEnvironment` 와 `PhpBinaryResolver` 는 실패 사유를 `message_key` 로 실어
  * 보내고 「소비처가 자기 로케일로 번역한다」고 선언한다. 그런데 그 키 열 개는 **어떤
@@ -73,7 +73,7 @@ class PhpProbeMessageKeyDictionaryTest extends TestCase
      * 이름과 `@effects` 를 「번들 로케일 전부」로 적어 두고 본문은 ko·en 두 개만 돌고
      * 있었다 — 번들 ja 팩은 실재하는 번들 로케일인데 그 축이 한 번도 측정되지 않았고,
      * 선언만 읽은 사람은 그 축이 닫혀 있다고 믿는다. 재는 것에 맞춰 이름을 좁힌다
-     * (8차 G3 라운드 D-r5).
+     * (D-r5).
      *
      * ja 팩 동기는 **별개 축**이며 그 통로는 `check-language-pack-sync` 다. 이 검사가
      * ja 를 함께 돌면 「코어 사전이 옳은가」와 「팩이 따라왔는가」 두 질문이 한 단언에

@@ -237,7 +237,7 @@ class CommandRunnerEquivalenceTest extends TestCase
             $this->markTestSkipped('proc_open 차단 환경 — 서브프로세스 러너는 이 환경의 측정 대상이 아니다 (P0 프로필)');
         }
 
-        // 폴백을 **실패하는 값**으로 몰아 둔다 (11차 #D6). 종전에는 주입값이 PHP_BINARY 이고
+        // 폴백을 **실패하는 값**으로 몰아 둔다. 종전에는 주입값이 PHP_BINARY 이고
         // 폴백도 PATH 의 `php` 라 둘 다 성공해서, 주입을 통째로 무시하도록 되돌려도 초록이었다 —
         // D35 의 종단 계약(판정이 고른 경로가 실제 스폰에 도달한다)이 잠기지 않았다.
         config(['process.php_binary' => __DIR__.'/no-such-php-binary']);
@@ -280,9 +280,9 @@ class CommandRunnerEquivalenceTest extends TestCase
 
         $runner = new SubprocessCommandRunner;
 
-        // **살아 있는 러너**임을 먼저 고정한다 (12차 L-3). `assertNotSame(0, ...)` 하나만으로는
+        // **살아 있는 러너**임을 먼저 고정한다. `assertNotSame(0, ...)` 하나만으로는
         // 러너가 통째로 망가져 프로세스가 뜨지도 않은 경우(어떤 커맨드든 비-0)와 「미존재
-        // 커맨드를 정상적으로 거부했다」가 구분되지 않는다 — 11차 #D6 이 형제 검사에서 닫은 축이다.
+        // 커맨드를 정상적으로 거부했다」가 구분되지 않는다 — 앞서 형제 검사에서 닫은 축이다.
         $baseline = $runner->run('list', ['--format' => 'txt']);
         $this->assertSame(
             0,

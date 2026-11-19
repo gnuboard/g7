@@ -915,7 +915,7 @@ class SettingsControllerTest extends TestCase
      *
      * 규정은 「허용값이 닫힌 설정 키의 규칙을 벌크·단건 **양쪽**이 공유한다」인데,
      * 측정은 단건 쪽에만 있었다 — `SaveSettingsRequest` 의 두 줄을 지워도 전 테스트가
-     * 초록이라, 한쪽이 우회로가 되는 상태를 아무것도 잡지 못했다 (7차 G3 라운드 D-4).
+     * 초록이라, 한쪽이 우회로가 되는 상태를 아무것도 잡지 못했다.
      *
      * @scenario save_path=bulk,setting_key=general.asset_url_mode,value_kind=undeclared
      *

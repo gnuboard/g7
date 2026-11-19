@@ -80,7 +80,7 @@ class InstallerServerJudgmentReachesScreenTest extends TestCase
         $body = $this->functionBody($this->clientSource(), 'checkFilesBeforeInstall');
 
         $this->assertStringContainsString('file_setup_description', $body, '「없다」 안내가 없다');
-        // 「쓸 수 없다」 안내는 공용 헬퍼로 추출됐다 (23차 F-2 — 사전 점검·재검사·서버 거부
+        // 「쓸 수 없다」 안내는 공용 헬퍼로 추출됐다 (사전 점검·재검사·서버 거부
         // 세 소비처가 공유). 사전 점검이 그 헬퍼를 경유하고, 헬퍼가 그 문구를 소유하는지 본다.
         $this->assertStringContainsString('renderEnvNotWritableSetup(', $body, '「쓸 수 없다」 안내 경로가 없다');
         $helperBody = $this->functionBody($this->clientSource(), 'renderEnvNotWritableSetup');

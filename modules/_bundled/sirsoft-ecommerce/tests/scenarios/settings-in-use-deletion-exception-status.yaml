@@ -90,10 +90,10 @@ scenarios:
 
       이 축은 맞바꾸기(422, 아래 시나리오)와 **다른 계약**이다 — 맞바꾸기는 payload 안 유일성
       위반이라 FormRequest 가 파일 쓰기 전에 거르고, 이쪽은 DB 사용량을 봐야 아는 도메인 판정이다.
-      17차가 이 가드를 신설하면서 effect 를 따로 세우지 않고 422 그룹의 것을 재사용해, 축값
-      하나가 다시 400 과 422 두 계약을 뭉갰다(18차 정정). 미사용 개명(200)은 이 가드의 음성
-      대조군인데, 18차가 그것까지 같은 축·같은 effect 에 둔 탓에 이 effect 의 셀이 200 단언만으로도
-      채워졌다 — 400 가드가 회귀해도 초록이 유지되는 상태였다. 19차가 대조군을 아래
+      이 가드를 신설할 때 effect 를 따로 세우지 않고 422 그룹의 것을 재사용해, 축값
+      하나가 다시 400 과 422 두 계약을 뭉갰다(뒤에 정정했다). 미사용 개명(200)은 이 가드의 음성
+      대조군인데, 그 정정이 그것까지 같은 축·같은 effect 에 둔 탓에 이 effect 의 셀이 200 단언만으로도
+      채워졌다 — 400 가드가 회귀해도 초록이 유지되는 상태였다. 이후 대조군을 아래
       `negative_controls_pass_without_a_rejection` 로 옮겼다.
     effects:
       - in_use_shipping_type_code_change_returns_400_with_reason
@@ -114,8 +114,8 @@ scenarios:
       (막는 것은 "쓰이는 중" 하나다).
 
       거절 effect 를 이 대조군까지 마킹하면 그 effect 의 셀이 200 단언만으로 채워져,
-      400/422 가드가 회귀해도 커버리지가 초록으로 남는다 — 이 매니페스트가 13·14차에
-      정정한 것과 같은 형태다("축값 하나가 두 계약을 뭉개면 안 된다"). 19차가 대조군 전용
+      400/422 가드가 회귀해도 커버리지가 초록으로 남는다 — 이 매니페스트가 앞서
+      정정한 것과 같은 형태다("축값 하나가 두 계약을 뭉개면 안 된다"). 그래서 대조군 전용
       effect 를 세워 갈랐다.
     effects:
       - settings_carrier_code_takeover_from_a_deleted_row_is_allowed
@@ -150,32 +150,32 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/EcommerceSettingsShippingTypeCodeSwapTest.php
 
 notes: |
-  이 매니페스트는 5차 감사에서 신설됐다. 대상 테스트는 브랜치가 추가하면서 `@scenario`·
+  이 매니페스트는 감사에서 신설됐다. 대상 테스트는 브랜치가 추가하면서 `@scenario`·
   `@effects` 마커까지 붙였는데, 그 effect 이름을 선언한 매니페스트가 어디에도 없었다.
   선언이 아예 없는 effect 는 test-scenario-coverage 의 셀 대상이 되지 않아 조용히
-  통과한다 — 3차 감사가 `OrderDomainExceptionStatusPairTest` 에서 지적한 것과 같은
+  통과한다 — 앞선 감사가 `OrderDomainExceptionStatusPairTest` 에서 지적한 것과 같은
   사각이 같은 브랜치 안에 하나 더 남아 있었다.
 
   같은 라운드에 `resource=shipping_carrier, error_class=infrastructure` 칸의 테스트도
   함께 추가했다. 그 칸을 exclusion 으로 처리하지 않은 것은, 두 자원의 집계 호출 지점이
   실제로 다르기 때문이다. 여기서 제외 사유를 적었다면 그 사유가 곧 거짓이 된다.
 
-  13차가 두 가지를 정정했다. ① `error_class` 에 `validation` 을 세웠다 — 12차가 더한
+  이후 두 가지를 정정했다. ① `error_class` 에 `validation` 을 세웠다 — 앞서 더한
   코드 맞바꾸기 effect 는 422 인데 `domain`(400 + 삭제 롤백)으로 선언된 시나리오 안에
   들어가 있었다. 커버리지 룰은 마킹의 존재만 보고 그 마킹이 단언하는 상태코드는 읽지
   않으므로, 축값 하나가 400 과 422 두 계약을 뭉갠 채로 셀이 채워져 있었다 — 이 매니페스트가
   존재하는 이유(상태코드 뭉개기 방지)가 축 안에서 재현된 셈이다. ② 배송유형 쪽 맞바꾸기
   가드가 아예 없던 것을 신설하면서 그 effect 를 함께 등재했다.
 
-  14차가 같은 종류를 하나 더 정정했다. 13차가 더한
+  이어서 같은 종류를 하나 더 정정했다. 앞 정정에서 더한
   `settings_shipping_section_with_only_catalogs_does_not_wipe_scalars` 는 `assertOk()` 만 하는
-  **성공 경로**인데 `domain`(400 + 사유 문구 + 롤백) 축값에 남아 있었다 — 13차가 `validation`
-  을 빼내며 바로잡은 것과 같은 형태가 같은 라운드의 신규 effect 안에서 재현된 셈이다.
+  **성공 경로**인데 `domain`(400 + 사유 문구 + 롤백) 축값에 남아 있었다 — `validation`
+  을 빼내며 바로잡은 것과 같은 형태가 그 정정의 신규 effect 안에서 재현된 셈이다.
   `error_class` 에 `none`(거절 없음, 200)을 세워 옮기고, 같은 칸에 `null` 카탈로그 변종을
   더했다. `null` 은 규칙이 `nullable` 이라 실제로 도착하는 형태인데 컨트롤러가 `isset()` 으로
-  걸러 스칼라 전축을 지우고 있었다(14차 red 증명 2건).
+  걸러 스칼라 전축을 지우고 있었다(red 증명 2건).
 
-  19차가 같은 종류를 세 건 더 정정했다. 거절 가드의 **음성 대조군**(200 으로 통과하는 경로)
+  그 뒤 같은 종류를 세 건 더 정정했다. 거절 가드의 **음성 대조군**(200 으로 통과하는 경로)
   세 건이 거절 effect 를 그대로 마킹하고 있었다 — 코드 물려받기 2건(422 축), 미사용 개명
   1건(400 축). 커버리지 룰은 마킹의 존재만 보므로 그 세 effect 의 셀은 `assertOk()` 만으로도
   채워졌고, 400/422 가드가 회귀해도 초록이 유지되는 상태였다. 대조군 전용 effect 3종을 세워

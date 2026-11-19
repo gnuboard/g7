@@ -7,9 +7,9 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * 설치가 만든 파일의 쓰기 실패가 성공으로 보고되지 않는다 (19차 F1).
+ * 설치가 만든 파일의 쓰기 실패가 성공으로 보고되지 않는다.
  *
- * 13차 #D12 는 `g7_installed` 쓰기 하나에만 반환값 검사를 붙였다. 같은 파일의 형제인
+ * 앞선 수정은 `g7_installed` 쓰기 하나에만 반환값 검사를 붙였다. 같은 파일의 형제인
  * `createSettingsJsonSSE()` 는 `mkdir` 과 `file_put_contents` 의 반환값을 **둘 다 버렸고**,
  * `storage/app` 이 쓰기 불가일 때 설정 파일이 하나도 생기지 않은 채 「설정 파일 생성 완료」가
  * 보고되고 `markTaskCompleted` 까지 진행됐다. 설치는 완주하고 사이트는 기본 설정 없이 뜬다 —
@@ -64,7 +64,7 @@ class InstallerDurableWriteCheckTest extends TestCase
         return [
             '설정 디렉토리 생성' => ['createSettingsJsonSSE', 'mkdir'],
             '설정 파일 저장' => ['createSettingsJsonSSE', 'file_put_contents'],
-            '완료 표식 저장 (13차 #D12 — 형제)' => ['setInstallationCompleteSSE', 'file_put_contents'],
+            '완료 표식 저장 (형제)' => ['setInstallationCompleteSSE', 'file_put_contents'],
         ];
     }
 

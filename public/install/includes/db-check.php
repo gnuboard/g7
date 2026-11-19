@@ -14,7 +14,7 @@ use App\Support\PrivilegedDatabaseAccounts;
  */
 if (! function_exists('installer_classify_db_connection_failure')) {
     /**
-     * DB 연결 실패를 조치가 갈리는 만큼만 분류한다 (13차 보안#6).
+     * DB 연결 실패를 조치가 갈리는 만큼만 분류한다.
      *
      * 운영자에게 필요한 것은 "무엇을 고쳐야 하는가" 지 드라이버 원문이 아니다. 그리고 웹 DB 테스트
      * 엔드포인트는 인증이 없으므로 원문을 그대로 돌려주면 임의 host:port 의 상태를 읽는
@@ -167,7 +167,7 @@ if (! function_exists('installer_test_database')) {
             $result['success'] = true;
         } catch (PDOException $e) {
             logInstallationError(lang('error_db_connection_failed', ['error' => $e->getMessage()]), $e);
-            // 예외 원문은 싣지 않는다 (13차 보안#6) — 웹 DB 테스트는 인증 없이 임의
+            // 예외 원문은 싣지 않는다 — 웹 DB 테스트는 인증 없이 임의
             // host:port 로 접속을 시도할 수 있어, 원문을 그대로 돌려주면 내부망 포트 상태와
             // DB 서버 버전·자격증명 존재 여부를 알려 주는 오라클이 된다. 대신 조치가 갈리는
             // 만큼만 분류해 사유 키로 돌려준다. 원문은 위 logInstallationError 가 남긴다.

@@ -40,7 +40,7 @@ class StorageLinkHelperTest extends TestCase
         // 공개 디스크 루트도 함께 옮긴다. 이 값은 **복구기와 판정기가 공유하는 출처**이고
         // (`PublicStorageService::rootPath()`), 기저 경로만 바꾸면 둘이 서로 다른 트리를
         // 보게 되어 픽스처가 재려는 상황 자체가 성립하지 않는다 — 종전에는 복구기만
-        // `storage_path()` 리터럴을 써서 그 불일치가 가려져 있었다 (22차 G3 라운드 D4).
+        // `storage_path()` 리터럴을 써서 그 불일치가 가려져 있었다.
         config(['filesystems.disks.public.root' => $this->fakeBase.'/storage/app/public']);
     }
 
@@ -423,10 +423,10 @@ class StorageLinkHelperTest extends TestCase
      * 운영자가 공개 디스크 루트를 **옮긴** 사이트에서, 복구기가 그 루트를 가리키는 링크를
      * 만드는지 잰다.
      *
-     * 22차가 복구기의 리터럴(`storage_path('app/public')`)을 판정기와 같은 출처로 바꿨다고
+     * 앞서 복구기의 리터럴(`storage_path('app/public')`)을 판정기와 같은 출처로 바꿨다고
      * 기록했지만, 픽스처가 공개 루트를 `storage/app/public` 과 **같은 값**으로 두어
      * 「옮긴」 상황을 한 번도 만들지 않았다 — 리터럴로 되돌려도 전 케이스가 초록이었다.
-     * 그 축을 여기서 연다 (23차 G3 라운드 D23-1).
+     * 그 축을 여기서 연다.
      *
      * @scenario storage_link=missing
      *
@@ -468,10 +468,9 @@ class StorageLinkHelperTest extends TestCase
     /**
      * **이미** 옛 위치를 가리키는 살아 있는 링크를 복구기가 고치는지 잰다.
      *
-     * 22차는 그 상태를 「생산」하지 않게만 고쳤다. 멱등 게이트가 `is_link()` 하나였으므로
+     * 앞선 수정은 그 상태를 「생산」하지 않게만 고쳤다. 멱등 게이트가 `is_link()` 하나였으므로
      * 이미 그 상태인 사이트는 복구기가 그대로 지나쳤고 — 링크는 살아 있으니 true 다 —
-     * 판정기는 같은 상태를 대상 불일치로 「불가」로 읽었다. 생산은 막혔는데 잔존은 영구였다
-     * (23차 G3 라운드 D23-2).
+     * 판정기는 같은 상태를 대상 불일치로 「불가」로 읽었다. 생산은 막혔는데 잔존은 영구였다.
      *
      * @effects public_storage_link_recovery_targets_the_configured_public_root
      *

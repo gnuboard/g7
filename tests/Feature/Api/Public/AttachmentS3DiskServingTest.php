@@ -39,7 +39,7 @@ class AttachmentS3DiskServingTest extends TestCase
     {
         $storage = Mockery::mock(StorageInterface::class);
         // 행 disk 해석(`ResolvesRowStorage::storageForRow`)이 주입 스토리지의 disk 이름을 먼저 묻는다 —
-        // 's3' 와 다른 이름을 돌려줘야 `withDisk('s3')` 분기로 들어간다 (14차 G3 라운드).
+        // 's3' 와 다른 이름을 돌려줘야 `withDisk('s3')` 분기로 들어간다.
         $storage->shouldReceive('getDisk')->andReturn('local');
         $storage->shouldReceive('withDisk')->andReturnSelf();
         $storage->shouldReceive('exists')->andReturn(true);
@@ -130,7 +130,7 @@ class AttachmentS3DiskServingTest extends TestCase
     /**
      * 첨부 통로도 `Last-Modified` 를 내보내고 `If-Modified-Since` 를 처리한다.
      *
-     * 8차 라운드가 스트림 서빙 헬퍼에 이 축을 넣으며 「첨부 통로까지 배선」이라고 적었는데,
+     * 앞서 스트림 서빙 헬퍼에 이 축을 넣으며 「첨부 통로까지 배선」이라고 적었는데,
      * 그 축을 재는 테스트는 **템플릿 레이아웃 첨부 라우트 하나**뿐이었다. 첨부 쪽 배선
      * (`AttachmentService::getFileInfo()` 의 `last_modified` 키 → 컨트롤러의
      * `lastModifiedAt:`)을 `null` 로 바꿔도 전 스위트가 초록이다 — ETag 를 쓰지 않는

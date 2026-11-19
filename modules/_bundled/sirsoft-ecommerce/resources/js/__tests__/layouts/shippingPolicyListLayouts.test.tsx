@@ -173,9 +173,9 @@ describe('init_actions', () => {
     it('setState로 query에서 필터 값을 복원한다', () => {
         // 개수로 고정하지 않는다. 여기의 계약은 "query 에서 필터를 복원하는 setState 가 있는가" 다.
         const { init_actions } = listLayout;
-        // 18차가 개수 리터럴(`toHaveLength(1)`)을 걷어내면서 **상한이 함께 사라졌다** — 그 뒤로는
+        // 앞서 개수 리터럴(`toHaveLength(1)`)을 걷어내면서 **상한이 함께 사라졌다** — 그 뒤로는
         // 무관한 init_action 이 몇 개 늘어도 이 검사가 초록이다. 상한을 되살리되 개수로 고정하지
-        // 않는다(그러면 18차가 걷어낸 구조 스냅샷으로 되돌아간다). 대신 "이 화면의 init_actions 에
+        // 않는다(그러면 그때 걷어낸 구조 스냅샷으로 되돌아간다). 대신 "이 화면의 init_actions 에
         // 설 수 있는 핸들러 집합" 을 못박아, 예상 밖의 핸들러가 들어오면 그 이름과 함께 붉어지게 한다.
         const ALLOWED_INIT_HANDLERS = ['setState'];
         expect(

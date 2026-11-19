@@ -210,7 +210,7 @@ class InstallerRetryLifecycleTest extends TestCase
     }
 
     /**
-     * 22차 N-3: `.env` 파싱이 실패해도 완료 판정은 fail-open 으로 새지 않는다 —
+     * `.env` 파싱이 실패해도 완료 판정은 fail-open 으로 새지 않는다 —
      * parse_ini_file 실패 시 줄 앵커 정규식 폴백으로 2차 판정한다. 운영자가 손으로 편집한
      * `.env`(따옴표 불일치·섹션 괄호)는 escapeEnvValue 규율 밖이고, finalize 계열 가드는
      * 락 파일 폴백조차 없어 이 판정이 열리면 run-task(Artisan 실행)가 열린다.
@@ -233,7 +233,7 @@ class InstallerRetryLifecycleTest extends TestCase
         );
 
         file_put_contents($envPath, $broken);
-        $this->assertTrue(isInstallationCompleted(), '파싱 실패가 완료 판정을 fail-open 으로 만들면 안 된다 (22차 N-3)');
+        $this->assertTrue(isInstallationCompleted(), '파싱 실패가 완료 판정을 fail-open 으로 만들면 안 된다');
 
         file_put_contents($envPath, "[broken\n# INSTALLER_COMPLETED=true\n");
         $this->assertFalse(isInstallationCompleted(), '폴백도 주석 줄을 완료로 읽으면 안 된다');
@@ -264,7 +264,7 @@ class InstallerRetryLifecycleTest extends TestCase
     }
 
     /**
-     * 22차 N-2: Step 3 저장의 읽기-판정-쓰기는 상태 잠금 안에서 수행된다 (소스 계약).
+     * Step 3 저장의 읽기-판정-쓰기는 상태 잠금 안에서 수행된다 (소스 계약).
      * 잠금 밖이면 #21-9 ① 이 막으려던 「다른 탭」 경합 창이 좁아졌을 뿐 남는다 —
      * 같은 라운드의 reset 은 installerWithStateLock 안에서 재조회하는 규율을 지켰다.
      *
@@ -278,7 +278,7 @@ class InstallerRetryLifecycleTest extends TestCase
     {
         $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/request-handler.php');
 
-        $this->assertStringContainsString('installerWithStateLock(', $source, 'Step 3 저장이 상태 잠금을 경유하지 않는다 (22차 N-2)');
+        $this->assertStringContainsString('installerWithStateLock(', $source, 'Step 3 저장이 상태 잠금을 경유하지 않는다');
     }
 
     /**

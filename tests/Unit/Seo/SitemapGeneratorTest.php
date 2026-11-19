@@ -1057,8 +1057,8 @@ class SitemapGeneratorTest extends TestCase
      * 종전 `url()` 은 요청의 호스트를 실었다. 사이트맵은 콘솔(`seo:generate-sitemap`)이 만들면
      * 요청이 없어 `app.url` 을, 웹 요청이 만들면 그 요청의 호스트를 실어 **같은 사이트의
      * 사이트맵이 생성 경로에 따라 다른 오리진**을 가졌다. 페이지의 정본 주소(canonical)와
-     * 같은 단일 지점(`ScreenUrl::toAbsolute()` — 「사용자 화면 URL」, 비면 사이트 주소)으로 통일한다
-     * (15차 G3 라운드 W4-1). 정적 화면은 SEO 선언 수집기 경로(#155)로 실제 generate() 를 거쳐 잰다.
+     * 같은 단일 지점(`ScreenUrl::toAbsolute()` — 「사용자 화면 URL」, 비면 사이트 주소)으로 통일한다.
+     *정적 화면은 SEO 선언 수집기 경로(#155)로 실제 generate() 를 거쳐 잰다.
      *
      * @effects sitemap_loc_origin_follows_configured_site_url
      *

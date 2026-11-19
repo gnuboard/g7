@@ -25,7 +25,7 @@ declare(strict_types=1);
 // 를 자체 역산하므로 config 보다 앞에 와도 안전하다.
 require_once __DIR__.'/../includes/execution-mode.php';
 
-// 오류 텍스트가 응답 본문에 섞이지 않게 한다 (20차 #13 · 21차 N4). 이 진입점은 아래에서
+// 오류 텍스트가 응답 본문에 섞이지 않게 한다. 이 진입점은 아래에서
 // Content-Length 를 세워 fire-and-forget 응답을 보내므로, include 체인·가드에서 warning
 // 한 줄만 나와도 실제 바이트 수와 어긋나 응답 계약이 깨진다 — **include 체인보다 앞**
 // 이어야 한다 (뒤에 두면 그 체인의 warning 창이 그대로 남는다).
@@ -57,14 +57,13 @@ installer_guard_finalize_or_410();
 // 이 파일만 빠져 있었다. `lang()` 은 `$translations` 가 없으면 **키를 그대로 돌려주므로**,
 // 마무리 단계의 진행 기록이 `log_finalize_env_config_cache_delete_failed` 같은 원시 키로
 // 운영자에게 나갔다 — 예외도 경고도 없이 문구만 사라지는 형태다. 설정 캐시 삭제 실패처럼
-// **운영자가 직접 조치해야 하는** 안내가 그 기록에 실리므로 그 키가 곧 조치 불능이 된다
-// (13차 G3 라운드).
+// **운영자가 직접 조치해야 하는** 안내가 그 기록에 실리므로 그 키가 곧 조치 불능이 된다.
 $currentLang = getCurrentLanguage();
 $translations = loadTranslations($currentLang);
 
 // 완료 표식 기록 + runtime.php·상태 파일 삭제는 인스톨러에서 가장 되돌릴 수 없는 동작이다.
 // 위 가드는 「이미 finalize 됐는가」만 보므로, 「끝난 설치가 맞는가」·「이 창이 주인인가」는
-// 여기서 따로 판정한다 (11차 #A1). 판정 자체는 execution-mode.php 가 소유한다.
+// 여기서 따로 판정한다. 판정 자체는 execution-mode.php 가 소유한다.
 $finalizeState = getInstallationState();
 $finalizeBody = json_decode((string) file_get_contents('php://input'), true);
 $finalizeRejection = installerCrossOriginRejection($_SERVER) ?? installerFinalizeRejection(
@@ -72,7 +71,7 @@ $finalizeRejection = installerCrossOriginRejection($_SERVER) ?? installerFinaliz
     (string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'),
     (string) ($_SERVER['HTTP_X_INSTALLER_TOKEN'] ?? ((is_array($finalizeBody) ? ($finalizeBody['token'] ?? null) : null) ?? '')),
     (string) (readInstallerRuntime()['installer']['stepwise_token'] ?? ''),
-    // 「상태 파일이 사라졌다」는 파일을 직접 보고 판정한다 (13차 D10) — getInstallationState() 는
+    // 「상태 파일이 사라졌다」는 파일을 직접 보고 판정한다 — getInstallationState() 는
     // 부재 시 기본 상태를 돌려주므로 반환값만으로는 부재를 알 수 없다.
     is_file(STATE_PATH),
 );
@@ -104,18 +103,18 @@ if ($finalizeStateFile !== null && installer_state_is_claimed($finalizeStateFile
 
 // 설치 소유 세션 판정 때문에 이 엔드포인트도 `session.php` 를 싣는다 — 응답 뒤 단계(워커 대기·
 // 병합·설정 캐시 다시 만들기)가 세션 잠금을 쥔 채 돌면 같은 브라우저의 다른 요청이 그동안 멈추므로
-// 응답 전에 세션을 닫는다 (17차 #B8 이 「세션이 생기면 곧바로 필요한 방어」로 남겨 둔 분기다).
+// 응답 전에 세션을 닫는다 (「세션이 생기면 곧바로 필요한 방어」로 남겨 둔 분기다).
 if (session_status() === PHP_SESSION_ACTIVE) {
     session_write_close();
 }
 
-// 호스팅이 막았을 수 있는 함수는 호출 전에 가용성을 본다 (13차 환경#1) — `@` 는 Error 를
+// 호스팅이 막았을 수 있는 함수는 호출 전에 가용성을 본다 — `@` 는 Error 를
 // 삼키지 않으므로, 막힌 환경에서 무가드로 부르면 여기서 치명 종료해 .env 머지가 통째로 사라진다.
 if (installerHasFunction('ignore_user_abort')) {
     ignore_user_abort(true);
 }
 
-// 출력 버퍼 / 압축 비활성화 — 형제 `install-process.php` 의 폴링 fire-and-forget 과 동일 (17차 #B3).
+// 출력 버퍼 / 압축 비활성화 — 형제 `install-process.php` 의 폴링 fire-and-forget 과 동일.
 // php.ini `output_buffering` 또는 `zlib.output_compression` 이 켜진 SAPI 에서는 아래
 // `Content-Length` 와 압축 후 실제 바이트 수가 어긋나 chunked 로 전환되거나 본문이 즉시
 // 송신되지 않는다 — `.env` 머지는 서버에서 끝나는데 브라우저의 완료 화면만 멈춘다.
@@ -152,7 +151,7 @@ if (function_exists('fastcgi_finish_request')) {
 // ---------------------------------------------------------------------------
 
 // 응답 뒤 단계는 워커 대기와 설정 캐시 다시 만들기(artisan)를 포함한다 — 실행 시간을 그만큼 확보한다.
-// 막힌 호스팅에서는 부르지 않는다 — `@` 는 차단 함수의 Error 를 삼키지 않는다 (13차 환경#1).
+// 막힌 호스팅에서는 부르지 않는다 — `@` 는 차단 함수의 Error 를 삼키지 않는다.
 if (installerHasFunction('set_time_limit')) {
     @set_time_limit((int) INSTALLER_FINALIZE_WORKER_WAIT_SECONDS + (int) INSTALLER_TASK_TIME_LIMIT);
 }

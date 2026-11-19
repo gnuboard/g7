@@ -49,7 +49,7 @@ window.CliValidator = {
     },
 
     /**
-     * PHP CLI 경로 검증이 필수인지 여부 — inprocess 에서는 선택사항 (19차 S-1).
+     * PHP CLI 경로 검증이 필수인지 여부 — inprocess 에서는 선택사항.
      *
      * `detect-php` 는 「php 를 못 찾았다」와 「probe 자체를 돌릴 수 없다」를 한 값
      * (`default_php_available=false`)으로 접는다. exec 이 막힌 서버 — 이 안이 지원하려는 바로
@@ -114,7 +114,7 @@ window.CliValidator = {
             ? installerLang('cli_status_verified')
             : installerLang('cli_status_not_verified');
         // 문구 색은 문구 전용 토큰을 쓴다 — 아이콘용 밝은 값은 alert-info 배경 위에서
-        // 라이트 2.1:1 까지 내려간다 (9차 #L25).
+        // 라이트 2.1:1 까지 내려간다.
         phpStatus.style.color = this.phpVerified ? 'var(--success-text)' : 'var(--error-text)';
 
         const composerOptional = !this.isComposerRequired();
@@ -267,7 +267,7 @@ window.ExecutionModeUi = {
         }
 
         // 자동 선택도 함께 잠근다 — 서버가 bundled 로 보정하므로, 잠그지 않으면 화면과
-        // 실제 동작이 갈린다 (9차 #L26). 상태 줄 문구도 사유로 갈아 끼운다.
+        // 실제 동작이 갈린다. 상태 줄 문구도 사유로 갈아 끼운다.
         const autoInput = document.querySelector('input[name="vendor_mode"][value="auto"]');
         const autoCard = autoInput ? autoInput.closest('.vendor-mode-card') : null;
         const autoStatus = document.getElementById('vendor-mode-auto-status');
@@ -388,7 +388,7 @@ async function detectAndVerifyPhp() {
     try {
         const response = await fetch('api/check-configuration.php?action=detect-php');
 
-        // 상한 초과(429)는 「php 가 없다」가 아니다 (19차 S-10).
+        // 상한 초과(429)는 「php 가 없다」가 아니다.
         //
         // `probe_binary` 버킷은 4개 액션이 공유하고 60회/300초다. 경로를 고쳐 가며 Step 3 을
         // 여러 번 새로고침하면 정상 서버에서도 넘는데, 종전에는 그 응답에 없는
@@ -403,7 +403,7 @@ async function detectAndVerifyPhp() {
         if (!data.default_php_available && window.CliValidator.isPhpCliRequired()) {
             // 기본 php 사용 불가 → 필수 모드로 전환
             //
-            // inprocess 에서는 전환하지 않는다 (19차 S-1). 그 환경의 `default_php_available=false`
+            // inprocess 에서는 전환하지 않는다. 그 환경의 `default_php_available=false`
             // 는 「php 가 없다」가 아니라 「probe 를 돌릴 수 없다」이고, 서버 자신이 그 사유를
             // `error_binary_probe_unavailable` 로 갈라 두었다. 필수로 바꾸면 제목이 「(필수)」가
             // 되고 토글이 잠기는데, 그 항목은 이 실행 방식에서 쓰이지 않는다.
@@ -648,7 +648,7 @@ function showDetectResult(data) {
         let html = '<strong>' + installerLang('detected_php_binaries') + '</strong><ul class="u-list-compact">';
         data.binaries.forEach(function(bin) {
             // 같은 값의 두 sink(선택 인자·링크 텍스트)를 둘 다 이스케이프한다 — 종전에는 인자만
-            // 치환하고 링크 텍스트는 무가공이었다 (9차 #L35). 한 값은 한 규칙으로 다룬다.
+            // 치환하고 링크 텍스트는 무가공이었다. 한 값은 한 규칙으로 다룬다.
             // SAPI 도 함께 보여 준다 — CLI 가 아닌 후보를 고르면 설치 태스크가 전부 실패한다.
             const safePath = escapeHtml(bin.path);
             const sapi = bin.sapi ? ' (' + escapeHtml(String(bin.sapi)) + ')' : '';
@@ -685,7 +685,7 @@ async function detectPhpBinaries() {
     try {
         const response = await fetch('api/check-configuration.php?action=detect-php');
 
-        // 상한 초과는 감지 실패가 아니다 (19차 S-10) — 사유를 그대로 알리고 상태는 건드리지 않는다.
+        // 상한 초과는 감지 실패가 아니다 — 사유를 그대로 알리고 상태는 건드리지 않는다.
         if (response.status === 429) {
             setTestResult(resultDiv, false, installerLang('error_probe_rate_limited'));
 

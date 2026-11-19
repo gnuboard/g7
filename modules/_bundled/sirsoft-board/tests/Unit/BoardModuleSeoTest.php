@@ -125,8 +125,7 @@ class BoardModuleSeoTest extends ModuleTestCase
             // 종전에는 이 자리에 이중접두 단언 하나뿐이었다. 그런데 이 결함의 반대편
             // 실패(절대화 자체를 지움)는 `/g7/g7/` 를 만들지 않으므로, 그 상태에서도
             // 이 테스트가 통과했다 — `AssetUrl::absolute()` 를 항등으로 되돌려도
-            // 6/6 초록이었고 저장소 어디에도 그 축을 재는 단언이 없었다
-            // (10차 G3 라운드 X-3).
+            // 6/6 초록이었고 저장소 어디에도 그 축을 재는 단언이 없었다.
             $schema = $this->module->seoStructuredData('post', $context);
             $this->assertStringNotContainsString('/g7/g7/', $schema['image'], 'schema.image 에 마운트 접두사가 두 번 붙었다');
             $this->assertStringStartsWith('http', $schema['image'], 'schema.image 는 절대 URL 이어야 크롤러가 인식한다');

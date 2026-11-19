@@ -16,7 +16,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  *
  * "테스트 참조 0" 은 §16.11.2 #6 이 회귀 게이트를 세운 근거로 쓴 바로 그 지표다 — 그 배선이
  * 지워져도 전 스위트가 초록이라는 뜻이고, 실제로 그중 둘(`recordInstallationRunException` ·
- * `installerTaskKeyDisplayName`)에서 6차 라운드가 결함을 다시 찾았다. 여기서는 나머지
+ * `installerTaskKeyDisplayName`)에서 결함이 다시 나왔다. 여기서는 나머지
  * 헬퍼들의 계약을 고정한다 — 각각이 **무엇을 약속하는지**만 잡고, 호출 흐름은 이미
  * InstallerStepwiseRunnerTest 가 덮는다.
  *
@@ -144,7 +144,7 @@ class InstallerUngatedHelperContractTest extends TestCase
      */
     public function test_execution_environment_loader_is_idempotent(): void
     {
-        // 오토로더를 우회해 판정한다 (11차 #D7). PHPUnit 프로세스에는 Composer 오토로더가
+        // 오토로더를 우회해 판정한다. PHPUnit 프로세스에는 Composer 오토로더가
         // 있어 `class_exists()` 는 이 함수가 아무 일도 하지 않아도 참이다 — 본문을 통째로
         // 비워도 초록이었다. 실 인스톨러에는 오토로더가 없고, 이 함수가 존재하는 이유가
         // 정확히 그것이다.
@@ -177,7 +177,7 @@ class InstallerUngatedHelperContractTest extends TestCase
         $report = installerDetectExecutionMode('php');
 
         $this->assertContains($report['mode'], ['subprocess', 'inprocess'], '판정은 두 모드 중 하나로 확정된다');
-        // 키 존재만 보면 값을 늘 null·빈 배열로 채워도 초록이다 (11차 #D15).
+        // 키 존재만 보면 값을 늘 null·빈 배열로 채워도 초록이다.
         $this->assertIsArray($report['blocked_functions']);
         $this->assertIsArray($report['php_probe']);
         $this->assertArrayHasKey('sapi', $report['php_probe'], 'probe 는 SAPI 를 실어 올린다 (§16.11.1 #5)');

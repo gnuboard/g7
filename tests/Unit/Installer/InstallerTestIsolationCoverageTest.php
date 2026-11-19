@@ -45,7 +45,7 @@ class InstallerTestIsolationCoverageTest extends TestCase
      * 모집단의 도출성을 말하는데, 판정의 **다른 축**인 전이 정의자는 손으로 적혀 있었다.
      * 실측 결과 `public/install/api/save-extensions.php`·`public/install/api/scan-extensions.php` 두 개가 직접
      * `define('BASE_PATH'` 를 하면서 목록에 없었고, 그 둘을 require 하는 새 테스트는
-     * 상수를 실 저장소 루트로 박고도 이 게이트를 통과한다 — 6차가 닫은 「조용한 skip」이
+     * 상수를 실 저장소 루트로 박고도 이 게이트를 통과한다 — 앞서 닫은 「조용한 skip」이
      * 그 자리에서 다시 열린다.
      *
      * 그래서 ① 직접 정의자를 인스톨러 트리 전체에서 스캔하고 ② 그것을 require 하는 파일을
@@ -140,7 +140,7 @@ class InstallerTestIsolationCoverageTest extends TestCase
      *
      * `loadsFile()` 의 판정 불가(`null`)는 **정의자로 친다** — 파일명이 변수인 require 가
      * 정의자의 디렉토리를 가리키면 그 파일을 로드할 수 있고, 로드하면 상수가 박힌다.
-     * 「모른다」를 「하지 않는다」로 접으면 6차가 닫은 조용한 skip 이 그 자리에서 다시 열린다.
+     * 「모른다」를 「하지 않는다」로 접으면 앞서 닫은 조용한 skip 이 그 자리에서 다시 열린다.
      *
      * @param  string  $src  테스트 소스
      * @return bool 정의하면(또는 정의할 수 있으면) true
@@ -190,7 +190,7 @@ class InstallerTestIsolationCoverageTest extends TestCase
      */
     private function scannedFiles(): array
     {
-        // 재귀 스캔 (11차 #D10). 종전에는 `tests/Unit/Installer` **한 디렉토리·비재귀**라
+        // 재귀 스캔. 종전에는 `tests/Unit/Installer` **한 디렉토리·비재귀**라
         // `tests/Feature/Installer/**` 나 하위 디렉토리에 인스톨러 테스트를 만들면 BASE_PATH 를
         // 실 저장소 루트로 박아도 게이트 밖이었다 — 6차 #4 가 닫은 「조용한 skip」이 그 위치에서
         // 다시 열린다. 모집단 조건은 위치가 아니라 **인스톨러 include 를 로드하는가**로 잡는다.
@@ -312,7 +312,7 @@ class InstallerTestIsolationCoverageTest extends TestCase
     }
 
     /**
-     * temp `BASE_PATH` 를 **새로 만드는** 클래스는 그것을 정리한다 (12차 L-4).
+     * temp `BASE_PATH` 를 **새로 만드는** 클래스는 그것을 정리한다.
      *
      * 이 클래스들은 대부분 `#[RunTestsInSeparateProcesses]` 라 테스트 메서드마다 새 임의
      * 디렉토리가 생긴다. 접미사가 임의값이라 교차 오염은 없지만 아무도 치우지 않아, 한 번
@@ -417,7 +417,7 @@ class InstallerTestIsolationCoverageTest extends TestCase
     }
 
     /**
-     * 판정 헬퍼의 **부정 분기**를 실제로 평가한다 (9차 #G14).
+     * 판정 헬퍼의 **부정 분기**를 실제로 평가한다.
      *
      * 실 소스가 전부 준수 상태라 위 두 테스트의 `$offenders` 는 늘 빈 배열이다 — 판정이
      * 뒤집혀도(항상 true / 항상 false) red 가 나지 않는다. 합성 입력으로 양쪽 분기를 태운다.

@@ -510,7 +510,7 @@ class ExtensionBundleService
      *
      * 종전에는 서빙 컨트롤러 둘이 네 자리에 리터럴로 들고 있었다. 파일이 있는 응답과
      * 빈 응답이 서로 다른 자리에서 값을 읽으면 한쪽만 고쳤을 때 같은 주소가 응답에 따라
-     * 다른 유형을 공표한다 (22차 G3 라운드 B7).
+     * 다른 유형을 공표한다.
      *
      * 확장 **개별 자산** 표(`ResolvesExtensionAssetType`)는 같은 `.js` 를
      * `application/javascript` 로 준다. 두 철자는 브라우저에게 동등하지만
@@ -664,7 +664,7 @@ class ExtensionBundleService
 
             // 원자 게시 임시 파일 — `writeAtomically` 는 rename 실패 시에만 지우므로 put 과
             // rename 사이에서 프로세스가 죽으면 남는다. 번들 이름 패턴만 보던 종전 정리기는 이
-            // 파일을 영원히 거르지 않았다 (13차 G3 W1-5). 진행 중인 게시를 지우지 않도록
+            // 파일을 영원히 거르지 않았다. 진행 중인 게시를 지우지 않도록
             // 나이 하한을 두고, mtime 을 읽지 못하면 보존한다(fail-closed).
             if ($this->isStaleTempBundleFile($name, $storage)) {
                 if ($storage->delete('', $name)) {
@@ -842,7 +842,7 @@ class ExtensionBundleService
         //
         // 임시 이름은 고유하기만 하면 된다. 종전의 `getmypid()` 는 하드닝 프로필의 차단
         // 대상이라 막힌 호스팅에서 Error(치명)가 되고, 그러면 번들 게시 경로가 무너져
-        // 확장 자산이 통째로 서빙되지 않는다 (3차 G3 라운드).
+        // 확장 자산이 통째로 서빙되지 않는다.
         // 폴백은 **차단 가능한 함수를 쓰지 않는다** — 종전 폴백 `uniqid()` 가 막히면 catch
         // 블록 안에서 다시 `Error` 가 나 받을 곳이 없다. 고유한 이름이면 충분한 자리다.
         try {

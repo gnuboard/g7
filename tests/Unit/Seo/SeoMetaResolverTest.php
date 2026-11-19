@@ -1613,9 +1613,8 @@ class SeoMetaResolverTest extends TestCase
      * 두 값의 생산자는 `AssetUrl::basePrefix()` 를 이미 실어 주므로, 종전의 `url()`
      * (오리진 + 접두사)로는 `https://host/g7/g7/api/…` 가 나가고 그 주소는 404 다.
      *
-     * 9차가 게시판 모듈의 **기본값** 경로에서 고친 것과 같은 실패가 한 계층 위
-     * (코어 해석기)에 남아 있었다 — 운영자가 편집기에서 칩을 고르는 순간 재현된다
-     * (10차 G3 라운드 X-2).
+     * 앞서 게시판 모듈의 **기본값** 경로에서 고친 것과 같은 실패가 한 계층 위
+     * (코어 해석기)에 남아 있었다 — 운영자가 편집기에서 칩을 고르는 순간 재현된다.
      *
      * @effects declared_og_image_carries_the_mount_prefix_once
      *
@@ -1626,7 +1625,7 @@ class SeoMetaResolverTest extends TestCase
         // 마운트를 **실제로** 재현한다. `forceBasePrefix` 만 걸면 `url()` 은 그 값을
         // 보지 않아 되돌림 변이가 동작 축에서 조용히 통과한다 — `url()` 의 오리진은
         // config 가 아니라 **요청 root** 이므로 `URL::forceRootUrl()` 까지 걸어야
-        // 그 헬퍼가 진짜로 이중 접두를 만든다 (10차 실측 · 9차 A-2 와 같은 방식).
+        // 그 헬퍼가 진짜로 이중 접두를 만든다 (실측).
         Config::set('app.url', 'https://example.test/g7');
         URL::forceRootUrl('https://example.test/g7');
         AssetUrl::forceBasePrefix('/g7');

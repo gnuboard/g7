@@ -104,7 +104,7 @@ class StreamedFileConditionalRequestTest extends TestCase
      * `setNotModified()` 에 `Last-Modified` 를 잃고, 200 의 `Expires`·`Vary` 를 304 에
      * 싣지 않으며, 스트림 콜백을 든 채 나간다. 그래서 응답 클래스(`NotModifiedResponse` —
      * 라우터가 벗긴 `Last-Modified` 를 되살리는 유일한 형태)·빈 본문·200 과의 헤더
-     * 대칭을 한 자리에서 잠근다 (14차 G3 라운드).
+     * 대칭을 한 자리에서 잠근다.
      *
      * @param  TestResponse  $full  200 응답
      * @param  TestResponse  $notModified  304 응답
@@ -236,8 +236,7 @@ class StreamedFileConditionalRequestTest extends TestCase
      *
      * 이 통로는 스스로 압축하지 않지만(스트림 응답은 압축 미들웨어가 건너뛴다),
      * 앞단 CDN·정적 서빙이 붙여 준 `-gzip` 값을 클라이언트가 되보내는 경우가 있다.
-     * 형제 두 지점은 `negotiatedEtag()` 를 거치는데 이 경로만 빠져 있었다
-     * (10차 G3 라운드 B10-1).
+     * 형제 두 지점은 `negotiatedEtag()` 를 거치는데 이 경로만 빠져 있었다.
      *
      * @scenario response_kind=streamed, conditional_request=if_none_match, encoding=gzip
      *
@@ -271,7 +270,7 @@ class StreamedFileConditionalRequestTest extends TestCase
      *
      * 승계하는 것은 `-gzip` 접미사뿐이다 — 그것만이 **다른 표현**을 뜻하기 때문이다.
      * `W/` 는 표현이 아니라 비교 강도를 말하므로, 약한 비교로 매치돼도 서버가 가진
-     * 표현은 여전히 강한 검증자다(7차 G3 라운드 C5 가 세운 계약). 이 케이스는 그
+     * 표현은 여전히 강한 검증자다(앞서 세운 계약). 이 케이스는 그
      * 구분이 유지되는지를 잠근다.
      *
      * @scenario response_kind=streamed, conditional_request=if_none_match
@@ -321,7 +320,7 @@ class StreamedFileConditionalRequestTest extends TestCase
     }
 
     /**
-     * 200·304 모두 `X-Content-Type-Options: nosniff` 를 싣는다 (15차 G3 라운드).
+     * 200·304 모두 `X-Content-Type-Options: nosniff` 를 싣는다.
      *
      * 실제 HTTP 왕복으로 잰다 — 라우터가 304 응답을 다시 다듬으므로 컨트롤러 반환값만 보면
      * 「붙였다」와 「나갔다」가 구분되지 않는다.

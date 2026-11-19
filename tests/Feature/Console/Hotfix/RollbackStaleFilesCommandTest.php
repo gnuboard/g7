@@ -44,7 +44,7 @@ class RollbackStaleFilesCommandTest extends TestCase
     }
 
     /**
-     * 백업 선택기의 정렬이 **형제 규율**과 같다 — fail-closed + 전순서 (23차 D23-10).
+     * 백업 선택기의 정렬이 **형제 규율**과 같다 — fail-closed + 전순서.
      *
      * 두 축이 각각 조용한 결함이다.
      *   ① `filemtime()` 실패(`false`)를 0 으로 강등하면 그 백업이 맨 뒤로 밀려 롤백이
@@ -54,7 +54,7 @@ class RollbackStaleFilesCommandTest extends TestCase
      *
      * 소스 계약으로 잰다. 이 명령은 실제 백업 트리를 읽어 두 상황(조회 실패 · 같은 초)을
      * 테스트가 만들 수 없고, 그래서 종전에는 **두 축을 되돌려도 이 클래스가 전부 초록**
-     * 이었다 (24차 G3 라운드 R24-C M13 실측).
+     * 이었다 (R24-C M13 실측).
      *
      * @scenario hotfix_command_mode=diagnose
      *

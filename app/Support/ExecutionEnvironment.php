@@ -149,7 +149,7 @@ final class ExecutionEnvironment
         // 사전은 `lang/{ko,en}/settings.php` 의 `php_probe_*` 다. 이 키들은 한동안 **어떤
         // 언어팩에도 없었고** 번역하는 소비처도 없어, 계약이 선언만 남고 사문이었다 —
         // 화면이 붙는 순간 원시 키가 그대로 노출됐을 것이다. 소비처는 자기 네임스페이스를
-        // 붙여 쓴다: `__('settings.'.$key, $params)` (7차 G3 라운드 D-5).
+        // 붙여 쓴다: `__('settings.'.$key, $params)`.
         return [
             'status' => ($result['valid'] ?? false) ? 'valid' : 'invalid',
             'version' => $result['version'] ?? null,

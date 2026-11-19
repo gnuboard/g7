@@ -2,7 +2,7 @@
 
 /**
  * 요구사항 화면(check-configuration.php ?action=requirements)을 **별도 프로세스**에서
- * 그대로 실행해 그 JSON 을 표준출력으로 흘려보내는 하네스 (13차 환경#1).
+ * 그대로 실행해 그 JSON 을 표준출력으로 흘려보내는 하네스.
  *
  * 왜 하위 프로세스인가: 이 라운드가 닫은 결함은 `disable_functions` 로 함수가 제거된
  * 환경에서만 드러난다. 그 상태는 실행 중인 프로세스 안에서 만들 수 없으므로
@@ -43,7 +43,7 @@ $cleanup = installerCleanupExposureProbe();
 // 쓸 수 있다고 가정하지 않고 디렉토리 순회로 처리한다.
 // `scandir` 자체가 차단 대상일 수 있다 — 그러면 하네스도 걷을 수단이 없다.
 // 무가드로 부르면 이 스텁이 치명 종료해 「화면이 뜨는가」를 재는 축이 그 함수에서만
-// 거짓 실패한다(15차 G3: 정리 함수가 `glob` 대신 `scandir` 로 나열하게 되면서 이
+// 거짓 실패한다(정리 함수가 `glob` 대신 `scandir` 로 나열하게 되면서 이
 // 폴백이 처음으로 도달했다).
 if (($cleanup['swept'] ?? true) === false && installerHasFunction('scandir')) {
     $probeDir = installerExposureProbeDir();

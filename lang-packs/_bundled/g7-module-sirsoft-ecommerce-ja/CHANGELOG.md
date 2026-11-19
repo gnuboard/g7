@@ -4,27 +4,37 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [1.3.0] - 2026-11-19
+## [1.3.0] - 2026-11-20
 
 ### Added
+
+#### 결제·주문·클레임
 
 - 결제사 플러그인용 공개 결제 계약의 예외 메시지(`exceptions.payment_contract.*` 10개 — 주문 없음, 다른 결제사 결제 행, 결제 상태 전이 거부, 재결제 복구 접두 불일치, 허용하지 않는 결제사 부가 정보 칸, 결제 실패 상태, 결제사 id 누락, 주문 meta namespace, 샘플 결제 칸, 환율 없는 통화) 일본어 번역을 추가했습니다.
 - 활동 로그 「재결제 복구」(작업 이름과 설명 「재결제를 위해 결제 대기로 복구」) 일본어 번역을 추가했습니다.
 - 관리자 클레임 목록 필터 「접수 출처」 선택칸의 화면 읽기용 이름(`admin.claim.filter.request_source`) 일본어 번역을 추가했습니다.
-
 - 시드 행 정리 직전 활동 로그의 항목 이름(`messages.seeders.{claim_reason|shipping_carrier|shipping_type}.entity_label` — 「クレーム理由」·「配送業者」·「配送タイプ」) 일본어 번역을 추가했습니다.
-- 푸터 사업자 정보(항목 이름·「사업자정보 확인」·호스팅 서비스 제공자)의 일본어 번역을 추가했습니다 (#434)
+
+#### 환경설정·주문서 항목·표시 이름
+
+- 푸터 사업자 정보(항목 이름·「사업자정보 확인」·호스팅 서비스 제공자)의 일본어 번역을 추가했습니다
+- 쇼핑몰 환경설정 「주문서 항목」 표와 항목 추가, 수정, 삭제 창(`admin.settings.checkout_fields.*`), 상품 후기와 상품 문의의 「작성자 표시 이름」 설정(`admin.settings.display_name.*`, `display_name.*`), 주문 상세의 「주문서 추가 항목」 구획(`admin.order.detail.order_info.extra_fields.*`), 회원 항목으로 선언하는 결제 통화와 배송국가, 주문서 항목 집합과 기본 항목 이름(`fields.*`), 「실명 …」 표기(`admin.common.real_name_sub`), 편집기 데이터 소스 이름 「주문서 항목 정의」의 일본어 번역을 추가했습니다
+- 환경설정 > 마일리지 탭에서 통화별 사용 단위의 첫 줄이 기본 통화와 다를 때 보이는 안내와 「기본 통화 줄을 첫 줄로 맞추기」 단추(`admin.mileage_settings.currency.mismatch_notice`·`align_hint`·`align_button`)의 일본어 번역을 추가했습니다
+
+#### 정기 작업·이미지 썸네일
+
 - 관리자 > 스케줄 관리에 보이는 이커머스 정기 작업 12개의 이름·설명 일본어 번역을 추가했습니다. 「임시 상품 이미지 삭제」 설명은 저장하지 않았거나 본문에서 빠진 본문 이미지도 지운다는 내용을 담습니다.
-- 내보내기 파일의 열 이름 3개(주문 「영세율 금액 합계」, 주문 옵션 「과세 종류」, 상품 옵션 「옵션 과세 종류」)의 일본어 번역을 추가했습니다.
 - 환경설정 「스케줄」 탭(스케줄 목록·활성/비활성 전환·읽기 전용 안내·스케줄 관리 이동) 일본어 번역을 추가했습니다.
-- 주문·상품·마일리지 목록의 [내보내기] 창, 「내보내기 관리」 화면, 내보내기 권한과 권한 범위 밖 안내·알림·메뉴·정리 스케줄과 정리 결과 안내, 환경설정 「내보내기 파일 보관 기간」, 합계 행 안내, 다시 요청할 행이 없을 때의 안내 일본어 번역을 추가했습니다.
-- 「내보내기 관리」에서 이미 지워진 작업을 열 때의 안내(`messages.export.not_found`), 기간을 쓰지 않은 작업의 조건 요약 「적용 안 함」(`export.summary.period_none`), 요청자 한정 조건의 항목 이름(`validation.export_attributes.requester_uuid`)의 일본어 번역을 추가했습니다.
 - 환경설정 > 업로드 「기존 이미지 썸네일 만들기」 창에 보이는 상품, 카테고리, 리뷰, 클레임 이미지 원본 이름 4개의 일본어 번역을 추가했습니다.
 - 환경설정 > 업로드 「기존 이미지 썸네일 만들기」 창에 보이는 본문 이미지 원본 이름(`messages.thumbnail_sources.content_media`)의 일본어 번역을 추가했습니다.
 - 이커머스 이미지 썸네일 실측 샘플 시더의 콘솔 출력(표 제목, 머리글, 구분, 정리 건수 이름)과 주문 계산 오류 문구의 일본어 번역을 추가했습니다 (`messages.seeders.thumbnail_measure.*`).
-- 쇼핑몰 환경설정 「주문서 항목」 표와 항목 추가, 수정, 삭제 창(`admin.settings.checkout_fields.*`), 상품 후기와 상품 문의의 「작성자 표시 이름」 설정(`admin.settings.display_name.*`, `display_name.*`), 주문 상세의 「주문서 추가 항목」 구획(`admin.order.detail.order_info.extra_fields.*`), 회원 항목으로 선언하는 결제 통화와 배송국가, 주문서 항목 집합과 기본 항목 이름(`fields.*`), 「실명 …」 표기(`admin.common.real_name_sub`), 편집기 데이터 소스 이름 「주문서 항목 정의」의 일본어 번역을 추가했습니다 (#490)
-- 환경설정 > 마일리지 탭에서 통화별 사용 단위의 첫 줄이 기본 통화와 다를 때 보이는 안내와 「기본 통화 줄을 첫 줄로 맞추기」 단추(`admin.mileage_settings.currency.mismatch_notice`·`align_hint`·`align_button`)의 일본어 번역을 추가했습니다
 - 관리자 > 스케줄 관리에 보이는 새 정기 작업 「임시 카테고리 이미지 삭제」의 이름과 설명, 그 정리 명령의 콘솔 출력(`messages.console.prune_temp_category_images.*`)의 일본어 번역을 추가했습니다
+
+#### 내보내기
+
+- 내보내기 파일의 열 이름 3개(주문 「영세율 금액 합계」, 주문 옵션 「과세 종류」, 상품 옵션 「옵션 과세 종류」)의 일본어 번역을 추가했습니다.
+- 주문·상품·마일리지 목록의 [내보내기] 창, 「내보내기 관리」 화면, 내보내기 권한과 권한 범위 밖 안내·알림·메뉴·정리 스케줄과 정리 결과 안내, 환경설정 「내보내기 파일 보관 기간」, 합계 행 안내, 다시 요청할 행이 없을 때의 안내 일본어 번역을 추가했습니다.
+- 「내보내기 관리」에서 이미 지워진 작업을 열 때의 안내(`messages.export.not_found`), 기간을 쓰지 않은 작업의 조건 요약 「적용 안 함」(`export.summary.period_none`), 요청자 한정 조건의 항목 이름(`validation.export_attributes.requester_uuid`)의 일본어 번역을 추가했습니다.
 
 ### Changed
 
@@ -34,7 +44,7 @@
 
 - 배송정책 목록에서 없어진 검색 대상 선택 상자의 번역을 지웠습니다.
 - 내보내기에서 쓰이지 않게 된 오류 안내 2건의 번역을 지웠습니다.
-- 결제 통화와 배송국가가 회원 항목으로 옮겨져 쓰이지 않게 된 문구 14건(회원 상세의 `admin.user_currency.*`, `admin.user_shipping_country.*`, 가입 화면의 `auth.register_currency.*`, `auth.register_shipping_country.*`)을 정리했습니다 (#490)
+- 결제 통화와 배송국가가 회원 항목으로 옮겨져 쓰이지 않게 된 문구 14건(회원 상세의 `admin.user_currency.*`, `admin.user_shipping_country.*`, 가입 화면의 `auth.register_currency.*`, `auth.register_shipping_country.*`)을 정리했습니다
 
 ### Fixed
 

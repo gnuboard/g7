@@ -1,7 +1,7 @@
 /**
- * 상태 변경 3액션의 **토큰 배선** 회귀 테스트 (11차 #D1).
+ * 상태 변경 3액션의 **토큰 배선** 회귀 테스트.
  *
- * 10차 #M10 은 [중단]·[초기화]·[건너뛰고 계속] 을 fail-closed 로 바꾸면서 서버 쪽 게이트를
+ * 앞서 [중단]·[초기화]·[건너뛰고 계속] 을 fail-closed 로 바꾸면서 서버 쪽 게이트를
  * 배선 표로 잠갔다. 그런데 그 확인값을 **실어 보내는 쪽**은 소스 대조조차 없어,
  * `stateMutationHeaders()` 의 헤더 항이나 `rememberStepwiseToken(result.stepwise_token)`
  * 한 줄을 지워도 전 스위트가 초록이었다 — 실제 결과는 stepwise 설치에서 세 버튼이 전부
@@ -269,7 +269,7 @@ describe('상태 변경 엔드포인트의 헤더 배선', () => {
   it('발급받은 토큰을 기억한다 — 이 한 줄이 빠지면 다음 요청부터 403 이다', () => {
     // **정의를 뺀 나머지**에서 센다. 종전에는 `toContain('rememberStepwiseToken(')` 하나였는데,
     // 그 조건은 정의(`function rememberStepwiseToken(token)`)만으로 충족된다 — 실제 호출
-    // (`rememberStepwiseToken(result.stepwise_token || null)`) 을 지워도 초록이었다 (12차 GI-1).
+    // (`rememberStepwiseToken(result.stepwise_token || null)`) 을 지워도 초록이었다.
     // 그 상태의 결과는 발급 토큰이 어디에도 남지 않아 다음 상태 변경 요청부터 전부 403 이 되는 것이다.
     const callSites = callSitesOf(strippedSource(), 'rememberStepwiseToken');
 

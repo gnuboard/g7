@@ -11,7 +11,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  * `window.EXTENSION_LABELS` 가 실리지 않은 경로(뷰가 그 블록을 내보내기 전의 오류 · 다른 단계에서
  * 호출되는 공용 함수)에서는 그 뒤의 `||` 폴백이 화면에 그대로 나간다. 그 자리가 영문 리터럴이면
  * 한국어 화면에 개발자 문구가 뜬다 — 같은 키가 `INSTALLER_LANG` 에 이미 실려 있어 `lang()` 으로
- * 닿는다 (13차 G3 W1-13).
+ * 닿는다.
  */
 class InstallerJsMessageFallbackTest extends TestCase
 {

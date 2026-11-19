@@ -1,10 +1,10 @@
 # Changelog
 
-All notable changes to this plugin will be documented in this file.
+이 플러그인의 모든 주요 변경사항을 기록합니다.
+형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
+[Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
-
-## [1.1.5] - 2026-11-19
+## [1.1.5] - 2026-11-20
 
 ### Added
 
@@ -22,7 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
-- 「플러그인 보기」 권한만 있는 운영자가 이 플러그인 설정 화면에 들어가지 못하던 문제를 고쳤습니다(「레이아웃 접근 권한이 없습니다」). 이제 읽기 전용 안내와 함께 설정을 볼 수 있고, 저장·변경 단추는 잠깁니다(저장은 계속 「플러그인 수정」 권한이 필요합니다). (#434)
+- 「플러그인 보기」 권한만 있는 운영자가 이 플러그인 설정 화면에 들어가지 못하던 문제를 고쳤습니다(「레이아웃 접근 권한이 없습니다」). 이제 읽기 전용 안내와 함께 설정을 볼 수 있고, 저장·변경 단추는 잠깁니다(저장은 계속 「플러그인 수정」 권한이 필요합니다).
 - 환경설정의 중복 회원 판정 기준(DI/CI) 선택지가 화면 안에서 모두 지금 고른 값을 갖던 문제를 수정했습니다.
 - 로그인한 회원이 마이페이지 등에서 본인인증을 할 때 그 본인인증 정보(DI·CI)가 **다른 회원**에 이미 등록돼 있으면 인증을 실패 처리하고 기록을 만들지 않습니다(가입할 때와 같은 판정·같은 안내 문구, 「동일인 중복 차단」 설정을 끄면 종전대로 통과). 종전에는 가입할 때만 막아, 다른 정보로 가입한 뒤 남의 본인인증 결과를 자기 계정에 붙일 수 있었습니다.
 

@@ -39,9 +39,9 @@
 require_once __DIR__.'/../includes/execution-mode.php';
 
 // 오류 텍스트가 SSE 프레임에 섞이지 않게 한다 — 상태 파일을 읽기 **전**, 헤더를 세우기 전,
-// **include 체인·가드보다 앞** (13차 E6 · 21차 N4). 그 구간의 warning 한 줄이면
+// **include 체인·가드보다 앞**. 그 구간의 warning 한 줄이면
 // text/event-stream 헤더가 서지 못해 EventSource 는 사유 대신 "연결 실패" 만 본다 —
-// 12차 #A6 은 이 파일을 이미 고쳐진 것으로 기록했으나 실물은 그렇지 않았다.
+// 이 파일은 한때 이미 고쳐진 것으로 기록됐으나 실물은 그렇지 않았다.
 if (installerHasFunction('ini_set')) {
     @ini_set('display_errors', '0');
 }
@@ -54,7 +54,7 @@ require_once __DIR__.'/../includes/progress-emitter.php';
 require_once __DIR__.'/../includes/task-runner.php';
 require_once __DIR__.'/_guard.php';
 installer_guard_finalize_or_410();
-// 끝난 설치에 워커가 다시 붙는 일은 없다 (13차 보안#8) — `.env` 표식이 없어도 락 파일과
+// 끝난 설치에 워커가 다시 붙는 일은 없다 — `.env` 표식이 없어도 락 파일과
 // 상태 파일의 완료 마커가 함께 참이면 설치는 실제로 끝난 것이다.
 installer_guard_post_complete_or_410();
 
@@ -67,7 +67,7 @@ $translations = loadTranslations($lang);
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     http_response_code(405);
     // charset 이 없으면 한글 사유가 mojibake 로 나가고, 캐시 지시자가 없으면 EventSource 의
-    // GET 재연결에서 거부 응답이 재생되어 조건이 해소된 뒤에도 같은 거부가 반복된다 (17차 #B6).
+    // GET 재연결에서 거부 응답이 재생되어 조건이 해소된 뒤에도 같은 거부가 반복된다.
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: no-store');
     echo installer_json_encode([
@@ -86,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 if (installerSseWorkerRejected($state)) {
     http_response_code(409);
     // charset 이 없으면 한글 사유가 mojibake 로 나가고, 캐시 지시자가 없으면 EventSource 의
-    // GET 재연결에서 거부 응답이 재생되어 조건이 해소된 뒤에도 같은 거부가 반복된다 (17차 #B6).
+    // GET 재연결에서 거부 응답이 재생되어 조건이 해소된 뒤에도 같은 거부가 반복된다.
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: no-store');
     echo installer_json_encode([
@@ -100,7 +100,7 @@ if (installerSseWorkerRejected($state)) {
     exit;
 }
 
-// 진입 전제 (13차 보안#5·F6) — 위 판정은 「stepwise 인가」만 본다. 그래서 이 입구는
+// 진입 전제 — 위 판정은 「stepwise 인가」만 본다. 그래서 이 입구는
 // 토큰도, CSRF 도, **상태 전제도** 없이 GET 하나로 runInstallationTasks() 를 돌릴 수 있었다:
 // 크로스오리진 `<img src=".../install-worker.php">` 한 번이 실제 마이그레이션·시딩을 시작한다.
 // 형제 입구 run-task.php 는 installerStepwiseEndpointRejection() 으로 이미 「진행 중인가」를
@@ -111,7 +111,7 @@ $workerRejection = installerCrossOriginRejection($_SERVER) ?? installerSseWorker
 if ($workerRejection !== null) {
     http_response_code($workerRejection['status']);
     // charset 이 없으면 한글 사유가 mojibake 로 나가고, 캐시 지시자가 없으면 EventSource 의
-    // GET 재연결에서 거부 응답이 재생되어 조건이 해소된 뒤에도 같은 거부가 반복된다 (17차 #B6).
+    // GET 재연결에서 거부 응답이 재생되어 조건이 해소된 뒤에도 같은 거부가 반복된다.
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: no-store');
     echo installer_json_encode([
@@ -124,7 +124,7 @@ if ($workerRejection !== null) {
 
 // SSE 헤더 설정
 header('Content-Type: text/event-stream');
-// 디스크 캐시를 쓰는 중간 노드까지 막는다 — 형제 JSON 응답과 같은 강도 (17차 #B9).
+// 디스크 캐시를 쓰는 중간 노드까지 막는다 — 형제 JSON 응답과 같은 강도.
 header('Cache-Control: no-store');
 header('Connection: keep-alive');
 header('X-Accel-Buffering: no'); // Nginx 버퍼링 비활성화
@@ -143,7 +143,7 @@ installerDiscardOutputBuffers();
 
 // 타임아웃 설정 — 작업 루프(runInstallationTasks)가 작업마다 같은 값으로 다시 건다.
 // 여기서는 첫 작업 전 준비 구간만 덮는다. 전체 설치 시간에는 제한이 없다.
-// 막힌 호스팅에서도 설치는 진행되어야 하므로 가용할 때만 부른다 (13차 환경#1).
+// 막힌 호스팅에서도 설치는 진행되어야 하므로 가용할 때만 부른다.
 if (installerHasFunction('set_time_limit')) {
     set_time_limit((int) INSTALLER_TASK_TIME_LIMIT);
 }
@@ -201,7 +201,7 @@ try {
     installerCurrentWorkerId($workerId);
     addLog(lang('log_worker_lock_acquired'));
 
-    // 워커 종료 시 lock 자동 해제 + 치명 종료면 상태를 실패로 승격 (12차 #A2) —
+    // 워커 종료 시 lock 자동 해제 + 치명 종료면 상태를 실패로 승격 —
     // 승격하지 않으면 fatal/OOM/시간초과 뒤 상태가 running 에 고착해 [건너뛰고 계속] 이
     // 원리상 불가능해진다. SSE 모드면 실패를 error 이벤트로도 보내고, 연결 끊김으로 끝났으면
     // 그 사실을 진행 기록에 남긴다(화면이 새 워커로 다시 연결해 이어 받는다).
@@ -223,7 +223,7 @@ try {
     // emitter 가 아직 없을 수 있다 (lock 획득 전 실패) — 그때도 프레임은 나가야 한다
     setProgressEmitter(new SseEmitter($workerId ?? null));
 
-    // 상태도 함께 남긴다 (12차 #A11). 종전에는 error 프레임만 보내 화면만 빨갛고 서버는
+    // 상태도 함께 남긴다. 종전에는 error 프레임만 보내 화면만 빨갛고 서버는
     // `running` 으로 남았다 — 그 조합에서는 재개도 [건너뛰고 계속] 도 성립하지 않는다.
     // 기록·로깅·error 프레임 송출은 실패 경로 SSoT(recordInstallationRunException)가 한다.
     recordInstallationRunException($e);

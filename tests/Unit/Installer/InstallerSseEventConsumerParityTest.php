@@ -6,7 +6,7 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * 서버가 보내는 SSE 이벤트 ↔ 화면이 소비하는 이벤트 정합성 (12차 #B27 · #B35).
+ * 서버가 보내는 SSE 이벤트 ↔ 화면이 소비하는 이벤트 정합성.
  *
  * 「살아 있음」의 증거를 세는 목록이 서버 이벤트 이름 전수와 갈라지면, 그 이벤트만 오는 구간이
  * 통째로 침묵으로 세어진다. 번들 추출 구간(`installVendorBundleSSE`)은 `heartbeat` 말고는
@@ -146,7 +146,7 @@ class InstallerSseEventConsumerParityTest extends TestCase
     }
 
     /**
-     * emitter 를 거치지 않고 **직접 써 내려간** 프레임도 소비자가 있어야 한다 (13차 E5).
+     * emitter 를 거치지 않고 **직접 써 내려간** 프레임도 소비자가 있어야 한다.
      *
      * `worker_superseded` 는 emitter 가 물러나기 직전에 `echo "event: ..."` 로 직접 내보낸다 —
      * 위 두 검사의 모집단(`sendSSEEvent`/`->emit`)에 잡히지 않는 형태다. 이름만 바뀌어도

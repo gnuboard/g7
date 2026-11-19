@@ -6,7 +6,7 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * `disable_functions` 환경에서 인스톨러 화면이 서는지 실측한다 (13차 환경#1·환경#18).
+ * `disable_functions` 환경에서 인스톨러 화면이 서는지 실측한다 (환경#18).
  *
  * ## 왜 하위 프로세스인가
  *
@@ -28,7 +28,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  * 죽어 **목록이 통째로 안 뜨고**, 최상위 catch 가 개발자 원문(`Call to undefined function`)
  * 을 진단에 실어 보낸다. 세션 부팅의 `ini_set` 은 더 앞이라 화면이 백지가 된다.
  *
- * 18차가 연 축은 그보다 뒤다 — `ini_get` 과 `error_log` 는 이 목록에 없었고, 그 무가드 호출이
+ * 나중에 드러난 축은 그보다 뒤다 — `ini_get` 과 `error_log` 는 이 목록에 없었고, 그 무가드 호출이
  * 하필 가드 판정 SSoT 자신(`ExecutionEnvironment::hasFunction`)과 최후 폴백 진단 채널에 있었다.
  * 그리고 하네스가 **첫 화면 경로만** 띄웠기 때문에, 요구사항이 전부 초록인 환경에서 태스크가
  * 한 개도 돌지 않는 상태(`installerSetTimeLimit` 의 무가드 `ini_get`)는 어떤 검사에도 걸리지
@@ -70,31 +70,31 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
         // 3인자 형태가 임의 파일 쓰기라 하드닝 프로필의 표준 차단 대상인데, 무가드 호출이
         // 28곳이었다 — 막히면 첫 요청이 백지가 되고, 그 사유를 남길 채널이 바로 그것이다.
         'error_log',
-        // 3차 G3 라운드. 노출 점검(exposure-check.php)이 링크 실측 임시 파일명을 가르는 데
+        // 노출 점검(exposure-check.php)이 링크 실측 임시 파일명을 가르는 데
         // 이 함수를 무가드로 썼다 — 막힌 호스팅에서 요구사항 화면이 통째로 뜨지 않았다.
         // 호출 자체를 난수원으로 통일해 없앴고, 되살아나면 이 전수 검사가 잡는다.
         'getmypid',
-        // 4차 G3 라운드. 3차가 정적 룰에는 등재했는데 **이 전수 검사에는 넣지 않아**, 계획서
+        // 앞서 정적 룰에는 등재했는데 **이 전수 검사에는 넣지 않아**, 계획서
         // 문언(「룰과 전수 검사에 등재」)이 절반만 사실이었다. 두 게이트의 목록이 어긋나면
         // 어느 쪽을 봐도 「검사했다」와 「보지 않았다」가 구분되지 않는다.
         'posix_getpid',
-        // 4차 G3 라운드. 둘 다 하드닝 프로필이 막을 수 있는데 인스톨러가 **비밀 채널
+        // 둘 다 하드닝 프로필이 막을 수 있는데 인스톨러가 **비밀 채널
         // (runtime.php 0600)·설치 상태 저장·vendor 설치·완료 플래그**에서 무가드로 불렀다.
         // 막히면 PHP 8 은 함수 테이블에서 지우므로 Error(치명)이고, 그 지점들은 전부 설치가
         // 한 걸음도 나아가지 못하는 자리다. 형제 지점(exposure-check.php)은 이미 가드가
         // 있었으므로 규약이 파일마다 갈려 있던 상태였다.
         'chmod',
-        // 5차 G3 라운드. 4차가 「catch 안의 uniqid 폴백」을 교체했다고 기록했으나 잔존 2곳이
+        // 앞서 「catch 안의 uniqid 폴백」을 교체했다고 기록했으나 잔존 2곳이
         // 남아 있었고, 정적 룰·이 목록·대기 목록 **셋 다 이 이름을 몰라** 아무도 잡지
         // 못했다. 남은 자리 하나는 요구사항 화면의 디렉토리 권한 점검이라 첫 화면이 백지다.
         'uniqid',
-        // 7차 G3 라운드. 인스톨러는 이미 `installerHasFunction('symlink')` 로 이 이름을
+        // 인스톨러는 이미 `installerHasFunction('symlink')` 로 이 이름을
         // 차단 가능으로 다뤘는데, **이 목록과 정적 룰 둘 다 그 이름을 몰랐다** — 그래서
         // 코어 형제 두 지점(`StorageLinkHelper::createLink` · `FilePermissionHelper`)의
         // `@symlink(...)` 무가드가 세 게이트 전부를 통과했고, 그 상태로 아래 대기 목록은
         // 「알려진 무가드 지점 없음」을 선언하고 있었다.
         'symlink',
-        // 7차 G3 라운드 D-13. 대기 목록이 「비어 있다」를 **도출로** 바꾸자마자 이 여섯이
+        // 대기 목록이 「비어 있다」를 **도출로** 바꾸자마자 이 여섯이
         // 드러났다 — 정적 룰이 가드를 요구하고 부팅 경로가 실제로 부르는데 이 전수 검사의
         // 모집단에는 없었다. 전부 가드는 갖고 있었으므로 결함이 아니라 **측정 공백**이며,
         // 손으로 비운 선언이 그만큼 사실이 아니었다는 실례다.
@@ -160,7 +160,7 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
     }
 
     /**
-     * 파손 상태 사본 나열은 `glob` 이 막혀도 **목록을 낸다** (14차 G3 W2-2).
+     * 파손 상태 사본 나열은 `glob` 이 막혀도 **목록을 낸다**.
      *
      * 종전에는 `glob` 차단 시 빈 목록이었다 — 그러면 「같은 내용 1회」와 「상한 5」 두
      * 가드가 동시에 증발해 폴링마다 마스킹 전 상태 사본이 무제한 증식한다. 형제
@@ -187,7 +187,7 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
 
     /**
      * 정리 스윕의 **차단 분기**가 「쓸지 못했다」로 보고하는가 — 그리고 `glob` 하나로는
-     * 더 이상 멈추지 않는가 (15차 G3 라운드에 계약을 **강화**했다).
+     * 더 이상 멈추지 않는가 (라운드에 계약을 **강화**했다).
      *
      * 종전에는 `glob` 이 막히면 정리가 통째로 무동작이었다. 그런데 **sentinel 생성은 그
      * 조건과 무관하게 계속되므로** 무인증 요청 반복이 `storage/installer` 에 상한 없이
@@ -403,7 +403,7 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
     }
 
     /**
-     * 「알려진 무가드 지점 없음」이 **손으로 비운 선언**이 아님을 증명한다 (7차 G3 D-13).
+     * 「알려진 무가드 지점 없음」이 **손으로 비운 선언**이 아님을 증명한다.
      *
      * @scenario blocked_function_entry=boot_path_ledger, guard_population=installer_sources
      *
@@ -417,7 +417,7 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
             // 목록이 비면 검사할 대상이 없다. 종전에는 그 사실을 `assertSame([], PENDING_UNGUARDED)`
             // 로 「단언」했는데 상수를 자기 자신과 비교하는 것이라 **언제나 참**이었다 — 즉
             // 「알려진 무가드 지점 없음」의 근거가 그 목록을 손으로 비운 것 자체였고, 실제로
-            // 7차 G3 라운드에서 `symlink` 두 지점이 그 선언 밖에 있었다 (D-13·D-3).
+            // `symlink` 두 지점이 그 선언 밖에 있었다.
             //
             // 대신 **도출**을 단언한다: 부팅 경로가 스스로 차단 가능하다고 선언한 이름을 이 파일의
             // 전수 검사 목록(BLOCKED_FUNCTIONS)이 전부 담고 있는가. 부팅 경로에 새 가드가 생기면
@@ -538,7 +538,7 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
     }
 
     /**
-     * 필수 확장(mbstring)이 없는 서버에서도 첫 화면과 요구사항 화면이 서야 한다 (16차 B-1·B-2).
+     * 필수 확장(mbstring)이 없는 서버에서도 첫 화면과 요구사항 화면이 서야 한다.
      *
      * ## 왜 이 축이 형제 축과 별개인가
      *
@@ -548,8 +548,8 @@ class InstallerDisabledFunctionResilienceTest extends TestCase
      * **요구사항 화면이 「없습니다」라고 말해 주어야 하는 대상**이다. 그 화면에 닿기 전에
      * 죽으면 운영자에게 남는 것은 백지뿐이고, 원인을 알 방법이 없다.
      *
-     * 13차가 같은 형태를 함수 축에서 치명으로 판정했으나(요구사항 화면이 통째로 안 뜬다),
-     * 확장 축에는 검사가 없어 16차까지 살아남았다.
+     * 앞서 같은 형태를 함수 축에서 치명으로 판정했으나(요구사항 화면이 통째로 안 뜬다),
+     * 확장 축에는 검사가 없어 그 뒤로도 한동안 살아남았다.
      *
      * ## 재현 방식
      *

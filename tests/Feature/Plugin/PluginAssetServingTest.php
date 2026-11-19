@@ -456,7 +456,7 @@ class PluginAssetServingTest extends TestCase
         $this->assertNotNull($etag, 'ETag header should be present');
         // RFC 9110 §8.8.3 의 entity-tag 는 큰따옴표로 감싼 형태다 — 정적 서빙(Apache·nginx)도
         // 항상 따옴표를 붙이고, 따옴표 없는 값은 중간 프록시·CDN 이 버리거나 다시 쓸 수 있다.
-        // 값 자체는 종전대로 파일에서 파생된 MD5 다 (3차 G3 라운드 L2).
+        // 값 자체는 종전대로 파일에서 파생된 MD5 다.
         $this->assertMatchesRegularExpression('/^"[a-f0-9]{32}"$/', $etag, 'ETag should be a quoted 32-character MD5 hash');
     }
 
@@ -497,7 +497,7 @@ class PluginAssetServingTest extends TestCase
      *
      * 종전 이 테스트는 **버전 없는 주소**를 요청하고 `immutable` 이 있어야 통과라고
      * 단언했다. 즉 규정 위반 상태가 곧 green 이었고, 그 계약이 서 있는 한 결함을 고치면
-     * 테스트가 red 가 되는 구조였다. 계약을 판정 기준 자체로 교체한다 (11차 G3 라운드).
+     * 테스트가 red 가 되는 구조였다. 계약을 판정 기준 자체로 교체한다.
      *
      * @scenario case=caching
      *
@@ -718,7 +718,7 @@ class PluginAssetServingTest extends TestCase
                 );
             }
             // 구분자 축 — 백슬래시도 세그먼트 구분자다. 이 케이스가 없으면 분할이
-            // `/` 만 보는 상태를 게이트가 통과시킨다(9차가 정확히 그 상태였다):
+            // `/` 만 보는 상태를 게이트가 통과시킨다(종전 구현이 정확히 그 상태였다):
             // 봉쇄 판정은 `\` 를 구분자로 취급하므로 숨김 세그먼트만 못 보고 넘어간다.
             //
             // 파일이 **실재해야** 이 축이 측정된다 — 없으면 규칙과 무관하게 404 라

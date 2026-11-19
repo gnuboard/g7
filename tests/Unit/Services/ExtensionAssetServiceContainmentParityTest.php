@@ -20,14 +20,14 @@ use Tests\TestCase;
  *
  * 이 검사가 필요한 이유는 실제로 갈려 있었기 때문이다: trait 독블록은 「2차 봉쇄를 가진
  * 서비스는 템플릿뿐」이라고 적었는데 실측 결과 템플릿이야말로 realpath 재확인이 없었고,
- * 모듈·플러그인만 trait 을 쓰고 있었다(11차 G3 라운드). 문서와 구현이 서로를 근거로
+ * 모듈·플러그인만 trait 을 쓰고 있었다. 문서와 구현이 서로를 근거로
  * 삼는 동안 어느 게이트도 그 어긋남을 보지 못했다.
  *
  * 같은 규약이 **유형 판정**(`ResolvesExtensionAssetType`)에도 걸린다. 확장자 화이트리스트
  * 2차 확인은 템플릿에만 있어 세 컨트롤러가 공통으로 갖는 `file_type_not_allowed` 403 분기가
  * 모듈·플러그인에서 도달 불가였고, MIME 표의 소스맵 항목(`map`)도 템플릿 사본에만 있어 그 두
  * 통로에서는 `local` 완화가 사문이었다 — 404 도 403 도 아니라 「200 인데 devtools 가 조용히
- * 무시」라 드러나지 않았다 (14차 G3 라운드).
+ * 무시」라 드러나지 않았다.
  *
  * @scenario asset_serving=template, defense_layer=second_containment, mime_table=sourcemap
  */
@@ -414,7 +414,7 @@ class ExtensionAssetServiceContainmentParityTest extends TestCase
      * 이 trait 은 요청 규칙(1차층)이 무력해졌을 때 남는 마지막 방어선인데, 그 두 축은
      * 1차층에만 있었다. 서비스는 확장에 열려 있어 「현재 호출부가 FormRequest 를
      * 거친다」는 방어가 되지 못한다. 형제 통로 `PublicStorageService` 는 같은 두 축을
-     * 이미 서비스 계층에 갖고 있었다 — 한쪽에만 있는 성질이 곧 결함이다 (15차 G3).
+     * 이미 서비스 계층에 갖고 있었다 — 한쪽에만 있는 성질이 곧 결함이다.
      *
      * @effects extension_asset_second_barrier_rejects_null_byte_and_hidden_segments
      *

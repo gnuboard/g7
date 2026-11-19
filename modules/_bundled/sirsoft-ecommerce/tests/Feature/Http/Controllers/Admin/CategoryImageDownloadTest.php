@@ -18,7 +18,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * 배경: downloadImage() 가 과거 response()->streamDownload(fn => echo Storage::get())
  * 로 파일 전체를 메모리에 적재하는 안티패턴이었다. 서빙은 CategoryImageService::getFileInfo()
  * (StorageInterface::response() 기반 스트리밍 + 검증자 메타)로 위임하고, 캐시 계약은 코어
- * 단일 지점(`streamedFileResponse()`)이 입힌다 (14차 G3 라운드).
+ * 단일 지점(`streamedFileResponse()`)이 입힌다.
  *
  * 이 테스트는 컨트롤러가 서비스의 스트리밍 경로로 위임하는지를 단언한다 —
  * 전체 적재 경로(getByHash 조회 후 직접 Storage 접근)로 회귀하면 실패한다.

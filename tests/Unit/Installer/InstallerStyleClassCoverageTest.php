@@ -10,7 +10,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  *
  * 미선언 `var()` 는 여러 라운드가 0 으로 몰았지만 **미선언 클래스**는 검사된 적이 없었다.
  * computed 값 비교는 "선언된 규칙이 같은 값을 내는가" 만 보므로 규칙이 **아예 없는** 경우를
- * 그대로 통과시킨다 — 그 사각에서 8차 라운드가 실제 결함을 찾았다:
+ * 그대로 통과시킨다 — 그 사각에서 실제 결함이 나왔다:
  *
  *  - `.test-success` / `.test-error` — Step 3 의 모든 검사 결과가 성공·실패 구분 없이 같은 색
  *    (§11.5 「상태색이 두 모드에서 모두 구분되어야 한다」 정면 위반)
@@ -62,7 +62,7 @@ class InstallerStyleClassCoverageTest extends TestCase
 
         // ③ 소비처 0 — 종전 코드에 남아 있는 표식. 제거는 이 검사와 별개 결정이라 여기서는 고정만 한다
         'execution-mode-cards' => '소비처 0 (스타일은 vendor-mode-cards) — 제거는 별개 결정',
-        // 11차 #D3 이 모집단에 includes/**·api/** 를 넣으면서 드러난 둘. 호출자 0 인
+        // 모집단에 includes/**·api/** 를 넣으면서 드러난 둘. 호출자 0 인
         // renderProgressIndicator() 가 유일한 출처이며, 죽은 함수를 지우는 것은 이 검사와
         // 별개 결정이라 여기서는 사실만 고정한다.
         'progress-indicator' => '호출자 0 인 renderProgressIndicator() 의 출력 — 제거는 별개 결정',
@@ -72,7 +72,7 @@ class InstallerStyleClassCoverageTest extends TestCase
         'log-separator' => '소비처 0 — HEAD 기원',
         'result-version' => '소비처 0 — HEAD 기원',
         'btn-sm' => '소비처 0 — HEAD 기원',
-        // classList 채널을 모집단에 넣으면서 드러난 항목 (9차 #G5)
+        // classList 채널을 모집단에 넣으면서 드러난 항목
         'single-select' => '소비처 0 — 단일 선택 카드 표식만, 스타일·선택자 소비 없음 (HEAD 기원)',
     ];
 
@@ -90,7 +90,7 @@ class InstallerStyleClassCoverageTest extends TestCase
      * 인스톨러 스타일시트 전수가 선언하는 클래스 이름 집합.
      *
      * 종전에는 `installer.css` 한 파일을 하드코딩했다 — 스타일시트가 하나 더 생기면 그 안의
-     * 규칙은 「선언 없음」으로 계상되어 정상 스타일이 위반으로 잡힌다 (12차 L-1).
+     * 규칙은 「선언 없음」으로 계상되어 정상 스타일이 위반으로 잡힌다.
      *
      * @return array<string, int> 스타일시트가 선언한 클래스 이름을 키로 둔 집합
      */
@@ -120,7 +120,7 @@ class InstallerStyleClassCoverageTest extends TestCase
      * 디렉토리를 **재귀**로 훑어 확장자가 맞는 파일을 모은다.
      *
      * 한 겹 `glob('*.php')` 은 하위 디렉토리가 하나 생기는 순간 그 안을 통째로 놓친다 —
-     * 11차 #D10 이 형제(격리 스캐너)에서 닫은 축이 여기에는 적용되지 않았다 (12차 L-1).
+     * 형제(격리 스캐너)에서 닫은 축이 여기에는 적용되지 않았다.
      *
      * @param  string  $dir  대상 디렉토리
      * @param  array<int, string>  $extensions  확장자
@@ -149,8 +149,8 @@ class InstallerStyleClassCoverageTest extends TestCase
      *
      * 실 경로와 픽스처가 **같은 이 메서드**를 부른다 — 픽스처가 같은 정규식을 다시 써서
      * 그 사본을 검증하면, 여기의 주석 제거를 지워도 픽스처는 초록이고 다른 검사들은
-     * 더 관대해질 뿐이라 역시 초록이 된다. 9차 #G6 이 닫았다고 기록한 축이 그 형태로
-     * 열려 있었다 (11차 #D2).
+     * 더 관대해질 뿐이라 역시 초록이 된다. 앞서 닫았다고 기록한 축이 그 형태로
+     * 열려 있었다.
      *
      * @param  string  $css  CSS 소스
      * @return array<string, int> 클래스 이름 → 임의 인덱스
@@ -158,7 +158,7 @@ class InstallerStyleClassCoverageTest extends TestCase
     private function declaredClassesIn(string $css): array
     {
         // 주석을 먼저 지운다 — 이 파일은 설계 주석이 많고 그 안에 클래스명이 흔히 등장한다.
-        // 주석을 「선언」으로 세면 규칙을 지우고 이름만 남겨도 이 검사가 초록이 된다 (9차 #G6).
+        // 주석을 「선언」으로 세면 규칙을 지우고 이름만 남겨도 이 검사가 초록이 된다.
         $css = (string) preg_replace('#/\*.*?\*/#s', '', $css);
         preg_match_all('/\.([A-Za-z][A-Za-z0-9_-]*)/', $css, $m);
 
@@ -183,10 +183,10 @@ class InstallerStyleClassCoverageTest extends TestCase
     private function usedClasses(): array
     {
         $dir = $this->installDir();
-        // 「전수」를 자처하면서 **PHP 헬퍼가 만드는 마크업**을 통째로 빼고 있었다 (11차 #D3) —
-        // renderInstallResultSection()·getSvgIcon() 같은 함수가 그 채널이고, 8차가 신설한
+        // 「전수」를 자처하면서 **PHP 헬퍼가 만드는 마크업**을 통째로 빼고 있었다 —
+        // renderInstallResultSection()·getSvgIcon() 같은 함수가 그 채널이고, 앞서 신설한
         // `.result-icon-dot` 의 출처가 바로 여기다. 검사는 그 채널을 보지 않았다.
-        // 인스톨러 전수를 **재귀**로 훑는다 (12차 L-1). 종전에는 세 디렉토리를 한 겹씩 glob 하고
+        // 인스톨러 전수를 **재귀**로 훑는다. 종전에는 세 디렉토리를 한 겹씩 glob 하고
         // JS 두 파일과 index.php 를 손으로 적었다 — 하위 디렉토리나 새 스크립트가 생기면 그
         // 마크업은 영원히 모집단 밖이고, 미선언 클래스가 그 안에 살아 있어도 초록이다.
         $files = array_merge(
@@ -220,14 +220,14 @@ class InstallerStyleClassCoverageTest extends TestCase
      * 두 채널을 함께 본다 — 속성 리터럴(`class="…"`)과 **동적 부착**
      * (`classList.add('x')`·`toggle`·`remove`). 뒤쪽을 빼면 진행 화면의 상태색을 담당하는
      * 이름(`task-failed`·`status-skipped` 등)이 통째로 사각이 되고, 실제로 그 사각에 미선언
-     * 클래스가 살아 있었다 (9차 #G5).
+     * 클래스가 살아 있었다.
      *
      * @param  string  $source  주석을 걷어낸 마크업 또는 스크립트 소스
      * @return array<int, string> 속성 리터럴과 동적 부착에서 모은 클래스 토큰
      */
     private function classesInSource(string $source): array
     {
-        // 보간 조각을 먼저 걷어낸다 — 이 채널이 통째로 버려지고 있었다 (10차 #G8).
+        // 보간 조각을 먼저 걷어낸다 — 이 채널이 통째로 버려지고 있었다.
         //
         //  - JS 템플릿 리터럴: `class="requirement-card${modifier}"` 는 토큰 전체가 이름 규칙을
         //    통과하지 못해 **앞조각까지 함께** 사라졌다.
@@ -277,7 +277,7 @@ class InstallerStyleClassCoverageTest extends TestCase
      * `class` 속성 안의 PHP 출력 태그에서 조건부 클래스 리터럴을 거둔다.
      *
      * 조건부 클래스는 이 형태로만 나타난다 — 소스 전체의 출력 태그를 뒤지면 `value="…"` 같은
-     * 다른 속성의 값이 클래스 이름으로 새어 들어온다 (10차 #G8 구현 중 실측).
+     * 다른 속성의 값이 클래스 이름으로 새어 들어온다 (구현 중 실측).
      *
      * @param  string  $source  원본
      * @return array<int, string> 공백 구분 클래스 문자열 목록
@@ -321,11 +321,11 @@ class InstallerStyleClassCoverageTest extends TestCase
     }
 
     /**
-     * 상태 문구는 **문구 전용 토큰**으로 칠한다 (10차 #M6·#M7·#M8).
+     * 상태 문구는 **문구 전용 토큰**으로 칠한다.
      *
      * `--success-color` 등은 아이콘·테두리용 밝은 값이다. 12~14px 본문에 쓰면 라이트 테마에서
      * 1.9~3.4:1 로 §11.5 의 4.5:1 을 못 넘긴다 — 다크는 정상이라 어두운 화면만 보면 드러나지
-     * 않는다. 9차가 W2 상태 줄에 이 규칙을 세웠지만 **형제 지점**(W3 진행 목록·그룹 배지·
+     * 않는다. 앞서 W2 상태 줄에 이 규칙을 세웠지만 **형제 지점**(W3 진행 목록·그룹 배지·
      * 완료 문구)에는 적용되지 않아 한 목록 안에서 규칙이 갈려 있었다.
      *
      * 실제 대비 계산 대신 「어느 층의 토큰을 썼는가」를 본다 — 토큰 층이 곧 그 규칙이고,
@@ -342,7 +342,7 @@ class InstallerStyleClassCoverageTest extends TestCase
         // 상태를 **글자로** 전하는 선택자들. 아이콘·테두리 규칙(`.task-* .task-icon`)은 도형이라
         // 대상이 아니다 — 그래서 선택자 끝이 정확히 이 이름들인 규칙만 본다.
         $statusSelectors = [
-            // 23차 F-1 이 statusPresentation 에 pending 을 채우면서 도출 대조가 요구한 등재.
+            // statusPresentation 에 pending 을 채우면서 도출 대조가 요구한 등재.
             '.task-pending',
             '.task-completed',
             '.task-failed',
@@ -354,7 +354,7 @@ class InstallerStyleClassCoverageTest extends TestCase
             '.task-group-status.status-aborted',
             '.task-group-status.status-in-progress',
             '.task-group-status.status-skipped',
-            // 도출 대조(아래)가 잡아낸 누락 — 수기 13개 시절에 빠져 있던 구성원 (20차 N-2).
+            // 도출 대조(아래)가 잡아낸 누락 — 수기 13개 시절에 빠져 있던 구성원.
             '.task-group-status.status-pending',
             '.progress-status.progress-status--success',
             '.vendor-mode-card-status-ok',
@@ -370,7 +370,7 @@ class InstallerStyleClassCoverageTest extends TestCase
         // (§16.25.10 규약 ②). 그래서 네 가족의 구성원을 소스에서 **도출**해 목록이 그
         // 상위집합인지 먼저 잠근다: 상태 가족 3종은 CSS 선택자에서, `.task-*` 상태 클래스는
         // installer.js 의 상태→클래스 매핑(statusPresentation — 그 축의 SSoT)에서 나온다.
-        // 새 상태 클래스가 어느 쪽에 추가되든 이 대조가 red 가 되어 목록 갱신을 강제한다 (20차 N-2).
+        // 새 상태 클래스가 어느 쪽에 추가되든 이 대조가 red 가 되어 목록 갱신을 강제한다.
         $derived = [];
         foreach ([
             'task-group-status\.status-[a-z-]+',
@@ -508,7 +508,7 @@ class InstallerStyleClassCoverageTest extends TestCase
     }
 
     /**
-     * 추출기의 부정·긍정 분기를 합성 입력으로 태운다 (9차 #G14).
+     * 추출기의 부정·긍정 분기를 합성 입력으로 태운다.
      *
      * 실 소스가 준수 상태라 위 검사의 「미선언 0」은 추출기가 죽어도 유지된다 — 그 상태는
      * 「검사했으나 통과」가 아니라 「아무것도 보지 않음」이다.
@@ -532,10 +532,10 @@ class InstallerStyleClassCoverageTest extends TestCase
         SRC);
 
         $this->assertContains('alert-error', $tokens, '속성 리터럴 채널');
-        $this->assertContains('task-failed', $tokens, 'classList.add 채널 — 이 채널이 빠져 있던 것이 9차 #G5');
+        $this->assertContains('task-failed', $tokens, 'classList.add 채널 — 종전 수집에서 빠져 있던 채널');
         $this->assertContains('status-skipped', $tokens, 'classList.toggle 채널');
-        $this->assertContains('requirement-card', $tokens, '보간이 붙은 앞조각도 실재하는 클래스다 (10차 #G8)');
-        $this->assertContains('installation-mode-option', $tokens, 'PHP 짧은 echo 앞의 리터럴 (10차 #G8)');
+        $this->assertContains('requirement-card', $tokens, '보간이 붙은 앞조각도 실재하는 클래스다');
+        $this->assertContains('installation-mode-option', $tokens, 'PHP 짧은 echo 앞의 리터럴');
         $this->assertContains('disabled', $tokens, 'PHP 짧은 echo **안**의 조건부 클래스 — 종전에는 정규식이 여기서 끊겼다');
         $this->assertNotContains('fa-check', $tokens, 'Font Awesome 은 외부 스타일시트 소유다');
         $this->assertNotContains('fas', $tokens);
@@ -543,7 +543,7 @@ class InstallerStyleClassCoverageTest extends TestCase
     }
 
     /**
-     * 모집단 스캔이 **재귀**다 (12차 L-1 부정 픽스처).
+     * 모집단 스캔이 **재귀**다 (부정 픽스처).
      *
      * 실 디렉토리가 지금은 평면이라 한 겹 glob 과 재귀 스캔의 결과가 같다 — 그 상태에서는
      * 스캔을 한 겹으로 되돌려도 red 가 나지 않는다. 하위 디렉토리를 실제로 만들어 잡는다.
@@ -575,7 +575,7 @@ class InstallerStyleClassCoverageTest extends TestCase
     }
 
     /**
-     * 선언 추출은 주석 안의 이름을 세지 않는다 (9차 #G6).
+     * 선언 추출은 주석 안의 이름을 세지 않는다.
      *
      * @scenario style_class_declared=declared
      *
@@ -586,7 +586,7 @@ class InstallerStyleClassCoverageTest extends TestCase
     public function test_declaration_extraction_ignores_comments(): void
     {
         // 판정 본체를 **직접 부른다** — 같은 정규식을 여기 다시 쓰면 사본을 검증하는 것이라
-        // 본체의 주석 제거를 지워도 이 픽스처가 초록으로 남는다 (11차 #D2).
+        // 본체의 주석 제거를 지워도 이 픽스처가 초록으로 남는다.
         $css = '/* .ghost-class 는 설명일 뿐이다 */
 .real-class { color: red; }
 ';

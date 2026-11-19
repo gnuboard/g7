@@ -16,7 +16,7 @@ use Tests\TestCase;
  * 종전에는 같은 루프가 네 벌이었고 그중 **스텝 안쪽 로더 하나만** `scandir` 로 옮겨져
  * 있었다 — 옮긴 쪽이 읽히기 전에 옮기지 않은 발견기가 죽으므로 그 회피는 도달조차
  * 하지 못했다. 「사본 중 하나만 고쳤다」가 오류도 경고도 없이 성립하던 형태라, 나열
- * 지점이 다시 갈리는 것을 이 검사가 막는다 (11차 G3 라운드).
+ * 지점이 다시 갈리는 것을 이 검사가 막는다.
  *
  * @scenario hosting_restriction=disabled_glob, extension_discovery=upgrade_steps
  */
@@ -149,10 +149,10 @@ class ExtensionDirectoryListingTest extends TestCase
     /**
      * 디렉토리 판본이 `glob('*', GLOB_ONLYDIR)` 와 같은 결과를 낸다.
      *
-     * 11차가 파일 나열을 한 곳으로 접었지만 **디렉토리** 나열은 그대로 `glob` 이었고,
+     * 앞서 파일 나열을 한 곳으로 접었지만 **디렉토리** 나열은 그대로 `glob` 이었고,
      * 그 지점들(템플릿 오버라이드 순회 · `_pending` 잔여물 정리 · 손상 백업 정리)은
      * 확장 설치 흐름에서 먼저 실행된다 — 먼저 죽는 쪽이 남아 있으면 옮긴 회피는
-     * 도달조차 하지 못한다 (12차 G3 라운드).
+     * 도달조차 하지 못한다.
      *
      * @scenario hosting_restriction=disabled_glob, extension_discovery=upgrade_steps
      *

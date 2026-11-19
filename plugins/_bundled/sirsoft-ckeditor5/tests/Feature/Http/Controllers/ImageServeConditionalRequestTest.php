@@ -7,9 +7,9 @@ use Plugins\Sirsoft\Ckeditor5\Models\Ckeditor5ImageUpload;
 use Plugins\Sirsoft\Ckeditor5\Tests\PluginTestCase;
 
 /**
- * 본문 이미지 서빙의 조건부 요청 계약 (13차 G3 라운드)
+ * 본문 이미지 서빙의 조건부 요청 계약
  *
- * 12차가 `ETag`·`Last-Modified` 를 **내보내기**는 했지만 돌려받은 `If-None-Match` /
+ * 앞서 `ETag`·`Last-Modified` 를 **내보내기**는 했지만 돌려받은 `If-None-Match` /
  * `If-Modified-Since` 를 판정하는 곳이 없어 재검증이 영원히 전문 200 이었다 — 검증자를
  * 싣지 않던 시절과 대역폭이 같다. 오류도 로그도 없이 응답 헤더로만 드러나므로 실제
  * HTTP 왕복으로 고정한다. 판정은 코어 단일 지점(`streamedFileResponse()`)이 하고, 여기서는

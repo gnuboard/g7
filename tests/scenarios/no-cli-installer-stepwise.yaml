@@ -42,8 +42,8 @@ axes:
   runner_strategy: [subprocess, inprocess_no_vendor, inprocess, override]
   endpoint_guard: [general, finalize_allowed, finalize_unexpected, missing]
   php_binary_source: [detected_autodetect, configured]              # D35
-  task: [composer, key_generate, env, dependency_precheck, db_cleanup, db_migrate, db_seed, template, user_template, module, plugin, language_pack, settings, cache, complete_flag, config_cache, route_cache, static_publish]   # 태스크 종류 (목록 순서는 test_task_list_order_keys_and_skippable_flags 가 고정). 11차 #C2 — 살아 있는 태스크 4종(key_generate·dependency_precheck·db_cleanup·user_template)이 축에 없어 롤백 디스패치·수동 복구 안내의 모집단에서 빠져 있었다. static_publish 는 부트스트랩 리소스 정적 게시 태스크로, 목록 SSoT 로 옮겨진 뒤에도 이 축에 없어 접기 표와 어긋나 있었다. route_cache 는 7.2.0 합류 태스크(설치 끝 라우트 캐시 생성, best_effort)
-  # G3 회차 16 W6 — 종전 마킹이 쓰던 이름을 선언으로 올린다 (선언 = 마킹, 제품 결정). 값은 실제 마킹에서 도출.
+  task: [composer, key_generate, env, dependency_precheck, db_cleanup, db_migrate, db_seed, template, user_template, module, plugin, language_pack, settings, cache, complete_flag, config_cache, route_cache, static_publish]   # 태스크 종류 (목록 순서는 test_task_list_order_keys_and_skippable_flags 가 고정). 살아 있는 태스크 4종(key_generate·dependency_precheck·db_cleanup·user_template)이 축에 없어 롤백 디스패치·수동 복구 안내의 모집단에서 빠져 있었다. static_publish 는 부트스트랩 리소스 정적 게시 태스크로, 목록 SSoT 로 옮겨진 뒤에도 이 축에 없어 접기 표와 어긋나 있었다. route_cache 는 7.2.0 합류 태스크(설치 끝 라우트 캐시 생성, best_effort)
+  # 종전 마킹이 쓰던 이름을 선언으로 올린다 (선언 = 마킹, 제품 결정). 값은 실제 마킹에서 도출.
   probe_key_source: [producer_sources]                              # PHP 프로브 메시지 키 사전의 모집단 출처
   locale: [ko, en]                                                  # 프로브 키가 해석돼야 하는 기본 로케일
   setting_key: [system.execution_mode, general.asset_url_mode]      # 허용값이 닫힌 설정 키 (EnumeratedSettingValues)
@@ -94,11 +94,11 @@ exclusions:
   - { installation_mode: polling, execution_mode_resolved: inprocess, reason: "동일" }
   - { vendor_mode_choice: composer, execution_mode_resolved: inprocess, reason: "bundled 로 고정된다 (A-4) — 조합 자체가 저장되지 않는다" }
   - { skip_request: skippable, task_outcome: failed_db, reason: "DB 단계는 필수 — 건너뛰기 불가" }
-  - { installation_mode: stepwise, vendor_mode_choice: composer, reason: "요청 하나가 180초를 사는데 composer install 은 그보다 오래 걸린다 — 화면·서버가 함께 막는다 (10차 #M3)" }
+  - { installation_mode: stepwise, vendor_mode_choice: composer, reason: "요청 하나가 180초를 사는데 composer install 은 그보다 오래 걸린다 — 화면·서버가 함께 막는다" }
   - { installation_mode: stepwise, vendor_mode_choice: auto, reason: "auto 는 composer 가 있으면 composer 를 돈다 — 위와 같은 이유로 막힌다" }
 
 effects:
-  # 8차 라운드 등재 — 마커는 달렸으나 어느 매니페스트에도 없던 축.
+  # 마커는 달렸으나 어느 매니페스트에도 없던 축.
   - php_probe_message_keys_resolve_in_base_locales
   - bulk_save_accepts_declared_enumerated_value
   - bulk_save_rejects_undeclared_enumerated_value
@@ -109,11 +109,11 @@ effects:
   - requirements_failure_reason_reaches_the_screen
   - requirements_recheck_does_not_resubmit_the_post
   - browser_requirements_recheck_reopens_with_get   # 실제 설치 화면에서 서버 게이트가 거부한 POST 화면의 [다시 검증]을 누르면 같은 주소를 GET 으로 다시 열고, POST 재전송·확인 창이 없다 (E2E)
-  # 상태 스키마·조회 응답 필드 집합 (10차 #G5 — 선언만 돼 있고 마커가 0 이던 파일)
+  # 상태 스키마·조회 응답 필드 집합 (선언만 돼 있고 마커가 0 이던 파일)
   - installer_state_schema_preserves_language_packs
   - installer_client_failure_fields_cover_screen_keys
   - installer_stepwise_state_summary_matches_polling
-  # 10차 라운드 — 다국어 정합 게이트 · 매니페스트 마커 정합 · 모니터 행위
+  # 다국어 정합 게이트 · 매니페스트 마커 정합 · 모니터 행위
   - installer_lang_locales_have_identical_keys
   - installer_lang_placeholders_match_across_locales
   - installer_lang_rejects_brace_placeholders
@@ -126,11 +126,11 @@ effects:
   - polling_monitor_ignores_response_after_stop
   - installer_markup_classes_have_style_rules
   - installer_settings_json_carries_locale_and_execution_mode
-  # 13차 라운드 — 라이브 리전 중첩 금지. 10차가 alert-in-polite 한 형태만 지우고
+  # 라이브 리전 중첩 금지. 앞서 alert-in-polite 한 형태만 지우고
   # 「한 층으로 줄였다」고 기록했으나 polite-in-polite 3곳과 setAttribute 형태 1곳이
   # 남아 있었다. 판정을 리터럴 계수에서 선언 전수 도출로 바꾼 축이다.
   - installer_live_regions_are_not_nested
-  # 10차 라운드 — 진행 방식 확정(강제·차단)과 번들 추출 중 heartbeat
+  # 진행 방식 확정(강제·차단)과 번들 추출 중 heartbeat
   - installer_stepwise_blocked_when_composer_can_run
   - installer_installation_mode_forced_to_stepwise_under_inprocess
   - bundle_extraction_reports_progress_in_chunks
@@ -153,7 +153,7 @@ effects:
   - stepwise_full_list_completes_by_repeating_requests
   - stepwise_skip_marks_pair_and_advances
   - stepwise_inprocess_propagates_bundled_vendor_mode
-  # best-effort 실패 · 워커 lock (검증 2차 라운드 §16.8.1 #1 · #8)
+  # best-effort 실패 · 워커 lock
   - stepwise_best_effort_failure_advances
   - stepwise_lock_loss_surfaces_as_busy
   # 모드 관여 지점 전수 (R9)
@@ -168,12 +168,12 @@ effects:
   - subprocess_runner_uses_injected_php_binary
   - installer_php_binary_precedence_explicit_resolved_default
   - installer_resolved_php_binary_prefers_explicit_then_detected
-  # 워커 lock 복구 · 롤백 디스패치 키 (검증 4차 라운드)
+  # 워커 lock 복구 · 롤백 디스패치 키 (검증)
   - rollback_dispatch_accepts_composite_task_key
   - worker_lock_cleared_on_abort_or_reset_allows_reacquire
   - worker_stale_window_declared_by_owner_is_lower_bound
   - lock_loss_inside_task_body_is_not_a_task_failure
-  # 6차 라운드 — 예외 경로 표시 정보 · 무게이트 헬퍼 계약 · 오류 봉투 · 테스트 격리
+  # 예외 경로 표시 정보 · 무게이트 헬퍼 계약 · 오류 봉투 · 테스트 격리
   - exception_error_event_carries_failure_path_display_fields
   - installer_execution_mode_vocabulary_comes_from_core_enum
   - installer_best_effort_failure_is_recorded_once
@@ -189,11 +189,11 @@ effects:
   # 로드 순서 · 런타임 헬퍼 (기존 파일의 마킹 누락 해소)
   - installer_includes_are_load_order_independent
   - installer_runtime_helpers_behave_as_contracted
-  # 8차 라운드 — 판정 배선·화면 스타일 규칙·건너뛰기 안전장치
+  # 판정 배선·화면 스타일 규칙·건너뛰기 안전장치
   - skip_guard_parses_env_without_ini_semantics
   - skip_guard_required_tables_are_fixed
 
-  # 9차 라운드 — 롤백 디스패치 전수 · 중단/예외 계약 · 건너뛰기 파급 · 번들 안전 · 모니터 대칭
+  # 롤백 디스패치 전수 · 중단/예외 계약 · 건너뛰기 파급 · 번들 안전 · 모니터 대칭
   - rollback_dispatch_covers_every_live_task
   - manual_commands_cover_every_live_task
   - db_seed_failure_rolls_back_seed_not_migrate
@@ -214,7 +214,7 @@ effects:
   - start_path_checks_cancellation
   - completion_keeps_passed_over_evidence
 
-  # 11차 라운드 — 진입 게이트·상태 고착·다국어 표기·모니터 세 모드 대칭
+  # 진입 게이트·상태 고착·다국어 표기·모니터 세 모드 대칭
   - installer_finalize_rejects_unfinished_or_unauthorized_requests
   - installer_start_rejects_live_worker_and_token_hijack
   - installer_token_rejection_separates_missing_from_mismatch
@@ -222,7 +222,7 @@ effects:
   - installer_task_marker_persistence_is_verified
   - installer_lang_rejects_literal_escape_sequences
   # 안내 문구가 실재하지 않는 버튼 이름을 부르면, 운영자는 화면에서 그 조치를 찾지 못한다
-  # (ko 안내가 [다시 검사] 를 불렀는데 버튼은 [다시 검증] 이었다 — 8차 라운드).
+  # (ko 안내가 [다시 검사] 를 불렀는데 버튼은 [다시 검증] 이었다).
   - installer_lang_guidance_names_existing_buttons
   - installer_inline_script_strings_use_shared_escaping
   - installer_worker_lock_lost_judgment_is_shared
@@ -236,11 +236,11 @@ effects:
   - sse_monitor_closes_stream_on_stop
   - polling_monitor_surfaces_client_error_status
 
-  # 12차 라운드 — 게이트 자신의 결함(무효 판정·미검증 축) 차단
+  # 게이트 자신의 결함(무효 판정·미검증 축) 차단
   - installer_test_creating_temp_base_path_cleans_it_up
   - no_cli_manifest_axes_match_their_source_of_truth
 
-  # 19차 라운드 — 롤백 범위·삭제 실패·서버 판정 도달
+  # 롤백 범위·삭제 실패·서버 판정 도달
   - installer_durable_writes_never_discard_their_result
   - delete_directory_reports_enumeration_failure
   - delete_directory_does_not_follow_symlinks
@@ -249,7 +249,7 @@ effects:
   - installer_finalize_checks_acceptance
   - installer_source_gates_strip_comments_and_scan_recursively
 
-  # 14차 라운드 — 12·13차가 만든 회귀 장치의 미등재분 전수 편입.
+  # 앞서 만든 회귀 장치의 미등재분 전수 편입.
   # 이 매니페스트는 stepwise 기능의 커버리지 SSoT 인데, 그 공정이 만든 테스트 25개가
   # test_files 에 없어 그 @effects 78개가 어느 매니페스트에도 없는 죽은 마커였다.
   # 세 방향 게이트가 전부 「선언한 파일」을 기점으로 돌아 이 방향만 보이지 않았다.
@@ -294,16 +294,16 @@ effects:
   - installer_finalize_clears_config_cache_after_env_merge
   - installer_finalize_survives_config_cache_delete_failure
   - installer_survives_windows_and_shared_hosting_constraints
-  # 20차 라운드 — DB 사전 검사 스코프·출력 채널·메모리 예산·색 토큰 게이트
+  # DB 사전 검사 스코프·출력 채널·메모리 예산·색 토큰 게이트
   - installer_db_privilege_check_scopes_to_target_database
   - installer_api_error_output_never_corrupts_response_body
   - installer_memory_budget_declarations_are_consistent
   - installer_css_colors_come_from_tokens_only
-  # 21차 라운드 — 재시도 수명주기·이미적용 판정·삭제 범위 공개
+  # 재시도 수명주기·이미적용 판정·삭제 범위 공개
   - installer_retry_run_preserves_progress_history
   - installer_already_applied_judgment_rejects_mid_sentence_matches
   - installer_drop_targets_are_disclosed_and_recorded
-  # 22차 라운드 — 이중 판정·전이 소비 정합
+  # 이중 판정·전이 소비 정합
   - installer_state_transitions_are_consistently_judged
   - killed_worker_promoted_by_next_request
   - killed_worker_promotion_keeps_skip_available
@@ -345,19 +345,19 @@ effects:
   - installer_translated_attribute_values_are_escaped
   - installer_running_card_header_is_inert
   # 화면 스크립트의 최후 폴백 문구도 다국어 표를 거친다 — `window.EXTENSION_LABELS` 가
-  # 실리지 않은 경로의 `||` 폴백이 영문 리터럴이면 한국어 화면에 개발자 문구가 뜬다 (13차 G3 W1-13)
+  # 실리지 않은 경로의 `||` 폴백이 영문 리터럴이면 한국어 화면에 개발자 문구가 뜬다
   - installer_client_messages_are_translated
 
-  # 14차 라운드 — 커맨드 원문 채널 분리 (§12.0 W3)
+  # 커맨드 원문 채널 분리 (§12.0 W3)
   - installer_command_output_prefix_is_shared_by_server_and_client
   - installer_command_output_never_enters_the_progress_log
   - installer_command_output_has_a_collapsible_home
 
-  # 14차 라운드 — busy 구간의 진행 기록 도달
+  # busy 구간의 진행 기록 도달
   - stepwise_busy_response_delivers_missed_log_lines
   - stepwise_log_offset_follows_the_server_total
 
-  # 16차 라운드 — 필수 확장 부재 축 (형제 「함수 차단」축과 별개)
+  # 필수 확장 부재 축 (형제 「함수 차단」축과 별개)
   - installer_boot_survives_missing_required_extension
 
   # APP_URL 기본값의 scheme 을 공용 https 판정에서 취한다 — 프록시 뒤에서 요청이 `http`
@@ -366,13 +366,13 @@ effects:
   # `installerRequestIsHttps()` 를 쓴다. 마커는 달렸으나 원장에 없던 축이다.
   - installer_seeds_app_url_scheme_from_shared_https_judgment
 
-  # 16차 라운드 — 건너뛰기의 짝 활성화 판정 (실제 설치 여부)
+  # 건너뛰기의 짝 활성화 판정 (실제 설치 여부)
   - skip_keeps_paired_activate_when_extension_is_installed
   - skip_pairs_activate_when_extension_is_absent
   - skip_pairs_activate_when_verdict_is_unavailable
   - skip_cascade_keeps_activate_for_installed_dependents
 
-  # 17차 라운드 — 자동 검사 필수 확장 목록이 공개 문서와 어긋나지 않는다.
+  # 자동 검사 필수 확장 목록이 공개 문서와 어긋나지 않는다.
   # 문서를 믿고 환경을 준비한 운영자가 설치 첫 화면에서 사유 없이 막히는 것을 막는다.
   - required_extension_list_matches_public_doc
   - required_extension_count_matches_public_doc
@@ -505,7 +505,7 @@ test_files:
   - tests/Unit/Installer/InstallerWorkerLockReleaseTest.php
   # 그 남은 시간을 세어 한 번 이어가는 화면 절반 (D7).
   - resources/js/installer/__tests__/installer-lock-wait.test.ts
-  # 8차 라운드 등재 — `@effects` 마커를 달고도 test_files 에 없어 지워도 조용하던 파일.
+  # `@effects` 마커를 달고도 test_files 에 없어 지워도 조용하던 파일.
   - tests/Unit/Support/PhpProbeMessageKeyDictionaryTest.php
   - tests/Feature/Api/Admin/SettingsControllerTest.php
   - tests/Unit/Installer/InstallerBaseUrlDerivationTest.php
@@ -520,35 +520,35 @@ test_files:
   - tests/Unit/Installer/InstallerEndpointGuardCoverageTest.php
   - tests/Unit/Installer/InstallerIncludeOrderTest.php
   - tests/Unit/Installer/InstallerRuntimeHelperTest.php
-  # 6차 라운드 — 무게이트였던 헬퍼 계약 · 표시 이름 · 테스트 격리
+  # 무게이트였던 헬퍼 계약 · 표시 이름 · 테스트 격리
   - tests/Unit/Installer/InstallerUngatedHelperContractTest.php
   - tests/Unit/Installer/InstallerTaskDisplayNameTest.php
   - tests/Unit/Installer/InstallerTestIsolationCoverageTest.php
   - tests/Unit/Execution/CommandRunnerResolverTest.php
   - tests/Feature/Execution/CommandRunnerEquivalenceTest.php
-  # 16차 라운드 — 건너뛰기 짝 활성화 판정
+  # 건너뛰기 짝 활성화 판정
   - tests/Unit/Installer/InstallerSkipPairedActivateTest.php
-  # 8차 라운드 — 미선언 CSS 클래스 회귀 · 건너뛰기 안전장치 자신의 계약
+  # 미선언 CSS 클래스 회귀 · 건너뛰기 안전장치 자신의 계약
   - tests/Unit/Installer/InstallerStyleClassCoverageTest.php
   - tests/Unit/Concerns/SkipsWhenExtensionTablesAreMissingTest.php
-  # 9차 라운드 — 롤백 디스패치·건너뛰기 파급·번들 안전·바이너리 SAPI·모니터 계약
+  # 롤백 디스패치·건너뛰기 파급·번들 안전·바이너리 SAPI·모니터 계약
   - tests/Unit/Installer/InstallerRollbackDispatchTest.php
   - tests/Unit/Installer/InstallerSkipDependencyCascadeTest.php
   - tests/Unit/Installer/InstallerVendorBundleGuardTest.php
   - tests/Unit/Installer/InstallerPhpBinaryDetectionTest.php
   - tests/Unit/Installer/InstallerMonitorContractTest.php
   - tests/Unit/Installer/InstallerStateSchemaTest.php
-  # 10차 라운드 — 인스톨러 다국어 회귀 게이트(신설 축) · 매니페스트 마커 정합 · 모니터 행위 테스트
+  # 인스톨러 다국어 회귀 게이트(신설 축) · 매니페스트 마커 정합 · 모니터 행위 테스트
   - tests/Unit/Installer/InstallerLanguageParityTest.php
   - tests/Unit/Installer/InstallerScenarioMarkerCoverageTest.php
   - resources/js/installer/__tests__/installation-monitor.test.ts
-  # 11차 라운드 — 토큰 클라이언트 배선(10차 fail-closed 의 나머지 절반) · OS 두 분기 동시 평가
+  # 토큰 클라이언트 배선(fail-closed 의 나머지 절반) · OS 두 분기 동시 평가
   - resources/js/installer/__tests__/installer-token-wiring.test.ts
   - tests/Unit/Installer/InstallerWindowsCommandsTest.php
   - tests/Unit/Concerns/ScansPhpSourceFunctionsTest.php
-  # 12차 라운드 — 게이트 자신을 스캔하는 메타 검사
+  # 게이트 자신을 스캔하는 메타 검사
   - tests/Unit/Meta/SourceGateHygieneTest.php
-  # 14차 라운드 — 위 effects 와 짝을 이루는 파일 목록
+  # 위 effects 와 짝을 이루는 파일 목록
   - tests/Unit/Installer/InstallerAbortSnapshotReloadTest.php
   - tests/Unit/Installer/InstallerAbortWorkerRetreatTest.php
   - tests/Unit/Installer/InstallerCssCascadeContractTest.php
@@ -577,25 +577,25 @@ test_files:
   - tests/Unit/Installer/InstallerTaskListViewParityTest.php
   - tests/Unit/Installer/InstallerTimeBudgetDeclarationTest.php
   - tests/Unit/Installer/InstallerTransitiveSkipCascadeTest.php
-  # 20차 라운드 — 위 effects 와 짝을 이루는 파일 목록
+  # 위 effects 와 짝을 이루는 파일 목록
   - tests/Unit/Installer/InstallerDbPrivilegeScopeTest.php
   - tests/Unit/Installer/InstallerJsonEndpointErrorChannelTest.php
   - tests/Unit/Installer/InstallerMemoryBudgetTest.php
   - tests/Unit/Installer/InstallerEnvTemplateDriftTest.php
   - tests/Unit/Installer/InstallerCssColorLiteralGateTest.php
-  # 21차 라운드 — 위 effects 와 짝을 이루는 파일 목록
+  # 위 effects 와 짝을 이루는 파일 목록
   - tests/Unit/Installer/InstallerRetryLifecycleTest.php
   - tests/Unit/Installer/InstallerAlreadyAppliedJudgmentTest.php
   - tests/Unit/Installer/InstallerDropTargetDisclosureTest.php
-  # 22차 라운드 — 위 effects 와 짝을 이루는 파일 목록
+  # 위 effects 와 짝을 이루는 파일 목록
   - tests/Unit/Installer/InstallerStateTransitionConsistencyTest.php
   - tests/Unit/Installer/InstallerViewAccessibilityContractTest.php
   - tests/Unit/Installer/InstallerCommandOutputChannelTest.php
-  # 13차 G3 라운드 — `installer_client_messages_are_translated` 와 짝 (마커는 달렸으나 미등재였다)
+  # `installer_client_messages_are_translated` 와 짝 (마커는 달렸으나 미등재였다)
   - tests/Unit/Installer/InstallerJsMessageFallbackTest.php
-  # 17차 라운드 — 필수 확장 목록 ↔ 공개 문서 대조 (제품 결정: 문서 갱신 + 대조 검사 신설)
+  # 필수 확장 목록 ↔ 공개 문서 대조 (제품 결정: 문서 갱신 + 대조 검사 신설)
   - tests/Unit/Installer/InstallerRequiredExtensionDocParityTest.php
-  # 18차 라운드 — 관리자 시더의 환경변수 3통로 (13차 수정에 회귀 장치가 0 이었다)
+  # 관리자 시더의 환경변수 3통로 (수정에 회귀 장치가 0 이었다)
   - tests/Feature/Installer/AdminSeederEnvChannelTest.php
   - resources/js/installer/__tests__/installation-monitor-busy-log-tail.test.ts
   # develop 합류분 — `task_outcome: best_effort_failed` 갈래의 사용자 안내 문구를 재는

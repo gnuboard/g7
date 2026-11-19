@@ -186,7 +186,7 @@ class InstallerStateSchemaTest extends TestCase
     }
 
     /**
-     * 조회 응답의 실패 필드 집합은 한 곳이 만든다 (9차 #G1).
+     * 조회 응답의 실패 필드 집합은 한 곳이 만든다.
      *
      * 같은 데이터를 두 엔드포인트가 내보낸다 — 폴링(state-management.php?action=get)과
      * 단계별 실행(run-task.php 의 상태 요약)이다. 각자 배열 리터럴을 갖고 있으면 한쪽에만
@@ -229,7 +229,7 @@ class InstallerStateSchemaTest extends TestCase
     }
 
     /**
-     * 단계별 실행 응답의 상태 요약이 폴링 조회와 같은 집합을 싣는다 (10차 #G9).
+     * 단계별 실행 응답의 상태 요약이 폴링 조회와 같은 집합을 싣는다.
      *
      * 요약은 종전에 `run-task.php`(최상위 스크립트) 안에 있어 형태·값이 무검사였다 —
      * 필드가 빠지거나 이름이 바뀌어도 소스 대조는 「부른다」만 확인했다.

@@ -14,7 +14,7 @@ use Tests\Unit\Support\LayoutMarkup\GateMembershipGuardTest;
  * 확장점 주입 리스너 테스트.
  *
  * S18 P1 이 확장점 읽기를 코어 진입점(`config()` 의존)으로 옮기면서 Laravel 부팅이 필요해졌다.
- * 종전 순수 `PHPUnit\Framework\TestCase` 상태로는 error 였고, 종료 게이트 밖이라 30차까지
+ * 종전 순수 `PHPUnit\Framework\TestCase` 상태로는 error 였고, 종료 게이트 밖이라 오랫동안
  * 관측되지 않았다 — 게이트 소속은 이제
  * {@see GateMembershipGuardTest} 가 잠근다.
  */

@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\CleansTemporaryBasePath;
 
 /**
- * 무CLI 환경에서 실행기가 조용히 죽지 않는다는 계약 (13차 환경#2·#3·#12·#25 · E3 · 보안#12).
+ * 무CLI 환경에서 실행기가 조용히 죽지 않는다는 계약 (#3·#12·#25 · E3 · 보안#12).
  *
  * 고정하는 계약:
  *

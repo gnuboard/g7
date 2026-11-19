@@ -1,5 +1,5 @@
 # audit:allow test-scenario-coverage reason: issue:#609 |
-# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 #   본 시나리오는 관리자 게시글 상세의 댓글 카드 우측 버튼 영역 (답변 / 신고) 시각 간격
 #   회귀 방지용 명세다. 기능 동작 변경은 0건 — Tailwind `gap-2` 클래스 1개 추가만 수행.
 #   회귀 가드는 기존 컴포넌트 단위 테스트(Vitest 의 admin-board-post-detail-* spec) 가

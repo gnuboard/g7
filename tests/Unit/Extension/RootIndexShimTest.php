@@ -7,7 +7,7 @@ use App\Services\CoreUpdateService;
 use Tests\TestCase;
 
 /**
- * 루트 `index.php` shim 판별의 SSoT 계약 (14차 G3 라운드).
+ * 루트 `index.php` shim 판별의 SSoT 계약.
  *
  * 판별 기준이 두 곳에 **다른 엄격도**로 적혀 있었다 — 런타임
  * (`CoreUpdateService::recordRootIndexReplacement`)은 공백까지 고정한 리터럴을

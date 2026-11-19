@@ -8,9 +8,9 @@ use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 /**
- * `layout:generate-fixture` 가 fixture 를 **소스 SSoT** 에서 굽는다 (39차 신설).
+ * `layout:generate-fixture` 가 fixture 를 **소스 SSoT** 에서 굽는다.
  *
- * ## 왜 이 축이 39차에 생겼나
+ * ## 왜 이 축이 생겼나
  *
  * 이 커맨드는 최상위 레이아웃을 `File::get` + `json_decode` 로 직행해 읽고 있었다. 조각 축은
  * `resolveAllPartials()` 로 규약을 타는데(그래서 조각은 소스로 인라인됐다) **문서 루트만

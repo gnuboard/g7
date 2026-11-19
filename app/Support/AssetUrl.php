@@ -51,7 +51,7 @@ class AssetUrl
      *
      * 정적 `spl_object_id` 저장은 쓰지 않는다 — 그 id 는 객체가 해제되면 **재사용**되므로
      * 장수 프로세스(Octane·큐 워커)에서 앞 요청 직후의 다음 요청이 같은 id 를 받아 경고가
-     * 조용히 삼켜졌다. 요청의 속성에 두면 그 의미가 객체 수명과 함께 끝난다 (16차 G3 라운드 B-8).
+     * 조용히 삼켜졌다. 요청의 속성에 두면 그 의미가 객체 수명과 함께 끝난다.
      */
     private const PREFIX_MISMATCH_WARNED_ATTRIBUTE = '_g7_asset_url_prefix_mismatch_warned';
 
@@ -282,7 +282,7 @@ class AssetUrl
 
         // 오리진을 알 수 없다 — `APP_URL` 에 scheme·host 가 없고 요청도 없다(큐·콘솔). 경로만
         // 돌려주면 메일·사이트맵에 상대 경로가 실려 조용히 깨진다. 그 사실을 로그로 남긴다 —
-        // 경로만 반환한다는 계약은 하위호환으로 유지하되, 원인을 진단할 통로를 둔다 (17차 G3 라운드 B-9).
+        // 경로만 반환한다는 계약은 하위호환으로 유지하되, 원인을 진단할 통로를 둔다.
         self::warnOriginUnresolvableOnce($path);
 
         return $path;
@@ -339,7 +339,7 @@ class AssetUrl
      * (`SeoMetaResolver`)에 **세 벌의 독립 사본**으로 살아 있었고, 번들 모듈 5지점은
      * 아예 순진한 형태(`str_starts_with('http') ? … : absolute()`)라 위 가드도 접두사
      * 채움도 없었다. 사본이 갈려도 오류가 나지 않고 그 자산만 404 가 되므로, 규칙을
-     * 여기 한 곳으로 접는다 (16차 G3 라운드 A-4·A-9).
+     * 여기 한 곳으로 접는다.
      *
      * @param  string  $path  사이트 경로 후보
      * @return string 접두사가 채워진 경로 (판정 대상이 아니면 원본 그대로)
@@ -437,7 +437,7 @@ class AssetUrl
      * 운영자가 `APP_URL` 에 후행 슬래시를 붙이면 그 형태가 그대로 메일에 나갔고, 요청이 접두사를
      * 실은 배치와 설정만 아는 배치(큐)가 다른 값을 냈다. `rtrim(SiteUrl::absolute('/'), '/')` 에
      * `siteAbsolute()` 의 오리진 소문자 정규화를 더한 값이라 형제 링크(`siteAbsolute('/login')`)와
-     * 언제나 같은 앞부분을 갖는다 (16차 G3 라운드 B-4). `APP_URL` 이 비면 빈 문자열이다.
+     * 언제나 같은 앞부분을 갖는다. `APP_URL` 이 비면 빈 문자열이다.
      *
      * @return string 예: `https://example.com/g7` (루트 설치면 `https://example.com`)
      */
@@ -546,7 +546,7 @@ class AssetUrl
      * 사이트맵)은 `app.url` 의 경로 부분(`configuredBasePath()`)만 안다. 둘이 다르면 그
      * 문맥이 만드는 주소가 전부 **사이트 밖**을 가리키는데, 그 결함은 웹에서는 절대
      * 재현되지 않고 메일의 깨진 이미지 · 크롤러의 404 로만 나타난다. 웹 요청 안에서는
-     * 두 값을 나란히 볼 수 있으므로 그 자리에서 로그로 남긴다 (15차 G3 라운드 W4-4).
+     * 두 값을 나란히 볼 수 있으므로 그 자리에서 로그로 남긴다.
      *
      * 테스트 프로세스는 제외한다 — 케이스마다 요청·설정을 임의로 만들어 불일치가 흔하고,
      * `Log` 파사드 기대를 가진 테스트에서 예기치 않은 호출이 된다.
@@ -566,7 +566,7 @@ class AssetUrl
 
         // 오리진 축도 함께 본다 — `absolute()` 는 설정 오리진을 요청보다 우선하므로, 설정 오리진이
         // 요청 오리진과 다르면 큐·콘솔이 만드는 PG 복귀·메일·사이트맵 주소가 웹과 다른 호스트를
-        // 가리킨다. 경로 축만 재던 종전에는 이 어긋남이 어디에도 드러나지 않았다 (17차 G3 라운드 B-10).
+        // 가리킨다. 경로 축만 재던 종전에는 이 어긋남이 어디에도 드러나지 않았다.
         $configuredOrigin = self::configuredOrigin();
         $requestOrigin = strtolower(rtrim($request->getSchemeAndHttpHost(), '/'));
         $originMismatch = $configuredOrigin !== '' && $configuredOrigin !== $requestOrigin;

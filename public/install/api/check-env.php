@@ -11,7 +11,7 @@
 // 이 파일은 최상위 실행문이 없고 BASE_PATH 를 자체 역산하므로 config 보다 앞에 와도 안전하다.
 require_once __DIR__.'/../includes/execution-mode.php';
 
-// 오류 텍스트가 JSON 본문에 섞이지 않게 한다 (20차 #13 · 21차 N4) — **include 체인·가드보다
+// 오류 텍스트가 JSON 본문에 섞이지 않게 한다 — **include 체인·가드보다
 // 앞**이어야 한다. config/session/functions 안의 warning 이 배선보다 먼저 실행되면 그
 // 텍스트가 본문 앞에 붙는 창이 그대로 남는다. `@` 는 진단 억제일 뿐이므로 가용성은
 // installerHasFunction 이 판정한다 (execution-function-availability-via-ssot).
@@ -27,7 +27,7 @@ require_once __DIR__.'/_guard.php';
 installer_guard_or_410();
 
 // 다국어 로드 — 형제 6곳과 같은 규칙이다. 이 파일만 싣지 않아 아래 405 문구가
-// 하드코딩 영문으로 나갔다(한국어 운영자에게 이 엔드포인트만 영문). (12차 G3 라운드 E-3)
+// 하드코딩 영문으로 나갔다(한국어 운영자에게 이 엔드포인트만 영문).
 $currentLang = getCurrentLanguage();
 $translations = loadTranslations($currentLang);
 
@@ -55,7 +55,7 @@ $webUser = getWebServerUser();
 // 가드는 **실제로 부르는 함수**를 본다. 종전에는 `posix_getuid` 를 함께 요구했는데 그
 // 함수는 이 줄에서 한 번도 불리지 않고, 정작 인자를 만드는 `fileowner` 는 판정 대상이
 // 아니었다 — 형제 판정(`check-configuration.php`)은 `posix_getpwuid` 만 보고 있어 같은
-// 판정의 두 사본이 이미 갈려 있었다 (7차 G3 라운드 D-7).
+// 판정의 두 사본이 이미 갈려 있었다.
 $baseOwner = installerHasFunction('posix_getpwuid') && function_exists('fileowner')
     ? (posix_getpwuid((int) fileowner(BASE_PATH))['name'] ?? null)
     : null;

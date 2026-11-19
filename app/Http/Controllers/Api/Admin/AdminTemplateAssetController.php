@@ -256,7 +256,7 @@ class AdminTemplateAssetController extends AdminBaseController
 
         // 세 응답 모두 코어 헬퍼를 지난다 — 파일 서빙 응답 계약(유형 선언 + `nosniff`)은 그
         // 한 곳이 붙인다. 종전에는 `response()->header()` 로 직접 만들어 이 통로만 `nosniff`
-        // 가 빠져 있었다 (16차 G3 라운드 E-8).
+        // 가 빠져 있었다.
         return $this->inlineContentResponse($css, 'text/css; charset=UTF-8');
     }
 
@@ -267,7 +267,7 @@ class AdminTemplateAssetController extends AdminBaseController
      * 실패한 요청들이 **하나의 키**를 공유해, 어느 시점의 변환 결과든 그 키에 한 번
      * 들어가면 빌드가 바뀌어도 1시간 동안 그대로 나간다 — mtime 을 키에 넣은 이유
      * (빌드 변경 즉시 무효화)가 그 자리에서 사라진다. 오류도 로그도 없다. 조회 실패는
-     * 키를 만들지 않아 호출부가 캐시를 읽지도 쓰지도 않게 한다 (13차 G3 라운드).
+     * 키를 만들지 않아 호출부가 캐시를 읽지도 쓰지도 않게 한다.
      *
      * @param  string  $identifier  템플릿 식별자
      * @param  int  $cacheVersion  확장 캐시 버전

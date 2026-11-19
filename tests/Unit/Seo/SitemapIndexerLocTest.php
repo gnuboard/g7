@@ -18,8 +18,7 @@ use Tests\TestCase;
  * 증분 색인(리스너 경유)이 `url()` 로 절대화하면 요청 호스트를 싣고, 접두사를 이미 품은
  * 값(`/g7/shop/1`)에 접두사를 **한 번 더** 실어 `/g7/g7/…` 이 된다. 전체 재생성
  * (`SitemapGenerator::normalizeEntry`)은 `AssetUrl::siteAbsolute()` 를 쓰므로 같은 리소스의
- * `<loc>` 이 생성 경로에 따라 갈리고, 크롤러는 그것을 오류 없이 다른 주소로 색인한다
- * (16차 G3 라운드 B-3).
+ * `<loc>` 이 생성 경로에 따라 갈리고, 크롤러는 그것을 오류 없이 다른 주소로 색인한다.
  */
 class SitemapIndexerLocTest extends TestCase
 {

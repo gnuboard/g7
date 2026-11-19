@@ -203,12 +203,12 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
 
         // @scenario asset_url_mode=extensionless, base_path=root
         // @effects public_storage_asset_url_conversion_matches_the_route_form, blade_inline_recovery_converter_matches_ts_builder
-        it('경로에 리터럴 %가 있어도 던지지 않는다 (5차 G3 · H6)', () => {
+        it('경로에 리터럴 %가 있어도 던지지 않는다', () => {
             // 서버의 확장자 모드는 경로를 **인코딩하지 않는다**(형제 `AssetUrl::asset()` 과
             // 동형이고 정적 `/storage/…` 도 그렇다). 그래서 `50%off.png` 같은 파일명이 그대로
             // 실려 오는데, `decodeURIComponent('50%off.png')` 는 `URIError` 를 던진다.
             //
-            // 두 구현이 **똑같이** 던지므로 위의 드리프트 대조는 초록이다 — 4차가 기록한
+            // 두 구현이 **똑같이** 던지므로 위의 드리프트 대조는 초록이다 — 앞서 기록한
             // 「양쪽이 같이 틀려서 초록」이 다른 입력에서 그대로 재현된 자리다. 던지는 지점은
             // 모듈 자산 로딩 전체(ModuleAssetLoader)와 CSS 자가 복구 핸들러라, 그 페이지의
             // 확장 자산이 통째로 멈추거나 스타일이 조용히 사라진다.
@@ -657,7 +657,7 @@ describe('자산 URL 자가 복구 불변식 (§12)', () => {
             // 리터럴을 적어 두었는데, 그러면 엔드포인트 이름이 바뀌는 순간 이 게이트가
             // 영구히 0건이 되고 아무도 알 수 없다 — 그 이름은 이 저장소의 프론트 소스
             // 어디에도 없어 대조할 상대가 없다. 라우트에서 도출해, 못 찾으면 그 자체가
-            // red 가 되게 한다 (7차 G3 라운드 E13).
+            // red 가 되게 한다.
             const routes = readFileSync(join(repoRoot, 'routes/api.php'), 'utf-8');
             const declared = /dualSuffix\(\s*'([^']*asset-probe[^']*)'/.exec(routes);
 

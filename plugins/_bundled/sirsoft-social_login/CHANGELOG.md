@@ -1,12 +1,14 @@
 # Changelog
 
-All notable changes to this plugin will be documented in this file.
+이 플러그인의 모든 주요 변경사항을 기록합니다.
+형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
+[Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
-
-## [1.0.0] - 2026-11-19
+## [1.0.0] - 2026-11-20
 
 ### Added
+
+- 소셜 로그인 플러그인 최초 릴리즈. 기본 언어는 한국어·영어이고 일본어는 번들 언어팩으로 제공한다. 코어 7.2.0 이상이 필요하다(`g7_version >=7.2.0`)
 
 #### 기본과 제공자
 
@@ -18,7 +20,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - 운영자가 회원 항목에 「기존 회원에게도 입력 요구」를 켜 추가 정보 입력이 필요한 회원도 소셜 계정 연결 시작과 해제, 본인 재확인(소셜 재로그인)의 시작과 결과 수령은 그대로 할 수 있습니다. 코어가 그런 회원의 쓰기 요청을 막지만, 로그인 수단을 다루는 이 요청들은 코어 필터 `core.required_fields.filter_exempt_routes` 로 열어 둡니다.
 - 사이트를 문서 루트 하위 폴더(예: `https://example.com/g7/`)에 설치해도 로그인/가입 버튼의 시작 주소가 설치 폴더 안을 가리키고, 본인 재확인의 복귀 경로는 설치 폴더 기준 화면 경로로 실립니다.
 - 화면 폭에 따라 바뀌는 모양은 엔진 responsive 로 정합니다(Tailwind 반응형 접두와 폭 미디어를 품은 의미 클래스를 쓰지 않습니다). 화면 모양은 같습니다.
-- 소셜 로그인 플러그인 최초 릴리즈. 기본 언어는 한국어·영어이고 일본어는 번들 언어팩으로 제공한다. 코어 7.2.0 이상이 필요하다(`g7_version >=7.2.0`)
 - 카카오, 네이버, 구글, 페이스북, 일반 OIDC 제공자 연동. 다른 확장은 필터 훅 `sirsoft-social_login.provider.filter_registered` 로 새 제공자를 더할 수 있다(내장 제공자 덮어쓰기는 무시)
 - id_token 서명 검증(RS256 고정, JWKS `kid` 선택과 1회 재조회, 발급자·수신자·만료·nonce 검사)
 - OAuth 왕복: state 1회성 보관(PKCE, nonce), 같은 출처 복귀 주소만 허용, 콜백 뒤 세션 ID 재발급. 관리자 연결 테스트는 로그인하지 않고 일회용 결과 화면(받은 항목·가입에 빠진 항목·제공자 원본 키 이름, 60초 안에 한 번)을 보여 준다
@@ -67,7 +68,3 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - 공개 API 와 마이페이지 API 13종, 관리자 API 16종([docs/api/social-login.md](docs/api/social-login.md)). 요청 제한은 라우트마다 따로 센다
 - 화면 스타일은 플러그인 자체 CSS 로 싣는다 — 템플릿의 CSS 라이브러리와 무관하게 표시되고, 다크 모드는 템플릿이 선언한 다크 방식을 따른다
 - 알림 템플릿 편집 창의 받는 사람에 「사이트 관리자 이메일」(코어 환경설정 > 일반의 관리자 이메일, 메일만)을 고를 수 있습니다(코어 7.2.0).
-
-### Changed
-
-- 소셜 로그인 버튼의 로그인, 가입, 다시 확인 문구에서 괄호 조사 「(으)로」를 없앴습니다. 이제 「○○ 계정으로 로그인」처럼 보입니다.

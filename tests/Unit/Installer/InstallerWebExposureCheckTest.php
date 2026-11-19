@@ -143,7 +143,7 @@ class InstallerWebExposureCheckTest extends TestCase
     }
 
     /**
-     * sentinel 파일명이 **검사마다 다르다** (3차 라운드 H2).
+     * sentinel 파일명이 **검사마다 다르다**.
      *
      * 이름을 고정하고 마커만 새로 만들면, 탭 두 개나 [다시 검사] 중복 호출이 겹칠 때 먼저
      * 받은 화면의 마커가 무효가 된다. 그 화면이 프로브하면 파일은 **실제로 서빙되는데도**
@@ -178,7 +178,7 @@ class InstallerWebExposureCheckTest extends TestCase
     }
 
     /**
-     * 준비에 실패한 계열은 목록에서 조용히 빠지지 않고 `unmeasured` 로 보고된다 (3차 H3).
+     * 준비에 실패한 계열은 목록에서 조용히 빠지지 않고 `unmeasured` 로 보고된다.
      *
      * 종전에는 sentinel 을 만들지 못하면 그 대상만 사라졌고, 남은 두 계열이 403 이면 화면이
      * 초록 「보호 확인됨」이 됐다 — storage 계열은 한 번도 재지 않았는데도. 재지 못한 축은
@@ -208,14 +208,14 @@ class InstallerWebExposureCheckTest extends TestCase
             '재지 못한 계열은 unmeasured 로 드러나야 한다 — 조용히 빠지면 화면이 안전으로 읽는다'
         );
 
-        // 이 픽스처에는 인스톨러 자산이 없으므로 대조 계열도 함께 승격된다(7차 라운드).
+        // 이 픽스처에는 인스톨러 자산이 없으므로 대조 계열도 함께 승격된다.
         // 그 사실이 이 단언에 들어오는 것은 의도된 결과다 — 종전에는 대조만 조용히
         // 빠져 「대조할 것이 없다」로 읽혔다.
         $this->assertContains('install/assets', array_column($plan['unmeasured'], 'label'));
     }
 
     /**
-     * sentinel 권한이 **실제 storage 콘텐츠와 같은 등급**이다 (8차 P4-1②).
+     * sentinel 권한이 **실제 storage 콘텐츠와 같은 등급**이다 (P4-1②).
      *
      * 종전 계약은 형제 임시 파일(runtime.php)과 같은 `0600` 이었다. 그 규약을 여기에 그대로
      * 적용하면 대표성이 깨진다 — PHP-FPM 이 사이트 계정으로 돌고 정적 파일은 웹서버 계정이
@@ -258,7 +258,7 @@ class InstallerWebExposureCheckTest extends TestCase
     }
 
     /**
-     * sentinel 이름에 **확장자가 없다** (8차 P4-1①).
+     * sentinel 이름에 **확장자가 없다** (P4-1①).
      *
      * 이 계열이 재려는 것은 rewrite 부재 방어선의 **경로(디렉토리) 차단**이 살아 있는가다
      * (`vendor/` 를 함께 재는 사유와 같다 — 그 차단은 `mod_alias` 안에 있어 그 모듈이 없으면
@@ -288,7 +288,7 @@ class InstallerWebExposureCheckTest extends TestCase
     }
 
     /**
-     * `vendor/` 가 아직 없으면 **재지 못한 계열**로 보고된다 (8차 P4-2).
+     * `vendor/` 가 아직 없으면 **재지 못한 계열**로 보고된다.
      *
      * 무CLI 배포 동선(`vendor-bundle.zip`)에서는 이 화면 시점에 `vendor/` 가 아직 풀리지
      * 않았다 — 이 점검이 대상으로 하는 바로 그 호스팅에서 vendor 계열은 **언제나** 재지
@@ -342,12 +342,12 @@ class InstallerWebExposureCheckTest extends TestCase
     }
 
     /**
-     * 진입 스윕은 **오래된** 잔여물만 걷는다 (4차 G3).
+     * 진입 스윕은 **오래된** 잔여물만 걷는다.
      *
      * 이 계열은 요청마다 파일을 만들므로 무인증 설치 창에서 무한히 쌓일 수 있다. 그래서 점검
      * 진입 시 정리하는데, **무조건 전부** 걷으면 탭 두 개나 [다시 검사] 중복 호출에서 뒤 호출이
      * 앞 호출의 대상을 지운다 — 앞 화면의 프로브가 404 를 받아 「보호 확인됨」이 되고, 그 파일은
-     * 실제로 서빙되고 있었을 수도 있다. 3차 라운드가 고유 파일명으로 닫은 D3 판정 반전이
+     * 실제로 서빙되고 있었을 수도 있다. 앞서 고유 파일명으로 닫은 판정 반전이
      * 정리 쪽으로 되살아나는 자리다.
      *
      * @scenario probe_target=storage_sentinel
@@ -378,7 +378,7 @@ class InstallerWebExposureCheckTest extends TestCase
     }
 
     /**
-     * `glob` 이 막힌 환경에서 「지울 것이 없었다」와 「쓸지 못했다」가 구분된다 (4차 G3).
+     * `glob` 이 막힌 환경에서 「지울 것이 없었다」와 「쓸지 못했다」가 구분된다.
      *
      * 둘을 같은 `removed:0` 으로 뭉뚱그리면 정리가 통째로 무동작인 호스팅에서도 로그에
      * 「정리 완료 (0개)」가 남아, 운영자가 잔여물이 없다고 읽는다.
@@ -458,7 +458,7 @@ class InstallerWebExposureCheckTest extends TestCase
 
     /**
      * 정리는 **접두사 전체**를 걷는다 — 이름이 고유해졌으므로 단일 파일명 삭제로는 부족하고,
-     * 링크 실측 임시 파일도 같은 디렉토리에 남을 수 있다 (3차 L4·L7).
+     * 링크 실측 임시 파일도 같은 디렉토리에 남을 수 있다.
      *
      * @scenario probe_target=storage_sentinel
      *
@@ -481,7 +481,7 @@ class InstallerWebExposureCheckTest extends TestCase
 
         // 레이트리밋 카운터도 설치 중에만 필요한 파일이다. 형제(`installer-state.json`)는
         // finalize 가 지우는데 이것만 정리 주체가 없어 설치가 끝난 사이트에 영구 잔존했고,
-        // `.gitignore` 에도 없어 개발 트리에서는 `git status` 에 그대로 떴다 (5차 G3).
+        // `.gitignore` 에도 없어 개발 트리에서는 `git status` 에 그대로 떴다.
         $ratePath = installerProbeRateLimitStatePath();
         file_put_contents($ratePath, json_encode(['probe_exposure_sentinel' => ['started_at' => time(), 'count' => 1]]));
 
@@ -560,7 +560,7 @@ class InstallerWebExposureCheckTest extends TestCase
     }
 
     /**
-     * 링크 실측의 상한은 **자기 클라이언트 창**으로만 판정한다 (8차 P4-5).
+     * 링크 실측의 상한은 **자기 클라이언트 창**으로만 판정한다.
      *
      * 설치 창은 무인증이다. 전역 창까지 보면 원격자가 그 창을 채우는 것만으로 운영자의
      * 실측이 상시 `null` 이 되고, 화면의 안내 조건(`symlink_supported === false` 일 때만
@@ -686,7 +686,7 @@ class InstallerWebExposureCheckTest extends TestCase
         // 생산자 계약은 `bool|null` 이다 — `symlink` 차단 · `storage/installer` 쓰기 불가 ·
         // 상한 도달 중 하나만 성립해도 「판정 불가」로 `null` 이 나온다. `assertIsBool` 은
         // 그 정상 상태를 결함 없이 red 로 만든다 — 계약을 재는 검사가 생산자보다 좁으면,
-        // 그 좁음이 곧 거짓 경보다 (23차 G3 라운드 D23-9).
+        // 그 좁음이 곧 거짓 경보다.
         $this->assertTrue(
             is_bool($decoded['web_exposure']['symlink_supported'])
                 || $decoded['web_exposure']['symlink_supported'] === null,
@@ -701,7 +701,7 @@ class InstallerWebExposureCheckTest extends TestCase
         );
         // 값의 **형태**까지 잠근다 — 문자열이기만 하면 통과하면, 생산자가 미지의 철자를
         // 내보내도 초록이고 화면(`installer.js`)은 그것을 `other` 로 접어 서버별 안내가
-        // 조용히 한 벌로 수렴한다 (23차 G3 라운드 D23-8).
+        // 조용히 한 벌로 수렴한다.
         $this->assertContains(
             $decoded['web_exposure']['server_kind'],
             ['apache', 'litespeed', 'iis', 'nginx', 'other'],
@@ -712,7 +712,7 @@ class InstallerWebExposureCheckTest extends TestCase
         // 위 단언은 **이 환경이 내는 한 값**만 잰다. 테스트 환경의 `SERVER_SOFTWARE` 는 비어
         // 있어 언제나 `other` 분기로 떨어지므로, 나머지 네 분기는 한 번도 평가되지 않는다 —
         // 실측: `apache` 분기의 반환값을 `'Apache'` 로 바꿔도 이 클래스가 전부 초록이었다
-        // (24차 G3 라운드 R24-C M12). 그래서 생산자를 **직접 구동**해 전 분기를 잰다.
+        // (R24-C M12). 그래서 생산자를 **직접 구동**해 전 분기를 잰다.
         $known = ['apache', 'litespeed', 'iis', 'nginx', 'other'];
         $original = $_SERVER['SERVER_SOFTWARE'] ?? null;
 
@@ -854,7 +854,7 @@ class InstallerWebExposureCheckTest extends TestCase
      * 대조 자산이 없거나 마커를 못 뽑으면 **재지 못한 계열**로 보고한다.
      *
      * 조용한 빈 배열은 화면에서 「대조할 것이 없다」로 읽혀 그 분기를 건너뛰게 하고,
-     * 그러면 위임이 죽은 서버가 다시 「보호 확인됨」으로 수렴한다 — 5차가 닫은 결함이
+     * 그러면 위임이 죽은 서버가 다시 「보호 확인됨」으로 수렴한다 — 앞서 닫은 결함이
      * 준비 실패 쪽으로 되살아난다. 형제 계열(`targets`)은 전부 승격한다.
      *
      * @effects exposure_control_preparation_failure_is_reported_as_unmeasured
@@ -898,8 +898,7 @@ class InstallerWebExposureCheckTest extends TestCase
      * 주소도 200 앱 화면으로 돌아온다(P0 실측: `/vendor/autoload.php`·`/storage/...` 가 둘 다
      * `HTTP 200 text/html`). 403/404 만 보호로 읽으면 그 정상 배치가 상시 「판정 불능」이 되어
      * D3 자동 차단이 모든 배치에서 D21 로 강등된다. 그래서 「이 서버가 파일 없는 주소에
-     * 무엇을 돌려주는가」를 함께 재고, 그 형태와 같은 응답을 받은 대상을 보호로 읽는다
-     * (14차 G3 라운드).
+     * 무엇을 돌려주는가」를 함께 재고, 그 형태와 같은 응답을 받은 대상을 보호로 읽는다.
      *
      * @effects exposure_absent_control_restores_automatic_judgement
      *

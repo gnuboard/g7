@@ -6,17 +6,17 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * 게이트 자신을 스캔하는 메타 검사 (12차 라운드에서 승인).
+ * 게이트 자신을 스캔하는 메타 검사 (라운드에서 승인).
  *
  * ## 왜 필요한가
  *
  * 12차 D축이 드러낸 패턴은 개별 결함이 아니라 **형태**다: 한 라운드가 결함을 고치면서 그
  * 결함의 형제 지점을 남긴다.
  *
- *  - 10차 #G4(주석 채널)는 `InstallerEndpointGuardCoverageTest` 의 **두 검사에만**
+ *  - 주석 채널 규칙은 `InstallerEndpointGuardCoverageTest` 의 **두 검사에만**
  *    `stripComments()` 를 적용했다 → 같은 파일의 형제 2검사·터치포인트 스캐너·모니터 계약
  *    20여 단언이 원문 대조로 남았다.
- *  - 11차 #D10(비재귀 스캔)은 격리 스캐너 하나만 재귀로 바꿨다 → 스타일 클래스 스캐너와
+ *  - 비재귀 스캔 수정은 격리 스캐너 하나만 재귀로 바꿨다 → 스타일 클래스 스캐너와
  *    자리표시자 스캐너의 한 겹 `glob()` 이 그대로 남았다.
  *
  * 둘 다 「고쳤다」고 기록된 축이고, 남은 형제는 **그 기록 때문에 오히려 덮여 있는 것처럼**
@@ -35,7 +35,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  *
  * 아직 이관하지 않은 지점은 **정확히 일치하는 목록**으로 고정한다 — 새로 생기면 red 가 되고,
  * 고쳤는데 목록에 남아 있어도 red 가 된다. 조용히 스캔 밖으로 빼면 그 사실 자체가 사라지므로
- * 목록에 남기는 쪽을 택한다 (11차 #D9 의 `DEFERRED_TO_OTHER_TRACKS` 와 같은 규율).
+ * 목록에 남기는 쪽을 택한다 (`DEFERRED_TO_OTHER_TRACKS` 와 같은 규율).
  *
  * 커버 축: gate_hygiene comment_channel·recursive_scan / judgment compliant·pending·detector_fixture
  */
@@ -121,7 +121,7 @@ class SourceGateHygieneTest extends TestCase
     /**
      * ① 축 — 아직 주석 제거로 이관하지 않은 게이트 (파일 단위, 사유 필수).
      *
-     * 전부 「원문 대조로 생산 소스를 판정한다」는 같은 형태다. 12차 라운드가 소유한 5건과
+     * 전부 「원문 대조로 생산 소스를 판정한다」는 같은 형태다. 기존 5건과
      * develop-7.2.0 병합으로 들어온 인스톨러 테스트 6건, 그 뒤 모집단에 잡힌 19건은 609 부채
      * 정리에서 모두 이관했다 — 소스 읽기는 공용 스트리퍼를 지나고, 원문이 꼭 필요한 읽기(주석 속
      * 구간 표식, 면제 표식, 로그와 자식 프로세스 출력, 상태 파일)는 그 자리에 사유와 함께
@@ -527,8 +527,8 @@ class SourceGateHygieneTest extends TestCase
             // 짝을 찾지 못하면 **검사할 수 없다는 사실을 드러낸다.** 종전에는 `continue` 라
             // 그 지점을 조용히 「위반 없음」으로 넘겼다(fail-open) — 괄호 판정이 어긋나는
             // 순간 `scansNonRecursively()` 가 아무것도 검사하지 않게 되는데 그 사실이
-            // 어디에도 나타나지 않는다. 14차가 `matchingBrace` 에서 없앤 것과 문자 그대로
-            // 같은 형태가 이 형제 게이트에 남아 있었다 (12차 G3 라운드 B-5).
+            // 어디에도 나타나지 않는다. 앞서 `matchingBrace` 에서 없앤 것과 문자 그대로
+            // 같은 형태가 이 형제 게이트에 남아 있었다.
             if ($close === null) {
                 throw new \RuntimeException(
                     '괄호 짝 판정 실패: '.$open.' 위치의 `glob(` 인자 범위를 정할 수 없다 — '

@@ -824,8 +824,8 @@ class SeoMetaResolver
      * **모듈이 편집기 칩으로 광고한다**(`{{product.data.thumbnail_url}}` ·
      * `{{post.data.thumbnail}}`). 그 두 값의 생산자는 `AssetUrl::basePrefix()` 를
      * 이미 실어 주므로, 운영자가 칩을 고르는 순간 `og:image` 가
-     * `https://host/g7/g7/api/…` 로 나가고 그 주소는 404 다 (10차 G3 라운드 X-2 —
-     * 9차가 게시판 모듈의 *기본값* 경로에서 고친 것과 같은 실패가 한 계층 위에 남아 있었다).
+     * `https://host/g7/g7/api/…` 로 나가고 그 주소는 404 다 (앞서 게시판 모듈의
+     * *기본값* 경로에서 고친 것과 같은 실패가 한 계층 위에 남아 있었다).
      *
      * 반대로 오리진만 붙이면 레이아웃이 리터럴로 적은 사이트 경로(`/img/og.png`)에
      * 접두사를 붙일 주체가 사라진다. 두 입력이 같은 자리에 오므로 **접두사를 멱등으로
@@ -834,7 +834,7 @@ class SeoMetaResolver
      * 그 보정 규칙은 `AssetUrl::siteAbsolute()` 가 소유하고, 절대 주소의 본체는 사이트 주소 기준
      * `SiteUrl::absolute()`(`SeoUrl::absolute()` 와 같은 출처 — 요청 Host 비의존)다. 종전에는 같은 규칙이
      * 여기와 `ComponentHtmlMapper` 두 곳에 **세 벌의 독립 사본**으로 살아 있었고, 갈려도
-     * 예외가 나지 않아(그 자산만 404) 대조할 장치가 없었다 (16차 G3 라운드 A-9).
+     * 예외가 나지 않아(그 자산만 404) 대조할 장치가 없었다.
      *
      * @param  string  $url  레이아웃 표현식 평가 결과
      * @return string 절대 URL (판정 대상이 아니면 원본 그대로)

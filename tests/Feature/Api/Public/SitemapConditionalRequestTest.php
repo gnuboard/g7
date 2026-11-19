@@ -17,7 +17,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
- * sitemap 두 통로(인덱스·자식)의 조건부 요청 계약 테스트 (14차 G3 라운드).
+ * sitemap 두 통로(인덱스·자식)의 조건부 요청 계약 테스트.
  *
  * 종전에는 두 통로가 `StorageInterface::response()` 스트림을 그대로 돌려줘 검증자가 하나도
  * 없었다 — 봇이 재방문마다 전문(자식은 최대 50MB)을 받아 갔다. 링크가 되는 서버의 정적
@@ -277,7 +277,7 @@ class SitemapConditionalRequestTest extends TestCase
      *
      * 세 라우트는 `routes/web.php` 라 `web` 그룹의 `StartSession` 이 매 응답에 세션 쿠키를
      * 실었다. `Set-Cookie` 가 붙은 `public` 응답은 공유 캐시가 저장하지 않거나 그 쿠키를 다른
-     * 방문자에게 재사용한다 — 봇이 받는 응답이라 세션이 있을 이유도 없다 (16차 G3 라운드 E-5).
+     * 방문자에게 재사용한다 — 봇이 받는 응답이라 세션이 있을 이유도 없다.
      * 200 과 304 모두 잰다 — 304 도 같은 미들웨어 스택을 지난다.
      *
      * @scenario response_kind=streamed, conditional_request=if_none_match

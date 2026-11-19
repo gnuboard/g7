@@ -185,14 +185,13 @@ class ServerConfigParityTest extends TestCase
      * `if ($request_method = POST) { return 405; }` 를 넣으면 그 뒤의 위임 줄이 매치
      * 밖으로 나가 거짓 red 가 됐다. (그 「정당한 구성」 판단은 형제 판정
      * `assertNginxDelegationIsReached()` 와 같아야 한다 — 종전에는 그쪽이 같은 구성을
-     * 순서 위반으로 읽어 두 판정이 서로 모순이었다. 14차 C11-3.) Caddy 축은 반대로 matcher 와 handle 사이의 거리를
-     * `[\s\S]{0,600}?` 로 고정해, 그 사이에 지시자 몇 줄만 늘어도 거짓 red 였다
-     * (10차 G3 라운드 C10-3·C10-4).
+     * 순서 위반으로 읽어 두 판정이 서로 모순이었다.) Caddy 축은 반대로 matcher 와 handle 사이의 거리를
+     * `[\s\S]{0,600}?` 로 고정해, 그 사이에 지시자 몇 줄만 늘어도 거짓 red 였다.
      *
      * Caddy 는 `@name` 선언과 `handle @name` 블록이 떨어져 있으므로, 이름을 매개로
      * **선언 줄 + 블록 본문**을 한 덩어리로 이어 돌려준다 — 거리에 무관해진다.
      *
-     * 판정 둘을 14차에 고쳤다 (C11-4·C11-6):
+     * 판정 둘을 고쳤다:
      *  · 후보를 찾으면 그 블록 끝까지 건너뛰고 있었다. 그래서 바깥 블록 하나가 매치하면
      *    **그 안의 규칙 전부가 한 번도 읽히지 않았다** — Caddy 는 사이트 블록
      *    (`example.com { … }`)이 언제나 먼저 매치하므로 안쪽 handle 이 통째로 사각이었다.
@@ -304,7 +303,7 @@ class ServerConfigParityTest extends TestCase
      * 그런데 **역방향(발산) 축**과 몇몇 순서·존재 판정은 원문을 그대로 훑고 있었고,
      * `directiveBody()` 는 `#` 로 시작하는 줄만 지운다 — web.config 의 주석은
      * `<!-- -->` 라 하나도 지워지지 않았다. 그래서 같은 파일의 같은 목록을 한 축은
-     * 주석까지 보고, 다른 축은 보지 않는 상태였다 (9차 G3 라운드 C-9).
+     * 주석까지 보고, 다른 축은 보지 않는 상태였다.
      *
      * 그 비대칭은 양방향으로 틀린다 — 주석에만 적힌 설명 항목이 「이 서버만 막는 항목」
      * 으로 읽혀 거짓 red 가 나고, 반대로 주석 처리된 진짜 규칙이 살아 있는 것으로 읽힌다.
@@ -431,8 +430,7 @@ class ServerConfigParityTest extends TestCase
      * 파일은 스스로 「잠그는 것은 목록의 일치」라고 선언하고 목록·숨김파일·ACME·
      * 디렉토리목록·차단효과·릴리즈페이로드만 쟀다. 그래서 nginx 조각에서 그 세 줄을
      * 지워도 전 검사가 초록이었고, 그 상태의 증상은 오류가 아니라 **그 서버에서만 사이트가
-     * 두 주소로 열리는 것**이다 — P0 Apache 실측이 잡아낸 바로 그 형태다
-     * (7차 G3 라운드 E1).
+     * 두 주소로 열리는 것**이다 — P0 Apache 실측이 잡아낸 바로 그 형태다.
      *
      * 세 대응표가 모두 「`public/.htaccess` (B) `/public/…` → 301」 행을 갖는다. 이 검사는
      * 그 행이 실제 규칙을 가리키는지를 잰다.
@@ -453,12 +451,11 @@ class ServerConfigParityTest extends TestCase
         // 후보는 **전부** 판정한다. 종전에는 `preg_match` 의 첫 매치 하나만 봤다 — 그래서
         // 축의 모양을 흉내 낸 무해한 한 줄(`location ~ ^/public-legacy/ { return 301 /; }`)을
         // 진짜 규칙 **위**에 두면, 효과를 잃은 진짜 규칙은 한 번도 읽히지 않고 초록이었다.
-        // 형제 축(효과 검사)이 10차에 이미 1:N 으로 고친 것과 같은 결함이다 (14차 C11-1).
+        // 형제 축(효과 검사)이 앞서 이미 1:N 으로 고친 것과 같은 결함이다.
         //
         // nginx locator 도 정규식에서 **블록 도출**로 바꾼다. `…\n\}` 는 닫는 중괄호가 열 0
         // 에 있다는 서식 가정에 묶여 있어, 들여쓰기가 바뀌면 조기 종료하거나 다음 규칙까지
-        // 삼킨다 — 형제 판정(`blocksContaining`)은 중괄호 균형으로 자르므로 서식과 무관하다
-        // (14차 C11-6).
+        // 삼킨다 — 형제 판정(`blocksContaining`)은 중괄호 균형으로 자르므로 서식과 무관하다.
         $rules = [
             self::NGINX_FRAGMENT => ['block', 'location ~ ^/public/', '~return\s+301\b~i'],
             // Caddy — `redir @<matcher> <목적지> 301` 한 줄.
@@ -521,7 +518,7 @@ class ServerConfigParityTest extends TestCase
      * 이 `//호스트/…` 가 되고, 브라우저는 그것을 **프로토콜 상대 URL** 로 읽는다 — 즉
      * 목적지 호스트를 요청자가 지정한다. Apache 는 그 실패를 실측으로 확인해
      * `RewriteCond %{REQUEST_URI} !//` 로 막고 있었는데, **그 규율이 형제 서버에 전파되지
-     * 않은 채였다** (9차 G3 라운드 D-2).
+     * 않은 채였다**.
      *
      * 이 검사가 요구하는 것은 「가드가 있다」가 아니라 **「그 축이 판정돼 있다」**다.
      * 서버마다 성립 여부가 다르기 때문이다:
@@ -553,8 +550,7 @@ class ServerConfigParityTest extends TestCase
             // (형제 `test_every_server_config_carries_the_canonical_address_rule` 과 같은 사유).
             // 가드 폭은 **경로 구간**이다 — `$request_uri` 는 쿼리를 포함한 원문이라
             // 문자열 전체에 걸면 형제 Apache(경로 전용 `%{REQUEST_URI}`)와 판정이
-            // 갈리고, 쿼리에 URL 이 실린 정상 요청이 이 서버에서만 404 가 된다
-            // (10차 G3 라운드 D10-1).
+            // 갈리고, 쿼리에 URL 이 실린 정상 요청이 이 서버에서만 404 가 된다.
             self::NGINX_FRAGMENT => '#if\s*\(\s*\$request_uri\s*~\s*"\^\[\^\?\]\*//"\s*\)#',
             // Caddy 는 정본 주소 matcher 블록 **안**에 빈 세그먼트 제외 조건이 있어야 한다 —
             // 다른 matcher 에 있으면 redir 의 발동 조건을 좁히지 못한다. 주석 밖 본문에서 잰다.
@@ -562,8 +558,7 @@ class ServerConfigParityTest extends TestCase
             // IIS 는 「성립하지 않는다」 단정을 근거로 삼지 않는다 — 그 단정이 실측
             // 결과 **거짓**이었고(슬래시 두 겹부터 캡처가 `//` 로 시작한다), 게이트가
             // 그 문장을 판정 완료로 인정하고 있었다. 근거를 **확인 목록 항목**으로
-            // 옮긴다 — 미판정을 미판정이라고 적는 것이 이 서버의 의무다
-            // (10차 G3 라운드 D10-2).
+            // 옮긴다 — 미판정을 미판정이라고 적는 것이 이 서버의 의무다.
             self::IIS_CONFIG => '~/public///evil\.example/p~',
         ];
 
@@ -659,7 +654,7 @@ class ServerConfigParityTest extends TestCase
      * (`CoreUpdateService::applyDeployFragments()`). 그 파일은 서버 설정 원문이라 비밀은
      * 아니지만, 서빙되면 배치 구조와 소켓 경로가 그대로 나간다. 두 겹으로 막힌다 — `deploy`
      * 디렉토리 자체가 차단 목록에 있고, `dist` 확장자도 목록에 있다. 어느 한 겹이 목록에서
-     * 빠지면 이 테스트가 그 사실을 이름으로 말한다 (15차 G3 라운드 W2-1).
+     * 빠지면 이 테스트가 그 사실을 이름으로 말한다.
      *
      * @scenario rollback_leftover=deploy_dist_sidecar, servers=apache+nginx+caddy+iis
      *
@@ -816,7 +811,7 @@ class ServerConfigParityTest extends TestCase
      *
      * 이 축은 종전에 어느 대조에도 없었다 — `serverSurfaces()` 가 비-Apache 3종만 모으고
      * `public/.htaccess` 는 이 테스트에 등장하지 않았다. 그래서 `IndexIgnore *` 를 지워도,
-     * Caddy 에 `browse` 를 켜도 아무것도 울지 않았다 (11차 G3 라운드).
+     * Caddy 에 `browse` 를 켜도 아무것도 울지 않았다.
      *
      * 목록이 열리면 문서 루트 아래 파일 이름이 통째로 나열된다 — 그 자체가 정찰 정보이고,
      * 확장자 차단을 우회할 이름을 그대로 알려 준다.
@@ -832,8 +827,7 @@ class ServerConfigParityTest extends TestCase
         $guards = [
             // Apache: `Options -Indexes` 는 Options 등급이라 쓸 수 없다 — `IndexIgnore`(Indexes 등급).
             // 루트 `.htaccess` 도 모집단이다 — 레이아웃 ②에서 mod_rewrite 가 없으면 프로젝트
-            // 루트가 디렉토리 요청의 응답 주체가 되는데, 종전에는 `public/` 만 재고 있었다
-            // (13차 G3 라운드 W4-1).
+            // 루트가 디렉토리 요청의 응답 주체가 되는데, 종전에는 `public/` 만 재고 있었다.
             '.htaccess' => ['/^IndexIgnore\s+\*/m', $this->directiveBody('.htaccess')],
             'public/.htaccess' => ['/^IndexIgnore\s+\*/m', $this->directiveBody('public/.htaccess')],
             self::IIS_CONFIG => ['/directoryBrowse[^>]*enabled="false"/', $this->iisConfigWithoutComments()],
@@ -863,7 +857,7 @@ class ServerConfigParityTest extends TestCase
      * 목록 대조는 「도출 집합의 각 항목이 세 서버에 있는가」한 방향뿐이었다. 그래서 한
      * 서버에만 항목을 더해도 초록이었고, 그 상태는 「네 설정이 같은 것을 막는다」는 이
      * 파일의 전제를 조용히 깬다 — 어느 쪽이 옳은지 사람이 판단해야 하는데 그 판단을
-     * 요구하는 신호가 없었다 (11차 G3 라운드).
+     * 요구하는 신호가 없었다.
      *
      * @scenario server_parity=reverse_direction, derivation=sensitive_dirs
      *
@@ -881,8 +875,7 @@ class ServerConfigParityTest extends TestCase
 
         // IIS 도 같은 모집단이다. docblock 은 「**비-Apache 설정이**」라고 적는데 목록에는
         // nginx·Caddy 둘뿐이었다 — 그 파일만 항목을 하나 더해도 초록이었고, 하필 그 파일은
-        // 실측 서버가 없어(머리말 「검증 상태」) 이 대조가 유일한 방어선이다
-        // (7차 G3 라운드 E2).
+        // 실측 서버가 없어(머리말 「검증 상태」) 이 대조가 유일한 방어선이다.
         $lists = [
             self::NGINX_FRAGMENT => '/\^\/\(([^)]+)\)\(\/\|\$\)/',
             self::CADDY_FRAGMENT => '/\^\/\(([^)]+)\)\(\/\|\$\)/',
@@ -892,7 +885,7 @@ class ServerConfigParityTest extends TestCase
         foreach ($lists as $file => $pattern) {
             // IIS 는 주석 문법이 달라 `directiveBody()` 가 그 주석을 지우지 못한다
             // (`#` 줄만 본다). 그 상태로 목록을 뽑으면 **주석에만 적힌 설명 항목**이
-            // 「이 서버만 막는 항목」으로 읽혀 거짓 red 가 난다 (9차 G3 라운드 C-9).
+            // 「이 서버만 막는 항목」으로 읽혀 거짓 red 가 난다.
             $body = $file === self::IIS_CONFIG
                 ? $this->iisConfigWithoutComments()
                 : $this->directiveBody($file);
@@ -918,7 +911,7 @@ class ServerConfigParityTest extends TestCase
      * 역방향 대조는 민감 디렉토리 축에만 있었다 — 확장자(29패턴)와 확장자 없는 이름은
      * 세 서버 어디에도 역방향이 없어, 한 서버에만 항목을 더해도 초록이었다. 그 상태는
      * 「네 설정이 같은 것을 막는다」는 이 파일의 전제를 조용히 깨고, 늘어난 쪽이 옳은지
-     * 줄어든 쪽이 옳은지 사람이 판단할 신호가 없다 (7차 G3 라운드 E2).
+     * 줄어든 쪽이 옳은지 사람이 판단할 신호가 없다.
      *
      * 목록 추출은 서버별 정규식 사본을 두지 않는다 — 세 파일의 표기(`^/[^/]+\.(…)$` ·
      * `^[^/]+\.(…)$`)가 달라 사본이 갈리면 그 서버만 조용히 무검사가 된다. 대신
@@ -967,7 +960,7 @@ class ServerConfigParityTest extends TestCase
      * 역방향(`alternationContaining`)은 괄호 대안 목록만 훑으므로 `.lock` 같은 **단독 토큰**은
      * 후보에 오르지도 않는다. 즉 **한 방향만 필터를 본다** — web.config 에만 항목을 더하면
      * 전 단언이 초록이었다. 하필 IIS 는 이 저장소에 실측 서버가 없어 이 대조가 유일한
-     * 방어선이라고 그 파일 자신이 적는다 (8차 G3 라운드 A-2).
+     * 방어선이라고 그 파일 자신이 적는다.
      *
      * `hiddenSegments` 의 점(`.`)으로 시작하는 항목은 **숨김 파일 축**이 따로 덮으므로
      * 디렉토리 도출 집합에 없어도 정상이다(`.env` 가 그 형태다). 그 축까지 디렉토리
@@ -1105,7 +1098,7 @@ class ServerConfigParityTest extends TestCase
         // 「축이 늘거나 줄면 따라간다」고 적혀 있었지만 구조적으로 항상 4였다.
         //
         // 더 나쁜 것은 정족수라는 형태 자체다. 보호 규칙 하나의 효과를 지우고 403 을 내는
-        // **무해한 규칙 하나를 더하면** 매치 수가 유지되어 초록이었다(9차 G3 라운드 변이
+        // **무해한 규칙 하나를 더하면** 매치 수가 유지되어 초록이었다(변이
         // 실측에서 그대로 통과했다). 개수는 「어느 규칙이 무엇을 막는가」를 묻지 않는다.
         //
         // 그래서 **축마다 그 축의 규칙을 특정하고, 그 규칙 안에서 효과를 요구한다.**
@@ -1119,7 +1112,7 @@ class ServerConfigParityTest extends TestCase
         // 종전 locator 는 `\(artisan[^)]*\)` 처럼 목록의 **첫 원소 이름을 리터럴로**
         // 박고 있어 원소 순서만 바꿔도 거짓 red 였고, `(/|$)`↔`($|/)` · `location ~`↔`~*`
         // 같은 동치 표기에도 흔들렸다. 반대로 `[^}]*\}` 는 블록 안에 중첩 중괄호가
-        // 생기면 첫 `}` 에서 끊겨 효과 줄이 매치 밖으로 나갔다 (10차 G3 라운드 C10-3·C10-4).
+        // 생기면 첫 `}` 에서 끊겨 효과 줄이 매치 밖으로 나갔다.
         //
         // 그래서 정규식 표기가 아니라 **그 축의 도출 목록이 실린 규칙**을 찾는다.
         $fold = static fn (string $name): string => strtolower(str_replace(chr(92), '', trim($name)));
@@ -1128,8 +1121,7 @@ class ServerConfigParityTest extends TestCase
         // `vendor` 를 빼고 그것만 서빙하는 전용 블록을 신설하면 목록 축(이름이 본문 어딘가에
         // 있는가)과 효과 축(첫 원소가 든 블록이 막는가)이 **둘 다 초록**이고 `/vendor/autoload.php`
         // 가 그대로 나갔다. 리터럴 폴백(`?? 'app'` 등)도 없앤다 — 도출이 비면 폴백이 그 자리를
-        // 메워 「아무것도 재지 않는 초록」이 되는데, 도출 헬퍼 셋은 이미 비면 스스로 red 다
-        // (14차 C11-4·C11-5).
+        // 메워 「아무것도 재지 않는 초록」이 되는데, 도출 헬퍼 셋은 이미 비면 스스로 red 다.
         $axes = [
             '민감 디렉토리' => array_map($fold, $this->sensitiveDirectories()),
             '민감 확장자' => array_map($fold, $this->blockedExtensions()),
@@ -1196,7 +1188,7 @@ class ServerConfigParityTest extends TestCase
                     // 종전에는 `preg_match` 의 **첫 매치**만 봤다. 그래서 축의 모양을 흉내 낸
                     // 무해한 규칙을 진짜 규칙보다 **위에** 두면, 지워진 진짜 규칙은 한 번도
                     // 읽히지 않고 초록이었다(변이 실측). 정족수를 1:1 매핑으로 바꾸면서
-                    // 유일성을 잠그지 않은 자리다 (10차 G3 라운드 C10-1).
+                    // 유일성을 잠그지 않은 자리다.
                     foreach ($blocks as $block) {
                         $this->assertMatchesRegularExpression(
                             $effects[$file],
@@ -1225,8 +1217,7 @@ class ServerConfigParityTest extends TestCase
         );
 
         // 위임 사슬의 **끝**도 잰다 — `@g7_front` 라는 이름만 보고 그 안이 무엇을 하는지
-        // 묻지 않으면, 그 블록을 정적 서빙으로 바꿔도 위 단언이 전부 초록이다
-        // (10차 G3 라운드 C10-2).
+        // 묻지 않으면, 그 블록을 정적 서빙으로 바꿔도 위 단언이 전부 초록이다.
         $nginx = (string) preg_replace('~^[ 	]*#.*$~m', '', (string) file_get_contents(base_path(self::NGINX_FRAGMENT)));
         $frontBlocks = $this->blocksContaining($nginx, '@g7_front', false);
 
@@ -1252,7 +1243,6 @@ class ServerConfigParityTest extends TestCase
         // 역방향 전 검사가 초록이었다. 네 handle 이 전부 이 스니펫을 import 하므로 그
         // 한 줄이 이 조각의 보호 전체를 결정한다. 형제 nginx 는 위에서 이미 잠갔다 —
         // 같은 축을 한 서버에만 두면 그것은 규율이 아니라 그 서버의 패치다.
-        // (12차 G3 라운드 F-1)
         $caddy = $this->directiveBody(self::CADDY_FRAGMENT);
         $delegateBlocks = $this->blocksContaining($caddy, '(g7_delegate)', false);
 
@@ -1283,7 +1273,7 @@ class ServerConfigParityTest extends TestCase
      * nginx 블록에서 **위임이 실제로 도달하는가**를 판정합니다.
      *
      * 종전 판정은 줄머리 정규식(`/^\s*(return|try_files|…)/m`)의 첫 매치 하나였다. 그
-     * 형태는 두 가지로 틀린다 (14차 C11-2·C11-3):
+     * 형태는 두 가지로 틀린다:
      *
      *  · **한 줄로 접은 조건 종결을 못 본다.** `if ($http_x) { return 200 "leak"; }` 를
      *    블록 첫 줄에 넣으면 그 줄은 `if` 로 시작해 줄머리 조건에 걸리지 않고, 첫 매치는
@@ -1518,7 +1508,7 @@ class ServerConfigParityTest extends TestCase
             // (`실측을 거치지 않았다`)을 대조했는데, 그러면 재는 대상이 사실이 아니라
             // 문구다 — 설명을 다듬기만 해도 red 가 나고, 반대로 실측을 마치고 그 문장을
             // 지우지 않으면 초록이다. 토큰은 그 자체가 선언이라 지우는 행위가 곧
-            // 「실측을 마쳤다」는 뜻이 된다 (9차 G3 라운드 D-6).
+            // 「실측을 마쳤다」는 뜻이 된다.
             $this->assertMatchesRegularExpression(
                 '/G7-VERIFICATION-STATUS:\s*UNVERIFIED/',
                 $body,
@@ -1534,7 +1524,7 @@ class ServerConfigParityTest extends TestCase
             // 정족수는 **확인 목록 안에서만** 센다. 종전에는 파일 전체의 `·` 를 세서,
             // 목록 밖의 항목(대응표·주 설명의 글머리)이 정족수를 채웠다 — web.config 는
             // 13개 중 4개가, Caddy 조각은 10개 중 4개가 목록 밖이라, Caddy 확인 목록 6개
-            // 중 4개를 지워도 초록이었다 (14차 D11-6).
+            // 중 4개를 지워도 초록이었다.
             $this->assertGreaterThanOrEqual(
                 5,
                 preg_match_all('/^\s*(?:#\s*)?·/mu', $this->verificationChecklistSection($body)),
@@ -1545,8 +1535,7 @@ class ServerConfigParityTest extends TestCase
         }
 
         // 모집단 대조 — 형제 축 넷(`:465`·`:528`·`:1110`·`:1319`)은 이미 갖고 있는데 이
-        // 축만 없었다. 배열이 리터럴이라 원소를 지우면 그 서버의 의무가 조용히 사라진다
-        // (14차 D11-7).
+        // 축만 없었다. 배열이 리터럴이라 원소를 지우면 그 서버의 의무가 조용히 사라진다.
         $this->assertSame(2, $measured, '미검증 선언 축의 모집단이 둘이 아니다');
     }
 
@@ -1559,8 +1548,7 @@ class ServerConfigParityTest extends TestCase
      * 지시어 고정 순서에서 (7) 의 `handle` 뒤로 밀리면 `file_server` 가 그 파일을 그대로
      * 낸다. 형제 Apache 는 `RedirectMatch` 가 경로 전 구간을 보고, nginx 는 `location ~ /\.`
      * 이 먼저 잡아 같은 요청을 막는다. 규칙은 프로젝트 선례(미실측 서버는 문서만 넓힌다)에 따라
-     * 바꾸지 않으므로, 한계와 조치(`file_server { hide .* }`)가 조각에 적혀 있는가를 잰다
-     * (13차 G3 라운드 W4-4).
+     * 바꾸지 않으므로, 한계와 조치(`file_server { hide .* }`)가 조각에 적혀 있는가를 잰다.
      *
      * 판정은 형제 축(`G7-VERIFICATION-STATUS`)과 같이 **선언 토큰**으로 한다 — 산문을 재면
      * 문구를 다듬을 때 red 가 나고, 반대로 한계를 닫은 뒤 산문을 지우지 않으면 초록이다.
@@ -1652,7 +1640,7 @@ class ServerConfigParityTest extends TestCase
      * 등)은 전부 **도출 목록의 원소**만 대조한다. 그래서 「이 서버에만 있는 **규칙**」은
      * 어느 게이트에도 모집단이 없었다 — nginx 의 `(3-1)`(설치 마법사 디렉토리 정규화)을
      * 통째로 지워도 전 검사가 초록이었고, 그 결과는 그 파일이 스스로 적어 둔 것이다:
-     * 위임 뒤 경로가 `Location: /public/install/` 로 공표된다 (10차 G3 라운드 D10-4).
+     * 위임 뒤 경로가 `Location: /public/install/` 로 공표된다.
      *
      * 규칙 텍스트를 대응표 문자열과 직접 맞추는 것은 표기에 묶여 깨지기 쉽다. 대신
      * **모든 규칙이 번호가 붙은 설명을 갖는가**를 잰다 — 두 조각 다 이미 `(N)` 으로
@@ -1725,7 +1713,7 @@ class ServerConfigParityTest extends TestCase
             // 통째로 지우면 `$seen` 이 줄고 `$unexplained` 는 빈 채라 초록이었다 — 이
             // 검사의 독블록이 스스로 인용한 실패 모드(nginx `(3-1)` 삭제)가 바로 그
             // 형태다. 대응표는 그 번호를 인용하므로, 인용된 번호가 실재하는지를 대조하면
-            // 사슬이 닫힌다 (14차 D11-1).
+            // 사슬이 닫힌다.
             $missing = array_values(array_diff($this->citedRuleNumbers($lines, $opener), array_unique($declared)));
 
             $this->assertSame(
@@ -1747,7 +1735,7 @@ class ServerConfigParityTest extends TestCase
      *
      * 종전 판정은 비-주석 줄을 만나면 `continue` 로 계속 거슬러 올라갔다. 그래서 빈 줄
      * 없이 앞 규칙 본문 뒤에 새 규칙을 끼우면 **앞 규칙의 번호를 상속**해 초록이었다 —
-     * 재는 것이 「설명이 있는가」가 아니라 「앞에 빈 줄을 두었는가」였다 (14차 D11-2).
+     * 재는 것이 「설명이 있는가」가 아니라 「앞에 빈 줄을 두었는가」였다.
      *
      * 이제 위로 갈 수 있는 줄은 **같은 규칙에 속하는 것**뿐이다:
      *  · 닫는 중괄호로 끝나는 줄은 그 블록의 헤더로 건너뛴다. 헤더가 **규칙 여는 줄**이면
@@ -2164,7 +2152,7 @@ class ServerConfigParityTest extends TestCase
      * 종전 형제 검사들은 「그 토큰이 파일 어딘가에 있는가」만 재서, 한 `location` 에만 있고
      * 나머지가 운영자 블록을 상속하는 상태가 초록이었다. 그러면 같은 사이트가 어느 주소로
      * 들어오느냐에 따라 보호 강도가 갈리는데, 그 차이는 오류가 아니라 조용한 동작 차이로만
-     * 나타난다 (22차 G3 라운드 A1·A2).
+     * 나타난다.
      *
      * 모집단은 리터럴로 세지 않고 **조각에서 도출**한다 — location 이 하나 늘면 이 검사가
      * red 가 돼 사람이 그 자리에 같은 줄을 옮긴다.
@@ -2196,7 +2184,7 @@ class ServerConfigParityTest extends TestCase
             // 있었는데, 형제 셋은 그 응답에도 헤더를 싣는다(Apache 는 디렉토리 하위 전 응답 ·
             // IIS 는 사이트 전역 · Caddy 는 그 자리). nginx 만 `add_header` 가 상속되지 않고
             // **대체**되므로, 빼 두면 같은 사이트가 서버에 따라 다른 헤더를 내는 상태를 이
-            // 검사가 정당화하게 된다 (23차 G3 라운드 A23-5).
+            // 검사가 정당화하게 된다.
             if (preg_match('/\brewrite\s+\^\s+\S+\s+last\s*;/', $body)) {
                 continue;
             }
@@ -2239,7 +2227,7 @@ class ServerConfigParityTest extends TestCase
      * 종전에는 역방향 절이 nginx 조각에만 있었다. 그러면 IIS 고유(`denyUrlSequences`)·
      * Caddy 고유(`encode gzip`)가 어느 대조에도 잡히지 않아, 늘리거나 지워도 아무것도
      * 울지 않는다 — 「형제와 같은 것을 막는가」는 재면서 「나만 갖는 것이 무엇인가」는
-     * 아무도 재지 않는 상태였다 (22차 G3 라운드 A5).
+     * 아무도 재지 않는 상태였다.
      *
      * @scenario server_parity=reverse_direction, servers=nginx+caddy+iis
      *
@@ -2274,7 +2262,7 @@ class ServerConfigParityTest extends TestCase
      * 그래서 「형제 목록에서 도출」할 수 없고, 종전 역방향 대조는 `fileExtension` 과
      * `segment` 만 보고 이 축을 통째로 지나쳤다. 항목이 하나 늘면 그 문자열이 든 정상
      * 주소가 전부 `404.7` 이 되는데(확장 번들·사이트맵이 사정권) IIS 실측 환경이 없어
-     * 응답으로 확인할 수단도 없다 — 그 상태에서 무측정이면 사각이다 (22차 G3 라운드 A3).
+     * 응답으로 확인할 수단도 없다 — 그 상태에서 무측정이면 사각이다.
      *
      * @scenario server_parity=reverse_direction, server_kind=iis, surface=request_filtering
      *
@@ -2313,7 +2301,7 @@ class ServerConfigParityTest extends TestCase
      * 어느 구간이든 걸리므로 목록이 좁을 수밖에 없고, 무엇을 왜 뺐는지가 web.config 머리말에
      * 적혀 있다. 그런데 종전 역방향 대조는 **멤버십**(IIS 목록 ⊆ 루트 목록)만 봐서, 뺀
      * 항목을 되넣어도 그것이 루트 목록에 있는 한 통과했다 — `.json` 하나로 확장 라우트
-     * 전체가, `.js` 하나로 확장 번들이 404.7 이 된다 (22차 G3 라운드 A6).
+     * 전체가, `.js` 하나로 확장 번들이 404.7 이 된다.
      *
      * @scenario server_parity=reverse_direction, server_kind=iis, surface=request_filtering
      *
@@ -2400,8 +2388,7 @@ class ServerConfigParityTest extends TestCase
      * 토큰의 단위가 「파일」이면 「일부 축만 재지 않았다」를 표현할 수 없다. nginx 조각은
      * 문서 루트 배치는 실측했지만 하위 주소 배치는 재지 않았고, 그 사실이 한국어 산문
      * 한 줄로만 있었다 — D-6 이 없앤 바로 그 형태가 이 파일에는 그대로 남아 있었고,
-     * 그 사각의 실물이 「그대로 따라 하면 정적 자산이 전부 미스가 되는」 조정 지시였다
-     * (10차 G3 라운드 D10-7·D10-3).
+     * 그 사각의 실물이 「그대로 따라 하면 정적 자산이 전부 미스가 되는」 조정 지시였다.
      *
      * 축 한정 토큰은 `UNVERIFIED(<축>)` 형태다. 형제 둘의 파일 단위 토큰과 같은 접두를
      * 쓰므로 위 검사는 그대로 통과한다.

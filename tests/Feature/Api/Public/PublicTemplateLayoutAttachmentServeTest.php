@@ -15,7 +15,7 @@ use Tests\TestCase;
  * 무인증 레이아웃 첨부 서빙(`PublicTemplateController::serveFile`)의 파일 서빙 계약 테스트.
  *
  * 이 통로는 형제 아홉 통로와 같은 헬퍼(`streamedFileResponse()`)를 지나면서도 `immutable`·
- * `mimeType`·`skipCompression` 세 인자를 전부 생략하고 있었다 (15차 G3 라운드). 셋 다
+ * `mimeType`·`skipCompression` 세 인자를 전부 생략하고 있었다. 셋 다
  * **없어도 동작하는** 축이라 오류로 드러나지 않는다:
  *
  *  - `immutable` 생략 → 요청의 `?v=` 로 파생된다. 이 URL 은 행 id 주소라 서버가 버전을

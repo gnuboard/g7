@@ -6,7 +6,7 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * A-8 — 시스템 정보 조회의 셸 호출은 전부 가용성 가드를 거친다 (9차 #G13).
+ * A-8 — 시스템 정보 조회의 셸 호출은 전부 가용성 가드를 거친다.
  *
  * `disable_functions` 로 막힌 환경에서 `shell_exec()` 를 그냥 부르면 **fatal Error** 다.
  * 그래서 그 호출들은 `ExecutionEnvironment::hasFunction()` 판정 뒤에만 실행돼야 한다.
@@ -30,7 +30,7 @@ class ShellExecGuardCoverageTest extends TestCase
     ];
 
     /**
-     * 스폰 계열 프리미티브 전수 (11차 #D9).
+     * 스폰 계열 프리미티브 전수.
      *
      * 종전에는 어휘가 `shell_exec` 하나뿐이라, 같은 파일에 `exec(`·`proc_open(`·`popen(`
      * 이 무가드로 생겨도 초록이었다. 8차 #23 이 스폰 룰의 어휘를 6종으로 넓힌 것과 같은 사각이다.
@@ -43,7 +43,7 @@ class ShellExecGuardCoverageTest extends TestCase
     ];
 
     /**
-     * 다른 공정이 소유한 무가드 지점 — **알고 있고, 아직 이관하지 않았다** (11차 #D9).
+     * 다른 공정이 소유한 무가드 지점 — **알고 있고, 아직 이관하지 않았다**.
      *
      * 어휘를 스폰 계열 전수로 넓히자 A-8 면 밖의 실제 무가드 3곳이 드러났고, 그 셋(코어
      * 업데이트 경로)은 **G6 에서 이관을 마쳤다** — `extractWithUnzip`·`isUnzipAvailable` 은
@@ -59,7 +59,7 @@ class ShellExecGuardCoverageTest extends TestCase
     private const DEFERRED_TO_OTHER_TRACKS = [];
 
     /**
-     * `app/**` 에서 스폰 프리미티브를 부르는 파일을 스캔한다 (11차 #D9).
+     * `app/**` 에서 스폰 프리미티브를 부르는 파일을 스캔한다.
      *
      * 하드코딩 열거는 「지금 아는 두 파일」만 지킨다 — 세 번째 파일이 생기면 그 파일의
      * 무가드 호출은 영원히 검사 밖이다. 판정 SSoT 자신(ExecutionEnvironment)만 제외한다.
@@ -133,7 +133,7 @@ class ShellExecGuardCoverageTest extends TestCase
         $checked = 0;
 
         // 모집단을 하드코딩 열거가 아니라 **스캔**으로 잡고, 어휘도 스폰 계열 전수로 넓힌다
-        // (11차 #D9) — 종전에는 두 파일 × `shell_exec` 하나뿐이라 세 번째 파일에 무가드
+        // 종전에는 두 파일 × `shell_exec` 하나뿐이라 세 번째 파일에 무가드
         // 호출이 생기거나 같은 파일에 exec(·proc_open( 이 생겨도 초록이었다.
         foreach ($this->scanSpawnSurfaces() as $relative) {
             $source = $this->source($relative);
@@ -149,8 +149,8 @@ class ShellExecGuardCoverageTest extends TestCase
 
                     // 「본문에 글자가 있는가」가 아니라 「이 호출이 가드 안에 있는가」를 본다.
                     // 종전 판정(str_contains)은 조건을 뒤집어도(`&& ! hasFunction(...)` — 차단
-                    // 환경에서 **오히려** 셸을 부른다) 가드를 통째로 밖으로 내보내도 초록이었다
-                    // (12차 GI-5). 형제 커버리지 테스트 4종은 전부 부정 픽스처를 갖는데
+                    // 환경에서 **오히려** 셸을 부른다) 가드를 통째로 밖으로 내보내도 초록이었다.
+                    //형제 커버리지 테스트 4종은 전부 부정 픽스처를 갖는데
                     // 이 파일만 없어 세 경우(정상·반전·가드 밖)가 구분되지 않았다.
                     if (! $this->guardCoversOffset($body, $bodyAt, $this->sourceIsPhp($source))) {
                         $unguarded[] = $relative.'::'.$enclosing.' ('.$primitive.')';
@@ -193,7 +193,7 @@ class ShellExecGuardCoverageTest extends TestCase
      * @param  int  $offset  본문 기준 호출 위치
      * @param  bool  $isPhp  이 본문이 PHP 인가 — **호출부가 알려 준다**. 본문에는
      *                       `<?php` 가 없어 추론에 맡기면 PHP 가 JS 스캐너로 흘러
-     *                       heredoc·`#` 주석의 중괄호를 코드로 세게 된다 (12차 G3 B-1).
+     *                       heredoc·`#` 주석의 중괄호를 코드로 세게 된다.
      * @return bool 보호 범위 안이면 true
      */
     private function guardCoversOffset(string $body, int $offset, bool $isPhp): bool
@@ -323,7 +323,7 @@ class ShellExecGuardCoverageTest extends TestCase
     }
 
     /**
-     * 판정의 **부정 분기**를 합성 입력으로 태운다 (12차 GI-5).
+     * 판정의 **부정 분기**를 합성 입력으로 태운다.
      *
      * 실 소스가 준수 상태라 위 검사의 「무가드 0」은 판정이 무엇이든 통과시키게 망가져도
      * 유지된다. 실측한 두 변이(조건 반전·가드 밖 호출)를 그대로 픽스처로 고정한다 —

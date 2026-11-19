@@ -100,7 +100,7 @@ if (! function_exists('installer_begin_installation')) {
         // `.env` 가 있으나 쓰기 불가면 시작을 거부한다 (22차 #22-1 의 서버 절반).
         // 그 상태로 진행하면 14단계가 전부 성공하고도 finalize 의 `.env` 머지가 조용히 실패해
         // INSTALLER_COMPLETED 미기록 → 인스톨러가 영구히 열린 채 남는다(평문 자격증명을 담은
-        // runtime.php 포함). 화면 게이트(19차 S-2 · 22차 #22-1)와 같은 술어의 서버 사본이다 —
+        // runtime.php 포함). 화면 게이트(#22-1)와 같은 술어의 서버 사본이다 —
         // 화면만이 유일한 지점이면 fetch 예외·재검사 우회가 곧 우회로가 된다.
         if (! @is_writable(BASE_PATH.'/.env')) {
             $result['error_code'] = 'env_not_writable';
@@ -178,13 +178,13 @@ if (! function_exists('installer_begin_installation')) {
         $state['installation_status'] = 'running';
         $state['completed_tasks'] = $isRetry ? ($state['completed_tasks'] ?? []) : [];
         $state['skipped_tasks'] = $isRetry ? ($state['skipped_tasks'] ?? []) : [];
-        // 마이그레이션 기준선은 `completed_tasks` 와 같은 수명을 갖는다 (19차 R2) — 재시도는
+        // 마이그레이션 기준선은 `completed_tasks` 와 같은 수명을 갖는다 — 재시도는
         // 같은 실행의 연장이라 유지하고, 새 시작은 비운다. 비우지 않으면 이전 회전의 기준선으로
         // 다음 회전의 롤백 범위가 계산되어, 이번 실행이 만들지도 않은 배치가 대상에 든다.
         $state['db_migrate_batch_baseline'] = $isRetry ? ($state['db_migrate_batch_baseline'] ?? null) : null;
         // 실패한 best-effort 작업은 재시도에서 다시 시도한다 — 목록을 비워 다음 작업 선택이 다시 뽑게 한다
         $state['best_effort_failed_tasks'] = [];
-        // 의존성 경고는 이번 실행에서 다시 판정된다 — 이월하면 재시도 로그에 중복해 찍힌다 (11차 #A8)
+        // 의존성 경고는 이번 실행에서 다시 판정된다 — 이월하면 재시도 로그에 중복해 찍힌다
         $state['dependency_skip_warnings'] = [];
         $state['current_task'] = null;
         $state['config'] = sanitizeConfigForState($config);
@@ -221,7 +221,7 @@ if (! function_exists('installer_begin_installation')) {
             }
         }
 
-        // 강제 종료된 이전 요청이 남긴 명령 출력 임시 로그를 정리한다 (9차 #L9) —
+        // 강제 종료된 이전 요청이 남긴 명령 출력 임시 로그를 정리한다 —
         // 재시도마다 새 파일명(uniqid)이 만들어지므로 청소하지 않으면 계속 쌓인다.
         if (function_exists('installerCleanupCommandOutputFiles')) {
             installerCleanupCommandOutputFiles();

@@ -11,14 +11,14 @@ use PHPUnit\Framework\TestCase;
  *
  * 모집단은 **이 테스트가 재는 것만**이다 — 쓰기 프로브(`.installer-write-probe-*`)가 남을 수
  * 있는 경로 전수(프루너의 프로브 루트 목록 + `storage/` 두 단계)와 상태 파일의 잠금 파일
- * (`installer-state.json.lock`, 15차 G3 W1-4), 코어 업데이트의 `deploy/**` 사이드카,
+ * (`installer-state.json.lock`), 코어 업데이트의 `deploy/**` 사이드카,
  * 그리고 압축 풀기 부트스트랩(`g7-setup.php`)이 사이트 루트에 남기는 파일.
  * 「코드가 남기는 파일 전수」가 아니다 — 나머지 잔여물(파손 사본·프로브 sentinel 등)의
  * 등재는 이 파일이 보지 않는다.
  *
  * 쓰기 프로브는 인스톨러가 점검하는 11개 디렉토리 어디에나 남을 수 있는데 `storage/app`·
  * `bootstrap/cache` 두 곳만 각자의 무시 규칙 덕에 가려졌고 `storage/`·`modules/`·`plugins/`·
- * `templates/`·`lang-packs/` 직하는 `git add -A` 한 번으로 저장소에 들어갔다 (14차 G3 W2-7).
+ * `templates/`·`lang-packs/` 직하는 `git add -A` 한 번으로 저장소에 들어갔다.
  * 모집단은 **생산자 상수**(프루너의 프로브 루트 목록)에서 도출한다 — 손으로 적은 목록은
  * 디렉토리가 하나 늘 때 같이 늘지 않는다.
  *
@@ -214,7 +214,7 @@ class GitIgnoreLeftoverContractTest extends TestCase
      * `git` 없이 `.gitignore` 를 직접 대조한다 — 접두사 패턴(`<name>-*`)의 전역·경로 지정 두 형태만 본다.
      *
      * 부정 패턴(`!`)은 **모른다.** 그 줄이 있으면 무시하지 않고 실패한다 — 무시하면 재등재된
-     * 경로를 「무시됨」으로 읽어 이 계약이 fail-open 이 된다 (15차 G3 W1-12).
+     * 경로를 「무시됨」으로 읽어 이 계약이 fail-open 이 된다.
      *
      * @param  string  $root  저장소 루트
      * @param  list<string>  $candidates  대조 경로

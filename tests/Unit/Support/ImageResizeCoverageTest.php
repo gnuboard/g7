@@ -57,7 +57,7 @@ class ImageResizeCoverageTest extends TestCase
         //
         // 이 축이 없던 동안 8개 중 4개가 그 처리를 갖지 않은 채 이 검사를 통과했다.
         // 열거만 전수이고 단언이 하나뿐이면, 「전수를 본다」는 외형만 남고 새 축은
-        // 아무것도 잡지 못한다 (12차 G3 라운드 D3).
+        // 아무것도 잡지 못한다.
         $this->assertStringContainsString(
             'clearstatcache',
             $source,

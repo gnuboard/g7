@@ -254,7 +254,7 @@ class InstallerDbPrivilegeScopeTest extends TestCase
     }
 
     /**
-     * 21차 N1: 테이블 스코프 부여(`db`.`tbl`)는 DB 전체 검사를 통과시키지 못한다 —
+     * 테이블 스코프 부여(`db`.`tbl`)는 DB 전체 검사를 통과시키지 못한다 —
      * 객체 부분이 `*` 인 부여만 DB 를 덮는다.
      *
      * @effects installer_db_privilege_check_scopes_to_target_database
@@ -271,11 +271,11 @@ class InstallerDbPrivilegeScopeTest extends TestCase
 
         $result = checkDatabasePrivileges($pdo, 'target_db');
 
-        $this->assertFalse($result['has_all'], '테이블 1개 부여가 DB 전체 권한으로 통과하면 안 된다 (21차 N1)');
+        $this->assertFalse($result['has_all'], '테이블 1개 부여가 DB 전체 권한으로 통과하면 안 된다');
     }
 
     /**
-     * 21차 N2: partial_revokes(MySQL 8.0.16+) — 회수된 권한은 found 에서 빠지고
+     * partial_revokes(MySQL 8.0.16+) — 회수된 권한은 found 에서 빠지고
      * missing 에 정확히 반영된다 (REVOKE 행을 해석 불가로 뭉개면 회수분이 초록 통과).
      *
      * @effects installer_db_privilege_check_scopes_to_target_database
@@ -292,14 +292,14 @@ class InstallerDbPrivilegeScopeTest extends TestCase
 
         $result = checkDatabasePrivileges($pdo, 'target_db');
 
-        $this->assertFalse($result['has_all'], '회수된 권한이 초록으로 통과하면 안 된다 (21차 N2)');
+        $this->assertFalse($result['has_all'], '회수된 권한이 초록으로 통과하면 안 된다');
         $this->assertContains('INSERT', $result['missing']);
         $this->assertContains('UPDATE', $result['missing']);
         $this->assertNotContains('SELECT', $result['missing'], '회수되지 않은 권한까지 부족으로 접으면 안 된다');
     }
 
     /**
-     * 21차 N2 파생: 해석하지 못한 행이 남으면 missing 이 비어도 「확인」을 단정하지 않는다 —
+     * 해석하지 못한 행이 남으면 missing 이 비어도 「확인」을 단정하지 않는다 —
      * 그 행이 REVOKE 변형일 수 있다. 확인 불가는 경고 후 진행(제품 결정)이므로 안전 방향이다.
      *
      * @effects installer_db_privilege_check_scopes_to_target_database
@@ -316,12 +316,12 @@ class InstallerDbPrivilegeScopeTest extends TestCase
 
         $result = checkDatabasePrivileges($pdo, 'target_db');
 
-        $this->assertTrue((bool) ($result['indeterminate'] ?? false), '해석 불가 행이 남았는데 확인을 단정하면 안 된다 (21차 N2 파생)');
+        $this->assertTrue((bool) ($result['indeterminate'] ?? false), '해석 불가 행이 남았는데 확인을 단정하면 안 된다 (파생)');
         $this->assertSame([], $result['missing']);
     }
 
     /**
-     * 21차 N3: MariaDB 는 롤을 인용 없이 출력한다 — 무인용 롤 토큰도 전개 대상이다.
+     * MariaDB 는 롤을 인용 없이 출력한다 — 무인용 롤 토큰도 전개 대상이다.
      *
      * @effects installer_db_privilege_check_scopes_to_target_database
      *
@@ -344,7 +344,7 @@ class InstallerDbPrivilegeScopeTest extends TestCase
 
         $result = checkDatabasePrivileges($pdo, 'target_db');
 
-        $this->assertTrue($result['has_all'], 'MariaDB 무인용 롤이 전개되지 않았다 (21차 N3)');
+        $this->assertTrue($result['has_all'], 'MariaDB 무인용 롤이 전개되지 않았다');
         $usingQueries = array_values(array_filter($queries, fn (string $q): bool => str_contains($q, 'USING')));
         $this->assertCount(1, $usingQueries);
         $this->assertStringContainsString('app_rw', $usingQueries[0]);

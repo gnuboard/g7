@@ -57,7 +57,7 @@ class AttachmentServeContractTest extends ModuleTestCase
         $this->repository = Mockery::mock(AttachmentRepositoryInterface::class);
         $boardRepository = Mockery::mock(BoardRepositoryInterface::class);
         $this->storage = Mockery::mock(StorageInterface::class);
-        // 서빙 경로가 **행의 disk** 를 따르게 되면서(10차 G3 라운드 B10-3) 스토리지
+        // 서빙 경로가 **행의 disk** 를 따르게 되면서 스토리지
         // 해석이 `storageForRow()` 를 지난다. 그 판정의 첫 축이 「카테고리 기본 디스크와
         // 같은가」이므로 mock 이 그 질문에 답해야 한다. 픽스처 행의 `disk` 와 같은 값을
         // 돌려주면 같은 인스턴스가 그대로 쓰인다 — 이 스위트가 재는 것은 디스크 해석이
@@ -303,7 +303,7 @@ class AttachmentServeContractTest extends ModuleTestCase
      * `withDisk($attachment->disk)` 를 쓰는데 서빙 경로만 카테고리 기본 디스크로 갔다.
      * 그러면서 `etag_source` 는 `disk` 를 싣는다 — 검증자는 디스크가 표현을 가른다고
      * 선언하고 서빙은 그것을 부정하는 자기모순이었다. 증상은 404 + 로그 한 줄이라
-     * 디스크를 옮긴 사이트에서 썸네일이 조용히 전멸한다 (10차 G3 라운드 B10-3).
+     * 디스크를 옮긴 사이트에서 썸네일이 조용히 전멸한다.
      *
      * @scenario serving_type=preview, serving_type=download, contract_axis=row_disk
      *

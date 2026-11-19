@@ -574,7 +574,7 @@ class ClaimReasonControllerTest extends ModuleTestCase
             ]))
             ->assertStatus(400)
             // 상태코드만 보면 컨트롤러가 전용 키를 버리고 generic `operation_failed` 를 돌려줘도
-            // 초록이다 — 설정 탭·삭제 경로와 같은 거절이 이 경로에서만 이유 없이 보이던 결함(11차 B1)
+            // 초록이다 — 설정 탭·삭제 경로와 같은 거절이 이 경로에서만 이유 없이 보이던 결함
             // 을 상태코드 단언은 잡지 못했다. 전용 키의 **도달**을 고정한다.
             ->assertJsonPath('message', trans_count('sirsoft-ecommerce::exceptions.claim_reason_code_locked_in_use', ['count' => 1]));
 

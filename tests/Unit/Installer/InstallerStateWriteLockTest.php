@@ -61,7 +61,7 @@ class InstallerStateWriteLockTest extends TestCase
             'releaseWorkerLock',
             'extendWorkerStaleWindow',
             'markInstallationTaskSkipped',
-            // 17차 #C4 — 폴링 lock 실패 기록. 이 경로는 정의상 승자가 도는 중에만 실행되므로
+            // 폴링 lock 실패 기록. 이 경로는 정의상 승자가 도는 중에만 실행되므로
             // 구간 밖 RMW 는 우발이 아니라 구조적 경합이다.
             'installerRecordBusyRejection',
         ];
@@ -294,7 +294,7 @@ class InstallerStateWriteLockTest extends TestCase
     }
 
     /**
-     * 17차 #C3 — 배타 구간이 **읽기까지** 감싼다.
+     * 배타 구간이 **읽기까지** 감싼다.
      *
      * `markInstallationTaskSkipped()` 는 상태를 인자로 받는다. 호출부(`state-management.php`)가
      * 구간 **밖**에서 읽어 넘기므로, 그 읽기와 저장 사이에 워커가 쓴 완료 마커는 저장 시점에

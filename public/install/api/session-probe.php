@@ -67,7 +67,7 @@ if (! $sessionProbeLibraryMode) {
     // 최상위 실행문이 없고 BASE_PATH 를 자체 역산하므로 config/session 보다 앞에 와도 안전하다.
     require_once __DIR__.'/../includes/execution-mode.php';
 
-    // 오류 텍스트가 JSON 본문에 섞이지 않게 한다 (20차 #13 · 21차 N4) — **include 체인·가드보다
+    // 오류 텍스트가 JSON 본문에 섞이지 않게 한다 — **include 체인·가드보다
     // 앞**. 이 진입점은 세션 진단 전용이라, 세션 warning 이 가장 잘 나는 자리(session.php 의
     // session_start)가 배선보다 앞이면 진단하려는 그 실패가 JSON 본문을 오염시킨다.
     if (installerHasFunction('ini_set')) {
@@ -82,7 +82,7 @@ if (! $sessionProbeLibraryMode) {
     require_once __DIR__.'/_guard.php';
     installer_guard_or_410();
 
-    // 다국어 로드 — 형제 6곳과 같은 규칙이다 (12차 G3 라운드 E-3).
+    // 다국어 로드 — 형제 6곳과 같은 규칙이다.
     $currentLang = getCurrentLanguage();
     $translations = loadTranslations($currentLang);
 

@@ -159,7 +159,7 @@
   --info-surface-strong: #dbeafe;
   --primary-soft: rgba(59, 130, 246, 0.08);
   --primary-soft-strong: rgba(59, 130, 246, 0.15);
-  --accent-purple: #7e22ce; /* 배지 문구로 쓰인다 — #9333ea 는 자기 배경(soft) 위에서 4.49:1 (9차 #L29) */
+  --accent-purple: #7e22ce; /* 배지 문구로 쓰인다 — #9333ea 는 자기 배경(soft) 위에서 4.49:1 */
   --accent-purple-soft: rgba(168, 85, 247, 0.15);
   --dep-auto-color: #d97706;
   --dep-auto-soft: rgba(217, 119, 6, 0.1);
@@ -176,7 +176,7 @@
   --log-border: #30363d;
   --log-text: #d7d7d7;
   /* 로그 상자는 두 테마 모두 어둡다 — 이 표면 위의 흐린 글자는 테마 반전 토큰이 아니라
-     전용 값을 쓴다 (11차 #B7). #0d1117 대비 6.6:1. */
+     전용 값을 쓴다. #0d1117 대비 6.6:1. */
   --log-text-muted: #9aa4b2;
   --log-track: #161b22;
   --log-thumb: #30363d;
@@ -266,7 +266,7 @@
   /* 판정 불능 카드(경고 배경)의 확인 주소 링크 — 기본 링크색(#3b82f6)은 노란 배경 위에서
      3.30:1 이다. 종전에는 `--warning-text-strong`(#b45309)을 재사용해 4.51:1 로 AA 를 겨우
      넘겼는데(여유 +0.01), 문자색 토큰이 조금만 밝아져도 미달로 떨어진다 — 전용 토큰으로
-     갈라 더 진한 값을 써서 여유를 둔다(#92400e on #fef3c7 · 6.36:1) (17차 E-3). */
+     갈라 더 진한 값을 써서 여유를 둔다(#92400e on #fef3c7 · 6.36:1). */
   --exposure-link-text: #92400e;
   --env-status-text: var(--warning-color);
 
@@ -1314,7 +1314,7 @@ hr {
  * 종전에는 인라인 `style="font-size:0.85rem;opacity:0.75;"` 였다. 색 토큰은 정상인데
  * 투명도가 대비를 깎아 라이트 3.75:1 · 다크 4.31:1 로 둘 다 기준(4.5:1) 미달이었다
  * (제거하면 6.37:1 · 6.29:1). 13.6px 보통 굵기라 대형 텍스트 완화 대상도 아니다.
- * 토큰을 보는 검사는 투명도 채널을 원리상 볼 수 없어 이 지점이 남아 있었다 (12차 #B33). */
+ * 토큰을 보는 검사는 투명도 채널을 원리상 볼 수 없어 이 지점이 남아 있었다. */
 .alert-technical-detail {
   font-size: var(--font-size-sm);
   margin-bottom: 0;
@@ -1422,7 +1422,7 @@ hr {
 }
 
 /* 바로 왼쪽의 .progress-label 은 --text-color 라 선명한데 이 값만 3.72:1 이었다 —
-   한 줄 안에서 규칙이 갈렸다 (11차 #B3). */
+   한 줄 안에서 규칙이 갈렸다. */
 .progress-percentage {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
@@ -1582,7 +1582,7 @@ hr {
 
 /* 항목 **문구**는 12~14px 본문이다 — 아이콘·테두리용 밝은 값(`--success-color` 등)을 쓰면
  * 라이트에서 2.0~3.4:1 로 §11.5 의 4.5:1 을 못 넘긴다. 같은 목록의 `.task-skipped` 는 이미
- * 문구 전용 토큰을 쓰고 있어, 한 목록 안에서 규칙이 갈려 있었다 (10차 #M6). 아이콘·테두리는
+ * 문구 전용 토큰을 쓰고 있어, 한 목록 안에서 규칙이 갈려 있었다. 아이콘·테두리는
  * 그대로 둔다 — 그 자리는 도형이라 본문 대비 기준의 대상이 아니다. */
 .task-completed {
   color: var(--success-text);
@@ -1659,7 +1659,7 @@ hr {
 }
 
 /* 아코디언 토글 아이콘 — 같은 헤더의 .task-group-status 는 --bg-color 위라 통과하는데
-   이 글리프만 --bg-gray 위라 4.46:1 / 4.00:1 이었다 (11차 #B8). */
+   이 글리프만 --bg-gray 위라 4.46:1 / 4.00:1 이었다. */
 .task-group-toggle {
   margin-left: auto;
   font-size: 12px;
@@ -1687,7 +1687,7 @@ hr {
   color: var(--text-muted);
 }
 
-/* 그룹 요약 배지도 같은 규칙이다 (10차 #M7) — 완료된 그룹은 접히므로 이 배지가 그 그룹에
+/* 그룹 요약 배지도 같은 규칙이다 — 완료된 그룹은 접히므로 이 배지가 그 그룹에
  * 남는 유일한 정보다. 라이트에서 1.9~3.1:1 이던 것을 문구 전용 토큰으로 올린다. */
 .task-group-status.status-in-progress {
   color: var(--info-text);
@@ -1716,7 +1716,7 @@ hr {
  * `overflow: hidden` 이라 넘친 마지막 6~7단계가 스크롤바도 없이 화면에서 사라졌다. 확장을
  * 많이 고른 설치일수록 잘리는 단계가 많아지는데, 잘렸다는 사실 자체가 화면에 나타나지 않는다.
  *
- * 12차는 그 잘림을 `max-height: none` 으로 막았는데, `none` 은 `0` 과 보간되지 않아 접기
+ * 앞서 그 잘림을 `max-height: none` 으로 막았는데, `none` 은 `0` 과 보간되지 않아 접기
  * 애니메이션이 함께 사라졌다(패딩 전환만 남았다). 그래서 높이 상한이 아니라 **그리드 행
  * 크기**를 전환한다 — `1fr ↔ 0fr` 은 보간되고, 펼친 상태의 `1fr` 은 내용 높이를 그대로
  * 따르므로 상한이 없다. 이 방식은 단일 자식(`.task-group-items-inner`)을 요구한다:
@@ -1910,8 +1910,8 @@ hr {
 
 /* 로그 상자는 「터미널은 두 테마 모두 어둡게」로 --log-bg 가 고정인데, --text-muted 는
    테마마다 뒤집힌다 — 라이트에서 어두운 회색을 검은 배경에 얹어 3.88:1 이 됐다.
-   고정 표면에는 그 표면 전용 토큰을 쓴다 (11차 #B7). */
-/* 중단 화면의 사유 줄 (11차 #A12) — 결과 본문과 같은 층의 문구다. */
+   고정 표면에는 그 표면 전용 토큰을 쓴다. */
+/* 중단 화면의 사유 줄 — 결과 본문과 같은 층의 문구다. */
 .abort-reason-notice {
   margin: var(--spacing-sm) 0 0 0;
   font-size: var(--font-size-sm);
@@ -2243,7 +2243,7 @@ hr {
  * 같은 선택자를 파일 뒤쪽에서 한 번 더 선언하면(종전에는 토글 정렬 보정 목적의 중복이 있었다)
  * 명시도가 같으므로 **뒤가 이긴다**. 미디어 쿼리는 명시도를 올리지 않으므로, 그 중복은 767px
  * 보정(`align-items: flex-start`)을 한 번도 적용되지 못하게 만들었다 — 좁은 화면에서 제목과
- * 우측 컨트롤이 세로 가운데로 붙은 채 남는다 (12차 #B31). 새 속성이 필요하면 여기에 더한다. */
+ * 우측 컨트롤이 세로 가운데로 붙은 채 남는다. 새 속성이 필요하면 여기에 더한다. */
 .requirement-card-header {
   display: flex;
   justify-content: space-between;
@@ -2381,7 +2381,7 @@ hr {
 
 /* PHP 확장 점검 목록(W1) — 확장 **카드** 그리드(.extension-grid)와 이름이 같아 뒤 규칙에
  * 덮이고 있었다. 같은 선택자·같은 속성의 상충 중복은 뒤가 이기므로 앞 의도가 조용히 사라진다.
- * 용도가 다르므로 이름을 나눈다 (9차 #L31). */
+ * 용도가 다르므로 이름을 나눈다. */
 .requirement-extension-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -2461,7 +2461,7 @@ hr {
  *
  * `--text-light` 자체가 이미 배경(--bg-light) 대비 2.43:1(라이트)·3.75:1(다크)로 기준 미달인데,
  * 여기에 `opacity: 0.7` 이 더해져 실효 1.81:1 · 2.48:1 까지 내려가 있었다. 토큰만 보는 검사는
- * 투명도 채널을 원리상 볼 수 없어 이 지점은 어느 라운드에서도 드러나지 않았다 (12차 #B33 형제).
+ * 투명도 채널을 원리상 볼 수 없어 이 지점은 어느 라운드에서도 드러나지 않았다 (형제).
  * 보조 텍스트 토큰으로 올리면 7.23:1 · 12.02:1 이 된다. */
 .directory-owner {
   font-family: var(--font-family-mono);
@@ -2634,7 +2634,7 @@ hr {
 
 /* 노출 확정(D3) 카드는 **빨강**이다 — 그 안의 라벨은 error 토큰이 맞다. 오류 배경 위 기본
    힌트색으로는 대비가 갈리므로 카드 배경에 맞춰 진한 error 문자색을 명시한다. 경고 라벨과
-   합치지 않는다 — 대비 게이트가 선택자 단위로 규칙을 찾는다 (18차 A-1). */
+   합치지 않는다 — 대비 게이트가 선택자 단위로 규칙을 찾는다. */
 .alert-error .fix-guide-label {
   color: var(--error-text-emphasis);
 }
@@ -2945,10 +2945,10 @@ hr {
   margin: 0 0 var(--spacing-xs) 0;
 }
 
-/* 문구 층 토큰을 쓴다 (11차 #B1·#B2). 아이콘 층(--success-color·--warning-icon)은 라이트
+/* 문구 층 토큰을 쓴다. 아이콘 층(--success-color·--warning-icon)은 라이트
    배경 위에서 2.32:1 / 1.95:1 이라 24px 굵은 글씨의 대형 텍스트 기준(3:1)에도 미달했다.
    아이콘 stroke 는 그대로 아이콘 층 토큰을 쓴다 — 대비 규칙은 글자에만 적용된다.
-   10차 #M6~#M8 이 진행 목록·그룹 배지·완료 문구에 세운 규칙의 미적용 형제였다. */
+   진행 목록·그룹 배지·완료 문구에 앞서 세운 규칙의 미적용 형제였다. */
 .result-section:has(.result-icon-success) .result-title {
   color: var(--success-text);
 }
@@ -2978,7 +2978,7 @@ hr {
 /* 수동 복구 안내(manual_commands)는 전용 UI 없이 **진행 기록(로그)** 으로 노출된다 —
  * 그것이 installation-monitor.js 의 콜백 계약 주석이 선언한 소비 경로다. 종전에는 완성된
  * 박스 UI 규칙 9개(.manual-commands-*)가 남아 있어 다음 사람이 「있는 UI」로 읽었고,
- * 실제로는 어느 마크업도 그 클래스를 붙이지 않았다 (9차 #L11). 사문 규칙은 걷어낸다. */
+ * 실제로는 어느 마크업도 그 클래스를 붙이지 않았다. 사문 규칙은 걷어낸다. */
 
 /* 에러 상세 아코디언 - 카드 형태 */
 .failure-error-detail {
@@ -3234,7 +3234,7 @@ hr {
 
   /* .extension-grid 는 여기에 두지 않는다 — 원 선언이 이 블록보다 **뒤**에 있어
      같은 명시도로 덮인다(미디어 쿼리는 명시도를 올리지 않는다). 그 보정은 원 선언
-     바로 아래에 둔다 (12차 #B31 형제 지점). */
+     바로 아래에 둔다 (형제 지점). */
   .requirement-extension-grid,
   .directory-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -3967,7 +3967,7 @@ body {
 
 /* 좁은 화면 보정은 원 선언 **바로 뒤**에 둔다. 파일 앞쪽의 공용 반응형 블록에 두면 이
  * 선언이 나중에 와서 같은 명시도로 덮어 버린다 — 미디어 쿼리는 명시도를 올리지 않으므로
- * 보정이 한 번도 적용되지 않는다 (12차 #B31 형제 지점). */
+ * 보정이 한 번도 적용되지 않는다 (형제 지점). */
 @media (max-width: 1023px) {
   .extension-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -4195,7 +4195,7 @@ body {
 }
 
 /* 선택 사항 배지 — 문구는 --text-secondary. --text-muted 는 이 배경에서 라이트 4.4:1 /
- * 다크 4.0:1 로 둘 다 4.5:1 아래이고, 다크가 라이트보다 나쁘다 (9차 #L29) */
+ * 다크 4.0:1 로 둘 다 4.5:1 아래이고, 다크가 라이트보다 나쁘다 */
 .badge-optional {
   background-color: var(--bg-gray);
   color: var(--text-secondary);
@@ -4294,7 +4294,7 @@ body {
   flex-shrink: 0;
 }
 
-/* 지금 고른 항목의 이름만 흐려지면 선택 강조가 오히려 가독을 낮춘다 (11차 #B4) —
+/* 지금 고른 항목의 이름만 흐려지면 선택 강조가 오히려 가독을 낮춘다 —
    16px strong 이라 대형 텍스트 완화도 받지 못한다. */
 .installation-mode-option input[type="radio"]:checked + .installation-mode-text strong {
   color: var(--info-text);
@@ -4683,7 +4683,7 @@ body {
  * 설명문(4.4:1 → 2.2:1)과 「이 서버에서 불가」 배지(6.8:1 → 2.9:1)가 함께 흐려진다. §12.0 W2 는
  * 「고를 수 없는 항목을 숨기지 않고 **사유 배지와 함께** 남긴다」인데 그 배지가 가장 흐려지는
  * 상태였다. 비활성 신호는 배경·커서·네이티브 disabled 가 이미 전달하고, 글자는 보조 색으로
- * 낮춘다 — 9차가 W3 비활성 옵션에 세운 규칙과 같은 기준으로 맞춘다 (10차). */
+ * 낮춘다 — W3 비활성 옵션에 세운 규칙과 같은 기준으로 맞춘다. */
 .vendor-mode-card.disabled .vendor-mode-card-icon,
 .vendor-mode-card.disabled .vendor-mode-card-check {
   opacity: 0.55;
@@ -4715,7 +4715,7 @@ body {
   gap: var(--spacing-sm);
 }
 
-/* Step 3 카드·상태 줄의 인라인 글리프 (11차 #B12).
+/* Step 3 카드·상태 줄의 인라인 글리프.
    크기는 슬롯이 정한 글자 크기를 따르고 색은 슬롯의 색을 물려받는다 — 결과 아이콘 셋
    (.result-icon, 48px + 스트로크 애니메이션)과 같은 클래스를 쓰면 12px 글줄이 무너진다. */
 .inline-icon {
@@ -4790,7 +4790,7 @@ body {
   white-space: nowrap;
 }
 
-/* 9차 #L29 가 형제 -dev 만 문구 층으로 옮겼고 나머지 둘은 남아 있었다 (11차 #B5·#B6).
+/* 앞서 형제 -dev 만 문구 층으로 옮겼고 나머지 둘은 남아 있었다.
    12px semibold 배지라 대형 텍스트 완화 대상이 아니다. */
 .vendor-mode-card-badge-recommended {
   background-color: var(--primary-soft-strong);
@@ -4828,7 +4828,7 @@ body {
 }
 
 /* 상태 줄은 12px 본문이다 — 아이콘·테두리용 밝은 값(`--success-color` 등)을 쓰면
- * 라이트에서 2.5~3.8:1 로 §11.5 의 4.5:1 을 못 넘긴다. 문구 전용 토큰으로 바꾼다 (9차 #L23).
+ * 라이트에서 2.5~3.8:1 로 §11.5 의 4.5:1 을 못 넘긴다. 문구 전용 토큰으로 바꾼다.
  * 「이 서버에서 불가」는 §12.0 W2 가 못박은 유일한 판정 근거 문구다. */
 .vendor-mode-card-status-ok {
   color: var(--success-text);
@@ -4869,7 +4869,7 @@ body {
  * 글자는 흐리지 않는다 — `.vendor-mode-card.disabled` 가 같은 이유로 이미 그렇게 바뀌었다
  * (10차). 카드 전체 `opacity: 0.5` 는 스택 컨텍스트를 만들어 자식이 그보다 진해질 수 없고,
  * 여기서는 그 위에 `--text-light` 까지 겹쳐 카드 이름·설명이 실효 1.5:1 안팎이었다.
- * 비활성 신호는 배경·커서·pointer-events 가 이미 전달한다 (12차 #B33 형제). */
+ * 비활성 신호는 배경·커서·pointer-events 가 이미 전달한다 (형제). */
 .extension-card.disabled {
   pointer-events: none;
   cursor: not-allowed;
@@ -4947,7 +4947,7 @@ body {
   opacity: 0.5;
 }
 
-/* (토글 우측 정렬 보정은 `.requirement-card-header` 원 선언으로 합쳤다 — 12차 #B31) */
+/* (토글 우측 정렬 보정은 `.requirement-card-header` 원 선언으로 합쳤다) */
 
 /* ============================================================
    단계별 실행 (W3) — 건너뛴 단계 · 단계 수 · 진행 방식 고정 배지
@@ -4979,14 +4979,14 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* 비활성 옵션 — 카드 전체에 opacity 를 걸지 않는다 (9차 #L24).
+/* 비활성 옵션 — 카드 전체에 opacity 를 걸지 않는다.
  *
  * opacity 는 스택 컨텍스트를 만들어 **자식이 더 진해질 수 없다**. 그래서 「이 환경에서
  * 사용 불가」 배지(6.8:1 → 2.9:1)와 설명문(4.4:1 → 2.2:1)이 함께 흐려져, 왜 못 고르는지가
  * 가장 읽기 어려워졌다. 면제되는 것은 비활성 컨트롤의 **라벨**이지 그 안의 사유 설명이
  * 아니다. W2 의 형제 규칙(.vendor-mode-card.disabled)도 같은 기준으로 맞췄다 — 종전에는 이
  * 주석이 「같은 기준」이라고 단언했지만 실제로 W2 는 설명문·배지에 opacity 를 유지하고
- * 있었다(10차에서 정렬). 주석은 선언이 아니라 사실이어야 한다. */
+ * 있었다(그 뒤 정렬했다). 주석은 선언이 아니라 사실이어야 한다. */
 .installation-mode-option.disabled {
   cursor: not-allowed;
   background-color: var(--bg-gray);

@@ -234,7 +234,7 @@
         'save_failed' => lang('save_failed'),
         'next' => lang('next'),
         'extension_load_failed' => lang('extension_load_failed'),
-        // 서버가 갈라 낸 스캔 실패 3사유 — 키가 없으면 화면이 「HTTP 500」만 그린다 (19차 S-4)
+        // 서버가 갈라 낸 스캔 실패 3사유 — 키가 없으면 화면이 「HTTP 500」만 그린다
         'scan_directory_listing_unavailable' => lang('scan_directory_listing_unavailable'),
         'no_admin_template_error' => lang('no_admin_template_error'),
         'scan_failed_see_log' => lang('scan_failed_see_log'),

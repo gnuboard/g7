@@ -91,7 +91,7 @@ class TemplateLayoutAttachmentService
         // `is_file()` 로 그 경로를 stat 하므로 PHP 공유 stat 캐시가 반드시 채워진다. 그 뒤의
         // `getSize()` 는 그 캐시를 그대로 읽어 **축소 전 크기**를 돌려주고, 그 값이 행의
         // `size` 로 기록돼 실제 저장 바이트와 어긋난다. 형제 `sirsoft-board` 는 같은 사유로
-        // 이미 이 처리를 갖는다 (11차 G3 라운드 B11-4).
+        // 이미 이 처리를 갖는다.
         clearstatcache(true, $file->getRealPath());
 
         $stored = $this->storage

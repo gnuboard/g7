@@ -75,9 +75,9 @@ class InstallerAlreadyAppliedJudgmentTest extends TestCase
     }
 
     /**
-     * 22차 N-1: 코어의 「이미 …」 문구 **전수**(파생 모집단)가 판정을 통과해야 한다.
+     * 코어의 「이미 …」 문구 **전수**(파생 모집단)가 판정을 통과해야 한다.
      *
-     * 21차 앵커 수정이 `…되어 있습니다` 계열만 남기고 `이미 활성화된 템플릿입니다.`
+     * 앞선 앵커 수정이 `…되어 있습니다` 계열만 남기고 `이미 활성화된 템플릿입니다.`
      * (templates.errors — TemplateManager 예외 경로가 실제로 내보내는 문구) 계열을
      * 놓쳤다 — KO 로케일(이 제품의 기본값)에서 템플릿 재시도가 하드 실패로 바뀌는
      * 역방향 회귀였고, 수기 케이스 목록이 그것을 통과시켰다. 모집단을
@@ -115,7 +115,7 @@ class InstallerAlreadyAppliedJudgmentTest extends TestCase
         }
 
         $this->assertGreaterThanOrEqual(8, $checked, '모집단 도출 실패 — already 키가 이보다 적을 수 없다');
-        $this->assertSame([], $offenders, "판정이 놓치는 코어 「이미 …」 문구 (22차 N-1 — 그 경로의 재시도가 하드 실패가 된다):\n".implode("\n", $offenders));
+        $this->assertSame([], $offenders, "판정이 놓치는 코어 「이미 …」 문구 (그 경로의 재시도가 하드 실패가 된다):\n".implode("\n", $offenders));
     }
 
     /**

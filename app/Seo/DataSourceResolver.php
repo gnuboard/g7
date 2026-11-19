@@ -272,7 +272,7 @@ class DataSourceResolver
         }
 
         // 이어 붙일 때 마운트 접두사는 멱등이다 — 접두사를 품은 endpoint(`/g7/api/…`)에 사이트 주소의
-        // 접두사를 한 번 더 싣지 않는다 (`SiteUrl::join()`, 16차 G3 라운드 B-7).
+        // 접두사를 한 번 더 싣지 않는다 (`SiteUrl::join()`).
         $fullUrl = $join ? SiteUrl::join($base, '/'.ltrim($endpoint, '/')) : $endpoint;
         $siteHost = OutboundUrlValidator::normalizeHost($baseParts['host']);
 

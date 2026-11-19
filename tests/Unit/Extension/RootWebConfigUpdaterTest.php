@@ -82,7 +82,7 @@ class RootWebConfigUpdaterTest extends RootHtaccessUpdaterTest
     }
 
     /**
-     * IIS 재직렬화로 **들여쓴** 마커도 찾아 교체한다 (17차 D-2).
+     * IIS 재직렬화로 **들여쓴** 마커도 찾아 교체한다.
      *
      * IIS 관리 도구는 web.config 를 저장할 때 XML 트리를 재직렬화하며 자식 요소를 들여쓴다 —
      * `  <!-- BEGIN G7 -->` 가 되어 컬럼 0 판정으로는 마커를 영영 찾지 못하고, 갱신이
@@ -140,7 +140,7 @@ class RootWebConfigUpdaterTest extends RootHtaccessUpdaterTest
     }
 
     /**
-     * 블록 밖 내용이 닫히지 않아 교체 결과가 적형 XML 이 아니면 **쓰기 전에** 거부한다 (17차 D-3).
+     * 블록 밖 내용이 닫히지 않아 교체 결과가 적형 XML 이 아니면 **쓰기 전에** 거부한다.
      *
      * IIS 는 web.config 파싱에 실패하면 사이트 전체를 500 으로 만든다 — 손상본을 디스크에
      * 확정하기 전에 걸러야 한다. 형제 `.htaccess` 는 줄 단위라 이 판정이 없다.

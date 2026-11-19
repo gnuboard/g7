@@ -42,7 +42,7 @@
      * 서버가 내보내는 이벤트 이름 전수(task-runner.php 의 sendSSEEvent/emit)에서 **종료
      * 이벤트만** 뺀 집합이다. 목록에서 이름이 빠지면 그 이벤트만 오는 구간이 통째로 침묵으로
      * 세어져, 서버가 정상 동작 중인데도 정지 화면이 뜬다 — 번들 추출 구간이 `heartbeat` 만
-     * 내보내는 것이 바로 그 경우였다 (12차 #B27). 소비 리스너가 따로 없는 이름도 여기에는
+     * 내보내는 것이 바로 그 경우였다. 소비 리스너가 따로 없는 이름도 여기에는
      * 반드시 남는다.
      *
      * 제외 대상과 근거:
@@ -80,7 +80,7 @@
     }
 
     /**
-     * 실패 상태를 `onError` 페이로드로 바꾼다 — 폴백 사슬의 단일 지점 (13차 F12).
+     * 실패 상태를 `onError` 페이로드로 바꾼다 — 폴백 사슬의 단일 지점.
      *
      * 사유는 세 자리에서 온다. 태스크가 실패하면 상태 파일에 기록되어 `state` 로 오고
      * (`error_detail` 은 상세, `error` 는 요약), **잡히지 않은 예외**로 끝난 경우(500 봉투)는
@@ -246,7 +246,7 @@
         constructor(callbacks, options = {}) {
             super(callbacks, options);
             this.workerUrl = options.workerUrl;
-            // 끊김 뒤 결말 판정·이어 받기와, 승자 요청에게 진행을 넘겨받을 때 갈아탈 주소 (13차 E5).
+            // 끊김 뒤 결말 판정·이어 받기와, 승자 요청에게 진행을 넘겨받을 때 갈아탈 주소.
             // 없으면 갈아탈 곳이 없으므로 끊김은 곧바로 멈춤으로 판정한다.
             this.stateUrl = options.stateUrl || null;
             this.connectionTimeoutMs = options.connectionTimeoutMs || 5000;
@@ -313,7 +313,7 @@
             // 목록은 서버가 내보내는 이벤트 이름 전수와 같아야 한다 (task-runner.php 의
             // sendSSEEvent/emit). 하나라도 빠지면 그 이벤트만 오는 구간이 통째로 「침묵」으로
             // 세어진다 — 번들 추출 구간은 `heartbeat` 말고는 아무것도 내보내지 않으므로
-            // 추출이 임계(기본 90초)를 넘기면 정상 설치가 정지 화면으로 뒤집힌다 (12차 #B27).
+            // 추출이 임계(기본 90초)를 넘기면 정상 설치가 정지 화면으로 뒤집힌다.
             // 이름 있는 이벤트는 `message` 리스너로 오지 않아 위의 캡처도 이를 대신하지 못한다.
             es.addEventListener('message', () => {
                 if (isCurrent()) this._armStuckTimer();
@@ -368,7 +368,7 @@
                 if (!isCurrent()) return;
                 // 한 태스크 **안**의 부분 진행이다 (번들 추출 묶음 수). 태스크 단위 진행률은
                 // 이 값으로 움직이지 않는다 — 최장 태스크가 도는 동안 화면이 정지한 스피너로만
-                // 남지 않도록 현재 작업 줄에 덧붙이는 용도다 (12차 #B35).
+                // 남지 않도록 현재 작업 줄에 덧붙이는 용도다.
                 // 진행 값이 없는 heartbeat 는 「살아 있다」의 신호일 뿐이므로 표시를 덮지 않는다.
                 const data = safeParseEventData(e);
                 if (typeof data.done === 'number' && typeof data.total === 'number' && data.total > 0) {
@@ -390,7 +390,7 @@
                 if (!isCurrent()) return;
                 const data = safeParseEventData(e);
 
-                // `busy` 는 중단이 아니라 **이어받기 실패**다 (19차 J1).
+                // `busy` 는 중단이 아니라 **이어받기 실패**다.
                 if (data && data.reason === 'busy') {
                     if (isReconnect) {
                         // 끊긴 뒤 이어 받으려던 연결이 「다른 워커 진행 중」 으로 거절됐다 — 앞 워커가
@@ -461,7 +461,7 @@
         }
 
         /**
-         * 승자 요청에게 진행을 넘긴다 — 재연결이 아니라 진행 조회로 갈아탄다 (13차 E5).
+         * 승자 요청에게 진행을 넘긴다 — 재연결이 아니라 진행 조회로 갈아탄다.
          *
          * 아무것도 하지 않으면 EventSource 가 스트림 종료를 장애로 읽고 재연결하는데, 그
          * 재연결은 승자 요청이 쥔 lock 에 막혀 `aborted{busy}` 를 받고 「중단」 화면을 그린다.
@@ -696,7 +696,7 @@
             this.lastCurrentTask = null;
             this.lastStatus = null;
             this.terminated = false;
-            // 조회가 날아가 있는 동안 다음 tick 이 또 발사하지 않게 한다 (19차 J2)
+            // 조회가 날아가 있는 동안 다음 tick 이 또 발사하지 않게 한다
             this.inFlight = false;
             // stuck 감지용 — 마지막으로 last_updated 가 변한 시각(client clock 기준 ms)
             this.lastUpdatedSeen = null;
@@ -729,7 +729,7 @@
         async _poll() {
             if (this.terminated) return;
 
-            // 겹침 방지 (19차 J2). `setInterval` 은 응답과 무관하게 매 tick 발사한다 —
+            // 겹침 방지. `setInterval` 은 응답과 무관하게 매 tick 발사한다 —
             // 상태 조회가 1초를 넘기면(로그가 커진 후반부·느린 디스크) 요청이 브라우저에
             // 쌓이고, 늦게 도착한 **옛 응답**이 `lastLogOffset`·`lastCompletedTasks`·
             // `lastCurrentTask` 를 통째로 되감는다. 그러면 다음 tick 에서 서버가 되감긴
@@ -743,7 +743,7 @@
                 const url = `${this.stateUrl}${this.stateUrl.includes('?') ? '&' : '?'}log_offset=${this.lastLogOffset}`;
                 const res = await fetch(url, { cache: 'no-store' });
                 if (!res.ok) {
-                    // 4xx 는 재시도로 낫지 않는다 (11차 #B21). 종전에는 401·403·409·410 이
+                    // 4xx 는 재시도로 낫지 않는다. 종전에는 401·403·409·410 이
                     // 5xx·네트워크와 함께 삼켜져, 입구가 닫힌(410) 뒤나 토큰 거부(403) 뒤에도
                     // 화면이 90초 동안 마지막 진행률에 멈춰 있다가 「응답이 없습니다」라는
                     // **틀린 사유**로 끝났다. 단계별 실행은 같은 상황에서 즉시 사유를 낸다.
@@ -810,7 +810,7 @@
         }
 
         _diffAndEmit(state) {
-            // 0. 서버 상태 요약 — 단계별 실행과 같은 계약이다 (13차 F11). 아래 diff 가 같은
+            // 0. 서버 상태 요약 — 단계별 실행과 같은 계약이다. 아래 diff 가 같은
             //    일을 자체 보정으로도 하지만, 계약이 한쪽에만 있으면 onState 소비자가 늘어날
             //    때마다 그 소비자가 폴링에서만 조용히 발화하지 않는다. 소비자는 멱등이다.
             this._invoke('onState', state);
@@ -896,7 +896,7 @@
                         this.stop();
                         // 침묵 시간은 자리표시자 치환값으로 나른다 — 종전 `idle_seconds` 는
                         // onError 소비자가 읽지 않는 필드라 화면에 도달하지 못했다
-                        // (7차가 세운 규약: 키를 내보내는 지점이 치환값도 함께 낸다).
+                        // (규약: 키를 내보내는 지점이 치환값도 함께 낸다).
                         this._invoke('onError', {
                             message: null,
                             message_key: 'error_installation_stuck',
@@ -939,7 +939,7 @@
                         break;
                     case 'failed':
                         this.stop();
-                        // 폴백 사슬은 failurePayload() 가 소유한다 (13차 F12).
+                        // 폴백 사슬은 failurePayload() 가 소유한다.
                         this._invoke('onError', failurePayload(state));
                         break;
                     case 'aborted':
@@ -1009,12 +1009,12 @@
             this.maxNetworkRetries = options.maxNetworkRetries || 3;
             this.networkFailures = 0;
             this.terminalEventSeen = false;
-            // 진행 중인 요청을 끊을 수 있게 인스턴스에 둔다 (11차 #B20). 지역 변수로 두면
+            // 진행 중인 요청을 끊을 수 있게 인스턴스에 둔다. 지역 변수로 두면
             // SSE 는 close(), 폴링은 clearInterval 로 즉시 끊는데 단계별만 못 끊어 [중단] 을
             // 눌러도 최대 11분짜리 요청과 그 타임아웃 타이머가 살아 있었다.
             this.activeController = null;
             this.activeTimeoutHandle = null;
-            // 대기(busy·재시도) 타이머도 같은 이유로 인스턴스에 둔다 (19차 J8)
+            // 대기(busy·재시도) 타이머도 같은 이유로 인스턴스에 둔다
             this.activeSleepHandle = null;
             // 단계별 실행의 한 요청은 태스크 하나만큼 산다 — 서버가 스스로에게 주는 상한은
             // 180초(stepwise) 이고 서브프로세스 스폰 구간은 600초까지 올라간다. 그래서 이 모드의
@@ -1104,7 +1104,7 @@
         }
 
         /**
-         * 대기 타이머는 핸들을 보관한다 (19차 J8) — `stop()` 이 끊을 수 있어야 한다.
+         * 대기 타이머는 핸들을 보관한다 — `stop()` 이 끊을 수 있어야 한다.
          *
          * 보관하지 않으면 busy 대기(2초)·재시도 대기(3초) 중의 [중단] 이 최대 3초짜리 고아
          * 타이머를 남긴다. SSE 의 `close()`·폴링의 `clearInterval` 과 달리 「전부 대칭 해제」
@@ -1125,7 +1125,7 @@
                 clearTimeout(this.activeSleepHandle);
                 this.activeSleepHandle = null;
             }
-            // 진행 중인 요청과 그 타임아웃 타이머를 함께 끊는다 (11차 #B20) — SSE 의
+            // 진행 중인 요청과 그 타임아웃 타이머를 함께 끊는다 — SSE 의
             // close()·폴링의 clearInterval 과 대칭이다.
             if (this.activeTimeoutHandle) {
                 clearTimeout(this.activeTimeoutHandle);
@@ -1172,7 +1172,7 @@
                     httpStatus = res.status;
                     body = await res.json();
                 } catch (e) {
-                    // 취소는 실패가 아니다 (19차 J5). `stop()` 이 부른 `AbortController.abort()`
+                    // 취소는 실패가 아니다. `stop()` 이 부른 `AbortController.abort()`
                     // 가 바로 이 catch 로 되돌아온다. 그것을 네트워크 실패로 세면 두 가지가
                     // 어긋난다 — ① 침묵 타이머가 먼저 발화해 `stop()` 한 경우, 정확한 사유
                     // (「응답이 없습니다 — 정지」)가 **틀린 사유**(「요청 실패」)로 덮인다
@@ -1255,7 +1255,7 @@
                         this._armStuckTimer();
                         // 다음 요청까지 **최소 간격**을 둔다 (D2 L8). 서버가 즉시 `task_done`
                         // 을 되돌리는 구간에서 이 대기가 없으면 요청 간격이 0 이 된다.
-                        // `_sleep` 을 쓰므로 [중단] 이 이 대기도 함께 끊는다 (19차 J8).
+                        // `_sleep` 을 쓰므로 [중단] 이 이 대기도 함께 끊는다.
                         if (this.taskGapMs) await this._sleep(this.taskGapMs);
                         continue;
 
@@ -1279,7 +1279,7 @@
                         if (!this.terminalEventSeen) {
                             // 사유는 두 통로로 온다(상태 파일 / 500 봉투). 폴백 사슬은
                             // failurePayload() 가 소유한다 — 사본을 두면 그 사본이 뒤처져
-                            // 같은 실패가 경로에 따라 다르게 보인다 (10차 #M4, 13차 F12).
+                            // 같은 실패가 경로에 따라 다르게 보인다.
                             this._invoke('onError', failurePayload(body && body.state, body));
                         }
                         return;

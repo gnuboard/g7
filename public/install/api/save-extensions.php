@@ -24,7 +24,7 @@
 header('Content-Type: application/json; charset=utf-8');
 
 // 프로젝트 루트 경로.
-// `realpath` 도 호스팅이 막을 수 있는 함수다 (13차 환경#1) — 막히면 이 첫 줄에서 치명 종료해
+// `realpath` 도 호스팅이 막을 수 있는 함수다 — 막히면 이 첫 줄에서 치명 종료해
 // 봉투조차 서지 않으므로, 가용할 때만 정규화하고 아니면 조립 경로를 그대로 쓴다.
 define('BASE_PATH', (function_exists('realpath') ? (realpath(dirname(__DIR__, 3)) ?: dirname(__DIR__, 3)) : dirname(__DIR__, 3)));
 
@@ -32,7 +32,7 @@ define('BASE_PATH', (function_exists('realpath') ? (realpath(dirname(__DIR__, 3)
 // 최상위 실행문이 없고 BASE_PATH 를 자체 역산하므로 session/config 보다 앞에 와도 안전하다.
 require_once dirname(__DIR__).'/includes/execution-mode.php';
 
-// 오류 텍스트가 JSON 본문에 섞이지 않게 한다 (20차 #13 · 21차 N4) — **include 체인·가드보다 앞**.
+// 오류 텍스트가 JSON 본문에 섞이지 않게 한다 — **include 체인·가드보다 앞**.
 if (installerHasFunction('ini_set')) {
     @ini_set('display_errors', '0');
 }
@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// 출처 확인 (13차 보안#4) — 상태를 바꾸는 엔드포인트는 CSRF 방어를 갖는다.
+// 출처 확인 — 상태를 바꾸는 엔드포인트는 CSRF 방어를 갖는다.
 // 인스톨러의 csrf_token 검증은 정의만 있고 호출부가 0건이었으므로, 판정을 한 지점
 // (execution-mode.php)이 소유하고 상태 변경 엔드포인트 전부가 그것을 공유한다.
 require_once dirname(__DIR__).'/includes/execution-mode.php';

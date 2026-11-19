@@ -454,7 +454,7 @@
                                                                             "text": "{{item.amount_formatted ?? ''}}"
                                                                         },
                                                                         {
-                                                                            "comment": "방향은 amount_type 이 단독으로 나른다 (S6c 2차 A4) — amount 는 크기만 싣는다. 화면이 유형으로 분기해 부호를 다시 붙이면 저가 교환에서 이중 부호가 된다.",
+                                                                            "comment": "방향은 amount_type 이 단독으로 나른다 — amount 는 크기만 싣는다. 화면이 유형으로 분기해 부호를 다시 붙이면 저가 교환에서 이중 부호가 된다.",
                                                                             "type": "basic",
                                                                             "name": "Div",
                                                                             "if": "{{(item.amount_type ?? 'none') !== 'none'}}",
@@ -829,7 +829,7 @@
                                                             "text": "{{item.amount_formatted ?? ''}}"
                                                         },
                                                         {
-                                                            "comment": "방향은 amount_type 이 단독으로 나른다 (S6c 2차 A4) — amount 는 크기만 싣는다.",
+                                                            "comment": "방향은 amount_type 이 단독으로 나른다 — amount 는 크기만 싣는다.",
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "if": "{{(item.amount_type ?? 'none') !== 'none'}}",

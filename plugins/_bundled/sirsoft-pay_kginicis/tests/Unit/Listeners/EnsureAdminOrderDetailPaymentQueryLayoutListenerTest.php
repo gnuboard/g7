@@ -16,7 +16,7 @@ use Tests\Unit\Support\LayoutMarkup\GateMembershipGuardTest;
  * 종전에는 순수 `PHPUnit\Framework\TestCase` 였다. S18 P1 이 이 리스너의 확장점 읽기를 코어
  * 진입점(`LayoutFragmentSourceHelper::read()` — `config()` 로 설치 소스를 판독한다)으로 옮기면서
  * Laravel 컨테이너가 필요해졌고, 부팅하지 않는 이 테스트들은 그 시점부터 error 였다.
- * **30차까지 아무도 몰랐던 이유는 종료 게이트 `--filter=LayoutMarkup` 밖이었기 때문이다.**
+ * **오랫동안 아무도 몰랐던 이유는 종료 게이트 `--filter=LayoutMarkup` 밖이었기 때문이다.**
  * 게이트 소속은 이제 {@see GateMembershipGuardTest} 가 잠근다.
  */
 class EnsureAdminOrderDetailPaymentQueryLayoutListenerTest extends PluginTestCase

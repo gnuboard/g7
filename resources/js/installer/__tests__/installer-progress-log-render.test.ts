@@ -396,7 +396,7 @@ describe('새로고침 복원 — 가장 무거운 렌더가 같은 배치 경�
    *
    * @effects progress_log_has_a_screen_cap_and_says_so
    */
-  it('로그가 없으면 플레이스홀더를 유지한다 (11차 #B15 회귀 축)', () => {
+  it('로그가 없으면 플레이스홀더를 유지한다 (회귀 축)', () => {
     region.displayLogs([]);
 
     expect(logDiv().querySelector('.log-placeholder'), '빈 검은 상자로 남기지 않는다').not.toBeNull();

@@ -572,7 +572,7 @@ describe('_apply_summary.json — 요약 + 청구 2축 (D6·P13)', () => {
         expect(source, `${itemVar} 가 ${key} 를 읽지 않는다`).toContain(`_local.claimEstimateFormatted?.${key}`);
       }
 
-      // 서버 원형을 직접 읽으면 오류 없이 빈 줄이 된다 (3차 C1 의 형태).
+      // 서버 원형을 직접 읽으면 오류 없이 빈 줄이 된다 (앞서 고친 것과 같은 형태).
       expect(source).not.toContain('refund_formatted?.mc');
       expect(source).not.toContain('claimEstimate?.mc_');
 

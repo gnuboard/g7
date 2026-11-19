@@ -58,7 +58,7 @@ class KcpBridgeController extends PublicBaseController
     {
         // file-serving:allow 파일이 아니라 이 자리에서 만든 중계 문서를 돌려준다 — 서빙 계약
         // (nosniff·ETag·304) 의 대상이 아니다. 표식이 없으면 소스 계약 검사가 이 메서드를
-        // 파일 서빙으로 읽는다 (22차 G3 라운드 B2).
+        // 파일 서빙으로 읽는다.
         return response($html, 200, [
             'Content-Type' => 'text/html; charset=UTF-8',
             'Referrer-Policy' => 'no-referrer',

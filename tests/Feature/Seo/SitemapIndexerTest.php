@@ -70,7 +70,7 @@ class SitemapIndexerTest extends TestCase
         $row = SitemapUrl::where('resource_type', 'product')->where('resource_id', '7')->first();
 
         $this->assertNotNull($row);
-        // 정본 주소는 요청이 아니라 설정(APP_URL)이 정한다 — `url()` 은 요청 오리진을 쓰므로 기대값이 아니다 (16차 G3 라운드 B-3).
+        // 정본 주소는 요청이 아니라 설정(APP_URL)이 정한다 — `url()` 은 요청 오리진을 쓰므로 기대값이 아니다.
         $this->assertSame(AssetUrl::siteAbsolute('/shop/products/7'), $row->loc, 'url 은 설정 기준 절대 loc 으로 정규화돼야 합니다.');
         $this->assertSame('sirsoft-ecommerce', $row->contributor);
     }

@@ -15,7 +15,7 @@ use Tests\Support\LayoutSourceConvention;
  * S17·S18 이 스무 회차 넘게 같은 형태로 반복된 기전 하나가 여기 있다 — 회차마다 "근본 조치" 로
  * 새 단언을 심었고, 그 단언이 **실패할 수 없는 명제**여도 아무도 알아채지 못했다.
  *
- * 29차가 그 최신판이다. 짝 병존 fragment 에서 "소스가 이긴다" 를 단언하려고 이렇게 썼다:
+ * 그 최신판은 이렇다. 짝 병존 fragment 에서 "소스가 이긴다" 를 단언하려고 이렇게 썼다:
  *
  * ```php
  * $viaMarkup = LayoutFragmentSourceHelper::read($markupFile);
@@ -40,7 +40,7 @@ class OracleIndependenceGuardTest extends LayoutMarkupTestCase
     /**
      * 소스 **선택**을 수행하는 코어 진입점 클래스 — 이 클래스의 public static 표면 전량이 대상이다.
      *
-     * 31차까지 진입점은 `['read', 'readDirectory']` 라는 **손으로 쓴 이름 열거**였다. 열거의 경계를
+     * 종전 진입점은 `['read', 'readDirectory']` 라는 **손으로 쓴 이름 열거**였다. 열거의 경계를
      * 저자가 정하므로 여집합이 남고, 실제로 남아 있었다 — 조각 축의 선택 진입점
      * (`ValidatesLayoutFiles::resolvePartialSource()`, S18 P1 의 본체)이 그 목록에 없어 조각
      * 축에서 만든 항진명제는 구조적으로 보이지 않았다. 그래서 열거를 **리플렉션 도출**로 바꾼다:
@@ -57,7 +57,7 @@ class OracleIndependenceGuardTest extends LayoutMarkupTestCase
      * 34차 — 이 자리는 **손으로 쓴 이름 열거 넷**이었고, 그 여집합에 규약의 소유자
      * (`layoutSourceCandidates`·`mergeLayoutSourcesByPriority`)와 조각 축의 `resolveAllPartials`
      * 가 남아 있었다. 그 진입점으로 만든 항진명제는 문지기(`mentionsResolverEntryPoint`)에서
-     * 걸러져 검사에 들어오지도 않는다 — 31차가 `resolvePartialSource` 누락으로 고친 것과 같은
+     * 걸러져 검사에 들어오지도 않는다 — 앞서 `resolvePartialSource` 누락으로 고친 것과 같은
      * 여집합이 한 층 위에 있었던 것이다. 열거를 없애고 규약 표면 정본
      * ({@see LayoutSourceConvention::DELEGATIONS})에서 도출한다. 소유자 실재는
      * {@see test_resolver_entry_points_still_exist_in_core()} 가 확인한다.
@@ -109,7 +109,7 @@ class OracleIndependenceGuardTest extends LayoutMarkupTestCase
     }
 
     /**
-     * 판정식이 29차의 실제 코드 형태를 잡는지 합성 표본으로 시험합니다.
+     * 판정식이 실제로 있었던 코드 형태를 잡는지 합성 표본으로 시험합니다.
      *
      * @scenario compile_unit=install,source_health=valid
      *
@@ -144,7 +144,7 @@ class OracleIndependenceGuardTest extends LayoutMarkupTestCase
 
         $this->assertNotSame([],
             $this->violationsInCode($this->codeWithoutComments($tautology)),
-            '29차의 항진명제 형태를 놓칩니다 — 이 가드의 초록은 아무것도 뜻하지 않는다');
+            '실제로 있었던 항진명제 형태를 놓칩니다 — 이 가드의 초록은 아무것도 뜻하지 않는다');
 
         $this->assertSame([],
             $this->violationsInCode($this->codeWithoutComments($independent)),
@@ -262,7 +262,7 @@ class OracleIndependenceGuardTest extends LayoutMarkupTestCase
         };
 
         $this->assertGuardRejects('oracle_inline_tautology.php', $inlineTautology, $production,
-            '인라인 호출 항진명제 — 32차까지 문지기가 대입문만 봐서 이 표본은 검사에 들어오지도 않았다');
+            '인라인 호출 항진명제 — 종전에는 문지기가 대입문만 봐서 이 표본은 검사에 들어오지도 않았다');
 
         $this->assertGuardAccepts('oracle_independent.php', $independentOracle, $production,
             '독립 오라클 — 한 변만 선택 경로를 통과하는 정상 형태');
@@ -319,7 +319,7 @@ class OracleIndependenceGuardTest extends LayoutMarkupTestCase
      *
      * ## 왜 이 방향이 필요한가
      *
-     * 34차는 흩어진 목록 둘을 {@see LayoutSourceConvention} 하나로 통합했지만, 폐쇄는
+     * 앞서 흩어진 목록 둘을 {@see LayoutSourceConvention} 하나로 통합했지만, 폐쇄는
      * **목록 → 코어** 한 방향뿐이었다({@see test_resolver_entry_points_still_exist_in_core()} —
      * "등재분이 코어에 실재하는가"). 그래서 **코어에 있는데 목록에 없는** 진입점은 아무도 묻지
      * 않았고, 실측에서 여집합 3건이 그대로 살아 있었다. 그중 `resolveFragmentSource()` 는
@@ -375,11 +375,11 @@ class OracleIndependenceGuardTest extends LayoutMarkupTestCase
      * {@see LayoutSourceConvention::NON_DELEGATING_SURFACE} 의 독블록은 *"여기 등재된 것은
      * 우선순위 결정을 위임받지 않는다. … 면제 목록에 넣으면 안 된다"* 로 두 목록의 배타를 이미
      * 규정하고 있었다. 그런데 그 규칙을 집행하는 장치가 없었고, 실제로 `resolveAllPartials` 가
-     * **양쪽에 동시 등재**돼 있었다. 35차가 두 목록을 갈라 낸 이유가 "폭이 다른 두 소비처"
+     * **양쪽에 동시 등재**돼 있었다. 두 목록을 갈라 낸 이유가 "폭이 다른 두 소비처"
      * (면제는 좁아야 안전 · 문지기는 넓어야 안전)인데, 한 이름이 양쪽에 있으면 **면제 쪽 폭이
      * 문지기 쪽 폭까지 넓어진다** — 갈라 낸 의미가 그 이름에 대해서만 사라진다.
      *
-     * 왜 35차의 역방향 폐쇄가 이것을 못 봤나: {@see test_core_selection_surface_is_fully_registered()}
+     * 왜 역방향 폐쇄가 이것을 못 봤나: {@see test_core_selection_surface_is_fully_registered()}
      * 는 도출 집합이 **합집합**({@see LayoutSourceConvention::selectionSurface()})에 덮이는지만
      * 본다. 합집합은 중복을 흡수하므로 이중 등재는 그 판정에 흔적을 남기지 않는다. 열거의
      * *여집합*은 잠갔으나 *교집합*은 잠근 적이 없었다.
@@ -419,11 +419,11 @@ class OracleIndependenceGuardTest extends LayoutMarkupTestCase
      *
      * ## 왜 면제를 없앴는가
      *
-     * 31차는 자기 파일을 `SAMPLE_BEARING_FILES` 로 **통째 면제**했다. 그 면제의 실제 사유는
+     * 종전에는 자기 파일을 `SAMPLE_BEARING_FILES` 로 **통째 면제**했다. 그 면제의 실제 사유는
      * "표본을 담고 있어서" 였는데, 표본은 nowdoc 리터럴이므로 **본문만 걷어내면 사라진다**.
      * 즉 면제는 판정이 heredoc 을 보지 못한 데서 온 것이지 그 파일이 특별해서가 아니었다.
      * 그런데 면제가 파일 단위라 **그 파일에 새로 생긴 진짜 항진명제는 영구히 판정 밖**이었다 —
-     * 22차가 "감시자가 자기를 관측 밖에 둔다" 로 지목한 형태의 파일-입도 판본이고, 33·34차가
+     * 이전에 "감시자가 자기를 관측 밖에 둔다" 로 지목한 형태의 파일-입도 판본이고, 앞서
      * 다른 가드에서 고친 입도 결함과 같은 계열이다.
      *
      * 그래서 면제를 없애고 {@see judgedCode()} 가 표본 본문을 걷어낸다. 이 테스트는 그 치환이
@@ -651,15 +651,15 @@ class OracleIndependenceGuardTest extends LayoutMarkupTestCase
     /**
      * 검사 대상 테스트 파일을 도출합니다 — 게이트가 실제로 실행하는 집합 전량.
      *
-     * 31차까지는 손으로 쓴 디렉토리 2줄이라 결제 리스너 테스트와 `tests/Unit/Rules`·`Enums` 의
+     * 종전에는 손으로 쓴 디렉토리 2줄이라 결제 리스너 테스트와 `tests/Unit/Rules`·`Enums` 의
      * 게이트 상주 테스트가 검사 밖이었다. 도출을 {@see GateTestPopulation} 한 곳에 위임한다.
      *
      * @return array<int, string> 저장소 루트 기준 상대 경로
      */
     private function guardTestFiles(): array
     {
-        // 33차 ⚠️F3 — `tests/Support/` 의 공유 오라클(CompilesFragmentMarkup 등)은 게이트 테스트가
-        // 실제로 실행하는 비교를 갖는다. 32차가 그 축을 무효 단언 가드(AssertionStrengthGuardTest)
+        // `tests/Support/` 의 공유 오라클(CompilesFragmentMarkup 등)은 게이트 테스트가
+        // 실제로 실행하는 비교를 갖는다. 앞서 그 축을 무효 단언 가드(AssertionStrengthGuardTest)
         // 에만 합류시켜, 오염된 오라클이 헬퍼 층으로 이사하면 이 가드의 판정 밖이었다.
         return array_keys(GateTestPopulation::gateSelectedFiles() + GateTestPopulation::gateSupportFiles());
     }
@@ -667,7 +667,7 @@ class OracleIndependenceGuardTest extends LayoutMarkupTestCase
     /**
      * PHP 소스에서 주석만 제거합니다 (문자열·정규식 리터럴 보존).
      *
-     * 정규식 치환을 쓰지 않는 이유는 19차가 그 대가를 치렀기 때문이다 — 주석 제거기가 리터럴
+     * 정규식 치환을 쓰지 않는 이유는 이 저장소가 이미 그 대가를 치렀기 때문이다 — 주석 제거기가 리터럴
      * 사이를 통째로 먹어 가드 전량이 후보 0건인 채 초록으로 통과했다.
      *
      * @param  string  $source  PHP 소스
@@ -698,7 +698,7 @@ class OracleIndependenceGuardTest extends LayoutMarkupTestCase
      * 실제로 판정에 넣을 코드 — 주석과 **합성 표본 본문**을 함께 걷어냅니다 (35차).
      *
      * 표본은 nowdoc 리터럴이므로 본문을 지우면 판정에서 사라진다. 이것이 파일 단위 면제를
-     * 불필요하게 만드는 치환이고, 동시에 31차가 파일 면제로 우회했던 **정규식 월경 기전**도
+     * 불필요하게 만드는 치환이고, 동시에 종전에 파일 면제로 우회했던 **정규식 월경 기전**도
      * 닫는다 — `resolverDerivedVariables()` 의 `[^;]*` 가 nowdoc 경계를 넘어 표본까지 한 매치로
      * 삼키던 자리에 애초에 nowdoc 본문이 없다.
      *

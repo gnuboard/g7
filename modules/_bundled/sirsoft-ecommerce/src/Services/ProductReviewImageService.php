@@ -88,7 +88,7 @@ class ProductReviewImageService
         // 읽어 **축소 전 크기**를 돌려준다. `getimagesize()` 는 파일을 직접 읽으므로
         // width/height 만 축소본을 가리키고 크기만 어긋난다 — 한 행의 두 값이 서로 다른
         // 파일을 가리키는 상태다. 형제 넷(코어 2 · 게시판 · 페이지)은 같은 사유로 이미 이
-        // 처리를 갖는다 (12차 G3 라운드 D3 — 11차가 형제 절반에만 적용했다).
+        // 처리를 갖는다 (종전 수정은 형제 절반에만 적용됐다).
         clearstatcache(true, $file->getRealPath());
 
         // 공개 자산 디스크를 주입받았어도 「공개 디스크로 내보낼 확장자」 밖이면 모듈 기본 디스크에 저장한다.
@@ -197,8 +197,7 @@ class ProductReviewImageService
      * 이미지 서빙 정보 조회 (스트림 + 검증자 메타)
      *
      * 캐싱 헤더·검증자 비교·304 는 코어 단일 지점이 만든다 — 이 서비스는 코어 형제
-     * (`App\Services\AttachmentService::getFileInfo()`)와 같은 형태의 서빙 정보만 돌려준다
-     * (14차 G3 라운드).
+     * (`App\Services\AttachmentService::getFileInfo()`)와 같은 형태의 서빙 정보만 돌려준다.
      *
      * @param  string  $hash  이미지 해시
      * @param  bool  $signatureVerified  유효 서명 URL 로 접근했는가 (숨김 리뷰 이미지의 한시 허용)
@@ -225,7 +224,7 @@ class ProductReviewImageService
         }
 
         // 서빙 정보(스트림 + 검증자 메타)는 `ServesImageWithRowValidators` 단일 지점이 만든다
-        // (형제 두 이미지 서비스와 같은 계약 — 11차 G3 라운드 B11-12 · 14차 코어 지점 경유).
+        // (형제 두 이미지 서비스와 같은 계약 — 코어 지점 경유).
         $info = $this->imageServeInfo($image);
 
         if (! $info) {

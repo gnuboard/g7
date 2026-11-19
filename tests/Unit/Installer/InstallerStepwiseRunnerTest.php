@@ -212,11 +212,11 @@ class InstallerStepwiseRunnerTest extends TestCase
             'execution_mode' => 'auto',
             'php_binary' => 'php',
         ];
-        // 확장 **종류를 전부** 시드한다 (11차 #D5). 빈 배열로 두면 그 종류의 태스크 함수가
+        // 확장 **종류를 전부** 시드한다. 빈 배열로 두면 그 종류의 태스크 함수가
         // 아예 생성되지 않아, 「전수 완주」를 자처하는 이 테스트가 plugin·user_template·
         // language_pack 경로를 한 번도 실행하지 않는다 — 그 경로의 vendorModeOptionFromState()
         // 전파를 지워도 전 스위트가 초록이었다(inprocess 설치에서 플러그인만 composer 를 타려
-        // 하는 R9/R10 형태의 사고). 10차 #M1 이 getManualCommands 픽스처에 한 조치와 같다.
+        // 하는 R9/R10 형태의 사고). 앞서 getManualCommands 픽스처에 한 조치와 같다.
         $state['selected_extensions'] = [
             'admin_templates' => ['sirsoft-admin_basic'],
             'user_templates' => ['sirsoft-basic'],
@@ -265,7 +265,7 @@ class InstallerStepwiseRunnerTest extends TestCase
         $tasks = buildInstallationTaskList();
         $keys = array_column($tasks, 'key');
 
-        // 11차 #D5 — 픽스처가 확장 **전 종류**를 시드하도록 넓히면서 목록도 함께 늘었다.
+        // 픽스처가 확장 **전 종류**를 시드하도록 넓히면서 목록도 함께 늘었다.
         // 좁은 픽스처에서는 plugin·user_template·language_pack 태스크가 아예 만들어지지
         // 않아 그 경로가 통째로 미도달이었다.
         $this->assertSame([
@@ -384,8 +384,8 @@ class InstallerStepwiseRunnerTest extends TestCase
     /**
      * R6 — DB 태스크 실패 시 completed 마커가 정리된다.
      *
-     * 19차 R1 로 기대값이 바뀌었다. 종전에는 `['migrate', 'migrate:rollback']` 과
-     * **`['--force' => true]`**(= `--step` 없는 롤백)를 단언했는데, 그것은 13차 #D9 가 금지한
+     * 기대값이 바뀌었다. 종전에는 `['migrate', 'migrate:rollback']` 과
+     * **`['--force' => true]`**(= `--step` 없는 롤백)를 단언했는데, 그것은 앞서 금지한
      * 바로 그 형태다 — 배치 지정이 없으면 마지막 배치(= 운영자의 것)가 대상이 된다.
      * `installerMigrateRollbackStepCount()` docblock · `installerRecordMigrationBatchBaseline()`
      * 주석 · `rollback_migrate_range_unknown` 문구 셋이 모두 「범위를 모르면 되돌리지 않는다」를
@@ -417,7 +417,7 @@ class InstallerStepwiseRunnerTest extends TestCase
             $this->assertNotSame(
                 'migrate:rollback',
                 $call['command'],
-                '범위를 확정하지 못한 채 롤백이 나가면 운영자의 마지막 배치가 사라진다 (#D9 · 19차 R1)',
+                '범위를 확정하지 못한 채 롤백이 나가면 운영자의 마지막 배치가 사라진다',
             );
         }
 
@@ -470,7 +470,7 @@ class InstallerStepwiseRunnerTest extends TestCase
         $this->assertSame('task_done', $run['outcome']);
         $this->assertSame('db_migrate', $run['task'], '롤백된 DB 태스크가 재시도에서 재실행되어야 한다 — 건너뛰면 DB 가 비어 있는 채 "완료" 된다');
 
-        // 19차 R1 — 범위 미확정이면 롤백이 나가지 않는다(위 형제 검사의 근거 참조).
+        // 범위 미확정이면 롤백이 나가지 않는다(위 형제 검사의 근거 참조).
         // 이 검사가 지키는 계약은 「재시도가 그 태스크를 다시 실행한다」이고, 그것은
         // 마커가 지워졌는지가 아니라 **애초에 세워지지 않았는지**로 성립한다.
         $this->assertSame(['migrate', 'migrate'], array_column($this->calls, 'command'));
@@ -583,12 +583,12 @@ class InstallerStepwiseRunnerTest extends TestCase
     }
 
     /**
-     * 설치본 설정 파일이 실제로 무엇을 담고 나가는지 고정한다 (10차 #G3).
+     * 설치본 설정 파일이 실제로 무엇을 담고 나가는지 고정한다.
      *
      * 완주 루프는 `create_settings_json` 을 **돌리기만** 하고 결과 파일을 한 번도 읽지 않았다.
      * 그 사각에서 두 축이 무검사로 남아 있었다:
      *
-     *  - **사이트 기본 언어** — 8차가 「진행 모드에 따라 언어가 갈린다」를 고치며 `$state['g7_locale']`
+     *  - **사이트 기본 언어** — 앞서 「진행 모드에 따라 언어가 갈린다」를 고치며 `$state['g7_locale']`
      *    로 옮긴 값. `getCurrentLanguage()` 로 되돌려도(=세션 의존 회귀) 전 스위트가 초록이었다.
      *  - **`system.execution_mode`** — D33 의 종단이다. Step 3 에서 고른 값이 설치본 설정에 남아야
      *    운영 중 실행 모드가 그 선택을 따른다. 저장 시점(Step 3)만 테스트가 덮고 있었다.
@@ -668,7 +668,7 @@ class InstallerStepwiseRunnerTest extends TestCase
             buildInstallationTaskList(),
             fn (array $t) => ! in_array($t['key'], $state['completed_tasks'], true),
         ));
-        // 건너뛴 짝 바로 다음은 그 다음 선택 확장이다 (11차 #D5 로 픽스처가 넓어졌다)
+        // 건너뛴 짝 바로 다음은 그 다음 선택 확장이다 (픽스처가 넓어졌다)
         $this->assertSame('plugin_install:sirsoft-gdpr', $pending[0]['key'], '건너뛴 짝 다음 태스크로 이어진다');
     }
 
@@ -718,7 +718,7 @@ class InstallerStepwiseRunnerTest extends TestCase
         $this->assertSame('module:install', $this->calls[0]['command']);
         $this->assertSame(['sirsoft-board', '--vendor-mode' => 'bundled'], $this->calls[0]['parameters']);
 
-        // 확장 **종류마다** 전파를 확인한다 (11차 #D5). 모듈 하나만 단언하면 형제 경로
+        // 확장 **종류마다** 전파를 확인한다. 모듈 하나만 단언하면 형제 경로
         // (플러그인·사용자 템플릿)의 `+ vendorModeOptionFromState()` 를 지워도 초록이고,
         // 그 상태의 결과는 inprocess 로 확정된 설치에서 그 확장만 composer 를 타려 하는
         // 것이다 — R9/R10 이 막으려던 형태다.
@@ -815,7 +815,7 @@ class InstallerStepwiseRunnerTest extends TestCase
     }
 
     /**
-     * 완주는 `installation_status` 를 completed 로 남긴다 (11차 #A6).
+     * 완주는 `installation_status` 를 completed 로 남긴다.
      *
      * 그 값을 쓰는 지점은 complete_flag 태스크 본문 하나뿐인데 best-effort 인 config_cache 가
      * **그 뒤**에 온다. config_cache 만 실패한 뒤 재시도하면 complete_flag 는 이미 마커가 있어
@@ -841,7 +841,7 @@ class InstallerStepwiseRunnerTest extends TestCase
     }
 
     /**
-     * 완료 마커가 저장되지 않으면 태스크를 성공으로 넘기지 않는다 (11차 #A5).
+     * 완료 마커가 저장되지 않으면 태스크를 성공으로 넘기지 않는다.
      *
      * markTaskCompleted() 는 저장 성공 여부를 돌려주는데 호출부 19곳이 전부 그 값을 버렸다.
      * 마커만 없는 상태가 되면 단계별 실행은 completed_tasks 에 없는 첫 작업을 다시 뽑으므로
@@ -1145,7 +1145,7 @@ class InstallerStepwiseRunnerTest extends TestCase
         // 모집단은 인스톨러 PHP 전수다 — 손으로 적은 목록은 「자동 검출」이 아니다.
         // 실제로 종전 3파일 목록은 execution-mode.php(error_stepwise_not_running 의 `:status`)를
         // 놓치고 있었고, 그 지점의 message_params 를 지워도 이 테스트가 초록이었다.
-        // 재귀 스캔 + `views/` 포함 (12차 L-2). 종전에는 `api`·`includes` 를 한 겹 glob 으로만
+        // 재귀 스캔 + `views/` 포함. 종전에는 `api`·`includes` 를 한 겹 glob 으로만
         // 훑어, 화면(`views/**`)의 message_key 생산 지점과 하위 디렉토리가 통째로 모집단 밖이었다.
         $sources = [];
         $installDir = $root.'/public/install';
@@ -1187,7 +1187,7 @@ class InstallerStepwiseRunnerTest extends TestCase
                 // 하나뿐이므로 그것이 "같은 반환" 의 경계 근사다. 고정 바이트 창은 사이에 낀
                 // 한국어 주석(문자당 3바이트)만으로 경계를 넘겨 오탐을 냈다.
                 //
-                // 앞쪽도 반드시 끊는다 (9차 #G11): 앞을 고정 800바이트로만 두면 **이전 반환의**
+                // 앞쪽도 반드시 끊는다: 앞을 고정 800바이트로만 두면 **이전 반환의**
                 // message_params 가 창에 들어와 이 키의 단언을 대신 만족시킨다 — 지점 하나만
                 // 늘어도 검사가 조용히 무효가 된다.
                 $previous = $index > 0 ? $keyOffsets[$index - 1] : 0;
@@ -1195,7 +1195,7 @@ class InstallerStepwiseRunnerTest extends TestCase
                 $next = $keyOffsets[$index + 1] ?? strlen($source);
                 $end = min($next, $offset + 1500);
 
-                // 「키가 창 안에 있다」가 아니라 「그 값이 비어 있지 않다」를 본다 (12차 M-2).
+                // 「키가 창 안에 있다」가 아니라 「그 값이 비어 있지 않다」를 본다.
                 // `'message_params' => []` 는 종전 판정을 통과하면서 화면에는 자리표시자를
                 // 그대로 내보낸다 — 7차 #1·8차 #16 이 닫은 결함군의 재현 통로다.
                 $this->assertMatchesRegularExpression(
@@ -1313,7 +1313,7 @@ function buildInstallationTaskListForSeed(InstallerStepwiseRunnerTest $test): ar
 
 /**
  * 성공을 돌려주지만 완료 마커는 남기지 않는 태스크 — 저장 실패(디스크 풀·부분 쓰기)의
- * 관측을 재현한다 (11차 #A5). 마커를 지우는 것으로 「markTaskCompleted 가 false 를
+ * 관측을 재현한다. 마커를 지우는 것으로 「markTaskCompleted 가 false 를
  * 돌려줬는데 아무도 안 봤다」와 같은 상태를 만든다.
  *
  * task-runner 는 태스크 정의의 function 이름을 그대로 부르므로 FQN 으로 전달한다.

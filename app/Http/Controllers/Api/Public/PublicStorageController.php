@@ -102,8 +102,8 @@ class PublicStorageController extends PublicBaseController
         $response = $this->fileResponse($result['filePath'], $result['mimeType'], 3600, immutable: false, skipCompression: true);
 
         // 파일 이름 선언은 `fileResponse()` 가 한다 — 네 통로(공개 스토리지 · template ·
-        // module · plugin)가 공유하는 자리다. 6차에 이 통로에만 사본으로 들어가 있었고
-        // 형제 셋은 빠져 있었다(7차 G3 라운드 C2). 사유는 그 자리 주석에 있다.
+        // module · plugin)가 공유하는 자리다. 종전에는 이 통로에만 사본으로 들어가 있었고
+        // 형제 셋은 빠져 있었다. 사유는 그 자리 주석에 있다.
         //
         // 실행 가능한 문서 유형은 내려받기 + 격리 CSP 로 돌린다(이름은 위 선언을 그대로 쓴다).
         // 종전에는 업로드된 `.html`·`.svg` 가 앱 오리진에서 inline 으로 열려 그 안의 스크립트가

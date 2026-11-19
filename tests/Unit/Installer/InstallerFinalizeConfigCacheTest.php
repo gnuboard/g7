@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 use Tests\Unit\Installer\Concerns\RunsInstallerSubprocess;
 
 /**
- * 설치 마무리가 설정 캐시를 무효화하고(제품 결정 13차 D7/E2), .env 확정 뒤 다시 굽는지 실측한다.
+ * 설치 마무리가 설정 캐시를 무효화하고(제품 결정), .env 확정 뒤 다시 굽는지 실측한다.
  *
  * 마지막 태스크 `config_cache` 는 `.env` 머지 **이전**에 돈다. 그 시점의 config 는
  * `InstallerRuntimeServiceProvider` 가 `storage/installer/runtime.php` 에서 주입한 값이고,
@@ -247,7 +247,7 @@ class InstallerFinalizeConfigCacheTest extends TestCase
         // 기대 문구는 **번역된 본문**이다. 종전 기대값(`bootstrap/cache/config.php 삭제
         // FAILED`)은 이 기록이 다국어 키로 옮겨지기 전의 것이라 어느 쪽으로도 맞지 않았고,
         // 그 stale 한 기대가 「이 파일만 번역을 싣지 않는다」는 실제 결함을 가리고 있었다.
-        // 원시 키가 나가면 이 단언이 red 다 (13차 G3 라운드).
+        // 원시 키가 나가면 이 단언이 red 다.
         $log = $this->installationLog();
 
         $this->assertStringContainsString(

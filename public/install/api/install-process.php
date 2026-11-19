@@ -15,7 +15,7 @@
 // 최상위 실행문이 없고 BASE_PATH 를 자체 역산하므로 config 보다 앞에 와도 안전하다.
 require_once __DIR__.'/../includes/execution-mode.php';
 
-// 오류 텍스트가 본문에 섞이지 않게 한다 — **include 체인·가드보다 앞** (12차 #A6 · 21차 N4).
+// 오류 텍스트가 본문에 섞이지 않게 한다 — **include 체인·가드보다 앞**.
 // 종전에는 include 체인 뒤에 있어서 설정 로드·세션 시작 구간의 warning 이 JSON 본문 앞에
 // 붙는 창이 남았다.
 if (installerHasFunction('ini_set')) {
@@ -37,7 +37,7 @@ require_once __DIR__.'/../includes/installer-ownership.php';
 require_once __DIR__.'/../includes/install-plan.php';
 require_once __DIR__.'/_guard.php';
 installer_guard_finalize_or_410();
-// 설치가 실제로 끝났는데 `.env` 표식만 없는 상태에서는 재시작이 성립하지 않는다 (13차 보안#8).
+// 설치가 실제로 끝났는데 `.env` 표식만 없는 상태에서는 재시작이 성립하지 않는다.
 // `.env` 쓰기가 권한 문제로 실패해도 위 가드는 통과시키므로, 운영 사이트에서 이 엔드포인트가
 // 영구히 열린 채 남는 것이 종전 상태였다.
 installer_guard_post_complete_or_410();
@@ -49,7 +49,7 @@ $translations = loadTranslations($currentLang);
 // JSON 응답 헤더 설정
 header('Content-Type: application/json; charset=UTF-8');
 
-// 채널 가드 이력 — 12차 #A6 이 폴링 워커 구간 한정이던 것을 이 위치로 올렸고, 21차 N4 가
+// 채널 가드 이력 — 폴링 워커 구간 한정이던 것을 이 위치로 올렸고, 이어서
 // include 체인보다 앞(파일 최상단)으로 다시 올렸다. 존재·순서는 파생 모집단 게이트
 // InstallerJsonEndpointErrorChannelTest 가 강제한다.
 
@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 /**
- * 출처 확인 (13차 보안#4)
+ * 출처 확인
  *
  * 인스톨러에는 CSRF 토큰 검증이 없다 — 헬퍼는 정의만 있고 호출부가 0건이었다. 세션 쿠키가
  * `SameSite=Lax` 라 top-level 폼 제출에는 동반 전송되므로, 다른 사이트의 자동 제출 폼 하나로
@@ -166,11 +166,11 @@ try {
     $forcedStepwise = $installationDecision['forced'];
     // 저장된 선택이 서버에서 뒤집힌 두 번째 경우 — 「단계별 실행 + Composer」 조합은 한 단계가
     // 요청 수명을 넘기므로 실시간 스트리밍으로 내린다. 형제 판정(forced)만 로그·응답에 실려서,
-    // 이쪽은 화면 표시와 실제 진행 방식이 어긋나도 흔적이 없었다 (12차 #A5).
+    // 이쪽은 화면 표시와 실제 진행 방식이 어긋나도 흔적이 없었다.
     $downgradedFromStepwise = $installationDecision['downgraded'];
 
     /**
-     * 시작 요청 거부 판정 (11차 #A2·#A4)
+     * 시작 요청 거부 판정
      *
      * 상태를 덮어쓰기 **전에** 본다 — 종전에는 두 번째 탭이 먼저 상태를 통째로 갈아엎고
      * `started` 를 응답한 뒤에야 워커 lock 획득에 실패해, 아무 신호 없이 종료했다.
@@ -179,7 +179,7 @@ try {
      * 이 runtime·state 를 쓰므로 그 호출보다 앞에 둔다.
      *
      * 같은 판정이 진행 중인 stepwise 설치에 기존 토큰을 요구한다. 이 엔드포인트가
-     * 무인증으로 새 토큰을 발급해 온 탓에, 10차가 [중단]·[초기화]·[건너뛰고 계속]에 건
+     * 무인증으로 새 토큰을 발급해 온 탓에, 앞서 [중단]·[초기화]·[건너뛰고 계속]에 건
      * 토큰 게이트가 요청 하나로 우회 가능했다.
      */
     // 생존 판정과 「남은 시간」은 같은 셈에서 나온다 (D7) — 한 함수가 둘을 낸다.
@@ -221,7 +221,7 @@ try {
     if ($installationMode === 'stepwise') {
         $stepwiseToken = bin2hex(random_bytes(16));
 
-        // 소유자 표식 (13차 보안#3) — 이 토큰은 Step 5 화면 HTML 에 실린다. 진행 중 설치가
+        // 소유자 표식 — 이 토큰은 Step 5 화면 HTML 에 실린다. 진행 중 설치가
         // 있으면 **세션이 없는 요청**도 Step 5 로 안내되므로(index.php 가 state 의
         // current_step 을 채택) 무인증 GET 한 번으로 토큰이 유출된다. 「이 세션이 설치를
         // 시작한 세션인가」를 대조할 수 있게 같은 값을 runtime.php(0600)와 세션 양쪽에 심는다.
@@ -269,7 +269,7 @@ try {
             $payload['env_required'] = true;
             if (! empty($plan['env_not_writable'])) {
                 // 화면이 「부재」 안내와 「쓰기 불가」 안내를 구분해 그리는 데 필요한 필드
-                // (23차 F-2) — 형제 갈래(.env 부재)와 같은 봉투 폭을 유지한다.
+                // 형제 갈래(.env 부재)와 같은 봉투 폭을 유지한다.
                 $payload['env_not_writable'] = true;
             } else {
                 $payload['missing_files'] = ['.env'];
@@ -368,7 +368,7 @@ try {
         header('Content-Type: application/json; charset=UTF-8');
         // Nginx 리버스 프록시 뒤에서는 위의 ob/zlib 차단만으로 부족하다 — 프록시가 응답을
         // 버퍼링하면 인라인 워커가 끝날 때까지(최대 600초) 본문이 브라우저에 닿지 않아
-        // 폴링이 시작조차 못 한다. SSE 형제 둘은 이 헤더를 세운다 (17차 #B4).
+        // 폴링이 시작조차 못 한다. SSE 형제 둘은 이 헤더를 세운다.
         header('X-Accel-Buffering: no');
         header('Cache-Control: no-store');
         header('Content-Length: '.strlen($responseJson));
@@ -393,7 +393,7 @@ try {
         }
 
         // 워커 타임아웃 설정 (SSE 모드와 동일) — 작업 루프가 작업마다 같은 값으로 다시 건다.
-        // 막힌 호스팅에서도 설치는 진행되어야 하므로 가용할 때만 부른다 (13차 환경#1).
+        // 막힌 호스팅에서도 설치는 진행되어야 하므로 가용할 때만 부른다.
         if (installerHasFunction('set_time_limit')) {
             @set_time_limit((int) INSTALLER_TASK_TIME_LIMIT);
         }
@@ -414,9 +414,9 @@ try {
             // 응답은 이미 `started` 로 나갔으므로 여기서 조용히 끝내면 화면은 아무도
             // 진행시키지 않는 `running` 을 무한 폴링한다. 형제 두 입구는 사유를 돌려준다
             // (run-task 는 `busy`, SSE 워커는 `aborted{reason:'busy'}`) — 폴링만 통로가
-            // 없었다. 상태 파일에 사유를 남겨 폴링 조회가 읽게 한다 (11차 #A4).
+            // 없었다. 상태 파일에 사유를 남겨 폴링 조회가 읽게 한다.
             //
-            // 읽기·쓰기는 배타 구간 안에서 한다 (17차 #C4) — 이 분기는 정의상 승자가 도는
+            // 읽기·쓰기는 배타 구간 안에서 한다 — 이 분기는 정의상 승자가 도는
             // 중에만 실행되므로, 구간 밖 RMW 는 승자의 완료 마커를 덮는 구조적 경합이다.
             installerRecordBusyRejection();
             exit;
@@ -467,7 +467,7 @@ try {
     logInstallationError(lang('error_installation_start_failed'), $e);
 
     // 상태를 failed로 변경.
-    // 예외 원문은 상태 파일에 남기지 않는다 (13차 보안#9) — 그 값은 무인증 폴링 응답
+    // 예외 원문은 상태 파일에 남기지 않는다 — 그 값은 무인증 폴링 응답
     // (`state-management.php?action=get` 의 `error`)으로 그대로 나간다. 원문은 위
     // logInstallationError 가 로그에만 남기고, 상태에는 번역 가능한 키를 남긴다.
     $state = getInstallationState();
@@ -477,7 +477,7 @@ try {
     $state['error_message_params'] = null;
     saveInstallationState($state);
 
-    // 에러 응답 — 예외 원문은 싣지 않는다 (13차 보안#9). 이 엔드포인트는 인증이 없어
+    // 에러 응답 — 예외 원문은 싣지 않는다. 이 엔드포인트는 인증이 없어
     // 절대경로·DB 호스트명 같은 배치 정보가 그대로 나갔다. 원문은 위 logInstallationError
     // 가 로그에만 남기고, 화면에는 번역된 일반 문구를 준다.
     http_response_code(500);

@@ -16,7 +16,7 @@ use Tests\TestCase;
  *
  * 문자열 이어 붙이기는 `APP_URL` 의 후행 슬래시를 그대로 실어 `https://host/g7//login` 을 만들고,
  * 요청이 있는 문맥(관리자가 보낸 재생성 요청)과 없는 문맥(큐)이 다른 규칙을 따르게 된다. 증상은
- * 오류가 아니라 메일 안의 깨진 링크뿐이다 (16차 G3 라운드 B-4).
+ * 오류가 아니라 메일 안의 깨진 링크뿐이다.
  */
 class NotificationLinkSiteAbsoluteTest extends TestCase
 {

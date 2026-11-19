@@ -14,8 +14,7 @@ use Tests\TestCase;
  *
  * 운영자가 `general.site_url` 을 비워 둔 사이트에서 종전 폴백은 `url('/')` — 요청 호스트를
  * 실었다. 같은 화면의 canonical·og:url 은 설정 오리진을 싣고 JSON-LD `WebSite.url` 만 요청
- * 호스트를 실으면, 앞단 프록시가 TLS 를 끝내는 배치에서 한 페이지 안의 두 절대 주소가 갈린다
- * (16차 G3 라운드 B-6).
+ * 호스트를 실으면, 앞단 프록시가 TLS 를 끝내는 배치에서 한 페이지 안의 두 절대 주소가 갈린다.
  */
 class SeoRendererSiteUrlFallbackTest extends TestCase
 {

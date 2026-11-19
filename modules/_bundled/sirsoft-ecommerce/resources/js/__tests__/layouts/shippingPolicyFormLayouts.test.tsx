@@ -318,7 +318,7 @@ describe('shippingPolicyFormLayouts', () => {
         it('init_actions: 글로벌 상태 초기화 + 커스텀 핸들러 + 복사 모드 is_default 해제 + 신규 등록 회수지 허용', () => {
             // 개수·인덱스로 고정하지 않는다 — 같은 파일의 partial 순서 검사(아래)가 이미 남긴
             // 이유와 같다. 이 수는 계약이 아니라 당시 구조의 스냅샷이라, init_action 이 하나 늘 때마다
-            // 무관한 단언이 함께 깨진다(18차에 로케일 주입이 들어오며 실제로 그렇게 됐다).
+            // 무관한 단언이 함께 깨진다(로케일 주입이 들어오며 실제로 그렇게 됐다).
             // 계약은 "무엇이 있는가" 다. 한때 순서가 계약이던 로케일 주입 액션은 걷어냈다 — 표현식은
             // 엔진이 렌더·액션 컨텍스트에 넣어 주는 `$locale` 을 읽는다.
             const actions: any[] = mainLayout.init_actions;
@@ -1708,7 +1708,7 @@ describe('shippingPolicyFormLayouts', () => {
         });
     });
 
-    // ===== 등록/수정 안내 문구의 술어 (19차) =====
+    // ===== 등록/수정 안내 문구의 술어 =====
 
     describe('저장 성공 토스트는 route.id 로만 등록/수정을 가른다', () => {
         /**
@@ -1794,7 +1794,7 @@ describe('shippingPolicyFormLayouts', () => {
         it('삼항의 방향이 뒤집혀 있지 않다 (route.id 가 있으면 "수정")', () => {
             // 위 두 검사는 "`route.id ?` 를 쓴다" 와 "updated 문구를 쓴다" 만 본다 — 그래서
             // `route.id ? …created : …updated` 로 **뒤집어도 셋 다 통과**한다. 그 상태의 증상은
-            // 19차가 고친 결함과 정확히 같다(새로 만든 정책에 "수정되었습니다"). 방향까지 고정한다.
+            // 앞서 고친 결함과 정확히 같다(새로 만든 정책에 "수정되었습니다"). 방향까지 고정한다.
             for (const message of saveToastMessages()) {
                 const branches = /route\.id\s*\?\s*'([^']+)'\s*:\s*'([^']+)'/.exec(message);
 

@@ -209,8 +209,7 @@ class KcpCallbackControllerTest extends PluginTestCase
      */
     /**
      * 브리지 복귀 주소는 요청이 아니라 **설정된 사이트 주소**를 따른다 — 인증기관의 콜백은 사이트
-     * 바깥에서 도착하므로 `url()` 이 실은 요청 호스트는 앞단 프록시 배치에서 사이트 밖이다
-     * (16차 G3 라운드 B-5).
+     * 바깥에서 도착하므로 `url()` 이 실은 요청 호스트는 앞단 프록시 배치에서 사이트 밖이다.
      *
      * @scenario outcome=success,lookup=by_reg_cert_key,missing_field=none
      *

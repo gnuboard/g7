@@ -66,8 +66,7 @@ class AssetProbeController extends PublicBaseController
 
         // 응답 계약(`Content-Type` + `nosniff`)은 헬퍼 단일 지점이 소유한다. 종전에는 이
         // 자리가 헤더 배열을 손으로 조립하면서 `nosniff` 를 리터럴 사본으로 들고 있었다 —
-        // 값이 같아 지금은 무해하지만, 계약이 바뀌면 이 통로만 따라오지 않는다
-        // (22차 G3 라운드 B1).
+        // 값이 같아 지금은 무해하지만, 계약이 바뀌면 이 통로만 따라오지 않는다.
         $response = $this->inlineContentResponse($body, 'application/javascript; charset=utf-8');
 
         // 이 응답은 **판정용 대조**라 캐시되면 안 된다 — 운영자가 자산 URL 모드를 바꾼 뒤

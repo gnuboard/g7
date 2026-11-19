@@ -6,7 +6,7 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * 인스톨러 스타일시트의 캐스케이드·가시성 계약 (12차 #B30 · #B31 · #B33).
+ * 인스톨러 스타일시트의 캐스케이드·가시성 계약.
  *
  * 세 결함 모두 **텍스트는 정상 표시되므로** 스크린샷을 사람이 봐도 지나간다:
  *
@@ -45,7 +45,7 @@ class InstallerCssCascadeContractTest extends TestCase
         '.db-existing-tables-badge:hover' => 'hover 피드백 (기본 상태는 흐리지 않다)',
         '.vendor-mode-card.disabled .vendor-mode-card-icon' => '장식 아이콘만 — 글자는 흐리지 않는다 (10차 결정)',
         '.vendor-mode-card.disabled .vendor-mode-card-check' => '같음',
-        '.extension-card.disabled .extension-card-select' => '같음 (12차에 같은 규칙으로 맞췄다)',
+        '.extension-card.disabled .extension-card-select' => '같음 (같은 규칙으로 맞췄다)',
     ];
 
     /** @var array<int, array{sel: string, props: array<string, string>, line: int, media: bool}> */
@@ -212,9 +212,9 @@ class InstallerCssCascadeContractTest extends TestCase
     }
 
     /**
-     * 접기 애니메이션은 보간 가능한 속성으로 구현되어야 한다 (제품 결정 13차 — B30 복구).
+     * 접기 애니메이션은 보간 가능한 속성으로 구현되어야 한다 (제품 결정).
      *
-     * 12차가 잘림(#B30)을 `max-height: none` 으로 막으면서 접기 전환이 함께 사라졌다 —
+     * 앞서 잘림을 `max-height: none` 으로 막으면서 접기 전환이 함께 사라졌다 —
      * `none` 은 `0` 과 보간되지 않아 패딩 전환만 남는다. 잘림 금지와 전환 유지는 함께
      * 성립해야 하므로, 높이 상한이 아니라 그리드 행 크기(`1fr ↔ 0fr`)를 전환한다.
      *

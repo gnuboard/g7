@@ -220,11 +220,11 @@ class AttachmentController extends AdminBaseController
             }
 
             // 캐시 계약(검증자 비교·304·200 헤더 동반)은 코어 단일 지점이 입힌다 — 미리보기
-            // 통로와 같은 형태다. 종전에는 다운로드에 검증자가 없었다 (14차 G3 라운드).
+            // 통로와 같은 형태다. 종전에는 다운로드에 검증자가 없었다.
             // `immutable` 은 `false`(이 URL 에는 `?v=` 가 없다), 압축은 선언으로 제외한다
             // (사용자 업로드물 — 형제 `PublicStorageController` 와 같은 선언).
             // `Content-Disposition: attachment` 는 스토리지가 세운 것을 헬퍼가 그대로 승계한다.
-            // 키 검증도 그 지점(`streamedFileResponseFromMeta()`)이 한다 (16차 G3 라운드 E-6).
+            // 키 검증도 그 지점(`streamedFileResponseFromMeta()`)이 한다.
             return $this->streamedFileResponseFromMeta(
                 $info,
                 (int) g7_core_settings('cache.layout_ttl', 86400),

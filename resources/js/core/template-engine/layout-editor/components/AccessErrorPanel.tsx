@@ -129,7 +129,7 @@ export function AccessErrorPanel({ error }: AccessErrorPanelProps): React.ReactE
 
   const handleGoHome = (): void => {
     if (typeof window !== 'undefined') {
-      // 리터럴 루트 상대는 하위 폴더 배치에서 사이트 밖을 가리킨다 (12차 G3).
+      // 리터럴 루트 상대는 하위 폴더 배치에서 사이트 밖을 가리킨다.
       window.location.href = withBasePrefix('/admin');
     }
   };

@@ -15,7 +15,7 @@ export interface ImgProps extends React.ImgHTMLAttributes<HTMLImageElement> {
  * `<img src>` 는 **브라우저가 라우터 없이 직접 받아오는 주소**라 접두사를 붙일 주체가 이
  * 컴포넌트뿐이다 — `A` 의 `href` 와 같은 축이다. 종전에는 `src` 를 그대로 흘려 하위
  * 폴더 배치(`https://host/g7/`)에서 레이아웃이 리터럴로 적은 `/images/…` 가 사이트
- * 밖을 가리켰다. 증상은 오류가 아니라 깨진 이미지뿐이다 (15차 G3 라운드 W4-2).
+ * 밖을 가리켰다. 증상은 오류가 아니라 깨진 이미지뿐이다.
  *
  * `thumbPreset` 이 있으면 썸네일 주소와 srcset 을 만든다(판정은 코어 `G7Core.thumbnail`).
  *

@@ -141,8 +141,7 @@ class EcommerceModuleSeoTest extends ModuleTestCase
             // 종전에는 이 자리에 이중접두 단언 하나뿐이었고, 파일 전체에서 `$schema['image']`
             // 를 재는 단언이 그것 하나였다. 그런데 이 결함의 반대편 실패(절대화 자체를
             // 지움)는 `/g7/g7/` 를 만들지 않으므로 그 상태에서도 초록이다 — 형제 모듈
-            // (`BoardModuleSeoTest`)은 이미 세 축으로 잠갔는데 이쪽만 남아 있었다
-            // (16차 G3 라운드 A-5).
+            // (`BoardModuleSeoTest`)은 이미 세 축으로 잠갔는데 이쪽만 남아 있었다.
             $schema = $this->module->seoStructuredData('product', $context);
             $this->assertStringNotContainsString('/g7/g7/', $schema['image'], 'schema.image 에 접두사가 두 번 붙었다');
             $this->assertStringStartsWith('http', $schema['image'], 'schema.image 는 절대 URL 이어야 크롤러가 인식한다');
@@ -160,8 +159,7 @@ class EcommerceModuleSeoTest extends ModuleTestCase
      * 접두사가 없는 표준 배치에서는 종전과 동일하다 — 과잉 전환 대조.
      *
      * 형제 모듈(`BoardModuleSeoTest`)이 이미 갖고 있던 축인데 이쪽에는 없었다.
-     * 그래서 `schema.image` 의 표준 배치 동작은 어느 검사에도 걸리지 않았다
-     * (16차 G3 라운드 A-5).
+     * 그래서 `schema.image` 의 표준 배치 동작은 어느 검사에도 걸리지 않았다.
      *
      * @effects seo_image_unchanged_without_mount_prefix
      *
@@ -195,8 +193,7 @@ class EcommerceModuleSeoTest extends ModuleTestCase
      * 조용히 망가뜨렸다 — 프로토콜 상대(`//cdn/…` → `https://host//cdn/…`) · 상대 경로
      * (`img.png` → `https://hostimg.png`) · `data:` URI(`https://hostdata:image/…`).
      * 그리고 접두사를 채우는 주체가 없어 리터럴 사이트 경로는 하위 폴더 배치에서
-     * 접두사를 잃었다. 넷 다 오류가 나지 않고 그 이미지만 안 나온다
-     * (16차 G3 라운드 A-4).
+     * 접두사를 잃었다. 넷 다 오류가 나지 않고 그 이미지만 안 나온다.
      *
      * @effects seo_image_leaves_non_site_paths_alone
      *

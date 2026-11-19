@@ -18,7 +18,7 @@ use Tests\Support\LayoutSourceConvention;
  * - 28차 — "확장이 자기 확장점을 직접 읽는 자리는 코어 진입점 하나로 모았다" 고 적었으나 사본
  *   셋이 남아 있었다(그 사본을 막는다던 가드가 표기 하나 때문에 못 봤다).
  * - 29차 — "다섯을 한 헬퍼로 모았다" 고 적었으나 한 자리는 **선택만** 규약을 타고 읽기는 인라인
- *   사본이었고, 30차에 **네 번째 갈래**(`TemplateManager`)에서 같은 형태가 또 나왔다.
+ *   사본이었고, 그 뒤 **네 번째 갈래**(`TemplateManager`)에서 같은 형태가 또 나왔다.
  *
  * 세 번 다 **선언은 독블록 산문**이었고 그것을 실제 호출과 맞춰 보는 장치가 없었다. 산문은
  * 낡아도 아무것도 깨뜨리지 않으므로 사람의 스윕만이 잡고, 스윕은 표집이다.
@@ -31,7 +31,7 @@ use Tests\Support\LayoutSourceConvention;
  *    하한 의무를 파일→메서드로 내린 것과 같은 입도 정정이다. 같은 메서드 안에 위임과 인라인
  *    파싱이 공존하는 형태는 명제 2 의 파싱 신호 축이 담당한다.)
  * 2. **선택만 규약을 타고 읽기를 자기가 하는 자리가 없다** — `collectFragmentSources()` 를 부르는
- *    파일(트레이트 자신 제외)은 파싱을 직접 하면 안 된다. 30차의 `TemplateManager` 가 정확히
+ *    파일(트레이트 자신 제외)은 파싱을 직접 하면 안 된다. 그 `TemplateManager` 가 정확히
  *    이 형태였고, 그 사본은 트레이트보다 약해서(배열 검증 부재 · `\Exception` 포착) 조각 하나가
  *    템플릿 활성화 전체를 세울 수 있었다.
  */
@@ -70,7 +70,7 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
      * @var array<string, string>
      */
     private const JSON_ONLY_LAYOUT_CONSUMER_DEBT = [
-        // **S18.5 해소 — `AddLayoutPermissionsCommand` 가 여기서 빠졌다.** 32차가 이 자리를 등재하며
+        // **S18.5 해소 — `AddLayoutPermissionsCommand` 가 여기서 빠졌다.** 앞서 이 자리를 등재하며
         // 적은 사유가 *"S18 P2 가 `.json` 을 기계 산출로 바꾸면 이 커맨드의 편집은 다음 굽기에
         // 소실된다 — 착수 시 소스를 고치도록 전환해야 하는 자리"* 였고, 그 전환을 S18.5 가
         // 이행했다: 모집단을 `LayoutCorpus`(번들 트리)로 옮기고 소스 선택을
@@ -93,7 +93,7 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
         // red 로 드러났다. 아래 `PluginSettingsService` 항목은 여전히 `.json` 을 직접 읽는 소비 측이라 남는다.
         'app/Services/PluginSettingsService.php' => '`AbstractPlugin::getSettingsLayout()` 예외의 소비 측. 명문 '
             .'설계(AGENTS.md "확장 시스템 빠른 참조")에 따라 `plugin_settings.json` 과 템플릿 오버라이드본을 직접 읽는다. '
-            .'31·32차가 각각 이 자리를 사본으로 오검출했으므로, 오검출이 재발하지 않도록 사유를 '
+            .'두 차례 이 자리를 사본으로 오검출했으므로, 오검출이 재발하지 않도록 사유를 '
             .'여기 못박는다.',
         // ── S19 ⑦ (D66 ⓒ) 에서 `app/Services/TemplateService.php` 가 이 목록에서 빠졌다.
         //
@@ -168,7 +168,7 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
     /**
      * 33차 자기시험 — 위임 파일 **안**의 인라인 소비를 잡는다 (판정 입도의 사각).
      *
-     * 32차까지 명제 1 의 판정은 파일 단위 문자열 공존이었다 — 파일 어딘가에
+     * 종전 명제 1 의 판정은 파일 단위 문자열 공존이었다 — 파일 어딘가에
      * `loadFragmentDefinitions(` 가 한 번이라도 있으면, 같은 파일의 **다른 메서드**가
      * `getLayoutExtensions()` 를 받아 `json_decode` 로 직접 읽어도 통과했다. 30차 ❌3 의
      * `TemplateManager` 가 정확히 "이미 위임 중인 파일에 남은 인라인 사본" 이었는데, 그 형태가
@@ -294,7 +294,7 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
 
         // 검사 0건과 위반 0건은 다른 명제다. 이 축은 "위임이 끝나 호출처가 없는" 상태가 정상
         // 종착지일 수 있어 호출처 수에는 하한을 걸 수 없다. 그래서 **모집단을 도출하는 이름 자체**를
-        // 잠근다 — 31차까지 이 자리는 `assertGreaterThanOrEqual(0, $inspected)` 로 끝났는데 정수는
+        // 잠근다 — 종전에는 이 자리가 `assertGreaterThanOrEqual(0, $inspected)` 로 끝났는데 정수는
         // 항상 0 이상이라 red 가 될 수 없었고, 보완 단언이 확인하던 이름(`loadFragmentDefinitions`)은
         // 모집단 도출에 쓰이는 이름(`collectFragmentSources`)이 아니었다. 즉 후자를 리네임하면
         // 호출처가 0건이 된 채 세 단언 전부 초록이었다. 두 이름 모두 실재를 요구한다.
@@ -315,7 +315,7 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
      *
      * `ValidatesLayoutFiles::resolvePartialPath()` 는 "호스트 디렉토리 → layouts 루트 폴백 →
      * layouts 밖 거부" 라는 규약을 갖는다. 이 규약을 자기 코드로 다시 쓰면 사본이 되고, 사본은
-     * 반드시 원본보다 약해진다(28~30차가 fragment 축에서 세 번 확인한 사실).
+     * 반드시 원본보다 약해진다(fragment 축에서 세 번 확인한 사실).
      *
      * 실측으로 **`app/` 에 사본 한 벌이 실재**한다 —
      * `TemplateService::resolveModalPartial()`. 독블록이 스스로 "경로 규약은 레이아웃 partial 해석과
@@ -439,7 +439,7 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
      */
     private function consumesLayoutSourcesAsJsonOnly(string $code): bool
     {
-        // 34차 — 판정 입도는 **메서드 본문**이다. 33차가 명제 1 에서 고친 사각(이웃 메서드의
+        // 판정 입도는 **메서드 본문**이다. 앞서 명제 1 에서 고친 사각(이웃 메서드의
         // 위임이 알리바이가 된다)이 이 축에는 그대로 남아 있었고, 그 사각에 실물이 있었다 —
         // `TemplateManager::validateErrorLayouts()` 가 에러 레이아웃을 `.json` 전용으로 찾는데,
         // 같은 파일 다른 메서드의 `loadFragmentDefinitions(` 하나가 파일 전체를 검사 밖으로
@@ -571,7 +571,7 @@ class FragmentSourceConventionRoutingGuardTest extends LayoutMarkupTestCase
         // 규약에 위임하는 자리는 사본이 아니다 — 이 조건이 없으면 `resolveAllPartials()` 를 태우는
         // 개발자 도구(`GenerateLayoutTestFixture`)가 사본으로 잡힌다.
         //
-        // 35차 — 이 세 이름은 종전에 **여기 인라인으로** 적혀 있었다. 34차가 "목록이 둘이면 한쪽만
+        // 이 세 이름은 종전에 **여기 인라인으로** 적혀 있었다. 앞서 "목록이 둘이면 한쪽만
         // 갱신된다" 며 두 목록을 규약 정본으로 통합했는데, 같은 파일 안에 **세 번째 목록**이 남아
         // 있었고 그 목록에만 있는 이름(`resolvePartialPath(`)이 정본에는 없었다. 정본으로 흡수한다.
         foreach (self::LAYOUT_SOURCE_DELEGATIONS as $delegation) {

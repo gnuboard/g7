@@ -98,11 +98,10 @@ class ImageServeService
         // 형제(ecommerce `ServesImageWithRowValidators`)는 같은 계열에서 `must-revalidate`
         // 까지 갖추고 있었다 — 한쪽만 갖추면 그것은 규율이 아니라 그 확장의 패치다.
         // ETag 는 큰따옴표로 감싼다 (RFC 9110 §8.8.3).
-        // (12차 G3 라운드 D1)
         //
         // 검증자의 **소스**는 `cacheValidators()` 한 곳이 만든다 — 조건부 요청 판정은
         // 컨트롤러가 코어 단일 지점(`streamedFileResponse()`)에 맡기는데, 그 지점이 같은
-        // 소스로 ETag 를 다시 만들므로 여기서 실은 값과 어긋나면 안 된다 (13차 G3 라운드).
+        // 소스로 ETag 를 다시 만들므로 여기서 실은 값과 어긋나면 안 된다.
         $validators = $this->cacheValidators($image);
         $lastModifiedAt = $validators['last_modified'];
 

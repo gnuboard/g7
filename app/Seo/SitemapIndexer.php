@@ -160,7 +160,7 @@ class SitemapIndexer
      * 보안: 요청 Host 로 만들면 위조 Host 요청 안에서 색인된 주소가 사이트맵에 영구히 남는다.
      * 규칙은 전체 재생성과 같은 단일 지점(`SitemapGenerator::entryLoc()`)이 소유한다 — 여기만
      * `url()` 사본이면 요청 호스트를 싣고 접두사를 한 번 더 실어, 같은 리소스의 `<loc>` 이
-     * 생성 경로에 따라 갈린다 (16차 G3 라운드 B-3).
+     * 생성 경로에 따라 갈린다.
      *
      * @param  array<string, mixed>  $entry  URL 항목
      * @return string|null 절대 URL (해석 불가 시 null)

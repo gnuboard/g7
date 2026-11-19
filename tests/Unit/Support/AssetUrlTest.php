@@ -324,7 +324,7 @@ class AssetUrlTest extends TestCase
     }
 
     /**
-     * `?file=` 인코더가 프론트 판본과 **같은 문자열**을 만들어야 한다 (14차 G3 라운드).
+     * `?file=` 인코더가 프론트 판본과 **같은 문자열**을 만들어야 한다.
      *
      * 두 인코더가 갈리면 같은 파일의 URL 문자열이 둘로 나뉜다. 디코딩하면 같은 경로라
      * 404 도 오류도 나지 않고, HTTP 캐시 키가 갈려 같은 자산을 두 번 받는 것이 유일한
@@ -610,14 +610,14 @@ class AssetUrlTest extends TestCase
      * 테스트가 0건**이었다(형제 `forceBasePrefix` 58 · `absolute` 10 대비). 계약이 전부
      * 4개 소비처를 통한 간접 측정이라, 가드 절을 지워도 그 소비처가 쓰지 않는 입력 형태
      * (빈 문자열 · 쿼리/프래그먼트 전용 · `data:` · 상대 경로)는 아무것도 red 가 되지
-     * 않았다 (12차 G3 라운드 A11·A12).
+     * 않았다.
      *
      * 여기서 재는 것은 **가드 절 전수**다 — 어느 입력을 손대고 어느 입력을 그대로 두는가.
      *
      * 기대표는 `tests/Fixtures/AssetUrl/base-prefix-boundary.json` 하나다. 종전에는 이 표가
      * 여기와 프론트 `assetUrl.test.ts` 에 **각자 손으로 쓴 두 벌**로 있었고, 사본은 갈려도
-     * 울지 않는다 — 한쪽만 고치면 같은 입력이 서버와 화면에서 다른 판정을 받는다
-     * (15차 G3 라운드 W4-3). 채움·멱등·비대상(빈 문자열 · 프로토콜 상대 · 절대 URL ·
+     * 울지 않는다 — 한쪽만 고치면 같은 입력이 서버와 화면에서 다른 판정을 받는다.
+     *채움·멱등·비대상(빈 문자열 · 프로토콜 상대 · 절대 URL ·
      * `data:` · 상대 경로 · 쿼리/프래그먼트 전용) · 경계(`?`·`#`·경계 없는 이어짐) ·
      * 공백 전처리 행이 전부 그 표에 있다.
      *
@@ -783,8 +783,8 @@ class AssetUrlTest extends TestCase
      *
      * 종전 판정은 `$path === $prefix || str_starts_with($path, $prefix.'/')` 두 형태만
      * 알았다. 하위 폴더 홈에 쿼리가 붙은 채 세션이 만료되면 복귀 주소가 `/g7?ref=x`
-     * 인데, 그 값은 어느 쪽에도 맞지 않아 `/g7/g7?ref=x` 로 이중 접두가 됐다
-     * (13차 G3 라운드 W3-1). 반대로 `/g7x/foo` 는 접두사가 **경계 없이** 이어진 다른
+     * 인데, 그 값은 어느 쪽에도 맞지 않아 `/g7/g7?ref=x` 로 이중 접두가 됐다.
+     *반대로 `/g7x/foo` 는 접두사가 **경계 없이** 이어진 다른
      * 경로라 붙여야 한다 — 경계 인식을 `str_starts_with($path, $prefix)` 로 넓히면
      * 이쪽이 조용히 빠진다.
      *
@@ -922,8 +922,8 @@ class AssetUrlTest extends TestCase
      *
      * 요청이 없는 문맥(큐·콘솔)은 `app.url` 의 경로만 알아서, 둘이 다르면 메일·사이트맵의
      * 주소가 전부 사이트 밖을 가리킨다 — 웹에서는 재현되지 않는 조용한 404 다. 웹 요청
-     * 안에서 두 값을 나란히 볼 수 있는 유일한 자리가 `basePrefix()` 라 그곳이 로그로 남긴다
-     * (15차 G3 라운드 W4-4). 테스트 프로세스는 제외되므로 여기서는 환경을 잠시 바꾼다.
+     * 안에서 두 값을 나란히 볼 수 있는 유일한 자리가 `basePrefix()` 라 그곳이 로그로 남긴다.
+     *테스트 프로세스는 제외되므로 여기서는 환경을 잠시 바꾼다.
      *
      * @scenario base_path=subpath, navigation_direction=request
      *
@@ -987,7 +987,7 @@ class AssetUrlTest extends TestCase
      * 종전 키는 `spl_object_id($request)` 였다. 그 값은 객체가 해제되면 **재사용**되므로
      * (PHP 는 빈 슬롯을 다시 쓴다), 장수 프로세스(Octane·큐 워커·테스트 러너)에서 앞 요청이
      * 해제된 직후의 다음 요청이 같은 id 를 받아 경고가 조용히 삼켜졌다. 요청당 1회라는 의미는
-     * 요청 자신의 속성에 두면 객체 수명과 함께 끝난다 (16차 G3 라운드 B-8).
+     * 요청 자신의 속성에 두면 객체 수명과 함께 끝난다.
      *
      * @scenario base_path=subpath, navigation_direction=request
      *
@@ -1152,7 +1152,7 @@ class AssetUrlTest extends TestCase
      *
      * `APP_URL` 에 scheme·host 가 없고(경로만 적음) 요청도 없는 문맥(큐·콘솔)에서만 도달한다.
      * 종전에는 경로만 조용히 돌려줘 메일·사이트맵에 상대 경로가 실렸고, 웹에서는 재현되지 않아
-     * 로그가 유일한 통로였다 (17차 G3 라운드 B-9).
+     * 로그가 유일한 통로였다.
      *
      * @scenario base_path=root, navigation_direction=navigation
      *
@@ -1192,7 +1192,7 @@ class AssetUrlTest extends TestCase
      *
      * `absolute()` 는 설정 오리진을 요청보다 우선하므로, 둘이 다르면 큐·콘솔이 만드는 PG 복귀·
      * 메일·사이트맵 주소가 웹과 다른 호스트를 가리킨다. 경로 축만 재던 종전에는 이 어긋남이
-     * 어디에도 드러나지 않았다 (17차 G3 라운드 B-10).
+     * 어디에도 드러나지 않았다.
      *
      * @scenario base_path=subpath, navigation_direction=request
      *

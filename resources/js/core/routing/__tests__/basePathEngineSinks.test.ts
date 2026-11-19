@@ -1,4 +1,4 @@
-// e2e:allow 하위 폴더 마운트(`https://host/g7/`) 실측 환경이 로컬에 없다(개발 사이트는 루트 설치, `localhost/g7_2/` 는 사이트 주소로 301). 대체 검증: 이 파일의 실물 Router·ActionDispatcher·AuthManager·LeaveGuard·G7Core 잠금(fail-first 10/10) + 루트 설치 Playwright 실측 매트릭스(이력 20261031_2013)
+// e2e:allow 하위 폴더 마운트(`https://host/g7/`) 실측 환경이 로컬에 없다(개발 사이트는 루트 설치, 하위 폴더 주소는 사이트 주소로 301). 대체 검증: 이 파일의 실물 Router·ActionDispatcher·AuthManager·LeaveGuard·G7Core 잠금(fail-first 10/10) + 루트 설치 Playwright 실측 매트릭스(이력 20261031_2013)
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 import { AuthManager } from '../../auth/AuthManager';

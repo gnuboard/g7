@@ -1,5 +1,5 @@
 # audit:allow test-scenario-coverage reason: issue:#609 axes cross product 중 의미적으로 핵심인 격리/폴백/전체성공 케이스만 docblock 매핑. probe_item 축의 각 항목(os_info/cpu_info/memory_usage/disk_usage 등)은 모두 동일한 safeSystemProbe 격리 경로를 타므로 cpu_info 1건으로 대표 검증(나머지는 형식적 확장). E2E axis 없음 — 순수 백엔드 JSON API 로 레이아웃/프론트 렌더 변경 없음.
-# 원장(9차 G3 라운드 C-4): 이 매니페스트는 :cross-product 로 좁히면 effects 1건이 미검증으로 드러난다.
+# 원장: 이 매니페스트는 :cross-product 로 좁히면 effects 1건이 미검증으로 드러난다.
 #   그 짝 맞추기는 이 공정(설정/시스템 정보)의 몫이며, 좁히는 시점에 함께 처리한다.
 
 feature: 관리자 시스템 정보(system-info) probe 실패 격리

@@ -22,7 +22,7 @@ require_once __DIR__.'/execution-mode.php';
 if (session_status() === PHP_SESSION_NONE) {
     // 세션 설정.
     // `ini_set` 은 호스팅이 흔히 막는 함수이고 이 파일은 인스톨러 **모든 페이지의 최상단**
-    // 이다 — 무가드로 부르면 봉투가 서기도 전에 치명 종료해 첫 화면이 백지가 된다 (13차 환경#18).
+    // 이다 — 무가드로 부르면 봉투가 서기도 전에 치명 종료해 첫 화면이 백지가 된다.
     // 이 설정들이 적용되지 않아도 세션 자체는 뜬다.
     installerIniSet('session.cookie_httponly', '1');
     installerIniSet('session.use_strict_mode', '1');
@@ -33,11 +33,11 @@ if (session_status() === PHP_SESSION_NONE) {
     // CSRF 방어는 `installerCrossOriginRejection()`(execution-mode.php)의 Origin/Referer
     // 검사가 담당한다 — 상태 변경 엔드포인트 전부가 그 판정을 공유한다. 종전 주석은 「별도
     // csrf_token 검증이 담당한다」고 적혀 있었으나 그 검증은 정의만 있고 호출부가 저장소
-    // 전체에 0건이었다: 완화의 근거가 실재하지 않는 상태였다 (13차 보안#4).
+    // 전체에 0건이었다: 완화의 근거가 실재하지 않는 상태였다.
     installerIniSet('session.cookie_samesite', 'Lax');
 
     // HTTPS 환경에서는 secure 쿠키 사용.
-    // 판정은 요구사항 화면과 같은 함수를 쓴다 (13차 환경#17) — 종전에는 이 자리만
+    // 판정은 요구사항 화면과 같은 함수를 쓴다 — 종전에는 이 자리만
     // `$_SERVER['HTTPS']` 를 직접 봐서, TLS 종단이 앞단에 있는 표준 배치에서 secure 가 붙지 않았다.
     if (installerRequestIsHttps($_SERVER)) {
         installerIniSet('session.cookie_secure', '1');
@@ -99,7 +99,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 /*
- * CSRF 토큰 헬퍼(generateCsrfToken / getCsrfToken / verifyCsrfToken)는 제거했다 (13차 보안#4).
+ * CSRF 토큰 헬퍼(generateCsrfToken / getCsrfToken / verifyCsrfToken)는 제거했다.
  *
  * 세 함수 모두 정의만 있고 호출부가 저장소 전체에 0건이었다 — 그런데 위 SameSite 완화 주석은
  * 그 검증이 CSRF 를 막는다고 적혀 있어, 실재하지 않는 방어를 근거로 완화가 유지돼 왔다.

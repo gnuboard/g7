@@ -444,7 +444,7 @@
         //
         // 403/404 가 아니어도, **파일이 없는 주소와 똑같은 응답**을 받았다면 그 대상 역시
         // 파일이 서빙되지 않은 것이다. 이 승격이 없으면 레이아웃 ②의 정상 배치가 상시
-        // 판정 불능이 되어 D3 자동 차단이 모든 배치에서 D21 로 강등된다 (14차 G3 라운드).
+        // 판정 불능이 되어 D3 자동 차단이 모든 배치에서 D21 로 강등된다.
         //
         // 안전 조건은 호출부에서 이미 섰다 — 노출 확정이 우선하고(마커 일치), 양성 대조가
         // 실패하면 여기 도달하지 못한다. 그래서 전 주소에 200 로그인 화면을 내리는 인증
@@ -464,8 +464,7 @@
             // 길이 0 은 어느 서버에서나 나올 수 있는 값이라 그 물음의 답이 되지 못한다 —
             // 실제로 `/vendor/autoload.php` 는 서빙이 아니라 **PHP 로 실행되면** 200 + 빈
             // 본문이 되고(마커는 본문에 나타나지 않는다), 그러면 「프로젝트 루트에서 PHP 가
-            // 실행된다」는 상태가 「보호 확인됨」으로 읽힌다. 판정 불능으로 남기는 편이 옳다
-            // (15차 G3 라운드).
+            // 실행된다」는 상태가 「보호 확인됨」으로 읽힌다. 판정 불능으로 남기는 편이 옳다.
             if (absentSignature.length === 0 || r.length === 0) {
                 return false;
             }
@@ -577,7 +576,7 @@
             // 403/404 는 이미 대상 판정이 보호로 읽는 응답이다. 그 형태를 음성 대조로
             // 쓰면 판정이 중복될 뿐이므로 형태 대조는 200 계열에서만 의미가 있다 — 그 밖의
             // 상태(5xx 등)는 서버 상태지 「파일 없는 주소의 형태」가 아니다. 종전 코드는 이
-            // 주석과 달리 전 status 를 서명으로 받았다 (15차 G3 W1-7).
+            // 주석과 달리 전 status 를 서명으로 받았다.
             if (!res.ok) {
                 return null;
             }
@@ -808,7 +807,7 @@
                     // 전 계열에 공용이라, 인스톨러 자신의 자산이 없어 양성 대조를 만들지
                     // 못한 경우에도 「`.env.example` 을 `.env` 로 바꿨다면」이라는 엉뚱한
                     // 조치를 안내했다 — 운영자가 있지도 않은 파일을 찾게 된다.
-                    // 계열 전용 키를 먼저 찾고, 없으면 공용 문구로 떨어진다 (14차 G3 라운드).
+                    // 계열 전용 키를 먼저 찾고, 없으면 공용 문구로 떨어진다.
                     const slug = String(u.label || '')
                         .replace(/[^a-z0-9]+/gi, '_')
                         .replace(/^_+|_+$/g, '')
@@ -960,11 +959,11 @@
      * 있어 그 셋이 통째로 버려지고 화면에는 「요구사항 검증 실패」와 `HTTP 500: ` 만
      * 남았다 — 운영자는 레이트리밋인지 예외인지 알 수 없었다. 형제 지점
      * (`scan-extensions` 소비부)은 정확히 이 사유로 「본문을 **먼저** 읽는다」로 고쳐져
-     * 있었고, 이 지점만 남아 있었다 (7차 G3 라운드 D-1).
+     * 있었고, 이 지점만 남아 있었다.
      *
      * `statusText` 는 쓰지 않는다 — HTTP/2 응답에서 브라우저가 언제나 빈 문자열을 주므로
      * 진단 상세가 `HTTP 500: ` 로 끝난다. 형제(`installation-monitor.js`)도 상태 코드만
-     * 싣는다 (7차 G3 라운드 D-2).
+     * 싣는다.
      *
      * @param {number} status - HTTP 상태 코드
      * @param {object|null} payload - 파싱된 응답 본문 (파싱 실패 시 null)
@@ -1032,7 +1031,7 @@
             const resultRegion = document.getElementById('requirements-result');
             resultRegion.innerHTML = resultHtml;
             // 검사가 끝났음을 라이브 리전에 알린다 — 이 해제가 없으면 결과가 통째로 갈아
-            // 끼워졌는데도 화면 밖에서는 여전히 「검사 중」이다 (12차 #B34).
+            // 끼워졌는데도 화면 밖에서는 여전히 「검사 중」이다.
             resultRegion.setAttribute('aria-busy', 'false');
             document.getElementById('navigation-buttons').classList.remove('hidden');
 
@@ -1121,7 +1120,7 @@
                 failedRequirements.push(`${lang('error_disk_space')}: ${diskSpaceGB} GB (${lang('minimum')} ${minSpaceGB} GB ${lang('required_text')})`);
             } else if (disk.low_headroom === true) {
                 // 차단 기준(500MB)은 넘겼으나 실사용 권장(700MB) 미만 — 경고색만 값 슬롯에,
-                // 문구는 카드 아래 별도 안내로 (21차 #21-7 · 22차 N-5). 값 슬롯은 짧은 라벨
+                // 문구는 카드 아래 별도 안내로 (21차 #21-7). 값 슬롯은 짧은 라벨
                 // 계약(OPcache 카드와 같은 규칙)이라 문단을 넣으면 배지를 밀어낸다.
                 diskStatusClass = 'status-warning';
             }
@@ -1471,7 +1470,7 @@
         }
 
         // 10. 실행 예산(메모리·시간) 카드 (정보 항목, 필수 아님)
-        // 값이 화면에 없으면 그 검사는 존재하지 않는 것과 같다 (13차 환경#8). 128M 공유호스팅
+        // 값이 화면에 없으면 그 검사는 존재하지 않는 것과 같다. 128M 공유호스팅
         // 에서 in-process 부팅 + migrate + seed 는 죽는데, 종전에는 이 두 값이 요구사항 목록에
         // 하나도 없어 운영자가 설치 중간에야 그 사실을 만났다.
         // failedRequirements.push() 를 하지 않는다 — 두 값 모두 실행 중 조정될 수 있고
@@ -1920,7 +1919,7 @@
 
         // 상태를 모양과 색으로만 전하면 화면 판독기 사용자와 색각 이상 사용자에게는
         // 판정이 전달되지 않는다 — 카드 본문에 "통과/실패" 텍스트가 따로 없기 때문이다.
-        // 아이콘은 보조기술에서 감추고, 같은 뜻의 텍스트를 시각적으로만 숨겨 함께 싣는다 (9차 #L28).
+        // 아이콘은 보조기술에서 감추고, 같은 뜻의 텍스트를 시각적으로만 숨겨 함께 싣는다.
         const label = labelKey ? `<span class="sr-only">${escapeHtml(lang(labelKey))}</span>` : '';
 
         return `<span class="status-icon ${statusClass}">${getIconSvg(iconType)}${label}</span>`;
@@ -2922,7 +2921,7 @@
      * Step 2 에는 `app_url` 입력이 아직 없으므로 현재 origin 기준으로 조립한다.
      */
     function getAppRootUrl() {
-        // 표기를 가리지 않는다 — 형제 `getProjectRootCandidates` 와 같은 규칙(16차 G3 A12).
+        // 표기를 가리지 않는다 — 형제 `getProjectRootCandidates` 와 같은 규칙.
         const base = (window.INSTALLER_BASE_URL || '').replace(/\/install$/i, '');
 
         return `${window.location.origin}${base}`;
@@ -3256,7 +3255,7 @@
             const cliSectionVisible = cliSection && !cliSection.classList.contains('hidden');
 
             if (cliRequired || cliSectionVisible) {
-                // inprocess 에서는 PHP 실행 경로가 쓰이지 않으므로 검증을 요구하지 않는다 (19차 S-1).
+                // inprocess 에서는 PHP 실행 경로가 쓰이지 않으므로 검증을 요구하지 않는다.
                 // 그 환경에서는 `validatePhpPath()` 가 `exec` 가드에 걸려 언제나 실패하므로,
                 // 요구하면 통과할 방법이 없는 막다른 길이 된다. vendor 축이 이미 같은 면제를 갖는다.
                 const phpCliRequired = typeof window.CliValidator.isPhpCliRequired === 'function'
@@ -3367,7 +3366,7 @@
                 cache: 'no-store',
                 headers: { 'Cache-Control': 'no-cache' }
             });
-            // 본문을 **먼저** 읽는다 (19차 S-4·S-11).
+            // 본문을 **먼저** 읽는다.
             //
             // 종전에는 `response.ok` 판정이 본문 읽기보다 앞에 있어, 서버가 세 사유를 갈라
             // 보내도(디렉토리 열거 불가 · 관리자 템플릿 없음 · 스캔 실패) 화면에는
@@ -3386,7 +3385,7 @@
                 const key = result && result.message_key;
                 const labels = window.EXTENSION_LABELS || {};
                 // 최후 폴백도 다국어 표를 거친다 — `EXTENSION_LABELS` 가 실리기 전의 실패에서
-                // 영문 리터럴이 한국어 화면에 그대로 나갔다 (13차 G3 W1-13).
+                // 영문 리터럴이 한국어 화면에 그대로 나갔다.
                 const message = (key && labels[key])
                     || labels.extension_load_failed
                     || lang('extension_load_failed');
@@ -4786,7 +4785,7 @@
         toast.className = 'dep-lock-toast';
         // 라이브 리전은 **비어 있는 상태로 먼저 붙이고** 내용을 채워야 읽힌다 — 내용을 담은
         // 채로 삽입하면 판독기가 이를 놓쳐, 선택 해제가 왜 막혔는지가 화면 밖에서는 전달되지
-        // 않는다 (12차 #B34 형제 지점).
+        // 않는다 (형제 지점).
         toast.setAttribute('role', 'status');
         toast.setAttribute('aria-live', 'polite');
         document.body.appendChild(toast);
@@ -4923,7 +4922,7 @@
     /* region:stepwise-token — 이 구간은 회귀 테스트가 소스에서 잘라 **실제로 실행**한다
        (`resources/js/installer/__tests__/installer-token-wiring.test.ts`). installer.js 는
        전역을 노출하지 않는 닫힌 IIFE 라, 프로덕션 표면을 늘리지 않으면서 행위를 잠그는
-       유일한 방법이 이 표식이다. 표식을 지우면 그 테스트가 red 가 된다 (11차 #D1). */
+       유일한 방법이 이 표식이다. 표식을 지우면 그 테스트가 red 가 된다. */
     /**
      * 단계별 실행 토큰 — 메모리 > 페이지 주입(새로고침 재개) > sessionStorage 순
      */
@@ -5060,7 +5059,7 @@
      * 이 상태를 **재개**로 이어야 하는가 (시작이 아니라) — 로드 복원과 해제 대기가 공유한다.
      *
      * 단계별 + `running` 은 시작 경로(`install-process.php`)가 **토큰 게이트에 403 으로 막힌다**
-     * (10차가 건 게이트 · `installerStartRejection`). 그 상태의 정본 경로는 `run-task.php` 로
+     * (`installerStartRejection`). 그 상태의 정본 경로는 `run-task.php` 로
      * 이어가는 재개다.
      *
      * 규칙을 한 곳에 둔다 (D7). 사본을 두면 한쪽만 고쳐져 「로드하면 이어지는데 대기 뒤에는
@@ -5140,7 +5139,7 @@
             let source = null;
             let phase1ClientTs = null;
 
-            // 타임아웃 타이머도 해제한다 (19차 J9) — `settled` 가 부작용을 막고 있어
+            // 타임아웃 타이머도 해제한다 — `settled` 가 부작용을 막고 있어
             // 실동작 영향은 없지만, EventSource 는 `finish()` 가 닫는데 타이머만 남아
             // 「전부 대칭 해제」 규칙에서 빠져 있었다.
             let timeoutHandle = null;
@@ -5185,7 +5184,7 @@
     }
 
     /**
-     * 시작 전 상태로 되돌린다 (19차 J4).
+     * 시작 전 상태로 되돌린다.
      *
      * `startInstallation()` 은 진입 즉시 `installationStarted = true` 로 세우고 시작 섹션을
      * 감춘다. 그 뒤의 세 await(SSE probe · install-process 응답 · stepwise 복원) 구간에서
@@ -5329,7 +5328,7 @@
                     installerHide(envWarning);
                     if (result.env_not_writable) {
                         // 서버 게이트의 「쓰기 불가」 거부 (22-1 서버 절반) — 부재 안내로 그리면
-                        // 파일명·명령·사유가 전부 빈 패널이 된다 (23차 F-2). 사전 점검과 같은 렌더.
+                        // 파일명·명령·사유가 전부 빈 패널이 된다. 사전 점검과 같은 렌더.
                         renderEnvNotWritableSetup(result.base_path || null, result.is_windows || false);
                     } else {
                         // 사유 문단도 「부재」로 되돌린다 (24차 낮음 #1) — 같은 세션에서 쓰기 불가
@@ -5359,12 +5358,12 @@
                 if (reflectedRadio) reflectedRadio.checked = true;
                 // 강제 전환(→ 단계별 실행)은 서버가 이미 진행 기록에 남겼고, 그 모드는
                 // 새로고침 재개 시 displayLogs(state.logs) 로 서버 줄을 다시 그린다 —
-                // 화면이 같은 문장을 또 쓰면 두 번 보인다. 그래서 서버 기록으로 일원화한다
-                // (13차 F5). 잠금 사유 자체는 진행 방식 카드가 서버 렌더로 이미 안내한다.
+                // 화면이 같은 문장을 또 쓰면 두 번 보인다. 그래서 서버 기록으로 일원화한다.
+                //잠금 사유 자체는 진행 방식 카드가 서버 렌더로 이미 안내한다.
                 //
                 // 반대로 강등(단계별 실행 → 실시간 스트리밍)은 SSE·폴링으로 끝나는데, 그 두
                 // 모드는 서버가 시작 전에 남긴 기록을 재생하지 않는다 — 화면이 쓰지 않으면
-                // 사용자가 자신이 고른 방식이 바뀐 사실을 알 방법이 없다 (13차 F4).
+                // 사용자가 자신이 고른 방식이 바뀐 사실을 알 방법이 없다.
                 if (result.installation_mode_downgraded) {
                     addLogMessage(lang('log_installation_mode_downgraded_sse'));
                 }
@@ -5524,7 +5523,7 @@
                     // `target` 을 버리면 SSE·단계별 실행에서만 「모듈 설치」로 뭉뚱그려져,
                     // 폴링·새로고침(합성키 state.failed_task 를 그대로 쓴다)과 달리 **어느
                     // 확장이 실패했는지 알 수 없게 된다**. setTaskStatus 는 합성키를 그대로
-                    // 받으므로 여기서 다시 이어 붙인다 (13차 E7).
+                    // 받으므로 여기서 다시 이어 붙인다.
                     const failedTaskId = data.task
                         ? (data.target ? `${data.task}:${data.target}` : data.task)
                         : null;
@@ -5537,7 +5536,7 @@
                     if (installationCompleted) return;
                     showError(lang('sse_connection_timeout'), lang('sse_server_config_guide'));
 
-                    // 서버는 아직 돌고 있다 (19차 J7).
+                    // 서버는 아직 돌고 있다.
                     //
                     // 이 지점은 `install-process.php` POST 가 **이미 성공해** 워커가 떠 있는
                     // 뒤다 — 붙지 못한 것은 스트림뿐이다. 그런데 `showError()` 는 사유를 가리지
@@ -5579,7 +5578,7 @@
             if (!completed.includes(key)) completed.push(key);
             if (!skipped.includes(key)) skipped.push(key);
         });
-        // 「목록 부재」와 「목록 공집합」의 구분 (23차 F-3) — 인코딩 실패 폴백 응답은 목록
+        // 「목록 부재」와 「목록 공집합」의 구분 — 인코딩 실패 폴백 응답은 목록
         // 없이 오는데, 그것을 공집합으로 접으면 22-4 의 되돌림이 화면의 모든 완료 표시를
         // 지우는 파괴적 연산이 된다. 되돌림은 authoritative(실제 배열이 실린 응답)에서만.
         return { completed, skipped, authoritative: Array.isArray(state.completed_tasks) };
@@ -5620,7 +5619,7 @@
      * db:seed · module:install)는 그 동안 아무 이벤트도 내보내지 않고 출력을 파일로 받는다 —
      * 서버는 그 구간을 위해 자기 수명과 lock 을 600초로 올린다. 화면 창이 그보다 짧으면
      * **서버가 정상 동작 중인데** 화면만 「응답이 없습니다」로 끝난다. 종전에는 단계별 실행만
-     * 660초를 쓰고 SSE·폴링은 90초여서, 같은 설치가 모드에 따라 성공/정지로 갈렸다 (13차 E1).
+     * 660초를 쓰고 SSE·폴링은 90초여서, 같은 설치가 모드에 따라 성공/정지로 갈렸다.
      *
      * 서버 창 + 여유(60초)를 쓴다. 주입값이 없으면(구형 캐시 페이지) 종전 단계별 실행 값과
      * 같은 660초로 떨어진다.
@@ -5671,7 +5670,7 @@
             const workerUrl = `${window.location.origin}${window.INSTALLER_BASE_URL}/api/install-worker.php`;
             currentMonitor = new MonitorNS.SseMonitor(callbacks, {
                 workerUrl: workerUrl,
-                // 다른 요청이 워커 lock 을 가져가면 재연결이 아니라 이 주소로 갈아탄다 (13차 E5).
+                // 다른 요청이 워커 lock 을 가져가면 재연결이 아니라 이 주소로 갈아탄다.
                 // 연결 수립 뒤 스트림이 끊기면 이 주소로 결말(실패·중단·완료·멈춤)을 판정하고,
                 // 워커 없이 설치가 남았으면 새 워커로 다시 연결해 이어 받는다.
                 stateUrl: stateUrl,
@@ -5721,7 +5720,7 @@
         try {
             const response = await fetch(getStateApiUrl('skip_task'), {
                 method: 'POST',
-                // 헤더는 한 지점이 만든다 — 사본을 두면 그 사본만 규칙에서 뒤처진다 (11차 #D1).
+                // 헤더는 한 지점이 만든다 — 사본을 두면 그 사본만 규칙에서 뒤처진다.
                 headers: stateMutationHeaders(),
                 body: JSON.stringify({ token: getStepwiseToken() || '' }),
             });
@@ -5740,9 +5739,9 @@
             addLogMessage(result.message || lang('skip_task_done'));
             continueInstallation();
         } catch (error) {
-            // 개발자 표기는 제목이 아니라 진단 상세에 싣는다 (§12.0 W3 · 10차 #M5).
+            // 개발자 표기는 제목이 아니라 진단 상세에 싣는다.
             // 비-JSON 500(HTML 오류 페이지)이 돌아오면 종전에는 `Unexpected token '<' ...`
-            // 가 모달 제목 자리에 그대로 떴다 (11차 #B17).
+            // 가 모달 제목 자리에 그대로 떴다.
             showError(lang('unknown_error_occurred'), error && error.message ? String(error.message) : null);
             if (btn) btn.disabled = false;
         }
@@ -5751,7 +5750,7 @@
     /* region:ui-state — 이 구간은 회귀 테스트가 소스에서 잘라 **실제로 실행**한다
        (`resources/js/installer/__tests__/installer-ui-state.test.ts`). installer.js 는 전역을
        노출하지 않는 닫힌 IIFE 라, 프로덕션 표면을 늘리지 않으면서 행위를 잠그는 유일한 방법이
-       이 표식이다. 표식을 지우면 그 테스트가 red 가 된다 (12차 #B24·#B25·#B26·#B28·#B35). */
+       이 표식이다. 표식을 지우면 그 테스트가 red 가 된다. */
 
     /**
      * 작업 그룹의 접힘 상태를 바꾼다 (클래스 + 트리거의 `aria-expanded` 를 함께).
@@ -5759,7 +5758,7 @@
      * 접힘은 두 경로로 일어난다 — 사람이 헤더를 누르는 경로와 그룹이 완료돼 **자동으로** 접히는
      * 경로다. 종전에는 수동 경로만 `aria-expanded` 를 갱신해, 자동으로 접힌 그룹이 보조기술에는
      * 계속 「펼쳐짐」으로 남았다(그 안의 단계는 화면에서 사라진 뒤다). 두 경로를 이 한 지점으로
-     * 모아야 다음에 새 전이가 생겨도 같은 사각이 다시 열리지 않는다 (12차 #B25).
+     * 모아야 다음에 새 전이가 생겨도 같은 사각이 다시 열리지 않는다.
      *
      * @param {HTMLElement|null} group `.task-group` 요소
      * @param {boolean} collapsed 접을지 여부
@@ -5779,7 +5778,7 @@
      * 설치 진행 카드의 접힘 상태를 바꾼다 (본문 표시 + 아이콘 + `aria-expanded`).
      *
      * 그룹 아코디언과 같은 이유로 단일 지점이다 — 완료·실패·중단·초기화가 각자 본문을 열고
-     * 닫는데, 그중 `aria-expanded` 를 따라 움직이는 것은 수동 토글 하나뿐이었다 (12차 #B26).
+     * 닫는데, 그중 `aria-expanded` 를 따라 움직이는 것은 수동 토글 하나뿐이었다.
      *
      * @param {boolean} collapsed 접을지 여부
      */
@@ -5804,7 +5803,7 @@
      *
      * 헤더는 `role="button"` 이지만 설치가 끝나기 전에는 핸들러가 첫 줄에서 되돌아간다. 그
      * 사이 헤더는 Tab 순서에 남아 있으면서 눌러도 아무 일이 없는 「죽은 버튼」이었다 — 비활성
-     * 이라는 사실이 보조기술에도 키보드에도 전달되지 않는다 (12차 #B28).
+     * 이라는 사실이 보조기술에도 키보드에도 전달되지 않는다.
      *
      * @param {boolean} enabled 조작 가능 여부
      */
@@ -5850,7 +5849,7 @@
      * 한 단계 **안**의 부분 진행을 덧붙인다 (번들 추출 묶음 수).
      *
      * 서버는 이 값을 heartbeat 로 계속 보내는데 소비처가 없어 통째로 버려지고 있었다 —
-     * 10~15초 이상 걸리는 최장 단계가 화면에서는 정지한 스피너였다 (12차 #B35). 숫자만
+     * 10~15초 이상 걸리는 최장 단계가 화면에서는 정지한 스피너였다. 숫자만
      * 덧붙이므로 새 번역 문구가 필요 없다(그룹 배지의 `n/m` 과 같은 표기다).
      *
      * @param {number} done 끝난 묶음 수
@@ -6269,7 +6268,7 @@
         }
 
         // 로그가 없으면 플레이스홀더를 **유지**한다 — 검사가 제거보다 뒤에 있으면 주석과
-        // 코드가 반대가 된다 (11차 #B15). 그 상태에서는 로그가 쌓이기 전에 실패·중단한
+        // 코드가 반대가 된다. 그 상태에서는 로그가 쌓이기 전에 실패·중단한
         // 설치를 새로고침했을 때 「진행 기록」이 안내도 플레이스홀더도 없는 빈 검은 상자로
         // 남는다(복원 경로 showAbortedInstallationSection·실패 복원이 둘 다 여기를 지난다).
         if (!logs || logs.length === 0) {
@@ -6290,7 +6289,7 @@
                 messages.push(log.message);
             }
             // 그 밖은 버린다 — 진행 기록은 사람 말로 쓴다. 원시 JSON 을 찍느니 그 줄을
-            // 버린다 (10차가 이 상자에서 셸 명령을 걷어낸 것과 같은 축 · 11차 #B16).
+            // 버린다 (이 상자에서 셸 명령을 걷어낸 것과 같은 축).
         }
 
         addLogMessages(messages);
@@ -6343,7 +6342,7 @@
      *
      * 확장 저장 시 해석기가 기록한 `install_pulled_by`(종류 경계를 넘어 앞당겨진 `카테고리:식별자` → 요구한 확장)를
      * 설치 작업(*_install) 행에만 붙인다. 카테고리는 항목의 kind 다 — 화면은 확장 작업을 실행 순서대로 한 묶음
-     * (extensions)에 담으므로 그룹 id 가 카테고리가 아니다(PO 2026-11-02). kind 가 없는 옛 그룹 정의(종류별 묶음)만
+     * (extensions)에 담으므로 그룹 id 가 카테고리가 아니다. kind 가 없는 옛 그룹 정의(종류별 묶음)만
      * 그룹 id 로 찾는다.
      *
      * @param {string} groupId 작업 그룹 id
@@ -6463,7 +6462,7 @@
         // 지운다. 화면이 단조 증가만 하면 롤백된 태스크가 초록('task-completed')으로 남아
         // 중단 화면이 실제 DB 와 반대를 말하고, 같은 상태가 새로고침 전후로 다르게 보인다.
         //
-        // 단, 되돌림은 authoritative(응답에 실제 목록 배열이 실림)에서만 (23차 F-3) —
+        // 단, 되돌림은 authoritative(응답에 실제 목록 배열이 실림)에서만 —
         // 인코딩 실패 폴백처럼 목록이 **부재**한 응답을 공집합으로 읽으면 화면의 모든
         // 완료 표시를 지우고 진행률을 0% 로 되감는다. 소비자는 멱등이어야 한다.
         if (authoritative) {
@@ -6608,10 +6607,10 @@
                 // 상태 변경 요청과 같은 헤더를 쓴다 — finalize 는 단계별 실행에서 토큰을
                 // 요구한다(installerFinalizeRejection). 무CLI 환경은 단계별 실행으로
                 // 강제되므로, 토큰이 빠지면 **이 안이 지원하려는 환경에서만** 403 이 되고
-                // 화면은 fire-and-forget 이라 성공을 그대로 띄운다 (13차 D2).
+                // 화면은 fire-and-forget 이라 성공을 그대로 띄운다.
                 headers: { ...stateMutationHeaders(), 'X-Installer-Finalize': '1' },
             }).then((res) => {
-                // 수락 여부는 본다 (19차 S-3). 서버는 이 요청을 405 / 409(끝난 설치가 아님) /
+                // 수락 여부는 본다. 서버는 이 요청을 405 / 409(끝난 설치가 아님) /
                 // 403(토큰 부재·불일치 · 교차 출처)로 거부할 수 있는데, `fetch` 는 4xx 에
                 // reject 하지 않으므로 `.catch` 는 발화하지 않는다. 그러면 초록 「설치 완료」와
                 // [관리자 로그인] 이 그대로 뜨는데 `runtime.php` 의 **평문 DB·관리자 비밀번호**와
@@ -6636,7 +6635,7 @@
     }
 
     /**
-     * 마무리가 거부됐음을 완료 화면에 덧붙인다 (19차 S-3).
+     * 마무리가 거부됐음을 완료 화면에 덧붙인다.
      *
      * 완료 화면을 걷어내지는 않는다 — 설치 자체는 끝났고, 남은 것은 마무리 한 단계다.
      * 그러나 그 사실을 숨기면 운영자는 인스톨러가 왜 계속 열려 있는지 알 수 없다.
@@ -6899,7 +6898,7 @@
         const logDiv = document.getElementById('install-log');
 
         setInstallationCardCollapsed(false);
-        // 다시 진행 중이므로 헤더는 다시 「누를 수 없는 상태」로 돌아간다 (12차 #B28).
+        // 다시 진행 중이므로 헤더는 다시 「누를 수 없는 상태」로 돌아간다.
         setInstallationCardInteractive(false);
         if (installToggleIcon) {
             installToggleIcon.classList.add('hidden');
@@ -7152,7 +7151,7 @@
                 // 끝날 때까지 기다린 상태로 목록·기록·완료 화면을 그린다(waitForFinalTasks).
                 const finalState = await waitForFinalTasks(state);
 
-                // 목록과 진행 기록을 먼저 그린다 (19차 S-8).
+                // 목록과 진행 기록을 먼저 그린다.
                 //
                 // 형제 두 갈래(`failed`·`aborted`)는 전부 `renderTaskList()` +
                 // `displayCompletedTasks()` + `displayLogs()` 를 지나는데 이 갈래만 없었다.
@@ -7188,7 +7187,7 @@
 
                 // 실패 정보 가져오기 (state.json에서 복원) — 폴백 사슬은 모니터 모듈이
                 // 소유한다. 세 경로(새로고침 복원 · 폴링 · 단계별 실행)가 각자 사슬을 두면
-                // 같은 실패가 경로에 따라 사유가 있기도 없기도 하다 (13차 F12).
+                // 같은 실패가 경로에 따라 사유가 있기도 없기도 하다.
                 const restoredFailure = window.G7InstallationMonitor.failurePayload(state);
                 const errorMessage = translateWithKey(
                     restoredFailure.message_key,
@@ -7259,10 +7258,10 @@
                     // 이 스코프에는 apiUrl 이 없다 — 종전 표기는 'use strict' 아래에서
                     // ReferenceError 였고, 바로 아래 catch 가 그것을 삼켜 abort **이전**
                     // 스냅샷으로 중단 화면을 그렸다(오류도 로그도 남지 않는다).
-                    // `return` 으로 바깥 catch 에 잇는다 (11차 #B9). 종전에는 콜백이
+                    // `return` 으로 바깥 catch 에 잇는다. 종전에는 콜백이
                     // undefined 를 돌려줘 이 체인의 거부(비-JSON·5xx·네트워크)를 아무도
                     // 잡지 못했고, 중단 화면이 영영 뜨지 않아 진행 카드도 시작 버튼도 없는
-                    // 빈 화면 + 콘솔 무경고가 남았다. 8차가 이 자리의 ReferenceError 를
+                    // 빈 화면 + 콘솔 무경고가 남았다. 앞서 이 자리의 ReferenceError 를
                     // 고치면서 형제인 미처리 거부를 남겼다.
                     return fetch(getStateApiUrl('get'))
                         .then(res => res.json())
@@ -7421,7 +7420,7 @@
         const abortedSection = document.getElementById('aborted-section');
 
         if (abortedSection) {
-            // 중단 사유를 보여 준다 (11차 #A12) — 서버는 「사람이 눌렀다」와 「연결이 끊겼다」를
+            // 중단 사유를 보여 준다 — 서버는 「사람이 눌렀다」와 「연결이 끊겼다」를
             // 구분해 기록해 왔는데 그 값을 아무도 읽지 않아 두 경우가 같은 문구로 끝났다.
             // 운영자는 그대로 다시 시작해도 되는지 판단할 근거가 필요하다.
             const abortReasonText = state.abort_reason ? lang(state.abort_reason) : '';
@@ -7635,7 +7634,7 @@
      *
      * 같은 마크업이 네 벌로 복제돼 있었다 — 초기 표시·중단 중·실패 복원 두 곳. 복제는 그
      * 자체로 재발원이다: 아이콘에 `aria-hidden` 을 다는 것 같은 수정이 한 벌만 반영되어도
-     * 나머지 세 벌은 그대로 남는다(실제로 네 벌 모두 빠져 있었다 — 12차 #B32). 뜻은 옆의
+     * 나머지 세 벌은 그대로 남는다(실제로 네 벌 모두 빠져 있었다). 뜻은 옆의
      * 텍스트 라벨이 전하므로 아이콘은 장식이다.
      *
      * @param {boolean} aborting 중단 요청을 보내는 중인지 (true 면 스피너 + "중단하는 중")
@@ -7734,7 +7733,7 @@
             } else {
                 // 중단 실패 시 플래그 복원
                 installationCompleted = false;
-                // 취소 표식도 되돌린다 (19차 J4). 되돌리지 않으면 시작 경로가 아직
+                // 취소 표식도 되돌린다. 되돌리지 않으면 시작 경로가 아직
                 // await 중일 때 그 뒤 처리가 영영 멈추고, 화면에는 0% 카드와 [중단] 버튼만
                 // 남아 탈출 경로가 사라진다 — 서버는 「진행 중이 아니다」로 거부했으므로
                 // 이 시점의 설치는 실제로 시작되지 않은 상태다.
@@ -7749,7 +7748,7 @@
                 }
             }
         } catch (error) {
-            // 모니터를 먼저 멈춘다 (19차 J3).
+            // 모니터를 먼저 멈춘다.
             //
             // 종전에는 성공 분기에만 `stop()` 이 있어, 중단 요청이 네트워크 오류·비-JSON 500
             // 으로 실패하면 **설치는 계속 도는데 실패 화면이 뜨고** 그 위에 모니터가
@@ -7759,10 +7758,10 @@
                 currentMonitor = null;
             }
 
-            // 같은 규약 (11차 #B17) — 원문은 접기 영역으로.
+            // 같은 규약 — 원문은 접기 영역으로.
             showError(lang('abort_error_occurred'), error && error.message ? String(error.message) : null);
 
-            // 플래그 복원은 `showError()` **뒤**에 온다 (19차 J3).
+            // 플래그 복원은 `showError()` **뒤**에 온다.
             //
             // `showError()` 는 첫 줄에서 `installationCompleted = true` 로 되돌리고
             // `hideAbortButton()` 을 부른다. 종전에는 그 앞에서 복원해 두어 값이 곧바로
@@ -7936,7 +7935,7 @@
         }
 
         // 수동 경로도 자동 경로와 같은 지점을 지난다 — 갈라 두면 한쪽만 `aria-expanded` 를
-        // 갱신하는 상태로 되돌아간다 (12차 #B26).
+        // 갱신하는 상태로 되돌아간다.
         setInstallationCardCollapsed(cardBody.style.display !== 'none');
     }
 
@@ -8029,8 +8028,8 @@
         const taskEl = document.getElementById(domId);
         if (!taskEl) {
             // 조용히 되돌아가면 서버가 도는 단계가 화면에 아예 없다는 사실이 어디에도 남지
-            // 않는다 — 그 단계는 실패해도 빨강이 되지 않고 진행률 분모에서도 빠진다
-            // (12차 #B24). 목록의 SSoT 는 서버이므로 여기서 고치지 않고 드러내기만 한다.
+            // 않는다 — 그 단계는 실패해도 빨강이 되지 않고 진행률 분모에서도 빠진다.
+            //목록의 SSoT 는 서버이므로 여기서 고치지 않고 드러내기만 한다.
             //
             // 다만 **같은 단계에 한 번만** 경고한다 (D2 L10). 이 함수는 한 단계에 여러 번
             // 불리고(단계별은 응답마다 완료 목록 전량을 재적용한다) 상태마다 다시 불린다 —
@@ -8057,7 +8056,7 @@
         // 색은 `.task-*` 규칙이 토큰으로 정한다 — 인라인 style 로 칠하면 다크 재정의가
         // 도달하지 못한다 (D16).
         const statusPresentation = {
-            // pending 도 완전한 표현을 갖는다 (23차 F-1) — 22-4 의 되돌림이 이 함수를
+            // pending 도 완전한 표현을 갖는다 — 22-4 의 되돌림이 이 함수를
             // 'pending' 으로 부르는데, 항목이 없으면 상태 클래스가 전부 벗겨진 「무상태」 행이
             // 되고 아이콘·sr-only 는 종전 「완료」가 그대로 남아 화면 판독기에 반대로 읽힌다.
             pending: { className: 'task-pending', icon: 'pending', labelKey: 'status_pending' },
@@ -8150,7 +8149,7 @@
         const group = document.querySelector(`.task-group[data-group-id="${groupId}"]`);
         if (group) {
             // 수동 경로도 자동 경로와 같은 지점을 지난다 — 갈라 두면 한쪽만 `aria-expanded` 를
-            // 갱신하는 상태로 되돌아간다 (12차 #B25).
+            // 갱신하는 상태로 되돌아간다.
             setTaskGroupCollapsed(group, !group.classList.contains('collapsed'));
         }
     };
@@ -8228,7 +8227,7 @@
             spinner: '<div class="task-icon-spinner"></div>',
             // 최초 렌더(아직 시작하지 않은 단계)용 — 종전에는 평면 렌더가 `⏳` 이모지를,
             // 그룹 렌더가 aria 속성 없는 raw <svg> 를 그렸다. 둘 다 텍스트 대체가 없어
-            // 화면 판독기는 14개 항목을 "이름 없는 그래픽 + 단계명" 으로만 읽었다 (11차 #B13).
+            // 화면 판독기는 14개 항목을 "이름 없는 그래픽 + 단계명" 으로만 읽었다.
             pending: `
                 <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" width="${px}" height="${px}" class="${sizeClass} ${className}">
                     <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="2" fill="none"/>
@@ -8475,14 +8474,14 @@
                 return false;
             }
 
-            // 서버는 3상태를 낸다 — 없음 / 있으나 쓰기 불가 / 있고 쓰기 가능 (19차 S-2).
+            // 서버는 3상태를 낸다 — 없음 / 있으나 쓰기 불가 / 있고 쓰기 가능.
             // 종전에는 `env_exists` 만 읽어 가운데 상태가 통과했다. `.env` 쓰기는 설치 **중**이
             // 아니라 끝난 뒤 finalize 에서 한 번 일어나고 실패해도 조용히 return 하므로,
             // 14단계가 전부 초록으로 끝나고 「설치 완료」가 뜨는데 `.env` 는 설치 전 그대로다.
             // `_guard.php` 는 `.env` 의 `INSTALLER_COMPLETED` 로만 판정하므로 인스톨러가
             // **영구히 열린 채** 남는다 — 실패도 경고도 없다.
             //
-            // 다만 여기가 **유일한** 지점은 아니다(종전 문언 정정, 8차 G3 라운드): 같은 술어의
+            // 다만 여기가 **유일한** 지점은 아니다(종전 문언 정정): 같은 술어의
             // 서버 사본이 `public/install/api/install-process.php` 에 있다. 아래 `catch` 가 통과로 떨어지는 것은
             // 그 사본이 받아 주기 때문이고, 그 사본의 독블록이 「화면만이 유일한 지점이면
             // fetch 예외가 곧 우회로가 된다」로 그 관계를 적고 있다. 이 문단을 「유일」로 두면
@@ -8503,7 +8502,7 @@
     }
 
     /**
-     * 파일 안내 섹션의 사유 문단을 바꾼다 (19차 S-2).
+     * 파일 안내 섹션의 사유 문단을 바꾼다.
      *
      * 「없다」와 「있는데 쓸 수 없다」는 조치가 다르다 — 하나는 생성, 하나는 권한이다.
      * 한 문구로 뭉개면 운영자가 `cp` 를 다시 실행하고 같은 자리에 머문다.
@@ -8516,7 +8515,7 @@
     }
 
     /**
-     * 「.env 가 있는데 쓸 수 없다」 안내를 그린다 — 사유·권한 명령·목록을 한 지점에서 (23차 F-2).
+     * 「.env 가 있는데 쓸 수 없다」 안내를 그린다 — 사유·권한 명령·목록을 한 지점에서.
      *
      * 사전 점검(checkFilesBeforeInstall)·[파일 확인] 재검사·서버 시작 게이트 거부 응답의
      * 세 소비처가 이 헬퍼를 공유한다. 지점마다 손으로 그리면 서버 게이트 거부처럼 새로
@@ -8653,9 +8652,9 @@
                 }
 
                 // 여전히 누락/쓰기 불가한 파일 목록 갱신. 「부재 → 쓰기 불가」로 상태가
-                // 바뀌었으면 사유 문단·권한 명령까지 함께 갈아 끼운다 (23차 4c) — 목록만
+                // 바뀌었으면 사유 문단·권한 명령까지 함께 갈아 끼운다 — 목록만
                 // 바꾸면 `cp` 명령과 「파일을 찾을 수 없습니다」 문구가 남아 운영자가
-                // 생성을 반복한다 (19차 S-2 의 원래 증상).
+                // 생성을 반복한다 (처음 보고된 증상이 이것이다).
                 if (check.env_exists && check.env_writable === false) {
                     renderEnvNotWritableSetup(null, check.is_windows || false);
                 }

@@ -9,13 +9,13 @@ use Tests\Concerns\CleansTemporaryBasePath;
 use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * 워커 lock 복구 경로 · 롤백 디스패치 키 회귀 테스트 (4차 검증 라운드).
+ * 워커 lock 복구 경로 · 롤백 디스패치 키 회귀 테스트.
  *
  * 고정하는 계약:
  *
  *  - 롤백 디스패치는 확장 태스크의 합성 키("module_install:sirsoft-board")를 받아도
  *    bare id 와 같은 판정을 낸다. 합성 키는 completed_tasks 비교용으로 도입됐고
- *    (검증 3차 라운드), current_task 를 그대로 넘겨받는 중단·연결끊김 경로가 이를
+ * (검증), current_task 를 그대로 넘겨받는 중단·연결끊김 경로가 이를
  *    미지원하면 "롤백 불필요" 가 "알 수 없는 작업" 으로 뒤집혀 운영자에게 거짓
  *    "수동 정리 필요" 가 표시된다.
  *  - 점유자가 선언한 시간 예산(worker_stale_after)은 stale 판정의 하한이지만,
@@ -481,7 +481,7 @@ class InstallerWorkerLockRecoveryTest extends TestCase
     }
 
     /**
-     * 세 emitter 가 공유하는 lock 상실 판정 (11차 #D13).
+     * 세 emitter 가 공유하는 lock 상실 판정.
      *
      * 종전에는 같은 판정이 세 사본에 흩어져 있었고 **예외로 끝나는 한 사본만** 행위
      * 테스트가 덮었다. 나머지 둘(SSE·폴링)은 조기 반환 조건을 뒤집어도 초록이라, lock 을

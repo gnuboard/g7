@@ -62,7 +62,7 @@ class InstallerExecutionModeTouchpointCoverageTest extends TestCase
                 continue;
             }
             // 주석을 지운 뒤 담는다 — 원문 대조는 주석으로 감싼 헬퍼 호출도
-            // 「헬퍼를 지났다」로 센다. 실측(12차 GI-4)에서 두 헬퍼 호출을 전부 주석으로
+            // 「헬퍼를 지났다」로 센다. 실측에서 두 헬퍼 호출을 전부 주석으로
             // 바꿔도 이 파일의 판정이 초록이었다.
             $sources[$relative] = $this->stripComments((string) file_get_contents($file->getPathname()));
         }
@@ -182,7 +182,7 @@ class InstallerExecutionModeTouchpointCoverageTest extends TestCase
     /**
      * 보정 헬퍼를 거치지 않는 **읽기 지점**을 찾는다 — 판정 단위는 「그 값이 헬퍼를 통과했는가」다.
      *
-     * 종전 판정은 「같은 함수 본문 안에 헬퍼 **이름이 있는가**」였다 (9차 #G10 이 파일 단위에서
+     * 종전 판정은 「같은 함수 본문 안에 헬퍼 **이름이 있는가**」였다 (앞서 파일 단위에서
      * 함수 단위로 좁힌 형태). 그 조건은 세 방향으로 헐겁다:
      *  ① 주석 안의 이름이 그대로 계상된다 (지금은 sources() 가 주석을 지운다).
      *  ② 같은 함수의 **다른 값**을 보정한 호출이 이 읽기의 알리바이가 된다.
@@ -335,7 +335,7 @@ class InstallerExecutionModeTouchpointCoverageTest extends TestCase
     }
 
     /**
-     * 판정 3형태의 **부정 분기**를 합성 입력으로 태운다 (12차 GI-4).
+     * 판정 3형태의 **부정 분기**를 합성 입력으로 태운다.
      *
      * 실 소스가 준수 상태라 위 두 검사의 `$missing` 은 늘 빈 배열이다 — 판정이 헐거워져도
      * red 가 나지 않는다. 통과해야 할 형태와 잡혀야 할 형태를 나란히 태운다.

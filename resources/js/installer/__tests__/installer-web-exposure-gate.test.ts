@@ -239,7 +239,7 @@ describe('storageLinkNoticeNeeded — symlink 실측 결과의 소비 지점 (B-
   });
 });
 
-describe('양성 대조 — 「열려야 하는 주소」로 위임 부재·기준 URL 오도출을 잡는다 (4차 G3)', () => {
+describe('양성 대조 — 「열려야 하는 주소」로 위임 부재·기준 URL 오도출을 잡는다', () => {
   const control = { path: '/install/assets/css/installer.css', marker: 'G7 Installer Stylesheet', label: 'install/assets' };
 
   /**
@@ -322,8 +322,8 @@ describe('양성 대조 — 「열려야 하는 주소」로 위임 부재·기�
    *
    * @effects exposure_positive_control_detects_broken_delegation, exposure_project_root_is_not_switched_by_the_control
    */
-  it('첫 후보에서 대조가 열리지 않으면 후보를 바꾸지 않는다 — 판정 불능으로 떨어뜨린다 (5차 G3, 제품 결정)', async () => {
-    // 4차까지는 「대조가 열리는 후보를 찾을 때까지 후보를 바꾼다」였다. 그러면 대조는
+  it('첫 후보에서 대조가 열리지 않으면 후보를 바꾸지 않는다 — 판정 불능으로 떨어뜨린다 (제품 결정)', async () => {
+    // 종전에는 「대조가 열리는 후보를 찾을 때까지 후보를 바꾼다」였다. 그러면 대조는
     // 게이트가 아니라 **후보 탐색기**가 되어, judgeExposureResults 의 `controls.some(!reachable)`
     // 분기에 **도달 자체가 불가능**해진다. 그 결과 위임(mod_rewrite)이 죽은 레이아웃 ② 가
     // 두 번째 후보에서 통과해 「보호 확인됨」으로 수렴하고 설치가 완주했다 — §4 B-1② 가
@@ -358,7 +358,7 @@ describe('양성 대조 — 「열려야 하는 주소」로 위임 부재·기�
    *
    * @effects exposure_positive_control_detects_broken_delegation
    */
-  it('위임이 죽은 레이아웃 ② 가 「보호 확인됨」으로 수렴하지 않는다 (5차 G3 · H1 회귀)', async () => {
+  it('위임이 죽은 레이아웃 ② 가 「보호 확인됨」으로 수렴하지 않는다 (회귀)', async () => {
     // 재현: 문서루트=프로젝트 루트인데 mod_rewrite 가 없다. `/install/` 이 404 라 운영자는
     // 실제 위치 `/public/install/` 로 들어올 수밖에 없고, 그러면 후보가 둘이 된다.
     // 폴백 하드닝이 프로젝트 루트의 프로브 3계열을 전부 403 으로 만들기 때문에, 대조가
@@ -371,7 +371,7 @@ describe('양성 대조 — 「열려야 하는 주소」로 위임 부재·기�
     stubFetchByUrl([
       // 위임이 죽어 프로젝트 루트의 인스톨러 자산이 열리지 않는다.
       [`${origin}/install/assets`, { ok: false, status: 404 }],
-      // 실제 위치는 정적 파일이라 열린다 — 4차까지는 이것이 후보를 갈아치웠다.
+      // 실제 위치는 정적 파일이라 열린다 — 종전에는 이것이 후보를 갈아치웠다.
       [`${origin}/public/install/assets`, { ok: true, body: 'G7 Installer Stylesheet' }],
     ]);
 
@@ -450,7 +450,7 @@ describe('judgeExposureResults (D3 · D21)', () => {
    *
    * @effects exposure_unmeasured_family_blocks_safe_verdict
    */
-  it('재지 못한 계열이 있으면 노출 0 이어도 safe 가 아니다 — 부분 fail-open 차단 (3차 H3)', () => {
+  it('재지 못한 계열이 있으면 노출 0 이어도 safe 가 아니다 — 부분 fail-open 차단', () => {
     // 서버가 sentinel 을 만들지 못하면 그 계열은 프로브 결과에 **나타나지 않는다**.
     // 결과 배열만 보면 「전 대상 판정 성공」이라 종전에는 초록이 됐다 — 재지 않은 축까지.
     expect(
@@ -575,7 +575,7 @@ describe('probeExposureTarget — 마커 기반 판정 (asset-probe 규약)', ()
       exposed: true,
       judged: true,
       // 형태(status·본문 길이)도 함께 싣는다 — 음성 대조와 대조해 판정을 되살리는
-      // 근거다(14차 G3). 노출 확정은 그 승격보다 언제나 우선한다.
+      // 근거다. 노출 확정은 그 승격보다 언제나 우선한다.
       status: 200,
       length: body.length,
     });
@@ -656,7 +656,7 @@ describe('probeExposureTarget — 마커 기반 판정 (asset-probe 규약)', ()
    *
    * @effects exposure_probe_treats_redirect_as_undetermined
    */
-  it('리다이렉트는 판정 불능이다 — 따라가면 로그인 페이지 200 이 「보호 확인됨」이 된다 (3차 L6)', async () => {
+  it('리다이렉트는 판정 불능이다 — 따라가면 로그인 페이지 200 이 「보호 확인됨」이 된다', async () => {
     // redirect:'manual' 이면 3xx 는 status 0 · type 'opaqueredirect' 로 도착한다.
     stubFetch(async () => ({ ok: false, status: 0, type: 'opaqueredirect' }));
 
@@ -816,7 +816,7 @@ describe('refreshWebExposureCard — 카드 렌더와 진행 경로 (D3 · D21)'
    *
    * @effects exposure_unmeasured_family_blocks_safe_verdict
    */
-  it('재지 못한 계열이 있으면 전 대상이 403 이어도 확인 경로로 간다 + 그 이름이 화면에 뜬다 (3차 H3)', async () => {
+  it('재지 못한 계열이 있으면 전 대상이 403 이어도 확인 경로로 간다 + 그 이름이 화면에 뜬다', async () => {
     region.setStep2GateState(true, 'pending');
     stubFetch(async () => ({ ok: false, status: 403 }));
 
@@ -933,7 +933,7 @@ describe('refreshWebExposureCard — 카드 렌더와 진행 경로 (D3 · D21)'
   const verdictField = () => document.getElementById('web-exposure-verdict') as HTMLInputElement;
 
   /**
-   * 주소 목록이 **비어 있는데** 「위 주소를 모두 확인했고…」에 서명시키지 않는다 (8차 P4-4).
+   * 주소 목록이 **비어 있는데** 「위 주소를 모두 확인했고…」에 서명시키지 않는다.
    *
    * 문구 선택 조건에 「재지 못한 계열 목록」까지 넣으면, 대상 0 + unmeasured 만 있는 상태에서
    * 화면에 주소가 한 줄도 없는 채로 그 문구가 뜬다. 정작 그 경우를 위해 만든
@@ -965,7 +965,7 @@ describe('refreshWebExposureCard — 카드 렌더와 진행 경로 (D3 · D21)'
   });
 
   /**
-   * 정제기가 버린 프록시 접두사(`X-Forwarded-Prefix`)는 **화면에 도달한다** (15차 G3 W1-2).
+   * 정제기가 버린 프록시 접두사(`X-Forwarded-Prefix`)는 **화면에 도달한다**.
    *
    * 기준 주소가 마운트 밖일 수 있는데 그 사실이 서버 응답에만 실리고 화면이 그리지 않으면
    * 운영자는 「왜 판정 불능인지」를 알 수 없다. 사유 키는 공용 사전(`web_exposure_unmeasured_reason_*`)
@@ -1017,7 +1017,7 @@ describe('refreshWebExposureCard — 카드 렌더와 진행 경로 (D3 · D21)'
   });
 
   /**
-   * 판정과 운영자 확인이 **기록으로 남는다** (8차 P4-6).
+   * 판정과 운영자 확인이 **기록으로 남는다**.
    *
    * 판정 주체가 브라우저이고 게이트도 화면이 잠그므로, 이 값이 폼에 실리지 않으면
    * 「보호 확인됨으로 통과했는지 / 판정 불능에서 운영자가 직접 확인하고 넘어갔는지」를
@@ -1068,7 +1068,7 @@ describe('refreshWebExposureCard — 카드 렌더와 진행 경로 (D3 · D21)'
   });
 
   /**
-   * 필수 게이트 카드의 busy 는 **판정이 난 뒤에** 풀린다 (8차 P4-7).
+   * 필수 게이트 카드의 busy 는 **판정이 난 뒤에** 풀린다.
    *
    * 바깥 결과 영역의 busy 해제는 요구사항 목록을 그린 직후에 일어나는데 이 카드의 판정은
    * 그 뒤에 비동기로 온다. 카드가 자기 busy 를 갖지 않으면 화면 판독기 사용자는
@@ -1503,7 +1503,7 @@ describe('소스 계약 — 게이트가 조용히 열리는 형태를 금지한
   });
 
   /**
-   * 화면이 서버에 보내는 판정 어휘 == 서버가 닫힌 집합으로 받는 어휘 (16차 G3 D-7).
+   * 화면이 서버에 보내는 판정 어휘 == 서버가 닫힌 집합으로 받는 어휘.
    *
    * 서버(`installerNormalizeWebExposureVerdict`)는 집합 밖을 「보고되지 않음」으로 접는다 —
    * 화면이 새 값을 보내기 시작해도 오류가 아니라 그 문구가 로그에 남을 뿐이다. 두 어휘를
@@ -1561,7 +1561,7 @@ describe('소스 계약 — 게이트가 조용히 열리는 형태를 금지한
   });
 });
 
-describe('getAppRootUrl — 앱 루트는 기준 URL 의 install 꼬리를 표기와 무관하게 벗긴다 (16차 G3 A12)', () => {
+describe('getAppRootUrl — 앱 루트는 기준 URL 의 install 꼬리를 표기와 무관하게 벗긴다', () => {
   /**
    * 형제 `getProjectRootCandidates` 는 `/i` 로 벗기는데 이 함수만 대소문자를 구분했다 —
    * 대소문자 무시 파일시스템에서 `/Install/` 로 접속하면 앱 루트가 `/Install` 이 되어
@@ -1641,7 +1641,7 @@ describe('서버별 보호 설정 안내', () => {
   });
 });
 
-describe('음성 대조 — 「파일이 없는 주소」와 같은 응답은 보호로 읽는다 (14차 G3)', () => {
+describe('음성 대조 — 「파일이 없는 주소」와 같은 응답은 보호로 읽는다', () => {
   // 레이아웃 ②는 루트 `.htaccess` 가 모든 주소를 앱으로 위임하므로, 파일이 서빙되지 않는
   // 주소도 200 앱 화면으로 돌아온다 — P0 실측: `/vendor/autoload.php` · `/storage/...` 가
   // 둘 다 `HTTP 200 text/html`, 존재하지 않는 주소와 **같은 길이**(12,557). 403/404 만 보호로
@@ -1675,7 +1675,7 @@ describe('음성 대조 — 「파일이 없는 주소」와 같은 응답은 �
     // 길이 0 은 어느 서버에서나 나올 수 있어 「파일 없는 주소와 같은 응답인가」의 답이
     // 되지 못한다. 실제로 `/vendor/autoload.php` 는 서빙이 아니라 **PHP 로 실행되면**
     // 200 + 빈 본문이 되고 마커는 본문에 나타나지 않는다 — 그 상태(프로젝트 루트에서
-    // PHP 가 실행된다)가 「보호 확인됨」으로 읽히면 안 된다 (15차 G3 라운드).
+    // PHP 가 실행된다)가 「보호 확인됨」으로 읽히면 안 된다.
     const results = [{ exposed: false, judged: false, status: 200, length: 0 }];
 
     expect(region.judgeExposureResults(results, 0, okControl, { status: 200, length: 0 })).toBe(
@@ -1683,7 +1683,7 @@ describe('음성 대조 — 「파일이 없는 주소」와 같은 응답은 �
     );
   });
 
-  // 15차 G3 W1-6 — 빈 본문 가드(`absentSignature.length === 0 || r.length === 0`)와 형태 대조
+  // 빈 본문 가드(`absentSignature.length === 0 || r.length === 0`)와 형태 대조
   // (status + length)를 각각 잰다. 두 길이가 다르면 형태 대조가 이미 unknown 을 내므로, 그
   // 가드가 판정을 실제로 가르는 입력은 **둘 다 0** 인 경우뿐이다 — 그 입력에서 가드를 지우면
   // 같은 형태로 읽혀 safe 가 된다(변이 실측: 가드를 `false` 로 바꾸면 이 케이스가 red).
@@ -1814,7 +1814,7 @@ describe('음성 대조 — 「파일이 없는 주소」와 같은 응답은 �
     ).resolves.toEqual({ status: 200, length: 1234 });
   });
 
-  // 15차 G3 W1-7 — 형태 대조는 **200 계열에서만** 의미가 있다(403/404 는 이미 대상 판정이
+  // 형태 대조는 **200 계열에서만** 의미가 있다(403/404 는 이미 대상 판정이
   // 보호로 읽는 응답이고, 5xx 는 서버 상태지 「파일 없는 주소의 형태」가 아니다). 종전 주석은
   // 그렇게 적혀 있었는데 코드는 전 status 를 서명으로 받았다.
   /**

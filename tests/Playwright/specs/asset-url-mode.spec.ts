@@ -27,11 +27,11 @@
  * 계획서 §"루프 방지 전용 테스트" 는 이 spec 이 **역방향 폴백을 일부러 넣은 브랜치에서
  * 무한 루프로 터지는지** 확인해야 가드로 인정된다고 명시한다.
  *
- * ## 시나리오 매니페스트 귀속 (14차 G3 검증 라운드)
+ * ## 시나리오 매니페스트 귀속
  *
  * `tests/scenarios/docroot-single-folder.yaml` 의 `asset_url_mode`(서버가 내주는 형태) ×
- * `e2e_asset_url_recovery`(그 형태를 만난 브라우저의 행동) 축을 소유한다. 13차까지 이
- * spec 은 **어느 매니페스트에도 등록돼 있지 않아**, 파일이 통째로 사라져도 게이트가
+ * `e2e_asset_url_recovery`(그 형태를 만난 브라우저의 행동) 축을 소유한다. 종전에는 이
+ * spec 이 **어느 매니페스트에도 등록돼 있지 않아**, 파일이 통째로 사라져도 게이트가
  * 초록이었다.
  *
  * @scenario asset_url_mode=extension, e2e_asset_url_recovery=browser_self_heal

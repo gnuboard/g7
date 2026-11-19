@@ -59,7 +59,7 @@ trait CompilesFragmentMarkup
      *
      * **S18.5 — 예견한 그 수렴이 실제로 일어났고, 이 메서드가 그 자리를 받았다.** 코퍼스 짝
      * 우선순위 가드({@see FragmentSourceCopyGuardTest::test_real_fragment_directories_resolve_to_authoring_sources()})
-     * 가 짝마다 이 단언을 함께 걸고, 31차의 divergence 하한은 계량으로 강등됐다. "값 오라클이
+     * 가 짝마다 이 단언을 함께 걸고, 종전의 divergence 하한은 계량으로 강등됐다. "값 오라클이
      * `.json` 승리를 잡는다" 는 명제는 어긋난 합성 짝이 따로 시험한다.
      *
      * @param  string  $fragmentPath  `.json` 참조 경로

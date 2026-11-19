@@ -101,7 +101,7 @@ class ConsentSourceVocabularyParityTest extends TestCase
      *
      * 백엔드(`lang/{locale}/messages.php`)와 프론트엔드(`resources/lang/{locale}.json`)를
      * **둘 다** 봅니다. 관리자 화면의 `$t:` 는 프론트엔드 JSON 에서 해석되므로 PHP 쪽만
-     * 채우면 화면에는 여전히 원시 키가 남습니다 (#492 7차에서 실제로 겪은 누락).
+     * 채우면 화면에는 여전히 원시 키가 남습니다 (#492 작업 중 실제로 겪은 누락).
      */
     #[Test]
     public function 모든_출처_값에_ko_en_라벨이_정의되어_있다(): void

@@ -1,5 +1,5 @@
 # audit:allow test-scenario-coverage[cross_product] reason: issue:#609 axes 54 cross product 중 의미적으로 핵심인 5케이스(글로벌 무결성, 식별자 prefix 매칭, fallback adapter, contextual binding 다중 소비자, empty array skip) 만 docblock 매핑. 나머지 49건은 axis 조합상으로는 가능하나 동작 분기는 동일 — 매트릭스 형식적 확장이므로 면제. effects 8건은 코어/플러그인 양측 docblock 에 전수 매핑됨.
-# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 
 feature: 확장(모듈/플러그인) 캐시·스토리지 도메인 격리
 

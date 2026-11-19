@@ -1,5 +1,5 @@
 # audit:allow test-scenario-coverage reason: issue:#609 본 매니페스트는 인스톨러 보안 패치의 시나리오 매트릭스 SSoT 로 기록. 회귀 가드는 test_files (InstallerSecurityHardening / ComposerPathValidation / BinaryPathPolicy) + manual_verification 의 양방향 PoC 로 커버하며, payload_class 19종 × vector 9종은 DataProvider 전수 전개라 조합별 docblock 마킹과 1:1 대응하지 않는다.
-# 원장(9차 G3 라운드 C-4): 이 매니페스트는 :cross-product 로 좁히면 effects 32건이 미검증으로 드러난다.
+# 원장: 이 매니페스트는 :cross-product 로 좁히면 effects 32건이 미검증으로 드러난다.
 #   그 짝 맞추기는 이 공정(인스톨러)의 몫이며, 좁히는 시점에 함께 처리한다.
 
 feature: 인스톨러 후속 보안 강화 (composer 명령 / 확장 ID / pending 경로 / .env 라인 주입 / DSN 파라미터)

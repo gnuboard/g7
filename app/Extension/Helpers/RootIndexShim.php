@@ -10,7 +10,7 @@ namespace App\Extension\Helpers;
  * 통째 교체이므로, 코어 업데이트는 교체 **직전**에 「그 파일이 코어 shim 인가」를 판정해
  * 아니면 사본을 남기고 운영자에게 알린다(레이아웃 ③ 사이트가 두던 자기 랜딩 파일).
  *
- * 그 판정 기준이 두 곳에 **다른 엄격도**로 적혀 있었다 (14차 G3 라운드):
+ * 그 판정 기준이 두 곳에 **다른 엄격도**로 적혀 있었다:
  *   · 런타임(`CoreUpdateService::recordRootIndexReplacement`)은 공백까지 고정한 리터럴
  *     `require __DIR__.'/public/index.php'` 를 `str_contains` 로 찾았고,
  *   · 계약 테스트(`RootEntrypointContractTest`)는 공백을 허용하는 정규식으로 봤다.

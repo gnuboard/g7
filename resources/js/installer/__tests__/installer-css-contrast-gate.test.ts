@@ -1,5 +1,5 @@
 /**
- * 인스톨러 CSS 색 대비 게이트 (16차 G3 D-1 · D-2 · D-3).
+ * 인스톨러 CSS 색 대비 게이트.
  *
  * 노출 점검 카드의 경고·오류 배경 위에 놓이는 문자 세 종(인라인 코드 · 링크 · 힌트)이
  * 라이트·다크 **양쪽**에서 WCAG AA(4.5:1)를 넘는지 잰다. 종전에는 토큰 리터럴 게이트
@@ -105,20 +105,20 @@ const PAIRS: Array<{
   { selector: '.exposure-address-list a', background: '--warning-light', note: '판정 불능 카드(경고 배경)의 확인 주소 링크 (D-2)' },
   { selector: '.alert-warning .fix-guide-hint', background: '--warning-light', note: '경고 카드 위 힌트 (D-3)' },
   { selector: '.alert-error .fix-guide-hint', background: '--error-light', note: '오류 카드 위 힌트 (D-3)' },
-  // 17차 E-1 — 경고 카드 위 라벨(`.alert-warning .fix-guide-label`)이 모집단에서 빠져 있었다.
+  // 경고 카드 위 라벨(`.alert-warning .fix-guide-label`)이 모집단에서 빠져 있었다.
   // 경고 배경 위 문자라 형제(힌트·링크)와 같은 축인데 손 열거에서 누락됐다.
   { selector: '.alert-warning .fix-guide-label', background: '--warning-light', note: '경고 카드 위 라벨 (E-1)' },
-  // 18차 A-1 — 오류 카드 위 라벨(`.alert-error .fix-guide-label`)이 형제 힌트·경고 라벨과
+  // 오류 카드 위 라벨(`.alert-error .fix-guide-label`)이 형제 힌트·경고 라벨과
   // 같은 축인데 census 에서 빠져 있었다(현재 대비 통과이나 토큰 회귀 시 조용히 초록).
-  { selector: '.alert-error .fix-guide-label', background: '--error-light', note: '오류 카드 위 라벨 (18차 A-1)' },
+  { selector: '.alert-error .fix-guide-label', background: '--error-light', note: '오류 카드 위 라벨' },
   // D1 — 판정 불능 카드의 **판정 기준** 한 줄. 경고 배경 위 문자이고 굵기를 올려 강조하는
   // 자리라 형제(라벨·힌트·링크)와 같은 축이다. 신설과 동시에 모집단에 넣는다 — 나중에
-  // 손 열거를 다시 훑는 일은 17차 E-1·18차 A-1 에서 두 번 다 실패했다.
+  // 손 열거를 다시 훑는 일은 앞서 두 번 다 실패했다.
   { selector: '.exposure-criteria', background: '--warning-light', note: '판정 불능 카드의 판정 기준 문장 (D1)' },
   // D7 — 실패 **결과 카드**(`--result-error-bg`)는 이 모집단에 한 줄도 없었다. 경고·오류
   // *알림*(`--warning-light`·`--error-light`)만 세고 있었는데, 운영자가 실패를 읽는 자리는
   // 그 알림이 아니라 이 카드다(현장 제보의 그 화면). 해제 대기 줄을 새로 넣는 김에 **형제
-  // 본문까지** 함께 등재한다 — 17차 E-1·18차 A-1 이 같은 누락을 두 번 냈고 둘 다 원인이
+  // 본문까지** 함께 등재한다 — 앞서 같은 누락을 두 번 냈고 둘 다 원인이
   // 「나중에 훑자」였다.
   //
   // 라이트는 그 배경이 그라디언트라 이 계산기로 잴 수 없다(아래 UNGATED) — 다크만 잰다.
@@ -142,7 +142,7 @@ const UNGATED: ReadonlyArray<{ token: string; theme: 'light' | 'dark'; reason: s
   { token: '--warning-surface', theme: 'dark', reason: 'rgba — 알파가 있어 밑에 깔리는 색에 따라 실제 배경이 달라진다' },
 ];
 
-// 손 열거 모집단은 비어도 `it.each` 가 0건을 돌려 초록이 된다 (17차 E-1) — 인구조사로 하한을 잠근다.
+// 손 열거 모집단은 비어도 `it.each` 가 0건을 돌려 초록이 된다 — 인구조사로 하한을 잠근다.
 const PAIRS_CENSUS_MINIMUM = 10;
 
 describe('인스톨러 CSS — 경고·오류 카드 위 문자의 AA 대비 (라이트·다크)', () => {

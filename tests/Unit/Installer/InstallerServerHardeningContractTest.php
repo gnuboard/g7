@@ -10,7 +10,7 @@ use Tests\Concerns\CleansTemporaryBasePath;
 use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * 인스톨러 서버측 결함 12차 라운드의 나머지 계약을 고정한다 (#A5·#A6·#A7·#A8·#A9·#A11·#A12).
+ * 인스톨러 서버측 결함의 나머지 계약을 고정한다.
  *
  * 여기 모인 결함은 전부 「예외도 오류도 남기지 않는」 종류다 — 응답 앞에 붙은 warning 한 줄,
  * 진행 기록에 섞인 영문, 잡히지 않은 `Error`, 상태를 남기지 않는 최상위 catch. 실행으로
@@ -341,7 +341,7 @@ class InstallerServerHardeningContractTest extends TestCase
      * ko/en 대칭은 `InstallerLanguageParityTest` 가 전수로 이미 덮는다. 그래서 위 검사가
      * 추가로 잡는 것은 「이 10개가 사라졌는가」뿐이고 **그 키를 쓰는 코드**는 보지 않았다 —
      * 호출을 통째로 지우고 lang 파일의 정의만 남겨도 초록이다. 그러면 죽은 lang 키가
-     * 게이트에 의해 보존되는 형태가 된다(1차 라운드가 「죽은 lang 키 3」을 결함으로 처리한
+     * 게이트에 의해 보존되는 형태가 된다(앞서 「죽은 lang 키 3」을 결함으로 처리한
      * 것과 방향이 반대다).
      *
      * @effects progress_record_has_no_hardcoded_english

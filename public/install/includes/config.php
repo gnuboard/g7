@@ -10,7 +10,7 @@ use App\Support\PhpExtensionRequirements;
 
 // 프로젝트 루트 경로 (public/install/includes에서 3단계 상위)
 if (! defined('BASE_PATH')) {
-    // `realpath` 도 호스팅이 막을 수 있는 함수다 (13차 환경#1). 이 줄은 인스톨러가 실행하는
+    // `realpath` 도 호스팅이 막을 수 있는 함수다. 이 줄은 인스톨러가 실행하는
     // 사실상 첫 코드라, 막힌 환경에서 무가드로 부르면 어떤 봉투도 서기 전에 치명 종료한다 —
     // 운영자에게는 백지만 남는다. 정규화는 못 해도 조립 경로로 설치는 진행된다.
     define('BASE_PATH', function_exists('realpath')
@@ -53,7 +53,7 @@ if (! function_exists('installerDeriveBaseUrl')) {
      *
      * 프록시가 `/g7/install/` 을 `/install/` 로 벗겨 넘기면 요청 경로도 스크립트 경로도
      * 접두사를 모른다 — 기준 URL 이 사이트 밖(`/install`)이 되어 노출 프로브가 언제나
-     * 「측정 불가」로 강등되고, 운영자는 그 사유를 알 수 없다 (13차 G3 W1-11). 프록시가
+     * 「측정 불가」로 강등되고, 운영자는 그 사유를 알 수 없다. 프록시가
      * 벗긴 접두사를 알려 주는 관례 헤더가 있으면 그것을 앞에 붙인다. 값은 **경로 접두사로만**
      * 받는다: `/` 로 시작하고 `//`(프로토콜 상대)가 아니며, 세그먼트마다 unreserved 문자 ·
      * 유효한 퍼센트 인코딩 · 원시 UTF-8 만 허용하고 제어문자·공백·역슬래시·`.`/`..` 는
@@ -74,12 +74,12 @@ if (! function_exists('installerDeriveBaseUrl')) {
             $path = str_replace('\\', '/', (string) (parse_url($requestUri, PHP_URL_PATH) ?? ''));
 
             // 역슬래시 치환은 `parse_url` **뒤**라, 앞머리 역슬래시 두 개(`\\evil.com/…`)가
-            // `//evil.com/…`(프로토콜 상대 = 다른 오리진)로 바뀐다 (17차 A-4). 그 값은
+            // `//evil.com/…`(프로토콜 상대 = 다른 오리진)로 바뀐다. 그 값은
             // `<script src>`·`Location:`·`APP_URL` 에 실려 사이트 밖을 가리킨다. 접두사
             // 정제기가 프로토콜 상대를 거부하는 것과 **같은 판정**을 요청 경로 축에도 적용해,
             // 걸리면 이 분기를 버리고 `SCRIPT_NAME` 파생으로 떨어진다.
             //
-            // 인코딩된 상위 디렉토리(`%2E%2E`)도 같은 자리에서 버린다 (17차 A-2). 접두사
+            // 인코딩된 상위 디렉토리(`%2E%2E`)도 같은 자리에서 버린다. 접두사
             // 정제기는 세그먼트를 디코딩해 `..`/`.` 를 거부하는데(위 `dot_segment`), 요청 경로
             // 축에는 그 판정이 없어 `installerNormalizePathEncoding()` 이 `%2E%2E` 를 실제 `..`
             // 로 되살렸다 — `/g7/%2E%2E/%2E%2E/install` 이 `/g7/../../install` 이 되어 마운트
@@ -118,7 +118,7 @@ if (! function_exists('installerSanitizeForwardedPrefix')) {
      * 그 값은 `Location:` 과 `<link href>`·`<script src>` 에 실린다. 그래서 차단 문자를
      * 열거하지 않고 **허용 문자만** 받는다. 열거 방식은 우회가 하나 드러날 때마다 한 글자씩
      * 뒤따라야 했다: 역슬래시는 WHATWG URL 파서가 `/\evil.com` 을 `//evil.com` 으로
-     * 정규화해 다른 오리진이 되고, `"><script>` 는 속성 밖으로 탈출한다 (14차 G3 W2-1).
+     * 정규화해 다른 오리진이 되고, `"><script>` 는 속성 밖으로 탈출한다.
      * 세그먼트로는 `.`·`..` 를 거부한다 — 접두사는 오르내리는 경로가 아니다.
      *
      * 원시 문자로는 RFC 3986 pchar(unreserved `A-Za-z0-9._~-` · sub-delims `!$&'()*+,;=` ·
@@ -126,11 +126,11 @@ if (! function_exists('installerSanitizeForwardedPrefix')) {
      * **세그먼트를 디코딩해 다시 판정**한다 — 디코딩 결과에 제어문자·`/`·`\`·`<>"` 가 있거나
      * UTF-8 이 아니면 버린다. 종전 화이트리스트는 이 둘을 통째로 버렸는데, 비ASCII 마운트
      * (`/한글/`)와 그 인코딩 형태는 **정상 배치**라 그 사이트에서는 기준 URL 이 마운트 밖이
-     * 되어 인스톨러 자체가 404 였다 (15차 G3 W1-1). 통과한 값은 세그먼트별 `rawurlencode` 로
+     * 되어 인스톨러 자체가 404 였다. 통과한 값은 세그먼트별 `rawurlencode` 로
      * **정규화된 퍼센트 인코딩 한 형태**로 돌려준다 — 출력이 헤더·속성에 실리므로 원시 UTF-8
      * 을 그대로 내보내지 않는다.
      *
-     * 같은 값의 두 표기(원시 `/g7,x` · 인코딩 `/g7%2Cx`)는 **같은 판정**을 받는다 (16차 G3 A6).
+     * 같은 값의 두 표기(원시 `/g7,x` · 인코딩 `/g7%2Cx`)는 **같은 판정**을 받는다.
      * 종전에는 원시 허용이 unreserved 뿐이라 앞의 것만 버렸는데, 출력이 어차피 정규형이라
      * 표기 차이에 의미가 없다 — 어느 표기로 헤더를 보내느냐에 따라 인스톨러가 404 가 됐다.
      * 같은 이유로 디코딩 뒤 거부 집합에서 공백과 `'` 를 뺐다: 둘 다 정규형에서 `%20`·`%27`
@@ -140,7 +140,7 @@ if (! function_exists('installerSanitizeForwardedPrefix')) {
      *
      * 버린 값은 사유·길이만 기록한다(`installerForwardedPrefixRejection`) — 값 자체는 신뢰
      * 경계 밖에서 온 것이라 로그에 싣지 않는다. 종전에는 버리는 순간 아무 흔적도 없어,
-     * 프록시 뒤에서 인스톨러가 통째로 404 가 되는 이유를 운영자가 알 수 없었다 (15차 G3 W1-2).
+     * 프록시 뒤에서 인스톨러가 통째로 404 가 되는 이유를 운영자가 알 수 없었다.
      *
      * @param  string|null  $value  헤더 원문
      * @return string 정제된 접두사 (`/g7` 형태, 끝 슬래시 없음) 또는 빈 문자열
@@ -227,7 +227,7 @@ if (! function_exists('installerNormalizePathEncoding')) {
 
 if (! function_exists('installerPathHasDotSegment')) {
     /**
-     * 경로에 상위/현재 디렉토리 세그먼트(`.`·`..`)가 하나라도 있는지 봅니다 (17차 A-2).
+     * 경로에 상위/현재 디렉토리 세그먼트(`.`·`..`)가 하나라도 있는지 봅니다.
      *
      * 판정은 **디코딩한 세그먼트**로 한다 — 접두사 정제기(`installerSanitizeForwardedPrefix`)의
      * `dot_segment` 거부와 같은 판정이다. `%2E%2E` 같은 인코딩 형태도 실제 `..` 로 보고 걸러야,
@@ -276,7 +276,7 @@ if (! function_exists('installerPrependForwardedPrefix')) {
     /**
      * 파생한 기준 URL 앞에 프록시 접두사를 붙입니다 — 이미 그 접두사로 시작하면 그대로.
      *
-     * 대조는 **같은 정규형**끼리 한다 (16차 G3 A1). 접두사는 정제기가 퍼센트 인코딩 정규형으로
+     * 대조는 **같은 정규형**끼리 한다. 접두사는 정제기가 퍼센트 인코딩 정규형으로
      * 만들어 주는데 요청 경로는 브라우저가 친 표기 그대로다 — 비ASCII 마운트(`/한글/`)에서
      * 벗기지 않는 프록시가 접두사를 알려 주면 두 표기가 달라 대조가 언제나 불일치했고, 그
      * 결과 `/%ED%95%9C%EA%B8%80/한글/install` 처럼 접두사가 두 번 붙었다. 접두사가 있을 때의
@@ -289,7 +289,7 @@ if (! function_exists('installerPrependForwardedPrefix')) {
      */
     function installerPrependForwardedPrefix(string $installerPath, string $prefix): string
     {
-        // 정규화는 접두사 유무와 무관하게 **언제나** 돈다 (17차 A-1). 종전에는 접두사가 있을
+        // 정규화는 접두사 유무와 무관하게 **언제나** 돈다. 종전에는 접두사가 있을
         // 때만 정규형(`rawurlencode(rawurldecode())`)으로 만들고, 없으면 요청 경로의 원문
         // 표기를 그대로 돌려줬다 — 같은 마운트가 `/한글/install`(원시 UTF-8) 과
         // `/%ED%95%9C%EA%B8%80/install`(인코딩) 두 형태로 갈렸다. 이 값은 `<script src>`·

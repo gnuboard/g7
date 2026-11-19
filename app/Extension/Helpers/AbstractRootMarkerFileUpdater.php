@@ -107,7 +107,7 @@ abstract class AbstractRootMarkerFileUpdater
      * 부분 쓰기·손편집). 그 파일은 `<IfModule>` 이 닫히지 않아 Apache 가 500 을 내거나
      * 위임 규칙이 없어 프로젝트 루트가 열린 상태인데, 종전에는 이것도 `preserved` 로
      * 접혀 「일부러 지운 것이 아니라면 릴리즈 판본을 두라」는 안내가 나갔다 — 안내가
-     * 원인을 가려 운영자가 엉뚱한 사실(지웠는가)을 확인하게 된다 (13차 G3 라운드 W4-2).
+     * 원인을 가려 운영자가 엉뚱한 사실(지웠는가)을 확인하게 된다.
      */
     public const RESULT_BROKEN_BLOCK = 'broken_block';
 
@@ -115,7 +115,7 @@ abstract class AbstractRootMarkerFileUpdater
     public const RESULT_SOURCE_INVALID = 'source_invalid';
 
     /**
-     * 블록을 끼워 넣은 결과가 **적형(well-formed)이 아니다** (17차 D-3).
+     * 블록을 끼워 넣은 결과가 **적형(well-formed)이 아니다**.
      *
      * XML(web.config) 자식만 이 판정을 낸다 — 운영자가 블록 **밖**에 닫히지 않은 태그를 두면
      * 교체 결과가 파싱 불가가 되고, IIS 는 web.config 파싱에 실패하면 사이트 전체를 500 으로
@@ -258,7 +258,7 @@ abstract class AbstractRootMarkerFileUpdater
      * 반환은 `RESULT_*` 중 하나다. **`bool` 이 아닌 이유**: 종전 계약은 「변경했다/안 했다」
      * 였는데 「블록이 같아 쓸 필요가 없었다」와 「쓰기가 실패했다」가 같은 `false` 였다.
      * 그래서 호출부가 그 값을 소비하려 해도 실패를 가려낼 수 없었고, 실제로 두 호출부
-     * 모두 값을 버린 채 업데이트를 「완료」로 보고했다 (3차 G3 라운드 H4).
+     * 모두 값을 버린 채 업데이트를 「완료」로 보고했다.
      *
      * @param  string  $sourcePath  신 버전 `.htaccess` 절대 경로 (_pending)
      * @param  string  $destinationPath  활성 루트 `.htaccess` 절대 경로
@@ -392,7 +392,7 @@ abstract class AbstractRootMarkerFileUpdater
         // 코어 블록이 두 벌 이상이면 손대지 않는다. 종전에는 **첫 블록만** 교체하고 나머지는
         // 그대로 뒀는데, Apache 는 뒤에 오는 지시자가 이기는 경우가 많아 실질적으로 구버전
         // 규칙이 살아남았고 로그도 반환값도 「갱신 성공」이었다. 어느 쪽을 남길지는 코어가
-        // 추측할 문제가 아니므로 운영자에게 넘긴다 (3차 G3 라운드 M2).
+        // 추측할 문제가 아니므로 운영자에게 넘긴다.
         if (static::countBlocks($destination) > 1) {
             Log::channel('upgrade')->warning('['.static::LOG_TAG.'] 대상 파일에 G7 마커 블록이 두 벌 이상이라 갱신을 건너뜁니다 — 중복 블록을 정리해야 합니다', [
                 'destination' => $destinationPath,
@@ -426,7 +426,7 @@ abstract class AbstractRootMarkerFileUpdater
             return self::RESULT_UNCHANGED; // 블록 동일 — 쓰기 생략 (mtime·퍼미션 보존)
         }
 
-        // 끼워 넣은 결과가 적형인지 **쓰기 전에** 판정한다 (17차 D-3). 운영자가 블록 밖에 닫히지
+        // 끼워 넣은 결과가 적형인지 **쓰기 전에** 판정한다. 운영자가 블록 밖에 닫히지
         // 않은 태그를 두면 교체 결과가 파싱 불가가 되고, IIS 는 web.config 파싱 실패 시 사이트
         // 전체를 500 으로 만든다 — 손상본을 디스크에 확정하기 전에 막는다. `.htaccess` 는 이
         // 판정을 재정의하지 않아 언제나 통과한다(줄 단위라 적형 개념이 없다).
@@ -445,7 +445,7 @@ abstract class AbstractRootMarkerFileUpdater
         // (억누르지 않으면 프레임워크 에러 핸들러가 예외로 승격해 업데이트 전체를 세운다).
         if (! static::writeAtomically($destinationPath, $spliced)) {
             // 파일 이름을 리터럴로 박지 않는다 — 이 경로는 공통 추상화라 web.config 갱신에도
-            // 그대로 탄다. `.htaccess` 라고 적으면 IIS 운영자에게 엉뚱한 파일을 지목한다 (17차 D-4).
+            // 그대로 탄다. `.htaccess` 라고 적으면 IIS 운영자에게 엉뚱한 파일을 지목한다.
             Log::channel('upgrade')->warning('['.static::LOG_TAG.'] 루트 보호 파일 쓰기 실패 — 보호 규칙이 구버전으로 남습니다', [
                 'destination' => $destinationPath,
             ]);
@@ -457,7 +457,7 @@ abstract class AbstractRootMarkerFileUpdater
     }
 
     /**
-     * 블록을 끼워 넣은 결과가 적형(well-formed)인지 판정합니다 — 기본은 언제나 참 (17차 D-3).
+     * 블록을 끼워 넣은 결과가 적형(well-formed)인지 판정합니다 — 기본은 언제나 참.
      *
      * `.htaccess` 는 줄 단위라 적형 개념이 없어 이 기본값을 그대로 쓴다. XML 파일(web.config)
      * 자식이 재정의해, 운영자가 블록 밖에 둔 내용이 닫히지 않아 교체 결과가 파싱 불가가 되는
@@ -472,7 +472,7 @@ abstract class AbstractRootMarkerFileUpdater
     }
 
     /**
-     * 마커 줄에 **선행 공백**을 허용할지 — 기본은 불허(컬럼 0 만) (17차 D-2).
+     * 마커 줄에 **선행 공백**을 허용할지 — 기본은 불허(컬럼 0 만).
      *
      * `.htaccess` 는 릴리즈 판본이 컬럼 0 에 마커를 두고 그 컨벤션을 그대로 강제한다. 반면
      * IIS 관리 도구는 web.config 를 저장할 때 XML 트리를 **재직렬화하며 자식 요소를 들여쓴다**
@@ -521,7 +521,7 @@ abstract class AbstractRootMarkerFileUpdater
         // (`.gitattributes` 가 강제한다) 운영자 파일이 CRLF 면 그대로 끼워 넣는 순간
         // 한 파일 안에서 줄바꿈이 갈린다 — 이 저장소는 툴체인의 CRLF 사각으로 이미 한 번
         // 사고를 겪었다(§16.18). 규칙 자체는 살아 있어도 파일이 섞이면 다음 편집·비교가
-        // 그 지점부터 어긋난다 (3차 G3 라운드 L9).
+        // 그 지점부터 어긋난다.
         return substr($content, 0, $range[0])
             .static::matchLineEndings($newBlock, $content)
             .substr($content, $range[1]);
@@ -544,7 +544,7 @@ abstract class AbstractRootMarkerFileUpdater
 
         // 판정 대상은 **블록 밖**이다. 파일 전체를 세면 ~100행짜리 LF 코어 블록이 표본을
         // 지배해, 운영자가 CRLF 로 몇 줄 덧붙인 파일에서도 LF 가 이겨 한 파일 안에 줄바꿈이
-        // 갈린 채로 남는다 — 3차 L9 가 닫으려던 상태가 그대로 존속한다. 블록 밖이 비어 있으면
+        // 갈린 채로 남는다 — 앞서 닫으려던 상태가 그대로 존속한다. 블록 밖이 비어 있으면
         // (코어 블록만 있는 파일) 전체를 표본으로 쓴다.
         $range = static::blockRange($reference);
         $outside = $range === null
@@ -608,7 +608,7 @@ abstract class AbstractRootMarkerFileUpdater
 
         // 줄 끝은 `\n` 뿐 아니라 `\r` 도 본다 — CR 단독 파일에서는 `\n` 이 없어 END 줄의
         // 끝이 파일 끝으로 읽히고, 그러면 END 뒤의 운영자 규칙이 통째로 블록 안으로 들어가
-        // 교체 시 사라진다. `strcspn` 은 첫 `\r` 또는 `\n` 에서 멈춘다 (3차 G3 라운드 L9).
+        // 교체 시 사라진다. `strcspn` 은 첫 `\r` 또는 `\n` 에서 멈춘다.
         $end = $endLineStart + strcspn($content, "\r\n", $endLineStart);
 
         // END 줄의 **종결자도 블록에 넣는다** (G3 회차 15). 종전에는 종결자를 블록 밖에
@@ -675,7 +675,7 @@ abstract class AbstractRootMarkerFileUpdater
      * 직접 truncate-then-write 하면 그 창에 들어온 요청이 **보호 규칙이 없는(또는 반쪽인)**
      * `.htaccess` 를 만난다 — 위임 규칙까지 사라지므로 사이트가 통째로 어긋나고, 그 잔해는
      * 「BEGIN 만 남은 파일」로 굳어 이후 모든 업데이트가 「운영자가 지웠다」로 오판해 영구히
-     * 건너뛴다. 저장소는 이미 같은 규율을 상태 파일 쓰기에서 쓰고 있다 (3차 G3 라운드 M1).
+     * 건너뛴다. 저장소는 이미 같은 규율을 상태 파일 쓰기에서 쓰고 있다.
      *
      * 부분 쓰기도 실패로 본다 — `file_put_contents` 는 디스크가 차면 `false` 가 아니라
      * **쓴 바이트 수**를 돌려주므로, `=== false` 만 보면 잘린 파일이 성공으로 통과한다.
@@ -818,8 +818,7 @@ abstract class AbstractRootMarkerFileUpdater
             // 종전에는 `<대상>.tmp.*` 에 걸린 것을 무조건 지웠다. 접미사는 이 클래스가
             // 16진으로 만드는데(위 `bin2hex` · 폴백도 hex), 삭제 규칙은 그 사실을 쓰지
             // 않아 운영자가 같은 이름 공간에 둔 파일(`.htaccess.tmp.new` 등)이 300초 뒤
-            // 조용히 사라졌다 — 생산자 규칙과 소비자 규칙이 갈려 있던 자리다
-            // (10차 G3 라운드 F10-9).
+            // 조용히 사라졌다 — 생산자 규칙과 소비자 규칙이 갈려 있던 자리다.
             if (preg_match(self::TEMP_SUFFIX_PATTERN, substr($stale, strlen($prefix))) !== 1) {
                 continue;
             }
@@ -861,7 +860,7 @@ abstract class AbstractRootMarkerFileUpdater
 
         // UTF-8 BOM 뒤의 첫 줄도 줄 시작으로 인정한다. 인정하지 않으면 BOM 이 붙은
         // `.htaccess` 는 블록을 영영 찾지 못해 갱신이 **영구히** 건너뛰어지고, 로그에는
-        // 「운영자가 지웠다」는 사실이 아닌 사유가 남는다 (3차 G3 라운드 L8).
+        // 「운영자가 지웠다」는 사실이 아닌 사유가 남는다.
         $bomLength = str_starts_with($content, "\xEF\xBB\xBF") ? 3 : 0;
 
         $allowIndent = static::markerAllowsLeadingWhitespace();
@@ -874,7 +873,7 @@ abstract class AbstractRootMarkerFileUpdater
             $atLineStart = $pos === 0 || $pos === $bomLength || $content[$pos - 1] === "\n" || $content[$pos - 1] === "\r";
 
             // 선행 공백을 허용하는 자식(web.config)은 이전 개행부터 마커까지가 공백·탭만이면
-            // 줄머리로 인정한다 — IIS 재직렬화가 자식 요소를 들여쓰기 때문 (17차 D-2).
+            // 줄머리로 인정한다 — IIS 재직렬화가 자식 요소를 들여쓰기 때문.
             if (! $atLineStart && $allowIndent) {
                 $lineStart = $pos;
                 while ($lineStart > 0 && $content[$lineStart - 1] !== "\n" && $content[$lineStart - 1] !== "\r") {

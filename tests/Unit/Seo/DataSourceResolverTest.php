@@ -64,7 +64,7 @@ class DataSourceResolverTest extends TestCase
      *
      * 봇 렌더가 `url($endpoint)` 로 조립하면 요청 호스트를 부르고, 레이아웃 데이터소스가 접두사를
      * 이미 품은 값(`/g7/api/…`)에는 접두사가 **한 번 더** 실려 `/g7/g7/api/…` 이 된다 — 봇 화면에서만
-     * 데이터가 조용히 비고, 오류는 fallback 으로 흡수된다 (16차 G3 라운드 B-7).
+     * 데이터가 조용히 비고, 오류는 fallback 으로 흡수된다.
      *
      * @scenario base_path=subpath, navigation_direction=request
      *

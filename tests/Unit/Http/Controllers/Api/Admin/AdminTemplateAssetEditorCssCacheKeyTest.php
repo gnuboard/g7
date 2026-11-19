@@ -8,7 +8,7 @@ use App\Http\Controllers\Api\Admin\AdminTemplateAssetController;
 use PHPUnit\Framework\TestCase;
 
 /**
- * 편집기 CSS 캐시 키는 mtime 을 읽지 못하면 만들어지지 않는다 (13차 G3 라운드).
+ * 편집기 CSS 캐시 키는 mtime 을 읽지 못하면 만들어지지 않는다.
  *
  * 종전에는 `(int) @filemtime()` 이라 조회 실패가 `m0` 으로 접혀, 실패한 요청들이 **하나의
  * 키**를 공유했다 — 어느 시점의 변환 결과든 그 키에 한 번 들어가면 빌드가 바뀌어도 1시간

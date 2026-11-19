@@ -818,8 +818,8 @@ class AttachmentServiceTest extends ModuleTestCase
 
         // 파일 이름 선언은 **스토리지 단일 지점**이 만든다 — 원문을 헤더로 넘기면
         // 어댑터가 자기 `makeDisposition()` 을 통째로 건너뛴다(따옴표가 든 이름에서
-        // 헤더 구조가 깨진다). 형제 `preview()` 는 8차에 위임됐고 코어 형제도 헤더를
-        // 넘기지 않는다 (10차 G3 라운드 B10-2).
+        // 헤더 구조가 깨진다). 형제 `preview()` 는 앞서 위임됐고 코어 형제도 헤더를
+        // 넘기지 않는다.
         $this->storage->shouldReceive('getDisk')->andReturn('local');
         $this->storage->shouldReceive('download')
             ->once()
@@ -888,7 +888,7 @@ class AttachmentServiceTest extends ModuleTestCase
         $expectedResponse = new StreamedResponse;
 
         // RFC 5987 인코딩도 어댑터가 만든다 — 호출부가 손으로 만들면 그 정제 지점을
-        // 건너뛴다 (10차 G3 라운드 B10-2).
+        // 건너뛴다.
         $this->storage->shouldReceive('getDisk')->andReturn('local');
         $this->storage->shouldReceive('download')
             ->once()
@@ -1104,8 +1104,7 @@ class AttachmentServiceTest extends ModuleTestCase
     /**
      * 임시 첨부 연결의 파일 이동도 **행에 기록된 disk** 를 따른다.
      *
-     * 디스크를 옮긴 사이트에서는 주입 디스크에 그 파일이 없으므로 읽기가 항상 실패한다
-     * (11차 G3 라운드 B11-9).
+     * 디스크를 옮긴 사이트에서는 주입 디스크에 그 파일이 없으므로 읽기가 항상 실패한다.
      *
      * @effects temp_link_move_uses_row_disk
      *
@@ -1157,7 +1156,7 @@ class AttachmentServiceTest extends ModuleTestCase
      * 종전에는 `if ($content)` 라 읽기 실패(null)와 0 바이트 파일이 모두 falsy 로 접혀
      * 이동을 건너뛰면서 DB `path` 는 갱신됐다 — 행은 최종 경로를 가리키는데 파일은
      * 임시 경로에 남거나 아예 없어 첨부가 오류도 로그도 없이 영구 유실된다.
-     * 여기서는 `update` 가 **불리지 않는 것**이 판정이다 (11차 G3 라운드 B11-9).
+     * 여기서는 `update` 가 **불리지 않는 것**이 판정이다.
      *
      * @effects unreadable_temp_file_skips_link_without_path_update
      *

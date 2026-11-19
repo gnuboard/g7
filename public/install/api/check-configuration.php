@@ -14,10 +14,10 @@ use App\Support\ExecutionEnvironment;
 
 // 실행 모드 판정 헬퍼 — Step 3 의 실행 방식 선택란이 같은 판정을 본다 (D33).
 // 선언 전용 파일이라 출력 채널 가드보다 앞에 둘 수 있고, 아래 가드가 쓰는
-// installerHasFunction 을 여기서 정의한다 (21차 N4 의 순서 예외 2파일 중 하나).
+// installerHasFunction 을 여기서 정의한다 (순서 예외 2파일 중 하나).
 require_once __DIR__.'/../includes/execution-mode.php';
 
-// 오류 텍스트가 JSON 본문에 섞이지 않게 한다 (20차 #13 · 21차 N4) — **include 체인보다 앞**.
+// 오류 텍스트가 JSON 본문에 섞이지 않게 한다 — **include 체인보다 앞**.
 // 이 파일의 detect-php 는 문서루트 밖 후보 경로를 stat 하므로 open_basedir 환경에서 warning
 // 발생이 정상 시나리오다 (#8) — 그 텍스트가 본문 앞에 붙으면 클라이언트의 response.json() 이
 // throw 해 PHP 자동 감지가 사유 없이 무동작이 된다.
@@ -59,7 +59,7 @@ class ValidationApi
         $method = $_SERVER['REQUEST_METHOD'];
         $action = $_GET['action'] ?? ($method === 'GET' ? 'requirements' : null);
 
-        // 설치 창에는 인증이 없다 (13차 보안#6·보안#7). 그 사이 `test-db` 는 임의 host:port 로
+        // 설치 창에는 인증이 없다 (보안#7). 그 사이 `test-db` 는 임의 host:port 로
         // 나가는 접속 프록시이고 `test-php-binary` 는 임의 절대경로를 `--version` 으로 실행한다 —
         // 정상 설치에는 몇 번이면 충분하므로 창당 호출 수에 상한을 둔다. 상한 판정은
         // execution-mode.php 가 소유하고, 기록에 실패하면 통과시킨다(정상 설치를 막지 않는다).
@@ -81,7 +81,7 @@ class ValidationApi
             exit;
         }
 
-        // 세션에 쓰지 않는 액션은 잠금을 먼저 놓는다 (17차 #B2). 이 액션들은 외부 바이너리를
+        // 세션에 쓰지 않는 액션은 잠금을 먼저 놓는다. 이 액션들은 외부 바이너리를
         // 타임아웃 없이 스폰하거나(`detect-php`·`test-composer`·`test-php-binary`) 요구사항
         // 전수를 훑는데, PHP 기본 세션 핸들러는 스크립트 종료까지 세션 파일을 배타 잠근다 —
         // 쥔 채로 오래 돌면 같은 세션의 다른 요청과 새로고침이 `session_start()` 에서 줄을 선다.
@@ -115,7 +115,7 @@ class ValidationApi
     private function setJsonHeaders(): void
     {
         header('Content-Type: application/json; charset=utf-8');
-        // 진단 결과는 절대 캐시되지 않아야 한다 (17차 #B5) — 운영자가 권한·확장을 고치고
+        // 진단 결과는 절대 캐시되지 않아야 한다 — 운영자가 권한·확장을 고치고
         // 다시 검사해도 중간 프록시·브라우저 휴리스틱이 옛 「실패」를 되돌려 줄 수 있다.
         header('Cache-Control: no-store');
     }
@@ -197,7 +197,7 @@ class ValidationApi
             echo installer_json_encode([
                 'success' => false,
                 'message' => $result['message'],
-                // 실패 분류 키 (13차 보안#6) — 드라이버 원문 대신 조치가 갈리는 만큼만 알린다.
+                // 실패 분류 키 — 드라이버 원문 대신 조치가 갈리는 만큼만 알린다.
                 'message_key' => $result['message_key'] ?? null,
                 'type' => $type,
             ], JSON_UNESCAPED_UNICODE);
@@ -342,7 +342,7 @@ class ValidationApi
             'blocked_functions' => $detection['blocked_functions'],
             'php_probe' => $detection['php_probe'],
             'bundle_available' => $detection['bundle_available'],
-            // 화면의 「고를 수 있는가」는 **저장 게이트와 같은 판정**을 쓴다 (19차 S-6).
+            // 화면의 「고를 수 있는가」는 **저장 게이트와 같은 판정**을 쓴다.
             //
             // 종전에는 `mode !== inprocess` 였다. 그런데 저장 게이트
             // (`installerExecutionModeRejection`)는 **필수 함수가 막혔을 때만** subprocess 를
@@ -524,7 +524,7 @@ if (! $checkConfigurationLibraryMode) {
     require_once __DIR__.'/../includes/session.php';
     require_once __DIR__.'/../includes/functions.php';
     // 웹 노출 자가 진단 (B-4) — 프로브 대상 산출 + symlink 실측. 선언 전용 파일이지만
-    // 출력 채널 가드(위)보다 뒤에 배선한다 (21차 N4 규약 — 예외 목록을 늘리지 않는다).
+    // 출력 채널 가드(위)보다 뒤에 배선한다 (규약 — 예외 목록을 늘리지 않는다).
     require_once __DIR__.'/../includes/exposure-check.php';
 
     // 설치 완료 시 인스톨러 비즈니스 로직 진입 차단

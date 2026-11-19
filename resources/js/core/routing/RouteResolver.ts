@@ -68,7 +68,7 @@ export class RouteResolver {
    */
   resolve(): void {
     // 라우트 패턴은 접두사 없이 등록된다 — 하위 폴더 배치의 주소에서 마운트
-    // 접두사를 벗겨야 대조가 성립한다 (형제 `Router.navigateToCurrentPath`, 12차 G3).
+    // 접두사를 벗겨야 대조가 성립한다 (형제 `Router.navigateToCurrentPath`).
     const pathname = stripBasePrefix(window.location.pathname);
     const match = this.router.match(pathname);
 

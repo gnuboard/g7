@@ -85,7 +85,7 @@ if (! function_exists('installer_guard_completed_message')) {
     /**
      * 완료 가드가 운영자에게 보낼 문구를 돌려준다.
      *
-     * 사실 관계 (13차 G3 W1-12): API 진입점 12곳 전부가 이 가드를 `$translations` 를 싣기
+     * 사실 관계: API 진입점 12곳 전부가 이 가드를 `$translations` 를 싣기
      * **전에** 부른다. 그래서 이 함수가 실제로 돌려주는 값은 언제나 **영문 폴백**이고, 아래
      * 번역 분기는 현재 어느 진입점에서도 도달하지 않는다. 화면이 그 사유를 운영자 언어로
      * 보여 주는 통로는 문구가 아니라 응답의 `message_key`(`installer_disabled_completed`)다 —
@@ -95,7 +95,7 @@ if (! function_exists('installer_guard_completed_message')) {
      * 번역 분기를 남겨 두는 이유는 판정 술어의 역사다. 종전 술어 `function_exists('lang')` 은
      * 언제나 참이라(진입점이 `functions.php` 를 가드보다 먼저 싣는다) `lang()` 이 미설정
      * `$translations` 앞에서 **원시 키**를 돌려줬다 — 폴백을 둔 목적이 뒤집혔다. 그래서
-     * 판정 대상을 「번역이 실렸는가」로 바꿨다(12차 G3 E-1). 번역이 실린 뒤에 부르는 진입점이
+     * 판정 대상을 「번역이 실렸는가」로 바꿨다. 번역이 실린 뒤에 부르는 진입점이
      * 생기면 그때 이 분기가 산다 — 그 전까지는 「번역이 실렸으면 번역문」이 아니라
      * 「지금은 영문 폴백뿐」이 이 함수의 실제 계약이다.
      *
@@ -168,7 +168,7 @@ if (! function_exists('installer_finalize_window_open')) {
         }
 
         // `.env` 완료 플래그 단독 판정은 installer_finalize_is_completed() 가 소유한다
-        // (손으로 편집해 파서가 깨진 .env 도 줄 앵커 폴백으로 읽는다 — 22차 N-3).
+        // (손으로 편집해 파서가 깨진 .env 도 줄 앵커 폴백으로 읽는다).
         if (installer_finalize_is_completed()) {
             return false;
         }
@@ -238,7 +238,7 @@ if (! function_exists('installer_finalize_is_completed')) {
 
 if (! function_exists('installer_installation_finished_without_env_flag')) {
     /**
-     * 설치는 끝났는데 `.env` 완료 표식만 없는 상태인가 (13차 보안#8).
+     * 설치는 끝났는데 `.env` 완료 표식만 없는 상태인가.
      *
      * `installer_finalize_is_completed()` 는 `.env` 의 `INSTALLER_COMPLETED` **단독**으로
      * 판정하는데, 그 값을 쓰는 곳은 finalize 하나뿐이다. `.env` 쓰기가 권한 문제로 실패하면
@@ -286,7 +286,7 @@ if (! function_exists('installer_installation_finished_without_env_flag')) {
 
 if (! function_exists('installer_guard_post_complete_or_410')) {
     /**
-     * 설치가 끝난 뒤에도 열려 있는 파괴적 엔드포인트를 닫는다 (13차 보안#8).
+     * 설치가 끝난 뒤에도 열려 있는 파괴적 엔드포인트를 닫는다.
      *
      * `.env` 표식이 없어 `installer_guard_finalize_or_410()` 이 통과시키는 창에서도, 설치가
      * 실제로 끝났다면(위 세 번째 신호) 재시작·중단·초기화·워커 진입은 성립하지 않는다.
@@ -310,7 +310,7 @@ if (! function_exists('installer_guard_post_complete_or_410')) {
      *    경로다. 여기를 막으면 평문 DB 비밀번호를 담은 `runtime.php` 가 그대로 남는다.
      *
      * 두 엔드포인트의 진입 조건은 `installer_guard_finalize_or_410()` + 발급 토큰이 담당한다.
-     * 토큰은 이제 설치를 시작한 세션에만 실리므로(13차 보안#3) 「토큰이 유출되니 이 가드로
+     * 토큰은 이제 설치를 시작한 세션에만 실리므로 「토큰이 유출되니 이 가드로
      * 대신 막자」는 근거도 성립하지 않는다.
      */
     function installer_guard_post_complete_or_410(): void

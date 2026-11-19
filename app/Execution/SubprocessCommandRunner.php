@@ -129,8 +129,7 @@ class SubprocessCommandRunner implements CommandRunner
      * `public` 인 이유: 같은 계약이 필요한 형제 스폰 지점(코어 업데이트 CLI 두 곳)이
      * `array_merge(getenv(), $_ENV)` 를 손으로 조립하고 있었고, 그 자리는 `proc_open`
      * 가드 **안쪽**이라 「proc_open 은 살아 있는데 getenv 만 막힌」 하드닝 프로필에서
-     * 치명 종료한다. 판정을 사본으로 두면 그 폴백이 다시 갈리므로 이 함수를 공유한다
-     * (7차 G3 라운드 D-8).
+     * 치명 종료한다. 판정을 사본으로 두면 그 폴백이 다시 갈리므로 이 함수를 공유한다.
      *
      * @return array<string, string> 환경변수 맵
      */

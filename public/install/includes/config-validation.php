@@ -182,7 +182,7 @@ if (! function_exists('installer_validate_config')) {
             $errors['php_binary'] = lang('error_php_binary_path_not_allowed', ['path' => $phpBinary]);
         }
 
-        // 지정한 경로가 CLI 가 아니면 저장하지 않는다 (13차 보안#7 ②). `php-fpm --version`·`php-cgi --version` 은
+        // 지정한 경로가 CLI 가 아니면 저장하지 않는다 (②). `php-fpm --version`·`php-cgi --version` 은
         // CLI 와 똑같이 정상 종료하고 같은 형태로 버전을 찍으므로 형태·버전 검사로는 구분되지 않는데, 그 바이너리는
         // artisan 을 받지 못해 설치 태스크가 전부 실패한다. 기본값 'php' 는 대상이 아니다 — 코어 판정이 CLI 후보를
         // 먼저 고르므로 php-cgi 로만 동작하던 환경을 새로 막지 않는다. 판정 불확실(exec 차단 등)은 막지 않는다.

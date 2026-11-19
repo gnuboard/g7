@@ -1,5 +1,5 @@
 /**
- * Step 3 제출 게이트가 무CLI 서버에서 막다른 길을 만들지 않는다 (19차 S-1).
+ * Step 3 제출 게이트가 무CLI 서버에서 막다른 길을 만들지 않는다.
  *
  * `detect-php` 는 「php 를 못 찾았다」와 「probe 자체를 돌릴 수 없다」를 한 값
  * (`default_php_available=false`)으로 접는다. `exec` 이 막힌 서버 — 이 안이 지원하려는 바로
@@ -9,7 +9,7 @@
  *
  * 이 검사는 소스 리터럴을 보지 않는다 — 게이트 구간을 **그대로 잘라 실행**해서 「어떤 오류가
  * 쌓이는가」를 본다. 리터럴 존재만 보는 형태는 분기 하나가 빠져나가는 모습을 잡지 못한다는
- * 것을 19차 R1 이 실측으로 보여 주었다.
+ * 것을 실측이 보여 주었다.
  *
  * 커버 축: execution_mode inprocess·subprocess / php_verified true·false / composer_required true·false
  *

@@ -96,7 +96,7 @@ class StorageServeRouteTest extends TestCase
     }
 
     /**
-     * 로컬 디스크 전부가 `serve => false` 를 **명시**한다 (15차 G3 라운드).
+     * 로컬 디스크 전부가 `serve => false` 를 **명시**한다.
      *
      * `public` 디스크만 선언이 없었다. 프레임워크 기본값이 오늘은 미서빙이라 무증상이지만,
      * 형제 여섯 디스크와 달리 이 디스크만 기본값에 기대면 프레임워크가 기본값을 바꾸는 순간

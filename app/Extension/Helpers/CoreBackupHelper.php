@@ -978,7 +978,7 @@ class CoreBackupHelper
 
         $residue = [];
         foreach ($entries as $entry) {
-            // 판정은 생산자 상수를 본다 — 리터럴 사본은 생산자가 규칙을 바꿀 때 조용히 빈다 (13차 G3 W1-8).
+            // 판정은 생산자 상수를 본다 — 리터럴 사본은 생산자가 규칙을 바꿀 때 조용히 빈다.
             if (str_starts_with($entry, StorageLinkHelper::DOCROOT_BROKEN_PREFIX)) {
                 $residue[] = $publicPath.DIRECTORY_SEPARATOR.$entry;
             }

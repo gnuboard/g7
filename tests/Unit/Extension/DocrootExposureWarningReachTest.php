@@ -43,7 +43,7 @@ class DocrootExposureWarningReachTest extends TestCase
 
         // `glob()` 은 형제 룰(`hosting-blocked-function-requires-guard`)이 이 경로(코어 커맨드)에서
         // 차단 가능 함수로 다루는 이름이다 — 게이트 자신이 그 이름으로 모집단을 만들면 「glob 이 막힌
-        // 호스팅」을 재는 검사들과 같은 트리에서 규약이 갈린다. `scandir` 로 도출한다 (15차 F-50).
+        // 호스팅」을 재는 검사들과 같은 트리에서 규약이 갈린다. `scandir` 로 도출한다.
         $dir = base_path('app/Console/Commands/Core');
         $entries = scandir($dir) ?: [];
         sort($entries);

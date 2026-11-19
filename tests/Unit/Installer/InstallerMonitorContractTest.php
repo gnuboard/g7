@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * 인스톨러 프론트엔드의 진행 모니터 계약 회귀 테스트 (9차 #M12~#M17 · #L12~#L21).
+ * 인스톨러 프론트엔드의 진행 모니터 계약 회귀 테스트.
  *
  * 인스톨러 JS 는 브라우저에서만 도는 순수 스크립트라 단위 실행 환경이 없다 — 계약은 소스
  * 대조로 고정한다. 여기서 고정하는 것은 「세 진행 모드가 같은 것을 한다」와 「비동기 시작
@@ -30,7 +30,7 @@ class InstallerMonitorContractTest extends TestCase
      *
      * 이 클래스의 20여 단언은 전부 원문 대조였다 — `AbortController`·`signal:`·
      * `safeParseEventData(`·`setResumeButtonsDisabled(true)` 같은 잠금 축이 **주석 안에만
-     * 있어도** 통과했다 (12차 L-6). 10차 #G4 가 세운 규칙(문자로 대조하는 게이트는 주석을
+     * 있어도** 통과했다. 앞서 세운 규칙(문자로 대조하는 게이트는 주석을
      * 지운다)이 이 파일에는 적용되지 않은 채였다.
      *
      * @return string 주석이 제거된 JS 소스
@@ -51,7 +51,7 @@ class InstallerMonitorContractTest extends TestCase
     }
 
     /**
-     * 주석 제거가 실제로 판정을 가른다 (12차 L-6 부정 픽스처).
+     * 주석 제거가 실제로 판정을 가른다 (부정 픽스처).
      *
      * 실 소스가 준수 상태라 위 단언들은 늘 통과한다 — 원문 대조로 되돌려도 red 가 없다.
      * 「주석으로 감싼 배선」을 합성 입력으로 만들어 구분되는지 본다.
@@ -472,7 +472,7 @@ class InstallerMonitorContractTest extends TestCase
     }
 
     /**
-     * 진행 목록의 상태 아이콘은 같은 뜻의 텍스트를 함께 싣는다 (10차 #M9).
+     * 진행 목록의 상태 아이콘은 같은 뜻의 텍스트를 함께 싣는다.
      *
      * 아이콘만 갈아 끼우면 화면 판독기 사용자에게 14단계가 전부 같은 이름으로만 읽힌다 —
      * 어느 단계가 완료·실패·건너뜀인지 항목 수준에서 전달되지 않는다. 요구사항 화면
@@ -519,7 +519,7 @@ class InstallerMonitorContractTest extends TestCase
     }
 
     /**
-     * 두 채널에 복제된 `setInputDisabled` 가 서로 어긋나지 않는가 (11차 #D14).
+     * 두 채널에 복제된 `setInputDisabled` 가 서로 어긋나지 않는가.
      *
      * installer.js 는 닫힌 IIFE 라 그 안의 함수가 Step 3 화면 스크립트에서 보이지 않는다 —
      * 사본이 존재하는 것 자체는 구조상 불가피하다. 문제는 그 사실을 **아무도 지키지 않았다**는

@@ -55,11 +55,11 @@ class PublicPageAttachmentAccessTest extends FeatureTestCase
         $svc = Mockery::mock(PageAttachmentService::class);
         $svc->shouldReceive('getByHash')->andReturn($attachment);
         $svc->shouldReceive('preview')->andReturn(new StreamedResponse(fn () => null, 200, ['Content-Type' => 'image/png']));
-        // 미리보기는 컨트롤러가 검증자 소스를 코어 헬퍼에 넘긴다(13차 G3 라운드) — 전체 mock 이라
+        // 미리보기는 컨트롤러가 검증자 소스를 코어 헬퍼에 넘긴다 — 전체 mock 이라
         // 이 기대가 없으면 게이트 통과 케이스가 500 이 되어 게이트 판정을 잴 수 없다.
         $svc->shouldReceive('previewValidators')->andReturn(['etag_source' => 'fixture', 'last_modified' => null]);
         // 다운로드는 컨트롤러가 서빙 정보(`getDownloadInfo()`)를 코어 헬퍼에 넘긴다 —
-        // 스트림만 돌려주는 `download()` 는 더 이상 컨트롤러가 부르지 않는다 (15차 G3 라운드).
+        // 스트림만 돌려주는 `download()` 는 더 이상 컨트롤러가 부르지 않는다.
         $svc->shouldReceive('getDownloadInfo')->andReturn([
             'response' => new StreamedResponse(fn () => null, 200, ['Content-Type' => 'application/pdf']),
             'etag_source' => 'fixture',

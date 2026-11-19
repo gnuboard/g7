@@ -14,7 +14,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * 서비스가 키를 빠뜨리면 배열 접근 경고가 `ErrorException` 으로 올라 무인증 표면이 500 이
  * 되거나(`etag_source`), 조용히 축 하나가 사라졌다(`last_modified`). 서비스는 확장에 열려
  * 있으므로 「지금 구현이 채운다」는 방어가 아니다. 판정을 한 곳으로 모아 열한 통로가 같은
- * 규칙을 갖게 한다 (16차 G3 라운드 E-6).
+ * 규칙을 갖게 한다.
  *
  * 값은 배열 형태 그대로다 — `mime_type` 은 빈 문자열일 수 있고(그 해석은 헬퍼가 한다:
  * 알 수 없으면 `application/octet-stream`), `last_modified` 는 `null` 일 수 있다(모르면

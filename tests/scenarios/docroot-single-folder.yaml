@@ -1,5 +1,5 @@
 # audit:allow test-scenario-coverage[cross_product] reason: issue:#609 문서 루트 배치·.htaccess rewrite·노출 차단은 실제 웹서버(Apache AllowOverride)가 있어야 재현된다 — PHPUnit/Playwright(vitest jsdom) 런타임 밖 (계획서 §8 자동화 한계). 판정·갱신·게이팅의 단위 계약은 test_files 가 커버하고, 종단(레이아웃 ② 노출 차단·자산 이중 모드 200·관리자/사용자 화면 정상)은 P0 격리 환경 브라우저 실측(§9 S4·S11, G3 DoD)이 담당한다 — 결과는 G8 보고서에 누적된다.
-# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 
 feature: 문서 루트 단일 폴더 (축 B 의 뼈대 — P3/G3)
 
@@ -34,9 +34,9 @@ axes:
   htaccess_write_access: [writable, read_only, not_a_file]          # 갱신 쓰기 결과 판정 (D25)
   update_targets_state: [current, stale_without_root_files]         # 구버전 targets → 자동 발견 폴백 (D25)
   redirect_context: [install_root, subpath]                         # 인스톨러 완료 리다이렉트 (G3 입력 ②)
-  # 4차 검증 라운드 신규 축
+  # 신규 축
   exposure_control: [reachable, unreachable]                        # 양성 대조 — 위임 부재·기준 URL 오도출 검출
-  # 15차 검증 라운드 신규 축 — 음성 대조(negative control)
+  # 신규 축 — 음성 대조(negative control)
   # 레이아웃 ②는 모든 주소를 앱으로 위임해 「파일 없는 주소」도 200 앱 화면이 된다.
   # 그 형태를 함께 재야 D3 자동 판정이 성립한다(재지 않으면 전 배치가 D21 로 강등).
   exposure_absent_control: [signature, unavailable, empty_body]     # 음성 대조 — 형태 승격 · 재지 못함 · 빈 본문(승격 불가)
@@ -48,22 +48,22 @@ axes:
   project_root_candidate: [stripped, unstripped]                    # /public 꼬리 판정 (디렉토리 이름 충돌)
   api_validation_client: [xhr, browser]                             # api/* 검증 실패의 응답 형태 (302 금지)
   conditional_request: [none, if_none_match, if_modified_since]     # 조건부 요청 → 304 계약
-  # 7차 검증 라운드 신규 축
+  # 신규 축
   base_path: [root, subpath]                                        # 사이트 마운트 위치 (`/` vs `/g7`) — 자산 URL 생성·복구 양쪽이 같은 규칙을 써야 한다
   range_request: [none, partial, head]                              # HEAD·206 응답 계약 (압축 제외 이후 형제 라우트가 대표하지 않는다)
-  # 16차 검증 라운드(W3) 등재 — 테스트에는 이미 쓰이고 있었으나 어느 매니페스트에도 없던 축
+  # 테스트에는 이미 쓰이고 있었으나 어느 매니페스트에도 없던 축
   response_kind: [streamed, binary]                                 # 파일 응답 헬퍼 두 지점 — 스토리지 스트림(streamedFileResponse) / 로컬 파일(fileResponse)
   accept_encoding: [weighted]                                       # `Accept-Encoding` 가중치(q) 판정 — 명시 거부·별칭·와일드카드
-  # 8차 검증 라운드 신규 축
+  # 신규 축
   allow_override: [full, restricted]                                # 루트 보호 파일이 허용받는 지시어 등급 — restricted(`FileInfo Limit Indexes`)에서 `Options`/`Require` 는 전 요청 500 이 된다. `<IfModule>` 은 모듈 유무만 보므로 그 가드가 되지 않는다
-  # 12차 검증 라운드 신규 축
-  navigation_direction: [request, navigation]                       # 접두사가 실려야 하는 두 방향 — 「데이터를 불러오는 주소」와 「화면을 이동하는 주소」. 11차까지는 앞의 것만 닫혀 있었고, 뒤의 것이 빠지면 라우트가 하나도 매칭되지 않아 **전 화면이 「없는 페이지」**가 된다(오류 없음)
+  # 신규 축
+  navigation_direction: [request, navigation]                       # 접두사가 실려야 하는 두 방향 — 「데이터를 불러오는 주소」와 「화면을 이동하는 주소」. 종전에는 앞의 것만 닫혀 있었고, 뒤의 것이 빠지면 라우트가 하나도 매칭되지 않아 **전 화면이 「없는 페이지」**가 된다(오류 없음)
   fetch_origin: [core_bundle, extension_bundle]                     # 그 주소를 만드는 번들 — 확장 번들은 코어와 별도 IIFE 라 코어 헬퍼를 import 할 수 없다. 게이트 모집단이 코어뿐이면 확장 28곳이 영구 사각이 된다
   probe_identity: [stable, rotating]                                # 프로브 상한의 클라이언트 신원 — `session_id()` 는 요청자가 고르는 값이라 rotating 축이 없으면 상한 우회가 재현되지 않는다
   server_kind: [apache_htaccess, iis_webconfig, nginx_snippet]      # 보호 규칙을 싣는 통로 — Apache/LiteSpeed 는 동봉 파일만으로 성립, IIS 는 web.config 동봉, nginx 는 서버 블록 조각 + 운영자 적용 + 재측정. IIS 는 로컬 실측 환경이 없어 정적 검토만이며 실측은 P0/G8 몫이다
-  # 14차 검증 라운드 신규 축 — **브라우저에서만 재현되는 절반**
+  # 신규 축 — **브라우저에서만 재현되는 절반**
   #
-  # 13차까지 이 매니페스트에는 E2E 축이 하나도 없었다. 그래서 이 기능의 Playwright
+  # 종전에는 이 매니페스트에 E2E 축이 하나도 없었다. 그래서 이 기능의 Playwright
   # spec 3종(자산 URL 이중 모드 계열)이 **어느 매니페스트에도 등록돼 있지 않았고**,
   # 그 파일이 통째로 사라져도 test_files 실재 검사가 울지 않았다. 동시에
   # `frontend-change-requires-e2e` 는 「변경셋에 시나리오 yaml 이 있으면 통과」라
@@ -74,13 +74,13 @@ axes:
   # PHP 런타임 밖의 조건이라 PHPUnit 으로 재현할 수 없고, 자가 복구는 네트워크 재시도
   # 예산·리로드 유무·초기화 횟수 같은 브라우저 상태라 jsdom 으로도 재현되지 않는다.
   e2e_asset_url_recovery: [browser_self_heal, admin_drift_notice, admin_mode_detect]
-  # 16차 검증 라운드 신규 축 — **마운트를 만드는 방법**
+  # 신규 축 — **마운트를 만드는 방법**
   #
   # `base_path` 축은 사이트가 하위 주소에 있는지만 갈랐고, 그 하위 주소를 **어떻게**
   # 만들었는지는 재지 않았다. 그런데 그 방법에 따라 웹서버가 진입 스크립트에 주는
   # 값이 달라진다 — 문서 루트 안의 실제 폴더는 `SCRIPT_NAME` 에 접두사를 싣는다.
   # 웹서버 별칭(`Alias`)은 **대상이 그 vhost 의 문서 루트와 같은 디렉토리일 때** 싣지
-  # 않는다(17차 실측 — 대상이 문서 루트 **밖**이면 싣는다. 「별칭이면 항상」이 아니다).
+  # 않는다(실측 — 대상이 문서 루트 **밖**이면 싣는다. 「별칭이면 항상」이 아니다).
   # 싣지 않는 그 배치에서는 접두사를 복원할 근거가 위임 규칙이 넘기는 값 하나뿐이고,
   # 없으면 미설치 안내와 주소 정리가 전부 **사이트 밖 주소**로 나간다(오류 없음).
   mount_shape: [docroot_relative, physical_subdir, server_alias]
@@ -105,7 +105,7 @@ axes:
   # 표준 배치에서는 `/storage/public/img.png` → `Location: /storage/img.png` 로 이 규칙이
   # 관여하지 말아야 할 배치의 주소까지 깎았다). 오류도 로그도 없이 다른 화면이 열린다.
   route_path_shape: [plain, contains_public_segment]
-  # 15차 검증 라운드 F-42~F-45 — **마커가 쓰던 이름을 선언으로 올린다** (선언 = 마커)
+  # **마커가 쓰던 이름을 선언으로 올린다** (선언 = 마커)
   #
   # 세 테스트(DocrootExposureWarningReachTest · CoreUpdateRunLockWarningTest · RootIndexShimTest)가
   # 아래 축 이름으로 마킹해 왔는데 어느 매니페스트도 선언하지 않았고, 그중 둘은 `=` 없는
@@ -131,8 +131,8 @@ axes:
   rollback_leftover: [deploy_dist_sidecar]                          # 되돌리기가 걷어야 하는 잔존물 — 백업에 없는 `.dist`·`.dist.new`
   server_parity: [iis, apache, caddy, canonical_address, empty_segment_guard, reverse_direction, rule_level_reverse, correspondence_table, autoindex, verification_token, nosniff]  # 네 서버 설정의 패리티 축 — 목록·규칙·헤더가 서버마다 갈리지 않는가
   servers: [apache+nginx+caddy+iis, nginx+caddy+iis, nginx+caddy]  # 그 축의 모집단
-  forwarded_prefix_spelling: [raw, percent_encoded]                 # X-Forwarded-Prefix 와 요청 경로의 표기 — 정제기는 정규형을 내고 대조는 같은 정규형끼리 해야 한다(16차 A1·A6). 두 표기가 다른 판정을 받거나 대조에서 어긋나면 접두사가 이중으로 붙는다
-  color_theme: [light, dark]                                        # 인스톨러 화면 테마 — 경고·오류 카드 위 문자의 AA 대비는 두 테마를 따로 잰다(16차 D-1~D-3)
+  forwarded_prefix_spelling: [raw, percent_encoded]                 # X-Forwarded-Prefix 와 요청 경로의 표기 — 정제기는 정규형을 내고 대조는 같은 정규형끼리 해야 한다. 두 표기가 다른 판정을 받거나 대조에서 어긋나면 접두사가 이중으로 붙는다
+  color_theme: [light, dark]                                        # 인스톨러 화면 테마 — 경고·오류 카드 위 문자의 AA 대비는 두 테마를 따로 잰다
   # G3 회차 16 W6 — 종전 마킹이 쓰던 이름을 선언으로 올린다 (선언 = 마킹, 제품 결정).
   # 이 매니페스트가 선언한 테스트 파일들의 @scenario 가 이미 쓰고 있던 축 이름 전수이며,
   # 값은 실제 마킹에서 도출했다. pairwise + :cross-product 면제라 조합 전개에는 영향이 없다.
@@ -207,18 +207,18 @@ exclusions:
   - { exposure_probe: pending, probe_response: [marker_200, clean_200, denied_403, missing_404, auth_401, server_5xx, network_error], reason: "프로브 응답을 받으면 같은 호출 안에서 판정이 정해진다 — 응답을 받은 대기 상태는 없다" }
 
 effects:
-  # 10차 라운드 등재 — 9차가 만든 「빈 세그먼트 가드」 계약과 그 회차가 연 축들이
+  # 앞서 만든 「빈 세그먼트 가드」 계약과 그때 연 축들이
   # 테스트에는 있는데 어느 매니페스트에도 없었다. effects 대조를 받지 않으면 그 축을
   # 재는 테스트가 통째로 사라져도 아무것도 울지 않는다 (E-06).
   - canonical_redirects_never_emit_a_protocol_relative_destination
-  # 14차 라운드 등재 — W2 가 신설한 서버측 노출 게이트·gitignore 계약
+  # 새로 둔 서버측 노출 게이트·gitignore 계약
   - exposed_verdict_is_rejected_server_side_and_stays_on_step_2
   - every_leftover_producer_prefix_is_registered_in_gitignore
   - every_server_rule_is_accounted_for_in_its_correspondence_table
   - unverified_axes_are_declared_not_narrated
   - install_redirect_destination_is_encoded_for_its_output_context
   - install_redirect_does_not_loop_without_delegation
-  # 8차 라운드 등재 — 테스트 docblock 에 마커는 달렸으나 어느 매니페스트에도 없어
+  # 테스트 docblock 에 마커는 달렸으나 어느 매니페스트에도 없어
   # effects 대조를 한 번도 받지 않던 축(넓은 면제 뒤에 가려져 있었다).
   - root_htaccess_declares_its_residual_risk
   - every_server_config_fixes_the_canonical_address
@@ -262,14 +262,14 @@ effects:
   - iis_web_config_is_a_core_update_target
   # 목록이 아니라 **효과**를 재는 축 (9차 신설) — 목록은 남아 있는데 차단이 사라지는 형태
   - server_protection_rules_declare_a_blocking_effect
-  # 11차 라운드 신설 — 서버 설정의 「엔진에서 성립하는가」·목록 축·역방향
+  # 서버 설정의 「엔진에서 성립하는가」·목록 축·역방향
   - caddy_fragment_loads_under_re2
   - directory_listing_is_blocked_on_every_server
   - server_configs_do_not_diverge_from_the_derived_list
-  # 11차 라운드 신설 — 확장 자산 2차 봉쇄 공유 · 차단 호스팅의 파일 나열
+  # 확장 자산 2차 봉쇄 공유 · 차단 호스팅의 파일 나열
   - extension_asset_services_share_one_containment
   - extension_file_listing_survives_disabled_glob
-  # 11차 라운드 신설 — 프록시 뒤 공유 IP 에서의 프로브 상한 범위
+  # 프록시 뒤 공유 IP 에서의 프로브 상한 범위
   - probe_rate_limit_is_scoped_per_browser_behind_a_proxy
   # 이중 모드가 검사 강도를 가르지 않는다 (9차 신설) — 네 통로 공유 계약의 실측
   - dual_mode_query_form_matches_path_form
@@ -283,7 +283,7 @@ effects:
   - attachment_stream_declares_last_modified_and_honours_ims
   # 동적으로 조립되는 서버별 안내 키가 전부 정의돼 있다 (리터럴 게이트의 사각)
   - server_guide_keys_exist_for_every_branch
-  # 서빙 루트 폴백 경고가 요청마다 쌓이지 않는다 (9차가 넣은 접기가 무효였던 것을 10차가 실측)
+  # 서빙 루트 폴백 경고가 요청마다 쌓이지 않는다 (앞서 넣은 접기가 무효였던 것을 실측으로 확인)
   - root_path_fallback_warns_once_per_process
   # 10차 — prune 이 보호 경로를 링크 여부로 판정하던 것(공개 업로드 영구 삭제 경로)
   - prune_preserves_public_storage_even_when_not_a_link
@@ -350,7 +350,7 @@ effects:
   - conditional_response_carries_the_full_cache_axis_of_200
   - public_storage_route_streams_large_files_without_buffering
   - public_storage_response_revalidates_instead_of_immutable
-  # 16차 검증 라운드(W3) — 파일 서빙 응답 계약의 남은 축
+  # 파일 서빙 응답 계약의 남은 축
   #   · 알 수 없는 MIME(행 컬럼 비어 있음 + 스트림 헤더 없음)은 예외가 아니라 내려받기(제품 결정)
   - unknown_mime_is_served_as_octet_stream_download
   #   · 파일 서빙 응답 전부(200·304, 문자열 자산 포함)가 nosniff 를 싣는다 — 헬퍼 단일 지점
@@ -366,7 +366,7 @@ effects:
   - api_http_exception_is_json_regardless_of_accept
   #   · `Accept-Encoding` 가중치 — q=0 명시 거부·별칭 병합(max)·규격 밖 qvalue 무시
   - gzip_honours_accept_encoding_q_values
-  # 코어 첨부 서빙 메타 계약 (11차 B11-4·B11-5) — 축소 후 `size` 가 실제 저장 바이트와
+  # 코어 첨부 서빙 메타 계약 — 축소 후 `size` 가 실제 저장 바이트와
   # 같은가(어긋나면 `Content-Length` 선언이 응답을 자른다) · 서빙 메타 키 부재는 조용한
   # 폴백이 아니라 명시 실패인가(폴백은 `Last-Modified` 축을 소리 없이 없앤다).
   - attachment_recorded_size_matches_stored_bytes_after_the_resize_path
@@ -384,20 +384,20 @@ effects:
   - symlink_probe_result_is_shown_to_the_operator
   - exposure_card_renders_even_when_server_item_is_missing
   - exposure_manual_confirm_path_survives_the_link_notice
-  # 3차 검증 라운드 — 노출 판정의 fail-open 두 축과 리다이렉트 분류
+  # 노출 판정의 fail-open 두 축과 리다이렉트 분류
   - exposure_unmeasured_family_blocks_safe_verdict
   - exposure_probe_treats_redirect_as_undetermined
-  # 3차 검증 라운드 — 루트 보호 파일 갱신의 실패 도달·중복 블록·원자적 쓰기
+  # 루트 보호 파일 갱신의 실패 도달·중복 블록·원자적 쓰기
   - root_htaccess_duplicate_blocks_are_refused
   - root_htaccess_write_is_atomic_and_line_endings_follow_destination
   - rewrite_absent_defense_line_is_derived_from_the_deployed_tree
-  # 3차 검증 라운드 — 서빙 응답 계약(정적 서빙 동등성)
+  # 서빙 응답 계약(정적 서빙 동등성)
   - public_storage_unknown_extension_is_not_content_sniffed
   - gzip_skips_head_and_partial_responses
   - gzip_marks_encoded_representation_with_distinct_etag
   # 인스톨러 완료 리다이렉트의 기준 URL 파생 (G3 입력 ②)
   - installer_redirects_derive_from_base_url
-  # 4차 검증 라운드 — 양성 대조·기준 URL 실측·200 인터스티셜
+  # 양성 대조·기준 URL 실측·200 인터스티셜
   - exposure_positive_control_detects_broken_delegation
   # 앞 검증 라운드에 선언한 「대조로 후보를 고른다」 효과는 뒤 회차의 제품 결정으로
   # 뒤집혔다 — 지금은 언제나 첫 후보를 쓰고 대조는 게이트로만 선다(installer.js resolveProjectRoot 주석).
@@ -408,31 +408,31 @@ effects:
   - exposure_missing_composer_json_is_reported_as_unmeasured
   - exposure_entry_sweep_spares_concurrent_checks
   - exposure_cleanup_reports_whether_it_could_sweep
-  # 4차 검증 라운드 — 루트 진입점·방어선 도출
+  # 루트 진입점·방어선 도출
   - root_htaccess_creation_failure_is_reported_not_claimed_as_updated
   - rewrite_absent_defense_line_covers_every_deployed_root_file
-  # 4차 검증 라운드 — 서빙 응답 계약
+  # 서빙 응답 계약
   - api_validation_failure_never_redirects_to_referer
   - public_storage_asset_url_conversion_matches_the_route_form
-  # 14차 검증 라운드 — E2E 축(브라우저에서만 재현되는 절반). 위 `asset_url_mode` 축이
+  # E2E 축(브라우저에서만 재현되는 절반). 위 `asset_url_mode` 축이
   # 내주는 두 형태를 실제 브라우저가 만났을 때의 계약이다.
   - browser_recovers_from_static_extension_404_without_reload
   - extensionless_form_actually_serves_the_asset
   - admin_dashboard_reports_asset_url_mode_drift
   - admin_settings_detect_reports_mode_inline
-  # 8차 검증 라운드 — 제한 AllowOverride 내성·루트 진입점 복구·결과 코드 분할
+  # 제한 AllowOverride 내성·루트 진입점 복구·결과 코드 분할
   - root_protection_survives_restricted_allow_override
   - replaced_root_index_is_recoverable_after_the_backup_is_deleted
   - root_htaccess_result_codes_are_partitioned_not_hand_enumerated
-  # 8차 검증 라운드 — 노출 점검의 대표성·미측정 보고·클라이언트 스코프 rate limit
+  # 노출 점검의 대표성·미측정 보고·클라이언트 스코프 rate limit
   - exposure_sentinel_represents_real_storage_content
   - exposure_absent_vendor_family_is_reported_as_unmeasured
   - exposure_symlink_probe_rate_limit_is_client_scoped
-  # 8차 검증 라운드 — 운영자 확인 절차의 문구·기록·화면 상태 (D21)
+  # 운영자 확인 절차의 문구·기록·화면 상태 (D21)
   - exposure_manual_confirm_wording_matches_the_listed_addresses
   - exposure_verdict_is_recorded_for_later_audit
   - exposure_card_busy_state_clears_only_after_the_verdict
-  # 16차 G3 라운드(W1) 등재 — 접두사 정규형 대조·표기 무관 판정·빈 세그먼트 접기, 앱 루트
+  # 접두사 정규형 대조·표기 무관 판정·빈 세그먼트 접기, 앱 루트
   # 대소문자, 카드 위 문자 대비, 판정 어휘 대칭, pending 판정, Host 폴백, 안내 원인 수
   - installer_forwarded_prefix_comparison_is_encoding_normalized
   - installer_forwarded_prefix_pchar_is_accepted_in_both_spellings
@@ -452,7 +452,7 @@ effects:
   # #869 κ3 표식 바로잡기 — exposure_probe=unknown 과 판정 대기 효과로 거짓 커버하던 시험이 실제로 재는 동작
   - exposure_probe_base_is_the_project_root_not_the_app_root   # 기준 URL 의 install, public 꼬리를 표기와 무관하게 벗겨 프로젝트 루트에 대고 잰다
   - exposure_server_guide_points_at_the_servers_own_protection_file   # 노출 카드의 보호 설정 안내가 서버 종류별 조치를 지목하고, 모르는 값은 범용 안내로 떨어진다
-  # 14차 검증 라운드(회차 14 W5) 등재 — 아래 effects 는 테스트 docblock 에 마커가 달려
+  # 아래 effects 는 테스트 docblock 에 마커가 달려
   # 있었으나 **어느 매니페스트에도 선언되지 않았다.** effects 대조는 「매니페스트가 요구하는
   # 항목이 마커에 있는가」 한 방향만 보므로, 이 상태에서는 그 테스트가 통째로 사라져도
   # 아무것도 울지 않는다. 선언해야 그 축이 도구 관점에서 존재한다.
@@ -495,14 +495,14 @@ effects:
   - nginx_fastcgi_overrides_follow_the_params_include
   - nginx_php_location_falls_back_to_the_front_controller
   - autoindex_response_code_parity_is_declared_on_every_server
-  # 22차 검증 라운드 — 서버 조각의 자리·범위·역방향
+  # 서버 조각의 자리·범위·역방향
   - nginx_every_response_location_declares_autoindex_and_nosniff
   - every_server_fragment_declares_its_reverse_only_rules
   - extension_bundle_empty_response_declares_nosniff
   - extension_installed_copies_match_their_bundled_source
   #   · 기설치본 백필 스텝의 재실행 멱등성
   - upgrade_step_is_idempotent_on_rerun
-  # 16차 G3 라운드(W4) 등재 — 서버가 만드는 **절대** 주소(사이트맵 색인·증분 색인·봇 데이터소스·
+  # 서버가 만드는 **절대** 주소(사이트맵 색인·증분 색인·봇 데이터소스·
   #   알림 메일 링크·PG/IDV 복귀·통보 주소)가 요청이 아니라 설정된 사이트 주소를 따른다 + 템플릿
   #   Img/Form 사본(종전에 마커만 있고 어느 매니페스트에도 없던 축)
   - sitemap_index_child_locations_follow_the_configured_site_url
@@ -515,11 +515,11 @@ effects:
   - prefix_mismatch_warning_is_keyed_to_the_request_not_a_reusable_object_id
   - template_img_component_applies_base_prefix
   - template_form_component_applies_base_prefix
-  # 24차 라운드 등재 — 23차가 고친 blade 날 링크가 **무게이트**였다(221룰 전수 무검출).
+  # 앞서 고친 blade 날 링크가 **무게이트**였다(221룰 전수 무검출).
   # 되돌리면 red 가 되는 검사가 없으면 다음 편집이 그대로 되돌린다.
   - blade_views_do_not_emit_root_relative_links
-  # 24차 라운드 등재 — 무CLI 동선의 운영자는 로그 파일을 열 수단이 없다. 원장 쓰기 실패가
-  # 로그에만 남으면 그 손실을 영영 모른다(23차 D23-13 의 조치를 재는 자리).
+  # 무CLI 동선의 운영자는 로그 파일을 열 수단이 없다. 원장 쓰기 실패가
+  # 로그에만 남으면 그 손실을 영영 모른다(앞서 취한 조치를 재는 자리).
   - deploy_fragment_ledger_write_failure_reaches_the_operator
   # 609 후속(7.2.0 병합 뒤) — 7.2.0 이 새로 만든 엔진 지점의 하위 폴더 규칙. 붙이는 쪽(redirect·개발자 화면 전체 이동·
   # 로그아웃 서버 이동)과 대조하는 쪽(로그인 전용 화면·같은 경로·이탈 가드·같은 출처 전체 주소·뒤로 가기·언어 전환·
@@ -651,15 +651,15 @@ effects:
   - every_upload_service_applies_the_configured_image_bounds
 
 test_files:
-  # 8차 라운드 등재 — 이 파일들은 `@effects` 마커를 달고도 어느 매니페스트의
+  # 이 파일들은 `@effects` 마커를 달고도 어느 매니페스트의
   # test_files 에도 없어, 통째로 지워도 아무것도 red 가 되지 않는 상태였다.
   - tests/Unit/Extension/RootIndexShimTest.php
   - tests/Unit/Extension/DocrootExposureWarningReachTest.php
   # G3 회차 16 W2 — web.config 갱신기(형제 케이스 표 상속) · 7.1.0 원장 씨앗 스텝
   - tests/Unit/Extension/RootWebConfigUpdaterTest.php
   - tests/Unit/Upgrades/SeedDeployFragmentLedgerTest.php
-  # 24차 라운드 등재 — 서버가 렌더하는 화면의 링크가 하위 폴더 배치에서 사이트 밖을
-  #가리키지 않는지 잰다. 그 축은 이 회차 전까지 어느 검사에도 없었다.
+  # 서버가 렌더하는 화면의 링크가 하위 폴더 배치에서 사이트 밖을
+  #가리키지 않는지 잰다. 그 축은 그 전까지 어느 검사에도 없었다.
   - tests/Feature/View/BladeRootRelativeLinkContractTest.php
   - tests/Unit/Console/CoreDeployLedgerSeedCommandTest.php
   - tests/Unit/Services/StorageLeftoverPruneServiceTest.php
@@ -706,12 +706,12 @@ test_files:
   # 운영자 수동 확인 **기준**이 응답 코드로 적히는 것을 형태로 막는다 (D1 현장 제보).
   # 문구는 사람이 고치는 자리라 규율만으로는 되돌아온다 — 화면·문서·소스 세 곳을 함께 잰다.
   - tests/Unit/Installer/InstallerManualVerificationCriteriaTest.php
-  # 경고·오류 카드 위 문자(인라인 코드·링크·힌트)의 AA 대비 — 토큰 값을 CSS 에서 파싱해 두 테마를 잰다 (16차 W1)
+  # 경고·오류 카드 위 문자(인라인 코드·링크·힌트)의 AA 대비 — 토큰 값을 CSS 에서 파싱해 두 테마를 잰다
   - resources/js/installer/__tests__/installer-css-contrast-gate.test.ts
   # 자산 URL 모드 변환의 두 구현(TS 빌더 · blade 인라인 복구기) 드리프트 — 공개 스토리지
   # 라우트의 무확장자 형태는 접미사 제거가 아니라 `?file=` 이라 규칙 순서까지 잠근다.
   - resources/js/core/support/__tests__/assetUrlRecovery.test.ts
-  # 서버 3종 설정 조각의 목록·효과 대조 (8차 신설, 9차에 효과 축 추가)
+  # 서버 3종 설정 조각의 목록·효과 대조 (신설, 이후 효과 축 추가)
   - tests/Unit/ServerConfigParityTest.php
   # 레거시 아바타 경로가 스토리지 드라이버를 계속 경유하는지 (제품 결정 「유지 + 테스트」)
   - tests/Unit/Models/UserAvatarUrlTest.php
@@ -722,18 +722,18 @@ test_files:
   - tests/Feature/Api/Public/ExtensionBundleServingTest.php
   - tests/Feature/Api/Public/SitemapConditionalRequestTest.php
   - tests/Feature/Attachment/AttachmentDownloadConditionalRequestTest.php
-  # 14차 검증 라운드(W3) — 같은 축의 형제 통로 셋: 스트림 응답 헬퍼 자신의 계약(MIME·Vary·
+  # 같은 축의 형제 통로 셋: 스트림 응답 헬퍼 자신의 계약(MIME·Vary·
   # 압축 제외 선언 순서·attachment disposition 보존) · 비이미지 첨부 **다운로드** 경로의 304 ·
   # 사이트맵 2통로(색인·gzip 자식)의 검증자. 셋 다 `conditional_response_carries_the_full_
   # cache_axis_of_200` 을 단언하며, 여기 없으면 통째로 지워도 아무것도 red 가 되지 않는다.
   # 첨부 통로의 같은 축 — 행 메타 기반 검증자 + 원격 디스크 스트리밍
   - tests/Feature/Api/Public/AttachmentS3DiskServingTest.php
-  # 16차 검증 라운드(W3) — api/* HTTP 예외의 JSON 고정 · 서빙 메타 값 객체 · 파일 서빙 통로 전수 소스 계약
+  # api/* HTTP 예외의 JSON 고정 · 서빙 메타 값 객체 · 파일 서빙 통로 전수 소스 계약
   - tests/Feature/Api/Public/ApiHttpExceptionJsonResponseTest.php
   - tests/Unit/Http/Responses/FileServingMetaTest.php
   - tests/Feature/Http/FileServingHelperSourceContractTest.php
   - tests/Feature/Attachment/AttachmentServeMetaContractTest.php
-  # 15차 G3 라운드 — 무인증 레이아웃 첨부 서빙(`PublicTemplateController::serveFile`)의 헬퍼 인자 계약.
+  # 무인증 레이아웃 첨부 서빙(`PublicTemplateController::serveFile`)의 헬퍼 인자 계약.
   # 위 세 effects(304 캐시 축·immutable 대신 재검증·nosniff)를 단언하는데 등재가 빠져 있어, develop-7.2.0
   # 병합(2026-10-31)에서 레이아웃 트랙의 「마킹 파일은 어느 매니페스트엔가 등재」 게이트가 잡았다.
   - tests/Feature/Api/Public/PublicTemplateLayoutAttachmentServeTest.php
@@ -746,7 +746,7 @@ test_files:
   - tests/Feature/Plugin/PluginAssetServingTest.php
   - tests/Feature/Template/TemplateAssetServingTest.php
   # 프론트 생성기가 마운트 접두사를 붙이는지 (하위 폴더 배치 — 화면까지 지원, 제품 결정)
-  # 14차 검증 라운드 — **effects 를 실제로 단언하는데 여기 없던 3건.**
+  # **effects 를 실제로 단언하는데 여기 없던 3건.**
   # 등재되지 않으면 그 파일이 통째로 사라져도 test_files 실재 검사가 울지 않는다
   # (effects 검사는 위 `audit:allow` 로 면제돼 있으므로 이 목록이 유일한 통로다).
   #   · extension_asset_services_share_one_containment
@@ -757,14 +757,14 @@ test_files:
   #   · prune_preserves_public_storage_even_when_not_a_link — 링크 여부로 판정하던 시절
   #     공개 업로드가 영구 삭제되던 경로(10차).
   - tests/Unit/Extension/Helpers/FilePermissionHelperSymlinkTest.php
-  # 14차 검증 라운드 — E2E 축(`e2e_asset_url_recovery`). 정적 최적화 블록은 PHP 런타임
+  # E2E 축(`e2e_asset_url_recovery`). 정적 최적화 블록은 PHP 런타임
   # 밖의 조건이고 자가 복구는 브라우저 상태(재시도 예산·리로드 유무·초기화 횟수)라
   # PHPUnit 으로도 jsdom 으로도 재현되지 않는다 — 이 셋이 그 절반을 소유한다.
   - tests/Playwright/specs/asset-url-mode.spec.ts
   - tests/Playwright/specs/admin/dashboard-asset-url-mode-drift.spec.ts
   - tests/Playwright/specs/admin/settings-asset-url-mode-detect.spec.ts
   - tests/Playwright/specs/rehearsal/subfolder-static-assets.spec.ts
-  # 코어 첨부 서빙 메타 계약 — 위 `attachment_*_serve_meta*` effects 와 짝. 14차 검증 라운드까지
+  # 코어 첨부 서빙 메타 계약 — 위 `attachment_*_serve_meta*` effects 와 짝. 종전에는
   # 어느 매니페스트에도 없어 통째로 지워도 아무것도 red 가 되지 않는 상태였다.
   # 마운트 접두사 4통로 · 행 disk 고아 폴백 — 위 14차 등재 effects 와 짝. 첨부 URL 은
   # public-asset-cdn.yaml, 게시판 SEO 는 page-settings.yaml 에도 실려 있으나 접두사 축의
@@ -775,7 +775,7 @@ test_files:
   - tests/Unit/Services/RowStorageOrphanDiskParityTest.php
   - tests/Unit/Installer/InstallerWebExposureServerGateTest.php
   - tests/Unit/GitIgnoreLeftoverContractTest.php
-  # 16차 G3 라운드(W4) — 서버측 절대 주소·템플릿 Img/Form 사본
+  # 서버측 절대 주소·템플릿 Img/Form 사본
   - tests/Unit/Support/AssetUrlTest.php
   - tests/Unit/Seo/SitemapFileStoreTest.php
   - tests/Unit/Seo/SitemapIndexerLocTest.php

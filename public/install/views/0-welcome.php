@@ -19,10 +19,10 @@ $storageResult = $storageCheck['results']['storage'] ?? null;
 
 <div class="welcome-wrapper">
     <div class="installer-container" id="welcome-step">
-        <?php /* 테마 토글은 상단 막대(index.php)가 소유한다 — 10차가 그 막대를 Step 0 에도
+        <?php /* 테마 토글은 상단 막대(index.php)가 소유한다 — 그 막대를 Step 0 에도
                  내면서 이 화면 자체의 토글과 id 가 겹쳤다. getElementById 는 앞선 하나만
                  잡으므로 여기 있던 버튼은 눌러도 반응하지 않고 아이콘도 🌙 로 고정됐다
-                 (중복 id 라 HTML 도 무효였다) — 11차 #C11. */ ?>
+                 (중복 id 라 HTML 도 무효였다). */ ?>
         <h1 class="installer-title">
             <?= lang('welcome_title') ?>
         </h1>

@@ -1,6 +1,6 @@
 # audit:allow test-scenario-coverage reason: issue:#609 이슈 #44 이커머스 마일리지 시스템 SSoT. axes cross product(수천 조합)는 docblock 전수 매핑이 비현실적이라 면제하고, 회귀 가드는 test_files(백엔드 PHPUnit 라이프사이클 + 프론트 Vitest + Playwright E2E)로 커버한다. effects 는 금전 정확성(FIFO/검증/캐시 정합/부분취소 재안분) + 라이프사이클(적립/사용/복원/회수/소멸/수동) + 스케줄러 + 알림을 망라 기록. 세션 1(백엔드)에서 라이프사이클 effects 를, 세션 2~3 에서 UI/마이페이지/E2E effects 를 채운다.
-# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
-# 원장(9차 G3 라운드 C-4): 이 매니페스트는 :cross-product 로 좁히면 effects 57건이 미검증으로 드러난다.
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
+# 원장: 이 매니페스트는 :cross-product 로 좁히면 effects 57건이 미검증으로 드러난다.
 #   그 짝 맞추기는 이 공정(이커머스 마일리지)의 몫이며, 좁히는 시점에 함께 처리한다.
 
 feature: 이커머스 마일리지 시스템 (Ecommerce Mileage)

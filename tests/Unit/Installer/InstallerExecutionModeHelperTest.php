@@ -393,7 +393,7 @@ class InstallerExecutionModeHelperTest extends TestCase
     }
 
     /**
-     * 단계별 실행 + composer 조합은 서버가 되돌린다 (10차 #M3).
+     * 단계별 실행 + composer 조합은 서버가 되돌린다.
      *
      * 단계별 실행은 요청 하나가 180초를 사는데 `composer install` 은 그보다 오래 걸리는 것이
      * 정상이고, 그 구간은 러너를 거치지 않아 시간 예산이 올라가지도 않는다 — 조합을 허용하면
@@ -442,7 +442,7 @@ class InstallerExecutionModeHelperTest extends TestCase
     }
 
     /**
-     * 진행 방식 확정 — inprocess 강제와 composer 조합 차단이 한 판정에 있다 (10차 #G1 · #M3).
+     * 진행 방식 확정 — inprocess 강제와 composer 조합 차단이 한 판정에 있다.
      *
      * inprocess 강제는 A-2·R1 의 뼈대인데 저장소 전체에서 참조 0 이었다: 이 줄을 지워도 전
      * 스위트가 초록이고, 결과는 inprocess 설치가 한 요청에 전 태스크를 연속 실행하는 것
@@ -547,10 +547,10 @@ class InstallerExecutionModeHelperTest extends TestCase
     }
 
     /**
-     * 잡히지 않은 예외의 500 봉투도 응답 계약을 지킨다 (9차 #L1).
+     * 잡히지 않은 예외의 500 봉투도 응답 계약을 지킨다.
      *
      * `outcome` 이 없으면 클라이언트(StepwiseMonitor)는 「알 수 없는 응답」 분기로 떨어지고,
-     * 같이 실린 예외 원문을 실패 화면 **본문**으로 그린다 — 8차가 HTTP 상태 표기를 본문에서
+     * 같이 실린 예외 원문을 실패 화면 **본문**으로 그린다 — 앞서 HTTP 상태 표기를 본문에서
      * 진단 상세로 내린 규약(§12.0 W3)이 이 봉투에는 적용되지 않았다.
      *
      * @scenario installation_mode=stepwise
@@ -571,13 +571,13 @@ class InstallerExecutionModeHelperTest extends TestCase
     }
 
     /**
-     * 거부 판정은 치환값도 함께 돌려준다 (9차 #L2 — 시그니처 드리프트).
+     * 거부 판정은 치환값도 함께 돌려준다 (시그니처 드리프트).
      *
      * 같은 파일이 「치환값은 키를 정한 곳이 함께 돌려준다」를 규약으로 선언해 두고 있으므로,
      * 그 계약을 **값까지** 고정한다. 종전에는 `assertArrayHasKey` 하나여서 값이 `[]` 로 비어도
      * 초록이었고, 그 상태의 결과는 운영자 화면에 `:status` 가 원문으로 나가는 것이다
      * (`error_stepwise_not_running` 은 자리표시자를 가진 키다). 7차 #1·8차 #16 이 두 번 닫은
-     * 결함군의 세 번째 재현 통로였다 (12차 M-2).
+     * 결함군의 세 번째 재현 통로였다.
      *
      * @scenario installation_mode=stepwise
      *
@@ -609,7 +609,7 @@ class InstallerExecutionModeHelperTest extends TestCase
     }
 
     /**
-     * 건너뛰기의 토큰 요구 조건 (9차 #G2).
+     * 건너뛰기의 토큰 요구 조건.
      *
      * 판정 함수(installerStepwiseTokenAccepted)는 행위 테스트가 덮지만, 그 함수를 **부를지
      * 말지** 정하는 조건은 종전에 엔드포인트 안의 if 였다 — 뒤집어도 red 가 되지 않았고,
@@ -630,7 +630,7 @@ class InstallerExecutionModeHelperTest extends TestCase
     }
 
     /**
-     * 토큰 거부 사유를 나눈다 (11차 #A10).
+     * 토큰 거부 사유를 나눈다.
      *
      * 「보관본이 없다」와 「제시한 값이 틀렸다」는 조치가 정반대다 — 후자는 새로고침으로
      * 복구되지만 전자(runtime.php 소실·판독 실패)는 몇 번을 새로고침해도 같은 403 이다.
@@ -666,7 +666,7 @@ class InstallerExecutionModeHelperTest extends TestCase
     }
 
     /**
-     * 설치 마무리 엔드포인트의 진입 조건 (11차 #A1).
+     * 설치 마무리 엔드포인트의 진입 조건.
      *
      * 이 엔드포인트는 `.env` 에 완료 표식을 박고 runtime.php(비밀·토큰)와 상태 파일을
      * 지운다 — 인스톨러에서 가장 되돌릴 수 없는 동작인데 진입 조건이 「이미 finalize
@@ -713,12 +713,12 @@ class InstallerExecutionModeHelperTest extends TestCase
     }
 
     /**
-     * 설치 시작의 거부 조건 (11차 #A2·#A4).
+     * 설치 시작의 거부 조건.
      *
      * ① 살아 있는 워커가 있으면 거절한다 — 종전에는 두 번째 탭이 상태를 덮어쓰고
      *    `started` 를 받은 뒤 폴링 분기가 조용히 죽어 두 탭이 함께 멈췄다.
      * ② 진행 중인 stepwise 설치는 기존 토큰을 요구한다 — 이 엔드포인트가 무인증으로 새
-     *    토큰을 발급해 온 탓에 10차가 [중단]·[초기화]·[건너뛰고 계속]에 건 게이트가
+     *    토큰을 발급해 온 탓에 앞서 [중단]·[초기화]·[건너뛰고 계속]에 건 게이트가
      *    요청 하나로 우회 가능했다.
      *
      * @scenario installation_mode=stepwise

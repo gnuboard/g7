@@ -9,7 +9,7 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\CleansTemporaryBasePath;
 
 /**
- * 번들 vendor 설치의 안전 계약 회귀 테스트 (9차 #M4 · #M11).
+ * 번들 vendor 설치의 안전 계약 회귀 테스트.
  *
  * 고정하는 계약:
  *

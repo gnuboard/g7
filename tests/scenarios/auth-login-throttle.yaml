@@ -1,5 +1,5 @@
 # audit:allow test-scenario-coverage reason: issue:#609 본 매니페스트는 신규 기능 시나리오 매트릭스 SSoT 로 기록. 핵심 회귀 가드는 test_files 의 통과 테스트로 커버.
-# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 
 feature: 로그인 시도 제한 / 계정 잠금 (per-account)
 

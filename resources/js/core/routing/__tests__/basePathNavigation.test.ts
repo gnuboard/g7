@@ -9,7 +9,7 @@ import { checkLayoutEditorMode } from '../../template-engine/layout-editor/hooks
 /**
  * 하위 폴더 마운트(`https://host/g7/`)에서의 **화면 이동** 계약.
  *
- * 11차 라운드까지 이 축에서 닫힌 것은 「데이터를 불러오는 주소」(`fetch`·자산 URL)뿐이고,
+ * 종전까지 이 축에서 닫힌 것은 「데이터를 불러오는 주소」(`fetch`·자산 URL)뿐이고,
  * 「화면을 이동하는 주소」는 한 곳도 접두사를 갖지 않았다. 그 상태의 증상은 오류가 아니라
  * **아무 화면도 열리지 않는 것**이다 — 라우트 패턴은 언제나 접두사 없이 등록되는데
  * `location.pathname` 은 접두사를 갖고 오므로 어떤 패턴에도 맞지 않고, 라우터는 그것을
@@ -24,8 +24,6 @@ import { checkLayoutEditorMode } from '../../template-engine/layout-editor/hooks
  *          history_entries_carry_the_site_base_path,
  *          login_redirect_stays_inside_the_site,
  *          layout_editor_boots_under_a_subpath_mount
- *
- * @since 12차 G3 검증 라운드
  */
 describe('하위 폴더 마운트의 화면 이동', () => {
     const MOUNT = '/g7';
@@ -162,7 +160,7 @@ describe('하위 폴더 마운트의 화면 이동', () => {
         // @effects login_redirect_stays_inside_the_site
         it('접두사를 벗긴 결과가 `//host` 형태여도 사이트 안 경로로 접혀 사이트 밖으로 나가지 않는다', async () => {
             // `stripBasePrefix('/g7//evil.com')` 은 `//evil.com` 이다 — 벗기는 쪽은 접두사 뒤
-            // 나머지를 그대로 돌려주므로 결과가 `/` 하나로 시작한다는 보장이 없다 (15차 G3 라운드 W4-5).
+            // 나머지를 그대로 돌려주므로 결과가 `/` 하나로 시작한다는 보장이 없다.
             // 그 값이 사이트 밖으로 나가지 않는 근거는 라우터의 슬래시 정규화다: 대조 전에 연속 슬래시를
             // 하나로 접으므로(`normalizePathname`, 서버 `RequestPath::normalize()` 와 같음 — engine-v1.84.0)
             // `//evil.com` 은 사이트 안 `/evil.com` 이 되고, 주소창도 `/` 하나로 시작하는 정규형으로 되쓴다.
@@ -202,7 +200,7 @@ describe('하위 폴더 마운트의 화면 이동', () => {
         // @scenario base_path=subpath, navigation_direction=navigation
         // @effects route_matching_strips_the_site_base_path
         it('하위 폴더 주소의 끝·연속 슬래시는 접두사를 품은 채 접히고, 대조는 접두사를 벗긴 정규형으로 한다', async () => {
-            // 병합 합성(engine-v1.84.0 슬래시 정규화 × 12차 G3 접두사 벗기기)의 순서를 잠근다 —
+            // 병합 합성(engine-v1.84.0 슬래시 정규화 × 접두사 벗기기)의 순서를 잠근다 —
             // 접두사 포함 전체 경로를 먼저 접어 주소창에 쓰고, 그 정규형에서 접두사를 벗겨 대조한다.
             const cases: Array<[string, string, string]> = [
                 ['/g7/board/free/', '/g7/board/free', '/board/free'],
@@ -309,7 +307,7 @@ describe('하위 폴더 마운트의 화면 이동', () => {
             // `/g7?ref=x`(접두사를 품은 원본) → 로그인 → `getRedirectUrl()` →
             // `router.navigate()` → `withBasePrefix()`. 접두사 판정이 `/g7` · `/g7/…`
             // 두 형태만 알면 여기서 `/g7/g7?ref=x` 가 되어 로그인 직후 사이트 밖으로
-            // 나간다 (13차 G3 라운드 W3-1).
+            // 나간다.
             const auth = AuthManager.getInstance();
             const loginUrl = auth.getLoginRedirectUrl('user', '/g7?ref=x', 'session_expired');
 
@@ -366,10 +364,10 @@ describe('하위 폴더 마운트의 화면 이동', () => {
         // 목록 화면의 검색·정렬·per_page·페이지 이동은 `navigate` + `replace: true` 로
         // `TemplateApp.updateQueryParams` 를 타고, 그 안의 `history.replaceState` 가
         // 주소창을 갈아 끼운다. 형제 셋(`Router`·`RouteResolver`·`handleReplaceUrl`)은
-        // 12차에 접두사를 붙였는데 이 한 곳만 빠져 있었다 — 목록은 정상 갱신되지만
+        // 앞서 접두사를 붙였는데 이 한 곳만 빠져 있었다 — 목록은 정상 갱신되지만
         // 주소창이 마운트 밖으로 바뀌어, 새로고침·북마크·주소 공유·뒤로가기 재진입에서
         // 문서 루트의 다른 사이트(또는 404)가 열렸다. 오류도 콘솔 메시지도 없다.
-        // `replaceState` 라 히스토리 항목 자체가 그 잘못된 주소로 대체된다 (14차 G3 라운드).
+        // `replaceState` 라 히스토리 항목 자체가 그 잘못된 주소로 대체된다.
         // @scenario base_path=subpath, navigation_direction=navigation
         // @effects history_entries_carry_the_site_base_path
         it('주소창에 싣는 값에 마운트 접두사가 붙는다', async () => {

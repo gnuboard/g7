@@ -12,11 +12,11 @@ use Tests\Concerns\ScansPhpSourceFunctions;
 use ValidationApi;
 
 /**
- * 인스톨러 PHP 바이너리 감지·검증의 SAPI 인지 회귀 테스트 (9차 #M8 · #L7).
+ * 인스톨러 PHP 바이너리 감지·검증의 SAPI 인지 회귀 테스트.
  *
  * `php-fpm --version` · `php-cgi --version` 은 CLI 와 똑같이 정상 종료하고 같은 형태로
  * 버전을 찍는다 — 구분은 괄호 안 SAPI 이름뿐이다. 코어(`ExecutionEnvironment::detect`)는
- * 이 판정을 3·5차 라운드에서 닫았는데 인스톨러의 사본(`validatePhpPath`·`detectPhpBinaries`)
+ * 이 판정을 앞서 닫았는데 인스톨러의 사본(`validatePhpPath`·`detectPhpBinaries`)
  * 에는 그 판정이 없었고, 화면은 감지 1순위를 입력란에 자동 대입한다(3-configuration.php).
  * mod_php/FPM 에서 `PHP_BINARY` 는 그 웹 SAPI 자신이므로, 정렬이 없으면 운영자가 아무것도
  * 입력하지 않아도 artisan 을 받지 못하는 바이너리가 실행 경로로 굳는다.
@@ -176,7 +176,7 @@ class InstallerPhpBinaryDetectionTest extends TestCase
         $this->assertArrayHasKey('cli_sapi', $result, '버전만 맞고 SAPI 가 다른 경우를 응답만 보고 구분할 수 있어야 한다');
         $this->assertSame('php', $result['cli_path'], '경로 기본값은 실행 모드 헬퍼가 SSoT 다');
 
-        // 키만 보면 값을 늘 null 로 채워도 초록이다 (11차 #D15) — 8차 #38 이 세 지점의
+        // 키만 보면 값을 늘 null 로 채워도 초록이다 — 8차 #38 이 세 지점의
         // 반환 shape 을 동형화한 그 키가 정확히 그 형태로만 지켜지고 있었다.
         if ($result['cli_sapi'] !== null) {
             $this->assertIsString($result['cli_sapi']);

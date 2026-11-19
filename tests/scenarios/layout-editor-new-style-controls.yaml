@@ -1,6 +1,6 @@
 # audit:allow test-scenario-coverage reason: issue:#609 axes cross product 의 회귀 가드는 test_files 의 단위(s7-followup-style-controls=recipeEngine apply/reverse 라운드트립 전 컨트롤×전 옵션, property-controls=TagInput 식별자)·Feature(PermissionServiceTest 리프 필터)·E2E(property-editor-new-style-controls.spec.ts // @scenario/@effects)가 cover.
-# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
-# 원장(9차 G3 라운드 C-4): 이 매니페스트는 :cross-product 로 좁히면 effects 24건이 미검증으로 드러난다.
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
+# 원장: 이 매니페스트는 :cross-product 로 좁히면 effects 24건이 미검증으로 드러난다.
 #   그 짝 맞추기는 이 공정(레이아웃 편집기)의 몫이며, 좁히는 시점에 함께 처리한다.
 
 feature: 레이아웃 편집기 속성 모달 — 신규 스타일 컨트롤(그림자/테두리/라운드/투명도/스크롤/텍스트 서식) + 고급 탭 권한 식별자

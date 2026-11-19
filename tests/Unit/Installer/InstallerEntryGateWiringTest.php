@@ -6,18 +6,18 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * 13차가 신설한 판정들이 **실제로 배선되어 있는지** 고정한다.
+ * 앞서 신설한 판정들이 **실제로 배선되어 있는지** 고정한다.
  *
  * 판정 함수 자체는 행위 테스트가 덮는다(InstallerEnvironmentJudgmentTest). 여기서 보는 축은
  * 「그 판정을 부르는 줄」이다 — 그 줄이 사라지면 함수는 멀쩡한 채로 기능만 없어지고, 전
- * 스위트가 초록으로 남는다(10차 #G1 이 실측한 형태).
+ * 스위트가 초록으로 남는다(실측한 형태).
  *
  * 대조는 예외 없이 **주석을 지운 뒤** 한다 — 원문에는 주석 처리된 배선도 글자로 남으므로
  * 원문 대조는 「배선이 살아 있다」를 증명하지 못한다.
  *
  * 손 목록은 파일이 늘어도 스스로 자라지 않는다. 그래서 목록마다 **역방향 도출**을 둔다 —
  * 「그 판정을 실제로 부르는 파일」과 「POST 를 받는 파일」을 소스에서 뽑아, 목록이 그것을
- * 전부 덮는지 본다. 모집단은 `api/` 한 겹이 아니라 `public/install/**` 전수다 (14차 C11-9·C11-10).
+ * 전부 덮는지 본다. 모집단은 `api/` 한 겹이 아니라 `public/install/**` 전수다.
  *
  * 커버 축: gate origin_check·post_complete_guard·worker_state_gate·function_availability·bundle_usability·probe_rate_limit·https_ssoT·state_file_presence / entry install_process·install_worker·state_management·save_extensions·finalize_env·check_configuration·session·config·request_handler·index
  */
@@ -50,7 +50,7 @@ class InstallerEntryGateWiringTest extends TestCase
     }
 
     /**
-     * 상태를 바꾸는 엔드포인트는 **전부** 출처를 확인한다 (13차 보안#4).
+     * 상태를 바꾸는 엔드포인트는 **전부** 출처를 확인한다.
      *
      * 인스톨러의 csrf_token 검증은 정의만 있고 호출부가 저장소 전체에 0건이었다 — 그런데
      * 세션 쿠키 SameSite 완화의 근거로는 그 검증이 인용돼 있었다. 한 엔드포인트만 빠져도
@@ -69,7 +69,7 @@ class InstallerEntryGateWiringTest extends TestCase
             'api/finalize-env.php' => '완료 표식 기록·runtime.php 삭제를 다른 사이트가 부를 수 있다',
             'api/install-worker.php' => '크로스오리진 이미지 태그 하나가 실제 설치를 시작한다',
             // 역방향 도출이 드러낸 자리 — 이 파일은 손 목록이 만들어진 뒤에 같은 가드를
-            // 부르게 됐고, 그동안 그 호출을 재는 검사가 0건이었다 (10차 G3 라운드 C10-9).
+            // 부르게 됐고, 그동안 그 호출을 재는 검사가 0건이었다.
             'api/run-task.php' => '단계별 실행(요청 1 = 태스크 1)을 다른 사이트가 부를 수 있다',
         ];
 
@@ -86,7 +86,7 @@ class InstallerEntryGateWiringTest extends TestCase
         // 위 다섯은 손으로 적혀 있었고, 그 사이 `public/install/api/run-task.php` 가 같은 가드를
         // 부르게 됐는데 목록에 들어오지 않았다 — 그래서 그 파일의 출처 확인은
         // **어느 검사도 보지 않는 상태**였다(그 줄을 지워도 전부 초록). 손 목록은
-        // 파일이 늘어도 스스로 자라지 않는다 (10차 G3 라운드 C10-9).
+        // 파일이 늘어도 스스로 자라지 않는다.
         //
         // 그래서 「그 가드를 실제로 부르는 엔드포인트」를 소스에서 도출해, 목록이
         // 그것을 전부 덮는지 본다. 새 파일이 그 가드를 부르면 여기서 멈춘다.
@@ -219,7 +219,7 @@ class InstallerEntryGateWiringTest extends TestCase
     }
 
     /**
-     * 설치가 끝난 뒤에도 열려 있던 파괴적 엔드포인트를 닫았는가 (13차 보안#8).
+     * 설치가 끝난 뒤에도 열려 있던 파괴적 엔드포인트를 닫았는가.
      *
      * `.env` 쓰기가 실패하면 종전 가드는 계속 통과시켰다 — DB·관리자 계정이 완비된 운영
      * 사이트에서 재시작·중단·초기화가 영구히 열린 채 남는다.
@@ -257,7 +257,7 @@ class InstallerEntryGateWiringTest extends TestCase
     }
 
     /**
-     * 스트리밍 워커의 진입 전제 (13차 보안#5·F6).
+     * 스트리밍 워커의 진입 전제.
      *
      * @scenario installation_mode=sse
      *
@@ -282,9 +282,9 @@ class InstallerEntryGateWiringTest extends TestCase
     }
 
     /**
-     * 오류 출력 차단이 **상태 파일 읽기보다 앞** 이어야 한다 (13차 E6).
+     * 오류 출력 차단이 **상태 파일 읽기보다 앞** 이어야 한다.
      *
-     * 12차 #A6 은 이 파일을 「이미 try 진입 전에 끈다」고 기록했으나 실물은 그렇지 않았다 —
+     * 앞선 수정은 이 파일을 「이미 try 진입 전에 끈다」고 기록했으나 실물은 그렇지 않았다 —
      * 상태 읽기·번역 로드를 켜진 채로 돌고 헤더 송출 뒤에야 껐다. 그 구간의 warning 한 줄이면
      * `text/event-stream` 헤더가 서지 못해 EventSource 는 사유 대신 "연결 실패" 만 본다.
      *
@@ -309,7 +309,7 @@ class InstallerEntryGateWiringTest extends TestCase
     }
 
     /**
-     * 호스팅이 흔히 막는 함수의 호출 지점에 가드가 있는가 (13차 환경#1).
+     * 호스팅이 흔히 막는 함수의 호출 지점에 가드가 있는가.
      *
      * @effects installer_blocked_function_call_sites_are_guarded
      *
@@ -363,7 +363,7 @@ class InstallerEntryGateWiringTest extends TestCase
         //
         // 위 목록은 손으로 적혀 있다. 그 사이 같은 함수를 부르게 된 파일은 목록에 스스로
         // 들어오지 않는다 — 형제 축(출처 확인)이 정확히 그 형태로 한 파일을 놓쳤고, 이
-        // 목록에는 그 방향이 아예 없었다 (14차 C11-10).
+        // 목록에는 그 방향이 아예 없었다.
         //
         // 그래서 그 함수들을 **실제로 부르는** 파일을 소스에서 도출하고, 그 파일이 같은
         // 파일 안에 가용성 판정을 갖는지 본다. 손 목록은 「리터럴 호출을 유지하기로 한
@@ -402,7 +402,7 @@ class InstallerEntryGateWiringTest extends TestCase
     }
 
     /**
-     * 「번들이 있다」가 아니라 「번들을 쓸 수 있다」를 보는가 (13차 환경#4).
+     * 「번들이 있다」가 아니라 「번들을 쓸 수 있다」를 보는가.
      *
      * @scenario bundle_state=present
      *
@@ -449,7 +449,7 @@ class InstallerEntryGateWiringTest extends TestCase
         // **역방향 도출** — 이 판정을 부르는 파일이 손 목록에 전부 있는가.
         //
         // 손 목록은 파일이 늘어도 스스로 자라지 않는다. 새 소비처가 생기면 그 파일의
-        // 사본 금지(`file_exists`) 축이 통째로 사각이 된다 (14차 C11-10).
+        // 사본 금지(`file_exists`) 축이 통째로 사각이 된다.
         $derived = [];
 
         foreach ($this->installerPhpFiles() as $relative => $source) {
@@ -473,7 +473,7 @@ class InstallerEntryGateWiringTest extends TestCase
     }
 
     /**
-     * 무인증 probe 엔드포인트의 호출 횟수 상한 (13차 보안#6·보안#7).
+     * 무인증 probe 엔드포인트의 호출 횟수 상한 (보안#7).
      *
      * @scenario endpoint_guard=general
      *
@@ -531,7 +531,7 @@ class InstallerEntryGateWiringTest extends TestCase
     }
 
     /**
-     * 예외 원문이 무인증 응답으로 나가지 않는가 (13차 보안#9).
+     * 예외 원문이 무인증 응답으로 나가지 않는가.
      *
      * @scenario endpoint_guard=general
      *
@@ -555,7 +555,7 @@ class InstallerEntryGateWiringTest extends TestCase
     }
 
     /**
-     * 판정이 두 벌이면 한쪽만 프록시를 고려하게 된다 (13차 환경#17·환경#21·D10).
+     * 판정이 두 벌이면 한쪽만 프록시를 고려하게 된다 (환경#21·D10).
      *
      * @scenario request_scheme=forwarded_https
      *
@@ -602,7 +602,7 @@ class InstallerEntryGateWiringTest extends TestCase
     }
 
     /**
-     * 사문화된 CSRF 헬퍼가 남아 있지 않은가 (13차 보안#4).
+     * 사문화된 CSRF 헬퍼가 남아 있지 않은가.
      *
      * 죽은 헬퍼를 남겨 두면 다음 라운드가 다시 「방어가 있다」고 읽는다 — 실제로 SameSite
      * 완화 주석이 그것을 근거로 삼고 있었다.
@@ -621,7 +621,7 @@ class InstallerEntryGateWiringTest extends TestCase
     }
 
     /**
-     * 운영자가 직접 지정한 비-CLI 바이너리를 저장하지 않는가 (13차 보안#7 ②).
+     * 운영자가 직접 지정한 비-CLI 바이너리를 저장하지 않는가 (②).
      *
      * @effects installer_non_cli_php_binary_is_rejected_at_save_time
      *
@@ -643,7 +643,7 @@ class InstallerEntryGateWiringTest extends TestCase
     }
 
     /**
-     * 단계별 실행 토큰의 소유자 표식이 발급 지점에서 심어지는가 (13차 보안#3 — 절반).
+     * 단계별 실행 토큰의 소유자 표식이 발급 지점에서 심어지는가 (절반).
      *
      * @scenario installation_mode=stepwise
      *

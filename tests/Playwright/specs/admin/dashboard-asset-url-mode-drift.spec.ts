@@ -14,10 +14,10 @@
  *  2. 확장자 형태만 가로채이면 안내가 뜨고, 버튼이 환경설정 일반 탭으로 보낸다
  *  3. 프로브가 양쪽 다 실패하면(PHP/네트워크 장애) 안내가 뜨지 않는다
  *
- * ## 시나리오 매니페스트 귀속 (14차 G3 검증 라운드)
+ * ## 시나리오 매니페스트 귀속
  *
  * `tests/scenarios/docroot-single-folder.yaml` 의 `e2e_asset_url_recovery=admin_drift_notice`
- * 를 소유한다. 13차까지 이 spec 은 어느 매니페스트에도 등록돼 있지 않았다.
+ * 를 소유한다. 종전에는 이 spec 이 어느 매니페스트에도 등록돼 있지 않았다.
  *
  * @scenario asset_url_mode=extension, e2e_asset_url_recovery=admin_drift_notice
  * @effects admin_dashboard_reports_asset_url_mode_drift

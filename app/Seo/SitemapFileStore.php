@@ -79,12 +79,12 @@ class SitemapFileStore
      * 정적 최적화 블록이 `.xml` 을 가로채는 서버라, 확장자 형태를 <loc> 에 적으면
      * 봇이 따라간 자식이 전부 404 가 되고 색인이 조용히 비어 버린다. gzip 여부는
      * manifest 가 정하므로 그 모드에서는 두 형태가 같은 주소로 모인다
-     * (컨트롤러가 URL 접미사를 보지 않는다 — 7차 G3 라운드 B-6).
+     * (컨트롤러가 URL 접미사를 보지 않는다).
      *
      * 오리진·접두사는 사이트 주소(`app.url`) 기준 단일 지점(`SiteUrl::absolute()`)이 만든다 —
      * 요청 Host 로 폴백하지 않고, 접두사는 멱등으로 실린다. 여기만 `url()` 이면 색인의 자식
      * 주소는 요청 호스트(콘솔이면 `http://localhost`)를 싣고 자식 안의 항목은 설정 오리진을
-     * 실어, 한 사이트맵 안에서 부모와 자식의 오리진이 갈린다 (16차 G3 라운드 B-1).
+     * 실어, 한 사이트맵 안에서 부모와 자식의 오리진이 갈린다.
      *
      * @param  int  $n  자식 번호 (1부터)
      * @param  bool  $gzip  gzip 압축 여부
@@ -154,8 +154,7 @@ class SitemapFileStore
      * 검증자는 **manifest** 에서 만든다 — 커밋 시각(`generated_at`)과 파일 이름이면 한 세트를
      * 결정적으로 가리키고, 파일 stat 이 없어 원격 디스크에서도 같다. 종전에는 두 sitemap 통로에
      * 검증자가 하나도 없어 봇이 매번 전문(최대 50MB)을 받아 갔다 — 정적 서빙(링크가 되는
-     * 서버)은 같은 파일에 ETag·Last-Modified 를 붙이므로 링크 유무로 동작이 갈리는 상태였다
-     * (14차 G3 라운드).
+     * 서버)은 같은 파일에 ETag·Last-Modified 를 붙이므로 링크 유무로 동작이 갈리는 상태였다.
      *
      * @return array{response: StreamedResponse, etag_source: string, mime_type: string, last_modified: int|null}|null 서빙 정보 (세트가 없으면 null)
      */

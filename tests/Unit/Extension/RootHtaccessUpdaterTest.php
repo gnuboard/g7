@@ -369,7 +369,7 @@ class RootHtaccessUpdaterTest extends TestCase
     }
 
     /**
-     * 신규 복사가 실패하면 「갱신했다」가 아니라 **실패**로 보고된다 (4차 G3).
+     * 신규 복사가 실패하면 「갱신했다」가 아니라 **실패**로 보고된다.
      *
      * 종전에는 대상 부재 분기가 `FilePermissionHelper::copyFile()`(반환 `void`)을 부르고
      * 결과를 전혀 보지 않은 채 무조건 `RESULT_UPDATED` 를 돌려줬다. 실제 실패는 조용하지
@@ -488,7 +488,7 @@ class RootHtaccessUpdaterTest extends TestCase
      * 파일은 지운 것이 아니라 **잘린** 것이다(전송 중단·부분 쓰기·손편집). 그 파일은 Apache
      * 가 닫히지 않은 `<IfModule>` 로 500 을 내거나 위임 규칙이 없어 프로젝트 루트가 열린
      * 상태인데, 안내가 원인을 가려 운영자가 「지웠다」의 반대 사실을 확인하는 데 시간을
-     * 쓴다. 손상은 실패로 분류해 그 사유를 그대로 싣는다 (13차 G3 라운드 W4-2).
+     * 쓴다. 손상은 실패로 분류해 그 사유를 그대로 싣는다.
      *
      * @effects root_htaccess_broken_block_is_reported_not_mistaken_for_preserved
      *
@@ -589,7 +589,7 @@ class RootHtaccessUpdaterTest extends TestCase
     }
 
     /**
-     * 「손대지 않았다」는 조용해서는 안 됩니다 (5차 G3 · 제품 결정).
+     * 「손대지 않았다」는 조용해서는 안 됩니다 (제품 결정).
      *
      * 마커가 없는 파일은 둘 중 하나다 — ① 운영자가 일부러 G7 블록을 지웠다(존중이 맞다)
      * ② 예전 사이트의 `.htaccess` 가 그대로 있거나 전송 중단으로 빈 파일이 됐다. ②에서는
@@ -627,7 +627,7 @@ class RootHtaccessUpdaterTest extends TestCase
     }
 
     /**
-     * 대상이 심볼릭 링크면 링크를 끊지 않고 **링크 대상에** 씁니다 (5차 G3).
+     * 대상이 심볼릭 링크면 링크를 끊지 않고 **링크 대상에** 씁니다.
      *
      * 원자적 교체(`rename`)는 링크를 일반 파일로 갈아치운다. 운영자가 서버 설정을 한곳에서
      * 관리하려고 `.htaccess` 를 링크로 묶어 두면 그 구성이 조용히 해체되고, 이후 원본을
@@ -659,7 +659,7 @@ class RootHtaccessUpdaterTest extends TestCase
     }
 
     /**
-     * END 마커가 두 벌이어도 중복으로 판정합니다 (5차 G3).
+     * END 마커가 두 벌이어도 중복으로 판정합니다.
      *
      * BEGIN 만 세면 `BEGIN 1 + END 2` 가 「블록 하나」로 통과하는데, 범위 계산은 첫 END 까지만
      * 잡으므로 교체 후 구버전 규칙 꼬리와 고아 `# END G7` 이 블록 **밖**에 남고 결과는
@@ -686,11 +686,11 @@ class RootHtaccessUpdaterTest extends TestCase
     }
 
     /**
-     * 줄바꿈 판정 표본은 **블록 밖**입니다 (5차 G3).
+     * 줄바꿈 판정 표본은 **블록 밖**입니다.
      *
      * 파일 전체를 세면 ~100행짜리 LF 코어 블록이 표본을 지배해, 운영자가 CRLF 로 몇 줄
      * 덧붙인 파일에서도 LF 가 이긴다 — 한 파일 안에서 줄바꿈이 갈린 채로 남으며, 그것이
-     * 3차 L9 가 닫으려던 상태다.
+     * 앞서 닫으려던 상태다.
      *
      * @effects root_htaccess_write_is_atomic_and_line_endings_follow_destination
      *
@@ -809,7 +809,7 @@ class RootHtaccessUpdaterTest extends TestCase
         );
         $this->assertFalse(
             (static::UPDATER)::isFailure((static::UPDATER)::RESULT_UNCHANGED),
-            '「변경 없음」과 「쓰기 실패」가 같은 값이면 호출부가 실패를 가려낼 수 없다 (3차 H4)'
+            '「변경 없음」과 「쓰기 실패」가 같은 값이면 호출부가 실패를 가려낼 수 없다'
         );
         $this->assertSame($core."\n# operator tail\n", file_get_contents($dest));
     }
@@ -880,7 +880,7 @@ class RootHtaccessUpdaterTest extends TestCase
     }
 
     /**
-     * 코어 블록이 **두 벌** 있으면 갱신을 건너뛰고 실패로 보고한다 (3차 G3 라운드 M2).
+     * 코어 블록이 **두 벌** 있으면 갱신을 건너뛰고 실패로 보고한다.
      *
      * 종전에는 첫 블록만 교체하고 나머지는 그대로 뒀다. Apache 는 뒤에 오는 지시자가 이기는
      * 경우가 많아 실질적으로 **구버전 규칙이 살아남는데**, 반환값도 로그도 「갱신 성공」이었다.
@@ -910,7 +910,7 @@ class RootHtaccessUpdaterTest extends TestCase
     }
 
     /**
-     * 대상이 CRLF 파일이면 삽입 블록도 CRLF 로 맞춘다 (3차 G3 라운드 L9).
+     * 대상이 CRLF 파일이면 삽입 블록도 CRLF 로 맞춘다.
      *
      * 릴리즈 판본은 항상 LF 다(.gitattributes 강제). 그대로 끼우면 한 파일 안에서 줄바꿈이
      * 갈리고, 이 저장소는 툴체인의 CRLF 사각으로 이미 한 번 사고를 겪었다.
@@ -941,7 +941,7 @@ class RootHtaccessUpdaterTest extends TestCase
     }
 
     /**
-     * BOM 이 붙은 대상 파일도 블록을 찾는다 (3차 G3 라운드 L8).
+     * BOM 이 붙은 대상 파일도 블록을 찾는다.
      *
      * 찾지 못하면 갱신이 **영구히** 건너뛰어지고, 로그에는 「운영자가 지웠다」는 사실이
      * 아닌 사유가 남아 다음 라운드가 그 오기록을 전제로 판단한다.
@@ -966,7 +966,7 @@ class RootHtaccessUpdaterTest extends TestCase
     }
 
     /**
-     * 쓰기는 임시 파일 + rename 이라 반쪽 파일이 서빙되는 창이 없다 (3차 G3 라운드 M1).
+     * 쓰기는 임시 파일 + rename 이라 반쪽 파일이 서빙되는 창이 없다.
      *
      * 직접 truncate-then-write 는 그 창에 들어온 요청에게 **보호 규칙도 위임 규칙도 없는**
      * `.htaccess` 를 보여 준다. 그 잔해는 「BEGIN 만 남은 파일」로 굳어 이후 모든 업데이트가

@@ -207,7 +207,7 @@ class MovePublicStorageBrokenBackupsOutOfDocrootTest extends TestCase
         // 종전에는 `-1` 카운터를 리터럴로 적었는데, 그 방식은 상한이 없고 `file_exists`
         // 판정과 `rename` 사이가 벌어져 두 실행이 겹치면 같은 이름을 고른다. 형제 생산자와
         // 같은 난수 접미사로 바꾸면서, 이 단언도 「유일한 이름으로 옮겼다」는 **성질**로
-        // 옮긴다 (10차 G3 라운드 F10-11).
+        // 옮긴다.
         $alternates = glob($occupied.'-*') ?: [];
 
         $this->assertCount(1, $alternates, '이름이 겹치면 유일한 이름으로 옮긴다');
@@ -289,7 +289,7 @@ class MovePublicStorageBrokenBackupsOutOfDocrootTest extends TestCase
      * 종전에는 `storage/app` 부재를 info 한 줄로 넘기고 반환했다 — 그런데 그 사이트에
      * 잔해가 있으면 그 사본은 여전히 문서 루트 안에서 열리고, 옮길 곳이 없다는 것은
      * 노출이 **계속된다**는 뜻이지 정리가 끝났다는 뜻이 아니다. 같은 상태를 옮기기 실패
-     * 경로는 통보 버퍼에 싣는데 이 갈래만 로그 파일에서 끝났다 (13차 G3 라운드 W4-3).
+     * 경로는 통보 버퍼에 싣는데 이 갈래만 로그 파일에서 끝났다.
      *
      * @scenario residue=present, destination=missing
      *
@@ -349,7 +349,7 @@ class MovePublicStorageBrokenBackupsOutOfDocrootTest extends TestCase
      * 클래스 독블록이 「idempotent」를 선언하는데 그것을 재는 케이스가 없었다 —
      * 업그레이드 스텝은 중단·재시도 경로에서 두 번 도는 것이 정상이고, 두 번째 실행이
      * 무언가를 옮기면 그 자체가 결함이다. 형제 정리 서비스는 같은 축을 갖고 있다
-     * (`test_second_run_prunes_nothing`) (10차 G3 라운드 F10-10).
+     * (`test_second_run_prunes_nothing`).
      *
      * @scenario upgrade_step=move_broken_backups, run=second
      *
@@ -386,8 +386,7 @@ class MovePublicStorageBrokenBackupsOutOfDocrootTest extends TestCase
      * 이름 형식이 다른 항목은 옮기지 않고 **건너뛴 것으로 보고**한다.
      *
      * 접두사만 보면 운영자가 손으로 둔 `storage.broken.메모` 같은 디렉토리까지 말없이
-     * 옮긴다 — 클래스 독블록은 형식을 받는다고 적었는데 코드는 접두사만 봤다
-     * (10차 G3 라운드 F10-12).
+     * 옮긴다 — 클래스 독블록은 형식을 받는다고 적었는데 코드는 접두사만 봤다.
      *
      * @scenario move_outcome=skipped
      *

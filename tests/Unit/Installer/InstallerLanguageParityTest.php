@@ -7,7 +7,7 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * 인스톨러 다국어 정합 회귀 테스트 (10차 #G7).
+ * 인스톨러 다국어 정합 회귀 테스트.
  *
  * 인스톨러의 `public/install/lang/{ko,en}.php` 는 그동안 **어떤 자동 검사도 보지 않는 축**이었다 —
  * audit 룰도, 스크립트도, PHPUnit 도 이 디렉토리를 스코프에 넣지 않았다. 라운드마다 사람이 손으로
@@ -23,12 +23,12 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  *  3. 중괄호 자리표시자를 쓰지 않는다 — 치환기가 모르는 표기다.
  *  3-b. 줄바꿈 이스케이프가 값에 문자 그대로 남지 않는다 — 홑따옴표 문자열의 `\n` 은
  *       PHP 가 해석하지 않아 화면에 역슬래시와 n 이 그대로 나간다. 중괄호 금지와 같은
- *       종류(치환기·파서가 모르는 표기)인데 한쪽만 잠겨 있었다 (11차 #B18).
+ *       종류(치환기·파서가 모르는 표기)인데 한쪽만 잠겨 있었다.
  *  4. 코드가 **리터럴로** 부르는 키가 정의돼 있다 (PHP·JS 양쪽. 동적 조립은 대상 밖).
  *  5. 점 경로 키는 중첩 표에서 해석된다 — 프론트가 그 경로를 따라 내려갈 수 있어야 한다.
- *  6. 지원 언어 상수(`SUPPORTED_LANGUAGES`)와 배포되는 `lang/*.php` 목록이 일치한다 (12차 #C6).
- *  7. PHP 채널은 점 경로 키를 부르지 않는다 — 서버 `lang()` 은 평면 조회다 (12차 #C7).
- *  8. 자리표시자 치환은 `lang(key, replace)` 한 지점을 지난다 (12차 #C8, 잔존분은 상한 고정).
+ *  6. 지원 언어 상수(`SUPPORTED_LANGUAGES`)와 배포되는 `lang/*.php` 목록이 일치한다.
+ *  7. PHP 채널은 점 경로 키를 부르지 않는다 — 서버 `lang()` 은 평면 조회다.
+ *  8. 자리표시자 치환은 `lang(key, replace)` 한 지점을 지난다 (잔존분은 상한 고정).
  *
  * 커버 축: locale ko·en / key_shape flat·nested / placeholder_style colon·brace·escape / reference_channel php·js
  */
@@ -92,7 +92,7 @@ class InstallerLanguageParityTest extends TestCase
     }
 
     /**
-     * 검사할 로케일 목록 — 인스톨러가 실제로 배포하는 lang 파일에서 도출한다 (11차 #C7).
+     * 검사할 로케일 목록 — 인스톨러가 실제로 배포하는 lang 파일에서 도출한다.
      *
      * `['ko', 'en']` 을 손으로 적어 두면 로케일이 늘어도 게이트가 그 사실을 모른다 —
      * 새 로케일의 키 누락·자리표시자 불일치가 통째로 검사 밖에 남는다.
@@ -236,7 +236,7 @@ class InstallerLanguageParityTest extends TestCase
     }
 
     /**
-     * 안내가 부르는 버튼 이름이 화면에 **실재하는 라벨**과 같다 (8차 P4-3).
+     * 안내가 부르는 버튼 이름이 화면에 **실재하는 라벨**과 같다.
      *
      * ko 의 노출 조치 안내는 「[다시 검사]를 눌러 주세요」였는데 실제 버튼은 `recheck`
      * (`[다시 검증]`)다 — 운영자는 화면에 없는 버튼을 찾는다. 오탈자가 아니라 **다른 이름**
@@ -255,7 +255,7 @@ class InstallerLanguageParityTest extends TestCase
         /** @var array<string, string> 안내 키 => 그 안내가 지목하는 버튼 라벨 키 */
         $guidance = [
             'web_exposure_exposed_remedy' => 'recheck',
-            // 16차 G3 D-4 — 서버측 차단 문구의 en 이 `[Re-verify]` 를 불렀다(실재 라벨은 `Recheck`).
+            // 서버측 차단 문구의 en 이 `[Re-verify]` 를 불렀다(실재 라벨은 `Recheck`).
             'error_web_exposure_blocked' => 'recheck',
         ];
 
@@ -282,7 +282,7 @@ class InstallerLanguageParityTest extends TestCase
     }
 
     /**
-     * 원인을 열거하는 안내는 자기가 **몇 개를 열거하는지** 바르게 말한다 (16차 G3 D-5).
+     * 원인을 열거하는 안내는 자기가 **몇 개를 열거하는지** 바르게 말한다.
      *
      * 양성 대조 실패 안내는 ③(리버스 프록시)을 덧붙이면서 머리말 「원인은 둘 중 하나」를 그대로
      * 두었다 — 운영자는 두 개만 읽고 세 번째를 지나친다. 열거 표식 수와 머리말의 수를 대조한다.
@@ -397,7 +397,7 @@ class InstallerLanguageParityTest extends TestCase
     }
 
     /**
-     * 이스케이프 시퀀스가 값에 문자 그대로 남아 있지 않은가 (11차 #B18).
+     * 이스케이프 시퀀스가 값에 문자 그대로 남아 있지 않은가.
      *
      * PHP 홑따옴표 문자열은 `\n` 을 해석하지 않는다 — 그 값을 alert/confirm 에 넘기면
      * 줄바꿈 대신 역슬래시와 n 이 화면에 뜬다. 같은 파일 안에서 형제 키는 쌍따옴표라
@@ -608,7 +608,7 @@ class InstallerLanguageParityTest extends TestCase
     }
 
     /**
-     * 런타임 지원 언어 목록과 실제 배포되는 lang 파일이 일치하는가 (12차 #C6).
+     * 런타임 지원 언어 목록과 실제 배포되는 lang 파일이 일치하는가.
      *
      * 지원 언어는 두 곳에 선언돼 있는데 대조 장치가 없었다 — 런타임은
      * `public/install/includes/config.php` 의 `SUPPORTED_LANGUAGES` 상수를, 이 게이트는 `lang/*.php`
@@ -651,7 +651,7 @@ class InstallerLanguageParityTest extends TestCase
     }
 
     /**
-     * PHP 채널에서 점 경로 키를 부르지 않는가 (12차 #C7).
+     * PHP 채널에서 점 경로 키를 부르지 않는가.
      *
      * 두 층의 조회 규칙이 다르다 — JS(`installer.js`)는 점 경로를 따라 내려가지만
      * 서버 `lang()` 은 `$translations[$key] ?? $key` 평면 조회다. 그래서 PHP 에서
@@ -692,7 +692,7 @@ class InstallerLanguageParityTest extends TestCase
     }
 
     /**
-     * 동적으로 조립되는 키의 어휘가 lang 에 도달하는가 (12차 #C6 재귀).
+     * 동적으로 조립되는 키의 어휘가 lang 에 도달하는가 (재귀).
      *
      * `test_literal_key_references_are_defined` 는 **리터럴** 호출만 본다. 그래서
      * `lang(getTaskName($id))` · `lang('execution_mode_label_'.$mode)` 처럼 접두사에
@@ -816,9 +816,9 @@ class InstallerLanguageParityTest extends TestCase
     }
 
     /**
-     * 자리표시자 치환이 `lang(key, replace)` 한 지점을 지나는가 (12차 #C8).
+     * 자리표시자 치환이 `lang(key, replace)` 한 지점을 지나는가.
      *
-     * 7차가 치환을 `lang(key, replace)` 로 단일화했는데 `lang(key).replace(':x', …)`
+     * 앞서 치환을 `lang(key, replace)` 로 단일화했는데 `lang(key).replace(':x', …)`
      * 형태가 남아 두 계통이 공존한다. `String.prototype.replace` 는 첫 문자열 인자에
      * 대해 **첫 occurrence 만** 바꾸는 반면 `lang()` 내부는 전부 치환한다 — 같은
      * 자리표시자가 두 번 나오는 문구가 생기는 순간 한쪽만 채워진 문장이 나간다.
@@ -929,9 +929,9 @@ class InstallerLanguageParityTest extends TestCase
     }
 
     /**
-     * 인라인 `<script>` 안에 심는 문구는 이스케이프 헬퍼를 지나는가 (11차 #D4).
+     * 인라인 `<script>` 안에 심는 문구는 이스케이프 헬퍼를 지나는가.
      *
-     * 9차 #L36 이 `installerJsString()` 을 만들었지만 호출 31곳이 전부 한 파일
+     * 앞서 `installerJsString()` 을 만들었지만 호출 31곳이 전부 한 파일
      * (`public/install/views/3-configuration.php`)이고, 그 함수에 테스트 참조가 **0** 이었다 — 본문을
      * `return "'".$value."'";` 로 바꿔도 전 스위트가 초록이다. 나머지 인라인 스크립트 두
      * 곳은 서로 다른 규칙(지역 상수·맨 json_encode)을 쓰고 있었고 그 사실도 무검사였다.
@@ -966,7 +966,7 @@ line2',
     }
 
     /**
-     * 인라인 스크립트가 문구를 심는 채널이 갈라지지 않았는가 (11차 #D4).
+     * 인라인 스크립트가 문구를 심는 채널이 갈라지지 않았는가.
      *
      * 규칙이 파일마다 다르면 한 파일만 규칙에서 뒤처져도 아무도 모른다.
      *

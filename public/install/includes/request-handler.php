@@ -142,7 +142,7 @@ function installerWebExposureVerdictLabel($verdict): string
  * 초기값 `pending`(프로브가 끝나기 전에 제출된 경우) 다섯이다. 그 밖(부재·비문자열·대소문자
  * 변형 포함)은 `unreported` 로 접는다 — 게이트는 `exposed` 만 막으므로 이 접힘이 차단을
  * 넓히지는 않는다. `pending` 을 집합에 두는 이유는 로그다: 접으면 「보고되지 않음」(배선 파손
- * 신호)과 「판정 전 제출」이 같은 줄이 된다 (16차 G3 D-6).
+ * 신호)과 「판정 전 제출」이 같은 줄이 된다.
  *
  * @param  mixed  $verdict  화면이 보낸 판정값
  * @return string `safe`|`exposed`|`unknown`|`confirmed`|`pending`|`unreported`
@@ -179,7 +179,7 @@ function handleStep2Post(string $currentLang, ?string &$error = null): void
 
         // 노출 점검(B-4)의 판정은 브라우저가 내리고 [다음 단계] 버튼도 화면이 잠근다(4차 제품
         // 결정 — 차단은 화면이 한다). 서버는 그 값을 닫힌 집합으로 정규화하고 **자기 신고
-        // `exposed` 만** 막는다 (14차 G3 W2-3) — 실효 범위는 「노출됨으로 판정된 화면에서
+        // `exposed` 만** 막는다 — 실효 범위는 「노출됨으로 판정된 화면에서
         // 버튼 비활성을 풀고 눌러도 넘어가지 않는다」까지다. 게이트의 목적은 경고 무시 방지이지
         // 공격자 차단이 아니므로, 값 위조(`safe` 로 바꿔 전송)와 API 직접 호출은 설계상 열려
         // 있다. `unknown`(판정 불능)과 `confirmed`(운영자 직접 확인, D21)는 종전대로 통과한다
@@ -274,7 +274,7 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
 
     // 검증 통과 시 다음 단계로 이동
     if (empty($errors)) {
-        // 읽기-판정-쓰기 전체를 상태 잠금 안에서 수행한다 (22차 N-2) — 잠금 밖이면 읽기와
+        // 읽기-판정-쓰기 전체를 상태 잠금 안에서 수행한다 — 잠금 밖이면 읽기와
         // 쓰기 사이에 워커가 running 으로 전이한 것을 이 저장이 되덮는 경합 창이 남는다.
         // 같은 라운드의 reset(state-management)이 지킨 규율과 동일하다. 저장은 CAS 로 한다 —
         // 소유권을 최초로 주장하는 상태변경이라 세대를 올려, 그 전의 설치 계획 서명을 무효로 만든다.

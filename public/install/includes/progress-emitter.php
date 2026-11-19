@@ -10,7 +10,7 @@
 if (! defined('BASE_PATH')) {
     // `realpath` 도 호스팅이 막을 수 있는 함수다 — 이 파일을 단독 로드하는 경로에서는 이 줄이
     // 첫 코드라, 막힌 환경에서 무가드로 부르면 어떤 봉투도 서기 전에 치명 종료한다.
-    // 형태는 `config.php` 의 폴백과 같다(사본이 갈리면 진입점에 따라 백지가 갈린다 — 15차 G3 W1-10).
+    // 형태는 `config.php` 의 폴백과 같다(사본이 갈리면 진입점에 따라 백지가 갈린다).
     define('BASE_PATH', function_exists('realpath')
         ? (realpath(dirname(__DIR__, 3)) ?: dirname(__DIR__, 3))
         : dirname(__DIR__, 3));
@@ -42,7 +42,7 @@ interface ProgressEmitter
  */
 if (! function_exists('installerWorkerLockLost')) {
     /**
-     * 이 요청이 워커 lock 을 잃었는가 — 세 emitter 가 공유하는 판정 (11차 #D13).
+     * 이 요청이 워커 lock 을 잃었는가 — 세 emitter 가 공유하는 판정.
      *
      * 종전에는 같은 판정이 세 사본에 흩어져 있었고, **예외로 끝나는 한 사본만** 행위
      * 테스트가 덮었다. 나머지 둘(SSE·폴링, `exit(0)` 로 끝난다)은 조기 반환 조건을
@@ -130,7 +130,7 @@ class SseEmitter implements ProgressEmitter
         $this->aborting = true;
         addLog(lang('log_worker_lock_lost_retreat'));
 
-        // 물러나기 전에 그 사실을 한 프레임 보낸다 (13차 #E5). 아무 말 없이 끊으면 브라우저는
+        // 물러나기 전에 그 사실을 한 프레임 보낸다. 아무 말 없이 끊으면 브라우저는
         // 스트림 종료를 장애로 읽고 재연결하는데, 그 재연결은 승자 요청이 lock 을 쥐고 있어
         // busy 를 받고 「중단」 화면을 그린다 — 설치는 멀쩡히 진행 중인데 화면만 실패한다.
         // stepwise 는 예외 → busy → 자동 재시도로 같은 사실을 전하므로, 그 계약을 SSE 로 옮긴
@@ -267,7 +267,7 @@ class BufferEmitter implements ProgressEmitter
 
     public function emit(string $event, array $data): void
     {
-        // heartbeat 은 접는다 (13차 #F7). 진행 값은 단조 증가라 마지막 1건이 곧 현재 상태인데,
+        // heartbeat 은 접는다. 진행 값은 단조 증가라 마지막 1건이 곧 현재 상태인데,
         // 전부 모아 두면 오래 도는 태스크 하나의 응답에 수백 개가 실려 클라이언트가 같은
         // 프레임을 되풀이 재생한다. 값이 아니라 개수만 버리는 것이므로 정보 손실이 없다.
         if ($event === 'heartbeat') {

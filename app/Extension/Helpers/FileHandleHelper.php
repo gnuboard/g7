@@ -28,7 +28,7 @@ class FileHandleHelper
         // 여기서는 PID **자체가 의미**를 갖는다(자기 프로세스를 종료 대상에서 뺀다) — 난수로
         // 대체할 수 없다. `getmypid` 는 하드닝 프로필의 차단 대상이라 무가드로 부르면 PHP 8
         // 에서 Error(치명)다. 막힌 환경에서는 0 을 돌려 「자기 PID 를 모른다」를 표현하고,
-        // 그 경우 어떤 프로세스도 제외 대상으로 걸러지지 않는다 (3차 G3 라운드).
+        // 그 경우 어떤 프로세스도 제외 대상으로 걸러지지 않는다.
         if (! ExecutionEnvironment::hasFunction('getmypid')) {
             return 0;
         }
@@ -345,7 +345,7 @@ class FileHandleHelper
         // 부르면 PHP 8 에서 `Error`(치명)이고, 설령 호출이 되더라도 `tempnam` 이 false 를
         // 돌리면 `false.'.ps1'` 이 `'.ps1'` 이 되어 **현재 작업 디렉토리에 파일을 만든다**.
         // 그 경우 강제 종료 시 아래 `finally` 가 돌지 않아 잔존물이 남고, 그것을 걷는
-        // 주체는 어디에도 없다 (11차 G3 라운드 E11-12).
+        // 주체는 어디에도 없다.
         if (! ExecutionEnvironment::hasFunction('sys_get_temp_dir') || ! ExecutionEnvironment::hasFunction('tempnam')) {
             $output('[RestartManager] tempnam()/sys_get_temp_dir() 함수 사용 불가');
 

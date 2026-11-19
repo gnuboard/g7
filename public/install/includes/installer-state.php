@@ -6,7 +6,7 @@
  * 설치 진행 상태를 storage/installer-state.json에 저장하고 조회합니다.
  */
 
-// 로그 정규화의 mbstring 가용성 판정에 쓴다 (16차 B-1). 해석은 호출 시점에 일어나므로
+// 로그 정규화의 mbstring 가용성 판정에 쓴다. 해석은 호출 시점에 일어나므로
 // 이 파일을 단독 로드하는 경로에서도 함수를 부르지 않는 한 문제가 되지 않는다 —
 // functions.php 가 이미 같은 클래스를 같은 방식으로 쓴다.
 use App\Support\ExecutionEnvironment;
@@ -14,7 +14,7 @@ use App\Support\ExecutionEnvironment;
 if (! defined('BASE_PATH')) {
     // `realpath` 도 호스팅이 막을 수 있는 함수다 — 이 파일을 단독 로드하는 경로에서는 이 줄이
     // 첫 코드라, 막힌 환경에서 무가드로 부르면 어떤 봉투도 서기 전에 치명 종료한다.
-    // 형태는 `config.php` 의 폴백과 같다(사본이 갈리면 진입점에 따라 백지가 갈린다 — 15차 G3 W1-10).
+    // 형태는 `config.php` 의 폴백과 같다(사본이 갈리면 진입점에 따라 백지가 갈린다).
     define('BASE_PATH', function_exists('realpath')
         ? (realpath(dirname(__DIR__, 3)) ?: dirname(__DIR__, 3))
         : dirname(__DIR__, 3)); // public/install/includes에서 프로젝트 루트로
@@ -33,7 +33,7 @@ if (! defined('INSTALLER_STATE_LOCK_SUFFIX')) {
      *
      * 생산자(`installerWithStateLock`)·finalize 정리·정리 주체(`StorageLeftoverPruneService`)가
      * 같은 이름을 봐야 한다. 종전에는 세 곳이 각자 `'.lock'` 리터럴이었고 프루너는 이 파일을
-     * 몰라, 설치를 포기한 사이트에 영구 잔존했다 (15차 G3 W1-4). 인스톨러는 Laravel 부팅 전
+     * 몰라, 설치를 포기한 사이트에 영구 잔존했다. 인스톨러는 Laravel 부팅 전
      * 코드라 값이 두 곳에 있고 그 일치는 `StorageLeftoverPruneServiceTest` 가 잠근다.
      */
     define('INSTALLER_STATE_LOCK_SUFFIX', '.lock');
@@ -42,7 +42,7 @@ if (! defined('INSTALLER_DIR')) {
     define('INSTALLER_DIR', BASE_PATH.'/storage/installer');
 }
 
-// 로그 정규화가 `isWindows()` 를 쓴다 (13차 환경#16 — 판정 사본 제거). 이 파일만 단독으로
+// 로그 정규화가 `isWindows()` 를 쓴다 (판정 사본 제거). 이 파일만 단독으로
 // 로드하는 경로(단위 테스트·일부 API)가 있으므로 의존을 명시한다. functions.php 는 최상위
 // 부수효과 없이 함수·상수만 선언하므로 순서 의존이 생기지 않는다. 임시 파일 이름의 중간
 // 조각·바이트 수·판정 패턴(`INSTALLER_TMP_*`)도 그 파일 소유라 아래 정의보다 먼저 싣는다.
@@ -53,7 +53,7 @@ if (! defined('INSTALLER_STATE_TMP_INFIX')) {
      * 상태 파일 원자 교체 임시 이름의 중간 조각 (`installer-state.json.tmp.<hex>`).
      *
      * 값은 이름 생성 SSoT(`functions.php` 의 `INSTALLER_TMP_INFIX`)를 그대로 가리킨다 —
-     * 리터럴 사본은 갈려도 아무것도 울리지 않는다 (14차 G3 W2-4).
+     * 리터럴 사본은 갈려도 아무것도 울리지 않는다.
      */
     define('INSTALLER_STATE_TMP_INFIX', INSTALLER_TMP_INFIX);
 }
@@ -83,13 +83,13 @@ if (! defined('INSTALLER_STATE_TMP_SUFFIX_PATTERN')) {
      *
      * 값은 이름 생성 SSoT(`functions.php` 의 `INSTALLER_TMP_SUFFIX_PATTERN`)를 그대로
      * 가리킨다. 파일마다 리터럴을 두면 한쪽만 갈린다 — 실제로 형제(`installer-runtime.php`)가
-     * `{8}` 로 갈려 그쪽 스윕 모집단이 0 이었다 (13차 G3 W1-1).
+     * `{8}` 로 갈려 그쪽 스윕 모집단이 0 이었다.
      *
      * 형식을 보지 않으면 `<대상>.tmp.*` 에 걸린 것을 무조건 지운다 — 운영자가 같은 이름
      * 공간에 둔 파일(`installer-state.json.tmp.backup` 등)이 300초 뒤 조용히 사라진다.
      * 형제 두 지점(`RootHtaccessUpdater::TEMP_SUFFIX_PATTERN` ·
      * `StorageLeftoverPruneService::pruneRootEntryTemp`)이 같은 규칙을 쓰는데, 이 파일은
-     * 그 둘에게 **선례로 인용까지 되면서** 자기만 게이트가 없었다 (11차 G3 라운드 E11-2).
+     * 그 둘에게 **선례로 인용까지 되면서** 자기만 게이트가 없었다.
      */
     define('INSTALLER_STATE_TMP_SUFFIX_PATTERN', INSTALLER_TMP_SUFFIX_PATTERN);
 }
@@ -101,7 +101,7 @@ if (! defined('INSTALLER_STATE_CORRUPT_INFIX')) {
      * 생산자(`installerPreserveCorruptState`)는 상한 5 로 만들기만 하고 지우는 지점이 없었다 —
      * 마스킹 전 비밀을 담을 수 있는 파일이 영구 잔존한다. 정리 주체(`StorageLeftoverPruneService`)
      * 가 같은 이름 규칙을 봐야 하며, 인스톨러는 Laravel 부팅 전 코드라 값이 두 곳에 있고
-     * 그 일치는 `StorageLeftoverPruneServiceTest` 가 잠근다 (13차 G3 W1-2).
+     * 그 일치는 `StorageLeftoverPruneServiceTest` 가 잠근다.
      */
     define('INSTALLER_STATE_CORRUPT_INFIX', '.corrupt.');
 }
@@ -125,7 +125,7 @@ if (! defined('INSTALLER_STATE_CORRUPT_SUFFIX_PATTERN')) {
 require_once __DIR__.'/execution-mode.php';
 
 /**
- * 상태 파일 파손 여부를 기억한다 (13차 #D13).
+ * 상태 파일 파손 여부를 기억한다.
  *
  * 파싱 실패는 종전에 「부재」와 같은 취급이었다 — 기본 상태를 돌려주고 끝. 그런데 파일은
  * 그대로 남아 있으므로, 그 뒤 어떤 헬퍼든(heartbeat·완료 마커·current_task) 저장하는 순간
@@ -158,7 +158,7 @@ function installerPreserveCorruptState(string $content): void
 {
     // 폴링 클라이언트는 같은 파손 파일을 2초마다 다시 읽는다 — 요청마다 새 프로세스라
     // 정적 플래그가 초기화되므로 사본이 무한 증식할 수 있다. 그래서 **같은 내용**은 한 번만
-    // 남긴다 (17차 #C6) — 종전처럼 「사본이 하나라도 있으면 중단」하면 두 번째 이후의 **다른**
+    // 남긴다 — 종전처럼 「사본이 하나라도 있으면 중단」하면 두 번째 이후의 **다른**
     // 파손은 근거가 남지 않아, 「과거 어느 시점에 한 번 깨졌다」밖에 알 수 없었다.
     $digest = substr(sha1($content), 0, 8);
     $existing = installerListCorruptStateCopies();
@@ -171,13 +171,13 @@ function installerPreserveCorruptState(string $content): void
 
     // 서로 다른 파손이 계속 나는 병리적 환경에서 디렉토리가 잠식되지 않도록 상한을 둔다.
     //
-    // 상한에 닿으면 **가장 오래된 사본을 내보내고 새 것을 남긴다** (14차 G3 W2-8). 종전처럼
+    // 상한에 닿으면 **가장 오래된 사본을 내보내고 새 것을 남긴다**. 종전처럼
     // 조용히 `return` 하면 다섯이 찬 뒤로는 새 파손의 근거가 0 이고, 프루너가 백업 등급
     // (30일 + 최신 1개)으로 걷을 때까지 그 침묵이 이어진다 — 상한의 목적은 잠식 방지이지
     // 최신 근거의 폐기가 아니다. 목록은 이름순(= 타임스탬프순)이라 첫 항목이 가장 오래된
     // 것이다 — 다만 **같은 초 안에서는 sha8 사전순**이라 생성 순서와 무관하고, 그 구간에서
     // 성립하는 약속은 「열거 순서와 무관하게 언제나 같은 하나가 나간다 + 새 사본은 남는다」
-    // 뿐이다 (15차 G3 W1-8). 내보내지 못하면(삭제 불가) 잠식을 막기 위해 종전대로 남기지
+    // 뿐이다. 내보내지 못하면(삭제 불가) 잠식을 막기 위해 종전대로 남기지
     // 않되, 그 사실은 로그에 남긴다 — 어느 쪽이든 조용하지 않다.
     if (count($existing) >= 5) {
         $oldest = (string) $existing[0];
@@ -234,7 +234,7 @@ function installerPreserveCorruptState(string $content): void
  *
  * `glob` 이 막힌 호스팅에서는 `scandir` 로 나열한다 — 형제 `installerListExposureProbeFiles()`
  * 와 같은 폴백이다. 종전에는 그 환경에서 빈 목록이었고, 그러면 두 가드가 **동시에 증발**해
- * 폴링(2초)마다 마스킹 전 상태 파일 사본이 무제한 증식했다 (14차 G3 W2-2). 둘 다 막히면
+ * 폴링(2초)마다 마스킹 전 상태 파일 사본이 무제한 증식했다. 둘 다 막히면
  * 나열 수단이 없으므로 빈 목록이다(사본은 여전히 남긴다).
  *
  * 목록은 이름순(= 타임스탬프순)으로 정렬돼 있다 — 상한에서 내보낼 「가장 오래된 것」이
@@ -328,12 +328,12 @@ function getInstallationState(): array
 
     // JSON 파싱 실패 시 기본 상태 반환 (재귀 호출 제거 - 무한 루프 방지)
     //
-    // 파손은 「부재」와 다르다 (13차 #D13). 부재는 아직/더 이상 설치가 없다는 뜻이지만, 파손은
+    // 파손은 「부재」와 다르다. 부재는 아직/더 이상 설치가 없다는 뜻이지만, 파손은
     // 원본이 남아 있는데 읽지 못한다는 뜻이다. 그 구분 없이 기본 상태를 돌려주면 다음 저장이
     // 원본을 덮어써 완료 마커·설정·진행 모드가 통째로 사라진다. 사본을 남기고 판정을 세워
     // 저장을 막는다 — 진행이 멈추는 대신 데이터가 남는다.
     if (json_last_error() !== JSON_ERROR_NONE || ! is_array($state)) {
-        // 원문은 싣지 않는다 — 길이와 digest 만 (15차 G3 W1-9). 비밀은 상태 파일에 없어야 하지만
+        // 원문은 싣지 않는다 — 길이와 digest 만. 비밀은 상태 파일에 없어야 하지만
         // (이슈 #465) 레거시 상태 파일이 남아 있을 수 있고, 종전에는 앞 200 바이트가 무마스킹으로
         // 진행 기록과 PHP 오류 로그에 실렸다. digest 는 보존 사본 이름의 접미사와 같은 값이라
         // 로그와 사본을 대조할 수 있다.
@@ -353,7 +353,7 @@ function getInstallationState(): array
 
     installerStateIsCorrupt(false);
 
-    // 시그널로 죽은 워커의 고착 상태를 여기서 실패로 승격한다 (13차 환경#10).
+    // 시그널로 죽은 워커의 고착 상태를 여기서 실패로 승격한다.
     //
     // 판정을 상태를 읽는 **이 단일 지점**에 두는 이유: 세 진입점에 흩어 놓으면 한 곳만
     // 빠져도 그 모드에서만 같은 고착이 남는다. 승격 조건과 그 한계는
@@ -510,7 +510,7 @@ function saveInstallationStateCas(array $state, int $expectedGeneration): bool
  */
 function installerWriteStateFile(array $state): bool
 {
-    // 파손된 원본 위에 덮어쓰지 않는다 (13차 #D13). 일반 저장과 CAS 저장이 모두 이 기록 지점을 지나므로
+    // 파손된 원본 위에 덮어쓰지 않는다. 일반 저장과 CAS 저장이 모두 이 기록 지점을 지나므로
     // 판정도 여기 둔다. 여기서 통과시키면 파싱 실패가 돌려준
     // 기본 상태가 원본을 대체해 완료 마커·설정이 영구 소실된다. 호출부는 이미 저장 실패를
     // 오류로 다루므로(예: error_task_marker_not_persisted) 실패 신호가 화면까지 도달한다.
@@ -563,7 +563,7 @@ function installerWriteStateFile(array $state): bool
     // 원자적 쓰기: tmp 파일에 쓰고 rename으로 교체
     // 동시 쓰기 경쟁 상황에서 부분 쓰기(half-written file)로 인한 JSON 손상 방지.
     // Linux에서 rename()은 atomic syscall이므로 다른 리더가 항상 완전한 파일만 읽는다.
-    // 남겨진 tmp 를 치운다 (17차 #C7). 쓰기 성공과 rename 사이에서 프로세스가 죽으면(FPM
+    // 남겨진 tmp 를 치운다. 쓰기 성공과 rename 사이에서 프로세스가 죽으면(FPM
     // 타임아웃 · OOM-kill · 재시작) tmp 가 남는데 청소 주체가 없었다. 각 파일은 완전한 DB
     // 접속 정보를 담으므로 누적은 저장 공간이 아니라 **노출** 문제다. 요청당 한 번만 훑는다.
     static $tmpSwept = false;
@@ -594,7 +594,7 @@ function installerWriteStateFile(array $state): bool
     // 임시 이름은 고유하기만 하면 된다. 종전에는 `getmypid()` 로 갈랐는데 그 함수는 하드닝
     // 프로필의 차단 대상이라 막힌 호스팅에서 PHP 8 은 함수 테이블에서 지운다 — 즉 Error(치명)
     // 이고, 하필 **상태 저장 경로**라 그 한 줄로 설치가 한 걸음도 나아가지 못한다. 형제
-    // 선례(`reserveCommandOutputFile`)와 같은 난수원으로 얻는다 (3차 G3 라운드).
+    // 선례(`reserveCommandOutputFile`)와 같은 난수원으로 얻는다.
     $tmpPath = STATE_PATH.INSTALLER_STATE_TMP_INFIX.installerUniqueSuffix(INSTALLER_TMP_SUFFIX_BYTES);
 
     $result = @file_put_contents($tmpPath, $content, LOCK_EX);
@@ -611,7 +611,7 @@ function installerWriteStateFile(array $state): bool
     }
 
     // 최종 파일 권한은 종전대로 0664 다. tmp 단계에서 넓히지 않는 이유는 rename 전에
-    // 프로세스가 죽으면 그 권한 그대로 남기 때문이다 (17차 #C7).
+    // 프로세스가 죽으면 그 권한 그대로 남기 때문이다.
     if (installerHasFunction('chmod')) {
         @chmod($tmpPath, 0664);
     }
@@ -711,14 +711,14 @@ if (! function_exists('installerReplaceFileWithRetry')) {
 
 if (! function_exists('installerDiscardCorruptState')) {
     /**
-     * 파손된 상태 원본을 치워 저장을 다시 가능하게 한다 — 운영자의 명시적 초기화 전용 (17차 #C5).
+     * 파손된 상태 원본을 치워 저장을 다시 가능하게 한다 — 운영자의 명시적 초기화 전용.
      *
-     * 13차 #D13 이 「파손 원본 위에 덮어쓰지 않는다」를 세운 뒤, 파손이 나면 초기화·재시작·중단이
+     * 「파손 원본 위에 덮어쓰지 않는다」를 세운 뒤, 파손이 나면 초기화·재시작·중단이
      * 전부 저장 거부로 500 이 됐다. `STATE_PATH` 를 지우는 제품 코드는 finalize(설치 완료 게이트
      * 뒤) 하나뿐이라 운영자에게는 **파일 시스템 접근 외의 복구 수단이 없었다.**
      *
      * 자동으로 부르지 않는다. 초기화는 진행분을 의도적으로 버리는 유일한 조작이므로 그 자리에서만
-     * 쓴다 — 읽기 경로에서 부르면 13차 #D13 을 통째로 되돌리는 것이 된다. 파손 사본은 남긴다.
+     * 쓴다 — 읽기 경로에서 부르면 그 규칙을 통째로 되돌리는 것이 된다. 파손 사본은 남긴다.
      *
      * @return bool 실제로 치웠으면 true (파손이 아니거나 삭제 실패면 false)
      */
@@ -750,7 +750,7 @@ if (! function_exists('installerDiscardCorruptState')) {
 
 if (! function_exists('installerSaveStateOrReport')) {
     /**
-     * 상태를 저장하고, 실패하면 그 사실을 남긴다 (17차 #C2).
+     * 상태를 저장하고, 실패하면 그 사실을 남긴다.
      *
      * `saveInstallationState()` 는 디스크 풀·권한 소실·파손 거부·인코딩 실패에서 `false` 를
      * 돌려주는데, 결과를 버리는 호출부가 10곳이었다. 그중 셋은 버려지면 조용히 나쁜 상태가
@@ -976,7 +976,7 @@ if (! function_exists('installerIsRetryRun')) {
 
 if (! function_exists('installerWithStateLock')) {
     /**
-     * 상태 파일의 read-modify-write 를 배타 구간 안에서 수행한다 (12차 #A3).
+     * 상태 파일의 read-modify-write 를 배타 구간 안에서 수행한다.
      *
      * 상태 파일은 여러 요청이 동시에 만진다 — 새로고침 직후의 끊긴 요청과 재개 요청,
      * 워커와 폴링 조회가 같은 창에 겹친다. 읽기·판정·쓰기가 보호 밖이면 나중에 쓴 쪽이
@@ -1017,8 +1017,8 @@ if (! function_exists('installerWithStateLock')) {
         $guard = @fopen(STATE_PATH.INSTALLER_STATE_LOCK_SUFFIX, 'c');
         $locked = $guard !== false && @flock($guard, LOCK_EX);
 
-        // 잠금을 못 얻으면 보호 없이 진행한다(위 docblock) — 그러나 **그 사실은 남긴다** (17차 #C9).
-        // 종전에는 완전 무음이라, 13개 헬퍼의 배타 구간이 통째로 사라진 채 12차 #A3 이전 동작으로
+        // 잠금을 못 얻으면 보호 없이 진행한다(위 docblock) — 그러나 **그 사실은 남긴다**.
+        // 종전에는 완전 무음이라, 13개 헬퍼의 배타 구간이 통째로 사라진 채 잠금 도입 이전 동작으로
         // 되돌아가도 어디에도 흔적이 없었다. 요청마다 반복 기록되지 않도록 프로세스당 한 번만.
         if (! $locked) {
             static $lockWarned = false;
@@ -1060,7 +1060,7 @@ function markTaskCompleted(string $task): bool
 
         // completed_tasks 배열에 추가 (중복 방지)
         //
-        // `?? []` 는 형제 지점들이 이미 쓰는 방어다 (17차 #C8). 파싱은 성공했지만 그 키가 없는
+        // `?? []` 는 형제 지점들이 이미 쓰는 방어다. 파싱은 성공했지만 그 키가 없는
         // state.json — 구버전·수동 편집·외부 도구 생성 — 에서 `in_array($task, null)` 은 PHP 8
         // 에서 TypeError 이고, 그러면 워커가 태스크 완료를 기록하다 즉사한다.
         $completed = $state['completed_tasks'] ?? [];
@@ -1070,7 +1070,7 @@ function markTaskCompleted(string $task): bool
         $state['completed_tasks'] = $completed;
 
         // 현재 작업이 완료된 작업과 같으면 초기화 — `?? null`·엄격 비교는 형제
-        // (markTaskBestEffortFailed)와 같은 방어다 (17차 #C8 형제, 22차 마이너).
+        // (markTaskBestEffortFailed)와 같은 방어다 (형제, 22차 마이너).
         if (($state['current_task'] ?? null) === $task) {
             $state['current_task'] = null;
             $state['current_task_name'] = null;
@@ -1121,7 +1121,7 @@ function removeTaskCompleted(string $task): bool
     return (bool) installerWithStateLock(static function () use ($task): bool {
         $state = getInstallationState();
 
-        // 형제 지점과 같은 방어 (17차 #C8) — 키가 없으면 array_filter 가 TypeError 다.
+        // 형제 지점과 같은 방어 — 키가 없으면 array_filter 가 TypeError 다.
         $state['completed_tasks'] = array_values(
             array_filter($state['completed_tasks'] ?? [], fn ($t) => $t !== $task)
         );
@@ -1159,7 +1159,7 @@ if (! function_exists('installerClientFailureFields')) {
             'rollback_failure' => $state['rollback_failure'] ?? null,
             'manual_commands' => $state['manual_commands'] ?? null,
             // 중단 사유 — 서버는 「사람이 눌렀다」와 「연결이 끊겼다」를 구분해 기록해 왔는데
-            // 그 값을 아무도 읽지 않아 중단 화면이 두 경우에 같은 문구만 보여 줬다 (11차 #A12).
+            // 그 값을 아무도 읽지 않아 중단 화면이 두 경우에 같은 문구만 보여 줬다.
             // 다국어 키로 싣는다(원문 문자열이 아니라) — 화면이 그대로 번역해 그린다.
             'abort_reason' => $state['abort_reason'] ?? null,
         ];
@@ -1218,7 +1218,7 @@ function installerWorkerLockRemainingSeconds(array $state, int $fallbackStaleSec
 
     // 시계가 뒤로 가면(NTP 보정·컨테이너 시각 점프) 경과가 음수가 되어 항상 alive 로 판정된다
     // — 살아 있는 워커가 하나도 없는데 모든 진입점이 영구 busy 를 받고, 운영자에게는 화면이
-    // 멈춘 것으로만 보인다 (13차 환경#19). 미래 heartbeat 는 신뢰할 수 없는 값이므로 stale 로 본다.
+    // 멈춘 것으로만 보인다. 미래 heartbeat 는 신뢰할 수 없는 값이므로 stale 로 본다.
     if ($elapsed < 0) {
         return 0;
     }
@@ -1246,7 +1246,7 @@ function acquireWorkerLock(int $staleSeconds = 15): array
     // 읽기·확인·쓰기를 state 쓰기 락 안에서 한 번에 한다 — 따로 하면 두 워커(웹 SSE·폴링·터미널)가
     // 같은 순간 둘 다 "비어 있음" 을 읽고 둘 다 잠금을 얻는다. 새로고침 직후
     // 끊긴 요청과 재개 요청이 같은 태스크를 겹쳐 돌리는 창도 같다. 파일 잠금으로 둘을 한 구간에 묶는다.
-    // 그 구간은 상태 파일을 고쳐 쓰는 모든 헬퍼가 공유한다 (12차 #A3) — 여기만 잠그면
+    // 그 구간은 상태 파일을 고쳐 쓰는 모든 헬퍼가 공유한다 — 여기만 잠그면
     // heartbeat·해제·완료 마커 쪽이 그대로 유실 창으로 남는다.
     return installerWithStateLock(static function () use ($staleSeconds): array {
         $state = getInstallationState();
@@ -1269,7 +1269,7 @@ function acquireWorkerLock(int $staleSeconds = 15): array
         $state['worker_stale_after'] = $staleSeconds;
         // 시그널 종료(php-fpm request_terminate_timeout · LiteSpeed lsapi_max_process_time ·
         // cgroup OOM-kill)는 shutdown 훅을 돌리지 않는다 — 그 경우 상태를 되살릴 근거는
-        // 「이 워커가 언제 시작해 얼마를 선언했는가」뿐이다 (13차 환경#10).
+        // 「이 워커가 언제 시작해 얼마를 선언했는가」뿐이다.
         // 선언 예산은 `worker_stale_after` 가 그대로 소유한다 — 호출자가 넘기는 값이 이미
         // `installerSetTimeLimit()` 의 **실적용치**이므로, 같은 값을 두 키에 복제하면
         // 둘이 어긋날 자리만 생긴다.
@@ -1385,7 +1385,7 @@ function clearWorkerLock(array $state): array
  * completed_tasks 는 보존한다 — 이미 끝난 작업은 롤백 대상이 아니다.
  *
  * @param  array  $state  현재 설치 상태
- * @param  string  $reason  중단 사유 **다국어 키** (화면이 그대로 번역해 표시한다 — 11차 #A12)
+ * @param  string  $reason  중단 사유 **다국어 키** (화면이 그대로 번역해 표시한다)
  * @return array 중단 상태가 적용된 상태 배열
  */
 function installerApplyAbortedState(array $state, string $reason = 'abort_reason_user'): array
@@ -1396,10 +1396,10 @@ function installerApplyAbortedState(array $state, string $reason = 'abort_reason
     $state['aborted_at'] = date('Y-m-d H:i:s');
     $state['abort_reason'] = $reason;
 
-    // 흔적 제거는 소유권과 무관하게 **항상** 한다. 11차에 「살아 있는 워커면 남긴다」로
+    // 흔적 제거는 소유권과 무관하게 **항상** 한다. 한때 「살아 있는 워커면 남긴다」로
     // 좁히려다 되돌렸다 — heartbeat 는 태스크 실행 중 갱신되지 않으므로(exec/Artisan::call
     // 이 블로킹) 「살아 있음」 판정은 죽은 in-process 워커가 선언한 600초 예산과 구분되지
-    // 않는다. 좁히면 8차가 닫은 「중단 후 [계속 진행] 이 최대 10분간 거짓 busy」가 그대로
+    // 않는다. 좁히면 앞서 닫은 「중단 후 [계속 진행] 이 최대 10분간 거짓 busy」가 그대로
     // 되살아난다(InstallerWorkerLockRecoveryTest 가 그 계약을 고정한다).
     // 살아 있는 워커와의 겹침은 lock 이 아니라 `aborted` 표식 + 태스크 경계의 물러남으로
     // 다룬다 — 그 경로의 잔여 위험은 §16.17 에 기록했다.
@@ -1408,7 +1408,7 @@ function installerApplyAbortedState(array $state, string $reason = 'abort_reason
 
 if (! function_exists('installerFinalizeAbortedState')) {
     /**
-     * 중단으로 전이된 상태를 저장한다 (중단 두 경로 공용 SSoT — 12차 #A1).
+     * 중단으로 전이된 상태를 저장한다 (중단 두 경로 공용 SSoT).
      *
      * 호출자는 **롤백 직후 다시 읽은** 상태에 `installerApplyAbortedState()` 를 적용해
      * 넘긴다 — `installerApplyAbortedState(getInstallationState(), …)` 한 형태다.
@@ -1450,7 +1450,7 @@ if (! function_exists('installerFatalShutdownErrorTypes')) {
 
 if (! function_exists('installerPromoteFatalShutdownToFailure')) {
     /**
-     * 치명 오류로 죽은 요청의 상태를 「실패」로 승격한다 (12차 #A2).
+     * 치명 오류로 죽은 요청의 상태를 「실패」로 승격한다.
      *
      * 세 진입점의 shutdown 훅이 lock 해제만 했으므로, fatal / OOM / 시간초과로 프로세스가
      * 중간에 죽으면 `installation_status` 는 `running` 인 채 `failed_task` 가 비어 남았다.
@@ -1559,7 +1559,7 @@ if (! defined('INSTALLER_WORKER_BUDGET_GRACE_SECONDS')) {
 
 if (! function_exists('installerWorkerBudgetExpired')) {
     /**
-     * 점유 중인 워커가 자기 선언 예산을 이미 넘겼는지 판정한다 (13차 환경#10).
+     * 점유 중인 워커가 자기 선언 예산을 이미 넘겼는지 판정한다.
      *
      * ## 무엇을 덮는가
      *
@@ -1586,8 +1586,7 @@ if (! function_exists('installerWorkerBudgetExpired')) {
      * 판정은 기존 생존 SSoT(`installerActiveWorkerIsAlive`)와 **모순되지 않는다** — heartbeat 가
      * 아직 예산 안이면 살아 있는 워커이므로 승격하지 않는다. 블로킹 구간에서 heartbeat 가 갱신되지
      * 않는다는 사실 때문에 기준은 heartbeat 가 아니라 **선언된 예산**이지만, 두 조건을 함께 요구해
-     * 어느 쪽으로도 살아 있는 워커를 앞지르지 않게 한다. 경과가 음수면(시계 역행) 승격하지 않는다
-     * (13차 환경#19 와 같은 규칙).
+     * 어느 쪽으로도 살아 있는 워커를 앞지르지 않게 한다. 경과가 음수면(시계 역행) 승격하지 않는다.
      *
      * @param  array<string, mixed>  $state  현재 상태
      * @param  string|null  $selfWorkerId  이 요청이 점유한 worker_id (자기 자신은 승격 대상이 아니다)
@@ -1642,7 +1641,7 @@ if (! function_exists('installerWorkerBudgetExpired')) {
 
 if (! function_exists('installerPromoteExpiredWorkerToFailure')) {
     /**
-     * 예산을 넘긴 점유자의 상태를 「실패」로 승격한다 — 시그널 종료의 안전망 (13차 환경#10).
+     * 예산을 넘긴 점유자의 상태를 「실패」로 승격한다 — 시그널 종료의 안전망.
      *
      * 치명 오류 채널(`installerPromoteFatalShutdownToFailure`)과 배타가 아니라 보완이다:
      * 그쪽은 fatal 을 **즉시** 잡는 빠른 경로고, 이쪽은 그 훅이 돌지 못한 경우를 다음 요청이
@@ -1767,7 +1766,7 @@ if (! function_exists('installerHandleWorkerShutdown')) {
     function installerHandleWorkerShutdown(string $workerId, string $mode = '', ?int $connectionStatus = null): void
     {
         // shutdown 처리에 쓸 시간을 따로 확보한다 (fatal 직후에는 남은 시간이 없다).
-        // 막힌 호스팅에서는 부르지 않는다 — `@` 는 차단 함수의 Error 를 삼키지 않는다 (13차 환경#1).
+        // 막힌 호스팅에서는 부르지 않는다 — `@` 는 차단 함수의 Error 를 삼키지 않는다.
         if (installerHasFunction('set_time_limit')) {
             @set_time_limit(30);
         }
@@ -1971,7 +1970,7 @@ if (! function_exists('installerWaitForWorkerToRetreat')) {
      * 표식을 기록한 직후 이 대기를 거쳐야 되돌리기가 아직 실행 중인 태스크와 겹치지 않는다.
      *
      * **무한 대기는 하지 않는다.** 상한을 넘으면 기다리지 않고 그대로 진행한다 — 중단은
-     * 어떤 경우에도 완료되어야 하기 때문이다(11차가 좁히려다 철회한 이유가 「탈출구가
+     * 어떤 경우에도 완료되어야 하기 때문이다(앞서 좁히려다 철회한 이유가 「탈출구가
      * 막히는 것」이었다). 상한 초과 사실은 호출자가 진행 기록에 남긴다.
      *
      * 시계 대신 **누적한 대기 시간**으로 상한을 판정한다 — 주입한 sleeper 로 검사할 수 있고,
@@ -2221,7 +2220,7 @@ function applyExistingDbActionStateGuard(array $state, string $newAction): array
             $state['completed_tasks'] ?? [],
             fn ($t) => ! isTaskInvalidatedByDbCleanup((string) $t)
         ));
-        // 기준선도 함께 비운다 (19차 R2). `db_migrate` 마커를 지웠다는 것은 이 실행이
+        // 기준선도 함께 비운다. `db_migrate` 마커를 지웠다는 것은 이 실행이
         // 마이그레이션을 **다시** 돌린다는 뜻인데, `installerRecordMigrationBatchBaseline()` 은
         // 값이 있으면 다시 기록하지 않는다. 게다가 drop_tables 는 그 사이 테이블을 지우므로
         // 이월된 기준선은 새 DB 상태보다 **크다** — 그러면 `--step` 이 0 으로 계산되어
@@ -2274,7 +2273,7 @@ function updateCurrentTask(string $task): bool
  * @return bool 저장 성공 여부
  */
 /**
- * 로그 한 줄을 저장 가능한 형태로 정규화한다 — 단건·배치가 공유하는 단일 지점 (13차 환경#11).
+ * 로그 한 줄을 저장 가능한 형태로 정규화한다 — 단건·배치가 공유하는 단일 지점.
  *
  * 종전에는 이 처리가 `addLog` 에만 있었고 `addLogBatch` 에는 Windows 변환만 있었다. 배치
  * 경로는 **폴링 모드**가 쓰는데, 잘못된 바이트가 그대로 남으면 폴링 응답
@@ -2284,7 +2283,7 @@ function updateCurrentTask(string $task): bool
  * Windows 판정은 **인자로 받는다** — 함수 안에서 OS 를 보면 그 분기는 Linux CI 에서 한 번도
  * 평가되지 않는다.
  *
- * ## mbstring 이 없을 때 (16차 B-1)
+ * ## mbstring 이 없을 때
  *
  * 이 함수는 `addLog` 를 거쳐 **`session.php` 최상위**에서 불린다 — 즉 인스톨러 첫 요청부터
  * 매번 돈다. `mb_*` 를 무가드로 부르면 mbstring 이 없는 서버에서 `Error` 로 **첫 화면이
@@ -2683,7 +2682,7 @@ function _addLogInternal(string $message): bool
  */
 if (! function_exists('installerReadLogLines')) {
     /**
-     * 진행 기록 파일의 비어 있지 않은 줄을 돌려준다 — 요청 내 1회만 읽는다 (17차 #C10).
+     * 진행 기록 파일의 비어 있지 않은 줄을 돌려준다 — 요청 내 1회만 읽는다.
      *
      * 폴링 응답 한 번이 `getInstallationLogs()` 와 `getInstallationLogCount()` 를 **둘 다**
      * 부르는데 각자 파일 전체를 `file_get_contents` + `explode` 했다. 회전·상한이 없는 파일이라
@@ -2771,7 +2770,7 @@ function getInstallationLogs(int $offset = 0): array
  */
 function getInstallationLogCount(): int
 {
-    // 같은 요청의 getInstallationLogs() 와 같은 읽기를 공유한다 (17차 #C10).
+    // 같은 요청의 getInstallationLogs() 와 같은 읽기를 공유한다.
     return count(installerReadLogLines());
 }
 
@@ -2829,14 +2828,14 @@ if (! function_exists('markInstallationTaskSkipped')) {
     function markInstallationTaskSkipped(array $state): array
     {
         // 완료 마커·건너뜀 목록을 읽고 고쳐 쓴다 — 상태 파일을 만지는 다른 헬퍼와 같은
-        // 배타 구간에서 해야 겹친 요청이 서로의 기록을 덮어쓰지 않는다 (12차 #A3).
+        // 배타 구간에서 해야 겹친 요청이 서로의 기록을 덮어쓰지 않는다.
         //
-        // **읽기도 구간 안에서 한다** (17차 #C3). 호출부(`state-management.php`)는 토큰 판정을
+        // **읽기도 구간 안에서 한다**. 호출부(`state-management.php`)는 토큰 판정을
         // 위해 구간 밖에서 상태를 한 번 읽는데, 그 스냅샷을 그대로 저장하면 읽기와 저장 사이에
         // 워커가 남긴 완료 마커가 통째로 덮인다 — 그 태스크가 다시 뽑히고, DB 정리 태스크가
         // 다시 돌면 방금 만든 테이블이 DROP 된다. 인자는 호출부의 의도(어느 태스크를 건너뛰는가)
         // 를 나르지만 그 판정 근거는 상태 파일이 SSoT 이므로, 중단 경로가 대기 뒤 재조회하는 것
-        // (12차 #A1)과 같은 방식으로 여기서도 최신 상태를 다시 읽는다.
+        //과 같은 방식으로 여기서도 최신 상태를 다시 읽는다.
         return installerWithStateLock(static function () use ($state): array {
             // 구간 안에서 다시 읽는다. 읽지 못하면(파손 등) 호출부 스냅샷으로 내려가 종전 동작을
             // 유지한다 — 확인하지 못한 것을 근거로 계약을 바꾸지 않는다.
@@ -2849,13 +2848,13 @@ if (! function_exists('markInstallationTaskSkipped')) {
 
 if (! function_exists('installerRecordBusyRejection')) {
     /**
-     * 폴링 워커가 lock 을 못 잡았을 때 그 사유를 상태에 남긴다 (11차 #A4 · 17차 #C4).
+     * 폴링 워커가 lock 을 못 잡았을 때 그 사유를 상태에 남긴다.
      *
      * 이 기록은 **정의상 다른 워커가 진행 중일 때만** 일어난다 — 즉 경합이 우발이 아니라
      * 구조적이다. 종전에는 구간 밖에서 읽고 써서, 승자가 그 창에 남긴 완료 마커·건너뜀·
      * best-effort 기록이 통째로 덮였다. 읽기·쓰기를 배타 구간 안에 둬 그 유실을 없앤다.
      *
-     * 사유를 남기는 것 자체(상태를 failed 로 뒤집어 폴링 조회가 읽게 하는 것)는 11차의
+     * 사유를 남기는 것 자체(상태를 failed 로 뒤집어 폴링 조회가 읽게 하는 것)는 앞선
      * 결정이며 여기서 바꾸지 않는다 — 이 변경은 유실 창만 닫는다.
      *
      * @return bool 저장 성공 여부
@@ -2880,7 +2879,7 @@ if (! function_exists('installerRecordBusyRejection')) {
 
 if (! function_exists('installerSkipDbConfig')) {
     /**
-     * 건너뛰기 판정이 쓰는 DB 설정 — 비밀은 runtime.php 가 보관처다 (16차 C-1).
+     * 건너뛰기 판정이 쓰는 DB 설정 — 비밀은 runtime.php 가 보관처다.
      *
      * `hydrateDbSecretsFromRuntime` 는 installer-runtime.php 소유라 이 파일만 단독 로드하는
      * 경로에서는 없다. 그때는 보강 없는 설정을 그대로 돌려주고, 접속이 되지 않으면 판정기가
@@ -2901,7 +2900,7 @@ if (! function_exists('installerSkipDbConfig')) {
 
 if (! function_exists('installerSkipDbPrefix')) {
     /**
-     * 건너뛰기 판정이 쓰는 테이블 접두사 (16차 C-1).
+     * 건너뛰기 판정이 쓰는 테이블 접두사.
      *
      * @param  array<string, mixed>  $state  현재 상태
      * @return string 접두사 (미설정이면 빈 문자열)
@@ -2914,11 +2913,11 @@ if (! function_exists('installerSkipDbPrefix')) {
 
 if (! function_exists('installerActivateKeyIsForInstalledExtension')) {
     /**
-     * 이 `*_activate` 태스크 키가 **실제로 설치된** 확장의 것인가 (16차 C-1).
+     * 이 `*_activate` 태스크 키가 **실제로 설치된** 확장의 것인가.
      *
      * 건너뛰기가 활성화 태스크를 함께 지나가는 근거는 「설치되지 않은 확장은 활성화할 수
      * 없다」이고, 그 판정의 출처는 **완료 마커**다. 그런데 부수효과가 끝난 뒤 마커를 남기기
-     * 전에 요청이 죽으면(12차가 실패로 승격시킨 경로) 마커의 부재는 설치의 부재를 뜻하지
+     * 전에 요청이 죽으면(실패로 승격된 경로) 마커의 부재는 설치의 부재를 뜻하지
      * 않는다. 그때 활성화까지 지나가면 운영자가 고른 확장이 **설치된 채 켜지지 않고** 설치가
      * 「완료」로 끝난다.
      *
@@ -2982,9 +2981,9 @@ if (! function_exists('installerApplyTaskSkip')) {
         if (str_ends_with($taskId, '_install') && $target !== null) {
             $pairId = substr($taskId, 0, -strlen('_install')).'_activate';
             // 짝 활성화를 함께 지나가는 근거는 「설치되지 않은 확장은 활성화할 수 없다」인데,
-            // 부수효과가 끝난 뒤 완료 마커 전에 요청이 죽으면(12차가 실패로 승격시킨 경로)
+            // 부수효과가 끝난 뒤 완료 마커 전에 요청이 죽으면(실패로 승격된 경로)
             // 그 전제가 깨진다. 그때 짝까지 지나가면 운영자가 고른 확장이 **설치되어 있는데
-            // 켜지지 않은 채** 설치가 「완료」로 끝난다 — 오류도 로그도 남지 않는다 (16차 C-1).
+            // 켜지지 않은 채** 설치가 「완료」로 끝난다 — 오류도 로그도 남지 않는다.
             //
             // 판정 불가(`null`)면 종전대로 함께 지나간다 — 확인하지 못한 것을 근거로 동작을
             // 바꾸지 않는다. 판정기는 rollback-functions.php 소유이며, 그것을 로드하지 않는
@@ -3003,14 +3002,14 @@ if (! function_exists('installerApplyTaskSkip')) {
         // 사실이 아니다 — 그대로 두면 의존이 깨진 확장이 설치·활성화된 채 「완료」된다.
         // 이미 설치가 끝난 의존 확장은 되돌릴 수 없으므로 사실을 기록해 운영자에게 알린다.
         $dependencyWarnings = $state['dependency_skip_warnings'] ?? [];
-        // 이번 건너뛰기가 **새로** 만든 경고만 따로 모은다 (11차 #A8) — 누적 배열 전체를
+        // 이번 건너뛰기가 **새로** 만든 경고만 따로 모은다 — 누적 배열 전체를
         // 로그로 다시 쏟으면 두 번째 건너뛰기부터 앞선 경고가 진행 기록에 중복해서 찍힌다.
         $newDependencyWarnings = [];
         if ($target !== null && function_exists('installerDependentsOfSkippedTarget')) {
             $dependents = installerDependentsOfSkippedTarget($target, $completed);
 
             foreach ($dependents['pending'] as $dependentKey) {
-                // 파급도 같은 규칙을 받는다 (16차 C-1 재귀). `pending` 판정의 근거는 **완료
+                // 파급도 같은 규칙을 받는다 (재귀). `pending` 판정의 근거는 **완료
                 // 마커의 부재**인데, 부수효과가 끝난 뒤 마커 전에 요청이 죽으면 그 부재는
                 // 「설치되지 않았다」를 뜻하지 않는다. 직접 짝만 고치고 여기를 두면 같은 결함이
                 // 한 단계 밖에 그대로 남는다 — 의존 확장이 설치된 채 켜지지 않는다.

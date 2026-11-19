@@ -371,7 +371,7 @@ class GeoIpDatabaseService
     {
         // 나열은 단일 지점을 쓴다 — GeoIP DB 갱신은 예약 작업이고, 무CLI 환경에서 그
         // 스케줄은 **웹 요청 안에서** 실행되므로 `glob` 이 막힌 호스팅에서는 이 자리가
-        // 치명 오류가 된다 (12차 G3 라운드).
+        // 치명 오류가 된다.
         foreach (ExtensionManager::listDirectories($extractPath, $editionId.'_') as $versionDir) {
             $candidate = $versionDir.DIRECTORY_SEPARATOR.$editionId.'.mmdb';
 

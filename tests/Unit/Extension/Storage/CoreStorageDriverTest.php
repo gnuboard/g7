@@ -201,8 +201,7 @@ class CoreStorageDriverTest extends TestCase
      * 파생값이 `https://host.test//storage` 가 되어 경로가 `//storage` 로 온다.
      * 슬래시를 접기 전에는 `=== '/storage'` 가 거짓이라 **대체 서빙이 켜지지 않았고**,
      * 링크를 만들 수 없는 호스팅에서 그 사이트의 공개 이미지가 전부 404 가 됐다 —
-     * 오류도 로그도 없이 슬래시 하나가 G3 의 핵심 기능 전체를 끄는 형태였다
-     * (14차 G3 라운드).
+     * 오류도 로그도 없이 슬래시 하나가 G3 의 핵심 기능 전체를 끄는 형태였다.
      *
      * @effects public_storage_url_switches_to_route_when_link_missing
      *

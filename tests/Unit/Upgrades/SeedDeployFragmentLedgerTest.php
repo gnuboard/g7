@@ -107,7 +107,7 @@ class SeedDeployFragmentLedgerTest extends TestCase
     }
 
     /**
-     * 부분 원장의 빠진 키를 서비스·스텝 **양쪽**이 채운다 (17차 C-4).
+     * 부분 원장의 빠진 키를 서비스·스텝 **양쪽**이 채운다.
      *
      * `applyDeployFragments()` 는 세 지점(선택 적용 제외·소스 읽기 실패·복사 검증 실패)에서 조각을
      * 원장에 넣지 않고 빠져나간다 — 그러면 부분 원장이 남는데, 종전 씨앗기는 `is_file()` 하나로 조기
@@ -151,7 +151,7 @@ class SeedDeployFragmentLedgerTest extends TestCase
     }
 
     /**
-     * 점 파일/디렉토리는 서비스·스텝 **양쪽**의 모집단에서 빠진다 (17차 C-1).
+     * 점 파일/디렉토리는 서비스·스텝 **양쪽**의 모집단에서 빠진다.
      *
      * 서비스 씨앗기는 `File::allFiles()`(`ignoreDotFiles(true)`)로 점 파일을 제외하는데, 스텝은
      * `scandir` 로 점 파일까지 포함해 두 구현의 모집단이 갈렸다 — 같은 디스크가 두 원장을 만들었다.
@@ -203,14 +203,14 @@ class SeedDeployFragmentLedgerTest extends TestCase
     }
 
     /**
-     * 원장 쓰기 실패가 **운영자에게 도달**한다 (23차 D23-13 의 조치를 재는 자리).
+     * 원장 쓰기 실패가 **운영자에게 도달**한다.
      *
      * 이 스텝이 도는 무CLI 동선의 운영자는 `storage/logs/*.log` 를 열 수단이 없다. 그래서
      * 실패는 로그가 아니라 형제 스텝과 같은 통로(`StorageLinkHelper` 의 경고 버퍼 —
      * 스텝 러너가 종료 시 비워 화면에 낸다)로 나가야 한다.
      *
      * 이 케이스가 없으면 그 통보를 통째로 지워도 이 클래스가 전부 초록이다
-     * (24차 G3 라운드 R24-C M14 실측).
+     * (R24-C M14 실측).
      *
      * @scenario deploy_fragment_ledger=absent, deploy_fragment_state=unmodified, process_shape=spawn_child
      *

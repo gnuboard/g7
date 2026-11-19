@@ -8,11 +8,11 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\CleansTemporaryBasePath;
 
 /**
- * 단계별 실행 토큰이 **설치를 시작한 세션에만** 실리는가 (13차 보안#3).
+ * 단계별 실행 토큰이 **설치를 시작한 세션에만** 실리는가.
  *
  * 진행 중인 stepwise 설치가 있으면 `index.php` 는 세션이 없는 요청도 상태 파일의
  * `current_step` 을 채택해 Step 5 로 안내한다. 그 화면이 토큰을 무조건 렌더하면 **무세션
- * GET 한 번으로 토큰이 유출되고**, 9~11차가 run-task·abort·reset·skip_task·finalize 에 건
+ * GET 한 번으로 토큰이 유출되고**, 앞서 run-task·abort·reset·skip_task·finalize 에 건
  * 토큰 게이트 전부가 그 통로 하나로 우회된다.
  *
  * 막는 것은 페이지가 아니라 토큰이다 — Step 5 렌더 자체를 막으면 `showInstallationRunningAlert()`

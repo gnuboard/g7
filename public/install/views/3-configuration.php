@@ -408,7 +408,7 @@ foreach (SUPPORTED_LANGUAGES as $code => $label) { ?>
         <?php
             require_once __DIR__.'/../includes/execution-mode.php';
 
-// 번들 가용성은 「파일이 있다」가 아니라 「풀 수 있다」다 (13차 환경#4) — 판정은
+// 번들 가용성은 「파일이 있다」가 아니라 「풀 수 있다」다 — 판정은
 // installerVendorBundleUsable() 단일 지점이 소유한다. 화면이 사본을 두면 요구사항 화면·감지·
 // 태스크가 각자 다른 답을 낸다.
 $bundleAvailable = installerVendorBundleUsable();
@@ -420,7 +420,7 @@ $currentVendorMode = $formData['vendor_mode'] ?? 'auto';
 
 // 실행 방식 — 감지 결과는 "초기값" 의 근거일 뿐 저장되지 않는다 (A-0 ①). 기본 선택은 auto.
 $currentExecutionMode = installerNormalizeExecutionMode($formData['execution_mode'] ?? 'auto');
-// 최초 렌더도 재감지 경로와 **같은 판정기**를 지난다 (19차 S-7).
+// 최초 렌더도 재감지 경로와 **같은 판정기**를 지난다.
 //
 // 종전에는 `$formData['php_binary']` 원문을 그대로 넘겨, 경로 정규화와 「되돌렸는가」 판정을
 // 소유한 `installerDetectionPhpBinary()`(§4.1 SSoT)를 건너뛰었다. 그래서 형태 위반 경로로
@@ -433,7 +433,7 @@ $executionBinary = installerDetectionPhpBinary(
 $executionBinarySubstituted = $executionBinary['substituted'];
 $executionDetection = installerDetectExecutionMode($executionBinary['binary']);
 $detectedExecutionMode = $executionDetection['mode'];
-// 화면의 「고를 수 있는가」는 저장 게이트와 같은 판정을 쓴다 (19차 S-6) — check-configuration.php
+// 화면의 「고를 수 있는가」는 저장 게이트와 같은 판정을 쓴다 — check-configuration.php
 // 의 `subprocess_selectable` 과 같은 규칙이어야 서버 렌더와 재감지 결과가 갈리지 않는다.
 $subprocessSelectable = installerExecutionModeRejection(
     ExecutionEnvironment::MODE_SUBPROCESS,
@@ -567,7 +567,7 @@ $currentVendorMode = installerCoerceVendorModeForExecution((string) $currentVend
                 </p>
                 <div class="vendor-mode-cards" role="radiogroup" aria-labelledby="vendor-mode-group-label">
                     <!-- 자동 (권장) -->
-                    <?php /* inprocess 로 확정된 환경에서는 이 선택지도 잠근다 (9차 #L26).
+                    <?php /* inprocess 로 확정된 환경에서는 이 선택지도 잠근다.
                              서버는 auto 를 bundled 로 보정하므로(A-4), 잠그지 않으면 화면은 「자동」이
                              선택된 채인데 실제 설치는 번들로 돈다 — 바로 아래 안내가 「선택을 바꿀 수
                              없습니다」라고 단정하는 것과도 어긋난다. */ ?>
@@ -665,7 +665,7 @@ $currentVendorMode = installerCoerceVendorModeForExecution((string) $currentVend
                 </p>
                 <?php /* 명령줄 안내는 그 명령을 실행할 수 있는 환경에서만 보여 준다 — 바로 위에
                          「이 서버는 Composer 를 실행할 수 없습니다」가 떠 있는 화면에서 `php artisan`
-                         후속 조치를 제시하면, 운영자가 따를 수 없는 유일한 안내가 된다 (9차 #L27).
+                         후속 조치를 제시하면, 운영자가 따를 수 없는 유일한 안내가 된다.
                          무CLI 환경의 변경 수단은 관리자 화면이므로 그 문구로 갈아 끼운다. */ ?>
                 <p class="form-help u-mt-md">
                     <?php if ($effectiveInprocess) { ?>

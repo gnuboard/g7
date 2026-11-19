@@ -509,7 +509,7 @@ class CategoryImageServiceTest extends ModuleTestCase
     /**
      * download 메서드가 StorageInterface.response()를 사용하여 StreamedResponse를 반환하는지 테스트
      *
-     * 헤더 계약은 11차 G3 라운드 B11-12 로 **강화**되었고, 14차에 그 계약의 소유자가 바뀌었다 —
+     * 헤더 계약은 앞서 **강화**되었고, 이후 그 계약의 소유자가 바뀌었다 —
      * `Cache-Control`·`ETag`·`Expires`·304 판정은 코어 단일 지점(`streamedFileResponse()`)이
      * 만들고 서비스는 스트림 + 검증자 메타(`getFileInfo()`)만 돌려준다. 서비스가 그 헤더를
      * 스토리지에 넘기면 코어 지점이 덮어쓰거나 갈린 사본이 되므로, 여기서는 **넘기지 않는

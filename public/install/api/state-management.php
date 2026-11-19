@@ -34,12 +34,12 @@ class StateManagementApi
         $method = $_SERVER['REQUEST_METHOD'];
         $action = $_GET['action'] ?? ($method === 'GET' ? 'get' : null);
 
-        // 상태를 바꾸는 액션은 출처를 확인한다 (13차 보안#4). 인스톨러에는 csrf_token 검증이
+        // 상태를 바꾸는 액션은 출처를 확인한다. 인스톨러에는 csrf_token 검증이
         // 없고(헬퍼는 정의만 있었다) 세션 쿠키는 SameSite=Lax 라, 다른 사이트의 자동 제출 폼
         // 하나로 [중단](진행 중 태스크 롤백)·[초기화](완료 기록 전소거)를 부를 수 있었다.
         // 커스텀 헤더 요구는 방어가 아니다 — 단순 폼 제출에는 헤더가 필요 없다.
         if (in_array($action, ['reset', 'abort', 'skip_task', 'reclaim'], true)) {
-            // 끝난 설치의 중단·초기화·건너뛰기는 성립하지 않는다 (13차 보안#8).
+            // 끝난 설치의 중단·초기화·건너뛰기는 성립하지 않는다.
             // `action=get` 은 대상이 아니다 — 완료 화면 전환이 그 폴링 한 번에 달려 있다.
             installer_guard_post_complete_or_410();
 
@@ -202,7 +202,7 @@ class StateManagementApi
      * (마이그레이션 실패 시 자동 롤백은 install-worker.php에서 처리)
      */
     /**
-     * 단계별 실행 중인 설치의 상태 변경 요청에 토큰을 요구한다 (10차 #M10).
+     * 단계별 실행 중인 설치의 상태 변경 요청에 토큰을 요구한다.
      *
      * 단계별 실행은 세션이 아니라 발급 토큰으로 진행한다(R8) — 그래서 이 파일의 상태 변경
      * 액션은 전부 같은 토큰을 요구해야 한다. 건너뛰기 한 곳에만 걸어 두면, **그보다 파괴적인**
@@ -224,7 +224,7 @@ class StateManagementApi
         $presented = (string) ($_SERVER['HTTP_X_INSTALLER_TOKEN'] ?? ((is_array($body) ? $body['token'] : null) ?? ''));
         $expected = (string) (readInstallerRuntime()['installer']['stepwise_token'] ?? '');
 
-        // 사유를 나눈다 (11차 #A10) — 판정은 execution-mode.php 가 소유한다.
+        // 사유를 나눈다 — 판정은 execution-mode.php 가 소유한다.
         $rejection = installerStepwiseTokenRejection($presented, $expected);
         if ($rejection === null) {
             return;
@@ -255,7 +255,7 @@ class StateManagementApi
         $state = getInstallationState();
         installer_require_csrf();
 
-        // 파손된 상태에서는 이 뒤의 저장이 거부되어(13차 #D13) 초기화가 500 으로 끝난다 —
+        // 파손된 상태에서는 이 뒤의 저장이 거부되어 초기화가 500 으로 끝난다 —
         // 그러면 운영자에게 남는 조작이 없다. 초기화는 진행분을 **의도적으로 버리는** 유일한
         // 조작이므로 여기서만 파손 원본을 치운다(사본은 남는다). 다른 경로는 종전대로 거부된다.
         $discardedCorrupt = false;
@@ -284,7 +284,7 @@ class StateManagementApi
             addLog(lang('state_reset_db_notice'));
         }
 
-        // 초기화의 읽기·수정·쓰기를 배타 구간 안에서 한다 (17차 #C12). 초기화는 진행분을
+        // 초기화의 읽기·수정·쓰기를 배타 구간 안에서 한다. 초기화는 진행분을
         // 의도적으로 버리지만 `config` 는 **보존**하므로, 구간 밖에서 읽은 스냅샷을 쓰면 그
         // 사이 워커가 갱신한 설정(예: composer 가용성 판정)이 조용히 사라진다. 구간 안에서
         // 다시 읽어 최신 config 위에 초기화를 얹는다. 이 구간에는 SSE flush 가 없어
@@ -314,10 +314,10 @@ class StateManagementApi
             $state['failed_task_skippable'] = false;
             $state['skipped_tasks'] = [];
             $state['best_effort_failed_tasks'] = [];
-            // 의존성 경고도 이 집합에 속한다 (11차 #A8) — 남기면 다음 설치의 첫 건너뛰기에서
+            // 의존성 경고도 이 집합에 속한다 — 남기면 다음 설치의 첫 건너뛰기에서
             // **이전 설치의** 경고가 진행 기록에 다시 나타난다.
             $state['dependency_skip_warnings'] = [];
-            // 마이그레이션 기준선도 이 집합에 속한다 (19차 R2). 이 값은 「이번 실행 직전의 최대
+            // 마이그레이션 기준선도 이 집합에 속한다. 이 값은 「이번 실행 직전의 최대
             // 배치」라 실행이 바뀌면 뜻을 잃는데, `installerRecordMigrationBatchBaseline()` 은
             // 값이 있으면 다시 기록하지 않는다. 이월하면 **이전 회전의 기준선**으로 다음 회전의
             // `--step` 이 계산되어, 그 사이 운영자가 DB 를 바꾸거나 유지했을 때 이번 실행이
@@ -470,7 +470,7 @@ class StateManagementApi
         // 넘기면 폴링의 정지 감지가 「응답이 없습니다」라는 **틀린 사유**로 설치를 끝낸다.
         //
         // 형제 지점 `install-process.php` 가 인라인 워커 앞에서 같은 이유로 같은 조치를 한다.
-        // 13차 결정 3 이 이 분기에 확정 대기를 넣으면서 그 조치를 승계하지 않은 자리다 (17차 #B1).
+        // 13차 결정 3 이 이 분기에 확정 대기를 넣으면서 그 조치를 승계하지 않은 자리다.
         // 이 분기는 `$_SESSION` 에 쓰지 않는다(쓰기는 reset 분기 1곳뿐)이라 닫아도 안전하다.
         if (session_status() === PHP_SESSION_ACTIVE) {
             session_write_close();
@@ -493,7 +493,7 @@ class StateManagementApi
         $abortWait = installerWaitForWorkerToRetreat($abortWaitCap);
 
         // 상한을 넘겨도 **기다리지 않고 진행한다** — 중단은 어떤 경우에도 완료되어야 한다.
-        // 11차가 이 축을 좁히려다 철회한 이유가 「탈출구가 막히는 것」이었으므로, 겹칠 수
+        // 앞서 이 축을 좁히려다 철회한 이유가 「탈출구가 막히는 것」이었으므로, 겹칠 수
         // 있다는 사실만 진행 기록에 남기고 되돌리기는 반드시 수행한다.
         addLog($abortWait['retreated']
             ? lang('abort_api_worker_retreated', ['seconds' => number_format($abortWait['waited_ms'] / 1000, 1)])
@@ -512,7 +512,7 @@ class StateManagementApi
         // installer-state.php SSoT). completed_tasks는 유지 (이미 완료된 작업은 롤백하지 않음).
         //
         // 위 롤백은 수 초 블로킹이고 그동안 워커가 완료 마커·건너뜀·best-effort 기록을 쓴다 —
-        // 진입 시 스냅샷($state)에 중단 표식만 얹어 저장하면 그 기록이 통째로 사라진다 (12차 #A1).
+        // 진입 시 스냅샷($state)에 중단 표식만 얹어 저장하면 그 기록이 통째로 사라진다.
         addLog(lang('abort_api_status_change'));
 
         // 롤백 실패 정보 저장 (새로고침 후에도 표시용)
@@ -729,7 +729,7 @@ class StateManagementApi
             addLog(lang('error_log_prefix', ['error' => $e->getMessage()]));
         }
 
-        // 에러 응답 — 예외 원문은 싣지 않는다 (13차 보안#9). 이 엔드포인트는 인증이 없고
+        // 에러 응답 — 예외 원문은 싣지 않는다. 이 엔드포인트는 인증이 없고
         // 폴링이 1초 간격으로 때린다: 원문에는 절대경로·DB 호스트명 같은 배치 정보가 섞이며,
         // `message` 는 화면이 제목으로 그리는 자리라 개발자 문구가 그대로 안내가 된다.
         // 원문은 위 로깅 채널에만 남는다.
@@ -754,7 +754,7 @@ class StateManagementApi
 // 최상위 실행문이 없고 BASE_PATH 를 자체 역산하므로 config 보다 앞에 와도 안전하다.
 require_once __DIR__.'/../includes/execution-mode.php';
 
-// 오류 텍스트가 본문에 섞이지 않게 한다 — **include 체인·가드보다 앞** (12차 #A6 · 21차 N4).
+// 오류 텍스트가 본문에 섞이지 않게 한다 — **include 체인·가드보다 앞**.
 // 이 엔드포인트는 폴링이 1초 간격으로 때리고 응답은 JSON 계약이라, warning 한 줄이 본문 앞에
 // 붙으면 프론트의 res.json() 이 매 초 throw 한다.
 if (installerHasFunction('ini_set')) {

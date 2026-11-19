@@ -294,7 +294,7 @@ class ExistingDbActionGuardTest extends TestCase
     }
 
     /**
-     * 회귀(9차 #M6): 점유자가 스스로 선언한 유효 시간을 이 가드도 존중한다.
+     * 회귀: 점유자가 스스로 선언한 유효 시간을 이 가드도 존중한다.
      *
      * `worker_stale_after` 는 오래 도는 태스크(마이그레이션·vendor 추출)를 위해 요청이
      * 자기 시간 예산을 lock 에 알리는 값이다. lock 획득(acquireWorkerLock)은 그 선언을

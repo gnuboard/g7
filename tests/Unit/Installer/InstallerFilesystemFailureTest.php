@@ -9,7 +9,7 @@ use Tests\Concerns\CleansTemporaryBasePath;
 use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * 파일시스템이 협조하지 않을 때의 삭제·복원 계약 (19차 F2·F3·F5).
+ * 파일시스템이 협조하지 않을 때의 삭제·복원 계약.
  *
  * 이 축의 결함은 전부 **성공으로 위장된 실패**다 — 예외도 로그도 없이 반쪽 상태가 남고,
  * 그 위에서 다음 단계가 정상인 것처럼 진행된다.

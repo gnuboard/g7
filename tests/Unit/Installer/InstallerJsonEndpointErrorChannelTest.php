@@ -11,7 +11,7 @@ use Tests\Concerns\ScansPhpSourceFunctions;
  * 인스톨러 API 는 전부 구조화 응답(JSON/SSE)을 돌려주고 클라이언트가 파싱한다.
  * `display_errors=On` 호스트(XAMPP 기본, php.ini-development 기본)에서는 warning 한 줄이
  * 본문 앞에 붙어 파싱이 깨지고, 절반의 클라이언트 경로는 그 실패를 삼켜 **사유 없이
- * 기능이 죽는다** — 20차 실측: 진입점 11곳 중 4곳만 가드가 있었다. 18차 #A3 의
+ * 기능이 죽는다** — 실측하니 진입점 11곳 중 4곳만 가드가 있었다. 앞선
  * 「형제 5곳 전부 보유」 서술은 사실과 달랐다(§16.26.2 기록 정정).
  *
  * 모집단은 `public/install/api/*.php` 디렉토리 스캔으로 도출한다 — 수기 목록은 그 자체가
@@ -135,8 +135,7 @@ class InstallerJsonEndpointErrorChannelTest extends TestCase
         $pattern = '/apache_setenv\(\s*\\\\?[\'"][^\'"]+\\\\?[\'"]\s*,\s*(?!\s*\\\\?[\'"])/';
 
         // 판정식 자기검증 — 이 검사가 재는 것은 「위반이 없다」이므로, 판정식이 깨지면
-        // 그 사실이 초록과 구분되지 않는다. 양성·음성 대조를 먼저 세운다
-        // (7차 G3 라운드 E12).
+        // 그 사실이 초록과 구분되지 않는다. 양성·음성 대조를 먼저 세운다.
         $this->assertSame(1, preg_match($pattern, "apache_setenv('no-gzip', 1);"));
         $this->assertSame(1, preg_match($pattern, 'apache_setenv(\'no-gzip\', $flag);'));
         $this->assertSame(0, preg_match($pattern, "apache_setenv('no-gzip', '1');"));
@@ -203,9 +202,9 @@ class InstallerJsonEndpointErrorChannelTest extends TestCase
     }
 
     /**
-     * 21차 N4·N5: 채널 가드는 **include 체인보다 앞**이어야 한다 — config/session/functions/
+     * 채널 가드는 **include 체인보다 앞**이어야 한다 — config/session/functions/
      * _guard 안의 warning(`session_start` 실패·`$_SERVER` 무가드 읽기·가드의 410 방출 경로)이
-     * 배선보다 먼저 실행되면 그 텍스트가 본문 앞에 붙는 창이 그대로 남는다. 20차는 존재만
+     * 배선보다 먼저 실행되면 그 텍스트가 본문 앞에 붙는 창이 그대로 남는다. 종전에는 존재만
      * 파생 모집단으로 강제했고 순서는 수기 4건짜리 형제 게이트에 남아 있었다 — 여기로
      * 흡수한다(같은 파생 모집단).
      *
@@ -232,7 +231,7 @@ class InstallerJsonEndpointErrorChannelTest extends TestCase
                 continue;
             }
 
-            // 비교 대상 include 는 **소스에서 도출**한다 (22차 N-4) — 수기 목록(20차의 5건)은
+            // 비교 대상 include 는 **소스에서 도출**한다 — 종전 수기 목록(5건)은
             // check-configuration 이 가드보다 앞에서 로드하는 binary-path-policy 를 놓쳤다.
             // 예외는 선언 전용 파일 둘뿐이며, 그 성질 자체를 아래 별도 테스트가 잠근다.
             preg_match_all('#require(?:_once)?[^;\n]*?/((?:includes/)?[\w-]+\.php)#', $source, $requireMatches, PREG_OFFSET_CAPTURE);
@@ -252,7 +251,7 @@ class InstallerJsonEndpointErrorChannelTest extends TestCase
             }
         }
 
-        $this->assertSame([], $offenders, "채널 가드가 include 체인 뒤에 있는 진입점 (21차 N4 · 22차 N-4):\n".implode("\n", $offenders));
+        $this->assertSame([], $offenders, "채널 가드가 include 체인 뒤에 있는 진입점:\n".implode("\n", $offenders));
     }
 
     /**

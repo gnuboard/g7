@@ -64,23 +64,22 @@ const PREFIXING_HELPERS = [
     // 공식 수단(`G7Core.url.api` 위임 + 같은 SSoT 폴백)이 이 이름이다.
     'apiUrl(',
     'G7Core.url.api(',
-    // 화면을 **이동**하는 주소의 짝. 연산은 `apiUrl` 과 같고 부르는 자리가 다르다
-    // (13차 G3 라운드).
+    // 화면을 **이동**하는 주소의 짝. 연산은 `apiUrl` 과 같고 부르는 자리가 다르다.
     'sitePath(',
     // 편집기 주소 조립의 단일 지점 — 내부에서 `withBasePrefix` 를 적용해 돌려준다
     // (`useEditorMode.ts::buildEditorUrl`). `pushState`/`<a href>` 에 그대로 실리는
     // 값이므로 이동 축에서도 허용된다.
     'buildEditorUrl(',
     // `G7Core.url.route(` 는 여기 두지 않는다 — 그것은 접두사를 **벗기는**
-    // (`stripBasePrefix`) 함수다(`G7CoreGlobals.ts` 의 `initUrlAPI`). 13차가 붙이는
+    // (`stripBasePrefix`) 함수다(`G7CoreGlobals.ts` 의 `initUrlAPI`). 한때 붙이는
     // 헬퍼 목록에 함께 올려 두어, 그 이름을 쓰면 게이트를 통과하면서도 접두사가
-    // 없는 주소가 나가는 상태였다 — 13차가 닫은 이동 축이 게이트를 지나 되열린다.
-    // 현재 호출부는 0건이라 실제 위반은 없었고, 되열릴 구멍만 있었다(14차 G3 라운드).
+    // 없는 주소가 나가는 상태였다 — 앞서 닫은 이동 축이 게이트를 지나 되열린다.
+    // 현재 호출부는 0건이라 실제 위반은 없었고, 되열릴 구멍만 있었다.
     //
-    // 같은 이유로 **두 이름을 더 뺐다** (15차 G3 라운드):
+    // 같은 이유로 **두 이름을 더 뺐다**:
     //  · `G7Core.url.base(` — 구현은 `base: (): string => basePrefix()` 로 **인자를
     //    받지 않는다.** `fetch(G7Core.url.base(path))` 는 path 를 버리고 접두사만
-    //    부르는데 게이트는 통과한다. 14차가 `route(` 를 뺀 것과 **같은 형태의
+    //    부르는데 게이트는 통과한다. 앞서 `route(` 를 뺀 것과 **같은 형태의
     //    구멍**이 세 줄 위에 남아 있었다.
     //  · `publicStorage(` — 프론트에 그 이름의 구현이 **아예 없다**(정의·호출 0건).
     //    누군가 접두사를 붙이지 않는 동명 함수를 만들면 그대로 통과하는 유령 허용이다.
@@ -94,18 +93,18 @@ const PREFIXING_HELPERS = [
  *
  * 종전에는 이 표가 네 벌의 독립 리터럴이었다(위반 스캔 / 빈 모집단 대조 / 사본 수집 /
  * 사본 필요 판정). 그래서 **스캔 표만 망가뜨리면 대조 표는 여전히 제 수를 세어 초록**
- * 이었다 — 14차가 「합계 하나로 재면 안 된다」며 컨테이너별로 쪼갠 그 개선이, 정작
+ * 이었다 — 앞서 「합계 하나로 재면 안 된다」며 컨테이너별로 쪼갠 그 개선이, 정작
  * 측정 대상과 측정기가 서로 다른 사본이라는 더 근본적인 형태를 남겼다. 저장소 규정이
- * 확장 헬퍼 사본에 대해 금지한 것을 게이트 자신이 하고 있었다 (15차 G3 라운드).
+ * 확장 헬퍼 사본에 대해 금지한 것을 게이트 자신이 하고 있었다.
  */
 /**
  * 소스 파일 판정과 순회 제외 디렉토리 — **측정기와 대조가 같은 표를 본다.**
  *
  * 종전에는 위반 스캔이 `.ts|.tsx|.js|.mjs` 를, 비공허성 계수기가 `.ts|.tsx` 를 보는
- * 별개의 리터럴이었다. 그래서 10차가 진입 스크립트(`app.js`·`bootstrap.js`)를 축 안으로
+ * 별개의 리터럴이었다. 그래서 앞서 진입 스크립트(`app.js`·`bootstrap.js`)를 축 안으로
  * 넣으려고 확장자를 넓혔는데, **그 파일들을 세는 쪽은 넓어지지 않아** 두 스캔의 모집단이
  * 갈렸다 — 계수 루트까지 한 단계 아래(`resources/js/core`)여서 그 두 파일은 결국
- * 스캔에도 계수에도 없었고, 배선을 되돌려도 red 가 없었다 (16차 G3 라운드 A-6).
+ * 스캔에도 계수에도 없었고, 배선을 되돌려도 red 가 없었다.
  */
 const SOURCE_FILE_RE = /\.(ts|tsx|js|mjs)$/;
 
@@ -170,7 +169,7 @@ function installedIsNewer(installed: string, bundled: string): boolean {
  * 규정은 **사유**를 요구하는데(개발 규정 문서), 종전 판정은 두 줄을
  * 이어 붙인 문자열에 `includes('base-path:allow')` 를 걸 뿐이었다 — 사유 없는
  * 맨 표식도, **문자열 리터럴 안**의 같은 글자도 면제로 인정됐다. 표식이 「사유가
- * 사라진 면제」로 퇴화해도 아무것도 울지 않는 상태였다 (7차 G3 라운드 E11).
+ * 사라진 면제」로 퇴화해도 아무것도 울지 않는 상태였다.
  *
  * 판정 축 셋: ① 줄 단위로 본다(이어 붙이면 앞줄의 `//` 가 뒷줄의 리터럴을 덮는다)
  * ② `//` 주석 안이어야 한다 — 앞에 따옴표가 없어야 하고, `http://` 처럼 `:` 뒤에
@@ -464,8 +463,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
          * 종전에는 이 표가 여기와 서버 `AssetUrlTest.php` 에 **각자 손으로 쓴 두 벌**로
          * 있었다 — 멱등(`/g7/api/x`) · 비대상(`//host`·절대 URL·상대 경로) · 경계(`?`·`#`·
          * 경계 없는 이어짐) · 공백 전처리 행이 양쪽에 따로 적혀 있었고, 사본은 갈려도 울지
-         * 않는다: 한쪽만 고치면 같은 입력이 서버에서는 접두사를 얻고 화면에서는 얻지 못한다
-         * (15차 G3 라운드 W4-3). 행은 회차 15 가 양쪽에서 실측한 값이다.
+         * 않는다: 한쪽만 고치면 같은 입력이 서버에서는 접두사를 얻고 화면에서는 얻지 못한다.
+         *행은 회차 15 가 양쪽에서 실측한 값이다.
          */
         const readBoundaryFixture = async () => {
             const fs = await import('node:fs');
@@ -641,7 +640,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
          * 대입받은 식별자면 그것은 fetch 다. 새 seam 이름이 생겨도 목록을 고칠 필요가 없다.
          *
          * 도출은 **이행적**이다. 종전 판본은 한 겹만 봐서 세 형태를 놓쳤고, 그 셋이 전부
-         * 이 저장소의 실물이었다 (9차 G3 라운드 A-3):
+         * 이 저장소의 실물이었다:
          *
          *   · `fetchImpl?: typeof fetch` — 선택 프로퍼티. 식별자와 `:` 사이의 `?` 를
          *     허용하지 않아 코어 3선언이 통째로 밖이었다.
@@ -751,8 +750,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             const found: { arg: string; line: number }[] = [];
             const patterns = [
                 // 프로퍼티 대입. 식별자 앞의 `.` 를 막지 않는다 — 막으면 `this.iframe.src = …`
-                // · `getElementById(x).src = …` 같은 **체인 형태가 통째로 수집 밖**이 된다
-                // (7차 G3 라운드 B-5). `location.href` 는 이동 축이 이미 잡으므로 여기서는
+                // · `getElementById(x).src = …` 같은 **체인 형태가 통째로 수집 밖**이 된다.
+                //`location.href` 는 이동 축이 이미 잡으므로 여기서는
                 // 바로 앞 식별자가 `location` 인 형태만 제외한다.
                 /(?!location)[A-Za-z_$][\w$]*\s*\.\s*(?:src|action)\s*(?<![=!<>])=(?!=)\s*(['"`][^'"`\s]*)/g,
                 /(?!location)[A-Za-z_$][\w$]*\s*\.\s*href\s*(?<![=!<>])=(?!=)\s*(['"`][^'"`\s]*)/g,
@@ -806,8 +805,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
          * `new Worker(url)` / `new SharedWorker(url)` 넷이다. 전부 라우터도 `fetch` 래퍼도
          * 거치지 않고 브라우저가 직접 여는 주소라 접두사를 붙일 주체가 호출부뿐인데, 어느
          * 수집기에도 없어 루트 상대 리터럴을 심어도 이 계약 검사가 초록이었다. 현재 실물은
-         * 0 이고 그 0 을 「빈 모집단」이 아니라 「루트 상대 리터럴 0」으로 고정한다
-         * (15차 G3 라운드 W4-6). 형제 축(자산 대입)과 같은 이유로 **리터럴만** 본다.
+         * 0 이고 그 0 을 「빈 모집단」이 아니라 「루트 상대 리터럴 0」으로 고정한다.
+         *형제 축(자산 대입)과 같은 이유로 **리터럴만** 본다.
          *
          * `.open(` 은 `window.open(` 과 구분해야 한다 — XHR 은 첫 인자가 HTTP 메서드
          * 문자열이라 그 형태(`'GET'` 등)를 요구하고 **둘째** 인자를 주소로 잡는다.
@@ -863,11 +862,11 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
          * 주소창을 갈아 끼우는 `history.pushState` / `history.replaceState` 의
          * **세 번째** 인자(= 브라우저가 보게 될 주소)를 모은다.
          *
-         * 이 축은 13차까지 게이트가 보지 못했다. `location.replace(` 와
+         * 이 축은 종전까지 게이트가 보지 못했다. `location.replace(` 와
          * `history.replaceState(` 는 다른 문자열이라 이동 수집기의 세 패턴 어디에도
          * 걸리지 않았고, 그 사각에 `TemplateApp.updateQueryParams` 가 남아 있었다 —
          * 목록의 검색·정렬·페이지 이동(`navigate` + `replace: true`)이 전부 그 경로라
-         * 하위 폴더 사이트에서 주소창이 마운트 밖으로 교체됐다(14차 G3 라운드).
+         * 하위 폴더 사이트에서 주소창이 마운트 밖으로 교체됐다.
          */
         const collectHistoryTargets = (body: string): { arg: string; line: number }[] => {
             const found: { arg: string; line: number }[] = [];
@@ -898,7 +897,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
          * 따라서 판정 대상은 그 한 곳을 **지나지 않는** 형태, 즉 대문자 `A`(컴포넌트)가
          * 아닌 소문자 `a`(날 DOM 앵커)다. JSX 는 대소문자를 구분하므로 태그 이름으로
          * 정확히 갈린다. `A` 컴포넌트 자신의 구현부는 접두사를 붙이는 그 지점이라
-         * 허용목록(`sitePath(`)으로 통과한다 (14차 G3 라운드).
+         * 허용목록(`sitePath(`)으로 통과한다.
          */
         const collectAnchorTargets = (body: string): { arg: string; line: number }[] => {
             const found: { arg: string; line: number }[] = [];
@@ -925,7 +924,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
          *
          * 증상이 가장 나쁜 축이다: 결제는 **승인되고** 복귀만 사이트 밖으로 나가
          * 주문이 완결되지 않으며, 문서 루트에 다른 사이트가 있으면 그쪽이 결제 결과를
-         * 받는다. 오류도 로그도 남지 않는다 (15차 G3 라운드).
+         * 받는다. 오류도 로그도 남지 않는다.
          *
          * 판정 대상은 `origin` 바로 뒤에 이어 붙는 피연산자다. 그 자리가 접두사를
          * 붙이는 헬퍼로 감싸여 있으면 통과한다. 오리진 자체를 **비교**하는 형태
@@ -971,7 +970,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
          * 한 줄이 다음 `*&#47;` 까지를 통째로 주석으로 삼켰다 — `AvatarUploader.tsx` 에서
          * **260줄**(107~366)이 그렇게 지워졌고, 그 안에 있던 루트 상대 `fetch(uploadEndpoint)`·
          * `fetch(deleteEndpoint)` 두 건이 게이트에 한 번도 보이지 않았다. 저장소 전체로는
-         * 165파일 1,360줄이 판정 밖이었다(14차 G3 라운드 실측). 같은 형태로 `"https://…"` 의
+         * 165파일 1,360줄이 판정 밖이었다(실측). 같은 형태로 `"https://…"` 의
          * `//` 도 그 줄 나머지를 지운다.
          *
          * 문자열 **내용은 지우지 않는다** — 수집기가 첫 인자로 읽어야 하는 값이 그 자리에
@@ -1044,15 +1043,14 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             //
             // 그래서 형태를 열거하는 대신 **첫 인자가 무엇인가**를 본다: 접두사 헬퍼를 거친
             // 값이거나, 루트 상대가 아닌 리터럴이어야 한다. 그 밖의 형태(변수·표현식)는
-            // 판정할 수 없으므로 바로 위 줄의 `// base-path:allow <사유>` 로 의도를 남긴다
-            // (11차 G3 라운드).
+            // 판정할 수 없으므로 바로 위 줄의 `// base-path:allow <사유>` 로 의도를 남긴다.
             const fs = await import('node:fs');
             const path = await import('node:path');
 
             const repoRoot = path.resolve(__dirname, '..', '..', '..', '..', '..');
             // 시작점은 `resources/js` 다 — `core` 하나로 두면 형제 진입 스크립트
             // (`app.js`·`bootstrap.js`)가 이 축 밖에 남는다. 지금은 그 둘에 주소가 없지만
-            // 「없다」를 고정하는 것이 없었다 (7차 G3 라운드 B-7). `resources/js/installer`
+            // 「없다」를 고정하는 것이 없었다. `resources/js/installer`
             // 는 `__tests__` 뿐이고, 그 화면의 실제 스크립트는 `public/install/assets/js`
             // 에 있어 이 walk 밖이다 — 그 축은 아래 별도 단언이 잰다.
             const root = path.resolve(__dirname, ...CORE_SCAN_ROOT);
@@ -1060,7 +1058,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             const navOffenders: string[] = [];
             // 전송 통로 축의 모집단 — 「루트 상대 리터럴 0」이 빈 모집단의 0 이 아님을 잰다.
             // **컨테이너별**로 센다 — 합계 하한 하나(`> 300`)는 코어 301 만으로 채워져 확장
-            // 세 컨테이너를 통째로 잃어도 초록이었다 (16차 G3 라운드 F13).
+            // 세 컨테이너를 통째로 잃어도 초록이었다.
             const transportFilesScanned: Record<string, number> = {};
             let transportContainer = 'resources/js';
 
@@ -1076,7 +1074,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
                     // (`app.js`·`bootstrap.js`)를 이 축 안이라고 적었는데 이 필터가
                     // 그것을 전부 걸러 내고 있었다. 그래서 그 두 파일에 루트 상대
                     // 주소를 넣어도 이 축은 초록이었다 — 「없다를 고정한다」는 서술이
-                    // 고정하고 있지 않았다 (10차 G3 라운드 X-5).
+                    // 고정하고 있지 않았다.
                     if (!SOURCE_FILE_RE.test(entry.name)) continue;
 
                     const raw = fs.readFileSync(full, 'utf8');
@@ -1094,11 +1092,11 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
                         offenders.push(`${path.relative(repoRoot, full)}:${line} → fetch(${arg}`);
                     }
 
-                    // **이동 통로도 같은 모집단이다.** 12차는 「확장의 비-fetch 통로는
+                    // **이동 통로도 같은 모집단이다.** 종전에는 「확장의 비-fetch 통로는
                     // 없다」고 판정하고 게이트를 fetch 축으로 유지했는데, 사실은 코어 1곳 +
                     // 번들 확장 7곳이 접두사 없이 남아 있었다. 그중 소셜 로그인은 폴백이
                     // 아니라 **유일 경로** 라 하위 폴더 사이트에서 무조건 사이트 밖으로
-                    // 나갔다 (13차 G3 라운드).
+                    // 나갔다.
                     for (const { arg, line } of collectNavigationTargets(body)) {
                         if (PREFIXING_HELPERS.some((h) => arg.startsWith(h))) continue;
 
@@ -1129,8 +1127,8 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
                     }
 
                     // **주소창 교체도 이동이다.** `history.pushState`/`replaceState` 의 세
-                    // 번째 인자는 브라우저가 그대로 보게 될 주소인데, 13차까지 이 축은
-                    // 어느 수집기에도 없었다 (14차 G3 라운드).
+                    // 번째 인자는 브라우저가 그대로 보게 될 주소인데, 종전까지 이 축은
+                    // 어느 수집기에도 없었다.
                     for (const { arg, line } of collectHistoryTargets(body)) {
                         if (PREFIXING_HELPERS.some((h) => arg.startsWith(h))) continue;
                         if (/^['"`]/.test(arg) && !/^['"`]\//.test(arg)) continue;
@@ -1143,7 +1141,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
                     }
 
                     // **`fetch` 가 아닌 전송 통로도 같은 모집단이다.** XHR·EventSource·
-                    // WebSocket·Worker 는 브라우저가 직접 여는 주소다 (15차 G3 라운드 W4-6).
+                    // WebSocket·Worker 는 브라우저가 직접 여는 주소다.
                     transportFilesScanned[transportContainer] = (transportFilesScanned[transportContainer] ?? 0) + 1;
                     for (const { arg, line } of collectTransportTargets(body)) {
                         if (!/^['"`]\//.test(arg) || /^['"`]\/\//.test(arg)) continue;
@@ -1156,7 +1154,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
                     }
 
                     // **우리가 만들어 밖에 건네는 주소도 같은 접두사가 필요하다.**
-                    // PG·인증기관이 그 주소로 브라우저를 되돌려 보낸다 (15차 G3 라운드).
+                    // PG·인증기관이 그 주소로 브라우저를 되돌려 보낸다.
                     for (const { arg, line } of collectOriginJoinTargets(body)) {
                         if (PREFIXING_HELPERS.some((h) => arg.startsWith(h))) continue;
                         // 루트 상대가 아닌 리터럴은 대상이 아니다.
@@ -1170,7 +1168,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
                     }
 
                     // **링크도 이동이다.** `A` 컴포넌트는 `href` 를 그대로 `<a>` 에 넘기고
-                    // 앵커 클릭을 가로채는 지점이 없다 (14차 G3 라운드).
+                    // 앵커 클릭을 가로채는 지점이 없다.
                     for (const { arg, line } of collectAnchorTargets(body)) {
                         const inner = arg.startsWith('{') ? arg.slice(1, -1).trim() : arg;
 
@@ -1194,7 +1192,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             // 확장(결제 4종·본인인증·GDPR·사용자/관리자 템플릿·이커머스)의 서버 호출
             // 28곳이 한 번도 판정된 적이 없었다 — 전부 접두사가 없었고, 하위 폴더
             // 배치에서 결제·본인인증·반응 버튼이 조용히 무반응이 됐다. 게이트의
-            // 모집단이 곧 그 라운드가 닫은 범위다 (11차가 남긴 규율, 12차 G3 라운드).
+            // 모집단이 곧 그 게이트로 닫았다고 말할 수 있는 범위다.
             for (const { base, sub } of EXTENSION_SOURCE_CONTAINERS) {
                 const container = path.join(repoRoot, base);
                 if (!fs.existsSync(container)) continue;
@@ -1210,7 +1208,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             // 두 배열을 **함께** 단언한다. 따로 단언하면 앞의 것이 실패하는 순간 뒤의
             // 축은 평가되지 않아, 한 번의 실행이 보여 주는 목록이 반쪽이 된다 — 실제로
             // 이동·주소창·링크 세 축을 신설한 직후 fetch 축 2건이 먼저 던져 나머지가
-            // 통째로 가려졌다(14차 G3 라운드).
+            // 통째로 가려졌다.
             expect([...offenders, ...navOffenders]).toEqual([]);
             // 전송 통로 축은 실물이 0 이라 offenders 만으로는 「빈 모집단」과 구분되지 않는다 —
             // 코어 + 번들 확장 전체를 실제로 걸었음을 **컨테이너별** 하한(실측 301/284/42/70 의
@@ -1234,16 +1232,16 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             //
             // 합계 하나로 재면 안 된다 — 종전 판본은 `scanned > 50` 이었는데 세 컨테이너의
             // 실제 규모가 각각 282 / 42 / 67 이라, 모듈과 플러그인을 **둘 다** 잃어도
-            // 282 > 50 으로 초록이었다. 12차가 당한 것이 바로 그 형태(모집단이 코어
+            // 282 > 50 으로 초록이었다. 앞서 당한 것이 바로 그 형태(모집단이 코어
             // 폴더 하나뿐이라 확장 28곳이 한 번도 판정된 적 없음)이므로, 컨테이너마다
-            // 따로 세어 하나라도 비면 red 가 되게 한다 (14차 G3 라운드).
+            // 따로 세어 하나라도 비면 red 가 되게 한다.
             const fs = await import('node:fs');
             const path = await import('node:path');
 
             const repoRoot = path.resolve(__dirname, '..', '..', '..', '..', '..');
 
             // 필터는 **위반 스캔과 같은 표**에서 도출한다. 리터럴 사본으로 두면 한쪽만
-            // 넓어져 「스캔은 하는데 세지는 않는」 파일이 생긴다 (16차 G3 라운드 A-6).
+            // 넓어져 「스캔은 하는데 세지는 않는」 파일이 생긴다.
             //
             // 개수가 아니라 **목록**을 돌려준다 — 아래 진입 스크립트 대조가 「몇 개인가」가
             // 아니라 「무엇이 들어 있는가」를 물어야 하기 때문이다.
@@ -1281,7 +1279,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             //
             // 루트는 **위반 스캔과 같은 곳**(`resources/js`)이다. 종전에는 한 단계 아래
             // (`resources/js/core`)를 세어, 그 사이에 있는 진입 스크립트
-            // (`app.js`·`bootstrap.js`)가 어느 축에도 없었다 (16차 G3 라운드 A-6).
+            // (`app.js`·`bootstrap.js`)가 어느 축에도 없었다.
             const coreRoot = path.resolve(__dirname, ...CORE_SCAN_ROOT);
             const coreFiles = listIn(coreRoot);
             perContainer['resources/js'] = coreFiles.length;
@@ -1296,8 +1294,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             // `.ts|.tsx` 로 되돌려도 코어 계수는 여전히 수백이라 `>10` 을 넘는다. 실제로
             // 종전 판본이 그 상태였고 — 계수 루트는 `core`, 필터는 `.ts|.tsx` — 스캔 루트
             // 바로 아래의 진입 스크립트(`app.js`·`bootstrap.js`)는 **어느 검사에도** 없었다.
-            // 그래서 「몇 개인가」가 아니라 「무엇이 들어 있는가」를 잰다
-            // (16차 G3 라운드 A-6).
+            // 그래서 「몇 개인가」가 아니라 「무엇이 들어 있는가」를 잰다.
             // 루트 자체가 옮겨지면 그 아래에서 도출한 목록도 함께 옮겨져 자기충족이 된다
             // — 실제로 계수 루트를 `core` 로 좁히는 변이가 이 대조를 통과했다. 그래서
             // 루트의 **위치**를 먼저 고정한다: 코어 디렉토리를 진부분집합으로 품어야 한다.
@@ -1346,8 +1343,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             // 종전 비공허성은 `defined.size > 0` 하나였다. 그런데 실질 고정인
             // `NON_URL_FETCH_EXPORTS` 네 이름이 전부 `plugins/_bundled/**` 에 살고
             // 코어에도 `fetchWithRetry` 가 있어, **템플릿·모듈 컨테이너를 스캔에서
-            // 통째로 빼도** 그 조건이 충족되고 아래 두 단언도 전부 초록이었다
-            // (16차 G3 라운드 A-7).
+            // 통째로 빼도** 그 조건이 충족되고 아래 두 단언도 전부 초록이었다.
             let scanned = 0;
 
             const scan = (dir: string): void => {
@@ -1375,7 +1371,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             // (`resources/js`) + 번들 확장 3컨테이너를 전부 훑는다 — 즉 「위반이 있는가」와
             // 「새 래퍼가 생겼는가」의 모집단이 서로 달랐다. 확장에 URL 을 첫 인자로 받는
             // 래퍼가 생기는 순간 그 호출부가 통째로 수집 밖이 되고 **아무것도 울지 않는다**
-            // (6차가 `fetchWithRetry` 로 당한 형태 그대로) (10차 G3 라운드 X-4).
+            // (앞서 `fetchWithRetry` 로 당한 형태 그대로).
             const scanRepoRoot = path.resolve(__dirname, '..', '..', '..', '..', '..');
 
             const perContainer: Record<string, number> = {};
@@ -1415,7 +1411,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             //
             // 모집단을 번들 확장까지 넓힌 직후 걸린 넷을 **전수로 읽어** 분류했다 —
             // 넓히는 것과 좁히는 것은 같은 작업의 두 단계이고, 분류하지 않고 두면 그
-            // 게이트를 사람이 곧 믿지 않게 된다 (9차 A-3 이 세운 규율).
+            // 게이트를 사람이 곧 믿지 않게 된다.
             const NON_URL_FETCH_EXPORTS: Record<string, string> = {
                 // 인자가 없다. 주소는 내부에서 `getJson('/plugins/…')` → `G7Core.api`
                 // (또는 확장 `apiUrl()` 폴백)로 만들어지므로 그 축은 이미 재고 있다.
@@ -1485,9 +1481,9 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             // 우변. 그 밖의 형태는 원리적으로 닿지 않는데, 그 사실이 어디에도 없어서
             // 회차마다 같은 사각을 다시 파냈다. 전 저장소 실측 결과 아래 네 형태의
             // **실물은 0건**이므로 지금 넓히지 않는다 — 넓히면 옵션 객체를 받는 내부
-            // 헬퍼가 무더기로 걸려 오탐이 된다(9차 A-3 이 실제로 겪은 것).
+            // 헬퍼가 무더기로 걸려 오탐이 된다(실제로 한 번 겪었다).
             //
-            // 실물이 생기면 이 케이스가 red 로 알려 준다 (10차 G3 라운드 X-8).
+            // 실물이 생기면 이 케이스가 red 로 알려 준다.
             const blindSpots = [
                 // ① 구조분해
                 'const { fetch: f } = window;\nf("/api/x");',
@@ -1513,7 +1509,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
         // @scenario base_path=subpath, fetch_origin=extension_bundle, navigation_direction=navigation
         // @effects browser_built_navigation_targets_carry_the_mount_prefix
         it('그 검사 자신이 이동 위반을 실제로 잡는다 (음성 대조)', () => {
-            // 이동 축은 12차까지 게이트가 없었다 — 새 수집기가 아무것도 잡지 못하는
+            // 이동 축은 종전까지 게이트가 없었다 — 새 수집기가 아무것도 잡지 못하는
             // 상태로 굳는 것을 막는다.
             const sample = [
                 "window.location.href = `/api/auth/${p}`;",
@@ -1651,7 +1647,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
          *
          * 왜 막는가: 그 3항식은 `http` 로 시작하는 한 형태만 안다. 프로토콜 상대·상대
          * 경로·`data:` 는 오리진에 그대로 이어 붙고, 루트 상대에는 마운트 접두사가
-         * 채워지지 않아 하위 폴더 사이트에서 사이트 밖을 가리킨다 (13차 G3 라운드 W3-7).
+         * 채워지지 않아 하위 폴더 사이트에서 사이트 밖을 가리킨다.
          */
         const NAIVE_ABSOLUTE_PREDICATE =
             String.raw`(?:([A-Za-z_$][\w$]*)\s*\.\s*startsWith\(\s*['"]https?[^'"]*['"]\s*\)|\/\^https?[^\/\n]*\/[a-z]*\s*\.\s*test\(\s*([A-Za-z_$][\w$]*)\s*\))`;
@@ -1840,7 +1836,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
         // 확장마다 **사본**으로 들어가 있다. 사본은 갈라도 아무 것도 울지 않는다 — 그
         // 확장만 다른 규칙을 따르게 되고, 증상은 그 화면의 버튼만 무반응인 것이라
         // 다른 확장이 정상인 만큼 원인이 더 숨는다. 저장소 선례(패리티 계약 테스트)를
-        // 따라 동형성 자체를 재다 (13차 G3 라운드).
+        // 따라 동형성 자체를 재다.
         type HelperCopy = { path: string; container: string; content: string };
 
         /**
@@ -1849,7 +1845,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
          * `apiUrl.ts` 만이 아니다 — 템플릿의 `Img.tsx`·`Form.tsx` 도 같은 규칙의 사본이다
          * (`src`/`action` 에 `sitePath()` 를 붙이는 자리). 한 템플릿의 사본만 갈리면 그
          * 템플릿의 이미지·폼 제출만 하위 폴더 배치에서 사이트 밖으로 나가고, 다른 템플릿이
-         * 정상인 만큼 원인이 더 숨는다 (16차 G3 라운드 A10).
+         * 정상인 만큼 원인이 더 숨는다.
          */
         const collectCopiesOf = async (
             spec: ReadonlyArray<{ base: string; helper: readonly string[]; only?: readonly string[] }>,
@@ -1919,7 +1915,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
          * 요구하면 샘플 확장에 다른 템플릿의 레이아웃 사정을 적어 넣게 되므로, 이 군의
          * 계약은 「논리가 같다」로 둔다 — 종전에는 그래서 이 군이 **동형성 검사 밖**에
          * 있었고, 접두사를 붙이는 그 한 줄이 한 템플릿에서만 사라져도 아무것도 울지
-         * 않았다 (22차 G3 라운드 C13).
+         * 않았다.
          */
         const withoutBlockComments = (source: string): string =>
             source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/[ \t]+$/gm, '').replace(/\n{2,}/g, '\n').trim();
@@ -1947,17 +1943,17 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             // 보는 검사는 그것이 몇 판본 뒤처져 있어도 초록이다 — 실제로 두 플러그인
             // (`gdpr`·`tosspayments`)이 회차 14 이전 판본에 머물러 있었고(`?`·`#` 접두사
             // 경계를 모르고 `trim` 이 없는 판본), 그 사이트에서는 그 둘만 하위 폴더 배치에서
-            // 주소가 어긋난다 (22차 G3 라운드 C1·C2).
+            // 주소가 어긋난다.
             //
             // 설치본이 **없는** 것은 정상이다(신선 클론·CI 체크아웃). 있는데 다른 것만 잡는다.
             const fs = await import('node:fs');
             const path = await import('node:path');
             const repoRoot = path.resolve(__dirname, '..', '..', '..', '..', '..');
 
-            // 24차 G3 라운드 R24-A — 이 계약은 **비교해서 green 이 아니라 비교 대상에서 빠져서
+            // 이 계약은 **비교해서 green 이 아니라 비교 대상에서 빠져서
             // green** 이었다. 실측: compared 9 쌍은 전부 번들 == 설치본 버전이고, 실제로 갈린
             // 확장 6개(board·ecommerce·page·daum_postcode·marketing·basic)는 **전원 skip** 이었다.
-            // 모집단과 실제 발산 집합이 서로소라, 22차가 막으려던 상황을 한 건도 재지 않았다.
+            // 모집단과 실제 발산 집합이 서로소라, 이 계약이 막으려던 상황을 한 건도 재지 않았다.
             //
             // 빠지는 메커니즘이 정확히 위험한 축을 고른다: 헬퍼 파일 **부재**를 「정상(신선
             // 클론)」으로 삼켰는데, 공개 릴리즈 페이로드가 그 헬퍼를 아직 담고 있지 않아
@@ -2048,7 +2044,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
 
             expect(offenders).toEqual([]);
 
-            // **모집단 회계** — 이 계약이 22차에 무력했던 이유는 위반이 없어서가 아니라
+            // **모집단 회계** — 이 계약이 종전에 무력했던 이유는 위반이 없어서가 아니라
             // 대상이 조용히 빠져서였다. 그러니 「빠진 것이 없다」를 숫자로 잠근다.
             // `_bundled` 에 헬퍼가 있는 설치 확장은 반드시 세 갈래 중 하나로 계상된다:
             // 대조했거나(compared) · 설치본에 그 헬퍼가 없거나(missingHelper). 새 `continue`
@@ -2094,7 +2090,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             // 위 검사는 사본이 0벌이어도 초록이다. 경로 규칙을 바꿔 모집단이 통째로
             // 빠지는 것을 막는다. 하한은 리터럴 8 이 아니라 **도출**한다 — 컨테이너마다
             // 최소 1벌(한 컨테이너가 통째로 빠지면 합계로는 안 보인다) + 합계는 실측
-            // (4/1/8 = 13)의 80% (16차 G3 라운드 F14).
+            // (4/1/8 = 13)의 80%.
             const copies = await collectHelperCopies();
 
             for (const { base } of EXTENSION_SOURCE_CONTAINERS) {
@@ -2118,7 +2114,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
                 expect(copy.content).toContain('export function apiUrl(');
                 expect(copy.content).toContain('export function sitePath(');
                 // 붙이는 짝만 재면 벗기는 쪽이 통째로 빠져도 초록이다 — 실제로 확장
-                // 30지점이 그 상태였다 (14차 G3 라운드).
+                // 30지점이 그 상태였다.
                 expect(copy.content).toContain('export function routePath(');
             }
         });
@@ -2131,7 +2127,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             // 상태였고, 업로드 주소(`/api/plugins/sirsoft-ckeditor5/upload`)를 접두사 없이
             // CKEditor 에 넘겨 하위 폴더 배치에서 에디터 이미지 업로드만 사이트 밖으로
             // 나갔다. 그 주소는 `simpleUpload` 가 직접 보내므로 `fetch(` 수집기에도
-            // 잡히지 않는다 (14차 G3 라운드).
+            // 잡히지 않는다.
             //
             // 「필요하다」의 판정: 그 확장의 TS 소스에 **루트 상대 사이트 주소 리터럴**이나
             // `location.pathname` 이 있으면 접두사를 다룰 일이 있는 확장이다.
@@ -2196,7 +2192,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
         it('허용목록의 모든 이름이 실제로 접두사를 붙인다', async () => {
             // 허용목록은 「이 이름을 쓰면 위반이 아니다」라는 **면제 선언**인데, 그 이름이
             // 정말 접두사를 붙이는지 재는 것이 없었다. 그래서 같은 구멍이 세 번 났다:
-            // 13차가 `G7Core.url.route(`(벗기는 함수)를 넣었고, 14차가 그것을 빼면서
+            // 한 번은 `G7Core.url.route(`(벗기는 함수)를 넣었고, 다음에 그것을 빼면서
             // 세 줄 위의 `G7Core.url.base(`(인자를 받지 않는 함수)와 `publicStorage(`
             // (구현이 없는 이름)를 남겼다.
             //
@@ -2239,7 +2235,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
                 }
             }
 
-            // 「인자를 받는 함수인가」만으로는 **방향**을 재지 못한다. 13차가 넣은
+            // 「인자를 받는 함수인가」만으로는 **방향**을 재지 못한다. 앞서 넣은
             // `G7Core.url.route(` 는 벗기는 함수인데 그 형태를 완벽히 만족한다 — 즉 이
             // 검사가 막으려고 만들어진 바로 그 이름을 다시 넣어도 통과했다.
             //
@@ -2276,7 +2272,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             // 검사가 없었다.** 그래서 그 전제가 거짓인 템플릿이 두 개 있어도 게이트는
             // 초록이었다 — `gnuboard7-hello_*` 2종의 `A.tsx` 는 `href` 를 `{...props}` 로
             // 그대로 흘려보냈고, 그 파일에는 리터럴 `href=` 가 없어 수집기에도 걸리지
-            // 않았다. 레이아웃 JSON 에 루트 상대 `href` 3건이 실재한다 (15차 G3 라운드).
+            // 않았다. 레이아웃 JSON 에 루트 상대 `href` 3건이 실재한다.
             //
             // 「전제를 재지 않는 허용」은 게이트의 사각 중 가장 조용한 형태다 — 통과
             // 근거가 코드가 아니라 주석에만 있기 때문이다.
@@ -2297,7 +2293,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
                 checked += 1;
                 // **주석을 걷어낸 본문**에서 찾는다. 종전에는 파일 전체를 봐서, 그 컴포넌트의
                 // 머리말이 `sitePath()` 를 설명으로 언급하는 것만으로 이 검사가 초록이었다 —
-                // 실제 배선(`sitePath(href)`)을 지워도 통과했다(변이 실측, 22차 G3 라운드 C13).
+                // 실제 배선(`sitePath(href)`)을 지워도 통과했다(변이 실측).
                 const body = fs
                     .readFileSync(anchor, 'utf8')
                     .replace(/\/\*[\s\S]*?\*\//g, '')
@@ -2352,8 +2348,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
             // 확장 축은 같은 목록을 정적 룰이 갖는다. 이 파일은 배포 산출물이라 그쪽을
             // `import` 하지 않는다(공개물이 내부 도구를 참조하면 안 된다) — 대신 **그쪽
             // 픽스처가 이 리터럴을 읽어 동일성을 잰다.** 의존 방향은 내부 → 공개다.
-            // 종전 코어 검사는 ① 한 형태만 봐서 나머지 셋이 무판정이었다
-            // (22차 G3 라운드 C7).
+            // 종전 코어 검사는 ① 한 형태만 봐서 나머지 셋이 무판정이었다.
             //
             // G7-SHARED-REGEX: pathname-access
             const pathnameAccessRe = new RegExp(
@@ -2392,7 +2387,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
                         // 검사는 `location.pathname` 한 형태만 봐서, 줄바꿈으로 갈라진
                         // 접근·구조분해·대괄호·`new URL(location.href).pathname` 이 전부
                         // 무판정이었다 — 같은 결함군의 두 검사가 다른 폭을 가지면 좁은
-                        // 쪽이 그대로 우회로다 (22차 G3 라운드 C7).
+                        // 쪽이 그대로 우회로다.
                         pathnameAccessRe.lastIndex = 0;
                         if (!pathnameAccessRe.test(line)) return;
                         // 대입 대상(주소를 쓰는 쪽)은 이 축이 아니다.
@@ -2441,7 +2436,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
 
             // 루트 목록에 존재하지 않는 경로(`resources/layouts`)를 두지 않는다 — `walk` 이
             // 조용히 건너뛰어 「걸었다」와 「없었다」가 구분되지 않았다. 루트마다 최소 1건을
-            // 따로 잰다 (16차 G3 라운드 B-9).
+            // 따로 잰다.
             const roots = ['templates/_bundled', 'modules/_bundled', 'plugins/_bundled'] as const;
 
             const offenders: string[] = [];
@@ -2476,16 +2471,16 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
                 // `src`·`action` 도 같은 축이다 — 브라우저가 라우터 없이 직접 여는 주소라
                 // 접두사를 붙일 주체가 컴포넌트뿐이고, 그 자리는 `Img`·`Form` 이다. 종전
                 // 게이트는 `href` 만 봐서 `Div.props.src = "/images/x.png"` 같은 형태를
-                // 아무도 재지 않았다 (15차 G3 라운드 W4-2). 판정은 `href` 와 같다 — 정상
+                // 아무도 재지 않았다. 판정은 `href` 와 같다 — 정상
                 // 형태(`Img.props.src`·`Form.props.action`)는 허용하고 다른 컴포넌트 위의
                 // 것만 offenders 에 싣는다. 종전의 「실물 0 고정」은 정상 형태가 하나만 생겨도
-                // red 라 소유자 분기가 도달 불가였다 (16차 G3 라운드 F12).
+                // red 라 소유자 분기가 도달 불가였다.
                 // `backPath`·`backLink` 도 같은 축이다 — 화면이 「목록으로」로 여는 주소이고,
                 // 값이 루트 상대라 접두사를 붙일 주체가 그 컴포넌트뿐이다. 소유자는
                 // `PageHeader` 이며 실물 12건이 전부 그 위에 있다. 종전 게이트는 세 prop
                 // (`href`·`src`·`action`)만 봐서 이 축이 통째로 사각이었다 — 지금은 그
                 // 컴포넌트가 아직 없어 값이 무해하지만, 구현되는 순간 그 자리가 접두사를
-                // 붙이는 책임을 진다는 사실을 아무도 재지 않는 상태였다 (22차 G3 라운드 C5).
+                // 붙이는 책임을 진다는 사실을 아무도 재지 않는 상태였다.
                 for (const [prop, owner] of [
                     ['src', 'Img'],
                     ['action', 'Form'],
@@ -2520,8 +2515,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
                     // 모집단 밖이었다 — 이 게이트를 만든 근거(`Button` 에 루트 상대 href)를
                     // 확장 JSON 에 그대로 넣으면 초록이었다. 형제 룰
                     // (`layout-binding-response-prefix`)은 이미 그 경로를 레이아웃으로
-                    // 취급하고 있어, 같은 저장소 안에서 「레이아웃」의 정의가 갈려 있었다
-                    // (7차 G3 라운드 B-4).
+                    // 취급하고 있어, 같은 저장소 안에서 「레이아웃」의 정의가 갈려 있었다.
                     const segments = full.split(path.sep);
                     if (!segments.includes('layouts') && !segments.includes('extensions')) continue;
 
@@ -2564,7 +2558,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
  * 실제로 갈려 있었다 — `extensionAsset()` 만 `encodeURIComponent` 를 썼고, 그 함수는
  * `! ' ( ) *` 를 인코딩하지 않는 반면 PHP `rawurlencode()` 는 전부 인코딩한다. 같은 파일의
  * 형제 경로(`convertToCurrentMode`)는 이미 교정 인코더를 쓰고 있어, 한 파일 안에서 두 규칙이
- * 공존했다 (14차 G3 라운드).
+ * 공존했다.
  *
  * 기대표는 `tests/Fixtures/AssetUrl/file-query-parity.json` 하나다. 양쪽 테스트에 각각 적으면
  * 그 사본이 다시 갈리므로, PHP 쪽 `AssetUrlTest` 도 같은 파일을 읽는다.
@@ -2574,8 +2568,7 @@ describe('assetUrl (프론트 자산 URL 빌더)', () => {
  *
  * 위의 여섯 통로 축은 전부 이 함수의 판정을 믿고 `continue` 한다 — 그 판정이
  * 느슨해지면 통로 축 전부가 동시에 열리는데, 저장소의 현재 표식 39건이 모두
- * 정상이라 그 완화는 red 를 내지 않는다. 그래서 판정 자신에 양성·음성 대조를 둔다
- * (7차 G3 라운드 E11).
+ * 정상이라 그 완화는 red 를 내지 않는다. 그래서 판정 자신에 양성·음성 대조를 둔다.
  */
 describe('base-path:allow 면제 표식은 사유를 갖춘 주석만 인정한다', () => {
     // @scenario base_path=subpath, navigation_direction=request
@@ -2712,7 +2705,7 @@ describe('코어 3번들이 assetUrl.ts 의 현재 판정을 싣고 있다 (dist
     // 비교 사슬(`==="/"||x==="?"||x==="#"`)은 최소화를 지나도 같은 모양이다. ①이 있는
     // 번들에 ②가 없으면 그 번들은 옛 소스로 빌드된 것이다.
     // 번들 목록은 디렉토리에서 **도출**한다 — 리터럴 3벌이면 네 번째 번들이 생겨도 이 게이트
-    // 밖이고, 하나가 사라져도 「읽기 실패」로만 드러난다. 하한 3 은 현재 실물이다 (16차 G3 라운드 A16).
+    // 밖이고, 하나가 사라져도 「읽기 실패」로만 드러난다. 하한 3 은 현재 실물이다.
     const REACH_MARKER = '__g7AssetUrlMode';
     const BOUNDARY_RE = /===\s*"\/"\s*\|\|\s*[\w$]+\s*===\s*"\?"\s*\|\|\s*[\w$]+\s*===\s*"#"/;
     // ③ 전처리 본체: `typeof p == "string" ? p.trim() : p` (회차 14 W1-2). 최소화를 지나면
@@ -2756,7 +2749,7 @@ describe('코어 3번들이 assetUrl.ts 의 현재 판정을 싣고 있다 (dist
         // 도달 판정을 마커 **하나**에 두면 그 마커를 트리셰이킹으로 잃은 번들이 단언 밖으로
         // 조용히 빠진다 — devtools 번들이 정확히 그 상태였다: `withBasePrefix` 의 경계
         // 사슬은 실려 있는데 `__g7AssetUrlMode` 가 없어 게이트가 그 번들을 재지 않았고,
-        // 그 번들을 옛 소스로 되돌려도 초록이었다 (15차 G3 라운드 W4-8). 그래서 도달은
+        // 그 번들을 옛 소스로 되돌려도 초록이었다. 그래서 도달은
         // 「assetUrl.ts 의 어느 함수든 포함하면」이고, 세 벌 전부가 측정됐음을 따로 단언한다.
         const reaching = bundles.filter(
             (b) => b.body.includes(REACH_MARKER) || BOUNDARY_RE.test(b.body) || TRIM_RE.test(b.body),

@@ -32,7 +32,7 @@ axes:
   # P0 프로필 브라우저 실측이 담당한다. 여기서는 이 매니페스트의 조합 축으로만 선언한다.
   vendor_bundle_presence: [present, absent]                        # 인스톨러 게이트(A-1) 분기
   installer_gate_status: [pass_green, info_blue, fail_red]         # Step 2 카드 상태
-  shell_exec_guard_surface: [dashboard_cpu, dashboard_memory, settings_memory, settings_cpu_info]  # A-8 의 자원 측정 가드 (실측 5곳 — DashboardService 3 · SettingsService 2). 디스크는 disk_*_space 라 가드 대상이 아니고 measurement_result 축 소관이다 (11차 #C9)
+  shell_exec_guard_surface: [dashboard_cpu, dashboard_memory, settings_memory, settings_cpu_info]  # A-8 의 자원 측정 가드 (실측 5곳 — DashboardService 3 · SettingsService 2). 디스크는 disk_*_space 라 가드 대상이 아니고 measurement_result 축 소관이다
   measurement_result: [measured, not_measurable]                   # percentage null 계약
   extension_vendor_source: [pending_staging, bundled_source, force_reinstall, none]  # 확장 vendor 구성의 소스 (설치 경로) — 15차 감사에서 bundled_source 가 resolver 를 안 거치고 있었다
 
@@ -86,7 +86,7 @@ effects:
   # 제한 호스팅 내성 — hasFunction 정규화·주입 이음매·러너 블로킹 read (19차 파생, 20차 등재)
   - core_execution_layer_survives_restricted_hosting
   # 설정 화면 2지점(메모리·CPU)의 shell_exec 가드 — 이 파일의 마커가 어느 매니페스트에도
-  # 등재돼 있지 않아 죽은 마커였다 (10차 #G5 역방향)
+  # 등재돼 있지 않아 죽은 마커였다 (역방향)
   - settings_system_info_shell_calls_are_guarded
   # 확장 vendor 구성 — 설치·업데이트가 같은 통로(VendorResolver)를 쓰는가. 인스톨러가
   # in-process 로 module:install 을 돌리면 이 코어 코드가 같은 요청 안에서 실행되므로
@@ -119,7 +119,7 @@ test_files:
   - tests/Feature/Api/Admin/DashboardControllerTest.php
   # PHP 바이너리 형태 규칙·자동 탐색 정렬 — detect() 의 php_binary_probe 축을 실제로 만드는 곳
   - tests/Unit/Support/PhpBinaryResolverTest.php
-  # A-8 가드 중 설정 화면 2지점(메모리·CPU) — 대시보드 2지점만 덮여 있던 축을 채운다 (9차 #G13)
+  # A-8 가드 중 설정 화면 2지점(메모리·CPU) — 대시보드 2지점만 덮여 있던 축을 채운다
   - tests/Unit/Support/ShellExecGuardCoverageTest.php
   # 확장 vendor 의 설치·업데이트 통로 대칭 — 「어느 분기가 어느 소스에 열려 있는가」는
   # 정적 룰로 판정할 수 없어 소스 계약 테스트가 잠근다 (15차 감사)
@@ -133,7 +133,7 @@ test_files:
 
 # 번들 존재 축(vendor_bundle_presence)도 같은 이유로 단위 커버리지 밖이다 — 그 축이 갈리는
 # 지점은 인스톨러 게이트 카드(A-1)이고, `vendor-bundle.zip` 유무는 파일 배치의 문제라
-# P0 격리 환경에서 번들을 넣고/빼며 확인한다 (§9 S2). 10차 라운드에서 사유를 명시했다.
+# P0 격리 환경에서 번들을 넣고/빼며 확인한다 (§9 S2). 이 사유는 이후 보강 때 명시했다.
 #
 # 인스톨러 게이트(installer_gate_status 축)는 check-configuration.php 의 procedural
 # 클래스 안에 있어 단위 하네스 비용이 크고, disable_functions 재현도 불가하다 —

@@ -1326,7 +1326,7 @@ class BoardNotificationDataListenerTest extends ModuleTestCase
      * 게시글 링크는 요청이 아니라 **설정된 사이트 주소**를 따르고 후행 슬래시를 이어 붙이지 않는다.
      *
      * `config('app.url').'/board/…'` 는 후행 슬래시를 그대로 실어 `https://host/g7//board/…` 를
-     * 만든다 — 메일 안의 링크가 조용히 깨진다 (16차 G3 라운드 B-4).
+     * 만든다 — 메일 안의 링크가 조용히 깨진다.
      * 회원 알림 링크는 「사용자 화면 URL」을 따르므로(#792) 그 값을 비워 사이트 주소 폴백을 검사한다.
      *
      * @scenario base_path=subpath, navigation_direction=navigation

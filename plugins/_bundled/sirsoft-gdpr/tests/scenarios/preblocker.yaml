@@ -1,6 +1,6 @@
 # audit:allow test-scenario-coverage reason: issue:#609 preblocker 는 prototype intercept (HTMLScriptElement.prototype.src setter) 단일 진입점이라 axes 의 cross product 가 작아 핵심 케이스만 통과 테스트로 커버. test_files 에 명시된 17개 케이스로 핵심 회귀 가드.
-# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
-# 원장(9차 G3 라운드 C-4): 이 매니페스트는 :cross-product 로 좁히면 effects 16건이 미검증으로 드러난다.
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
+# 원장: 이 매니페스트는 :cross-product 로 좁히면 effects 16건이 미검증으로 드러난다.
 #   그 짝 맞추기는 이 공정(GDPR 플러그인)의 몫이며, 좁히는 시점에 함께 처리한다.
 
 feature: GDPR 사전 차단 (preblocker — prototype intercept)

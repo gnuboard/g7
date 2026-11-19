@@ -57,13 +57,13 @@ Route::prefix('admin')
 // `dualSuffix` 가 아니라 `dualSuffixSegment` 를 쓴다 — 접미사를 떼면 `/sitemap` 이라는
 // **맨 이름**을 이 라우트가 선점해 그 주소를 쓰던 사용자 페이지가 도달 불가가 되고,
 // `.xml` 과 `.xml.gz` 의 확장자 없는 형태가 서로 충돌한다. 세그먼트로 내리면 둘 다
-// 생기지 않는다 (7차 G3 라운드 B-6).
+// 생기지 않는다.
 //
 // 세션·쿠키 미들웨어를 뺀다 — 이 파일은 `web` 그룹이라 `StartSession` 이 매 응답에 세션
 // 쿠키를 싣는데, 사이트맵 응답은 `public, max-age` 다. `Set-Cookie` 가 실린 `public` 응답은
 // 공유 캐시가 저장하지 않거나(RFC 9111 §3.5 — 캐시마다 다르다) 세션 쿠키를 다른 방문자에게
 // 재사용한다. 봇이 받는 응답이라 세션이 있을 이유도 없다. `ShareErrorsFromSession` 은 세션
-// 없이는 예외를 던지므로 함께 뺀다 (16차 G3 라운드 E-5).
+// 없이는 예외를 던지므로 함께 뺀다.
 $sitemapWithoutSession = [
     StartSession::class,
     ShareErrorsFromSession::class,

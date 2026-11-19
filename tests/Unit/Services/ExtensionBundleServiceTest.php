@@ -662,7 +662,7 @@ class ExtensionBundleServiceTest extends TestCase
      * 원자 게시 임시 파일(`{type}.{version}.{kind}.tmp.<hex>`)이 나이 하한을 지나면 걷힌다.
      *
      * `writeAtomically` 는 rename 실패 시에만 tmp 를 지운다 — put 과 rename 사이에서 프로세스가
-     * 죽으면 남는데, 정리기는 번들 이름 패턴만 봐서 tmp 를 영원히 거르지 않았다 (13차 G3 W1-5).
+     * 죽으면 남는데, 정리기는 번들 이름 패턴만 봐서 tmp 를 영원히 거르지 않았다.
      * 진행 중인 게시를 지우지 않도록 나이 하한을 두고, 생성 규칙과 다른 이름은 건드리지 않는다.
      *
      * @effects cleanup_removes_stale_atomic_write_temp_files

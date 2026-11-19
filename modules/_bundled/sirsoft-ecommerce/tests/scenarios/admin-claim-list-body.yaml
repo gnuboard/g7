@@ -110,7 +110,7 @@ effects:
   # 선택 범위
   - selection_scope_declared_page
   - selection_closed_for_cancel_subtab
-  # 컬럼 표시 영속 (2차 F5 이월 — SSoT 하나)
+  # 컬럼 표시 영속 (이월 — SSoT 하나)
   - visible_columns_single_persistence_owner
   - column_selector_and_datagrid_share_state
   - column_selector_matches_datagrid_columns

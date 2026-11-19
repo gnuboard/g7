@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\CleansTemporaryBasePath;
 
 /**
- * [건너뛰고 계속] 이 짝 활성화까지 지나가도 되는지의 판정 회귀 테스트 (16차 C-1).
+ * [건너뛰고 계속] 이 짝 활성화까지 지나가도 되는지의 판정 회귀 테스트.
  *
  * ## 무엇이 걸려 있는가
  *
@@ -20,7 +20,7 @@ use Tests\Concerns\CleansTemporaryBasePath;
  *   - **[건너뛰고 계속]** — 종전 구현은 짝이 되는 `*_activate` 를 **무조건** 함께 지나갔다.
  *
  * 그 짝 처리의 근거는 「설치되지 않은 확장을 활성화할 수 없다」인데, 부수효과가 끝난 뒤
- * 완료 마커를 남기기 전에 요청이 죽으면(12차가 실패로 승격시킨 그 경로) 전제가 깨진다.
+ * 완료 마커를 남기기 전에 요청이 죽으면(앞서 실패로 승격시킨 그 경로) 전제가 깨진다.
  * 그러면 운영자가 고른 확장이 **설치되어 있는데 켜지지 않은 채** 설치가 「완료」로 끝난다 —
  * 라우트도 메뉴도 레이아웃도 없고, 오류·경고·로그가 하나도 남지 않는다.
  *
@@ -176,7 +176,7 @@ class InstallerSkipPairedActivateTest extends TestCase
     /**
      * 확장이 **실제로 설치되어 있으면** 짝 활성화는 지나가지 않는다.
      *
-     * 이것이 16차 C-1 이 막는 상태다 — 지나가면 그 확장은 설치된 채 영영 켜지지 않는다.
+     * 이것이 이 검사가 막는 상태다 — 지나가면 그 확장은 설치된 채 영영 켜지지 않는다.
      *
      * @scenario skip_request=skippable, task=module, task_outcome=failed_extension
      *
@@ -224,7 +224,7 @@ class InstallerSkipPairedActivateTest extends TestCase
     }
 
     /**
-     * 파급 목록도 같은 규칙을 받는다 (16차 C-1 재귀).
+     * 파급 목록도 같은 규칙을 받는다 (재귀).
      *
      * `pending` 판정의 근거 역시 **완료 마커의 부재**다 — 직접 짝만 고치면 같은 결함이
      * 한 단계 밖(의존 확장)에 그대로 남는다. 건너뛴 확장은 미설치, 의존 확장은 설치됨으로

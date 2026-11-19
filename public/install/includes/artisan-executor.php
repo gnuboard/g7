@@ -136,7 +136,7 @@ if (! function_exists('installerTempDir')) {
 
 if (! function_exists('installerDescribeSignalExit')) {
     /**
-     * 종료 코드가 시그널 종료를 뜻하면 그 사유 문구를 돌려준다 (13차 환경#25).
+     * 종료 코드가 시그널 종료를 뜻하면 그 사유 문구를 돌려준다.
      *
      * 셸은 시그널로 죽은 자식을 `128 + N` 으로 보고한다 — 컨테이너 cgroup 의 OOM-kill 은
      * `137`(= 128 + SIGKILL). 종료 코드만 보면 "실패했다" 뿐이라 운영자가 메모리 한도를
@@ -162,7 +162,7 @@ if (! function_exists('installerBuildArtisanCommandLine')) {
      * 종전 호출부가 손으로 조립하던 형태를 그대로 재현한다 — 커맨드명·bare 플래그는
      * 그대로, 값은 escapeshellarg, 값 옵션은 `--opt=` + escapeshellarg(value).
      *
-     * 비대화형 강제(`--no-interaction`)는 여기가 아니라 **러너**가 붙인다 (13차 E3). 코어
+     * 비대화형 강제(`--no-interaction`)는 여기가 아니라 **러너**가 붙인다. 코어
      * `SubprocessCommandRunner` 도 `formatParameters()` 가 아니라 `run()` 에서 붙이며, 이
      * 함수는 파라미터를 argv 문자열로 옮기기만 하는 순수 변환으로 남는다.
      *
@@ -275,7 +275,7 @@ if (! function_exists('installerRunArtisanSubprocess')) {
         // 들어오므로(run-task.php), 선언만 600 으로 올리면 비정상 종료 시 이미 죽은 요청의
         // 점유가 최대 10분 남아 다음 요청이 그동안 busy 를 받는다. in-process 부팅과 같은
         // 순서로 수명을 먼저 올린 뒤 그 값을 lock 에 알린다.
-        // 선언값은 요청값이 아니라 **실제로 적용된 값**이다 (제품 결정 13차 환경#9) —
+        // 선언값은 요청값이 아니라 **실제로 적용된 값**이다 (제품 결정) —
         // `set_time_limit` 이 막혔거나 호스팅이 상한을 잠근 환경에서 600 을 선언하면
         // 30초에 죽은 워커의 예산이 10분 남아 다음 요청이 그동안 거짓 busy 를 받는다.
         $timeBudget = installerSetTimeLimit(INSTALLER_SUBPROCESS_TIME_LIMIT);
@@ -291,7 +291,7 @@ if (! function_exists('installerRunArtisanSubprocess')) {
         $phpBin = escapeshellarg(getPhpBinary());
         $artisanCommand = installerBuildArtisanCommandLine($command, $parameters);
 
-        // 비대화형 강제 — 웹 요청 안에는 응답할 TTY 가 없다 (13차 E3). 코어의 두 러너
+        // 비대화형 강제 — 웹 요청 안에는 응답할 TTY 가 없다. 코어의 두 러너
         // (SubprocessCommandRunner·InProcessCommandRunner)가 이미 같은 규약을 쓰므로, 여기만
         // 빠지면 같은 파라미터가 러너마다 다른 argv 로 실행된다 — 확인 프롬프트를 띄우는
         // 커맨드가 응답을 기다리며 멈추고, 화면에는 진행이 멈춘 것으로만 보인다.
@@ -301,7 +301,7 @@ if (! function_exists('installerRunArtisanSubprocess')) {
 
         // 출력 파일 예약이 실패하면(open_basedir 로 후보 디렉토리가 전부 막힌 환경) 리다이렉트
         // 자체가 성립하지 않는다. 쓸 수 없는 경로로 그냥 진행하면 파일이 생기지 않아 output 이
-        // 빈 배열로 남고, 실패 사유가 통째로 사라진다 (13차 환경#12). 그 경우에는 파이프로
+        // 빈 배열로 남고, 실패 사유가 통째로 사라진다. 그 경우에는 파이프로
         // 받는다 — deadlock 회피 이점은 잃지만 사유는 남는다.
         $cmdLogFile = reserveCommandOutputFile();
 
@@ -388,7 +388,7 @@ if (! function_exists('installerBootLaravelForInProcess')) {
         // heartbeat 를 갱신할 수 없으므로, 알리지 않으면 아직 살아 있는 이 요청을 다른
         // 요청이 stale 로 보고 탈취해 같은 태스크를 겹쳐 돌린다.
         //
-        // 선언값은 요청값이 아니라 **실제로 적용된 값**이다 (제품 결정 13차 환경#9) — 요청값을
+        // 선언값은 요청값이 아니라 **실제로 적용된 값**이다 (제품 결정) — 요청값을
         // 그대로 선언하면 그 시간을 얻지 못한 환경에서 죽은 워커의 예산이 그만큼 남는다.
         $workerId = function_exists('installerCurrentWorkerId') ? installerCurrentWorkerId() : null;
         if ($workerId !== null && function_exists('extendWorkerStaleWindow')) {

@@ -112,7 +112,7 @@ if (! function_exists('installerDetectExecutionMode')) {
         if (! isset($cache[$phpBinary])) {
             $detection = ExecutionEnvironment::detect($phpBinary);
             // 「번들이 쓸 수 있는가」는 파일 존재만으로 결정되지 않는다 — 푸는 데 ZipArchive 가
-            // 필요하다 (13차 환경#4). 판정은 installerVendorBundleUsable() 단일 지점이 소유한다.
+            // 필요하다. 판정은 installerVendorBundleUsable() 단일 지점이 소유한다.
             $detection['bundle_available'] = installerVendorBundleUsable();
             $cache[$phpBinary] = $detection;
         }
@@ -233,7 +233,7 @@ if (! function_exists('installerCoerceVendorModeForExecution')) {
 
 if (! function_exists('installerStepwiseBlockedByVendorMode')) {
     /**
-     * 이 조합에서 단계별 실행을 고를 수 없는가 (10차 #M3).
+     * 이 조합에서 단계별 실행을 고를 수 없는가.
      *
      * 단계별 실행은 요청 하나가 태스크 하나만큼 산다 — `run-task.php` 가 자기 수명을
      * `STEPWISE_LOCK_STALE_SECONDS`(180초)로 잡고 들어온다. 그런데 `composer install` 은
@@ -264,7 +264,7 @@ if (! function_exists('installerStepwiseBlockedByVendorMode')) {
 
 if (! function_exists('installerCoerceInstallationModeForVendor')) {
     /**
-     * 유효 Vendor 방식에 맞게 진행 방식을 보정한다 (10차 #M3).
+     * 유효 Vendor 방식에 맞게 진행 방식을 보정한다.
      *
      * 화면이 비활성으로 막아도 저장된 값·직접 요청은 그대로 들어올 수 있으므로 서버가 같은
      * 판정을 다시 적용한다. 막힌 조합이면 기본 진행 방식(sse)으로 되돌린다.
@@ -286,7 +286,7 @@ if (! function_exists('installerCoerceInstallationModeForVendor')) {
 
 if (! function_exists('installerResolveInstallationMode')) {
     /**
-     * 요청된 진행 방식을 유효 실행 모드·Vendor 방식에 맞게 확정한다 (A-2 · R1 · 10차 #M3).
+     * 요청된 진행 방식을 유효 실행 모드·Vendor 방식에 맞게 확정한다.
      *
      * 두 규칙이 한 지점에서 적용된다:
      *
@@ -298,7 +298,7 @@ if (! function_exists('installerResolveInstallationMode')) {
      *    `composer install` 은 그보다 오래 걸리는 것이 정상이다 (#M3).
      *
      * 판정을 엔드포인트의 `if` 로 두면 그 조건이 뒤집혀도 어떤 테스트도 red 가 되지 않는다 —
-     * 실제로 강제 분기는 저장소 전체에서 참조 0 이었다 (10차 #G1).
+     * 실제로 강제 분기는 저장소 전체에서 참조 0 이었다.
      *
      * @param  string  $requested  요청된 진행 방식 (sse|polling|stepwise, 그 밖은 sse)
      * @param  string  $executionMode  유효 실행 모드 (subprocess|inprocess)
@@ -424,7 +424,7 @@ if (! function_exists('installerRequiresStepwiseToken')) {
      * 요구해야 한다. 판정을 엔드포인트 안의 `if` 로 두면 그 조건이 뒤집혀도(예: `!==`) 어떤
      * 테스트도 red 가 되지 않는다: 토큰 **판정 함수**는 행위 테스트가 덮지만 그 함수를 부를지
      * 말지를 정하는 **조건**은 아무도 보지 않기 때문이다. 그 상태의 결과는 stepwise 설치의
-     * 건너뛰기가 무인증이 되는 것이다 (9차 #G2).
+     * 건너뛰기가 무인증이 되는 것이다.
      *
      * @param  array<string, mixed>  $state  설치 상태
      * @return bool 토큰 요구 여부
@@ -461,7 +461,7 @@ if (! function_exists('installerStepwiseFailurePayload')) {
 
 if (! function_exists('installerStepwiseStateSummary')) {
     /**
-     * 단계별 실행 응답이 싣는 상태 요약 (10차 #G9).
+     * 단계별 실행 응답이 싣는 상태 요약.
      *
      * 폴링 조회(`state-management.php?action=get`)와 **같은 실패·건너뜀 필드 집합**을 내보내야
      * 한다 — 각자 배열 리터럴을 두면 한쪽에만 추가된 필드가 그 진행 모드에서만 조용히 빠진다.
@@ -573,7 +573,7 @@ if (! function_exists('installerSseWorkerRejected')) {
 
 if (! function_exists('installerStepwiseTokenRejection')) {
     /**
-     * 토큰 거부의 **사유**를 나눈다 (11차 #A10).
+     * 토큰 거부의 **사유**를 나눈다.
      *
      * 종전에는 「보관된 토큰이 없다」와 「제시한 토큰이 틀렸다」가 같은 문구로 끝났는데,
      * 두 상황의 조치가 정반대다 — 후자는 새로고침으로 복구되지만 전자(runtime.php 가
@@ -601,7 +601,7 @@ if (! function_exists('installerStepwiseTokenRejection')) {
 
 if (! function_exists('installerFinalizeRejection')) {
     /**
-     * 설치 마무리 엔드포인트(finalize-env.php)가 이 요청을 거부해야 하는지 판정한다 (11차 #A1).
+     * 설치 마무리 엔드포인트(finalize-env.php)가 이 요청을 거부해야 하는지 판정한다.
      *
      * 이 엔드포인트는 `.env` 에 완료 표식을 박고 runtime.php(DB 비밀번호·APP_KEY·stepwise
      * 토큰)와 상태 파일을 지운다 — 인스톨러에서 **가장 되돌릴 수 없는 동작**이다. 그런데
@@ -614,7 +614,7 @@ if (! function_exists('installerFinalizeRejection')) {
      * 밖에서는 아무도 모른다.
      *
      * 완료 판정은 `complete_flag` 마커로 한다. `installation_status` 는 config_cache 재시도
-     * 경로에서 갱신되지 않을 수 있어(11차 #A6 이 그 자체를 고치지만) 마커가 더 직접적이다.
+     * 경로에서 갱신되지 않을 수 있어(그 자체도 따로 고쳤지만) 마커가 더 직접적이다.
      *
      * @param  array<string, mixed>  $state  설치 상태 (읽지 못했으면 빈 배열)
      * @param  string  $method  요청 메서드
@@ -632,7 +632,7 @@ if (! function_exists('installerFinalizeRejection')) {
         // 상태 파일이 이미 사라졌으면 finalize 가 한 번 끝난 것이다 — 멱등 재호출을 막지
         // 않는다(막으면 .env 머지가 실패한 뒤의 재시도 경로가 함께 닫힌다).
         //
-        // 「사라졌다」는 호출자가 파일을 직접 보고 알려 준다 (13차 D10). 종전에는 `$state === []`
+        // 「사라졌다」는 호출자가 파일을 직접 보고 알려 준다. 종전에는 `$state === []`
         // 로 판정했는데 `getInstallationState()` 는 파일 부재 시 **DEFAULT_INSTALLATION_STATE**
         // (비어 있지 않다)를 돌려주므로 이 분기는 실제 호출 경로에서 한 번도 참이 되지 않았다 —
         // 그 결과 finalize 를 다시 부르면 멱등 통과 대신 409(미완료)가 나갔다.
@@ -656,7 +656,7 @@ if (! function_exists('installerFinalizeRejection')) {
 
 if (! function_exists('installerStartRejection')) {
     /**
-     * 설치 시작(install-process.php)이 이 요청을 거부해야 하는지 판정한다 (11차 #A2·#A4).
+     * 설치 시작(install-process.php)이 이 요청을 거부해야 하는지 판정한다.
      *
      * 두 가지를 함께 본다.
      *
@@ -724,7 +724,7 @@ if (! function_exists('installerStartRejection')) {
 
 if (! function_exists('installerHasFunction')) {
     /**
-     * 이 환경에서 그 PHP 함수를 호출할 수 있는가 (13차 환경#1).
+     * 이 환경에서 그 PHP 함수를 호출할 수 있는가.
      *
      * PHP 8 부터 `disable_functions` 로 막힌 함수는 함수 테이블에서 제거되므로, 호출하면
      * `Error: Call to undefined function` 이 난다 — `@` 접두는 이 오류를 막지 못한다
@@ -758,7 +758,7 @@ if (! function_exists('installerHasFunction')) {
 
 if (! function_exists('installerVendorBundleUsable')) {
     /**
-     * 동봉 의존성 묶음(vendor-bundle.zip)으로 설치가 성립하는가 (13차 환경#4).
+     * 동봉 의존성 묶음(vendor-bundle.zip)으로 설치가 성립하는가.
      *
      * 「파일이 있다」만으로는 부족하다 — 묶음을 푸는 데 `ZipArchive` 가 필요하고, 공식
      * `php:8.3-apache` / `php:8.3-fpm` 도커 이미지에는 `ext-zip` 이 기본으로 없다.
@@ -779,7 +779,7 @@ if (! function_exists('installerVendorBundleUsable')) {
 
 if (! function_exists('installerRequestIsHttps')) {
     /**
-     * 이 요청이 HTTPS 로 도달했는가 (13차 환경#17).
+     * 이 요청이 HTTPS 로 도달했는가.
      *
      * 판정이 두 벌이면 한쪽만 프록시를 고려하게 된다 — 실제로 요구사항 화면은
      * `X-Forwarded-Proto` 를 보는데 세션 쿠키 설정은 `$_SERVER['HTTPS']` 만 봐서, TLS 종단이
@@ -809,7 +809,7 @@ if (! function_exists('installerRequestIsHttps')) {
 
 if (! function_exists('installerCrossOriginRejection')) {
     /**
-     * 상태를 바꾸는 요청이 다른 출처에서 왔는지 판정한다 (13차 보안#4).
+     * 상태를 바꾸는 요청이 다른 출처에서 왔는지 판정한다.
      *
      * 인스톨러에는 CSRF 토큰 검증이 없다 — `verifyCsrfToken()` 은 정의만 있고 호출부가
      * 저장소 전체에 0건이었다. 그런데 세션 쿠키는 `SameSite=Lax` 라 top-level 폼 제출에는
@@ -863,7 +863,7 @@ if (! function_exists('installerCrossOriginRejection')) {
 
 if (! function_exists('installerSseWorkerStateRejection')) {
     /**
-     * 스트리밍 워커(install-worker.php)의 진입 전제를 판정한다 (13차 보안#5·F6).
+     * 스트리밍 워커(install-worker.php)의 진입 전제를 판정한다.
      *
      * 형제 입구 `run-task.php` 는 `installerStepwiseEndpointRejection()` 으로 「이 입구의
      * 모드인가」와 「진행 중인가」를 함께 본다. 스트리밍 워커는 앞의 절반(stepwise 거부)만
@@ -902,11 +902,11 @@ if (! function_exists('installerSseWorkerStateRejection')) {
 
 if (! function_exists('installerSessionOwnsStepwiseInstall')) {
     /**
-     * 이 세션이 진행 중인 설치를 시작한 세션인가 (13차 보안#3 — 절반).
+     * 이 세션이 진행 중인 설치를 시작한 세션인가 (절반).
      *
      * 단계별 실행 토큰은 Step 5 화면 HTML 에 실린다. 그런데 진행 중 설치가 있으면 세션이
      * 없는 요청도 Step 5 로 안내되므로(index.php 가 state 의 current_step 을 채택),
-     * 무인증 GET 한 번으로 토큰이 유출된다. 그 통로 하나로 9~11차가 건 토큰 게이트 전부가
+     * 무인증 GET 한 번으로 토큰이 유출된다. 그 통로 하나로 앞서 건 토큰 게이트 전부가
      * 우회된다.
      *
      * 소유자 표식은 설치 시작 지점(install-process.php)이 runtime.php(0600)와 세션 양쪽에
@@ -977,7 +977,7 @@ if (! function_exists('installerTransferStepwiseOwnership')) {
 
 if (! function_exists('installerProbeRateLimitExceeded')) {
     /**
-     * 무인증 probe 엔드포인트의 호출 횟수 상한 (13차 보안#6·보안#7).
+     * 무인증 probe 엔드포인트의 호출 횟수 상한 (보안#7).
      *
      * 설치 창에는 인증이 없다. 그 사이 `?action=test-db` 는 임의 host:port 로 나가는 접속
      * 프록시이고 `?action=test-php-binary` 는 임의 절대경로를 `--version` 으로 실행한다 —
@@ -1012,9 +1012,9 @@ if (! function_exists('installerProbeRateLimitExceeded')) {
         if ($clientKey !== '') {
             $clientExceeded = installerProbeRateLimitCount($bucket.'|'.$clientKey, $limit, $windowSeconds);
 
-            // ── 두 통을 함께 본다 (12차 G3 라운드) ────────────────────────────────
+            // ── 두 통을 함께 본다 ────────────────────────────────
             //
-            // 11차는 클라이언트 식별을 세션 기반으로 바꾸고 이 분기에서 전역 창을
+            // 앞서 클라이언트 식별을 세션 기반으로 바꾸면서 이 분기에서 전역 창을
             // 뺐다. 앞의 절반은 옳다 — 전역 창은 **남이 채울 수 있고**, 채워지면
             // 운영자의 storage 계열이 상시 `rate_limited` 로 떨어져 노출 자동
             // 차단(D3)이 수동 확인(D21)으로 강등된다.
@@ -1070,7 +1070,7 @@ if (! function_exists('installerProbeRateLimitClientKey')) {
         // 상한 초과로 빠져** 노출 자동 차단이 수동 확인으로 강등된다.
         //
         // `session_id()` 는 write-close 뒤에도 같은 값을 돌려준다(실측). 그러므로 상태가
-        // 아니라 **식별자 자체**를 본다 (11차 G3 라운드).
+        // 아니라 **식별자 자체**를 본다.
         $raw = (string) session_id();
 
         if ($raw === '') {
@@ -1217,7 +1217,7 @@ if (! function_exists('installerProbeRateLimitExceededInSession')) {
         // 세션을 닫고 들어온다 — 노출 점검(`?action=requirements`)은 느린 프로브 동안
         // 세션 잠금을 쥐지 않으려고 `session_write_close()` 를 먼저 부른다. 그래서 이
         // 폴백은 그 경로에서 **한 번도 세어 본 적이 없었고**, 「끊기지 않는 반복만이라도
-        // 끊는다」는 선언이 사실이 아니었다 (15차 G3 라운드).
+        // 끊는다」는 선언이 사실이 아니었다.
         //
         // 다시 여는 비용(짧은 잠금)은 이 폴백이 도는 조건 자체가 예외적(storage 쓰기 불가)
         // 이라 감수한다. 응답이 이미 나가기 시작했으면 열 수 없으므로 그때는 종전대로
@@ -1277,7 +1277,7 @@ if (! function_exists('installerProbeRateLimitStatePath')) {
 
 if (! function_exists('installerIniSet')) {
     /**
-     * `ini_set()` 을 가용할 때만 호출한다 (13차 환경#1·환경#18).
+     * `ini_set()` 을 가용할 때만 호출한다 (환경#18).
      *
      * `ini_set` 은 cPanel/CloudLinux 계열 호스팅의 표준 차단 목록에 있고, 인스톨러는
      * 세션 설정·출력 버퍼·오류 표시를 이 함수로 조정한다 — 그 호출들은 대부분 응답 봉투가
@@ -1302,7 +1302,7 @@ if (! function_exists('installerIniSet')) {
 
 if (! function_exists('installerEffectiveTimeLimit')) {
     /**
-     * 요청한 실행 시간과 **실제로 적용된 값** 중 작은 쪽을 돌려준다 (제품 결정 13차 환경#9).
+     * 요청한 실행 시간과 **실제로 적용된 값** 중 작은 쪽을 돌려준다 (제품 결정).
      *
      * `set_time_limit()` 은 요청한 값을 항상 얻어내지 못한다 — `disable_functions` 로 막혀
      * 있거나, `Suhosin` 계열이 상한을 고정하거나, 호스팅이 ini 를 잠근 경우 호출은 조용히
@@ -1346,10 +1346,10 @@ if (! function_exists('installerSetTimeLimit')) {
     /**
      * `set_time_limit()` 을 가용할 때만 호출하고, **실제로 적용된 시간**을 돌려준다.
      *
-     * 막힌 환경에서도 설치는 진행되어야 한다 (13차 환경#1) — 시간 상한을 못 늘리는 것과
+     * 막힌 환경에서도 설치는 진행되어야 한다 — 시간 상한을 못 늘리는 것과
      * 그 자리에서 치명 종료하는 것은 전혀 다른 결과다.
      *
-     * 반환값은 워커 lock 에 선언할 시간 예산이다 (제품 결정 13차 환경#9). 호출부는 요청값이
+     * 반환값은 워커 lock 에 선언할 시간 예산이다 (제품 결정). 호출부는 요청값이
      * 아니라 **이 반환값**을 선언해야 한다 — 근거는 `installerEffectiveTimeLimit()` 이 소유한다.
      *
      * @param  int  $seconds  허용을 요청할 실행 시간(초)
@@ -1373,7 +1373,7 @@ if (! function_exists('installerSetTimeLimit')) {
 
 if (! function_exists('installerParseByteSize')) {
     /**
-     * php.ini 크기 표기(`256M`·`1G`·`-1`)를 바이트로 바꾼다 (13차 환경#8).
+     * php.ini 크기 표기(`256M`·`1G`·`-1`)를 바이트로 바꾼다.
      *
      * `-1`(무제한)은 그대로 -1 로 돌려준다 — 0 으로 접으면 "무제한" 과 "확인 불가" 가
      * 구분되지 않는다. 해석할 수 없는 값은 null 이다.
@@ -1427,7 +1427,7 @@ if (! function_exists('installerOutputConfirmsAlreadyApplied')) {
             return false;
         }
 
-        // 두 계열을 모두 덮는다 (22차 N-1) — 커맨드 자체 선검사(`…이(가) 이미 설치되어
+        // 두 계열을 모두 덮는다 — 커맨드 자체 선검사(`…이(가) 이미 설치되어
         // 있습니다.`)와 Manager 예외 경로(`이미 활성화된 템플릿입니다.`). 후자를 놓치면 KO
         // 로케일(기본값)에서 템플릿 재시도가 하드 실패가 된다. 모집단은
         // InstallerAlreadyAppliedJudgmentTest 가 lang 파일에서 도출해 전수 대조한다.

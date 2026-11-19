@@ -1,5 +1,5 @@
 # audit:allow test-scenario-coverage reason: issue:#609 effects 가 매커니즘 단계별 단언 (5단계 fallback × 2 origin source × 2 락) 으로 광범위. 핵심 회귀 가드는 test_files 의 단위/Feature 테스트가 cover 하므로 개별 케이스 docblock 매핑은 후속 PR 에서 단계 적용.
-# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 
 feature: ActivityLog action 라벨 다국어 namespace 분리
 

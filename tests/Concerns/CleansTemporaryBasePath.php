@@ -3,7 +3,7 @@
 namespace Tests\Concerns;
 
 /**
- * temp `BASE_PATH` 트리를 클래스 종료 시 지운다 (12차 L-4).
+ * temp `BASE_PATH` 트리를 클래스 종료 시 지운다.
  *
  * 인스톨러 테스트는 실 `.env`·상태 파일을 파괴하지 않으려고 `BASE_PATH` 를 시스템 temp 하위의
  * 임의 디렉토리로 고정한다(R7). 그런데 그 디렉토리를 **만들기만 하고 지우지 않는** 클래스가

@@ -403,7 +403,7 @@ class CoreBackupHelperTest extends TestCase
      * 문서 루트 안 손상 사본 판정이 **생산자 상수**(`StorageLinkHelper::DOCROOT_BROKEN_PREFIX`)를 본다.
      *
      * 리터럴 `'storage.broken.'` 사본이 남아 있으면 생산자가 규칙을 바꿀 때 롤백 경고의 모집단이
-     * 조용히 빈다 (13차 G3 W1-8). 실제 생산자 이름으로 만든 항목이 목록에 든다.
+     * 조용히 빈다. 실제 생산자 이름으로 만든 항목이 목록에 든다.
      *
      * @scenario backup_operation=restore
      *

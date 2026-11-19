@@ -9,7 +9,7 @@ use Tests\Concerns\CleansTemporaryBasePath;
 use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * 태스크 흐름의 되돌리기·보고 계약 (13차 #D4·#D12 · E5 · F1/F2 · F3 · F7).
+ * 태스크 흐름의 되돌리기·보고 계약 (#D12 · E5 · F1/F2 · F3 · F7).
  *
  * 고정하는 계약:
  *

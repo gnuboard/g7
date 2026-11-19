@@ -231,12 +231,12 @@ class CategoryImageServiceRowDiskTest extends ModuleTestCase
     /**
      * 304 가 본문 없는 전용 응답이고 200 의 캐시 축을 그대로 싣는지 단언합니다.
      *
-     * 13차까지는 서비스 trait 이 자체 304 객체(`StreamedResponse` 서브클래스)를 만들었고,
+     * 종전에는 서비스 trait 이 자체 304 객체(`StreamedResponse` 서브클래스)를 만들었고,
      * 그 테스트의 「본문 없음」 단언은 `sendContent()` 를 버퍼에 흘려 재는 형태였다 — Symfony
      * `setNotModified()` 가 `setContent(null)` 로 `streamed = true` 를 세우므로 **어떤 구현으로도**
      * red 가 되지 않는 공허한 단언이었다. 여기서는 응답 클래스(코어 `NotModifiedResponse`)와
      * 200 과의 헤더 대칭(`Last-Modified`·`Cache-Control`·`Expires`)을 잰다 — 옛 형태로 되돌리면
-     * 클래스 단언에서 red 가 된다 (14차 G3 라운드).
+     * 클래스 단언에서 red 가 된다.
      *
      * @param  TestResponse  $full  같은 자원의 200 응답
      * @param  TestResponse  $notModified  조건부 요청으로 받은 304 응답
@@ -271,8 +271,8 @@ class CategoryImageServiceRowDiskTest extends ModuleTestCase
      * 종전에는 `Cache-Control: public, max-age=31536000` 만 실었다 — 검증자가 없으니
      * 만료 전에는 재검증 자체가 불가능하고(파일을 갈아 끼워도 1년간 옛것을 본다) 만료
      * 뒤에는 내용이 그대로여도 매번 전문이 나갔다. 오류도 로그도 없이 대역폭과 신선도
-     * 양쪽에서만 손해가 나므로 응답 헤더를 직접 재는 것 말고는 드러날 통로가 없다
-     * (11차 G3 라운드 B11-12). 14차부터 그 계약은 코어 단일 지점이 만든다.
+     * 양쪽에서만 손해가 나므로 응답 헤더를 직접 재는 것 말고는 드러날 통로가 없다.
+     * 이제 그 계약은 코어 단일 지점이 만든다.
      *
      * @effects serve_and_delete_follow_row_disk
      *
@@ -314,7 +314,7 @@ class CategoryImageServiceRowDiskTest extends ModuleTestCase
     /**
      * `Cache-Control` 은 **환경**이 정한다 — 코어 지점은 운영 환경이 아니면 `no-cache` 다.
      *
-     * 13차 서비스 사본은 `public, max-age=31536000, must-revalidate` 를 환경과 무관하게 고정했다.
+     * 종전 서비스 사본은 `public, max-age=31536000, must-revalidate` 를 환경과 무관하게 고정했다.
      * 그러면 개발·스테이징에서 이 통로만 1년 캐시가 걸려, 같은 사이트의 다른 파일 서빙과 다르게
      * 동작한다. 같은 요청을 운영 환경으로 돌리면 정책이 바뀌는 것으로 코어 지점 경유를 잰다.
      *
@@ -364,7 +364,7 @@ class CategoryImageServiceRowDiskTest extends ModuleTestCase
     /**
      * `-gzip` 접미사가 붙은 `If-None-Match` 도 같은 파일로 인정한다 — 코어 비교 지점의 규약.
      *
-     * 13차 서비스 사본은 Symfony `isNotModified()` 에 판정을 맡겼는데, 그것은 정확 일치 비교라
+     * 종전 서비스 사본은 Symfony `isNotModified()` 에 판정을 맡겼는데, 그것은 정확 일치 비교라
      * 앞단 CDN·정적 서빙이 압축본에 붙여 준 `"<etag>-gzip"` 을 클라이언트가 되보내면 영원히
      * 전문 200 이었다. 304 는 클라이언트가 보유한 표현의 검증자를 그대로 돌려준다.
      *

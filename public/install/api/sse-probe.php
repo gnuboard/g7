@@ -28,12 +28,12 @@
  */
 
 // 실행 환경 판정 헬퍼 — 아래 ini_set / set_time_limit / ignore_user_abort 는 호스팅이 흔히
-// 막는 함수라 호출 전에 가용성을 봐야 한다 (13차 환경#1). `@` 는 Error 를 삼키지 않으므로,
+// 막는 함수라 호출 전에 가용성을 봐야 한다. `@` 는 Error 를 삼키지 않으므로,
 // 무가드 호출은 이 진단 자체를 치명 종료시켜 클라이언트가 사유 없는 연결 실패만 본다.
 // 최상위 실행문이 없고 BASE_PATH 를 자체 역산하므로 가드보다 앞에 와도 안전하다.
 require_once dirname(__DIR__).'/includes/execution-mode.php';
 
-// 오류 텍스트가 이벤트 스트림에 섞이지 않게 한다 (20차 #13 · 21차 N4) — **가드보다 앞**.
+// 오류 텍스트가 이벤트 스트림에 섞이지 않게 한다 — **가드보다 앞**.
 // 가드의 410 방출 경로가 warning 을 내면 그 텍스트가 스트림 프레임을 깨뜨린다.
 if (installerHasFunction('ini_set')) {
     @ini_set('display_errors', '0');
@@ -47,7 +47,7 @@ installer_guard_or_410();
 
 // SSE 헤더 설정 (install-worker.php 와 동일 — 호환성 검증의 정확도 보장)
 header('Content-Type: text/event-stream');
-// 디스크 캐시를 쓰는 중간 노드까지 막는다 — 형제 JSON 응답과 같은 강도 (17차 #B9).
+// 디스크 캐시를 쓰는 중간 노드까지 막는다 — 형제 JSON 응답과 같은 강도.
 header('Cache-Control: no-store');
 header('Connection: keep-alive');
 header('X-Accel-Buffering: no');
@@ -60,7 +60,7 @@ if (installerHasFunction('ini_set')) {
 if (function_exists('apache_setenv')) {
     @apache_setenv('no-gzip', '1');
 }
-// 진행 보장 포함 (17차 #B7). 이 파일은 의도적으로 최소 include 체인이라
+// 진행 보장 포함. 이 파일은 의도적으로 최소 include 체인이라
 // functions.php 의 공용 헬퍼를 쓰지 않고 같은 규칙을 인라인한다 — 닫히지 않는
 // 버퍼가 있으면 종전 형태는 max_execution_time 까지 조용히 회전했다.
 while (($obLevel = ob_get_level()) > 0) {

@@ -153,7 +153,7 @@ class InstallerRuntimeHelperTest extends TestCase
     }
 
     /**
-     * 삭제 경로도 쓰기 경로와 같은 OPcache 규약을 따른다 (15차 G3 W1-11).
+     * 삭제 경로도 쓰기 경로와 같은 OPcache 규약을 따른다.
      *
      * `runtime.php` 는 PHP 파일이라 OPcache 가 캐시한다. 쓰기(`writeInstallerRuntime`)와 읽기는
      * 갱신 직후 항목을 버리는데 삭제만 빠져 있었다 — 지운 뒤 `revalidate_freq` 창 안의 다음
@@ -761,7 +761,7 @@ ENV;
      * 생성 규칙(`installerUniqueSuffix(INSTALLER_TMP_SUFFIX_BYTES)`)으로 만든 tmp 가 스윕에 걷힌다.
      *
      * 종전 판정 패턴은 `{8}` 이었는데 생성 이름은 16진 **16자**라 영원히 매치되지 않았다 —
-     * 스윕 모집단이 0 인 채 형제(`installer-state.php`)만 `{16,}` 이었다 (13차 G3 W1-1).
+     * 스윕 모집단이 0 인 채 형제(`installer-state.php`)만 `{16,}` 이었다.
      * 생성 규칙과 판정 패턴이 같은 SSoT(`functions.php`)를 보는지를 실제 이름으로 잰다.
      *
      * @scenario runtime_state=present_with_db_and_key

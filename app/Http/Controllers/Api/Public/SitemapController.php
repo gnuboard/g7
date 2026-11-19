@@ -24,7 +24,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  *
  * 캐시 계약(검증자·조건부 요청·304 헤더 동반)은 코어 단일 지점
  * (`BaseApiController::streamedFileResponse()`)이 소유한다 — 그래서 `PublicBaseController`
- * 를 상속한다. 종전에는 두 통로에 검증자가 없어 봇이 매번 전문을 받아 갔다 (14차 G3 라운드).
+ * 를 상속한다. 종전에는 두 통로에 검증자가 없어 봇이 매번 전문을 받아 갔다.
  *
  * 세 통로 모두 `streamedFileResponseFromMeta()` 로 넘긴다 — 만료 기간은 세트의 신선도 기간
  * (`SeoCacheSettings::sitemapCacheTtl()`)과 같다(그보다 길면 재생성된 세트가 봇에 늦게 닿고,
@@ -34,7 +34,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  *
  * 이 세 라우트는 `web` 그룹에 있지만 세션·쿠키 미들웨어를 뺀다(`routes/web.php`) —
  * `public, max-age` 응답에 `Set-Cookie` 가 실리면 공유 캐시가 그 응답을 저장하지 않거나
- * 세션 쿠키를 다른 방문자에게 재사용한다 (16차 G3 라운드 E-5).
+ * 세션 쿠키를 다른 방문자에게 재사용한다.
  */
 class SitemapController extends PublicBaseController
 {

@@ -13,8 +13,7 @@ use Plugins\Sirsoft\VerificationKginicis\Tests\PluginTestCase;
  * 콜백 → 브리지 복귀 주소는 요청이 아니라 **설정된 사이트 주소**를 따른다.
  *
  * 인증기관의 콜백은 사이트 바깥에서 도착한다 — 앞단 프록시가 접두사를 벗기거나 내부 호스트명으로
- * 들어오는 배치에서 `url()` 은 그 요청의 호스트를 실어, 인증을 마친 사용자가 사이트 밖으로 튕긴다
- * (16차 G3 라운드 B-5).
+ * 들어오는 배치에서 `url()` 은 그 요청의 호스트를 실어, 인증을 마친 사용자가 사이트 밖으로 튕긴다.
  */
 class InicisCallbackBridgeUrlTest extends PluginTestCase
 {

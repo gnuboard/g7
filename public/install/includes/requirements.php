@@ -64,7 +64,7 @@ if (! function_exists('installer_requirement_php_extensions')) {
         // 필수·선택 목록의 원본은 app/Support/Requirements/php-extensions.json 이고 `zip` 은 그 원본에서
         // 필수다(실행 방식과 무관 — 코어 업데이트·번들 설치가 모두 ZipArchive 로 푼다).
         // in-process 는 Vendor 설치 방식이 bundled 로 고정되고(A-4) 그 묶음을 ZipArchive 로 푼다
-        // (13차 환경#4 ②) — 원본 목록이 바뀌어 zip 이 필수에서 빠지더라도 in-process 로 떨어지는
+        // (②) — 원본 목록이 바뀌어 zip 이 필수에서 빠지더라도 in-process 로 떨어지는
         // 환경에서는 필수로 남긴다. 원본이 이미 필수로 두는 지금은 아무것도 바꾸지 않는다.
         // 감지는 PHP 바이너리 probe 를 포함하므로 요청당 한 번만 돈다 (installerDetectExecutionMode 의 정적 캐시).
         if (! in_array('zip', $requiredExtensions, true)
@@ -174,7 +174,7 @@ if (! function_exists('installer_requirement_disk_space')) {
         $recommendedMb = RECOMMENDED_DISK_SPACE_MB;
         $lowHeadroom = $passed && $freeSpaceMb < $recommendedMb;
 
-        // 경고 문구는 message 에 합성하지 않고 별도 필드로 낸다 (22차 N-5) — 카드 값 슬롯은
+        // 경고 문구는 message 에 합성하지 않고 별도 필드로 낸다 — 카드 값 슬롯은
         // 짧은 라벨 계약(OPcache 카드와 같은 규칙)이라 문단이 들어가면 배지를 밀어낸다.
         // 화면은 값 슬롯을 GB 로 유지하고 이 문구를 카드 아래 안내로 그린다.
         return [
@@ -422,7 +422,7 @@ if (! function_exists('installer_requirement_https')) {
      */
     function installer_requirement_https(): array
     {
-        // 판정은 세션 쿠키 설정과 같은 함수를 쓴다 (13차 환경#17) — 두 벌로 두었더니
+        // 판정은 세션 쿠키 설정과 같은 함수를 쓴다 — 두 벌로 두었더니
         // 한쪽만 프록시를 고려해, TLS 종단이 앞단인 배치에서 secure 쿠키가 붙지 않았다.
         $isHttps = installerRequestIsHttps($_SERVER);
 
@@ -479,7 +479,7 @@ if (! function_exists('installer_requirement_php_limits')) {
     /**
      * 실행 예산(메모리·시간) 확인 (정보 — 설치를 차단하지 않음)
      *
-     * 종전에는 요구사항 목록에 이 두 값이 **하나도 없었다** (13차 환경#8). 128M 공유호스팅
+     * 종전에는 요구사항 목록에 이 두 값이 **하나도 없었다**. 128M 공유호스팅
      * 에서 in-process 부팅 + migrate + seed 는 죽는데, 그 사실을 설치 전에 알 방법이 없어
      * 운영자는 요구사항을 전부 통과하고서 중간에 멈추는 설치를 만난다.
      *
@@ -623,7 +623,7 @@ if (! function_exists('installer_requirement_disabled_functions')) {
         $requiredFunctions = ExecutionEnvironment::SUBPROCESS_FUNCTIONS;
         $disabled = $detection['blocked_functions'];
 
-        // 「번들이 있다」가 아니라 「번들을 쓸 수 있다」를 본다 (13차 환경#4) — 푸는 데
+        // 「번들이 있다」가 아니라 「번들을 쓸 수 있다」를 본다 — 푸는 데
         // ZipArchive 가 필요하고 공식 php 도커 이미지에는 ext-zip 이 기본으로 없다.
         // 판정은 installerVendorBundleUsable() 단일 지점이 소유한다.
         $bundleAvailable = $detection['bundle_available'] ?? installerVendorBundleUsable();
@@ -661,7 +661,7 @@ if (! function_exists('installer_requirement_disabled_functions')) {
 
 if (! function_exists('installer_probe_cli_runtime')) {
     /**
-     * CLI 바이너리의 런타임 설정을 조회한다 (13차 환경#7).
+     * CLI 바이너리의 런타임 설정을 조회한다.
      *
      * `--version` 은 버전만 알려 준다. 같은 버전이라도 웹 SAPI 와 CLI 가 서로 다른 php.ini
      * 를 읽는 배치(cPanel/Plesk 멀티 PHP, EA-PHP)가 표준이므로, 실제 확장 로드 상태와 메모리
@@ -753,7 +753,7 @@ if (! function_exists('installer_requirement_php_cli_version')) {
         $cliMajorMinor = $cliVersion ? implode('.', array_slice(explode('.', $cliVersion), 0, 2)) : null;
         $matched = $cliMajorMinor !== null && $webMajorMinor === $cliMajorMinor;
 
-        // 버전이 같아도 **설정이 같다는 뜻은 아니다** (13차 환경#7). 멀티 PHP 패널에서 웹은
+        // 버전이 같아도 **설정이 같다는 뜻은 아니다**. 멀티 PHP 패널에서 웹은
         // ea-php83, PATH 의 php 는 시스템 php83 인데 php.ini 가 달라 pdo_mysql 이 CLI 에만
         // 없는 조합이 흔하다 — 그 조합에서 요구사항은 전부 초록인데 마이그레이션만 실패한다.
         // 그래서 CLI 쪽 확장 목록·메모리 상한을 함께 조회해 REQUIRED_EXTENSIONS 와 대조한다.
@@ -887,7 +887,7 @@ if (! function_exists('installer_verify_php_binary')) {
 
         // 이 판정은 `{binary} --version` 을 실제로 돌려서 내린다 — 실행 함수가 막힌 환경
         // (= 이 안이 지원하려는 대표 환경)에서 가드 없이 부르면 `exec()` 자체가 정의되지 않아
-        // Error 가 나고, 라우터의 catch 가 그 개발자 원문을 화면에 띄운다 (10차 #M5).
+        // Error 가 나고, 라우터의 catch 가 그 개발자 원문을 화면에 띄운다.
         // 가용성 판정은 코어와 공유하는 SSoT 가 소유한다(disable_functions 까지 본다).
         if (! ExecutionEnvironment::hasFunction('exec')) {
             return ['valid' => false, 'version' => null, 'sapi' => null, 'message' => lang('error_binary_probe_unavailable')];
@@ -948,7 +948,7 @@ if (! function_exists('installer_verify_composer')) {
     {
         installerEnsureExecutionEnvironmentLoaded();
 
-        // PHP 경로 판정과 같은 이유의 가드 (10차 #M5) — 이 함수도 `--version` 을 실제로 돌린다.
+        // PHP 경로 판정과 같은 이유의 가드 — 이 함수도 `--version` 을 실제로 돌린다.
         if (! ExecutionEnvironment::hasFunction('exec')) {
             return ['valid' => false, 'version' => null, 'message' => lang('error_binary_probe_unavailable')];
         }
@@ -1019,7 +1019,7 @@ if (! function_exists('installer_detect_composer_binary')) {
      * Composer 바이너리 자동 감지 — 시스템 PATH → 프로젝트 루트 composer.phar → api 폴더 composer.phar.
      *
      * 후보 경로는 `realpath` 없이 BASE_PATH 와 이 파일 위치로 만든다 — `realpath` 가 막힌 환경
-     * (13차 환경#1)에서도 그대로 성립한다.
+     *에서도 그대로 성립한다.
      *
      * @param  string  $phpPath  .phar 실행 시 사용할 PHP 경로
      * @return array{found: bool, path: string|null, version: string|null}
@@ -1156,7 +1156,7 @@ if (! function_exists('installer_check_core_pending_path')) {
             ? $path
             : BASE_PATH.DIRECTORY_SEPARATOR.$path;
 
-        // `realpath` 가 막혀 있으면 정규화 없이 판정한다 (13차 환경#1) — 위에서 상위 경로
+        // `realpath` 가 막혀 있으면 정규화 없이 판정한다 — 위에서 상위 경로
         // 세그먼트(`..`)와 NUL 을 이미 거부했으므로 traversal 방어는 그대로 성립한다.
         $resolved = installerHasFunction('realpath') ? @realpath($candidatePath) : $candidatePath;
 

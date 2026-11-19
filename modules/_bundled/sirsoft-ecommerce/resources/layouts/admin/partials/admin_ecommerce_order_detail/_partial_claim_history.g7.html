@@ -91,7 +91,7 @@
                       </class-map>
                       {{item.amount_formatted ?? ''}}
                     </div>
-                    <!-- 방향은 amount_type 이 단독으로 나른다 (S6c 2차 A4) — amount 는 크기만 싣는다. 화면이 유형으로 분기해 부호를 다시 붙이면 저가 교환에서 이중 부호가 된다. -->
+                    <!-- 방향은 amount_type 이 단독으로 나른다 — amount 는 크기만 싣는다. 화면이 유형으로 분기해 부호를 다시 붙이면 저가 교환에서 이중 부호가 된다. -->
                     <div data-if="{{(item.amount_type ?? 'none') !== 'none'}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.amount_type.{{item.amount_type ?? 'none'}}</div>
                   </div>
                   <badge data-type="composite" variant="{{item.status_variant ?? 'default'}}">{{item.status_label ?? ''}}</badge>
@@ -160,7 +160,7 @@
                   </class-map>
                   {{item.amount_formatted ?? ''}}
       </div>
-                <!-- 방향은 amount_type 이 단독으로 나른다 (S6c 2차 A4) — amount 는 크기만 싣는다. -->
+                <!-- 방향은 amount_type 이 단독으로 나른다 — amount 는 크기만 싣는다. -->
                 <div data-if="{{(item.amount_type ?? 'none') !== 'none'}}" class="ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.admin.order.detail.claim_history.amount_type.{{item.amount_type ?? 'none'}}</div>
               </td>
               <td class="ecommerce:px-3 ecommerce:py-3 ecommerce:align-top ecommerce:text-center">

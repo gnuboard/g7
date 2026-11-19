@@ -14,7 +14,7 @@ use Tests\TestCase;
 /**
  * `BaseApiController::streamedFileResponse()` 의 인자 계약 테스트 (DB 미사용).
  *
- * 14차 G3 라운드가 이 헬퍼에 두 인자를 더했다 — `$mimeType`(`Vary` 판정 근거) 과
+ * 앞서 이 헬퍼에 두 인자를 더했다 — `$mimeType`(`Vary` 판정 근거) 과
  * `$skipCompression`(압축 제외 선언). 둘 다 **없어도 동작하던** 축이라 HTTP 계약 테스트로는
  * 보이지 않는다: 근거 없는 `Vary` 판정은 호출부가 `Content-Type` 을 세우지 않을 때만
  * 200/304 를 가르고, 압축 제외는 미들웨어가 응답 클래스를 보고 건너뛰는 우연에 가려진다.
@@ -81,7 +81,7 @@ class StreamedFileResponseContractTest extends TestCase
     /**
      * `Content-Type` 을 어디서도 알 수 없으면 **내려받기**(`application/octet-stream`)다 — 추정하지 않는다.
      *
-     * 제품 결정(16차 G3 라운드): 종전에는 이 자리가 `LogicException` 을 던졌는데, 그 예외는
+     * 제품 결정: 종전에는 이 자리가 `LogicException` 을 던졌는데, 그 예외는
      * 개발자에게 「인자를 넘겨라」를 말할 뿐 방문자에게는 무인증 표면의 500 이었고, 행
      * `mime_type` 이 빈 첨부는 코드 결함이 아니라 데이터 상태다. 정적 서빙이 미지 확장자에
      * 주는 것과 같은 유형으로 내려보내며, 내용을 스니핑하지 않는다. 200/304 의 `Vary` 는 그
@@ -298,7 +298,7 @@ class StreamedFileResponseContractTest extends TestCase
             $this->assertSame('text/plain', $full->headers->get('Content-Type'), var_export($blank, true).' 는 null 과 같은 「모름」이어야 한다');
         }
 
-        // 양쪽 다 비어 있으면 추정하지 않고 내려받기다 — 제품 결정(16차 G3 라운드). 종전 기대값
+        // 양쪽 다 비어 있으면 추정하지 않고 내려받기다 — 제품 결정. 종전 기대값
         // (`LogicException`)을 뒤집었다: 알 수 없으면 500 이 아니라 `application/octet-stream`.
         $this->bindRequest();
         $full = $this->controller()->serve($this->stream(['Content-Type' => '']), 'src', ['mimeType' => '  ']);

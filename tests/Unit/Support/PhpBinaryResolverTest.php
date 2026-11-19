@@ -355,7 +355,7 @@ class PhpBinaryResolverTest extends TestCase
      *
      * 위 테스트는 실제 탐색 결과를 쓰는데 이 저장소의 개발 환경에서는 CLI 후보만 나온다.
      * 그러면 `$seenNonCli` 가 참이 되는 원소가 없어 단언이 한 번도 평가되지 않고,
-     * 정렬을 지우거나 뒤집어도 통과한다(4차 라운드가 vacuous 로 판정한 지점).
+     * 정렬을 지우거나 뒤집어도 통과한다(라운드가 vacuous 로 판정한 지점).
      * 순수 함수로 분리한 정렬에 목록을 직접 주입해 그 사각을 닫는다.
      *
      * @scenario php_binary_probe=invalid_with_autodetect

@@ -1,12 +1,14 @@
 # Changelog
 
-All notable changes to this plugin will be documented in this file.
+이 플러그인의 모든 주요 변경사항을 기록합니다.
+형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
+[Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
-
-## [1.0.0] - 2026-11-19
+## [1.0.0] - 2026-11-20
 
 ### Added
+
+- SSO 연동 플러그인 최초 릴리즈. 회사 계정(SAML 2.0, OpenID Connect, LDAP/Active Directory)으로 로그인하고 SCIM 2.0 으로 회원을 만들고 지운다. 기본 언어는 한국어와 영어이고 일본어는 번들 언어팩으로 제공한다. 코어 7.2.0 이상이 필요하다(`g7_version >=7.2.0`)
 
 #### 기본
 
@@ -21,7 +23,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - 운영자가 회원 항목에 「기존 회원에게도 입력 요구」를 켜 추가 정보 입력이 필요한 회원도 회사 계정 연결 시작과 해제는 그대로 할 수 있습니다. 코어가 그런 회원의 쓰기 요청을 막지만, 로그인 수단을 다루는 이 요청들은 코어 필터 `core.required_fields.filter_exempt_routes` 로 열어 둡니다.
 - 사이트를 문서 루트 하위 폴더(예: `https://example.com/g7/`)에 설치해도 회사 계정 로그인과 계정 연결 시작 주소가 설치 폴더 안을 가리킵니다.
 - 화면 폭에 따라 바뀌는 모양은 엔진 responsive 로 정합니다(Tailwind 반응형 접두와 폭 미디어를 품은 의미 클래스를 쓰지 않습니다). 화면 모양은 같습니다.
-- SSO 연동 플러그인 최초 릴리즈. 회사 계정(SAML 2.0, OpenID Connect, LDAP/Active Directory)으로 로그인하고 SCIM 2.0 으로 회원을 만들고 지운다. 기본 언어는 한국어와 영어이고 일본어는 번들 언어팩으로 제공한다. 코어 7.2.0 이상이 필요하다(`g7_version >=7.2.0`)
 - 로그인 관문(잠금, 2단계 인증, 비밀번호 변경, 휴면 해제)은 코어가 그대로 맡는다. 회사 계정으로 인증한 회원도 코어 로그인 인계를 거쳐 비밀번호 로그인과 같은 관문을 지난다
 - IdP 를 사이트에 여러 개(최대 20개) 등록하고 IdP 마다 프로토콜, 버튼 표시, 관리자 로그인 허용, 소유 도메인을 정한다
 - 외부 패키지(`onelogin/php-saml`, `firebase/php-jwt`)를 플러그인에 함께 싣는다. composer 를 쓰지 않는 설치에서도 바로 동작한다
@@ -84,8 +85,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - 스케줄 4종(`sirsoft-sso:deprovision-check`, `sirsoft-sso:withdraw-deprovisioned`, `sirsoft-sso:metadata-refresh`, `sirsoft-sso:prune`)과 LDAP 연결 진단 명령 `sirsoft-sso:ldap-test`
 - 개발과 검수용 모의 IdP(OpenID Connect, SAML) — `sirsoft-sso:mock --enable --minutes=N`(최대 240분), `sirsoft-sso:mock-saml` 으로만 켜고 운영 환경에서는 켜지지 않는다
 - 비상 로그인 알림의 로그인 시각, 인증서 만료 알림의 만료일, 모의 IdP 명령이 알리는 만료 시각은 서버 시간대(UTC)가 아니라 사이트 시간대로 보인다
-
-### Changed
-
-- 회사 계정 로그인 버튼, 처음 로그인 동의 창 제목, 비상 계정 빼기 단추, 회원 상세의 IdP 이메일 차이 안내에서 괄호 조사(「(으)로」, 「을(를)」)를 없앴습니다. 버튼은 「○○ 계정으로 로그인」으로 보이고, 비밀번호 찾기 안내 메일의 버튼 안내도 같은 문구로 맞췄습니다.
-- 플러그인을 제거할 때 「데이터도 함께 삭제」를 고르지 않으면 관리자 메뉴를 지우지 않습니다. 다시 설치하면 운영자가 고친 메뉴 이름·순서가 그대로 남습니다(코어 7.2.0).
+- 플러그인을 제거할 때 「데이터도 함께 삭제」를 고르지 않으면 관리자 메뉴를 남겨, 다시 설치하면 운영자가 고친 메뉴 이름·순서가 그대로 남습니다(코어 7.2.0).

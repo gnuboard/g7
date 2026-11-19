@@ -26,7 +26,7 @@ $savedInstallationMode = $state['installation_mode'] ?? null;
 $initialInstallationMode = $forceStepwise ? 'stepwise' : (in_array($savedInstallationMode, ['sse', 'polling', 'stepwise'], true) ? $savedInstallationMode : 'sse');
 
 // 단계별 실행 + composer 조합은 고를 수 없다 — 한 요청 수명(180초)보다 `composer install` 이
-// 오래 걸리는 것이 정상이라 의존성이 반쯤 설치된 채 요청이 죽는다 (10차 #M3). 판정은 서버가
+// 오래 걸리는 것이 정상이라 의존성이 반쯤 설치된 채 요청이 죽는다. 판정은 서버가
 // 소유하고(execution-mode.php) install-process.php 가 같은 함수로 다시 적용한다.
 $effectiveVendorMode = installerCoerceVendorModeForExecution(
     (string) ($config['vendor_mode'] ?? 'auto'),
@@ -37,11 +37,11 @@ if ($stepwiseBlockedByVendor && $initialInstallationMode === 'stepwise') {
     $initialInstallationMode = 'sse';
 }
 
-// 단계별 실행 재개용 토큰 — 진행 중인 stepwise 설치를 **시작한 세션에만** 싣는다 (13차 보안#3).
+// 단계별 실행 재개용 토큰 — 진행 중인 stepwise 설치를 **시작한 세션에만** 싣는다.
 //
 // 이 페이지 자체는 세션 뒤에 있지 않다: 진행 중인 stepwise 설치가 있으면 세션 없이
 // `/install/` 을 열어도 Step 5 가 렌더된다(index.php 가 상태 파일의 current_step 을 채택).
-// 종전에는 그 화면이 토큰을 무조건 실었으므로, 무세션 GET 한 번이면 9~11차가 run-task ·
+// 종전에는 그 화면이 토큰을 무조건 실었으므로, 무세션 GET 한 번이면 앞서 run-task ·
 // abort · reset · skip_task · finalize 에 건 토큰 게이트 전부가 우회됐다.
 //
 // 막는 것은 페이지가 아니라 토큰이다. Step 5 렌더 자체를 막으면 showInstallationRunningAlert()
@@ -65,7 +65,7 @@ if ($savedInstallationMode === 'stepwise'
 //
 // 화면 목록은 **서버 태스크 목록에서 파생한다**. 종전에는 같은 목록을 이 파일에 손으로 다시
 // 적어 두었고, 그 사본에서 세 단계(dependency_precheck · db_cleanup · config_cache)가 빠져
-// 있었다. 서버는 그 셋을 조건 없이 실행하므로 결과는 이랬다 (12차 #B22~#B24):
+// 있었다. 서버는 그 셋을 조건 없이 실행하므로 결과는 이랬다:
 //
 //  - 진행률 분모가 화면 항목 수라 「10 / 10 · 100%」 뒤에도 서버가 계속 돌았다
 //  - 그 세 단계는 DOM 항목이 없어 실패해도 빨강이 되지 않았다 (setTaskStatus 가 조용히 반환)
@@ -73,7 +73,7 @@ if ($savedInstallationMode === 'stepwise'
 // 파생하면 서버에 단계가 늘어도 화면이 저절로 따라온다. 그룹 소속만 화면이 정한다 —
 // 목록에 없는 새 태스크는 마무리 그룹으로 떨어져 **적어도 보이기는 한다**.
 //
-// 순서도 서버 목록 그대로다 (PO 2026-11-02). 확장 작업은 종류를 넘는 의존 순서로 실행되므로
+// 순서도 서버 목록 그대로다. 확장 작업은 종류를 넘는 의존 순서로 실행되므로
 // (installerExtensionInstallOrder — 플러그인이 모듈보다, 모듈이 관리자 템플릿보다 먼저 올 수 있다)
 // 종류별 묶음에 나눠 담으면 진행 표시가 아래 묶음부터 채워진다. 그래서 관리자 템플릿·모듈·
 // 플러그인·사용자 템플릿 작업은 한 묶음(extensions)에 실행 순서로 담고, 종류는 항목마다 kind 로
@@ -164,7 +164,7 @@ foreach (buildInstallationTaskList() as $installerTask) {
         </div>
         <div class="requirement-card-body">
             <?php /* 사유는 두 가지다 — 파일이 없거나(생성 안내), 있는데 쓸 수 없거나(권한 안내).
-                     19차 S-2 전에는 후자를 사전 점검이 통과시켜, 14단계가 전부 초록으로 끝난 뒤에도
+                     종전에는 후자를 사전 점검이 통과시켜, 14단계가 전부 초록으로 끝난 뒤에도
                      `.env` 가 설치 전 그대로 남고 인스톨러가 영구히 열려 있었다. JS 가 이 문단을
                      사유에 맞게 바꾼다(기본값은 생성 안내). */ ?>
             <p id="env-setup-reason"><?= htmlspecialchars(lang('file_setup_description')) ?></p>
@@ -252,7 +252,7 @@ if (PHP_OS_FAMILY !== 'Windows' && is_file($envPath)) {
             .'<p class="env-hardening-hint-title">'.htmlspecialchars(lang('env_hardening_hint_title')).'</p>'
             .'<p class="env-hardening-hint-status">'
             // 인스톨러 전체가 `:name` 규약이다 — 여기만 sprintf(%s) 였던 탓에 자리표시자
-            // 게이트(인스톨러 PHP 전수 스캔)가 이 지점을 영원히 통과시켰다 (9차 #L34).
+            // 게이트(인스톨러 PHP 전수 스캔)가 이 지점을 영원히 통과시켰다.
             .htmlspecialchars(lang('env_hardening_hint_current_status', [
                 'permission' => decoct($envPerms),
                 'owner' => $envOwnerName,
@@ -372,7 +372,7 @@ echo renderInstallResultSection('failure', 'error', 'installation_failed', '', $
                  button + aria-expanded 로 되어 있어 그 형태에 맞춘다. */ ?>
         <?php /* 설치가 끝나기 전에는 핸들러가 첫 줄에서 되돌아간다 — 그동안 이 헤더는 Tab
                  순서에 남아 있으면서 눌러도 아무 일이 없는 「죽은 버튼」이었다. 비활성이라는
-                 사실을 처음부터 싣고, 완료·실패·중단 시 JS 가 해제한다 (12차 #B28).
+                 사실을 처음부터 싣고, 완료·실패·중단 시 JS 가 해제한다.
                  클릭은 data-action 위임(installer-boot.js)으로, Enter·Space 는 installer.js 의
                  role="button" 키보드 위임으로 같은 클릭을 낸다 — 인라인 on* 은 strict CSP 에서 실행되지 않는다. */ ?>
         <div class="requirement-card-header" id="installation-card-header" role="button" tabindex="-1"
@@ -471,12 +471,12 @@ $languagePacks = $selectedExtensions['language_packs'] ?? [];
     'stepwise_token' => $stepwiseToken,
     // 서버가 서브프로세스 스폰 동안 스스로에게 주는 창(초 → ms). 그 구간에는 emit 이 0 이므로
     // 화면의 정지 감지는 이 값보다 커야 한다 — 숫자를 여기에 다시 적지 않고 서버 상수에서
-    // 파생한다. 세 모니터가 같은 근거를 쓰지 않으면 SSE·폴링만 정상 설치를 정지로 뒤집는다
-    // (13차 E1). 상수는 이 파일이 이미 require 한 task-runner.php 가 artisan-executor.php 를
+    // 파생한다. 세 모니터가 같은 근거를 쓰지 않으면 SSE·폴링만 정상 설치를 정지로 뒤집는다.
+    //상수는 이 파일이 이미 require 한 task-runner.php 가 artisan-executor.php 를
     // 통해 정의한다.
     'server_blocking_window_ms' => INSTALLER_SUBPROCESS_TIME_LIMIT * 1000,
     // 작업 그룹 정의 — 서버 태스크 목록(buildInstallationTaskList)에서 파생한다.
-    // 이 파일 상단의 $installerTaskGroups 주석 참조 (12차 #B22).
+    // 이 파일 상단의 $installerTaskGroups 주석 참조.
     'task_groups' => $installerTaskGroups,
     // 확장 종류별 작업 — task_groups 가 없을 때(옛 캐시 화면) step-5-installation.js 의 기본 그룹 정의가 이 목록으로 채운다
     'admin_templates' => array_values($adminTemplates),

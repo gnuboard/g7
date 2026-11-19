@@ -33,7 +33,7 @@
 // (R4 취지). 최상위 실행문이 없고 BASE_PATH 를 자체 역산하므로 config 보다 앞에 와도 안전하다.
 require_once __DIR__.'/../includes/execution-mode.php';
 
-// 오류 텍스트가 본문에 섞이지 않게 한다 — **include 체인·가드보다 앞** (12차 #A6 · 21차 N4).
+// 오류 텍스트가 본문에 섞이지 않게 한다 — **include 체인·가드보다 앞**.
 // 종전에는 include 체인 뒤에 있어서 그 체인(config/state/runtime)의 warning 이 JSON 본문
 // 앞에 붙는 창이 남았다. 상세 사유는 아래 원 위치의 주석 참조.
 if (installerHasFunction('ini_set')) {
@@ -62,11 +62,11 @@ if (! defined('STEPWISE_LOCK_STALE_SECONDS')) {
 header('Content-Type: application/json; charset=UTF-8');
 header('Cache-Control: no-store');
 
-// 채널 가드 이력 — 12차 #A6 이 lock 획득 뒤에 있던 것을 헤더 직후로 올렸고(상태 읽기·토큰·
-// 모드 가드·lock 구간의 warning 이 JSON 본문 앞에 붙어 res.json() 이 throw), 21차 N4 가
+// 채널 가드 이력 — lock 획득 뒤에 있던 것을 헤더 직후로 올렸고(상태 읽기·토큰·
+// 모드 가드·lock 구간의 warning 이 JSON 본문 앞에 붙어 res.json() 이 throw), 이어서
 // **include 체인보다도 앞**(파일 최상단)으로 다시 올렸다 — 체인(config/state/runtime) 안의
 // warning 창이 남아 있었기 때문이다. 이 가드는 응답을 방출하는 **모든** api 진입점의 의무다:
-// 20차 #13 실측 당시 11곳 중 4곳만 보유(18차의 「형제 5곳 전부 보유」 기록은 사실과 달랐다).
+// 실측 당시 11곳 중 4곳만 보유(앞선 「형제 5곳 전부 보유」 기록은 사실과 달랐다).
 // 존재·순서 모두 파생 모집단 게이트 InstallerJsonEndpointErrorChannelTest 가 강제한다.
 // `ini_set` 은 호스팅 표준 차단 목록에 있고(`installerIniSet` docblock), 그 줄은 try 밖이라
 // 막힌 환경에서는 JSON 봉투조차 서지 못한 채 500 이 된다 — 그래서 가용성 가드가 필수다.
@@ -81,7 +81,7 @@ function stepwiseRespond(array $payload, int $status = 200): void
 {
     http_response_code($status);
 
-    // 인코딩 실패에도 빈 본문을 내보내지 않는다 (11차 #A9). 이 응답에는 artisan 원문 출력이
+    // 인코딩 실패에도 빈 본문을 내보내지 않는다. 이 응답에는 artisan 원문 출력이
     // events 로 실리므로 깊이·인코딩 문제로 false 가 돌아올 수 있는데, `echo false` 는 빈
     // 본문이라 클라이언트의 `res.json()` 이 throw 하고 화면은 서버 오류를 「통신 오류」로
     // 잘못 보고한다. 폴링 응답(state-management.php)이 이미 같은 폴백을 갖고 있다.
@@ -139,7 +139,7 @@ function stepwiseStateSummary(array $state): array
 {
     // 요약의 형태·값은 execution-mode.php 가 소유한다 — 이 파일은 최상위 스크립트라
     // require 로 부를 수 없어, 여기에 본문을 두면 「부른다」만 소스로 확인할 수 있고
-    // 필드가 빠지거나 이름이 바뀌어도 어떤 테스트도 red 가 되지 않는다 (10차 #G9).
+    // 필드가 빠지거나 이름이 바뀌어도 어떤 테스트도 red 가 되지 않는다.
     return installerStepwiseStateSummary($state);
 }
 
@@ -158,7 +158,7 @@ try {
     // 출처 확인 — 형제 상태 변경 입구(abort·reset·skip_task·finalize-env)가 전부 거치는 검사다.
     // 이 엔드포인트만 빠져 있었는데, 인스톨러에서 실제로 Artisan 을 돌리는 곳이 여기다.
     // 토큰이 실질 방어라 즉시 악용되지는 않지만, 요구 집합이 형제와 갈려 있으면 어느 쪽이
-    // 옳은지 다음 사람이 알 수 없다 — 13차 D2 가 정확히 그 형태였다.
+    // 옳은지 다음 사람이 알 수 없다 — 앞서 실제로 그 형태의 결함이 있었다.
     $originRejection = installerCrossOriginRejection($_SERVER);
     if ($originRejection !== null) {
         stepwiseRespond([
@@ -193,7 +193,7 @@ try {
     // 소유자가 확정했다는 증거다. 또 그 검증은 running 만 허용해, complete_flag 뒤 completed 상태에서
     // 이어지는 config_cache 재개(installerStepwiseEndpointRejection 이 허용한다)를 막는다.
 
-    // 거부 사유를 나눈다 (11차 #A10) — 「보관본이 없다」는 새로고침으로 복구되지 않는데
+    // 거부 사유를 나눈다 — 「보관본이 없다」는 새로고침으로 복구되지 않는데
     // 종전에는 「토큰이 틀렸다」와 같은 문구·같은 안내(새로고침)를 냈다.
     $tokenRejection = installerStepwiseTokenRejection($presented, $expected);
     if ($tokenRejection !== null) {
@@ -222,7 +222,7 @@ try {
     // 겹쳐 돌리고, 더 짧으면 이미 죽은 요청의 점유가 남아 다음 요청을 그만큼 막는다.
     // in-process 부팅은 둘을 함께 올린다 (artisan-executor.php 의 extendWorkerStaleWindow).
     //
-    // 선언은 요청값이 아니라 **실제로 적용된 값**으로 한다 (제품 결정 13차 환경#9) —
+    // 선언은 요청값이 아니라 **실제로 적용된 값**으로 한다 (제품 결정) —
     // `set_time_limit(180)` 이 먹지 않는 호스팅(막힌 함수·잠긴 ini)에서 180 을 선언하면
     // 30초에 죽은 요청의 점유가 3분 남아 그동안 화면이 「다른 창에서 진행 중」에 멈춘다.
     // 그래서 수명을 먼저 확정하고, 그 결과를 lock 에 선언한다 (순서가 뒤집히면 lock 이
@@ -248,7 +248,7 @@ try {
 
     $workerId = $lockResult['worker_id'];
     installerCurrentWorkerId($workerId);
-    // lock 해제 + 치명 종료면 상태를 실패로 승격 (12차 #A2) — 승격하지 않으면 fatal/OOM/
+    // lock 해제 + 치명 종료면 상태를 실패로 승격 — 승격하지 않으면 fatal/OOM/
     // 시간초과 뒤 상태가 running 에 고착해 [건너뛰고 계속] 이 원리상 불가능해진다.
     register_shutdown_function('installerHandleWorkerShutdown', $workerId);
 

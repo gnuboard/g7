@@ -89,11 +89,11 @@ class AttachmentController extends PublicBaseController
             }
 
             // 캐시 계약(검증자 비교·304·200 헤더 동반)은 코어 단일 지점이 입힌다 — 미리보기
-            // 통로와 같은 형태다. 종전에는 다운로드에 검증자가 없었다 (14차 G3 라운드).
+            // 통로와 같은 형태다. 종전에는 다운로드에 검증자가 없었다.
             // `immutable` 은 `false`(이 URL 에는 `?v=` 가 없다), 압축은 선언으로 제외한다
             // (사용자 업로드물 — 형제 `PublicStorageController` 와 같은 선언).
             // `Content-Disposition: attachment` 는 스토리지가 세운 것을 헬퍼가 그대로 승계한다.
-            // 키 검증도 그 지점(`streamedFileResponseFromMeta()`)이 한다 (16차 G3 라운드 E-6).
+            // 키 검증도 그 지점(`streamedFileResponseFromMeta()`)이 한다.
             return $this->streamedFileResponseFromMeta(
                 $info,
                 (int) g7_core_settings('cache.layout_ttl', 86400),
@@ -182,7 +182,7 @@ class AttachmentController extends PublicBaseController
             // `fileResponse()` 를 쓰면 안 된다 — 그 헬퍼는 로컬 절대 경로 전제
             // (`filemtime`/`filesize`)라 원격 첨부 디스크(S3 등)에서는 파일을 찾지 못하고,
             // 이 통로는 그 실패를 404 로 접어 **썸네일이 오류 없이 전부 사라진다**.
-            // 코어 형제는 같은 사유로 이미 스트림 서빙으로 옮겼다 (8차 G3 라운드 C-2).
+            // 코어 형제는 같은 사유로 이미 스트림 서빙으로 옮겼다.
             //
             // 파일 이름은 스토리지가 원본 이름으로 선언한다 — `fileResponse()` 는
             // `basename()` 고정이라 저장 UUID 가 노출됐다 (같은 라운드 C-3).
@@ -204,12 +204,12 @@ class AttachmentController extends PublicBaseController
             // 배열 접근 경고가 `ErrorException` 으로 올라 500 이 됐고, 원인이 응답에
             // 드러나지 않았다. 키 부재의 **명시 실패** + 로그는 코어 헬퍼
             // (`streamedFileResponseFromMeta()`)가 소유한다 — 종전에는 이 통로가
-            // `array_key_exists` 가드 사본을 들고 있었다 (10차 B10-10 · E-09 → 16차 E-6).
+            // `array_key_exists` 가드 사본을 들고 있었다.
             //
             // `immutable` 은 `false`(이 URL 에는 `?v=` 가 없다). `Vary` 판정 근거(MIME)는 200 과
             // 같은 값(행 메타)을 넘기고, 압축은 선언으로 제외한다 — 사용자 업로드물은 크기·건수가
             // 유계가 아니라 압축 경로의 전체 적재가 동시 요청 수만큼 증폭된다 (형제
-            // `PublicStorageController` 와 같은 선언 · 14차 G3 라운드).
+            // `PublicStorageController` 와 같은 선언).
             //
             // 비밀글·삭제글·블라인드 글 첨부와 서명으로 연 원본은 `private` 다 — 요청자마다 볼 수 있는지가
             // 갈리는 응답이 공유 캐시(CDN·프록시)에 남으면 다음 방문자가 게이트 없이 받는다.

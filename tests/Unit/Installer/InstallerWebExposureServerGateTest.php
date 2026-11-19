@@ -9,7 +9,7 @@ use Tests\Concerns\CleansTemporaryBasePath;
 use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * 웹 노출 점검(B-4)의 **서버측** 게이트 (14차 G3 W2-3).
+ * 웹 노출 점검(B-4)의 **서버측** 게이트.
  *
  * 판정은 브라우저가 내리고 [다음 단계] 버튼도 화면이 잠근다 — 그런데 서버는 그 값을
  * 로그에만 싣고 `exposed` 인 POST 도 그대로 Step 3 으로 넘겼다. 화면 게이트는 개발자
@@ -147,7 +147,7 @@ class InstallerWebExposureServerGateTest extends TestCase
     }
 
     /**
-     * 숨은 필드의 초기값 `pending` 도 닫힌 집합의 일원이다 (16차 G3 D-6).
+     * 숨은 필드의 초기값 `pending` 도 닫힌 집합의 일원이다.
      *
      * 화면은 판정 전 `pending` 을 싣고 태어난다(`public/install/views/2-requirements.php`). 프로브가 끝나기
      * 전에 POST 가 오면 서버는 그 값을 받는데, 집합 밖으로 접으면 로그에 「보고되지 않음」

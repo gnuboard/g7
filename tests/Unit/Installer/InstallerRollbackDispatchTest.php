@@ -13,13 +13,13 @@ use Tests\Concerns\CleansTemporaryBasePath;
  * 고정하는 계약:
  *
  *  - 살아 있는 태스크 id 는 전부 rollbackTask() 가 알아본다 — 「알 수 없는 작업」으로 떨어지면
- *    롤백할 것이 없는 단계에 「롤백 실패」·「수동 정리 필요」가 표시된다 (9차 #M1)
- *  - 수동 복구 안내(getManualCommands)도 같은 목록을 모집단으로 갖는다 (9차 #L10)
+ *    롤백할 것이 없는 단계에 「롤백 실패」·「수동 정리 필요」가 표시된다
+ *  - 수동 복구 안내(getManualCommands)도 같은 목록을 모집단으로 갖는다
  *  - DB 태스크 실패의 롤백은 실패한 그 태스크의 롤백이다 — db_seed 실패를 migrate:rollback 으로
- *    되돌리면 「중단으로 끝났을 때」와 「실패로 끝났을 때」의 DB 상태가 갈린다 (9차 #M2)
- *  - 중단(aborted)으로 확정된 설치는 그 뒤 태스크가 실패해도 실패로 덮이지 않는다 (9차 #M10)
- *  - best_effort 태스크의 예외는 이미 기록된 완료를 실패로 덮지 않는다 (9차 #M18)
- *  - 건너뛰기는 직전 실패의 자리표시자 치환값을 남기지 않는다 (9차 #L4)
+ *    되돌리면 「중단으로 끝났을 때」와 「실패로 끝났을 때」의 DB 상태가 갈린다
+ *  - 중단(aborted)으로 확정된 설치는 그 뒤 태스크가 실패해도 실패로 덮이지 않는다
+ *  - best_effort 태스크의 예외는 이미 기록된 완료를 실패로 덮지 않는다
+ *  - 건너뛰기는 직전 실패의 자리표시자 치환값을 남기지 않는다
  *
  * BASE_PATH 는 temp 로 고정한다 (R7). 인스톨러 테스트 여럿이 실 저장소 루트를 BASE_PATH 로
  * define 하므로 메서드마다 새 프로세스에서 돌려 상수 충돌을 피한다.
@@ -216,7 +216,7 @@ class InstallerRollbackDispatchTest extends TestCase
         // 태스크 id 가 아예 생성되지 않아, 「전수」를 자처하는 이 모집단이 조용히 줄어든다.
         // 실측: modules·plugins·user_templates·language_packs 를 빈 배열로 두던 동안 7종이
         // 모집단 밖이었고, 그 사각에서 `language_pack_install` 의 수동 복구 안내 누락이
-        // 두 커버리지 단언을 모두 통과했다 (10차 #M1).
+        // 두 커버리지 단언을 모두 통과했다.
         $this->seedState([], ['selected_extensions' => [
             'admin_templates' => ['sirsoft-admin_basic'],
             'user_templates' => ['sirsoft-basic'],

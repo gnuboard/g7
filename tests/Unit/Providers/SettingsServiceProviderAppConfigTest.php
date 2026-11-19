@@ -96,7 +96,7 @@ class SettingsServiceProviderAppConfigTest extends TestCase
     }
 
     /**
-     * 저장된 site_url 의 후행 슬래시·공백은 app.url 로 주입되기 전에 걷어낸다 (17차 G3 라운드 B-8).
+     * 저장된 site_url 의 후행 슬래시·공백은 app.url 로 주입되기 전에 걷어낸다.
      *
      * 관리자 저장 경로(SaveSettingsRequest)는 이미 정규화하지만 인스톨러는 그 경로를 우회해
      * 원값을 저장한다. 저장된 값이 모두 이 지점을 지나 app.url 이 되므로, 여기서 정규화하면

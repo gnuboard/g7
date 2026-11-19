@@ -17,9 +17,9 @@ use Modules\Sirsoft\Page\Tests\FeatureTestCase;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * 페이지 첨부 미리보기의 조건부 요청 계약 (13차 G3 라운드)
+ * 페이지 첨부 미리보기의 조건부 요청 계약
  *
- * 12차가 `ETag`·`Last-Modified` 를 **내보내기**는 했지만 돌려받은 `If-None-Match` /
+ * 앞서 `ETag`·`Last-Modified` 를 **내보내기**는 했지만 돌려받은 `If-None-Match` /
  * `If-Modified-Since` 를 판정하는 곳이 없어 재검증이 영원히 전문 200 이었다. 본문 `<img>`
  * 로 실려 건수가 유계가 아닌 통로라 페이지 조회마다 손해가 누적되는데, 오류도 로그도
  * 없이 응답 헤더로만 드러난다. 실제 HTTP 왕복으로 고정한다 — 라우터가 304 응답의
@@ -179,11 +179,11 @@ class PublicPageAttachmentConditionalRequestTest extends FeatureTestCase
     }
 
     /**
-     * 다운로드 통로도 코어 헬퍼를 지난다 — 검증자·304·`nosniff`·압축 제외 선언 (15차 G3 라운드).
+     * 다운로드 통로도 코어 헬퍼를 지난다 — 검증자·304·`nosniff`·압축 제외 선언.
      *
      * 종전에는 `download()` 가 스토리지 스트림을 그대로 돌려줘 이 통로만 ETag 도 304 도
      * 없었다 — 같은 첨부가 이미지면 재검증되고 문서면 매번 전문을 받아 갔다(코어 첨부가
-     * 14차에 고친 것과 같은 비대칭). `Content-Disposition: attachment` 는 그대로 승계된다.
+     * 앞서 고친 것과 같은 비대칭). `Content-Disposition: attachment` 는 그대로 승계된다.
      *
      * @scenario serving_type=download, published=published, viewer=guest
      *

@@ -1,5 +1,5 @@
 # audit:allow test-scenario-coverage reason: issue:#609 |
-# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 15차 F-21 에서 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 #   본 매니페스트는 첨부 서빙(preview 썸네일 / download 파일) 별건 결함의 serving_type ×
 #   published × viewer cross product 를 기록한다. preview 는 모든 조합에서 공개 서빙(200),
 #   download 는 published=200 무조건 / unpublished 는 page_reader admin 만 200·나머지 404 로
@@ -62,8 +62,8 @@ effects:
   - download_icon_uses_valid_fa_name_not_heroicon
   - user_page_image_attachment_renders_preview_thumbnail
   - user_page_non_image_attachment_renders_file_icon
-  # 서빙 응답 계약 (G3 회차 11~13 후속) — 미리보기의 조건부 요청 판정(12차가 검증자를
-  # **내보내기**만 하고 **판정**을 빠뜨린 자리를 13차가 닫았다) + 형제 게시판·코어와의
+  # 서빙 응답 계약 — 미리보기의 조건부 요청 판정(앞서 검증자를
+  # **내보내기**만 하고 **판정**을 빠뜨린 자리를 닫았다) + 형제 게시판·코어와의
   # 강도 패리티(파일 이름 선언·행 disk·축소 후 size). 오류가 아니라 응답 헤더로만 드러나는
   # 축이라 실제 HTTP 왕복과 서비스 계약 양쪽이 잰다.
   - preview_matching_etag_returns_304_with_the_cache_headers_of_200

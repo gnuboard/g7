@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * 서버 태스크 목록 ↔ 진행 화면 목록 정합성 (12차 #B22 · #B23 · #B24).
+ * 서버 태스크 목록 ↔ 진행 화면 목록 정합성.
  *
  * `buildInstallationTaskList()` 이 설치 단계의 SSoT 다. 화면(`public/install/views/5-installation.php`)이 그
  * 목록을 손으로 다시 적으면 두 사본이 갈라지는데, 갈라진 결과는 **오류로 나타나지 않는다**:
@@ -329,7 +329,7 @@ class InstallerTaskListViewParityTest extends TestCase
     {
         // 목록이 갈라지면 서버가 도는 단계의 DOM 항목이 없다. `setTaskStatus()` 가 그때
         // 아무 흔적도 없이 되돌아가면 **그 단계는 실패해도 빨강이 되지 않는다** — 화면에도
-        // 콘솔에도 아무것도 남지 않아 무엇이 잘못됐는지 알 방법이 없었다 (12차 #B24).
+        // 콘솔에도 아무것도 남지 않아 무엇이 잘못됐는지 알 방법이 없었다.
         // 목록 자체는 위 검사가 지키고, 여기서는 그 방어가 뚫렸을 때의 흔적을 지킨다.
         // JS 도 같은 규칙이다 — 주석 처리된 console.warn 은 흔적을 남기지 않는다.
         $installer = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/assets/js/installer.js');

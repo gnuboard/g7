@@ -232,7 +232,7 @@ class InstallerRuntimeServiceProvider extends ServiceProvider
         // `runtime.php` 가 있는 동안 **모든 웹 요청의 register() 단계**에서 도는데,
         // 그 시점은 Laravel 이 응답 봉투를 세우기 전이라 치명이 곧 **사이트 전면 백지**다.
         // 형제(`public/install/includes/artisan-executor.php`)는 같은 두 함수에 이미
-        // 가드를 갖고 있었다 — 같은 판정의 두 사본이 갈려 있던 것이다. (12차 G3 E-13)
+        // 가드를 갖고 있었다 — 같은 판정의 두 사본이 갈려 있던 것이다.
         $envUsername = ExecutionEnvironment::hasFunction('getenv')
             ? (string) getenv('DB_WRITE_USERNAME')
             : '';

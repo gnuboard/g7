@@ -6,11 +6,11 @@ use PHPUnit\Framework\TestCase;
 use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
- * 클라이언트가 보내는 헤더 집합 ↔ 엔드포인트가 요구하는 집합의 정합 (13차 D2).
+ * 클라이언트가 보내는 헤더 집합 ↔ 엔드포인트가 요구하는 집합의 정합.
  *
  * ## 왜 이 축인가
  *
- * 12차는 「가드가 배선됐는가」만 잠갔다 — 서버가 stepwise 토큰을 요구하는지는 순수 함수
+ * 종전 검사는 「가드가 배선됐는가」만 잠갔다 — 서버가 stepwise 토큰을 요구하는지는 순수 함수
  * 단위 테스트(`installerFinalizeRejection`)가 확인했고, 그 함수는 초록이었다. 그런데
  * **화면이 그 토큰을 실제로 실어 보내는지**는 아무도 보지 않았고, `finalize-env.php` 호출만
  * 토큰 없이 나가고 있었다.

@@ -72,7 +72,7 @@ class RegisterPgProviderListenerTest extends PluginTestCase
      * CBT 편의점 결제의 입금통보 주소(`notiUrl`)는 요청이 아니라 **설정된 사이트 주소**를 따른다.
      *
      * `url()` 은 요청 호스트·접두사를 싣는다 — 앞단 프록시가 접두사를 벗기는 배치에서 PG 에
-     * 전달되는 통보 주소가 사이트 밖이 되고, 통보는 오류 없이 도착하지 않는다 (16차 G3 라운드 B-5).
+     * 전달되는 통보 주소가 사이트 밖이 되고, 통보는 오류 없이 도착하지 않는다.
      *
      * @scenario base_path=subpath, navigation_direction=navigation
      *

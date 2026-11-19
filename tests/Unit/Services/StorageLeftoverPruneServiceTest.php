@@ -506,7 +506,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * 커맨드는 라벨 표를 `foreach` 로 돌며 출력하므로, **라벨에 없는 키는 합계에서도
      * 목록에서도 통째로 빠진다.** 서비스가 대상군을 하나 늘려도 운영자 화면에는 그 건수가
      * 나타나지 않고, 오류도 경고도 없다 — 「지울 것이 없었다」와 구분되지 않는다.
-     * 종전에는 이 대칭을 재는 단언이 없었다 (7차 G3 라운드 D-10).
+     * 종전에는 이 대칭을 재는 단언이 없었다.
      *
      * 반대 방향도 함께 본다. 라벨만 남고 대상군이 사라지면 그 줄은 영원히 0 으로 출력되어
      * 운영자가 「그 축은 항상 깨끗하다」고 읽는다.
@@ -542,7 +542,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * 이 백업은 `public/storage` 트리를 통째로 옮겨 둔 것이라 크기에 상한이 없고, 링크가
      * 반복 손상되는 환경에서는 실행마다 하나씩 쌓인다. 그런데 종전에는 어느 대상군에도
      * 없어 **정리 주체가 0** 이었다 — G3 이 문서 루트 안에서 밖으로 옮기면서 위치만
-     * 바꾸고 회수 주체를 만들지 않았다 (10차 G3 라운드 F10-1).
+     * 바꾸고 회수 주체를 만들지 않았다.
      *
      * 이름은 **생산자 규약에서 도출**한다(`public-storage-broken-<YmdHis>-<hex8>`).
      * 리터럴로 다시 적으면 생산자가 규칙을 바꿀 때 모집단이 조용히 비므로, 형제 두
@@ -558,7 +558,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
     {
         // 이름은 **생산자에게 받아온다** — 독블록이 「생산자 규약에서 도출한다」고 적어 두고
         // 실제로는 손으로 적은 리터럴이었다. 그러면 생산자가 규칙을 바꿔도 이 검사는 그대로
-        // 초록이고, 그것이 이 규약이 폐기하려는 결함 자체다 (11차 G3 라운드 E11-7).
+        // 초록이고, 그것이 이 규약이 폐기하려는 결함 자체다.
         $older = $this->makeDir('storage/app/'.$this->nameFromBrokenBackupProducer(), 50);
         // 같은 초에 두 번 불러도 이름이 갈리는 것 자체가 생산자의 계약이다.
         $newer = $this->makeDir('storage/app/'.$this->nameFromBrokenBackupProducer(), 40);
@@ -616,7 +616,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
      *
      * 형제 두 백업군은 「실제 생산자가 만드는 이름이 모집단에 드는가」 전용 검사를
      * 갖는데 이 군만 없었다 — 접두사가 리터럴 복제라 생산자가 규칙을 바꾸면 모집단이
-     * 조용히 비는데 아무것도 red 가 되지 않았다 (10차 G3 라운드 F10-6).
+     * 조용히 비는데 아무것도 red 가 되지 않았다.
      *
      * @scenario leftover_target=installer_probe, leftover_mode=real_delete
      *
@@ -682,7 +682,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
         $producer = [];
 
         // 쓰기 프로브 접두사는 `functions.php` 소유다(생산자 `installerDirectoryIsWritable`) —
-        // 세 접두사가 두 파일에 흩어져 있어도 정리 주체는 한 표로 본다 (13차 G3 W1-6).
+        // 세 접두사가 두 파일에 흩어져 있어도 정리 주체는 한 표로 본다.
         foreach ([
             'INSTALLER_EXPOSURE_PROBE_PREFIX' => 'exposure-check.php',
             'INSTALLER_SYMLINK_PROBE_PREFIX' => 'exposure-check.php',
@@ -725,7 +725,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
      *
      * 생산자(`RootHtaccessUpdater`)는 자기 다음 실행에서만 걷는다 — 코어 업데이트를
      * 다시 하지 않는 사이트에서는 영구 잔존한다. 형제 대상군 전부가 「생산자 자기 스윕
-     * + 정리 커맨드」 두 주체 구조인데 이 자리만 하나였다 (10차 G3 라운드 F10-8).
+     * + 정리 커맨드」 두 주체 구조인데 이 자리만 하나였다.
      *
      * @scenario leftover_target=root_entry_temp, leftover_mode=real_delete
      *
@@ -818,7 +818,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * 링크 복구는 백업을 웹 트리 밖으로 옮기지 못하면 `public/storage.broken.<…>` 로
      * 폴백한다 — 그 사본은 **지금 웹에서 열린다**. 형제(`storage/app` 쪽)만 회수 주체를
      * 얻는 동안 이쪽은 정리 주체가 0 이었다: 7.2.0 이설 마이그레이션은 1회성이라 그 뒤에
-     * 새로 생기는 것을 잡지 못한다 (11차 G3 라운드 E11-1 / F-4).
+     * 새로 생기는 것을 잡지 못한다 (/ F-4).
      *
      * @scenario leftover_target=public_storage_broken_docroot, leftover_mode=real_delete, leftover_guard=latest_kept
      *
@@ -847,11 +847,11 @@ class StorageLeftoverPruneServiceTest extends TestCase
     /**
      * 같은 초 · **같은 mtime** 구간에서도 「최신 1개 보존」이 언제나 같은 하나를 남긴다.
      *
-     * 11차는 정렬 결정자를 난수 접미사에서 mtime 으로 옮기며 「이제 최신이 실제로 최신을
+     * 앞선 수정은 정렬 결정자를 난수 접미사에서 mtime 으로 옮기며 「이제 최신이 실제로 최신을
      * 뜻한다」고 적었다. 그런데 `filemtime()` 은 stamp 와 **같은 초 해상도**라, 같은 초에
      * 만들어진 둘은 mtime 까지 같아지는 것이 이 구간의 *정상* 상태다 — 비교자가 0 을 돌리면
      * 안정 정렬이 입력 순서(=디렉토리 열거 순서)를 남겨, 없앴다던 임의성이 한 겹 아래에서
-     * 그대로 살아난다. 그 구간을 결정적으로 재는 픽스처가 하나도 없었다 (12차 G3 C-1·C-2).
+     * 그대로 살아난다. 그 구간을 결정적으로 재는 픽스처가 하나도 없었다.
      *
      * 여기서 재는 것은 「진짜 최신을 골랐는가」가 아니다 — 초 해상도로는 알 수 없다.
      * **열거 순서와 무관하게 언제나 같은 하나가 살아남는가**를 잰다.
@@ -902,7 +902,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * `backupExistingEnvFile()` 은 finalize 마다 `.env` **전문**(DB 자격증명 · APP_KEY ·
      * 서드파티 키)을 프로젝트 루트 직하에 한 벌 남기는데, 저장소 전체에서 그 이름을 지우는
      * 지점이 **0** 이었다 — 재설치·재시도마다 비밀 사본이 하나씩 영구 누적됐다. 형제 두 군
-     * (런타임 설정 · 상태 파일)은 정리 주체를 갖는다 (12차 G3 라운드 C-7).
+     * (런타임 설정 · 상태 파일)은 정리 주체를 갖는다.
      *
      * 다만 이것은 운영자가 값을 되찾는 **백업 자산**이라 백업 등급으로 걷는다 — 보존일이
      * 지난 것만, 그리고 최신 1개는 나이와 무관하게 남긴다.
@@ -943,8 +943,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
      *
      * 이설 마이그레이션은 이미 접미사를 가진 이름을 옮기다 충돌하면 그 뒤에 하나를 더
      * 붙인다(`…-a1b2c3d4-e5f6a7b8`). 정리 쪽 정규식이 대시 그룹을 **하나만** 받으면 그
-     * 결과가 영원히 모집단 밖에 남아, 공개 파일 전량 사본이 무한 잔존한다
-     * (11차 G3 라운드 E11-3).
+     * 결과가 영원히 모집단 밖에 남아, 공개 파일 전량 사본이 무한 잔존한다.
      *
      * 이름은 **이설 코드가 실제로 만드는 방식**으로 조립한다 — 두 곳이 같은 상수를 본다.
      *
@@ -1017,8 +1016,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
      *
      * `storage/logs/core_update_{success,failed,failure}_*.log` 는 daily 로테이션 밖이라
      * 프레임워크가 걷지 않고, 이 서비스의 어느 대상군에도 없어 업데이트마다 하나씩 영구히
-     * 쌓였다. 같은 서비스가 형제 로그(`logs/browser.log`)는 대상으로 삼는다
-     * (11차 G3 라운드 E11-4).
+     * 쌓였다. 같은 서비스가 형제 로그(`logs/browser.log`)는 대상으로 삼는다.
      *
      * 이름은 **생산자 단일 지점**(`CoreUpdateService::updateReportPath()`)이 만드는 규칙을
      * 그대로 쓴다.
@@ -1058,8 +1056,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * ① 번들 업데이트 매니페스트(`storage/app/core_pending/`) ② 확장 동기화가 옆으로 치운
      * 잠긴 파일(`*.g7stale_<uniqid>` — 활성 확장 디렉토리 안) ③ composer 폴백 임시
      * 디렉토리(`storage/temp` — 형제 대상군은 `storage/app/temp` 라 다른 경로).
-     * 셋 다 강제 종료(FPM 타임아웃·OOM)에서 잔존하고 회수 주체가 없었다
-     * (11차 G3 라운드 E11-9).
+     * 셋 다 강제 종료(FPM 타임아웃·OOM)에서 잔존하고 회수 주체가 없었다.
      *
      * @scenario leftover_target=core_pending, leftover_mode=real_delete, leftover_guard=aged_out
      *
@@ -1133,8 +1130,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * `storage/{logs,installer}/installer-cmd-output-*.log` — 셋 다 정리 주체가 finalize
      * 하나뿐인데, 이 공정이 대상으로 삼은 배치의 흔한 종착점은 **설치 포기**다. 특히
      * `runtime.php` 는 DB 접속 정보와 APP_KEY 를 담고, 배포 레이아웃 ②에서는 `storage/`
-     * 가 문서 루트 안이다 — 누적은 저장 공간이 아니라 **노출** 문제다
-     * (11차 G3 라운드 E11-10).
+     * 가 문서 루트 안이다 — 누적은 저장 공간이 아니라 **노출** 문제다.
      *
      * @scenario leftover_target=installer_probe, leftover_mode=real_delete, leftover_guard=install_completed
      *
@@ -1197,11 +1193,11 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * 이름 판정이 **생산자 상수에서 도출**된다 — 대상군별 사본 드리프트 차단.
      *
      * 종전에는 이 계약이 `installer_probes` 한 군만 덮었고 나머지는 리터럴 사본이었다
-     * (11차 G3 라운드 E11-6 / F-5). 정리 주체가 생산자 상수를 **실제로 참조**하는지
+     * (/ F-5). 정리 주체가 생산자 상수를 **실제로 참조**하는지
      * 소스에서 확인한다 — 값이 우연히 같은 상태와 「같은 곳을 본다」를 구분하기 위해서다.
      */
     /**
-     * 루트 진입 임시 파일 대상이 **각자의 갱신기 클래스**에 매핑된다 (17차 D-6).
+     * 루트 진입 임시 파일 대상이 **각자의 갱신기 클래스**에 매핑된다.
      *
      * 종전에는 세 대상 전부를 `RootHtaccessUpdater` 상수로 판정했다 — web.config 의 생산자는
      * `RootWebConfigUpdater` 인데, 지금은 두 클래스가 이름 규칙을 공통 추상화에서 상속해 값이 같지만
@@ -1242,7 +1238,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
             'StorageLinkHelper::publicStorageBrokenNamePattern()',
             'StorageLinkHelper::DOCROOT_BROKEN_PREFIX',
             'StorageLinkHelper::docrootBrokenNamePattern()',
-            // 루트 진입 임시 파일 이름 규칙은 **대상별 갱신기**(`$updater`)에서 도출한다 (17차 D-6) —
+            // 루트 진입 임시 파일 이름 규칙은 **대상별 갱신기**(`$updater`)에서 도출한다 —
             // web.config 는 RootWebConfigUpdater 가 판정한다. 매핑이 두 갱신기 클래스를 지목하고,
             // 스윕은 매핑된 클래스의 상수를 쓴다.
             'RootHtaccessUpdater::class',
@@ -1323,7 +1319,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * 종전에는 ① 형식 판정이 없어 운영자 파일(`installer-state.json.tmp.backup`)이 300초
      * 뒤 조용히 사라졌고 ② `@filemtime` 실패를 「아주 오래됨」으로 읽어 지웠다(fail-open —
      * `false < (time()-300)` 은 PHP 8 에서 true). 형제 둘은 정반대이고, 그중 하나는 이
-     * 스윕을 **선례로 명시 인용**하면서 자기만 게이트를 받았다 (11차 G3 라운드 E11-2).
+     * 스윕을 **선례로 명시 인용**하면서 자기만 게이트를 받았다.
      *
      * @effects installer_state_tmp_sweep_shares_the_sibling_judgement
      *
@@ -1334,7 +1330,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
         // 형식 게이트의 **값**은 이름 생성 SSoT(`functions.php` 의 `installerUniqueSuffix`) 곁에
         // 한 번만 적힌다 — 상태 파일·런타임 파일 두 스윕은 그 상수를 가리킨다. 종전에는 파일마다
         // 리터럴이었고, 런타임 쪽이 `{8}` 로 갈려 생성 이름(16진 16자)이 영원히 매치되지 않아
-        // 스윕 모집단이 0 이었다 (13차 G3 W1-1).
+        // 스윕 모집단이 0 이었다.
         $functions = (string) file_get_contents(base_path('public/install/includes/functions.php'));
 
         $this->assertSame(
@@ -1359,7 +1355,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
             '세 지점의 임시 파일 형식 판정이 갈렸다 — 같은 규칙이어야 한다'
         );
 
-        // 중간 조각(`.tmp.`)도 같은 축이다 — 패턴만 잠그고 infix 는 세 곳 리터럴이었다 (14차 G3 W2-4).
+        // 중간 조각(`.tmp.`)도 같은 축이다 — 패턴만 잠그고 infix 는 세 곳 리터럴이었다.
         // 한쪽이 `.temp.` 로 갈리면 그 스윕의 모집단이 조용히 0 이 된다.
         $this->assertSame(
             1,
@@ -1417,7 +1413,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * 되어 **현재 작업 디렉토리**에 파일을 만든다(강제 종료 시 `finally` 가 돌지 않아 잔존).
      * ② 인스톨러 워커 id 는 `bin2hex(random_bytes(8))` 무가드였다 — 비밀이 아니라 겹치지만
      * 않으면 되는 값이라 `installerUniqueSuffix()` 대상인데, CSPRNG 없는 호스팅에서는 그 한
-     * 줄로 단계별 설치가 500 이 된다 (11차 G3 라운드 E11-12).
+     * 줄로 단계별 설치가 500 이 된다.
      *
      * @effects leftover_producing_call_sites_guard_blockable_functions
      *
@@ -1461,8 +1457,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * 누적 통보 문구가 **다국어 키**로 나간다 — 형제 통보 둘과 같은 통로.
      *
      * 종전에는 이 문구만 한국어 하드코딩이라 영어 운영자에게 한국어가 그대로 나갔다.
-     * 모집단 판정도 접두사만 봐서 정리 주체(형식 판정)와 숫자가 갈렸다
-     * (11차 G3 라운드 E11-11).
+     * 모집단 판정도 접두사만 봐서 정리 주체(형식 판정)와 숫자가 갈렸다.
      *
      * @effects accumulated_backup_notice_is_translated_and_format_gated
      *
@@ -1514,7 +1509,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
      *
      * 생산자 스윕은 **다음 쓰기 때만** 돈다 — 설치를 포기한 사이트에서는 다시 쓰지 않으므로
      * 영구 잔존한다. `runtime.php.tmp.*` 는 DB 자격증명·APP_KEY 를 담고 확장자가 `.php` 가
-     * 아니라 배포 레이아웃 ②에서 평문으로 나간다 (13차 G3 W1-1).
+     * 아니라 배포 레이아웃 ②에서 평문으로 나간다.
      *
      * 이 tmp 는 설치를 재개해도 **다시 읽히지 않는다** — 그래서 상태 파일과 달리 설치 미완
      * 사이트에서도 임시 등급 그대로 걷는다.
@@ -1550,7 +1545,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * 파손 상태 사본(`installer-state.json.corrupt.<YmdHis>.<sha8>`)이 백업 등급으로 걷힌다.
      *
      * 생산자는 상한 5 로 **만들기만** 하고 지우는 지점이 0 이었다. 마스킹 전 비밀(구버전 상태
-     * 파일)을 담을 수 있으므로 누적은 노출 문제다. 진단 자산이라 최신 1개는 남긴다 (13차 G3 W1-2).
+     * 파일)을 담을 수 있으므로 누적은 노출 문제다. 진단 자산이라 최신 1개는 남긴다.
      *
      * @scenario leftover_target=installer_probe, leftover_mode=real_delete, leftover_guard=latest_backup_kept
      *
@@ -1576,7 +1571,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
     }
 
     /**
-     * 상태 파일의 잠금 파일(`installer-state.json.lock`)이 정리 모집단에 든다 (15차 G3 W1-4).
+     * 상태 파일의 잠금 파일(`installer-state.json.lock`)이 정리 모집단에 든다.
      *
      * `installerWithStateLock` 이 `fopen(…, 'c')` 로 만들고, finalize 가 상태 파일과 함께 지운다.
      * 그런데 설치를 포기한 사이트에서는 finalize 가 돌지 않아 상태 파일과 같은 이유로 영구
@@ -1694,7 +1689,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * 쓰기 가능 실측 프로브(`.installer-write-probe-*`)가 정리 모집단에 든다.
      *
      * 생성 직후 지우지만, fopen 과 unlink 사이에서 프로세스가 죽으면 남는다. 정리 스윕도
-     * 프루너도 이 접두사를 몰랐다 (13차 G3 W1-6). 점 파일이라 `listDirectoryFiles` 로는
+     * 프루너도 이 접두사를 몰랐다. 점 파일이라 `listDirectoryFiles` 로는
      * 영원히 0건이다 — 그 통로를 쓰지 않는지도 여기서 갈린다.
      *
      * @scenario leftover_target=installer_probe, leftover_mode=real_delete
@@ -1726,7 +1721,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
     }
 
     /**
-     * 프루너는 `filemtime()` 을 **무가드로** 읽지 않는다 (14차 G3 W2-5).
+     * 프루너는 `filemtime()` 을 **무가드로** 읽지 않는다.
      *
      * `filemtime()` 실패는 `false` 이고 `false < (int)` 는 PHP 8 에서 참이다 — 그 비교가
      * 삭제 조건이면 조회 실패가 곧 삭제(fail-open)다. `isFresh()` 는 실패를 보존으로 읽는데
@@ -1761,7 +1756,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
         // 실측: 종전 조건 `filemtime($f) < $cutoff` 가 조회 실패에서 참이었다는 근거.
         $this->assertTrue(time() > false);
 
-        // 보존 **방향**까지 잰다 (15차 G3 W1-13). `=== false` 분기가 있어도 실패를 `0`(가장
+        // 보존 **방향**까지 잰다. `=== false` 분기가 있어도 실패를 `0`(가장
         // 오래됨)으로 접으면 백업 정렬에서 그 항목이 맨 뒤로 밀려 「최신 1개 보존」의 밖이 된다 —
         // 규정 「조회 실패는 보존」의 반대 방향이다. 실패는 **최신**으로 읽어 보존 쪽에 둔다.
         $this->assertDoesNotMatchRegularExpression(
@@ -1795,7 +1790,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
     }
 
     /**
-     * 쓰기 프로브 나열은 `glob` 이 없어도 **`scandir` 로** 이어진다 (14차 G3 W2-6).
+     * 쓰기 프로브 나열은 `glob` 이 없어도 **`scandir` 로** 이어진다.
      *
      * 종전에는 `glob` 차단 시 빈 배열로 돌아가 11개 디렉토리의 프로브 잔해에 정리 주체가
      * 0 이었다 — 그 호스팅이 곧 이 프루너가 대상으로 삼는 배치다. `disable_functions` 는
@@ -1895,7 +1890,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * 언어팩 `_pending` 추출 디렉토리(UUID · `preview-<UUID>`)가 스테이징 정리에 든다.
      *
      * `cleanupPending` 은 `catch`/`finally` 뿐이라 강제 종료 시 남는데, 스테이징 정리는
-     * 확장 세 종만 봤다 (13차 G3 W1-4). 운영자가 손으로 둔 팩(식별자 이름)은 불가침이다.
+     * 확장 세 종만 봤다. 운영자가 손으로 둔 팩(식별자 이름)은 불가침이다.
      *
      * @scenario leftover_target=update_staging, leftover_mode=real_delete, leftover_guard=normal_pending_untouched
      *
@@ -1923,7 +1918,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
     /**
      * `@filemtime` 조회 실패는 **보존**이다 (fail-closed).
      *
-     * 이 분기를 태우는 픽스처가 0 이었다 — `$mtime === false ||` 를 지워도 초록이었다 (13차 G3 W1-9).
+     * 이 분기를 태우는 픽스처가 0 이었다 — `$mtime === false ||` 를 지워도 초록이었다.
      * `(int) false === 0` 이면 `0 > cutoff` 가 언제나 거짓이라 삭제로 기운다.
      *
      * @effects mtime_lookup_failure_keeps_the_leftover
@@ -1958,7 +1953,7 @@ class StorageLeftoverPruneServiceTest extends TestCase
      *
      * 생산자(`backupExistingEnvFile`)는 `'.bak.'.date('Ymd_His')` 리터럴, 프루너는
      * `ENV_BACKUP_PREFIX`/`ENV_BACKUP_NAME_PATTERN` 리터럴 — 양쪽 다 리터럴이라 어느 쪽이
-     * 바뀌어도 아무것도 red 가 되지 않았다 (13차 G3 W1-7). `installer_probes` 선례와 같이
+     * 바뀌어도 아무것도 red 가 되지 않았다. `installer_probes` 선례와 같이
      * 생산자 소스에서 상수를 도출해 대조한다.
      *
      * @effects prune_name_rules_come_from_producer_constants
@@ -2006,10 +2001,10 @@ class StorageLeftoverPruneServiceTest extends TestCase
      * 이 서비스가 타는 **전이 나열기**도 `scandir` 가드를 갖는다.
      *
      * 서비스 자신은 수집기 전부에 `ExecutionEnvironment::hasFunction('scandir')` 가드를
-     * 갖췄지만(22차 D3), 6개 대상군이 실제로 나열에 쓰는 것은 공용 지점인
+     * 갖췄지만, 6개 대상군이 실제로 나열에 쓰는 것은 공용 지점인
      * `ExtensionManager::listDirectoryFiles()` / `listDirectories()` 였고 그 둘이 무가드였다.
      * `scandir` 이 막힌 호스팅에서는 자기 가드를 다 갖춘 채로 그 전이 지점에서 함께
-     * 죽는다 — 이 정리 작업은 **웹 요청 안의 예약 작업**으로 돈다 (23차 G3 라운드 D23-6).
+     * 죽는다 — 이 정리 작업은 **웹 요청 안의 예약 작업**으로 돈다.
      *
      * 실행 프로세스에서 `disable_functions` 를 재현할 수 없으므로(그 제약이 이 축의
      * 정적 검사가 존재하는 이유다) 소스 계약으로 잠근다. 모집단은 **도출**한다 —

@@ -200,7 +200,7 @@ class PageAttachmentService
         // 캐시가 반드시 채워진다. 아래에서 읽는 `getSize()` 는 그 공유 캐시를 그대로 쓰는데,
         // 값이 축소 전 크기면 행의 `size` 가 실제 저장 바이트보다 커진다. 그 값은 서빙에서
         // `Content-Length` 로 **선언**되므로 어긋나는 순간 응답이 잘린다. 형제
-        // `sirsoft-board` 는 같은 사유로 이미 이 처리를 갖는다 (11차 G3 라운드 B11-4).
+        // `sirsoft-board` 는 같은 사유로 이미 이 처리를 갖는다.
         clearstatcache(true, $file->getRealPath());
 
         // StorageInterface를 통한 파일 저장
@@ -307,7 +307,7 @@ class PageAttachmentService
         // 같은 메서드의 이동 3연산은 `storageForRow()` 를 쓰는데 이 마지막 정리만 주입
         // 디스크였다 — 디스크를 옮긴 사이트에서 행 disk 의 `temp/{key}` 가 영구 잔류한다.
         // 같은 클래스의 서빙·삭제·이동·정리 네 경로 중 이 한 지점만 어긋나 있었고, 형제
-        // 둘(ecommerce·board)은 이미 disk 별 순회를 갖는다 (12차 G3 라운드 D5).
+        // 둘(ecommerce·board)은 이미 disk 별 순회를 갖는다.
         // 부수 작업이라 실패해도 연결을 되돌리지 않는다. 막 옮긴 대용량 파일을 운영체제가
         // 잠시 붙잡고 있으면 디렉토리 순회가 lstat 오류를 던져 저장 전체가 500 이 되고 파일·DB 경로가 어긋났다(#703 게시판 실측).
         // 원본 삭제가 커밋 뒤라 정리도 커밋 뒤에 한다.
@@ -619,13 +619,11 @@ class PageAttachmentService
      * 실립니다 — 이름에 따옴표가 들어간 업로드(`getClientOriginalName()` 은 basename 만
      * 하고 따옴표를 지우지 않는다)에서 값이 첫 따옴표에서 끊기고 나머지가 헤더 문법으로
      * 새어 나갑니다. RFC 5987(`filename*=utf-8''…`) 인코딩도 같은 지점이 만듭니다.
-     * 형제 `sirsoft-board`·코어 첨부 서비스는 모두 스토리지 `download()` 에 위임합니다
-     * (11차 G3 라운드 B11-1).
+     * 형제 `sirsoft-board`·코어 첨부 서비스는 모두 스토리지 `download()` 에 위임합니다.
      *
      * 디스크도 행이 정합니다 — 같은 클래스의 정리 경로(`pruneTempUploads()` ·
      * `removeEmptyTempDirectories()`)는 이미 `storageForRow()` 를 쓰는데 서빙만 주입
-     * 디스크로 갔습니다. 디스크를 옮긴 사이트에서는 이 통로만 전량 404 가 됩니다
-     * (11차 G3 라운드 B11-3).
+     * 디스크로 갔습니다. 디스크를 옮긴 사이트에서는 이 통로만 전량 404 가 됩니다.
      *
      * @param  PageAttachment  $attachment  첨부파일 모델
      * @return StreamedResponse|null 스트리밍 응답 또는 null (파일 없음)
@@ -641,7 +639,7 @@ class PageAttachmentService
      * 종전에는 `download()` 가 스토리지 스트림만 돌려줘 컨트롤러가 그것을 그대로 반환했다 —
      * 이 통로만 코어 헬퍼(`streamedFileResponse()`)를 지나지 않아 ETag·304·`nosniff`·압축
      * 제외 선언이 전부 빠졌다. 같은 첨부가 이미지면 재검증되고 문서면 매번 전문을 받아 갔다
-     * (코어 첨부 서비스 `getDownloadInfo()` 가 14차에 고친 것과 같은 비대칭, 15차 G3 라운드).
+     * (코어 첨부 서비스 `getDownloadInfo()` 가 앞서 고친 것과 같은 비대칭).
      * 검증자는 `previewValidators()` 한 곳이 만든다 — 통로마다 사본으로 두면 같은 첨부가
      * 통로에 따라 다른 ETag 를 갖는다.
      *
@@ -735,7 +733,7 @@ class PageAttachmentService
      * 파일 이름 선언은 스토리지 단일 지점에 맡깁니다 — 종전에는 원문 헤더
      * `Content-Disposition: inline` 으로 그 선언을 덮어, 같은 파일이 통로에 따라 다른
      * 이름으로 저장됐습니다. `response()` 의 기본 disposition 이 이미 `inline` 이므로
-     * 헤더를 넘기지 않아도 인라인 표시는 그대로입니다 (11차 G3 라운드 B11-2).
+     * 헤더를 넘기지 않아도 인라인 표시는 그대로입니다.
      *
      * 디스크도 행이 정합니다 (B11-3).
      *
@@ -757,14 +755,13 @@ class PageAttachmentService
         // 검증자(ETag · Last-Modified)와 캐시 정책을 함께 싣는다. 종전에는 `Content-Type`
         // 하나뿐이라 이 통로만 **재검증 수단이 전무**했다 — 본문에 `<img>` 로 실려 건수가
         // 유계가 아닌 경로인데 매 요청이 전문 200 이 된다. 같은 계열 형제 넷(코어·게시판·
-        // 템플릿·ecommerce)은 모두 검증자를 싣는다. 11차가 이 파일의 `Content-Disposition`
+        // 템플릿·ecommerce)은 모두 검증자를 싣는다. 앞서 이 파일의 `Content-Disposition`
         // 과 디스크 두 축은 형제에 맞췄으나 검증자 축만 남았다.
         // ETag 는 큰따옴표로 감싼다 (RFC 9110 §8.8.3).
-        // (12차 G3 라운드 D2)
         //
         // 검증자의 **소스**는 `previewValidators()` 한 곳이 만든다 — 조건부 요청 판정은
         // 컨트롤러가 코어 단일 지점(`streamedFileResponse()`)에 맡기는데, 그 지점이 같은
-        // 소스로 ETag 를 다시 만들므로 여기서 실은 값과 어긋나면 안 된다 (13차 G3 라운드).
+        // 소스로 ETag 를 다시 만들므로 여기서 실은 값과 어긋나면 안 된다.
         $validators = $this->previewValidators($attachment);
         $lastModifiedAt = $validators['last_modified'];
 

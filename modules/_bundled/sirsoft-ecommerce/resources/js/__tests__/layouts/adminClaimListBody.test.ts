@@ -323,7 +323,7 @@ describe('클레임 목록 셸 — 본체 배선 (S8b)', () => {
   });
 });
 
-describe('컬럼 표시 영속 — SSoT 는 ColumnSelector 자기 키 하나다 (2차 F5 이월)', () => {
+describe('컬럼 표시 영속 — SSoT 는 ColumnSelector 자기 키 하나다 (이월)', () => {
   /**
    * @effects visible_columns_single_persistence_owner
    */
@@ -677,7 +677,7 @@ describe('완료 처리 모달 — 세 진입점 공용 (D26)', () => {
       const text = JSON.parse(fs.readFileSync(file, 'utf8')).complete.discard_note as string;
 
       expect(text, `${locale} 안내가 비어 있다`).toBeTruthy();
-      // 활동 로그·기록을 약속하는 어휘가 없어야 한다 (S8b 4차 N8 — 기록 자체는 S6b 이월).
+      // 활동 로그·기록을 약속하는 어휘가 없어야 한다 (기록 자체는 후속 작업으로 미뤘다).
       expect(/활동 로그|기록됩니다|기록된다|activity log|logged|記録され/.test(text), `${locale} 안내가 없는 이력을 약속한다`).toBe(false);
     });
   });

@@ -75,8 +75,8 @@ class PublicPageAttachmentController extends PublicBaseController
         // 다운로드도 코어 단일 지점을 지난다 — 종전에는 스토리지 스트림을 그대로 돌려줘 이
         // 통로만 ETag·304·`nosniff`·압축 제외 선언이 전부 빠졌다(미리보기는 지났다). 코어
         // 첨부(`PublicAttachmentController`)와 같은 형태이며 `Content-Disposition: attachment`
-        // 는 헬퍼가 건드리지 않아 그대로 승계된다 (15차 G3 라운드).
-        // 키 검증도 그 지점(`streamedFileResponseFromMeta()`)이 한다 (16차 G3 라운드 E-6).
+        // 는 헬퍼가 건드리지 않아 그대로 승계된다.
+        // 키 검증도 그 지점(`streamedFileResponseFromMeta()`)이 한다.
         return $this->streamedFileResponseFromMeta(
             $downloadInfo,
             (int) g7_core_settings('cache.layout_ttl', 86400),
@@ -172,16 +172,16 @@ class PublicPageAttachmentController extends PublicBaseController
         // 판정은 코어 단일 지점(`streamedFileResponse()`)이 소유한다 — `-gzip` 접미사·
         // 다중값·`W/` 약한 검증자 흡수, 304 에 200 의 `Cache-Control`/`Expires`/
         // `Last-Modified` 동반, 라우터가 벗기는 `Last-Modified` 복원까지 그 한 곳이 한다.
-        // 형제 게시판(`sirsoft-board` AttachmentController)과 같은 형태다 (13차 G3 라운드).
+        // 형제 게시판(`sirsoft-board` AttachmentController)과 같은 형태다.
         //
         // `immutable` 은 `false` 고정 — 이 URL 에는 `?v=` 가 없고 같은 주소의 내용이
         // 교체될 수 있다(코어 파일 서빙 계약).
         //
         // 사용자가 올린 파일이라 크기·건수가 유계가 아니다 — 압축 제외를 응답 클래스에
-        // 기대지 않고 **선언**한다(공개 스토리지 통로와 같은 형태, 14차 G3 라운드).
+        // 기대지 않고 **선언**한다(공개 스토리지 통로와 같은 형태).
         $validators = $this->attachmentService->previewValidators($attachment);
 
-        // 키 검증도 그 지점(`streamedFileResponseFromMeta()`)이 한다 (16차 G3 라운드 E-6).
+        // 키 검증도 그 지점(`streamedFileResponseFromMeta()`)이 한다.
         //
         // 미발행 페이지의 첨부는 `private` 다 — 관리자·서명 요청만 통과한 응답이 공유 캐시(CDN·프록시)에
         // 남으면 다음 방문자가 게이트 없이 받는다. 발행 페이지는 종전처럼 public 이다.
@@ -189,9 +189,9 @@ class PublicPageAttachmentController extends PublicBaseController
             [
                 ...$validators,
                 'response' => $response,
-                // MIME 은 행 컬럼이 SSoT — 응답 헤더 폴백에 기대지 않는다(형제 통로와 같은 형태, 15차 G3 라운드).
+                // MIME 은 행 컬럼이 SSoT — 응답 헤더 폴백에 기대지 않는다(형제 통로와 같은 형태).
                 // 명시 키(response·mime_type)를 스프레드 **뒤**에 두어 서비스 검증자와 키가 겹쳐도
-                // 행 메타가 이긴다(PublicTemplateController 와 같은 형태, 17차 G3 라운드 B-17).
+                // 행 메타가 이긴다(PublicTemplateController 와 같은 형태).
                 'mime_type' => (string) $attachment->mime_type,
             ],
             PageAttachmentService::PREVIEW_CACHE_MAX_AGE,

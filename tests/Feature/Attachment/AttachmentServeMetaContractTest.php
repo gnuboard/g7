@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
- * 코어 첨부 서빙 메타 계약 테스트 (11차 G3 라운드 B11-4 · B11-5)
+ * 코어 첨부 서빙 메타 계약 테스트
  *
  * 두 축을 저장 결과·응답으로 고정합니다.
  *
@@ -121,7 +121,7 @@ class AttachmentServeMetaContractTest extends TestCase
             ->assertStatus(500);
 
         // 로그 문구는 코어 헬퍼(`streamedFileResponseFromMeta()`) 단일 지점의 것이다 — 종전
-        // 컨트롤러 사본의 '첨부 서빙 메타 누락' 에서 바뀌었다(16차 E-6: 열한 통로가 같은 문구·
+        // 컨트롤러 사본의 '첨부 서빙 메타 누락' 에서 바뀌었다(열한 통로가 같은 문구·
         // 같은 판정을 쓴다). 문구는 사용자 계약이 아니라 운영자 로그의 식별자이고, 통로는
         // `hash` 문맥으로 구분된다.
         Log::shouldHaveReceived('error')
@@ -136,7 +136,7 @@ class AttachmentServeMetaContractTest extends TestCase
      *
      * 구형 업로드·외부 이관 행은 `mime_type` 이 빈 문자열일 수 있다. 종전에는 스트림 헬퍼가
      * 「어느 쪽에서도 유형을 알 수 없다」며 `LogicException` 을 던져 무인증 표면이 500 이었다.
-     * 제품 결정(16차 G3 라운드): 알 수 없으면 정적 서빙의 미지 확장자와 같은 유형으로
+     * 제품 결정: 알 수 없으면 정적 서빙의 미지 확장자와 같은 유형으로
      * 내려보내고, 내용을 스니핑하지 않는다(`nosniff` 동반).
      *
      * @scenario conditional_request=none
