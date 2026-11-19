@@ -3,6 +3,7 @@
 namespace Tests\Feature\Listeners;
 
 use App\Contracts\Repositories\TemplateCustomTranslationRepositoryInterface;
+use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Extension\HookManager;
 use App\Listeners\LanguagePack\MergeCustomTranslations;
 use App\Models\Template;
@@ -34,6 +35,11 @@ class MergeCustomTranslationsTest extends TestCase
 
     private Template $template;
 
+    /**
+     * 커스텀 번역 키를 매달 템플릿을 하나 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -41,6 +47,13 @@ class MergeCustomTranslationsTest extends TestCase
         $this->template = Template::factory()->create();
     }
 
+    /**
+     * 시험 템플릿과 로케일로 `template.language.merge` 필터를 적용한 결과를 돌려준다.
+     *
+     * @param  array<string, mixed>  $base  필터에 넣을 언어 데이터
+     * @param  string  $locale  병합할 로케일
+     * @return array<string, mixed> 커스텀 키가 병합된 언어 데이터
+     */
     private function applyMerge(array $base, string $locale = 'ko'): array
     {
         return HookManager::applyFilters(
@@ -51,6 +64,15 @@ class MergeCustomTranslationsTest extends TestCase
         );
     }
 
+    /**
+     * 활성 커스텀 키가 점 경로대로 언어 트리에 병합된다.
+     *
+     * @scenario merge_priority=no_languagepack_key, status=active
+     *
+     * @effects merge_custom_key_into_language_tree_by_dot_path
+     *
+     * @return void 반환값 없음
+     */
     public function test_custom_key_is_merged_into_language_tree_by_dot_path(): void
     {
         TemplateCustomTranslation::create([
@@ -67,6 +89,15 @@ class MergeCustomTranslationsTest extends TestCase
         $this->assertSame('안녕', data_get($result, 'custom.home.1'));
     }
 
+    /**
+     * 요청 로케일(en)의 값이 병합된다.
+     *
+     * @scenario locale=en, locale_value_presence=has_locale
+     *
+     * @effects merge_resolves_locale_value
+     *
+     * @return void 반환값 없음
+     */
     public function test_custom_key_resolves_locale_value(): void
     {
         TemplateCustomTranslation::create([
@@ -83,6 +114,15 @@ class MergeCustomTranslationsTest extends TestCase
         $this->assertSame('hello', data_get($result, 'custom.home.1'));
     }
 
+    /**
+     * 언어팩이 먼저 채운 같은 경로의 값을 커스텀 키가 덮어쓴다.
+     *
+     * @scenario merge_priority=overrides_languagepack_key
+     *
+     * @effects merge_overrides_existing_languagepack_value_via_higher_priority
+     *
+     * @return void 반환값 없음
+     */
     public function test_custom_key_overrides_existing_language_pack_value(): void
     {
         TemplateCustomTranslation::create([
@@ -101,6 +141,15 @@ class MergeCustomTranslationsTest extends TestCase
         $this->assertSame('커스텀', data_get($result, 'custom.home.1'));
     }
 
+    /**
+     * 고아 상태(orphaned) 키는 병합되지 않는다.
+     *
+     * @scenario status=orphaned
+     *
+     * @effects merge_excludes_orphaned_keys
+     *
+     * @return void 반환값 없음
+     */
     public function test_orphaned_keys_are_not_merged(): void
     {
         TemplateCustomTranslation::create([
@@ -117,6 +166,15 @@ class MergeCustomTranslationsTest extends TestCase
         $this->assertNull(data_get($result, 'custom.home.1'));
     }
 
+    /**
+     * 요청 로케일 값이 없으면 폴백 로케일(ko) 값이 병합된다.
+     *
+     * @scenario locale=en, locale_value_presence=fallback_to_fallback_locale
+     *
+     * @effects merge_missing_locale_falls_back_to_fallback_locale
+     *
+     * @return void 반환값 없음
+     */
     public function test_missing_locale_falls_back_to_fallback_locale(): void
     {
         TemplateCustomTranslation::create([
@@ -142,6 +200,12 @@ class MergeCustomTranslationsTest extends TestCase
      * QueryException 이 `serveLanguage` 전체를 500 으로 무너뜨려 모든 admin/user 화면의
      * 다국어 로드가 깨졌다. 리스너는 코어 언어 파이프라인의 후행 부가 단계이므로 자신의
      * 실패를 흡수해야 한다.
+     *
+     * @scenario locale=ko
+     *
+     * @effects merge_custom_translations_degrades_gracefully_when_table_missing
+     *
+     * @return void 반환값 없음
      */
     public function test_repository_failure_degrades_to_input_data_without_throwing(): void
     {
@@ -158,7 +222,7 @@ class MergeCustomTranslationsTest extends TestCase
             ));
 
         $listener = new MergeCustomTranslations(
-            app(\App\Contracts\Repositories\TemplateRepositoryInterface::class),
+            app(TemplateRepositoryInterface::class),
             $failingRepo,
         );
 
@@ -168,9 +232,17 @@ class MergeCustomTranslationsTest extends TestCase
         $this->assertSame('홈', data_get($result, 'nav.home'));
     }
 
+    /**
+     * Mockery 기대를 검증하고 닫은 뒤 부모 정리를 실행한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 }

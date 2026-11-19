@@ -120,7 +120,7 @@ effects:
   - dormancy_notice_marker_rolls_back_when_delivery_throws
   - dormancy_command_isolates_stage_failures_and_reports_them
   - login_blocked_for_missing_two_factor_leaves_no_session
-  - admin_login_rejection_still_reports_dormancy_restoration
+  - admin_login_rejection_keeps_dormancy
   - dormancy_notice_date_is_rendered_in_the_recipient_timezone
   - scheduler_flag_is_recorded_when_the_signature_promises_it
   - measurement_seed_stages_land_in_their_target_lists

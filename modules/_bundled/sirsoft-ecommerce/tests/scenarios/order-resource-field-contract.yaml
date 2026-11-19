@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#599 |
 #   이 매니페스트의 축은 "리소스가 어떤 재료를 낼 때 값이 갈리는가" 다 — 세 축의 전 교차곱
 #   (금액 스냅샷 × 통화 관계 × 파생 플래그)은 한 Unit 메서드가 재현하지 않는다. 각 테스트는
 #   축 하나를 격리해 값을 고정하고, 조합의 실체는 Feature/E2E 가 화면에서 잰다.

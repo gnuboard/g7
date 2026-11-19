@@ -23,7 +23,7 @@ use Tests\PureTestCase;
  *
  * @scenario reason_type=exchange
  *
- * @effects settings_claim_status_vocabulary_matches_server_gate
+ * 효과 요약(마커 아님 — 평문): settings_claim_status_vocabulary_matches_server_gate
  */
 class ClaimSettingsStatusVocabularyTest extends PureTestCase
 {

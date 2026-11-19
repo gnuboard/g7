@@ -20,8 +20,8 @@
  * 이름(「{행 이름} {열 이름}」·「{행 이름} 선택」)을 단다. 셀·펼침은 DataGrid 의 props 라 DynamicRenderer 가 행 문맥 없이
  * 먼저 번역하므로, 행 값을 넘기는 이름은 `$t:defer:` 로 쓴다(행마다 그릴 때 번역).
  *
- * @scenario surface=admin_layout
- * @effects controls_have_accessible_name
+ * 조합 요약(마커 아님, 평문): surface=admin_layout
+ * 효과 요약(마커 아님, 평문): controls_have_accessible_name
  *
  * @vitest-environment node
  */
@@ -99,7 +99,7 @@ const classOf = (n: any): string => String(n?.props?.className ?? '');
 const isControl = (n: any): boolean =>
     isNode(n) && CONTROLS.has(n.name) && n.props?.type !== 'hidden' && !/\bsr-only\b/.test(classOf(n));
 const isLabelEl = (n: any): boolean =>
-    isNode(n) && (n.name === 'Label' || /\b(form-label|filter-label|text-heading)\b/.test(classOf(n)));
+    isNode(n) && (n.name === 'Label' || /\b(form-label|filter-field-label|filter-label|text-heading)\b/.test(classOf(n)));
 const kids = (n: any): any[] => (Array.isArray(n?.children) ? n.children.filter(isNode) : []);
 const deep = (n: any, pred: (x: any) => boolean): boolean => isNode(n) && (pred(n) || kids(n).some((c) => deep(c, pred)));
 const hasText = (n: any): boolean =>
@@ -422,6 +422,25 @@ describe('이커머스 입력칸 이름 (#757)', () => {
     // @effects listbox_reads_name_and_value
     it('관리자 화면의 목록형 선택칸은 고른 값만이 아니라 이름(aria-label·aria-labelledby·곁 라벨)을 갖는다', () => {
         const missing = list((h) => h.side === 'admin' && h.category === 'A_value_only_select');
+        expect(missing, missing.join('\n')).toEqual([]);
+    });
+
+    // @scenario surface=admin_layout
+    // @effects listbox_reads_name_and_value
+    it('목록 화면 필터 줄의 목록형 선택칸은 곁 라벨에 기대지 않고 자기 이름(aria-label·aria-labelledby)을 갖는다', () => {
+        // 필터 줄은 행 제목(span)과 선택칸 사이에 표시 여부 체크박스·감싼 div 가 끼어, 관리자 템플릿의 곁 라벨 잇기가
+        // 브라우저에서 닿지 않는다 — 클레임 「접수 출처」·상품 「브랜드」 선택칸의 접근 이름이 빈 문자열이었다.
+        // 정적 판정의 곁 라벨 경로가 이 둘을 이름 있음으로 쳤으므로 필터 조각은 자기 이름만 인정한다.
+        const missing: string[] = [];
+        const walk = (n: any, rel: string): void => {
+            if (Array.isArray(n)) return n.forEach((c) => walk(c, rel));
+            if (!n || typeof n !== 'object') return;
+            if (isListbox(n) && !listboxOwnName(n.props ?? {})) missing.push(`${rel} ${n.name} ${n.props?.name ?? ''}`);
+            Object.values(n).forEach((c) => walk(c, rel));
+        };
+        jsonFiles(join(ROOT, 'resources/layouts'))
+            .filter((f) => /_partial_filter_section\.json$/.test(f))
+            .forEach((f) => walk(JSON.parse(readFileSync(f, 'utf8')), relative(ROOT, f)));
         expect(missing, missing.join('\n')).toEqual([]);
     });
 

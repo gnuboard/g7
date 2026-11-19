@@ -4,23 +4,29 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayKginicis\Services;
 
-use App\Support\SiteUrl;
 use App\Helpers\TimezoneHelper;
+use App\Support\SiteUrl;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\OrderRecord;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\PaymentCompletion;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\PaymentRecord;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Modules\Sirsoft\Ecommerce\Enums\OrderStatusEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
-use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
-use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
 use Plugins\Sirsoft\PayKginicis\Concerns\PreventsReplayCallback;
 use Plugins\Sirsoft\PayKginicis\Concerns\SanitizesPgResponse;
 use Plugins\Sirsoft\PayKginicis\Concerns\SerializesPaymentCallbacks;
 use Plugins\Sirsoft\PayKginicis\Concerns\ValidatesCbtOrderContext;
-use Plugins\Sirsoft\PayKginicis\Repositories\CbtCvsOperationsRepositoryInterface;
 
+/**
+ * 일본 CBT 편의점결제 입금 통보 처리와 관리자 운영(요약·시뮬레이션·만료·재확인).
+ *
+ * 주문·결제 조회와 쓰기는 이커머스 공개 결제 계약 {@see PaymentGatewayBridge} 로 한다(#916) — 결제 meta 누적(통보 이력)은
+ * 결제 행 잠금 아래 계산(`mutatePaymentMetaWithLock`), 입금 기한 만료 전이는 `expireAwaitingDeposit`, 입금 완료는
+ * `completePayment`(결제사 id 인수 포함)로 맡긴다.
+ */
 class CbtCvsOperationsService
 {
     use PreventsReplayCallback;
@@ -51,14 +57,12 @@ class CbtCvsOperationsService
     /**
      * CBT 편의점결제 운영 서비스를 생성합니다.
      *
-     * @param  OrderProcessingService  $orderService  주문 결제 상태 전환 서비스
+     * @param  PaymentGatewayBridge  $bridge  이커머스 결제 공개 계약 (주문·결제 조회와 상태 전환)
      * @param  KgInicisApiService  $apiService  KG 이니시스 API 서비스
-     * @param  CbtCvsOperationsRepositoryInterface  $repository  주문·결제 조회·잠금·갱신 저장소
      */
     public function __construct(
-        private readonly OrderProcessingService $orderService,
+        private readonly PaymentGatewayBridge $bridge,
         private readonly KgInicisApiService $apiService,
-        private readonly CbtCvsOperationsRepositoryInterface $repository,
     ) {}
 
     /**
@@ -77,7 +81,6 @@ class CbtCvsOperationsService
         $status = preg_replace('/\s+/', '', (string) ($payload['status'] ?? ''));
         $amount = (int) ($payload['amount'] ?? 0);
         $payment = null;
-        $existingMeta = [];
         $callbackLock = null;
 
         if ($tid === '' || $orderId === '' || $mid === '' || $amount <= 0) {
@@ -93,7 +96,7 @@ class CbtCvsOperationsService
         }
 
         try {
-            $order = $this->orderService->findByOrderNumber($orderId);
+            $order = $this->bridge->findOrderByNumber($orderId, 'kginicis');
             if (! $order) {
                 Log::error('KG Inicis CBT CVS: order not found', ['order_id' => $orderId, 'tid' => $tid]);
 
@@ -102,7 +105,7 @@ class CbtCvsOperationsService
 
             $callbackLock = $this->acquireOrderCallbackLock('cbtCvsNotify', $orderId);
 
-            $payment = $this->repository->firstPaymentForOrder($order);
+            $payment = $order->payment;
             if (! $payment) {
                 Log::warning('KG Inicis CBT CVS: payment row not found', [
                     'order_id' => $orderId,
@@ -112,10 +115,10 @@ class CbtCvsOperationsService
                 return $this->notifyResult('FAIL', 'failed', 'payment_not_found');
             }
 
-            $existingMeta = is_array($payment->payment_meta) ? $payment->payment_meta : [];
+            $existingMeta = $payment->paymentMeta;
 
             if ($status !== '00') {
-                $this->storeNotifyHistory($payment, $existingMeta, $payload, 'ignored', 'non_success_status', $source, $remoteIp);
+                $this->storeNotifyHistory($orderId, $payload, 'ignored', 'non_success_status', $source, $remoteIp);
                 Log::info('KG Inicis CBT CVS: non-success notify ignored', [
                     'tid' => $tid,
                     'order_id' => $orderId,
@@ -125,9 +128,9 @@ class CbtCvsOperationsService
                 return $this->notifyResult('OK', 'ignored', 'non_success_status');
             }
 
-            $expectedTid = trim((string) $payment->transaction_id);
+            $expectedTid = trim((string) $payment->transactionId);
             if ($expectedTid === '' || ! hash_equals($expectedTid, $tid)) {
-                $this->storeNotifyHistory($payment, $existingMeta, $payload, 'failed', 'tid_mismatch', $source, $remoteIp);
+                $this->storeNotifyHistory($orderId, $payload, 'failed', 'tid_mismatch', $source, $remoteIp);
                 Log::warning('KG Inicis CBT CVS: tid mismatch', [
                     'order_id' => $orderId,
                     'received_tid' => $tid,
@@ -138,7 +141,7 @@ class CbtCvsOperationsService
             }
 
             if ($this->wasAlreadyPaid($tid)) {
-                $this->storeNotifyHistory($payment, $existingMeta, $payload, 'ignored', 'already_paid', $source, $remoteIp);
+                $this->storeNotifyHistory($orderId, $payload, 'ignored', 'already_paid', $source, $remoteIp);
                 $this->logReplayDetected($tid, $orderId, 'CBT CVS notify');
 
                 return $this->notifyResult('OK', 'ignored', 'already_paid');
@@ -150,8 +153,8 @@ class CbtCvsOperationsService
             // 주문이 결제완료로 되살아나 재고·마일리지가 재차감된다. 아래 결제상태 가드만으로는
             // 부족하다 — 미입금 취소가 결제행을 `waiting_deposit` 그대로 두던 시절의 행이 그
             // 가드를 통과한다. 입금된 돈은 환불 절차로 돌려주어야 하는 별개 사건이다.
-            if ($order->order_status === OrderStatusEnum::CANCELLED) {
-                $this->storeNotifyHistory($payment, $existingMeta, $payload, 'ignored', 'order_cancelled', $source, $remoteIp);
+            if ($order->orderStatus === OrderStatusEnum::CANCELLED) {
+                $this->storeNotifyHistory($orderId, $payload, 'ignored', 'order_cancelled', $source, $remoteIp);
                 Log::warning('KG Inicis CBT CVS: order is cancelled', [
                     'order_id' => $orderId,
                     'tid' => $tid,
@@ -160,12 +163,12 @@ class CbtCvsOperationsService
                 return $this->notifyResult('OK', 'ignored', 'order_cancelled');
             }
 
-            if (! $this->paymentStatusEquals($payment->payment_status, PaymentStatusEnum::WAITING_DEPOSIT)) {
-                $this->storeNotifyHistory($payment, $existingMeta, $payload, 'failed', 'payment_status_mismatch', $source, $remoteIp);
+            if (! $this->paymentStatusEquals($payment->paymentStatus, PaymentStatusEnum::WAITING_DEPOSIT)) {
+                $this->storeNotifyHistory($orderId, $payload, 'failed', 'payment_status_mismatch', $source, $remoteIp);
                 Log::warning('KG Inicis CBT CVS: payment status is not waiting_deposit', [
                     'order_id' => $orderId,
                     'tid' => $tid,
-                    'payment_status' => $this->paymentStatusValue($payment->payment_status),
+                    'payment_status' => $this->paymentStatusValue($payment->paymentStatus),
                 ]);
 
                 return $this->notifyResult('FAIL', 'failed', 'payment_status_mismatch');
@@ -173,7 +176,7 @@ class CbtCvsOperationsService
 
             $expectedPayMethod = strtoupper((string) ($existingMeta['pay_method'] ?? ''));
             if ($expectedPayMethod !== 'CVS') {
-                $this->storeNotifyHistory($payment, $existingMeta, $payload, 'failed', 'pay_method_mismatch', $source, $remoteIp);
+                $this->storeNotifyHistory($orderId, $payload, 'failed', 'pay_method_mismatch', $source, $remoteIp);
                 Log::warning('KG Inicis CBT CVS: existing payment method is not CVS', [
                     'order_id' => $orderId,
                     'tid' => $tid,
@@ -186,7 +189,7 @@ class CbtCvsOperationsService
             $expectedSid = trim((string) ($existingMeta['cbt_sid'] ?? ''));
             $receivedSid = trim((string) ($payload['sid'] ?? ''));
             if ($expectedSid !== '' && $receivedSid !== $expectedSid) {
-                $this->storeNotifyHistory($payment, $existingMeta, $payload, 'failed', 'sid_mismatch', $source, $remoteIp);
+                $this->storeNotifyHistory($orderId, $payload, 'failed', 'sid_mismatch', $source, $remoteIp);
                 Log::warning('KG Inicis CBT CVS: sid mismatch', [
                     'order_id' => $orderId,
                     'tid' => $tid,
@@ -199,7 +202,7 @@ class CbtCvsOperationsService
 
             $currency = strtoupper(trim((string) ($payload['currencyCd'] ?? '')));
             if ($currency !== 'JPY') {
-                $this->storeNotifyHistory($payment, $existingMeta, $payload, 'failed', 'currency_mismatch', $source, $remoteIp);
+                $this->storeNotifyHistory($orderId, $payload, 'failed', 'currency_mismatch', $source, $remoteIp);
                 Log::warning('KG Inicis CBT CVS: currency mismatch', [
                     'order_id' => $orderId,
                     'tid' => $tid,
@@ -211,7 +214,7 @@ class CbtCvsOperationsService
 
             $expectedAmount = $this->resolveExpectedCvsAmount($order, $existingMeta);
             if ($expectedAmount === null) {
-                $this->storeNotifyHistory($payment, $existingMeta, $payload, 'failed', 'invalid_payment_currency', $source, $remoteIp);
+                $this->storeNotifyHistory($orderId, $payload, 'failed', 'invalid_payment_currency', $source, $remoteIp);
                 Log::warning('KG Inicis CBT CVS: payment currency is not chargeable', [
                     'order_id' => $orderId,
                     'tid' => $tid,
@@ -221,7 +224,7 @@ class CbtCvsOperationsService
             }
 
             if ($expectedAmount > 0 && $amount !== $expectedAmount) {
-                $this->storeNotifyHistory($payment, $existingMeta, $payload, 'failed', 'amount_mismatch', $source, $remoteIp);
+                $this->storeNotifyHistory($orderId, $payload, 'failed', 'amount_mismatch', $source, $remoteIp);
                 Log::warning('KG Inicis CBT CVS: amount mismatch', [
                     'order_id' => $orderId,
                     'tid' => $tid,
@@ -234,7 +237,7 @@ class CbtCvsOperationsService
 
             $expectedMid = (string) ($existingMeta['cbt_mid'] ?? $this->apiService->getJapanMid());
             if ($expectedMid !== '' && $mid !== $expectedMid) {
-                $this->storeNotifyHistory($payment, $existingMeta, $payload, 'failed', 'mid_mismatch', $source, $remoteIp);
+                $this->storeNotifyHistory($orderId, $payload, 'failed', 'mid_mismatch', $source, $remoteIp);
                 Log::warning('KG Inicis CBT CVS: MID mismatch', [
                     'order_id' => $orderId,
                     'tid' => $tid,
@@ -246,34 +249,36 @@ class CbtCvsOperationsService
             }
 
             $sanitized = $this->sanitizePgResponse($payload, self::NOTIFY_RESPONSE_KEYS);
-            $completedMeta = $this->appendNotifyHistory($existingMeta, $payload, 'confirmed', 'deposit_confirmed', $source, $remoteIp);
-            $completedMeta = array_merge($completedMeta, [
-                'result_code' => $status,
-                'pay_method' => 'CVS',
-                'auth_date' => ($payload['applDt'] ?? '').($payload['applTm'] ?? ''),
-                'mid' => $mid,
-                'currency' => $payload['currencyCd'] ?? 'JPY',
-                'is_cbt' => true,
-                'cbt_type' => 'JPPG',
-                'cbt_mid' => $mid,
-                'cbt_sid' => $payload['sid'] ?? ($existingMeta['cbt_sid'] ?? null),
-                'is_test_mode' => $existingMeta['is_test_mode'] ?? $this->apiService->isTestMode(),
-                'pg_response_sanitized' => true,
-                'pg_cvs_notify_response' => $sanitized,
-                'pg_raw_response' => $sanitized,
-                'cvs_status' => 'paid',
-                'cvs_convenience' => $payload['convenience'] ?? null,
-                'cvs_conf_no' => $payload['confNo'] ?? null,
-                'cvs_receipt_no' => $payload['receiptNo'] ?? null,
-                'cvs_payment_term' => $payload['paymentTerm'] ?? null,
-            ]);
+            // 완료 meta 는 결제 완료 직전의 현재 meta 에 통보 이력을 덧붙여 만든다(교체 저장).
+            $completedMeta = fn (array $current): array => array_merge(
+                $this->appendNotifyHistory($current, $payload, 'confirmed', 'deposit_confirmed', $source, $remoteIp),
+                [
+                    'result_code' => $status,
+                    'pay_method' => 'CVS',
+                    'auth_date' => ($payload['applDt'] ?? '').($payload['applTm'] ?? ''),
+                    'mid' => $mid,
+                    'currency' => $payload['currencyCd'] ?? 'JPY',
+                    'is_cbt' => true,
+                    'cbt_type' => 'JPPG',
+                    'cbt_mid' => $mid,
+                    'cbt_sid' => $payload['sid'] ?? ($current['cbt_sid'] ?? null),
+                    'is_test_mode' => $current['is_test_mode'] ?? $this->apiService->isTestMode(),
+                    'pg_response_sanitized' => true,
+                    'pg_cvs_notify_response' => $sanitized,
+                    'pg_raw_response' => $sanitized,
+                    'cvs_status' => 'paid',
+                    'cvs_convenience' => $payload['convenience'] ?? null,
+                    'cvs_conf_no' => $payload['confNo'] ?? null,
+                    'cvs_receipt_no' => $payload['receiptNo'] ?? null,
+                    'cvs_payment_term' => $payload['paymentTerm'] ?? null,
+                ],
+            );
 
-            $this->orderService->completePayment($order, [
-                'transaction_id' => $tid,
-                'payment_meta' => $completedMeta,
-            ], $amount);
-
-            $this->repository->updatePaymentProvider($order, 'kginicis');
+            $this->bridge->completePayment($orderId, 'kginicis', new PaymentCompletion(
+                transactionId: $tid,
+                paymentMeta: $completedMeta,
+                takeOverProvider: true,
+            ), $amount);
 
             Log::info('KG Inicis CBT CVS: deposit confirmed', [
                 'order_id' => $orderId,
@@ -283,8 +288,8 @@ class CbtCvsOperationsService
 
             return $this->notifyResult('OK', 'confirmed', 'deposit_confirmed');
         } catch (\Throwable $e) {
-            if ($payment instanceof OrderPayment) {
-                $this->storeNotifyHistory($payment, $existingMeta, $payload, 'failed', 'exception', $source, $remoteIp);
+            if ($payment instanceof PaymentRecord) {
+                $this->storeNotifyHistory($orderId, $payload, 'failed', 'exception', $source, $remoteIp);
             }
 
             Log::error('KG Inicis CBT CVS: notify failed', [
@@ -313,11 +318,11 @@ class CbtCvsOperationsService
         }
 
         $payment = $order->payment;
-        $meta = is_array($payment?->payment_meta) ? $payment->payment_meta : [];
-        $isCbtCvs = $payment instanceof OrderPayment && $this->isCbtCvsMeta($meta);
+        $meta = $payment?->paymentMeta ?? [];
+        $isCbtCvs = $payment !== null && $this->isCbtCvsMeta($meta);
         $paymentTerm = (string) ($meta['cvs_payment_term'] ?? '');
         $paymentTermAt = $this->parseCbtDateTime($paymentTerm);
-        $paymentStatus = $payment instanceof OrderPayment ? $this->paymentStatusValue($payment->payment_status) : '';
+        $paymentStatus = $payment !== null ? $this->paymentStatusValue($payment->paymentStatus) : '';
         $isWaitingDeposit = $paymentStatus === PaymentStatusEnum::WAITING_DEPOSIT->value;
         $isExpiredByTime = $paymentTermAt instanceof CarbonImmutable
             && $paymentTermAt->isPast()
@@ -325,11 +330,12 @@ class CbtCvsOperationsService
 
         return [
             'is_cbt_cvs' => $isCbtCvs,
-            'order_number' => $order->order_number,
-            'order_status' => $this->enumValue($order->order_status),
+            'order_number' => $order->orderNumber,
+            'order_status' => $this->enumValue($order->orderStatus),
             'payment_status' => $paymentStatus,
-            'tid' => (string) ($payment?->transaction_id ?? ''),
-            'amount' => (int) ($meta['cvs_amount'] ?? ($payment?->paid_amount_local ?: $order->total_due_amount)),
+            'tid' => (string) ($payment?->transactionId ?? ''),
+            // 결제 행이 있으면 그 결제액(0 포함), 없으면 주문 결제 예정액 — 종전 decimal 문자열 「0.00」 이 참으로 읽히던 판정과 같다
+            'amount' => (int) ($meta['cvs_amount'] ?? ($payment !== null ? $payment->paidAmountLocal : $order->totalDueAmount)),
             'currency' => (string) ($payment?->currency ?? $order->currency ?? 'JPY'),
             'cbt_mid' => (string) ($meta['cbt_mid'] ?? ''),
             'cbt_sid' => (string) ($meta['cbt_sid'] ?? ''),
@@ -377,9 +383,9 @@ class CbtCvsOperationsService
             return $context;
         }
 
-        /** @var Order $order */
+        /** @var OrderRecord $order */
         $order = $context['order'];
-        /** @var OrderPayment $payment */
+        /** @var PaymentRecord $payment */
         $payment = $context['payment'];
         $meta = $context['meta'];
 
@@ -387,7 +393,7 @@ class CbtCvsOperationsService
             return $this->operationError('messages.cbt_cvs.not_test_mode', 422);
         }
 
-        if (! $this->paymentStatusEquals($payment->payment_status, PaymentStatusEnum::WAITING_DEPOSIT)) {
+        if (! $this->paymentStatusEquals($payment->paymentStatus, PaymentStatusEnum::WAITING_DEPOSIT)) {
             return $this->operationError('messages.cbt_cvs.not_waiting_deposit', 422);
         }
 
@@ -400,7 +406,7 @@ class CbtCvsOperationsService
         // audit:allow datetime-display-user-timezone reason: 일본 PG(CBT) 시각 — Asia/Tokyo 고정(D11)
         $now = CarbonImmutable::now('Asia/Tokyo');
         $payload = [
-            'tid' => $payment->transaction_id ?: 'ADMIN_CVS_'.$order->order_number,
+            'tid' => $payment->transactionId ?: 'ADMIN_CVS_'.$order->orderNumber,
             'mid' => (string) ($meta['cbt_mid'] ?? $this->apiService->getJapanMid()),
             // audit:allow datetime-display-user-timezone reason: 일본 PG(CBT) 시각 — Asia/Tokyo 고정(D11)
             'applDt' => $now->format('Ymd'),
@@ -408,7 +414,7 @@ class CbtCvsOperationsService
             'applTm' => $now->format('His'),
             'status' => '00',
             'payNm' => 'CVS',
-            'orderId' => $order->order_number,
+            'orderId' => $order->orderNumber,
             'applNo' => (string) ($meta['cvs_receipt_no'] ?? 'ADMIN-SIM'),
             'sid' => (string) ($meta['cbt_sid'] ?? ''),
             'convenience' => (string) ($meta['cvs_convenience'] ?? ''),
@@ -447,34 +453,18 @@ class CbtCvsOperationsService
             return $context;
         }
 
-        /** @var OrderPayment $payment */
-        $payment = $context['payment'];
-
-        $expired = DB::transaction(function () use ($payment): bool {
-            $lockedPayment = $this->repository->lockPayment($payment);
-            if (! $lockedPayment instanceof OrderPayment) {
-                return false;
-            }
-
-            $lockedMeta = is_array($lockedPayment->payment_meta) ? $lockedPayment->payment_meta : [];
-            if (! $this->canMarkExpired($lockedPayment, $lockedMeta)) {
-                return false;
-            }
-
-            $updatedMeta = array_merge($lockedMeta, [
+        // 잠근 결제 행 기준으로 만료 가능 여부를 다시 판정하고, 가능하면 상태(EXPIRED)와 meta 를 함께 바꾼다.
+        $expired = $this->bridge->expireAwaitingDeposit(
+            $orderNumber,
+            'kginicis',
+            fn (PaymentRecord $locked): bool => $this->canMarkExpired($locked, $locked->paymentMeta),
+            fn (array $lockedMeta): array => array_merge($lockedMeta, [
                 'cvs_status' => 'expired',
                 // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
                 'cvs_expired_at' => now()->toIso8601String(),
                 'cvs_expiry_reason' => 'payment_term_elapsed',
-            ]);
-
-            $this->repository->updatePayment($lockedPayment, [
-                'payment_status' => PaymentStatusEnum::EXPIRED,
-                'payment_meta' => $updatedMeta,
-            ]);
-
-            return true;
-        });
+            ]),
+        );
 
         if (! $expired) {
             return $this->operationError('messages.cbt_cvs.not_expirable', 422);
@@ -499,15 +489,11 @@ class CbtCvsOperationsService
             return $context;
         }
 
-        /** @var OrderPayment $payment */
-        $payment = $context['payment'];
-        $meta = array_merge($context['meta'], [
+        $this->bridge->mergePaymentMeta($orderNumber, 'kginicis', [
             // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
             'cvs_last_recheck_at' => now()->toIso8601String(),
             'cvs_last_recheck_result' => 'local_status_checked',
         ]);
-
-        $this->savePaymentMeta($payment, $meta);
 
         return [
             'ok' => true,
@@ -529,9 +515,9 @@ class CbtCvsOperationsService
         }
 
         $payment = $order->payment;
-        $meta = is_array($payment?->payment_meta) ? $payment->payment_meta : [];
+        $meta = $payment?->paymentMeta ?? [];
 
-        if (! $payment instanceof OrderPayment || ! $this->isCbtCvsMeta($meta)) {
+        if ($payment === null || ! $this->isCbtCvsMeta($meta)) {
             return $this->operationError('messages.cbt_cvs.not_cvs', 422, [
                 'order' => $order,
                 'payment' => $payment,
@@ -568,11 +554,11 @@ class CbtCvsOperationsService
      * 결제 정보를 함께 불러온 주문을 조회합니다.
      *
      * @param  string  $orderNumber  주문번호
-     * @return Order|null 주문 (없으면 null)
+     * @return OrderRecord|null 주문 (없으면 null)
      */
-    private function findOrder(string $orderNumber): ?Order
+    private function findOrder(string $orderNumber): ?OrderRecord
     {
-        return $this->repository->findOrderWithPayment($orderNumber);
+        return $this->bridge->findOrderByNumber($orderNumber, 'kginicis');
     }
 
     /**
@@ -595,8 +581,9 @@ class CbtCvsOperationsService
     /**
      * 결제 행을 잠근 뒤 입금통보 수신 이력을 결제 메타에 추가 저장합니다.
      *
-     * @param  OrderPayment  $payment  대상 결제
-     * @param  array<string, mixed>  $existingMeta  잠금 행을 읽지 못했을 때 쓸 기존 결제 메타
+     * 이력 append 라 잠금 안에서 현재 meta 로 계산한다(경쟁 시 이력이 빠지지 않게).
+     *
+     * @param  string  $orderNumber  주문번호
      * @param  array<string, mixed>  $payload  입금통보 payload
      * @param  string  $result  처리 결과 구분
      * @param  string  $reason  결과 사유 코드
@@ -605,27 +592,18 @@ class CbtCvsOperationsService
      * @return array<string, mixed> 이력이 추가된 결제 메타
      */
     private function storeNotifyHistory(
-        OrderPayment $payment,
-        array $existingMeta,
+        string $orderNumber,
         array $payload,
         string $result,
         string $reason,
         string $source,
         ?string $remoteIp
     ): array {
-        $updatedMeta = DB::transaction(function () use ($payment, $existingMeta, $payload, $result, $reason, $source, $remoteIp): array {
-            $lockedPayment = $this->repository->lockPayment($payment);
-            $currentMeta = $lockedPayment instanceof OrderPayment && is_array($lockedPayment->payment_meta)
-                ? $lockedPayment->payment_meta
-                : $existingMeta;
-
-            $mergedMeta = $this->appendNotifyHistory($currentMeta, $payload, $result, $reason, $source, $remoteIp);
-            $this->savePaymentMeta($lockedPayment ?? $payment, $mergedMeta);
-
-            return $mergedMeta;
-        });
-
-        return $updatedMeta;
+        return $this->bridge->mutatePaymentMetaWithLock(
+            $orderNumber,
+            'kginicis',
+            fn (array $current): array => $this->appendNotifyHistory($current, $payload, $result, $reason, $source, $remoteIp),
+        ) ?? [];
     }
 
     /**
@@ -676,18 +654,6 @@ class CbtCvsOperationsService
     }
 
     /**
-     * 결제 메타를 저장합니다.
-     *
-     * @param  OrderPayment  $payment  대상 결제
-     * @param  array<string, mixed>  $meta  저장할 결제 메타
-     * @return void 반환값 없음
-     */
-    private function savePaymentMeta(OrderPayment $payment, array $meta): void
-    {
-        $this->repository->updatePayment($payment, ['payment_meta' => $meta]);
-    }
-
-    /**
      * 저장된 입금통보 이력에서 배열 항목만 남겨 목록으로 정리합니다.
      *
      * @param  mixed  $history  결제 메타의 이력 값
@@ -717,17 +683,17 @@ class CbtCvsOperationsService
     /**
      * 잠금된 결제 row 기준으로 CVS 만료 전환 가능 여부를 다시 판정합니다.
      *
-     * @param  OrderPayment  $payment  잠금된 결제 row
+     * @param  PaymentRecord  $payment  잠금된 결제 row
      * @param  array<string, mixed>  $meta  결제 메타
      * @return bool 만료 전환 가능 여부
      */
-    private function canMarkExpired(OrderPayment $payment, array $meta): bool
+    private function canMarkExpired(PaymentRecord $payment, array $meta): bool
     {
         if (! $this->isCbtCvsMeta($meta)) {
             return false;
         }
 
-        if (! $this->paymentStatusEquals($payment->payment_status, PaymentStatusEnum::WAITING_DEPOSIT)) {
+        if (! $this->paymentStatusEquals($payment->paymentStatus, PaymentStatusEnum::WAITING_DEPOSIT)) {
             return false;
         }
 
@@ -741,11 +707,11 @@ class CbtCvsOperationsService
      *
      * 결제 메타의 발급 금액이 있으면 그 값을, 없으면 결제 통화 기준 주문 청구액을 쓴다.
      *
-     * @param  Order  $order  대상 주문
+     * @param  OrderRecord  $order  대상 주문
      * @param  array<string, mixed>  $paymentMeta  결제 메타
      * @return int|null 기대 청구액 (구할 수 없으면 null)
      */
-    private function resolveExpectedCvsAmount(Order $order, array $paymentMeta): ?int
+    private function resolveExpectedCvsAmount(OrderRecord $order, array $paymentMeta): ?int
     {
         $metaAmount = (int) ($paymentMeta['cvs_amount'] ?? 0);
         if ($metaAmount > 0) {

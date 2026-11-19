@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Console\Commands\Traits\LocalizesDescription;
 use App\Enums\SitemapGenerationMode;
 use App\Jobs\GenerateSitemapJob;
+use App\Support\RuntimeRole;
 use Illuminate\Bus\UniqueLock;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Bus\Dispatcher;
@@ -37,6 +38,12 @@ class SeoGenerateSitemapCommand extends Command
      */
     public function handle(): int
     {
+        if (RuntimeRole::isStage()) {
+            $this->error(__('common.console.runtime_role.sitemap_stage'));
+
+            return self::FAILURE;
+        }
+
         $mode = $this->resolveMode();
         if ($mode === null) {
             $allowed = implode(', ', array_map(fn (SitemapGenerationMode $m): string => $m->value, SitemapGenerationMode::cases()));

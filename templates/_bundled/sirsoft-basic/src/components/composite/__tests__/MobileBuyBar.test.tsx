@@ -2,22 +2,25 @@
  * MobileBuyBar 컴포넌트 테스트
  *
  * @description 좁은 화면 아래에 고정되는 구매바가 넓은 화면에서 숨고, 본문이 가려지지 않게 body 에 표시를 남기며,
- *   단추마다 레이아웃이 건 동작을 부르는지 잠근다.
+ *   단추마다 레이아웃이 건 동작을 부르는지 잠근다. 좁은지 넓은지는 창 폭(CSS 미디어)이 아니라 엔진 폭
+ *   (`G7Core.useResponsive().width`, 편집기 미리보기에서는 기기 폭)으로 가른다 — 경계는 Tailwind md(768px)와 같다.
  *
  * @scenario-manifest tests/scenarios/shop-mobile-buy-bar.yaml
  */
 
-import React from 'react';
 import { fireEvent, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MobileBuyBar } from '../MobileBuyBar';
 
 describe('MobileBuyBar', () => {
   let originalG7Core: any;
+  /** 엔진 폭(G7Core.useResponsive().width) — 기본은 좁은 화면, 넓은 화면 시험만 바꾼다 */
+  let viewportWidth = 375;
 
   beforeEach(() => {
     originalG7Core = (window as any).G7Core;
-    (window as any).G7Core = { ...originalG7Core, t: (k: string) => k };
+    viewportWidth = 375;
+    (window as any).G7Core = { ...originalG7Core, t: (k: string) => k, useResponsive: () => ({ width: viewportWidth }) };
   });
 
   afterEach(() => {
@@ -31,16 +34,25 @@ describe('MobileBuyBar', () => {
   // @scenario case=c01
   // @effects buy_bar_hidden_on_wide_screens
   it('아래에 고정되고 넓은 화면에서는 숨는다(다크 짝·안전 영역 여백 포함)', () => {
-    const { container } = render(<MobileBuyBar variant="product" priceText="12,000원" />);
+    const { container, rerender } = render(<MobileBuyBar variant="product" priceText="12,000원" />);
     const root = bar(container);
+    const tokens = () => bar(container).className.split(/\s+/);
 
-    expect(root.className).toContain('fixed');
-    expect(root.className).toContain('bottom-0');
-    expect(root.className).toContain('md:hidden');
-    expect(root.className).toContain('pb-[env(safe-area-inset-bottom)]');
+    // 767px — 좁은 화면: 아래에 고정
+    viewportWidth = 767;
+    rerender(<MobileBuyBar variant="product" priceText="12,000원" />);
+    expect(tokens()).toEqual(expect.arrayContaining(['fixed', 'bottom-0', 'pb-[env(safe-area-inset-bottom)]']));
+    expect(tokens()).not.toContain('hidden');
     expect(root.className).toMatch(/bg-white dark:bg-gray-800/);
     expect(root.className).toMatch(/border-gray-200 dark:border-gray-700/);
     expect(root.textContent).toContain('12,000원');
+
+    // 768px — 넓은 화면: 숨는다(창 폭 미디어 접두 없이)
+    viewportWidth = 768;
+    rerender(<MobileBuyBar variant="product" priceText="12,000원" />);
+    expect(tokens()).toContain('hidden');
+    expect(tokens()).not.toContain('fixed');
+    expect(bar(container).className).not.toMatch(/(^|\s)(sm|md|lg|xl|2xl):/);
   });
 
   // @scenario case=c02
@@ -55,6 +67,25 @@ describe('MobileBuyBar', () => {
     expect(document.body.classList.contains('g7-has-mobile-buybar')).toBe(true);
 
     second.unmount();
+    expect(document.body.classList.contains('g7-has-mobile-buybar')).toBe(false);
+  });
+
+  // @scenario case=c02
+  // @effects buy_bar_marks_body_while_mounted
+  it('넓은 화면에서는 바가 숨으므로 body 표시를 남기지 않고, 폭이 바뀌면 표시가 따라간다', () => {
+    viewportWidth = 1024;
+    const view = render(<MobileBuyBar variant="product" priceText="1" />);
+    expect(document.body.classList.contains('g7-has-mobile-buybar')).toBe(false);
+
+    viewportWidth = 375;
+    view.rerender(<MobileBuyBar variant="product" priceText="1" />);
+    expect(document.body.classList.contains('g7-has-mobile-buybar')).toBe(true);
+
+    viewportWidth = 1024;
+    view.rerender(<MobileBuyBar variant="product" priceText="1" />);
+    expect(document.body.classList.contains('g7-has-mobile-buybar')).toBe(false);
+
+    view.unmount();
     expect(document.body.classList.contains('g7-has-mobile-buybar')).toBe(false);
   });
 

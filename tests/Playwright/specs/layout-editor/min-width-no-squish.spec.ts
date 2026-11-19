@@ -21,8 +21,11 @@
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import type { Page } from '@playwright/test';
 
-/** 셸 최소 너비 — LayoutEditorChrome.tsx 의 EDITOR_MIN_WIDTH 와 동일 SSoT. */
-const EDITOR_MIN_WIDTH = 1280;
+/**
+ * 셸 최소 너비 — LayoutEditorChrome.tsx 의 EDITOR_MIN_WIDTH 와 동일 SSoT.
+ * 2026-11-08 설계 확정(툴바 「두 줄로 감기」)으로 1280 → 1000. 툴바는 줄 단위로 감기고 항목은 줄지 않는다.
+ */
+const EDITOR_MIN_WIDTH = 1000;
 
 /** 압착을 유발하는 좁은 창 — 최소 너비보다 확실히 좁게 잡는다. */
 const NARROW_WIDTH = 900;
@@ -99,10 +102,14 @@ test.describe('레이아웃 편집기 — 좁은 창 압착 차단', () => {
  *
  * 박스 없는 노드(`<style>` 태그, 조건부 미표시 요소 등)는 제외한다. 이들은 창 크기와
  * 무관하게 0×0 이라 비교에 의미가 없고, 포함하면 측정 노이즈만 만든다.
+ *
+ * 가운데 빈칸(`flex-grow` 가 있는 spacer)도 제외한다 — 남는 폭을 채우는 칸이라 창 폭과 툴바 줄 감김
+ * (설계 확정 2026-11-08 「두 줄로 감기」)에 따라 폭이 달라지는 것이 정상이다.
  */
 async function measureToolbarItems(page: Page): Promise<Array<{ w: number; h: number }>> {
   return page.getByTestId('g7le-toolbar').evaluate((toolbar) =>
     Array.from(toolbar.children)
+      .filter((el) => getComputedStyle(el).flexGrow === '0')
       .map((el) => {
         const r = el.getBoundingClientRect();
         return { w: Math.round(r.width), h: Math.round(r.height) };

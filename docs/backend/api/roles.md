@@ -8,7 +8,7 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Roles 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
@@ -168,6 +168,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 역할 관리 화면(`admin_role_list.g7.html`)의 목록 데이터를 제공하는 페이지네이션 조회 엔드포인트다. `search`(identifier/name 텍스트 검색), `is_active`(활성 여부), `extension_type`(소유 구분 — 시스템·모듈·플러그인·직접 추가)으로 필터링하며 `per_page` 로 페이지 크기를 조절한다. 응답에는 소유 확장 정보, 사용자 수(`users_count`), 할당 권한 개수(`permissions_count`), 현재 사용자의 조작 가능 여부(abilities)가 포함된다. 목록에는 **할당 권한의 목록(`permission_ids`/`permission_values`/`permissions`)이 실리지 않는다** — 권한 트리는 역할 하나당 수백 건까지 갈 수 있어 목록을 여는 것만으로 전 행의 권한이 전송됐다. 권한 목록이 필요하면 단건 조회(`GET /api/admin/roles/{role}`)를 사용한다. `core.permissions.read` 권한이 필요하다.
@@ -284,6 +286,8 @@ HTTP/1.1 201
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -420,6 +424,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 셀렉트 UI(사용자 폼·메뉴 편집의 역할 선택 등)에 채울 활성 역할 목록을 제공한다. 별도 권한 미들웨어가 없어 인증만 되면 호출 가능하지만, 내부에서 권한에 따라 범위가 갈린다. `core.permissions.read` 권한 보유자는 전체 활성 역할을 받고(사용자에게 역할을 부여하는 관리 용도), 미보유자는 자신에게 부여된 활성 역할만 받는다(자기 정보 폼 표시 용도). 응답의 `abilities.can_assign_roles` 는 `core.users.update`(사용자 관리) 권한 보유 여부를 나타낸다 — 역할 부여는 사용자 관리의 일부이지 역할 정의 수정(`core.permissions.update`)이 아니다. 부여 가능한 개별 역할의 범위는 서버 상한(권한 상승 가드)이 역할별로 강제한다.
@@ -474,6 +480,7 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
 
 **설명**
 
@@ -563,6 +570,8 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -682,6 +691,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 기존 역할의 `name`·`description`·`is_active`·`permissions` 를 수정한다. 생성과 달리 `identifier` 는 변경 대상이 아니며, 각 필드는 `sometimes` 규칙이라 전달된 항목만 갱신된다. `permissions` 를 보내면 `[{id, scope_type}]` 형식으로 역할의 권한 집합 전체가 동기화된다(전달된 목록 기준으로 재설정). `name`·`description` 은 문자열/다국어 객체 양쪽을 받는다. 검증 규칙은 `core.role.update_validation_rules` 필터 훅으로 확장할 수 있다. `core.permissions.update` 권한이 필요하다. 대상이 비회원(`guest`) 역할이면 `scope_type` 이 null 이 아닌 권한 항목마다 422 `errors["permissions.{N}.scope_type"]` 「비회원 역할은 권한 범위를 지정할 수 없습니다. 범위 없이(전체) 부여해 주세요.」 이고 아무것도 저장하지 않는다(7.1.1 — 비회원은 「본인」 을 판정할 신원이 없어 범위가 실제로는 「전체」 였다). 범위 없는(null) 항목은 그대로 저장된다. 다국어 `name` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 `errors.name` 이 칸 이름과 언어 이름을 함께 알린다(「역할 이름의 한국어(ko) 값은 필수입니다.」).
@@ -785,6 +796,8 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 

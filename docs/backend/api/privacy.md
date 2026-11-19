@@ -318,7 +318,8 @@ Authorization: Bearer {YOUR_TOKEN}
 | targets.*.run.remaining_count | integer\|null | `0` | 처리 후 남은 건수 (발송 상한이 있는 조치만 — gdpr 연간 통지) |
 | targets.*.run.mode | string\|null | `"convert"` | 처리 방식 (`anonymize`·`delete`·`erase_ip`·`notify`·휴면 단계명) |
 | targets.*.run.error | string\|null | `null` | 실패 사유 |
-| targets.*.run.requester_name | string\|null | `"표준"` | 접수한 관리자 이름 (회원이 삭제됐으면 `null`) |
+| targets.*.run.requester_name | string\|null | `"표준"` | 접수한 관리자의 표시 이름(관리자 화면 영역). 회원이 삭제됐으면 `null` |
+| targets.*.run.requester_real_name | string | `"홍길동"` | 접수한 관리자의 실명. 요청한 관리자에게 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 실린다(아니면 키 없음) |
 | targets.*.run.queued_at / started_at / finished_at | string\|null | `"2026-09-25 22:40:31"` | 관리자 시간대 `Y-m-d H:i:s` |
 | has_active | boolean | `true` | 처리 대기·처리 중인 대상이 있는지 — 화면이 주기 조회를 계속할지 정한다 |
 | finished_since | boolean | `false` | `since` 이후 끝난 실행이 있는지 — `true` 면 화면이 대상 건수를 다시 받는다 |

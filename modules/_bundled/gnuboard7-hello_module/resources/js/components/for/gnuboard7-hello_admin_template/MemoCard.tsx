@@ -22,6 +22,8 @@ import type { MemoCardProps } from '../../composite/MemoCard';
  * 이 자리를 `components/overrides/` 라고 부르지 않는 이유: 오버라이드는 **남의** 컴포넌트를
  * 대체하는 것이고 그 권한은 템플릿에만 있다. 여기서 하는 일은 자기 것의 판본 선택이라 다른
  * 개념이다.
+ *
+ * 모양은 기본 판본과 같은 모듈 CSS(`resources/css/main.css`)의 `hellomodule-row*` 클래스가 정한다.
  */
 export const MemoCard: React.FC<MemoCardProps> = ({
   title = '',
@@ -31,22 +33,15 @@ export const MemoCard: React.FC<MemoCardProps> = ({
   id,
   editorAttrs,
 }) => {
+  const rootClassName = ['hellomodule-row', className].filter(Boolean).join(' ');
+  const titleClassName = ['hellomodule-row__title', highlighted ? 'hellomodule-row__title--highlighted' : '']
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <div
-      id={id}
-      className={`flex items-baseline gap-2 border-b border-gray-200 py-2 dark:border-gray-700 ${className}`}
-      {...editorAttrs}
-    >
-      <span
-        className={`text-sm font-medium ${
-          highlighted
-            ? 'text-blue-700 dark:text-blue-300'
-            : 'text-gray-900 dark:text-gray-100'
-        }`}
-      >
-        {title}
-      </span>
-      <span className="truncate text-xs text-gray-500 dark:text-gray-400">{body}</span>
+    <div id={id} className={rootClassName} {...editorAttrs}>
+      <span className={titleClassName}>{title}</span>
+      <span className="hellomodule-row__body">{body}</span>
     </div>
   );
 };

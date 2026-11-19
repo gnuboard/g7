@@ -83,6 +83,7 @@ effects:
   - legacy_seeder_is_noop_shim
   - order_mail_sent_through_notification
   - order_mail_member_recipient
+  - order_mail_site_url_user_screen
   - order_mail_channel_off_422
   - upgrade_migrates_and_drops_legacy_tables
   - upgrade_preserves_operator_edits

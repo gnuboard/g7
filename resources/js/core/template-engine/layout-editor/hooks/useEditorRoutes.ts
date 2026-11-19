@@ -31,6 +31,7 @@ import {
 } from '../types/editorErrors';
 import { buildAuthHeaders } from '../utils/authToken';
 import { suffixed } from '../../../support/assetUrl';
+import { withBasePrefix } from '../../../support/assetUrl';
 
 const logger = createLogger('useEditorRoutes');
 
@@ -181,6 +182,7 @@ function resolveEditorRouteExpressions(routes: RouteResponseItem[]): RouteRespon
       settings: g7Config?.settings ?? {},
       plugins: g7Config?.plugins ?? {},
       modules: g7Config?.modules ?? {},
+      templateSettings: g7Config?.templateSettings ?? {},
       appConfig: g7Config?.appConfig ?? {},
     },
   };
@@ -275,7 +277,7 @@ export function useEditorRoutes(options: UseEditorRoutesOptions): void {
         return Promise.reject(buildNetworkError(new Error('fetch unavailable'), 'routes'));
       }
       try {
-        const result = fetch(url, { credentials: 'same-origin', headers: buildAuthHeaders() });
+        const result = fetch(withBasePrefix(url), { credentials: 'same-origin', headers: buildAuthHeaders() });
         if (!result || typeof (result as Promise<unknown>).then !== 'function') {
           return Promise.reject(
             buildNetworkError(new Error('fetch returned non-Promise (test stub?)'), 'routes'),
@@ -300,7 +302,7 @@ export function useEditorRoutes(options: UseEditorRoutesOptions): void {
     const extensionsPromise: Promise<ExtensionGroupsResponse | null> = (() => {
       if (typeof fetch !== 'function') return Promise.resolve(null);
       try {
-        const result = fetch(extensionsUrl, { credentials: 'same-origin', headers: buildAuthHeaders() });
+        const result = fetch(withBasePrefix(extensionsUrl), { credentials: 'same-origin', headers: buildAuthHeaders() });
         if (!result || typeof (result as Promise<unknown>).then !== 'function') {
           return Promise.resolve(null);
         }

@@ -2,14 +2,16 @@
 
 namespace App\Http\Requests\Public\Template;
 
+use App\Http\Requests\Concerns\ResolvesDualModeFilePath;
 use App\Rules\AllowedTemplateFileType;
 use App\Rules\SafeTemplatePath;
 use App\Support\CustomAssets;
-use App\Support\Routing\DualExtensionRoute;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ServeTemplateAssetRequest extends FormRequest
 {
+    use ResolvesDualModeFilePath;
+
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
      *
@@ -67,7 +69,7 @@ class ServeTemplateAssetRequest extends FormRequest
         // 어느 형태로 오든 컨트롤러는 동일하게 `path` 만 본다.
         $this->merge([
             'identifier' => $this->route('identifier'),
-            'path' => $this->resolveAmdModulePath($this->route('path') ?? $this->query(DualExtensionRoute::FILE_QUERY_PARAM)),
+            'path' => $this->resolveAmdModulePath($this->dualModeFilePath()),
         ]);
     }
 
@@ -79,7 +81,14 @@ class ServeTemplateAssetRequest extends FormRequest
      */
     private function basePathFor(string $requestedPath): string
     {
+        // 식별자는 **검증 전** 값이다. 라우트에 형태 제약이 없고 Laravel 은 매칭·바인딩을
+        // 모두 디코딩된 경로로 하므로 `%2e%2e` 가 `..` 로 들어온다 — 그대로 보간하면
+        // 봉쇄의 **기준선을 요청이 고르게** 된다. 확장 식별자는 `vendor-name` 형태이므로
+        // 그 형태가 아니면 실재할 수 없는 이름으로 접어 기준선이 트리 밖으로 나가지 않게 한다.
         $identifier = $this->route('identifier');
+        $identifier = is_string($identifier) && preg_match('/^[A-Za-z0-9_.-]+$/', $identifier) && ! str_contains($identifier, '..')
+            ? $identifier
+            : '__invalid__';
 
         return str_starts_with($requestedPath, CustomAssets::DIRECTORY.'/')
             ? base_path("templates/{$identifier}")

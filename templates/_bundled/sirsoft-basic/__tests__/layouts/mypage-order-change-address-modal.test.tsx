@@ -12,8 +12,8 @@
  * - 회원/비회원 UI 분기: 탭/저장된배송지는 회원만, 직접입력은 비회원 항상
  * - 로딩 스피너 + confirm 1회
  *
- * @scenario actor=member, change_mode=saved, e2e_browser=chromium
- * @effects change_address_modal_uses_global_editingshippingaddress_datakey_not_parent_local,
+ * 조합 요약(마커 아님, 평문): actor=member, change_mode=saved, e2e_browser=chromium
+ * 효과 요약(마커 아님, 평문): change_address_modal_uses_global_editingshippingaddress_datakey_not_parent_local,
  *   change_address_autobind_inputs_use_subkey_name_without_prefix,
  *   change_address_postcode_search_writes_global_via_onaddressselect,
  *   change_address_apply_invokes_single_custom_handler_with_one_confirm,
@@ -77,6 +77,11 @@ function flatten(node: Node | undefined, acc: Node[] = []): Node[] {
   acc.push(node);
   if (Array.isArray(node.children)) {
     for (const child of node.children) flatten(child, acc);
+  }
+  // 고정 하단(props.footer)의 단추도 걷는다(#869 — 적용·취소 단추가 Modal 고정 하단으로 옮김)
+  const footer = (node as any).props?.footer;
+  if (Array.isArray(footer)) {
+    for (const child of footer) flatten(child, acc);
   }
   return acc;
 }
@@ -142,7 +147,7 @@ describe('_modal_change_address.json (회원 주문 배송지 변경 모달)', (
     });
 
     // @scenario close=none
-    // @effects order_change_address_modal_contract
+    // @effects order_change_address_modal_contract, change_address_apply_invokes_single_custom_handler_with_one_confirm
     it('적용 버튼의 click 액션은 1개다 (2개면 confirm 이 두 번 뜸)', () => {
       const btn = findApplyButton(layout)!;
       const clickActions = btn.actions!.filter(
@@ -152,7 +157,7 @@ describe('_modal_change_address.json (회원 주문 배송지 변경 모달)', (
     });
 
     // @scenario close=none
-    // @effects order_change_address_modal_contract
+    // @effects order_change_address_modal_contract, change_address_apply_invokes_single_custom_handler_with_one_confirm
     it('적용 버튼 액션 트리 전체에서 confirm 속성은 최대 1개다', () => {
       const btn = findApplyButton(layout)!;
       const all = collectActions(btn.actions);
@@ -196,7 +201,7 @@ describe('_modal_change_address.json (회원 주문 배송지 변경 모달)', (
     });
 
     // @scenario close=none
-    // @effects order_change_address_modal_contract
+    // @effects order_change_address_modal_contract, change_address_modal_uses_global_editingshippingaddress_datakey_not_parent_local
     it('manual 모드 분기 if 가 _global.changeAddressMode 를 참조한다', () => {
       const container = findManualFormContainer(layout)!;
       expect(String(container.if)).toContain('_global.changeAddressMode');
@@ -220,7 +225,7 @@ describe('_modal_change_address.json (회원 주문 배송지 변경 모달)', (
     );
 
     // @scenario close=none
-    // @effects order_change_address_modal_contract
+    // @effects order_change_address_modal_contract, change_address_autobind_inputs_use_subkey_name_without_prefix
     it('직접입력 폼 Input 의 name 에 manualAddress. 접두사가 남아있지 않다 (구 _local 잔재 회귀 차단)', () => {
       const container = findManualFormContainer(layout)!;
       const inputs = flatten(container).filter((n) => n.name === 'Input');
@@ -231,7 +236,7 @@ describe('_modal_change_address.json (회원 주문 배송지 변경 모달)', (
     });
 
     // @scenario close=none
-    // @effects order_change_address_modal_contract
+    // @effects order_change_address_modal_contract, change_address_modal_uses_global_editingshippingaddress_datakey_not_parent_local
     it('직접입력 폼 어디에도 _local.manualAddress 참조가 남아있지 않다', () => {
       const container = findManualFormContainer(layout)!;
       const json = JSON.stringify(container);
@@ -240,7 +245,7 @@ describe('_modal_change_address.json (회원 주문 배송지 변경 모달)', (
     });
 
     // @scenario close=none
-    // @effects order_change_address_modal_contract
+    // @effects order_change_address_modal_contract, change_address_postcode_search_writes_global_via_onaddressselect
     it('우편번호 검색 extension_point 가 callbacks(props 아님) 키로 onAddressSelect 를 전달한다', () => {
       const container = findManualFormContainer(layout)!;
       const slot = flatten(container).find((n: any) => n.type === 'extension_point');
@@ -261,7 +266,7 @@ describe('_modal_change_address.json (회원 주문 배송지 변경 모달)', (
   // ── 칸 쓰기 경로 정합 (_global 점 경로) ──────────
   describe('칸 쓰기 경로 정합 (_global 점 경로)', () => {
     // @scenario close=none
-    // @effects order_change_address_modal_contract
+    // @effects order_change_address_modal_contract, change_address_modal_uses_global_editingshippingaddress_datakey_not_parent_local
     it('change 쓰기 경로는 editingShippingAddress.<field> 다 (접두사 중복 없음)', () => {
       const container = findManualFormContainer(layout)!;
       const recipientInput = flatten(container).find(
@@ -286,7 +291,7 @@ describe('_modal_change_address.json (회원 주문 배송지 변경 모달)', (
     }
 
     // @scenario close=none
-    // @effects order_change_address_modal_contract
+    // @effects order_change_address_modal_contract, change_address_apply_invokes_single_custom_handler_with_one_confirm
     it('버튼 액션은 changeShippingAddress 핸들러 1개이며 confirm 1개를 가진다', () => {
       const btn = findApplyButton(layout)!;
       expect(btn.actions!.length).toBe(1);
@@ -303,7 +308,7 @@ describe('_modal_change_address.json (회원 주문 배송지 변경 모달)', (
     });
 
     // @scenario close=none
-    // @effects order_change_address_modal_contract
+    // @effects order_change_address_modal_contract, change_address_layout_has_no_direct_apicall_or_endpoint_url
     it('레이아웃에 apiCall / sequence 등 구 endpoint 직접 호출 잔재가 없다 (핸들러로 통합)', () => {
       const btn = findApplyButton(layout)!;
       const all = collectActions(btn.actions);
@@ -327,7 +332,7 @@ describe('_modal_change_address.json (회원 주문 배송지 변경 모달)', (
     }
 
     // @scenario close=none
-    // @effects order_change_address_modal_contract
+    // @effects order_change_address_modal_contract, change_address_tab_header_visible_member_only
     it('탭 헤더는 회원에게만 노출된다 (if 에 currentUser?.uuid)', () => {
       const tab = findTabHeader();
       expect(tab, '탭 헤더 컨테이너 존재').toBeDefined();
@@ -335,7 +340,7 @@ describe('_modal_change_address.json (회원 주문 배송지 변경 모달)', (
     });
 
     // @scenario close=none
-    // @effects order_change_address_modal_contract
+    // @effects order_change_address_modal_contract, change_address_manual_form_visible_for_guest_always_and_member_manual_mode
     it('직접입력 폼은 비회원이면 항상, 회원이면 manual 모드일 때 노출된다', () => {
       const container = findManualFormContainer(layout)!;
       const cond = String(container.if);
@@ -345,7 +350,7 @@ describe('_modal_change_address.json (회원 주문 배송지 변경 모달)', (
     });
 
     // @scenario close=none
-    // @effects order_change_address_modal_contract
+    // @effects order_change_address_modal_contract, change_address_saved_list_visible_member_only
     it('저장된 배송지 목록은 회원에게만 노출된다', () => {
       const savedList = flatten(layout).find(
         (n) =>
@@ -362,14 +367,14 @@ describe('_modal_change_address.json (회원 주문 배송지 변경 모달)', (
   // 적용 클릭 → 처리 중 스피너 노출 + 버튼 비활성. isSubmittingAddress 토글은 핸들러(TS)가 수행.
   describe('로딩 스피너 / 처리 중 상태', () => {
     // @scenario close=none
-    // @effects order_change_address_modal_contract
+    // @effects order_change_address_modal_contract, change_address_apply_button_shows_spinner_and_disables_while_submitting
     it('적용 버튼이 isSubmittingAddress 로 disabled 된다', () => {
       const btn = findApplyButton(layout)!;
       expect(String(btn.props?.disabled)).toContain('isSubmittingAddress');
     });
 
     // @scenario close=none
-    // @effects order_change_address_modal_contract
+    // @effects order_change_address_modal_contract, change_address_apply_button_shows_spinner_and_disables_while_submitting
     it('적용 버튼 안에 처리 중 스피너 아이콘(if=isSubmittingAddress)이 있다', () => {
       const btn = findApplyButton(layout)!;
       const spinner = (btn.children ?? []).find(
@@ -381,7 +386,7 @@ describe('_modal_change_address.json (회원 주문 배송지 변경 모달)', (
     });
 
     // @scenario close=none
-    // @effects order_change_address_modal_contract
+    // @effects order_change_address_modal_contract, change_address_apply_button_shows_spinner_and_disables_while_submitting
     it('적용 버튼 라벨이 처리 중일 때 common.processing 으로 전환된다', () => {
       const btn = findApplyButton(layout)!;
       const label = (btn.children ?? []).find((c: any) => c.name === 'Span');
@@ -442,7 +447,7 @@ describe('마이페이지 배송지 창과 같은 칸 규칙 (_modal_address.jso
   });
 
   // @scenario close=none
-  // @effects order_change_address_modal_contract
+  // @effects order_change_address_modal_contract, change_address_autobind_inputs_use_subkey_name_without_prefix
   it('본 모달의 직접입력 칸은 하위 키 name 과 상태 value 를 가진다(참조 모달과 같은 규칙)', () => {
     const container = findManualFormContainer(layout)!;
     const inputs = flatten(container).filter((n) => n.name === 'Input');
@@ -496,5 +501,72 @@ describe('저장된 배송지 카드는 키보드로 고를 수 있는 단추다
     expect(evalExpr(pressed, { _global: { selectedAddressId: 3 }, addr: { id: 3 } })).toBe(true);
     expect(evalExpr(pressed, { _global: { selectedAddressId: 3 }, addr: { id: 4 } })).toBe(false);
     expect(evalExpr(pressed, { _global: {}, addr: { id: 4 } })).toBe(false);
+  });
+});
+
+// ── 창을 여는 트리거: _shipping.json 의 「배송지 변경」 단추 ──
+// 매니페스트 member-order-change-address.yaml 이 선언한 트리거 효과 둘은 #55 이후 어느 시험도 재지 않았다(#869 κ2).
+describe('배송지 변경 트리거 (_shipping.json)', () => {
+  const shipping: Node = JSON.parse(
+    fs.readFileSync(path.resolve(__dirname, '../../layouts/partials/mypage/orders/_shipping.json'), 'utf8')
+  );
+  /** 트리거 = 배송지 변경 창을 여는 openModal 을 가진 Button */
+  const trigger = flatten(shipping).find(
+    (n) =>
+      n.name === 'Button' &&
+      collectActions(n.actions).some((a) => a.handler === 'openModal' && a.target === 'changeAddressModal')
+  );
+
+  /**
+   * `{{식}}` 하나를 주어진 문맥으로 평가한다.
+   *
+   * @param expr 레이아웃의 식
+   * @param scope 식이 읽는 이름들
+   * @returns 평가 결과
+   */
+  const evalExpr = (expr: string, scope: Record<string, unknown>): unknown => {
+    const m = /^\{\{([\s\S]*)\}\}$/.exec(String(expr).trim());
+    expect(m, `식 하나로 된 값이 아니다: ${expr}`).not.toBeNull();
+    // eslint-disable-next-line no-new-func
+    return new Function(...Object.keys(scope), `return (${m![1]});`)(...Object.values(scope));
+  };
+
+  const member = { uuid: 'member-uuid' };
+
+  // @scenario close=static
+  // @effects change_address_trigger_visible_for_both_member_and_guest_before_shipping
+  it('트리거는 배송 전(입금 대기, 결제 완료)이면 회원과 비회원 모두에게 보이고, 배송이 시작되면 숨는다', () => {
+    expect(trigger, '배송지 변경 창을 여는 단추가 없다').toBeDefined();
+    const cond = trigger!.if as string;
+    expect(typeof cond).toBe('string');
+    const visible = (status: string, currentUser: unknown) =>
+      Boolean(evalExpr(cond, { _local: {}, _global: { currentUser }, order: { data: { order_status: status } } }));
+    for (const status of ['pending_payment', 'payment_complete']) {
+      expect(visible(status, member), `회원 ${status}`).toBe(true);
+      expect(visible(status, null), `비회원 ${status}`).toBe(true);
+    }
+    for (const status of ['shipping', 'delivered', 'cancelled']) {
+      expect(visible(status, member), `회원 ${status}`).toBe(false);
+      expect(visible(status, null), `비회원 ${status}`).toBe(false);
+    }
+  });
+
+  // @scenario close=static
+  // @effects change_address_trigger_sets_mode_saved_for_member_manual_for_guest
+  it('트리거는 창을 열기 전에 회원(저장된 배송지 있음)은 saved, 비회원과 저장된 배송지 0건 회원은 manual 로 연다', () => {
+    expect(trigger, '배송지 변경 창을 여는 단추가 없다').toBeDefined();
+    const sequence = collectActions(trigger!.actions);
+    const setIdx = sequence.findIndex((a) => a.handler === 'setState' && a.params?.target === 'global' && 'changeAddressMode' in (a.params ?? {}));
+    const openIdx = sequence.findIndex((a) => a.handler === 'openModal' && a.target === 'changeAddressModal');
+    expect(setIdx, '창을 열기 전에 changeAddressMode 를 정해야 한다').toBeGreaterThanOrEqual(0);
+    expect(setIdx).toBeLessThan(openIdx);
+    const modeExpr = sequence[setIdx].params!.changeAddressMode as string;
+    const mode = (currentUser: unknown, addresses: unknown[]) =>
+      evalExpr(modeExpr, { _global: { currentUser }, userAddresses: { data: { addresses: { data: addresses } } } });
+    expect(mode(member, [{ id: 1 }])).toBe('saved');
+    expect(mode(null, [])).toBe('manual');
+    expect(mode(null, [{ id: 1 }])).toBe('manual');
+    // 저장된 배송지가 0건인 회원은 saved 로 열면 고를 것이 없어 적용이 address_id 없이 나갔다(#703)
+    expect(mode(member, [])).toBe('manual');
   });
 });

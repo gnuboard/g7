@@ -86,6 +86,8 @@ class OrderActivityLogListener implements HookListenerInterface
             'sirsoft-ecommerce.order.after_payment_complete' => ['method' => 'handleOrderAfterPaymentComplete', 'priority' => 20],
             'sirsoft-ecommerce.order.after_deposit_recorded' => ['method' => 'handleOrderAfterDepositRecorded', 'priority' => 20],
             'sirsoft-ecommerce.order.payment_failed' => ['method' => 'handleOrderAfterPaymentFailed', 'priority' => 20],
+            // 결제사 계약의 재결제 복구 — 결제 취소 주문을 결제 대기로 되돌린 전이 (#916)
+            'sirsoft-ecommerce.order.payment_retry_restored' => ['method' => 'handleOrderPaymentRetryRestored', 'priority' => 20],
             'sirsoft-ecommerce.coupon.use' => ['method' => 'handleCouponUse', 'priority' => 20],
             'sirsoft-ecommerce.mileage.use' => ['method' => 'handleMileageUse', 'priority' => 20],
             'sirsoft-ecommerce.mileage.earn' => ['method' => 'handleMileageEarn', 'priority' => 20],
@@ -921,6 +923,27 @@ class OrderActivityLogListener implements HookListenerInterface
             'properties' => [
                 'error_code' => $errorCode,
                 'error_message' => $errorMessage,
+            ],
+            'changes' => ChangeDetector::detect($order, $snapshot),
+        ]);
+    }
+
+    /**
+     * 재결제 복구 후 로그 기록 (#916)
+     *
+     * @param  Order  $order  복구된 주문
+     * @param  string  $provider  복구를 요청한 결제사 id
+     * @param  array|null  $snapshot  복구 전 주문 스냅샷
+     * @return void 반환값 없음
+     */
+    public function handleOrderPaymentRetryRestored(Order $order, string $provider, ?array $snapshot = null): void
+    {
+        $this->logActivity('order.payment_retry_restored', [
+            'loggable' => $order,
+            'description_key' => 'sirsoft-ecommerce::activity_log.description.order_payment_retry_restored',
+            'description_params' => ['order_number' => $order->order_number],
+            'properties' => [
+                'pg_provider' => $provider,
             ],
             'changes' => ChangeDetector::detect($order, $snapshot),
         ]);

@@ -62,7 +62,7 @@ describe('확장 자산 재로드 핸들러 (reloadModuleHandlers / reloadPlugin
     });
 
     const run = (handler: string, params: Record<string, any>) =>
-        dispatcher.executeAction(
+        dispatcher['executeAction'](
             { type: 'click', handler, params } as ActionDefinition,
             {} as any
         );
@@ -76,6 +76,11 @@ describe('확장 자산 재로드 핸들러 (reloadModuleHandlers / reloadPlugin
         const add = (assets: Record<string, string>) =>
             run(handlerName, { [infoKey]: { identifier, assets }, action: 'add' });
 
+        /**
+         * @scenario case=same_origin_js_css
+         *
+         * @effects same_origin_extension_assets_loaded
+         */
         it('same-origin js/css 는 정상 로드된다', async () => {
             const result = lastResult(await add({ js: '/api/x/bundle.js', css: '/api/x/bundle.css' }));
 
@@ -85,6 +90,11 @@ describe('확장 자산 재로드 핸들러 (reloadModuleHandlers / reloadPlugin
             expect((window as any).G7Config[assetsKey][identifier]).toBeDefined();
         });
 
+        /**
+         * @scenario case=untrusted_external_js
+         *
+         * @effects untrusted_external_extension_script_blocked
+         */
         it('미신뢰 외부 js 는 차단된다 (태그 미생성)', async () => {
             const result = lastResult(await add({ js: 'https://cdn.evil.com/x.js' }));
 
@@ -93,6 +103,11 @@ describe('확장 자산 재로드 핸들러 (reloadModuleHandlers / reloadPlugin
             expect(created.filter(el => el.tagName === 'SCRIPT')).toHaveLength(0);
         });
 
+        /**
+         * @scenario case=untrusted_external_css
+         *
+         * @effects untrusted_external_extension_stylesheet_blocked
+         */
         it('미신뢰 외부 css 는 차단된다 (태그 미생성)', async () => {
             const result = lastResult(
                 await add({ js: '/api/x/bundle.js', css: 'https://cdn.evil.com/x.css' })
@@ -103,6 +118,11 @@ describe('확장 자산 재로드 핸들러 (reloadModuleHandlers / reloadPlugin
             expect(created.filter(el => el.tagName === 'LINK')).toHaveLength(0);
         });
 
+        /**
+         * @scenario case=script_already_present
+         *
+         * @effects css_loaded_even_when_script_already_present
+         */
         it('script 가 이미 있어도 CSS 로드는 진행된다', async () => {
             const existing = originalCreateElement('script');
             existing.id = `${prefix}-${identifier}`;
@@ -116,6 +136,11 @@ describe('확장 자산 재로드 핸들러 (reloadModuleHandlers / reloadPlugin
             expect(created.filter(el => el.tagName === 'SCRIPT')).toHaveLength(0);
         });
 
+        /**
+         * @scenario case=css_only_extension
+         *
+         * @effects css_only_extension_assets_loaded
+         */
         it('css 만 있는 확장도 로드된다 (js 없음)', async () => {
             const result = lastResult(await add({ css: '/api/x/bundle.css' }));
 
@@ -123,6 +148,11 @@ describe('확장 자산 재로드 핸들러 (reloadModuleHandlers / reloadPlugin
             expect(document.getElementById(`${prefix}-css-${identifier}`)).not.toBeNull();
         });
 
+        /**
+         * @scenario case=trusted_external_host
+         *
+         * @effects trusted_host_external_assets_allowed
+         */
         it('신뢰 호스트로 선언된 외부 자산은 통과한다', async () => {
             (window as any).G7Config.trustedScriptHosts = ['cdn.trusted.com'];
 

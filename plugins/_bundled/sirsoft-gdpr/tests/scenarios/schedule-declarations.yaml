@@ -1,0 +1,17 @@
+feature: sirsoft-gdpr 스케줄 선언 — 코어 7.2.0 DB 스케줄 등록부 전환
+
+description: |
+  getSchedules() 를 7.2.0 새 형식(name·label/description 다국어·expression·enabled_condition)으로 바꿨다.
+  코어 동기화(ExtensionScheduleSyncHelper)는 검증 위반 항목을 건너뛰므로 선언이 틀리면 설치 뒤 작업이
+  조용히 빠진다. 옛 등록과 실행 시각·조건이 같아야 업데이트한 사이트의 동작이 바뀌지 않는다.
+
+axes:
+  shape: [new_schema]
+
+effects:
+  - declarations_syncable
+  - legacy_timing_and_conditions_preserved
+  - legacy_named_rows_adopted_on_format_upgrade
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/tests/Unit/ScheduleDeclarationTest.php

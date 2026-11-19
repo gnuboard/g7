@@ -52,9 +52,11 @@ class HookCacheRealFileGuardTest extends TestCase
         } else {
             File::put($this->realPath, $this->original);
         }
-        Mockery::close();
-
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**

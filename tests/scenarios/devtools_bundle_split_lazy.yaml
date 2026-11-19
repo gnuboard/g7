@@ -1,0 +1,20 @@
+feature: DevTools 번들 분리 — devtools.min.js 는 디버그 상태일 때만 지연 로드된다 (engine-v1.51.0)
+
+description: |
+  개발자 진단도구(DevTools)는 디버그 모드에서만 쓰이므로 코어 번들에서 분리해 devtools.min.js 로 빌드하고,
+  `initDevToolsAPI()` 가 `isEnabled()` 참일 때만 <script> 주입으로 로드한다. 디버그 판정은 `G7Config.debug`
+  (app.debug) 또는 `settings.advanced.debug_mode` 중 하나라도 참이다.
+
+  spec 은 라이브 서버의 디버그 상태를 강제로 바꾸지 않고, 그 상태를 감지해 해당 불변식만 단언한다 —
+  OFF 면 번들 요청 0건, ON 이면 번들 로드 + 패널(#g7-devtools-root) 마운트. 한 실행이 두 갈래 중 하나만
+  밟으므로 디버그 상태는 축으로 두지 않는다(어느 실행도 두 칸을 함께 덮지 못한다). 축 load_surface 는
+  측정하는 진입 화면(사용자 홈 첫 로드) 하나다.
+
+axes:
+  load_surface: [storefront_home]
+
+effects:
+  - devtools_bundle_lazy_by_debug_state   # 디버그 OFF 면 devtools.min.js 요청이 없고, ON 이면 로드되어 패널이 마운트된다
+
+test_files:
+  - tests/Playwright/specs/layout-editor/devtools-bundle-split.spec.ts

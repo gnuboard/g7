@@ -20,7 +20,8 @@ use Tests\TestCase;
  *
  * @scenario surface=admin_shell, csp=webserver_strict, failure=none
  *
- * @effects shell_html_has_no_inline_executable, shell_config_keys_unchanged
+ * 효과 요약(마커 아님 — 평문): 셸 HTML 에 실행형 인라인 코드가 없음, g7-config 키 집합 불변.
+ * 각 효과는 그것을 재는 메서드 docblock 이 가리킨다.
  */
 class ShellNoInlineScriptTest extends TestCase
 {
@@ -36,6 +37,14 @@ class ShellNoInlineScriptTest extends TestCase
         'customAssetsDisabled', 'activeModules', 'activePlugins', 'trustedScriptHosts', 'stateContracts',
         'appConfig', 'consentInitial', 'coreEditorAsset', 'coreDevToolsAsset', 'cache_version', 'assetUrlMode',
         'searchScopes', 'seoTitle',
+        // 7.2.0 — 다크 방식·확장 CSS 덮기·확장 클래스 접두(#816), 개발자 화면 주소(#792)
+        'colorScheme', 'extensionCssOverrides', 'extensionClassPrefixes', 'customRoutes',
+        // 하위 폴더 배치의 경로 접두사 — 서버 `AssetUrl::basePrefix()` 값(#609)
+        'basePath',
+        // 활성 템플릿 공개 설정 — 엔진 `_global.templateSettings`(#434)
+        'templateSettings',
+        // 템플릿 설정 중 template.json `expose` 선언 키 — 엔진이 첫 화면 전 config API 를 부르지 않는다(#879, 비실행 JSON 블록 안)
+        'templateConfig',
     ];
 
     /**
@@ -46,6 +55,16 @@ class ShellNoInlineScriptTest extends TestCase
         'customAssetsDisabled', 'activeModules', 'activePlugins', 'trustedScriptHosts', 'stateContracts',
         'appConfig', 'coreEditorAsset', 'coreDevToolsAsset', 'cache_version', 'assetUrlMode',
         'seoTitle',
+        // 7.2.0 — 다크 방식·확장 CSS 덮기·확장 클래스 접두(#816), 개발자 화면 주소(#792)
+        'colorScheme', 'extensionCssOverrides', 'extensionClassPrefixes', 'customRoutes',
+        // 하위 폴더 배치의 경로 접두사 — 서버 `AssetUrl::basePrefix()` 값(#609)
+        'basePath',
+        // 활성 템플릿 공개 설정 — 엔진 `_global.templateSettings`(#434)
+        'templateSettings',
+        // 템플릿이 공급하는 설정 화면 번들 주소 — 관리자 셸만 싣는다(#434)
+        'templateSettingsAssets',
+        // 템플릿 설정 중 template.json `expose` 선언 키(#879)
+        'templateConfig',
     ];
 
     /**

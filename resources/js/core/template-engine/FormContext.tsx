@@ -16,7 +16,7 @@
  */
 
 import React, { createContext, useContext } from 'react';
-import type { IsolatedContextValue } from './IsolatedStateContext';
+import type { IsolatedStateContextValue } from './IsolatedStateContext';
 
 /**
  * Form 컨텍스트 값 인터페이스
@@ -71,7 +71,7 @@ export interface FormContextValue {
    * dataKey가 "_isolated."로 시작할 때 사용
    * IsolatedStateProvider 내부에서만 유효
    */
-  isolatedContext?: IsolatedContextValue | null;
+  isolatedContext?: IsolatedStateContextValue | null;
 }
 
 /**

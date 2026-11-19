@@ -15,7 +15,6 @@
  * @since engine-v1.50.0
  */
 
-import React from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { IterationBindingSection } from '../../components/property-controls/IterationBindingSection';
@@ -57,6 +56,10 @@ const candidates: BindingCandidate[] = [
 ];
 
 describe('IterationBindingSection — 게이트', () => {
+  /**
+   * @scenario subject=iteration_binding_section
+   * @effects iteration_binding_section_renders_for_iteration
+   */
   it('iteration 노드면 "반복 데이터 연결" 영역을 렌더한다', () => {
     const node: EditorNode = { name: 'Div', iteration: { source: '', item_var: 'item' } };
     render(<IterationBindingSection node={node} candidates={candidates} t={t} onPatchNode={vi.fn()} />);
@@ -64,6 +67,10 @@ describe('IterationBindingSection — 게이트', () => {
     expect(screen.getByTestId('g7le-iteration-binding-empty')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=iteration_binding_section
+   * @effects iteration_binding_section_null_without_iteration
+   */
   it('iteration 없는 노드면 null(영역 비노출)', () => {
     const node: EditorNode = { name: 'Div', props: {} };
     const { container } = render(
@@ -74,6 +81,10 @@ describe('IterationBindingSection — 게이트', () => {
 });
 
 describe('IterationBindingSection — 연결 round-trip', () => {
+  /**
+   * @scenario subject=iteration_binding_section
+   * @effects iteration_binding_pick_array_sets_source
+   */
   it('검색 → array 후보만 노출(scalar 미노출) → 선택 시 iteration.source 기입 + item_var 보존', () => {
     const node: EditorNode = { name: 'Div', iteration: { source: '', item_var: 'product' } };
     const onPatchNode = vi.fn();
@@ -92,6 +103,10 @@ describe('IterationBindingSection — 연결 round-trip', () => {
     );
   });
 
+  /**
+   * @scenario subject=iteration_binding_section
+   * @effects iteration_binding_clear_removes_source_only
+   */
   it('연결됨 → 표현식 표시 + [해제] → source 키만 제거(iteration 객체 유지)', () => {
     const node: EditorNode = {
       name: 'Div',
@@ -114,6 +129,10 @@ describe('IterationBindingSection — G7 표준 안전 바인딩 인식', () => 
   // 실제 레이아웃의 iteration 소스는 전부 `?.` + `?? []` 표준 형태인데,
   // 이전 파서가 이를 복합식으로 묶어 "코드 편집" 디그레이드 → 검색 피커가 가려져 변경 불가.
   // 이제 안전 바인딩은 연결됨으로 인식하고 검색 피커로 변경 가능해야 한다.
+  /**
+   * @scenario subject=iteration_binding_section
+   * @effects iteration_binding_safe_fallback_expr_is_linked
+   */
   it('`{{products?.data?.data ?? []}}` 는 연결됨으로 인식 + 검색 피커로 변경 가능', () => {
     const node: EditorNode = {
       name: 'Div',
@@ -135,6 +154,10 @@ describe('IterationBindingSection — G7 표준 안전 바인딩 인식', () => 
     );
   });
 
+  /**
+   * @scenario subject=iteration_binding_section
+   * @effects iteration_binding_complex_expr_degrades
+   */
   it('진짜 복합식(삼항·파이프)은 코드 편집 디그레이드 + 검색 피커 미노출', () => {
     const node: EditorNode = {
       name: 'Div',
@@ -147,6 +170,10 @@ describe('IterationBindingSection — G7 표준 안전 바인딩 인식', () => 
 });
 
 describe('IterationBindingSection — 반복 변수 힌트', () => {
+  /**
+   * @scenario subject=iteration_binding_section
+   * @effects iteration_binding_shows_item_index_vars
+   */
   it('item_var/index_var 를 읽기전용 힌트로 표시', () => {
     const node: EditorNode = {
       name: 'Div',

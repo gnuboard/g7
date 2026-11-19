@@ -216,6 +216,42 @@ export class ModuleAssetLoader {
     }
 
     /**
+     * 템플릿이 공급한 설정 화면 부품 묶음을 싣습니다 (#434).
+     *
+     * 템플릿 설정 화면은 그 템플릿 부품으로 그린다 — 어느 관리자 템플릿이 켜져 있든 뜨게, 플러그인 묶음처럼 관리자
+     * 화면을 열 때 싣는다. 묶음은 `registerExtensionComponent('{템플릿id}.이름')` 로 등록하므로 확장 묶음과 같이
+     * 켜진 관리자 템플릿 부품 뒤에 실려야 그 템플릿의 `overrides` 대체본이 지켜진다.
+     *
+     * 템플릿끼리는 함께 받는다. 템플릿 하나가 실패해도 그 템플릿만 경고한다 — 설정 화면 하나 때문에 관리자 화면 전체가
+     * 멈추지 않게.
+     *
+     * @return Promise<void>
+     * @since engine-v1.94.0
+     */
+    async loadTemplateSettingsBundles(): Promise<void> {
+        // 템플릿끼리는 순서가 없다 — 함께 받아 관리자 화면 첫 그리기를 템플릿 수만큼 늦추지 않는다
+        await Promise.all(
+            parseTemplateSettingsBundlesFromConfig().map(async (bundle) => {
+                const key = `template-settings-${cssEscapeId(bundle.identifier)}`;
+
+                try {
+                    await this.loadBundle(key, bundle.js, bundle.css);
+                } catch (error) {
+                    // 설정 묶음은 핸들러를 등록하지 않는다 — 실패 기록을 남기면 「확장 핸들러를 기다리지 않는다」 판정이 켜진다.
+                    // 그 설정 화면만 비므로 자산 실패 안내로 알린다(항목명은 사용자 어휘, 식별자 원문을 내지 않는다).
+                    logger.warn(`Template settings bundle failed to load: ${bundle.identifier}`, error);
+                    this.failedJsAssets.delete(key);
+                    notifyAssetFailure({
+                        id: key,
+                        label: assetText('core.assets.template_settings_screen', '템플릿 설정 화면'),
+                        retry: () => this.loadBundle(key, bundle.js, bundle.css),
+                    });
+                }
+            })
+        );
+    }
+
+    /**
      * 운영자가 덧붙인 사용자 추가 에셋(`custom/`)을 로드합니다.
      *
      * 목록은 서버가 `window.G7Config.customAssets` 로 내려준다 — 활성 확장의 `custom/`
@@ -282,6 +318,51 @@ export class ModuleAssetLoader {
                         await load(legacyUrl ?? asset.url);
                     },
                 });
+            }
+        }
+    }
+
+    /**
+     * 템플릿이 선언한 확장 CSS 덮기 파일을 로드합니다.
+     *
+     * 목록은 서버가 `window.G7Config.extensionCssOverrides` 로 내려준다 — 템플릿
+     * `template.json` 의 `extension_css_overrides` 중 대상 확장이 활성이고 `targetVersion`
+     * 이 맞는 항목만 남긴 결과다(판정은 서버 몫, 버전이 어긋나면 빠져 확장 원본으로 폴백).
+     *
+     * 확장 번들 CSS 뒤, 운영자 추가 자산 앞에 붙여야 한다. 덮기 파일은 확장 CSS 와 같은
+     * 특이도로 쓰이므로 나중에 붙는 것이 이긴다.
+     *
+     * 실패해도 throw 하지 않는다 — 덮기 파일이 없으면 확장 원본 모양이 그대로 남을 뿐이다.
+     *
+     * @return Promise<void>
+     * @since engine-v1.94.0
+     */
+    async loadExtensionCssOverrides(): Promise<void> {
+        const overrides = parseExtensionCssOverridesFromConfig();
+
+        for (const override of overrides) {
+            const elementId = `g7-ext-css-override-${cssEscapeId(override.target)}`;
+
+            if (document.getElementById(elementId)) {
+                continue;
+            }
+
+            try {
+                await loadStylesheetWithRetry(
+                    convertToCurrentMode(override.url),
+                    { id: elementId },
+                    { label: `extension CSS override: ${override.target}` }
+                );
+                logger.log(`Extension CSS override loaded: ${override.target}`);
+            } catch (error) {
+                // 항목명은 사용자 어휘로 — 확장 식별자 원문을 배너에 내지 않는다(AssetFailureNotice 계약). 재시도는 같은 id 로 붙인다.
+                this.surfaceCssFailure(
+                    `override-${override.target}`,
+                    assetText('core.assets.extension_style_overrides', '템플릿 확장 스타일 조정'),
+                    override.url,
+                    error,
+                    elementId
+                );
             }
         }
     }
@@ -473,9 +554,10 @@ export class ModuleAssetLoader {
      * @param label 사용자에게 보일 항목명
      * @param url 실패한 URL
      * @param error 마지막 시도의 에러
+     * @param elementId 재시도 때 지우고 같은 id 로 다시 붙일 `<link>` id(없으면 id 없이 붙인다)
      * @since engine-v1.62.0
      */
-    private surfaceCssFailure(assetKey: string, label: string, url: string, error: unknown): void {
+    private surfaceCssFailure(assetKey: string, label: string, url: string, error: unknown, elementId?: string): void {
         logger.warn(`Failed to load CSS after retries: ${assetKey} (${url})`, error);
         this.failedCssAssets.add(assetKey);
 
@@ -485,7 +567,10 @@ export class ModuleAssetLoader {
             retry: async () => {
                 document.getElementById(`module-css-${assetKey}`)?.remove();
                 document.getElementById(`ext-bundle-css-${assetKey.replace(/^bundle-/, '')}`)?.remove();
-                await loadStylesheetWithRetry(url, {}, { label: `CSS retry: ${assetKey}` });
+                if (elementId) {
+                    document.getElementById(elementId)?.remove();
+                }
+                await loadStylesheetWithRetry(url, elementId ? { id: elementId } : {}, { label: `CSS retry: ${assetKey}` });
                 this.failedCssAssets.delete(assetKey);
             },
         });
@@ -658,6 +743,39 @@ export function parseCustomAssetsFromConfig(): CustomAsset[] {
 }
 
 /**
+ * 템플릿 확장 CSS 덮기 파일 서술자
+ *
+ * 서버(`App\Support\Template\ExtensionCssOverrideResolver`)가 호환 판정을 끝낸 항목이다.
+ *
+ * @since engine-v1.94.0
+ */
+export interface ExtensionCssOverride {
+    /** 덮는 대상 확장 식별자 */
+    target: string;
+    /** 덮기 CSS URL */
+    url: string;
+}
+
+/**
+ * `window.G7Config.extensionCssOverrides` 를 파싱합니다.
+ *
+ * @return ExtensionCssOverride[] 서술자 목록 (없으면 빈 배열)
+ * @since engine-v1.94.0
+ */
+export function parseExtensionCssOverridesFromConfig(): ExtensionCssOverride[] {
+    const raw = (window as any)?.G7Config?.extensionCssOverrides;
+
+    if (!Array.isArray(raw)) {
+        return [];
+    }
+
+    return raw.filter(
+        (item: any): item is ExtensionCssOverride =>
+            item && typeof item.target === 'string' && typeof item.url === 'string'
+    );
+}
+
+/**
  * 서술자 id 를 element id 에 쓸 수 있는 형태로 바꿉니다.
  *
  * 서술자 id 는 `custom:templates:sirsoft-basic:custom.css` 형태라 콜론·점을 포함한다.
@@ -758,6 +876,43 @@ export function parseBundleUrlsFromConfig(): ExtensionBundleUrls | null {
         pluginJs: urls.pluginJs ? convertToCurrentMode(urls.pluginJs) : urls.pluginJs,
         pluginCss: urls.pluginCss ? convertToCurrentMode(urls.pluginCss) : urls.pluginCss,
     } as ExtensionBundleUrls;
+}
+
+/**
+ * 템플릿이 공급한 설정 화면 부품 묶음 서술자 (#434).
+ */
+export interface TemplateSettingsBundle {
+    identifier: string;
+    js?: string | null;
+    css?: string | null;
+}
+
+/**
+ * window.G7Config.templateSettingsAssets 에서 템플릿 설정 화면 부품 묶음 목록을 파싱합니다.
+ *
+ * 관리자 화면에만 서버가 싣는다(사용자 화면은 빈 목록). 설치된 템플릿(꺼진 것 포함) 중 묶음을 빌드해 둔 것이다.
+ *
+ * @returns 템플릿별 묶음 URL 목록
+ * @since engine-v1.94.0
+ */
+export function parseTemplateSettingsBundlesFromConfig(): TemplateSettingsBundle[] {
+    if (typeof window === 'undefined') {
+        return [];
+    }
+
+    const list = (window as any).G7Config?.templateSettingsAssets;
+
+    if (!Array.isArray(list)) {
+        return [];
+    }
+
+    return list
+        .filter((item: any) => typeof item?.identifier === 'string' && item.identifier !== '')
+        .map((item: any) => ({
+            identifier: item.identifier,
+            js: typeof item.js === 'string' ? convertToCurrentMode(item.js) : null,
+            css: typeof item.css === 'string' ? convertToCurrentMode(item.css) : null,
+        }));
 }
 
 /**

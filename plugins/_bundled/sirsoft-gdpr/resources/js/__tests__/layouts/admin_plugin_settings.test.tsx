@@ -14,11 +14,13 @@
  * — 운영자가 끌 수 있는 토글이 없으므로 관리자 설정 화면에 카드/필드가 존재하지 않는다.
  * auto_blocking 동작은 banner_enabled (쿠키 배너 노출) 와 단일 토글로 통합되어 별도 토글 없음.
  *
- * @scenario scope=sessionStorage, notation=exact, locked=locked_item, settings_state=populated, request=valid_item
- * @effects layout_renders_three_scope_cards, layout_uses_static_setstate_key_with_object_spread, layout_extracts_value_from_event_target_value, layout_error_key_prefix_matches_scope, layout_locked_chips_read_response_not_form_state, layout_provided_chips_read_response_not_form_state, layout_card_not_gated_behind_banner_toggle, layout_i18n_keys_exist_in_ko_and_en
+ * 표식(마커 아님, 평문): 화면 구조 시험은 admin-settings-screen-structure.yaml(area 축), 필수 저장 항목 카드 시험은
+ * necessary-storage-allowlist.yaml, 처리방침 주소와 정책 스냅숏 시험은 settings-api.yaml 의 조합과 효과를 시험마다 단다.
  */
 
 import { describe, it, expect } from 'vitest';
+import { dataBindingEngine } from '@core/template-engine/DataBindingEngine';
+import { evaluateIfCondition } from '@core/template-engine/helpers/RenderHelpers';
 import layout from '../../../layouts/admin/plugin_settings.json';
 import publishModal from '../../../layouts/admin/partials/plugin_settings/_policy_version_publish_modal.json';
 import snapshotModal from '../../../layouts/admin/partials/_shared/_policy_version_snapshot_modal.json';
@@ -31,6 +33,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
     const root = layout as unknown as AnyNode;
 
     describe('레이아웃 메타데이터', () => {
+        // @scenario area=shell
+        // @effects settings_layout_meta_and_source_declared
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -39,6 +43,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect((root as { layout_name?: string }).layout_name).toBe('plugin_settings');
         });
 
+        // @scenario area=shell
+        // @effects settings_layout_meta_and_source_declared
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -51,6 +57,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
     describe('데이터 소스', () => {
         const dataSources = (root as { data_sources?: AnyNode[] }).data_sources ?? [];
 
+        // @scenario area=shell
+        // @effects settings_layout_meta_and_source_declared
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -65,6 +73,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
     describe('상단 탭 스크롤 (TabNavigationScroll)', () => {
         const nav = findById(root, 'settings_tab_navigation');
 
+        // @scenario area=shell
+        // @effects settings_tab_scroll_lists_six_cards_with_scroll_spy
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -74,6 +84,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(nav?.name).toBe('TabNavigationScroll');
         });
 
+        // @scenario area=shell
+        // @effects settings_tab_scroll_lists_six_cards_with_scroll_spy
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -91,6 +103,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             ]);
         });
 
+        // @scenario area=shell
+        // @effects settings_tab_scroll_lists_six_cards_with_scroll_spy
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -110,6 +124,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             'card_gdpr_notifications',
         ];
 
+        // @scenario area=shell
+        // @effects settings_six_cards_direct_children_with_uniform_spacing
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -118,6 +134,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(findById(root, cardId)).toBeTruthy();
         });
 
+        // @scenario area=shell
+        // @effects settings_six_cards_direct_children_with_uniform_spacing
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -133,6 +151,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
 
         // 실측 2026-09-21 — 카드마다 겉 여백 규격이 갈려 상하 간격이 들쭉날쭉했다.
         // 겉은 여백만(첫 카드 제외 mt-4), 안쪽 패딩은 본문 컨테이너(p-6)가 갖는다.
+        // @scenario area=shell
+        // @effects settings_six_cards_direct_children_with_uniform_spacing
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -144,6 +164,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             if (cardId !== expectedCards[0]) expect(className).toContain('mt-4');
         });
 
+        // @scenario area=shell
+        // @effects settings_six_cards_direct_children_with_uniform_spacing
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -159,6 +181,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
     });
 
     describe('제거된 카드는 더 이상 존재하지 않는다', () => {
+        // @scenario area=retired
+        // @effects retired_cards_and_fields_absent
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -181,6 +205,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(findById(root, oldCardId)).toBeNull();
         });
 
+        // @scenario area=retired
+        // @effects retired_cards_and_fields_absent
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -193,6 +219,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
     });
 
     describe('card_operator (운영 주체 + 정책 페이지)', () => {
+        // @scenario area=operator
+        // @effects operator_card_lists_entity_location_and_policy_url
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -235,6 +263,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
      * 사용하고 있었다 (참조 패턴).
      */
     describe('필드 2단 배치 컨테이너 — grid-3col-responsive 사용 (section-heading-md 오용 회귀 가드)', () => {
+        // @scenario area=operator, area=cookie_banner
+        // @effects field_rows_use_prefixed_grid_with_engine_responsive
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -246,10 +276,16 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             'field_banner_position',
         ])('%s 컨테이너 className 이 grid-3col-responsive 를 포함한다', (fieldId) => {
             const field = findById(root, fieldId);
+            // 폭 미디어를 품은 의미 클래스 대신 접두 유틸 + 엔진 responsive(1024px 이상 3열)로 쓴다
             const className = String((field?.props as { className?: string } | undefined)?.className ?? '');
-            expect(className).toContain('grid-3col-responsive');
+            const wide = String(((field as { responsive?: Record<string, { props?: { className?: string } }> } | undefined)?.responsive?.['1024-']?.props?.className) ?? '');
+            expect(className.split(/\s+/)).toEqual(expect.arrayContaining(['gdpr:grid', 'gdpr:grid-cols-1', 'gdpr:gap-4', 'gdpr:items-start']));
+            expect(wide.split(/\s+/)).toEqual(expect.arrayContaining(['gdpr:grid', 'gdpr:grid-cols-3', 'gdpr:gap-4', 'gdpr:items-start']));
+            expect(className).not.toContain('grid-3col-responsive');
         });
 
+        // @scenario area=operator, area=cookie_banner
+        // @effects field_rows_use_prefixed_grid_with_engine_responsive
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -271,6 +307,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
      * 표시되던 결함. 정상 카드 제목 색상은 section-heading-md(중립 톤).
      */
     describe('카드 제목 색상 — text-error-strong 오용 회귀 가드', () => {
+        // @scenario area=operator, area=cookie_banner, area=auto_blocking_policy
+        // @effects card_titles_use_neutral_heading_color
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -280,11 +318,13 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             (headerId) => {
                 const header = findById(root, headerId);
                 const json = JSON.stringify(header);
-                expect(json).toContain('"className":"section-heading-md"');
+                expect(json).toContain('"className":"gdpr-section-heading-md"');
                 expect(json).not.toContain('text-error-strong');
             }
         );
 
+        // @scenario area=auto_blocking_policy
+        // @effects card_titles_use_neutral_heading_color
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -304,6 +344,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
          * (mypage_privacy_tab.test.tsx "카드 표시 조건" 참조). 안내 문구를 실제 동작과
          * 불일치시키지 않도록 ko/en 양쪽 hint 를 고정한다.
          */
+        // @scenario area=cookie_banner
+        // @effects banner_toggle_is_single_switch_with_accurate_hint
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -323,6 +365,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(enHint).not.toMatch(/MyPage.*activated together/);
         });
 
+        // @scenario area=cookie_banner
+        // @effects banner_toggle_is_single_switch_with_accurate_hint
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -336,6 +380,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).not.toContain('field_auto_blocking_enabled');
         });
 
+        // @scenario area=cookie_banner
+        // @effects category_cards_are_read_only_info_with_required_badge
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -349,6 +395,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
          * 카테고리 카드는 정보 패널이며 필수 여부는 CookieCategory enum 이 SSoT.
          * 운영자가 카드에서 required 값을 변경하는 위젯/액션은 존재하지 않는다.
          */
+        // @scenario area=cookie_banner
+        // @effects category_cards_are_read_only_info_with_required_badge
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -362,6 +410,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).not.toContain('required: $event.target.checked');
         });
 
+        // @scenario area=cookie_banner
+        // @effects category_cards_are_read_only_info_with_required_badge
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -383,6 +433,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
          * 운영자 admin UI 에서 4번째 카테고리 카드 + 도메인 차단 섹션 노출. legal_basis 축은
          * 운영자 의사결정에 불필요하여 제거됨 (정책 버전 snapshot 에는 보존).
          */
+        // @scenario area=cookie_banner
+        // @effects category_cards_are_read_only_info_with_required_badge
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -403,6 +455,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).toContain('cookie_categories.info.functional.tools');
         });
 
+        // @scenario area=cookie_banner
+        // @effects category_cards_are_read_only_info_with_required_badge
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -422,6 +476,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).not.toContain('cookie_categories.info.legal_basis_label');
         });
 
+        // @scenario area=auto_blocking_policy
+        // @effects blocked_domains_taginput_per_optional_category
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -435,6 +491,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).toContain('"name":"sliders"');
         });
 
+        // @scenario area=cookie_banner
+        // @effects banner_card_sections_follow_operator_flow
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -448,6 +506,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
     });
 
     describe('card_cookie_banner — 섹션 배치 순서 (운영자 의사결정 흐름)', () => {
+        // @scenario area=cookie_banner
+        // @effects banner_card_sections_follow_operator_flow
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -475,6 +535,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
     });
 
     describe('card_auto_blocking_policy — 자동 차단 정책 별도 카드', () => {
+        // @scenario area=auto_blocking_policy
+        // @effects blocked_domains_gated_by_banner_toggle_with_off_hint
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -497,6 +559,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
     });
 
     describe('card_auto_blocking_policy — F-02 추적 도메인 차단 섹션', () => {
+        // @scenario area=auto_blocking_policy
+        // @effects blocked_domains_gated_by_banner_toggle_with_off_hint
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -509,6 +573,28 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
         });
 
         /**
+         * 설정을 받은 직후, 받은 값이 폼(initLocal)에 들어오기 전 한 박자에도 쿠키 배너를 켠 사이트에는 「OFF 안내」가
+         * 보이지 않는다. 종전 조건은 그 박자에 `!undefined` 로 참이 되어 안내가 번쩍였다(받는 중 결함군).
+         *
+         * @scenario surface=admin_show
+         * @effects blocked_domains_off_hint_not_flashed_before_form_filled
+         */
+        it('쿠키 배너 OFF 안내는 폼 채우기 전 한 박자에도 받은 설정 값으로 판단한다', () => {
+            const offHint = findById(root, 'blocked_domains_off_hint');
+            const shows = (gdprSettings: unknown, form: unknown): boolean => {
+                const ctx: any = { gdprSettings, _local: form === undefined ? {} : { form }, _global: {}, _computed: {}, query: {}, route: {} };
+                return evaluateIfCondition(offHint?.if as string, ctx, dataBindingEngine);
+            };
+            expect(shows(undefined, undefined)).toBe(false);
+            expect(shows({ data: { settings: { banner_enabled: true } } }, undefined)).toBe(false);
+            expect(shows({ data: { settings: { banner_enabled: false } } }, undefined)).toBe(true);
+            expect(shows({ data: { settings: { banner_enabled: true } } }, { banner_enabled: false })).toBe(true);
+            expect(shows({ data: { settings: { banner_enabled: false } } }, { banner_enabled: true })).toBe(false);
+        });
+
+        // @scenario area=auto_blocking_policy
+        // @effects blocked_domains_gated_by_banner_toggle_with_off_hint
+        /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
          */
@@ -516,7 +602,7 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             const offHint = findById(root, 'blocked_domains_off_hint');
             expect(offHint).toBeTruthy();
             // 단일 토글 통합 — banner_enabled OFF (= !banner_enabled) 일 때 안내 표시
-            expect(offHint?.if).toBe('{{gdprSettings !== undefined && !_local.form?.banner_enabled}}');
+            expect(offHint?.if).toBe('{{gdprSettings !== undefined && !(_local.form?.banner_enabled ?? gdprSettings?.data?.settings?.banner_enabled)}}');
             const serialized = JSON.stringify(offHint);
             // 안내 텍스트
             expect(serialized).toContain('blocked_domains.auto_blocking_off_hint');
@@ -535,6 +621,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(findById(root, 'blocked_domains_body')).toBeNull();
         });
 
+        // @scenario area=auto_blocking_policy
+        // @effects blocked_domains_guidance_box_three_items_info_tone
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -574,6 +662,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).toContain('circle-info');
         });
 
+        // @scenario area=auto_blocking_policy
+        // @effects blocked_domains_gated_by_banner_toggle_with_off_hint
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -591,6 +681,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).not.toContain('use_default_catalog');
         });
 
+        // @scenario area=auto_blocking_policy
+        // @effects blocked_domains_taginput_per_optional_category
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -604,6 +696,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(wrapper?.iteration?.item_var).toBe('category');
         });
 
+        // @scenario area=auto_blocking_policy
+        // @effects blocked_domains_taginput_per_optional_category
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -621,6 +715,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).toContain('default_blocked_domains_preview');
         });
 
+        // @scenario area=auto_blocking_policy
+        // @effects blocked_domains_taginput_per_optional_category
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -640,6 +736,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).toContain('$event?.target?.value');
         });
 
+        // @scenario area=auto_blocking_policy
+        // @effects blocked_domains_taginput_per_optional_category
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -655,6 +753,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).toContain('default_blocked_domains_preview');
         });
 
+        // @scenario area=auto_blocking_policy
+        // @effects blocked_domains_guidance_box_three_items_info_tone
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -672,6 +772,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).not.toContain('whitespace-pre-line');
         });
 
+        // @scenario area=auto_blocking_policy
+        // @effects blocked_domain_validation_error_marks_category_card
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -686,11 +788,13 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             // 카드 내부 에러 Span — Object.entries + find 로 첫 매칭 키의 첫 메시지 추출
             expect(serialized).toContain("Object.entries(_local.errors ?? {}).find(([k]) => k.startsWith('blocked_domains.' + category.key + '.'))");
             // 에러 Span 시각 시맨틱 (form-error) — 텍스트 톤 + 줄바꿈을 한 결로 통일 (#399)
-            expect(serialized).toContain('"form-error"');
+            expect(serialized).toContain('"gdpr-form-error"');
             // 단, 정적 setState 키 (form.blocked_domains) 는 그대로 유지 (회귀 차단)
             expect(serialized).toContain('"form.blocked_domains"');
         });
 
+        // @scenario area=shell
+        // @effects settings_save_error_toast_shows_first_validation_message
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -706,6 +810,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).toContain('"errors"');
         });
 
+        // @scenario area=operator
+        // @effects operator_fields_show_validation_error_under_field
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -718,16 +824,18 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             const wrapper = findById(root, fieldId);
             expect(wrapper).not.toBeNull();
             const serialized = JSON.stringify(wrapper);
-            // Input className 동적 변경 — 대괄호 표기법으로 errors 키 접근 (코어 _tab_general 패턴)
+            // 필드 오류 키 접근(대괄호 표기) — 아래 오류 Span 의 if·text 바인딩에 있다
             expect(serialized).toContain(`_local.errors?.['${formField}']`);
             // 에러 시 시맨틱 input-error 로 통일 (#399 시맨틱 통일 — 옛 border-red-500/focus:ring-red-500 원시 클래스 대체)
             expect(serialized).toContain('input-error');
             // 필드 아래 에러 Span — if 가드 + 첫 메시지 text (코어 단순 패턴)
             expect(serialized).toContain(`_local.errors?.['${formField}']?.[0]`);
             // 에러 Span 시각 시맨틱 (form-error) — 텍스트 톤 + 줄바꿈을 한 결로 통일 (#399)
-            expect(serialized).toContain('"form-error"');
+            expect(serialized).toContain('"gdpr-form-error"');
         });
 
+        // @scenario area=policy_version
+        // @effects policy_version_read_only_card_with_inline_history
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -755,6 +863,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).not.toContain('sirsoft-gdpr.settings.policy_version.history_button');
         });
 
+        // @scenario area=policy_version
+        // @effects policy_version_read_only_card_with_inline_history
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -787,6 +897,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
          * 두 위치를 모두 인식하는 fallback을 갖고 있어 동작 자체는 정상이었지만, 정석
          * 위치(actions가 액션 객체의 top-level)로 바로잡는다.
          */
+        // @scenario area=policy_version
+        // @effects policy_version_read_only_card_with_inline_history
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -800,6 +912,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(json).not.toMatch(/"handler":"sequence","params":\{"actions":\[/);
         });
 
+        // @scenario area=policy_version
+        // @effects policy_version_read_only_card_with_inline_history
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -808,6 +922,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(findById(root, 'policy_version_history_table')).toBeTruthy();
         });
 
+        // @scenario area=policy_version
+        // @effects policy_version_manual_publish_modal_stays_open_until_success
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -821,6 +937,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
         describe('정책 버전 발행 모달 (_policy_version_publish_modal.json) — 진행 상태 UX', () => {
             const modalText = JSON.stringify(publishModal);
 
+            // @scenario area=policy_version
+            // @effects policy_version_manual_publish_modal_stays_open_until_success
             /**
              * @scenario surface=admin_show
              * @effects admin_settings_layout_contract
@@ -839,6 +957,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
                 expect(modalText).toContain('"disabled":"{{_local.isPublishing}}"');
             });
 
+            // @scenario area=policy_version
+            // @effects policy_version_manual_publish_modal_stays_open_until_success
             /**
              * @scenario surface=admin_show
              * @effects admin_settings_layout_contract
@@ -856,6 +976,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             });
         });
 
+        // @scenario area=policy_version
+        // @effects policy_version_guide_is_inline_hint
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -886,6 +1008,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).not.toContain('guide_no_publish_');
         });
 
+        // @scenario area=policy_version
+        // @effects policy_version_guide_is_inline_hint
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -899,6 +1023,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(Object.keys(params ?? {})).not.toContain('policyGuideOpen');
         });
 
+        // @scenario area=policy_version
+        // @effects settings_save_does_not_publish_policy_version
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -914,6 +1040,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(serialized).toContain('sirsoft-gdpr.settings.save_success');
         });
 
+        // @scenario area=policy_version
+        // @effects policy_version_read_only_card_with_inline_history
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -931,6 +1059,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
     });
 
     describe('마이페이지 동의 관리 카드 제거 (GDPR Art.7(3) 대칭성 의무)', () => {
+        // @scenario area=retired
+        // @effects retired_cards_and_fields_absent
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -950,6 +1080,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
          */
         const layoutJson = JSON.stringify(root);
 
+        // @scenario area=retired
+        // @effects retired_cards_and_fields_absent
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -968,6 +1100,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
          */
         const layoutJson = JSON.stringify(root);
 
+        // @scenario area=cookie_banner
+        // @effects category_labels_follow_current_locale
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -980,6 +1114,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(layoutJson).not.toMatch(/category\?\.description\?\.en/);
         });
 
+        // @scenario area=cookie_banner
+        // @effects category_labels_follow_current_locale
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -995,6 +1131,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(descMatches.length, '카테고리 설명에 $localized() 헬퍼가 2회 이상 사용됨').toBeGreaterThanOrEqual(2);
         });
 
+        // @scenario area=cookie_banner
+        // @effects category_labels_follow_current_locale
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -1006,6 +1144,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
     });
 
     describe('제거된 DPO / 제3자 필드는 노출되지 않는다', () => {
+        // @scenario area=retired
+        // @effects retired_cards_and_fields_absent
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -1037,6 +1177,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
     describe('작업 2: 정책 버전 snapshot 조회', () => {
         const layoutJson = JSON.stringify(layout);
 
+        // @scenario area=policy_version
+        // @effects policy_version_snapshot_view_entry
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -1046,6 +1188,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(layoutJson).toContain('/api/plugins/sirsoft-gdpr/admin/policy-versions/{{_global.viewingPolicyVersion}}');
         });
 
+        // @scenario area=policy_version
+        // @effects policy_version_snapshot_view_entry
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -1054,6 +1198,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(layoutJson).toContain('partials/_shared/_policy_version_snapshot_modal.json');
         });
 
+        // @scenario area=policy_version
+        // @effects policy_version_snapshot_view_entry
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -1068,6 +1214,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(layoutJson).toContain('snapshot_view_short');
         });
 
+        // @scenario area=policy_version
+        // @effects policy_version_snapshot_view_entry
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -1079,6 +1227,8 @@ describe('admin/plugin_settings.json — 6 카드 (operator / cookie_banner / au
             expect(layoutJson).toContain('"viewingPolicyVersion":"{{row?.version}}"');
         });
 
+        // @scenario area=policy_version
+        // @effects policy_version_guide_is_inline_hint
         /**
          * @scenario surface=admin_show
          * @effects admin_settings_layout_contract
@@ -1118,6 +1268,7 @@ describe('admin/plugin_settings.json — card_necessary_storage (필수 저장 �
     const root = layout as unknown as AnyNode;
     const SCOPES = ['localStorage', 'sessionStorage', 'cookie'] as const;
 
+    /** @effects layout_necessary_storage_card_with_guidance_box */
     /**
      * @scenario surface=admin_show
      * @effects admin_settings_layout_contract
@@ -1127,6 +1278,8 @@ describe('admin/plugin_settings.json — card_necessary_storage (필수 저장 �
         expect(findById(root, 'necessary_storage_warnings_box')).toBeTruthy();
     });
 
+    // @scenario scope=localStorage, scope=sessionStorage, scope=cookie
+    // @effects layout_renders_three_scope_cards
     /**
      * @scenario surface=admin_show
      * @effects admin_settings_layout_contract
@@ -1138,6 +1291,8 @@ describe('admin/plugin_settings.json — card_necessary_storage (필수 저장 �
         expect(ids).toEqual(SCOPES.map((s) => `necessary_storage_card_${s}`));
     });
 
+    // @scenario scope=localStorage, scope=sessionStorage, scope=cookie
+    // @effects layout_taginput_reads_scope_value_and_catalog_suggestions
     /**
      * @scenario surface=admin_show
      * @effects admin_settings_layout_contract
@@ -1154,6 +1309,8 @@ describe('admin/plugin_settings.json — card_necessary_storage (필수 저장 �
         expect(serialized).toContain(`default_necessary_allowlist_preview?.${scope}`);
     });
 
+    // @scenario scope=localStorage, scope=sessionStorage, scope=cookie
+    // @effects layout_uses_static_setstate_key_with_object_spread, layout_extracts_value_from_event_target_value
     /**
      * @scenario surface=admin_show
      * @effects admin_settings_layout_contract
@@ -1172,6 +1329,8 @@ describe('admin/plugin_settings.json — card_necessary_storage (필수 저장 �
         expect(serialized).toContain('"hasChanges":true');
     });
 
+    // @scenario scope=localStorage, scope=sessionStorage, scope=cookie, request=invalid_format
+    // @effects layout_error_key_prefix_matches_scope
     /**
      * @scenario surface=admin_show
      * @effects admin_settings_layout_contract
@@ -1187,9 +1346,11 @@ describe('admin/plugin_settings.json — card_necessary_storage (필수 저장 �
             `Object.entries(_local.errors ?? {}).find(([k]) => k.startsWith('necessary_storage_allowlist.${scope}.'))`,
         );
         expect(serialized).toContain('border-red-500');
-        expect(serialized).toContain('"form-error"');
+        expect(serialized).toContain('"gdpr-form-error"');
     });
 
+    // @scenario scope=localStorage, scope=sessionStorage, scope=cookie, locked=locked_item
+    // @effects layout_locked_chips_read_response_not_form_state
     /**
      * @scenario surface=admin_show
      * @effects admin_settings_layout_contract
@@ -1209,6 +1370,7 @@ describe('admin/plugin_settings.json — card_necessary_storage (필수 저장 �
         expect(serialized).toContain('opacity-70');
     });
 
+    // @scenario scope=localStorage, scope=sessionStorage, scope=cookie
     /** @effects layout_provided_chips_read_response_not_form_state */
     it.each(SCOPES)('%s 카드의 확장 제공 칩 행이 응답의 제공 집합을 읽고 편집 값에는 넣지 않는다', (scope) => {
         const providedRow = findById(root, `necessary_storage_provided_${scope}`);
@@ -1225,6 +1387,7 @@ describe('admin/plugin_settings.json — card_necessary_storage (필수 저장 �
         expect(serialized).toContain('necessary_storage_allowlist.provided_hint');
     });
 
+    /** @effects layout_card_not_gated_behind_banner_toggle */
     /**
      * @scenario surface=admin_show
      * @effects admin_settings_layout_contract
@@ -1236,6 +1399,7 @@ describe('admin/plugin_settings.json — card_necessary_storage (필수 저장 �
         expect(serialized).not.toContain('banner_enabled');
     });
 
+    /** @effects layout_i18n_keys_exist_in_ko_and_en */
     /**
      * @scenario surface=admin_show
      * @effects admin_settings_layout_contract
@@ -1262,6 +1426,7 @@ describe('admin/plugin_settings.json — card_necessary_storage (필수 저장 �
         expect(missing).toEqual([]);
     });
 
+    /** @effects layout_i18n_keys_exist_in_ko_and_en */
     /**
      * @scenario surface=admin_show
      * @effects admin_settings_layout_contract
@@ -1283,12 +1448,14 @@ describe('admin/plugin_settings.json — card_necessary_storage (필수 저장 �
  * 읽어 `privacy_policy.url`(옛 슬러그 스냅샷은 그 시절 링크 경로로 푼 값)과 `legacy_slug` 를 내보낸다.
  * 화면은 그 주소를 그대로 href 로 쓰고 경로를 조합하지 않는다.
  *
- * @scenario surface=policy_snapshot
- * @effects snapshot_modal_links_resolved_privacy_policy_url, snapshot_modal_labels_legacy_slug_snapshot
+ * 조합 요약(마커 아님, 평문): surface=policy_snapshot. 효과 snapshot_modal_links_resolved_privacy_policy_url,
+ * snapshot_modal_labels_legacy_slug_snapshot 은 아래 각 시험이 단다.
  */
 describe('admin/partials/_shared/_policy_version_snapshot_modal.json — 처리방침 링크', () => {
     const layoutJson = JSON.stringify(snapshotModal);
 
+    // @scenario surface=policy_snapshot
+    // @effects snapshot_modal_links_resolved_privacy_policy_url
     /**
      * @scenario surface=admin_show
      * @effects admin_settings_layout_contract
@@ -1299,6 +1466,8 @@ describe('admin/partials/_shared/_policy_version_snapshot_modal.json — 처리�
         expect(layoutJson).not.toContain('snapshot?.privacy_policy_slug');
     });
 
+    // @scenario surface=policy_snapshot
+    // @effects snapshot_modal_labels_legacy_slug_snapshot
     /**
      * @scenario surface=admin_show
      * @effects admin_settings_layout_contract
@@ -1316,6 +1485,8 @@ describe('admin/partials/_shared/_policy_version_snapshot_modal.json — 처리�
         }
     });
 
+    // @scenario surface=policy_snapshot
+    // @effects snapshot_modal_links_resolved_privacy_policy_url
     /**
      * @scenario surface=admin_show
      * @effects admin_settings_layout_contract

@@ -191,19 +191,6 @@ export const DataSourcesTab: React.FC<DataSourcesTabProps> = ({ devTools }) => {
                             </div>
                         )}
 
-                        {/* 의존성 */}
-                        {selectedDataSource.dependencies && selectedDataSource.dependencies.length > 0 && (
-                            <div>
-                                <span className="g7dt-text-gray">의존성:</span>
-                                <div className="g7dt-flex g7dt-flex-wrap g7dt-gap-1 g7dt-mt-1">
-                                    {selectedDataSource.dependencies.map((dep: string) => (
-                                        <span key={dep} className="g7dt-dep-tag">
-                                            {dep}
-                                        </span>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
                     </div>
                 </div>
             )}

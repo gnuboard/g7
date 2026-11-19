@@ -214,6 +214,8 @@ return [
             ],
             'confirm_question' => '本当に削除してもよろしいですか?',
             'aborted' => 'プラグイン削除がキャンセルされました。',
+            'confirm_unavailable' => '確認の質問に答えられない実行（端末なし、または --no-interaction）のため、プラグイン ":plugin" を削除しませんでした。',
+            'confirm_unavailable_hint' => 'cron、CI、リモートコマンドのように確認なしで削除する必要がある場合は、--force オプションを付けて再実行してください。例: php artisan plugin:uninstall :plugin --force',
             'not_installed' => 'プラグイン ":plugin" はインストールされていません。',
             'custom_preserved' => '運営者ファイル(:directory)を:archiveに保管しました。',
             'delete_data_warning' => '--delete-data: マイグレーションのロールバックと環境設定ファイルの削除も行われます。',
@@ -250,6 +252,8 @@ return [
             'update_source' => 'アップデートソース: :source',
             'confirm_question' => 'アップデートを実行しますか?',
             'aborted' => 'アップデートがキャンセルされました。',
+            'confirm_unavailable' => '確認の質問に答えられない実行（端末なし、または --no-interaction）のため、プラグイン ":plugin" のアップデートを開始しませんでした。(プラグインは変更されていません)',
+            'confirm_unavailable_hint' => 'cron、CI、リモートコマンドのように確認なしで進める必要がある場合は、--force オプションを付けて再実行してください。--force はバージョン比較も省略し、同じバージョンも再適用します。例: php artisan plugin:update :plugin --force',
             'backup_restored' => 'バックアップから前のバージョンが復元されました。',
             'force_mode' => '強制アップデートモード: バージョン比較をスキップして再インストールします。',
             'layout_strategy' => 'レイアウト戦略: :strategy',
@@ -329,4 +333,5 @@ return [
         'updated' => 'プラグイン設定が正常にアップデートされました。',
     ],
     'dependency_version_unmet' => '依存する「:dependency」のインストール済みバージョン(:installed)が要求バージョン(:required)を満たしていません。先に依存する拡張を更新してください。',
+    'refresh_layouts_preview_success' => 'レイアウト更新プレビューを作成しました。',
 ];

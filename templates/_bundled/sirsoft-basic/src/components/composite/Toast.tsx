@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';
 import { Button } from '../basic/Button';
@@ -31,6 +31,11 @@ export interface ToastItem {
   icon?: string;
   /** 개별 토스트 자동 닫힘 시간 (ms) */
   duration?: number;
+  /**
+   * 항목을 만든 시각 (epoch ms, 엔진 toast 핸들러가 넣는다).
+   * 있으면 자동 닫힘 시간을 이 시각부터 센다 — 화면이 바뀌어 Toast 가 새로 마운트돼도 같은 항목은 같은 시각에 닫힌다.
+   */
+  createdAt?: number;
 }
 
 export interface ToastProps {
@@ -82,6 +87,80 @@ const positionClassMap: Record<ToastPosition, string> = {
   'bottom-right': 'bottom-4 right-4',
 };
 
+/** 숨김 애니메이션 길이 (ms) — 이 시간 뒤 전역 상태에서 항목을 뺀다 */
+const HIDE_ANIMATION_MS = 300;
+
+/**
+ * 알림을 닫은 뒤 포커스를 돌릴 본문 시작점 — 두 기반 레이아웃은 본문 칸을 `#main_content` 로 그린다.
+ * 앞의 표지(main, role=main)가 있으면 그것이 먼저다.
+ */
+const FOCUS_LANDMARK_SELECTORS = ['main', '[role="main"]', '#main_content', 'h1'];
+
+/** 알림 뿌리 요소 표지 — 포커스가 알림 안에 있는지 가를 때 쓴다 */
+const TOAST_ROOT_ATTR = 'data-g7-toast-id';
+
+/**
+ * 요소가 지금 포커스를 받을 수 있는 자리에 있는가 — 문서에 붙어 있고, 잠기지 않았고, 숨김이나 비활성 조상 아래가 아니다.
+ *
+ * @param el 검사할 요소
+ * @returns 받을 수 있으면 true
+ */
+const canReceiveFocus = (el: HTMLElement | null | undefined): el is HTMLElement => {
+  if (!el || !el.isConnected || (el as HTMLButtonElement).disabled) return false;
+  if (el.closest(`[${TOAST_ROOT_ATTR}]`)) return false;
+  for (let node: HTMLElement | null = el; node; node = node.parentElement) {
+    if (node.hidden || node.hasAttribute('inert') || node.getAttribute('aria-hidden') === 'true') return false;
+    const style = window.getComputedStyle(node);
+    if (style.display === 'none' || style.visibility === 'hidden') return false;
+  }
+  return true;
+};
+
+/**
+ * 알림을 닫은 뒤 포커스를 돌린다 — 알림 직전 요소가 쓸 수 있으면 그리로, 아니면 본문 시작점으로(#869 키보드 접근).
+ * 본문 시작점이 원래 포커스를 받지 않는 요소면 `tabIndex=-1` 을 잠시 주고, 포커스가 떠나면 거둔다.
+ *
+ * @param previous 알림이 뜨기 직전에 포커스가 있던 요소
+ */
+const returnFocusAfterToast = (previous: HTMLElement | undefined): void => {
+  if (canReceiveFocus(previous)) {
+    previous.focus();
+    return;
+  }
+  for (const selector of FOCUS_LANDMARK_SELECTORS) {
+    const landmark = document.querySelector<HTMLElement>(selector);
+    if (!landmark || !canReceiveFocus(landmark)) continue;
+    if (landmark.tabIndex < 0 && !landmark.hasAttribute('tabindex')) {
+      landmark.setAttribute('tabindex', '-1');
+      landmark.addEventListener('blur', () => landmark.removeAttribute('tabindex'), { once: true });
+    }
+    landmark.focus();
+    return;
+  }
+};
+
+
+/**
+ * 항목이 숨기 시작할 시각을 구한다.
+ *
+ * 만든 시각(`createdAt`)이 있으면 그 시각부터 센다. 로그인 화면처럼 베이스 레이아웃이 다른 화면으로 넘어가면 Toast 가
+ * 새로 마운트되는데, 그때마다 처음부터 다시 세면 같은 알림이 정해진 시간보다 오래 남거나 앞 화면 타이머에 갑자기 지워지고,
+ * 이미 다 보인 알림이 늦게 그려진 화면에서 다시 나타난다. 만든 시각이 없으면 이 Toast 가 처음 받은 시각부터 센다.
+ *
+ * @param toast 토스트 항목
+ * @param defaultDuration Toast 의 기본 자동 닫힘 시간 (ms)
+ * @param fallbackStart 만든 시각이 없을 때 기준 시각 (ms)
+ * @returns 숨기 시작할 시각 (ms), 자동으로 닫지 않으면 Infinity
+ */
+const getHideAt = (toast: ToastItem, defaultDuration: number, fallbackStart: number): number => {
+  const effectiveDuration = toast.duration || defaultDuration;
+  if (!(effectiveDuration > 0)) return Infinity;
+  const start = typeof toast.createdAt === 'number' && Number.isFinite(toast.createdAt)
+    ? toast.createdAt
+    : fallbackStart;
+  return start + effectiveDuration;
+};
+
 /**
  * Toast 컴포넌트
  *
@@ -128,9 +207,50 @@ export const Toast: React.FC<ToastProps> = ({
 }) => {
   // 내부적으로 표시할 토스트 상태 관리 (애니메이션용)
   const [visibleToasts, setVisibleToasts] = useState<Map<string | number, boolean>>(new Map());
+  // 이 Toast 가 맡은 항목의 숨김 시각과 타이머 — 언마운트 때 타이머를 모두 거둔다
+  const trackedRef = useRef<Map<string | number, { hideAt: number; timer: ReturnType<typeof setTimeout> | null }>>(new Map());
+  // 숨기기를 시작했거나(닫기·시간 만료) 표시 시간이 이미 지나 상태에서 빼기를 요청한 항목
+  const removedRef = useRef<Set<string | number>>(new Set());
+  // 알림마다 뜨기 직전에 포커스가 있던 요소와 그 알림의 뿌리 요소 — 닫을 때 포커스를 돌린다(#869 키보드 접근)
+  const previousFocusRef = useRef<Map<string | number, HTMLElement>>(new Map());
+  const itemRootsRef = useRef<Map<string | number, HTMLElement | null>>(new Map());
 
-  // 토스트 제거 핸들러
+  // 전역 상태에서 항목 제거
+  const removeFromState = useCallback((id: string | number) => {
+    if (onRemove) {
+      onRemove(id);
+      return;
+    }
+    // onRemove가 없으면 G7Core.state.update를 통해 전역 상태 업데이트
+    const G7Core = (window as any).G7Core;
+    if (G7Core?.state?.update) {
+      G7Core.state.update((prevState: Record<string, any>) => {
+        const currentToasts = Array.isArray(prevState.toasts) ? prevState.toasts : [];
+        return {
+          toasts: currentToasts.filter((t: ToastItem) => t.id !== id),
+        };
+      });
+    }
+  }, [onRemove]);
+
+  // 토스트 제거 핸들러 (닫기 버튼·자동 닫힘 공용, 항목마다 한 번)
   const handleRemove = useCallback((id: string | number) => {
+    const tracked = trackedRef.current.get(id);
+    if (tracked?.timer) {
+      clearTimeout(tracked.timer);
+      tracked.timer = null;
+    }
+    if (removedRef.current.has(id)) return;
+    removedRef.current.add(id);
+
+    // 닫는 순간 포커스가 이 알림 안에 있을 때만 돌린다 — 사용자가 이미 다른 곳으로 옮겼으면 그대로 둔다
+    const root = itemRootsRef.current.get(id);
+    const active = typeof document !== 'undefined' ? (document.activeElement as HTMLElement | null) : null;
+    if (root && active && root.contains(active)) {
+      returnFocusAfterToast(previousFocusRef.current.get(id));
+    }
+    previousFocusRef.current.delete(id);
+
     // 먼저 숨김 애니메이션 시작
     setVisibleToasts(prev => {
       const next = new Map(prev);
@@ -139,51 +259,91 @@ export const Toast: React.FC<ToastProps> = ({
     });
 
     // 애니메이션 후 실제 제거
-    setTimeout(() => {
-      if (onRemove) {
-        onRemove(id);
-      } else {
-        // onRemove가 없으면 G7Core.state.update를 통해 전역 상태 업데이트
-        const G7Core = (window as any).G7Core;
-        if (G7Core?.state?.update) {
-          G7Core.state.update((prevState: Record<string, any>) => {
-            const currentToasts = Array.isArray(prevState.toasts) ? prevState.toasts : [];
-            return {
-              toasts: currentToasts.filter((t: ToastItem) => t.id !== id),
-            };
-          });
-        }
-      }
-    }, 300);
-  }, [onRemove]);
+    setTimeout(() => removeFromState(id), HIDE_ANIMATION_MS);
+  }, [removeFromState]);
 
-  // 새 토스트가 추가되면 visible 상태 설정 및 자동 제거 타이머 설정
+  // 새 토스트가 들어오면 visible 상태와 남은 시간만큼의 자동 제거 타이머를 설정한다
   useEffect(() => {
-    if (!toasts || toasts.length === 0) return;
+    const list = toasts ?? [];
+    const present = new Set(list.map(t => t.id));
 
-    toasts.forEach(toast => {
+    // 상태에서 빠진 항목은 추적을 끝낸다
+    trackedRef.current.forEach((entry, id) => {
+      if (present.has(id)) return;
+      if (entry.timer) clearTimeout(entry.timer);
+      trackedRef.current.delete(id);
+      previousFocusRef.current.delete(id);
+      itemRootsRef.current.delete(id);
+    });
+    removedRef.current.forEach(id => {
+      if (!present.has(id)) removedRef.current.delete(id);
+    });
+
+    const now = Date.now();
+    const shown: Array<string | number> = [];
+    const expired: Array<string | number> = [];
+
+    list.forEach(toast => {
       // 이미 처리된 토스트는 건너뜀
-      if (visibleToasts.has(toast.id)) return;
+      if (trackedRef.current.has(toast.id) || removedRef.current.has(toast.id)) return;
 
+      const hideAt = getHideAt(toast, duration, now);
+      if (hideAt <= now) {
+        // 표시 시간이 이미 지났다(앞 화면에서 다 보였다) — 다시 그리지 않고 정리한다
+        expired.push(toast.id);
+        return;
+      }
+
+      const timer = Number.isFinite(hideAt)
+        ? setTimeout(() => handleRemove(toast.id), hideAt - now)
+        : null;
+      trackedRef.current.set(toast.id, { hideAt, timer });
+      shown.push(toast.id);
+
+      // 뜨기 직전 포커스를 기억한다 — 다른 알림 안에 있었으면 그 알림이 기억한 자리를 이어받는다
+      const active = document.activeElement as HTMLElement | null;
+      const inToast = active?.closest(`[${TOAST_ROOT_ATTR}]`)?.getAttribute(TOAST_ROOT_ATTR);
+      const previous = inToast !== undefined && inToast !== null
+        ? [...previousFocusRef.current.entries()].find(([key]) => String(key) === inToast)?.[1]
+        : active && active !== document.body ? active : undefined;
+      if (previous) previousFocusRef.current.set(toast.id, previous);
+    });
+
+    if (shown.length > 0) {
       // visible 상태 추가
       setVisibleToasts(prev => {
         const next = new Map(prev);
-        next.set(toast.id, true);
+        shown.forEach(id => next.set(id, true));
         return next;
       });
+    }
 
-      // 자동 제거 타이머 설정
-      const effectiveDuration = toast.duration || duration;
-      if (effectiveDuration > 0) {
-        setTimeout(() => {
-          handleRemove(toast.id);
-        }, effectiveDuration);
-      }
+    expired.forEach(id => {
+      removedRef.current.add(id);
+      removeFromState(id);
     });
-  }, [toasts, duration, handleRemove, visibleToasts]);
+  }, [toasts, duration, handleRemove, removeFromState]);
+
+  // 언마운트 때 타이머를 거둔다 — 다음 화면의 Toast 가 같은 항목을 남은 시간만큼 이어 맡는다
+  useEffect(() => {
+    const tracked = trackedRef.current;
+    return () => {
+      tracked.forEach(entry => {
+        if (entry.timer) clearTimeout(entry.timer);
+      });
+      tracked.clear();
+    };
+  }, []);
+
+  // 맡은 항목과, 아직 표시 시간이 남은 새 항목만 그린다 (이미 지난 항목은 위 효과가 정리한다)
+  const renderNow = Date.now();
+  const renderable = (toasts ?? []).filter(toast =>
+    trackedRef.current.has(toast.id)
+    || (!removedRef.current.has(toast.id) && getHideAt(toast, duration, renderNow) > renderNow)
+  );
 
   // 토스트가 없으면 렌더링하지 않음
-  if (!toasts || toasts.length === 0) {
+  if (renderable.length === 0) {
     return null;
   }
 
@@ -195,13 +355,16 @@ export const Toast: React.FC<ToastProps> = ({
       aria-live="polite"
       aria-atomic="true"
     >
-      {toasts.map((toast) => (
+      {renderable.map((toast) => (
         <ToastItemComponent
           key={toast.id}
           toast={toast}
           position={position}
           isVisible={visibleToasts.get(toast.id) ?? true}
           onClose={() => handleRemove(toast.id)}
+          rootRef={(el: HTMLElement | null) => {
+            itemRootsRef.current.set(toast.id, el);
+          }}
         />
       ))}
     </Div>
@@ -213,9 +376,11 @@ interface ToastItemComponentProps {
   position: ToastPosition;
   isVisible: boolean;
   onClose: () => void;
+  /** 알림 뿌리 요소를 받는 자리 — 포커스가 이 알림 안에 있는지 가른다 */
+  rootRef?: (el: HTMLElement | null) => void;
 }
 
-const ToastItemComponent: React.FC<ToastItemComponentProps> = ({ toast, position, isVisible, onClose }) => {
+const ToastItemComponent: React.FC<ToastItemComponentProps> = ({ toast, position, isVisible, onClose, rootRef }) => {
   const typeStyle = typeStyleMap[toast.type] || typeStyleMap.info;
 
   // 아이콘 결정: 커스텀 아이콘 > 타입별 기본 아이콘
@@ -236,6 +401,8 @@ const ToastItemComponent: React.FC<ToastItemComponentProps> = ({ toast, position
         ${isVisible ? 'opacity-100 translate-y-0' : `opacity-0 ${hideTranslate}`}
       `}
       role="alert"
+      ref={rootRef}
+      {...{ [TOAST_ROOT_ATTR]: String(toast.id) }}
     >
       <Icon
         name={iconName}
@@ -245,6 +412,7 @@ const ToastItemComponent: React.FC<ToastItemComponentProps> = ({ toast, position
         {toast.message}
       </Span>
       <Button
+        type="button"
         onClick={onClose}
         className={`flex-shrink-0 p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 ${typeStyle.text} focus:outline-none`}
         aria-label={getTranslation('common.close')}

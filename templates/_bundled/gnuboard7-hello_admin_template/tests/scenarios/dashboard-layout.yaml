@@ -1,0 +1,18 @@
+feature: Hello 관리자 템플릿 대시보드 레이아웃 — 환영 카드 렌더
+
+description: |
+  예제 관리자 템플릿 대시보드(`admin_dashboard`)가 환영 카드와 그 제목·메시지를 그린다.
+  `_admin_base` 상속은 베이스 레이아웃 로딩이 필요해 시험은 slots.content 를 단독으로 그린다.
+
+axes:
+  case:
+    - render               # 환영 카드·제목·메시지
+
+exclusions:
+  - { case: render, reason: "제외 없음 — 검증 구역 단일 축" }
+
+effects:
+  - dashboard_layout_renders_welcome_card    # 환영 카드·제목(H1)·메시지(Span) 노드가 그려진다
+
+test_files:
+  - templates/_bundled/gnuboard7-hello_admin_template/__tests__/layouts/dashboard.test.tsx

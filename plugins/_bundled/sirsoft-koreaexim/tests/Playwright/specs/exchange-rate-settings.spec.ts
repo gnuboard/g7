@@ -42,17 +42,28 @@ test('settings tabs, masked key, channel editor and history survive navigation',
  * @scenario flow=validation
  * @effects admin_ui_contract
  */
-test('invalid update time returns 422 and valid correction saves through the UI',async({page})=>{
-  // Validate with the real endpoint; save a valid original value to leave settings unchanged.
+test('update time is managed by the schedule screen and invalid input still returns 422',async({page})=>{
+  // 갱신 시각은 코어 스케줄 행(plugin/sirsoft-koreaexim/update-rates)이 원천이다 — 설정 폼에는 입력 칸이 없고
+  // 다음 실행 시각과 스케줄 관리 링크(소유 필터 쿼리)만 있다(D10).
   await page.goto(path);
-  const field=page.locator('#koreaexim_update_time');
-  await expect(field).toHaveValue(/^\d{2}:\d{2}$/);
+  await expect(page.locator('#koreaexim_update_time')).toHaveCount(0);
+  const status=await page.evaluate(async()=>(await (await fetch('/api/plugins/sirsoft-koreaexim/admin/status',{headers:{Accept:'application/json'}})).json())?.data ?? null);
+  console.log(`status_next_run_at=${status?.next_run_at}, schedule=${JSON.stringify(status?.schedule ?? null)}`);
+  await expect(page.locator('#koreaexim_schedule_next_run')).toContainText(status?.next_run_at ?? '-');
+  const link=page.locator('#koreaexim_schedule_link');
+  await expect(link).toHaveAttribute('href','/admin/schedules?extension_type=plugin&extension_identifier=sirsoft-koreaexim');
+  // 범위 밖 값은 서버가 422 로 막고, 원래 값으로 고치면 저장된다.
+  const field=page.locator('#koreaexim_retry_max');
+  await expect(field).toHaveValue(/^\d+$/);
   const original=await field.inputValue();
-  await field.fill('25:99');
+  await field.fill('99');
   const invalid=page.waitForResponse(r=>r.url().includes('/api/admin/plugins/sirsoft-koreaexim/settings')&&r.request().method()==='PUT');
   await page.getByRole('button',{name:'저장',exact:true}).click();
-  expect((await invalid).status()).toBe(422);
-  await expect(page.locator('.form-error').filter({hasText:/./}).first()).toBeVisible();
+  const invalidResponse=await invalid;
+  expect(invalidResponse.status()).toBe(422);
+  // 저장 본문에 없어진 갱신 시각 키가 실리지 않는다.
+  expect(Object.keys(invalidResponse.request().postDataJSON() ?? {})).not.toContain('update_time');
+  await expect(page.locator('.koreaexim-form-error').filter({hasText:/./}).first()).toBeVisible();
   await field.fill(original);
   const valid=page.waitForResponse(r=>r.url().includes('/api/admin/plugins/sirsoft-koreaexim/settings')&&r.request().method()==='PUT');
   await page.getByRole('button',{name:'저장',exact:true}).click();
@@ -60,6 +71,8 @@ test('invalid update time returns 422 and valid correction saves through the UI'
   await expect(page.getByRole('button',{name:'저장',exact:true})).toBeDisabled();
   await page.reload();
   await expect(field).toHaveValue(original);
+  await link.click();
+  await expect(page).toHaveURL(/\/admin\/schedules\?extension_type=plugin&extension_identifier=sirsoft-koreaexim/);
 });
 
 /**
@@ -148,7 +161,7 @@ test('connection test spins only its own button',async({page})=>{
   await page.waitForLoadState('networkidle');
   const test_=page.locator('#test_connection');
   const update=page.locator('#update_now');
-  const spinner=(scope:typeof test_)=>scope.locator('.spinner-sm');
+  const spinner=(scope:typeof test_)=>scope.locator('.koreaexim-spinner-sm');
   await expect(test_).toBeEnabled();
   await expect(spinner(test_)).toHaveCount(0);
   await expect(spinner(update)).toHaveCount(0);
@@ -213,13 +226,13 @@ test('delivery channels follow the core registry and save as a set',async({page}
   await page.waitForLoadState('networkidle');
 
   const rows=page.locator('[id^=koreaexim_channel_row]');
-  const labels=(await rows.locator('.text-heading').allTextContents()).map(t=>t.trim());
+  const labels=(await rows.locator('.koreaexim-text-heading').allTextContents()).map(t=>t.trim());
   console.log(`channel_rows=${labels.join('|')}`);
   // 코어 채널과 확장이 들인 채널이 모두 줄로 깔린다 — 드롭다운 단일 선택이 아니다.
   // 설치된 확장(예: 비즈뿌리오)이 채널을 더 들이면 줄이 늘어난다 — 코어 3줄이 모두 있는지만 본다
   expect(labels).toEqual(expect.arrayContaining(['메일','사이트내 알림','SMS']));
   expect(labels.length).toBe(await rows.count());
-  const rowOf=(label:string)=>rows.filter({has:page.locator('.text-heading',{hasText:new RegExp(`^${label}$`)})});
+  const rowOf=(label:string)=>rows.filter({has:page.locator('.koreaexim-text-heading',{hasText:new RegExp(`^${label}$`)})});
   await expect(rowOf('SMS')).toContainText('문자 플러그인');
 
   const save=page.locator('[id^=koreaexim_save_channels]');
@@ -235,10 +248,10 @@ test('delivery channels follow the core registry and save as a set',async({page}
   await save.click();
 
   // 저장 중 — 누른 버튼에 진행 표시가 뜨고, 그동안 다시 누르거나 되돌릴 수 없다.
-  await expect(save.locator('.spinner-sm')).toHaveCount(1);
+  await expect(save.locator('.koreaexim-spinner-sm')).toHaveCount(1);
   await expect(save).toBeDisabled();
   await expect(cancel).toBeDisabled();
-  console.log(`saving spinner=${await save.locator('.spinner-sm').count()}, cancel_disabled=${await cancel.isDisabled()}`);
+  console.log(`saving spinner=${await save.locator('.koreaexim-spinner-sm').count()}, cancel_disabled=${await cancel.isDisabled()}`);
   releaseSave();
 
   // 저장 응답이 온 뒤 목록 재조회가 끝나기 전 구간 — 껐던 스위치가 되살아나면 안 된다(제보 2026-09-15).
@@ -257,7 +270,7 @@ test('delivery channels follow the core registry and save as a set',async({page}
   expect(saved.channels).not.toContain('mail');   // 끈 수단은 빠진다
 
   // 저장이 끝나면 화면은 "고칠 것이 없는" 상태로 돌아온다(제보 2026-09-15).
-  await expect(save.locator('.spinner-sm')).toHaveCount(0);
+  await expect(save.locator('.koreaexim-spinner-sm')).toHaveCount(0);
   await expect(save).toBeDisabled();
   await expect(cancel).toHaveCount(0);
   console.log(`after_save disabled=${await save.isDisabled()}, cancel=${await cancel.count()}`);

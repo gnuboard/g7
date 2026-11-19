@@ -2,6 +2,7 @@
 
 namespace App\Extension\Traits;
 
+use App\Extension\ExtensionManager;
 use Illuminate\Support\Facades\File;
 
 /**
@@ -23,6 +24,7 @@ trait ValidatesTranslationPath
      *
      * @param  object  $extension  검증할 모듈 또는 플러그인 인스턴스
      * @param  string  $extensionType  확장 타입 ('module' 또는 'plugin')
+     * @return void 반환값 없음
      *
      * @throws \Exception 언어 파일 경로가 올바르지 않을 때
      */
@@ -44,6 +46,7 @@ trait ValidatesTranslationPath
      * 잘못된 경로: modules/{identifier}/lang
      *
      * @param  string  $identifier  모듈 식별자
+     * @return void 반환값 없음
      *
      * @throws \Exception 언어 파일 경로가 올바르지 않을 때
      */
@@ -74,6 +77,7 @@ trait ValidatesTranslationPath
      * 올바른 경로: plugins/{identifier}/lang
      *
      * @param  string  $identifier  플러그인 식별자
+     * @return void 반환값 없음
      *
      * @throws \Exception 언어 파일 경로가 올바르지 않을 때
      */
@@ -115,7 +119,7 @@ trait ValidatesTranslationPath
         $localeDirectories = File::directories($path);
 
         foreach ($localeDirectories as $localeDir) {
-            $phpFiles = File::glob($localeDir.'/*.php');
+            $phpFiles = ExtensionManager::listDirectoryFiles($localeDir, '.php');
             if (! empty($phpFiles)) {
                 return true;
             }

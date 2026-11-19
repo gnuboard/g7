@@ -12,8 +12,6 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  * 관리자 화면이 HTML number 입력의 문자열 값을 저장하더라도, 조회 시에는
  * defaults.json 스키마의 스칼라 타입(int/float)으로 정규화되어야 한다.
  * 정규화가 없으면 Carbon 등 strict 타입 경계에서 TypeError 가 발생한다.
- *
- * @effects settings_read_returns_schema_scalar_type
  */
 class EcommerceSettingsNumericTypeTest extends ModuleTestCase
 {
@@ -21,6 +19,11 @@ class EcommerceSettingsNumericTypeTest extends ModuleTestCase
 
     private string $storagePath;
 
+    /**
+     * 테스트용 설정 저장 디렉터리를 비우고 새 설정 서비스를 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -34,6 +37,11 @@ class EcommerceSettingsNumericTypeTest extends ModuleTestCase
         $this->service = new EcommerceSettingsService;
     }
 
+    /**
+     * 테스트가 남긴 설정 파일을 지워 다른 테스트 오염을 막는다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if (File::isDirectory($this->storagePath)) {
@@ -43,6 +51,13 @@ class EcommerceSettingsNumericTypeTest extends ModuleTestCase
         parent::tearDown();
     }
 
+    /**
+     * 문자열로 저장된 자동취소 일수가 조회 시 defaults 스키마의 정수로 정규화되는지 확인한다.
+     *
+     * @effects settings_read_returns_schema_scalar_type
+     *
+     * @return void 반환값 없음
+     */
     public function test_auto_cancel_days_saved_as_string_is_read_back_as_int(): void
     {
         $this->service->saveSettings(['order_settings' => ['auto_cancel_days' => '5']]);
@@ -50,6 +65,13 @@ class EcommerceSettingsNumericTypeTest extends ModuleTestCase
         $this->assertSame(5, $this->service->getSetting('order_settings.auto_cancel_days'));
     }
 
+    /**
+     * 문자열로 저장된 장바구니 보관 일수가 조회 시 정수로 정규화되는지 확인한다.
+     *
+     * @effects settings_read_returns_schema_scalar_type
+     *
+     * @return void 반환값 없음
+     */
     public function test_cart_expiry_days_saved_as_string_is_read_back_as_int(): void
     {
         $this->service->saveSettings(['order_settings' => ['cart_expiry_days' => '15']]);
@@ -57,6 +79,13 @@ class EcommerceSettingsNumericTypeTest extends ModuleTestCase
         $this->assertSame(15, $this->service->getSetting('order_settings.cart_expiry_days'));
     }
 
+    /**
+     * 정수로 저장한 값은 조회해도 정수 그대로인지 확인한다(회귀 기준선).
+     *
+     * @effects settings_read_returns_schema_scalar_type
+     *
+     * @return void 반환값 없음
+     */
     public function test_int_saved_value_stays_int(): void
     {
         $this->service->saveSettings(['order_settings' => ['auto_cancel_days' => 7]]);
@@ -64,6 +93,13 @@ class EcommerceSettingsNumericTypeTest extends ModuleTestCase
         $this->assertSame(7, $this->service->getSetting('order_settings.auto_cancel_days'));
     }
 
+    /**
+     * 불리언 설정은 숫자 정규화의 영향을 받지 않고 false 그대로 읽히는지 확인한다.
+     *
+     * @effects settings_read_returns_schema_scalar_type
+     *
+     * @return void 반환값 없음
+     */
     public function test_boolean_setting_is_not_affected_by_numeric_normalization(): void
     {
         $this->service->saveSettings(['order_settings' => ['auto_cancel_expired' => false]]);
@@ -71,6 +107,13 @@ class EcommerceSettingsNumericTypeTest extends ModuleTestCase
         $this->assertFalse($this->service->getSetting('order_settings.auto_cancel_expired'));
     }
 
+    /**
+     * defaults 타입이 문자열인 설정은 숫자처럼 보여도 문자열을 유지하는지 확인한다.
+     *
+     * @effects settings_read_returns_schema_scalar_type
+     *
+     * @return void 반환값 없음
+     */
     public function test_string_setting_is_not_converted_to_number(): void
     {
         // defaults 타입이 문자열인 설정은 값이 숫자처럼 보여도 문자열을 유지해야 한다.

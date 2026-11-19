@@ -7,8 +7,9 @@
  * identity_target 을 선언하지 않으면 비로그인 흐름에서 target 이 비어 422 missing_target 으로 깨졌다.
  *
  * 결제 apiCall 은 identity_target.{email,phone} 을 표현식으로 선언해야 하며,
- * 주문자 정보 우선 → 회원 세션 → 수취인 연락처 폴백 순서를 따른다.
+ * 주문자 칸에 보이는 값(계산값 ordererDefaults — 손대지 않은 칸만 회원 세션 값) → 수취인 연락처 폴백 순서를 따른다.
  *
+ * @scenario-manifest tests/scenarios/identity-challenge-request-shape.yaml
  * @since engine-v1.51.0
  */
 
@@ -44,30 +45,51 @@ const orderCall = findNode(
 );
 
 describe('체크아웃 결제 identity_target 선언 (_checkout_summary)', () => {
+  /**
+   * @scenario surface=checkout_order_target
+   * @effects checkout_declares_identity_target
+   */
   it('주문 생성 POST apiCall 노드가 존재해야 한다', () => {
     expect(orderCall, '주문 생성 POST apiCall 노드').toBeDefined();
   });
 
+  /**
+   * @scenario surface=checkout_order_target
+   * @effects checkout_declares_identity_target
+   */
   it('결제 apiCall 은 identity_target.email/phone 을 선언해야 한다 (회귀 차단)', () => {
     expect(orderCall.identity_target).toBeDefined();
     expect(typeof orderCall.identity_target.email).toBe('string');
     expect(typeof orderCall.identity_target.phone).toBe('string');
   });
 
+  /**
+   * @scenario surface=checkout_order_target
+   * @effects checkout_identity_target_follows_orderer_fields
+   */
   it('email 선언은 주문자 정보를 우선 사용한다', () => {
     // ordererDefaults(주문자→회원 폴백 내장) 또는 _local.orderer.email 참조
     expect(orderCall.identity_target.email).toContain('ordererDefaults');
     expect(orderCall.identity_target.email).toContain('orderer');
   });
 
-  it('phone 선언은 주문자 → 회원 → 수취인 연락처 폴백 순서를 따른다', () => {
+  /**
+   * @scenario surface=checkout_order_target
+   * @effects checkout_identity_target_follows_orderer_fields
+   */
+  it('phone 선언은 주문자 칸 값(ordererDefaults: 주문자 → 회원) → 수취인 연락처 폴백 순서를 따른다', () => {
     const phone = orderCall.identity_target.phone as string;
-    expect(phone).toContain('_local.orderer?.phone');
-    expect(phone).toContain('currentUser?.phone');
+    // 주문자 칸에 보이는 값과 같은 계산값을 쓴다 — 사용자가 지운 칸을 계정 값으로 되채우지 않는다
+    expect(phone).toContain('ordererDefaults?.phone');
+    expect(phone).not.toContain('currentUser?.phone ||');
     // 수취인 연락처 폴백
     expect(phone).toContain('shipping?.recipient_phone');
   });
 
+  /**
+   * @scenario surface=checkout_order_target
+   * @effects checkout_declares_identity_target
+   */
   it('표현식은 fallback(|| \'\')으로 빈 문자열을 보장해야 한다 (undefined 방지)', () => {
     expect(orderCall.identity_target.email).toMatch(/\|\|\s*''/);
     expect(orderCall.identity_target.phone).toMatch(/\|\|\s*''/);

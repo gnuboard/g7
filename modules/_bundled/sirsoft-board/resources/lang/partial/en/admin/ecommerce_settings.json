@@ -3,6 +3,7 @@
     "description": "You can designate the board to use as the product inquiry board.",
     "board_label": "Inquiry Board",
     "board_placeholder": "Select a board",
+    "board_list_unavailable": "The board list is unavailable, so the inquiry board cannot be changed. Saving keeps the currently assigned board.",
     "hint_secret": "ℹ A board with the secret post feature enabled is recommended.",
     "go_to_board_edit": "Go to Board Settings",
     "go_to_board_edit_desc": "Change detailed board settings such as secret post options, read/write permissions, and categories.",

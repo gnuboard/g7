@@ -39,7 +39,7 @@
  * // author.name이 "홍길동"이어도 "관리자"가 표시됨
  */
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
@@ -49,6 +49,7 @@ import type { EditorAttrs } from '../../types';
 import { isSameOriginRequest } from '../../support/sameOriginRequest';
 import { LinkButton } from '../../support/LinkButton';
 import { navigateTo } from '../../support/navigationLink';
+import { escapeToClose, focusMenuEdge, menuKeyDown, menuTriggerKeyDown } from '../../support/keyboardActivation';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -80,8 +81,8 @@ export interface AuthorInfo {
   id?: string | number;
   /** 사용자 UUID */
   uuid?: string;
-  /** 사용자 이름 */
-  name?: string;
+  /** 사용자 이름(서버가 그 영역의 표시 이름을 실어 준다). 보일 값이 없으면 null */
+  name?: string | null;
   /** 아바타 URL */
   avatar?: string;
   /** 사용자 상태 */
@@ -99,9 +100,9 @@ export interface UserInfoProps {
   author?: AuthorInfo;
 
   /**
-   * 사용자 이름 (author.name보다 우선)
+   * 사용자 이름 (author.name보다 우선). null 이면 author.name 으로 넘어간다
    */
-  name?: string;
+  name?: string | null;
 
   /**
    * 사용자 ID (author.id보다 우선)
@@ -250,7 +251,10 @@ export const UserInfo: React.FC<UserInfoProps> = ({
   // 명시적 props > author 추출값 순서로 결정
   const actualUserId = userId ?? author?.uuid;
   const actualIsGuest = isGuest || author?.is_guest || false;
-  const actualIsWithdrawn = isWithdrawn || author?.status === 'withdrawn';
+  // 회원 번호는 남았는데 계정이 지워진 작성자 — 서버가 `{uuid: null, is_guest: false}` 로 준다(관리자가 삭제한 회원의 글·댓글).
+  // uuid 가 없다고 비회원으로 보면 이름 빈 칸 + 「비회원」 배지가 된다 — 탈퇴한 사용자처럼 그린다.
+  const accountGone = !isGuest && author?.is_guest === false && !actualUserId;
+  const actualIsWithdrawn = isWithdrawn || author?.status === 'withdrawn' || accountGone;
 
   // 이름 우선순위: text > name > author.name
   // 탈퇴한 사용자는 "탈퇴한 사용자" 텍스트 표시
@@ -264,6 +268,9 @@ export const UserInfo: React.FC<UserInfoProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  // 키보드로 연 메뉴가 열린 뒤 포커스를 옮길 끝(첫 항목, 마지막 항목). 마우스로 열면 비어 있어 포커스를 옮기지 않는다
+  const pendingEdgeRef = useRef<'first' | 'last' | null>(null);
+  const menuId = `userinfo-menu-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
 
   // 프로필 경로 생성
   const actualProfilePath = profilePath.replace('{userId}', String(actualUserId ?? ''));
@@ -329,6 +336,15 @@ export const UserInfo: React.FC<UserInfoProps> = ({
     }
   }, []);
 
+  // 키보드로 연 메뉴는 열린 직후 첫 항목(ArrowUp 이면 마지막)으로 포커스를 옮긴다 — 메뉴가 포털로 문서 끝에 붙어,
+  // 옮기지 않으면 Tab 이 메뉴 밖 다음 글로 가고 화살표가 움직이지 않았다(#869 8차 8부)
+  useEffect(() => {
+    if (!showMenu || !pendingEdgeRef.current) return;
+    const edge = pendingEdgeRef.current;
+    pendingEdgeRef.current = null;
+    focusMenuEdge(dropdownRef.current, edge);
+  }, [showMenu]);
+
   // 메뉴 항목 클릭 핸들러
   const handleMenuItemClick = useCallback((item: MenuItemConfig, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -373,7 +389,7 @@ export const UserInfo: React.FC<UserInfoProps> = ({
 
   // 비회원인 경우 — 이름은 회원 이름과 같이 한 줄 … (최대 8rem), 「비회원」 배지는 줄지 않는다. 좁은 줄(320px 인기글)에서
   // 이름·배지가 「관리/자」「비회/원」 으로 글자 단위로 접혔다(7.1.1).
-  if (actualIsGuest || !actualUserId) {
+  if ((actualIsGuest || !actualUserId) && !accountGone) {
     return (
       <Div className={containerClass} id={id} {...editorAttrs}>
         <Div className="flex items-center gap-1.5 min-w-0 text-gray-500 dark:text-gray-400">
@@ -410,7 +426,8 @@ export const UserInfo: React.FC<UserInfoProps> = ({
     : `${defaultColorClass} font-medium truncate max-w-32`.trim();
 
   return (
-    <Div ref={containerRef} className={`relative inline-block ${className}`} id={id} {...editorAttrs}>
+    // 메뉴(포털) 안 어디에서든 Esc 로 닫고 이름 단추로 돌아간다 — 종전에는 바깥 클릭과 스크롤로만 닫혔다(#869)
+    <Div ref={containerRef} className={`relative inline-block ${className}`} id={id} {...editorAttrs} onKeyDown={escapeToClose(showMenu, () => setShowMenu(false), buttonRef)}>
       <Div className={LAYOUT_CLASSES[layout]}>
         {/* 드롭다운 없이 프로필로 가는 이름은 링크 — 새 탭으로 열 수 있다(#757). 드롭다운을 여는 이름은 단추 그대로 */}
         {!showDropdown && clickable ? (
@@ -426,6 +443,22 @@ export const UserInfo: React.FC<UserInfoProps> = ({
           <Button
             ref={buttonRef}
             onClick={handleClick}
+            {...(showDropdown
+              ? {
+                  'aria-haspopup': 'menu' as const,
+                  'aria-expanded': showMenu,
+                  'aria-controls': showMenu ? menuId : undefined,
+                  onKeyDown: menuTriggerKeyDown(
+                    showMenu,
+                    (open: boolean) => {
+                      if (open) updateMenuPosition();
+                      setShowMenu(open);
+                    },
+                    pendingEdgeRef,
+                    dropdownRef
+                  ),
+                }
+              : {})}
             className={nameButtonClass}
           >
             {actualName}
@@ -438,12 +471,15 @@ export const UserInfo: React.FC<UserInfoProps> = ({
       {showDropdown && showMenu && finalMenuItems.length > 0 && createPortal(
         <Div
           ref={dropdownRef}
+          id={menuId}
+          role="menu"
+          onKeyDown={menuKeyDown(dropdownRef, buttonRef, () => setShowMenu(false))}
           className="fixed w-40 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1 z-[9999]"
           style={{ top: menuPosition.top, left: menuPosition.left }}
           data-testid="author-dropdown-menu"
         >
           {finalMenuItems.map((item) => {
-            const menuItemClass = 'flex items-center justify-start gap-2 w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer';
+            const menuItemClass = 'flex items-center justify-start gap-2 w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 focus:outline-none cursor-pointer';
             // 주소로 가는 항목은 링크(새 탭 열기, #757). 동작을 부르는 항목(onClick)은 단추 그대로
             if (!item.onClick && item.path) {
               const path = item.path.replace(/\{\{userId\}\}/g, String(actualUserId ?? ''));
@@ -458,6 +494,8 @@ export const UserInfo: React.FC<UserInfoProps> = ({
                     }}
                     stopPropagation
                     className={menuItemClass}
+                    role="menuitem"
+                    tabIndex={-1}
                     data-testid={`menu-item-${item.key}`}
                   >
                     {item.icon && <Icon name={item.icon} className="w-4 h-4" />}
@@ -472,6 +510,8 @@ export const UserInfo: React.FC<UserInfoProps> = ({
                 key={item.key}
                 onClick={(e) => handleMenuItemClick(item, e)}
                 className={menuItemClass}
+                role="menuitem"
+                tabIndex={-1}
                 data-testid={`menu-item-${item.key}`}
               >
                 {item.icon && <Icon name={item.icon} className="w-4 h-4" />}

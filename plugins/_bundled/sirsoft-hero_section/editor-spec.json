@@ -1,0 +1,1348 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "레이아웃 편집기 스펙 — 히어로섹션 관리자 화면(목록·등록/수정·설정)과 사용자 확장점 주입 조각(home_hero·shop_hero, 동적 위치 board_hero·product_hero·category_hero)의 data_source 샘플과 창 상태 표본. 응답 모양은 BannerResource(목록 행·상세)·BannerImageResource·PositionSettingService::overview 기준. 이미지는 외부 요청 없이 그리도록 data URI.",
+  "pluginId": "sirsoft-hero_section",
+  "version": "1.0.0",
+  "description": "히어로섹션 관리 화면 레이아웃 편집기 샘플 데이터와 창 상태.",
+  "componentPalette": {
+    "comment": "확장 컴포넌트는 레지스트리 등록 이름(`{플러그인식별자}.{이름}`)을 그대로 키로 쓴다. 관리자 미리보기(HeroBannerPreview)는 관리자 화면 전용이라 올리지 않는다.",
+    "groups": [
+      {
+        "label": "$t:sirsoft-hero_section.editor.palette.group",
+        "kind": "content",
+        "components": [
+          "sirsoft-hero_section.HeroSlider"
+        ]
+      }
+    ],
+    "entries": {
+      "sirsoft-hero_section.HeroSlider": {
+        "label": "$t:sirsoft-hero_section.editor.palette.hero_slider.label",
+        "requiresDefaultNode": true,
+        "defaultNode": {
+          "type": "composite",
+          "name": "sirsoft-hero_section.HeroSlider",
+          "if": "{{(heroSectionHome?.data?.banners ?? []).length > 0}}",
+          "props": {
+            "banners": "{{heroSectionHome?.data?.banners ?? []}}",
+            "settings": "{{heroSectionHome?.data?.settings}}",
+            "position": "home_hero"
+          }
+        }
+      }
+    }
+  },
+  "componentCapabilities": {
+    "sirsoft-hero_section.HeroSlider": {
+      "label": "$t:sirsoft-hero_section.editor.palette.hero_slider.label",
+      "coreProps": [
+        "id"
+      ],
+      "styleControls": [
+        "marginAll",
+        "width"
+      ]
+    }
+  },
+  "sampleData": {
+    "byDataSourceId": {
+      "banners": {
+        "data": {
+          "data": [
+            {
+              "id": 1,
+              "position": "home_hero",
+              "is_active": true,
+              "status": "active",
+              "sort_order": 1,
+              "display_period": "always",
+              "starts_at_display": null,
+              "ends_at_display": null,
+              "title": {
+                "ko": "가을 신상품 기획전"
+              },
+              "title_localized": "가을 신상품 기획전",
+              "title_locales": [
+                "ko"
+              ],
+              "created_at_display": "2026-10-20 10:00",
+              "thumbnail": {
+                "id": 10,
+                "hash": "a000000000000000000000000000000000000000000000000000000000000010",
+                "device": "pc",
+                "url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E",
+                "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E",
+                "original_filename": "banner-pc-10.jpg",
+                "mime_type": "image/jpeg",
+                "size": 412000,
+                "size_formatted": "402.34 KB",
+                "width": 1920,
+                "height": 640,
+                "order": 0,
+                "is_image": true
+              },
+              "abilities": {
+                "can_update": true,
+                "can_delete": true
+              }
+            },
+            {
+              "id": 2,
+              "position": "home_hero",
+              "is_active": true,
+              "status": "scheduled",
+              "sort_order": 2,
+              "display_period": "range",
+              "starts_at_display": "2026-11-01 00:00",
+              "ends_at_display": "2026-11-03 23:59",
+              "title": {
+                "ko": "주말 한정 할인"
+              },
+              "title_localized": "주말 한정 할인",
+              "title_locales": [
+                "ko"
+              ],
+              "created_at_display": "2026-10-20 10:00",
+              "thumbnail": {
+                "id": 20,
+                "hash": "a000000000000000000000000000000000000000000000000000000000000020",
+                "device": "pc",
+                "url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E",
+                "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E",
+                "original_filename": "banner-pc-20.jpg",
+                "mime_type": "image/jpeg",
+                "size": 412000,
+                "size_formatted": "402.34 KB",
+                "width": 1920,
+                "height": 640,
+                "order": 0,
+                "is_image": true
+              },
+              "abilities": {
+                "can_update": true,
+                "can_delete": true
+              }
+            },
+            {
+              "id": 3,
+              "position": "home_hero",
+              "is_active": true,
+              "status": "ended",
+              "sort_order": 3,
+              "display_period": "range",
+              "starts_at_display": "2026-07-01 00:00",
+              "ends_at_display": "2026-08-31 23:59",
+              "title": {
+                "ko": "여름 휴가 이벤트"
+              },
+              "title_localized": "여름 휴가 이벤트",
+              "title_locales": [
+                "ko"
+              ],
+              "created_at_display": "2026-10-20 10:00",
+              "thumbnail": {
+                "id": 30,
+                "hash": "a000000000000000000000000000000000000000000000000000000000000030",
+                "device": "pc",
+                "url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E",
+                "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E",
+                "original_filename": "banner-pc-30.jpg",
+                "mime_type": "image/jpeg",
+                "size": 412000,
+                "size_formatted": "402.34 KB",
+                "width": 1920,
+                "height": 640,
+                "order": 0,
+                "is_image": true
+              },
+              "abilities": {
+                "can_update": true,
+                "can_delete": true
+              }
+            }
+          ],
+          "pagination": {
+            "total": 3,
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 20,
+            "has_more_pages": false
+          },
+          "statistics": {
+            "positions": {
+              "home_hero": 3,
+              "shop_hero": 1
+            },
+            "statuses": {
+              "active": 1,
+              "scheduled": 1,
+              "ended": 1,
+              "inactive": 0
+            },
+            "targets": {}
+          },
+          "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
+          }
+        }
+      },
+      "preview": {
+        "data": {
+          "data": [
+            {
+              "id": 1,
+              "title": "가을 신상품 기획전",
+              "description": "새로 들어온 가을 상품을 만나 보세요.",
+              "button_text": "자세히 보기",
+              "image_alt": "가을 신상품 기획전",
+              "title_visible": true,
+              "title_color": "#FFFFFF",
+              "title_align": "left",
+              "description_visible": true,
+              "description_color": "#E5E7EB",
+              "description_align": "left",
+              "link_url": "/shop",
+              "link_new_window": false,
+              "images": {
+                "pc": {
+                  "id": 10,
+                  "hash": "a000000000000000000000000000000000000000000000000000000000000010",
+                  "device": "pc",
+                  "url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E",
+                  "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E",
+                  "original_filename": "banner-pc-10.jpg",
+                  "mime_type": "image/jpeg",
+                  "size": 412000,
+                  "size_formatted": "402.34 KB",
+                  "width": 1920,
+                  "height": 640,
+                  "order": 0,
+                  "is_image": true
+                },
+                "mobile": {
+                  "id": 11,
+                  "hash": "a000000000000000000000000000000000000000000000000000000000000011",
+                  "device": "mobile",
+                  "url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20750%201000'%3E%3Crect%20width='750'%20height='1000'%20fill='%231e40af'/%3E%3C/svg%3E",
+                  "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20750%201000'%3E%3Crect%20width='750'%20height='1000'%20fill='%231e40af'/%3E%3C/svg%3E",
+                  "original_filename": "banner-mobile-11.jpg",
+                  "mime_type": "image/jpeg",
+                  "size": 412000,
+                  "size_formatted": "402.34 KB",
+                  "width": 750,
+                  "height": 1000,
+                  "order": 0,
+                  "is_image": true
+                }
+              },
+              "title_localized": "가을 신상품 기획전",
+              "presentation": {
+                "pc_x": 50,
+                "pc_y": 50,
+                "mobile_x": 50,
+                "mobile_y": 50,
+                "overlay": "none"
+              }
+            }
+          ]
+        }
+      },
+      "position_settings": {
+        "data": {
+          "positions": [
+            {
+              "key": "home_hero",
+              "extension_point": "home_hero",
+              "label_key": "sirsoft-hero_section.admin.position.home_hero",
+              "label": null,
+              "registered": true,
+              "dynamic": false,
+              "target": null,
+              "settings": {
+                "autoplay": true,
+                "interval_seconds": 5,
+                "effect": "slide"
+              }
+            },
+            {
+              "key": "shop_hero",
+              "extension_point": "shop_hero",
+              "label_key": "sirsoft-hero_section.admin.position.shop_hero",
+              "label": null,
+              "registered": true,
+              "dynamic": false,
+              "target": null,
+              "settings": {
+                "autoplay": true,
+                "interval_seconds": 5,
+                "effect": "fade"
+              }
+            },
+            {
+              "key": "board_hero",
+              "extension_point": "board_hero",
+              "label_key": "sirsoft-hero_section.admin.position.board_hero",
+              "label": null,
+              "registered": true,
+              "dynamic": true,
+              "target": {
+                "type": "board",
+                "label_key": "sirsoft-hero_section.admin.target.board",
+                "label": null
+              },
+              "settings": {
+                "autoplay": true,
+                "interval_seconds": 5,
+                "effect": "slide"
+              }
+            },
+            {
+              "key": "product_hero",
+              "extension_point": "product_hero",
+              "label_key": "sirsoft-hero_section.admin.position.product_hero",
+              "label": null,
+              "registered": true,
+              "dynamic": true,
+              "target": {
+                "type": "product",
+                "label_key": "sirsoft-hero_section.admin.target.product",
+                "label": null
+              },
+              "settings": {
+                "autoplay": true,
+                "interval_seconds": 5,
+                "effect": "slide"
+              }
+            },
+            {
+              "key": "category_hero",
+              "extension_point": "category_hero",
+              "label_key": "sirsoft-hero_section.admin.position.category_hero",
+              "label": null,
+              "registered": true,
+              "dynamic": true,
+              "target": {
+                "type": "category",
+                "label_key": "sirsoft-hero_section.admin.target.category",
+                "label": null
+              },
+              "settings": {
+                "autoplay": true,
+                "interval_seconds": 5,
+                "effect": "slide"
+              }
+            }
+          ],
+          "upload": {
+            "max_mb": 5,
+            "server_limit_mb": 8,
+            "effective_mb": 5
+          },
+          "editor": {
+            "timezone": "Asia/Seoul",
+            "server_now": "2026-10-27T01:00:00+00:00",
+            "default_locale": "ko",
+            "locales": [
+              "ko",
+              "en",
+              "ja"
+            ],
+            "focus_limits": {
+              "min": 0,
+              "max": 100
+            },
+            "preview_frame": {
+              "template": "sirsoft-basic",
+              "stylesheets": [],
+              "positions": {
+                "home_hero": {
+                  "layout": "home",
+                  "chain": [
+                    {
+                      "className": "min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900",
+                      "responsive": {}
+                    },
+                    {
+                      "className": "flex-1",
+                      "responsive": {}
+                    },
+                    {
+                      "className": "min-h-fit px-4",
+                      "responsive": {
+                        "desktop": "min-h-fit max-w-7xl mx-auto px-8"
+                      }
+                    }
+                  ]
+                },
+                "shop_hero": {
+                  "layout": "shop/index",
+                  "chain": [
+                    {
+                      "className": "min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900",
+                      "responsive": {}
+                    },
+                    {
+                      "className": "flex-1",
+                      "responsive": {}
+                    },
+                    {
+                      "className": "min-h-fit px-4",
+                      "responsive": {
+                        "desktop": "min-h-fit max-w-7xl mx-auto px-8"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "upload_limit": {
+        "data": {
+          "positions": [
+            {
+              "key": "home_hero",
+              "extension_point": "home_hero",
+              "label_key": "sirsoft-hero_section.admin.position.home_hero",
+              "settings": {
+                "autoplay": true,
+                "interval_seconds": 5,
+                "effect": "slide"
+              }
+            },
+            {
+              "key": "shop_hero",
+              "extension_point": "shop_hero",
+              "label_key": "sirsoft-hero_section.admin.position.shop_hero",
+              "settings": {
+                "autoplay": true,
+                "interval_seconds": 5,
+                "effect": "fade"
+              }
+            }
+          ],
+          "upload": {
+            "max_mb": 5,
+            "server_limit_mb": 8,
+            "effective_mb": 5
+          }
+        }
+      },
+      "banner": {
+        "data": {
+          "id": 1,
+          "position": "home_hero",
+          "is_active": true,
+          "status": "active",
+          "sort_order": 1,
+          "display_period": "always",
+          "starts_at_display": null,
+          "ends_at_display": null,
+          "title": {
+            "ko": "가을 신상품 기획전"
+          },
+          "title_locales": [
+            "ko"
+          ],
+          "created_at_display": "2026-10-20 10:00",
+          "abilities": {
+            "can_update": true,
+            "can_delete": true
+          },
+          "title_localized": "가을 신상품 기획전",
+          "description": {
+            "ko": "새로 들어온 가을 상품을 만나 보세요."
+          },
+          "button_text": {
+            "ko": "자세히 보기"
+          },
+          "image_alt": {
+            "ko": "가을 신상품 기획전 배너"
+          },
+          "title_visible": true,
+          "title_color": "#FFFFFF",
+          "title_align": "left",
+          "description_visible": true,
+          "description_color": "#E5E7EB",
+          "description_align": "left",
+          "link_url": "/shop",
+          "link_new_window": false,
+          "starts_at_local": null,
+          "ends_at_local": null,
+          "images": {
+            "pc": {
+              "id": 10,
+              "hash": "a000000000000000000000000000000000000000000000000000000000000010",
+              "device": "pc",
+              "url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E",
+              "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E",
+              "original_filename": "banner-pc-10.jpg",
+              "mime_type": "image/jpeg",
+              "size": 412000,
+              "size_formatted": "402.34 KB",
+              "width": 1920,
+              "height": 640,
+              "order": 0,
+              "is_image": true
+            },
+            "mobile": null
+          },
+          "presentation": {
+            "pc_x": 50,
+            "pc_y": 50,
+            "mobile_x": 50,
+            "mobile_y": 50,
+            "overlay": "none"
+          },
+          "revision": 0
+        }
+      },
+      "settings": {
+        "data": {
+          "max_upload_mb": 5,
+          "public_cache_minutes": 10,
+          "abilities": {
+            "can_update": true
+          }
+        }
+      },
+      "heroSectionHome": {
+        "data": {
+          "position": "home_hero",
+          "target": null,
+          "target_key": null,
+          "abilities": {
+            "can_update": false
+          },
+          "settings": {
+            "autoplay": true,
+            "interval_seconds": 5,
+            "effect": "slide"
+          },
+          "banners": [
+            {
+              "id": 1,
+              "title": "가을 신상품 기획전",
+              "description": "새로 들어온 가을 상품을 만나 보세요.",
+              "button_text": "자세히 보기",
+              "image_alt": "가을 신상품 기획전",
+              "title_visible": true,
+              "title_color": "#FFFFFF",
+              "title_align": "left",
+              "description_visible": true,
+              "description_color": "#E5E7EB",
+              "description_align": "left",
+              "link_url": "/shop",
+              "link_new_window": false,
+              "images": {
+                "pc": {
+                  "id": 10,
+                  "hash": "a000000000000000000000000000000000000000000000000000000000000010",
+                  "device": "pc",
+                  "url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E",
+                  "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E",
+                  "original_filename": "banner-pc-10.jpg",
+                  "mime_type": "image/jpeg",
+                  "size": 412000,
+                  "size_formatted": "402.34 KB",
+                  "width": 1920,
+                  "height": 640,
+                  "order": 0,
+                  "is_image": true
+                },
+                "mobile": {
+                  "id": 11,
+                  "hash": "a000000000000000000000000000000000000000000000000000000000000011",
+                  "device": "mobile",
+                  "url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20750%201000'%3E%3Crect%20width='750'%20height='1000'%20fill='%231e40af'/%3E%3C/svg%3E",
+                  "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20750%201000'%3E%3Crect%20width='750'%20height='1000'%20fill='%231e40af'/%3E%3C/svg%3E",
+                  "original_filename": "banner-mobile-11.jpg",
+                  "mime_type": "image/jpeg",
+                  "size": 412000,
+                  "size_formatted": "402.34 KB",
+                  "width": 750,
+                  "height": 1000,
+                  "order": 0,
+                  "is_image": true
+                }
+              },
+              "presentation": {
+                "pc_x": 50,
+                "pc_y": 50,
+                "mobile_x": 50,
+                "mobile_y": 50,
+                "overlay": "none"
+              }
+            },
+            {
+              "id": 2,
+              "title": "주말 한정 할인",
+              "description": "이번 주말에만 만나는 특가 상품.",
+              "button_text": "",
+              "image_alt": "주말 한정 할인",
+              "title_visible": true,
+              "title_color": "#FFFFFF",
+              "title_align": "left",
+              "description_visible": true,
+              "description_color": "#E5E7EB",
+              "description_align": "left",
+              "link_url": "/shop",
+              "link_new_window": false,
+              "images": {
+                "pc": {
+                  "id": 10,
+                  "hash": "a000000000000000000000000000000000000000000000000000000000000010",
+                  "device": "pc",
+                  "url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E",
+                  "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E",
+                  "original_filename": "banner-pc-10.jpg",
+                  "mime_type": "image/jpeg",
+                  "size": 412000,
+                  "size_formatted": "402.34 KB",
+                  "width": 1920,
+                  "height": 640,
+                  "order": 0,
+                  "is_image": true
+                },
+                "mobile": {
+                  "id": 11,
+                  "hash": "a000000000000000000000000000000000000000000000000000000000000011",
+                  "device": "mobile",
+                  "url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20750%201000'%3E%3Crect%20width='750'%20height='1000'%20fill='%231e40af'/%3E%3C/svg%3E",
+                  "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20750%201000'%3E%3Crect%20width='750'%20height='1000'%20fill='%231e40af'/%3E%3C/svg%3E",
+                  "original_filename": "banner-mobile-11.jpg",
+                  "mime_type": "image/jpeg",
+                  "size": 412000,
+                  "size_formatted": "402.34 KB",
+                  "width": 750,
+                  "height": 1000,
+                  "order": 0,
+                  "is_image": true
+                }
+              },
+              "presentation": {
+                "pc_x": 50,
+                "pc_y": 50,
+                "mobile_x": 50,
+                "mobile_y": 50,
+                "overlay": "none"
+              }
+            }
+          ]
+        }
+      },
+      "heroSectionShop": {
+        "data": {
+          "position": "shop_hero",
+          "target": null,
+          "target_key": null,
+          "abilities": {
+            "can_update": false
+          },
+          "settings": {
+            "autoplay": true,
+            "interval_seconds": 5,
+            "effect": "fade"
+          },
+          "banners": [
+            {
+              "id": 1,
+              "title": "가을 신상품 기획전",
+              "description": "새로 들어온 가을 상품을 만나 보세요.",
+              "button_text": "자세히 보기",
+              "image_alt": "가을 신상품 기획전",
+              "title_visible": true,
+              "title_color": "#FFFFFF",
+              "title_align": "left",
+              "description_visible": true,
+              "description_color": "#E5E7EB",
+              "description_align": "left",
+              "link_url": "/shop",
+              "link_new_window": false,
+              "images": {
+                "pc": {
+                  "id": 10,
+                  "hash": "a000000000000000000000000000000000000000000000000000000000000010",
+                  "device": "pc",
+                  "url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E",
+                  "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E",
+                  "original_filename": "banner-pc-10.jpg",
+                  "mime_type": "image/jpeg",
+                  "size": 412000,
+                  "size_formatted": "402.34 KB",
+                  "width": 1920,
+                  "height": 640,
+                  "order": 0,
+                  "is_image": true
+                },
+                "mobile": {
+                  "id": 11,
+                  "hash": "a000000000000000000000000000000000000000000000000000000000000011",
+                  "device": "mobile",
+                  "url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20750%201000'%3E%3Crect%20width='750'%20height='1000'%20fill='%231e40af'/%3E%3C/svg%3E",
+                  "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20750%201000'%3E%3Crect%20width='750'%20height='1000'%20fill='%231e40af'/%3E%3C/svg%3E",
+                  "original_filename": "banner-mobile-11.jpg",
+                  "mime_type": "image/jpeg",
+                  "size": 412000,
+                  "size_formatted": "402.34 KB",
+                  "width": 750,
+                  "height": 1000,
+                  "order": 0,
+                  "is_image": true
+                }
+              },
+              "presentation": {
+                "pc_x": 50,
+                "pc_y": 50,
+                "mobile_x": 50,
+                "mobile_y": 50,
+                "overlay": "none"
+              }
+            },
+            {
+              "id": 2,
+              "title": "주말 한정 할인",
+              "description": "이번 주말에만 만나는 특가 상품.",
+              "button_text": "",
+              "image_alt": "주말 한정 할인",
+              "title_visible": true,
+              "title_color": "#FFFFFF",
+              "title_align": "left",
+              "description_visible": true,
+              "description_color": "#E5E7EB",
+              "description_align": "left",
+              "link_url": "/shop",
+              "link_new_window": false,
+              "images": {
+                "pc": {
+                  "id": 10,
+                  "hash": "a000000000000000000000000000000000000000000000000000000000000010",
+                  "device": "pc",
+                  "url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E",
+                  "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E",
+                  "original_filename": "banner-pc-10.jpg",
+                  "mime_type": "image/jpeg",
+                  "size": 412000,
+                  "size_formatted": "402.34 KB",
+                  "width": 1920,
+                  "height": 640,
+                  "order": 0,
+                  "is_image": true
+                },
+                "mobile": {
+                  "id": 11,
+                  "hash": "a000000000000000000000000000000000000000000000000000000000000011",
+                  "device": "mobile",
+                  "url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20750%201000'%3E%3Crect%20width='750'%20height='1000'%20fill='%231e40af'/%3E%3C/svg%3E",
+                  "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20750%201000'%3E%3Crect%20width='750'%20height='1000'%20fill='%231e40af'/%3E%3C/svg%3E",
+                  "original_filename": "banner-mobile-11.jpg",
+                  "mime_type": "image/jpeg",
+                  "size": 412000,
+                  "size_formatted": "402.34 KB",
+                  "width": 750,
+                  "height": 1000,
+                  "order": 0,
+                  "is_image": true
+                }
+              },
+              "presentation": {
+                "pc_x": 50,
+                "pc_y": 50,
+                "mobile_x": 50,
+                "mobile_y": 50,
+                "overlay": "none"
+              }
+            }
+          ]
+        }
+      },
+      "target_info": {
+        "data": {
+          "position": "board_hero",
+          "items": [],
+          "selected": {
+            "key": "2",
+            "label": "자유게시판",
+            "exists": true,
+            "site_url": "/board/free"
+          }
+        }
+      },
+      "placements": {
+        "data": {
+          "position": "board_hero",
+          "data": [
+            {
+              "key": "2",
+              "label": "자유게시판",
+              "exists": true,
+              "site_url": "/board/free",
+              "total": 3,
+              "active": 2
+            },
+            {
+              "key": "9",
+              "label": null,
+              "exists": false,
+              "site_url": null,
+              "total": 1,
+              "active": 0
+            }
+          ],
+          "summary": {
+            "banners": 4,
+            "targets": 2
+          },
+          "pagination": {
+            "current_page": 1,
+            "last_page": 1,
+            "total": 2,
+            "per_page": 20
+          }
+        }
+      },
+      "heroSectionBoard": {
+        "data": {
+          "position": "board_hero",
+          "target": "free",
+          "target_key": "2",
+          "abilities": {
+            "can_update": false
+          },
+          "settings": {
+            "autoplay": true,
+            "interval_seconds": 5,
+            "effect": "slide"
+          },
+          "banners": [
+            {
+              "id": 1,
+              "title": "가을 신상품 기획전",
+              "description": "새로 들어온 가을 상품을 만나 보세요.",
+              "button_text": "자세히 보기",
+              "image_alt": "가을 신상품 기획전",
+              "title_visible": true,
+              "title_color": "#FFFFFF",
+              "title_align": "left",
+              "description_visible": true,
+              "description_color": "#E5E7EB",
+              "description_align": "left",
+              "link_url": "/shop",
+              "link_new_window": false,
+              "images": {
+                "pc": {
+                  "id": 10,
+                  "hash": "a000000000000000000000000000000000000000000000000000000000000010",
+                  "device": "pc",
+                  "url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E",
+                  "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E",
+                  "original_filename": "banner-pc-10.jpg",
+                  "mime_type": "image/jpeg",
+                  "size": 412000,
+                  "size_formatted": "402.34 KB",
+                  "width": 1920,
+                  "height": 640,
+                  "order": 0,
+                  "is_image": true
+                },
+                "mobile": {
+                  "id": 11,
+                  "hash": "a000000000000000000000000000000000000000000000000000000000000011",
+                  "device": "mobile",
+                  "url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20750%201000'%3E%3Crect%20width='750'%20height='1000'%20fill='%231e40af'/%3E%3C/svg%3E",
+                  "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20750%201000'%3E%3Crect%20width='750'%20height='1000'%20fill='%231e40af'/%3E%3C/svg%3E",
+                  "original_filename": "banner-mobile-11.jpg",
+                  "mime_type": "image/jpeg",
+                  "size": 412000,
+                  "size_formatted": "402.34 KB",
+                  "width": 750,
+                  "height": 1000,
+                  "order": 0,
+                  "is_image": true
+                }
+              },
+              "presentation": {
+                "pc_x": 50,
+                "pc_y": 50,
+                "mobile_x": 50,
+                "mobile_y": 50,
+                "overlay": "none"
+              }
+            },
+            {
+              "id": 2,
+              "title": "주말 한정 할인",
+              "description": "이번 주말에만 만나는 특가 상품.",
+              "button_text": "",
+              "image_alt": "주말 한정 할인",
+              "title_visible": true,
+              "title_color": "#FFFFFF",
+              "title_align": "left",
+              "description_visible": true,
+              "description_color": "#E5E7EB",
+              "description_align": "left",
+              "link_url": "/shop",
+              "link_new_window": false,
+              "images": {
+                "pc": {
+                  "id": 10,
+                  "hash": "a000000000000000000000000000000000000000000000000000000000000010",
+                  "device": "pc",
+                  "url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E",
+                  "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E",
+                  "original_filename": "banner-pc-10.jpg",
+                  "mime_type": "image/jpeg",
+                  "size": 412000,
+                  "size_formatted": "402.34 KB",
+                  "width": 1920,
+                  "height": 640,
+                  "order": 0,
+                  "is_image": true
+                },
+                "mobile": {
+                  "id": 11,
+                  "hash": "a000000000000000000000000000000000000000000000000000000000000011",
+                  "device": "mobile",
+                  "url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20750%201000'%3E%3Crect%20width='750'%20height='1000'%20fill='%231e40af'/%3E%3C/svg%3E",
+                  "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20750%201000'%3E%3Crect%20width='750'%20height='1000'%20fill='%231e40af'/%3E%3C/svg%3E",
+                  "original_filename": "banner-mobile-11.jpg",
+                  "mime_type": "image/jpeg",
+                  "size": 412000,
+                  "size_formatted": "402.34 KB",
+                  "width": 750,
+                  "height": 1000,
+                  "order": 0,
+                  "is_image": true
+                }
+              },
+              "presentation": {
+                "pc_x": 50,
+                "pc_y": 50,
+                "mobile_x": 50,
+                "mobile_y": 50,
+                "overlay": "none"
+              }
+            }
+          ]
+        }
+      },
+      "heroSectionProduct": {
+        "data": {
+          "position": "product_hero",
+          "target": "P-1001",
+          "target_key": "2",
+          "abilities": {
+            "can_update": false
+          },
+          "settings": {
+            "autoplay": true,
+            "interval_seconds": 5,
+            "effect": "slide"
+          },
+          "banners": [
+            {
+              "id": 1,
+              "title": "가을 신상품 기획전",
+              "description": "새로 들어온 가을 상품을 만나 보세요.",
+              "button_text": "자세히 보기",
+              "image_alt": "가을 신상품 기획전",
+              "title_visible": true,
+              "title_color": "#FFFFFF",
+              "title_align": "left",
+              "description_visible": true,
+              "description_color": "#E5E7EB",
+              "description_align": "left",
+              "link_url": "/shop",
+              "link_new_window": false,
+              "images": {
+                "pc": {
+                  "id": 10,
+                  "hash": "a000000000000000000000000000000000000000000000000000000000000010",
+                  "device": "pc",
+                  "url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E",
+                  "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E",
+                  "original_filename": "banner-pc-10.jpg",
+                  "mime_type": "image/jpeg",
+                  "size": 412000,
+                  "size_formatted": "402.34 KB",
+                  "width": 1920,
+                  "height": 640,
+                  "order": 0,
+                  "is_image": true
+                },
+                "mobile": {
+                  "id": 11,
+                  "hash": "a000000000000000000000000000000000000000000000000000000000000011",
+                  "device": "mobile",
+                  "url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20750%201000'%3E%3Crect%20width='750'%20height='1000'%20fill='%231e40af'/%3E%3C/svg%3E",
+                  "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20750%201000'%3E%3Crect%20width='750'%20height='1000'%20fill='%231e40af'/%3E%3C/svg%3E",
+                  "original_filename": "banner-mobile-11.jpg",
+                  "mime_type": "image/jpeg",
+                  "size": 412000,
+                  "size_formatted": "402.34 KB",
+                  "width": 750,
+                  "height": 1000,
+                  "order": 0,
+                  "is_image": true
+                }
+              },
+              "presentation": {
+                "pc_x": 50,
+                "pc_y": 50,
+                "mobile_x": 50,
+                "mobile_y": 50,
+                "overlay": "none"
+              }
+            },
+            {
+              "id": 2,
+              "title": "주말 한정 할인",
+              "description": "이번 주말에만 만나는 특가 상품.",
+              "button_text": "",
+              "image_alt": "주말 한정 할인",
+              "title_visible": true,
+              "title_color": "#FFFFFF",
+              "title_align": "left",
+              "description_visible": true,
+              "description_color": "#E5E7EB",
+              "description_align": "left",
+              "link_url": "/shop",
+              "link_new_window": false,
+              "images": {
+                "pc": {
+                  "id": 10,
+                  "hash": "a000000000000000000000000000000000000000000000000000000000000010",
+                  "device": "pc",
+                  "url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E",
+                  "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E",
+                  "original_filename": "banner-pc-10.jpg",
+                  "mime_type": "image/jpeg",
+                  "size": 412000,
+                  "size_formatted": "402.34 KB",
+                  "width": 1920,
+                  "height": 640,
+                  "order": 0,
+                  "is_image": true
+                },
+                "mobile": {
+                  "id": 11,
+                  "hash": "a000000000000000000000000000000000000000000000000000000000000011",
+                  "device": "mobile",
+                  "url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20750%201000'%3E%3Crect%20width='750'%20height='1000'%20fill='%231e40af'/%3E%3C/svg%3E",
+                  "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20750%201000'%3E%3Crect%20width='750'%20height='1000'%20fill='%231e40af'/%3E%3C/svg%3E",
+                  "original_filename": "banner-mobile-11.jpg",
+                  "mime_type": "image/jpeg",
+                  "size": 412000,
+                  "size_formatted": "402.34 KB",
+                  "width": 750,
+                  "height": 1000,
+                  "order": 0,
+                  "is_image": true
+                }
+              },
+              "presentation": {
+                "pc_x": 50,
+                "pc_y": 50,
+                "mobile_x": 50,
+                "mobile_y": 50,
+                "overlay": "none"
+              }
+            }
+          ]
+        }
+      },
+      "heroSectionCategory": {
+        "data": {
+          "position": "category_hero",
+          "target": "outer",
+          "target_key": "2",
+          "abilities": {
+            "can_update": false
+          },
+          "settings": {
+            "autoplay": true,
+            "interval_seconds": 5,
+            "effect": "slide"
+          },
+          "banners": [
+            {
+              "id": 1,
+              "title": "가을 신상품 기획전",
+              "description": "새로 들어온 가을 상품을 만나 보세요.",
+              "button_text": "자세히 보기",
+              "image_alt": "가을 신상품 기획전",
+              "title_visible": true,
+              "title_color": "#FFFFFF",
+              "title_align": "left",
+              "description_visible": true,
+              "description_color": "#E5E7EB",
+              "description_align": "left",
+              "link_url": "/shop",
+              "link_new_window": false,
+              "images": {
+                "pc": {
+                  "id": 10,
+                  "hash": "a000000000000000000000000000000000000000000000000000000000000010",
+                  "device": "pc",
+                  "url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E",
+                  "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E",
+                  "original_filename": "banner-pc-10.jpg",
+                  "mime_type": "image/jpeg",
+                  "size": 412000,
+                  "size_formatted": "402.34 KB",
+                  "width": 1920,
+                  "height": 640,
+                  "order": 0,
+                  "is_image": true
+                },
+                "mobile": {
+                  "id": 11,
+                  "hash": "a000000000000000000000000000000000000000000000000000000000000011",
+                  "device": "mobile",
+                  "url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20750%201000'%3E%3Crect%20width='750'%20height='1000'%20fill='%231e40af'/%3E%3C/svg%3E",
+                  "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20750%201000'%3E%3Crect%20width='750'%20height='1000'%20fill='%231e40af'/%3E%3C/svg%3E",
+                  "original_filename": "banner-mobile-11.jpg",
+                  "mime_type": "image/jpeg",
+                  "size": 412000,
+                  "size_formatted": "402.34 KB",
+                  "width": 750,
+                  "height": 1000,
+                  "order": 0,
+                  "is_image": true
+                }
+              },
+              "presentation": {
+                "pc_x": 50,
+                "pc_y": 50,
+                "mobile_x": 50,
+                "mobile_y": 50,
+                "overlay": "none"
+              }
+            },
+            {
+              "id": 2,
+              "title": "주말 한정 할인",
+              "description": "이번 주말에만 만나는 특가 상품.",
+              "button_text": "",
+              "image_alt": "주말 한정 할인",
+              "title_visible": true,
+              "title_color": "#FFFFFF",
+              "title_align": "left",
+              "description_visible": true,
+              "description_color": "#E5E7EB",
+              "description_align": "left",
+              "link_url": "/shop",
+              "link_new_window": false,
+              "images": {
+                "pc": {
+                  "id": 10,
+                  "hash": "a000000000000000000000000000000000000000000000000000000000000010",
+                  "device": "pc",
+                  "url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E",
+                  "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E",
+                  "original_filename": "banner-pc-10.jpg",
+                  "mime_type": "image/jpeg",
+                  "size": 412000,
+                  "size_formatted": "402.34 KB",
+                  "width": 1920,
+                  "height": 640,
+                  "order": 0,
+                  "is_image": true
+                },
+                "mobile": {
+                  "id": 11,
+                  "hash": "a000000000000000000000000000000000000000000000000000000000000011",
+                  "device": "mobile",
+                  "url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20750%201000'%3E%3Crect%20width='750'%20height='1000'%20fill='%231e40af'/%3E%3C/svg%3E",
+                  "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20750%201000'%3E%3Crect%20width='750'%20height='1000'%20fill='%231e40af'/%3E%3C/svg%3E",
+                  "original_filename": "banner-mobile-11.jpg",
+                  "mime_type": "image/jpeg",
+                  "size": 412000,
+                  "size_formatted": "402.34 KB",
+                  "width": 750,
+                  "height": 1000,
+                  "order": 0,
+                  "is_image": true
+                }
+              },
+              "presentation": {
+                "pc_x": 50,
+                "pc_y": 50,
+                "mobile_x": 50,
+                "mobile_y": 50,
+                "overlay": "none"
+              }
+            }
+          ]
+        }
+      },
+      "form_target_info": {
+        "data": {
+          "position": "board_hero",
+          "items": [],
+          "selected": {
+            "key": "2",
+            "label": "자유게시판",
+            "exists": true,
+            "site_url": "/board/free"
+          }
+        }
+      }
+    }
+  },
+  "states": {
+    "groups": [
+      {
+        "comment": "목록 — 배너가 없는 위치.",
+        "scope": {
+          "kind": "route",
+          "match": "*/admin/plugins/sirsoft-hero_section/banners"
+        },
+        "items": [
+          {
+            "id": "with_data",
+            "label": "$t:sirsoft-hero_section.editor.state.with_data",
+            "default": true
+          },
+          {
+            "id": "empty_data",
+            "label": "$t:sirsoft-hero_section.editor.state.empty_data",
+            "sampleDataOverrides": {
+              "byDataSourceId": {
+                "banners": {
+                  "data": {
+                    "data": [],
+                    "pagination": {
+                      "total": 0,
+                      "current_page": 1,
+                      "last_page": 1,
+                      "per_page": 20,
+                      "has_more_pages": false
+                    },
+                    "statistics": {
+                      "positions": {
+                        "home_hero": 0,
+                        "shop_hero": 0
+                      },
+                      "statuses": {
+                        "active": 0,
+                        "scheduled": 0,
+                        "ended": 0,
+                        "inactive": 0
+                      }
+                    },
+                    "abilities": {
+                      "can_create": true,
+                      "can_update": true,
+                      "can_delete": true
+                    }
+                  }
+                },
+                "preview": {
+                  "data": {
+                    "data": []
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "한 건 삭제 확인 창 — 대상 배너는 행 메뉴 [삭제] 클릭이 _global.targetBanner 에 담는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "hero_delete_modal"
+        },
+        "items": [
+          {
+            "id": "delete_confirm",
+            "label": "$t:sirsoft-hero_section.editor.state.delete_confirm",
+            "default": true,
+            "initialState": {
+              "global": {
+                "targetBanner": {
+                  "id": 1,
+                  "title_localized": "가을 신상품 기획전"
+                },
+                "isDeleting": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "일괄 삭제 확인 창 — 선택 묶음은 표 선택칸이 _global.bulkSelectedIds 에 담는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "hero_bulk_delete_modal"
+        },
+        "items": [
+          {
+            "id": "bulk_delete_confirm",
+            "label": "$t:sirsoft-hero_section.editor.state.bulk_delete_confirm",
+            "default": true,
+            "initialState": {
+              "global": {
+                "bulkSelectedIds": [
+                  1,
+                  2
+                ],
+                "isBulkWorking": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "순서 변경 창 — [순서 변경] 이 위치 배너 전체를 _global.reorderItems·reorderOriginal 에 담는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "hero_reorder_modal"
+        },
+        "items": [
+          {
+            "id": "reorder_open",
+            "label": "$t:sirsoft-hero_section.editor.state.reorder_open",
+            "default": true,
+            "initialState": {
+              "global": {
+                "reorderItems": [
+                  {
+                    "id": 1,
+                    "title": "가을 신상품 기획전",
+                    "status": "active",
+                    "thumbnail": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E"
+                  },
+                  {
+                    "id": 2,
+                    "title": "주말 한정 할인",
+                    "status": "scheduled",
+                    "thumbnail": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E"
+                  },
+                  {
+                    "id": 3,
+                    "title": "여름 휴가 이벤트",
+                    "status": "ended",
+                    "thumbnail": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%201920%20640'%3E%3Crect%20width='1920'%20height='640'%20fill='%231e3a8a'/%3E%3C/svg%3E"
+                  }
+                ],
+                "reorderOriginal": [
+                  1,
+                  2,
+                  3
+                ],
+                "reorderLoading": false,
+                "reorderSaving": false,
+                "reorderError": null
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

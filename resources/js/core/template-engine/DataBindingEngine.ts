@@ -87,6 +87,20 @@ function isDynamicCachePath(path: string): boolean {
 }
 
 /**
+ * 바인딩 캐시 세대 표지 — 화면 전환이 새 화면의 데이터 문맥에 싣는 세대 번호의 키다 (engine-v1.95.0, #869).
+ *
+ * 영구 캐시와 렌더 사이클 캐시는 컨텍스트와 무관한 키(경로 글자)를 쓴다. 화면 전환은 새 화면을 그리기 직전에 둘을 비우는데
+ * (engine-v1.82.1), 응답을 기다리는 동안 전역 상태가 바뀌면 떠나는 화면의 다시 그리기가 startTransition 으로 예약되고, 그 렌더가
+ * 비운 뒤에 처리되면 앞 대상 문맥으로 평가한 값을 비운 캐시에 다시 채운다. 새 화면은 그 값을 읽어 30초 동안 앞 대상 값
+ * (클레임 B 상세의 「주문 보기」 가 A 주문)을 그렸다. 그래서 전환이 세대를 열고({@link DataBindingEngine.startCacheEpoch}) 새 문맥에
+ * 그 번호를 싣는다. 다른 세대 번호를 실은 문맥의 평가는 캐시를 읽지도 쓰지도 않는다. 표지가 없는 문맥(편집기 미리보기·단독 사용)은
+ * 종전과 같다. 심볼 키라 객체 펼치기로 자식 문맥에 따라가고 `Object.keys`·식 평가의 변수 목록에는 나타나지 않는다.
+ *
+ * @since engine-v1.95.0
+ */
+export const BINDING_CACHE_EPOCH: unique symbol = Symbol.for('g7.bindingCacheEpoch');
+
+/**
  * 어떤 캐시에도 담으면 안 되는 식인지 판정한다 — 같은 렌더 사이클 안에서도 컴포넌트마다 값이 다른 루트를 읽는다.
  *
  * `_computed`·`$computed` 는 컴포넌트 범위로 다시 계산되고(트러블슈팅 cache 사례 13), `extensionPointProps` 는
@@ -190,7 +204,7 @@ export interface ExpressionTrackingInfo {
   /**
    * DevTools 로그에 기록할 평가 진입점 이름 (기본: 호출된 메서드명)
    */
-  method?: string;
+  method?: 'resolve' | 'resolveBindings' | 'evaluateExpression' | 'evaluatePipeExpression';
 
   /**
    * DevTools 로그에 표시할 원본 식 (기본: `{{expr}}`)
@@ -255,6 +269,16 @@ export class DataBindingEngine {
    * key: 바인딩 경로, value: 캐시 엔트리
    */
   private cache: Map<string, CacheEntry> = new Map();
+
+  /**
+   * 지금 캐시 세대 번호 — 0 이면 세대를 연 적이 없다 (engine-v1.95.0, {@link BINDING_CACHE_EPOCH})
+   */
+  private cacheEpoch = 0;
+
+  /**
+   * 엔진 인스턴스를 넘어 겹치지 않는 세대 번호 발급기 (engine-v1.95.0)
+   */
+  private static epochSequence = 0;
 
   /**
    * 렌더 사이클 캐시
@@ -379,6 +403,8 @@ export class DataBindingEngine {
     trackingInfo?: { componentId?: string; componentName?: string; propName?: string },
   ): string {
     const opts = { ...this.defaultOptions, ...options };
+    // 앞 세대 문맥(화면 전환이 캐시를 비운 뒤 늦게 처리된 떠나는 화면의 렌더)은 캐시를 읽지도 쓰지도 않는다 (engine-v1.95.0, BINDING_CACHE_EPOCH)
+    if (!opts.skipCache && this.isOtherCacheEpochContext(context)) opts.skipCache = true;
     const devTools = getDevTools();
 
     // $computed alias 추가
@@ -607,6 +633,8 @@ export class DataBindingEngine {
     trackingInfo?: ExpressionTrackingInfo,
   ): unknown {
     const opts = { ...this.defaultOptions, ...options };
+    // 앞 세대 문맥(화면 전환이 캐시를 비운 뒤 늦게 처리된 떠나는 화면의 렌더)은 캐시를 읽지도 쓰지도 않는다 (engine-v1.95.0, BINDING_CACHE_EPOCH)
+    if (!opts.skipCache && this.isOtherCacheEpochContext(context)) opts.skipCache = true;
     const devTools = getDevTools();
     const pipeStartTime = devTools?.isEnabled() ? performance.now() : 0;
 
@@ -709,6 +737,8 @@ export class DataBindingEngine {
     trackingInfo?: { componentId?: string; componentName?: string; propName?: string },
   ): T {
     const opts = { ...this.defaultOptions, ...options };
+    // 앞 세대 문맥(화면 전환이 캐시를 비운 뒤 늦게 처리된 떠나는 화면의 렌더)은 캐시를 읽지도 쓰지도 않는다 (engine-v1.95.0, BINDING_CACHE_EPOCH)
+    if (!opts.skipCache && this.isOtherCacheEpochContext(context)) opts.skipCache = true;
     const devTools = getDevTools();
     const startTime = devTools?.isEnabled() ? performance.now() : 0;
 
@@ -1226,6 +1256,40 @@ export class DataBindingEngine {
    */
   public clearCache(): void {
     this.cache.clear();
+  }
+
+  /**
+   * 바인딩 캐시의 새 세대를 엽니다 — 캐시를 비우고 새 세대 번호를 돌려줍니다 (engine-v1.95.0, #869).
+   *
+   * 화면 전환이 새 화면을 그리기 직전에 부르고, 돌려받은 번호를 새 화면 데이터 문맥의 {@link BINDING_CACHE_EPOCH} 에 싣는다. 그 뒤
+   * 늦게 처리된 떠나는 화면의 렌더(앞 세대 번호를 실은 문맥)는 캐시를 읽지도 쓰지도 않는다. 번호는 엔진 인스턴스를 넘어 겹치지 않는다
+   * (언어 전환으로 엔진을 새로 띄워도 앞 엔진의 문맥 번호와 같아지지 않게).
+   *
+   * @returns 새 세대 번호
+   * @since engine-v1.95.0
+   */
+  public startCacheEpoch(): number {
+    this.clearCache();
+    DataBindingEngine.epochSequence += 1;
+    this.cacheEpoch = DataBindingEngine.epochSequence;
+
+    return this.cacheEpoch;
+  }
+
+  /**
+   * 문맥이 지금과 다른 캐시 세대의 것인지 (engine-v1.95.0) — 표지가 없으면 false(종전처럼 캐시를 쓴다).
+   *
+   * 세대를 연 적이 없는 엔진(번역 매개변수 파이프를 평가하는 전역 싱글턴, 편집기 미리보기 등 화면 전환에 참여하지 않는 인스턴스)은
+   * 판정하지 않는다 — 렌더 문맥은 늘 세대 번호를 실으므로, 판정하면 그런 엔진의 평가가 화면 안에서도 늘 캐시를 건너뛴다.
+   *
+   * @param context 평가 문맥
+   * @returns 다른 세대 번호를 실었으면 true
+   */
+  private isOtherCacheEpochContext(context: unknown): boolean {
+    if (this.cacheEpoch === 0 || !context || typeof context !== 'object') return false;
+    const epoch = (context as Record<symbol, unknown>)[BINDING_CACHE_EPOCH];
+
+    return typeof epoch === 'number' && epoch !== this.cacheEpoch;
   }
 
   /**

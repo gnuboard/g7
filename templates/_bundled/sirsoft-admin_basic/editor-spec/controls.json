@@ -2041,7 +2041,7 @@
       "whitespace-break-spaces"
     ]
   },
-  "_propControlsComment": "비-스타일 prop(propValue) 편집 컨트롤. componentCapabilities.propControls 가 키로 참조한다. 위젯: text=자유문자열 / i18n-text=다국어문자열 / select=택1 / toggle=불리언 / icon-picker=아이콘명(카탈로그는 iconName.icons 인라인) / options-list=정적 선택지 배열. apply 는 모두 propValue(node.props[propKey] 기록).",
+  "_propControlsComment": "비-스타일 prop(propValue) 편집 컨트롤. componentCapabilities.propControls 가 키로 참조한다. 위젯: text=자유문자열 / i18n-text=다국어문자열 / select=택1 / toggle=불리언 / icon-picker=아이콘명(카탈로그는 iconName.icons 인라인) / options-list=정적 선택지 배열 / thumbnail-preset=썸네일 규격(목록은 서버 규격 `settings.upload.thumbnail_presets_public`). apply 는 모두 propValue(node.props[propKey] 기록).",
   "iconName": {
     "label": "$t:editor.control.icon_name.label",
     "widget": "icon-picker",
@@ -10333,6 +10333,14 @@
     "apply": {
       "type": "propValue",
       "propKey": "alt"
+    }
+  },
+  "imgThumbPreset": {
+    "label": "$t:editor.control.img_thumb_preset.label",
+    "widget": "thumbnail-preset",
+    "apply": {
+      "type": "propValue",
+      "propKey": "thumbPreset"
     }
   },
   "linkHref": {

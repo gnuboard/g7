@@ -8,7 +8,12 @@
  * - NullEmitter: addLog만 수행 (폴링 모드, state.json 기반 조회)
  */
 if (! defined('BASE_PATH')) {
-    define('BASE_PATH', realpath(dirname(__DIR__, 3)) ?: dirname(__DIR__, 3));
+    // `realpath` 도 호스팅이 막을 수 있는 함수다 — 이 파일을 단독 로드하는 경로에서는 이 줄이
+    // 첫 코드라, 막힌 환경에서 무가드로 부르면 어떤 봉투도 서기 전에 치명 종료한다.
+    // 형태는 `config.php` 의 폴백과 같다(사본이 갈리면 진입점에 따라 백지가 갈린다).
+    define('BASE_PATH', function_exists('realpath')
+        ? (realpath(dirname(__DIR__, 3)) ?: dirname(__DIR__, 3))
+        : dirname(__DIR__, 3));
 }
 
 interface ProgressEmitter
@@ -35,6 +40,30 @@ interface ProgressEmitter
  *
  * 기존 sendSSEEvent() 동작을 그대로 재현합니다.
  */
+if (! function_exists('installerWorkerLockLost')) {
+    /**
+     * 이 요청이 워커 lock 을 잃었는가 — 세 emitter 가 공유하는 판정.
+     *
+     * 종전에는 같은 판정이 세 사본에 흩어져 있었고, **예외로 끝나는 한 사본만** 행위
+     * 테스트가 덮었다. 나머지 둘(SSE·폴링, `exit(0)` 로 끝난다)은 조기 반환 조건을
+     * 뒤집어도 초록이라, lock 을 뺏긴 워커가 계속 돌아 두 요청이 같은 DB 를 조작하는
+     * 상태가 검사 밖이었다 — 7차 #14 가 두 오케스트레이터의 lock-lost 규칙 비대칭을
+     * 없앤 것의 반대편이다.
+     *
+     * @param  string|null  $workerId  이 요청이 점유한 worker_id (없으면 판정하지 않는다)
+     * @param  bool  $aborting  이미 물러나는 중인가
+     * @return bool 물러나야 하면 true
+     */
+    function installerWorkerLockLost(?string $workerId, bool $aborting): bool
+    {
+        if ($workerId === null || $aborting) {
+            return false;
+        }
+
+        return ! refreshWorkerHeartbeat($workerId);
+    }
+}
+
 class SseEmitter implements ProgressEmitter
 {
     /**
@@ -94,16 +123,28 @@ class SseEmitter implements ProgressEmitter
      */
     private function exitIfNotOwner(): void
     {
-        if ($this->workerId === null || $this->aborting) {
-            return;
-        }
-
-        if (refreshWorkerHeartbeat($this->workerId)) {
+        if (! installerWorkerLockLost($this->workerId, $this->aborting)) {
             return;
         }
 
         $this->aborting = true;
-        addLog('=== SSE Worker lock lost — another worker took over, aborting ===');
+        addLog(lang('log_worker_lock_lost_retreat'));
+
+        // 물러나기 전에 그 사실을 한 프레임 보낸다. 아무 말 없이 끊으면 브라우저는
+        // 스트림 종료를 장애로 읽고 재연결하는데, 그 재연결은 승자 요청이 lock 을 쥐고 있어
+        // busy 를 받고 「중단」 화면을 그린다 — 설치는 멀쩡히 진행 중인데 화면만 실패한다.
+        // stepwise 는 예외 → busy → 자동 재시도로 같은 사실을 전하므로, 그 계약을 SSE 로 옮긴
+        // 것이다. 클라이언트는 이 이벤트를 받으면 재연결 대신 진행 조회로 전환하면 된다.
+        echo "event: worker_superseded\n";
+        echo 'data: '.installer_json_encode(
+            ['message' => lang('log_worker_lock_lost_retreat')],
+            JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE
+        )."\n\n";
+        if (ob_get_level()) {
+            @ob_flush();
+        }
+        flush();
+
         exit(0);
     }
 
@@ -129,7 +170,7 @@ class SseEmitter implements ProgressEmitter
         }
 
         $this->aborting = true;
-        addLog('=== SSE Worker disconnected — aborting ===');
+        addLog(lang('log_worker_disconnected_abort'));
         exit(0);
     }
 }
@@ -180,17 +221,145 @@ class NullEmitter implements ProgressEmitter
      */
     private function exitIfNotOwner(): void
     {
-        if ($this->workerId === null || $this->aborting) {
-            return;
-        }
-
-        if (refreshWorkerHeartbeat($this->workerId)) {
+        if (! installerWorkerLockLost($this->workerId, $this->aborting)) {
             return;
         }
 
         $this->aborting = true;
-        addLog('=== Polling Worker lock lost — another worker took over, aborting ===');
+        addLog(lang('log_worker_lock_lost_retreat'));
         exit(0);
+    }
+}
+
+/**
+ * 버퍼 진행 상황 송출 (stepwise 진행 모드 전용).
+ *
+ * 태스크 하나가 한 HTTP 요청 안에서 돌고 그 요청의 JSON 응답으로 결과가 돌아가는
+ * 구조이므로, 이벤트를 스트리밍하지 않고 모아 두었다가 응답에 실어 보낸다.
+ * 클라이언트(StepwiseMonitor)는 받은 이벤트를 SSE 와 같은 순서·형태로 재생한다 —
+ * 진행률 UI 가 세 모드에서 같은 콜백을 쓰는 이유다.
+ *
+ * log 이벤트는 installation.log 에도 기록한다 (새로고침 재개 시 로그 복원 경로).
+ */
+class BufferEmitter implements ProgressEmitter
+{
+    /**
+     * 이 요청 동안 모인 이벤트 목록.
+     *
+     * @var array<int, array{event: string, data: array<string, mixed>}>
+     */
+    private array $events = [];
+
+    /**
+     * 워커 lock owner ID. null 이면 lock 무관 모드.
+     */
+    private ?string $workerId;
+
+    /**
+     * lock 손실 후 종료 처리 락 (재진입 방지).
+     */
+    private bool $aborting = false;
+
+    public function __construct(?string $workerId = null)
+    {
+        $this->workerId = $workerId;
+    }
+
+    public function emit(string $event, array $data): void
+    {
+        // heartbeat 은 접는다. 진행 값은 단조 증가라 마지막 1건이 곧 현재 상태인데,
+        // 전부 모아 두면 오래 도는 태스크 하나의 응답에 수백 개가 실려 클라이언트가 같은
+        // 프레임을 되풀이 재생한다. 값이 아니라 개수만 버리는 것이므로 정보 손실이 없다.
+        if ($event === 'heartbeat') {
+            $this->events = array_values(array_filter(
+                $this->events,
+                static fn (array $buffered): bool => $buffered['event'] !== 'heartbeat',
+            ));
+        }
+
+        $this->events[] = ['event' => $event, 'data' => $data];
+
+        if ($event === 'log' && isset($data['message'])) {
+            addLog($data['message']);
+        }
+
+        $this->exitIfNotOwner();
+    }
+
+    /**
+     * 커맨드 원문 여러 줄을 **한 묶음**으로 낸다 (D2 L6).
+     *
+     * 이 모드의 응답은 태스크가 끝난 뒤 한 번에 나가므로 줄 단위로 쪼갤 이유가 없다.
+     * 그런데 종전에는 줄마다 `emit('log')` 였고, 그러면 두 가지가 줄 수에 비례해 늘었다 —
+     * ① 줄마다 `addLog()` 가 로그 파일을 open/flock/write/fflush/close 한다(공유 호스팅
+     * 디스크에서 줄당 수 ms) ② 응답 JSON 에 이벤트 객체가 줄 수만큼 실린다.
+     *
+     * 실측(2026-09-11): 가장 긴 태스크가 `[cmd]` 3,844 줄을 뱉고 그 응답이 44.0 초 걸렸다.
+     *
+     * 접는 것이 아니라 **묶는** 것이다 — 줄은 하나도 버리지 않는다(heartbeat 과 다른 점).
+     *
+     * @param  array<int, string>  $lines  표식이 이미 붙은 로그 줄
+     */
+    public function emitLogBatch(array $lines): void
+    {
+        if ($lines === []) {
+            return;
+        }
+
+        $this->events[] = ['event' => 'log_batch', 'data' => ['messages' => array_values($lines)]];
+
+        // 파일 쓰기도 한 번이다 — 배치 API 가 잠금을 한 번만 잡고 한 번만 flush 한다.
+        addLogBatch($lines);
+
+        $this->exitIfNotOwner();
+    }
+
+    public function isConnectionAborted(): bool
+    {
+        // 응답은 태스크가 끝난 뒤 한 번에 나간다 — 연결 상태는 진행 판정에 쓰지 않는다.
+        // 사용자 중단은 state.json 의 installation_status === 'aborted' 로 감지.
+        return false;
+    }
+
+    /**
+     * 모인 이벤트를 돌려준다 (응답 조립용).
+     *
+     * @return array<int, array{event: string, data: array<string, mixed>}> 이벤트 목록
+     */
+    public function drain(): array
+    {
+        $events = $this->events;
+        $this->events = [];
+
+        return $events;
+    }
+
+    /**
+     * 자기가 워커 lock owner 가 아니면 워커 종료 (race 차단).
+     */
+    private function exitIfNotOwner(): void
+    {
+        if (! installerWorkerLockLost($this->workerId, $this->aborting)) {
+            return;
+        }
+
+        $this->aborting = true;
+        addLog(lang('log_worker_lock_lost_retreat'));
+
+        // exit() 로 끊으면 본문 없는 200 이 나가 브라우저가 네트워크 실패로 오분류한다 —
+        // 예외로 올려 run-task.php 가 busy 로 응답하게 한다 (점유자는 다른 요청이다).
+        throw new InstallerWorkerLockLostException($this->workerId);
+    }
+}
+
+/**
+ * 태스크 도중 워커 lock 을 다른 요청에 빼앗긴 경우 — 이 요청은 물러나고 브라우저는 재시도한다.
+ */
+class InstallerWorkerLockLostException extends RuntimeException
+{
+    public function __construct(public readonly string $workerId)
+    {
+        parent::__construct('Stepwise task lock lost: '.$workerId);
     }
 }
 

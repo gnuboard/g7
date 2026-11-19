@@ -4,8 +4,10 @@
   "layout_script": "a page feature script",
   "module_styles": "module styles",
   "plugin_styles": "plugin styles",
+  "extension_style_overrides": "template style adjustments for extensions",
   "retry": "Retry",
   "retrying": "Retrying...",
   "close": "Close",
-  "retry_failed": "The retry failed. Please try again in a moment."
+  "retry_failed": "The retry failed. Please try again in a moment.",
+  "template_settings_screen": "Template settings screen"
 }

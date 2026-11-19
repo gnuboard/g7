@@ -5,6 +5,12 @@
 @source '../**/*.blade.php';
 @source '../**/*.js';
 
+/* 에이전트 작업 문서(이력, 계획, 하네스)는 화면 소스가 아니다. Windows 경로의 `\a7b5…` 같은 조각을
+   Tailwind 자동 소스 탐지가 CSS 이스케이프로 읽어 빌드가 「Invalid code point」로 멈춘다. */
+@source not '../../.claude';
+@source not '../../.codex';
+@source not '../../.agents';
+
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';

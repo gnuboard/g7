@@ -1,3 +1,4 @@
+// e2e:allow 화면 축은 tests/Playwright/specs/exchange-rate-settings.spec.ts 가 지난다 — 이 파일은 레이아웃 구조·문구 단언이다.
 import React from 'react';
 import {afterEach, beforeEach, describe, expect, it} from 'vitest';
 import {fireEvent, waitFor} from '@testing-library/react';
@@ -108,7 +109,7 @@ describe('Exchange rate history controls', () => {
     // 누른 버튼에 진행 표시가 없으면 눌렸는지 알 수 없고, 끝난 뒤 폼을 비우지 않으면
     // 저장했는데도 「저장」·「취소」가 남아 아직 안 된 것처럼 보인다(제보 2026-09-15).
     const save=nodes(notifications).find((n:any)=>String(n.id ?? '').startsWith('koreaexim_save_channels'));
-    const spinner=nodes(save).find((n:any)=>n.props?.className==='spinner-sm');
+    const spinner=nodes(save).find((n:any)=>n.props?.className==='koreaexim-spinner-sm');
     expect(spinner).toBeTruthy();
     expect(spinner.if).toContain('koreaeximSavingChannels === def.id');   // 누른 버튼만
     expect(save.props.disabled).toContain('koreaeximSavingChannels');      // 저장 중 재클릭 금지
@@ -235,6 +236,78 @@ describe('Exchange rate history controls', () => {
     const sample=spec?.sampleData?.byDataSourceId?.koreaeximStatus?.data ?? {};
     for (const field of used) expect(Object.keys(sample)).toContain(field);
   });
+  /** 갱신 시각은 코어 스케줄 행이 원천이다(D10) — 폼에 입력 칸이 없고 다음 실행 시각과 스케줄 관리 링크만 보인다.
+   * @scenario flow=validation
+   * @effects admin_ui_contract */
+  it('갱신 시각 입력 대신 다음 실행 시각과 스케줄 관리 링크를 보인다', async () => {
+    (ComponentRegistry.getInstance() as any).registry.A={component:({text,children,...props}:any)=>React.createElement('a',props,children||text),metadata:{name:'A',type:'basic'}};
+    expect(JSON.stringify(form)).not.toContain('update_time"');
+    expect(nodes(form).some((n:any)=>n.props?.name==='update_time')).toBe(false);
+    const block=nodes(form).find((n:any)=>n.id==='koreaexim_schedule_block');
+    expect(block).toBeTruthy();
+    const render=async(status:any)=>{
+      utils?.cleanup();
+      utils=createLayoutTest({version:'1.0.0',layout_name:'koreaexim_schedule_block',components:[block]} as any,{
+        translations:{'sirsoft-koreaexim':ko},locale:'ko',
+        initialData:{$templateId:'test-template',$locale:'ko',koreaeximStatus:{data:status}},
+      });
+      return (await utils.render()).container;
+    };
+    let container=await render({next_run_at:'2026-10-19 11:30',update_time_site:'11:30',schedule:{id:1,name:'update-rates',expression:'30 11 * * *',timezone:'Asia/Seoul',is_active:true}});
+    const link=container.querySelector('#koreaexim_schedule_link');
+    expect(link?.getAttribute('href')).toBe('/admin/schedules?extension_type=plugin&extension_identifier=sirsoft-koreaexim');
+    expect(link?.textContent).toBe(ko.schedule.manage_link);
+    expect(container.querySelector('#koreaexim_schedule_next_run')?.textContent).toContain('2026-10-19 11:30');
+    expect(container.querySelector('#koreaexim_schedule_inactive')).toBeNull();
+    expect(container.querySelector('#koreaexim_schedule_missing')).toBeNull();
+    container=await render({next_run_at:null,update_time_site:'11:30',schedule:{id:1,name:'update-rates',expression:'30 11 * * *',timezone:'Asia/Seoul',is_active:false}});
+    expect(container.querySelector('#koreaexim_schedule_inactive')?.textContent).toBe(ko.schedule.inactive);
+    expect(container.querySelector('#koreaexim_schedule_next_run')?.textContent).toContain('-');
+    container=await render({next_run_at:null,update_time_site:null,schedule:null});
+    expect(container.querySelector('#koreaexim_schedule_missing')?.textContent).toBe(ko.schedule.missing);
+  });
+  /** 갱신 일정 블록은 2열 격자의 한 칸이 아니라 한 줄 전체를 쓰고, 「스케줄 관리에서 변경」 안내는 설정 화면 공통 모양
+   * (파란 안내 상자 + 정보 아이콘 + 한 문장 + 링크)이다. 11:00 권장 안내는 한 번만 보인다(#17).
+   * @scenario flow=validation
+   * @effects admin_ui_contract */
+  it('갱신 일정 블록이 전체 폭이고 공통 안내 상자에 실행 요일·시각의 분담과 스케줄 관리 링크를 담는다', () => {
+    const block=nodes(form).find((n:any)=>n.id==='koreaexim_schedule_block');
+    // 768px 이상에서 두 칸을 차지한다 — 엔진 responsive 의 768 이상 구간 클래스로 적는다(Tailwind 반응형 접두를 쓰지 않는다).
+    expect(String(block.props?.className)).not.toMatch(/col-span-2/);
+    const wide=Object.entries(block.responsive??{}).find(([k])=>/^768-$/.test(k)) as [string, any]|undefined;
+    expect(String(wide?.[1]?.props?.className)).toMatch(/(^|\s)koreaexim:col-span-2(\s|$)/);
+    const notice=nodes(block).find((n:any)=>n.id==='koreaexim_schedule_notice');
+    expect(notice).toBeTruthy();
+    expect(notice.props.className).toContain('alert-info');
+    expect(nodes(notice).some((n:any)=>n.name==='Icon' && n.props?.name==='circle-info')).toBe(true);
+    const link=nodes(notice).find((n:any)=>n.id==='koreaexim_schedule_link');
+    expect(link?.text).toBe('$t:sirsoft-koreaexim.schedule.manage_link');
+    expect(ko.schedule.manage_link).toBe('스케줄 관리에서 변경');
+    expect(nodes(notice).some((n:any)=>n.name==='P' && n.text==='$t:sirsoft-koreaexim.schedule.managed_hint')).toBe(true);
+    // 실행 요일은 이 화면, 시각은 스케줄 관리 — 어디서 무엇을 바꾸는지 한 문장으로 가른다.
+    expect(ko.schedule.managed_hint).toContain('실행 요일');
+    expect(ko.schedule.managed_hint).toContain('스케줄 관리');
+    // 「11:00 이후 권장」은 폼이 쓰는 문구 가운데 한 곳에만 있다.
+    const resolve=(dict:any,key:string)=>key.split('.').reduce((o:any,k:string)=>o==null?undefined:o[k],dict);
+    const used=[...new Set([...JSON.stringify(form).matchAll(/\$t:sirsoft-koreaexim\.([A-Za-z0-9_.]+)/g)].map(m=>m[1].replace(/\.+$/,'')))];
+    for (const dict of [ko,en]) {
+      expect(used.map(k=>String(resolve(dict,k) ?? '')).filter(t=>t.includes('11:00'))).toHaveLength(1);
+    }
+  });
+  /** 플러그인 「실패 알림」(환율 갱신이 실패했을 때)과 스케줄 「실패 알림」(작업이 실행되지 못했을 때)이 무엇이 다른지 한 줄로 알린다.
+   * @scenario flow=notifications
+   * @effects admin_ui_contract */
+  it('실패 알림 칸 아래에 스케줄 실패 알림과의 차이를 한 줄로 안내하고 보관 기간 칸 이름이 「이력 보관 기간 (일)」이다', () => {
+    const field=nodes(form).find((n:any)=>n.name==='Div' && nodes(n).some((c:any)=>c.props?.name==='notify_on_failure'));
+    const hint=nodes(field).find((n:any)=>n.name==='P' && String(n.text).startsWith('$t:sirsoft-koreaexim.hints.notify_on_failure'));
+    expect(hint?.props?.className).toBe('koreaexim-form-hint');
+    expect(ko.hints.notify_on_failure).toContain('환율 갱신');
+    expect(ko.hints.notify_on_failure).toContain('스케줄 관리');
+    expect(ko.hints.notify_on_failure).toContain('실패 알림');
+    expect(typeof en.hints.notify_on_failure).toBe('string');
+    expect(ko.fields.history_retention_days).toBe('이력 보관 기간 (일)');
+    expect(en.fields.history_retention_days).toBe('History retention period (days)');
+  });
   /** @scenario flow=notifications
    * @effects admin_ui_contract */
   it('알림 데이터소스가 자기 확장 정의만 조회한다', () => {
@@ -254,7 +327,7 @@ describe('Exchange rate history controls', () => {
     // DataGridProps 에 loading 계약이 없으므로 로딩은 그리드 형제 스피너로 표현한다.
     const spinner=nodes(tabHistory).find((n:any)=>typeof n.if==='string' && n.if.includes('koreaeximRuns === undefined'));
     expect(spinner).toBeTruthy();
-    expect(nodes(spinner).some((n:any)=>n.props?.className==='spinner-sm')).toBe(true);
+    expect(nodes(spinner).some((n:any)=>n.props?.className==='koreaexim-spinner-sm')).toBe(true);
     const runs=(settingsLayout as any).data_sources.filter((d:any)=>typeof d.endpoint==='string' && d.endpoint.includes('/admin/runs'));
     expect(runs.length).toBeGreaterThan(0);
     expect(runs.some((d:any)=>d.fallback?.data?.pagination)).toBe(true);
@@ -267,11 +340,11 @@ describe('Exchange rate history controls', () => {
     // 한쪽을 눌러도 양쪽이 돌아 어느 쪽이 호출됐는지 화면이 거짓말을 한다(제보 2026-09-15).
     // 함께 disabled 되는 것은 의도다 — 서버가 manual-budget 락 하나를 두 경로가 공유한다.
     const owners=nodes(statusCard).filter((n:any)=>Array.isArray(n.actions) && n.actions.some((a:any)=>a?.type==='click'));
-    const buttons=owners.filter((n:any)=>nodes(n).some((c:any)=>c.props?.className==='spinner-sm'));
+    const buttons=owners.filter((n:any)=>nodes(n).some((c:any)=>c.props?.className==='koreaexim-spinner-sm'));
     expect(buttons.map((b:any)=>b.id).sort()).toEqual(['test_connection','update_now']);
 
     for (const button of buttons) {
-      const spinner=nodes(button).find((c:any)=>c.props?.className==='spinner-sm');
+      const spinner=nodes(button).find((c:any)=>c.props?.className==='koreaexim-spinner-sm');
       // 자기 것만 본다 — 키 단독 truthy 가 아니라 누가 켰는지 비교해야 한다.
       expect(spinner.if).toMatch(/_local\.busy\s*===/);
       expect(spinner.if).toContain(button.id === 'test_connection' ? "'test'" : "'update'");

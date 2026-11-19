@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\DisplayName\MemberNamePresenter;
 use App\Enums\ActivityLogType;
 use App\Extension\ExtensionManager;
 use App\Extension\HookManager;
@@ -20,6 +21,12 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  */
 class ActivityLog extends Model
 {
+    /** @var list<string> 삭제 직전 기록 액션의 꼬리 — 영구 삭제(`*.force_deleted`)·선언 정리(`*.sync_deleted`) */
+    public const DELETION_SNAPSHOT_ACTION_SUFFIXES = ['.force_deleted', '.sync_deleted'];
+
+    /** @var list<string> 꼬리 규칙 밖의 삭제 직전 기록 액션 */
+    public const DELETION_SNAPSHOT_ACTIONS = ['template_custom_translation.deleted'];
+
     /**
      * 테이블명
      *
@@ -255,12 +262,15 @@ class ActivityLog extends Model
      * properties.via 로 구분해 "시스템(CLI)" 로 표기한다. 'console' 은 via 를 먼저 도입한
      * 커맨드(security:ip-restriction)의 표기라 같은 뜻으로 받는다.
      *
-     * @return string 회원 이름, 또는 시스템 / 시스템(CLI) 라벨
+     * 회원은 그 자리의 표시 이름으로 낸다(관리자 화면이면 관리자 영역). 이름을 직접 읽지 않으므로
+     * 이름이 빈 회원도 대체 순서(닉네임, 아이디 가림)의 값이 나온다.
+     *
+     * @return string 회원 표시 이름, 또는 시스템 / 시스템(CLI) 라벨
      */
     public function getActorNameAttribute(): string
     {
         if ($this->user) {
-            return (string) $this->user->name;
+            return (string) (app(MemberNamePresenter::class)->name($this->user) ?? '');
         }
 
         return $this->isCliOrigin() ? __('common.system_cli') : __('common.system');
@@ -342,6 +352,39 @@ class ActivityLog extends Model
         return $query
             ->where('loggable_type', $model->getMorphClass())
             ->where('loggable_id', $model->getKey());
+    }
+
+    /**
+     * 삭제 직전 기록(영구 삭제·선언 정리·커스텀 번역 삭제)인 액션인지 판정합니다 — 목록의 펼침 요약과 「삭제 직전 기록만 보기」 필터가 함께 쓴다.
+     *
+     * @param  string  $action  액션 이름
+     * @return bool 삭제 직전 기록이면 true
+     */
+    public static function isDeletionSnapshotAction(string $action): bool
+    {
+        foreach (self::DELETION_SNAPSHOT_ACTION_SUFFIXES as $suffix) {
+            if (str_ends_with($action, $suffix)) {
+                return true;
+            }
+        }
+
+        return in_array($action, self::DELETION_SNAPSHOT_ACTIONS, true);
+    }
+
+    /**
+     * 삭제 직전 기록만 남기는 스코프 — {@see self::isDeletionSnapshotAction()} 와 같은 판정.
+     *
+     * @param  Builder  $query  쿼리 빌더
+     * @return Builder 필터링된 쿼리 빌더
+     */
+    public function scopeDeletionSnapshots(Builder $query): Builder
+    {
+        return $query->where(function (Builder $q): void {
+            foreach (self::DELETION_SNAPSHOT_ACTION_SUFFIXES as $suffix) {
+                $q->orWhere('action', 'like', '%'.addcslashes($suffix, '%_\\'));
+            }
+            $q->orWhereIn('action', self::DELETION_SNAPSHOT_ACTIONS);
+        });
     }
 
     /**

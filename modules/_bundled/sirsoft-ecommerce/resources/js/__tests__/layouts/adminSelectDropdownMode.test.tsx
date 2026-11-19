@@ -83,8 +83,13 @@ const OPTION_ROWS = [
 let registry: MockComponentRegistry;
 let calls: Record<string, any[]>;
 let utils: ReturnType<typeof createLayoutTest> | null = null;
+let prevConfig: unknown;
 
 beforeEach(() => {
+    // 이 확장의 클래스는 자체 CSS 접두(`ecommerce:bg-gray-100`)다. 운영 셸처럼 접두 목록(G7Config.extensionClassPrefixes)을
+    // 실어 Select 가 앞글자를 떼고 읽게 한다 — 없으면 접두 토큰을 변형으로 보고 기본 외형(border-0)을 붙인다.
+    prevConfig = (window as any).G7Config;
+    (window as any).G7Config = { ...((prevConfig as object) ?? {}), extensionClassPrefixes: ['ecommerce'] };
     registry = createMockComponentRegistryWithBasics();
     registry.register('basic', 'Select', Select as any);
     calls = {};
@@ -105,6 +110,7 @@ afterEach(() => {
     utils = null;
     vi.restoreAllMocks();
     document.body.innerHTML = '';
+    (window as any).G7Config = prevConfig;
 });
 
 /**

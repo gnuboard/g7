@@ -182,7 +182,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.dashboard.view`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -212,15 +212,13 @@ Authorization: Bearer {YOUR_TOKEN}
 
 **응답 필드** (`data` 내부)
 
-
-
 | 필드 | 타입 | 실측 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | id | integer | `99` | 기본 키 (내부 식별자) |
 | product_id | integer | `320` | product 식별자 (연관 리소스 참조) |
 | product_name | string | `API 문서 샘플 상품` | 리뷰 대상 상품의 현재 로케일 상품명 (product 관계 파생) |
 | rating | integer | `5` | 리뷰 평점 (별점 정수) |
-| author_name | string | `API 문서 샘플 사용자` | 리뷰 작성자 표시 이름 — 회원 후기는 회원 이름, 회원 없이 등록한 후기(다른 쇼핑몰에서 이관)는 저장된 이름 |
+| author_name | string | `API 문서 샘플 사용자` | 리뷰 작성자 표시 이름 — 회원 후기는 관리자 영역의 표시 이름(설정을 바꾸지 않았으면 회원 이름), 회원 없이 등록한 후기(다른 쇼핑몰에서 이관)는 저장된 이름 |
 | created_at | string | `2026-07-07 14:47:31` | 생성 일시 |
 
 **응답 예시**
@@ -243,7 +241,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.dashboard.view`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -280,7 +278,7 @@ _단건 응답: `data` 객체의 필드._
 | total_sales | integer | `0` | 표시 기간 순매출 합계 (기본 통화 자릿수로 라운딩) |
 | quantity_change | null | `null` | 직전 동일 기간 대비 판매 수량 증감율(%) (직전 합계 0 이면 null) |
 | sales_change | null | `null` | 직전 동일 기간 대비 순매출 증감율(%) (직전 합계 0 이면 null) |
-| updated_at | null | `null` | 최종 수정 일시 |
+| updated_at | string | `2026-11-01T01:46:48+00:00` | 최종 수정 일시 |
 | updated_at_display | string | `` | 집계 마지막 갱신 시각의 사용자 타임존 HH:mm 캡션 (갱신 이력 없으면 빈 문자열) |
 
 **응답 예시**

@@ -9,12 +9,15 @@ use App\Contracts\Repositories\ActivityLogRepositoryInterface;
 use App\Contracts\Repositories\LanguagePackRepositoryInterface;
 use App\Contracts\Repositories\NotificationLogRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
+use App\DisplayName\DisplayNameAreaRegistry;
+use App\DisplayName\DisplayNameResolver;
 use App\Enums\PermissionType;
 use App\Extension\HookManager;
 use App\Helpers\TimezoneHelper;
 use App\Models\ActivityLog;
 use App\Models\NotificationLog;
 use App\Models\User;
+use App\Support\ExecutionEnvironment;
 use App\Support\SiteUrl;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -262,22 +265,24 @@ class DashboardService
     /**
      * CPU 수집 불가 시 폴백 구조를 반환합니다.
      *
-     * @return array CPU 폴백 (percentage 0, color gray)
+     * percentage null = 측정 불가 — 화면은 0% 가 아니라 "측정 불가" 로 표기한다 (A-8).
+     *
+     * @return array CPU 폴백 (percentage null, color gray)
      */
     protected function fallbackCpu(): array
     {
-        return ['percentage' => 0, 'color' => 'gray'];
+        return ['percentage' => null, 'color' => 'gray'];
     }
 
     /**
      * 메모리 수집 불가 시 폴백 구조를 반환합니다.
      *
-     * @return array 메모리 폴백 (percentage 0, used/total "알 수 없음", color gray)
+     * @return array 메모리 폴백 (percentage null = 측정 불가, used/total "알 수 없음", color gray)
      */
     protected function fallbackMemory(): array
     {
         return [
-            'percentage' => 0,
+            'percentage' => null,
             'used' => __('common.unknown'),
             'total' => __('common.unknown'),
             'color' => 'gray',
@@ -287,12 +292,12 @@ class DashboardService
     /**
      * 디스크 수집 불가 시 폴백 구조를 반환합니다.
      *
-     * @return array 디스크 폴백 (percentage 0, used/total "알 수 없음", color gray)
+     * @return array 디스크 폴백 (percentage null = 측정 불가, used/total "알 수 없음", color gray)
      */
     protected function fallbackDisk(): array
     {
         return [
-            'percentage' => 0,
+            'percentage' => null,
             'used' => __('common.unknown'),
             'total' => __('common.unknown'),
             'color' => 'gray',
@@ -306,7 +311,8 @@ class DashboardService
      */
     protected function getCpuUsage(): array
     {
-        $percentage = 0;
+        // 측정 불가는 null 로 구분한다 — 0% 로 표기하면 "한가한 서버" 와 구분되지 않는다.
+        $percentage = null;
 
         if (PHP_OS_FAMILY === 'Windows') {
             $percentage = $this->getWindowsCpuUsage();
@@ -315,9 +321,11 @@ class DashboardService
             if (function_exists('sys_getloadavg')) {
                 $load = sys_getloadavg();
                 // 1분 평균 로드를 CPU 코어 수로 나눠서 백분율로 변환.
-                // disable_functions 에 shell_exec 가 있으면 호출 자체가 warning → 가드 (공개#40).
-                $cores = function_exists('shell_exec') ? ((int) @shell_exec('nproc 2>/dev/null') ?: 1) : 1;
-                $percentage = min(100, round(($load[0] / $cores) * 100));
+                // shell_exec 차단 판정은 ExecutionEnvironment 가 SSoT (공개#40 가드 승계).
+                $cores = ExecutionEnvironment::hasFunction('shell_exec')
+                    ? ((int) @shell_exec('nproc 2>/dev/null') ?: 1)
+                    : 1;
+                $percentage = (int) min(100, round(($load[0] / $cores) * 100));
             }
         }
 
@@ -331,11 +339,17 @@ class DashboardService
      * Windows에서 CPU 사용률을 조회합니다.
      *
      * PowerShell Get-CimInstance를 우선 사용하고, 실패 시 wmic을 fallback으로 사용합니다.
+     * shell_exec 차단 환경(disable_functions)에서는 호출 없이 null(측정 불가)을 반환합니다.
      *
-     * @return int CPU 사용률 (0-100)
+     * @return int|null CPU 사용률 (0-100). 측정 불가 시 null
      */
-    private function getWindowsCpuUsage(): int
+    private function getWindowsCpuUsage(): ?int
     {
+        // disable_functions 차단 시 호출 자체가 fatal Error — 가드 필수 (A-8)
+        if (! ExecutionEnvironment::hasFunction('shell_exec')) {
+            return null;
+        }
+
         // PowerShell Get-CimInstance 시도 (Windows 10/11 권장)
         $output = shell_exec('powershell -NoProfile -Command "Get-CimInstance -ClassName Win32_Processor | Select-Object -ExpandProperty LoadPercentage" 2>&1');
         if ($output !== null) {
@@ -354,7 +368,7 @@ class DashboardService
             }
         }
 
-        return 0;
+        return null;
     }
 
     /**
@@ -366,7 +380,6 @@ class DashboardService
     {
         $used = 0;
         $total = 0;
-        $percentage = 0;
 
         if (PHP_OS_FAMILY === 'Windows') {
             [$total, $used] = $this->getWindowsMemoryUsage();
@@ -388,9 +401,12 @@ class DashboardService
             }
         }
 
-        if ($total > 0) {
-            $percentage = round(($used / $total) * 100);
+        // total 을 못 읽었으면 측정 불가 — 0% 가 아니라 null 로 구분한다 (A-8)
+        if ($total <= 0) {
+            return $this->fallbackMemory();
         }
+
+        $percentage = (int) round(($used / $total) * 100);
 
         return [
             'percentage' => $percentage,
@@ -404,13 +420,19 @@ class DashboardService
      * Windows에서 메모리 사용량을 조회합니다.
      *
      * PowerShell Get-CimInstance를 우선 사용하고, 실패 시 wmic을 fallback으로 사용합니다.
+     * shell_exec 차단 환경(disable_functions)에서는 호출 없이 [0, 0](측정 불가)을 반환합니다.
      *
-     * @return array [total, used] 바이트 단위
+     * @return array [total, used] 바이트 단위 (측정 불가 시 [0, 0])
      */
     private function getWindowsMemoryUsage(): array
     {
         $total = 0;
         $used = 0;
+
+        // disable_functions 차단 시 호출 자체가 fatal Error — 가드 필수 (A-8)
+        if (! ExecutionEnvironment::hasFunction('shell_exec')) {
+            return [0, 0];
+        }
 
         // PowerShell Get-CimInstance 시도 (Windows 10/11 권장)
         $totalOutput = shell_exec('powershell -NoProfile -Command "(Get-CimInstance -ClassName Win32_ComputerSystem).TotalPhysicalMemory" 2>&1');
@@ -461,13 +483,23 @@ class DashboardService
 
         // open_basedir 로 '/' 가 제한된 환경에서 disk_*_space 가 warning → ErrorException 이
         // 되지 않도록 @ 억제 + numeric 체크 (공개#40). ?: 0 폴백은 예외 승격 후엔 무력하므로 @ 필수.
+        // `@` 는 `disable_functions` 축의 가드가 아니지만, 이 두 지점은 호출부가
+        // `safeProbe`/`safeSystemProbe` 로 `\Throwable` 을 잡아 「측정 불가」 폴백으로 접는다 —
+        // PHP 8 에서 차단 함수 호출은 `Error`(= Throwable)이므로 그 catch 가 실제로 잡는다.
+        // audit 이관 원장이 이 자리를 「조치 불필요」로 판정한 근거가 그것이다.
         $totalRaw = @disk_total_space($path);
+        // audit:allow hosting-blocked-function-requires-guard 호출부 safeProbe/safeSystemProbe 가 Throwable 을 잡아 「측정 불가」로 접는다 — 룰은 호출부 try/catch 를 보지 못한다
         $freeRaw = @disk_free_space($path);
         $total = is_numeric($totalRaw) ? (float) $totalRaw : 0;
         $free = is_numeric($freeRaw) ? (float) $freeRaw : 0;
         $used = $total - $free;
 
-        $percentage = $total > 0 ? round(($used / $total) * 100) : 0;
+        // total 을 못 읽었으면 측정 불가 — 0% 가 아니라 null 로 구분한다 (A-8)
+        if ($total <= 0) {
+            return $this->fallbackDisk();
+        }
+
+        $percentage = (int) round(($used / $total) * 100);
 
         return [
             'percentage' => $percentage,
@@ -480,11 +512,15 @@ class DashboardService
     /**
      * 리소스 사용률에 따른 색상을 반환합니다.
      *
-     * @param  int  $percentage  사용률 (0-100)
-     * @return string 색상명
+     * @param  int|null  $percentage  사용률 (0-100). null 은 측정 불가
+     * @return string 색상명 (측정 불가 시 gray)
      */
-    private function getResourceColor(int $percentage): string
+    private function getResourceColor(?int $percentage): string
     {
+        if ($percentage === null) {
+            return 'gray';
+        }
+
         if ($percentage >= 90) {
             return 'red';
         } elseif ($percentage >= 70) {
@@ -684,12 +720,20 @@ class DashboardService
         $viewer = Auth::user();
         $logs = $this->notificationLogRepository->getRecent($limit, $viewer instanceof User ? $viewer : null);
 
-        return $logs->map(function (NotificationLog $log) {
+        // 수신 회원은 관리자 영역의 표시 이름으로 보인다. 회원이 지워졌으면 발송 당시 기록한 이름, 그것도 없으면 수신 주소.
+        $names = app(DisplayNameResolver::class)->resolveMany(
+            $logs->map(fn (NotificationLog $log) => $log->recipientUser)->filter(),
+            DisplayNameAreaRegistry::AREA_ADMIN,
+        );
+
+        return $logs->map(function (NotificationLog $log) use ($names) {
             return [
                 'id' => $log->id,
                 'type' => $log->notification_type,
                 'channel' => $log->channel,
-                'recipient' => $log->recipientUser?->name ?? $log->recipient_name ?? $log->recipient_identifier,
+                'recipient' => ($log->recipientUser ? ($names[$log->recipientUser->getKey()] ?? null) : null)
+                    ?? $log->recipient_name
+                    ?? $log->recipient_identifier,
                 'subject' => Str::limit((string) $log->subject, 50),
                 'status' => $log->status->value,
                 'time' => TimezoneHelper::toUserCarbon($log->sent_at ?? $log->created_at)?->diffForHumans(),

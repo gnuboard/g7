@@ -15,11 +15,18 @@ use Plugins\Sirsoft\MessageBizppurio\Tests\PluginTestCase;
  *
  * plugin.php 가 선언하는 권한/알림 정의/설정 스키마 구조와
  * 관리자 메뉴 미생성(⚑ 결정 3) 을 검증한다.
+ *
+ * @scenario credential_state=empty
  */
 class InstallationTest extends PluginTestCase
 {
     private Plugin $plugin;
 
+    /**
+     * 테스트마다 검증 대상 Plugin 인스턴스를 새로 만든다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -27,12 +34,26 @@ class InstallationTest extends PluginTestCase
         $this->plugin = new Plugin;
     }
 
+    /**
+     * 플러그인 식별자가 디렉터리명 sirsoft-message_bizppurio 와 같고 벤더가 sirsoft 인지 확인한다.
+     *
+     * @effects plugin_identifier_and_vendor_match_directory_name
+     *
+     * @return void 반환값 없음
+     */
     public function test_식별자가_디렉토리명과_일치한다(): void
     {
         $this->assertSame('sirsoft-message_bizppurio', $this->plugin->getIdentifier());
         $this->assertSame('sirsoft', $this->plugin->getVendor());
     }
 
+    /**
+     * 권한 선언이 messaging 카테고리 하나에 view 와 manage 두 admin 권한만 두고, 둘 다 admin 역할에 기본 부여되는지 확인한다.
+     *
+     * @effects install_creates_view_and_manage_permissions
+     *
+     * @return void 반환값 없음
+     */
     public function test_권한이_view_manage_2개로_선언된다(): void
     {
         $permissions = $this->plugin->getPermissions();
@@ -52,6 +73,15 @@ class InstallationTest extends PluginTestCase
         }
     }
 
+    /**
+     * 설정 스키마가 password, api_key, sender_key 를 sensitive 로 표시하고, 일반 필드와 기본값 true 인 is_test_mode 불리언을 함께 선언하는지 확인한다.
+     *
+     * @scenario field_kind=credential
+     *
+     * @effects settings_schema_marks_credentials_sensitive, settings_defaults_load_with_test_mode_on
+     *
+     * @return void 반환값 없음
+     */
     public function test_설정_스키마의_크리덴셜은_sensitive다(): void
     {
         $schema = $this->plugin->getSettingsSchema();
@@ -72,6 +102,15 @@ class InstallationTest extends PluginTestCase
         $this->assertTrue($schema['is_test_mode']['default']);
     }
 
+    /**
+     * config/settings/defaults.json 의 frontend_schema 가 모든 필드를 expose false 로 두고 크리덴셜 세 필드를 sensitive 로 표시하는지 확인한다.
+     *
+     * @scenario field_kind=credential
+     *
+     * @effects defaults_json_frontend_schema_exposes_no_fields
+     *
+     * @return void 반환값 없음
+     */
     public function test_defaults_json의_크리덴셜은_expose_false다(): void
     {
         $path = dirname(__DIR__, 3).'/config/settings/defaults.json';
@@ -92,6 +131,13 @@ class InstallationTest extends PluginTestCase
         }
     }
 
+    /**
+     * 잔액부족 알림 정의가 bizppurio_balance_low 타입 하나로 mail 과 database 채널에 선언되고, 모든 템플릿 수신자가 admin 역할인지 확인한다.
+     *
+     * @effects balance_low_notification_targets_admin
+     *
+     * @return void 반환값 없음
+     */
     public function test_잔액부족_알림이_관리자_대상으로_정의된다(): void
     {
         $definitions = $this->plugin->getNotificationDefinitions();
@@ -116,6 +162,10 @@ class InstallationTest extends PluginTestCase
      * 플러그인 메뉴 추가는 정식 기능이 아니므로 getAdminMenus()·메뉴 sync 를
      * 폐기했다. 진입은 코어 소유 설정 페이지(/admin/plugins/{id}/settings) 하나로
      * 통일한다. 활성화해도 플러그인 소속 메뉴 row 가 생성되지 않아야 한다.
+     *
+     * @effects activate_does_not_create_admin_menus
+     *
+     * @return void 반환값 없음
      */
     public function test_activate_시_관리자_메뉴를_생성하지_않는다(): void
     {
@@ -140,6 +190,10 @@ class InstallationTest extends PluginTestCase
      *
      * bizppurio_notification_bindings 는 #597 개편으로 bizppurio_templates(알림톡 등록
      * 페이로드·승인 스냅샷·검수 상태 + SMS 본문)로 대체되었다.
+     *
+     * @effects phase4_tables_created_with_expected_columns
+     *
+     * @return void 반환값 없음
      */
     public function test_phase4_테이블이_생성된다(): void
     {
@@ -160,6 +214,10 @@ class InstallationTest extends PluginTestCase
 
     /**
      * 마이그레이션 up→down→up 왕복 후에도 리포지토리 호출 1회전이 동작한다.
+     *
+     * @effects migration_roundtrip_up_down_up_preserves_repository_ops
+     *
+     * @return void 반환값 없음
      */
     public function test_마이그레이션_왕복_후_리포지토리가_동작한다(): void
     {

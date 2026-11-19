@@ -7,13 +7,24 @@ namespace Plugins\Sirsoft\PayNhnkcp\Listeners;
 use App\Contracts\Extension\HookListenerInterface;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentLookup;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
+use Plugins\Sirsoft\PayNhnkcp\Exceptions\NhnKcpRejectedException;
 use Plugins\Sirsoft\PayNhnkcp\Services\NhnKcpApiService;
 
 class PaymentRefundListener implements HookListenerInterface
 {
     private const PG_PROVIDER_ID = 'nhnkcp';
+
+    /**
+     * 이커머스 결제 조회 계약을 주입받습니다.
+     *
+     * @param  PaymentLookup  $payments  이커머스 결제 조회 계약 (결제 판정 값, 과세 분리 금액)
+     */
+    public function __construct(
+        private readonly PaymentLookup $payments,
+    ) {}
 
     /**
      * 구독할 훅 매핑 반환
@@ -95,7 +106,7 @@ class PaymentRefundListener implements HookListenerInterface
      */
     private function isSettledVirtualAccount(OrderPayment $payment): bool
     {
-        return ($payment->isVirtualAccount() || $payment->vbank_number !== null) && $payment->paid_at !== null;
+        return ($this->payments->describePayment($payment)->isVirtualAccount || $payment->vbank_number !== null) && $payment->paid_at !== null;
     }
 
     /**
@@ -110,16 +121,18 @@ class PaymentRefundListener implements HookListenerInterface
      */
     private function buildPartialTaxFields(Order $order, int $cancelAmt): array
     {
-        // 승인 때와 같은 분류 — 면세 = 면세 + 영세, 과세 = 영세를 뺀 과세 합계(이커머스 1.3.3, #612)
-        $taxFree = (int) round($this->pgTaxFreeOf($order));
-        $taxable = (int) round($this->pgTaxableOf($order));
+        // 승인 때와 같은 분류 — 면세 = 면세 + 영세, 과세 = 영세를 뺀 과세 합계(이커머스 1.3.3, #612).
+        // 세 값은 이커머스 계약이 훅이 넘긴 주문(그 값 그대로)으로 계산한다.
+        $taxSplit = $this->payments->pgTaxSplit($order);
+        $taxFree = (int) round($taxSplit->taxFree);
+        $taxable = (int) round($taxSplit->taxable);
         if ($taxFree <= 0 || $cancelAmt <= 0 || $taxFree + $taxable <= 0) {
             return [];
         }
 
         $freeShare = min($cancelAmt, (int) round($cancelAmt * $taxFree / ($taxFree + $taxable)));
         $taxablePart = $cancelAmt - $freeShare;
-        $vatTotal = (int) round((float) ($order->total_vat_amount ?? 0));
+        $vatTotal = (int) round($taxSplit->vat);
         $vat = $taxablePart > 0 && $taxable > 0 && $vatTotal > 0
             ? min($taxablePart, (int) round($taxablePart * $vatTotal / $taxable))
             : 0;
@@ -158,7 +171,7 @@ class PaymentRefundListener implements HookListenerInterface
         try {
             $apiService = app(NhnKcpApiService::class);
             $this->restorePaymentCredentials($apiService, $payment);
-            $apiService->cancelPayment($tno, (string) $order->order_number, $issuedAmount, __('sirsoft-ecommerce::messages.vbank_close_reason'), false, $issuedAmount, null);
+            $apiService->cancelPayment($tno, (string) $order->order_number, $issuedAmount, __('sirsoft-pay_nhnkcp::messages.vbank_close_reason'), false, $issuedAmount, null);
 
             return ['handled' => true, 'success' => true, 'error_message' => null];
         } catch (\Throwable $e) {
@@ -289,7 +302,9 @@ class PaymentRefundListener implements HookListenerInterface
                 'success' => false,
                 'handled' => true,
                 'error_code' => 'PG_API_ERROR',
-                'error_message' => $e->getMessage(),
+                // 이 사유는 쇼핑몰이 「PG 환불 처리에 실패했습니다. (…)」 안내에 끼워 회원·비회원·관리자 응답으로 낸다 —
+                // 결제대행사 거절 사유만 그대로 싣고 통신·내부 오류 원문은 위 로그에만 남긴다(#858).
+                'error_message' => $this->refundFailureReason($e),
                 'transaction_id' => null,
             ];
         }
@@ -350,31 +365,21 @@ class PaymentRefundListener implements HookListenerInterface
     }
 
     /**
-     * 결제사에 면세로 넘길 주문 금액(면세 + 영세)을 읽습니다.
+     * 환불 실패 결과에 실을 사유를 고릅니다.
      *
-     * 이커머스 1.3.3 의 `Order::pgTaxFreeAmount()` 를 쓰고, 그 메서드가 없는 구버전(영세 없음)은 면세 합계로 떨어진다 —
-     * 플러그인 갱신은 이커머스 의존 버전을 다시 검사하지 않아 구버전과 함께 돌 수 있다.
+     * NHN KCP 가 돌려준 거절 사유는 운영자·구매자가 조치에 쓰는 정보라 그대로 싣는다. 통신 예외(연결·시간 초과)
+     * 원문에는 결제대행사 API 주소와 cURL 오류 문구가, DB 예외 원문에는 SQL·DB 접속 정보가 담기므로 운영 모드에서는
+     * 일반 문구로 바꾼다(원문은 호출 측이 서버 로그에 남긴다). 디버그 모드는 코어 관례(SafeExceptionMessage)대로 원문을 둔다.
      *
-     * @param  Order  $order  주문
-     * @return float 면세 + 영세
+     * @param  \Throwable  $e  환불 중 잡은 예외
+     * @return string 결과에 실을 사유
      */
-    private function pgTaxFreeOf(Order $order): float
+    private function refundFailureReason(\Throwable $e): string
     {
-        return method_exists($order, 'pgTaxFreeAmount')
-            ? $order->pgTaxFreeAmount()
-            : (float) ($order->total_tax_free_amount ?? 0);
-    }
+        if ($e instanceof NhnKcpRejectedException || config('app.debug')) {
+            return $e->getMessage();
+        }
 
-    /**
-     * 결제사에 과세로 넘길 주문 금액(영세를 뺀 과세 합계, 부가세 포함)을 읽습니다.
-     *
-     * @param  Order  $order  주문
-     * @return float 과세 합계(영세 제외)
-     */
-    private function pgTaxableOf(Order $order): float
-    {
-        return method_exists($order, 'pgTaxableAmount')
-            ? $order->pgTaxableAmount()
-            : (float) ($order->total_tax_amount ?? 0);
+        return __('sirsoft-pay_nhnkcp::messages.refund.pg_failed');
     }
 }

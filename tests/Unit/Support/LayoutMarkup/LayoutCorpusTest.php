@@ -18,9 +18,13 @@ use App\Support\LayoutMarkup\LayoutCorpus;
 class LayoutCorpusTest extends LayoutMarkupTestCase
 {
     /**
+     * 본 레이아웃 루트가 세 확장 유형과 템플릿 설정 화면 폴더를 모두 덮는다.
+     *
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects corpus_roots_cover_all_three_extension_types
+     *
+     * @return void 반환값 없음
      */
     public function test_layout_roots_cover_all_three_extension_types(): void
     {
@@ -30,7 +34,9 @@ class LayoutCorpusTest extends LayoutMarkupTestCase
             'templates/_bundled/*/layouts',
             'modules/_bundled/*/resources/layouts',
             'plugins/_bundled/*/resources/layouts',
-        ], $roots, '본 레이아웃 루트가 세 확장 유형을 모두 덮지 않습니다.');
+            // 템플릿이 공급하는 설정 화면(#434) — 교차 등록돼 DB 레이아웃이 되므로 왕복·굽기 대상이다
+            'templates/_bundled/*/settings',
+        ], $roots, '본 레이아웃 루트가 세 확장 유형과 템플릿 설정 화면을 모두 덮지 않습니다.');
     }
 
     /**
@@ -42,6 +48,8 @@ class LayoutCorpusTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects fragment_roots_include_template_extensions
+     *
+     * @return void 반환값 없음
      */
     public function test_fragment_roots_include_template_extensions(): void
     {
@@ -60,6 +68,8 @@ class LayoutCorpusTest extends LayoutMarkupTestCase
      * @scenario compile_unit=decompile,source_health=valid
      *
      * @effects corpus_roots_are_layout_roots_plus_fragment_roots
+     *
+     * @return void 반환값 없음
      */
     public function test_roots_are_layout_roots_plus_fragment_roots(): void
     {
@@ -79,6 +89,8 @@ class LayoutCorpusTest extends LayoutMarkupTestCase
      * @scenario compile_unit=install,source_health=valid
      *
      * @effects fragment_scan_excludes_main_layouts
+     *
+     * @return void 반환값 없음
      */
     public function test_fragment_scan_excludes_main_layouts(): void
     {

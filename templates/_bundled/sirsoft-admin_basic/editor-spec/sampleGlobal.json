@@ -25,9 +25,18 @@
     "general": {
       "site_name": "샘플 사이트",
       "site_description": "편집 모드 미리보기 — 실제 사이트 설정은 운영 환경에서 적용됩니다.",
-      "site_logo_url": null
+      "site_logo_url": null,
+      "site_favicon_url": null
     },
     "site_name": "샘플 사이트"
+  },
+  "templateSettings": {
+    "branding": {
+      "favicon_url": null,
+      "accent": "blue",
+      "color_scheme_default": "system",
+      "logo_url": null
+    }
   },
   "site": {
     "name": "샘플 사이트"
@@ -55,8 +64,10 @@
   "fileDeleteRouteRequired": false,
   "layoutVersionLimit": 100,
   "extensionViewMode": "gallery",
+  "thumbnailStatsFailed": false,
   "appConfig": {
     "version": "1.1.0",
+    "runtime_role": "live",
     "releaseYear": 2026,
     "isIos": false,
     "supportedLocales": [

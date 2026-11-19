@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\DisplayName\MemberNamePresenter;
 use App\Exceptions\ConcurrentModificationException;
 use App\Exceptions\LayoutFileOperationException;
 use App\Http\Controllers\Api\Base\AdminBaseController;
@@ -561,6 +562,9 @@ class LayoutController extends AdminBaseController
             $name,
             (int) ($request->validated()['limit'] ?? LayoutVersionListRequest::DEFAULT_LIMIT)
         );
+
+        // 저장자 이름은 표시 이름으로 나간다. 추가 항목 값이 필요한 설정이면 여기서 한 번에 읽는다.
+        app(MemberNamePresenter::class)->preloadRelations($versions, ['creator'], $request);
 
         // 목록은 경량 표현만 내려준다 — 분해된 본문은 버전 비교 diff 전용이라 단건 조회가 공급한다.
         $items = $versions

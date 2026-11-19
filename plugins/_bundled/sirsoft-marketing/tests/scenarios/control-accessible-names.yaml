@@ -10,7 +10,6 @@ axes:
     - admin_layout    # 관리자 레이아웃 본문의 칸(곁 라벨 연결 훅 인정)
     - admin_modal     # 관리자 모달 안 칸(Modal 노드 아래·모달 partial)
     - admin_row       # 관리자 반복 행(iteration)·표 셀 렌더 안 칸 — 행 이름 + 열 이름
-    - user_extension  # 사용자 화면에 주입되는 확장 조각(곁 라벨 불인정)
 
 exclusions:
   - { surface: admin_layout, reason: "제외 없음 — 면별 모집단을 레이아웃 JSON 전수에서 파생하는 단일 축이다" }
@@ -18,6 +17,7 @@ exclusions:
 effects:
   - controls_have_accessible_name      # 모든 입력칸이 이름(자기 이름·감싼 Label·for 연결·관리자 곁 라벨)을 갖는다
   - row_controls_read_row_and_column   # 반복 행·표 셀 칸이 「{행 이름} {열 이름}」 형태의 이름을 갖는다
+  - no_user_screen_fragment_controls   # 사용자 화면에 주입되는 조각의 칸이 없다(동의 칸은 회원 항목으로 코어 템플릿이 그린다, #490)
 
 test_files:
   - plugins/_bundled/sirsoft-marketing/resources/js/__tests__/layouts/control-names.test.ts

@@ -3,6 +3,7 @@
 namespace Tests\Unit\Installer;
 
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 설치 마무리 작업 완료 신호(tasks_finished) 계약 — 폴링 모드 완료 경합 회귀 가드.
@@ -20,6 +21,8 @@ use PHPUnit\Framework\TestCase;
  */
 class InstallerFinalTasksSignalTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
     /**
      * 저장소 루트 기준 파일 내용을 읽는다.
      *
@@ -31,7 +34,7 @@ class InstallerFinalTasksSignalTest extends TestCase
         $path = dirname(__DIR__, 3).'/'.$relative;
         $this->assertFileExists($path);
 
-        return (string) file_get_contents($path);
+        return $this->sourceWithoutComments($path);
     }
 
     /**
@@ -77,15 +80,43 @@ class InstallerFinalTasksSignalTest extends TestCase
     /**
      * 설치 화면 재진입(새로고침)에서 completed 라도 마무리 작업이 남았으면 기다린 뒤 완료 화면(→ finalize)을 연다.
      *
+     * completed 갈래는 기다리기 전에 남은 단계별 태스크를 한 번 이어받고, 기다린 뒤의 상태로 작업 목록과
+     * 진행 기록까지 그린 다음 완료 화면을 연다. 그래서 한 줄 표기가 아니라 「갈래 안에서 기다린 결과가
+     * 완료 화면으로 가고, 그 전에는 완료 화면을 열지 않는다」를 잰다.
+     *
      * @effects installer_reentry_waits_for_final_tasks
      *
      * @return void 반환값 없음
      */
     public function test_installer_reentry_waits_for_final_tasks(): void
     {
+        // 주석을 걷어낸 원문으로 잰다 — 갈래 안의 이유 주석이 `showCompletionSection()` 을 글자로 언급한다.
+        $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/assets/js/installer.js');
+
+        $fn = strpos($source, 'async function checkAndStartInstallation()');
+        $this->assertNotFalse($fn, '재진입 처리 함수를 찾지 못했다 — 이 검사의 기준점이 사라졌다');
+
+        $start = strpos($source, "if (state.status === 'completed') {", $fn);
+        $this->assertNotFalse($start, '재진입 처리의 completed 갈래를 찾지 못했다 — 이 검사의 기준점이 사라졌다');
+
+        $end = strpos($source, 'return;', $start);
+        $this->assertNotFalse($end, 'completed 갈래의 끝(return)을 찾지 못했다');
+        $branch = substr($source, $start, $end - $start);
+
         $this->assertMatchesRegularExpression(
-            "/if \(state\.status === 'completed'\) \{\s*showCompletionSection\(await waitForFinalTasks\(state\)\);/",
-            $this->source('public/install/assets/js/installer.js'),
+            '/\b(?:const|let)\s+([A-Za-z_$][\w$]*)\s*=\s*await\s+waitForFinalTasks\(state\);/',
+            $branch,
+            'completed 갈래가 마무리 작업 완료를 기다리지 않는다 — 폴링 워커가 도는 중에 finalize-env 가 상태 파일을 지운다',
         );
+        preg_match('/\b(?:const|let)\s+([A-Za-z_$][\w$]*)\s*=\s*await\s+waitForFinalTasks\(state\);/', $branch, $m, PREG_OFFSET_CAPTURE);
+        $waitedVar = $m[1][0];
+        $waitAt = $m[0][1];
+
+        $showAt = strpos($branch, 'showCompletionSection('.$waitedVar.')');
+        $this->assertNotFalse($showAt, '완료 화면이 기다린 뒤의 상태('.$waitedVar.')로 열리지 않는다');
+        $this->assertGreaterThan($waitAt, $showAt, '완료 화면은 기다린 뒤에 연다');
+
+        $earlyShow = strpos($branch, 'showCompletionSection(');
+        $this->assertSame($showAt, $earlyShow, '기다리기 전에 완료 화면을 여는 호출이 있다 — finalize-env 가 워커보다 먼저 돈다');
     }
 }

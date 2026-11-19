@@ -18,6 +18,7 @@ use Modules\Sirsoft\Board\Http\Requests\Concerns\NamesContentMediaPolicyFields;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ReadsBoardLimits;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesLengthRange;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesMemberFieldSettings;
 use Modules\Sirsoft\Board\Rules\BoardTypeValidationRule;
 use Modules\Sirsoft\Board\Rules\PermissionRolesRequiredRule;
 
@@ -28,6 +29,7 @@ class UpdateBoardRequest extends FormRequest
     use ProvidesFallbackRuleMessages;
     use ReadsBoardLimits;
     use ValidatesLengthRange;
+    use ValidatesMemberFieldSettings;
 
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
@@ -254,6 +256,9 @@ class UpdateBoardRequest extends FormRequest
 
             // 본문 미디어 정책 (null: 첨부 정책을 따름, #883) — 보내지 않으면 바꾸지 않는다
             ...ContentMediaPolicyRules::settingsRules('content_media_policy'),
+
+            // 작성자 표시 이름(방식과 종류)과 비회원 작성자 항목의 게시판별 사용, 필수
+            ...$this->memberFieldSettingRules(),
         ];
 
         // 카테고리 삭제는 차단하지 않는다. 삭제된 분류의 게시글은 category 문자열이 그대로
@@ -300,6 +305,9 @@ class UpdateBoardRequest extends FormRequest
 
         // 본문 미디어 정책 하위 칸 (#883) — 생성·일괄 적용 요청과 같은 이름
         $attributes = array_merge($attributes, $this->contentMediaPolicyAttributes('content_media_policy'));
+
+        // 작성자 표시 이름 칸과 비회원 작성자 항목 표
+        $attributes = array_merge($attributes, $this->memberFieldSettingAttributes());
 
         // 권한 필드에 대한 동적 속성 매핑
         $permissionDefinitions = config('sirsoft-board.board_permission_definitions', []);

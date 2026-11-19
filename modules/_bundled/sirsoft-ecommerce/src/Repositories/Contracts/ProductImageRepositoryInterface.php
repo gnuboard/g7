@@ -124,4 +124,23 @@ interface ProductImageRepositoryInterface
      * @return bool
      */
     public function reorder(array $orders): bool;
+
+    /**
+     * 래스터 이미지 MIME 상품 이미지 행 수 (썸네일 미리 만들기 진행률)
+     * 임시 업로드(상품 미연결) 행은 뺀다 — 저장 전 폼의 미리보기이고 상품 저장 때 본경로로 옮겨진다.
+     *
+     * @param  list<string>  $mimeTypes  MIME 목록
+     * @return int 행 수
+     */
+    public function countByMimeTypes(array $mimeTypes): int;
+
+    /**
+     * 래스터 이미지 MIME 상품 이미지 행을 id 순으로 나눠 조회합니다 (썸네일 미리 만들기 — 커서는 마지막 id).
+     *
+     * @param  list<string>  $mimeTypes  MIME 목록
+     * @param  int  $afterId  이 id 보다 큰 행부터
+     * @param  int  $limit  최대 행 수
+     * @return Collection<int, ProductImage> 행 (id·disk·path·mime_type·width·height)
+     */
+    public function chunkByMimeTypes(array $mimeTypes, int $afterId, int $limit): Collection;
 }

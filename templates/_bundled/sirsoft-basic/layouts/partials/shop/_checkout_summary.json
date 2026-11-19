@@ -828,17 +828,17 @@
                                     }
                                 },
                                 {
-                                    "comment": "결제 엔드포인트 — 회원/비회원 공유 단일 endpoint (optional.sanctum). PG 플러그인 fetch 인터셉터가 /user/orders 한 경로만 매칭하므로 비회원도 같은 endpoint 로 호출해 PG 결제창이 정상 노출되도록 한다. 회원/비회원 분기는 백엔드 컨트롤러가 처리.\n           params.body 는 통짜 표현식이다. 말미의 ...(_local.checkoutExtraPayload ?? {}) 는 슬롯에 주입된 모듈/플러그인 폼이 자기 필드를 주문 생성 payload 에 실어 보내기 위한 확장 병합 칸이다. 주입분은 이 body 리터럴을 수정할 수단이 없으므로(결제 버튼에 id 부재 → overlay target 불가, inject_props 는 컴포넌트 props 전용이라 actions[].params.body 미도달) 이 칸이 유일한 경로다. 확장은 자기 도메인 키만 쓴다 — spread 가 뒤에 오므로 기존 키를 덮어쓸 수 있다. 확장 미주입 시 {} 이므로 payload 는 전환 전과 키·값 모두 동일하다. refund_bank 는 템플릿 소유 필드라 확장 칸을 경유하지 않고 직접 기재한다. 회귀 pin: __tests__/layouts/checkoutSummaryBodyPayload.test.tsx",
+                                    "comment": "결제 엔드포인트 — 회원/비회원 공유 단일 endpoint (optional.sanctum). PG 플러그인 fetch 인터셉터가 /user/orders 한 경로만 매칭하므로 비회원도 같은 endpoint 로 호출해 PG 결제창이 정상 노출되도록 한다. 회원/비회원 분기는 백엔드 컨트롤러가 처리.\n           params.body 는 통짜 표현식이다. 말미의 ...(_local.checkoutExtraPayload ?? {}) 는 슬롯에 주입된 모듈/플러그인 폼이 자기 필드를 주문 생성 payload 에 실어 보내기 위한 확장 병합 칸이다. 주입분은 이 body 리터럴을 수정할 수단이 없으므로(결제 버튼에 id 부재 → overlay target 불가, inject_props 는 컴포넌트 props 전용이라 actions[].params.body 미도달) 이 칸이 유일한 경로다. 확장은 자기 도메인 키만 쓴다 — spread 가 뒤에 오므로 기존 키를 덮어쓸 수 있다. 확장 미주입 시 {} 이므로 payload 는 전환 전과 키·값 모두 동일하다. refund_bank 는 템플릿 소유 필드라 확장 칸을 경유하지 않고 직접 기재한다. 회귀 pin: __tests__/layouts/checkoutSummaryBodyPayload.test.tsx\n           운영자가 쇼핑몰 설정에서 끈 항목은 싣지 않는다(계산값 checkoutFields): 주문자 이메일이 꺼지면 orderer 에서 email 을, 상세 주소가 꺼지면 shipping 에서 address_detail 을, 배송 메모가 꺼지면 shipping_memo 키를 뺀다.\n           추가 항목 값(extra_fields)은 실을 값이 있을 때만 키가 생긴다 — 추가 항목이 없는 사이트의 요청 본문은 종전과 키와 값이 모두 같다. 회귀 pin: __tests__/layouts/checkout-order-fields.test.ts",
                                     "handler": "apiCall",
                                     "target": "/api/modules/sirsoft-ecommerce/user/orders",
                                     "auth_mode": "optional",
                                     "identity_target": {
-                                        "email": "{{_computed.ordererDefaults?.email || _local.orderer?.email || ''}}",
-                                        "phone": "{{_local.orderer?.phone || _global.currentUser?.phone || _local.shipping?.recipient_phone || ''}}"
+                                        "email": "{{_computed.ordererDefaults?.email || ''}}",
+                                        "phone": "{{_computed.ordererDefaults?.phone || _local.shipping?.recipient_phone || ''}}"
                                     },
                                     "params": {
                                         "method": "POST",
-                                        "body": "{{ ({ temp_order_id: checkoutData.data.temp_order_id, orderer: _computed.ordererDefaults, shipping: _local.shipping, payment_method: _computed.selectedCorePaymentMethod, shipping_memo: _local.shippingMemo === 'custom' ? _local.shippingMemoCustom : _local.shippingMemo, depositor_name: _local.depositorName ?? _computed.ordererDefaults?.name ?? '', dbank: _computed.selectedCorePaymentMethod === 'dbank' ? { bank_code: _local.selectedDbank?.bank_code, account_number: _local.selectedDbank?.account_number, account_holder: _local.selectedDbank?.account_holder } : null, expected_total_amount: checkoutData.data.calculation?.summary?.final_amount ?? 0, save_shipping_address: _local.saveShippingAddress ?? false, save_shipping_address_id: ((_computed.shippingAddressDirty && (_local.updateSelectedAddress ?? true)) ? _local.selectedAddressId : null), guest_lookup_password: _global.currentUser?.uuid ? null : (_local.guestLookupPassword ?? ''), guest_lookup_password_confirmation: _global.currentUser?.uuid ? null : (_local.guestLookupPasswordConfirmation ?? ''), refund_bank: _local.refundBankCode ? { bank_code: _local.refundBankCode, account_number: _local.refundBankAccount ?? null, holder: _local.refundBankHolder ?? null } : null, ...(_local.checkoutExtraPayload ?? {}) }) }}",
+                                        "body": "{{ ({ temp_order_id: checkoutData.data.temp_order_id, orderer: _computed.checkoutFields?.orderer_email?.enabled === false ? { name: _computed.ordererDefaults?.name, phone: _computed.ordererDefaults?.phone } : _computed.ordererDefaults, shipping: _computed.checkoutFields?.address_detail?.enabled === false ? Object.fromEntries(Object.entries(_local.shipping ?? {}).filter(entry => entry[0] !== 'address_detail')) : _local.shipping, payment_method: _computed.selectedCorePaymentMethod, ...(_computed.checkoutFields?.shipping_memo?.enabled === false ? {} : { shipping_memo: _local.shippingMemo === 'custom' ? _local.shippingMemoCustom : _local.shippingMemo }), ...(Object.keys(_computed.extraFieldsPayload ?? {}).length > 0 ? { extra_fields: _computed.extraFieldsPayload } : {}), depositor_name: _local.depositorName ?? _computed.ordererDefaults?.name ?? '', dbank: _computed.selectedCorePaymentMethod === 'dbank' ? { bank_code: _local.selectedDbank?.bank_code, account_number: _local.selectedDbank?.account_number, account_holder: _local.selectedDbank?.account_holder } : null, expected_total_amount: checkoutData.data.calculation?.summary?.final_amount ?? 0, save_shipping_address: _local.saveShippingAddress ?? false, save_shipping_address_id: ((_computed.shippingAddressDirty && (_local.updateSelectedAddress ?? true)) ? _local.selectedAddressId : null), guest_lookup_password: _global.currentUser?.uuid ? null : (_local.guestLookupPassword ?? ''), guest_lookup_password_confirmation: _global.currentUser?.uuid ? null : (_local.guestLookupPasswordConfirmation ?? ''), refund_bank: _local.refundBankCode ? { bank_code: _local.refundBankCode, account_number: _local.refundBankAccount ?? null, holder: _local.refundBankHolder ?? null } : null, ...(_local.checkoutExtraPayload ?? {}) }) }}",
                                         "headers": {
                                             "X-Cart-Key": "{{_global.cartKey}}"
                                         }
@@ -964,16 +964,23 @@
                                     },
                                     "onError": [
                                         {
+                                            "comment": "추가 정보가 비어 있어 거부된 요청(403, error_code 가 required_fields_pending)이면 일반 오류 알림 대신 「추가 정보 필요」 안내 창을 연다.\n                     그 거부면 인라인 오류 문구도 세우지 않는다 — 안내 창과 같은 문장이 두 번 보였다",
+                                            "handler": "openModal",
+                                            "target": "required_info_pending_modal",
+                                            "if": "{{error.error_code === 'required_fields_pending'}}"
+                                        },
+                                        {
                                             "handler": "setState",
                                             "params": {
                                                 "target": "local",
                                                 "isSubmittingOrder": false,
                                                 "errors": "{{error.response?.errors ?? error.errors ?? null}}",
-                                                "orderError": "{{error.response?.message ?? error.message ?? $t:shop.checkout.order_failed}}"
+                                                "orderError": "{{error.error_code === 'required_fields_pending' ? null : (error.response?.message ?? error.message ?? $t:shop.checkout.order_failed)}}"
                                             }
                                         },
                                         {
                                             "handler": "toast",
+                                            "if": "{{error.error_code !== 'required_fields_pending'}}",
                                             "params": {
                                                 "type": "error",
                                                 "message": "{{error.response?.message ?? error.message ?? $t:shop.checkout.order_failed}}"

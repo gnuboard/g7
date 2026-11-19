@@ -1,3 +1,4 @@
+import { sitePath } from '../support/apiUrl';
 /**
  * IDV Modal Launcher (sirsoft-admin_basic)
  *
@@ -56,6 +57,29 @@ interface ChallengeResponseData {
   claim_secret?: string;
 }
 
+/** 외부 재확인에서 돌아올 때 붙는 일회용 결과 쿼리 — 돌아갈 경로에 다시 싣지 않는다(지난 왕복의 값이 따라가지 않게). */
+const RETURN_RESULT_QUERY_KEYS = ['verification_token', 'social_reauth', 'social_error'];
+
+/**
+ * 외부 수단이 확인을 마치고 돌려보낼 지금 화면 경로를 만듭니다.
+ *
+ * 같은 출처 경로+쿼리만 쓴다(절대 주소·해시 없음). 지난 왕복의 결과 쿼리는 뺀다.
+ *
+ * @returns 경로 (`/` 로 시작), 만들 수 없으면 null
+ */
+function currentReturnPath(): string | null {
+  const pathname = typeof window !== 'undefined' ? window.location?.pathname : undefined;
+  if (typeof pathname !== 'string' || !pathname.startsWith('/') || pathname.startsWith('//')) {
+    return null;
+  }
+  const params = new URLSearchParams(window.location?.search ?? '');
+  for (const key of RETURN_RESULT_QUERY_KEYS) {
+    params.delete(key);
+  }
+  const query = params.toString();
+  return query ? `${pathname}?${query}` : pathname;
+}
+
 async function startChallenge(payload: VerificationPayload, target: IdentityVerificationTarget | null = null): Promise<ChallengeResponseData> {
   // admin 컨텍스트 — 일반적으로 로그인 상태(서버가 세션 기반으로 target 도출).
   // 단, target 이 명시되면(예: 재전송 동기화) 그것을 사용.
@@ -64,6 +88,13 @@ async function startChallenge(payload: VerificationPayload, target: IdentityVeri
   // 428 이 알려 준 정책 — 서버가 그 정책별 문구를 고른다(켜져 있고 목적이 같을 때만).
   if (payload.policy_key) body.policy_key = payload.policy_key;
   if (target) body.target = target;
+  // 관리자 화면에서 시작한 인증 — 서버가 메일의 확인 링크·사이트 링크를 사이트 주소 기준으로 만든다
+  // (「사용자 화면 URL」이 외부 화면이어도 관리자는 사이트 자체의 확인 화면으로 간다).
+  body.scope = 'admin';
+  // 외부 화면을 거치는 수단(회사 계정 다시 로그인 등)이 확인을 마치고 돌려보낼 곳 — 지금 관리자 화면.
+  // 싣지 않으면 서버 기본값(사용자 화면의 마이페이지 등)으로 돌아간다. 서버는 같은 출처 경로만 받는다.
+  const returnPath = currentReturnPath();
+  if (returnPath) body.return_path = returnPath;
 
   // challenge 시작 주소는 428 응답 본문(`challenge_start_url`)에서 온다. 코어 `G7Core.api` 로 보내면
   // Bearer·XSRF 는 동일 출처 대상에만 실리고(교차 출처 서버가 428 을 흉내 내 자기 주소를 넣어도 토큰이
@@ -240,9 +271,14 @@ export async function sirsoftAdminBasicIdentityLauncher(
       render_hint: 'external_redirect',
       // 인증 화면은 `query.return_url` 을 읽는다 — 같은 출처 경로+쿼리만 넘긴다(절대 주소 아님). 해시는 빼는데,
       // 인증 화면의 복귀 이동(mergeQuery)이 쿼리를 덧붙일 때 해시 안으로 들어가지 않게 하기 위해서다.
-      redirect_url: `/admin/identity/challenge?challenge_id=${encodeURIComponent(challenge.id)}&return_url=${encodeURIComponent(
-        `${window.location.pathname}${window.location.search}`,
-      )}`,
+      // 외부 인증기관이 그대로 여는 복귀 주소라 사이트 마운트 접두사를 붙인다 — 없으면 하위 폴더 사이트에서
+      // 인증을 마친 사용자가 사이트 밖으로 돌아온다(`return_url` 의 pathname 은 이미 접두사를 갖고 있고, 복귀 이동이 그대로 받는다).
+      redirect_url: sitePath(
+        `/admin/identity/challenge?challenge_id=${encodeURIComponent(challenge.id)}&return_url=${encodeURIComponent(
+          // base-path:allow 복귀 주소는 브라우저가 그대로 열 값이라 접두사를 품은 원본을 쓴다(위 주석).
+          `${window.location.pathname}${window.location.search}`,
+        )}`,
+      ),
     });
   }
 

@@ -7,8 +7,10 @@ use App\Contracts\Repositories\MenuRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
 use App\Enums\MenuPermissionType;
+use App\Extension\Helpers\Concerns\RecordsSyncDeletion;
 use App\Extension\Support\LifecycleWarnings;
 use App\Models\Menu;
+use App\Models\Role;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
@@ -25,6 +27,8 @@ use Illuminate\Support\Facades\Log;
  */
 class ExtensionMenuSyncHelper
 {
+    use RecordsSyncDeletion;
+
     /**
      * @param  MenuRepositoryInterface  $menuRepository  메뉴 저장소
      * @param  RoleRepositoryInterface  $roleRepository  역할 저장소
@@ -248,6 +252,149 @@ class ExtensionMenuSyncHelper
     }
 
     /**
+     * 확장이 선언한 역할에 그 확장 메뉴 중 역할이 가진 권한으로 열 수 있는 메뉴를 붙입니다.
+     *
+     * 새 메뉴는 관리자 역할과 설치한 사람의 역할에만 자동으로 붙는다(`grantDefaultRoles()`). 그래서 확장이
+     * 선언한 역할(예: 이커머스 관리자)만 가진 운영자는 그 확장 권한을 갖고도 관리자 사이드바가 비었다.
+     * 이 메서드는 선언 역할마다 메뉴 정의를 훑어 다음 규칙으로 읽기 권한을 붙인다.
+     *
+     *  - 메뉴의 필요 권한은 정의의 `permission` 키다. 역할이 그 권한을 가지면(범위 제한 권한 포함) 붙인다.
+     *  - 필요 권한이 없는 상위 메뉴는 붙는 하위 메뉴가 하나라도 있을 때 붙인다(하위 메뉴는 상위를 거쳐서만 보인다).
+     *  - 필요 권한을 선언하지 않은 단독 메뉴는 판정할 근거가 없으므로 붙이지 않는다.
+     *  - 운영자가 역할 관리·메뉴 관리에서 이 역할을 넣거나 뺀 메뉴(메뉴 `user_overrides` 에 역할 식별자)는 건드리지 않는다.
+     *    그 상위 메뉴에서 역할을 뺀 상태면 하위 메뉴도 붙이지 않는다.
+     *  - 붙이기만 하고 떼지 않는다. 이미 붙어 있으면 그대로 둔다(멱등).
+     *
+     * 설치·업데이트·활성 확장 재동기화가 모두 메뉴 동기화 뒤에 이 메서드를 부르므로, 기존 사이트도 다음 동기화 때 채워진다.
+     *
+     * @param  array  $menuDataArray  메뉴 정의 배열 (`getAdminMenus()` 형식)
+     * @param  ExtensionOwnerType  $extensionType  확장 타입
+     * @param  string  $extensionIdentifier  확장 식별자
+     * @param  array<int, string>  $roleIdentifiers  확장이 선언한 역할 식별자 목록
+     * @return int 새로 붙인 역할-메뉴 연결 수
+     */
+    public function grantMenusToDeclaredRoles(
+        array $menuDataArray,
+        ExtensionOwnerType $extensionType,
+        string $extensionIdentifier,
+        array $roleIdentifiers,
+    ): int {
+        $granted = 0;
+
+        foreach (array_unique(array_filter($roleIdentifiers, 'is_string')) as $roleIdentifier) {
+            // 관리자 역할은 새 메뉴마다 이미 붙는다
+            if ($roleIdentifier === 'admin') {
+                continue;
+            }
+
+            try {
+                $role = $this->roleRepository->findByIdentifier($roleIdentifier);
+                if ($role === null) {
+                    continue;
+                }
+
+                $heldPermissions = $role->permissions()->pluck('permissions.identifier')->all();
+
+                foreach ($menuDataArray as $menuData) {
+                    if (is_array($menuData)) {
+                        $this->grantOpenableMenuTree($menuData, $extensionType, $extensionIdentifier, $role, $heldPermissions, $granted);
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::warning('확장 선언 역할 메뉴 부여 실패', [
+                    'extension_type' => $extensionType->value,
+                    'extension_identifier' => $extensionIdentifier,
+                    'role' => $roleIdentifier,
+                    'error' => $e->getMessage(),
+                ]);
+                LifecycleWarnings::current()->add('menu_role', $roleIdentifier, $e->getMessage());
+            }
+        }
+
+        return $granted;
+    }
+
+    /**
+     * 메뉴 정의 하나(와 하위)를 훑어 역할이 열 수 있으면 붙이고, 그 역할에게 이 메뉴가 보이는지 돌려줍니다.
+     *
+     * @param  array  $menuData  메뉴 정의
+     * @param  ExtensionOwnerType  $extensionType  확장 타입
+     * @param  string  $extensionIdentifier  확장 식별자
+     * @param  Role  $role  대상 역할
+     * @param  array<int, string>  $heldPermissions  역할이 가진 권한 식별자
+     * @param  int  $granted  새로 붙인 연결 수 (누적)
+     * @return bool 이 메뉴가 그 역할에 붙어 있으면(이번에 붙였거나 이미 있었으면) true
+     */
+    private function grantOpenableMenuTree(
+        array $menuData,
+        ExtensionOwnerType $extensionType,
+        string $extensionIdentifier,
+        Role $role,
+        array $heldPermissions,
+        int &$granted,
+    ): bool {
+        $menu = $this->menuRepository->findBySlugAndExtension($this->resolveSlug($menuData), $extensionType, $extensionIdentifier);
+        if ($menu === null) {
+            return false;
+        }
+
+        $isAttached = static fn (Menu $target): bool => $target->roles()
+            ->wherePivot('permission_type', MenuPermissionType::Read->value)
+            ->whereKey($role->id)
+            ->exists();
+
+        // 운영자가 이 메뉴에서 이 역할을 넣거나 뺐다 — 그 결정을 따른다. 뺀 상태면 하위도 보이지 않으므로 손대지 않는다.
+        $operatorDecided = in_array($role->identifier, (array) ($menu->user_overrides ?? []), true);
+        if ($operatorDecided && ! $isAttached($menu)) {
+            return false;
+        }
+
+        $hasOpenableChild = false;
+        foreach ($menuData['children'] ?? [] as $childData) {
+            if (is_array($childData)
+                && $this->grantOpenableMenuTree($childData, $extensionType, $extensionIdentifier, $role, $heldPermissions, $granted)) {
+                $hasOpenableChild = true;
+            }
+        }
+
+        if ($operatorDecided) {
+            return true;
+        }
+
+        $requiredPermission = $menuData['permission'] ?? null;
+        $openable = (is_string($requiredPermission) && $requiredPermission !== '' && in_array($requiredPermission, $heldPermissions, true))
+            || $hasOpenableChild;
+
+        if (! $openable) {
+            return $isAttached($menu);
+        }
+
+        if (! $isAttached($menu)) {
+            $menu->roles()->attach($role->id, ['permission_type' => MenuPermissionType::Read->value]);
+            $granted++;
+        }
+
+        return true;
+    }
+
+    /**
+     * 메뉴 정의의 슬러그를 구합니다 (`syncMenuRecursive()` 와 같은 규칙 — slug 가 없으면 첫 언어 이름).
+     *
+     * @param  array  $menuData  메뉴 정의
+     * @return string 슬러그
+     */
+    private function resolveSlug(array $menuData): string
+    {
+        if (isset($menuData['slug'])) {
+            return (string) $menuData['slug'];
+        }
+
+        $name = $menuData['name'] ?? '';
+
+        return (string) (is_array($name) ? (array_values($name)[0] ?? '') : $name);
+    }
+
+    /**
      * 현재 확장에 속하지 않는 stale 메뉴를 정리합니다.
      *
      * 정책:
@@ -274,6 +421,11 @@ class ExtensionMenuSyncHelper
         string $extensionIdentifier,
         array $currentSlugs,
     ): int {
+        // 검수 서버(stage)는 공유 DB 의 선언 항목을 지우지 않고 대장에 미룬다 — 운영 서버가 extension:apply-deferred-cleanup 으로 같은 규칙대로 지운다
+        if (DeferredDeclarativeCleanup::shouldDefer()) {
+            return DeferredDeclarativeCleanup::defer($this, __FUNCTION__, func_get_args());
+        }
+
         $existingMenus = $this->menuRepository->getMenusByExtension($extensionType, $extensionIdentifier);
 
         $deleted = 0;
@@ -282,18 +434,12 @@ class ExtensionMenuSyncHelper
                 continue;
             }
 
-            // role_menus 피벗 정리
-            $menu->roles()->detach();
-
-            // 자식 메뉴 먼저 삭제 (orphan 회피)
-            foreach ($menu->children as $child) {
-                $child->roles()->detach();
-                $this->menuRepository->delete($child);
-                $deleted++;
+            // 앞선 메뉴의 하위 트리로 이미 지워졌으면 건너뛴다.
+            if ($this->menuRepository->findById((int) $menu->id) === null) {
+                continue;
             }
 
-            $this->menuRepository->delete($menu);
-            $deleted++;
+            $deleted += $this->deleteMenuSubtree($menu, $extensionType, $extensionIdentifier, $currentSlugs);
         }
 
         if ($deleted > 0) {
@@ -336,5 +482,108 @@ class ExtensionMenuSyncHelper
         }
 
         return $slugs;
+    }
+
+    /**
+     * 선언에서 빠진 메뉴 하나를 하위 트리(손자 포함)째 명시적으로 지웁니다.
+     *
+     * 순서: 역할 배정(`role_menus`)·메뉴 권한(`menu_permissions`) → 깊은 자식부터 → 본 메뉴. 운영자가 만든 자식(다른 출처)과
+     * 새 판이 여전히 선언한 자식은 지우지 않고 최상위(부모 null)로 올린다 — 종전에는 손자까지 DB CASCADE 로 사라졌다.
+     * 운영자 데이터(고친 필드·운영자가 만든 자식)가 있으면 지우기 직전 `menu.sync_deleted` 로 트리·역할 배정을 남긴다.
+     *
+     * @param  Menu  $menu  선언에서 빠진 메뉴
+     * @param  ExtensionOwnerType  $extensionType  소유 확장 종류
+     * @param  string  $extensionIdentifier  소유 확장 식별자
+     * @param  array<int, string>  $currentSlugs  새 판이 선언한 슬러그
+     * @return int 지운 메뉴 수
+     */
+    private function deleteMenuSubtree(Menu $menu, ExtensionOwnerType $extensionType, string $extensionIdentifier, array $currentSlugs): int
+    {
+        [$owned, $lifted] = $this->partitionMenuSubtree($menu, $extensionType, $extensionIdentifier, $currentSlugs);
+
+        $operatorData = $lifted !== [] || collect($owned)->contains(fn (Menu $m) => $this->hasOperatorOverrides($m));
+        if ($operatorData) {
+            $this->recordSyncDeletion('menu', (string) $menu->slug, $extensionType->value, $extensionIdentifier, [
+                'menus' => array_map(fn (Menu $m) => $m->toArray() + ['role_ids' => $m->roles()->pluck('roles.id')->all()], $owned),
+                'lifted_children' => array_map(fn (Menu $m) => (string) $m->slug, $lifted),
+            ]);
+        }
+
+        foreach ($lifted as $child) {
+            $this->menuRepository->update($child, ['parent_id' => null]);
+        }
+
+        foreach (array_reverse($owned) as $node) {
+            $node->roles()->detach();
+            $this->menuRepository->deleteMenuPermissions($node);
+            $this->menuRepository->delete($node);
+        }
+
+        return count($owned);
+    }
+
+    /**
+     * 메뉴 하위 트리를 「같이 지울 것」과 「최상위로 올릴 것」으로 나눕니다 (부모 → 자식 순).
+     *
+     * @param  Menu  $menu  뿌리 메뉴
+     * @param  ExtensionOwnerType  $extensionType  소유 확장 종류
+     * @param  string  $extensionIdentifier  소유 확장 식별자
+     * @param  array<int, string>  $currentSlugs  새 판이 선언한 슬러그
+     * @return array{0: list<Menu>, 1: list<Menu>} [지울 메뉴(뿌리 포함), 올릴 자식]
+     */
+    private function partitionMenuSubtree(Menu $menu, ExtensionOwnerType $extensionType, string $extensionIdentifier, array $currentSlugs): array
+    {
+        $owned = [$menu];
+        $lifted = [];
+        $queue = [$menu];
+
+        while ($queue !== []) {
+            $node = array_shift($queue);
+
+            foreach ($this->menuRepository->getChildrenByParent((int) $node->id) as $child) {
+                $childType = $child->extension_type instanceof ExtensionOwnerType ? $child->extension_type : ExtensionOwnerType::tryFrom((string) $child->extension_type);
+                $sameOwner = $childType === $extensionType && (string) $child->extension_identifier === $extensionIdentifier;
+
+                if (! $sameOwner || in_array($child->slug, $currentSlugs, true)) {
+                    $lifted[] = $child;
+
+                    continue;
+                }
+
+                $owned[] = $child;
+                $queue[] = $child;
+            }
+        }
+
+        return [$owned, $lifted];
+    }
+
+    /**
+     * 지워질 stale 메뉴를 미리 계산합니다 — 쓰기 없음, 실제 정리와 같은 판정식.
+     *
+     * @param  ExtensionOwnerType  $extensionType  소유 확장 종류
+     * @param  string  $extensionIdentifier  소유 확장 식별자
+     * @param  array<int, string>  $currentSlugs  새 판이 선언한 슬러그
+     * @return list<array{type: string, key: string, has_operator_overrides: bool}> 삭제 예정
+     */
+    public function planCleanup(ExtensionOwnerType $extensionType, string $extensionIdentifier, array $currentSlugs): array
+    {
+        $plan = [];
+        $seen = [];
+
+        foreach ($this->menuRepository->getMenusByExtension($extensionType, $extensionIdentifier) as $menu) {
+            if (in_array($menu->slug, $currentSlugs, true) || isset($seen[$menu->id])) {
+                continue;
+            }
+
+            [$owned, $lifted] = $this->partitionMenuSubtree($menu, $extensionType, $extensionIdentifier, $currentSlugs);
+            foreach ($owned as $node) {
+                $seen[$node->id] = true;
+            }
+
+            $plan[] = ['type' => 'menu', 'key' => (string) $menu->slug, 'has_operator_overrides' => $lifted !== [] || collect($owned)->contains(fn (Menu $m) => $this->hasOperatorOverrides($m))];
+        }
+
+        return $plan;
     }
 }

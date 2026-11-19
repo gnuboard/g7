@@ -1,0 +1,10 @@
+{
+    "format": "g7-signing-key",
+    "version": 1,
+    "algorithm": "ed25519",
+    "label": "sirsoft",
+    "key_id": "sirsoft:df6a55b950333863",
+    "public_key": "mLiL730E9szjbs51HTmIXNyy7BnmyyjKL+9EoK1M160=",
+    "secret_seed": "tTZJMFyXG9JZ/3jsKzs+L+Hf9TQFqAlw0fHQvbgGRcY=",
+    "_comment": "TEST ONLY — 테스트 전용 키. 공개된 시드라 어떤 운영 신뢰 목록에도 넣지 않는다."
+}

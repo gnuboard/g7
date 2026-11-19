@@ -11,8 +11,20 @@
             "comment": "상품 그리드",
             "type": "basic",
             "name": "Div",
+            "responsive": {
+                "640-1023": {
+                    "props": {
+                        "className": "grid gap-4 grid-cols-3 mb-8"
+                    }
+                },
+                "desktop": {
+                    "props": {
+                        "className": "grid gap-4 grid-cols-4 mb-8"
+                    }
+                }
+            },
             "props": {
-                "className": "grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 mb-8"
+                "className": "grid grid-cols-2 gap-4 mb-8"
             },
             "children": [
                 {

@@ -72,6 +72,8 @@ effects:
   # 별도 프로세스 복구 수단 (extension:update-autoload)
   - update_autoload_command_regenerates_hook_cache_after_reregistering_autoload
   - update_autoload_command_runs_without_required_arguments
+  # 코어 리스너 등록 경로 중복 (명시 등록 + 캐시 재귀 수집) — 같은 필터가 두 번 붙으면 대시보드 경고가 두 번 뜬다
+  - core_listener_registered_exactly_once_across_registration_paths
   # #862 — 테스트 환경은 실 bootstrap/cache/hooks.php 를 쓰거나 지우지 않는다(경로 치환 인스턴스는 그대로 쓴다)
   - testing_env_never_writes_real_hook_cache_file
   - testing_env_never_deletes_real_hook_cache_file
@@ -85,3 +87,4 @@ test_files:
   - tests/Feature/Console/HooksCacheCommandTest.php
   - tests/Unit/Services/NotificationDefinitionServiceTest.php
   - tests/Feature/Extension/ExtensionUpdateAutoloadHookCacheTest.php
+  - tests/Feature/Dashboard/CoreAlertListenerRegistrationTest.php

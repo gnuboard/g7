@@ -1,0 +1,79 @@
+{
+  "_why": [
+    "확장자 없는 모드의 `?file=` 값은 서버(App\\Support\\AssetUrl::asset)와 프론트",
+    "(resources/js/core/support/assetUrl.ts::extensionAsset)가 각각 만든다. 두 인코더가",
+    "갈리면 같은 파일의 URL 문자열이 둘로 나뉘어 HTTP 캐시 키가 갈린다 — 디코딩하면",
+    "같은 경로라 404 도 오류도 나지 않고, 같은 자산을 두 번 받는 것이 유일한 증상이다.",
+    "",
+    "실제로 갈려 있었다: 프론트가 `encodeURIComponent` 를 썼는데 그 함수는 `! ' ( ) *`",
+    "를 인코딩하지 않는 반면 PHP `rawurlencode()` 는 RFC 3986 대로 전부 인코딩한다.",
+    "같은 파일의 형제 경로(`convertToCurrentMode`)는 이미 교정 인코더(`rawEncode`)를",
+    "쓰고 있어, 한 파일 안에서도 두 규칙이 공존했다.",
+    "",
+    "기대표를 두 테스트에 각각 적으면 그 사본이 다시 갈린다. 그래서 표는 여기 하나이고",
+    "양쪽 테스트가 이 파일을 읽는다.",
+    "",
+    "소비처: tests/Unit/Support/AssetUrlTest.php,",
+    "        resources/js/core/support/__tests__/assetUrl.test.ts"
+  ],
+  "_identifier_why": [
+    "식별자 축도 같은 두 인코더가 만든다. 서버 독블록은 「프론트와 같이 rawurlencode」라 적었는데",
+    "프론트 extensionAsset() 은 encodeURIComponent 였다 — 회차 13 C-5. 표는 여기 하나다."
+  ],
+  "identifier_cases": [
+    {
+      "why": "RFC 3986 분기점 — encodeURIComponent 는 ! * ( ) 를 원문으로 남긴다",
+      "identifier": "a!b(c)*d",
+      "encoded": "a%21b%28c%29%2Ad"
+    },
+    {
+      "why": "작은따옴표 — encodeURIComponent 가 남기는 마지막 한 글자",
+      "identifier": "o'neil-plugin",
+      "encoded": "o%27neil-plugin"
+    },
+    {
+      "why": "공백 — 두 인코더가 이미 같던 자리 (회귀 고정)",
+      "identifier": "a b",
+      "encoded": "a%20b"
+    }
+  ],
+  "type": "templates",
+  "identifier": "sirsoft-basic",
+  "cases": [
+    {
+      "why": "평범한 경로 — 구분자만 인코딩된다",
+      "path": "js/components.iife.js",
+      "encoded": "js%2Fcomponents.iife.js"
+    },
+    {
+      "why": "공백 + 한글 (두 인코더가 같은 자리)",
+      "path": "dist/img/여백 파일.png",
+      "encoded": "dist%2Fimg%2F%EC%97%AC%EB%B0%B1%20%ED%8C%8C%EC%9D%BC.png"
+    },
+    {
+      "why": "`+` 는 인코딩되어야 한다 — 안 하면 수신측이 공백으로 읽는다",
+      "path": "dist/js/a+b.js",
+      "encoded": "dist%2Fjs%2Fa%2Bb.js"
+    },
+    {
+      "why": "리터럴 `%` — 이 값을 디코딩하려 들면 URIError 가 난다",
+      "path": "dist/img/50%off.png",
+      "encoded": "dist%2Fimg%2F50%25off.png"
+    },
+    {
+      "why": "RFC 3986 분기점 — `encodeURIComponent` 만 쓰면 `! ' ( ) *` 가 원문으로 남는다",
+      "path": "dist/js/a(1)'s !file*.js",
+      "encoded": "dist%2Fjs%2Fa%281%29%27s%20%21file%2A.js"
+    },
+    {
+      "why": "unreserved 는 인코딩하지 않는다 — 과인코딩도 문자열을 가른다",
+      "path": "dist/js/~tilde-_.js",
+      "encoded": "dist%2Fjs%2F~tilde-_.js"
+    },
+    {
+      "why": "쿼리 구분자(`&`·`=`)가 든 파일명 — 인코딩이 빠지면 쿼리 파싱 자체가 깨진다",
+      "path": "dist/js/한글&질의=값.js",
+      "encoded": "dist%2Fjs%2F%ED%95%9C%EA%B8%80%26%EC%A7%88%EC%9D%98%3D%EA%B0%92.js"
+    }
+  ]
+}

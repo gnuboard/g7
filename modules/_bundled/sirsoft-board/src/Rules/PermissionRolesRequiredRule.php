@@ -18,6 +18,7 @@ class PermissionRolesRequiredRule implements ValidationRule
      * @param  string  $attribute  검증할 속성명
      * @param  mixed  $value  검증할 값 (permissions 배열)
      * @param  Closure  $fail  실패 콜백
+     * @return void 반환값 없음 (역할이 빈 권한이 있으면 $fail 로 실패 처리)
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {

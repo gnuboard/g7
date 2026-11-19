@@ -54,36 +54,43 @@ Route::prefix('admin/pages')->middleware(['auth:sanctum', 'throttle:600,1'])->na
 
     // 버전 이력 조회 (/{page} 보다 먼저 등록 불가하나, /versions 패턴이므로 정상 동작)
     Route::get('/{page}/versions', [PageController::class, 'versions'])
+        ->whereNumber('page')
         ->middleware('permission:admin,sirsoft-page.pages.read')
         ->name('versions.index');
 
     // 버전 상세 조회
     Route::get('/{page}/versions/{versionId}', [PageController::class, 'showVersion'])
+        ->whereNumber(['page', 'versionId'])
         ->middleware('permission:admin,sirsoft-page.pages.read')
         ->name('versions.show');
 
     // 버전 복원
     Route::post('/{page}/versions/{versionId}/restore', [PageController::class, 'restoreVersion'])
+        ->whereNumber(['page', 'versionId'])
         ->middleware('permission:admin,sirsoft-page.pages.update')
         ->name('versions.restore');
 
     // 발행/미발행 토글
     Route::patch('/{page}/publish', [PageController::class, 'publish'])
+        ->whereNumber('page')
         ->middleware('permission:admin,sirsoft-page.pages.update')
         ->name('publish');
 
     // 페이지 상세 조회
     Route::get('/{page}', [PageController::class, 'show'])
+        ->whereNumber('page')
         ->middleware('permission:admin,sirsoft-page.pages.read')
         ->name('show');
 
     // 페이지 수정
     Route::put('/{page}', [PageController::class, 'update'])
+        ->whereNumber('page')
         ->middleware('permission:admin,sirsoft-page.pages.update')
         ->name('update');
 
     // 페이지 삭제
     Route::delete('/{page}', [PageController::class, 'destroy'])
+        ->whereNumber('page')
         ->middleware('permission:admin,sirsoft-page.pages.delete')
         ->name('destroy');
 });
@@ -117,6 +124,7 @@ Route::prefix('admin/attachments')->middleware(['auth:sanctum', 'throttle:600,1'
     // 첨부파일 삭제 — 등록 화면의 임시 첨부(올린 사람만)와 수정 화면의 연결 첨부(수정 권한 + 부모 페이지 스코프)를
     // 서비스가 갈라 판정하므로 라우트는 등록·수정 어느 권한으로도(OR)
     Route::delete('/{id}', [PageAttachmentController::class, 'destroy'])
+        ->whereNumber('id')
         ->middleware('permission:admin,sirsoft-page.pages.create|sirsoft-page.pages.update,false')
         ->name('destroy');
 });

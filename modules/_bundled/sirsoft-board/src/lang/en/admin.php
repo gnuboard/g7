@@ -13,4 +13,13 @@ return [
             'comment' => 'Comment',
         ],
     ],
+    'display_name' => [
+        'areas' => [
+            'posts' => 'Boards (posts, comments)',
+            'admin' => 'Board admin screens',
+        ],
+    ],
+    'guest_author_fields' => [
+        'set_label' => 'Board guest author fields',
+    ],
 ];

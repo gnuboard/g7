@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { DataGrid, DataGridColumn } from '../DataGrid';
+import type { ResponsiveContextValue } from '@core/template-engine/ResponsiveContext';
 
 /**
  * 런타임의 `G7Core.useControllableState` 와 같은 계약을 갖는 테스트용 구현.
@@ -92,7 +93,7 @@ const mockEvaluateCondition = vi.fn((condition: string, ctx: Record<string, any>
 });
 
 // window.G7Core.useResponsive mock
-const mockUseResponsive = vi.fn(() => ({
+const mockUseResponsive = vi.fn((): ResponsiveContextValue => ({
   width: 1024,
   isMobile: false,
   isTablet: false,
@@ -1255,7 +1256,7 @@ describe('DataGrid', () => {
         isMobile: true,
         isTablet: false,
         isDesktop: false,
-        matchedPreset: 'portable' as const,
+        matchedPreset: 'mobile' as const,
       });
     });
 
@@ -1279,7 +1280,7 @@ describe('DataGrid', () => {
         <DataGrid
           columns={mockColumns}
           data={mockData}
-          mobileBreakpoint={768}
+          responsiveBreakpoint={768}
           subRowRender={(row) => <div data-testid="mobile-sub-row">모바일 서브: {row.name}</div>}
         />
       );
@@ -1305,7 +1306,7 @@ describe('DataGrid', () => {
         <DataGrid
           columns={mockColumns}
           data={dataWithFlag}
-          mobileBreakpoint={768}
+          responsiveBreakpoint={768}
           subRowRender={(row) => <div data-testid="mobile-sub-row">{row.name}</div>}
           subRowCondition="{{row.showSubRow}}"
         />
@@ -1324,7 +1325,7 @@ describe('DataGrid', () => {
         <DataGrid
           columns={mockColumns}
           data={mockData}
-          mobileBreakpoint={768}
+          responsiveBreakpoint={768}
           subRowRender={(row) => <div data-testid="mobile-sub-row">{row.name}</div>}
           subRowClassName="mobile-sub-row-custom"
         />
@@ -1419,8 +1420,6 @@ describe('DataGrid', () => {
    * `renderCellChildren` 으로 넘기고 `cell.text` 는 원문 그대로 출력해 왔다.
    * 그 결과 `{{order.data?.total_quantity ?? 0}}개` 같은 값이 화면에 **원본 문자열로 노출**된다.
    * (브라우저 실측: `/admin/ecommerce/orders/:orderNumber` 합계 행 3셀)
-   *
-   * @effects datagrid_footer_cell_text_binding_resolved
    */
   describe('푸터 행 text 바인딩 해석', () => {
     const footerColumns: DataGridColumn[] = [

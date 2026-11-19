@@ -357,4 +357,6 @@ template.routes.{identifier}
 - [모듈 레이아웃](module-layouts.md) - 레이아웃 등록, 오버라이드
 - [모듈 다국어](module-i18n.md) - 백엔드/프론트엔드 다국어
 - [템플릿 라우트](template-routing.md) - 템플릿 라우트 규칙
+- [라우팅 「절대 URL」](../backend/routing.md#절대-url-은-사이트-주소로-만든다) - 서버가 만드는 화면 링크는 `ScreenUrl`, 콜백은 `SiteUrl`
+- [개발자 화면 가이드](../custom-development.md) - 모듈 화면 주소를 개발자 화면이 가져갈 때의 화면 키(5절)
 - [확장 시스템 개요](README.md) - 전체 인덱스

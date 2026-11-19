@@ -609,6 +609,9 @@
                                                             "if": "{{item.thumbnail_url}}",
                                                             "props": {
                                                                 "src": "{{item.thumbnail_url}}",
+                                                                "thumbPreset": "sm",
+                                                                "loading": "lazy",
+                                                                "decoding": "async",
                                                                 "alt": "{{item.product_name}}",
                                                                 "className": "w-full h-full object-cover"
                                                             }

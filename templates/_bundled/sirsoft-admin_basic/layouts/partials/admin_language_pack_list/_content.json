@@ -58,10 +58,20 @@
                                             }
                                         },
                                         {
+                                            "comment": "GitHub 최신 판 조회에 실패한 팩(details[].error)은 「확인하지 못함」이다 — 있으면 「모두 최신」을 띄우지 않고 경고로 알린다.",
                                             "handler": "toast",
+                                            "if": "{{!(response.data?.details ?? []).some(d => d.error) || response.data?.updates > 0}}",
                                             "params": {
                                                 "type": "success",
                                                 "message": "{{response.data?.updates > 0 ? '$t:admin.language_packs.messages.check_updates_done|count=' + response.data.updates : '$t:admin.language_packs.messages.check_updates_none'}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "if": "{{(response.data?.details ?? []).some(d => d.error)}}",
+                                            "params": {
+                                                "type": "warning",
+                                                "message": "$t:admin.language_packs.messages.check_updates_github_failed|count={{(response.data?.details ?? []).filter(d => d.error).length}}|names={{(response.data?.details ?? []).filter(d => d.error).map(d => d.identifier).join(', ')}}|reason={{(response.data?.details ?? []).filter(d => d.error)[0]?.error ?? ''}}"
                                             }
                                         },
                                         {
@@ -183,7 +193,9 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
+                        "disabled": "{{_global.appConfig?.runtime_role === 'stage'}}",
+                        "title": "{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}",
+                        "className": "disabled:opacity-50 disabled:cursor-not-allowed flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors"
                     },
                     "children": [
                         {
@@ -251,10 +263,20 @@
                                             }
                                         },
                                         {
+                                            "comment": "GitHub 최신 판 조회에 실패한 팩(details[].error)은 「확인하지 못함」이다 — 있으면 「모두 최신」을 띄우지 않고 경고로 알린다.",
                                             "handler": "toast",
+                                            "if": "{{!(response.data?.details ?? []).some(d => d.error) || response.data?.updates > 0}}",
                                             "params": {
                                                 "type": "success",
                                                 "message": "{{response.data?.updates > 0 ? '$t:admin.language_packs.messages.check_updates_done|count=' + response.data.updates : '$t:admin.language_packs.messages.check_updates_none'}}"
+                                            }
+                                        },
+                                        {
+                                            "handler": "toast",
+                                            "if": "{{(response.data?.details ?? []).some(d => d.error)}}",
+                                            "params": {
+                                                "type": "warning",
+                                                "message": "$t:admin.language_packs.messages.check_updates_github_failed|count={{(response.data?.details ?? []).filter(d => d.error).length}}|names={{(response.data?.details ?? []).filter(d => d.error).map(d => d.identifier).join(', ')}}|reason={{(response.data?.details ?? []).filter(d => d.error)[0]?.error ?? ''}}"
                                             }
                                         },
                                         {
@@ -360,7 +382,9 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "flex-center flex-1 justify-center gap-2 px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors text-sm"
+                        "disabled": "{{_global.appConfig?.runtime_role === 'stage'}}",
+                        "title": "{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}",
+                        "className": "disabled:opacity-50 disabled:cursor-not-allowed flex-center flex-1 justify-center gap-2 px-3 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors text-sm"
                     },
                     "children": [
                         {
@@ -561,6 +585,13 @@
                             "type": "basic",
                             "name": "Select",
                             "if": "{{!_local.scopeLocked}}",
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100"
+                                    }
+                                }
+                            },
                             "actions": [
                                 {
                                     "comment": "이 칸은 확장 상세에서 들어왔을 때 통째로 감춰진다 — 그때는 범위가 그 확장으로 이미 정해져 있어 고를 여지가 없다.",
@@ -588,7 +619,7 @@
                             "props": {
                                 "aria-label": "$t:admin.language_packs.columns.scope",
                                 "value": "{{query.scope ?? ''}}",
-                                "className": "w-full sm:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100",
+                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100",
                                 "options": [
                                     {
                                         "value": "",
@@ -617,6 +648,13 @@
                             "id": "lp_filter_status",
                             "type": "basic",
                             "name": "Select",
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100"
+                                    }
+                                }
+                            },
                             "actions": [
                                 {
                                     "comment": "상태 다섯 중 「미설치」는 아직 깔지 않은 번들 팩이고, 「오류」는 파일이나 매니페스트가 깨져 읽히지 않는 팩이다.",
@@ -644,7 +682,7 @@
                             "props": {
                                 "aria-label": "$t:admin.language_packs.columns.status",
                                 "value": "{{query.status ?? ''}}",
-                                "className": "w-full sm:w-40 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100",
+                                "className": "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 dark:text-gray-100",
                                 "options": [
                                     {
                                         "value": "",
@@ -1133,7 +1171,7 @@
                         "currentPage": "{{language_packs?.data?.pagination?.current_page ?? 1}}",
                         "totalPages": "{{language_packs?.data?.pagination?.last_page ?? null}}",
                         "hasMorePages": "{{language_packs?.data?.pagination?.has_more_pages ?? false}}",
-                        "items": "{{(language_packs?.data?.data ?? []).map(p => ({\n        id: String(p.id ?? p.bundled_identifier ?? p.identifier),\n        row: p,\n        name: p.name ?? p.identifier,\n        version: p.version,\n        description: p.description ?? '',\n        vendor: p.vendor,\n        iconUrl: p.icon_url,\n        fallbackIcon: 'language',\n        iconBadge: p.icon_source !== 'manifest' ? { text: p.locale, srLabel: p.locale_native_name ?? p.locale ?? '' } : null,\n        dependencies: [],\n        badges: [\n          ...(p.status === 'active' ? [{ label: '$t:admin.language_packs.status.active', tone: 'success' }] : []),\n          ...(p.status === 'inactive' ? [{ label: '$t:admin.language_packs.status.inactive', tone: 'neutral' }] : []),\n          ...(p.status === 'uninstalled' ? [{ label: '$t:admin.language_packs.status.uninstalled', tone: 'info' }] : []),\n          ...(p.is_protected === true ? [{ label: '$t:admin.language_packs.messages.protected_badge', tone: 'accent' }] : []),\n          ...(p.files_missing === true ? [{ label: '$t:admin.language_packs.badge.files_missing', tone: 'danger' }] : []),\n          ...(p.has_update === true && p.status !== 'uninstalled' ? [{ label: '$t:admin.language_packs.badge.update_available', tone: 'danger' }] : [])\n        ],\n        toggle: p.status !== 'uninstalled' ? { checked: p.status === 'active', disabled: p.is_protected === true || (p.abilities?.can_activate !== true && p.abilities?.can_deactivate !== true), label: p.name ?? p.identifier } : null,\n        secondaryAction: p.files_missing === true && p.bundled_source_available === true && p.abilities?.can_install === true\n          ? { label: '$t:admin.language_packs.actions.reinstall', icon: 'refresh' }\n          : (p.has_update === true && p.status !== 'uninstalled' && language_packs?.data?.abilities?.can_update ? { label: '$t:admin.language_packs.actions.update', icon: 'refresh' } : null),\n        primaryAction: p.status === 'uninstalled'\n          ? { label: '$t:admin.language_packs.actions.install', icon: 'download', variant: 'solid', disabled: p.abilities?.can_install !== true }\n          : null,\n        actions: [\n          { id: 'view_detail', label: '$t:admin.language_packs.actions.detail', iconName: 'info-circle' },\n          { id: 'uninstall', label: '$t:admin.language_packs.actions.uninstall', iconName: 'trash', variant: 'danger', disabled: p.is_protected === true || p.status === 'uninstalled' || p.abilities?.can_uninstall !== true }\n        ]\n      }))}}"
+                        "items": "{{(language_packs?.data?.data ?? []).map(p => ({\n        id: String(p.id ?? p.bundled_identifier ?? p.identifier),\n        row: p,\n        name: p.name ?? p.identifier,\n        version: p.version,\n        description: p.description ?? '',\n        vendor: p.vendor,\n        iconUrl: p.icon_url,\n        fallbackIcon: 'language',\n        iconBadge: p.icon_source !== 'manifest' ? { text: p.locale, srLabel: p.locale_native_name ?? p.locale ?? '' } : null,\n        dependencies: [],\n        badges: [\n          ...(p.status === 'active' ? [{ label: '$t:admin.language_packs.status.active', tone: 'success' }] : []),\n          ...(p.status === 'inactive' ? [{ label: '$t:admin.language_packs.status.inactive', tone: 'neutral' }] : []),\n          ...(p.status === 'uninstalled' ? [{ label: '$t:admin.language_packs.status.uninstalled', tone: 'info' }] : []),\n          ...(p.is_protected === true ? [{ label: '$t:admin.language_packs.messages.protected_badge', tone: 'accent' }] : []),\n          ...(p.files_missing === true ? [{ label: '$t:admin.language_packs.badge.files_missing', tone: 'danger' }] : []),\n          ...(p.has_update === true && p.status !== 'uninstalled' ? [{ label: '$t:admin.language_packs.badge.update_available', tone: 'danger' }] : [])\n        ],\n        toggle: p.status !== 'uninstalled' ? { checked: p.status === 'active', title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined, disabled: _global.appConfig?.runtime_role === 'stage' || p.is_protected === true || (p.abilities?.can_activate !== true && p.abilities?.can_deactivate !== true), label: p.name ?? p.identifier } : null,\n        secondaryAction: p.files_missing === true && p.bundled_source_available === true && p.abilities?.can_install === true\n          ? { label: '$t:admin.language_packs.actions.reinstall', icon: 'refresh', disabled: _global.appConfig?.runtime_role === 'stage', title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined }\n          : (p.has_update === true && p.status !== 'uninstalled' && language_packs?.data?.abilities?.can_update ? { label: '$t:admin.language_packs.actions.update', icon: 'refresh', disabled: _global.appConfig?.runtime_role === 'stage', title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined } : null),\n        primaryAction: p.status === 'uninstalled'\n          ? { label: '$t:admin.language_packs.actions.install', icon: 'download', variant: 'solid', disabled: _global.appConfig?.runtime_role === 'stage' || p.abilities?.can_install !== true, title: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined }\n          : null,\n        actions: [\n          { id: 'view_detail', label: '$t:admin.language_packs.actions.detail', iconName: 'info-circle' },\n          { id: 'uninstall', label: '$t:admin.language_packs.actions.uninstall', iconName: 'trash', variant: 'danger', disabledReason: _global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : undefined, disabled: _global.appConfig?.runtime_role === 'stage' || p.is_protected === true || p.status === 'uninstalled' || p.abilities?.can_uninstall !== true }\n        ]\n      }))}}"
                     }
                 },
                 {

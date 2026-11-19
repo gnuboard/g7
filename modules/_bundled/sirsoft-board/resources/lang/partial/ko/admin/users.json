@@ -1,15 +1,4 @@
 {
-  "form": {
-    "sections": {
-      "notification_settings": "게시판 알림 설정"
-    },
-    "notifications": {
-      "post_complete": "게시글 완료 알림",
-      "post_reply": "게시글 답변 알림",
-      "comment": "댓글 알림",
-      "reply_comment": "답변 알림"
-    }
-  },
   "scraps": {
     "tab_label": "스크랩",
     "title": "게시글 스크랩",

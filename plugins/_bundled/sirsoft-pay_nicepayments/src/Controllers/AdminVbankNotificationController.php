@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNicepayments\Controllers;
 
+// audit:allow api-doc-coverage reason: 주문과 결제 조회를 이커머스 공개 결제 계약으로 옮기고 응답을 ResponseHelper 로 만든다 — success, data(notifications, summary) 모양은 같고 성공 응답에 message 가 더해진다 (#916)
+
+use App\Helpers\ResponseHelper;
 use Illuminate\Http\JsonResponse;
-use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Plugins\Sirsoft\PayNicepayments\Concerns\GuardsOrderScope;
 
 /**
@@ -31,13 +34,16 @@ class AdminVbankNotificationController
 {
     use GuardsOrderScope;
 
+    /** 이 플러그인 결제 행의 결제사 id(옛 식별자 포함 — 옛 id 로 발급된 가상계좌 이력도 보인다) */
+    private const PG_SCOPE = ['nicepayments', 'nicepay'];
+
     /**
      * 의존성을 주입받습니다.
      *
-     * @param  OrderProcessingService  $orderService  주문 처리 서비스 (주문번호 조회)
+     * @param  PaymentGatewayBridge  $paymentGateway  이커머스 공개 결제 계약 (주문번호 조회)
      */
     public function __construct(
-        private readonly OrderProcessingService $orderService
+        private readonly PaymentGatewayBridge $paymentGateway,
     ) {}
 
     /**
@@ -55,34 +61,32 @@ class AdminVbankNotificationController
             return $denied;
         }
 
-        $order = $this->orderService->findByOrderNumber($orderNumber);
+        $order = $this->paymentGateway->findOrderByNumber($orderNumber, self::PG_SCOPE);
 
         if (! $order) {
-            return response()->json([
-                'success' => false,
-                'message' => __('sirsoft-pay_nicepayments::messages.errors.order_not_found'),
-                'data' => ['notifications' => [], 'summary' => null],
-            ], 404);
+            return ResponseHelper::error(
+                'messages.errors.order_not_found',
+                404,
+                null,
+                [],
+                'sirsoft-pay_nicepayments',
+                ['notifications' => [], 'summary' => null],
+            );
         }
 
+        // 결제 행은 이 플러그인 행이거나 아직 결제 전인 행일 때만 실린다(다른 결제사가 결제한 행은 null).
         $payment = $order->payment;
-        if (! $payment || ! $payment->isVirtualAccount()) {
-            return response()->json([
-                'success' => true,
-                'data' => ['notifications' => [], 'summary' => null],
-            ]);
+        if (! $payment || ! $payment->isVirtualAccount) {
+            return ResponseHelper::success('common.success', ['notifications' => [], 'summary' => null]);
         }
 
-        $meta = is_array($payment->payment_meta) ? $payment->payment_meta : [];
+        $meta = $payment->paymentMeta;
         $notifications = is_array($meta['vbank_notifications'] ?? null) ? $meta['vbank_notifications'] : [];
         $summary = is_array($meta['vbank_notification_summary'] ?? null) ? $meta['vbank_notification_summary'] : null;
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'notifications' => $notifications,
-                'summary' => $summary,
-            ],
+        return ResponseHelper::success('common.success', [
+            'notifications' => $notifications,
+            'summary' => $summary,
         ]);
     }
 }

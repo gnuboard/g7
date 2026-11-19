@@ -28,6 +28,11 @@ class SettingsSingleValueUpdateTest extends TestCase
 
     private string $token;
 
+    /**
+     * 설정 읽기·수정 권한을 가진 관리자 토큰을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -37,6 +42,8 @@ class SettingsSingleValueUpdateTest extends TestCase
 
     /**
      * 관리자 사용자 생성
+     *
+     * @return User 설정 권한을 가진 관리자
      */
     private function createAdminUser(): User
     {
@@ -86,6 +93,7 @@ class SettingsSingleValueUpdateTest extends TestCase
      *
      * @param  string  $key  설정 키
      * @param  array<string, mixed>  $payload  요청 본문
+     * @return TestResponse 응답
      */
     private function putSetting(string $key, array $payload): TestResponse
     {
@@ -114,6 +122,8 @@ class SettingsSingleValueUpdateTest extends TestCase
      * @scenario declared_type=string, value_disposition=cleared
      *
      * @effects setting_cleared_to_empty_string
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function string_setting_can_be_cleared_to_empty(): void
@@ -135,6 +145,8 @@ class SettingsSingleValueUpdateTest extends TestCase
      * @scenario declared_type=string, value_disposition=cleared
      *
      * @effects setting_cleared_to_empty_string
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function null_value_is_accepted(): void
@@ -152,6 +164,8 @@ class SettingsSingleValueUpdateTest extends TestCase
      * @scenario declared_type=string, value_disposition=rejected
      *
      * @effects missing_value_key_rejected_with_422
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function missing_value_key_is_rejected(): void
@@ -174,6 +188,8 @@ class SettingsSingleValueUpdateTest extends TestCase
      * @scenario declared_type=string, value_disposition=accepted
      *
      * @effects string_setting_stored_verbatim
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function string_setting_is_stored_verbatim(): void
@@ -195,6 +211,8 @@ class SettingsSingleValueUpdateTest extends TestCase
      * @scenario declared_type=boolean, value_disposition=accepted
      *
      * @effects boolean_setting_stored_as_boolean
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function boolean_setting_stores_boolean_not_string(): void
@@ -215,13 +233,18 @@ class SettingsSingleValueUpdateTest extends TestCase
      * @scenario declared_type=boolean, value_disposition=accepted
      *
      * @effects boolean_setting_stored_as_boolean
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function native_boolean_is_preserved(): void
     {
-        $this->putSetting('general.maintenance_mode', ['value' => true])->assertOk();
+        // 기본값이 true 인 키에 진짜 false 를 보내 「기본값이 그대로 남은 것」과 구분한다.
+        $this->putSetting('seo.sitemap_enabled', ['value' => false])->assertOk();
 
-        $this->assertTrue($this->stored('general.maintenance_mode'));
+        $stored = $this->stored('seo.sitemap_enabled');
+        $this->assertIsBool($stored);
+        $this->assertFalse($stored);
     }
 
     /**
@@ -232,6 +255,8 @@ class SettingsSingleValueUpdateTest extends TestCase
      * @scenario declared_type=boolean, value_disposition=rejected
      *
      * @effects uninterpretable_value_rejected_with_422
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function uninterpretable_boolean_is_rejected(): void
@@ -247,6 +272,8 @@ class SettingsSingleValueUpdateTest extends TestCase
      * @scenario declared_type=integer, value_disposition=accepted
      *
      * @effects integer_setting_stored_as_integer
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function integer_setting_stores_integer_not_string(): void
@@ -264,6 +291,8 @@ class SettingsSingleValueUpdateTest extends TestCase
      * @scenario declared_type=integer, value_disposition=rejected
      *
      * @effects uninterpretable_value_rejected_with_422
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function uninterpretable_integer_is_rejected(): void
@@ -279,6 +308,8 @@ class SettingsSingleValueUpdateTest extends TestCase
      * @scenario declared_type=integer, value_disposition=cleared
      *
      * @effects setting_cleared_to_null
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function empty_string_clears_non_string_setting(): void
@@ -295,6 +326,8 @@ class SettingsSingleValueUpdateTest extends TestCase
      * @scenario declared_type=array, value_disposition=accepted
      *
      * @effects array_setting_stored_as_array
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function array_value_is_accepted(): void
@@ -310,6 +343,8 @@ class SettingsSingleValueUpdateTest extends TestCase
      * @scenario declared_type=boolean, value_disposition=cleared
      *
      * @effects setting_cleared_to_null
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function boolean_setting_can_be_cleared(): void
@@ -326,6 +361,8 @@ class SettingsSingleValueUpdateTest extends TestCase
      * @scenario declared_type=array, value_disposition=cleared
      *
      * @effects setting_cleared_to_null
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function array_setting_can_be_cleared(): void
@@ -344,6 +381,8 @@ class SettingsSingleValueUpdateTest extends TestCase
      * @scenario declared_type=string, value_disposition=rejected
      *
      * @effects oversized_value_rejected_with_422
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function oversized_string_is_rejected(): void
@@ -362,6 +401,8 @@ class SettingsSingleValueUpdateTest extends TestCase
      * @scenario declared_type=array, value_disposition=rejected
      *
      * @effects oversized_array_rejected_with_422
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function oversized_array_is_rejected(): void

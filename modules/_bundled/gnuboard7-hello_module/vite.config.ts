@@ -10,6 +10,10 @@ import path from 'path';
  *
  * React 는 external 이다 — 코어가 이미 페이지에 실어 둔 인스턴스를 빌려 쓴다. 번들이 자기
  * React 사본을 품으면 훅 호출이 다른 인스턴스에 걸려 "Invalid hook call" 로 죽는다.
+ *
+ * 화면 스타일은 순수 CSS(resources/css/main.css)다. 엔트리가 그 파일을 import 하면 Vite 가 CSS 를 따로 뽑아내고,
+ * 아래 assetFileNames 가 그것을 module.json `assets.css.output` 과 같은 dist/css/module.css 로 낸다.
+ * CSS 전처리기·Tailwind 플러그인은 쓰지 않는다.
  */
 export default defineConfig({
   define: {
@@ -44,7 +48,8 @@ export default defineConfig({
 
         entryFileNames: 'js/hello-module.iife.js',
         chunkFileNames: 'js/[name]-[hash].js',
-        assetFileNames: 'assets/[name][extname]',
+        // index.ts 가 불러오는 CSS 는 module.json assets.css.output 과 같은 경로로 낸다
+        assetFileNames: (info) => (info.name?.endsWith('.css') ? 'css/module.css' : 'assets/[name][extname]'),
       },
     },
 

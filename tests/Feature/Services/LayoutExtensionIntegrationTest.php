@@ -12,8 +12,10 @@ use App\Extension\PluginManager;
 use App\Models\LayoutExtension;
 use App\Models\Template;
 use App\Models\TemplateLayout;
+use App\Services\Layout\TemplateChildrenDeleter;
 use App\Services\LayoutExtensionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 /**
@@ -498,13 +500,15 @@ class LayoutExtensionIntegrationTest extends TestCase
     }
 
     /**
-     * 템플릿 삭제 시 관련 Extension 모두 삭제 테스트
+     * 템플릿을 지우기 전에 그 템플릿의 Extension 을 명시적으로 지운다 — 외래키 검사를 꺼도 고아가 남지 않는다(DB CASCADE 비의존, #888).
+     *
+     * 템플릿 제거(`TemplateManager::unregisterLayouts()`)와 같은 순서로 `TemplateChildrenDeleter` 가 자식을 먼저 지운다.
      *
      * @return void 반환값 없음
      *
      * @effects uninstall_and_template_deletion_remove_extension_rows
      */
-    public function test_template_deletion_cascades_to_extensions(): void
+    public function test_template_deletion_removes_extensions_explicitly(): void
     {
         // 1. Extension 등록
         $this->service->registerExtension(
@@ -531,11 +535,17 @@ class LayoutExtensionIntegrationTest extends TestCase
 
         $this->assertEquals(2, LayoutExtension::count());
 
-        // 2. 템플릿 삭제
-        $this->template->delete();
+        // 2. 외래키 검사를 끈 채 템플릿 제거와 같은 순서로 삭제 — CASCADE 가 돌지 않으므로 남으면 명시 삭제가 빠진 것이다
+        Schema::disableForeignKeyConstraints();
+        try {
+            app(TemplateChildrenDeleter::class)->deleteChildrenBeforeLayouts($this->template->id);
+            $this->template->delete();
+        } finally {
+            Schema::enableForeignKeyConstraints();
+        }
 
-        // 3. 관련 Extension도 cascade 삭제됨
-        $this->assertEquals(0, LayoutExtension::count());
+        // 3. 관련 Extension 이 명시적으로 지워졌다
+        $this->assertEquals(0, LayoutExtension::withTrashed()->count());
     }
 
     // =========================================================================

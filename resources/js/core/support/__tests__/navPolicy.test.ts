@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { sanitizeNavPath, resolveSameTabNavPath, isDangerousScheme, toSameOriginNavPath } from '../navPolicy';
+import { sanitizeNavPath, resolveSameTabNavPath, isDangerousScheme, toSameOriginNavPath, isOffSiteNavTarget } from '../navPolicy';
 
 describe('navPolicy', () => {
     describe('sanitizeNavPath — 거부', () => {
@@ -148,6 +148,40 @@ describe('navPolicy', () => {
             expect(resolveSameTabNavPath(undefined, '/')).toBe('/');
             expect(resolveSameTabNavPath('/admin/users', '/')).toBe('/admin/users');
             expect(resolveSameTabNavPath(`${window.location.origin}/admin/users?x=1`, '/')).toBe('/admin/users?x=1');
+        });
+    });
+
+    describe('isOffSiteNavTarget — SPA 이동 목적지의 사이트 밖 판정 (handleNavigate 4곳이 공유)', () => {
+        /**
+         * @scenario target_kind=offsite, sink=same_tab
+         *
+         * @effects nav_sink_rejects_offsite_target
+         */
+        it('프로토콜 상대·스킴·백슬래시·제어 문자 변형은 사이트 밖이다', () => {
+            for (const path of [
+                '//evil.example/x',
+                '///evil.example/x',
+                '/\\evil.example/x',
+                '/\t/evil.example/x',
+                '  //evil.example/x  ',
+                'https://evil.example/x',
+                'javascript:alert(1)',
+            ]) {
+                expect(isOffSiteNavTarget(path), path).toBe(true);
+            }
+        });
+
+        /**
+         * @scenario target_kind=same_origin, sink=same_tab
+         *
+         * @effects same_origin_redirect_preserved
+         */
+        it('사이트 안 경로·가운데 연속 슬래시·상대 경로·문자열이 아닌 값은 사이트 밖이 아니다 (과차단 없음)', () => {
+            for (const path of ['/board/free', '/board//free', '/board/free?page=2#a', 'board/free', '']) {
+                expect(isOffSiteNavTarget(path), path).toBe(false);
+            }
+            expect(isOffSiteNavTarget(undefined)).toBe(false);
+            expect(isOffSiteNavTarget(42)).toBe(false);
         });
     });
 

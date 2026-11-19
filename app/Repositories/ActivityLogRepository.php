@@ -7,6 +7,7 @@ use App\Helpers\PermissionHelper;
 use App\Helpers\TimezoneHelper;
 use App\Http\Resources\BaseApiCollection;
 use App\Models\ActivityLog;
+use App\Models\User;
 use App\Repositories\Concerns\DeletesInBatches;
 use App\Repositories\Concerns\HasMultipleSearchFilters;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
@@ -114,6 +115,11 @@ class ActivityLogRepository implements ActivityLogRepositoryInterface
             $query->where('loggable_type', $filters['loggable_type']);
         }
 
+        // 「삭제 직전 기록만 보기」 — 목록의 펼침 요약(ActivityLogResource)과 같은 판정이다
+        if (filter_var($filters['deletion_snapshot'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+            $query->deletionSnapshots();
+        }
+
         if (isset($filters['created_by'])) {
             $query->whereHas('user', function ($q) use ($filters) {
                 $q->where('uuid', $filters['created_by']);
@@ -147,7 +153,7 @@ class ActivityLogRepository implements ActivityLogRepositoryInterface
 
         if (! empty($filters['cursor']) && KeysetPaginator::supports($sortKeys, self::SORTABLE_COLUMNS)) {
             return KeysetPaginator::paginate(
-                query: $query->with('user:id,uuid,name,email'),
+                query: $query->with('user:'.User::displayColumns()),
                 perPage: $perPage,
                 sortKeys: $sortKeys,
                 uniqueKey: 'id',
@@ -163,7 +169,7 @@ class ActivityLogRepository implements ActivityLogRepositoryInterface
             columns: ['*'],
             sort: $sort,
             perPage: $perPage,
-            relations: ['user:id,uuid,name,email'],
+            relations: ['user:'.User::displayColumns()],
             // 로그 테이블은 계속 쌓이기만 한다. 총 건수는 상한까지만 세고 "다음" 이동은
             // per_page + 1 실측으로 끝까지 열어 둔다 (계산 불가는 마지막 페이지 번호 하나뿐).
             resultCap: PaginationLimits::resultCap('admin.activity_logs'),
@@ -299,7 +305,7 @@ class ActivityLogRepository implements ActivityLogRepositoryInterface
      */
     public function getRecent(string $permission, int $limit = 5): Collection
     {
-        $query = ActivityLog::query()->with('user:id,uuid,name,email');
+        $query = ActivityLog::query()->with('user:'.User::displayColumns());
 
         // 스코프 기반 권한 필터링 (self: 본인 활동만, role: 소유역할 활동, null: 전체)
         PermissionHelper::applyPermissionScope($query, $permission);

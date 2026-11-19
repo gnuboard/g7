@@ -18,6 +18,7 @@ import { asArray, actionsOf } from '@core/template-engine/__tests__/utils/layout
 import { ComponentRegistry } from '@/core/template-engine/ComponentRegistry';
 
 import loginForm from '../../layouts/partials/auth/_login_form.json';
+import loginPage from '../../layouts/auth/login.json';
 
 // 공개 #133 의 원인은 레이아웃이 아니라 **응답 형태를 하나로 가정한 코어**였다. 상태를 직접
 // 주입해 그린 화면만 단언하면 그 경로를 한 번도 태우지 않으므로, 코어가 다시 challenge 응답에서
@@ -145,6 +146,15 @@ function setupRegistry(): ComponentRegistry {
 const layout = {
   version: '1.0.0',
   layout_name: 'auth/login',
+  // 로그인 응답 분기는 로그인 화면의 명명 액션(`applyLoginResult`)에 있다 — 파셜의 `login` 성공이 그것을 부른다(#40).
+  // 하네스에 없는 템플릿 커스텀 핸들러(`clearGuestOrderToken`)는 아래 제출 액션과 같은 이유로 뺀다.
+  named_actions: {
+    ...(loginPage as any).named_actions,
+    applyLoginResult: {
+      ...(loginPage as any).named_actions.applyLoginResult,
+      actions: ((loginPage as any).named_actions.applyLoginResult.actions as any[]).filter((a) => a?.handler !== 'clearGuestOrderToken'),
+    },
+  },
   components: [loginForm as any],
 };
 

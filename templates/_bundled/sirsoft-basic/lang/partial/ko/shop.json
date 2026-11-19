@@ -507,6 +507,10 @@
     "refund_bank_partial_notice": "셋 중 하나라도 입력하면 나머지도 입력해야 합니다.",
     "mileage_min_product_total": "상품 합계 {{amount}} 이상 구매 시 마일리지를 사용할 수 있습니다."
   },
+  "checkout_fields": {
+    "orderer_extra": "주문자 추가 정보",
+    "shipping_extra": "배송 추가 정보"
+  },
   "order_complete": {
     "page_title": "주문 완료",
     "title": "주문 완료",

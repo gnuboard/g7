@@ -9,26 +9,26 @@
 
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
-| `sirsoft-page.attachment.after_delete` | action | — | `src/Services/PageAttachmentService.php:313` |
-| `sirsoft-page.attachment.after_reorder` | action | — | `src/Services/PageAttachmentService.php:443` |
-| `sirsoft-page.attachment.after_upload` | action | — | `src/Services/PageAttachmentService.php:227` |
-| `sirsoft-page.attachment.before_delete` | action | — | `src/Services/PageAttachmentService.php:305` |
-| `sirsoft-page.attachment.before_reorder` | action | — | `src/Services/PageAttachmentService.php:439` |
-| `sirsoft-page.attachment.before_upload` | action | — | `src/Services/PageAttachmentService.php:175` |
-| `sirsoft-page.attachment.filter_upload_file` | filter | — | `src/Services/PageAttachmentService.php:177` |
-| `sirsoft-page.page.after_create` | action | — | `src/Services/PageService.php:125` |
-| `sirsoft-page.page.after_delete` | action | — | `src/Services/PageService.php:225` |
-| `sirsoft-page.page.after_publish` | action | — | `src/Services/PageService.php:258` 외 1곳 |
-| `sirsoft-page.page.after_restore` | action | — | `src/Services/PageService.php:365` |
-| `sirsoft-page.page.after_update` | action | — | `src/Services/PageService.php:190` |
-| `sirsoft-page.page.before_create` | action | — | `src/Services/PageService.php:85` |
-| `sirsoft-page.page.before_delete` | action | — | `src/Services/PageService.php:210` |
-| `sirsoft-page.page.before_publish` | action | — | `src/Services/PageService.php:244` 외 1곳 |
-| `sirsoft-page.page.before_update` | action | — | `src/Services/PageService.php:149` |
+| `sirsoft-page.attachment.after_delete` | action | — | `src/Services/PageAttachmentService.php:358` |
+| `sirsoft-page.attachment.after_reorder` | action | — | `src/Services/PageAttachmentService.php:488` |
+| `sirsoft-page.attachment.after_upload` | action | — | `src/Services/PageAttachmentService.php:238` |
+| `sirsoft-page.attachment.before_delete` | action | — | `src/Services/PageAttachmentService.php:343` |
+| `sirsoft-page.attachment.before_reorder` | action | — | `src/Services/PageAttachmentService.php:484` |
+| `sirsoft-page.attachment.before_upload` | action | — | `src/Services/PageAttachmentService.php:177` |
+| `sirsoft-page.attachment.filter_upload_file` | filter | — | `src/Services/PageAttachmentService.php:179` |
+| `sirsoft-page.page.after_create` | action | — | `src/Services/PageService.php:127` |
+| `sirsoft-page.page.after_delete` | action | — | `src/Services/PageService.php:231` |
+| `sirsoft-page.page.after_publish` | action | — | `src/Services/PageService.php:264` 외 1곳 |
+| `sirsoft-page.page.after_restore` | action | — | `src/Services/PageService.php:371` |
+| `sirsoft-page.page.after_update` | action | — | `src/Services/PageService.php:192` |
+| `sirsoft-page.page.before_create` | action | — | `src/Services/PageService.php:87` |
+| `sirsoft-page.page.before_delete` | action | — | `src/Services/PageService.php:213` |
+| `sirsoft-page.page.before_publish` | action | — | `src/Services/PageService.php:250` 외 1곳 |
+| `sirsoft-page.page.before_update` | action | — | `src/Services/PageService.php:151` |
 | `sirsoft-page.page.filter_content_thumbnail` | filter | — | `src/Models/Page.php:133` |
-| `sirsoft-page.page.filter_create_data` | filter | — | `src/Services/PageService.php:87` |
-| `sirsoft-page.page.filter_list_query` | filter | — | `src/Services/PageService.php:68` |
-| `sirsoft-page.page.filter_update_data` | filter | — | `src/Services/PageService.php:153` |
+| `sirsoft-page.page.filter_create_data` | filter | — | `src/Services/PageService.php:89` |
+| `sirsoft-page.page.filter_list_query` | filter | — | `src/Services/PageService.php:70` |
+| `sirsoft-page.page.filter_update_data` | filter | — | `src/Services/PageService.php:155` |
 | `sirsoft-page.search.page.index_should_update` | filter | — | `src/Models/Page.php:290` |
 <!-- @generated:hooks-published END -->
 
@@ -69,6 +69,8 @@ CRUD 동작을 바꾸고 싶으면 이 셋 중 하나를 잡습니다.
 | `core.search.build_response` | filter | `SearchPagesListener` | `buildPagesResponse` | 10 |
 | `core.search.index_validation_rules` | filter | `SearchPagesListener` | `addValidationRules` | 10 |
 | `core.search.results` | filter | `SearchPagesListener` | `searchPages` | 10 |
+| `core.thumbnail.filter_source_providers` | filter | `ThumbnailServingListener` | `addSourceProviders` | 10 |
+| `core.thumbnail.filter_url_patterns` | filter | `ThumbnailServingListener` | `addUrlPatterns` | 10 |
 | `sirsoft-ckeditor5.image.filter_reference_sources` | filter | `Ckeditor5ReferenceSourcesListener` | `addPageSources` | 10 |
 | `sirsoft-page.attachment.after_delete` | action (미선언) | `PageActivityLogListener` | `handleAttachmentAfterDelete` | 20 |
 | `sirsoft-page.attachment.after_upload` | action (미선언) | `PageActivityLogListener` | `handleAttachmentAfterUpload` | 20 |
@@ -117,10 +119,11 @@ CRUD 동작을 바꾸고 싶으면 이 셋 중 하나를 잡습니다.
 | `PageActivityLogListener` | 7개 | 명시 등록 | ✅ | `src/Listeners/PageActivityLogListener.php` |
 | `SearchPagesListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/SearchPagesListener.php` |
 | `SeoPageCacheListener` | 5개 | 명시 등록 | ✅ | `src/Listeners/SeoPageCacheListener.php` |
+| `ThumbnailServingListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/ThumbnailServingListener.php` |
 <!-- @generated:listeners END -->
 
 <!-- @intent START -->
-5개 전부 `HookListenerInterface` 를 구현하고 `getSubscribedHooks()` 로 자기 구독을 선언합니다.
+6개 전부 `HookListenerInterface` 를 구현하고 `getSubscribedHooks()` 로 자기 구독을 선언합니다.
 
 | 리스너 | 역할 |
 |---|---|
@@ -129,6 +132,7 @@ CRUD 동작을 바꾸고 싶으면 이 셋 중 하나를 잡습니다.
 | `SeoPageCacheListener` | 내용이 바뀌면 봇 화면 캐시 무효화 |
 | `SearchPagesListener` | 코어 통합 검색에 페이지 결과 편입 |
 | `Ckeditor5ReferenceSourcesListener` | 편집기 이미지 출처에 페이지 첨부 제공 |
+| `ThumbnailServingListener` | 첨부 미리보기 경로와 첨부 원본 제공자(권한 원본)를 코어 썸네일 목록에 더함. 제공자는 필터마다 새로 만들지 않고 컨테이너에 공유 바인딩으로 묶어 다시 씀 |
 
 새 활동 로그 항목을 더할 때는 코어 `lang/{ko,en}/activity_log.php` 의 action 라벨과 description
 본문이 함께 필요합니다 — **모듈 lang 파일에 넣으면 해석되지 않습니다.** 번들 일본어 팩도 같은
@@ -147,6 +151,16 @@ _레이아웃 확장이 없습니다._
 페이지 내용을 다른 화면에 노출하고 싶다면 그 화면을 소유한 쪽(템플릿 또는 그 모듈)이 이
 모듈의 공개 API 를 호출하는 것이 맞는 방향입니다. 여기에 조각을 더하면 대상 화면이 슬롯을
 없앨 때 오류 없이 사라지는 결합이 생깁니다.
+<!-- @intent END -->
+
+### 이 모듈 화면이 여는 자리 — 첨부 업로더 (7.2.0)
+
+<!-- @intent START -->
+페이지 등록·수정 화면(`admin_page_form`)의 첨부 업로더는 코어 확장점 `attachment_uploader` 의 기본 업로더(default)다. 업로더 플러그인이
+`mode="replace"` 로 주입하면 이 자리의 업로더가 바뀐다. 계약 `uploader` 는 `context { owner: 'sirsoft-page', purpose: 'page_attachments' }`,
+업로드 신호 `upload:page_attachments`(저장 버튼이 보내고 `_eventResult` 의 `failedCount` 로 저장을 멈춘다), 새 페이지는 임시 키(`fields.temp_key`)로
+올리고 정렬 주소가 `null` 이다. 콜백은 `onUploadComplete`·`onReorder`·`onRemove`·`onUploadError` 로 기본 업로더와 같은 일을 한다.
+계약과 플러그인 규약은 코어 문서 `docs/extension/attachment-uploader.md`.
 <!-- @intent END -->
 
 ## 미들웨어
@@ -184,7 +198,7 @@ _등록하는 브로드캐스트 채널이 없습니다._
 <!-- @generated:schedules START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 스케줄 | 주기 | 설명 |
 |---|---|---|
-| `sirsoft-page:prune-temp-attachments` | `daily` | 미연결 임시 페이지 첨부 자동 삭제 |
+| `prune-temp-attachments` | `0 0 * * *` | 임시 페이지 첨부 삭제 |
 <!-- @generated:schedules END -->
 
 <!-- @intent START -->

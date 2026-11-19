@@ -5,9 +5,9 @@
 
 <!-- @generated:badges START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.1.7-0066FF?style=flat-square" alt="version 1.1.7">
+  <img src="https://img.shields.io/badge/version-1.2.0-0066FF?style=flat-square" alt="version 1.2.0">
   <img src="https://img.shields.io/badge/type-%ED%85%9C%ED%94%8C%EB%A6%BF-555555?style=flat-square" alt="type 템플릿">
-  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.1.6-1F883D?style=flat-square" alt="그누보드7 &gt;=7.1.6">
+  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.2.0-1F883D?style=flat-square" alt="그누보드7 &gt;=7.2.0">
   <img src="https://img.shields.io/badge/license-MIT-8250DF?style=flat-square" alt="license MIT">
 </p>
 <!-- @generated:badges END -->
@@ -77,7 +77,7 @@ flowchart TD
 <!-- @generated:requirements START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 항목 | 값 |
 |---|---|
-| 그누보드7 코어 | `>=7.1.6` |
+| 그누보드7 코어 | `>=7.2.0` |
 | PHP | `^8.2` |
 <!-- @generated:requirements END -->
 
@@ -101,12 +101,12 @@ php artisan template:update sirsoft-admin_basic --force
 ## 제공 컴포넌트
 
 <!-- @generated:settings-summary START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-컴포넌트 134개 (루트: `src/components`).
+컴포넌트 135개 (루트: `src/components`).
 
 | 분류 | 개수 |
 |---|---|
 | `basic` | 39개 |
-| `composite` | 88개 |
+| `composite` | 89개 |
 | `layout` | 5개 |
 | `modals` | 1개 |
 | `shared` | 1개 |

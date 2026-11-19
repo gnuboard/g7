@@ -638,11 +638,13 @@ describe('G7CoreGlobals - modal API', () => {
 
   // @scenario surface=ui
   // @effects modal_api_dispatches_open_close_actions
-  it('modal.closeAll()이 closeAllModals 액션을 dispatch해야 함', () => {
+  // 종전에는 없는 핸들러(closeAllModals)를 불러 아무 일도 하지 않았다 — closeModal 의 전부 닫기 옵션으로 보낸다(engine-v1.95.0)
+  it('modal.closeAll()이 closeModal 의 전부 닫기(params.all)를 dispatch해야 함', () => {
     G7Core.modal.closeAll();
 
     expect(dispatchSpy).toHaveBeenCalledWith({
-      handler: 'closeAllModals',
+      handler: 'closeModal',
+      params: { all: true },
     });
   });
 
@@ -914,7 +916,7 @@ describe('G7CoreGlobals - navigation API', () => {
 
     mockTransitionManager = {
       getIsPending: vi.fn(() => false),
-      subscribe: vi.fn((callback) => {
+      subscribe: vi.fn(() => {
         // 구독 해제 함수 반환
         return () => {};
       }),
@@ -1310,6 +1312,48 @@ describe('G7CoreGlobals - core APIs', () => {
   });
 });
 
+describe('G7CoreGlobals - thumbnail API', () => {
+  let G7Core: any;
+
+  beforeEach(() => {
+    delete (window as any).G7Core;
+    (window as any).G7Config = {
+      settings: {
+        upload: {
+          thumbnail_url_patterns: ['/api/attachment/*'],
+          thumbnail_presets_public: [
+            { name: 'md', width: 640, height: null, fit: 'width', numeric: true },
+            { name: 'lg', width: 1280, height: null, fit: 'width', numeric: true },
+            { name: 'xl', width: 1920, height: null, fit: 'width', numeric: true },
+          ],
+        },
+      },
+    };
+    initializeG7CoreGlobals(createMockDependencies());
+    G7Core = (window as any).G7Core;
+  });
+
+  afterEach(() => {
+    delete (window as any).G7Config;
+  });
+
+  // @scenario surface=assets
+  // @effects thumbnail_api_exposes_content_srcset_within
+  it('원본 가로 상한 srcset(contentSrcsetWithin)을 노출하고 두 규칙(이하 · 원본 덧붙임)을 옵션으로 고른다', () => {
+    expect(typeof G7Core.thumbnail.contentSrcsetWithin).toBe('function');
+    expect(G7Core.thumbnail.contentSrcsetWithin('/api/attachment/a', 1280)).toBe(
+      '/api/attachment/a?size=md 640w, /api/attachment/a?size=lg 1280w',
+    );
+    expect(G7Core.thumbnail.contentSrcsetWithin('/api/attachment/a', 1280, { includeOriginal: true })).toBe(
+      '/api/attachment/a?size=md 640w, /api/attachment/a 1280w',
+    );
+    // 기존 contentSrcset 은 그대로 전체 후보다
+    expect(G7Core.thumbnail.contentSrcset('/api/attachment/a')).toBe(
+      '/api/attachment/a?size=md 640w, /api/attachment/a?size=lg 1280w, /api/attachment/a?size=xl 1920w',
+    );
+  });
+});
+
 // =============================================================================
 // 회귀 테스트: cellChildren/expandChildren 상태 주입
 // 문서: troubleshooting-components-datagrid.md
@@ -1325,7 +1369,7 @@ describe('G7CoreGlobals - renderItemChildren 상태 주입 회귀 테스트', ()
 
     // mock 초기화
     mockedRenderItemChildren.mockClear();
-    mockedRenderItemChildren.mockImplementation((children, context) => {
+    mockedRenderItemChildren.mockImplementation((_children, context) => {
       // context를 캡처하여 테스트에서 확인할 수 있도록 반환
       return context as any;
     });
@@ -1417,7 +1461,7 @@ describe('G7CoreGlobals - renderExpandContent 회귀 테스트', () => {
 
     // mock 초기화
     mockedRenderItemChildren.mockClear();
-    mockedRenderItemChildren.mockImplementation((children, context) => context as any);
+    mockedRenderItemChildren.mockImplementation((_children, context) => context as any);
 
     // BindingEngine mock
     mockBindingEngine = {
@@ -1678,19 +1722,8 @@ describe('G7Core.state.getIsolated/setIsolated API', () => {
     };
     (window as any).__templateApp = mockTemplateApp;
 
-    // G7CoreGlobals 초기화
-    const deps: G7CoreDependencies = {
-      ComponentRegistry: { getInstance: vi.fn(() => ({ getComponentMap: vi.fn() })) } as any,
-      TranslationEngine: vi.fn() as any,
-      ActionDispatcher: vi.fn() as any,
-      DataBindingEngine: vi.fn() as any,
-      useTransitionState: vi.fn() as any,
-      useTranslation: vi.fn() as any,
-      useResponsive: vi.fn() as any,
-      AuthManager: { getInstance: vi.fn() } as any,
-      getApiClient: vi.fn() as any,
-    };
-    initializeG7CoreGlobals(deps);
+    // G7CoreGlobals 초기화 — 의존성은 파일 공용 목으로 만든다(state.getIsolated/setIsolated 는 의존성을 읽지 않는다)
+    initializeG7CoreGlobals(createMockDependencies());
     G7Core = (window as any).G7Core;
   });
 

@@ -3,6 +3,7 @@
 namespace Tests\Unit\Installer;
 
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 use Tests\Unit\Installer\Concerns\RunsInstallerSubprocess;
 
 /**
@@ -17,6 +18,7 @@ use Tests\Unit\Installer\Concerns\RunsInstallerSubprocess;
 class InstallerFinalizeRuntimeCleanupTest extends TestCase
 {
     use RunsInstallerSubprocess;
+    use ScansPhpSourceFunctions;
 
     /**
      * 확정 가능한 설치 직후 상태(런타임·state·템플릿 .env)를 만든다.
@@ -143,7 +145,7 @@ class InstallerFinalizeRuntimeCleanupTest extends TestCase
 
         // 터미널 설치의 두 갈래(처음 설치·이어서 확정)가 그 문구를 쓴다
         foreach (['install-flow.php', 'app.php'] as $file) {
-            $this->assertStringContainsString("lang('runtime_cleanup_failed_warning')", (string) file_get_contents($root.'/public/install/includes/cli/'.$file), $file);
+            $this->assertStringContainsString("lang('runtime_cleanup_failed_warning')", $this->sourceWithoutComments($root.'/public/install/includes/cli/'.$file), $file);
         }
     }
 

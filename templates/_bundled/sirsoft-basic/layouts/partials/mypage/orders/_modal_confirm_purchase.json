@@ -41,6 +41,9 @@
                                     "if": "{{$parent._local.confirmTarget?.thumbnail_url}}",
                                     "props": {
                                         "src": "{{$parent._local.confirmTarget?.thumbnail_url ?? ''}}",
+                                        "thumbPreset": "sm",
+                                        "loading": "lazy",
+                                        "decoding": "async",
                                         "alt": "{{$parent._local.confirmTarget?.product_name ?? ''}}",
                                         "className": "w-full h-full object-cover"
                                     }

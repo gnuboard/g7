@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Board\Tests\Feature;
 use App\Models\Permission;
 use App\Models\Role;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Modules\Sirsoft\Board\Module;
 use Modules\Sirsoft\Board\Tests\ModuleTestCase;
 
@@ -40,6 +41,11 @@ class UninstallDynamicRoleCleanupTest extends ModuleTestCase
 
     private Module $module;
 
+    /**
+     * 모듈 인스턴스를 만들고 이전 실행의 시드 역할을 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -52,6 +58,8 @@ class UninstallDynamicRoleCleanupTest extends ModuleTestCase
      * ModuleTestCase 는 프로세스당 1회 `migrate:fresh`(DDL) 를 실행하므로 그 케이스의
      * 트랜잭션이 암묵적으로 커밋된다 — 시드 행이 롤백되지 않고 다음 케이스로 새어
      * identifier unique 충돌을 일으킨다. 케이스 전후로 명시 정리한다.
+     *
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -63,7 +71,7 @@ class UninstallDynamicRoleCleanupTest extends ModuleTestCase
     /**
      * 이 테스트가 시드한 역할과 그 피벗을 제거합니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function purgeSeededRoles(): void
     {
@@ -84,7 +92,7 @@ class UninstallDynamicRoleCleanupTest extends ModuleTestCase
     /**
      * 게시판별 동적 역할을 시드합니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     private function seedDynamicRoles(): void
     {
@@ -119,6 +127,15 @@ class UninstallDynamicRoleCleanupTest extends ModuleTestCase
             ->count();
     }
 
+    /**
+     * 동적 역할이 첫 청크(1000건)를 넘어도 모듈 제거가 전건을 지운다.
+     *
+     * @scenario case=chunk_beyond_offset
+     *
+     * @effects every_dynamic_role_removed
+     *
+     * @return void 반환값 없음
+     */
     public function test_uninstall_removes_every_dynamic_role_beyond_the_first_chunk(): void
     {
         $this->seedDynamicRoles();
@@ -138,6 +155,15 @@ class UninstallDynamicRoleCleanupTest extends ModuleTestCase
         );
     }
 
+    /**
+     * OFFSET 순회가 건너뛰던 뒤쪽 역할의 권한 연결도 모듈 제거가 뗀다.
+     *
+     * @scenario case=pivot_detach
+     *
+     * @effects tail_role_permission_pivots_removed
+     *
+     * @return void 반환값 없음
+     */
     public function test_uninstall_detaches_permissions_of_roles_in_the_skipped_range(): void
     {
         $this->seedDynamicRoles();
@@ -171,6 +197,64 @@ class UninstallDynamicRoleCleanupTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 외래키 검사를 끈 채 모듈을 제거해도 동적 역할의 메뉴 연결(`role_menus`)·메뉴 권한(`menu_permissions`)이
+     * 고아로 남지 않는다 — 역할 삭제가 DB 외래키 연쇄에 기대지 않는다 (#888).
+     *
+     * @scenario case=menu_links_without_fk
+     *
+     * @effects role_menu_links_removed_without_fk_cascade
+     *
+     * @return void 반환값 없음
+     */
+    public function test_uninstall_removes_menu_links_of_dynamic_roles_without_fk_cascade(): void
+    {
+        $roleId = DB::table('roles')->insertGetId([
+            'identifier' => 'sirsoft-board.chunkskipmenu.manager',
+            'name' => json_encode(['ko' => '게시판 관리자', 'en' => 'Board Manager']),
+            'extension_type' => 'module',
+            'extension_identifier' => 'sirsoft-board',
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $menuId = DB::table('menus')->insertGetId([
+            'name' => json_encode(['ko' => '역할 정리 메뉴', 'en' => 'Role Cleanup Menu']),
+            'slug' => 'chunkskip-role-cleanup-menu',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        try {
+            DB::table('role_menus')->insert(['role_id' => $roleId, 'menu_id' => $menuId, 'permission_type' => 'read', 'created_at' => now(), 'updated_at' => now()]);
+            DB::table('menu_permissions')->insert(['menu_id' => $menuId, 'role_id' => $roleId, 'permission_type' => 'read', 'created_at' => now(), 'updated_at' => now()]);
+
+            Schema::disableForeignKeyConstraints();
+            try {
+                $this->assertTrue($this->module->uninstall());
+            } finally {
+                Schema::enableForeignKeyConstraints();
+            }
+
+            $this->assertFalse(DB::table('roles')->where('id', $roleId)->exists(), '동적 역할이 삭제되지 않았습니다.');
+            $this->assertSame(0, DB::table('role_menus')->where('role_id', $roleId)->count(), '역할의 메뉴 연결이 고아로 남았습니다.');
+            $this->assertSame(0, DB::table('menu_permissions')->where('role_id', $roleId)->count(), '역할의 메뉴 권한이 고아로 남았습니다.');
+        } finally {
+            DB::table('role_menus')->where('menu_id', $menuId)->delete();
+            DB::table('menu_permissions')->where('menu_id', $menuId)->delete();
+            DB::table('menus')->where('id', $menuId)->delete();
+        }
+    }
+
+    /**
+     * 다른 확장이 소유한 역할은 모듈 제거가 지우지 않는다.
+     *
+     * @scenario case=other_extension_kept
+     *
+     * @effects other_extension_roles_kept
+     *
+     * @return void 반환값 없음
+     */
     public function test_uninstall_keeps_roles_owned_by_other_extensions(): void
     {
         $this->seedDynamicRoles();

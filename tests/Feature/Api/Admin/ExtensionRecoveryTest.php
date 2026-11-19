@@ -190,6 +190,11 @@ class ExtensionRecoveryTest extends TestCase
 
         $response->assertStatus(404);
         $response->assertJson(['success' => false]);
+
+        // 안내 문구에 자리표시자가 그대로 남지 않고 찾지 못한 확장 식별자가 들어간다 (#888)
+        $message = (string) $response->json('message');
+        $this->assertStringNotContainsString(':identifier', $message);
+        $this->assertStringContainsString('nonexistent-plugin', $message);
     }
 
     /**
@@ -261,8 +266,11 @@ class ExtensionRecoveryTest extends TestCase
      */
     protected function tearDown(): void
     {
-        \Mockery::close();
-        parent::tearDown();
+        try {
+            \Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**

@@ -4,10 +4,12 @@ namespace Tests\Feature\Console;
 
 use App\Console\Commands\Core\ExecuteBundledUpdatesCommand;
 use App\Extension\Helpers\ExtensionOperationLock;
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Tests\Concerns\SimulatesOperationLockStore;
+use Tests\Support\Console\NoSpawnExecuteBundledUpdatesCommand;
 use Tests\TestCase;
 
 /**
@@ -192,13 +194,26 @@ class ExecuteBundledUpdatesCommandTest extends TestCase
      */
     private function resultPayload(string $output): array
     {
-        foreach (preg_split('/\R/', $output) as $line) {
+        foreach (preg_split('~\r\n|\r|\n~', $output) as $line) {
             if (str_starts_with(trim($line), ExecuteBundledUpdatesCommand::RESULT_PREFIX)) {
                 return json_decode(substr(trim($line), strlen(ExecuteBundledUpdatesCommand::RESULT_PREFIX)), true) ?? [];
             }
         }
 
         return [];
+    }
+
+    /**
+     * 일괄 업데이트 명령을 같은 프로세스에서 도는 판으로 바꿔 끼웁니다.
+     *
+     * 항목이 둘 이상이면 명령은 항목마다 새 PHP 프로세스를 띄운다. 새 프로세스는 이 시험이 바꿔 둔 잠금 저장소(장애 흉내)와
+     * 이 프로세스가 쥔 잠금을 물려받지 않으므로, 잠금 장애 중단과 진행 중 항목 처리는 같은 프로세스 경로에서 본다.
+     *
+     * @return void 반환값 없음
+     */
+    private function runItemsInThisProcess(): void
+    {
+        $this->app[Kernel::class]->registerCommand($this->app->make(NoSpawnExecuteBundledUpdatesCommand::class));
     }
 
     /**
@@ -217,13 +232,14 @@ class ExecuteBundledUpdatesCommandTest extends TestCase
             'plugins' => [['identifier' => 'acme-i161-c', 'strategy' => 'keep']],
             'templates' => [['identifier' => 'acme-i161-t', 'strategy' => 'keep']],
         ]);
+        $this->runItemsInThisProcess();
         $this->breakLockStore();
 
         $exit = Artisan::call('core:execute-bundled-updates', ['--manifest' => $path]);
         $output = Artisan::output();
 
         $this->assertSame(1, $exit, $output);
-        $this->assertSame(1, substr_count($output, __('extensions.commands.bundled_update.lock_unavailable_aborted', ['count' => 3])), '중단 안내가 한 번만 나와야 한다: '.$output);
+        $this->assertSame(1, substr_count($output, trans_count('extensions.commands.bundled_update.lock_unavailable_aborted', ['count' => 3])), '중단 안내가 한 번만 나와야 한다: '.$output);
         $this->assertStringNotContainsString('acme-i161-b', $output, '중단 뒤 다음 항목을 시도했다');
         $payload = $this->resultPayload($output);
         $this->assertSame(['success' => 0, 'failed' => 1, 'skipped' => 3, 'aborted' => true], $payload);
@@ -243,6 +259,7 @@ class ExecuteBundledUpdatesCommandTest extends TestCase
         $path = $this->writeManifest([
             'modules' => [['identifier' => 'acme-i161-busy', 'strategy' => 'keep'], ['identifier' => 'acme-i161-next', 'strategy' => 'keep']],
         ]);
+        $this->runItemsInThisProcess();
         $held = Cache::lock(ExtensionOperationLock::key('module', 'acme-i161-busy'), 60);
         $this->assertTrue($held->get());
 
@@ -256,7 +273,7 @@ class ExecuteBundledUpdatesCommandTest extends TestCase
         $this->assertSame(1, $exit);
         $this->assertStringContainsString(__('extensions.errors.update_already_running', ['name' => 'acme-i161-busy']), $output);
         $this->assertStringContainsString('acme-i161-next', $output, '진행 중 항목 뒤 다음 항목을 건너뛰었다');
-        $this->assertStringNotContainsString(__('extensions.commands.bundled_update.lock_unavailable_aborted', ['count' => 1]), $output);
+        $this->assertStringNotContainsString(trans_count('extensions.commands.bundled_update.lock_unavailable_aborted', ['count' => 1]), $output);
         $payload = $this->resultPayload($output);
         $this->assertSame(2, $payload['failed']);
         $this->assertFalse($payload['aborted']);

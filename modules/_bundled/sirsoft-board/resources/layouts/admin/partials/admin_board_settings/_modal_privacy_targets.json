@@ -11,7 +11,24 @@
     "props": {
         "title": "{{_global.privacyTargets?.title ?? ''}}",
         "width": "800px",
-        "className": "max-w-[calc(100vw-2rem)]"
+        "className": "board:max-w-[calc(100vw-2rem)]",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "board-btn board-btn-secondary"
+                },
+                "text": "$t:sirsoft-board.admin.settings.privacy_retention.targets.close"
+            }
+        ]
     },
     "children": [
         {
@@ -19,21 +36,21 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "space-y-3"
+                "className": "board:space-y-3"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-between"
+                        "className": "board-flex-between"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-label"
+                                "className": "board-text-label"
                             },
                             "text": "$t:sirsoft-board.admin.settings.privacy_retention.targets.total|count={{privacyTargets?.data?.pagination?.total ?? 0}}"
                         }
@@ -45,7 +62,7 @@
                     "name": "Div",
                     "if": "{{(privacyTargets?.data?.data ?? []).length > 0}}",
                     "props": {
-                        "className": "border border-gray-200 dark:border-gray-700 rounded-lg"
+                        "className": "board:border board:border-gray-200 board:dark:border-gray-700 board:rounded-lg"
                     },
                     "children": [
                         {
@@ -132,21 +149,21 @@
                                 }
                             ],
                             "props": {
-                                "className": "max-h-96 overflow-y-auto overflow-x-auto"
+                                "className": "board:max-h-96 board:overflow-y-auto board:overflow-x-auto"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Table",
                                     "props": {
-                                        "className": "table whitespace-nowrap"
+                                        "className": "board:table board-table board:whitespace-nowrap"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Thead",
                                             "props": {
-                                                "className": "sticky top-0 z-10 bg-white dark:bg-gray-800"
+                                                "className": "board:sticky board:top-0 board:z-10 board:bg-white board:dark:bg-gray-800"
                                             },
                                             "children": [
                                                 {
@@ -175,7 +192,7 @@
                                                             "name": "Th",
                                                             "if": "{{privacyTargets?.data?.columns?.date}}",
                                                             "props": {
-                                                                "className": "w-28"
+                                                                "className": "board:w-28"
                                                             },
                                                             "text": "{{privacyTargets?.data?.columns?.date ?? ''}}"
                                                         }
@@ -206,7 +223,7 @@
                                                                     "props": {
                                                                         "href": "{{target.url}}",
                                                                         "target": "_blank",
-                                                                        "className": "text-blue-600 dark:text-blue-400 hover:underline"
+                                                                        "className": "board:text-blue-600 board:dark:text-blue-400 board:hover:underline"
                                                                     },
                                                                     "text": "{{target.title}}"
                                                                 },
@@ -235,7 +252,7 @@
                                                             "name": "Td",
                                                             "if": "{{privacyTargets?.data?.columns?.date}}",
                                                             "props": {
-                                                                "className": "tabular-nums"
+                                                                "className": "board:tabular-nums"
                                                             },
                                                             "text": "{{target.date ?? ''}}"
                                                         }
@@ -254,7 +271,7 @@
                                         "size": "sm",
                                         "text": "$t:sirsoft-board.admin.settings.privacy_retention.targets.loading",
                                         "color": "text-blue-600 dark:text-blue-400",
-                                        "className": "py-3"
+                                        "className": "board:py-3"
                                     }
                                 }
                             ]
@@ -269,7 +286,7 @@
                     "if": "{{privacyTargets === null}}",
                     "props": {
                         "role": "alert",
-                        "className": "py-6 text-center text-sm text-red-600 dark:text-red-400"
+                        "className": "board:py-6 board:text-center board:text-sm board:text-red-600 board:dark:text-red-400"
                     },
                     "text": "$t:sirsoft-board.common.list_load_failed"
                 },
@@ -279,7 +296,7 @@
                     "name": "Div",
                     "if": "{{privacyTargets !== undefined && privacyTargets !== null && ((privacyTargets?.data?.data ?? []).length === 0)}}",
                     "props": {
-                        "className": "flex flex-col items-center gap-3 text-center text-gray-500 dark:text-gray-400 py-6"
+                        "className": "board:flex board:flex-col board:items-center board:gap-3 board:text-center board:text-gray-500 board:dark:text-gray-400 board:py-6"
                     },
                     "children": [
                         {
@@ -287,43 +304,18 @@
                             "name": "Icon",
                             "props": {
                                 "name": "inbox",
-                                "className": "text-4xl"
+                                "className": "board:text-4xl"
                             }
                         },
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-sm"
+                                "className": "board:text-sm"
                             },
                             "text": "$t:sirsoft-board.admin.settings.privacy_retention.targets.empty"
                         }
                     ]
-                }
-            ]
-        },
-        {
-            "id": "privacy_targets_footer",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "flex justify-end mt-6"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-secondary"
-                    },
-                    "text": "$t:sirsoft-board.admin.settings.privacy_retention.targets.close"
                 }
             ]
         }

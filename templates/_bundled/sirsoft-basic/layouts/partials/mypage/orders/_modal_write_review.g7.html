@@ -7,7 +7,7 @@
       <!-- 상품 정보 -->
       <div class="flex gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
         <div class="w-14 h-14 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex-shrink-0">
-          <img data-if="{{$parent._local.reviewTarget?.thumbnail_url}}" src="{{$parent._local.reviewTarget?.thumbnail_url ?? ''}}" alt="{{$parent._local.reviewTarget?.product_name ?? ''}}" class="w-full h-full object-cover"/>
+          <img data-if="{{$parent._local.reviewTarget?.thumbnail_url}}" src="{{$parent._local.reviewTarget?.thumbnail_url ?? ''}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{$parent._local.reviewTarget?.product_name ?? ''}}" class="w-full h-full object-cover"/>
           <div data-if="{{!$parent._local.reviewTarget?.thumbnail_url}}" class="w-full h-full flex items-center justify-center">
             <icon name="image" size="lg" class="text-gray-500 dark:text-gray-400"/>
           </div>
@@ -75,12 +75,48 @@
       <!-- 이미지 첨부 (리뷰 정책 max_images=0 이면 숨김) -->
       <div data-if="{{(reviewSettings?.data?.review_settings?.max_images ?? 5) > 0}}">
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">$t:mypage.order_detail.review_modal.image_label|count={{reviewSettings?.data?.review_settings?.max_images ?? 5}}</label>
-        <file-uploader data-type="composite" :autoUpload="false" accept=".jpg,.jpeg,.png,.gif,.webp" maxFiles="{{reviewSettings?.data?.review_settings?.max_images ?? 5}}" maxSize="{{reviewSettings?.data?.review_settings?.max_image_size_mb ?? 10}}">
-          <on type="change">
-            <!-- 고른 파일을 담아만 둔다 — 실제 업로드는 리뷰 등록 요청에 실려 함께 나간다 -->
+        <!-- 첨부 업로더 확장점(선택형) — 업로더는 파일을 고르기만 하고, 리뷰 등록 요청에 실려 함께 올라간다. 대체 업로더도 onFilesChange 에
+             { target: { files } } 모양을 넘겨야 한다. 정책 값은 아래 기본 업로더와 같다. -->
+        <extension-point name="attachment_uploader" data-ref="review_images_uploader_slot" class="contents">
+          <prop name="uploader">
+            <field name="version" :value="1"/>
+            <field name="mode" value="select"/>
+            <field name="endpoints" :value="null"/>
+            <field name="fields" :value="{}"/>
+            <field name="policy">
+              <field name="accept" value=".jpg,.jpeg,.png,.gif,.webp"/>
+              <field name="maxSize" value="{{reviewSettings?.data?.review_settings?.max_image_size_mb ?? 10}}"/>
+              <field name="maxFiles" value="{{reviewSettings?.data?.review_settings?.max_images ?? 5}}"/>
+              <field name="maxConcurrentUploads" :value="1"/>
+              <field name="imageCompression" :value="null"/>
+            </field>
+            <field name="collection" value="default"/>
+            <field name="attachmentable">
+              <field name="type" :value="null"/>
+              <field name="id" :value="null"/>
+            </field>
+            <field name="triggerEvent" :value="null"/>
+            <field name="initialFiles" :value="[]"/>
+            <field name="disabled" :value="false"/>
+            <field name="autoUpload" :value="false"/>
+            <field name="context">
+              <field name="owner" value="sirsoft-ecommerce"/>
+              <field name="purpose" value="review_images"/>
+            </field>
+          </prop>
+          <callback name="onFilesChange">
+            <!-- 고른 파일을 담아만 둔다(기본 업로더의 change 와 같다) -->
             <set-state target="_local" reviewImages="{{$event.target.files ?? []}}"/>
-          </on>
-        </file-uploader>
+          </callback>
+          <default>
+            <file-uploader data-type="composite" :autoUpload="false" accept=".jpg,.jpeg,.png,.gif,.webp" maxFiles="{{reviewSettings?.data?.review_settings?.max_images ?? 5}}" maxSize="{{reviewSettings?.data?.review_settings?.max_image_size_mb ?? 10}}">
+              <on type="change">
+                <!-- 고른 파일을 담아만 둔다 — 실제 업로드는 리뷰 등록 요청에 실려 함께 나간다 -->
+                <set-state target="_local" reviewImages="{{$event.target.files ?? []}}"/>
+              </on>
+            </file-uploader>
+          </default>
+        </extension-point>
       </div>
       <!-- 에러 메시지 -->
       <div data-if="{{!!_local.reviewError}}" class="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 rounded-lg p-3">

@@ -1,0 +1,33 @@
+feature: 알림 채널 발송 준비 상태 판정
+
+description: |
+  `ChannelReadinessService` 는 알림 채널이 실제로 보낼 수 있는 상태인지를 `ready` 와 사유 키(`reason`)로 답한다.
+  메일 채널은 메일러 종류마다 필요한 값이 다르다. SMTP 는 호스트, Mailgun 은 도메인, SES 는 키가 비면 준비되지
+  않은 것이고, 보내는 주소가 설치 기본값(noreply@example.com)이어도 준비되지 않은 것이다. log 메일러는 늘 준비됐다.
+  사이트내 알림(database)은 notifications 테이블이 있으면 준비됐고, 판정 규칙이 없는 채널은 준비된 것으로 본다.
+  같은 인스턴스에서 같은 채널을 다시 물으면 설정을 다시 읽지 않는다.
+
+axes:
+  case: [mail_smtp, mail_from_address, mail_mailgun, mail_ses, mail_log, database, unknown_channel,
+         is_ready_shortcut, check_all, instance_cache]
+
+effects:
+  # 메일 채널
+  - channel_readiness_mail_smtp_ready_when_host_and_sender_configured
+  - channel_readiness_mail_smtp_not_ready_without_host
+  - channel_readiness_mail_not_ready_with_default_from_address
+  - channel_readiness_mail_mailgun_not_ready_without_domain
+  - channel_readiness_mail_ses_not_ready_without_key
+  - channel_readiness_mail_log_mailer_always_ready
+  # 그 밖의 채널
+  - channel_readiness_database_ready_when_notifications_table_exists
+  - channel_readiness_unknown_channel_defaults_to_ready
+  # 조회 편의와 캐시
+  - channel_readiness_is_ready_returns_check_result_as_boolean
+  - channel_readiness_check_all_returns_result_per_channel
+  - channel_readiness_result_cached_within_instance
+
+# E2E axis 없음: 판정은 서버측 서비스 단위이고 화면 변경이 없다.
+
+test_files:
+  - tests/Unit/Services/ChannelReadinessServiceTest.php

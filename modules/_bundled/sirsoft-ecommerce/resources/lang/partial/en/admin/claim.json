@@ -381,6 +381,7 @@
     },
     "detail_title": "Detailed search",
     "claim_flags": "More filters",
+    "request_source": "Request source",
     "request_source_option": {
       "all": "All sources",
       "admin": "Filed by seller",

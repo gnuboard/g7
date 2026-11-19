@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#703 |
 #   축은 이 화면의 영역 목록이고 조합마다 다른 동작이 갈리는 분기가 아니다 — 영역별 테스트가 각 효과를 잰다.
 
 feature: 관리자 리뷰 관리 목록 레이아웃 (admin_ecommerce_product_review_index)

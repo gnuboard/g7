@@ -1,4 +1,17 @@
 {
+  "common": {
+    "real_name": {
+      "label": "실명",
+      "with_label": "실명: {{name}}"
+    }
+  },
+  "extension_public_api": {
+    "title": "공개 API (다른 확장이 쓸 수 있는 PHP 표면)",
+    "hint": "다른 확장은 아래에 공개된 네임스페이스·클래스와 공개 훅만 써야 합니다. 그 밖의 클래스는 내부 구현이라 예고 없이 바뀔 수 있습니다.",
+    "namespaces": "네임스페이스",
+    "classes": "클래스",
+    "readonly_models": "읽기 전용 Model (타입힌트·속성 읽기만)"
+  },
   "extension_integrations": {
     "title": "함께 쓰면 연동되는 확장",
     "hint": "아래 확장이 설치돼 있으면 기능이 서로 연결됩니다. 없어도 이 확장은 그대로 동작합니다.",
@@ -17,10 +30,39 @@
     "requires_no_permission": "필요한 확장을 설치할 권한이 없음",
     "integrated_by_label": "연동 중인 확장",
     "deactivate_notice_title": "연동 중인 확장 확인",
-    "deactivate_notice_body": "{{name}}을(를) 끄면 아래 확장에서 이 확장을 쓰던 메뉴·화면이 사라집니다. 아래 확장은 계속 동작합니다.",
+    "deactivate_notice_body": "「{{name}}」 확장을 끄면 아래 확장에서 이 확장을 쓰던 메뉴·화면이 사라집니다. 아래 확장은 계속 동작합니다.",
     "deactivate_confirm": "비활성화",
     "uninstall_notice": "아래 확장이 이 확장과 연동 중입니다 — 삭제하면 이 확장을 쓰던 메뉴·화면이 사라집니다.",
     "notice_toast": "함께 쓰면 연동되는 확장 안내: {{items}}"
+  },
+  "package_integrity": {
+    "signature_label": "패키지 서명",
+    "status_verified": "서명 확인됨: {{signer}}",
+    "status_unsigned": "서명 없음",
+    "status_unverifiable": "서명 확인 불가 (서버에 sodium 없음)",
+    "status_bundled": "번들 원본",
+    "status_none": "기록 없음",
+    "unsigned_title": "서명이 없는 패키지입니다",
+    "unverifiable_title": "이 서버에서 서명을 확인할 수 없습니다",
+    "invalid_title": "서명이 맞지 않아 진행을 멈췄습니다",
+    "untrusted_title": "신뢰하지 않는 키로 서명된 패키지입니다",
+    "package": "패키지: {{identifier}} {{version}}",
+    "signer_key": "서명 키: {{key}}",
+    "continue_hint": "제작자를 믿을 수 있을 때만 아래 「미서명으로 계속」을 누르세요. 같은 요청을 서명 확인 없이 다시 보냅니다.",
+    "blocked_hint": "환경설정 > 보안의 「미서명 패키지 차단」이 켜져 있어 진행할 수 없습니다. 서명된 패키지를 쓰거나 차단을 끄세요.",
+    "invalid_hint": "패키지 내용이 바뀌었거나 서명 파일이 다른 패키지의 것입니다. 배포처에서 ZIP 과 서명 파일을 다시 받으세요.",
+    "untrusted_hint": "환경설정 > 보안의 「확장 신뢰 키」에 제작자 키가 등록돼 있는지, 그 키의 vendor 범위가 이 식별자와 맞는지 확인하세요.",
+    "continue_unsigned": "미서명으로 계속",
+    "result_verified": "패키지 서명을 확인했습니다 (서명자: {{signer}}).",
+    "result_unsigned": "서명을 확인하지 않은 패키지로 진행했습니다.",
+    "signature_file_label": "서명 파일 (.sig.json, 선택)",
+    "no_signature_selected": "선택한 서명 파일이 없습니다.",
+    "signature_file_hint": "릴리스에 ZIP 과 함께 올라온 서명 파일(ZIP 이름 뒤에 .sig.json)을 고르면 설치 전에 서명을 확인합니다. 고르지 않으면 서명 없는 패키지로 다룹니다.",
+    "signature_url_label": "서명 파일 주소 (선택)",
+    "signature_url_hint": "ZIP 과 함께 배포된 .sig.json 파일의 https 주소입니다. 비워 두면 서명 없는 패키지로 다룹니다(주소를 짐작해 따로 요청하지 않습니다).",
+    "core_signature_label": "릴리스 서명",
+    "core_signature_available": "서명 있음",
+    "core_signature_missing": "서명 없음"
   },
   "sidebar": {
     "no_accessible_menus": "접근 가능한 메뉴가 없습니다",
@@ -171,6 +213,40 @@
     "alert_action_no_permission": "이 경고를 처리할 권한이 없습니다. 권한이 있는 관리자에게 요청하세요."
   },
   "users": {
+    "member_fields": {
+      "select_placeholder": "선택하세요",
+      "other": "기타(직접 입력)",
+      "other_input": "{{label}} 직접 입력",
+      "other_placeholder": "직접 입력하세요",
+      "range_start": "{{label}} 시작일",
+      "range_end": "{{label}} 종료일",
+      "zipcode_label": "{{label}} 우편번호",
+      "address_label": "{{label}} 기본 주소",
+      "address_detail_label": "{{label}} 상세 주소",
+      "upload_after_save": "회원을 저장한 뒤 수정 화면에서 올릴 수 있습니다.",
+      "file_add": "파일 추가",
+      "file_add_label": "{{label}} 파일 추가",
+      "file_remove": "{{name}} 삭제",
+      "file_rules": "허용 확장자: {{extensions}} / 파일당 최대 {{size}}MB / 최대 {{count}}개",
+      "locked_identity": "본인인증으로 확인된 항목이라 수정할 수 없습니다.",
+      "locked_generic": "수정할 수 없는 항목입니다.",
+      "extra_title": "추가 항목",
+      "extension_title": "확장 항목",
+      "tab_has_error": "오류가 있는 칸이 있습니다",
+      "status": {
+        "nickname_changed_at": "닉네임 마지막 변경",
+        "nickname_next_changeable_at": "닉네임 다음 변경 가능",
+        "nickname_next_changeable_hint": "회원 본인이 닉네임을 다시 바꿀 수 있는 때입니다. 관리자는 언제든 바꿀 수 있습니다.",
+        "pending_required": "비어 있는 필수 항목",
+        "display_name_kind": "회원이 고른 표시 이름 종류",
+        "display_name_kind_none": "고르지 않음 (회원 기본 종류: {{kind}})",
+        "display_name_kind_unavailable": "지금은 고를 수 없는 종류입니다. 회원 기본 종류({{kind}})로 보입니다.",
+        "display_name_kind_hint": "회원 본인만 바꿀 수 있습니다.",
+        "display_name_current": "지금 보이는 이름",
+        "display_name_site": "사이트 기본",
+        "display_name_admin": "관리자 화면"
+      }
+    },
     "page_title": "사용자 관리",
     "page_description": "시스템 사용자를 관리합니다.",
     "title": "사용자 관리",
@@ -178,6 +254,15 @@
     "add_user": "사용자 추가",
     "search": "검색",
     "search_placeholder": "검색어를 입력하세요...",
+    "list_member_fields": {
+      "pending_column": "미입력",
+      "pending_count": "{{count}}개",
+      "filter_required_missing": "필수 항목 미입력",
+      "filter_required_missing_only": "미입력 회원만",
+      "filter_nickname_duplicate": "닉네임 중복",
+      "filter_nickname_duplicate_only": "겹치는 회원만",
+      "display_name_column": "보이는 이름"
+    },
     "search_fields": {
       "all": "전체",
       "name": "이름",
@@ -310,8 +395,6 @@
       },
       "fields": {
         "id": "ID",
-        "name": "이름",
-        "nickname": "닉네임",
         "role": "역할",
         "role_placeholder": "역할을 선택하세요",
         "role_no_options": "선택 가능한 역할이 없습니다",
@@ -321,27 +404,22 @@
         "email": "이메일",
         "email_verified": "인증됨",
         "email_verify_btn": "인증",
-        "mobile": "휴대폰번호",
-        "phone": "전화번호",
-        "homepage": "홈페이지",
         "address": "주소",
         "zipcode": "우편번호",
         "address_detail": "상세 주소",
-        "country": "국가",
-        "language": "언어",
-        "timezone": "시간대",
         "password": "비밀번호",
         "password_confirmation": "비밀번호 확인",
         "password_hint": "수정 시 빈 값이면 기존 비밀번호 유지",
-        "signature": "서명",
-        "bio": "자기소개",
         "admin_memo": "관리자 메모",
         "created_at": "가입일",
         "last_login_at": "마지막 로그인",
         "ip_address": "IP",
         "country_select": "국가 선택",
         "country_search": "국가 검색...",
-        "lock_status": "계정 잠금 상태"
+        "lock_status": "계정 잠금 상태",
+        "create_without_password": "비밀번호 없이 만들기 (외부 로그인 전용)",
+        "create_without_password_hint": "비밀번호를 정하지 않고 회원을 만듭니다. 이 회원은 외부 인증으로 로그인하고, 필요하면 비밀번호 찾기로 직접 비밀번호를 정할 수 있습니다.",
+        "locked_by_company": "회사 계정에서 관리하는 항목입니다"
       },
       "verification": {
         "method": "본인확인방법",
@@ -395,6 +473,17 @@
         "create_notice": "등록한 회원은 첫 로그인 때 비밀번호를 바꿔야 합니다.",
         "current_password": "현재 비밀번호",
         "current_password_hint": "내 계정의 비밀번호를 바꾸려면 현재 비밀번호를 입력해야 합니다.",
+        "reauth_notice": "비밀번호가 없는 계정입니다. 비밀번호를 처음 설정하려면 이메일로 받은 인증번호로 본인을 확인하세요.",
+        "reauth_request_code": "인증번호 받기",
+        "reauth_resend_code": "인증번호 다시 받기",
+        "reauth_code_placeholder": "6자리 인증번호",
+        "reauth_confirm": "확인",
+        "reauth_verified": "본인 확인이 끝났습니다. 저장하면 비밀번호가 설정됩니다.",
+        "reauth_code_sent": "인증번호를 이메일로 보냈습니다.",
+        "reauth_code_sent_generic": "인증번호를 보냈습니다.",
+        "reauth_notice_other": "비밀번호가 없는 계정입니다. 비밀번호를 처음 설정하려면 「본인 확인 시작」을 눌러 이 계정에 쓸 수 있는 방법(회사 계정 다시 로그인 등)으로 본인을 확인하세요.",
+        "reauth_start": "본인 확인 시작",
+        "reauth_external_failed": "본인 확인 화면으로 이동할 수 없습니다. 잠시 뒤 다시 시도해 주세요.",
         "expiry": "비밀번호 만료",
         "expiry_inherit": "역할·사이트 설정 따름",
         "expiry_apply": "적용",
@@ -424,8 +513,6 @@
       "info_public": "공개",
       "info_private": "비공개",
       "consent_history": "약관 동의 이력",
-      "enabled": "활성",
-      "disabled": "비활성",
       "withdrawn_at": "탈퇴일",
       "blocked_at": "차단일",
       "dormant_at": "휴면 전환일",
@@ -465,6 +552,10 @@
         "yes": "예",
         "no": "아니오",
         "postponed_until": "연기 종료",
+        "state": "비밀번호",
+        "set": "설정됨",
+        "not_set": "미설정",
+        "not_set_hint": "외부 인증(소셜 로그인 등)으로만 가입해 비밀번호가 없습니다. 만료 정책 대상이 아닙니다.",
         "policy": "만료 개별 설정"
       },
       "search_history": {
@@ -475,6 +566,13 @@
         "keywords": "검색어",
         "count": "{{count}}건",
         "empty": "저장된 검색어가 없습니다."
+      },
+      "revoke_sessions": {
+        "button": "모든 기기에서 로그아웃",
+        "confirm_title": "모든 기기에서 로그아웃",
+        "confirm_message": "이 회원이 로그인한 모든 기기에서 로그아웃시킵니다. 회원은 다시 로그인해야 합니다. 계속할까요?",
+        "confirm": "로그아웃",
+        "success": "모든 기기에서 로그아웃시켰습니다"
       }
     },
     "filter": {
@@ -676,16 +774,22 @@
     },
     "install_modal": {
       "title": "언어팩 설치",
-      "description": "ZIP 파일 또는 GitHub URL로 언어팩을 설치합니다.",
+      "description": "ZIP 파일, GitHub URL 또는 ZIP 주소로 언어팩을 설치합니다.",
       "tabs": {
         "zip": "ZIP 파일",
-        "github": "GitHub"
+        "github": "GitHub",
+        "url": "URL"
       },
       "file_label": "ZIP 파일",
       "no_file_selected": "선택된 파일이 없습니다.",
       "file_requirements": "다음 manifest 파일이 ZIP 루트에 포함되어 있어야 합니다.",
       "github_url_label": "GitHub URL",
-      "github_requirements": "Public 저장소만 지원합니다. 다음 manifest 파일이 저장소 루트에 있어야 합니다."
+      "github_requirements": "Public 저장소만 지원합니다. 다음 manifest 파일이 저장소 루트에 있어야 합니다.",
+      "url_label": "패키지 주소 (https)",
+      "url_hint": "언어팩 ZIP 을 바로 받을 수 있는 https 주소입니다.",
+      "checksum_label": "SHA-256 체크섬 (선택)",
+      "checksum_hint": "배포처가 알려 준 ZIP 의 SHA-256 값(16진수 64자)을 적으면 받은 파일과 대조합니다.",
+      "url_requirements": "받은 ZIP 의 루트에 다음 manifest 파일이 있어야 합니다."
     },
     "installing": "설치 중...",
     "messages": {
@@ -698,6 +802,7 @@
       "protected_badge": "🔒 보호됨",
       "check_updates_done": "업데이트 확인을 완료했습니다 ({{count}}건 가능).",
       "check_updates_none": "모든 언어팩이 최신 상태입니다.",
+      "check_updates_github_failed": "GitHub 최신 판을 확인하지 못한 언어팩 {{count}}개({{names}}) — 최신으로 판정하지 않았고 최신 버전 정보도 그대로 두었습니다. 사유: {{reason}}",
       "check_updates_failed": "업데이트 확인에 실패했습니다.",
       "activate_success": "언어팩을 활성화했습니다.",
       "deactivate_success": "언어팩을 비활성화했습니다.",
@@ -872,7 +977,8 @@
         "permissions": "권한",
         "menus": "관리자 메뉴",
         "notification_definitions": "알림 정의",
-        "identity_policies": "본인인증 정책"
+        "identity_policies": "본인인증 정책",
+        "schedules": "스케줄"
       },
       "no_tables": "삭제할 테이블이 없습니다.",
       "no_storage": "삭제할 스토리지가 없습니다.",
@@ -885,7 +991,6 @@
       "refresh_layouts_description": "모듈 파일에 포함된 레이아웃으로 데이터베이스의 레이아웃이 교체됩니다. 기존에 수정한 레이아웃 내용은 모두 삭제됩니다.",
       "deactivate_warning_title": "모듈 비활성화 경고",
       "deactivate_warning_message": "이 모듈에 의존하는 활성 확장(템플릿, 모듈, 플러그인)이 있습니다.",
-      "affected_templates": "다음 템플릿이 영향을 받습니다:",
       "dependent_templates": "의존하는 템플릿",
       "dependent_modules": "의존하는 모듈",
       "dependent_plugins": "의존하는 플러그인",
@@ -940,7 +1045,7 @@
       "file_requirements": "모듈 패키지는 반드시",
       "file_structure_hint": "파일을 포함해야 하며, 그누보드7 모듈 표준 구조를 따라야 합니다.",
       "github_url_label": "GitHub 저장소 URL",
-      "github_url_hint": "GitHub 저장소의 기본 브랜치에서 모듈을 다운로드합니다.",
+      "github_url_hint": "GitHub 저장소의 최신 태그 릴리스에서 모듈을 받습니다. 릴리스가 없는 저장소는 설치하지 않습니다.",
       "github_requirements": "루트 디렉토리에",
       "github_public_only": "파일이 있어야 합니다."
     },
@@ -1104,7 +1209,8 @@
         "permissions": "권한",
         "menus": "관리자 메뉴",
         "notification_definitions": "알림 정의",
-        "identity_policies": "본인인증 정책"
+        "identity_policies": "본인인증 정책",
+        "schedules": "스케줄"
       },
       "no_tables": "삭제할 테이블이 없습니다.",
       "no_storage": "삭제할 스토리지가 없습니다.",
@@ -1171,7 +1277,7 @@
       "file_requirements": "플러그인 패키지는 반드시",
       "file_structure_hint": "파일을 포함해야 하며, 그누보드7 플러그인 표준 구조를 따라야 합니다.",
       "github_url_label": "GitHub 저장소 URL",
-      "github_url_hint": "GitHub 저장소의 기본 브랜치에서 플러그인을 다운로드합니다.",
+      "github_url_hint": "GitHub 저장소의 최신 태그 릴리스에서 플러그인을 받습니다. 릴리스가 없는 저장소는 설치하지 않습니다.",
       "github_requirements": "루트 디렉토리에",
       "github_public_only": "파일이 있어야 합니다."
     },
@@ -1389,100 +1495,102 @@
     "page_description": "시스템 예약 작업을 관리합니다.",
     "title": "스케줄 관리",
     "description": "시스템에 등록된 스케줄(크론탭, Job)을 관리합니다.",
-    "add_schedule": "스케줄 추가",
-    "register_schedule": "스케줄 등록",
-    "search_placeholder": "스케줄 이름으로 검색...",
     "search_input_placeholder": "검색어를 입력하세요...",
-    "pagination_info": "총 {{total}}개 중 {{from}}-{{to}}개 표시",
-    "advanced_search": "상세검색",
-    "apply_filters": "필터 적용",
-    "reset_filters": "초기화",
-    "column_select": "컬럼 선택({{count}})",
     "total_count": "총 {{count}}개",
+    "total_at_least": "총 {{count}}개 이상",
     "selected_count": "{{count}}개 선택됨",
+    "per_page": "{{count}}개",
+    "per_page_label": "쪽당 개수",
     "duration_display": "{{duration}} 소요",
+    "empty": "등록된 스케줄이 없습니다.",
     "tabs": {
       "schedules": "스케줄 작업",
       "queue": "큐 모니터링"
     },
-    "stats": {
-      "total": "전체",
-      "active": "활성화",
-      "success": "성공",
-      "failed": "실패"
+    "action": {
+      "register": "스케줄 등록",
+      "security_policy": "보안 정책",
+      "edit": "수정",
+      "run": "즉시 실행",
+      "history": "실행 이력",
+      "duplicate": "복사",
+      "delete": "삭제",
+      "delete_disabled_reason": "직접 등록한 작업만 삭제할 수 있습니다.",
+      "bulk_apply": "일괄 적용",
+      "bulk_delete": "선택 삭제",
+      "advanced_search": "상세검색",
+      "edit_search": "검색편집",
+      "reset": "초기화"
     },
     "search_fields": {
       "all": "전체",
       "name": "작업명",
-      "command": "명령어",
-      "description": "설명"
+      "identifier": "식별자",
+      "command": "명령"
     },
-    "filters": {
-      "type": "작업유형",
+    "filter": {
+      "detail_title": "상세 검색",
+      "owner": "소유",
+      "owner_schedule_count": "스케줄",
+      "owner_search": "확장 이름·식별자 검색",
+      "owner_select": "확장 선택",
+      "show_in_basic": "{{label}} 필터를 기본 검색에 표시",
+      "type": "작업 유형",
       "status": "상태",
-      "result": "실행 결과",
-      "last_result": "마지막 실행결과",
-      "all_types": "모든 유형",
-      "all_status": "모든 상태",
-      "all_results": "모든 결과",
-      "all": "전체",
-      "frequency": "실행주기",
+      "last_result": "최근 실행 결과",
+      "frequency": "실행 주기",
       "created_at": "등록일",
-      "start_date": "시작일",
-      "end_date": "종료일",
-      "without_overlapping": "중복실행 방지",
-      "run_in_maintenance": "점검모드 실행",
-      "module": "소속 모듈",
-      "yes": "예",
-      "no": "아니오",
-      "use": "사용",
-      "not_use": "미사용",
-      "allow": "허용",
-      "disallow": "비허용",
+      "without_overlapping": "중복 실행 방지",
+      "overlap_on": "켬",
+      "overlap_off": "끔",
+      "dispatch_mode": "실행 방식",
+      "history_mode": "실행 이력",
       "preset": {
         "today": "오늘",
-        "week": "일주일",
+        "week": "1주일",
         "month": "1개월",
         "3months": "3개월",
         "6months": "6개월",
-        "year": "1년"
+        "1year": "1년"
       }
     },
     "bulk": {
-      "status_change": "상태 변경",
-      "action_run": "작업 실행",
-      "apply": "일괄변경"
+      "select_status": "변경할 상태 선택",
+      "action_select": "일괄 작업 선택",
+      "to_active": "활성으로 변경",
+      "to_inactive": "비활성으로 변경",
+      "delete_owned_blocked": "코어·확장이 등록한 작업이 섞여 있어 삭제할 수 없습니다. 직접 등록한 작업만 골라 주세요."
     },
     "sort": {
-      "created_at_desc": "등록일시 최근순",
-      "created_at_asc": "등록일시 오래된순",
+      "label": "정렬",
+      "created_at_desc": "등록일 최근순",
+      "created_at_asc": "등록일 오래된순",
       "name_asc": "작업명 오름차순",
       "name_desc": "작업명 내림차순",
-      "next_run_at_asc": "다음실행 빠른순",
-      "next_run_at_desc": "다음실행 늦은순"
-    },
-    "per_page": {
-      "10": "10개",
-      "20": "20개",
-      "50": "50개",
-      "100": "100개"
+      "next_run_at_asc": "다음 실행 빠른순",
+      "next_run_at_desc": "다음 실행 늦은순",
+      "last_run_at_desc": "최근 실행 최신순",
+      "last_run_at_asc": "최근 실행 오래된순"
     },
     "columns": {
       "name": "작업명",
-      "type": "작업유형",
-      "command": "명령",
-      "frequency": "실행주기",
-      "last_result": "마지막 실행결과",
-      "last_run": "마지막 실행",
-      "next_run": "다음 실행 예정",
+      "owner": "소유",
+      "type": "작업 유형",
+      "frequency": "실행 주기",
+      "without_overlapping": "중복 방지",
+      "next_run": "다음 실행",
+      "last_run": "최근 실행",
+      "last_result": "최근 실행 결과",
       "status": "상태"
     },
     "type": {
       "artisan": "Artisan",
       "shell": "Shell",
-      "url": "URL"
+      "url": "URL",
+      "job": "Job"
     },
     "frequency": {
+      "everyThirtySeconds": "30초마다",
       "everyMinute": "매분",
       "hourly": "매시간",
       "daily": "매일",
@@ -1494,79 +1602,327 @@
       "success": "성공",
       "failed": "실패",
       "running": "실행 중",
-      "never": "실행 안됨"
+      "never": "미실행"
     },
     "status": {
-      "active": "활성화",
-      "inactive": "비활성화"
+      "active": "활성",
+      "inactive": "비활성"
     },
     "trigger_type": {
       "scheduled": "예약 실행",
       "manual": "수동 실행"
     },
-    "actions": {
-      "run": "즉시 실행",
-      "history": "실행 이력",
-      "duplicate": "복제"
+    "dispatch_mode": {
+      "sync": "바로 실행",
+      "queue": "큐로 보내기"
     },
+    "history_mode": {
+      "all": "모든 실행 기록",
+      "failures_only": "실패만 기록"
+    },
+    "owner": {
+      "core": "코어",
+      "module": "모듈",
+      "plugin": "플러그인",
+      "custom": "직접 등록"
+    },
+    "condition_unmet": "설정에서 꺼짐",
+    "overlap_minutes": "{{minutes}}분",
+    "overlap_off": "끔",
     "form": {
-      "name": "이름",
-      "name_placeholder": "스케줄 이름을 입력하세요",
+      "label": "작업명",
+      "label_placeholder": "작업명을 입력하세요",
       "description": "설명",
-      "description_placeholder": "스케줄에 대한 설명을 입력하세요",
+      "description_placeholder": "작업에 대한 설명을 입력하세요",
       "type": "작업 유형",
+      "name": "식별자",
+      "name_placeholder": "예: cleanup_temp_files",
+      "name_help": "기계 식별자입니다. 비워 두면 작업명으로 채웁니다.",
       "command": "명령",
-      "command_placeholder": "실행할 명령을 입력하세요",
-      "command_help": "Artisan 커맨드, 쉘 명령 또는 URL을 입력하세요",
+      "command_placeholder": {
+        "artisan": "예: cache:prune-stale-tags",
+        "shell": "예: /usr/bin/php -v",
+        "url": "예: https://example.com/ping",
+        "job": "예: App\\Jobs\\GenerateSitemapJob"
+      },
+      "command_help": {
+        "artisan": "php artisan 뒤에 오는 명령과 옵션을 입력하세요. 보안 허용 목록에 있는 명령만 실행됩니다.",
+        "shell": "서버 설정이 허용한 실행 파일로 시작하는 명령을 입력하세요.",
+        "url": "호출할 주소를 입력하세요. 내부망 주소는 보안 설정에 따라 막힐 수 있습니다.",
+        "job": "보안 허용 목록에 등록된 Job 클래스 이름(전체 경로)을 입력하세요."
+      },
+      "command_multiline_hint": "여러 줄로 적어도 저장할 때 한 줄로 합쳐집니다.",
+      "shell_disabled": "서버 설정에서 Shell 실행이 꺼져 있습니다. 서버 .env 에 SCHEDULE_SHELL_ENABLED=true 와 허용할 실행 파일(SCHEDULE_SHELL_ALLOWED_BINARIES, 예: php,python3)을 적으면 켜집니다.",
+      "locked_hint": "코어·확장이 등록한 작업이라 바꿀 수 없습니다.",
       "frequency": "실행 주기",
       "expression": "Cron 표현식",
       "expression_help": "예: * * * * * (매분), 0 0 * * * (매일 자정)",
-      "timeout": "타임아웃 (초)",
-      "timeout_help": "최대 실행 시간 (1-86400초)",
+      "timeout": "제한 시간",
+      "timeout_help": "이 시간을 넘기면 실행을 멈춥니다. (1 ~ 86400초)",
+      "timeout_placeholder": "기본값",
+      "timeout_default": {
+        "artisan_sync": "비워 두면 시간 제한 없이 실행합니다.",
+        "artisan_queue": "비워 두면 600초입니다. 큐 연결의 재시도 대기 시간보다 길면 그보다 짧게 줄입니다.",
+        "shell": "비워 두면 60초입니다.",
+        "url": "비워 두면 30초입니다.",
+        "job": "Job 유형은 이 값을 쓰지 않고 Job 클래스에 정해진 제한 시간을 따릅니다."
+      },
+      "seconds_suffix": "초",
+      "minutes_suffix": "분",
       "without_overlapping": "중복 실행 방지",
-      "without_overlapping_help": "이전 작업이 실행 중일 때 새 작업을 건너뜁니다",
+      "without_overlapping_help": "이전 실행이 끝나지 않았으면 새 실행을 건너뜁니다.",
+      "overlap_minutes": "잠금 유지 시간",
+      "overlap_minutes_help": "앞 실행이 이 시간 안에 끝나지 않으면 잠금이 풀립니다. (1 ~ 10080분)",
+      "on_one_server": "한 서버에서만 실행",
+      "on_one_server_help": "여러 서버가 스케줄러를 돌릴 때 한 대만 실행합니다(공유 캐시 필요).",
+      "notify_on_failure": "실패 알림",
+      "notify_on_failure_help": "예약 실행이 실패하면 관리자에게 알립니다(같은 작업은 하루 한 번).",
       "run_in_maintenance": "점검 모드에서 실행",
-      "run_in_maintenance_help": "시스템 점검 모드에서도 작업을 실행합니다",
-      "is_active": "활성화",
-      "is_active_help": "비활성화하면 예약 실행되지 않습니다"
+      "run_in_maintenance_help": "사이트 점검 모드에서도 작업을 실행합니다.",
+      "is_active": "활성",
+      "is_active_help": "끄면 예약 실행되지 않습니다.",
+      "conditions": "실행 조건",
+      "conditions_help": "아래 설정이 모두 켜져 있을 때만 예약 실행됩니다(노란색 = 지금 꺼짐). 조건은 코어·확장이 정하며 여기서 바꿀 수 없습니다.",
+      "dispatch_mode": "실행 방식",
+      "dispatch_mode_help": "바로 실행은 워커 없이도 동작합니다. 오래 걸리는 작업은 큐로 보내 워커가 처리하게 하세요.",
+      "history_mode": "실행 이력",
+      "history_mode_help": "「실패만 기록」은 자주 도는 작업이 이력을 쌓지 않게 합니다.",
+      "queue_connection": "큐 연결",
+      "queue_name": "큐",
+      "queue_default": "기본값",
+      "overridden_badge": "운영자 수정됨",
+      "owned_badge": "{{owner}} 등록 작업 — 이름·유형·명령 잠김",
+      "timezone_badge": "시간대: {{timezone}}",
+      "allow_unsigned_hint": "설치·업데이트 명령(module:update 등)을 등록할 때는 --allow-unsigned 를 함께 적어야 서명 없는 패키지에서 멈추지 않습니다."
     },
     "modals": {
-      "create_title": "스케줄 추가",
+      "create_title": "스케줄 등록",
       "edit_title": "스케줄 수정",
+      "bulk_status_title": "상태 일괄 변경",
+      "bulk_status_confirm_active": "선택한 {{count}}개 스케줄을 활성으로 변경하시겠습니까?",
+      "bulk_status_confirm_inactive": "선택한 {{count}}개 스케줄을 비활성으로 변경하시겠습니까?",
       "delete_title": "스케줄 삭제",
-      "delete_confirm": "이 스케줄을 삭제하시겠습니까? 관련된 실행 이력도 함께 삭제됩니다.",
+      "delete_confirm": "이 스케줄을 삭제하시겠습니까?",
+      "delete_confirm_bulk": "선택한 {{count}}개 스케줄을 삭제하시겠습니까?",
+      "delete_warning": "삭제한 스케줄과 실행 이력은 되돌릴 수 없습니다.",
       "run_title": "스케줄 즉시 실행",
       "run_confirm": "이 스케줄을 지금 실행하시겠습니까?",
-      "run_duration": "실행 시간: {{duration}}",
+      "duration": "소요 시간",
       "output": "출력",
+      "error_output": "오류 출력",
       "running": "실행 중...",
+      "run_not_recorded": "「실패만 기록」 작업이라 성공 이력은 남기지 않았습니다.",
+      "run_queue_hint": "이 작업은 큐로 보냅니다. 워커가 처리하면 실행 이력에 기록됩니다.",
+      "run_queued": "큐에 넣었습니다. 워커가 처리하면 실행 이력에 기록됩니다.",
+      "run_unmet_warning": "실행 조건이 꺼져 있어 예약 실행은 건너뛰는 작업입니다. 즉시 실행은 그대로 실행됩니다.",
       "history_title": "실행 이력",
       "no_history": "실행 이력이 없습니다.",
-      "duplicate_title": "스케줄 복제",
-      "duplicate_confirm": "이 스케줄을 복제하시겠습니까?",
-      "duplicate_note": "복제된 스케줄은 비활성화 상태로 생성됩니다.",
-      "duplicating": "복제 중..."
+      "duplicate_title": "스케줄 복사",
+      "duplicate_confirm": "이 스케줄을 복사하시겠습니까?",
+      "duplicate_note": "복사한 스케줄은 비활성 상태로 만들어집니다.",
+      "duplicate_owned_note": "코어·확장이 등록한 작업을 복사하면 직접 등록 작업으로 만들어집니다.",
+      "duplicating": "복사 중..."
     },
     "history": {
-      "duration": "소요 시간: {{duration}}",
-      "memory": "메모리: {{memory}}",
-      "triggered_by": "실행자: {{user}}"
+      "duration": "소요 시간 {{duration}}",
+      "memory": "메모리 {{memory}}",
+      "triggered_by": "실행자 {{user}}"
     },
     "messages": {
-      "create_success": "스케줄이 생성되었습니다.",
+      "create_success": "스케줄이 등록되었습니다.",
       "update_success": "스케줄이 수정되었습니다.",
       "delete_success": "스케줄이 삭제되었습니다.",
-      "duplicate_success": "스케줄이 복제되었습니다.",
+      "bulk_delete_success": "선택한 스케줄이 삭제되었습니다.",
+      "duplicate_success": "스케줄이 복사되었습니다.",
       "status_updated": "스케줄 상태가 변경되었습니다.",
-      "bulk_status_updated": "선택한 스케줄의 상태가 일괄 변경되었습니다."
+      "bulk_status_updated": "선택한 스케줄의 상태가 변경되었습니다."
     },
     "errors": {
       "save_failed": "스케줄 저장에 실패했습니다.",
       "delete_failed": "스케줄 삭제에 실패했습니다.",
       "run_failed": "스케줄 실행에 실패했습니다.",
-      "duplicate_failed": "스케줄 복제에 실패했습니다.",
+      "duplicate_failed": "스케줄 복사에 실패했습니다.",
       "status_update_failed": "상태 변경에 실패했습니다.",
-      "bulk_status_failed": "일괄 상태 변경에 실패했습니다."
+      "bulk_status_failed": "상태 일괄 변경에 실패했습니다."
+    },
+    "security": {
+      "title": "스케줄 보안 정책",
+      "description": "예약 작업으로 실행할 수 있는 명령의 범위입니다. 이 화면에서는 볼 수만 있습니다.",
+      "guide": "서버 관리자가 storage/app/schedule_security.json 에서 항목을 더할 수 있습니다(코어 거부 목록은 풀 수 없습니다). Shell 실행 여부와 허용 실행 파일은 .env 의 SCHEDULE_SHELL_ENABLED · SCHEDULE_SHELL_ALLOWED_BINARIES 로 정합니다.",
+      "load_failed": "보안 정책을 불러오지 못했습니다.",
+      "none": "없음",
+      "count": "{{count}}개",
+      "allowed": "허용",
+      "not_allowed": "허용 안 함",
+      "source": {
+        "core": "코어",
+        "override": "추가",
+        "extension": "확장"
+      },
+      "denied": "거부됨",
+      "override": {
+        "title": "덮어쓰기 파일",
+        "path": "경로",
+        "status": "상태",
+        "applied": "적용 중",
+        "missing": "없음 — 코어 기본값만 씁니다",
+        "invalid": "형식 오류 — 파일 전체를 무시합니다"
+      },
+      "shell": {
+        "title": "Shell 실행",
+        "enabled": "켜짐",
+        "disabled": "꺼짐",
+        "allowed_binaries": "허용 실행 파일",
+        "no_binaries": "SCHEDULE_SHELL_ENABLED 는 켜져 있지만 허용 실행 파일이 없어 Shell 작업을 쓸 수 없습니다."
+      },
+      "artisan": {
+        "allowlist": "허용 Artisan 명령",
+        "allow_extension_commands": "확장 명령 자동 허용",
+        "denylist": "거부 명령",
+        "denylist_prefixes": "거부 접두어",
+        "denylist_hint": "거부 목록과 겹치는 허용 항목은 거부가 이깁니다."
+      },
+      "job": {
+        "allowed_classes": "허용 Job 클래스"
+      },
+      "url": {
+        "block_private_hosts": "내부망 주소 차단"
+      }
+    },
+    "status_card": {
+      "scheduler": "스케줄러",
+      "healthy": "정상 동작",
+      "stopped": "멈춤",
+      "last_tick": "마지막 실행 {{minutes}}분 전",
+      "never_ticked": "실행 기록이 없습니다",
+      "cron_hint": "서버 cron 에 아래 한 줄을 등록하세요.",
+      "schedules": "등록된 작업",
+      "active_inactive": "활성 {{active}} · 비활성 {{inactive}}",
+      "results": "최근 실행 결과",
+      "failed_count": "실패 {{count}}",
+      "success_never": "성공 {{success}} · 미실행 {{never}}",
+      "queue": "큐 ({{driver}})",
+      "pending_count": "대기 {{count}}",
+      "pending_unmeasurable": "대기 건수 측정 불가",
+      "queue_detail": "실패 {{failed}} · 워커 {{alive}}/{{registered}}",
+      "mobile_summary": "{{minutes}}분 전 · 워커 {{alive}}/{{registered}} · 실패 {{failed}}개",
+      "mobile_summary_never": "실행 기록 없음 · 워커 {{alive}}/{{registered}} · 실패 {{failed}}개",
+      "detail_open": "자세히",
+      "detail_close": "접기"
+    },
+    "queue": {
+      "views": {
+        "pending": "대기",
+        "failed": "실패",
+        "logs": "처리 기록"
+      },
+      "status": {
+        "driver": "드라이버",
+        "connection": "연결 {{connection}}",
+        "pending": "대기",
+        "failed": "실패",
+        "count": "{{count}}개",
+        "unmeasurable": "측정 불가",
+        "workers": "워커",
+        "workers_hint": "동작 중 / 등록",
+        "worker_warnings": "워커 경고 {{count}}개"
+      },
+      "notice": {
+        "unmeasurable": "현재 큐 드라이버({{driver}})는 대기 목록을 셀 수 없습니다. 대기 목록은 database 드라이버에서만 보입니다.",
+        "no_worker": "기본 큐 드라이버가 {{driver}}라 실패한 작업을 다시 넣어도 처리할 워커가 없습니다. 재시도는 거절됩니다.",
+        "no_permission": "큐 모니터링을 볼 권한이 없습니다. 「큐 작업 조회」 권한이 필요합니다."
+      },
+      "filter": {
+        "queue": "큐",
+        "connection": "연결",
+        "connection_all": "모든 연결",
+        "result": "처리 결과",
+        "failed_at": "실패 일시",
+        "processed_at": "처리 일시"
+      },
+      "search_fields": {
+        "label": "검색 대상",
+        "all": "전체",
+        "job": "큐 작업",
+        "error": "오류 내용",
+        "uuid": "UUID"
+      },
+      "search_placeholder": "검색어를 입력하세요",
+      "sort": {
+        "created_at_desc": "등록 일시 최근순",
+        "created_at_asc": "등록 일시 오래된순",
+        "available_at_asc": "실행 가능 일시 빠른순",
+        "available_at_desc": "실행 가능 일시 늦은순",
+        "attempts_desc": "시도 많은순",
+        "attempts_asc": "시도 적은순",
+        "failed_at_desc": "실패 일시 최근순",
+        "failed_at_asc": "실패 일시 오래된순",
+        "finished_at_desc": "처리 일시 최근순",
+        "finished_at_asc": "처리 일시 오래된순",
+        "duration_ms_desc": "소요 시간 긴순",
+        "duration_ms_asc": "소요 시간 짧은순"
+      },
+      "columns": {
+        "job": "큐 작업",
+        "queue": "큐",
+        "state": "상태",
+        "attempts": "시도",
+        "queued_at": "등록 일시",
+        "available_at": "실행 가능 일시",
+        "error": "오류",
+        "failed_at": "실패 일시",
+        "result": "결과",
+        "duration": "소요 시간",
+        "processed_at": "처리 일시"
+      },
+      "state": {
+        "waiting": "대기",
+        "delayed": "지연",
+        "running": "실행 중"
+      },
+      "log_status": {
+        "processed": "처리 완료",
+        "failed": "실패"
+      },
+      "schedule_ref": "스케줄 #{{id}}",
+      "duration_ms": "{{ms}}ms",
+      "empty": {
+        "pending": "대기 중인 작업이 없습니다.",
+        "failed": "실패한 작업이 없습니다.",
+        "logs": "처리 기록이 없습니다."
+      },
+      "action": {
+        "detail": "상세보기",
+        "retry": "재시도",
+        "retry_selected": "선택 재시도",
+        "delete_selected": "선택 삭제"
+      },
+      "confirm": {
+        "retry_title": "실패 작업 재시도",
+        "retry_message": "아래 작업을 원래 큐에 다시 넣습니다.",
+        "delete_title": "실패 작업 삭제",
+        "delete_message": "아래 작업을 실패 목록에서 지웁니다. 지운 작업은 되살릴 수 없습니다.",
+        "bulk_target": "선택한 작업 {{count}}개"
+      },
+      "detail": {
+        "title": "큐 작업 상세",
+        "uuid": "UUID",
+        "period": "처리 일시",
+        "schedule": "스케줄",
+        "exception": "오류 내용",
+        "payload": "작업 정보"
+      },
+      "messages": {
+        "retry_done": "재시도를 요청했습니다.",
+        "delete_done": "삭제했습니다."
+      },
+      "errors": {
+        "retry_failed": "재시도하지 못했습니다.",
+        "delete_failed": "삭제하지 못했습니다.",
+        "detail_failed": "작업 상세를 불러오지 못했습니다.",
+        "list_load_failed": "목록을 불러오지 못했습니다. 잠시 뒤 새로고침해 주세요.",
+        "status_load_failed": "큐 현황을 불러오지 못했습니다. 잠시 뒤 새로고침해 주세요."
+      }
     }
   },
   "settings": {
@@ -1582,12 +1938,15 @@
       "content": "본문 콘텐츠",
       "seo": "SEO",
       "security": "보안",
+      "member": "회원",
       "drivers": "드라이버",
       "advanced": "고급",
       "notification_definitions": "알림 설정",
       "language_packs": "언어팩",
       "identity": "본인인증",
       "info": "정보",
+      "system": "시스템",
+      "update": "업데이트",
       "privacy": "개인정보"
     },
     "general": {
@@ -1595,11 +1954,18 @@
       "site_info_desc": "기본 사이트 정보를 설정합니다.",
       "site_name": "사이트 이름",
       "site_url": "사이트 URL",
+      "site_url_help": "이 주소는 알림·비밀번호 재설정 메일 링크와 결제 복귀 주소의 기준이 됩니다. 프록시·하위 폴더 배치라면 실제 접속 주소와 일치해야 합니다.",
       "site_description": "사이트 설명",
       "site_description_placeholder": "사이트에 대한 간단한 설명을 입력하세요.",
       "admin_email": "관리자 이메일",
+      "admin_email_desc": "알림 템플릿의 받는 사람을 「사이트 관리자 이메일」로 정하면 이 주소로 메일을 보냅니다. 비워 두면 그 규칙으로는 아무에게도 보내지 않습니다.",
       "site_logo": "사이트 타이틀 이미지",
       "site_logo_desc": "헤더에 표시될 로고 이미지입니다.",
+      "site_favicon": "파비콘",
+      "site_favicon_desc": "브라우저 탭에 표시되는 아이콘입니다. 정사각 32px 이상의 PNG·SVG 또는 ICO 파일 1개(최대 1MB)를 권장합니다.",
+      "favicon_override_user": "현재 사용자 화면은 「{{name}}」 템플릿 설정의 파비콘이 우선 적용됩니다.",
+      "favicon_override_admin": "현재 관리자 화면은 「{{name}}」 템플릿 설정의 파비콘이 우선 적용됩니다.",
+      "favicon_go_template_settings": "템플릿 설정으로",
       "upload_drag_drop": "클릭하거나 파일을 드래그하여 업로드",
       "max_size": "최대",
       "localization": "지역화",
@@ -1617,6 +1983,10 @@
       "asset_url_mode_detect_extension": "확장자를 사용할 수 있는 환경입니다.",
       "asset_url_mode_detect_extensionless": "정적 파일 최적화 규칙(nginx의 location ~* \\.(js|css|json|png|jpg|jpeg|gif|ico|svg|woff2?)$ 블록 등)이 확장자 주소를 가로채고 있습니다. '확장자 미사용'으로 바꾼 뒤 저장하세요.",
       "asset_url_mode_detect_unavailable": "감지에 실패했습니다. 서버가 응답하지 않아 방식을 판정할 수 없습니다.",
+      "layout_edit_button": "레이아웃 편집 단추",
+      "layout_edit_button_description": "레이아웃 편집 권한이 있는 관리자가 로그인하면 관리자 화면과 사이트 화면 오른쪽 아래에 레이아웃 편집 단추가 보입니다. 누르면 보고 있던 화면을 레이아웃 편집기로 엽니다.",
+      "layout_edit_button_enabled": "레이아웃 편집 단추 표시",
+      "layout_edit_button_enabled_desc": "끄면 권한이 있어도 단추가 보이지 않습니다. 레이아웃 편집기는 템플릿 관리 화면에서 계속 열 수 있습니다.",
       "static_cache_title": "초기 화면 정적 파일",
       "static_cache_description": "첫 화면을 빠르게 띄우기 위해 다국어·라우트·컴포넌트·확장 번들을 정적 파일로 미리 만들어 둡니다. 확장 설치·업데이트나 설정 변경 뒤 자동으로 다시 만들어지며, 화면이 옛 내용을 보이면 여기서 즉시 다시 만들 수 있습니다.",
       "static_cache_status": "상태",
@@ -1643,7 +2013,9 @@
       "static_cache_republish_confirm_warning": "완료까지 잠시 걸릴 수 있습니다. 그동안 사이트는 정상 동작합니다.",
       "static_cache_republished": "초기 화면 정적 파일을 다시 만들었습니다.",
       "static_cache_republish_not_publishable": "지금 환경에서는 정적 파일을 만들지 않습니다 (운영 모드가 아니거나 꺼져 있음).",
-      "static_cache_republish_failed": "초기 화면 정적 파일을 다시 만들지 못했습니다. 아래 실패 사유를 확인하세요. 사이트는 정상 동작합니다."
+      "static_cache_republish_failed": "초기 화면 정적 파일을 다시 만들지 못했습니다. 아래 실패 사유를 확인하세요. 사이트는 정상 동작합니다.",
+      "user_screen_url": "사용자 화면 URL",
+      "user_screen_url_help": "비우면 사이트 URL 과 같습니다. 다른 주소에서 운영하는 외부 화면(예: Next.js)을 쓸 때만 입력하세요. 비밀번호 재설정·알림 메일의 링크와 결제 뒤 돌아가는 주소에 쓰이며, 관리자 화면 주소는 바뀌지 않습니다."
     },
     "mail": {
       "smtp_settings": "SMTP 설정",
@@ -1694,23 +2066,162 @@
       "image_max_height": "최대 높이",
       "image_quality": "이미지 품질",
       "image_quality_hint": "1~100 사이의 값을 입력하세요. 높을수록 품질이 좋습니다.",
+      "thumbnail": {
+        "title": "썸네일",
+        "desc": "이미지 주소에 규격(?size=sm 등)을 붙이면 아래 「썸네일 규격」대로 줄인 파일을 만들어 두고 내보냅니다.",
+        "engine_missing": "이 서버에는 이미지 처리 엔진(GD 또는 Imagick)이 없어 썸네일을 만들 수 없습니다. 이미지는 원본 그대로 전송됩니다.",
+        "enabled": "썸네일 사용",
+        "enabled_hint": "끄면 규격을 붙인 주소도 원본을 그대로 보냅니다. 이미 만든 썸네일 파일은 지우지 않습니다.",
+        "content_preset": "본문 이미지 규격",
+        "content_preset_hint": "게시글과 페이지 본문의 이미지를 표시할 때 쓸 규격입니다. 저장된 본문 HTML 은 바뀌지 않습니다.",
+        "prune_enabled": "썸네일 자동 정리",
+        "prune_enabled_hint": "규격이 바뀌어 쓰이지 않거나 원본이 없어진 썸네일 파일을 정리 스케줄이 지웁니다.",
+        "animated_original": "움직이는 이미지는 원본 사용",
+        "animated_original_hint": "움직이는 GIF·WebP·PNG 는 썸네일로 바꾸지 않고 원본을 그대로 보냅니다. 끄면 첫 장면으로 썸네일을 만들어 움직이지 않습니다. GD 엔진은 움직이는 WebP 를 읽지 못해 꺼도 원본을 보냅니다.",
+        "prune_schedule_notice": "썸네일 정리는 썸네일 정리 스케줄이 실행합니다.",
+        "server_limits": {
+          "title": "고급 — 서버 보호 값",
+          "desc": "썸네일을 만드느라 서버가 붙잡히지 않게 하는 값입니다. 칸을 비우면 서버 기본값(.env 의 G7_THUMBNAIL_* 가 있으면 그 값)을 쓰고, 칸에 보이는 흐린 숫자가 지금 그 값입니다. .env 우선 모드에서 .env 에 값을 적은 칸은 「.env 고정」으로 잠깁니다.",
+          "generate_per_minute": "1분에 새로 만드는 썸네일 수 (IP 하나)",
+          "generate_per_minute_hint": "아직 없는 썸네일을 IP 하나가 1분에 이만큼까지 만들게 합니다. 넘으면 원본을 보냅니다. 1~10000",
+          "lock_wait_seconds": "생성 대기 시간",
+          "lock_wait_seconds_hint": "같은 썸네일을 다른 요청이 만들고 있을 때 기다리는 시간입니다. 넘으면 원본을 보내고 캐시하지 않습니다. 1~30초",
+          "max_source_pixels": "원본 최대 픽셀 수",
+          "max_source_pixels_hint": "이보다 큰 원본은 줄이지 않고 원본을 보냅니다(메모리 보호). 서버 메모리 한도가 작으면 더 낮춰 씁니다. 1000000~100000000",
+          "pregenerate_batch": "한 번에 만드는 원본 수",
+          "pregenerate_batch_hint": "「기존 이미지 썸네일 만들기」와 명령 thumbnails:pregenerate 가 한 번에 처리하는 원본 수입니다. 1~500",
+          "pregenerate_time_budget": "한 번 호출의 시간 예산",
+          "pregenerate_time_budget_hint": "「기존 이미지 썸네일 만들기」 한 번 호출이 쓰는 최대 시간입니다. 넘으면 그 자리에서 이어 부릅니다. 서버 실행 시간 한도가 더 짧으면 그 절반을 씁니다. 1~60초",
+          "purge_time_budget": "비우기 한 번 호출의 시간 예산",
+          "purge_time_budget_hint": "썸네일 「비우기」 한 번 호출이 쓰는 최대 시간입니다. 같은 저장소를 두 위치가 함께 쓰거나 규격 하나만 지우거나 원격 저장소를 비울 때 넘으면 그 자리에서 이어 부릅니다. 서버 실행 시간 한도가 더 짧으면 그 절반을 씁니다. 1~60초",
+          "unit_count": "개",
+          "unit_seconds": "초",
+          "unit_pixels": "픽셀"
+        },
+        "storage": {
+          "title": "저장 위치 · 캐시",
+          "desc": "썸네일 파일을 원본의 공개 여부에 따라 두 곳에 나눠 저장합니다. 저장 위치는 「저장」을 눌러야 바뀌고, 비우기는 누르는 즉시 실행됩니다.",
+          "kinds": {
+            "public": "공개 이미지 썸네일",
+            "gated": "권한이 걸린 이미지 썸네일"
+          },
+          "kind_hints": {
+            "public": "레이아웃 첨부, 상품, 카테고리처럼 누구나 볼 수 있는 이미지입니다. 공개 저장소(CDN)를 고를 수 있습니다.",
+            "gated": "첨부파일, 비밀글, 리뷰처럼 권한을 확인하고 보내는 이미지입니다. 비공개 저장소만 고를 수 있습니다."
+          },
+          "disk": "저장 디스크",
+          "private_disk": "비공개 썸네일 저장소",
+          "usage": "파일 {{count}}개, {{size}}",
+          "not_counted": "집계 안 함(원격 저장소)",
+          "after_save": "저장 후 집계",
+          "load_failed": "썸네일 사용량을 불러오지 못했습니다. 잠시 뒤 다시 시도하세요.",
+          "locked_hint": "저장 위치를 바꾼 줄은 「저장」 전까지 비우기를 할 수 없습니다. 저장하면 새 위치 기준으로 다시 집계합니다.",
+          "purge_preset": "비울 규격",
+          "all_presets": "모든 규격",
+          "purge": "비우기",
+          "purge_success": "썸네일 {{count}}개를 지웠습니다.",
+          "purge_failed": "썸네일을 비우지 못했습니다.",
+          "purge_all": "두 곳 모두 비우기",
+          "pregenerate": "기존 이미지 썸네일 만들기",
+          "cdn_purge_notice": "공개 썸네일을 공개 저장소(CDN)에 두면, 비우기와 원본 삭제 때 CDN 캐시 무효화는 CDN 플러그인이 처리합니다. 플러그인이 없으면 CDN 에 남은 사본이 만료될 때까지 보일 수 있습니다.",
+          "same_bucket_warning": "드라이버 탭의 공개 자산 디스크도 Amazon S3 라서 권한이 걸린 이미지 썸네일과 같은 버킷을 씁니다. 버킷에 공개 읽기 정책이 있으면 이 썸네일도 버킷 주소로 직접 읽힐 수 있으니, 썸네일 경로(thumbnails/)에 공개 정책이 걸리지 않았는지 확인하세요."
+        },
+        "purge_all_modal": {
+          "title": "썸네일 모두 비우기",
+          "body": "아래 두 저장 위치의 썸네일 파일을 모두 지웁니다.",
+          "disk": "디스크: {{disk}}",
+          "warning": "원본 이미지는 그대로입니다. 지운 썸네일은 다음 요청 때 다시 만들어집니다.",
+          "confirm": "모두 비우기",
+          "success": "썸네일을 지웠습니다. 공개 {{public}}개, 권한 {{gated}}개"
+        },
+        "pregenerate_modal": {
+          "title": "기존 이미지 썸네일 만들기",
+          "body": "이미 올라와 있는 이미지의 썸네일을 미리 만듭니다. 이미 만든 썸네일은 건너뜁니다.",
+          "sources": "대상 이미지",
+          "no_sources": "썸네일을 만들 수 있는 이미지 소스가 없습니다.",
+          "presets": "만들 규격",
+          "counts": "처리 {{processed}} / {{total}}, 생성 {{generated}}",
+          "running": "만드는 중…",
+          "paused": "멈춤",
+          "done": "완료",
+          "done_toast": "썸네일 만들기를 마쳤습니다. 새로 만든 파일 {{generated}}개",
+          "failed": "썸네일을 만들지 못했습니다.",
+          "start": "시작",
+          "restart": "다시 시작",
+          "pause": "멈춤"
+        },
+        "presets": {
+          "title": "썸네일 규격",
+          "desc": "규격마다 크기, 맞춤, 형식을 정합니다. 코어 규격과 확장 규격은 이름을 바꿀 수 없고 값만 고칠 수 있습니다.",
+          "col": {
+            "name": "이름",
+            "source": "출처",
+            "width": "가로",
+            "height": "세로",
+            "fit": "맞춤",
+            "anchor": "기준점",
+            "format": "형식",
+            "quality": "품질",
+            "upscale": "확대",
+            "pregenerate": "등록 시 생성",
+            "numeric": "숫자 요청",
+            "enabled": "사용",
+            "actions": "관리"
+          },
+          "kinds": {
+            "fixed": "코어",
+            "og": "코어(SEO)",
+            "extension": "확장",
+            "custom": "운영자"
+          },
+          "fit": {
+            "cover": "자르기",
+            "contain": "맞추기",
+            "width": "가로만"
+          },
+          "anchor": {
+            "center": "가운데",
+            "top": "위",
+            "bottom": "아래",
+            "left": "왼쪽",
+            "right": "오른쪽"
+          },
+          "format": {
+            "original": "원본 형식",
+            "webp": "WebP",
+            "avif": "AVIF"
+          },
+          "og_size_notice": "SEO 탭에서 설정",
+          "reset": "기본값으로",
+          "remove": "삭제",
+          "add": "규격 추가",
+          "name_rule": "규격 이름은 영문 소문자로 시작하고 영문 소문자, 숫자, 밑줄로 2~32자입니다(^[a-z][a-z0-9_]{1,31}$). xs, sm, md, lg, xl, og 는 쓸 수 없습니다. 세로를 비우면 가로만 맞추고, 품질을 비우면 이미지 품질 설정을 따릅니다.",
+          "placeholder": {
+            "name": "예: banner_wide",
+            "height": "자동"
+          }
+        }
+      },
       "orphan_cleanup": "고아 첨부 정리",
       "orphan_cleanup_desc": "폼을 저장하지 않고 나가서 소유자 없이 남은 첨부파일을 정리합니다.",
       "orphan_cleanup_enabled": "고아 첨부 자동 정리",
-      "orphan_cleanup_enabled_hint": "기본 꺼짐 — 운영자가 직접 켜야 동작합니다. 켜면 보존기간이 지난 고아 첨부의 파일과 기록을 매일 삭제합니다. 사이트 로고처럼 현재 사용 중인 첨부는 삭제하지 않습니다.",
+      "orphan_cleanup_enabled_hint": "기본 꺼짐 — 운영자가 직접 켜야 동작합니다. 켜면 보존기간이 지난 고아 첨부의 파일과 기록을 정리 스케줄이 삭제합니다. 사이트 로고처럼 현재 사용 중인 첨부는 삭제하지 않습니다.",
       "orphan_retention_days": "고아 첨부 보존기간 (일)",
-      "orphan_retention_days_hint": "업로드 후 이 기간이 지난 고아 첨부만 정리 대상이 됩니다. 폼 작성 중 이탈을 감안해 넉넉히 잡으세요. (1 ~ 3650 일)"
+      "orphan_retention_days_hint": "업로드 후 이 기간이 지난 고아 첨부만 정리 대상이 됩니다. 폼 작성 중 이탈을 감안해 넉넉히 잡으세요. (1 ~ 3650 일)",
+      "orphan_cleanup_schedule_notice": "고아 첨부 정리는 첨부 정리 스케줄이 실행합니다."
     },
     "seo": {
       "meta_settings": "메타 태그 설정",
       "meta_settings_desc": "검색엔진 최적화를 위한 메타 태그를 설정합니다.",
       "meta_title_suffix": "타이틀 접미사",
       "meta_title_suffix_hint": "모든 페이지 제목(검색엔진 제목과 방문자 브라우저 탭 제목) 뒤에 붙는 문구입니다. {site_name} 자리에 사이트 이름이 들어가고, 비우면 ' - 사이트 이름' 을 붙입니다. 제목이 이미 사이트 이름으로 끝나면 다시 붙이지 않습니다. (예: ' | {site_name}')",
+      "meta_title_suffix_placeholder": " | 그누보드7",
       "meta_description": "기본 메타 설명",
       "meta_description_placeholder": "사이트의 기본 메타 설명을 입력하세요.",
       "meta_description_hint": "검색 결과에 표시되는 설명입니다. 최대 160자를 권장합니다.",
       "meta_keywords": "메타 키워드",
       "meta_keywords_hint": "쉼표로 구분하여 입력하세요.",
+      "meta_keywords_placeholder": "CMS, 그누보드7, 오픈소스",
       "generator_settings": "Generator 메타 태그",
       "generator_settings_desc": "CMS 식별을 위한 generator 메타 태그입니다. W3Techs 등 통계 도구가 이 값으로 사이트를 그누보드7로 분류합니다.",
       "generator_enabled": "Generator 태그 표시",
@@ -1759,12 +2270,7 @@
       "sitemap_settings_desc": "sitemap.xml 자동 생성 관련 설정입니다.",
       "sitemap_enabled": "Sitemap 생성 활성화",
       "sitemap_enabled_desc": "sitemap.xml을 자동으로 생성하여 검색엔진에 제공합니다.",
-      "sitemap_schedule": "생성 주기",
-      "sitemap_schedule_hourly": "매시간",
-      "sitemap_schedule_daily": "매일",
-      "sitemap_schedule_weekly": "매주",
-      "sitemap_schedule_time": "생성 시각",
-      "sitemap_schedule_time_hint": "HH:mm 형식으로 입력하세요. (예: 02:00)",
+      "sitemap_schedule_managed": "사이트맵 생성 주기와 시각은 스케줄 관리에서 바꿉니다.",
       "sitemap_cache_ttl": "Sitemap 캐시 유지 시간 (초)",
       "sitemap_cache_ttl_hint": "비워두면 고급 설정의 Sitemap 캐시 시간을 따릅니다. 값을 넣으면 이 화면의 값이 우선합니다 — 최소 3600초 (1시간), 최대 604800초 (7일)",
       "sitemap_last_updated_at": "마지막 생성",
@@ -1788,15 +2294,14 @@
       "sitemap_progress_phase": "현재 처리 중: {{phase}}",
       "sitemap_progress_urls": "누적 URL: {{count}}개",
       "sitemap_realtime_connected": "실시간으로 연결되어 있습니다.",
-      "sitemap_polling": "진행 상황을 주기적으로 확인하고 있습니다.",
-      "meta_title_suffix_placeholder": " | 그누보드7",
-      "meta_keywords_placeholder": "CMS, 그누보드7, 오픈소스"
+      "sitemap_polling": "진행 상황을 주기적으로 확인하고 있습니다."
     },
     "security": {
       "title": "보안 설정",
       "desc": "사이트 보안 관련 설정을 관리합니다.",
       "force_https": "HTTPS 강제 적용",
       "force_https_desc": "모든 연결을 HTTPS로 강제합니다.",
+      "force_https_notice": "HTTPS 인증서가 준비된 뒤 켜세요. 잠겼을 때: php artisan settings:set security.force_https false",
       "allow_internal_outbound_urls": "내부 네트워크 주소 호출 허용",
       "allow_internal_outbound_urls_desc": "외부 API 연동·스케줄 URL 호출 등에서 사설 IP나 localhost 같은 내부 주소를 사용할 수 있게 합니다. 사내 서버를 호출해야 할 때만 켜세요. 켜면 서버가 내부망으로 요청을 보낼 수 있게 되므로 기본값은 꺼짐입니다.",
       "login_attempt_limit": "로그인 시도 제한",
@@ -1913,7 +2418,7 @@
         "remind_days_hint": "1~90일. 「다음에 변경」을 고른 회원에게 이 기간 뒤 다시 변경을 요구합니다.",
         "batch_size": "1회 실행당 처리 상한 (명)",
         "batch_size_hint": "사전 안내·만료 처리에 각각 적용됩니다. 만료가 가까운 회원부터 처리하고 남은 인원은 다음 실행에서 처리합니다. 0을 입력하면 제한 없이 처리합니다.",
-        "schedule_notice": "매일 05:15 에 스케줄러가 안내 메일과 사이트 알림을 보냅니다. 메일 설정과 알림 설정의 「비밀번호 만료 사전 안내」·「비밀번호 만료」가 켜져 있어야 발송됩니다. 개인정보 처리방침에 비밀번호 변경 주기를 미리 알려 두세요.",
+        "schedule_notice": "스케줄러가 안내 메일과 사이트 알림을 보냅니다. 메일 설정과 알림 설정의 「비밀번호 만료 사전 안내」·「비밀번호 만료」가 켜져 있어야 발송됩니다. 개인정보 처리방침에 비밀번호 변경 주기를 미리 알려 두세요.",
         "rows": {
           "notice": "만료 사전 안내",
           "expire": "만료 처리"
@@ -1949,11 +2454,17 @@
       },
       "activity_log_retention": {
         "title": "활동 로그(접속기록) 보관",
-        "desc": "관리자·회원의 접속과 작업 기록(활동 로그)을 보관할 기간입니다. 기간이 지난 기록은 매일 04:45 자동으로 삭제됩니다.",
+        "desc": "관리자·회원의 접속과 작업 기록(활동 로그)을 보관할 기간입니다. 기간이 지난 기록은 정리 스케줄이 자동으로 삭제합니다.",
         "days": "보관 기간",
         "days_suffix": "일",
         "days_hint": "{{min}}~{{max}}일. 법정 최소 기간보다 짧게 정할 수 없습니다.",
-        "legal_notice": "법정 최소: 접속기록 1년(회원 5만 명 이상이거나 고유식별·민감정보를 처리하면 2년) · 권한·역할 변경 기록은 이 값과 관계없이 최소 3년 보관합니다."
+        "legal_notice": "법정 최소: 접속기록 1년(회원 5만 명 이상이거나 고유식별·민감정보를 처리하면 2년) · 권한·역할 변경 기록은 이 값과 관계없이 최소 3년 보관합니다.",
+        "schedule_notice": "기간이 지난 활동 로그는 정리 스케줄이 지웁니다."
+      },
+      "registration": {
+        "title": "회원가입",
+        "enabled": "일반 회원가입 받기",
+        "enabled_desc": "끄면 회원가입 화면, 공개 가입, 소셜 신규 가입이 닫힙니다. 이미 가입한 회원의 로그인과 소셜 연결, 관리자가 추가하거나 외부 인증 확장이 만드는 계정은 그대로입니다."
       },
       "csp": {
         "title": "콘텐츠 보안 정책 (CSP)",
@@ -1982,8 +2493,8 @@
           "level_strict": "엄격 — 기본 + 태그의 style 속성도 차단",
           "level_desc": "기본은 대부분의 화면이 그대로 동작합니다. 엄격은 외부 라이브러리가 직접 넣는 style 속성까지 막으므로 깨지는 화면이 더 많습니다.",
           "enforce_warning": "먼저 '점검만'으로 storage/logs/csp-*.log 에 위반이 없는지 확인한 뒤 강제로 바꾸세요.",
-          "known_issues_basic": "강제하면 다음 화면이 깨집니다: 태그 입력·다중 선택 칸(이 카드의 허용 호스트 입력 포함) — 칸 안 배치가 흐트러지고 화면 낭독용 안내 문구가 그대로 보임; 레이아웃 코드 편집기 — 구문 색과 배경 테마가 빠짐; 글쓰기 편집기(CKEditor)의 색상 선택기 — 임의 색을 끌어 고르는 판이 접힘(색 타일과 16진수 입력으로는 고를 수 있음). 이 화면을 쓰는 사이트는 '점검만'으로 두세요.",
-          "known_issues_strict": "강제하면 다음 화면이 깨집니다: 태그 입력·다중 선택 칸(이 카드의 허용 호스트 입력 포함) — 칸 안 배치가 흐트러지고 화면 낭독용 안내 문구가 그대로 보임; 레이아웃 코드 편집기 — 구문 색·배경 테마·줄 강조가 빠짐; 글쓰기 편집기(CKEditor)의 색상 선택기 — 임의 색을 끌어 고르는 판이 접힘(색 타일과 16진수 입력으로는 고를 수 있음). 이 화면을 쓰는 사이트는 '점검만'으로 두세요.",
+          "known_issues_basic": "강제하면 다음 화면이 깨집니다: 레이아웃 코드 편집기 — 구문 색과 배경 테마가 빠짐; 글쓰기 편집기(CKEditor)의 색상 선택기 — 임의 색을 끌어 고르는 판이 접힘(색 타일과 16진수 입력으로는 고를 수 있음). 이 화면을 쓰는 사이트는 '점검만'으로 두세요.",
+          "known_issues_strict": "강제하면 다음 화면이 깨집니다: 레이아웃 코드 편집기 — 구문 색·배경 테마·줄 강조가 빠짐; 글쓰기 편집기(CKEditor)의 색상 선택기 — 임의 색을 끌어 고르는 판이 접힘(색 타일과 16진수 입력으로는 고를 수 있음). 이 화면을 쓰는 사이트는 '점검만'으로 두세요.",
           "override_notice": ".env 의 G7_CSP_STYLE_MODE={{mode}} 가 이 설정보다 우선합니다. 바꾸려면 .env 를 고친 뒤 php artisan config:clear 를 실행하세요.",
           "extra_hosts": "추가 스타일 허용 호스트 (입력 후 Enter)",
           "extra_hosts_placeholder": "fonts.example.com",
@@ -1992,6 +2503,304 @@
           "auto_hosts_empty": "활성 템플릿·확장이 선언한 외부 스타일시트 호스트가 없습니다.",
           "preview": "적용될 스타일 정책 미리보기"
         }
+      },
+      "extension_trust": {
+        "title": "확장 신뢰 키",
+        "desc": "확장·언어팩·코어 패키지의 서명을 확인할 때 믿는 공개키입니다. 코어 내장 키는 코어와 함께 배포되고, 제작자 키는 여기서 추가합니다. 키 추가와 삭제는 저장 버튼과 별개로 바로 반영됩니다.",
+        "block_unsigned": "미서명 패키지 차단",
+        "block_unsigned_desc": "켜면 서명이 없거나 이 서버에서 서명을 확인할 수 없는 패키지의 설치·업데이트를 막습니다(「미서명으로 계속」도 나타나지 않습니다). 저장 버튼을 눌러야 반영됩니다.",
+        "sodium_missing": "이 서버에 PHP sodium 확장이 없어 서명을 확인할 수 없습니다. 서명된 패키지도 「서명 확인 불가」로 다뤄 미서명과 같은 정책을 따릅니다.",
+        "builtin_title": "코어 내장 키",
+        "builtin_hint": "코어와 함께 배포되는 키라 여기서 바꿀 수 없습니다.",
+        "builtin_empty": "코어 내장 키가 아직 없습니다. 코어 업데이트로 함께 배포됩니다.",
+        "vendor_title": "제작자 키",
+        "vendor_empty": "등록한 제작자 키가 없습니다.",
+        "add_key": "키 추가",
+        "delete_key": "삭제",
+        "field_key_id": "키 ID",
+        "field_signer": "서명자",
+        "field_vendor_scope": "vendor 범위",
+        "field_created_at": "등록일",
+        "status_active": "사용 중",
+        "status_retired": "새 서명 중단",
+        "status_revoked": "폐기",
+        "load_failed": "신뢰 키 목록을 불러오지 못했습니다."
+      }
+    },
+    "member": {
+      "sub_tabs": {
+        "fields": "가입 항목",
+        "nickname": "닉네임 정책"
+      },
+      "display_name": {
+        "sub_tab": "표시 이름",
+        "title": "표시 이름",
+        "description": "회원을 화면에 어떤 이름으로 보일지 정합니다. 아래 「저장」을 눌러야 적용됩니다.",
+        "selectable_kinds": "회원이 고를 수 있는 종류",
+        "selectable_kinds_hint": "둘 이상을 켜면 회원이 가입 화면과 내 정보 수정에서 하나를 고를 수 있습니다. 고른 종류는 방식이 「회원이 고른 값」인 영역에 쓰입니다.",
+        "selectable_default_locked": "회원 기본 종류는 뺄 수 없습니다. 먼저 회원 기본 종류를 바꿔 주세요.",
+        "requires_nickname_badge": "닉네임 필요",
+        "sample": "미리보기 기준 회원: 이름 {{name}}, 닉네임 {{nickname}}, 아이디 {{id}}",
+        "member_default_kind": "회원 기본 종류",
+        "member_default_kind_hint": "회원이 종류를 고르지 않았을 때 쓰는 종류입니다. 회원이 고를 수 있는 종류 가운데 하나여야 합니다.",
+        "member_default_kind_usage": "지금 이 값을 쓰는 영역: {{areas}}",
+        "member_default_kind_usage_more": "지금 이 값을 쓰는 영역: {{areas}} 외 {{count}}곳",
+        "member_default_kind_unused": "지금은 이 값을 쓰는 영역이 없습니다. 이 값은 방식이 「회원이 고른 값」인 영역에서만 쓰입니다.",
+        "areas_title": "영역별 방식",
+        "areas_hint": "이름이 보이는 영역마다 방식을 정합니다. 들여 쓴 영역은 바로 위 영역을 따를 수 있습니다.",
+        "col": {
+          "area": "영역",
+          "mode": "방식",
+          "kind": "종류"
+        },
+        "mode": {
+          "inherit": "상위 영역 따름",
+          "fixed": "종류 고정",
+          "member": "회원이 고른 값"
+        },
+        "area_mode_label": "{{area}} 방식",
+        "area_kind_label": "{{area}} 종류",
+        "effective_member": "고르지 않은 회원은 {{kind}}",
+        "effective_inherit": "지금 적용: {{kind}}",
+        "effective_inherit_member": "지금 적용: 회원이 고른 값",
+        "effective_inherit_pending": "저장하면 상위 영역의 설정을 따릅니다",
+        "extension_note": "게시판처럼 한 영역 안에서 다시 나뉘는 곳은 그 확장의 설정 화면에서 따로 정합니다.",
+        "nickname_notice": {
+          "all": "저장하면 닉네임 항목이 사용, 필수로 고정됩니다.",
+          "chosen": "저장하면 닉네임 항목이 사용으로 고정되고, 닉네임이 필요한 종류로 보이는 회원은 닉네임이 필수가 됩니다.",
+          "empty_count": "지금 닉네임이 비어 있는 회원은 {{count}}명입니다.",
+          "require_existing": "로그인 시 닉네임 입력 요구",
+          "require_existing_hint": "켜면 닉네임이 비어 있는 기존 회원이 로그인했을 때 닉네임부터 입력하게 합니다.",
+          "already_required": "기존 회원에게도 닉네임 입력을 이미 요구하고 있습니다."
+        },
+        "lock_link": "표시 이름 설정 보기",
+        "usage": {
+          "title": "표시 이름에 쓰이고 있어 삭제할 수 없습니다.",
+          "hint": "아래 설정에서 이 항목을 뺀 뒤 다시 삭제해 주세요.",
+          "link": "표시 이름 설정으로 가기"
+        },
+        "data_source": {
+          "options": "표시 이름 종류와 영역",
+          "nickname_empty_count": "닉네임이 빈 회원 수"
+        }
+      },
+      "fields": {
+        "title": "가입 항목",
+        "description": "가입 화면, 내 정보 수정, 관리자 회원 폼에서 받는 항목을 정합니다.",
+        "add_button": "항목 추가",
+        "instant_save_notice": "이 표의 변경(사용, 필수, 가입 표시, 순서)은 바로 저장됩니다.",
+        "fixed_notice": "고정: 이메일, 비밀번호, 약관 동의 (항상 사용)",
+        "layout_modified_notice": "가입 화면 레이아웃이 수정본으로 유지되고 있어 새 항목이 보이지 않을 수 있습니다.",
+        "layout_modified_hint": "레이아웃 편집기에서 가입 화면을 원본으로 복원하면 여기서 정한 항목이 그대로 보입니다.",
+        "empty_custom": "추가한 항목이 없습니다. 「항목 추가」로 가입 항목을 만드세요.",
+        "unavailable": "사용 불가",
+        "unavailable_desc": "유형을 제공한 확장이 꺼져 있습니다. 확장을 다시 켜면 복구됩니다.",
+        "signup_unsupported": "이 유형은 가입 화면에서 받지 않습니다.",
+        "signup_unsupported_short": "가입 화면 미지원",
+        "drag_handle": "{{name}} 순서 바꾸기",
+        "drag_hint": "끌어서 순서를 바꿉니다",
+        "move_up": "{{name}} 위로",
+        "move_down": "{{name}} 아래로",
+        "move_up_short": "위로",
+        "move_down_short": "아래로",
+        "saved": "저장했습니다.",
+        "order_saved": "순서를 저장했습니다.",
+        "save_failed": "저장하지 못했습니다. 표를 다시 불러왔습니다.",
+        "load_failed": "항목 정보를 불러오지 못했습니다.",
+        "changed_by_other": "다른 관리자가 항목을 바꿨습니다. 다시 불러왔습니다.",
+        "col": {
+          "order": "순서",
+          "name": "항목",
+          "type": "유형",
+          "source": "출처",
+          "enabled": "사용",
+          "required": "필수",
+          "show_on_signup": "가입 표시",
+          "edit_scope": "범위"
+        },
+        "source": {
+          "core": "기본",
+          "custom": "추가",
+          "extension": "확장"
+        },
+        "scope": {
+          "self": "본인 수정",
+          "admin_edit": "관리자만 수정",
+          "admin_only": "관리자만 열람"
+        },
+        "btn": {
+          "settings": "설정",
+          "edit": "수정",
+          "view": "보기"
+        },
+        "delete": {
+          "title": "항목 삭제",
+          "message": "「{{name}}」 항목을 삭제합니다.",
+          "values_warning": "회원 {{count}}명이 입력한 값이 함께 삭제되며 되돌릴 수 없습니다.",
+          "no_values_warning": "아직 입력된 값은 없습니다. 삭제한 항목은 되돌릴 수 없습니다.",
+          "confirm_check": "위 내용을 확인했습니다",
+          "success": "항목을 삭제했습니다.",
+          "failed": "항목을 삭제하지 못했습니다."
+        },
+        "required_confirm": {
+          "title": "필수로 바꾸기",
+          "message": "「{{name}}」 항목이 비어 있는 기존 회원이 {{count}}명 있습니다.",
+          "mode_label": "이 회원들에게 언제 입력을 요구할까요?",
+          "on_edit": "내 정보 수정 때만",
+          "on_login": "로그인하면 바로",
+          "submit": "필수로 바꾸기",
+          "hint": {
+            "on_edit": "회원이 내 정보를 수정해 저장할 때만 입력을 요구합니다. 그 전까지는 지금처럼 이용할 수 있습니다.",
+            "on_login": "로그인한 회원을 추가 정보 입력 화면으로 보내고, 입력할 때까지 글쓰기 같은 요청을 받지 않습니다."
+          }
+        },
+        "form": {
+          "title": {
+            "create": "항목 추가",
+            "edit": "항목 수정",
+            "settings": "항목 설정",
+            "view": "항목 보기"
+          },
+          "readonly_notice": "조회 권한만 있어 내용을 바꿀 수 없습니다.",
+          "declared_notice": "기본 항목과 확장이 제공한 항목은 이름, 안내 문구와 공통 옵션만 바꿀 수 있습니다.",
+          "type": "유형",
+          "type_locked": "유형은 만든 뒤 바꿀 수 없습니다.",
+          "change_type": "바꾸기",
+          "type_step": {
+            "description": "받을 값의 유형을 고르고 「다음」을 누르세요. 저장하기 전에는 다시 고를 수 있습니다.",
+            "unavailable": "확장 꺼짐"
+          },
+          "key": "키",
+          "key_hint": "영문 소문자로 시작하고 영문 소문자, 숫자, 밑줄만 쓸 수 있습니다(2~50자). 만든 뒤에는 바꿀 수 없습니다.",
+          "name": "이름",
+          "description": "안내 문구",
+          "description_hint": "입력칸 아래에 보이는 설명입니다.",
+          "placeholder": "예시 글",
+          "placeholder_hint": "빈 입력칸에 흐리게 보이는 글입니다.",
+          "save_success": "항목을 저장했습니다.",
+          "section": {
+            "type_options": "유형별 옵션",
+            "common": "공통 옵션"
+          },
+          "c": {
+            "min_length": "최소 길이",
+            "max_length": "최대 길이",
+            "regex": "형식(정규식)",
+            "regex_hint": "/^[a-z]+$/ 처럼 구분자를 포함해 적습니다. 비우면 형식을 검사하지 않습니다.",
+            "regex_message": "형식 오류 문구",
+            "regex_message_hint": "형식에 맞지 않을 때 회원에게 보일 글입니다. 비우면 기본 문구가 나옵니다.",
+            "rows": "줄 수",
+            "rows_hint": "입력칸의 높이입니다(2~20줄).",
+            "min": "최솟값",
+            "max": "최댓값",
+            "decimals": "소수 자리",
+            "decimals_hint": "0 이면 정수만 받습니다(0~6).",
+            "unit": "단위",
+            "unit_hint": "입력칸 옆에 붙는 글입니다(예: 세, 개).",
+            "widget": "입력 모양",
+            "widget_toggle": "스위치",
+            "widget_checkbox": "체크박스",
+            "inline_label": "옆 문구",
+            "inline_label_hint": "스위치나 체크박스 옆에 보이는 글입니다.",
+            "default_on": "처음부터 켜진 채로 보이기",
+            "date_min": "가장 이른 날",
+            "date_max": "가장 늦은 날",
+            "date_hint": "「오늘」은 사이트 시간대 기준입니다.",
+            "display": "표시 방식",
+            "display_select": "목록에서 고르기",
+            "display_radio": "라디오 단추",
+            "display_checkbox": "체크박스",
+            "display_multi_select": "여러 개 고르는 목록",
+            "allow_other": "「기타(직접 입력)」 허용",
+            "allow_other_hint": "회원이 「기타」를 고르면 바로 아래 칸에 직접 적을 수 있습니다.",
+            "min_select": "최소 선택 개수",
+            "max_select": "최대 선택 개수",
+            "address_note": "우편번호, 기본 주소, 상세 주소를 받습니다. 우편번호 검색 플러그인이 켜져 있으면 검색 단추가 함께 보입니다.",
+            "extensions": "허용 확장자",
+            "extensions_placeholder": "jpg 처럼 입력 후 Enter",
+            "extensions_hint": "비우면 유형의 기본 확장자를 따릅니다.",
+            "max_count": "최대 개수",
+            "max_size_mb": "최대 크기(MB)",
+            "file_signup_note": "파일과 이미지는 가입 화면에서 받지 않습니다. 가입한 뒤 내 정보 수정에서 올릴 수 있습니다."
+          },
+          "date_bound": {
+            "none": "제한 없음",
+            "today": "오늘",
+            "after_today": "오늘 이후",
+            "date": "날짜 지정"
+          },
+          "options": {
+            "title": "선택지",
+            "add_button": "선택지 추가",
+            "paste_button": "여러 줄 붙여넣기",
+            "paste_label": "줄마다 선택지 1개",
+            "paste_placeholder": "학생\n직장인\n자영업",
+            "paste_hint": "값(영문)은 자동으로 만들어지고 이미 있는 값과 겹치면 번호가 붙습니다. 선택지는 50개까지 넣을 수 있습니다.",
+            "paste_apply": "선택지로 추가",
+            "empty": "선택지가 없습니다.",
+            "value": "값",
+            "value_placeholder": "값(영문)",
+            "label": "이름",
+            "label_placeholder": "회원에게 보일 이름",
+            "usage": "사용 {{count}}명",
+            "remove_warning": "이 값을 고른 회원 {{count}}명의 값이 비워집니다. 저장해야 적용됩니다.",
+            "remove_pending": "저장하면 이 선택지가 삭제됩니다.",
+            "restore": "되돌리기"
+          },
+          "opt": {
+            "enabled": "사용",
+            "required": "필수",
+            "show_on_signup": "가입 화면 표시",
+            "edit_scope": "범위",
+            "edit_scope_hint": {
+              "self": "회원 본인과 관리자가 고칠 수 있습니다.",
+              "admin_edit": "회원은 볼 수만 있고 관리자만 고칠 수 있습니다.",
+              "admin_only": "관리자 화면에서만 보이고 회원에게는 보이지 않습니다."
+            },
+            "require_existing_members": "기존 회원에게도 입력 요구",
+            "require_existing_locked": "「관리자만 수정」「관리자만 열람」 범위에서는 기존 회원에게 입력을 요구할 수 없습니다.",
+            "public_profile": "공개 프로필 노출",
+            "admin_list_column": "회원 목록 열",
+            "admin_searchable": "회원 검색",
+            "unique": "중복 금지",
+            "display_name_usable": "표시 이름으로 사용 가능",
+            "display_name_usable_hint": "한 줄 글 유형만 켤 수 있습니다.",
+            "idv_claim": "본인인증 연결",
+            "idv_claim_none": "없음",
+            "idv_claim_name": "이름",
+            "idv_claim_mobile": "휴대폰",
+            "idv_claim_birth_date": "생년월일",
+            "idv_claim_gender": "성별",
+            "idv_lock": "인증 값으로 채우고 잠금"
+          },
+          "close_confirm": {
+            "message": "작성 중인 내용이 있습니다. 닫으면 사라집니다.",
+            "keep": "계속 작성",
+            "discard": "저장하지 않고 닫기"
+          }
+        }
+      },
+      "nickname": {
+        "title": "닉네임 정책",
+        "description": "닉네임에 적용할 규칙을 정합니다. 아래 「저장」을 눌러야 적용됩니다.",
+        "unique": "중복 금지",
+        "unique_desc": "같은 닉네임을 두 회원이 쓸 수 없게 합니다. 대소문자, 전각 문자, 공백 차이는 같은 닉네임으로 봅니다.",
+        "duplicates_message": "지금 같은 닉네임을 쓰는 회원이 있습니다. 겹치는 닉네임 {{nicknames}}종, 회원 {{members}}명.",
+        "duplicates_hint": "켜도 이 회원들의 닉네임은 그대로 둡니다. 닉네임을 바꾸거나 새로 가입할 때부터 겹치지 않게 막습니다.",
+        "duplicates_view": "겹치는 회원 보기",
+        "duplicates_confirm": "그래도 켜기",
+        "duplicates_failed": "겹치는 닉네임을 확인하지 못해 켜지 않았습니다.",
+        "recompute_running": "중복 검사를 준비하고 있습니다",
+        "recompute_count": "{{processed}} / {{total}}명",
+        "recompute_running_hint": "기존 회원의 닉네임을 비교할 수 있게 정리하는 중입니다. 화면을 떠나도 계속됩니다.",
+        "recompute_done": "중복 검사 준비가 끝났습니다. 회원 {{total}}명을 확인했습니다.",
+        "banned_words": "금지어",
+        "banned_words_placeholder": "금지어 입력 후 Enter",
+        "banned_words_hint": "닉네임에 이 낱말이 들어 있으면 쓸 수 없습니다. 500개까지 넣을 수 있습니다.",
+        "change_interval": "변경 주기",
+        "change_interval_unit": "일",
+        "change_interval_hint": "닉네임을 바꾼 뒤 다시 바꿀 수 있을 때까지의 날 수입니다. 0 이면 제한이 없습니다.",
+        "display_note": "표시 이름이 닉네임을 쓰는 동안 닉네임은 필수입니다."
       }
     },
     "identity": {
@@ -2078,6 +2887,35 @@
         "hardening_warning": "웹서버 보호 규칙이 적용되지 않았습니다. /storage 직접 주소 응답에 보호 헤더가 없습니다 — 설치 문서의 nginx/Apache 설정을 확인하세요.",
         "hardening_rules_write_failed": "웹서버 보호 규칙 파일을 지금 설정으로 바꾸지 못했습니다. 공개 디스크 폴더(storage/app/public)와 그 안의 .htaccess 파일을 웹서버 계정이 쓸 수 있는지 확인한 뒤 다시 저장하세요."
       },
+      "private_attachment": {
+        "title": "비공개 첨부 저장소",
+        "desc": "권한을 확인한 뒤 서버가 내려주는 파일(게시판·페이지·코어 첨부, 클레임 이미지, 본문 미디어, 내보내기 파일)을 저장할 디스크입니다. 「기본」이면 지금까지처럼 사이트 스토리지 드라이버를 따릅니다. 바꾼 뒤 올린 파일만 새 디스크에 저장되고, 이미 올린 파일은 원래 디스크에서 그대로 내려줍니다.",
+        "disk": "디스크",
+        "same_disk_warning": "공개 자산 스토리지와 같은 디스크입니다. 버킷에 공개 읽기 정책이 있으면 비공개 파일도 버킷 주소로 직접 읽힐 수 있습니다. 공개 정책이 없는 버킷이나 경로를 쓰세요.",
+        "s3_help": "S3 를 고르면 위 파일 스토리지 카드의 S3 접속 정보를 씁니다. 버킷은 공개 읽기를 막아 두세요.",
+        "pins_title": ".env 로 고정된 확장",
+        "pin_core": "코어 첨부",
+        "pins_hint": "이 항목들은 .env 에 적은 디스크를 쓰므로 위 선택을 따르지 않습니다. 선택을 따르게 하려면 .env 에서 해당 값을 지우세요."
+      },
+      "file_delegation": {
+        "title": "웹서버 파일 위임",
+        "desc": "템플릿·모듈·플러그인 자산, 공개 스토리지 파일, 확장 아이콘, 히어로섹션 배너 영상, 본문의 로컬 미디어처럼 서버에 있는 파일을 PHP 가 읽어 보내는 대신 웹서버가 직접 보내게 합니다. 영상 탐색·이어받기(범위 요청)도 웹서버가 처리합니다. 웹서버 설정이 함께 필요하며, 원격 디스크(S3) 파일과 첨부 다운로드는 대상이 아닙니다.",
+        "mode": "위임 방식",
+        "accel_prefix": "내부 위치 접두사",
+        "accel_prefix_desc": "nginx 의 internal location 경로입니다. / 로 시작하고 끝나야 하며, 바깥에서 짐작하기 어려운 이름을 쓰세요. 앱이 이 접두사와 설치 위치로 매핑(X-Accel-Mapping)을 만듭니다.",
+        "apache_guide": "Apache 에 mod_xsendfile 을 설치·활성화하고(예: a2enmod xsendfile) 사이트 설정에 아래 두 줄을 넣은 뒤 Apache 설정을 다시 읽히세요.",
+        "nginx_guide": "nginx 사이트 설정의 server 블록에 아래 location 을 넣고 설정을 다시 읽히세요. internal 이 빠지면 설치 폴더 전체가 바깥에 열립니다.",
+        "saved_differs": "화면의 값이 아직 적용되지 않았습니다. 「실제 전송 확인」은 적용 중인 설정으로 검사하므로 먼저 저장하세요.",
+        "test_hint": "「설정 점검」은 이 서버의 웹서버 종류와 모듈만 보고 판단하며 저장을 막지 않습니다. 저장한 뒤 「실제 전송 확인」으로 웹서버가 파일을 보내는지 확인하세요.",
+        "test_button": "설정 점검",
+        "test_mapping": "앱이 보낼 매핑(X-Accel-Mapping): {{mapping}}",
+        "probe_button": "실제 전송 확인",
+        "probe_ok": "웹서버가 파일을 보냈습니다. 위임이 동작합니다.",
+        "probe_failed": "파일 본문을 받지 못했습니다. 웹서버 설정을 확인하거나 위임 방식을 「사용 안 함」으로 되돌리세요.",
+        "probe_inactive": "적용 중인 방식이 「사용 안 함」이라 웹서버가 아니라 PHP 가 파일을 보냅니다. 위임 방식을 저장한 뒤 다시 확인하세요.",
+        "probe_skipped": "위임은 켜져 있지만 이 파일은 위임 경로 밖이라 PHP 가 보냈습니다. 설치 위치(심볼릭 링크 포함)가 위임 매핑과 맞는지 확인하세요.",
+        "recover_hint": "켠 뒤 화면 자산이나 이미지가 열리지 않으면 위임 방식을 「사용 안 함」으로 저장하세요. 관리 화면에 들어갈 수 없으면 서버의 storage/app/settings/drivers.json 에서 file_delegation 값을 none 으로 고치세요."
+      },
       "cache": {
         "title": "캐시",
         "desc": "애플리케이션 캐시 드라이버를 설정합니다.",
@@ -2091,6 +2929,7 @@
         "redis_port": "Redis 포트",
         "redis_password": "Redis 비밀번호",
         "redis_database": "Redis 데이터베이스",
+        "redis_shared_hint": "세션·큐가 Redis 를 쓰므로 보이는 접속 정보입니다. 캐시·세션·큐가 이 한 벌을 함께 씁니다.",
         "memcached_host": "Memcached 호스트",
         "memcached_port": "Memcached 포트"
       },
@@ -2105,7 +2944,7 @@
         },
         "lifetime": "세션 유효시간",
         "minutes": "분",
-        "redis_shared_notice": "Redis 선택 시 캐시의 Redis 설정을 공유합니다."
+        "redis_shared_notice": "Redis 를 고르면 캐시 카드의 Redis 접속 정보를 함께 씁니다. 접속 정보와 연결 테스트는 캐시 카드에 있습니다."
       },
       "queue": {
         "title": "큐",
@@ -2117,7 +2956,7 @@
           "redis": "Redis"
         },
         "worker_notice": "database 또는 redis 사용 시 큐 워커를 실행해야 합니다.",
-        "redis_shared_notice": "Redis 선택 시 캐시의 Redis 설정을 공유합니다.",
+        "redis_shared_notice": "Redis 를 고르면 캐시 카드의 Redis 접속 정보를 함께 씁니다. 접속 정보와 연결 테스트는 캐시 카드에 있습니다.",
         "worker": {
           "title": "큐 워커",
           "not_required": "동기(sync) 드라이버는 요청 안에서 바로 처리하므로 큐 워커가 필요 없습니다.",
@@ -2175,6 +3014,16 @@
             "title": "Supervisor 실행 명령",
             "desc": "등록한 연결마다 아래 명령으로 워커를 띄우세요. 긴 작업 연결은 반드시 그 연결 이름으로 띄워야 합니다."
           }
+        },
+        "records": {
+          "title": "처리 기록",
+          "job_log_enabled": "작업 처리 기록",
+          "job_log_enabled_desc": "큐 작업이 끝나거나 실패할 때마다 기록을 남깁니다.",
+          "retention_days": "보관 기간",
+          "retention_days_hint": "처리 기록과 실패한 작업을 이 기간만큼 남깁니다. ({{min}} ~ {{max}}일)",
+          "view_link": "처리 기록 보기",
+          "days_suffix": "일",
+          "schedule_managed": "지난 처리 기록과 실패한 작업은 정리 스케줄이 지웁니다."
         }
       },
       "log": {
@@ -2228,6 +3077,13 @@
         "driver": "검색엔진 드라이버",
         "driver_desc": "기본 제공되는 MySQL FULLTEXT(ngram) 엔진은 별도 설정 없이 한국어 검색을 지원합니다.",
         "plugin_notice": "검색엔진 플러그인(Meilisearch, Elasticsearch 등)을 설치하면 추가 드라이버가 표시됩니다."
+      },
+      "image": {
+        "title": "이미지 처리",
+        "desc": "업로드 이미지 축소와 썸네일 생성에 쓸 이미지 처리 엔진을 설정합니다.",
+        "driver": "이미지 처리 엔진",
+        "driver_desc": "GD 는 대부분의 서버에 기본으로 있습니다. Imagick 은 PHP imagick 확장이 설치된 서버에서만 표시됩니다.",
+        "plugin_notice": "이미지 처리 플러그인을 설치하면 추가 엔진이 표시됩니다. 고른 엔진을 쓸 수 없게 되면 GD 로 처리합니다."
       },
       "test_connection": "연결 테스트",
       "testing": "테스트 중...",
@@ -2284,7 +3140,7 @@
       "geoip_license_key": "MaxMind 라이선스 키",
       "geoip_license_key_desc": "MaxMind 무료 계정에서 발급받은 라이선스 키를 입력하세요. https://www.maxmind.com/en/geolite2/signup 에서 무료로 발급 가능합니다.",
       "geoip_auto_update_enabled": "GeoIP DB 자동 업데이트",
-      "geoip_auto_update_enabled_desc": "주 1회(수요일 03:00) MaxMind GeoLite2-City DB를 자동으로 재다운로드합니다.",
+      "geoip_auto_update_enabled_desc": "MaxMind GeoLite2-City DB를 스케줄에 따라 자동으로 다시 내려받습니다.",
       "geoip_last_updated_at": "마지막 업데이트",
       "geoip_manual_update": "지금 업데이트",
       "geoip_updating": "업데이트 중...",
@@ -2293,7 +3149,7 @@
       "seo_sitemap_cache": "Sitemap 캐시",
       "seo_sitemap_cache_desc": "sitemap.xml 을 캐시합니다.",
       "trusted_proxy": "리버스 프록시 (신뢰 프록시)",
-      "trusted_proxy_desc": "HTTPS 를 앞단에서 처리하는 구성(AWS ALB, CloudFront, Cloudflare, nginx)에서 접속 주소와 방문자 IP 를 올바르게 인식하기 위한 설정입니다. 값은 .env 의 TRUSTED_PROXIES 로만 변경할 수 있습니다.",
+      "trusted_proxy_desc": "HTTPS 를 앞단에서 처리하는 구성(AWS ALB, CloudFront, Cloudflare, nginx)에서 접속 주소와 방문자 IP 를 올바르게 인식하기 위한 설정입니다.",
       "trusted_proxy_status": "진단 결과",
       "trusted_proxy_status_ok": "정상",
       "trusted_proxy_status_warning": "조치 필요",
@@ -2308,7 +3164,27 @@
       "trusted_proxy_client_ip": "방문자 IP 로 인식된 값",
       "trusted_proxy_remote_addr": "직전 호출 IP (REMOTE_ADDR)",
       "trusted_proxy_same_ip_hint": "두 값이 같으면서 프록시 헤더를 받고 있습니다 — 모든 방문자가 한 사람으로 기록되고 있는 상태입니다.",
-      "trusted_proxy_doc_hint": "설정 방법과 도입 시 후속 조치:"
+      "trusted_proxy_doc_hint": "설정 방법과 도입 시 후속 조치:",
+      "trusted_proxy_scope": "신뢰 범위",
+      "trusted_proxy_scope_desc": "앞단이 보내는 X-Forwarded-* 헤더를 어디까지 믿을지 고릅니다. 저장하면 즉시 적용됩니다.",
+      "trusted_proxy_mode_none": "신뢰하지 않음",
+      "trusted_proxy_mode_none_desc": "앞단 없이 직접 노출된 구성. 프록시를 쓰지 않으면 이것이 정상입니다.",
+      "trusted_proxy_mode_nearest": "직전 프록시만 신뢰 (*)",
+      "trusted_proxy_mode_nearest_desc": "같은 호스트의 웹서버·로드밸런서가 앞단인 일반 공유호스팅 구성입니다.",
+      "trusted_proxy_mode_list": "지정한 주소만 신뢰",
+      "trusted_proxy_mode_list_desc": "프록시가 여러 단(CDN → 로드밸런서)일 때. 체인의 모든 IP·CIDR 를 적습니다.",
+      "trusted_proxy_list_label": "신뢰할 주소",
+      "trusted_proxy_list_placeholder": "10.0.0.1 또는 10.0.0.0/24 입력 후 Enter",
+      "trusted_proxy_list_hint": "IP 또는 CIDR 로 적습니다. 콤마로 구분한 목록을 붙여넣으면 자동으로 나뉩니다. 체인에서 한 단이라도 빠지면 그 프록시가 방문자로 기록됩니다.",
+      "trusted_proxy_spoof_warning": "앞단을 우회해 앱에 직접 닿을 수 있는 구성이라면, 방문자가 X-Forwarded-For 를 위조해 IP 기록과 로그인 제한을 조작할 수 있습니다.",
+      "trusted_proxy_env_locked_notice": "이 설치는 .env 의 TRUSTED_PROXIES 를 기준값으로 씁니다. 화면에서는 바꿀 수 없고, 저장할 때 이 항목은 서버에서 제외됩니다.",
+      "trusted_proxy_probe_button": "이 값으로 지금 검사",
+      "trusted_proxy_probe_hint": "저장하지 않습니다. 지금 이 요청에 적용했다면 어떻게 해석되는지만 봅니다.",
+      "trusted_proxy_probe_title": "이 값으로 지금 검사한 결과",
+      "trusted_proxy_probe_client_ip": "방문자 IP",
+      "trusted_proxy_probe_is_secure": "HTTPS 인식",
+      "trusted_proxy_probe_trusted": "신뢰될 앞단",
+      "geoip_schedule_notice": "자동 갱신은 GeoIP 갱신 스케줄이 실행합니다."
     },
     "notification_definitions": {
       "title": "알림 설정",
@@ -2343,6 +3219,8 @@
         "btn_confirming": "복원 중..."
       },
       "no_template_for_channel": "이 채널에 대한 템플릿이 없습니다.",
+      "user_template_inactive": "빈 템플릿이 만들어졌습니다. 내용과 받는 사람을 채운 뒤 켜야 이 수단으로 발송됩니다.",
+      "user_template_created": "빈 템플릿을 만들었습니다. [편집]에서 내용과 받는 사람을 채운 뒤 켜세요.",
       "body_preview": "본문 미리보기",
       "save_success": "알림 설정이 저장되었습니다.",
       "save_error": "알림 설정 저장에 실패했습니다.",
@@ -2361,7 +3239,8 @@
         "dormant_converted": "휴면 전환 완료",
         "dormant_withdraw_notice": "휴면 계정 탈퇴 예정 안내",
         "password_expiry_notice": "비밀번호 만료 사전 안내",
-        "password_expired": "비밀번호 만료"
+        "password_expired": "비밀번호 만료",
+        "schedule_failed": "예약 작업 실패"
       },
       "channels_label": "채널:",
       "edit_modal": {
@@ -2375,7 +3254,12 @@
         "variables_title": "사용 가능한 변수",
         "btn_preview": "미리보기",
         "validation_error": "입력 정보를 확인해주세요.",
-        "is_active_label": "활성화"
+        "is_active_label": "활성화",
+        "warnings_title": "저장했습니다. 다만 확인할 것이 있습니다.",
+        "warnings_description": "아래 변수는 지금 없는 회원 항목이라 그 자리가 빈 글자로 발송됩니다. 고친 뒤 다시 저장하거나 그대로 닫을 수 있습니다.",
+        "warnings_toast": "저장했지만 지금 없는 변수가 있습니다 ({{count}}건). 창의 경고를 확인하세요.",
+        "member_variables_title": "회원 항목 ({{count}})",
+        "member_variables_hint": "받는 회원의 값으로 바뀝니다. 값이 비어 있으면 빈 글자로 발송됩니다."
       },
       "recipients_label": "수신자:",
       "category": {
@@ -2437,7 +3321,8 @@
           "trigger_user": "이벤트 유발자",
           "related_user": "관련 사용자",
           "role": "역할 기반",
-          "specific_users": "특정 사용자"
+          "specific_users": "특정 사용자",
+          "site_admin_email": "사이트 관리자 이메일"
         },
         "badge": {
           "trigger_user": "이벤트 유발자",
@@ -2453,6 +3338,7 @@
         "role_no_options": "일치하는 역할이 없습니다",
         "relation_placeholder": "관계를 선택하세요",
         "relation_undeclared": "이 알림은 '{{relation}}' 관계를 지원하지 않습니다. 목록에서 다시 선택하세요 — 그대로 두면 저장되지 않습니다.",
+        "site_admin_email_hint": "환경설정 > 일반의 관리자 이메일로 메일만 보냅니다(사이트 알림 등 다른 수단은 받지 않습니다). 비워 두면 보내지 않습니다.",
         "roles_selected_count": "역할 {count}개 선택됨",
         "users_selected_count": "{count}명 선택됨",
         "remove_selected": "선택 해제: {{name}}",
@@ -2478,6 +3364,7 @@
       "cpu": "CPU",
       "memory": "메모리",
       "disk": "디스크",
+      "not_measurable": "측정 불가",
       "php_memory": "PHP 메모리 제한",
       "opcache": "OPcache",
       "opcache_enabled": "활성화됨",
@@ -2524,8 +3411,8 @@
       "changelog_title": "변경사항",
       "no_changelog": "변경사항 정보가 없습니다.",
       "changelog_load_failed": "변경사항을 불러오는데 실패했습니다.",
-      "update_guide_title": "터미널에서 업데이트",
-      "update_guide_warning": "코어 업데이트는 터미널에서만 실행할 수 있습니다. 업데이트 전 반드시 데이터베이스를 백업하세요.",
+      "update_guide_title": "명령어로 업데이트 (SSH 가 있는 경우)",
+      "update_guide_warning": "이 방법은 서버에 SSH 로 접속할 수 있을 때 쓸 수 있습니다. SSH 를 쓸 수 없다면 이 창을 닫고 화면의 안내에 따라 웹에서 다시 진행하세요. 업데이트 전 반드시 데이터베이스를 백업하세요.",
       "update_guide_desc": "서버 터미널에 접속하여 그누보드7 설치 디렉토리에서 아래 명령어를 실행하세요.",
       "update_guide_note": "업데이트 중 자동으로 유지보수 모드가 활성화됩니다. 업데이트 완료 후 자동으로 해제됩니다.",
       "manual_update_title": "수동 업데이트 (GitHub 에서 받기 어려운 환경)",
@@ -2536,15 +3423,39 @@
       "update_guide_cmd": "$ sudo php artisan core:update",
       "manual_update_cmd": "$ sudo php artisan core:update --source=/path/to/extracted",
       "upgrade_guide_link_desc": "운영 환경별 권한/사용자군별 자세한 절차는 업그레이드 가이드를 참고하세요.",
-      "upgrade_guide_link_label": "전체 업그레이드 가이드 보기"
+      "upgrade_guide_link_label": "전체 업그레이드 가이드 보기",
+      "custom_preflight_title": "업데이트를 시작하지 않았습니다",
+      "custom_preflight_desc": "개발자가 설치한 패키지(custom/composer.json) {count}개가 새 코어 {version} 과 맞지 않습니다. 아무 파일도 바뀌지 않았고 사이트는 그대로 동작합니다.",
+      "custom_conflict_package": "개발자 패키지",
+      "custom_conflict_reason": "무엇이 맞지 않나",
+      "custom_conflict_core": "새 코어",
+      "custom_conflict_installed": "설치 {version}",
+      "custom_conflict_constraint": "이 패키지가 요구하는 {requires} 버전 조건({constraint})을 새 코어가 만족하지 않습니다",
+      "custom_conflict_duplicate": "코어도 같은 패키지를 다른 버전으로 갖고 있습니다 — 실행 때는 코어 버전이 쓰입니다",
+      "custom_reserved_files": "배포본이 개발자 전용 custom 자리에 파일을 싣고 있습니다:",
+      "custom_fix_title": "이렇게 해결하세요",
+      "custom_fix_step1": "개발자 패키지를 새 코어에 맞는 버전으로 올립니다: composer update [패키지] -d custom",
+      "custom_fix_step2": "php artisan custom:check 로 충돌이 없는지 확인한 뒤 다시 업데이트합니다.",
+      "custom_fix_step3": "composer 를 쓸 수 없는 서버라면 다른 PC 에서 고친 뒤 php artisan custom:vendor-bundle 로 묶음을 다시 만들어 올립니다."
     },
     "modals": {
       "password_confirm_title": "비밀번호 확인",
+      "identity_confirm_title": "본인 확인",
       "app_key_warning": "키를 변경하면 모든 세션이 무효화되고, 기존 암호화된 데이터에 접근할 수 없게 될 수 있습니다. 신중하게 진행하세요.",
       "enter_password": "최고 관리자 비밀번호",
       "password_placeholder": "비밀번호를 입력하세요",
       "regenerate": "키 재생성",
       "regenerating": "재생성 중...",
+      "reauth_notice": "비밀번호가 없는 계정입니다. 이메일로 받은 인증번호로 본인을 확인한 뒤 재생성할 수 있습니다. 비밀번호를 설정하면 비밀번호로 확인할 수 있습니다.",
+      "reauth_request_code": "인증번호 받기",
+      "reauth_resend_code": "인증번호 다시 받기",
+      "reauth_code_sent": "인증번호를 이메일로 보냈습니다.",
+      "reauth_code_sent_generic": "인증번호를 보냈습니다.",
+      "reauth_notice_other": "비밀번호가 없는 계정입니다. 「본인 확인 시작」을 눌러 이 계정에 쓸 수 있는 방법(회사 계정 다시 로그인 등)으로 본인을 확인한 뒤 재생성할 수 있습니다.",
+      "reauth_start": "본인 확인 시작",
+      "reauth_external_failed": "본인 확인 화면으로 이동할 수 없습니다. 잠시 뒤 다시 시도해 주세요.",
+      "reauth_verified": "본인 확인을 마쳤습니다. [키 재생성] 을 누르면 앱 키를 다시 만듭니다.",
+      "reauth_code_placeholder": "6자리 인증번호",
       "cache_delete_title": "캐시 삭제 확인",
       "cache_delete_confirm": "모든 캐시를 삭제하시겠습니까?",
       "cache_delete_warning": "캐시 삭제 후 일시적으로 사이트 응답 속도가 느려질 수 있습니다.",
@@ -2563,6 +3474,111 @@
     "validation_error": "입력 정보를 확인해주세요",
     "app_key_regenerated": "어플리케이션 키가 재생성되었습니다.",
     "cache_cleared": "모든 캐시가 삭제되었습니다.",
+    "system": {
+      "execution_title": "실행 방식",
+      "execution_desc": "웹 화면에서 설치·업데이트 같은 작업을 실행할 때 서버 명령을 쓸지 여부입니다.",
+      "current": "현재",
+      "reason": "근거",
+      "running_with_cli": "서버 명령을 사용해 동작 중",
+      "running_without_cli": "서버 명령 없이 동작 중",
+      "blocked_functions": "차단된 함수:",
+      "execution_mode": "실행 방식 선택",
+      "execution_mode_auto": "자동으로 판단",
+      "execution_mode_subprocess": "항상 서버 명령 사용",
+      "execution_mode_inprocess": "항상 서버 명령 없이",
+      "execution_mode_hint": "자동으로 두면 서버 환경이 바뀌어도 알아서 따라갑니다. 특정 방식으로 고정하고 싶을 때만 바꾸세요.",
+      "detect_again": "다시 감지",
+      "detect_done": "실행 환경을 다시 감지했습니다.",
+      "detect_failed": "실행 환경 감지에 실패했습니다.",
+      "cron_title": "예약 작업",
+      "scheduler_off_on_this_server": "이 화면을 처리한 서버는 스케줄 실행이 꺼져 있습니다(G7_SCHEDULER=off). 여러 서버라면 스케줄을 실행하는 서버를 확인하세요.",
+      "cron_desc": "오래된 데이터 정리, 사이트맵 생성처럼 정해진 시각에 도는 작업입니다. 서버에 예약 실행을 걸 수 없는 호스팅에서는 아래 주소를 호출해 대신 돌릴 수 있습니다.",
+      "cron_mode": "실행 방식",
+      "cron_mode_auto": "자동으로 판단",
+      "cron_mode_web": "주소 호출",
+      "cron_mode_cron": "서버 예약 실행",
+      "cron_mode_both": "둘 다",
+      "cron_url": "호출 주소",
+      "cron_url_masked": "••••••••  [보기] 를 누르면 주소가 표시됩니다",
+      "cron_url_reveal": "보기",
+      "cron_url_copied": "호출 주소를 복사했습니다.",
+      "cron_url_failed": "호출 주소를 가져오지 못했습니다.",
+      "cron_url_hint": "호스팅 관리자 페이지의 예약 실행에 이 주소를 넣으세요. 주소에 비밀 번호가 들어 있으니 외부에 공개하지 마세요.",
+      "cron_token_rotate": "번호 재발급",
+      "cron_token_rotate_title": "호출 번호를 재발급할까요?",
+      "cron_token_rotate_confirm": "새 번호를 발급하면 지금 쓰고 있는 호출 주소가 즉시 무효가 됩니다.",
+      "cron_token_rotate_warning": "호스팅 관리자 페이지나 외부 예약 서비스에 등록해 둔 주소를 새 주소로 바꿔 주세요. 바꾸지 않으면 예약 작업이 더 이상 실행되지 않습니다.",
+      "cron_token_rotated": "호출 번호를 재발급했습니다.",
+      "cron_token_rotate_failed": "호출 번호 재발급에 실패했습니다.",
+      "cron_allowed_ips": "허용 주소",
+      "cron_allowed_ips_hint": "비우면 제한이 없습니다. 한 줄에 하나씩 또는 쉼표로 구분해 적습니다.",
+      "cron_min_interval": "최소 간격 (분)",
+      "cron_min_interval_hint": "이 간격보다 자주 호출되면 그 호출은 실행 없이 넘어갑니다. 밀린 작업은 다음 호출에서 함께 처리되므로 빠지지 않습니다.",
+      "cron_visit_fallback": "방문자 접속 시 실행",
+      "cron_visit_fallback_desc": "주소 호출을 걸 수 없을 때의 마지막 수단입니다. 방문자가 없으면 실행되지 않습니다.",
+      "cron_last_run": "마지막 실행",
+      "cron_last_run_none": "아직 실행된 적이 없습니다.",
+      "cron_last_run_legend": "시각 · 소요 시간 · 처리 건수 / 실패 건수",
+      "cron_history": "실행 이력",
+      "cron_history_none": "아직 실행 기록이 없습니다.",
+      "cron_history_success": "성공",
+      "cron_history_failed": "실패",
+      "cron_history_duration": "{{seconds}}초",
+      "cron_state_persist_failed": "실행 기록을 저장하지 못했습니다. 저장 폴더의 쓰기 권한을 확인해 주세요 — 기록이 남지 않으면 이미 처리한 작업을 매 호출마다 다시 실행합니다.",
+      "cron_run_now": "지금 실행",
+      "cron_run_done": "예약 작업을 실행했습니다.",
+      "cron_run_failed": "예약 작업 실행에 실패했습니다."
+    },
+    "core_update": {
+      "title": "코어 업데이트",
+      "desc": "그누보드7 코어를 새 버전으로 올립니다. 진행 중에는 사이트가 점검 모드로 전환되며, 중간에 실패하면 백업본으로 자동 되돌립니다.",
+      "current_version": "현재 버전",
+      "latest_version": "새 버전",
+      "up_to_date": "최신 버전입니다.",
+      "check_update": "업데이트 확인",
+      "view_changelog": "변경사항 보기",
+      "together_title": "함께 처리",
+      "together_bundled": "번들 확장·언어팩 함께 업데이트",
+      "together_bundled_hint": "코어에 포함된 모듈·플러그인·템플릿과 언어팩 중 새 버전이 있는 것을 이어서 업데이트합니다.",
+      "together_rebuild_index": "검색 인덱스 다시 만들기",
+      "together_rebuild_index_hint": "인덱스가 잠기고 전체 재색인이 일어납니다. 방문이 적은 시간에 수행하세요. 이 선택은 이번 실행에만 적용됩니다.",
+      "layout_strategy": "레이아웃",
+      "layout_overwrite": "새 버전으로 덮어쓰기",
+      "layout_keep": "수정한 레이아웃은 보존",
+      "modified_layouts_hint": "수정된 레이아웃 {{count}}개 — 보존을 권장합니다.",
+      "layout_per_extension_hint": "확장별로 다르게 적용하려면 그 확장을 빼고, 확장 관리 화면에서 개별로 업데이트하세요.",
+      "maintenance_warning": "진행 중에는 사이트가 점검 모드로 전환됩니다.",
+      "start": "업데이트 시작",
+      "starting": "진행 중…",
+      "advanced_title": "고급",
+      "manual_zip_label": "직접 올린 ZIP 으로 업데이트",
+      "manual_zip_hint": "새 버전을 자동으로 내려받을 수 없는 서버용입니다. 릴리스 ZIP 을 FTP 로 storage/app/core_pending 에 올린 뒤 아래에서 고르세요.",
+      "manual_zip_none": "올려 둔 ZIP 파일이 없습니다.",
+      "manual_zip_auto": "자동으로 내려받기",
+      "cli_guide_title": "명령어로 업데이트 (SSH 가 있는 경우)",
+      "progress_title": "업데이트 진행 중",
+      "progress_count": "{{done}} / {{total}} 단계",
+      "view_log": "기록 보기",
+      "hide_log": "기록 접기",
+      "resume": "이어서 진행",
+      "completed_desc": "{{version}} 버전으로 업데이트를 마쳤습니다.",
+      "failed_title": "{{step}} 단계에서 실패했습니다. {{detail}}",
+      "rolled_back": "백업본으로 되돌렸습니다. 사이트는 정상 동작합니다.",
+      "rolled_back_not_applied": "파일을 바꾸기 전에 멈췄습니다. 사이트는 그대로입니다.",
+      "rollback_failed": "되돌리기도 실패했습니다.",
+      "rollback_manual": "수동 복구가 필요합니다. 아래 리포트를 확인한 뒤, FTP 로 백업본(`storage/app/core_backups` 의 최신 폴더)을 제자리에 되돌리고 `storage/framework/down` 파일을 삭제해 점검 모드를 해제하세요. SSH 를 쓸 수 있다면 `php artisan up` 으로 해제해도 됩니다.",
+      "rollback_failed_targets": "되돌리지 못한 항목: {{targets}}",
+      "report_path": "실패 리포트",
+      "backup_path": "백업 위치",
+      "dismiss": "확인",
+      "warnings_title": "확인이 필요한 사항",
+      "notices_title": "알림",
+      "advance_limit": "진행이 예상보다 오래 걸립니다. [이어서 진행] 을 눌러 계속하세요.",
+      "check_failed_hint": "새 버전을 확인하지 못했습니다.",
+      "preflight_blocked_title": "지금은 업데이트를 시작할 수 없습니다",
+      "preflight_blocked_hint": "위 항목을 해결한 뒤 다시 시도하거나, SSH 를 쓸 수 있다면 아래 고급 설정의 명령어 절차를 이용하세요.",
+      "view_guide": "조치 방법 보기"
+    },
     "privacy": {
       "consent_provider": {
         "title": "동의 관리 제공자",
@@ -2582,10 +3598,11 @@
         "title": "탈퇴 회원 잔여정보 파기",
         "desc": "탈퇴 시에는 분쟁 대응을 위해 이름·이메일의 원값이 접미사 형태로 남습니다. 보유기간이 지나면 그 잔여 정보까지 실제로 지웁니다.",
         "enabled": "보유기간 경과 시 자동 파기",
-        "enabled_desc": "기본 꺼짐. 켜면 매일 새벽 배치가 대상을 처리합니다.",
+        "enabled_desc": "기본 꺼짐. 켜면 개인정보 파기 스케줄이 대상을 처리합니다.",
         "days": "탈퇴 후 보유기간 (일)",
         "days_hint": "탈퇴일로부터 이 기간이 지난 회원이 대상입니다. 기본 365일.",
-        "irreversible_warning": "연락처·주소·자기소개와 본인인증 식별자까지 지워지며 되돌릴 수 없습니다. 이름은 「탈퇴회원」, 이메일은 식별 불가 형태로 바뀝니다."
+        "irreversible_warning": "연락처·주소·자기소개와 본인인증 식별자까지 지워지며 되돌릴 수 없습니다. 이름은 「탈퇴회원」, 이메일은 식별 불가 형태로 바뀝니다.",
+        "schedule_notice": "탈퇴 회원 파기는 개인정보 파기 스케줄이 실행합니다."
       },
       "dormant": {
         "title": "휴면 계정",
@@ -2747,6 +3764,39 @@
         "description": "비밀글·발행 전 페이지처럼 볼 수 있는 사람이 정해진 본문 미디어는 잠시만 유효한 주소로 내보냅니다. 화면을 오래 열어 두면 이 시간이 지난 뒤 다시 불러와야 재생됩니다.",
         "unit": "분 (5~1440)"
       }
+    },
+    "schedule_link": {
+      "next_run": "다음 실행",
+      "inactive": "이 스케줄이 비활성이라 지금은 실행되지 않습니다.",
+      "change": "스케줄 관리에서 변경"
+    },
+    "permission_required": {
+      "language_packs": "언어팩을 볼 권한이 없습니다. 「언어팩 조회」 권한이 필요합니다.",
+      "identity_providers": "본인인증 프로바이더를 볼 권한이 없습니다. 「프로바이더 설정 조회」 권한이 필요합니다.",
+      "identity_policies": "본인인증 정책을 볼 권한이 없습니다. 「정책 조회」 권한이 필요합니다."
+    },
+    "extension_trust_key_modal": {
+      "add_title": "제작자 신뢰 키 추가",
+      "add_desc": "확장 제작자가 알려 준 공개키를 등록합니다. 이 키로 서명된 패키지 가운데 vendor 범위에 든 식별자만 신뢰합니다.",
+      "public_key": "공개키",
+      "public_key_placeholder": "base64 로 인코딩한 32바이트 Ed25519 공개키",
+      "public_key_hint": "제작자가 extension:keygen 명령으로 만든 공개키 한 줄을 그대로 붙여 넣습니다. 키 ID 는 서버가 계산합니다.",
+      "label": "서명자 이름",
+      "label_placeholder": "예: glitter",
+      "label_hint": "영문·숫자·밑줄·하이픈 32자 이내이고 sirsoft 로 시작할 수 없습니다. 키 ID 의 앞부분이 됩니다.",
+      "vendor_scope": "vendor 범위",
+      "vendor_scope_placeholder": "예: glitter, glitter-labs",
+      "vendor_scope_hint": "이 키의 서명을 믿을 확장 식별자의 vendor(하이픈 앞부분)를 쉼표로 구분해 하나 이상 적습니다. sirsoft 는 넣을 수 없습니다.",
+      "password_notice": "신뢰 키를 바꾸면 어떤 패키지를 믿을지가 바뀌므로 본인 비밀번호를 다시 확인합니다.",
+      "submit": "키 추가",
+      "submitting": "추가하는 중...",
+      "add_success": "신뢰 키를 추가했습니다.",
+      "delete_title": "제작자 신뢰 키 삭제",
+      "delete_confirm": "{{key_id}} 키를 삭제합니다.",
+      "delete_warning": "이 키로 서명된 확장은 다음 설치·업데이트부터 「신뢰하지 않는 키」로 차단됩니다.",
+      "delete_submit": "삭제",
+      "deleting": "삭제하는 중...",
+      "delete_success": "신뢰 키를 삭제했습니다."
     }
   },
   "templates": {
@@ -2802,7 +3852,7 @@
       "file_requirements": "템플릿 패키지는 반드시",
       "file_structure_hint": "파일을 포함해야 하며, 그누보드7 템플릿 표준 구조를 따라야 합니다.",
       "github_url_label": "GitHub 저장소 URL",
-      "github_url_hint": "GitHub 저장소의 기본 브랜치에서 템플릿을 다운로드합니다.",
+      "github_url_hint": "GitHub 저장소의 최신 태그 릴리스에서 템플릿을 받습니다. 릴리스가 없는 저장소는 설치하지 않습니다.",
       "github_requirements": "루트 디렉토리에",
       "github_public_only": "파일이 있어야 합니다."
     },
@@ -2834,6 +3884,9 @@
       "recover_update": "정리 후 다시 업데이트",
       "check_updates": "업데이트 확인",
       "view_detail": "상세정보",
+      "settings": "설정",
+      "settings_read_only": "설정 (읽기 전용)",
+      "settings_unavailable": "설정 항목이 없거나 이 템플릿이 설정 화면을 제공하지 않습니다",
       "refresh_layouts": "레이아웃 갱신",
       "edit_layouts": "레이아웃 편집",
       "edit_code": "코드 편집",
@@ -2956,11 +4009,22 @@
         "restore_success": "버전이 성공적으로 복원되었습니다.",
         "restore_note": "복구 후에는 반드시 저장 버튼을 눌러야 변경사항이 적용됩니다.",
         "saved_by": "저장자: {{name}}",
+        "saved_by_system": "저장자: 시스템",
         "lines": "라인",
         "modified": "수정",
         "chars": "자",
         "load_more": "이전 버전 더 보기",
-        "limit_reached": "표시할 수 있는 최대 개수에 도달했습니다."
+        "limit_reached": "표시할 수 있는 최대 개수에 도달했습니다.",
+        "source_labels": {
+          "before_extension_update": "확장 업데이트로 덮기 전 운영자 판",
+          "before_refresh": "레이아웃 갱신으로 덮기 전 운영자 판",
+          "before_decision_take_theirs": "「새 판 적용」으로 덮기 전 운영자 판",
+          "before_upgrade_step": "업그레이드로 바꾸기 전 운영자 판",
+          "before_other": "덮기 전 운영자 판",
+          "merge_refresh": "레이아웃 갱신 병합 결과",
+          "merge_extension_update": "확장 업데이트 병합 결과",
+          "merge_other": "병합 결과"
+        }
       },
       "extension_version_history": {
         "title": "확장 버전 히스토리",
@@ -2993,7 +4057,7 @@
       "file_requirements": "템플릿 패키지는 반드시",
       "file_structure_hint": "파일을 포함해야 하며, 그누보드7 템플릿 표준 구조를 따라야 합니다.",
       "github_url_label": "GitHub 저장소 URL",
-      "github_url_hint": "GitHub 저장소의 기본 브랜치에서 템플릿을 다운로드합니다.",
+      "github_url_hint": "GitHub 저장소의 최신 태그 릴리스에서 템플릿을 받습니다. 릴리스가 없는 저장소는 설치하지 않습니다.",
       "github_requirements": "루트 디렉토리에",
       "github_public_only": "파일이 있어야 합니다."
     },
@@ -3187,6 +4251,9 @@
       "actor_select": "행위자 선택",
       "actor_search_placeholder": "이름 또는 이메일로 검색",
       "actor_search_initial": "행위자를 검색하세요",
+      "deletion_snapshot_label": "삭제 기록",
+      "deletion_snapshot_only": "삭제 직전 기록만 보기",
+      "deletion_snapshot_hint": "영구 삭제·선언 정리·커스텀 번역 삭제 직전에 남긴 기록만 보입니다. 펼치면 지운 본문과 버전을 볼 수 있습니다.",
       "date_range_label": "기간",
       "date_from_label": "시작일",
       "date_to_label": "종료일",
@@ -3223,7 +4290,15 @@
       "column_field": "항목명",
       "column_old": "변경 전",
       "column_new": "변경 후",
-      "no_value": "-"
+      "no_value": "-",
+      "snapshot_title": "삭제 직전 기록",
+      "snapshot_target": "대상: {{target}}",
+      "snapshot_reason": "사유: {{reason}}",
+      "snapshot_versions": "남긴 버전 {{count}}개",
+      "snapshot_versions_truncated": "최근 50개만 남김",
+      "snapshot_show": "지우기 전 본문 보기",
+      "snapshot_hide": "본문 접기",
+      "snapshot_content_truncated": "본문이 길어 앞부분만 보입니다."
     },
     "pagination": {
       "total": "총 {{count}}건",
@@ -4295,9 +5370,9 @@
       },
       "reports": {
         "weekly": "주간 리포트 메일",
-        "weekly_hint": "매주 월요일 08:00 에 admin 역할에게 보냅니다.",
+        "weekly_hint": "admin 역할에게 주간 리포트를 보냅니다.",
         "monthly": "월간 리포트 메일",
-        "monthly_hint": "매월 1일 08:00 에 admin 역할에게 보냅니다.",
+        "monthly_hint": "admin 역할에게 월간 리포트를 보냅니다.",
         "definitions_title": "알림 정의 상태",
         "definitions_description": "리포트·경고 알림의 활성 여부와 채널. 문안 편집은 환경설정의 알림 정의 탭에서 합니다.",
         "definition_inactive_alert": "리포트 메일은 켰는데 알림 정의가 꺼져 있어 메일이 가지 않습니다 — 아래에서 정의를 켜세요.",
@@ -4387,7 +5462,6 @@
       "module_refresh_layouts_modal": "모듈 레이아웃 갱신",
       "module_uninstall_modal": "모듈 삭제",
       "module_update_modal": "모듈 업데이트",
-      "module_deactivate_warning_modal": "모듈 비활성화 경고",
       "module_detail_modal": "모듈 상세",
       "module_manifest_preview_drawer": "모듈 매니페스트 미리보기"
     },
@@ -4421,7 +5495,15 @@
       "settings_password_confirm_modal": "앱 키 재생성 비밀번호 확인",
       "core_changelog_modal": "코어 변경 이력",
       "core_update_guide_modal": "코어 업데이트 안내",
-      "core_update_result_modal": "코어 업데이트 확인 결과"
+      "core_update_result_modal": "코어 업데이트 확인 결과",
+      "cron_token_rotate_modal": "웹 크론 호출 번호 재발급 모달",
+      "settings_thumbnail_purge_all_modal": "썸네일 모두 비우기 확인",
+      "settings_thumbnail_pregenerate_modal": "기존 이미지 썸네일 만들기",
+      "member_field_form_modal": "회원 항목 추가와 수정",
+      "member_field_delete_modal": "회원 항목 삭제 확인",
+      "member_field_required_modal": "회원 항목 필수 전환 확인",
+      "extension_trust_key_add_modal": "확장 신뢰 키 추가 창",
+      "extension_trust_key_delete_modal": "확장 신뢰 키 삭제 창"
     },
     "admin_template_list": {
       "template_activate_modal": "템플릿 활성화 확인",
@@ -4473,10 +5555,14 @@
     },
     "admin_schedule_list": {
       "schedule_delete_modal": "스케줄 삭제",
-      "schedule_duplicate_modal": "스케줄 복제",
+      "schedule_duplicate_modal": "스케줄 복사",
       "schedule_form_modal": "스케줄 등록/수정",
       "schedule_history_modal": "스케줄 실행 이력",
-      "schedule_run_modal": "스케줄 즉시 실행"
+      "schedule_run_modal": "스케줄 즉시 실행",
+      "queue_job_detail_modal": "큐 작업 상세",
+      "queue_confirm_modal": "큐 실패 작업 재시도·삭제",
+      "schedule_bulk_status_modal": "스케줄 상태 일괄 변경",
+      "schedule_security_modal": "스케줄 보안 정책"
     },
     "admin_notification_log_list": {
       "modal_notification_log_detail": "알림 발송 이력 상세"
@@ -4507,6 +5593,11 @@
   },
   "brand_name": "그누보드7",
   "default_user_name": "관리자",
+  "stage_role": {
+    "banner": "검수 서버 — 운영 데이터를 공유합니다. 확장·코어 변경은 배포 절차로만 합니다.",
+    "locked_hint": "검수 서버에서는 바꿀 수 없습니다. 배포 절차로 반영하세요.",
+    "editor_banner": "검수용 저장 — 운영 사이트에는 반영되지 않으며 다음 배포 때 사라집니다."
+  },
   "template_partial_test": {
     "title": "템플릿 Partial 시스템 테스트",
     "meta_description": "sirsoft-admin_basic 템플릿의 Partial 시스템 동작 확인",
@@ -4569,6 +5660,60 @@
         "search_scopes": "최근 검색어 범위 선언",
         "seeder": "기본 데이터 생성"
       }
+    }
+  },
+  "layout_sync_preview": {
+    "title": "화면별 처리 미리보기",
+    "refresh_description": "파일의 레이아웃을 다시 읽습니다. 아래에서 화면마다 어떻게 바뀌는지 확인한 뒤 적용하세요. 미리보기는 아무것도 바꾸지 않습니다.",
+    "strategy_title": "레이아웃 처리 방식",
+    "strategy_keep": "수정 유지 (권장)",
+    "strategy_keep_desc": "편집기로 고친 부분은 그대로 두고, 손대지 않은 부분만 새 판으로 바꿉니다.",
+    "strategy_overwrite": "모두 교체",
+    "strategy_overwrite_desc": "모든 화면을 새 판으로 덮습니다. 덮기 전 운영자 판은 편집기 [버전 기록]에 남습니다.",
+    "overwrite_warning": "편집기로 고친 화면도 모두 새 판으로 바뀝니다. 되돌리려면 편집기 [버전 기록]에서 복원하세요.",
+    "loading": "새 판과 비교하는 중입니다…",
+    "error": "미리보기를 불러오지 못했습니다. 미리보기를 확인해야 적용할 수 있습니다.",
+    "retry": "다시 시도",
+    "summary_changed": "바뀌는 화면 {{count}}개",
+    "summary_conflicts": "운영자 수정과 겹친 화면 {{count}}개",
+    "summary_deleted": "삭제 예정 {{count}}개",
+    "skipped_inactive": "꺼 둔 확장은 업데이트 때 레이아웃을 갱신하지 않습니다 — 켤 때 수정 유지로 병합합니다.",
+    "skipped_files_missing": "활성 디렉토리에 이 확장의 파일이 없어 화면 판정을 건너뜁니다 — 업데이트하면 새 판 파일을 복사한 뒤 화면을 맞춥니다.",
+    "empty": "바뀌는 화면이 없습니다.",
+    "kind_extension": "확장 조각",
+    "conflict_units": "겹침 {{count}}곳",
+    "decision_merge": "겹치지 않는 곳만 반영 (권장)",
+    "decision_merge_hint": "운영자가 고친 곳과 겹치는 부분은 운영자 판을 두고, 나머지는 새 판으로 바꿉니다.",
+    "decision_keep_ours": "운영자 판 유지",
+    "decision_take_theirs": "새 판 적용",
+    "decision_keep_ours_hint": "이 화면은 새 판을 하나도 받지 않고 운영자 판을 통째로 둡니다.",
+    "decision_take_theirs_hint": "이 화면만 새 판으로 덮습니다. 덮기 전 운영자 판은 편집기 [버전 기록]에 남습니다.",
+    "deletions_title": "이 업데이트로 지워질 항목 {{count}}개",
+    "deletion_operator": "운영자 수정본 — 지우기 직전 활동 로그에 기록",
+    "verdict": {
+      "created": "새로 추가",
+      "updated": "새 판으로 교체",
+      "unchanged": "바뀐 것 없음",
+      "took_theirs": "새 판 반영",
+      "merged": "새 판 일부 반영",
+      "conflict": "겹쳐서 운영자 판 유지",
+      "kept": "운영자 판 유지",
+      "kept_no_base": "비교 기준 없음 — 운영자 판 유지",
+      "kept_invalid": "병합 검증 실패 — 운영자 판 유지",
+      "kept_removed": "새 판에서 빠졌지만 수정본이라 남김",
+      "kept_deleted_by_operator": "운영자가 지운 화면 — 건너뜀",
+      "kept_name_collision": "운영자가 만든 같은 이름 화면 — 건너뜀",
+      "deleted": "삭제 예정"
+    },
+    "deletion_type": {
+      "notification_definition": "알림 정의",
+      "notification_template": "알림 템플릿",
+      "menu": "관리자 메뉴",
+      "permission": "권한",
+      "role": "역할",
+      "identity_policy": "본인확인 정책",
+      "schedule": "스케줄",
+      "entity": "기본 데이터"
     }
   }
 }

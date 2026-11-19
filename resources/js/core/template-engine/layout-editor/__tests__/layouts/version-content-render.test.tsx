@@ -56,11 +56,11 @@ const versionContentV1 = {
   components: [
     {
       id: 'cart-root-node',
-      type: 'basic',
+      type: 'basic' as const,
       name: 'Div',
       props: { 'data-testid': 'cart-root' },
       children: [
-        { id: 'cart-title-node', type: 'basic', name: 'Span', text: '장바구니', props: { 'data-testid': 'cart-title' } },
+        { id: 'cart-title-node', type: 'basic' as const, name: 'Span', text: '장바구니', props: { 'data-testid': 'cart-title' } },
       ],
     },
   ],
@@ -75,12 +75,12 @@ const versionContentV2 = {
   components: [
     {
       id: 'cart-root-node',
-      type: 'basic',
+      type: 'basic' as const,
       name: 'Div',
       props: { 'data-testid': 'cart-root' },
       children: [
-        { id: 'cart-title-node', type: 'basic', name: 'Span', text: '장바구니', props: { 'data-testid': 'cart-title' } },
-        { id: 'cart-extra-node', type: 'basic', name: 'Span', text: '재주문', props: { 'data-testid': 'cart-extra' } },
+        { id: 'cart-title-node', type: 'basic' as const, name: 'Span', text: '장바구니', props: { 'data-testid': 'cart-title' } },
+        { id: 'cart-extra-node', type: 'basic' as const, name: 'Span', text: '재주문', props: { 'data-testid': 'cart-extra' } },
       ],
     },
   ],
@@ -95,13 +95,13 @@ const versionContentWithData = {
   components: [
     {
       id: 'cart-root-node',
-      type: 'basic',
+      type: 'basic' as const,
       name: 'Div',
       props: { 'data-testid': 'cart-root' },
       children: [
         {
           id: 'cart-bound-node',
-          type: 'basic',
+          type: 'basic' as const,
           name: 'Span',
           text: '{{cart?.data?.title ?? ""}}',
           props: { 'data-testid': 'cart-bound-title' },
@@ -124,6 +124,10 @@ describe('버전 content 레이아웃 렌더링', () => {
     active = null;
   });
 
+  /**
+   * @scenario roundtrip=version_content
+   * @effects version_content_renders
+   */
   it('복원/미리보기 대상 버전 content(v1)가 DynamicRenderer 로 정상 렌더된다', async () => {
     active = createLayoutTest(versionContentV1, { componentRegistry: registry });
     await active.render();
@@ -133,16 +137,31 @@ describe('버전 content 레이아웃 렌더링', () => {
     expect(screen.getByTestId('cart-title')).toHaveTextContent('장바구니');
   });
 
+  /**
+   * @scenario roundtrip=version_content
+   * @effects version_content_swap_renders_new_tree_only
+   */
   it('다른 버전 content(v2)로 교체해도 렌더가 정합한다 (복원 시나리오)', async () => {
-    // 복원은 다른 버전의 content 로 캔버스를 재로드한다 — v2 content 도 정상 렌더되어야 함.
+    // 복원은 다른 버전의 content 로 캔버스를 재로드한다 — v1 을 그린 뒤 v2 로 바꿔 그린다.
+    active = createLayoutTest(versionContentV1, { componentRegistry: registry });
+    await active.render();
+    expect(screen.queryByTestId('cart-extra')).not.toBeInTheDocument();
+    active.cleanup();
+
     active = createLayoutTest(versionContentV2, { componentRegistry: registry });
     await active.render();
 
+    // 교체 뒤에는 v2 트리 하나만 남는다(v1 트리 잔존 없음).
+    expect(screen.getAllByTestId('cart-root')).toHaveLength(1);
     expect(screen.getByTestId('cart-title')).toHaveTextContent('장바구니');
     // v2 에 추가된 Span 도 렌더됨 (v1→v2 의 +1 라인 변경이 실제 노드로 반영)
     expect(screen.getByTestId('cart-extra')).toHaveTextContent('재주문');
   });
 
+  /**
+   * @scenario roundtrip=version_content
+   * @effects version_content_with_data_sources_binds
+   */
   it('data_sources 를 가진 버전 content 가 데이터 바인딩과 함께 렌더된다 (미리보기)', async () => {
     active = createLayoutTest(versionContentWithData, { componentRegistry: registry });
     active.mockApi('cart', { response: { data: { title: '주문 요약' } } });

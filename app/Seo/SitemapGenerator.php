@@ -8,6 +8,7 @@ use App\Extension\PluginManager;
 use App\Seo\Contracts\SitemapContributorInterface;
 use App\Services\TemplateService;
 use App\Support\RequestPath;
+use App\Support\ScreenUrl;
 use App\Support\SiteUrl;
 
 /**
@@ -159,12 +160,38 @@ class SitemapGenerator
     private function normalizeEntry(array $entry): array
     {
         if (isset($entry['url']) && ! isset($entry['loc'])) {
-            // 보안: 요청 Host 가 아니라 사이트 주소 기준 (익명 sitemap 요청 안에서 생성될 수 있다)
-            $entry['loc'] = SiteUrl::absolute($entry['url']);
+            $entry['loc'] = self::entryLoc($entry);
             unset($entry['url']);
         }
 
         return $entry;
+    }
+
+    /**
+     * URL 항목의 절대 주소(`loc`)를 해석합니다 — 전체 재생성과 증분 색인이 공유하는 단일 지점.
+     *
+     * `loc`(절대 URL)이 있으면 그대로, 없으면 `url`(사이트 경로)을 `ScreenUrl::toAbsolute()` 로
+     * 절대화한다 — 설정 주소(「사용자 화면 URL」, 비면 사이트 주소) 기준이고 요청 Host 는 쓰지 않으며,
+     * 접두사는 **멱등**으로 실린다(`SiteUrl::join()`). 종전에는
+     * 증분 색인(`SitemapIndexer`)이 같은 규칙을 `url()` 사본으로 갖고 있어, 같은 리소스의
+     * `<loc>` 이 생성 경로(전체 재생성 vs 리스너 경유 증분)에 따라 오리진·접두사가 갈렸다.
+     *
+     * @param  array<string, mixed>  $entry  URL 항목
+     * @return string|null 절대 URL (해석 불가 시 null)
+     */
+    public static function entryLoc(array $entry): ?string
+    {
+        if (isset($entry['loc']) && is_string($entry['loc']) && $entry['loc'] !== '') {
+            return $entry['loc'];
+        }
+
+        if (isset($entry['url']) && is_string($entry['url']) && $entry['url'] !== '') {
+            // 보안: 요청 Host 가 아니라 설정 주소 기준 (익명 sitemap 요청 안에서 생성될 수 있다).
+            // 검색엔진에 알릴 주소는 사람이 여는 주소라 「사용자 화면 URL」(비면 사이트 주소) 기준이다(#792 W17).
+            return ScreenUrl::toAbsolute($entry['url']);
+        }
+
+        return null;
     }
 
     /**
@@ -336,7 +363,11 @@ class SitemapGenerator
                 // 301 로 이동하므로(공개#156) 이동 대상 주소를 싣는다
                 $routePath = RequestPath::normalize(ltrim($routePath, '*/'));
 
-                $loc = SiteUrl::absolute($routePath);
+                // 검색엔진에 알릴 주소는 사람이 여는 주소라 「사용자 화면 URL」(비면 사이트 주소) 기준이다(#792 W17).
+                // 홈은 끝 슬래시 없는 정규형으로 싣는다(공개#156 — 사이트 주소 기준 SiteUrl::absolute 와 같은 모양).
+                // 단 하위 폴더 설치의 마운트 루트는 끝 슬래시 형태가 정본이다 — 웹서버가 `…/g7` 을 `…/g7/` 로
+                // 301 하므로 봇 화면 canonical 과 같은 규칙(SiteUrl::canonicalScreenForm)을 쓴다.
+                $loc = SiteUrl::canonicalScreenForm(ScreenUrl::toAbsolute($routePath), ScreenUrl::userBase());
 
                 // 필터 훅(core.seo.register_layouts)으로 같은 화면이 두 번 들어와도 한 번만 싣는다
                 $key = $this->comparableLoc($loc);

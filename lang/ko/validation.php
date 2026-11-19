@@ -1,5 +1,7 @@
 <?php
 
+// changelog:allow 숨김 파일 서빙 거부 문구 — 무CLI·고정 문서루트 축의 신규 키. 공개 CHANGELOG 는 기능 완성 릴리즈 섹션에 일괄 기재
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -126,6 +128,7 @@ return [
     'present_unless' => ':other 값이 :value 외의 값이면 :attribute 필드가 있어야 합니다.',
     'present_with' => ':values 필드가 있을 때 :attribute 필드가 있어야 합니다.',
     'present_with_all' => ':values 필드가 모두 있을 때 :attribute 필드가 있어야 합니다.',
+    'forbidden_word' => '쓸 수 없는 말이 들어 있습니다: :word',
     'prohibited' => ':attribute 필드는 금지되어 있습니다.',
     'prohibited_if' => ':other 값이 :value일 때 :attribute 필드는 금지되어 있습니다.',
     'prohibited_unless' => ':other 값이 :values 중 하나가 아니면 :attribute 필드는 금지되어 있습니다.',
@@ -585,6 +588,7 @@ return [
     ],
 
     // 다국어 필드 검증 메시지
+    'safe_link' => ':attribute 필드는 사이트 안 경로(/로 시작) 또는 http·https 주소여야 합니다.',
     'translatable' => [
         'must_be_array' => '다국어 필드는 배열이어야 합니다.',
         'unsupported_language' => "지원되지 않는 언어 코드입니다: ':lang'",
@@ -768,6 +772,7 @@ return [
         'absolute_path_not_allowed' => '절대 경로는 허용되지 않습니다.',
         'null_byte_detected' => 'NULL 바이트 공격이 감지되었습니다.',
         'outside_base_directory' => '기준 디렉토리 외부 경로는 허용되지 않습니다.',
+        'hidden_segment_not_allowed' => '점(.)으로 시작하는 파일·디렉토리는 제공하지 않습니다.',
         'file_type_not_allowed' => '허용되지 않은 파일 타입입니다. 확장자: :extension (허용: :allowed)',
     ],
 
@@ -790,6 +795,7 @@ return [
         'absolute_path_not_allowed' => '절대 경로는 허용되지 않습니다.',
         'null_byte_detected' => 'NULL 바이트가 감지되었습니다.',
         'outside_base_directory' => '기준 디렉토리 외부 접근은 허용되지 않습니다.',
+        'hidden_segment_not_allowed' => '점(.)으로 시작하는 파일·디렉토리는 제공하지 않습니다.',
     ],
 
     // 플러그인 경로 검증 메시지
@@ -800,6 +806,7 @@ return [
         'absolute_path_not_allowed' => '절대 경로는 허용되지 않습니다.',
         'null_byte_detected' => 'NULL 바이트가 감지되었습니다.',
         'outside_base_directory' => '기준 디렉토리 외부 접근은 허용되지 않습니다.',
+        'hidden_segment_not_allowed' => '점(.)으로 시작하는 파일·디렉토리는 제공하지 않습니다.',
     ],
 
     // 인증 관련 검증 메시지
@@ -808,6 +815,10 @@ return [
             'challenge_required' => '인증 요청 정보가 없습니다. 처음부터 다시 로그인해주세요.',
             'challenge_invalid' => '인증 요청 정보가 올바르지 않습니다.',
             'code_required' => '인증번호를 입력해주세요.',
+        ],
+        // 로그인 인계 (#40)
+        'login_handoff' => [
+            'code_required' => '로그인 인계 코드가 없습니다. 다시 로그인해 주세요.',
         ],
         // 로그인 비밀번호 변경 단계 (#736)
         'password_change' => [
@@ -865,6 +876,11 @@ return [
         ],
     ],
 
+    // IP 허용 목록 (웹 크론 호출 제한 — App\Rules\ValidIpAllowList)
+    'ip_allow_list' => [
+        'invalid' => '올바른 IP 주소나 대역 표기가 아닙니다: ":value". 한 줄에 하나씩 또는 쉼표로 구분해 적어 주세요.',
+    ],
+
     // 설정값 검증 메시지
     'setting' => [
         'value' => [
@@ -876,6 +892,7 @@ return [
             'max' => '설정 값은 :max자를 초과할 수 없습니다.',
             'array_max' => '설정 값의 크기가 :max자를 초과할 수 없습니다.',
             'server_only' => '이 설정은 서버가 기록하는 값이라 직접 저장할 수 없습니다.',
+            'tab_only' => '이 설정은 환경설정 화면의 탭 저장으로만 바꿀 수 있습니다.',
             'env_locked' => '이 설정은 .env 가 값을 정하고 있어 여기서 바꿀 수 없습니다. .env 의 :env 를 고치세요.',
         ],
     ],
@@ -927,6 +944,8 @@ return [
         'site_url_required' => '사이트 URL을 입력해주세요.',
         'site_url_invalid' => '올바른 URL 형식이 아닙니다.',
         'site_url_max' => '사이트 URL은 255자를 초과할 수 없습니다.',
+        'user_screen_url_invalid' => 'http:// 또는 https:// 로 시작하는 전체 주소를 입력하세요.',
+        'user_screen_url_max' => '사용자 화면 URL은 255자를 초과할 수 없습니다.',
         'site_description_max' => '사이트 설명은 500자를 초과할 수 없습니다.',
         'admin_email_required' => '관리자 이메일을 입력해주세요.',
         'admin_email_invalid' => '올바른 이메일 형식이 아닙니다.',
@@ -936,7 +955,6 @@ return [
         'language_required' => '기본 언어를 선택해주세요.',
         'language_invalid' => '올바른 언어를 선택해주세요.',
         'currency_max' => '통화 코드는 10자를 초과할 수 없습니다.',
-        'maintenance_mode_boolean' => '유지보수 모드는 true 또는 false 값이어야 합니다.',
 
         // 메일 설정
         'mailer_required' => '메일러를 선택해주세요.',
@@ -1028,8 +1046,6 @@ return [
         'sitemap_max_urls_per_contributor_integer' => '수집기당 최대 URL 수는 정수여야 합니다.',
         'sitemap_max_urls_per_contributor_min' => '수집기당 최대 URL 수는 0 이상이어야 합니다.',
         'sitemap_hreflang_enabled_boolean' => 'Sitemap 다국어 대체 링크(hreflang) 설정은 true 또는 false 값이어야 합니다.',
-        'sitemap_schedule_invalid' => '유효한 Sitemap 생성 주기를 선택해주세요.',
-        'sitemap_schedule_time_invalid' => 'Sitemap 생성 시각은 00:00~23:59 사이의 HH:mm 형식이어야 합니다.',
 
         // 보안 설정
         'force_https_required' => 'HTTPS 강제 적용 설정을 선택해주세요.',
@@ -1112,6 +1128,11 @@ return [
         'outbound_proxy_bypass_array' => '프록시 예외 목록은 배열이어야 합니다.',
         'outbound_proxy_bypass_item_string' => '프록시 예외 항목은 문자열이어야 합니다.',
         'outbound_proxy_bypass_item_max' => '프록시 예외 항목은 :max자를 초과할 수 없습니다.',
+        'trusted_proxies_present' => '신뢰할 프록시 목록이 요청에 없습니다.',
+        'trusted_proxies_array' => '신뢰할 프록시 목록은 배열이어야 합니다.',
+        'trusted_proxies_max' => '신뢰할 프록시는 :max개를 초과할 수 없습니다.',
+        'trusted_proxy_address_invalid' => '신뢰할 프록시 주소 형식이 올바르지 않습니다. IP 주소 또는 CIDR 로 입력하세요 (예: 10.0.0.1, 10.0.0.0/24).',
+        'trusted_proxy_address_max' => '신뢰할 프록시 주소는 :max자를 초과할 수 없습니다.',
 
         // 목록 한계값
         'pagination_result_cap_integer' => '총 건수 집계 상한은 숫자여야 합니다.',
@@ -1199,9 +1220,41 @@ return [
         'log_days_integer' => '로그 보관 일수는 정수여야 합니다.',
         'log_days_min' => '로그 보관 일수는 1 이상이어야 합니다.',
         'log_days_max' => '로그 보관 일수는 365를 초과할 수 없습니다.',
+        // 큐 작업 처리 기록 (#17)
+        'queue_job_log_enabled_boolean' => '처리 기록 사용 여부는 켜기/끄기 값이어야 합니다.',
+        'queue_record_retention_days_integer' => '처리 기록 보관 기간은 정수(일)여야 합니다.',
+        'queue_record_retention_days_min' => '처리 기록 보관 기간은 :min일 이상이어야 합니다.',
+        'queue_record_retention_days_max' => '처리 기록 보관 기간은 :max일을 넘을 수 없습니다.',
 
         // 공개 자산 디스크 설정
         'public_asset_disk_invalid' => '올바른 공개 자산 디스크를 선택해주세요.',
+        'private_attachment_disk_invalid' => '올바른 비공개 첨부 저장소를 선택해주세요.',
+        'file_delegation_invalid' => '올바른 웹서버 파일 위임 방식을 선택해주세요.',
+        'file_delegation_accel_prefix_required' => 'nginx(X-Accel-Redirect)를 고르면 내부 위치 접두사를 입력해야 합니다.',
+        'file_delegation_accel_prefix_format' => '내부 위치 접두사는 /_g7_sendfile/ 처럼 / 로 시작하고 끝나야 하며 영문·숫자·. _ - 만 쓸 수 있습니다.',
+
+        // 이미지 처리 엔진, 이미지 썸네일 (#869)
+        'image_driver_invalid' => '올바른 이미지 처리 엔진을 선택해주세요.',
+        'thumbnail_presets_array' => '썸네일 규격 표 형식이 올바르지 않습니다.',
+        'thumbnail_presets_max' => '썸네일 규격은 최대 :max개까지 둘 수 있습니다(고정 규격과 확장 규격 포함).',
+        'thumbnail_preset_name_required' => '규격 이름을 입력해주세요.',
+        'thumbnail_preset_name_distinct' => '같은 이름의 규격이 이미 있습니다.',
+        'thumbnail_preset_name_reserved' => "기본 규격 이름(':name')이라 쓸 수 없습니다.",
+        'thumbnail_preset_name_literal' => "레이아웃 파이프가 문자열로 읽지 않는 낱말(':name')이라 규격 이름으로 쓸 수 없습니다.",
+        'thumbnail_preset_name_format' => '규격 이름은 영문 소문자로 시작하고 영문 소문자, 숫자, 밑줄(_)만 써서 2~32자로 입력해주세요.',
+        'thumbnail_preset_name_locked' => '기본 규격과 확장 규격은 이름을 바꿀 수 없습니다.',
+        'thumbnail_preset_extension_unknown' => "':name' 규격을 등록한 확장이 켜져 있지 않습니다.",
+        'thumbnail_preset_width_required' => '가로 크기를 입력해주세요.',
+        'thumbnail_preset_height_required' => '자르기나 맞추기에는 세로 크기가 필요합니다.',
+        'thumbnail_preset_size_integer' => '크기는 정수(px)로 입력해주세요.',
+        'thumbnail_preset_size_range' => '크기는 :min~:max px 사이로 입력해주세요.',
+        'thumbnail_preset_quality_range' => '품질은 :min~:max 사이 정수로 입력하거나 비워 두세요.',
+        'thumbnail_preset_fit_invalid' => '맞춤 방식을 선택해주세요.',
+        'thumbnail_preset_anchor_invalid' => '올바른 기준점을 선택해주세요.',
+        'thumbnail_preset_format_invalid' => '올바른 저장 형식을 선택해주세요.',
+        'thumbnail_content_preset_invalid' => '사용 중인 규격 중에서 본문 이미지 규격을 선택해주세요.',
+        'thumbnail_disk_public_invalid' => '공개 이미지 썸네일 저장 위치를 목록에서 선택해주세요.',
+        'thumbnail_disk_gated_invalid' => '권한이 걸린 이미지 썸네일은 서버 비공개 저장소, Amazon S3, 비공개 첨부 저장소 목록의 디스크에만 둘 수 있습니다. 공개 자산 디스크는 고를 수 없습니다.',
 
         // 드라이버 조건부 필수 메시지 (선택 드라이버에 따라 필수)
         's3_bucket_required' => 'S3 버킷 이름은 필수입니다.',
@@ -1376,6 +1429,10 @@ return [
         'embed_provider_id_rule' => 'id 글자 규칙',
         'embed_provider_sample_url' => '예시 주소',
         'layout_source' => '레이아웃 설치 소스',
+        'layout_strategy' => '레이아웃 처리 방식',
+        'decisions' => '화면별 결정',
+        'decisions.*' => '화면별 결정 값',
+        'pending_token' => '레이아웃 미리보기 토큰',
         'layout_meta_icon' => '메뉴 아이콘',
         'layout_meta_editor_label' => '편집기 표시 이름',
         'layout_meta_authoring_note' => '작성 도구 표기',
@@ -1413,11 +1470,18 @@ return [
         // 일반 설정 필드
         'site_name' => '사이트 이름',
         'site_url' => '사이트 URL',
+        'user_screen_url' => '사용자 화면 URL',
         'site_description' => '사이트 설명',
         'admin_email' => '관리자 이메일',
         'timezone' => '시간대',
         'language' => '언어',
         'default_language' => '기본 언어',
+        // 실행 방식·예약 작업 필드 (관리자 '시스템' 탭)
+        'system.execution_mode' => '실행 방식',
+        'system.cron_mode' => '예약 작업 실행 방식',
+        'system.cron_allowed_ips' => '예약 작업 허용 주소',
+        'system.cron_min_interval' => '예약 작업 최소 호출 간격',
+        'system.cron_visit_fallback' => '방문자 접속 시 예약 작업 실행',
         // 본인인증(IDV) 필드
         'identity_default_provider' => '기본 프로바이더',
         'identity_purpose_providers' => '목적별 프로바이더',
@@ -1530,14 +1594,26 @@ return [
         'settings_tab_identity' => '본인인증 설정',
         'settings_tab_analytics' => '방문자 통계 설정',
         'settings_tab_privacy' => '개인정보 설정',
+        'settings_tab_member' => '회원 설정',
+        'member_nickname_unique' => '닉네임 중복 금지',
+        'member_nickname_banned_words' => '닉네임 금지어',
+        'member_nickname_change_interval_days' => '닉네임 변경 주기',
+        'member_display_name_selectable_kinds' => '회원이 고를 수 있는 표시 이름 종류',
+        'member_display_name_member_default_kind' => '회원 기본 표시 이름 종류',
+        'member_display_name_areas' => '영역별 표시 이름',
+        'member_display_name_area_mode' => '표시 이름 방식',
+        'member_display_name_area_kind' => '표시 이름 종류',
+        'member_nickname_require_existing_members' => '로그인 시 닉네임 입력 요구',
+        'display_name_kind' => '표시 이름 종류',
         'notification_channel_id' => '알림 채널 식별자',
         'notification_channel_is_active' => '알림 채널 사용 여부',
         'notification_channel_sort_order' => '알림 채널 정렬 순서',
         'currency' => '통화',
         'default_currency' => '기본 통화',
-        'maintenance_mode' => '점검 모드',
         'asset_url_mode' => '자산 주소 방식',
+        'layout_edit_button_enabled' => '레이아웃 편집 단추',
         'site_logo' => '사이트 로고',
+        'site_favicon' => '사이트 파비콘',
         'og_image_default' => '기본 공유 이미지',
         // SEO 설정 (추가)
         'bot_user_agents' => '봇 User-Agent 목록',
@@ -1558,13 +1634,15 @@ return [
         'sitemap_serve_stale_on_miss' => '사이트맵 미생성 시 이전 파일 제공',
         'sitemap_max_urls_per_contributor' => '사이트맵 항목별 최대 URL 수',
         'sitemap_hreflang_enabled' => '사이트맵 대체 언어 링크 사용',
-        'sitemap_schedule' => '사이트맵 자동 생성 주기',
-        'sitemap_schedule_time' => '사이트맵 자동 생성 시각',
         'generator_enabled' => 'SEO 페이지 생성기 사용',
         'generator_content' => 'SEO 페이지 생성기 콘텐츠',
         // 보안 설정 (추가)
         'force_https' => 'HTTPS 강제 적용',
         'login_attempt_enabled' => '로그인 시도 제한',
+        'registration_enabled' => '일반 회원가입 받기',
+        // 본인 확인 요청 — 외부 수단이 확인을 마친 뒤 돌아갈 화면 (7.2.0)
+        'return_path' => '돌아갈 화면 경로',
+        'scope' => '시작한 화면 범위',
         'auth_token_lifetime' => '인증 토큰 유지시간',
         'max_login_attempts' => '최대 로그인 시도 횟수',
         'login_lockout_time' => '로그인 차단 시간',
@@ -1592,6 +1670,8 @@ return [
         'current_password' => '현재 비밀번호',
         'password_confirmation' => '비밀번호 확인',
         'challenge_id' => '변경 단계 식별자',
+        'verification_token' => '본인 확인 인증',
+        'login_handoff_code' => '로그인 인계 코드',
         'two_factor_auth' => '2단계 인증',
         'two_factor_scope' => '2단계 인증 적용 범위',
         'allow_internal_outbound_urls' => '내부 네트워크 주소 호출 허용',
@@ -1620,6 +1700,7 @@ return [
         'sql_query_log' => 'SQL 쿼리 로그',
         'outbound_proxy' => '아웃바운드 프록시 주소',
         'outbound_proxy_bypass' => '프록시 예외 목록',
+        'trusted_proxies' => '신뢰할 프록시 목록',
         'core_update_github_url' => '코어 업데이트 GitHub 주소',
         'core_update_github_token' => '코어 업데이트 GitHub 토큰',
         'geoip_enabled' => 'GeoIP 사용',
@@ -1638,7 +1719,40 @@ return [
         'log_driver' => '로그 드라이버',
         'log_level' => '로그 레벨',
         'log_days' => '로그 보관 일수',
+        'queue_job_log_enabled' => '큐 처리 기록 사용',
+        'queue_record_retention_days' => '큐 처리 기록 보관 기간',
         'public_asset_disk' => '공개 자산 디스크',
+        'private_attachment_disk' => '비공개 첨부 저장소',
+        'file_delegation' => '웹서버 파일 위임',
+        'file_delegation_accel_prefix' => '내부 위치 접두사',
+        // 이미지 처리 엔진, 이미지 썸네일 (#869)
+        'image_driver' => '이미지 처리 엔진',
+        'thumbnail_enabled' => '이미지 썸네일 사용',
+        'thumbnail_prune_enabled' => '썸네일 자동 정리',
+        'thumbnail_animated_original' => '움직이는 이미지 원본 사용',
+        'thumbnail_presets' => '썸네일 규격',
+        'thumbnail_preset_row' => '썸네일 규격 행',
+        'thumbnail_preset_name' => '규격 이름',
+        'thumbnail_preset_source' => '규격 출처',
+        'thumbnail_preset_width' => '가로',
+        'thumbnail_preset_height' => '세로',
+        'thumbnail_preset_fit' => '맞춤',
+        'thumbnail_preset_anchor' => '기준점',
+        'thumbnail_preset_quality' => '품질',
+        'thumbnail_preset_format' => '형식',
+        'thumbnail_preset_upscale' => '확대',
+        'thumbnail_preset_pregenerate' => '등록 시 생성',
+        'thumbnail_preset_numeric' => '숫자 요청',
+        'thumbnail_preset_enabled' => '사용',
+        'thumbnail_content_preset' => '본문 이미지 규격',
+        'thumbnail_disk_public' => '공개 이미지 썸네일 저장 위치',
+        'thumbnail_disk_gated' => '권한이 걸린 이미지 썸네일 저장 위치',
+        'thumbnail_generate_per_minute' => '1분에 새로 만드는 썸네일 수 (IP 하나)',
+        'thumbnail_lock_wait_seconds' => '썸네일 생성 대기 시간',
+        'thumbnail_max_source_pixels' => '썸네일을 만들 원본의 최대 픽셀 수',
+        'thumbnail_pregenerate_batch' => '한 번에 만드는 원본 수',
+        'thumbnail_pregenerate_time_budget' => '한 번 호출의 시간 예산',
+        'thumbnail_purge_time_budget' => '비우기 한 번 호출의 시간 예산',
         'public_asset_extensions' => '공개 디스크로 내보낼 확장자',
         'layout_attachment_extensions' => '레이아웃 첨부 허용 확장자',
     ],

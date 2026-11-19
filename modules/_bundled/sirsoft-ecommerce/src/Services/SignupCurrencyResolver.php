@@ -122,4 +122,44 @@ class SignupCurrencyResolver
 
         return false;
     }
+
+    /**
+     * 회원이 고를 수 있는 통화 목록을 반환합니다 (기본 통화이거나 환율이 설정된 통화).
+     *
+     * 회원 항목 「결제 통화」의 선택지와 헤더 셀렉터가 같은 집합을 쓴다(`isRegistered()` 와 같은 조건).
+     *
+     * @return array<int, array{code: string, symbol: string}> 통화 코드와 기호 (설정 순서)
+     */
+    public function selectableCurrencies(): array
+    {
+        $lc = $this->settings->getSettings('language_currency');
+        $currencies = is_array($lc['currencies'] ?? null) ? $lc['currencies'] : [];
+
+        $selectable = [];
+        foreach ($currencies as $currency) {
+            $code = $currency['code'] ?? null;
+            if (! is_string($code) || $code === '') {
+                continue;
+            }
+            if (($currency['is_default'] ?? false) || (float) ($currency['exchange_rate'] ?? 0) > 0) {
+                $symbol = $currency['symbol'] ?? null;
+                $selectable[] = ['code' => $code, 'symbol' => is_string($symbol) && $symbol !== '' ? $symbol : $code];
+            }
+        }
+
+        return $selectable;
+    }
+
+    /**
+     * 사이트의 기본 통화 코드를 반환합니다.
+     *
+     * @return string|null 기본 통화 코드 (설정이 없으면 null)
+     */
+    public function defaultCurrency(): ?string
+    {
+        $lc = $this->settings->getSettings('language_currency');
+        $default = $lc['default_currency'] ?? null;
+
+        return is_string($default) && $default !== '' ? $default : null;
+    }
 }

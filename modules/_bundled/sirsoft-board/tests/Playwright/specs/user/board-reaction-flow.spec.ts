@@ -9,7 +9,7 @@
  * 등록/전환/해제 판정·카운트 증감·렌더 분기를 검증하므로, 이 spec 은 실제 클릭 → API 호출 →
  * 재조회 → 화면 갱신의 종단 흐름을 담당한다.
  *
- * @scenario surface=detail_register_switch_remove
+ * @scenario case=register_first_like, case=switch_like_to_dislike, case=remove_same_type, case=self_post_react_blocked
  * @effects detail_register_then_switch_then_remove_updates_ui,register_inserts_row_and_increments_count,switch_updates_row_and_adjusts_both_counts,remove_deletes_row_and_decrements_count,self_post_click_shows_denied_toast
  *
  * 활성화 절차: PlaywrightIssueToken 발급 + 반응 유형이 켜진 공개 게시판/게시글 시드가 가능한
@@ -32,7 +32,7 @@ const OWN_POST_PATH = `/board/${SLUG}/${OWN_POST_ID}`;
 const OWN_POST_REACT_API = `**/api/modules/sirsoft-board/boards/${SLUG}/posts/${OWN_POST_ID}/react`;
 
 test.describe('게시판 반응 등록→전환→해제 흐름 (#525)', () => {
-  // @scenario surface=detail_register_switch_remove
+  // @scenario case=register_first_like, case=switch_like_to_dislike, case=remove_same_type
   // @effects register_inserts_row_and_increments_count, switch_updates_row_and_adjusts_both_counts, remove_deletes_row_and_decrements_count
   test('추천 등록 → 비추천 전환 → 비추천 해제 시 버튼 하이라이트·개수가 갱신된다', async ({
     page,
@@ -95,7 +95,7 @@ test.describe('게시판 반응 등록→전환→해제 흐름 (#525)', () => {
     expect((reactBody as Record<string, unknown> | null)?.reaction_type_id).toBe(DISLIKE_ID);
   });
 
-  // @scenario surface=detail_register_switch_remove
+  // @scenario case=guest_react_blocked
   // @effects guest_react_returns_401
   test('비로그인 상태에서 반응 클릭 시 로그인 안내 후 로그인 페이지로 이동한다', async ({ page }) => {
     // 인증 없이 진입 (토큰 미주입)
@@ -110,7 +110,7 @@ test.describe('게시판 반응 등록→전환→해제 흐름 (#525)', () => {
     expect(page.url()).toContain('redirect');
   });
 
-  // @scenario surface=detail_register_switch_remove
+  // @scenario case=self_post_react_blocked
   // @effects self_post_click_shows_denied_toast
   test('본인 글 반응 버튼 클릭 시 API 호출 없이 안내 토스트가 표시된다', async ({
     page,

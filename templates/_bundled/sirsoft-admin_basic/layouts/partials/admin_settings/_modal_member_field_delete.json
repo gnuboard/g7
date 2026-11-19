@@ -1,0 +1,425 @@
+{
+    "comment": "회원 항목 삭제 확인 창(#490). 가입 항목 표에서 운영자가 추가한 항목의 [삭제]가 연다(기본 항목과 확장이 선언한 항목은 지울 수 없다).\n  항목을 지우면 회원이 그 항목에 입력한 값도 함께 지워지고 되돌릴 수 없다. 그래서 여는 쪽이 항목 상세에서 값이 있는 회원 수를 받아 보여 주고,\n  「위 내용을 확인했습니다」를 체크해야 삭제 단추가 풀린다. 상태는 전역 `member_field_delete_modal` 한 객체에 있다.\n  표시 이름 종류로 쓰이는 항목은 서버가 삭제를 막는다(409 `field_in_use`, U4). 그때는 어디서 쓰이는지(`usages`)와 표시 이름 구획으로 가는 단추를 보이고\n  삭제 단추를 잠근다. 표시 이름 설정에서 이 항목을 뺀 뒤 창을 다시 열어야 지울 수 있다.",
+    "meta": {
+        "is_partial": true,
+        "description": "환경설정 > 회원 탭 항목 삭제 확인 모달 — 값 수 안내와 확인 체크 뒤에만 삭제",
+        "editor_label": "$t:admin.modal_label.admin_settings.member_field_delete_modal"
+    },
+    "id": "member_field_delete_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:admin.settings.member.fields.delete.title",
+        "size": "sm",
+        "closeOnOverlayClick": false,
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal",
+                        "target": "member_field_delete_modal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "data-testid": "member-field-delete-cancel",
+                    "className": "btn btn-secondary",
+                    "disabled": "{{_global.member_field_delete_modal?.isDeleting === true}}"
+                },
+                "text": "$t:common.cancel"
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "삭제 실행. 대상 id 와 정의 버전은 여는 쪽이 전역에 담아 준 값이다(버전은 쿼리로 싣는다). 성공하면 창을 닫고 표를 다시 받는다.\n               다른 관리자가 먼저 바꿨으면(409 fields_changed) 지우지 않고 알린 뒤 창을 닫고 표를 다시 받는다.\n               표시 이름 종류로 쓰이고 있으면(409 field_in_use) 사용처 목록을 창에 담아 보이고 삭제 단추를 잠근다. 사용처는 서버가 응답 본문의 data.usages 로 준다\n               (오류 묶음 errors.usages 로 오면 그것을 먼저 읽는다. 항목은 {label} 객체와 글자 둘 다 받는다).\n               그 밖의 실패는 서버 문구를 알리고 창을 그대로 둔다.",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "member_field_delete_modal.isDeleting": true
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/admin/field-sets/core.user/fields/{{_global.member_field_delete_modal?.id}}?fields_version={{_global.member_field_delete_modal?.fieldsVersion ?? ''}}",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "DELETE"
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "$t:admin.settings.member.fields.delete.success"
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal",
+                                        "target": "member_field_delete_modal"
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "member_field_delete_modal": null
+                                        }
+                                    },
+                                    {
+                                        "handler": "updateDataSource",
+                                        "params": {
+                                            "dataSourceId": "memberFieldDefs",
+                                            "data": "{{ { ...(memberFieldDefs ?? { }), data: { ...(memberFieldDefs?.data ?? { }), fields_version: response?.data?.fields_version ?? memberFieldDefs?.data?.fields_version ?? null } } }}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "memberFieldDefs"
+                                        }
+                                    }
+                                ],
+                                "onError": {
+                                    "handler": "conditions",
+                                    "conditions": [
+                                        {
+                                            "if": "{{error.error_code === 'fields_changed'}}",
+                                            "then": [
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "$t:admin.settings.member.fields.changed_by_other"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "closeModal",
+                                                    "target": "member_field_delete_modal"
+                                                },
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "member_field_delete_modal": null
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "refetchDataSource",
+                                                    "params": {
+                                                        "dataSourceId": "memberFieldDefs"
+                                                    }
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "if": "{{error.error_code === 'field_in_use'}}",
+                                            "then": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "member_field_delete_modal.isDeleting": false,
+                                                    "member_field_delete_modal.confirmed": false,
+                                                    "member_field_delete_modal.usages": "{{error.errors?.usages ?? []}}"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "then": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "member_field_delete_modal.isDeleting": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message ?? '$t:admin.settings.member.fields.delete.failed'}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "data-testid": "member-field-delete-submit",
+                    "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-600 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                    "disabled": "{{_global.member_field_delete_modal?.confirmed !== true || _global.member_field_delete_modal?.loading === true || _global.member_field_delete_modal?.isDeleting === true || Array.isArray(_global.member_field_delete_modal?.usages)}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.member_field_delete_modal?.isDeleting === true}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "spinner-sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.member_field_delete_modal?.isDeleting === true ? '$t:common.deleting' : '$t:common.delete'}}"
+                    }
+                ]
+            }
+        ]
+    },
+    "children": [
+        {
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "row-stack"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "data-testid": "member-field-delete-message",
+                        "className": "text-gray-700 dark:text-gray-300 break-words"
+                    },
+                    "text": "$t:admin.settings.member.fields.delete.message|name={{_global.member_field_delete_modal?.label ?? ''}}"
+                },
+                {
+                    "id": "member_field_delete_loading",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.member_field_delete_modal?.loading === true}}",
+                    "props": {
+                        "role": "status",
+                        "className": "flex-center gap-2 text-label-subtle"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "spinner",
+                                "className": "spinner-sm"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:common.loading"
+                        }
+                    ]
+                },
+                {
+                    "id": "member_field_delete_warning",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{_global.member_field_delete_modal?.loading !== true}}",
+                    "props": {
+                        "role": "alert",
+                        "className": "alert-danger"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "triangle-exclamation",
+                                        "size": "md",
+                                        "className": "text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "data-testid": "member-field-delete-values",
+                                        "className": "text-danger-soft break-words"
+                                    },
+                                    "text": "{{Number(_global.member_field_delete_modal?.values_count ?? 0) > 0 ? $t('admin.settings.member.fields.delete.values_warning', { count: Number(_global.member_field_delete_modal?.values_count ?? 0) }) : $t('admin.settings.member.fields.delete.no_values_warning')}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "member_field_delete_usages",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{Array.isArray(_global.member_field_delete_modal?.usages)}}",
+                    "props": {
+                        "role": "alert",
+                        "className": "alert-warning"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "props": {
+                                        "name": "circle-info",
+                                        "size": "md",
+                                        "className": "text-yellow-700 dark:text-yellow-400 flex-shrink-0 mt-0.5"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "min-w-0 flex-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "data-testid": "member-field-delete-usages-title",
+                                                "className": "text-warning-soft font-medium break-words"
+                                            },
+                                            "text": "$t:admin.settings.member.display_name.usage.title"
+                                        },
+                                        {
+                                            "id": "member_field_delete_usage_list",
+                                            "type": "basic",
+                                            "name": "Ul",
+                                            "props": {
+                                                "className": "mt-2 list-disc list-inside space-y-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Li",
+                                                    "iteration": {
+                                                        "source": "{{_global.member_field_delete_modal?.usages ?? []}}",
+                                                        "item_var": "usage"
+                                                    },
+                                                    "props": {
+                                                        "className": "text-warning-soft break-words"
+                                                    },
+                                                    "text": "{{typeof usage === 'string' ? usage : (usage?.label ?? '')}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-warning-soft break-words mt-2"
+                                            },
+                                            "text": "$t:admin.settings.member.display_name.usage.hint"
+                                        },
+                                        {
+                                            "id": "member_field_delete_usage_link",
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "표시 이름 구획으로 가기. 창을 닫고 같은 화면의 표시 이름 구획으로 스크롤한다(삭제 창은 회원 탭에서만 열린다).",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "closeModal",
+                                                            "target": "member_field_delete_modal"
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "member_field_delete_modal": null
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "scrollIntoView",
+                                                            "params": {
+                                                                "selector": "#member_section_display_name",
+                                                                "behavior": "smooth",
+                                                                "block": "start"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "data-testid": "member-field-delete-usages-link",
+                                                "type": "button",
+                                                "className": "mt-2 text-sm font-medium text-blue-600 dark:text-blue-400 underline"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.settings.member.display_name.usage.link"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Label",
+                    "if": "{{!Array.isArray(_global.member_field_delete_modal?.usages)}}",
+                    "props": {
+                        "className": "flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Checkbox",
+                            "actions": [
+                                {
+                                    "comment": "확인 체크. 체크해야 삭제 단추가 풀린다(되돌릴 수 없는 삭제를 한 번의 클릭으로 끝내지 않게).",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "member_field_delete_modal.confirmed": "{{$event.target.checked}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "data-testid": "member-field-delete-confirm",
+                                "checked": "{{_global.member_field_delete_modal?.confirmed === true}}",
+                                "disabled": "{{_global.member_field_delete_modal?.loading === true || _global.member_field_delete_modal?.isDeleting === true}}"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "text": "$t:admin.settings.member.fields.delete.confirm_check"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

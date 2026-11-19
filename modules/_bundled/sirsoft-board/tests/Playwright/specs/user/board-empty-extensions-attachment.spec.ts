@@ -13,10 +13,10 @@
  * `gallery`(ext 5개) accept=`".jpg,..."` → 정상. 서버측 curl 은 `free`+`.txt` 201 로 정상이었다.
  *
  * @scenario board-empty-extensions-attachment
- * @axes allowed_extensions=empty allowed_extensions=specified surface=user_write surface=admin_write
- * @effects empty_extensions_accept_falls_back_to_defaults,
- *          empty_extensions_file_selection_succeeds,
- *          specified_extensions_accept_reflects_list
+ * 커버 축(마커 아님 — 평문): allowed_extensions empty·specified (화면은 사용자 글쓰기만 잰다 —
+ *   관리자 글쓰기 화면은 이 spec 이 재지 않는다)
+ * 효과 요약(마커 아님 — 평문): 미지정 게시판 accept 기본 확장자 폴백, 미지정 게시판 파일 선택 성공,
+ *   지정 게시판 accept 목록 반영 — 효과 이름은 시험마다 마킹
  *
  * 활성화 절차: PlaywrightIssueToken 발급이 가능한 환경에서 test.describe.skip → test.describe.
  */
@@ -36,7 +36,7 @@ async function readAcceptAttribute(page: import('@playwright/test').Page): Promi
 }
 
 test.describe.skip('허용 확장자 미지정 게시판의 첨부 (#78 R3)', () => {
-  // @scenario allowed_extensions=empty, surface=user_write
+  // @scenario allowed_extensions=empty
   // @effects empty_extensions_accept_falls_back_to_defaults
   test('확장자 미지정 게시판의 사용자 글쓰기 accept 는 기본 확장자로 폴백된다', async ({
     page,
@@ -52,7 +52,7 @@ test.describe.skip('허용 확장자 미지정 게시판의 첨부 (#78 R3)', ()
     expect(accept).toBe(DEFAULT_ACCEPT);
   });
 
-  // @scenario allowed_extensions=empty, surface=user_write
+  // @scenario allowed_extensions=empty
   // @effects empty_extensions_file_selection_succeeds
   test('확장자 미지정 게시판에서 파일을 선택하면 거부되지 않는다', async ({
     page,
@@ -76,7 +76,7 @@ test.describe.skip('허용 확장자 미지정 게시판의 첨부 (#78 R3)', ()
     await expect(page.getByText(/1\s*\/\s*\d+개 첨부됨|첨부됨/)).toBeVisible({ timeout: 10_000 });
   });
 
-  // @scenario allowed_extensions=specified, surface=user_write
+  // @scenario allowed_extensions=specified
   // @effects specified_extensions_accept_reflects_list
   test('확장자를 지정한 게시판은 accept 에 그 목록이 반영된다 (회귀 방지)', async ({
     page,

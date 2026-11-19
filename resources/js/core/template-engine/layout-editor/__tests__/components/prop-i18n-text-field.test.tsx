@@ -10,11 +10,11 @@
  *  - B.펼침(🌐) → ko/en/ja 일괄 폼(커스텀 키일 때 행 로드).
  *  - ControlRenderer — widget=i18n-text + apply=propValue → I18nTextField 분기, 그 외 위젯 무변경.
  *
- * @effects prop_text_control_promoted_to_dynamic_i18n_when_propvalue, plain_prop_text_blur_creates_custom_key_token, existing_custom_key_prop_blur_updates_current_locale_value, binding_expression_prop_degrades_readonly, label_key_input_uses_dynamic_i18n_field, text_propvalue_promoted_to_value_chip_input_no_keyify, i18n_propvalue_decomposable_expression_enters_collapsed_tree, recipe_param_text_without_apply_stays_bare_widget
+ * 효과 요약(마커 아님, 평문): 효과 이름은 각 시험 바로 위 표식에 있다. 소유 매니페스트는
+ * tests/scenarios/layout-editor-i18n-text-pi2.yaml.
  * @since engine-v1.50.0
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 
@@ -111,6 +111,8 @@ describe('classifyCustomText (순수 분류)', () => {
           ? '최소 {p0}자 입력'
           : '';
 
+  // @scenario area=classify
+  // @effects classify_plain_text_not_key_not_binding
   it('평문 → customKey null, binding false, paramKey false, displayValue=원문', () => {
     expect(classifyCustomText('안내 문구', translate)).toEqual({
       customKey: null,
@@ -120,6 +122,8 @@ describe('classifyCustomText (순수 분류)', () => {
     });
   });
 
+  // @scenario area=classify
+  // @effects classify_custom_key_extracts_key_and_preview
   it('$t:custom.* 키 → customKey 추출 + 해석값 미리보기', () => {
     expect(classifyCustomText('$t:custom.login.1', translate)).toEqual({
       customKey: 'custom.login.1',
@@ -129,6 +133,8 @@ describe('classifyCustomText (순수 분류)', () => {
     });
   });
 
+  // @scenario area=classify
+  // @effects classify_foreign_lang_key_treated_as_plain
   it('임의 $t: 키(코어/언어팩) → customKey null(평문 동격), 시작값=해석값', () => {
     expect(classifyCustomText('$t:auth.login.email', translate)).toEqual({
       customKey: null,
@@ -138,6 +144,8 @@ describe('classifyCustomText (순수 분류)', () => {
     });
   });
 
+  // @scenario area=classify
+  // @effects classify_binding_expression_not_editable
   it('{{...}} 바인딩식 → binding true(편집 비대상)', () => {
     const r = classifyCustomText('{{user.email}}', translate);
     expect(r.binding).toBe(true);
@@ -145,11 +153,15 @@ describe('classifyCustomText (순수 분류)', () => {
     expect(r.paramKey).toBe(false);
   });
 
+  // @scenario area=classify
+  // @effects classify_unresolved_key_yields_empty_display
   it('해석 실패 키 → 빈 displayValue(raw 키 노출 회피)', () => {
     expect(classifyCustomText('$t:unknown.key', translate).displayValue).toBe('');
   });
 
   // param 정규화 custom 키는 binding 보다 먼저 분기(raw 노출 차단).
+  // @scenario area=classify
+  // @effects classify_param_custom_key_before_binding
   it('param 정규화 custom 키($t:custom.X|pN={{}}) → paramKey true, customKey 추출, binding false', () => {
     const r = classifyCustomText('$t:custom.form.placeholder|p0={{user.minLength}}', translate);
     expect(r).toEqual({
@@ -160,6 +172,8 @@ describe('classifyCustomText (순수 분류)', () => {
     });
   });
 
+  // @scenario area=classify
+  // @effects classify_param_custom_key_before_binding
   it('param custom 키 — param 값 보간(|p0={{}})이 binding 으로 오분류되지 않음', () => {
     // 종전 결함: `|p0={{...}}` 의 `{{...}}` 가 BINDING_RE 에 먼저 걸려 binding:true → raw 코드 배지 노출.
     const r = classifyCustomText('$t:custom.x|p0={{a.b}}|p1={{c.d}}', translate);
@@ -168,6 +182,8 @@ describe('classifyCustomText (순수 분류)', () => {
     expect(r.customKey).toBe('custom.x');
   });
 
+  // @scenario area=classify
+  // @effects classify_lang_named_param_falls_back_binding
   it('lang named-param($t:user.*|count={{}}) → custom 키 아님 → paramKey false(키화 전 폴백)', () => {
     // custom. 접두가 아니므로 param 키 분기 제외 → BINDING_RE → binding(키화 전 코드 배지/raw 폴백).
     const r = classifyCustomText('$t:user.identity.remaining|count={{Math.max(0,3)}}', translate);
@@ -178,12 +194,16 @@ describe('classifyCustomText (순수 분류)', () => {
 });
 
 describe('I18nTextField — A.미리보기 + 커밋', () => {
+  // @scenario area=i18n_field_commit
+  // @effects i18n_field_plain_preview_with_plus_hint
   it('평문 값 → 미리보기 input 에 평문, 🌐 뱃지에 + 힌트(키 미생성)', () => {
     render(<I18nTextField value="안내" onChange={vi.fn()} t={t} />);
     expect((screen.getByTestId('g7le-i18n-text-field-preview') as HTMLInputElement).value).toBe('안내');
     expect(screen.getByTestId('g7le-i18n-text-field-toggle').textContent).toContain('+');
   });
 
+  // @scenario area=i18n_field_commit
+  // @effects i18n_field_custom_key_preview_shows_resolved
   it('$t:custom.* 키 → 미리보기에 해석값(이메일), raw 키 미노출', () => {
     render(<I18nTextField value="$t:custom.login.1" onChange={vi.fn()} t={t} />);
     const input = screen.getByTestId('g7le-i18n-text-field-preview') as HTMLInputElement;
@@ -191,6 +211,8 @@ describe('I18nTextField — A.미리보기 + 커밋', () => {
     expect(input.value).not.toContain('$t:');
   });
 
+  // @scenario area=i18n_field_commit
+  // @effects plain_prop_text_blur_creates_custom_key_token
   it('평문 입력 blur → createCustomKey 호출 후 토큰을 onChange', async () => {
     createCustomKey.mockResolvedValue({ kind: 'ok', resource: { id: 7, translation_key: 'custom.login.7', values: { ko: '비밀번호' }, lock_version: 0 } });
     const onChange = vi.fn();
@@ -203,6 +225,8 @@ describe('I18nTextField — A.미리보기 + 커밋', () => {
     expect(onChange).toHaveBeenCalledWith('$t:custom.login.7');
   });
 
+  // @scenario area=i18n_field_commit
+  // @effects existing_custom_key_prop_blur_updates_current_locale_value
   it('기존 커스텀 키 값 변경 blur → updateCustomKeyValue(현재 로케일), onChange 미발화(토큰 유지)', async () => {
     updateCustomKeyValue.mockResolvedValue({ kind: 'ok' });
     const onChange = vi.fn();
@@ -215,6 +239,8 @@ describe('I18nTextField — A.미리보기 + 커밋', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  // @scenario area=i18n_field_commit
+  // @effects i18n_field_unchanged_blur_skips_crud
   it('변경 없음 blur → CRUD 미호출(noop)', async () => {
     const onChange = vi.fn();
     render(<I18nTextField value="$t:custom.login.1" onChange={onChange} t={t} />);
@@ -225,6 +251,8 @@ describe('I18nTextField — A.미리보기 + 커밋', () => {
     expect(updateCustomKeyValue).not.toHaveBeenCalled();
   });
 
+  // @scenario area=i18n_field_commit
+  // @effects binding_expression_prop_degrades_readonly
   it('C.바인딩식 → 읽기전용 배지(input 없음)', () => {
     render(<I18nTextField value="{{user.email}}" onChange={vi.fn()} t={t} />);
     expect(screen.getByTestId('g7le-i18n-text-field-binding')).toBeInTheDocument();
@@ -237,6 +265,8 @@ describe('I18nTextField — A.미리보기 + 커밋', () => {
   // 보유)로 띄운다. 종전엔 단일식이 ConditionalValueEditor(추가 버튼 없음)로 가서 일반→표현식 전환 후
   // 고정글자/조건분기/데이터 조각을 추가할 수 없었다. SegmentedValueEditor 가 단일식을 expression 조각
   // 1개로 분해 → 그 조각 내부는 ConditionalValueEditor(분기 트리) 재귀.
+  // @scenario area=expression_tree
+  // @effects i18n_field_collapsible_expr_opens_segment_editor
   it('C.표현식+다국어(F) + collapsible → 접힌 미리보기, [수정] → 세그먼트 편집기(조각 추가 버튼)↔[접기]', () => {
     render(
       <I18nTextField
@@ -266,6 +296,8 @@ describe('I18nTextField — A.미리보기 + 커밋', () => {
   // collapsible 미전달(중첩 위젯 — 세그먼트 카드 내부) → 접힘 없이 ConditionalValueEditor 직접(이중
   // 세그먼트화 방지). 단일식 카드 value 는 SegmentedValueEditor 가 이미 한 조각으로 쪼갰으므로, 그
   // 조각 내부 I18nTextField 는 트리(분기)만 그려야 한다(또 SegmentedValueEditor 면 무한 중첩).
+  // @scenario area=expression_tree
+  // @effects i18n_field_nested_expr_uses_conditional_tree
   it('C.표현식 + enableExpressionTree(collapsible 미전달) → ConditionalValueEditor 직접(이중세그먼트 방지)', () => {
     render(
       <I18nTextField
@@ -285,6 +317,8 @@ describe('I18nTextField — A.미리보기 + 커밋', () => {
 
   // 다중 세그먼트(`{{식}} 평문 {{바인딩}}`) + 표현식 조각은
   // [수정] 후 SegmentedValueEditor 로 세그먼트별 분해(종전 raw 노출 결함 해소).
+  // @scenario area=expression_tree
+  // @effects i18n_field_collapsible_expr_opens_segment_editor
   it('C.다중 세그먼트 + collapsible → 접힘 미리보기, [수정] → 세그먼트 편집기', () => {
     render(
       <I18nTextField
@@ -302,6 +336,8 @@ describe('I18nTextField — A.미리보기 + 커밋', () => {
     expect(screen.queryByTestId('g7le-i18n-text-field-binding')).not.toBeInTheDocument();
   });
 
+  // @scenario area=expression_tree
+  // @effects i18n_field_expr_tree_opt_in_gate_keeps_badge
   it('C.다중 세그먼트라도 enableExpressionTree 미전달이면 종전 읽기전용 배지', () => {
     render(
       <I18nTextField
@@ -314,6 +350,8 @@ describe('I18nTextField — A.미리보기 + 커밋', () => {
     expect(screen.queryByTestId('g7le-i18n-text-field-seg')).not.toBeInTheDocument();
   });
 
+  // @scenario area=expression_tree
+  // @effects i18n_field_expr_tree_opt_in_gate_keeps_badge
   it('C.표현식이라도 enableExpressionTree 미전달이면 종전 읽기전용 배지(opt-in 게이트)', () => {
     render(<I18nTextField value="{{route.id ? '$t:edit' : '$t:create'}}" onChange={vi.fn()} t={t} />);
     expect(screen.getByTestId('g7le-i18n-text-field-binding')).toBeInTheDocument();
@@ -323,6 +361,8 @@ describe('I18nTextField — A.미리보기 + 커밋', () => {
   // 모드 전환: 일반 이름 ↔ 표현식.
   //  · 일반(평문/키) + collapsible → [+표현식] 버튼 → 현재 값을 then 분기로 seed → onChange(`{{...}}`).
   //  · enableExpressionTree 미전달/collapsible 미전달이면 버튼 미렌더(최상위 진입점 전용).
+  // @scenario area=expression_tree
+  // @effects i18n_field_to_expr_seeds_conditional_branch
   it('A.일반(평문) + collapsible → [+표현식] 버튼 → 조건 분기 seed onChange', () => {
     const onChange = vi.fn();
     render(
@@ -335,6 +375,8 @@ describe('I18nTextField — A.미리보기 + 커밋', () => {
     expect(onChange).toHaveBeenCalledWith("{{false ? '안녕' : ''}}");
   });
 
+  // @scenario area=expression_tree
+  // @effects i18n_field_to_expr_seeds_conditional_branch
   it('A.일반(단일 다국어키) + collapsible → [+표현식] → 키 보존 seed(빈 조건)', () => {
     const onChange = vi.fn();
     render(
@@ -344,6 +386,8 @@ describe('I18nTextField — A.미리보기 + 커밋', () => {
     expect(onChange).toHaveBeenCalledWith("{{false ? '$t:board.title' : ''}}");
   });
 
+  // @scenario area=expression_tree
+  // @effects i18n_field_to_expr_seeds_conditional_branch
   it('A.빈 값 + collapsible → [+표현식] → 빈 분기 seed(빈 조건)', () => {
     const onChange = vi.fn();
     render(
@@ -353,17 +397,23 @@ describe('I18nTextField — A.미리보기 + 커밋', () => {
     expect(onChange).toHaveBeenCalledWith("{{false ? '' : ''}}");
   });
 
+  // @scenario area=expression_tree
+  // @effects i18n_field_to_expr_button_only_at_top_level
   it('A.일반 + enableExpressionTree 미전달이면 [+표현식] 버튼 미렌더(opt-in 게이트)', () => {
     render(<I18nTextField value="안녕" onChange={vi.fn()} t={t} />);
     expect(screen.queryByTestId('g7le-i18n-text-field-to-expr')).toBeNull();
   });
 
+  // @scenario area=expression_tree
+  // @effects i18n_field_to_expr_button_only_at_top_level
   it('A.일반 + collapsible 미전달이면 [+표현식] 버튼 미렌더(최상위 진입점 전용)', () => {
     render(<I18nTextField value="안녕" onChange={vi.fn()} t={t} enableExpressionTree />);
     expect(screen.queryByTestId('g7le-i18n-text-field-to-expr')).toBeNull();
   });
 
   // 표현식 빌더 헤더 → [일반 이름으로] 버튼 → 확인 대화 → 첫 분기 값으로 환원 onChange.
+  // @scenario area=expression_tree
+  // @effects i18n_field_to_plain_confirm_reverts_first_branch
   it('C.표현식 빌더 → [일반 이름으로] → 확인 대화 → 첫 분기 값 환원 onChange', () => {
     const onChange = vi.fn();
     render(
@@ -390,11 +440,14 @@ describe('I18nTextField — A.미리보기 + 커밋', () => {
   // 되돌리기 확인 대화의 미리보기 값은 raw `$t:` 키가 아니라 **다국어
   // 해석값**으로 보여야 한다(사용자가 어떤 글자가 남는지 알 수 있게). 종전엔 reduceExpressionToPlain
   // 의 raw 토큰(`$t:board.edit_post`)을 그대로 표시했다.
+  // @scenario area=expression_tree
+  // @effects i18n_field_to_plain_confirm_preview_resolved
   it('C.[일반 이름으로] 확인 대화 미리보기 → $t: 키를 해석한 값 표시(raw 키 아님, B1)', () => {
+    const onChange = vi.fn();
     render(
       <I18nTextField
         value="{{route.id ? '$t:board.edit_post' : '$t:board.new_post'}}"
-        onChange={vi.fn()}
+        onChange={onChange}
         t={t}
         enableExpressionTree
         expressionTreeCollapsible
@@ -408,8 +461,12 @@ describe('I18nTextField — A.미리보기 + 커밋', () => {
     expect(confirm.textContent).not.toContain('$t:board.edit_post');
     // 확정 onChange 는 여전히 키(저장값) 보존 — 표시만 해석.
     fireEvent.click(screen.getByTestId('g7le-i18n-text-field-to-plain-confirm-ok'));
+    expect(onChange).toHaveBeenCalledWith('$t:board.edit_post');
+    expect(onChange).not.toHaveBeenCalledWith('게시글 수정');
   });
 
+  // @scenario area=expression_tree
+  // @effects i18n_field_to_plain_cancel_keeps_expression
   it('C.표현식 빌더 → [일반 이름으로] → [취소] → 환원 안 함(표현식 유지)', () => {
     const onChange = vi.fn();
     render(
@@ -429,6 +486,8 @@ describe('I18nTextField — A.미리보기 + 커밋', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  // @scenario area=data_binding
+  // @effects i18n_field_single_binding_no_candidates_badge
   it('C.D(단일 바인딩) + 후보 없음 → 읽기전용 배지(데이터 피커 불가)', () => {
     render(<I18nTextField value="{{user.email}}" onChange={vi.fn()} t={t} enableExpressionTree />);
     expect(screen.getByTestId('g7le-i18n-text-field-binding')).toBeInTheDocument();
@@ -438,6 +497,8 @@ describe('I18nTextField — A.미리보기 + 커밋', () => {
 
   // D 단일 바인딩 + 후보 풀
   // → 데이터 칩 + [데이터 바꾸기] 피커(읽기전용 배지 대체). 선택 시 buildBindingExpression 으로 onChange.
+  // @scenario area=data_binding
+  // @effects single_binding_renders_link_chip_with_change_data_affordance
   it('C.D(단일 바인딩) + 후보 보유 + enableExpressionTree → 데이터 칩 + [데이터 바꾸기](배지 미렌더)', () => {
     render(
       <I18nTextField
@@ -460,6 +521,8 @@ describe('I18nTextField — A.미리보기 + 커밋', () => {
   // [일반 이름으로] 되돌려 단일 데이터 바인딩이 된 값은, 최상위
   // collapsible 진입점이어도 **표현식 트리(SegmentedValueEditor)로 펼치지 말고** 설명처럼 데이터 칩 +
   // [데이터 바꾸기] 로 보여야 한다. 단일 순수 바인딩은 분해할 표현식 구조가 없으므로 트리가 부적합.
+  // @scenario area=data_binding
+  // @effects i18n_field_single_binding_stays_chip_when_collapsible
   it('C.D(단일 바인딩) + collapsible 까지 켜도 표현식 트리 아닌 데이터 칩', () => {
     render(
       <I18nTextField
@@ -484,6 +547,8 @@ describe('I18nTextField — A.미리보기 + 커밋', () => {
   // 회귀 — 데이터 선택은 **폴백 없는 순수
   // 바인딩**(`{{src?.path}}`)을 흘려야 한다. `?? ''` 폴백을 붙이면 리프가 fallback 노드로 재분해돼
   // 데이터 바꿀 때마다 "기본값 > 기본값 > …" 폴백이 무한 중첩된다.
+  // @scenario area=data_binding
+  // @effects i18n_field_change_data_emits_pure_binding
   it('C.D 데이터 바꾸기 선택 → 폴백 없는 순수 바인딩(`?? ` 없음, 중첩 회귀 방지)', () => {
     const onChange = vi.fn();
     render(
@@ -506,6 +571,8 @@ describe('I18nTextField — A.미리보기 + 커밋', () => {
     expect(out).not.toContain('??'); // `?? ''` 금지(중첩 유발).
   });
 
+  // @scenario area=data_binding
+  // @effects i18n_field_expr_tree_opt_in_gate_keeps_badge
   it('C.D + 후보 보유라도 enableExpressionTree 미전달이면 읽기전용 배지(opt-in 게이트)', () => {
     render(
       <I18nTextField
@@ -521,6 +588,8 @@ describe('I18nTextField — A.미리보기 + 커밋', () => {
     expect(screen.queryByTestId('g7le-i18n-text-field-data')).toBeNull();
   });
 
+  // @scenario area=expression_tree
+  // @effects i18n_field_complex_expr_stays_readonly_badge
   it('C.복잡 식(함수/산술)은 enableExpressionTree 켜도 읽기전용 배지(손상 0 폴백)', () => {
     render(
       <I18nTextField
@@ -538,6 +607,8 @@ describe('I18nTextField — A.미리보기 + 커밋', () => {
 // 설정 참조($core_settings:/$module_settings:/$plugin_settings:)가 평문 input 에
 // raw 로 노출되던 결함의 회귀 가드. classify 가 binding 으로 못 잡는 설정참조를 칩으로 시각화.
 describe('I18nTextField — 설정 참조($*_settings:) 칩 시각화', () => {
+  // @scenario area=settings_ref
+  // @effects i18n_text_field_renders_settings_ref_as_chip_with_edit_toggle_no_raw
   it('단독 $core_settings: → 칩 시각화(raw 미노출) + [수정] 버튼', () => {
     render(<I18nTextField value="$core_settings:general.site_name" onChange={vi.fn()} t={t} />);
     const chips = screen.getByTestId('g7le-i18n-text-field-settings-ref-chips');
@@ -550,6 +621,8 @@ describe('I18nTextField — 설정 참조($*_settings:) 칩 시각화', () => {
     expect(screen.queryByTestId('g7le-i18n-text-field-preview')).not.toBeInTheDocument();
   });
 
+  // @scenario area=settings_ref
+  // @effects i18n_text_field_renders_settings_ref_as_chip_with_edit_toggle_no_raw
   it('$module_settings:/$plugin_settings: 도 칩 시각화', () => {
     const { rerender } = render(<I18nTextField value="$module_settings:sirsoft-ecommerce:shop.name" onChange={vi.fn()} t={t} />);
     expect(screen.getByTestId('g7le-i18n-text-field-settings-ref-chips').textContent).toContain('name');
@@ -557,6 +630,8 @@ describe('I18nTextField — 설정 참조($*_settings:) 칩 시각화', () => {
     expect(screen.getByTestId('g7le-i18n-text-field-settings-ref-chips').textContent).toContain('consent_text');
   });
 
+  // @scenario area=settings_ref
+  // @effects i18n_text_field_renders_settings_ref_as_chip_with_edit_toggle_no_raw
   it('평문+설정참조 혼합 → 평문/칩 분리 시각화(raw 미노출)', () => {
     render(<I18nTextField value="우리 $core_settings:general.site_name 쇼핑몰" onChange={vi.fn()} t={t} />);
     const chips = screen.getByTestId('g7le-i18n-text-field-settings-ref-chips');
@@ -566,6 +641,8 @@ describe('I18nTextField — 설정 참조($*_settings:) 칩 시각화', () => {
     expect(chips.textContent).not.toContain('$core_settings:');
   });
 
+  // @scenario area=settings_ref
+  // @effects i18n_text_field_renders_settings_ref_as_chip_with_edit_toggle_no_raw
   it('[수정] 클릭 → 평문 input 으로 전환(raw 직접 편집 가능)', () => {
     render(<I18nTextField value="$core_settings:general.site_name" onChange={vi.fn()} t={t} />);
     fireEvent.click(screen.getByTestId('g7le-i18n-text-field-settings-ref-edit'));
@@ -574,6 +651,8 @@ describe('I18nTextField — 설정 참조($*_settings:) 칩 시각화', () => {
     expect(input.value).toBe('$core_settings:general.site_name');
   });
 
+  // @scenario area=settings_ref
+  // @effects i18n_field_plain_and_key_skip_settings_ref_chip
   it('순수 평문/단일키는 설정참조 칩 분기 미진입(회귀 0)', () => {
     const { rerender } = render(<I18nTextField value="안내 문구" onChange={vi.fn()} t={t} />);
     expect(screen.queryByTestId('g7le-i18n-text-field-settings-ref-chips')).not.toBeInTheDocument();
@@ -586,6 +665,8 @@ describe('I18nTextField — 설정 참조($*_settings:) 칩 시각화', () => {
 describe('I18nTextField — B.펼침 ko/en/ja', () => {
   // 펼침은 [번역] 탭과 동일 컴포넌트(TranslationField) 공유. 펼침부 testid 는
   // 통합 컴포넌트의 `g7le-translation-*` 를 쓴다(ExpandedLocaleForm 제거).
+  // @scenario area=expand_locales
+  // @effects i18n_field_expand_custom_key_loads_locale_rows
   it('🌐 펼침 + 커스텀 키 → 통합 TranslationField 로드 후 활성 로케일 행', async () => {
     findCustomKeyRow.mockResolvedValue({ id: 1, translation_key: 'custom.login.1', values: { ko: '이메일', en: 'Email' }, lock_version: 3 });
     render(<I18nTextField value="$t:custom.login.1" onChange={vi.fn()} t={t} />);
@@ -597,6 +678,8 @@ describe('I18nTextField — B.펼침 ko/en/ja', () => {
     expect(screen.getByTestId('g7le-translation-missing-ja')).toBeInTheDocument();
   });
 
+  // @scenario area=expand_locales
+  // @effects i18n_field_expand_plain_shows_create_key_hint
   it('🌐 펼침 + 평문(키 미생성) → 생성 안내', () => {
     render(<I18nTextField value="안내" onChange={vi.fn()} t={t} />);
     fireEvent.click(screen.getByTestId('g7le-i18n-text-field-toggle'));
@@ -608,6 +691,8 @@ describe('I18nTextField — B.펼침 ko/en/ja', () => {
   // 잔존하면 stale id/lock 으로 저장이 발화해 다른 노드 번역행을 덮어쓴다. value 가 평문으로
   // 바뀌면 cls.customKey 가 null → 통합 TranslationField 가 사라지고 "키 먼저 생성" 힌트만 남아
   // 이전 키 폼 잔존이 차단된다.
+  // @scenario area=expand_locales
+  // @effects i18n_field_expand_drops_stale_key_form
   it('펼친 상태에서 value(노드/컨트롤) 변경 → 이전 키 폼 잔존 금지', async () => {
     findCustomKeyRow.mockResolvedValue({ id: 1, translation_key: 'custom.login.1', values: { ko: '이메일' }, lock_version: 3 });
     const { rerender } = render(<I18nTextField value="$t:custom.login.1" onChange={vi.fn()} t={t} />);
@@ -631,6 +716,8 @@ describe('ControlRenderer — propValue + i18n-text 분기', () => {
     apply: { type: 'propValue', propKey: 'placeholder' },
   } as never;
 
+  // @scenario area=prop_control
+  // @effects prop_text_control_promoted_to_dynamic_i18n_when_propvalue
   it('widget=i18n-text + apply=propValue → I18nTextField 렌더(prop_i18n testid)', () => {
     const node: EditorNode = { type: 'basic', name: 'Input', props: { placeholder: '$t:custom.login.1' } };
     render(
@@ -641,6 +728,8 @@ describe('ControlRenderer — propValue + i18n-text 분기', () => {
     expect((screen.getByTestId('g7le-prop-i18n-inputPlaceholder-preview') as HTMLInputElement).value).toBe('이메일');
   });
 
+  // @scenario area=prop_control
+  // @effects plain_prop_text_blur_creates_custom_key_token
   it('평문 placeholder 입력 blur → createCustomKey → onPatch 로 props.placeholder 토큰 기록', async () => {
     createCustomKey.mockResolvedValue({ kind: 'ok', resource: { id: 9, translation_key: 'custom.login.9', values: {}, lock_version: 0 } });
     const onPatch = vi.fn();
@@ -660,6 +749,8 @@ describe('ControlRenderer — propValue + i18n-text 분기', () => {
   // text+propValue 는
   // i18n 키화는 안 하되(다국어 키 미생성) 평문 input 대신 DataChipValueInput(값 전용 데이터칩)으로
   // 승격한다. 종전("일반 text 위젯 유지")에서 동작이 의도적으로 바뀐 지점(테스트 의미 갱신).
+  // @scenario area=prop_control
+  // @effects text_propvalue_promoted_to_value_chip_input_no_keyify
   it('text + propValue → DataChipValueInput 승격(값 전용 데이터칩, i18n 키화 없음)', () => {
     registerCoreWidgets();
     const textControl: EditorControlSpec = {
@@ -676,6 +767,8 @@ describe('ControlRenderer — propValue + i18n-text 분기', () => {
     expect((screen.getByTestId('g7le-prop-value-imgSrc-input') as HTMLInputElement).value).toBe('https://x/y.png');
   });
 
+  // @scenario area=prop_control
+  // @effects text_propvalue_promoted_to_value_chip_input_no_keyify
   it('text + propValue 평문값 변경 → onPatch 로 prop 기록(다국어 키 미생성)', () => {
     registerCoreWidgets();
     const textControl: EditorControlSpec = {
@@ -695,6 +788,8 @@ describe('ControlRenderer — propValue + i18n-text 분기', () => {
 
   // text + propValue 가 아닌(apply 없는) recipe/computed/condition 파라미터 text 위젯은 ControlRenderer
   // 를 거치지 않으므로 본 분기 무관 — bare text 위젯 그대로(식별자/셀렉터 보존, 부작용 0).
+  // @scenario area=prop_control
+  // @effects recipe_param_text_without_apply_stays_bare_widget
   it('text 위젯 + apply 없음(recipe 파라미터형) → bare text 위젯 유지(DataChipValueInput 미승격)', () => {
     registerCoreWidgets();
     const recipeTextControl: EditorControlSpec = { label: 'selector', widget: 'text' } as never;
@@ -706,6 +801,8 @@ describe('ControlRenderer — propValue + i18n-text 분기', () => {
 
   // i18n-text propValue 도 표현식 분해 트리 opt-in 이 켜져, 분해 가능식(`{{cond ? a: b}}`)은
   // 접힌 미리보기([수정])로 진입한다(종전 읽기전용 배지 대체). 못 푸는 복잡식만 배지(손상 0).
+  // @scenario area=prop_control
+  // @effects i18n_propvalue_decomposable_expression_enters_collapsed_tree
   it('i18n-text + propValue + 분해 가능식 → 표현식 접힌 미리보기(읽기전용 배지 아님)', () => {
     const node: EditorNode = { type: 'basic', name: 'Input', props: { placeholder: "{{route?.id ? '$t:auth.login.email' : '$t:board.new_post'}}" } };
     render(
@@ -728,6 +825,8 @@ describe('I18nTextField — 칸자리 칩(데이터 든 param 키) + +데이터 
     preview: '홍길동',
   };
 
+  // @scenario area=param_chip
+  // @effects i18n_field_param_key_renders_chip_input
   it('param 키 값($t:custom.X|p0={{}}) → 미리보기 input 아닌 칸자리 칩 입력기 상시 렌더', async () => {
     apiFindCustomKeyRow.mockResolvedValue({ id: 1, translation_key: 'custom.x', values: { ko: '{p0} 님' }, lock_version: 1 });
     render(<I18nTextField value="$t:custom.x|p0={{user.name}}" onChange={vi.fn()} t={t} candidates={[scalarCandidate]} />);
@@ -743,6 +842,8 @@ describe('I18nTextField — 칸자리 칩(데이터 든 param 키) + +데이터 
   // lang 키 라벨(`$t:shop.tabs.x`)을 키화할 때 raw `$t:` 가 키
   // 값에 박히지 않도록, +데이터 키화가 keyifyWithNewBinding 에 **lang 키를 평문화하는 resolveLang**
   // 을 넘겨야 한다(종전 항등 함수 → `$t:shop.tabs.detail_info ⠿🔗data.name` raw 누출 라이브 재현).
+  // @scenario area=param_chip
+  // @effects i18n_field_plus_data_resolves_lang_key_label
   it('lang 키 라벨 +데이터 키화 → resolveLang 인자가 $t: 키를 평문화(항등 함수 아님)', async () => {
     keyifyWithNewBinding.mockResolvedValue({ kind: 'ok', text: '$t:custom.new|p0={{user.name}}', key: 'custom.new' });
     // shop.tabs.detail_info → "상품 정보" 로 해석하는 t.
@@ -760,6 +861,8 @@ describe('I18nTextField — 칸자리 칩(데이터 든 param 키) + +데이터 
     expect(resolveLangArg('$t:shop.tabs.detail_info')).not.toContain('$t:');
   });
 
+  // @scenario area=param_chip
+  // @effects i18n_field_plus_data_keyifies_plain_text
   it('평문 + candidates → +데이터 버튼 → 후보 선택 → keyifyWithNewBinding → onChange(param 키 텍스트)', async () => {
     keyifyWithNewBinding.mockResolvedValue({ kind: 'ok', text: '$t:custom.new|p0={{user.name}}', key: 'custom.new' });
     const onChange = vi.fn();
@@ -774,6 +877,8 @@ describe('I18nTextField — 칸자리 칩(데이터 든 param 키) + +데이터 
     await waitFor(() => expect(onChange).toHaveBeenCalledWith('$t:custom.new|p0={{user.name}}'));
   });
 
+  // @scenario area=param_chip
+  // @effects i18n_field_plus_data_in_param_key_inherits_key
   it('param 키 칸자리 +데이터 → insertBindingIntoParamKey(키 승계) → onChange(param 추가 텍스트)', async () => {
     apiFindCustomKeyRow.mockResolvedValue({ id: 1, translation_key: 'custom.x', values: { ko: '{p0} 님' }, lock_version: 1 });
     insertBindingIntoParamKey.mockResolvedValue({ kind: 'ok', text: '$t:custom.x|p0={{user.name}}|p1={{user.email}}', paramName: 'p1' });
@@ -790,6 +895,8 @@ describe('I18nTextField — 칸자리 칩(데이터 든 param 키) + +데이터 
     await waitFor(() => expect(onChange).toHaveBeenCalledWith('$t:custom.x|p0={{user.name}}|p1={{user.email}}'));
   });
 
+  // @scenario area=param_chip
+  // @effects i18n_field_chip_mode_keeps_action_buttons
   it('데이터 칩 모드 액션 버튼 일관성 — +데이터·ƒx 표현식이 입력칸 우측 행에 노출', async () => {
     apiFindCustomKeyRow.mockResolvedValue({ id: 1, translation_key: 'custom.x', values: { ko: '{p0} 님' }, lock_version: 1 });
     render(
@@ -808,6 +915,8 @@ describe('I18nTextField — 칸자리 칩(데이터 든 param 키) + +데이터 
     expect(screen.getByTestId('g7le-i18n-text-field-to-expr')).toBeInTheDocument();
   });
 
+  // @scenario area=param_chip
+  // @effects i18n_field_chip_mode_fx_promotes_keeping_chip
   it('데이터 칩 모드 ƒx 표현식 → 조건 분기 표현식으로 승격(칩 보존, onChange)', async () => {
     apiFindCustomKeyRow.mockResolvedValue({ id: 1, translation_key: 'custom.x', values: { ko: '{p0} 님' }, lock_version: 1 });
     const onChange = vi.fn();
@@ -831,6 +940,8 @@ describe('I18nTextField — 칸자리 칩(데이터 든 param 키) + +데이터 
     expect(seeded).toContain('$t:custom.x|p0={{user.name}}'); // 칩 보존.
   });
 
+  // @scenario area=param_chip
+  // @effects i18n_field_hides_plus_data_without_candidates
   it('candidates 미전달 → +데이터 버튼 숨김(디그레이드, 칩/키화 외 동작은 유지)', () => {
     render(<I18nTextField value="안녕" onChange={vi.fn()} t={t} />);
     expect(screen.getByTestId('g7le-i18n-text-field-preview')).toBeInTheDocument();

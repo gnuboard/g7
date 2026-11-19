@@ -9,8 +9,8 @@
 
 ## 목차
 
-- [코어](#코어) (635)
-- [기본 제공 확장](#기본-제공-확장) (15)
+- [코어](#코어) (741)
+- [기본 제공 확장](#기본-제공-확장) (19)
 - [사용 중단](#사용-중단)
 - [이름을 조립하는 발화처](#이름을-조립하는-발화처)
 
@@ -108,12 +108,19 @@
 | `core.auth.before_register` | action | 2 |  |
 | `core.auth.before_reset_password` | action | 1 |  |
 | `core.auth.console_password_reset_notices` | filter | 2 |  |
+| `core.auth.filter_register_data` | filter | 3 |  |
 | `core.auth.forgot_password_validation_rules` | filter | 2 |  |
 | `core.auth.lockout_minutes` | filter | 2 |  |
+| `core.auth.login_auto_redirect` | filter | 2 |  |
+| `core.auth.login_discover_validation_rules` | filter | 2 |  |
+| `core.auth.login_discovery` | filter | 3 |  |
 | `core.auth.login_failed` | action | 2 |  |
+| `core.auth.login_handoff_validation_rules` | filter | 2 |  |
 | `core.auth.login_validation_rules` | filter | 2 |  |
 | `core.auth.logout` | action | 1 |  |
+| `core.auth.logout_redirect_url` | filter | 3 |  |
 | `core.auth.max_login_attempts` | filter | 2 |  |
+| `core.auth.password_auth_decision` | filter | 2 |  |
 | `core.auth.password_change_postpone_validation_rules` | filter | 2 |  |
 | `core.auth.password_change_postponed` | action | 2 |  |
 | `core.auth.password_change_recorded` | action | 2 |  |
@@ -121,10 +128,14 @@
 | `core.auth.password_change_validation_rules` | filter | 2 |  |
 | `core.auth.password_expired` | action | 2 |  |
 | `core.auth.password_expiry_notice` | action | 2 |  |
+| `core.auth.password_reset_blocked` | action | 2 |  |
 | `core.auth.record_consents` | action | 4 |  |
+| `core.auth.register_fields_validation_rules` | filter | 2 |  |
 | `core.auth.register_validation_rules` | filter | 2 |  |
+| `core.auth.registered_credential_verifiers` | filter | 1 |  |
 | `core.auth.registering` | action | 3 |  |
 | `core.auth.reset_password_validation_rules` | filter | 2 |  |
+| `core.auth.self_registration_open` | filter | 1 |  |
 | `core.auth.two_factor_requested` | action | 2 |  |
 | `core.auth.two_factor_resend_validation_rules` | filter | 2 |  |
 | `core.auth.two_factor_validation_rules` | filter | 2 |  |
@@ -142,6 +153,10 @@
 | `core.content_media.before_delete` | action | 2 |  |
 | `core.content_media.before_upload` | action | 2 |  |
 | `core.content_media.filter_upload_file` | filter | 2 |  |
+| `core.core_update.completed` | action | 4 |  |
+| `core.core_update.failed` | action | 5 |  |
+| `core.core_update.start_validation_rules` | filter | 2 |  |
+| `core.core_update.started` | action | 4 |  |
 | `core.csp.trusted_style_hosts` | filter | 1 |  |
 | `core.custom_assets.after_change` | action | 4 |  |
 | `core.custom_translation.bulk_destroy_validation_rules` | filter | 2 |  |
@@ -154,6 +169,9 @@
 | `core.dashboard.before_stats` | action | 0 |  |
 | `core.dashboard.resources` | filter | 1 |  |
 | `core.dashboard.stats` | filter | 1 |  |
+| `core.display_name.filter_areas` | filter | 1 |  |
+| `core.display_name.filter_kinds` | filter | 1 |  |
+| `core.display_name.filter_resolved` | filter | 4 |  |
 | `core.extension.changelog_rules` | filter | 1 | 호환용 옛 이름 → `core.extension.changelog_validation_rules` |
 | `core.extension.changelog_validation_rules` | filter | 1 |  |
 | `core.extension_custom_asset.read_validation_rules` | filter | 2 |  |
@@ -161,6 +179,26 @@
 | `core.extension_custom_asset.save_validation_rules` | filter | 2 |  |
 | `core.extension_custom_asset.search_validation_rules` | filter | 2 |  |
 | `core.extension_custom_asset.upload_validation_rules` | filter | 2 |  |
+| `core.extension_trust_keys.after_create` | action | 1 |  |
+| `core.extension_trust_keys.after_delete` | action | 1 |  |
+| `core.extension_trust_keys.before_create` | action | 1 |  |
+| `core.extension_trust_keys.before_delete` | action | 1 |  |
+| `core.extension_trust_keys.destroy_validation_rules` | filter | 2 |  |
+| `core.extension_trust_keys.index_validation_rules` | filter | 2 |  |
+| `core.extension_trust_keys.store_validation_rules` | filter | 2 |  |
+| `core.field.filter_definitions` | filter | 4 |  |
+| `core.field.filter_rules` | filter | 4 |  |
+| `core.field.filter_sets` | filter | 1 |  |
+| `core.field.filter_types` | filter | 1 |  |
+| `core.field_definition.after_create` | action | 1 |  |
+| `core.field_definition.after_delete` | action | 1 |  |
+| `core.field_definition.after_update` | action | 2 |  |
+| `core.field_definition.filter_usages` | filter | 2 |  |
+| `core.field_definition.reorder_validation_rules` | filter | 2 |  |
+| `core.field_definition.show_validation_rules` | filter | 2 |  |
+| `core.field_definition.store_validation_rules` | filter | 2 |  |
+| `core.field_definition.update_validation_rules` | filter | 2 |  |
+| `core.fields.config` | filter | 1 |  |
 | `core.frontend.filter_app_config` | filter | 1 |  |
 | `core.geoip.database.after_update` | action | 1 |  |
 | `core.geoip.database.after_update_failed` | action | 1 |  |
@@ -177,6 +215,7 @@
 | `core.identity.challenge_expired` | action | 1 |  |
 | `core.identity.claim_validation_rules` | filter | 2 |  |
 | `core.identity.filter_default_message_definitions` | filter | 2 |  |
+| `core.identity.filter_verified_claims` | filter | 3 |  |
 | `core.identity.message.after_send` | action | 1 |  |
 | `core.identity.message.before_send` | action | 1 |  |
 | `core.identity.message.resolve_failed` | action | 1 |  |
@@ -209,7 +248,9 @@
 | `core.identity.resolve_policy` | filter | 4 |  |
 | `core.identity.runtime_policy_registered` | action | 1 |  |
 | `core.identity.settings_schema` | filter | 2 |  |
+| `core.identity.verified_claims_validation_rules` | filter | 2 |  |
 | `core.identity.verify_validation_rules` | filter | 2 |  |
+| `core.identity_logs.before_purge` | action | 1 |  |
 | `core.identity_policy.destroy_validation_rules` | filter | 2 |  |
 | `core.identity_policy.reset_field_validation_rules` | filter | 2 |  |
 | `core.identity_policy.store_validation_rules` | filter | 2 |  |
@@ -223,6 +264,7 @@
 | `core.language_packs.install_from_url_validation_rules` | filter | 2 |  |
 | `core.language_packs.installed` | action | 1 |  |
 | `core.language_packs.manifest_preview_validation_rules` | filter | 2 |  |
+| `core.language_packs.perform_update_validation_rules` | filter | 2 |  |
 | `core.language_packs.uninstalled` | action | 1 |  |
 | `core.language_packs.updated` | action | 1 |  |
 | `core.layout.after_cache_clear` | action | 3 |  |
@@ -301,6 +343,7 @@
 | `core.mail.after_send` | action | 1 |  |
 | `core.mail.send_failed` | action | 1 |  |
 | `core.mail.send_skipped` | action | 1 |  |
+| `core.member_field.info_validation_rules` | filter | 2 |  |
 | `core.member_notification.after_bulk_delete` | action | 2 |  |
 | `core.member_notification.before_bulk_delete` | action | 1 |  |
 | `core.member_notification.bulk_delete_validation_rules` | filter | 2 |  |
@@ -388,7 +431,9 @@
 | `core.notification.filter_available_channels` | filter | 1 |  |
 | `core.notification.filter_default_definitions` | filter | 2 |  |
 | `core.notification.filter_list_params` | filter | 2 |  |
+| `core.notification.filter_member_variable_keys` | filter | 3 |  |
 | `core.notification.filter_seed_definitions` | filter | 2 |  |
+| `core.notification.filter_template_variables` | filter | 2 |  |
 | `core.notification.index_validation_rules` | filter | 1 |  |
 | `core.notification_definition.after_create` | action | 2 |  |
 | `core.notification_definition.after_delete` | action | 1 |  |
@@ -478,6 +523,22 @@
 | `core.privacy.target_list_validation_rules` | filter | 2 |  |
 | `core.privacy.withdrawn_user.after_prune` | action | 2 |  |
 | `core.privacy.withdrawn_user.before_prune` | action | 1 |  |
+| `core.queue_job.after_delete` | action | 2 |  |
+| `core.queue_job.after_delete_many` | action | 2 |  |
+| `core.queue_job.after_prune` | action | 2 |  |
+| `core.queue_job.after_retry` | action | 2 |  |
+| `core.queue_job.after_retry_many` | action | 2 |  |
+| `core.queue_job.before_delete` | action | 1 |  |
+| `core.queue_job.before_delete_many` | action | 1 |  |
+| `core.queue_job.before_prune` | action | 1 |  |
+| `core.queue_job.before_retry` | action | 1 |  |
+| `core.queue_job.before_retry_many` | action | 1 |  |
+| `core.queue_job.bulk_delete_validation_rules` | filter | 2 |  |
+| `core.queue_job.bulk_retry_validation_rules` | filter | 2 |  |
+| `core.queue_job.failed_list_validation_rules` | filter | 2 |  |
+| `core.queue_job.log_list_validation_rules` | filter | 2 |  |
+| `core.queue_job.pending_list_validation_rules` | filter | 2 |  |
+| `core.required_fields.filter_exempt_routes` | filter | 2 |  |
 | `core.role.after_create` | action | 1 |  |
 | `core.role.after_delete` | action | 1 |  |
 | `core.role.after_sync_permissions` | action | 3 |  |
@@ -511,11 +572,15 @@
 | `core.schedule.bulk_delete_validation_rules` | filter | 2 |  |
 | `core.schedule.bulk_update_status_validation_rules` | filter | 2 |  |
 | `core.schedule.create_validation_rules` | filter | 2 |  |
+| `core.schedule.filter_allowed_job_classes` | filter | 1 |  |
 | `core.schedule.filter_create_data` | filter | 1 |  |
 | `core.schedule.filter_update_data` | filter | 2 |  |
 | `core.schedule.history_list_validation_rules` | filter | 2 |  |
 | `core.schedule.list_validation_rules` | filter | 2 |  |
+| `core.schedule.run_failed` | action | 3 |  |
 | `core.schedule.update_validation_rules` | filter | 2 |  |
+| `core.schedules.config` | filter | 1 |  |
+| `core.screen_url.filter_path` | filter | 4 |  |
 | `core.search.after_search` | action | 1 |  |
 | `core.search.build_response` | filter | 3 |  |
 | `core.search.engine_drivers` | filter | 1 |  |
@@ -553,6 +618,7 @@
 | `core.settings.before_set` | action | 2 |  |
 | `core.settings.embed_preview_validation_rules` | filter | 2 |  |
 | `core.settings.filter_save_data` | filter | 1 |  |
+| `core.settings.filter_system_info_sections` | filter | 1 |  |
 | `core.settings.password_expiry_preview_validation_rules` | filter | 2 |  |
 | `core.settings.privacy_preview_validation_rules` | filter | 2 |  |
 | `core.settings.regenerate_app_key_validation_rules` | filter | 2 |  |
@@ -562,6 +628,7 @@
 | `core.settings.test_driver_connection_validation_rules` | filter | 2 |  |
 | `core.settings.test_mail_validation_rules` | filter | 2 |  |
 | `core.settings.test_outbound_proxy_validation_rules` | filter | 2 |  |
+| `core.settings.test_trusted_proxy_validation_rules` | filter | 2 |  |
 | `core.settings.update_validation_rules` | filter | 2 |  |
 | `core.storage.filter_url` | filter | 2 |  |
 | `core.template.activate_validation_rules` | filter | 2 |  |
@@ -580,6 +647,15 @@
 | `core.template_layout_attachment.filter_upload_file` | filter | 1 |  |
 | `core.template_layout_attachment.list_validation_rules` | filter | 2 |  |
 | `core.template_layout_attachment.upload_validation_rules` | filter | 2 |  |
+| `core.template_settings.after_delete` | action | 1 |  |
+| `core.template_settings.after_reset` | action | 3 |  |
+| `core.template_settings.after_save` | action | 3 |  |
+| `core.template_settings.before_delete` | action | 1 |  |
+| `core.template_settings.before_reset` | action | 2 |  |
+| `core.template_settings.before_save` | action | 2 |  |
+| `core.template_settings.filter_save_data` | filter | 2 |  |
+| `core.template_settings.reset_validation_rules` | filter | 3 |  |
+| `core.template_settings.update_validation_rules` | filter | 3 |  |
 | `core.templates.activated` | action | 1 |  |
 | `core.templates.after_activate` | action | 1 |  |
 | `core.templates.after_check_updates` | action | 1 |  |
@@ -611,14 +687,31 @@
 | `core.templates.filter_update_data` | filter | 2 |  |
 | `core.templates.installed` | action | 1 |  |
 | `core.templates.updated` | action | 1 |  |
+| `core.thumbnail.after_pregenerate` | action | 3 |  |
+| `core.thumbnail.after_purge` | action | 1 |  |
+| `core.thumbnail.before_pregenerate` | action | 3 |  |
+| `core.thumbnail.before_purge` | action | 2 |  |
+| `core.thumbnail.filter_animated_original` | filter | 4 |  |
+| `core.thumbnail.filter_presets` | filter | 1 |  |
+| `core.thumbnail.filter_processors` | filter | 1 |  |
+| `core.thumbnail.filter_source_providers` | filter | 1 |  |
+| `core.thumbnail.filter_url` | filter | 3 |  |
+| `core.thumbnail.filter_url_patterns` | filter | 1 |  |
+| `core.thumbnail.pregenerate_validation_rules` | filter | 2 |  |
+| `core.thumbnail.purge_validation_rules` | filter | 2 |  |
+| `core.thumbnail.stats_validation_rules` | filter | 2 |  |
 | `core.unique_id.after_generate` | action | 2 |  |
 | `core.unique_id.before_generate` | action | 1 |  |
+| `core.user.admin_form_fields_validation_rules` | filter | 2 |  |
+| `core.user.after_block` | action | 2 |  |
 | `core.user.after_bulk_update_roles` | action | 4 |  |
 | `core.user.after_create` | action | 2 |  |
 | `core.user.after_delete` | action | 1 |  |
 | `core.user.after_list` | action | 1 |  |
 | `core.user.after_search` | action | 2 |  |
+| `core.user.after_sessions_revoked` | action | 3 |  |
 | `core.user.after_show` | action | 1 |  |
+| `core.user.after_unblock` | action | 2 |  |
 | `core.user.after_update` | action | 3 |  |
 | `core.user.after_update_roles` | action | 3 |  |
 | `core.user.after_withdraw` | action | 1 |  |
@@ -632,21 +725,34 @@
 | `core.user.bulk_update_status_validation_rules` | filter | 2 |  |
 | `core.user.change_password_validation_rules` | filter | 2 |  |
 | `core.user.check_email_validation_rules` | filter | 2 |  |
+| `core.user.complete_required_fields_validation_rules` | filter | 2 |  |
 | `core.user.create_validation_rules` | filter | 2 |  |
 | `core.user.delete_validation_rules` | filter | 2 |  |
+| `core.user.display_name_changed` | action | 2 |  |
+| `core.user.field_file.after_delete` | action | 3 |  |
+| `core.user.field_file.after_upload` | action | 3 |  |
+| `core.user.field_file_delete_validation_rules` | filter | 2 |  |
+| `core.user.field_file_upload_validation_rules` | filter | 2 |  |
+| `core.user.fields.after_update` | action | 3 |  |
 | `core.user.filter_create_data` | filter | 1 |  |
 | `core.user.filter_list_params` | filter | 1 |  |
+| `core.user.filter_list_rows` | filter | 2 |  |
 | `core.user.filter_resource_data` | filter | 2 |  |
 | `core.user.filter_update_data` | filter | 2 |  |
 | `core.user.list_query_extensions` | filter | 2 |  |
 | `core.user.list_validation_attributes` | filter | 2 |  |
 | `core.user.list_validation_rules` | filter | 2 |  |
+| `core.user.locked_field_reasons` | filter | 3 |  |
+| `core.user.locked_fields` | filter | 3 |  |
+| `core.user.nickname_rejected` | action | 4 |  |
+| `core.user.profile_fields_validation_rules` | filter | 2 |  |
 | `core.user.search_validation_rules` | filter | 2 |  |
 | `core.user.update_language_validation_rules` | filter | 2 |  |
 | `core.user.update_profile_validation_rules` | filter | 2 |  |
 | `core.user.update_validation_rules` | filter | 2 |  |
 | `core.user.upload_avatar_rules` | filter | 1 | 호환용 옛 이름 → `core.user.upload_avatar_validation_rules` |
 | `core.user.upload_avatar_validation_rules` | filter | 1 |  |
+| `core.web_cron.run_validation_rules` | filter | 2 |  |
 | `hook.context.capture` | filter | 1 |  |
 | `hook.context.restore` | action | 1 |  |
 | `sirsoft-core.user.after_bulk_update` | action | 3 |  |
@@ -666,6 +772,7 @@
 | `sirsoft-ckeditor5` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-ckeditor5/docs/extension-points.md#발행-훅) |
 | `sirsoft-ecommerce` | 모듈 | [확장 지점 문서](../../modules/_bundled/sirsoft-ecommerce/docs/extension-points.md#발행-훅) |
 | `sirsoft-gdpr` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-gdpr/docs/extension-points.md#발행-훅) |
+| `sirsoft-hero_section` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-hero_section/docs/extension-points.md#발행-훅) |
 | `sirsoft-koreaexim` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-koreaexim/docs/extension-points.md#발행-훅) |
 | `sirsoft-marketing` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-marketing/docs/extension-points.md#발행-훅) |
 | `sirsoft-message_bizppurio` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-message_bizppurio/docs/extension-points.md#발행-훅) |
@@ -673,6 +780,9 @@
 | `sirsoft-pay_kginicis` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-pay_kginicis/docs/extension-points.md#발행-훅) |
 | `sirsoft-pay_nhnkcp` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-pay_nhnkcp/docs/extension-points.md#발행-훅) |
 | `sirsoft-pay_nicepayments` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-pay_nicepayments/docs/extension-points.md#발행-훅) |
+| `sirsoft-popup` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-popup/docs/extension-points.md#발행-훅) |
+| `sirsoft-social_login` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-social_login/docs/extension-points.md#발행-훅) |
+| `sirsoft-sso` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-sso/docs/extension-points.md#발행-훅) |
 | `sirsoft-tosspayments` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-tosspayments/docs/extension-points.md#발행-훅) |
 | `sirsoft-totp` | 플러그인 | [확장 지점 문서](../../plugins/_bundled/sirsoft-totp/docs/extension-points.md#발행-훅) |
 
@@ -693,12 +803,14 @@
 | `app/Extension/ModuleManager.php` | `module.*.manifest.translations` | 문자열 보간 조립 |
 | `app/Extension/ModuleManager.php` | `module.*.roles.translations` | 문자열 보간 조립 |
 | `app/Extension/ModuleManager.php` | `module.*.permissions.translations` | 문자열 보간 조립 |
+| `app/Extension/ModuleManager.php` | `seed.*.schedules.translations` | 문자열 보간 조립 — 확장 스케줄 언어팩 필터 (#17, 7.2.0) |
 | `app/Extension/ModuleManager.php` | `seed.*.notifications.translations` | 문자열 보간 조립 |
 | `app/Extension/PluginManager.php` | `plugin.*.manifest.translations` | 문자열 보간 조립 |
 | `app/Extension/PluginManager.php` | `plugin.*.admin_menus.translations` | 문자열 보간 조립 |
 | `app/Extension/PluginManager.php` | `plugin.*.manifest.translations` | 문자열 보간 조립 |
 | `app/Extension/PluginManager.php` | `plugin.*.roles.translations` | 문자열 보간 조립 |
 | `app/Extension/PluginManager.php` | `plugin.*.permissions.translations` | 문자열 보간 조립 |
+| `app/Extension/PluginManager.php` | `seed.*.schedules.translations` | 문자열 보간 조립 — 확장 스케줄 언어팩 필터 (#17, 7.2.0) |
 | `app/Extension/PluginManager.php` | `seed.*.notifications.translations` | 문자열 보간 조립 |
 | `app/Extension/TemplateManager.php` | `template.*.manifest.translations` | 문자열 보간 조립 |
 | `app/Extension/TemplateManager.php` | `template.*.manifest.translations` | 문자열 보간 조립 |
@@ -709,5 +821,6 @@
 | `app/Seo/Editor/SeoOgPreviewService.php` | `core.seo.filter_og_data`<br>`core.seo.filter_twitter_data` | buildKeyCascade() 호출부가 리터럴로 넘긴다 |
 | `app/Services/Analytics/ReportMailService.php` | `core.analytics.weekly_report_ready`<br>`core.analytics.monthly_report_ready` | 기간(weekly·monthly)별 리포트 |
 | `app/Services/DriverRegistryService.php` | `core.settings.available_*_drivers` | 드라이버 카테고리별 필터 |
+| `app/Services/Extension/ExtensionDeclarativeCleanupPlanner.php` | `seed.*.schedules.translations` | 문자열 보간 조립 — 업데이트 미리보기의 스케줄 정리 계획이 매니저와 같은 언어팩 필터를 적용 (#888, 7.2.0) |
 | `app/Services/NotificationChannelService.php` | `*.notification.channels` | 도메인 채널 후보 필터 — 알림 정의의 hook_prefix 로 조립(코어 core.notification.channels 다음) |
 | `database/seeders/Concerns/LoadsConfigSeedWithLangPackFilter.php` | `seed.*.translations` | 설정 시드 언어팩 필터 — 호출부가 키를 넘긴다(seed.notifications.translations 등) |

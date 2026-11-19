@@ -10,10 +10,14 @@ import type { EditorAttrs } from '../../types';
 import { getSiteLocale } from '../../support/siteLocale';
 import { getLocaleDisplayName } from '../../support/localeName';
 import { findAdjacentLabel } from '../../hooks/useAdjacentLabel';
+import { translate } from '../../utils/translate';
+import { useRenderWidth } from '../../hooks/useRenderWidth';
+import { classAtWidth } from '../layout/widthBreakpoints';
+import { escapeToClose } from '../../support/keyboardActivation';
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
-  (window as any).G7Core?.t?.(key, params) ?? key;
+  translate(key, params) ?? key;
 
 /**
  * 라벨 요소의 글자를 접근 이름으로 쓸 모양으로 다듬습니다 — 공백을 하나로 줄이고 끝의 필수 표시(`*`)를 뗀다.
@@ -37,7 +41,7 @@ const getLocaleNameByCode = (code: string): string => getLocaleDisplayName(code)
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
 const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
-  const translated = (window as any).G7Core?.t?.(key, params);
+  const translated = translate(key, params);
   return typeof translated === 'string' && translated !== key ? translated : fallback;
 };
 
@@ -148,6 +152,8 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
   'aria-label': ariaLabelAttr,
 }) => {
   const rootRef = useRef<HTMLDivElement>(null);
+  // 언어 탭 이름(전체 이름·코드)을 고르는 렌더 폭 — Provider 폭 우선(편집기 미리보기에서는 기기 폭)
+  const renderWidth = useRenderWidth();
 
   // 이름 prop 이 없으면 바깥 상자 곁의 라벨 글자를 이름으로 삼는다. 종전에는 그 라벨을 `aria-labelledby` 로만 이어
   // 언어명이 붙지 않았다 — 역할명 칸의 한국어·English 칸이 둘 다 「역할명*」으로 읽혔다(admin_basic 1.1.1 의 「{칸 이름} ({언어})」 약속).
@@ -239,6 +245,36 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
   // 현재 선택된 언어 탭 (tabs 레이아웃용)
   const [currentLocale, setCurrentLocale] = useState<string>(actualDefaultLocale);
 
+  // ── 비어 있는 필수 언어 탭 열기 (#17 P10) ──
+  // tabs 배치는 지금 탭이 아닌 언어 칸을 hidden 으로 숨긴다. 필수 칸이 빈 채 다른 탭에서 저장하면 브라우저 검증이
+  // 숨은 칸에서 「포커스할 수 없음」으로 멈춰 안내 없이 제출이 끝났다. invalid 가 오면 그 탭을 열고, 칸이 보인 뒤
+  // 포커스·검증 말풍선을 띄운다(다시 오는 invalid 는 이미 그 탭이라 되풀이되지 않는다).
+  const pendingRevealRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+
+  const handleHiddenInvalid = useCallback((localeCode: string, target: HTMLInputElement | HTMLTextAreaElement) => {
+    if (localeCode === currentLocale) return;
+    pendingRevealRef.current = target;
+    setCurrentLocale(localeCode);
+  }, [currentLocale]);
+
+  useEffect(() => {
+    const target = pendingRevealRef.current;
+    if (!target) return;
+    pendingRevealRef.current = null;
+    target.focus();
+    target.reportValidity?.();
+  }, [currentLocale]);
+
+  // 서버 검증 오류(noValidate 폼)는 칸 아래 문구로 오는데, 필수 언어 칸이 숨은 탭이면 문구도 가려진다.
+  // 오류가 새로 왔고 필수 언어 칸이 비어 있으면 그 탭으로 옮긴다 — 채워져 있으면 다른 이유의 오류라 지금 탭을 둔다.
+  useEffect(() => {
+    if (!error || !required) return;
+    if (layout !== 'tabs' && layout !== 'compact') return;
+    if (localValueRef.current[actualDefaultLocale]?.trim()) return;
+    setCurrentLocale(actualDefaultLocale);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [error]);
+
   // 추가 가능한 언어 목록 (이미 활성화된 언어 제외)
   const addableLocales = useMemo(() => {
     return actualAvailableLocales.filter(locale => !activeLocales.includes(locale.code));
@@ -246,6 +282,8 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
 
   // 언어 추가 드롭다운 표시 여부
   const [showAddMenu, setShowAddMenu] = useState(false);
+  // 「언어 추가」 단추 — 메뉴 안에서 Esc 로 닫으면 여기로 포커스를 돌린다
+  const addMenuTriggerRef = useRef<HTMLButtonElement>(null);
 
   // value prop이 변경될 때 activeLocales 동기화
   useEffect(() => {
@@ -386,9 +424,13 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
     if (addableLocales.length === 0) return null;
 
     return (
-      <Div className="relative">
+      // 메뉴 안에서 Esc 로 닫고 「언어 추가」 단추로 돌아간다 — 종전에는 메뉴를 닫을 길이 단추 다시 누르기뿐이었다(#869)
+      <Div className="relative" onKeyDown={escapeToClose(showAddMenu, () => setShowAddMenu(false), addMenuTriggerRef)}>
         <Button
+          ref={addMenuTriggerRef}
           type="button"
+          aria-haspopup="menu"
+          aria-expanded={showAddMenu}
           className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-full border border-dashed border-blue-300 dark:border-blue-600 transition-colors"
           onClick={() => setShowAddMenu(!showAddMenu)}
           disabled={disabled}
@@ -500,6 +542,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
             name={`${name}[${localeCode}]`}
             value={localValue[localeCode] || ''}
             onChange={(e) => handleInputChange(localeCode, e.target.value)}
+            onInvalid={(e) => handleHiddenInvalid(localeCode, e.currentTarget)}
             placeholder={localizedPlaceholder}
             aria-label={fieldName(localeCode)}
             required={required && localeCode === actualDefaultLocale}
@@ -514,6 +557,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
             name={`${name}[${localeCode}]`}
             value={localValue[localeCode] || ''}
             onChange={(e) => handleInputChange(localeCode, e.target.value)}
+            onInvalid={(e) => handleHiddenInvalid(localeCode, e.currentTarget)}
             placeholder={localizedPlaceholder}
             aria-label={fieldName(localeCode)}
             required={required && localeCode === actualDefaultLocale}
@@ -524,7 +568,7 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
         )}
       </Div>
     );
-  }, [name, localValue, handleInputChange, placeholder, required, disabled, maxLength, rows, inputType, actualDefaultLocale, getLocaleName, hasError, fieldName]);
+  }, [name, localValue, handleInputChange, handleHiddenInvalid, placeholder, required, disabled, maxLength, rows, inputType, actualDefaultLocale, getLocaleName, hasError, fieldName]);
 
   // Inline 레이아웃 렌더링
   const renderInlineLayout = () => (
@@ -570,8 +614,8 @@ export const MultilingualInput: React.FC<MultilingualInputProps> = ({
               {/* showCodeOnMobile: 모바일에서는 언어 코드, 데스크탑에서는 전체 언어명 표시 */}
               {showCodeOnMobile ? (
                 <>
-                  <Span className="hidden md:inline">{getLocaleName(localeCode)}</Span>
-                  <Span className="inline md:hidden">{localeCode.toUpperCase()}</Span>
+                  <Span className={classAtWidth(renderWidth, 'md', 'inline', 'hidden')}>{getLocaleName(localeCode)}</Span>
+                  <Span className={classAtWidth(renderWidth, 'md', 'hidden', 'inline')}>{localeCode.toUpperCase()}</Span>
                 </>
               ) : (
                 getLocaleName(localeCode)

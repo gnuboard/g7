@@ -152,6 +152,10 @@ export type { PageLoadingProps } from './PageLoading';
 export { Toggle } from './Toggle';
 export type { ToggleProps } from './Toggle';
 
+// 회원 항목 입력칸 (관리자 회원 추가, 수정 화면)
+export { MemberFieldInput } from './MemberFieldInput';
+export type { MemberFieldInputProps, MemberFieldContract, MemberFieldOption } from './MemberFieldInput';
+
 export { TagInput } from './TagInput';
 export type { TagInputProps, TagOption } from './TagInput';
 
@@ -268,3 +272,4 @@ export type { DonutChartProps, DonutChartDataItem } from './DonutChart';
 // 방문자 통계 추이(선 차트) — 방문자·방문·페이지뷰 세 계열을 시간 축으로 그린다 (#682)
 export { LineChart } from './LineChart';
 export type { LineChartProps, LineChartDataset } from './LineChart';
+

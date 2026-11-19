@@ -1,10 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MultilingualTabPanel } from '../MultilingualTabPanel';
 import {
   useCurrentMultilingualLocale,
-  MultilingualLocaleContext,
 } from '../MultilingualLocaleContext';
 import React, { useState, useCallback } from 'react';
 
@@ -94,6 +93,8 @@ const MultilingualInputSimulator: React.FC<{
 
 describe('MultilingualTabPanel', () => {
   describe('기본 렌더링', () => {
+    // @scenario component=multilingual_tab_panel
+    // @effects multilingual_tab_panel_renders_locale_tabs_and_variants
     it('탭이 렌더링됨', () => {
       render(
         <MultilingualTabPanel>
@@ -105,6 +106,8 @@ describe('MultilingualTabPanel', () => {
       expect(screen.getByText('English')).toBeInTheDocument();
     });
 
+    // @scenario component=multilingual_tab_panel
+    // @effects multilingual_tab_panel_renders_locale_tabs_and_variants
     it('자식 요소가 렌더링됨', () => {
       render(
         <MultilingualTabPanel>
@@ -115,6 +118,8 @@ describe('MultilingualTabPanel', () => {
       expect(screen.getByTestId('child')).toBeInTheDocument();
     });
 
+    // @scenario component=multilingual_tab_panel
+    // @effects multilingual_tab_panel_renders_locale_tabs_and_variants
     it('className이 적용됨', () => {
       const { container } = render(
         <MultilingualTabPanel className="custom-class">
@@ -125,6 +130,8 @@ describe('MultilingualTabPanel', () => {
       expect(container.firstChild).toHaveClass('custom-class');
     });
 
+    // @scenario component=multilingual_tab_panel
+    // @effects multilingual_tab_panel_renders_locale_tabs_and_variants
     it('기본 로케일이 ko로 설정됨', () => {
       render(
         <MultilingualTabPanel>
@@ -137,6 +144,8 @@ describe('MultilingualTabPanel', () => {
   });
 
   describe('탭 스타일 variant', () => {
+    // @scenario component=multilingual_tab_panel
+    // @effects multilingual_tab_panel_renders_locale_tabs_and_variants
     it('default variant 스타일이 적용됨', () => {
       render(
         <MultilingualTabPanel variant="default">
@@ -148,6 +157,8 @@ describe('MultilingualTabPanel', () => {
       expect(koTab).toHaveClass('bg-blue-50');
     });
 
+    // @scenario component=multilingual_tab_panel
+    // @effects multilingual_tab_panel_renders_locale_tabs_and_variants
     it('pills variant 스타일이 적용됨', () => {
       render(
         <MultilingualTabPanel variant="pills">
@@ -159,6 +170,8 @@ describe('MultilingualTabPanel', () => {
       expect(koTab).toHaveClass('bg-blue-600');
     });
 
+    // @scenario component=multilingual_tab_panel
+    // @effects multilingual_tab_panel_renders_locale_tabs_and_variants
     it('underline variant 스타일이 적용됨', () => {
       render(
         <MultilingualTabPanel variant="underline">
@@ -173,6 +186,8 @@ describe('MultilingualTabPanel', () => {
   });
 
   describe('탭 전환', () => {
+    // @scenario component=multilingual_tab_panel
+    // @effects multilingual_tab_panel_switch_updates_active_locale
     it('탭 클릭 시 activeLocale이 변경됨', async () => {
       const user = userEvent.setup();
 
@@ -189,6 +204,8 @@ describe('MultilingualTabPanel', () => {
       expect(screen.getByTestId('active-locale')).toHaveTextContent('en');
     });
 
+    // @scenario component=multilingual_tab_panel
+    // @effects multilingual_tab_panel_switch_updates_active_locale
     it('onLocaleChange 콜백이 호출됨', async () => {
       const user = userEvent.setup();
       const handleLocaleChange = vi.fn();
@@ -204,6 +221,8 @@ describe('MultilingualTabPanel', () => {
       expect(handleLocaleChange).toHaveBeenCalledWith('en');
     });
 
+    // @scenario component=multilingual_tab_panel
+    // @effects multilingual_tab_panel_switch_updates_active_locale
     it('defaultLocale prop이 적용됨', () => {
       render(
         <MultilingualTabPanel defaultLocale="en">
@@ -216,6 +235,8 @@ describe('MultilingualTabPanel', () => {
   });
 
   describe('Context 전파', () => {
+    // @scenario component=multilingual_tab_panel
+    // @effects multilingual_tab_panel_context_propagates_active_locale
     it('자식 컴포넌트에서 activeLocale 접근 가능', () => {
       render(
         <MultilingualTabPanel>
@@ -227,6 +248,8 @@ describe('MultilingualTabPanel', () => {
       expect(screen.getByTestId('active-locale')).toHaveTextContent('ko');
     });
 
+    // @scenario component=multilingual_tab_panel
+    // @effects multilingual_tab_panel_context_propagates_active_locale
     it('supportedLocales가 전파됨', () => {
       render(
         <MultilingualTabPanel>
@@ -241,6 +264,8 @@ describe('MultilingualTabPanel', () => {
   });
 
   describe('Context 외부 (G7Core fallback)', () => {
+    // @scenario component=multilingual_tab_panel
+    // @effects multilingual_tab_panel_context_propagates_active_locale
     it('Context 외부에서 G7Core fallback 사용', () => {
       render(<LocaleDisplay />);
 
@@ -250,6 +275,8 @@ describe('MultilingualTabPanel', () => {
   });
 
   describe('Stale Closure 방지', () => {
+    // @scenario component=multilingual_tab_panel
+    // @effects multilingual_tab_panel_context_propagates_active_locale
     it('getActiveLocale getter가 최신 값 반환', async () => {
       const user = userEvent.setup();
       const capturedLocales: string[] = [];
@@ -272,6 +299,8 @@ describe('MultilingualTabPanel', () => {
       expect(capturedLocales[capturedLocales.length - 1]).toBe('en');
     });
 
+    // @scenario component=multilingual_tab_panel
+    // @effects multilingual_tab_panel_context_propagates_active_locale
     it('빠른 탭 전환 후 입력 시 올바른 로케일 사용', async () => {
       const user = userEvent.setup();
       let currentValue: Record<string, string> = { ko: '', en: '' };
@@ -307,6 +336,8 @@ describe('MultilingualTabPanel', () => {
   });
 
   describe('다국어 입력 통합', () => {
+    // @scenario component=multilingual_tab_panel
+    // @effects multilingual_tab_panel_context_propagates_active_locale
     it('탭 전환 시 입력 필드 값이 해당 로케일로 변경됨', async () => {
       const user = userEvent.setup();
 
@@ -337,6 +368,8 @@ describe('MultilingualTabPanel', () => {
       );
     });
 
+    // @scenario component=multilingual_tab_panel
+    // @effects multilingual_tab_panel_context_propagates_active_locale
     it('각 로케일에 독립적으로 입력 가능', async () => {
       const user = userEvent.setup();
       let finalValue: Record<string, string> = {};
@@ -378,6 +411,8 @@ describe('MultilingualTabPanel', () => {
   });
 
   describe('중첩 MultilingualTabPanel', () => {
+    // @scenario component=multilingual_tab_panel
+    // @effects multilingual_tab_panel_context_propagates_active_locale
     it('중첩된 패널이 독립적으로 동작함', async () => {
       const user = userEvent.setup();
 
@@ -407,13 +442,15 @@ describe('MultilingualTabPanel', () => {
       await user.click(englishButtons[0]);
 
       // 바깥 패널만 en으로 변경됨 (가장 가까운 Context가 우선)
-      const updatedDisplays = screen.getAllByTestId('active-locale');
+      screen.getAllByTestId('active-locale');
       // 내부 패널은 자체 Context를 가지므로 독립적
       // (주의: 이 테스트는 구현 방식에 따라 다를 수 있음)
     });
   });
 
   describe('마운트/언마운트', () => {
+    // @scenario component=multilingual_tab_panel
+    // @effects multilingual_tab_panel_context_propagates_active_locale
     it('컴포넌트 언마운트 후 Context가 정리됨', () => {
       const { unmount } = render(
         <MultilingualTabPanel>
@@ -431,6 +468,8 @@ describe('MultilingualTabPanel', () => {
   });
 
   describe('locales prop', () => {
+    // @scenario component=multilingual_tab_panel
+    // @effects multilingual_tab_panel_renders_locale_tabs_and_variants
     it('locales prop이 제공되면 해당 로케일만 탭으로 표시', () => {
       render(
         <MultilingualTabPanel locales={['ko']}>
@@ -442,6 +481,8 @@ describe('MultilingualTabPanel', () => {
       expect(screen.queryByText('English')).not.toBeInTheDocument();
     });
 
+    // @scenario component=multilingual_tab_panel
+    // @effects multilingual_tab_panel_renders_locale_tabs_and_variants
     it('locales prop이 비어있으면 그누보드7 지원 로케일 전체 표시', () => {
       render(
         <MultilingualTabPanel locales={[]}>
@@ -453,6 +494,8 @@ describe('MultilingualTabPanel', () => {
       expect(screen.getByText('English')).toBeInTheDocument();
     });
 
+    // @scenario component=multilingual_tab_panel
+    // @effects multilingual_tab_panel_renders_locale_tabs_and_variants
     it('locales prop이 undefined면 그누보드7 지원 로케일 전체 표시', () => {
       render(
         <MultilingualTabPanel locales={undefined}>
@@ -464,6 +507,8 @@ describe('MultilingualTabPanel', () => {
       expect(screen.getByText('English')).toBeInTheDocument();
     });
 
+    // @scenario component=multilingual_tab_panel
+    // @effects multilingual_tab_panel_switch_updates_active_locale
     it('locales가 변경될 때 activeLocale이 새 목록에 없으면 첫 번째 로케일로 변경', async () => {
       const handleLocaleChange = vi.fn();
 
@@ -488,6 +533,8 @@ describe('MultilingualTabPanel', () => {
       expect(handleLocaleChange).toHaveBeenCalledWith('ko');
     });
 
+    // @scenario component=multilingual_tab_panel
+    // @effects multilingual_tab_panel_context_propagates_active_locale
     it('supportedLocales가 locales prop 값으로 Context에 전파됨', () => {
       render(
         <MultilingualTabPanel locales={['en', 'ja']}>
@@ -498,6 +545,8 @@ describe('MultilingualTabPanel', () => {
       expect(screen.getByTestId('supported-locales')).toHaveTextContent('en,ja');
     });
 
+    // @scenario component=multilingual_tab_panel
+    // @effects multilingual_tab_panel_switch_updates_active_locale
     it('locales prop에 포함된 로케일만 탭 클릭 가능', async () => {
       const user = userEvent.setup();
 

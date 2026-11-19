@@ -7,8 +7,7 @@ namespace Plugins\Sirsoft\PayNhnkcp\Controllers;
 use App\Helpers\ResponseHelper;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\RateLimiter;
-use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
-use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\RecordsPaymentWindowClosure;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\VerifiesOrderOwnership;
 use Plugins\Sirsoft\PayNhnkcp\Http\Requests\PaymentRetryRequest;
@@ -19,12 +18,12 @@ class PaymentRetryController
     use VerifiesOrderOwnership;
 
     /**
-     * @param  OrderProcessingService  $orderService  주문 처리 서비스
-     * @param  GuestOrderAuthService  $guestOrderAuthService  비회원 조회 토큰 검증 서비스 (주문 소유자 확인)
+     * 이커머스 결제 계약을 주입받습니다.
+     *
+     * @param  PaymentGatewayBridge  $bridge  이커머스 결제 계약 (주문 조회, 소유자 확인, 재결제 복구)
      */
     public function __construct(
-        private readonly OrderProcessingService $orderService,
-        private readonly GuestOrderAuthService $guestOrderAuthService,
+        private readonly PaymentGatewayBridge $bridge,
     ) {}
 
     /**
@@ -42,21 +41,21 @@ class PaymentRetryController
         $rateLimitKey = $this->rateLimitKey($request, $oid);
         if (RateLimiter::tooManyAttempts($rateLimitKey, 20)) {
             return ResponseHelper::error('common.failed', 429, [
-                'message' => ['Too many NHN KCP payment retry requests. Please try again later.'],
+                'message' => [__('sirsoft-pay_nhnkcp::messages.responses.too_many_requests')],
             ]);
         }
         RateLimiter::hit($rateLimitKey, 60);
 
-        $order = $this->orderService->findByOrderNumber($oid);
+        $order = $this->bridge->findOrderByNumber($oid, 'nhnkcp');
         if (! $order) {
             return ResponseHelper::error('common.failed', 404, [
-                'message' => ['Order not found.'],
+                'message' => [__('sirsoft-pay_nhnkcp::messages.responses.order_not_found')],
             ]);
         }
 
-        if (! $this->requestOwnsOrder($request, $order, $this->guestOrderAuthService)) {
+        if (! $this->requestOwnsOrder($request, $order)) {
             return ResponseHelper::error('common.failed', 403, [
-                'message' => ['Order ownership verification failed.'],
+                'message' => [__('sirsoft-pay_nhnkcp::messages.responses.ownership_verification_failed')],
             ]);
         }
 
@@ -67,30 +66,30 @@ class PaymentRetryController
         ]);
         if ($expectedPrice === null) {
             return ResponseHelper::error('common.failed', 422, [
-                'message' => ['Payment currency is not chargeable.'],
+                'message' => [__('sirsoft-pay_nhnkcp::messages.responses.currency_not_chargeable')],
             ]);
         }
 
         if ($price !== $expectedPrice) {
             return ResponseHelper::error('common.failed', 422, [
-                'message' => ['Payment amount does not match the order amount.'],
+                'message' => [__('sirsoft-pay_nhnkcp::messages.responses.amount_mismatch')],
             ]);
         }
 
-        if ($order->order_status->isBeforePayment()) {
+        if ($order->orderStatus->isBeforePayment()) {
             return ResponseHelper::success('common.success', [
                 'status' => 'ready',
             ]);
         }
 
-        if ($this->restoreRetryableKcpOrder($order, $price)) {
+        if ($this->restoreKcpOrderForRetry($order, $price) !== null) {
             return ResponseHelper::success('common.success', [
                 'status' => 'restored',
             ]);
         }
 
         return ResponseHelper::error('common.failed', 409, [
-            'message' => ['Order is not retryable for NHN KCP payment.'],
+            'message' => [__('sirsoft-pay_nhnkcp::messages.responses.order_not_retryable')],
         ]);
     }
 

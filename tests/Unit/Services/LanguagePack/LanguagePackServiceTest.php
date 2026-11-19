@@ -10,10 +10,12 @@ use App\Exceptions\ExtensionOperationLockUnavailableException;
 use App\Exceptions\LanguagePackOperationException;
 use App\Extension\Helpers\ExtensionOperationLock;
 use App\Extension\HookManager;
+use App\Extension\Integrity\PackageIntegrityOptions;
 use App\Models\LanguagePack;
 use App\Services\LanguagePack\LanguagePackRegistry;
 use App\Services\LanguagePackService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -1093,6 +1095,49 @@ class LanguagePackServiceTest extends TestCase
     }
 
     /**
+     * GitHub 최신 판 조회가 실패 응답(요청 한도 초과 403·인증 401·5xx)이면 팩별 결과의 `error` 에 사유를 싣고, 번들 판으로
+     * 대체해도 DB 의 최신 버전(`latest_version`)을 덮지 않는다 — 모듈·플러그인·템플릿 일괄 확인과 같은 규칙.
+     *
+     * 종전에는 연결 실패만 사유로 보고 실패 응답은 「릴리스 없음」처럼 넘겨, 관리자 [업데이트 확인]이 「모든 언어팩이 최신 상태입니다」로
+     * 끝났고 지난 확인에서 알아 둔 GitHub 최신 판이 번들 판으로 바뀌었다. 릴리스가 아직 없는 404 는 실패가 아니다.
+     *
+     * @scenario case=check_updates_github_failure
+     *
+     * @effects update_check_reports_github_failure_without_overwrite
+     *
+     * @return void 반환값 없음
+     */
+    public function test_update_check_reports_github_failure_and_keeps_latest_version(): void
+    {
+        $identifier = 'lpfail-core-ja';
+        $manifest = $this->coreJaManifest($identifier, 'lpfail', '1.0.0') + ['github_url' => 'https://github.com/acme/lpfail-core-ja'];
+        $bundledDir = $this->createBundledFixture($identifier, $manifest);
+
+        try {
+            $pack = $this->service->installFromBundled($identifier, autoActivate: false);
+            $pack->forceFill(['latest_version' => '1.0.5'])->save();
+            $this->createBundledFixture($identifier, array_merge($manifest, ['version' => '1.0.2']));
+
+            Http::fake(['api.github.com/*' => Http::sequence()
+                ->push(['message' => 'API rate limit exceeded'], 403)
+                ->push(['message' => 'Not Found'], 404)]);
+
+            $failed = $this->service->checkUpdates($identifier)['details'][0] ?? [];
+            $this->assertNotNull($failed['error'] ?? null, '조회 실패(403)를 사유 없이 넘겼다');
+            $this->assertStringContainsString('403', (string) $failed['error']);
+            $this->assertSame('1.0.5', $pack->fresh()->latest_version, '조회에 실패했는데 DB 최신 버전을 번들 판으로 덮었다');
+
+            // 릴리스가 아직 없는 404 는 실패가 아니다 — 번들 판을 후보로 기록한다
+            $notFound = $this->service->checkUpdates($identifier)['details'][0] ?? [];
+            $this->assertNull($notFound['error'] ?? null);
+            $this->assertSame('1.0.2', $pack->fresh()->latest_version);
+        } finally {
+            File::deleteDirectory($bundledDir);
+            File::deleteDirectory(base_path('lang-packs/'.$identifier));
+        }
+    }
+
+    /**
      * 켜져 있는 팩을 업데이트하면 엔티티 번역 재적용(활성화 훅 경로)이 정확히 한 번 돈다 (W3 실측 — 클레임 사유 name.ja).
      *
      * 업데이트로 새 판 seed(예: 새 클레임 사유의 일본어 이름)가 들어와도 DB 행에 다시 병합되지 않으면 그 언어로 비어 보인다.
@@ -1226,7 +1271,7 @@ class LanguagePackServiceTest extends TestCase
         $before = File::isDirectory($tempRoot) ? File::directories($tempRoot) : [];
 
         try {
-            $pack = $this->service->installFromUrl('https://packs.example.com/pack.zip', null);
+            $pack = $this->service->installFromUrl('https://packs.example.com/pack.zip', null, false, null, false, null, new PackageIntegrityOptions(true));
 
             $this->assertSame($identifier, $pack->identifier);
 
@@ -1240,6 +1285,42 @@ class LanguagePackServiceTest extends TestCase
             @unlink($zipPath);
             File::deleteDirectory(base_path('lang-packs/'.$identifier));
         }
+    }
+
+    /**
+     * URL 에 연결하지 못하면(이름 해석 실패·연결 거부·시간 초과) 사유를 담은 안내성 실패로 끝난다.
+     *
+     * 종전에는 연결 예외가 그대로 올라가 컨트롤러의 마지막 catch 에서 사유 없는 500 「언어팩 설치에 실패했습니다.」 가
+     * 되었고 운영 모드에서는 로그에도 남지 않았다. HTTP 오류 응답(4xx·5xx)과 같은 문구로 알린다.
+     *
+     * @scenario vector=install_from_url, actor_permission=cli_system
+     *
+     * @effects successful_install_leaves_no_temp_directory
+     *
+     * @return void 반환값 없음
+     */
+    public function test_install_from_url_connection_failure_is_reported_with_its_reason(): void
+    {
+        Http::fake(function () {
+            throw new ConnectionException('cURL error 6: Could not resolve host: packs.example.com');
+        });
+        // 사유는 관리 작업 공통 거름망(SafeExceptionMessage)을 거친다 — 연결 실패는 내부 예외가 아니라 운영 모드에서도 원문이 사유다.
+        config(['app.debug' => false]);
+
+        $tempRoot = storage_path('app/temp');
+        $before = File::isDirectory($tempRoot) ? File::directories($tempRoot) : [];
+
+        try {
+            $this->service->installFromUrl('https://packs.example.com/pack.zip', null, false, null, false, null, new PackageIntegrityOptions(true));
+            $this->fail('연결 실패가 안내성 실패(LanguagePackOperationException)로 바뀌지 않았다');
+        } catch (LanguagePackOperationException $e) {
+            $this->assertSame('language_packs.errors.download_failed', $e->errorKey);
+            $this->assertSame('https://packs.example.com/pack.zip', $e->params['url']);
+            $this->assertStringContainsString('Could not resolve host', $e->params['error']);
+        }
+
+        $after = File::isDirectory($tempRoot) ? File::directories($tempRoot) : [];
+        $this->assertSame([], array_values(array_diff($after, $before)), '연결 실패 뒤 다운로드 임시 디렉토리가 남았다');
     }
 
     /**

@@ -3,22 +3,22 @@
   전역(totpResetTargetId·totpResetTargetName)에 넣고 연다 — 창은 별도 문맥이라 목록의 _local 을 보지 못한다. -->
 <partial description="인증 앱 보안 알림 기본 정의 복원 확인">
   <modal data-type="composite" data-ref="modal_totp_notification_definition_reset" title="$t:sirsoft-totp.admin.notifications.reset_modal.title" size="sm">
-    <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-totp.admin.notifications.reset_modal.confirm_message</p>
-    <div class="mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-      <span class="form-sub-label">$t:sirsoft-totp.admin.notifications.reset_modal.target_label</span>
-      <span class="text-primary font-medium">{{_global.totpResetTargetName ?? ''}}</span>
+    <p class="totp:text-gray-700 totp:dark:text-gray-300">$t:sirsoft-totp.admin.notifications.reset_modal.confirm_message</p>
+    <div class="totp:mt-4 totp:p-3 totp:bg-gray-100 totp:dark:bg-gray-700 totp:rounded-lg">
+      <span class="totp-form-sub-label">$t:sirsoft-totp.admin.notifications.reset_modal.target_label</span>
+      <span class="totp-text-primary totp:font-medium">{{_global.totpResetTargetName ?? ''}}</span>
     </div>
-    <div class="alert-danger">
-      <p class="text-error-soft">$t:sirsoft-totp.admin.notifications.reset_modal.warning_message</p>
+    <div class="totp-alert-danger">
+      <p class="totp-text-error-soft">$t:sirsoft-totp.admin.notifications.reset_modal.warning_message</p>
     </div>
-    <div class="modal-footer-buttons">
-      <button type="button" class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.totpResettingNotification}}">
+    <div class="totp-modal-footer-buttons">
+      <button type="button" class="totp:px-4 totp:py-2 totp:bg-white totp:dark:bg-gray-800 totp:text-gray-700 totp:dark:text-gray-300 totp:border totp:border-gray-300 totp:dark:border-gray-600 totp:rounded-lg totp:hover:bg-gray-50 totp:dark:hover:bg-gray-700 totp:disabled:opacity-50 totp:disabled:cursor-not-allowed" disabled="{{_global.totpResettingNotification}}">
         <on type="click">
           <close-modal target="modal_totp_notification_definition_reset"/>
         </on>
         $t:common.cancel
       </button>
-      <button type="button" class="flex-center gap-2 px-4 py-2 bg-orange-700 dark:bg-orange-700 text-white dark:text-white rounded-lg hover:bg-orange-800 disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_global.totpResettingNotification}}">
+      <button type="button" class="totp-flex-center totp:gap-2 totp:px-4 totp:py-2 totp:bg-orange-700 totp:dark:bg-orange-700 totp:text-white totp:dark:text-white totp:rounded-lg totp:hover:bg-orange-800 totp:disabled:opacity-50 totp:disabled:cursor-not-allowed" disabled="{{_global.totpResettingNotification}}">
         <on type="click">
           <!-- 초기화. 성공하면 알림 목록을 다시 불러 되돌아간 값을 보여 준다. -->
           <sequence>
@@ -37,7 +37,7 @@
             </api-call>
           </sequence>
         </on>
-        <icon data-if="{{_global.totpResettingNotification}}" name="spinner" class="spinner-sm"/>
+        <icon data-if="{{_global.totpResettingNotification}}" name="spinner" class="totp-spinner-sm"/>
         <span>{{_global.totpResettingNotification ? '$t:sirsoft-totp.admin.notifications.reset_modal.btn_confirming' : '$t:sirsoft-totp.admin.notifications.reset_modal.btn_confirm'}}</span>
       </button>
     </div>

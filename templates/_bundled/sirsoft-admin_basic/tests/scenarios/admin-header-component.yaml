@@ -1,0 +1,18 @@
+feature: 관리자 머리글(AdminHeader) 사용자 정보와 드롭다운 계약
+
+description: |
+  사용자 이름과 아바타(없으면 기본 아이콘)를 보인다. 알림 버튼은 안 읽은 수(9 넘으면 9+)를 보이고 눌러 알림 드롭다운을
+  연다(비면 빈 상태 문구, 항목 클릭은 핸들러 호출). 프로필 버튼은 프로필 드롭다운을 열고 설정과 로그아웃 핸들러를 부른다.
+
+# axis 의미:
+#   component — 이 매니페스트가 다루는 컴포넌트 하나(단위 시험이 그 컴포넌트를 직접 그린다).
+axes:
+  component: [admin_header]
+
+effects:
+  - admin_header_shows_user_info        # 사용자 이름과 아바타, 아바타가 없으면 기본 아이콘을 보인다
+  - admin_header_notification_dropdown  # 안 읽은 수(9+ 상한), 알림 드롭다운 열기, 빈 상태, 알림 클릭 핸들러
+  - admin_header_profile_menu_actions   # 프로필 드롭다운을 열고 프로필 설정과 로그아웃 핸들러를 부른다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/AdminHeader.test.tsx

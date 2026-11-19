@@ -13,6 +13,12 @@ effects:
   - blinded_post_comment_rejected_422
   - deleted_post_comment_rejected_422
   - published_post_comment_allowed
+  # 서비스 직접 호출(CommentService::validatePostForComment / createComment, 답글 포함)
+  - service_rejects_comment_on_blinded_post
+  - service_rejects_comment_on_deleted_post
+  - service_allows_comment_on_published_post
+  - service_rejected_comment_is_not_persisted
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/CommentPostStateTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/CommentServiceTest.php

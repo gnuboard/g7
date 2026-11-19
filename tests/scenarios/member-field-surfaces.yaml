@@ -1,0 +1,25 @@
+feature: member_field_surfaces
+
+description: |
+  관리자 회원 추가와 수정, 내 정보 수정, 관리자 회원 목록이 회원 항목 값을 저장하고 보여 주는 방식.
+  본인 표면은 본인이 고칠 수 있는 항목만 저장하고, 관리자만 열람 항목은 본인 응답에 싣지 않는다.
+  회원 삭제와 탈퇴 회원 2차 파기는 항목 값을 함께 지운다.
+
+coverage_strategy: full
+
+axes:
+  surface: [admin_create, admin_update, self_update, admin_list]
+
+effects:
+  - admin_create_stores_custom_field_values
+  - admin_update_stores_values_and_relaxes_empty_required
+  - field_value_change_fires_hook_and_logs_activity
+  - self_update_stores_only_self_scope_fields
+  - profile_response_hides_admin_only_values
+  - profile_update_unchanged_without_custom_fields
+  - update_service_surface_option
+  - admin_list_searches_and_shows_custom_fields
+  - user_delete_and_retention_purge_field_values
+
+test_files:
+  - tests/Feature/User/UserFieldValuesTest.php

@@ -12,7 +12,7 @@ namespace App\Support\LayoutMarkup;
  *
  * **루트 종류는 JSON 시그니처로 판별한다.** 컴파일러는 루트 태그(`<layout>`/`<partial>`/`<extension>`/
  * `<override>`)로 갈래를 정하지만 역변환은 JSON 만 있으므로 키로 역추론한다 — `target_layout`/
- * `extension_point`=fragment, `meta.is_partial`=partial, `version_constraint`=override, 그 밖=layout.
+ * `extension_point`=fragment(`version_constraint` 가 함께 있어도 fragment), `meta.is_partial`=partial, `version_constraint`=override, 그 밖=layout.
  * (override 판별 키가 없는 경계 케이스는 layout 으로 찍어도 컴파일 산출이 동일해 왕복이 성립한다.)
  */
 final class LayoutMarkupDecompiler
@@ -410,6 +410,12 @@ final class LayoutMarkupDecompiler
 
         if (isset($json['priority'])) {
             $attributes[] = $this->attr('priority', (string) $json['priority']);
+        }
+
+        // 템플릿 오버라이드 조각이 적은 대상 확장의 버전 제약 — 루트 종류는 target_layout/extension_point 가 먼저 정하므로
+        // 이 키가 있어도 `<override>`(레이아웃 대체)로 갈리지 않는다.
+        if (isset($json['version_constraint'])) {
+            $attributes[] = $this->attr('version-constraint', (string) $json['version_constraint']);
         }
 
         $children = [];

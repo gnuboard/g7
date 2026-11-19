@@ -451,6 +451,7 @@ export class ServerConnector {
         const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
 
         try {
+            // base-path:allow devtools 서버 주소는 개발자가 지정한 외부 오리진일 수 있다.
             const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: {

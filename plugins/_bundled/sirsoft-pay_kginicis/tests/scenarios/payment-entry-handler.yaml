@@ -12,6 +12,8 @@ axes:
 effects:
   - payment_method_read_from_action_argument_only
   - payment_entry_fails_closed
+  - claim_payment_entry_failure_is_handed_to_the_claim_screen  # 클레임 추가결제의 결제창 열기 전 실패는 문구를 담아 던진다(신청서가 안내, #855)
+  - payment_error_message_is_translated_for_screens  # 화면 문구: 번역된 오류·서버 응답 문구는 그대로, 내부 영어·네트워크 오류는 번역된 일반 문구(진단은 콘솔, #855)
   - pc_standard_form_follows_manual
   - cbt_form_follows_manual
   - mobile_form_follows_manual

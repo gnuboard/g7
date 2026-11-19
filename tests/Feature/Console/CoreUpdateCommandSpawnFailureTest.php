@@ -41,6 +41,11 @@ class CoreUpdateCommandSpawnFailureTest extends TestCase
 
     private ?string $originalUpdateFlag = null;
 
+    /**
+     * 스텝 픽스처 경로를 정하고 업데이트 트리 플래그·env APP_VERSION 원값을 보관한 뒤 비웁니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -61,6 +66,11 @@ class CoreUpdateCommandSpawnFailureTest extends TestCase
         $this->setEnvVersion(null);
     }
 
+    /**
+     * 스텝 픽스처를 지우고 env APP_VERSION·업데이트 트리 플래그를 원값으로 되돌립니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         foreach ([$this->failingStepPath, $this->silentStepPath] as $p) {
@@ -86,6 +96,7 @@ class CoreUpdateCommandSpawnFailureTest extends TestCase
      * 업데이트 트리 플래그를 세 채널($_ENV/$_SERVER/putenv)에 세우거나 지웁니다.
      *
      * @param  bool  $enabled  true 면 플래그 설정, false 면 세 채널 모두 제거
+     * @return void 반환값 없음
      */
     private function setUpdateFlag(bool $enabled): void
     {
@@ -105,6 +116,7 @@ class CoreUpdateCommandSpawnFailureTest extends TestCase
      * 프로세스 env 의 APP_VERSION 을 세우거나(문자열) 비운다(null).
      *
      * @param  string|null  $version  세울 버전. null 이면 세 채널($_ENV/$_SERVER/putenv) 모두 제거
+     * @return void 반환값 없음
      */
     private function setEnvVersion(?string $version): void
     {
@@ -120,6 +132,15 @@ class CoreUpdateCommandSpawnFailureTest extends TestCase
         putenv('APP_VERSION='.$version);
     }
 
+    /**
+     * abort 모드의 spawn 실패는 재개 명령을 담은 핸드오프 예외로 끝난다.
+     *
+     * @scenario spawn_failure_mode=abort
+     *
+     * @effects failSpawnWithMode_abort_throws_UpgradeHandoffException_with_resume_command
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function fail_spawn_with_mode_abort_모드는_upgrade_handoff_exception_을_throw_한다(): void
     {
@@ -143,6 +164,15 @@ class CoreUpdateCommandSpawnFailureTest extends TestCase
         }
     }
 
+    /**
+     * fallback 모드의 spawn 실패는 경고 로그를 남기고 false(in-process 진행)를 돌려준다.
+     *
+     * @scenario spawn_failure_mode=fallback
+     *
+     * @effects failSpawnWithMode_fallback_returns_false_with_warning_log
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function fail_spawn_with_mode_fallback_모드는_false_를_반환한다(): void
     {
@@ -170,6 +200,15 @@ class CoreUpdateCommandSpawnFailureTest extends TestCase
         $this->assertStringContainsString('stale 메모리 위험', $allLogs);
     }
 
+    /**
+     * 범위 안에 스텝 파일이 없어 실행 0건이면 from<to 여도 정상 통과한다.
+     *
+     * @scenario spawn_branch=child_zero_steps_no_step_files, spawn_failure_mode=abort, from_to_relation=from_lt_to, steps_discovered_signal=discovered_zero
+     *
+     * @effects spawnUpgradeStepsProcess_no_step_files_returns_true_even_when_from_lt_to
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function spawn_자식_범위내_스텝_파일이_없어_0건이면_정상_통과한다(): void
     {
@@ -199,6 +238,15 @@ class CoreUpdateCommandSpawnFailureTest extends TestCase
         $this->assertStringContainsString('실행할 스텝 없음', $allLogs, '스텝 부재 정상 통과 로그');
     }
 
+    /**
+     * 범위 안에 스텝 파일이 있는데 실행 0건이면 abort 모드에서 핸드오프 예외로 끝난다.
+     *
+     * @scenario spawn_branch=child_zero_steps_with_discovered, spawn_failure_mode=abort, steps_executed_signal=present_zero, steps_discovered_signal=discovered_positive
+     *
+     * @effects handleSpawnExit_zero_executed_positive_discovered_dispatches_to_failSpawnWithMode
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function spawn_자식_범위내_스텝이_있는데_0건_실행이면_abort_throw_한다(): void
     {
@@ -226,6 +274,15 @@ class CoreUpdateCommandSpawnFailureTest extends TestCase
         }
     }
 
+    /**
+     * 실행 0건 + 발견 0건이면 from<to 여도 정상 통과한다.
+     *
+     * @scenario spawn_branch=child_zero_steps_no_step_files, steps_executed_signal=present_zero, steps_discovered_signal=discovered_zero, from_to_relation=from_lt_to
+     *
+     * @effects handleSpawnExit_zero_executed_zero_discovered_returns_true
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_spawn_exit_executed_0_discovered_0_이면_from_lt_to_여도_정상_통과한다(): void
     {
@@ -249,6 +306,55 @@ class CoreUpdateCommandSpawnFailureTest extends TestCase
         $this->assertStringContainsString('실행할 스텝 없음', implode("\n", $logs));
     }
 
+    /**
+     * DB 를 함께 쓰는 다른 서버가 이미 끝낸 스텝만 있으면(실행 0·건너뜀 = 발견) 실패가 아니다 (#888).
+     *
+     * 두 번째 서버의 `core:update` 는 실행 대장이 끝난 스텝을 건너뛰어 실행 0건이 된다. 이를 「스텝 파일이 있는데 실행 0건」
+     * 가드가 실패로 읽어 중단하고 `--force` 재개를 안내하면, 안내를 따른 운영자가 끝난 스텝을 다시 돌린다.
+     *
+     * @scenario spawn_branch=child_zero_steps_with_discovered, steps_executed_signal=present_zero, steps_discovered_signal=discovered_positive, spawn_failure_mode=abort
+     *
+     * @effects handleSpawnExit_zero_executed_all_skipped_by_ledger_returns_true
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function handle_spawn_exit_다른_서버가_이미_실행한_스텝만_있으면_정상_통과한다(): void
+    {
+        config(['app.update.spawn_failure_mode' => 'abort']);
+
+        $command = $this->makeCommandWithDummyIo();
+        $method = new \ReflectionMethod(CoreUpdateCommand::class, 'handleSpawnExit');
+
+        $logs = [];
+        $log = function (string $msg) use (&$logs): void {
+            $logs[] = $msg;
+        };
+
+        // exitCode=0, stepsExecuted=0, stepsDiscovered=2, stepsSkipped=2 — 둘 다 다른 서버가 이미 실행
+        $result = $method->invoke($command, 0, null, 0, 2, '7.2.0', '7.2.1', $log, 2);
+
+        $this->assertTrue($result, '다른 서버가 끝낸 스텝만 있으면 정상 통과');
+        $this->assertStringContainsString('건너뜀 2', implode("\n", $logs));
+
+        // 일부만 건너뛰고 나머지를 실행하지 못했다면 여전히 실패다
+        try {
+            $method->invoke($command, 0, null, 0, 3, '7.2.0', '7.2.1', fn () => null, 1);
+            $this->fail('건너뜀이 발견 수보다 적고 실행 0건이면 fail-fast');
+        } catch (UpgradeHandoffException $e) {
+            $this->assertStringContainsString('발견 3건', $e->reason);
+        }
+    }
+
+    /**
+     * 발견 수를 모르는 구버전 자식의 실행 0건은 종전처럼 fail-fast 다.
+     *
+     * @scenario child_process_origin=beta_5_plus, steps_executed_signal=present_zero, steps_discovered_signal=absent, spawn_failure_mode=abort
+     *
+     * @effects handleSpawnExit_zero_executed_null_discovered_from_lt_to_dispatches_to_failSpawnWithMode
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function handle_spawn_exit_구버전_자식_discovered_null_은_레거시_fail_fast_판정을_유지한다(): void
     {
@@ -270,6 +376,15 @@ class CoreUpdateCommandSpawnFailureTest extends TestCase
         }
     }
 
+    /**
+     * 스텝 파일이 없어 실행 0건이면 fallback 모드도 정상 통과한다.
+     *
+     * @scenario spawn_branch=child_zero_steps_no_step_files, spawn_failure_mode=fallback, steps_discovered_signal=discovered_zero
+     *
+     * @effects spawnUpgradeStepsProcess_no_step_files_returns_true_even_when_from_lt_to
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function spawn_자식_범위내_스텝_파일이_없어_0건이면_fallback_모드도_정상_통과한다(): void
     {
@@ -288,6 +403,15 @@ class CoreUpdateCommandSpawnFailureTest extends TestCase
         $this->assertTrue($result, '스텝 파일 부재(discovered=0)는 fallback 모드에서도 정상 통과(true)');
     }
 
+    /**
+     * 자식이 정상 종료하며 실행 건수 신호를 내면 부모는 그 신호를 읽고 성공으로 본다.
+     *
+     * @scenario steps_executed_signal=present_positive, steps_discovered_signal=discovered_positive, spawn_failure_mode=abort
+     *
+     * @effects spawnUpgradeStepsProcess_parses_STEPS_EXECUTED_with_positive_count_returns_true, ExecuteUpgradeStepsCommand_emits_STEPS_EXECUTED_with_count_and_discovered_on_normal_completion
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function spawn_자식_정상_종료_시_step_s_execute_d_파싱_후_true_반환한다(): void
     {
@@ -335,6 +459,15 @@ PHP);
         $this->assertStringContainsString('steps=1', $allLogs, '최종 spawn 완료 로그에 step 수 포함');
     }
 
+    /**
+     * 자식이 비정상 종료하면 abort 모드에서 핸드오프 예외로 끝난다.
+     *
+     * @scenario spawn_branch=child_abnormal_exit, spawn_failure_mode=abort
+     *
+     * @effects spawnUpgradeStepsProcess_child_abnormal_exit_dispatches_to_failSpawnWithMode
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function spawn_자식_비정상_종료_시_abort_모드는_throw_한다(): void
     {
@@ -374,6 +507,15 @@ PHP);
         }
     }
 
+    /**
+     * 자식이 비정상 종료하면 fallback 모드는 false(in-process 진행)를 돌려준다.
+     *
+     * @scenario spawn_branch=child_abnormal_exit, spawn_failure_mode=fallback
+     *
+     * @effects spawnUpgradeStepsProcess_child_abnormal_exit_dispatches_to_failSpawnWithMode
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function spawn_자식_비정상_종료_시_fallback_모드는_false_반환한다(): void
     {
@@ -409,6 +551,15 @@ PHP);
         $this->assertFalse($result, 'fallback 모드는 false 반환');
     }
 
+    /**
+     * 메모리 판이 대상 판보다 낮으면(낡은 부모) abort 모드에서 핸드오프 예외로 끝난다.
+     *
+     * @scenario parent_memory_version=less_than_to, memory_version_source=env_app_version, spawn_failure_mode=abort
+     *
+     * @effects runUpgradeSteps_throws_UpgradeHandoffException_when_memory_lt_to_with_abort_mode
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function run_upgrade_steps_stale_메모리_감지_시_abort_throw_한다(): void
     {
@@ -430,6 +581,15 @@ PHP);
         }
     }
 
+    /**
+     * 메모리 판이 대상 판보다 낮아도 fallback 모드는 경고 후 진행한다.
+     *
+     * @scenario parent_memory_version=less_than_to, memory_version_source=env_app_version, spawn_failure_mode=fallback
+     *
+     * @effects runUpgradeSteps_logs_warning_when_memory_lt_to_with_fallback_mode
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function run_upgrade_steps_stale_메모리_감지_시_fallback_은_경고_후_진행한다(): void
     {
@@ -446,6 +606,15 @@ PHP);
         $this->assertTrue(true);
     }
 
+    /**
+     * 메모리 판이 대상 판과 같으면 낡은 메모리 가드가 발동하지 않는다.
+     *
+     * @scenario parent_memory_version=equal_to_to, memory_version_source=env_app_version, spawn_failure_mode=abort
+     *
+     * @effects runUpgradeSteps_proceeds_silently_when_memory_eq_or_gt_to
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function run_upgrade_steps_memory_가_target_과_동일하면_가드_미발동(): void
     {
@@ -466,6 +635,12 @@ PHP);
      * 부모는 spawn 전에 그 캐시를 비우지 않는다. 자식은 env `APP_VERSION=toVersion` 을 받지만
      * 캐시로 부팅하므로 `config('app.version')` 은 캐시에 박힌 fromVersion 이다. 가드가 config 만
      * 읽으면 정상 spawn 자식을 stale 부모로 오판해 abort 한다 — 스텝 0건 릴리즈에서도 중단된다.
+     *
+     * @scenario child_config_cache_state=cached_from_version, memory_version_source=env_app_version, parent_memory_version=equal_to_to
+     *
+     * @effects runUpgradeSteps_reads_env_APP_VERSION_before_config_so_spawn_child_with_stale_config_cache_passes_guard
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function run_upgrade_steps_spawn_자식은_config_캐시가_stale_해도_env_버전으로_가드를_통과한다(): void
@@ -497,6 +672,8 @@ PHP);
      * 않으면 자식은 이 불완전한 캐시로 부팅해 비정상 종료한다.
      *
      * @effects spawnUpgradeStepsProcess_clears_config_cache_before_proc_open
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function spawn_전에_config_캐시_파일을_지워_자식이_디스크_config_로_부팅하게_한다(): void
@@ -549,6 +726,12 @@ PHP);
 
     /**
      * env 가 비어 있으면(운영자 단독 실행 등) 종전처럼 config('app.version') 으로 판정한다.
+     *
+     * @scenario memory_version_source=config_only_env_absent, parent_memory_version=less_than_to, spawn_failure_mode=abort
+     *
+     * @effects runUpgradeSteps_falls_back_to_config_version_when_env_APP_VERSION_absent
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function run_upgrade_steps_env_부재_시_config_버전으로_stale_을_판정한다(): void
@@ -564,6 +747,8 @@ PHP);
 
     /**
      * CoreUpdateCommand 를 OutputStyle 주입 없이 리플렉션 호출 가능한 형태로 준비.
+     *
+     * @return CoreUpdateCommand 출력이 버퍼로 연결된 명령
      */
     private function makeCommandWithDummyIo(): CoreUpdateCommand
     {

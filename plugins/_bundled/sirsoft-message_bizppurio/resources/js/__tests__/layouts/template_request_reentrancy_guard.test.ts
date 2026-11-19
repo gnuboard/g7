@@ -111,11 +111,17 @@ function collectRequestClickActions(file: string): ClickAction[] {
 describe('검수 신청 체인 재진입 가드 (#597 10c)', () => {
     const all = FILES.flatMap(collectRequestClickActions);
 
+    /**
+     * @effects request_chain_click_actions_carry_reentrancy_guard
+     */
     it('신청 체인을 포함한 click 액션이 산출 파일 전체에서 수집된다 (0건이면 아래 단언은 공회전한다)', () => {
         // 편집 모달 푸터 [저장 후 검수 신청] 1 + 관리 화면(모달 저장 후 신청 신규/수정 + 행 신청)
         expect(all.length).toBeGreaterThanOrEqual(3);
     });
 
+    /**
+     * @effects request_chain_click_actions_carry_reentrancy_guard
+     */
     it.each(FILES)('%s 의 신청 체인 click 액션은 모두 재진입 if 가드를 갖는다', (file) => {
         const actions = all.filter((a) => a.file === file);
         for (const action of actions) {
@@ -130,6 +136,9 @@ describe('검수 신청 체인 재진입 가드 (#597 10c)', () => {
         }
     });
 
+    /**
+     * @effects request_chain_click_actions_carry_reentrancy_guard
+     */
     it('신청 체인 버튼은 in-flight 플래그를 disabled 로 바인딩한다 (구독 없으면 액션 컨텍스트가 갱신되지 않아 if 가드가 항상 stale false 를 본다 — 실측)', () => {
         for (const action of all) {
             const flag = action.ifExpr?.includes('bz_row_busy') ? 'bz_row_busy' : 'bz_tpl_modal?.isSaving';
@@ -140,6 +149,9 @@ describe('검수 신청 체인 재진입 가드 (#597 10c)', () => {
         }
     });
 
+    /**
+     * @effects request_chain_click_actions_carry_reentrancy_guard
+     */
     it('bz_row_busy 플래그를 쓰는 체인은 성공·실패 양쪽에서 플래그를 해제한다', () => {
         const rowChains = all.filter((a) => a.ifExpr?.includes('bz_row_busy'));
         for (const action of rowChains) {
@@ -189,6 +201,9 @@ describe('저장 체인 재진입 가드 (#597 라운드 5 §6.3 10c 실측 파�
         return found;
     };
 
+    /**
+     * @effects save_chain_click_actions_carry_reentrancy_guard
+     */
     it('저장 버튼의 click 액션이 산출 파일 전수에서 재진입 가드를 보유한다', () => {
         const all = FILES.flatMap(collectSaveClickActions);
         // 편집 모달 푸터 통합 [저장] 1 + 관리 화면 모달 (신규/수정) 2버튼

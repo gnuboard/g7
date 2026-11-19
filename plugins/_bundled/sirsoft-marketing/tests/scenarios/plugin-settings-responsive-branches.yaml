@@ -1,0 +1,20 @@
+feature: 마케팅 동의 환경설정 화면 — 폭 분기 갈래의 넓은 화면 배치
+
+description: |
+  화면 폭 분기를 엔진 responsive 로 쓴다. 확장 유틸리티는 화면에 실릴 때 층 없이 실려 의미 클래스 칸의
+  marketing-grid-2col·marketing-hidden 을 이긴다. 그래서 동의 사용 줄은 1024px 이상 갈래에 grid-cols-3 이,
+  채널 표의 슬러그 칸·작업 칸 머리와 행 슬러그 칸은 640px 이상 갈래에 block 이 있어야 넓은 화면 배치가 유지된다.
+
+axes:
+  plugin: [sirsoft-marketing]
+  element: [consent_row, channel_table]
+  width: [narrow, wide]
+
+effects:
+  - consent_rows_two_columns_below_1024
+  - consent_rows_three_columns_from_1024
+  - channel_slug_columns_hidden_below_640
+  - channel_slug_columns_shown_from_640
+
+test_files:
+  - plugins/_bundled/sirsoft-marketing/resources/js/__tests__/layouts/pluginSettingsResponsiveBranches.test.ts

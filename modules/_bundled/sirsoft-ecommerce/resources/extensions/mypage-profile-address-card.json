@@ -12,21 +12,21 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "mt-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5"
+                        "className": "ecommerce:mt-4 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:p-5"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex items-center justify-between mb-3"
+                                "className": "ecommerce:flex ecommerce:items-center ecommerce:justify-between ecommerce:mb-3"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "H3",
                                     "props": {
-                                        "className": "text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2"
+                                        "className": "ecommerce:text-base ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:flex ecommerce:items-center ecommerce:gap-2"
                                     },
                                     "children": [
                                         {
@@ -34,7 +34,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "map-pin",
-                                                "className": "text-base text-gray-600 dark:text-gray-400"
+                                                "className": "ecommerce:text-base ecommerce:text-gray-600 ecommerce:dark:text-gray-400"
                                             }
                                         },
                                         {
@@ -56,7 +56,7 @@
                                     ],
                                     "props": {
                                         "href": "/mypage/addresses",
-                                        "className": "flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                                        "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-1 ecommerce:text-sm ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:hover:underline"
                                     },
                                     "children": [
                                         {
@@ -69,7 +69,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "arrow-right",
-                                                "className": "text-sm"
+                                                "className": "ecommerce:text-sm"
                                             }
                                         }
                                     ]
@@ -81,7 +81,7 @@
                             "name": "Span",
                             "if": "{{user !== undefined && user !== null && (!user?.data?.ecommerce_default_address)}}",
                             "props": {
-                                "className": "block text-sm text-gray-500 dark:text-gray-400"
+                                "className": "ecommerce:block ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-ecommerce.user_address_card.empty_notice"
                         },
@@ -95,14 +95,14 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex items-center gap-2 flex-wrap"
+                                        "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:flex-wrap"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                                "className": "ecommerce:text-sm ecommerce:font-medium ecommerce:text-gray-900 ecommerce:dark:text-white"
                                             },
                                             "text": "{{user?.data?.ecommerce_default_address?.recipient_name}}"
                                         },
@@ -111,7 +111,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+                                                "className": "ecommerce:inline-flex ecommerce:items-center ecommerce:px-2 ecommerce:py-0.5 ecommerce:rounded ecommerce:text-xs ecommerce:font-medium ecommerce:bg-blue-100 ecommerce:dark:bg-blue-900/30 ecommerce:text-blue-700 ecommerce:dark:text-blue-300"
                                             },
                                             "text": "$t:sirsoft-ecommerce.user_address_card.default_badge"
                                         },
@@ -120,7 +120,7 @@
                                             "name": "Span",
                                             "if": "{{user?.data?.ecommerce_default_address?.label}}",
                                             "props": {
-                                                "className": "text-xs text-gray-500 dark:text-gray-400"
+                                                "className": "ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400"
                                             },
                                             "text": "{{user?.data?.ecommerce_default_address?.label}}"
                                         }
@@ -130,7 +130,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "block text-sm text-gray-700 dark:text-gray-300 mt-1"
+                                        "className": "ecommerce:block ecommerce:text-sm ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:mt-1"
                                     },
                                     "text": "{{user?.data?.ecommerce_default_address?.address_summary}}"
                                 },
@@ -139,7 +139,7 @@
                                     "name": "Span",
                                     "if": "{{user?.data?.ecommerce_default_address?.recipient_phone}}",
                                     "props": {
-                                        "className": "block text-xs text-gray-500 dark:text-gray-400 mt-0.5"
+                                        "className": "ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400 ecommerce:mt-0.5"
                                     },
                                     "text": "{{user?.data?.ecommerce_default_address?.recipient_phone}}"
                                 }

@@ -1,0 +1,17 @@
+feature: upgrade_720_data_migration_order
+
+description: |
+  코어 7.2.0 데이터 스텝(`upgrades/data/7.2.0/migrations/`)의 목록·실행 순서 잠금.
+  02·03 은 00 이 동기화한 코어 스케줄 행(sitemap-generate·geoip-update)의 cron 을 고치므로 00 이 앞서야 한다.
+
+coverage_strategy: full
+
+axes:
+  step_dir: [core_7_2_0]
+
+effects:
+  - data_migrations_run_in_deterministic_sorted_order
+  - schedule_rows_exist_before_cron_migrations
+
+test_files:
+  - tests/Unit/Upgrades/Upgrade720DataMigrationOrderTest.php

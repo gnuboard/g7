@@ -7,6 +7,7 @@ namespace Plugins\Sirsoft\MessageBizppurio\Services;
 use App\Models\User;
 use App\Notifications\BaseNotification;
 use App\Notifications\GenericNotification;
+use App\Notifications\RecipientDisplayName;
 use App\Services\NotificationDefinitionService;
 use App\Services\PluginSettingsService;
 use Illuminate\Notifications\Notification;
@@ -115,8 +116,12 @@ class AlimtalkChannelDriver
             );
         }
 
+        // 알림 변수는 받는 사람 언어로 해석해 쓴다 — 언어별 값({ko: …, en: …})이 그대로 배열로 남으면 치환되지 않는다(#798).
+        //    전화번호 같은 문자열 변수는 그대로 남는다.
+        $data = $notification->getDataFor($notifiable);
+
         // 2. 전화번호 해석 (회원=mobile, 비회원=data 의 _recipient_phone)
-        $to = $this->resolvePhone($notifiable, $notification->getData());
+        $to = $this->resolvePhone($notifiable, $data);
         if ($to === null) {
             throw new NotificationSendSkippedException(
                 __('sirsoft-message_bizppurio::messages.send_skipped.recipient_phone_missing', ['type' => $this->resolveTypeLabel($type)])
@@ -124,7 +129,7 @@ class AlimtalkChannelDriver
         }
 
         // 3. 승인 스냅샷 → 발송 형식 변환 + 변수(#{var}) 치환. 본문이 비면 발송 불가라 skip.
-        $mapped = $this->payloadMapper->map((array) $template->approved_content, $notification->getData());
+        $mapped = $this->payloadMapper->map((array) $template->approved_content, $data);
         $message = (string) ($mapped['message'] ?? '');
         if (trim($message) === '') {
             throw new NotificationSendSkippedException(
@@ -145,7 +150,7 @@ class AlimtalkChannelDriver
         if ($template->fallback_sms_enabled) {
             $payload = $this->withSmsFallback($payload, $this->smsFallbackBody(
                 $template,
-                $notification,
+                $data,
                 BaseNotification::resolveNotifiableLocale($notifiable),
             ));
         }
@@ -155,7 +160,8 @@ class AlimtalkChannelDriver
             'refkey' => $refkey,
             'channel' => DispatchChannel::Alimtalk->value,
             'to_number' => $to,
-            'to_name' => $notifiable->name ?? null,
+            // 발송 이력은 관리자 화면의 기록물이다. 회원은 그 시점의 관리자 영역 표시 이름, 비회원은 받은 이름 그대로 남긴다.
+            'to_name' => app(RecipientDisplayName::class)->forLog($notifiable),
             'to_user_id' => $this->resolveUserId($notifiable),
             'content' => $message,
             'request_payload' => $this->payloadBuilder->forHistory($payload),
@@ -186,18 +192,18 @@ class AlimtalkChannelDriver
      * 같은 알림의 SMS 단독 발송과 대체발송이 서로 다른 언어로 나가면 안 된다(§14.3).
      *
      * @param  BizppurioTemplate  $template  템플릿 행
-     * @param  GenericNotification  $notification  발송 대상 알림
+     * @param  array<string, mixed>  $data  받는 사람 언어로 해석한 알림 변수 (GenericNotification::getDataFor)
      * @param  string|null  $locale  수신자 로케일 (null 이면 현재 앱 로케일)
      * @return string 치환 완료된 대체 SMS 본문 (없으면 빈 문자열)
      */
-    private function smsFallbackBody(object $template, GenericNotification $notification, ?string $locale = null): string
+    private function smsFallbackBody(object $template, array $data, ?string $locale = null): string
     {
         $body = trim($template->getLocalizedSmsBody($locale));
         if ($body === '') {
             return '';
         }
 
-        return $this->payloadMapper->substituteText($body, $notification->getData());
+        return $this->payloadMapper->substituteText($body, $data);
     }
 
     /**

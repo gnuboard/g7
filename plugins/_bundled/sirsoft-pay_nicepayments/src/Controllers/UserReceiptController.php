@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNicepayments\Controllers;
 
+// audit:allow api-doc-coverage 요청·응답 무변경 — 주문·결제 조회와 기록을 이커머스 공개 결제 계약으로 옮긴 내부 리팩토링 (#916)
+
 use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\PublicBaseController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
-use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\ReceiptRequester;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Plugins\Sirsoft\PayNicepayments\Concerns\IssuesReceiptCookie;
 use Plugins\Sirsoft\PayNicepayments\Concerns\ResolvesEasyPayDisplay;
 
@@ -23,10 +23,12 @@ class UserReceiptController extends PublicBaseController
     private const RECEIPT_BASE_URL = 'https://npg.nicepay.co.kr/issue/IssueLoader.do';
 
     /**
-     * @param  GuestOrderAuthService  $guestOrderAuthService  비회원 조회 토큰 검증 서비스
+     * 이커머스 공개 결제 계약을 주입받습니다.
+     *
+     * @param  PaymentGatewayBridge  $paymentGateway  이커머스 공개 결제 계약 (영수증 결제 행 조회, 비회원 조회 토큰 검증)
      */
     public function __construct(
-        private readonly GuestOrderAuthService $guestOrderAuthService,
+        private readonly PaymentGatewayBridge $paymentGateway,
     ) {
         parent::__construct();
     }
@@ -38,6 +40,8 @@ class UserReceiptController extends PublicBaseController
      * receipt_url 이 비어있으면 transaction_id 로 NicePay IssueLoader URL 을 동적 생성.
      * 테스트 모드 결제는 is_test_mode=true 플래그로 표시되어 UI 에서 안내 가능.
      *
+     * 소유 조건(회원 본인, 비회원 조회 토큰, 이 플러그인이 서명한 비회원 영수증 쿠키)은 이커머스 계약이 결제 행 조회와 함께 건다.
+     *
      * @param  Request  $request  회원 또는 비회원 영수증 요청
      * @param  string  $orderNumber  주문번호
      * @return JsonResponse receipt_url / payment_receipt_url / cash_receipt_url / is_test_mode 또는 404
@@ -46,65 +50,47 @@ class UserReceiptController extends PublicBaseController
     public function show(Request $request, string $orderNumber): JsonResponse
     {
         $user = $request->user();
-        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
-        $query = DB::table((new OrderPayment)->getTable().' as p')
-            ->join((new Order)->getTable().' as o', 'o.id', '=', 'p.order_id')
-            ->where('o.order_number', $orderNumber)
-            ->where('p.pg_provider', 'nicepayments');
 
         if ($user) {
-            $query->where('o.user_id', $user->id);
+            $requester = ReceiptRequester::member((int) $user->id);
         } else {
-            $order = $this->guestOrderAuthService->verifyToken($request->header('X-Guest-Order-Token'), $orderNumber);
+            $token = $request->header('X-Guest-Order-Token');
 
-            if ($order) {
-                $query->whereNull('o.user_id')->where('o.id', $order->id);
+            if ($this->paymentGateway->verifyGuestOrderToken($token, $orderNumber)) {
+                $requester = ReceiptRequester::guestToken($token);
             } elseif ($this->verifyReceiptCookie($request->cookie(self::RECEIPT_COOKIE_NAME), $orderNumber)) {
-                $query->whereNull('o.user_id')
-                    ->where('o.id', function ($sub) use ($orderNumber) {
-                        $sub->select('id')->from((new Order)->getTable())->where('order_number', $orderNumber);
-                    });
+                // 이 플러그인 서명 쿠키로 확인한 비회원 — 비회원 주문인지는 이커머스가 확인한다
+                $requester = ReceiptRequester::guestVerifiedByPg();
             } else {
                 return ResponseHelper::notFound();
             }
         }
 
-        $payment = $query
-            ->select([
-                'p.transaction_id',
-                'p.receipt_url',
-                'p.payment_meta',
-                'p.payment_method',
-                'p.embedded_pg_provider',
-            ])
-            ->first();
+        $payment = $this->paymentGateway->findReceiptPayment('nicepayments', $orderNumber, $requester);
 
         if (! $payment) {
             return ResponseHelper::notFound();
         }
 
-        $receiptUrl = $payment->receipt_url;
-        if (! $receiptUrl && $payment->transaction_id) {
-            $receiptUrl = self::RECEIPT_BASE_URL.'?type=0&TID='.rawurlencode($payment->transaction_id);
+        $receiptUrl = $payment->receiptUrl;
+        if (! $receiptUrl && $payment->transactionId) {
+            $receiptUrl = self::RECEIPT_BASE_URL.'?type=0&TID='.rawurlencode($payment->transactionId);
         }
 
         $cashReceiptUrl = null;
-        $isTestMode = false;
         $display = $this->resolvePaymentDisplay($payment);
-        if ($payment->payment_meta) {
-            $meta = json_decode($payment->payment_meta, true);
-            $rcptTid = $meta['rcpt_tid'] ?? ($meta['pg_raw_response']['RcptTID'] ?? null);
-            if ($rcptTid) {
-                $cashReceiptUrl = self::RECEIPT_BASE_URL.'?type=1&TID='.rawurlencode($rcptTid);
-            }
-            $isTestMode = (bool) ($meta['is_test_mode'] ?? false);
+        $meta = $payment->paymentMeta;
+        $rcptTid = $meta['rcpt_tid'] ?? ($meta['pg_raw_response']['RcptTID'] ?? null);
+        if ($rcptTid) {
+            $cashReceiptUrl = self::RECEIPT_BASE_URL.'?type=1&TID='.rawurlencode($rcptTid);
         }
+        $isTestMode = (bool) ($meta['is_test_mode'] ?? false);
 
         // 마이페이지 「결제 영수증」 링크가 첫 출시부터 열어 온 주소(type=2). 레이아웃에 결제사 외부 주소를 적으면
         // 편집기 저장 게이트(외부 URL 금지)가 거절하므로 서버가 내려준다. receipt_url(매출전표, type=0)과는
         // 다른 화면이 쓰는 다른 값이라 서로 대신하지 않는다.
-        $paymentReceiptUrl = $payment->transaction_id
-            ? self::RECEIPT_BASE_URL.'?type=2&TID='.rawurlencode($payment->transaction_id)
+        $paymentReceiptUrl = $payment->transactionId
+            ? self::RECEIPT_BASE_URL.'?type=2&TID='.rawurlencode($payment->transactionId)
             : null;
 
         return ResponseHelper::success('common.success', [

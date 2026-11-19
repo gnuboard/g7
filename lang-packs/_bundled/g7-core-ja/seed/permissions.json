@@ -111,6 +111,10 @@
     "name": "レイアウト編集",
     "description": "テンプレートレイアウトを編集できます。"
   },
+  "core.templates.settings": {
+    "name": "テンプレート設定",
+    "description": "テンプレート環境設定を保存します。"
+  },
   "core.permissions": {
     "name": "権限管理",
     "description": "ロールおよび権限管理権限"
@@ -319,6 +323,22 @@
     "name": "スケジュール実行",
     "description": "スケジュールを手動で実行できます。"
   },
+  "core.queue_jobs": {
+    "name": "キュータスク管理",
+    "description": "キューの待機・失敗タスクと処理記録の管理権限（キュー画面はスケジュール管理画面の中にあるため、スケジュール閲覧権限も必要）"
+  },
+  "core.queue_jobs.read": {
+    "name": "キュータスク閲覧",
+    "description": "キューの待機・失敗タスクと処理記録を閲覧できます。"
+  },
+  "core.queue_jobs.retry": {
+    "name": "失敗タスクの再試行",
+    "description": "失敗したキュータスクを再実行できます。"
+  },
+  "core.queue_jobs.delete": {
+    "name": "失敗タスクの削除",
+    "description": "失敗したキュータスクを削除できます。"
+  },
   "core.language_packs": {
     "name": "言語パック管理",
     "description": "言語パックインストール/アンインストール/有効化権限"
@@ -382,5 +402,9 @@
   "core.analytics.privacy": {
     "name": "訪問者個人情報閲覧",
     "description": "訪問者プロフィールとアクションタイムライン、リアルタイムIP原値、情報主体検索·エクスポート·削除ができます。"
+  },
+  "core.profile.display_name.choose": {
+    "name": "表示名を直接選択",
+    "description": "会員登録画面とマイ情報編集で、他の会員に表示される名前の種類を直接選べます。選べる種類は環境設定の会員タブで設定します。"
   }
 }

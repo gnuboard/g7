@@ -1,10 +1,18 @@
 // audit:allow seo-renderer-parity-sync #883 표시 규칙을 코어 「본문 콘텐츠」(G7Core.contentPolicy)로 옮겼다 — 봇 정화기 HtmlSanitizer 도 같은 ContentHtmlPolicy 로 후보 태그를 살리고 마무리한다(외부 영상은 봇에 링크)
-import React, { useLayoutEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 // @ts-ignore - DOMPurify 타입 정의 없음
 import DOMPurify from 'dompurify';
 import { Div } from '../basic/Div';
 import type { EditorAttrs } from '../../types';
 import { applyDeferredStyles, getInlineStyleApi, sanitizeDeferred } from '../../support/inlineStyleDeferral';
+import { ImageGallery, useImageGallery } from './ImageGallery';
+import { decorateContentImages, ZOOM_ATTR } from '../../support/contentImages';
+import { stripThumb } from '../../support/thumbnail';
+
+// G7Core.t() 번역 함수 참조
+const t = (key: string, params?: Record<string, string | number>): string =>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (window as any).G7Core?.t?.(key, params) ?? key;
 
 export interface HtmlContentProps {
   /**
@@ -29,6 +37,13 @@ export interface HtmlContentProps {
    * DOMPurify 설정 오버라이드 (isHtml=true일 때만 사용)
    */
   purifyConfig?: any;
+
+  /**
+   * 본문 이미지 srcset 의 `sizes` 값 (isHtml=true일 때만 사용)
+   * 본문 칸 너비가 레이아웃마다 달라, 브라우저가 고를 후보 폭을 레이아웃이 바꿀 수 있게 연다.
+   * @default "(min-width: 1024px) 768px, 100vw"
+   */
+  imageSizes?: string;
 
   /**
    * 레이아웃 JSON에서 text 속성으로 전달되는 콘텐츠
@@ -114,17 +129,31 @@ export const HtmlContent: React.FC<HtmlContentProps> = ({
   isHtml = true,
   className = '',
   purifyConfig,
+  imageSizes,
   id,
   editorAttrs,
 }) => {
   // text prop이 우선순위가 높음 (레이아웃 JSON에서 사용)
   const actualContent = text ?? content ?? '';
+  const isEmpty = !actualContent || actualContent.trim() === '';
+  // 편집 캔버스에서는 클릭이 컴포넌트 선택이라 확대 보기를 붙이지 않는다
+  const zoomable = !editorAttrs;
 
-  // sanitize된 HTML을 메모이제이션. 훅은 조기 return 위에 둔다 — 그리지 않는 경우(빈 값·일반 텍스트)는 정화하지 않고 빈 문자열
+  // 훅은 조기 return 앞에서 모두 부른다 — 종전에는 빈 값·평문 분기가 useMemo 보다 먼저 return 해
+  // 내용이 비었다가 채워지는 순간 훅 개수가 바뀌었다(React 훅 규칙 위반).
+  const { openGallery, galleryProps } = useImageGallery();
+  // 확대 보기를 연 이미지 — 닫힌 뒤 초점을 돌려준다. 라이트박스는 열릴 때 바깥 트리에 inert 를 걸어 누른 이미지의
+  // 초점이 먼저 body 로 빠지므로, 라이트박스 자체의 초점 복귀(직전 초점 요소 기억)는 이 경우 아무 데도 돌려주지 못한다.
+  const zoomOriginRef = useRef<HTMLElement | null>(null);
+  const wasZoomOpenRef = useRef(false);
+
+  // sanitize된 HTML을 메모이제이션
   const sanitizedHtml = useMemo(() => {
-    if (!isHtml || !actualContent || actualContent.trim() === '') {
+    if (isEmpty || !isHtml) {
       return '';
     }
+
+
     const config = purifyConfig
       ? {
           ...DEFAULT_PURIFY_CONFIG,
@@ -134,6 +163,18 @@ export const HtmlContent: React.FC<HtmlContentProps> = ({
           FORBID_ATTR: [...DEFAULT_PURIFY_CONFIG.FORBID_ATTR, ...(purifyConfig.FORBID_ATTR || [])],
         }
       : DEFAULT_PURIFY_CONFIG;
+    // 정화 결과를 문자열이 아니라 DOM 조각으로 받아 그 자리에서 고치고 한 번만 직렬화한다 — 종전에는 정화 결과
+    // 문자열을 다시 파싱(DOMParser)해 고친 뒤 또 직렬화했다. 조각은 DOMPurify 가 만든 비활성 문서(DOMParser)에
+    // 속해 이미지 요청이 나가지 않는다. DOMPurify 는 shadowroot 속성이 허용될 때만 조각을 화면 문서로 가져오므로
+    // (importNode — 그 순간 원본 주소로 요청이 나간다) 그 두 속성은 허용 목록에서 뺀다. innerHTML 은 선언형
+    // 섀도 루트를 만들지 않아 본문에서 쓸 곳이 없는 속성이다.
+    const withoutShadowRoot = (list: unknown) =>
+      Array.isArray(list) ? list.filter((name) => name !== 'shadowroot' && name !== 'shadowrootmode') : list;
+    const inertConfig = {
+      ...config,
+      ...(config.ADD_ATTR !== undefined ? { ADD_ATTR: withoutShadowRoot(config.ADD_ATTR) } : {}),
+      ...(config.ALLOWED_ATTR !== undefined ? { ALLOWED_ATTR: withoutShadowRoot(config.ALLOWED_ATTR) } : {}),
+    };
     // 코어 「본문 콘텐츠」 규칙(G7Core.contentPolicy, engine-v1.90.0)이 있으면 그 규칙으로 정화한다 — 켜진 후보(그림 캡션·업로드 동영상·
     // 오디오·외부 영상)를 살리고 외부 영상은 정해진 플레이어 iframe 으로 바꾼다. prop 으로 덧붙인 금지는 규칙으로 풀 수 없다.
     // 규칙이 없으면(옛 코어) 종전 경로다 (#883)
@@ -141,32 +182,53 @@ export const HtmlContent: React.FC<HtmlContentProps> = ({
     // 정책(`style-src-attr 'none'`)에서 HTML 문자열의 style 속성이 막히기 때문이다. 장치가 없으면(옛 코어) 종전 그대로다 (공개 #163)
     const deferStyle = getInlineStyleApi() !== null;
     const policySanitized = (window as any)?.G7Core?.contentPolicy?.sanitize?.(DOMPurify, actualContent, {
-      ...config,
+      ...inertConfig,
       FORBID_TAGS: [...DEFAULT_PURIFY_CONFIG.FORBID_TAGS],
       G7_KEEP_FORBID_TAGS: purifyConfig?.FORBID_TAGS || [],
       ...(deferStyle ? { G7_DEFER_STYLE: true } : {}),
     });
-    const cleaned = typeof policySanitized === 'string'
-      ? policySanitized
-      : (sanitizeDeferred(actualContent, config) ?? (DOMPurify.sanitize(actualContent, config) as unknown as string));
+    // 고칠 그릇은 어느 경로든 비활성 문서의 요소다. 규칙 경로는 문자열을 돌려준다 — 이미 정화된 결과이므로 다시 정화하지 않고
+    // (플레이어 iframe 이 지워진다) 비활성 문서(DOMParser)로 읽은 body 를 쓴다. 규칙이 없으면 DOMPurify 조각을 그 조각과 같은
+    // 문서의 요소에 담는다.
+    // 규칙이 없고 서식 지연 장치만 있으면(#163) 지연 정화 문자열을 같은 방식으로 읽는다.
+    const preSanitized = typeof policySanitized === 'string' ? policySanitized : sanitizeDeferred(actualContent, inertConfig);
+    let holder: HTMLElement;
+    if (typeof preSanitized === 'string') {
+      holder = new DOMParser().parseFromString(`<!DOCTYPE html><body>${preSanitized}`, 'text/html').body;
+    } else {
+      const fragment = DOMPurify.sanitize(actualContent, {
+        ...inertConfig,
+        RETURN_DOM: false,
+        RETURN_DOM_FRAGMENT: true,
+        RETURN_TRUSTED_TYPE: false,
+      }) as unknown as DocumentFragment;
+      holder = fragment.ownerDocument.createElement('div');
+      holder.appendChild(fragment);
+    }
 
-    // target="_blank" 링크에 rel 속성 추가 (보안)
-    return cleaned.replace(
-      /<a\s+([^>]*?)href=["']([^"']+)["']([^>]*?)>/gi,
-      (match: string, before: string, href: string, after: string) => {
-        if (href.startsWith('http://') || href.startsWith('https://')) {
-          if (!match.includes('rel=')) {
-            return `<a ${before}href="${href}"${after} rel="noopener noreferrer">`;
-          }
-        }
-        return match;
+    // target="_blank" 링크에 rel 속성 추가 (보안) — 외부(http·https) 링크에 rel 이 없을 때만
+    holder.querySelectorAll('a[href]').forEach((anchor) => {
+      const href = anchor.getAttribute('href') ?? '';
+      if ((href.startsWith('http://') || href.startsWith('https://')) && !anchor.hasAttribute('rel')) {
+        anchor.setAttribute('rel', 'noopener noreferrer');
       }
-    );
-  }, [actualContent, purifyConfig, isHtml]);
+    });
 
-  // React 19 는 `dangerouslySetInnerHTML` 객체가 바뀔 때마다(문자열이 같아도) innerHTML 을 다시 쓴다. 렌더마다 새 객체를 넘기면
-  // 부모가 다시 그릴 때마다 본문 DOM 이 통째로 갈리고, 입혀 둔 서식이 지연 속성(`data-g7-style`) 상태로 되돌아간다(브라우저 실측:
-  // 글 보기 첫 표시 60ms 뒤 재렌더에서 글자색·정렬이 사라짐). 그래서 객체를 문자열 기준으로 고정한다.
+    // 정화 뒤 이미지 표시 처리 — 썸네일·srcset·지연 로딩, 링크 밖 이미지의 확대 보기 표식(저장 본문은 그대로).
+    // 봇 화면 짝은 HtmlSanitizer::sanitizeContent 다.
+    decorateContentImages(holder, {
+      imageSizes,
+      zoomable,
+      zoomLabel: (alt: string) => (alt !== '' ? t('common.zoom_image_named', { name: alt }) : t('common.zoom_image')),
+    });
+
+    // 직렬화는 그 그릇에서 한 번만 한다
+    return holder.innerHTML;
+  }, [actualContent, isEmpty, isHtml, purifyConfig, imageSizes, zoomable]);
+
+  // innerHTML 객체를 본문이 바뀔 때만 새로 만든다. React 19 는 dangerouslySetInnerHTML 을 객체 동일성으로 비교해, 렌더마다
+  // 새 객체를 주면 같은 문자열이어도 innerHTML 을 다시 쓴다 — 확대 보기를 열고 닫는 상태 변화만으로 본문 이미지 요소가
+  // 통째로 다시 만들어져(요청 재평가, 누른 이미지 초점 소실) 화면이 흔들렸다.
   const innerHtml = useMemo(() => ({ __html: sanitizedHtml }), [sanitizedHtml]);
 
   // 지연된 서식을 화면에 붙은 뒤 입힌다. 본문이 바뀌면 React 가 innerHTML 을 다시 쓰므로 다시 입혀야 하는데, 다른 경로로
@@ -176,8 +238,78 @@ export const HtmlContent: React.FC<HtmlContentProps> = ({
     applyDeferredStyles(containerRef.current);
   });
 
+  // 확대 보기가 닫히면(열림 → 닫힘) 누른 이미지로 초점을 돌려준다. 본문이 바뀌어 그 이미지가 문서에서 빠졌으면 두지 않는다.
+  useEffect(() => {
+    if (galleryProps.isOpen) {
+      wasZoomOpenRef.current = true;
+      return;
+    }
+    if (!wasZoomOpenRef.current) {
+      return;
+    }
+    wasZoomOpenRef.current = false;
+    const origin = zoomOriginRef.current;
+    zoomOriginRef.current = null;
+    if (origin && origin.isConnected) {
+      origin.focus({ preventScroll: true });
+    }
+  }, [galleryProps.isOpen]);
+
+  /**
+   * 링크 밖 본문 이미지 확대 보기 — 컨테이너 한 곳에서 위임 처리한다.
+   * 슬라이드는 같은 본문의 확대 대상 이미지 전부(원본 주소), 시작은 누른 이미지다.
+   */
+  const openZoom = useCallback((container: HTMLElement, target: EventTarget | null): boolean => {
+    if (!(target instanceof Element)) {
+      return false;
+    }
+
+    const image = target.closest(`img[${ZOOM_ATTR}]`);
+    if (!image || !container.contains(image) || image.closest('a')) {
+      return false;
+    }
+
+    const images = Array.from(container.querySelectorAll<HTMLImageElement>(`img[${ZOOM_ATTR}]`)).filter(
+      (img) => !img.closest('a'),
+    );
+    const index = images.indexOf(image as HTMLImageElement);
+    if (index === -1) {
+      return false;
+    }
+
+    zoomOriginRef.current = image as HTMLElement;
+    openGallery(
+      images.map((img) => ({
+        src: String(stripThumb(img.getAttribute('src') ?? '')),
+        title: img.getAttribute('alt') ?? '',
+      })),
+      index,
+    );
+
+    return true;
+  }, [openGallery]);
+
+  const handleClick = useCallback((event: React.MouseEvent<HTMLElement>) => {
+    if (openZoom(event.currentTarget, event.target)) {
+      event.preventDefault();
+    }
+  }, [openZoom]);
+
+  const handleKeyDown = useCallback((event: React.KeyboardEvent<HTMLElement>) => {
+    if (event.key !== 'Enter' && event.key !== ' ' && event.key !== 'Spacebar') {
+      return;
+    }
+    // 키를 누르고 있으면 keydown 이 반복된다 — 확대 보기를 닫자마자 같은 키 반복으로 다시 열리지 않게 첫 입력만 받는다
+    if (event.repeat) {
+      return;
+    }
+    if (openZoom(event.currentTarget, event.target)) {
+      event.preventDefault();
+    }
+  }, [openZoom]);
+
   // 빈 값 처리
-  if (!actualContent || actualContent.trim() === '') {
+  if (isEmpty) {
     return null;
   }
 
@@ -226,12 +358,17 @@ export const HtmlContent: React.FC<HtmlContentProps> = ({
   `.trim().replace(/\s+/g, ' ');
 
   return (
-    <Div
-      id={id}
-      className={containerClasses}
-      ref={containerRef}
-      dangerouslySetInnerHTML={innerHtml}
-      {...editorAttrs}
-    />
+    <>
+      <Div
+        id={id}
+        className={containerClasses}
+        ref={containerRef}
+        dangerouslySetInnerHTML={innerHtml}
+        onClick={zoomable ? handleClick : undefined}
+        onKeyDown={zoomable ? handleKeyDown : undefined}
+        {...editorAttrs}
+      />
+      {zoomable && <ImageGallery {...galleryProps} />}
+    </>
   );
 };

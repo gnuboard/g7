@@ -68,11 +68,18 @@ class TemplateUpdateConfigCacheInvalidationTest extends TestCase
             'updateTemplate'
         );
 
-        $this->assertStringNotContainsString(
-            'if ($previousStatus !== ExtensionStatus::Active->value)',
-            $body,
-            'updateTemplate() 의 bump 가 previousStatus 가드 안에 있으면 활성 템플릿의 lang/routes/dist 변경이 게시본에 반영되지 않습니다.'
-        );
+        // 같은 조건은 꺼진 템플릿의 설정 화면 동기화(#434)에도 쓰인다 — 조건문 자체가 아니라
+        // 그 블록 안에 bump 가 들어 있는지를 본다.
+        $guard = 'if ($previousStatus !== ExtensionStatus::Active->value)';
+        $offset = 0;
+        while (($at = strpos($body, $guard, $offset)) !== false) {
+            $this->assertStringNotContainsString(
+                '$this->incrementExtensionCacheVersion();',
+                $this->braceBlockAt($body, $at),
+                'updateTemplate() 의 bump 가 previousStatus 가드 안에 있으면 활성 템플릿의 lang/routes/dist 변경이 게시본에 반영되지 않습니다.'
+            );
+            $offset = $at + strlen($guard);
+        }
 
         // 성공 tail + 실패 catch 두 자리 — 최소 2회
         $this->assertGreaterThanOrEqual(
@@ -118,6 +125,34 @@ class TemplateUpdateConfigCacheInvalidationTest extends TestCase
         $this->assertNotFalse($throwAt, '실패 경로의 재던지기를 찾지 못했습니다.');
 
         $this->assertTrue($restoreAt < $bumpAt && $bumpAt < $throwAt, 'bump 는 상태 복원 뒤, 재던지기 앞에 있어야 합니다.');
+    }
+
+    /**
+     * 지정 위치 뒤 첫 여는 중괄호부터 짝이 맞는 닫는 중괄호까지의 블록을 반환합니다.
+     *
+     * @param  string  $source  검사 대상 소스
+     * @param  int  $from  조건문 시작 위치
+     * @return string 중괄호 블록
+     */
+    private function braceBlockAt(string $source, int $from): string
+    {
+        $open = strpos($source, '{', $from);
+        $this->assertNotFalse($open, '조건문 뒤 블록을 찾지 못했습니다.');
+
+        $depth = 0;
+        $length = strlen($source);
+        for ($i = $open; $i < $length; $i++) {
+            if ($source[$i] === '{') {
+                $depth++;
+            } elseif ($source[$i] === '}') {
+                $depth--;
+                if ($depth === 0) {
+                    return substr($source, $open, $i - $open + 1);
+                }
+            }
+        }
+
+        $this->fail('조건문 블록 끝을 찾지 못했습니다.');
     }
 
     /**

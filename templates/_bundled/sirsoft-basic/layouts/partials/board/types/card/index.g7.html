@@ -18,9 +18,11 @@
       </div>
     </div>
     <!-- 필터 바 (카테고리 필터 + 검색) -->
-    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4">
+    <div class="flex flex-col items-stretch justify-between gap-3 mb-4">
+      <responsive on="640-" class="flex flex-row items-center justify-between gap-3 mb-4"/>
       <!-- 카테고리 필터 (카테고리가 있을 때만 표시) -->
-      <select data-if="{{posts?.data?.board?.categories &amp;&amp; posts?.data?.board?.categories.length > 0}}" aria-label="$t:board.form.category" value="{{query.category || 'all'}}" class="w-full sm:w-auto sm:min-w-48 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm" options="{{[{value:'all', label:'$t:board.filter.category_all'},{value:'unclassified', label:'$t:board.filter.category_unclassified'}].concat((posts?.data?.board?.categories ?? []).map(function(c){return{value:c,label:c};}))}}">
+      <select data-if="{{posts?.data?.board?.categories &amp;&amp; posts?.data?.board?.categories.length > 0}}" aria-label="$t:board.form.category" value="{{query.category || 'all'}}" class="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm" options="{{[{value:'all', label:'$t:board.filter.category_all'},{value:'unclassified', label:'$t:board.filter.category_unclassified'}].concat((posts?.data?.board?.categories ?? []).map(function(c){return{value:c,label:c};}))}}">
+        <responsive on="640-" class="w-auto min-w-48 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm"/>
         <on type="change">
           <navigate path="/board/{{route.slug}}" :mergeQuery="true">
             <query category="{{$event.target.value === 'all' ? '' : $event.target.value}}" :page="1"/>
@@ -38,7 +40,8 @@
         <span>$t:board.filter.include_deleted</span>
       </a>
       <!-- 검색 줄 (오른쪽 정렬) — 검색 대상 셀렉트 + 검색 바. 셀렉트는 담아만 두고(_local.boardSearchField) 제출 시 URL 의 search_field 로 옮긴다. URL 에 값이 있으면 그것이 초기값이라 뒤로가기·링크 공유에서 고른 대상이 그대로 살아난다 -->
-      <div class="w-full sm:w-auto sm:ml-auto flex gap-2">
+      <div class="w-full flex gap-2">
+        <responsive on="640-" class="w-auto ml-auto flex gap-2"/>
         <select data-ref="board_search_field_select" aria-label="$t:common.search_field" value="{{_local.boardSearchField ?? query.search_field ?? 'title_content'}}" class="px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
           <options>
             <option value="title_content">$t:board.search_fields.title_content</option>
@@ -52,7 +55,8 @@
           </on>
         </select>
         <!-- 최근 검색어 검색창(게시글 검색 범위 sirsoft-board.posts — 게시판·목록 유형을 가리지 않고 목록을 함께 쓴다). 주소의 search 는 보이기만 하고 기록하지 않는다 — 제출(Enter·목록 항목)할 때 검색창이 기록한다. 게시판이 꺼져 범위가 없으면 평범한 검색칸이다. 칸을 비우고 제출하면 검색어 조건이 풀린다(submitEmpty). -->
-        <recent-search-combobox data-type="composite" data-ref="board_search_box" scope="sirsoft-board.posts" name="search" value="{{query.search || ''}}" placeholder="$t:board.search_placeholder" :submitEmpty="true" :showClear="true" class="w-full sm:w-64" inputClassName="w-full pl-10 pr-11 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+        <recent-search-combobox data-type="composite" data-ref="board_search_box" scope="sirsoft-board.posts" name="search" value="{{query.search || ''}}" placeholder="$t:board.search_placeholder" :submitEmpty="true" :showClear="true" class="w-full" inputClassName="w-full pl-10 pr-11 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+          <responsive on="640-" class="w-64"/>
           <on event="onSearch">
             <!-- 글 검색 — 다른 조건(분류·삭제글 보기)은 그대로 두고 검색어와 검색 대상만 갈아 끼운다. 결과가 줄어들면 보던 페이지 번호가 뜻을 잃으므로 반드시 1페이지로 되돌린다. -->
             <navigate path="/board/{{route.slug}}" :mergeQuery="true">
@@ -79,7 +83,7 @@
         <!-- 썸네일 이미지 영역 -->
         <div class="w-full h-48 bg-gray-100 dark:bg-gray-900 relative overflow-hidden">
           <!-- 썸네일 이미지 (블라인드/삭제 여부와 관계없이 있으면 표시) -->
-          <img data-if="{{post?.thumbnail}}" src="{{post?.thumbnail}}" alt="{{post?.title}}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"/>
+          <img data-if="{{post?.thumbnail}}" src="{{post?.thumbnail}}" thumbPreset="md" loading="lazy" decoding="async" alt="{{post?.title}}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"/>
           <!-- 이미지가 없는 경우 플레이스홀더 -->
           <div data-if="{{!post?.thumbnail}}" class="w-full h-full flex items-center justify-center gap-2 bg-gray-200 dark:bg-gray-700">
             <icon name="image" class="text-gray-500 dark:text-gray-400"/>

@@ -6,8 +6,8 @@ namespace Plugins\Sirsoft\PayKginicis\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\ClaimPaymentLookup;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
-use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
 use Plugins\Sirsoft\PayKginicis\Concerns\SanitizesPgResponse;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 use Plugins\Sirsoft\PayKginicis\Support\CbtClaimApproveToken;
@@ -36,6 +36,13 @@ class ClaimPaymentApproveListener implements HookListenerInterface
     use SanitizesPgResponse;
 
     private const PG_PROVIDER_ID = 'kginicis';
+
+    /**
+     * @param  ClaimPaymentLookup  $claimPayments  이커머스 클레임 결제 공개 계약 (청구액·환급 합계 계산)
+     */
+    public function __construct(
+        private readonly ClaimPaymentLookup $claimPayments,
+    ) {}
 
     /**
      * 클레임 승인 응답 보관 화이트리스트 (PC + 모바일 승인 응답 공용)
@@ -367,19 +374,20 @@ class ClaimPaymentApproveListener implements HookListenerInterface
      */
     private function expectedChargeAmount(ClaimPayment $payment, string $currency): ?int
     {
-        $charge = app(ClaimPaymentService::class)->resolvePaymentCharge($payment);
+        // 훅 인자 결제 건 Model 을 그대로 넘긴다 — 잠긴 행의 값으로 계산한다.
+        $charge = $this->claimPayments->resolveClaimCharge($payment);
 
-        if ($charge === null || strtoupper((string) $charge['currency']) !== $currency) {
+        if ($charge === null || strtoupper($charge->currency) !== $currency) {
             Log::warning('KG Inicis: claim approve refused — charge basis unavailable for this path', [
                 'payment_number' => $payment->payment_number,
                 'path_currency' => $currency,
-                'charge_currency' => $charge['currency'] ?? null,
+                'charge_currency' => $charge?->currency,
             ]);
 
             return null;
         }
 
-        return (int) $charge['minor_unit_amount'];
+        return $charge->minorUnitAmount;
     }
 
     /**

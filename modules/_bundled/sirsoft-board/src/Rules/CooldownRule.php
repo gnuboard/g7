@@ -2,8 +2,10 @@
 
 namespace Modules\Sirsoft\Board\Rules;
 
+use App\Extension\Cache\CacheDriverFactory;
 use App\Extension\Cache\ModuleCacheDriver;
 use Closure;
+use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -27,7 +29,7 @@ class CooldownRule implements ValidationRule
     /**
      * 이번 요청이 선점한 쿨다운 자리 — 응답 뒤 아직 자기 표지를 들고 있으면 반납한다.
      *
-     * @var list<array{store: \Illuminate\Contracts\Cache\Repository, key: string, token: string}>
+     * @var list<array{store: Repository, key: string, token: string}>
      */
     private static array $pendingClaims = [];
 
@@ -70,7 +72,7 @@ class CooldownRule implements ValidationRule
         // 모듈 컨트롤러와 동일한 ModuleCacheDriver 사용 → 동일 키 namespace 보장
         // (`g7:module.sirsoft-board:` 접두사). Validation Rule 은 컨테이너 DI 가 안 되므로
         // 인스턴스 생성. 동일 모듈 내 다중 호출 시에도 stateless 라 안전.
-        $cache = new ModuleCacheDriver('sirsoft-board', config('cache.default', 'array'));
+        $cache = CacheDriverFactory::extension('module', 'sirsoft-board');
 
         try {
             // audit:allow no-cache-facade-direct reason: CacheInterface 에는 원자적 선점(add)이 없다 — 같은 스토어(getStore)와

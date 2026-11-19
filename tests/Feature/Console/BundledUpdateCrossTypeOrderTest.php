@@ -7,11 +7,13 @@ use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
 use App\Extension\TemplateManager;
 use Illuminate\Console\OutputStyle;
+use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use Mockery;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\BufferedOutput;
+use Tests\Support\Console\NoSpawnExecuteBundledUpdatesCommand;
 use Tests\TestCase;
 
 /**
@@ -57,6 +59,9 @@ class BundledUpdateCrossTypeOrderTest extends TestCase
         });
         $this->app->instance(ModuleManager::class, $modules);
         $this->app->instance(PluginManager::class, $plugins);
+
+        // 일괄 업데이트는 항목마다 새 PHP 프로세스로 돈다 — 매니저 목 호출 순서를 보려면 같은 프로세스에서 돌린다
+        $this->app[Kernel::class]->registerCommand($this->app->make(NoSpawnExecuteBundledUpdatesCommand::class));
     }
 
     /**

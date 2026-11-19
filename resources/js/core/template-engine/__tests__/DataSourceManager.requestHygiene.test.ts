@@ -10,7 +10,7 @@
  *    편집 창에서 2건(E-M2-1)이 console.error 로 찍혔다. 처리기가 없거나 화면에 알리는 실패는 종전대로 error.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, type MockInstance } from 'vitest';
 import { DataSourceManager, DataSource } from '../DataSourceManager';
 import { getErrorHandlingResolver } from '../../error';
 import Logger from '../../utils/Logger';
@@ -52,7 +52,7 @@ function failedResponse(status: number) {
  * @param spy console.error 스파이
  * @return DataSourceManager 가 남긴 error 줄 수
  */
-function dataSourceErrorLines(spy: ReturnType<typeof vi.spyOn>): number {
+function dataSourceErrorLines(spy: MockInstance<typeof console.error>): number {
   return spy.mock.calls.filter((args) => String(args[0]).includes('[DataSourceManager]')).length;
 }
 

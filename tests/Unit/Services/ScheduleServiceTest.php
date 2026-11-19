@@ -8,12 +8,12 @@ use App\Exceptions\ScheduleAlreadyRunningException;
 use App\Extension\HookManager;
 use App\Models\Schedule;
 use App\Models\ScheduleHistory;
+use App\Services\Schedule\ScheduleExecutor;
 use App\Services\ScheduleService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Process;
-use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 /**
@@ -115,12 +115,14 @@ class ScheduleServiceTest extends TestCase
     }
 
     // ========================================================================
-    // runSchedule() - 실행 직전 방어선 (KVE-2026-1653)
+    // runNow() - 실행 직전 방어선 (KVE-2026-1653)
+    //   7.2.0: 즉시 실행이 예약 실행과 같은 디스패처·실행기를 거친다 — 방어선은 실행기에 있고,
+    //   차단된 실행은 예외가 아니라 실패 이력으로 돌아온다(K3).
     // ========================================================================
 
     /**
      * 게이트를 켜고 `bash` 를 등록한 상태라도, DB 에 직접 심어진 `bash -c id` 는
-     * 실행 직전 방어선에서 차단된다 (저장 검증을 우회해 들어온 값 방어).
+     * 즉시 실행(runNow) 경로의 실행 직전 방어선에서 차단된다 (저장 검증을 우회해 들어온 값 방어).
      *
      * @scenario command_class=inline_code, enforcement_point=run
      *
@@ -128,7 +130,7 @@ class ScheduleServiceTest extends TestCase
      *
      * @return void 반환값 없음
      */
-    public function test_run_schedule_blocks_interpreter_inline_code(): void
+    public function test_run_now_blocks_interpreter_inline_code(): void
     {
         config([
             'schedule_security.shell.enabled' => true,
@@ -144,14 +146,12 @@ class ScheduleServiceTest extends TestCase
             'is_active' => true,
         ]);
 
-        try {
-            $this->scheduleService->runSchedule($schedule);
-            $this->fail('인라인 코드 스케줄이 실행됨');
-        } catch (ValidationException) {
-            // 실행 직전 방어선이 차단 — 아래에서 미실행·실패 기록을 확인한다
-        }
+        $history = $this->scheduleService->runNow($schedule);
 
+        // 실행 직전 방어선이 차단 — 프로세스는 돌지 않고 실패 이력·실패 결과가 남는다
         Process::assertNothingRan();
+        $this->assertNotNull($history, '차단된 실행도 실패 이력을 남겨야 한다');
+        $this->assertSame(ScheduleResultStatus::Failed, $history->status);
         $this->assertSame(ScheduleResultStatus::Failed, $schedule->fresh()->last_result);
     }
 
@@ -235,16 +235,18 @@ class ScheduleServiceTest extends TestCase
     }
 
     // ========================================================================
-    // runSchedule() - 「중복 실행 방지」 실행 잠금 (#161 F4)
+    // runNow() - 「중복 실행 방지」 실행 잠금 (#161 F4)
+    //   7.2.0: 잠금은 실행기(ScheduleExecutor)가 이력 생성보다 먼저 잡는다 — 키는 `schedule:run:{id}`,
+    //   유지 시간은 without_overlapping(분)이다. 실행 실패는 예외가 아니라 실패 이력으로 돌아온다.
     // ========================================================================
 
     /**
      * 외부 프로세스를 돌리지 않는 Shell 스케줄을 만듭니다 — 실행은 Process 가짜가 받는다.
      *
-     * @param  bool  $withoutOverlapping  중복 실행 방지 여부
+     * @param  int  $withoutOverlappingMinutes  중복 실행 방지 잠금 유지 시간(분). 0 이면 방지를 끈다
      * @return Schedule 생성된 스케줄
      */
-    private function createFakeShellSchedule(bool $withoutOverlapping): Schedule
+    private function createFakeShellSchedule(int $withoutOverlappingMinutes): Schedule
     {
         config([
             'schedule_security.shell.enabled' => true,
@@ -257,7 +259,7 @@ class ScheduleServiceTest extends TestCase
             'command' => 'i161-task',
             'expression' => '* * * * *',
             'is_active' => true,
-            'without_overlapping' => $withoutOverlapping,
+            'without_overlapping' => $withoutOverlappingMinutes,
             'timeout' => 60,
         ]);
     }
@@ -275,7 +277,7 @@ class ScheduleServiceTest extends TestCase
     public function test_run_rejects_second_run_when_without_overlapping(): void
     {
         Process::fake();
-        $schedule = $this->createFakeShellSchedule(true);
+        $schedule = $this->createFakeShellSchedule(60);
         $nested = null;
 
         // 첫 실행이 도는 도중(직전 훅)에 같은 스케줄을 다시 실행한다
@@ -283,15 +285,16 @@ class ScheduleServiceTest extends TestCase
             if ($nested !== null) {
                 return;
             }
+            $nested = 'started';
             try {
-                $this->scheduleService->runSchedule(Schedule::find($schedule->id));
+                $this->scheduleService->runNow(Schedule::find($schedule->id));
                 $nested = 'ran';
             } catch (ScheduleAlreadyRunningException $e) {
                 $nested = $e;
             }
         });
 
-        $history = $this->scheduleService->runSchedule($schedule);
+        $history = $this->scheduleService->runNow($schedule);
 
         $this->assertInstanceOf(ScheduleAlreadyRunningException::class, $nested, '실행 중인 스케줄의 두 번째 실행은 거절된다');
         $this->assertSame(409, $nested->getStatusCode());
@@ -301,12 +304,12 @@ class ScheduleServiceTest extends TestCase
         Process::assertRanTimes(fn () => true, 1);
 
         // 다른 프로세스가 실행 잠금을 쥐고 있는 동안 — 이력·last_result 를 건드리지 않는다
-        $other = Cache::lock('schedule-run:'.$schedule->id, 3600, 'other-runner');
+        $other = Cache::lock(ScheduleExecutor::LOCK_PREFIX.$schedule->id, 3600, 'other-runner');
         $this->assertTrue($other->get());
         $before = $schedule->fresh()->last_result;
 
         try {
-            $this->scheduleService->runSchedule($schedule->fresh());
+            $this->scheduleService->runNow($schedule->fresh());
             $this->fail('실행 잠금이 잡혀 있는데 실행됨');
         } catch (ScheduleAlreadyRunningException) {
             // 거절 — 아래에서 부수효과가 없음을 본다
@@ -314,7 +317,10 @@ class ScheduleServiceTest extends TestCase
 
         $this->assertSame(1, ScheduleHistory::where('schedule_id', $schedule->id)->count());
         $this->assertSame($before, $schedule->fresh()->last_result, 'last_result 를 Running 으로 바꾸지 않는다');
-        $this->assertTrue(Cache::restoreLock('schedule-run:'.$schedule->id, 'other-runner')->isOwnedByCurrentProcess(), '남의 실행 잠금은 풀지 않는다');
+        $this->assertTrue(
+            Cache::restoreLock(ScheduleExecutor::LOCK_PREFIX.$schedule->id, 'other-runner')->isOwnedByCurrentProcess(),
+            '남의 실행 잠금은 풀지 않는다'
+        );
     }
 
     /**
@@ -329,7 +335,7 @@ class ScheduleServiceTest extends TestCase
     public function test_run_allows_concurrent_when_overlapping_allowed(): void
     {
         Process::fake();
-        $schedule = $this->createFakeShellSchedule(false);
+        $schedule = $this->createFakeShellSchedule(0);
         $nested = null;
 
         HookManager::addAction('core.schedule.before_run', function () use ($schedule, &$nested) {
@@ -337,19 +343,19 @@ class ScheduleServiceTest extends TestCase
                 return;
             }
             $nested = 'started';
-            $nested = $this->scheduleService->runSchedule(Schedule::find($schedule->id));
+            $nested = $this->scheduleService->runNow(Schedule::find($schedule->id));
         });
 
-        $this->scheduleService->runSchedule($schedule);
+        $this->scheduleService->runNow($schedule);
 
         $this->assertInstanceOf(ScheduleHistory::class, $nested, '겹친 실행도 끝까지 돈다');
         $this->assertSame(2, ScheduleHistory::where('schedule_id', $schedule->id)->count());
         Process::assertRanTimes(fn () => true, 2);
-        $this->assertTrue(Cache::lock('schedule-run:'.$schedule->id, 10)->get(), '방지를 끈 스케줄은 실행 잠금을 잡지 않는다');
+        $this->assertTrue(Cache::lock(ScheduleExecutor::LOCK_PREFIX.$schedule->id, 10)->get(), '방지를 끈 스케줄은 실행 잠금을 잡지 않는다');
     }
 
     /**
-     * 실행이 실패해도 실행 잠금은 풀린다 — 풀리지 않으면 실패한 스케줄을 유지 시간(최소 1시간) 동안 다시 실행할 수 없다.
+     * 실행이 실패해도 실행 잠금은 풀린다 — 풀리지 않으면 실패한 스케줄을 잠금 유지 시간 동안 다시 실행할 수 없다.
      *
      * @scenario case=run_failed_releases_lock
      *
@@ -360,19 +366,18 @@ class ScheduleServiceTest extends TestCase
     public function test_lock_released_after_failed_run(): void
     {
         Process::fake(['*' => Process::result(output: '', errorOutput: 'i161 task failed', exitCode: 1)]);
-        $schedule = $this->createFakeShellSchedule(true);
+        $schedule = $this->createFakeShellSchedule(60);
 
+        // 두 번째 시도도 409 가 아니라 실행 실패(실패 이력)로 끝나야 한다
         for ($attempt = 1; $attempt <= 2; $attempt++) {
-            try {
-                $this->scheduleService->runSchedule($schedule->fresh());
-                $this->fail('실패해야 하는 실행이 성공함');
-            } catch (ValidationException) {
-                // 실행 실패 — 두 번째 시도도 409 가 아니라 실행 실패로 끝나야 한다
-            }
+            $history = $this->scheduleService->runNow($schedule->fresh());
+
+            $this->assertNotNull($history, '실패한 실행은 실패 이력으로 돌아온다');
+            $this->assertSame(ScheduleResultStatus::Failed, $history->status);
         }
 
         $this->assertSame(2, ScheduleHistory::where('schedule_id', $schedule->id)->count(), '두 번 모두 실제로 실행됐다');
         $this->assertSame(ScheduleResultStatus::Failed, $schedule->fresh()->last_result);
-        $this->assertTrue(Cache::lock('schedule-run:'.$schedule->id, 10)->get(), '실패 뒤 실행 잠금이 풀려 있다');
+        $this->assertTrue(Cache::lock(ScheduleExecutor::LOCK_PREFIX.$schedule->id, 10)->get(), '실패 뒤 실행 잠금이 풀려 있다');
     }
 }

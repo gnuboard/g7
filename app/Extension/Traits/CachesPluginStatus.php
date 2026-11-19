@@ -4,12 +4,14 @@ namespace App\Extension\Traits;
 
 use App\Contracts\Extension\CacheInterface;
 use App\Enums\ExtensionStatus;
-use App\Extension\Cache\CoreCacheDriver;
+use App\Extension\Cache\CacheDriverFactory;
 use App\Extension\Support\ExtensionStatusMemo;
 use App\Extension\Support\IntegrationReverseIndex;
+use App\Models\IdentityPolicy;
 use App\Models\Plugin;
 use App\Support\InstallerContext;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -140,6 +142,15 @@ trait CachesPluginStatus
 
         // 같은 요청에서 만든 선택 연동 역맵도 버린다 — 상태가 바뀐 뒤의 「연동 중인 확장」 응답이 옛 목록이 되지 않게(7.1.4)
         IntegrationReverseIndex::flushCurrent();
+
+        // 본인인증 정책 색인(route·hook)은 활성 확장의 정책만 담는다 — 상태가 바뀌면 함께 비운다. 업데이트 중(updating)에는
+        // 그 확장의 정책이 빠진 색인이 만들어질 수 있어, 상태 복원(성공·롤백)이 비우지 않으면 캐시 수명 동안 그 확장의
+        // 정책이 걸리지 않는다(#869). 비우기 실패가 상태 변경을 깨지 않게 경고만 남긴다.
+        try {
+            IdentityPolicy::flushRouteScopeCache();
+        } catch (\Throwable $e) {
+            Log::warning('플러그인 상태 변경 뒤 본인인증 정책 색인을 비우지 못했습니다', ['error' => $e->getMessage()]);
+        }
     }
 
     /**
@@ -177,7 +188,7 @@ trait CachesPluginStatus
         try {
             return app(CacheInterface::class);
         } catch (\Throwable $e) {
-            return new CoreCacheDriver(config('cache.default', 'array'));
+            return CacheDriverFactory::core();
         }
     }
 }

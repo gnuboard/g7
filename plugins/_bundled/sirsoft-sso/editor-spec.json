@@ -1,0 +1,333 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "레이아웃 편집기 스펙 — SSO 연동 플러그인. 로그인 화면 확장 조각(auth-login-sso-modals, admin-login-sso-modals)의 동의·연결 확인 창은 창을 연 화면 init 이 담아 둔 값(_global.ssoPending·ssoLink)을 읽는다. 편집기는 그 왕복을 하지 않으므로 상태 표본이 대신 담는다. 응답 모양은 LinkVerificationService::consentInfo()·linkInfo() 에서 역추론. 이 파일은 릴리즈에 실리므로 실제 IdP·회원 정보를 싣지 않는다.",
+  "pluginId": "sirsoft-sso",
+  "version": "1.0.0",
+  "description": "SSO 연동 플러그인 레이아웃 편집기 스펙 (로그인 화면 동의·연결 확인 창 상태 표본).",
+  "states": {
+    "comment": "동의 창은 GET pending/{token} 응답을 _global.ssoPending 에, 연결 확인 창은 GET link/{token} 응답을 _global.ssoLink 에 담는다. 관리자 로그인 조각은 같은 모양에 guard=admin.",
+    "groups": [
+      {
+        "comment": "사용자 로그인 — 가입 동의 창(제목이 ssoPending.idp.label 을 끼워 넣는다).",
+        "scope": {
+          "kind": "modal",
+          "match": "sso_consent"
+        },
+        "items": [
+          {
+            "id": "consent_pending",
+            "label": "$t:sirsoft-sso.editor.state.consent_pending",
+            "default": true,
+            "initialState": {
+              "global": {
+                "ssoPending": {
+                  "idp": {
+                    "key": "corp",
+                    "label": "Corp SSO"
+                  },
+                  "guard": "user",
+                  "name": "Sample User",
+                  "email": "sa****@corp.example"
+                },
+                "ssoPendingExpired": false,
+                "ssoForm": {
+                  "agree_terms": false,
+                  "agree_privacy": false,
+                  "password": "",
+                  "code": ""
+                },
+                "ssoBusy": false,
+                "ssoError": null
+              }
+            }
+          },
+          {
+            "id": "consent_expired",
+            "label": "$t:sirsoft-sso.editor.state.consent_expired",
+            "initialState": {
+              "global": {
+                "ssoPending": null,
+                "ssoPendingExpired": true,
+                "ssoForm": {
+                  "agree_terms": false,
+                  "agree_privacy": false,
+                  "password": "",
+                  "code": ""
+                },
+                "ssoBusy": false,
+                "ssoError": null
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "사용자 로그인 — 기존 계정 연결 확인 창(비밀번호 또는 메일 코드).",
+        "scope": {
+          "kind": "modal",
+          "match": "sso_link_verify"
+        },
+        "items": [
+          {
+            "id": "link_password",
+            "label": "$t:sirsoft-sso.editor.state.link_password",
+            "default": true,
+            "initialState": {
+              "global": {
+                "ssoLink": {
+                  "idp": {
+                    "key": "corp",
+                    "label": "Corp SSO"
+                  },
+                  "guard": "user",
+                  "email": "sa****@corp.example",
+                  "methods": [
+                    "password",
+                    "email"
+                  ]
+                },
+                "ssoLinkExpired": false,
+                "ssoLinkMethod": "password",
+                "ssoLinkChallengeId": null,
+                "ssoForm": {
+                  "agree_terms": false,
+                  "agree_privacy": false,
+                  "password": "",
+                  "code": ""
+                },
+                "ssoBusy": false,
+                "ssoError": null
+              }
+            }
+          },
+          {
+            "id": "link_email_code",
+            "label": "$t:sirsoft-sso.editor.state.link_email_code",
+            "initialState": {
+              "global": {
+                "ssoLink": {
+                  "idp": {
+                    "key": "corp",
+                    "label": "Corp SSO"
+                  },
+                  "guard": "user",
+                  "email": "sa****@corp.example",
+                  "methods": [
+                    "password",
+                    "email"
+                  ]
+                },
+                "ssoLinkExpired": false,
+                "ssoLinkMethod": "email",
+                "ssoLinkChallengeId": "00000000-0000-0000-0000-000000000000",
+                "ssoForm": {
+                  "agree_terms": false,
+                  "agree_privacy": false,
+                  "password": "",
+                  "code": ""
+                },
+                "ssoBusy": false,
+                "ssoError": null
+              }
+            }
+          },
+          {
+            "id": "link_expired",
+            "label": "$t:sirsoft-sso.editor.state.link_expired",
+            "initialState": {
+              "global": {
+                "ssoLink": null,
+                "ssoLinkExpired": true,
+                "ssoLinkMethod": "password",
+                "ssoLinkChallengeId": null,
+                "ssoForm": {
+                  "agree_terms": false,
+                  "agree_privacy": false,
+                  "password": "",
+                  "code": ""
+                },
+                "ssoBusy": false,
+                "ssoError": null
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "관리자 로그인 — 가입 동의 창.",
+        "scope": {
+          "kind": "modal",
+          "match": "sso_admin_consent"
+        },
+        "items": [
+          {
+            "id": "consent_pending",
+            "label": "$t:sirsoft-sso.editor.state.consent_pending",
+            "default": true,
+            "initialState": {
+              "global": {
+                "ssoPending": {
+                  "idp": {
+                    "key": "corp",
+                    "label": "Corp SSO"
+                  },
+                  "guard": "admin",
+                  "name": "Sample User",
+                  "email": "sa****@corp.example"
+                },
+                "ssoPendingExpired": false,
+                "ssoForm": {
+                  "agree_terms": false,
+                  "agree_privacy": false,
+                  "password": "",
+                  "code": ""
+                },
+                "ssoBusy": false,
+                "ssoError": null
+              }
+            }
+          },
+          {
+            "id": "consent_expired",
+            "label": "$t:sirsoft-sso.editor.state.consent_expired",
+            "initialState": {
+              "global": {
+                "ssoPending": null,
+                "ssoPendingExpired": true,
+                "ssoForm": {
+                  "agree_terms": false,
+                  "agree_privacy": false,
+                  "password": "",
+                  "code": ""
+                },
+                "ssoBusy": false,
+                "ssoError": null
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "관리자 로그인 — 기존 계정 연결 확인 창.",
+        "scope": {
+          "kind": "modal",
+          "match": "sso_admin_link_verify"
+        },
+        "items": [
+          {
+            "id": "link_password",
+            "label": "$t:sirsoft-sso.editor.state.link_password",
+            "default": true,
+            "initialState": {
+              "global": {
+                "ssoLink": {
+                  "idp": {
+                    "key": "corp",
+                    "label": "Corp SSO"
+                  },
+                  "guard": "admin",
+                  "email": "sa****@corp.example",
+                  "methods": [
+                    "password",
+                    "email"
+                  ]
+                },
+                "ssoLinkExpired": false,
+                "ssoLinkMethod": "password",
+                "ssoLinkChallengeId": null,
+                "ssoForm": {
+                  "agree_terms": false,
+                  "agree_privacy": false,
+                  "password": "",
+                  "code": ""
+                },
+                "ssoBusy": false,
+                "ssoError": null
+              }
+            }
+          },
+          {
+            "id": "link_email_code",
+            "label": "$t:sirsoft-sso.editor.state.link_email_code",
+            "initialState": {
+              "global": {
+                "ssoLink": {
+                  "idp": {
+                    "key": "corp",
+                    "label": "Corp SSO"
+                  },
+                  "guard": "admin",
+                  "email": "sa****@corp.example",
+                  "methods": [
+                    "password",
+                    "email"
+                  ]
+                },
+                "ssoLinkExpired": false,
+                "ssoLinkMethod": "email",
+                "ssoLinkChallengeId": "00000000-0000-0000-0000-000000000000",
+                "ssoForm": {
+                  "agree_terms": false,
+                  "agree_privacy": false,
+                  "password": "",
+                  "code": ""
+                },
+                "ssoBusy": false,
+                "ssoError": null
+              }
+            }
+          },
+          {
+            "id": "link_expired",
+            "label": "$t:sirsoft-sso.editor.state.link_expired",
+            "initialState": {
+              "global": {
+                "ssoLink": null,
+                "ssoLinkExpired": true,
+                "ssoLinkMethod": "password",
+                "ssoLinkChallengeId": null,
+                "ssoForm": {
+                  "agree_terms": false,
+                  "agree_privacy": false,
+                  "password": "",
+                  "code": ""
+                },
+                "ssoBusy": false,
+                "ssoError": null
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "마이페이지 — 회사 계정 연결 해제 확인 창. 카드의 [연결 해제] 클릭이 _global.ssoUnlinkTarget 에 연결 한 줄(MyAccountService::overview() accounts 행)을 담는다.",
+        "scope": {
+          "kind": "modal",
+          "match": "sso_unlink_confirm"
+        },
+        "items": [
+          {
+            "id": "unlink_confirm",
+            "label": "$t:sirsoft-sso.editor.state.unlink_confirm",
+            "default": true,
+            "initialState": {
+              "global": {
+                "ssoUnlinkTarget": {
+                  "id": 1,
+                  "idp_key": "corp",
+                  "idp_label": "Corp SSO",
+                  "active": true,
+                  "linked_at": "2026-01-01T00:00:00+09:00",
+                  "last_login_at": null,
+                  "unlink_block": null
+                },
+                "ssoUnlinking": false,
+                "ssoUnlinkError": null
+              }
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

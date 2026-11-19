@@ -345,6 +345,49 @@ class SmsChannelDriverTest extends PluginTestCase
     }
 
     /**
+     * 알림 변수가 언어별 값(`{ko: …, en: …}`)이면 수신자 언어의 값으로 치환한다 (#798).
+     *
+     * 코어가 알림 변수에 언어별 값을 허용한 뒤(GenericNotification::getDataFor) 이 드라이버가 getData() 를 그대로 읽으면
+     * 배열이라 치환되지 않고 `#{name}` 이 본문에 남는다.
+     *
+     * @effects sms_body_resolves_localized_variables_for_recipient
+     *
+     * @param  string  $locale  수신자 로케일
+     * @param  string  $expected  기대하는 발송 본문
+     * @return void 반환값 없음
+     */
+    #[DataProvider('localizedVariableProvider')]
+    public function test_언어별_알림_변수는_수신자_언어로_치환된다(string $locale, string $expected): void
+    {
+        Bus::fake();
+        $guest = new GuestNotifiable('guest@example.com', '홍길동', $locale);
+        $builder = $this->spyBuilder();
+
+        $this->makeDriver($this->templateRow(smsBody: [
+            'ko' => '[샵] #{idp_label} 연결 실패',
+            'en' => '[Shop] #{idp_label} connection failed',
+        ]), $builder)->send($guest, $this->notification([
+            'idp_label' => ['ko' => '사내 계정', 'en' => 'Company account'],
+            SmsChannelDriver::RECIPIENT_PHONE_KEY => '010-9999-0000',
+        ]));
+
+        $this->assertSame($expected, $builder->calls[0]['message']);
+    }
+
+    /**
+     * 언어별 변수 치환의 수신자 로케일과 기대 본문 쌍을 공급합니다.
+     *
+     * @return array<string, array{0: string, 1: string}> 케이스명별 [로케일, 기대 본문]
+     */
+    public static function localizedVariableProvider(): array
+    {
+        return [
+            'ko 수신자' => ['ko', '[샵] 사내 계정 연결 실패'],
+            'en 수신자' => ['en', '[Shop] Company account connection failed'],
+        ];
+    }
+
+    /**
      * 수신자 로케일별 본문 선택 (#597 §14.3).
      *
      * 개편 과정에서 sms_body 가 단일 문자열이 되며 이 축이 사라진 적이 있다 — 코드에서

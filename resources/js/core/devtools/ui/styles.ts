@@ -1130,15 +1130,6 @@ export const DEVTOOLS_STYLES = `
   border-radius: 4px;
 }
 
-/* 의존성 태그 */
-.g7dt-dep-tag {
-  font-size: 11px;
-  background-color: rgba(34, 197, 94, 0.2);
-  color: #86efac;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-
 /* 타입 태그 */
 .g7dt-type-tag {
   font-size: 11px;

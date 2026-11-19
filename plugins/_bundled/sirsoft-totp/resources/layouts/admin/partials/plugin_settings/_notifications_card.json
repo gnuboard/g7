@@ -8,7 +8,7 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "card-stack-item"
+        "className": "totp-card-stack-item"
     },
     "children": [
         {
@@ -16,7 +16,7 @@
             "type": "basic",
             "name": "H3",
             "props": {
-                "className": "card-title"
+                "className": "totp-card-title"
             },
             "text": "$t:sirsoft-totp.admin.notifications.title"
         },
@@ -25,7 +25,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "card-description"
+                "className": "totp-card-description"
             },
             "text": "$t:sirsoft-totp.admin.notifications.description"
         },
@@ -39,14 +39,14 @@
                 "index_var": "defIdx"
             },
             "props": {
-                "className": "mt-4"
+                "className": "totp:mt-4"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-heading"
+                        "className": "totp-text-heading"
                     },
                     "text": "{{$localized(def.name)}}"
                 },
@@ -55,7 +55,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "form-label mt-3"
+                        "className": "totp-form-label totp:mt-3"
                     },
                     "text": "$t:sirsoft-totp.admin.notifications.channels"
                 },
@@ -69,14 +69,14 @@
                         "index_var": "chIdx"
                     },
                     "props": {
-                        "className": "flex-between p-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg my-2"
+                        "className": "totp-flex-between totp:p-3 totp:bg-gray-50 totp:dark:bg-gray-900 totp:border totp:border-gray-200 totp:dark:border-gray-700 totp:rounded-lg totp:my-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-2"
+                                "className": "totp-flex-center totp:gap-2"
                             },
                             "children": [
                                 {
@@ -84,7 +84,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "{{ch.icon ?? 'fas fa-bell'}}",
-                                        "className": "text-gray-500 dark:text-gray-400"
+                                        "className": "totp:text-gray-500 totp:dark:text-gray-400"
                                     }
                                 },
                                 {
@@ -95,7 +95,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-heading"
+                                                "className": "totp-text-heading"
                                             },
                                             "text": "{{ch.name ?? ch.id}}"
                                         },
@@ -104,7 +104,7 @@
                                             "name": "Span",
                                             "if": "{{ch.source && ch.source !== 'core'}}",
                                             "props": {
-                                                "className": "text-hint block"
+                                                "className": "totp-text-hint totp:block"
                                             },
                                             "text": "{{ch.source_label ?? ch.source}}"
                                         },
@@ -114,7 +114,7 @@
                                             "name": "Span",
                                             "if": "{{(_local.totpChannels?.[def.id] ?? def.channels ?? []).includes(ch.id) && !(def.templates ?? []).some(t => t.channel === ch.id)}}",
                                             "props": {
-                                                "className": "text-hint block text-amber-700 dark:text-amber-400"
+                                                "className": "totp-text-hint totp:block totp:text-amber-700 totp:dark:text-amber-400"
                                             },
                                             "text": "$t:sirsoft-totp.admin.notifications.channel_template_missing"
                                         }
@@ -148,7 +148,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-center gap-2 my-2"
+                        "className": "totp-flex-center totp:gap-2 totp:my-2"
                     },
                     "children": [
                         {
@@ -230,7 +230,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-primary disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "totp-btn totp-btn-primary totp:disabled:opacity-50 totp:disabled:cursor-not-allowed",
                                 "disabled": "{{_computed.isNotificationReadOnly || _local.totpSavingChannels !== null && _local.totpSavingChannels !== undefined || !(JSON.stringify([...(_local.totpChannels?.[def.id] ?? def.channels ?? [])].sort()) !== JSON.stringify([...(def.channels ?? [])].sort())) || (_local.totpChannels?.[def.id] ?? def.channels ?? []).length === 0}}"
                             },
                             "children": [
@@ -240,7 +240,7 @@
                                     "if": "{{_local.totpSavingChannels === def.id}}",
                                     "props": {
                                         "name": "spinner",
-                                        "className": "spinner-sm"
+                                        "className": "totp-spinner-sm"
                                     }
                                 },
                                 {
@@ -280,7 +280,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-secondary disabled:opacity-50 disabled:cursor-not-allowed",
+                                "className": "totp-btn totp-btn-secondary totp:disabled:opacity-50 totp:disabled:cursor-not-allowed",
                                 "disabled": "{{_local.totpSavingChannels !== null && _local.totpSavingChannels !== undefined}}"
                             },
                             "children": [
@@ -304,7 +304,7 @@
                         "index_var": "tplIdx"
                     },
                     "props": {
-                        "className": "flex flex-wrap items-center gap-3 my-3"
+                        "className": "totp:flex totp:flex-wrap totp:items-center totp:gap-3 totp:my-3"
                     },
                     "children": [
                         {
@@ -381,7 +381,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "btn btn-secondary",
+                                "className": "totp-btn totp-btn-secondary",
                                 "disabled": "{{_computed.isNotificationReadOnly}}"
                             },
                             "children": [
@@ -421,7 +421,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "btn btn-secondary",
+                        "className": "totp-btn totp-btn-secondary",
                         "disabled": "{{_computed.isNotificationReadOnly}}"
                     },
                     "children": [
@@ -441,7 +441,7 @@
             "name": "P",
             "if": "{{totpNotificationDefinitions !== undefined && (totpNotificationDefinitions?.data?.data ?? []).length === 0 && !_local.totpNotificationsError}}",
             "props": {
-                "className": "text-hint mt-4"
+                "className": "totp-text-hint totp:mt-4"
             },
             "text": "$t:sirsoft-totp.admin.notifications.empty"
         },
@@ -452,7 +452,7 @@
             "name": "P",
             "if": "{{_local.totpNotificationsError === 'forbidden'}}",
             "props": {
-                "className": "alert-warning mt-4"
+                "className": "totp-alert-warning totp:mt-4"
             },
             "text": "$t:sirsoft-totp.admin.notifications.forbidden"
         },
@@ -462,7 +462,7 @@
             "name": "P",
             "if": "{{_local.totpNotificationsError === 'failed'}}",
             "props": {
-                "className": "alert-warning mt-4"
+                "className": "totp-alert-warning totp:mt-4"
             },
             "text": "$t:sirsoft-totp.admin.notifications.load_failed"
         }

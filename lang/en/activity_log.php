@@ -28,10 +28,13 @@ return [
 
     // Action labels (last segment based)
     'action' => [
+        'force_deleted' => 'Permanently deleted (recorded)',
+        'sync_deleted' => 'Deleted by declaration sync (recorded)',
         'created' => 'Created',
         'create' => 'Created',
         'updated' => 'Updated',
         'update' => 'Updated',
+        'fields_update' => 'Extra fields updated',
         'rename' => 'Renamed',
         'deleted' => 'Deleted',
         'delete' => 'Deleted',
@@ -80,6 +83,10 @@ return [
         'version_update' => 'Version Updated',
         'version_restore' => 'Version Restored',
         'reset' => 'Reset',
+        // Core update
+        'started' => 'Started',
+        'completed' => 'Completed',
+        'failed' => 'Failed',
 
         // IP access restriction (security.*) — compound words that do not collide with existing segments
         // (so the 4th-stage "last segment" lookup never attaches an unrelated label)
@@ -90,6 +97,11 @@ return [
         'dormant_restored' => 'Dormancy Lifted',
         'dormant_converted' => 'Marked Dormant',
         'dormant_withdrawn' => 'Dormant Account Withdrawn',
+        // External authentication extension points (7.2.0)
+        'register_identity_policy_skipped' => 'Sign-up Without Identity Policy',
+        'block' => 'Member Blocked',
+        'unblock' => 'Member Unblocked',
+        'sessions_revoked' => 'Signed Out of All Devices',
 
         // Password policy (auth.password_*) — compound words that do not collide with existing segments
         'password_change' => 'Password Changed',
@@ -121,11 +133,23 @@ return [
 
     // Description templates (used as description_key)
     'description' => [
+        'layout_force_deleted' => 'Recorded before permanent layout deletion: :name (:template, :reason)',
+        'layout_extension_force_deleted' => 'Recorded before permanent layout fragment deletion: :name (:template, :reason)',
+        'template_custom_translation_deleted' => 'Recorded before template custom translation deletion: :key',
+        'notification_definition_sync_deleted' => 'Recorded before notification definition cleanup: :key (:extension)',
+        'notification_template_sync_deleted' => 'Recorded before notification template cleanup: :key (:channel)',
+        'menu_sync_deleted' => 'Recorded before admin menu cleanup: :key (:extension)',
+        'permission_sync_deleted' => 'Recorded before permission cleanup: :key (:extension)',
+        'role_sync_deleted' => 'Recorded before role cleanup: :key (:extension)',
+        'identity_policy_sync_deleted' => 'Recorded before identity verification policy cleanup: :key (:extension)',
+        'entity_sync_deleted' => 'Recorded before :entity seed data cleanup: :key (:extension)',
+        'schedule_sync_deleted' => 'Recorded before schedule cleanup: :key (:extension)',
         // User management
         'user_index' => 'User list viewed',
         'user_create' => 'User created (ID: :user_id)',
         'user_show' => 'User details viewed (ID: :user_id)',
         'user_update' => 'User updated (ID: :user_id)',
+        'user_fields_update' => 'Updated member extra fields (ID: :user_id)',
         'user_delete' => 'User deleted (ID: :user_id)',
         'user_withdraw' => 'User withdrawn (ID: :user_id)',
         'user_statistics' => 'User statistics viewed',
@@ -166,9 +190,16 @@ return [
         'menu_sync_roles' => 'Menu roles synchronized (ID: :menu_id)',
         'menu_get_by_extension' => 'Menus by extension viewed (:extension_type: :extension_identifier)',
 
+        // Core update
+        'core_update_started' => 'Core update started (:from -> :to)',
+        'core_update_completed' => 'Core update completed (:from -> :to)',
+        'core_update_failed' => 'Core update failed (:from -> :to) - step: :step / rollback: :rollback',
+
         // Settings management
         'settings_index' => 'Settings list viewed',
         'settings_save' => 'Settings saved',
+        'extension_trust_key_create' => 'Extension trust key added (:key_id, vendor: :vendors)',
+        'extension_trust_key_delete' => 'Extension trust key deleted (:key_id, vendor: :vendors)',
         'settings_show' => 'Setting viewed',
         'settings_update' => 'Setting updated',
         'settings_system_info' => 'System information viewed',
@@ -210,6 +241,10 @@ return [
         'user_dormant_restored' => 'Dormancy lifted by sign-in (ID: :user_id)',
         'user_dormant_converted' => 'Marked dormant after long inactivity (ID: :user_id)',
         'user_dormant_withdrawn' => 'Withdrawn after the dormancy period (ID: :user_id)',
+        'user_register_identity_policy_skipped' => 'Signed up without the identity verification policy (ID: :user_id, reason: :reason)',
+        'user_block' => 'Member blocked (ID: :user_id, reason: :reason)',
+        'user_unblock' => 'Member unblocked (ID: :user_id, reason: :reason)',
+        'user_sessions_revoked' => 'Member signed out of all devices (ID: :user_id, :count tokens)',
         'privacy_manual_run_queued' => 'Privacy action manual run queued (:target)',
         'privacy_manual_run_queued_skip_waiting' => 'Privacy action manual run queued — waiting period skipped (:target)',
         'privacy_manual_run_completed' => 'Privacy action manual run completed (:target, :count item)|Privacy action manual run completed (:target, :count items)',
@@ -296,6 +331,8 @@ return [
         // Plugin settings
         'plugin_settings_save' => 'Plugin settings saved (:plugin_name)',
         'plugin_settings_reset' => 'Plugin settings reset (:plugin_name)',
+        'template_settings_save' => 'Template settings saved (:template_name)',
+        'template_settings_reset' => 'Template settings restored to defaults (:template_name)',
 
         // Template management
         'template_index' => 'Template list viewed',
@@ -384,5 +421,13 @@ return [
     // 확장 업데이트 레이아웃 병합 결과의 변경 내역 라벨 (#727)
     'layout_sync' => [
         'operator_modified' => 'Operator-modified',
+    ],
+    'deletion_reason' => [
+        'uninstall' => 'extension uninstalled',
+        'refresh_overwrite_removed' => 'not in the new version (overwrite refresh)',
+        'orphan_override' => 'orphan override cleanup',
+        'settings_layout_removed' => 'settings screen file removed',
+        'template_uninstall' => 'template uninstalled',
+        'declaration_removed' => 'removed from the new version declaration',
     ],
 ];

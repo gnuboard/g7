@@ -1,0 +1,66 @@
+feature: 게시판 첨부 서빙 계약 (코어 형제와의 강도 패리티 — 조건부 요청 · Content-Length · 파일 이름 선언 · 행 disk)
+
+description: |
+  게시판 첨부의 미리보기(`…/attachment/{hash}/preview`)와 다운로드(`…/attachment/{hash}`)가
+  코어 형제(`PublicAttachmentController` · `PublicTemplateController`)와 **같은 강도**의 서빙
+  계약을 갖는지 고정한다. 이 축의 결함은 예외도 로그도 남기지 않는다 — 응답 헤더·전송
+  바이트·저장되는 파일 이름으로만 드러나므로 실제 HTTP 왕복(Feature)과 서비스 계약(Unit)
+  양쪽이 잰다 (G3 검증 회차 10~13 에 걸쳐 발견·처리).
+
+  네 축:
+    - conditional_request — 행 메타(`updated_at`) 기준 `Last-Modified` 를 내보내고
+      `If-Modified-Since` 를 304 로 판정한다. 304 는 200 이 실었을 캐시 헤더를 함께 싣는다.
+      `etag_source` 는 항상 채워지고 컨트롤러는 `path` 로 조용히 폴백하지 않는다
+      (폴백은 내용과 무관한 불변 ETag → 영구 304).
+    - content_length — 행 메타(`size`)로 선지정하며, 축소 경로를 지난 이미지에서도 실제
+      저장 바이트와 같다 (어긋나면 응답이 잘린다).
+    - filename_declaration — `Content-Disposition` 은 스토리지 단일 지점이 만든다
+      (원문 헤더를 넘기면 따옴표가 든 이름이 끊기고 비-ASCII 이름이 RFC 5987 파라미터를 잃는다).
+      미리보기도 원문 `inline` 헤더로 그 선언을 덮지 않는다.
+    - row_disk — 존재 검사·스트림·다운로드 셋 다 **행에 기록된 disk** 를 따른다
+      (디스크를 옮긴 사이트에서 썸네일이 조용히 전멸하던 축).
+
+axes:
+  serving_type: [preview, download]
+  contract_axis: [conditional_request, content_length, filename_declaration, row_disk]
+
+effects:
+  # conditional_request
+  - preview_emits_last_modified_from_row_meta
+  - preview_answers_if_modified_since_with_304_carrying_the_cache_headers_of_200
+  # 다운로드 두 통로(회원·관리자)도 같은 계약 — 종전에는 검증자가 하나도 없었다 (14차)
+  - download_answers_conditional_requests_with_304_carrying_the_cache_headers_of_200
+  - get_file_info_carries_last_modified_from_row_meta
+  - get_file_info_always_fills_etag_source
+  - controller_does_not_fall_back_to_path_for_etag_source
+  # content_length
+  - preview_content_length_matches_streamed_bytes
+  - content_length_matches_after_the_resize_path
+  - download_streams_the_stored_bytes
+  - get_file_info_carries_size_from_row_meta
+  - stream_file_declares_content_length_from_row_meta
+  # filename_declaration
+  - download_disposition_is_built_by_the_storage_layer
+  - download_declares_non_ascii_filename_via_rfc5987
+  - preview_serves_through_the_same_stream_point
+  # row_disk
+  - serving_follows_the_disk_recorded_on_the_row
+  # #609 docblock 정리 때 사후 등재 — AttachmentDownloadCacheContractTest 가 따로 재는 다운로드 통로 단언
+  - download_carries_row_meta_validators_and_keeps_attachment_disposition
+  - download_returns_full_200_for_a_non_matching_validator
+  - download_declares_compression_skip
+  # 다운로드는 글 상태와 무관하게 private, 미리보기는 글 상태 판정을 유지한다
+  - download_is_always_private_in_production
+  - download_cache_scope_read_from_service       # 사용자 다운로드 컨트롤러는 private 를 서비스 값에서 읽는다(빠지면 private)
+  - preview_cache_keeps_the_post_state_gate
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/User/AttachmentPreviewCacheContractTest.php
+  - modules/_bundled/sirsoft-board/tests/Feature/User/AttachmentDownloadCacheContractTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/AttachmentServeContractTest.php
+
+notes: |
+  형제 통로의 같은 계약: 코어 첨부·스트림 서빙 → tests/scenarios/docroot-single-folder.yaml,
+  페이지 첨부 → modules/_bundled/sirsoft-page/tests/scenarios/page-attachment-serving.yaml,
+  에디터 이미지 → plugins/_bundled/sirsoft-ckeditor5/tests/scenarios/image-serve-conditional-request.yaml.
+  미리보기 URL 의 마운트 접두사 축(`AttachmentPreviewUrlTest`)은 docroot-single-folder.yaml 이 소유한다.

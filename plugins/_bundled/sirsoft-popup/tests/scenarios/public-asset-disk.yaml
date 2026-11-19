@@ -1,0 +1,54 @@
+feature: 팝업 이미지의 공개 자산 디스크 — 직접 주소(원본)와 API 주소(썸네일), 행 disk 추종 (#878)
+
+description: |
+  팝업 이미지는 공개 API `/api/plugins/sirsoft-popup/images/{hash}` 로만 나갔다(히어로섹션과 같은 결함, 제품 결정). 이 플러그인이
+  공개 자산 디스크(플러그인 설정 `public_asset_disk` > 코어 `drivers.public_asset_disk`)를 따르게 했다. 업로드 서비스에 주입되는
+  스토리지는 카테고리 `images` 의 디스크이고, 이미 올린 파일의 읽기·서빙·썸네일 원본·복제 원본·삭제·정리 대장 재정리·전체 정리는
+  **행(또는 대장)에 기록된 disk** 를 따른다(코어 `RowDiskStorage::resolve()` — 고아 disk 는 주입 디스크로 폴백).
+
+  응답 주소(제품 결정): 공개 프레젠터는 `url`(API) + `direct_url`(null 가능), 관리자 리소스는 `url`·`preview_url`(API) + `direct_url` +
+  `download_url`(= direct ?? API). 사용자 레이어의 `ImageFrame` 은 `src` 와 srcset 의 마지막 원본 후보만 직접 주소로 쓰고, 축소 후보와
+  그린 크기 비교 키는 `url` 이다.
+
+  변종 축(디스크 설정 none·public·fake_cdn·고아 × 플러그인 재정의 × 옛 행·새 행·혼재)은 surface 마다 시험 안에서 고정한다 — 단일 surface 축은
+  기존 히어로·팝업 매니페스트와 같은 표기다.
+
+  회귀 불변식:
+    1. 기본(plugins) 디스크 행은 `direct_url` null, `download_url` = `url` = 공개 API 주소.
+    2. 직접 URL 디스크 행은 절대 주소(마운트 접두사 없음), `url` 은 접두사를 갖는다.
+    3. 고아 disk·빈 disk/path·`core.storage.filter_url` 차단이면 `direct_url` null, 서빙·삭제·대장 재정리는 예외 없이 폴백.
+    4. 행 disk 에 없는 파일을 주입 디스크의 같은 경로로 몰래 서빙하지 않는다. 삭제는 행 disk 파일만 지운다.
+    5. 팝업 복사는 원본을 원본 행 disk 에서 읽고 복제본은 지금 업로드 디스크에 쓴다(행 disk 도 그 디스크).
+    6. 전체 정리는 기록된 모든 disk 를 비우고, 한 디스크 실패에도 나머지를 비운다.
+    7. 설정 카탈로그 부착·422·재귀 없음은 히어로섹션과 같다(설정 스키마↔defaults 일치는 SettingsParityTest).
+
+axes:
+  surface: [direct_url, download_url, serve, delete, thumbnail_source, purge_all, settings_catalog, settings_validation, recursion, image_frame]
+
+effects:
+  - popup_direct_url_follows_row_disk
+  - popup_direct_url_null_for_streaming_disk
+  - popup_upload_records_public_asset_disk
+  - popup_serve_and_delete_follow_row_disk
+  - popup_orphan_disk_falls_back_to_streaming
+  - popup_duplicate_reads_source_disk_writes_current_disk
+  - popup_purge_all_covers_every_row_disk
+  - popup_settings_catalog_attached
+  - popup_invalid_disk_rejected_with_422
+  - popup_settings_load_recursion_free
+  - popup_image_frame_uses_direct_url
+
+test_files:
+  - plugins/_bundled/sirsoft-popup/tests/Unit/Models/PopupImageDirectUrlTest.php
+  - plugins/_bundled/sirsoft-popup/tests/Unit/Models/ImageUrlBasePrefixTest.php
+  - plugins/_bundled/sirsoft-popup/tests/Unit/Services/PopupImageServiceRowDiskTest.php
+  - plugins/_bundled/sirsoft-popup/tests/Unit/Services/PopupImagePurgeAllTest.php
+  - plugins/_bundled/sirsoft-popup/tests/Unit/PluginSettingsCatalogAttachTest.php
+  - plugins/_bundled/sirsoft-popup/tests/Unit/PluginSettingsPublicAssetDiskValidationTest.php
+  - plugins/_bundled/sirsoft-popup/tests/Unit/StorageDiskRecursionTest.php
+  - plugins/_bundled/sirsoft-popup/tests/Unit/Support/SettingsParityTest.php
+  - plugins/_bundled/sirsoft-popup/resources/js/__tests__/components/PopupImageThumbnail.test.tsx
+  - plugins/_bundled/sirsoft-popup/resources/js/__tests__/layouts/pluginSettingsPublicAssetDisk.test.tsx
+
+notes: |
+  썸네일 302(공개 썸네일 디스크)는 image-thumbnail.yaml 이 소유한다. 팝업은 영상이 없어 웹서버 위임 통로 대상이 아니다.

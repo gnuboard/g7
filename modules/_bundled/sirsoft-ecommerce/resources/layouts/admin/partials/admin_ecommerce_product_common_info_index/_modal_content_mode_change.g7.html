@@ -6,13 +6,13 @@
 <partial description="Common Info Content Mode Change Confirm Modal">
   <modal data-type="composite" data-ref="modal_content_mode_change" title="$t:sirsoft-ecommerce.admin.common_info.modal.content_mode_change.title" size="sm">
     <footer>
-      <button type="button" class="btn btn-outline">
+      <button type="button" class="ecommerce-btn ecommerce-btn-outline">
         <on type="click">
           <close-modal/>
         </on>
         $t:sirsoft-ecommerce.common.cancel
       </button>
-      <button type="button" class="btn btn-primary">
+      <button type="button" class="ecommerce-btn ecommerce-btn-primary">
         <on type="click">
           <!-- 일반 텍스트로 전환 — 서식이 사라진다. 목적지가 `text` 로 고정이라 이 창은 위지윅→텍스트 한 방향 전용이다. -->
           <set-state target="_local" contentMode="text"/>
@@ -23,6 +23,6 @@
         $t:sirsoft-ecommerce.admin.common_info.modal.content_mode_change.confirm
       </button>
     </footer>
-    <p class="text-body">$t:sirsoft-ecommerce.admin.common_info.modal.content_mode_change.message</p>
+    <p class="ecommerce-text-body">$t:sirsoft-ecommerce.admin.common_info.modal.content_mode_change.message</p>
   </modal>
 </partial>

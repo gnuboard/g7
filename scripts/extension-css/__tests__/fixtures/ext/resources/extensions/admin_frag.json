@@ -1,0 +1,6 @@
+{
+    "target_layout": "admin_screen",
+    "components": [
+        { "name": "Div", "props": { "className": "input card" } }
+    ]
+}

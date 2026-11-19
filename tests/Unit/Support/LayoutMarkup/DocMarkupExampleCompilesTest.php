@@ -189,7 +189,7 @@ class DocMarkupExampleCompilesTest extends LayoutMarkupTestCase
             1,
             count($this->compilers),
             '판정 레지스트리가 '.count($this->compilers).'개뿐 — 한 템플릿으로 판정하면 다른 템플릿 소유 '
-            .'컴포넌트를 쓴 예시가 조용히 컴파일 불가로 접힌다 (41차가 그 형태로 1자리를 놓쳤다)'
+            .'컴포넌트를 쓴 예시가 조용히 컴파일 불가로 접힌다 (실제로 그 형태로 1자리를 놓쳤다)'
         );
 
         // "실패 0" 과 "검사 대상 0" 은 다른 명제다 — 펜스 추출식이 깨지면 이 단언이 먼저 red 다.

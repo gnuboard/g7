@@ -206,6 +206,9 @@
     "img_alt": {
       "label": "Alt text"
     },
+    "img_thumb_preset": {
+      "label": "Thumbnail Preset"
+    },
     "link_href": {
       "label": "Link URL"
     },
@@ -735,6 +738,7 @@
     "expandable_content": "Expandable Content",
     "tab_navigation": "Tab Navigation",
     "quantity_selector": "Quantity Selector",
+    "member_field_input": "Member field input",
     "product_image_viewer": "Product Image Viewer",
     "file_uploader": "File Uploader",
     "avatar_uploader": "Avatar Uploader",
@@ -991,6 +995,9 @@
     "draft_preview": "Draft preview",
     "profile_password_entry": "Password verification",
     "profile_actual_edit": "Edit profile",
+    "required_info_default": "Required info: waiting for input",
+    "required_info_validation_failed": "Required info: input error",
+    "required_info_saving": "Required info: saving",
     "profile_validation_failed": "Validation failed",
     "forgot_default": "Input form",
     "forgot_success": "Email sent",
@@ -1191,6 +1198,8 @@
     "postStats": "Post Stats",
     "posts": "Posts",
     "privacyContent": "Privacy Policy Content",
+    "registerFields": "Sign-up fields",
+    "profileFields": "Profile fields",
     "product": "Product",
     "productDownloadableCoupons": "Downloadable Coupons",
     "products": "Products",

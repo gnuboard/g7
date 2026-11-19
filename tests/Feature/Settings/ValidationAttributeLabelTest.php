@@ -172,4 +172,22 @@ class ValidationAttributeLabelTest extends TestCase
         $this->assertStringContainsString('연동 비밀키', $message, "확장이 준 라벨이 문구에 실려야 합니다: {$message}");
         $this->assertStringNotContainsString('vendor_ext', $message, "문구에 원시 키가 실렸습니다: {$message}");
     }
+
+    /**
+     * 사이트 파비콘(#434) 칸과 그 항목 문구가 「사이트 파비콘」 라벨을 쓴다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario field_shape=wildcard_item
+     *
+     * @effects wildcard_label_covers_every_array_index, message_never_contains_raw_field_key
+     */
+    #[Test]
+    public function test_site_favicon_message_uses_operator_label(): void
+    {
+        $this->assertUsesLabel('general.site_favicon', ['array', 'max:1'], [1, 2]);
+        $this->assertUsesLabel('general.site_favicon.*', ['integer'], 'not-a-number');
+
+        $this->assertSame('사이트 파비콘', (new SaveSettingsRequest)->attributes()['general.site_favicon']);
+    }
 }

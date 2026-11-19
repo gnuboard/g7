@@ -1,0 +1,25 @@
+feature: 레이아웃 편집기 저장 결과 kind 별 SaveFeedbackBanner 렌더 (422·409·네트워크 오류·문서 없음 가드)
+
+description: |
+  `useLayoutDocument.save` 가 돌려주는 SaveResult kind 마다 SaveFeedbackBanner 가 맞는 배너·모달을 그리는지
+  라이브 편집기에서 잰다. PUT `/api/admin/templates/{id}/layouts/{name}` 응답을 page.route() 로
+  422·409·abort 로 갈라 클라이언트 분기를 태우고, 가드 분기는 라우트 미선택 상태의 저장 클릭으로 자연 발생시킨다.
+
+  축 save_kind 는 이 spec 이 실제로 만들어 내는 결과 갈래다. success 는 palette-i18n-and-globals.spec.ts 가,
+  blocked_inactive_extension 은 활성 확장 판정 콜백을 바꿔야만 생겨 통합 환경에서 자연 발생하지 않으므로
+  축에 두지 않는다(아래 notes).
+
+axes:
+  save_kind: [validation_failed, concurrent_modification, network_error, guard_no_document]
+
+effects:
+  - banner_visible_per_kind                               # kind 에 맞는 testid 의 배너·모달이 보인다
+  - validation_banner_lists_field_errors_and_stays        # 422 배너가 필드 경로·메시지를 나열하고 5초 뒤에도 닫히지 않는다
+  - concurrent_modal_shows_versions_and_closes_on_cancel  # 409 모달이 dialog 역할·현재/내 버전·3 액션을 보이고 취소로 닫힌다
+
+test_files:
+  - tests/Playwright/specs/layout-editor/save-feedback-banner-kinds.spec.ts
+
+notes: |
+  spec 의 test.skip('blocked_inactive_extension …') 은 본문이 비어 재는 효과가 없다 — 소속 슬러그만 달았다.
+  그 분기(비활성 확장 path 차단 배너)는 useLayoutDocument 단위 시험 영역이다.

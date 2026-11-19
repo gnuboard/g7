@@ -110,5 +110,10 @@ trait RebuildsSearchIndex
         foreach ($report->remaining as $identifier) {
             $this->warn('   '.__('search.index.still_stale_item', ['index' => $identifier]));
         }
+
+        // 재생성으로 고쳐지지 않는 손상은 표 재구축 명령을 안내한다(실행하지 않음)
+        foreach ($report->adviceLines() as $line) {
+            $this->warn('   '.$line);
+        }
     }
 }

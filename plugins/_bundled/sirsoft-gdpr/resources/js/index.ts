@@ -25,7 +25,7 @@
  * @module sirsoft-gdpr/index
  */
 
-import '../css/banner.css';
+import '../css/main.css';
 import { startBlocker, setCurrentConsent, setBlockedDomains } from './blocker';
 import {
     installCookieInterceptor,

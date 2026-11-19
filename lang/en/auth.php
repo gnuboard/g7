@@ -4,6 +4,7 @@ return [
     // Authentication related messages
     'login_success' => 'Login successful.',
     'login_failed' => 'Authentication failed.',
+    'login_handoff_invalid' => 'Your sign-in link has expired or is invalid. Please sign in again.',
     'two_factor_required' => 'A verification code has been sent. Enter it to finish signing in.',
     'two_factor_required_app' => 'Enter the 6-digit code from your authenticator app to finish signing in.',
     'two_factor_enrollment_required' => 'You must enroll an authenticator app before signing in. Please contact the administrator.',
@@ -31,6 +32,7 @@ return [
     'invalid_credentials' => 'Invalid credentials.',
     'admin_login_success' => 'Admin login successful.',
     'admin_required' => 'Administrator privileges required.',
+    'super_admin_required' => 'Only a super administrator can perform this action.',
     'admin_required_dormancy_restored' => 'Administrator privileges required. Your dormant account has been reactivated — please use the regular sign-in page.',
     'unauthenticated' => 'Authentication required.',
     'permission_denied' => 'Permission denied.',
@@ -61,6 +63,22 @@ return [
     'reset_token_expired' => 'Password reset token has expired. Please request again.',
     'password_reset_email_sent' => 'If this email is registered, we have sent a password reset link. Please check your inbox.',
     'email_send_failed' => 'Failed to send email. Please try again later.',
+    // External authentication extension points (7.2.0)
+    'identifier' => 'Email or username',
+    'login_discovery_success' => 'Sign-in method checked.',
+    'password_auth_disabled' => 'This account cannot sign in with a password. Please sign in with your company account.',
+    'password_auth_disabled_with_method' => 'This account cannot sign in with a password. Please sign in with :method.',
+    'external_step_required' => 'One more step is needed to finish signing in.',
+    'two_factor_means_required' => 'This account requires two-factor authentication, but no verification method is available. Please contact an administrator.',
+    'session_cap_reached' => 'Your sign-in time has ended. Please sign in again.',
+    'registration_disabled' => 'This site is not accepting new sign-ups.',
+    // `auth:handoff-issue` command output
+    'handoff_issue_command' => [
+        'production_refused' => 'Unbound sign-in handoff codes cannot be issued in production (APP_ENV=production).',
+        'invalid_guard' => 'The sign-in guard must be user or admin. (given: :guard)',
+        'user_not_found' => 'No member has that email.',
+        'issued' => 'Sign-in handoff URL created. Open it in a browser within :seconds seconds.',
+    ],
     // `auth:process-password-expiry` command output
     'console' => [
         'process_password_expiry' => [

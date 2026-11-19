@@ -1,11 +1,11 @@
 /**
  * 주문 항목상태 전이 + 리뷰 인라인 모달 (skeleton, placeholder).
  *
- * @scenario order-option-status-review
- * @effects member_sees_option_status_transition_on_order_detail,
- *          member_can_open_review_modal_after_confirm,
- *          review_button_opens_inline_modal_not_dead_route,
- *          review_button_visible_only_when_can_write_review
+ * @scenario order-option-status-transition
+ * 케이스(마커 아님 — 평문): order-option-status-review
+ * 효과 요약(마커 아님 — 평문): 주문상세 항목 배지 전이와 확정 옵션의 리뷰 인라인 모달.
+ *   효과 마킹은 각 테스트 주석에 있다. 리뷰 버튼의 can_write_review 게이트(미노출 쪽)는
+ *   레이아웃 렌더링 테스트(orderReviewButton.test.tsx)가 잰다.
  *
  * e2e:allow 본 변경의 사용자측 표면은 리뷰작성 진입을 데드라우트 navigate 제거 후 항목별 인라인
  *           모달(openModal modal_write_review)로 통일한 것(F1/D4)으로, 신규 화면이 아닌 기존
@@ -31,6 +31,7 @@ import { test, expect, authenticatePage } from '../fixtures/ecommerce-auth';
 const ORDER_DETAIL_URL = (orderNumber: string) => `/mypage/orders/${orderNumber}`;
 
 test.describe.skip('주문 항목상태 전이 + 리뷰 모달 (placeholder — data-testid 보강 후 활성화)', () => {
+  /** @effects member_can_open_review_modal_after_confirm, review_button_opens_inline_modal_not_dead_route */
   test('CONFIRMED 옵션에 리뷰 버튼이 노출되고 클릭 시 인라인 모달이 열린다 (데드라우트 아님)', async ({
     page,
     memberToken,
@@ -47,6 +48,7 @@ test.describe.skip('주문 항목상태 전이 + 리뷰 모달 (placeholder — 
     expect(page.url()).not.toContain('/mypage/reviews/write');
   });
 
+  /** @effects member_sees_option_status_transition_on_order_detail */
   test('무통장 입금확인 후 주문상세 항목 배지가 결제완료로 전이된다', async ({
     page,
     memberToken,

@@ -4,6 +4,12 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.0.4] - 2026-11-20
+
+### Changed
+
+- 인증 앱 플러그인 1.1.0 에 맞춰 판 번호를 공개 최신판(1.0.3) 다음으로 맞췄습니다. 번역 문구는 바뀌지 않았습니다.
+
 ## [1.0.3] - 2026-11-15
 
 ### Added

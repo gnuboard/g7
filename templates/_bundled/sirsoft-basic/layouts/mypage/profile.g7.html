@@ -16,6 +16,26 @@
       </default>
     </error-handling>
   </data-source>
+  <!-- 내 정보 항목 — 운영자가 환경설정 > 회원에서 정한 항목 계약과 보기용 값(display_value), 파일 항목의 올라간 파일(files). 보기 조각(partials/member/_member_fields_view)이 카드마다 이 항목을 돌며 그린다.
+       수정 화면과 같은 소스, 같은 묶음 계산(computed profileFieldGroups — 항목이 있는 묶음만. basic, contact, location, profile 은 항목의 ui.group, extra 는 묶음이 없는 운영자 추가 항목)을 쓴다.
+       computed profileExtensionGroups 는 모듈과 플러그인이 선언한 항목을 확장마다 묶은 목록이고 묶음 제목은 그 확장의 이름이다. -->
+  <data-source id="profileFields" label_key="$t:editor.data_source.profileFields" type="api" endpoint="/api/me/fields" method="GET" :auto_fetch="true" :auth_required="true" loading_strategy="progressive">
+    <error-handling>
+      <default>
+        <!-- 처음 받기 실패는 본문 오류 화면, 다시 받기 실패는 받아 둔 항목을 그대로 두고 알린다. -->
+        <conditions>
+          <when if="{{error.refetch}}">
+            <toast type="error" message="$t:core.errors.refresh_failed"/>
+          </when>
+          <else>
+            <show-error-page errorCode="{{error.status}}" target="content"/>
+          </else>
+        </conditions>
+      </default>
+    </error-handling>
+  </data-source>
+  <computed name="profileFieldGroups">{{['basic', 'contact', 'location', 'profile', 'extra'].map(function(g) { return { key: g, fields: (profileFields?.data?.fields ?? []).filter(function(f) { return g === 'extra' ? (!f.ui?.group &amp;&amp; f.owner === 'custom') : f.ui?.group === g; }) }; }).filter(function(g) { return g.fields.length > 0; })}}</computed>
+  <computed name="profileExtensionGroups">{{(profileFields?.data?.fields ?? []).filter(function(f) { return f.owner_type === 'module' || f.owner_type === 'plugin'; }).map(function(f) { return f.owner; }).filter(function(owner, index, owners) { return owners.indexOf(owner) === index; }).map(function(owner) { return { key: 'ext_' + owner, title: ((profileFields?.data?.fields ?? []).filter(function(f) { return f.owner === owner; })[0]?.source_label ?? owner), fields: (profileFields?.data?.fields ?? []).filter(function(f) { return f.owner === owner; }), includeAgreements: true }; })}}</computed>
   <computed name="currentTab">profile</computed>
   <permissions/>
   <transition-overlay enabled style="spinner" target="mypage_tab_content" fallback-target="main_content_area">

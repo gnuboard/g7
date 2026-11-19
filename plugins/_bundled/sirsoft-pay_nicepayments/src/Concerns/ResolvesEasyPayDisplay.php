@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\PayNicepayments\Concerns;
 
 use App\Support\LocalizedValue;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\PaymentRecord;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 
 trait ResolvesEasyPayDisplay
@@ -12,41 +13,46 @@ trait ResolvesEasyPayDisplay
     private const EASY_PAY_METHODS = [
         'nicepay_naverpay' => [
             'provider' => 'naverpay',
-            'label' => ['ko' => '네이버페이', 'en' => 'NaverPay'],
+            'label_key' => 'naverpay',
         ],
         'nicepay_kakaopay' => [
             'provider' => 'kakaopay',
-            'label' => ['ko' => '카카오페이', 'en' => 'KakaoPay'],
+            'label_key' => 'kakaopay',
         ],
         'nicepay_samsungpay' => [
             'provider' => 'samsungpay',
-            'label' => ['ko' => '삼성페이', 'en' => 'Samsung Pay'],
+            'label_key' => 'samsungpay',
         ],
         'nicepay_applepay' => [
             'provider' => 'applepay',
-            'label' => ['ko' => '애플페이', 'en' => 'Apple Pay'],
+            'label_key' => 'applepay',
         ],
         'nicepay_payco' => [
             'provider' => 'payco',
-            'label' => ['ko' => 'PAYCO (페이코)', 'en' => 'PAYCO'],
+            'label_key' => 'payco',
         ],
         'nicepay_skpay' => [
             'provider' => 'skpay',
-            'label' => ['ko' => 'SK pay', 'en' => 'SK pay'],
+            'label_key' => 'skpay',
         ],
         'nicepay_ssgpay' => [
             'provider' => 'ssgpay',
-            'label' => ['ko' => 'SSG PAY', 'en' => 'SSG PAY'],
+            'label_key' => 'ssgpay',
         ],
         'nicepay_lpay' => [
             'provider' => 'lpay',
-            'label' => ['ko' => 'L.pay', 'en' => 'L.pay'],
+            'label_key' => 'lpay',
         ],
     ];
 
     /**
+     * 페이로드가 고른 나이스 간편결제 수단을 결제 meta 에 남길 값으로 해석합니다.
+     *
+     * 라벨은 지원 언어(활성 언어팩) 전부로 만든다 — 결제 meta 에 그대로 남아 주문 상세·영수증·주문 목록이 화면 언어로 고른다.
+     * 이미 저장된 결제 기록의 라벨(종전 ko·en)은 고치지 않는다(데이터 수정 없음).
+     *
      * @param  array<string, mixed>  $payload  PG 승인 응답·요청 페이로드
-     * @return array{method: string, provider: string, label: array{ko: string, en: string}}|array{}
+     * @return array{method: string, provider: string, label: array<string, string>}|array{} 간편결제 값 (간편결제가 아니면 빈 배열)
      */
     protected function resolveEasyPayMeta(array $payload): array
     {
@@ -60,13 +66,15 @@ trait ResolvesEasyPayDisplay
         return [
             'method' => $method,
             'provider' => $definition['provider'],
-            'label' => $definition['label'],
+            'label' => $this->easyPayLabel($definition),
         ];
     }
 
     /**
+     * 결제 메타를 배열로 풉니다 (JSON 문자열도 받는다).
+     *
      * @param  mixed  $paymentMeta  결제 메타(배열 또는 JSON 문자열)
-     * @return array<string, mixed>
+     * @return array<string, mixed> 결제 메타 배열 (풀 수 없으면 빈 배열)
      */
     protected function decodePaymentMeta(mixed $paymentMeta): array
     {
@@ -84,21 +92,44 @@ trait ResolvesEasyPayDisplay
     }
 
     /**
-     * @param  object  $payment  결제 행
+     * 이커머스 결제 계약의 결제 행 DTO 로 표시 라벨을 만듭니다.
+     *
+     * @param  PaymentRecord  $payment  결제 행
      * @return array{
      *     payment_method_label: string|null,
      *     payment_method_display_label: string|null,
      *     selected_payment_method: string|null,
      *     embedded_pg_provider: string|null,
      *     embedded_pg_provider_label: string|null
-     * }
+     * } 결제수단 라벨, 표시 라벨, 고른 간편결제 수단, 간편결제 제공자와 그 라벨
      */
-    protected function resolvePaymentDisplay(object $payment): array
+    protected function resolvePaymentDisplay(PaymentRecord $payment): array
     {
-        $paymentMeta = $this->decodePaymentMeta($payment->payment_meta ?? null);
+        return $this->resolvePaymentDisplayFields($payment->paymentMeta, $payment->embeddedPgProvider, $payment->paymentMethod);
+    }
+
+    /**
+     * 결제 메타·간편결제 제공자·결제수단 값으로 표시 라벨을 만듭니다.
+     *
+     * 결제 행 DTO 가 아닌 값(다른 화면이 넘긴 일반 객체 등)을 받는 곳이 쓴다.
+     *
+     * @param  mixed  $paymentMeta  결제 메타(배열 또는 JSON 문자열)
+     * @param  mixed  $embeddedPgProvider  결제 행의 간편결제 제공자 값
+     * @param  mixed  $paymentMethod  결제 행의 결제수단 값
+     * @return array{
+     *     payment_method_label: string|null,
+     *     payment_method_display_label: string|null,
+     *     selected_payment_method: string|null,
+     *     embedded_pg_provider: string|null,
+     *     embedded_pg_provider_label: string|null
+     * } 결제수단 라벨, 표시 라벨, 고른 간편결제 수단, 간편결제 제공자와 그 라벨
+     */
+    protected function resolvePaymentDisplayFields(mixed $paymentMeta, mixed $embeddedPgProvider, mixed $paymentMethod): array
+    {
+        $paymentMeta = $this->decodePaymentMeta($paymentMeta);
         $selectedPaymentMethod = $this->stringOrNull($paymentMeta['nicepay_easy_pay_method'] ?? null);
         $provider = $this->stringOrNull(
-            $payment->embedded_pg_provider
+            $embeddedPgProvider
                 ?? $paymentMeta['nicepay_easy_pay_provider']
                 ?? $paymentMeta['embedded_pg_provider']
                 ?? null
@@ -108,7 +139,7 @@ trait ResolvesEasyPayDisplay
             $provider = $this->stringOrNull(self::EASY_PAY_METHODS[$selectedPaymentMethod]['provider'] ?? null);
         }
 
-        $baseLabel = $this->paymentMethodLabel($this->stringOrNull($payment->payment_method ?? null));
+        $baseLabel = $this->paymentMethodLabel($this->stringOrNull($paymentMethod));
         $embeddedLabel = $this->embeddedPgProviderLabel($provider, $paymentMeta);
 
         return [
@@ -156,6 +187,8 @@ trait ResolvesEasyPayDisplay
     }
 
     /**
+     * 간편결제 제공자의 표시 라벨을 반환합니다 (결제 meta 에 저장한 라벨 우선).
+     *
      * @param  string|null  $provider  간편결제 제공자 코드
      * @param  array<string, mixed>  $paymentMeta  결제 메타(라벨 저장값 우선)
      * @return string|null 제공자 라벨 (없으면 null)
@@ -175,7 +208,7 @@ trait ResolvesEasyPayDisplay
 
         foreach (self::EASY_PAY_METHODS as $definition) {
             if (($definition['provider'] ?? null) === $provider) {
-                return $this->localizedLabel($definition['label'] ?? null);
+                return $this->localizedLabel($this->easyPayLabel($definition));
             }
         }
 
@@ -183,7 +216,9 @@ trait ResolvesEasyPayDisplay
     }
 
     /**
-     * @param  array<string, mixed>  $payload
+     * 페이로드의 예약 필드에서 나이스 간편결제 수단 코드를 찾습니다.
+     *
+     * @param  array<string, mixed>  $payload  PG 승인 응답·요청 페이로드
      * @return string|null 간편결제 수단 코드 (없으면 null)
      */
     private function resolveEasyPayMethod(array $payload): ?string
@@ -235,6 +270,19 @@ trait ResolvesEasyPayDisplay
 
         // 현재 로케일 → 사이트 기본 언어 → 영어 (#148)
         return $this->stringOrNull(LocalizedValue::pick($label, anyAsLast: false));
+    }
+
+    /**
+     * 간편결제 정의의 표시 라벨을 지원 언어 전부로 만듭니다.
+     *
+     * @param  array<string, mixed>  $definition  EASY_PAY_METHODS 의 한 항목
+     * @return array<string, string> 언어 코드 => 라벨 (`app.supported_locales` 순서)
+     */
+    private function easyPayLabel(array $definition): array
+    {
+        $key = 'sirsoft-pay_nicepayments::payment_methods.'.($definition['label_key'] ?? '').'.label';
+
+        return LocalizedValue::translateAll(fn () => __($key));
     }
 
     /**

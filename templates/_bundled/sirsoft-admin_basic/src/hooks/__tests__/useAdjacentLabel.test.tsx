@@ -6,7 +6,6 @@
  * 스위치는 필드 키(「security.force_https」), 선택 상자는 고른 값(「Artisan」)으로 읽혔다.
  */
 
-import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { Input } from '../../components/basic/Input';
@@ -177,6 +176,25 @@ describe('곁 라벨 규칙 보강', () => {
       </div>
     );
     expect(screen.getByRole('button', { name: '작업유형 전체' })).toBeTruthy();
+  });
+
+  /**
+   * 번들 레이아웃의 필터 줄 라벨 표식은 폭과 무관한 `filter-field-label` 이다(`filter-label` 은 폐지 예정 — 사이트에서
+   * 직접 고친 레이아웃 호환용으로 위 경우가 계속 잇는다).
+   *
+   * @scenario control=select_filter_field_label
+   * @effects form_controls_named_by_adjacent_label
+   */
+  it('목록 필터 줄 라벨의 새 표식(filter-field-label)도 이름표로 쓴다', () => {
+    render(
+      <div className="filter-grid">
+        <div className="flex flex-col gap-2">
+          <span className="filter-field-label">처리 상태</span>
+          <Select options={[{ value: '', label: '전체' }]} value="" onChange={() => {}} />
+        </div>
+      </div>
+    );
+    expect(screen.getByRole('button', { name: '처리 상태 전체' })).toBeTruthy();
   });
 
   /**

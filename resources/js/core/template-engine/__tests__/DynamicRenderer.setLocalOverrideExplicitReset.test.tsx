@@ -8,12 +8,9 @@
  * 같은 sequence 의 `form.newCurrency = null` 뒤 객체 setState 에서 앞 입력이 되살아났다(deep 병합 `name: {}` 로는 못 지움).
  * 명시적 setState 가 쓰는 경로는 그 기록에서 지운다 — 사용자가 고른 초기화가 앞 입력을 이긴다.
  *
- * @effects explicit_set_state_beats_set_local_override, untouched_override_paths_kept
+ * 같은 경로와 다른 경로 두 조합을 시험 하나가 함께 재고, 조합과 효과 표식은 그 시험 앞에 있다.
  */
-// @scenario write_path=explicit_set_state, overridden=same_path
-// @scenario write_path=explicit_set_state, overridden=other_path
 
-import React from 'react';
 import { describe, it, expect, afterEach } from 'vitest';
 import { fireEvent, screen, act } from '@testing-library/react';
 import { createLayoutTest, createMockComponentRegistryWithBasics } from './utils/layoutTestUtils';

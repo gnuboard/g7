@@ -1,34 +1,86 @@
 <!-- 글 작성 폼의 첨부 구획. 개수·용량·확장자 한도는 그 게시판 설정에서 그대로 가져오고(없으면 안전한 기본값), 파일은 고르는 즉시가 아니라 저장 버튼이 쏘는 이벤트를 받아서야 올라간다(`autoUpload=false`) — 글보다 파일이 먼저 올라가므로 `tempKey` 가 둘을 잇는다 -->
 <partial description="Post Form - Attachments Section (Compact List Style)">
-  <div data-ref="attachments_card" data-if="{{form_meta?.data?.board?.use_file_upload}}" class="admin-card">
-    <div class="flex-center gap-2 mb-4">
-      <icon name="paperclip" class="text-xl text-gray-700 dark:text-gray-300"/>
-      <h3 class="section-heading-md">$t:sirsoft-board.admin.posts.form.attachments</h3>
+  <div data-ref="attachments_card" data-if="{{form_meta?.data?.board?.use_file_upload}}" class="board-admin-card">
+    <div class="board-flex-center board:gap-2 board:mb-4">
+      <icon name="paperclip" class="board:text-xl board:text-gray-700 board:dark:text-gray-300"/>
+      <h3 class="board-section-heading-md">$t:sirsoft-board.admin.posts.form.attachments</h3>
     </div>
     <div>
-      <p data-ref="attachments_desc" class="text-xs text-gray-500 dark:text-gray-400 mb-2">$t:sirsoft-board.admin.posts.form.attachments_desc|count={{form_meta?.data?.board?.max_file_count ?? 5}}|maxFiles={{form_meta?.data?.board?.max_file_count ?? 5}}|maxSize={{form_meta?.data?.board?.max_file_size ?? 10}}</p>
-      <p data-ref="attachments_no_permission" data-if="{{!_computed.isReadOnly &amp;&amp; form_meta?.data?.board?.user_abilities?.can_upload !== true}}" class="text-xs text-amber-700 dark:text-amber-400 mb-2">$t:sirsoft-board.admin.posts.form.attachments_no_permission</p>
-      <file-uploader data-type="composite" disabled="{{_computed.isReadOnly || form_meta?.data?.board?.user_abilities?.can_upload !== true}}" collection="post_attachments" maxFiles="{{form_meta?.data?.board?.max_file_count ?? 5}}" maxSize="{{form_meta?.data?.board?.max_file_size ?? 10}}" accept="{{form_meta?.data?.board?.allowed_extensions?.length ? '.' + form_meta.data.board.allowed_extensions.join(',.') : '.jpg,.jpeg,.png,.gif,.pdf,.zip'}}" initialFiles="{{form_meta?.data?.attachments ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:board_attachments" size="sm" :confirmBeforeRemove="true" confirmRemoveTitle="$t:sirsoft-board.admin.posts.form.confirm_remove_attachment_title" confirmRemoveMessage="$t:sirsoft-board.admin.posts.form.confirm_remove_attachment_message">
-        <prop name="uploadParams">
-          <field name="temp_key" value="{{_local.tempKey}}"/>
+      <p data-ref="attachments_desc" class="board:text-xs board:text-gray-500 board:dark:text-gray-400 board:mb-2">$t:sirsoft-board.admin.posts.form.attachments_desc|count={{form_meta?.data?.board?.max_file_count ?? 5}}|maxFiles={{form_meta?.data?.board?.max_file_count ?? 5}}|maxSize={{form_meta?.data?.board?.max_file_size ?? 10}}</p>
+      <p data-ref="attachments_no_permission" data-if="{{!_computed.isReadOnly &amp;&amp; form_meta?.data?.board?.user_abilities?.can_upload !== true}}" class="board:text-xs board:text-amber-700 board:dark:text-amber-400 board:mb-2">$t:sirsoft-board.admin.posts.form.attachments_no_permission</p>
+      <!-- 첨부 업로더 확장점 — 업로더 플러그인이 mode="replace" 로 이 자리를 바꾼다. 업로드 권한이 없으면 계약의 disabled 가 참이라
+           대체 업로더도 잠긴다(기본 업로더와 같다). 새 글은 정렬 주소가 없다. 저장 버튼의 upload:board_attachments 신호와 결과 모양은 그대로다. -->
+      <extension-point name="attachment_uploader" data-ref="attachments_uploader_slot" class="board:contents">
+        <prop name="uploader">
+          <field name="version" :value="1"/>
+          <field name="mode" value="upload"/>
+          <field name="endpoints">
+            <field name="upload" value="/api/modules/sirsoft-board/admin/board/{{route?.slug}}/attachments"/>
+            <field name="delete" value="/api/modules/sirsoft-board/admin/board/{{route?.slug}}/attachments/:id"/>
+            <field name="reorder" value="{{route?.id ? '/api/modules/sirsoft-board/admin/board/' + route?.slug + '/attachments/reorder' : null}}"/>
+          </field>
+          <field name="fields">
+            <field name="temp_key" value="{{_local.tempKey}}"/>
+          </field>
+          <field name="policy">
+            <field name="accept" value="{{form_meta?.data?.board?.allowed_extensions?.length ? '.' + form_meta.data.board.allowed_extensions.join(',.') : '.jpg,.jpeg,.png,.gif,.pdf,.zip'}}"/>
+            <field name="maxSize" value="{{form_meta?.data?.board?.max_file_size ?? 10}}"/>
+            <field name="maxFiles" value="{{form_meta?.data?.board?.max_file_count ?? 5}}"/>
+            <field name="maxConcurrentUploads" :value="1"/>
+            <field name="imageCompression" :value="null"/>
+          </field>
+          <field name="collection" value="post_attachments"/>
+          <field name="attachmentable">
+            <field name="type" :value="null"/>
+            <field name="id" :value="null"/>
+          </field>
+          <field name="triggerEvent" value="upload:board_attachments"/>
+          <field name="initialFiles" value="{{form_meta?.data?.attachments ?? []}}"/>
+          <field name="disabled" value="{{!!(_computed.isReadOnly || form_meta?.data?.board?.user_abilities?.can_upload !== true)}}"/>
+          <field name="autoUpload" :value="false"/>
+          <field name="ui">
+            <field name="confirmBeforeRemove" :value="true"/>
+          </field>
+          <field name="context">
+            <field name="owner" value="sirsoft-board"/>
+            <field name="purpose" value="admin_post_attachments"/>
+          </field>
         </prop>
-        <prop name="apiEndpoints">
-          <field name="upload" value="/api/modules/sirsoft-board/admin/board/{{route?.slug}}/attachments"/>
-          <field name="delete" value="/api/modules/sirsoft-board/admin/board/{{route?.slug}}/attachments/:id"/>
-          <field name="reorder" value="/api/modules/sirsoft-board/admin/board/{{route?.slug}}/attachments/reorder"/>
-        </prop>
-        <on type="change" event="onFilesChange">
-          <!-- 파일을 더하거나 뺀 것도 「변경 있음」으로 친다 — 그래야 본문을 손대지 않고 첨부만 바꿔도 저장 버튼이 열린다. 이미 켜져 있으면 다시 쓰지 않는다 -->
+        <callback name="onFilesChange">
+          <!-- 파일을 더하거나 뺀 것도 「변경 있음」으로 친다(기본 업로더와 같다) -->
           <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="true"/>
-        </on>
-        <on type="change" event="onUploadError">
-          <!-- 업로드 실패 — 저장은 「첨부 올리기 → 본문 보내기」 순서라, 여기서 저장 중 표시를 내려 주지 않으면 버튼이 잠긴 채로 남는다 -->
+        </callback>
+        <callback name="onUploadError">
+          <!-- 업로드 실패 — 저장 중 표시를 내리고 사유를 알린다(기본 업로더와 같다) -->
           <sequence>
-            <set-state target="local" uploadError="{{$args[0]}}" :isSaving="false"/>
-            <toast type="error" message="{{$args[0]}}" icon="triangle-exclamation"/>
+            <set-state target="local" uploadError="{{$event}}" :isSaving="false"/>
+            <toast type="error" message="{{$event}}" icon="triangle-exclamation"/>
           </sequence>
-        </on>
-      </file-uploader>
+        </callback>
+        <default>
+          <file-uploader data-type="composite" disabled="{{_computed.isReadOnly || form_meta?.data?.board?.user_abilities?.can_upload !== true}}" collection="post_attachments" maxFiles="{{form_meta?.data?.board?.max_file_count ?? 5}}" maxSize="{{form_meta?.data?.board?.max_file_size ?? 10}}" accept="{{form_meta?.data?.board?.allowed_extensions?.length ? '.' + form_meta.data.board.allowed_extensions.join(',.') : '.jpg,.jpeg,.png,.gif,.pdf,.zip'}}" initialFiles="{{form_meta?.data?.attachments ?? []}}" :autoUpload="false" uploadTriggerEvent="upload:board_attachments" size="sm" :confirmBeforeRemove="true" confirmRemoveTitle="$t:sirsoft-board.admin.posts.form.confirm_remove_attachment_title" confirmRemoveMessage="$t:sirsoft-board.admin.posts.form.confirm_remove_attachment_message">
+            <prop name="uploadParams">
+              <field name="temp_key" value="{{_local.tempKey}}"/>
+            </prop>
+            <prop name="apiEndpoints">
+              <field name="upload" value="/api/modules/sirsoft-board/admin/board/{{route?.slug}}/attachments"/>
+              <field name="delete" value="/api/modules/sirsoft-board/admin/board/{{route?.slug}}/attachments/:id"/>
+              <field name="reorder" value="/api/modules/sirsoft-board/admin/board/{{route?.slug}}/attachments/reorder"/>
+            </prop>
+            <on type="change" event="onFilesChange">
+              <!-- 파일을 더하거나 뺀 것도 「변경 있음」으로 친다 — 그래야 본문을 손대지 않고 첨부만 바꿔도 저장 버튼이 열린다. 이미 켜져 있으면 다시 쓰지 않는다 -->
+              <set-state if="{{!_local.hasChanges}}" target="local" :hasChanges="true"/>
+            </on>
+            <on type="change" event="onUploadError">
+              <!-- 업로드 실패 — 저장은 「첨부 올리기 → 본문 보내기」 순서라, 여기서 저장 중 표시를 내려 주지 않으면 버튼이 잠긴 채로 남는다 -->
+              <sequence>
+                <set-state target="local" uploadError="{{$args[0]}}" :isSaving="false"/>
+                <toast type="error" message="{{$args[0]}}" icon="triangle-exclamation"/>
+              </sequence>
+            </on>
+          </file-uploader>
+        </default>
+      </extension-point>
     </div>
   </div>
 </partial>

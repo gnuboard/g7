@@ -1,8 +1,10 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useRef } from 'react';
 import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';
 import { Svg } from '../basic/Svg';
 import type { EditorAttrs } from '../../types';
+import { keyboardActivationProps, FOCUS_VISIBLE_RING } from '../../support/keyboardActivation';
+import { useRemovalFocus } from '../../hooks/useRemovalFocus';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
 const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
@@ -74,14 +76,20 @@ export const TagSelect: React.FC<TagSelectProps> = ({
     [options]
   );
 
+  // 지운 뒤 포커스 — 같은 자리의 다음 지우기 단추, 마지막이면 앞 단추, 모두 지웠으면 태그 상자(#869 키보드 접근).
+  // 입력칸이 없는 부품이라 상자가 마지막 자리다(tabIndex -1 — Tab 순서에는 넣지 않는다)
+  const containerRef = useRef<HTMLDivElement>(null);
+  const markRemoved = useRemovalFocus(containerRef, '[data-tag-remove]', (remaining, index) => remaining[index - 1] ?? containerRef.current);
+
   // 태그 제거 핸들러
   const handleRemove = useCallback(
     (valueToRemove: string | number) => {
       if (disabled) return;
+      markRemoved(value.findIndex(v => String(v) === String(valueToRemove)));
       const newValues = value.filter(v => String(v) !== String(valueToRemove));
       onChange?.(newValues);
     },
-    [value, onChange, disabled]
+    [value, onChange, disabled, markRemoved]
   );
 
   // 선택된 값들을 옵션 정보와 함께 매핑
@@ -95,7 +103,7 @@ export const TagSelect: React.FC<TagSelectProps> = ({
   const containerClassName = `${STYLES.container.base} ${disabled ? STYLES.container.disabled : ''} ${className}`.trim();
 
   return (
-    <Div className={containerClassName} id={id} {...editorAttrs}>
+    <Div ref={containerRef} tabIndex={-1} className={containerClassName} id={id} {...editorAttrs}>
       {selectedItems.length === 0 ? (
         <Span className={STYLES.placeholder}>{placeholder}</Span>
       ) : (
@@ -104,8 +112,11 @@ export const TagSelect: React.FC<TagSelectProps> = ({
             {item.label}
             {!disabled && (
               <Span
-                className={STYLES.tagRemove}
+                className={`${STYLES.tagRemove} rounded ${FOCUS_VISIBLE_RING}`}
+                data-tag-remove=""
                 onClick={() => handleRemove(item.value)}
+                // Tab 으로 닿고 Enter·Space 로 지운다(#869 키보드 접근)
+                {...keyboardActivationProps(() => handleRemove(item.value))}
                 role="button"
                 aria-label={tOr('common.tag_input.remove', `Remove ${item.label}`, { label: item.label })}
               >

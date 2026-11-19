@@ -1,0 +1,19 @@
+feature: ImageGallery 편집 모드 인라인 placeholder
+
+description: |
+  ImageGallery 는 닫혀 있으면 DOM 을 그리지 않는 라이트박스라 편집기 캔버스에서 고를 수 없었다. 편집 모드(editorAttrs 주입)에서는
+  썸네일 그리드 placeholder 를 대신 그려 editorAttrs 와 id 를 붙이고, 런타임에서는 그리지 않는다.
+
+# axis 의미:
+#   mode — editorAttrs 주입 여부(editor: 편집기 캔버스, runtime: 사용자 화면).
+axes:
+  mode: [editor, runtime]
+
+effects:
+  - editor_placeholder_carries_editor_attrs   # 편집 모드 placeholder 루트에 editorAttrs 와 id 가 붙는다
+  - editor_placeholder_renders_thumbnails     # 편집 모드 placeholder 에 이미지 썸네일이 우선 그려진다
+  - editor_placeholder_shows_empty_label      # 이미지가 없으면 placeholder 안내 라벨을 그린다
+  - runtime_skips_inline_placeholder          # 런타임에는 인라인 placeholder 를 그리지 않는다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/ImageGallery.test.tsx

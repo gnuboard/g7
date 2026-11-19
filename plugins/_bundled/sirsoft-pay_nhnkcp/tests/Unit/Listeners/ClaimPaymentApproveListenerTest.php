@@ -128,7 +128,7 @@ class ClaimPaymentApproveListenerTest extends PluginTestCase
     {
         $payment = $this->makePendingPayment(['pg_provider' => 'tosspayments'], withSnapshot: false);
 
-        $result = (new ClaimPaymentApproveListener)->processApprove($this->defaultFilterValue(), $payment, $this->pgCallback());
+        $result = app(ClaimPaymentApproveListener::class)->processApprove($this->defaultFilterValue(), $payment, $this->pgCallback());
 
         $this->assertFalse($result['handled']);
     }
@@ -146,7 +146,7 @@ class ClaimPaymentApproveListenerTest extends PluginTestCase
     {
         $payment = $this->makePendingPayment(withSnapshot: false);
 
-        $result = (new ClaimPaymentApproveListener)->processApprove($this->defaultFilterValue(), $payment, $this->pgCallback(['res_cd' => '9999']));
+        $result = app(ClaimPaymentApproveListener::class)->processApprove($this->defaultFilterValue(), $payment, $this->pgCallback(['res_cd' => '9999']));
 
         $this->assertFalse($result['success']);
         $this->assertSame('9999', $result['error_code']);
@@ -179,7 +179,7 @@ class ClaimPaymentApproveListenerTest extends PluginTestCase
             ])->id,
         ], withSnapshot: false);
 
-        $result = (new ClaimPaymentApproveListener)->processApprove($this->defaultFilterValue(), $payment, $this->pgCallback());
+        $result = app(ClaimPaymentApproveListener::class)->processApprove($this->defaultFilterValue(), $payment, $this->pgCallback());
 
         $this->assertFalse($result['success']);
         $this->assertSame('CURRENCY_NOT_SUPPORTED', $result['error_code']);
@@ -199,7 +199,7 @@ class ClaimPaymentApproveListenerTest extends PluginTestCase
         $this->mockApiService(expectNoApprove: true);
         $payment = $this->makePendingPayment();
 
-        $result = (new ClaimPaymentApproveListener)->processApprove($this->defaultFilterValue(), $payment, $this->pgCallback(['use_pay_method' => 'VCNT']));
+        $result = app(ClaimPaymentApproveListener::class)->processApprove($this->defaultFilterValue(), $payment, $this->pgCallback(['use_pay_method' => 'VCNT']));
 
         $this->assertFalse($result['success']);
         $this->assertSame('CLAIM_DEPOSIT_METHOD_NOT_SUPPORTED', $result['error_code']);
@@ -224,7 +224,7 @@ class ClaimPaymentApproveListenerTest extends PluginTestCase
         ]);
         $payment = $this->makePendingPayment();
 
-        $result = (new ClaimPaymentApproveListener)->processApprove($this->defaultFilterValue(), $payment, $this->pgCallback());
+        $result = app(ClaimPaymentApproveListener::class)->processApprove($this->defaultFilterValue(), $payment, $this->pgCallback());
 
         $this->assertTrue($result['success']);
         $this->assertSame('KCP-CLAIM-TNO-1', $result['transaction_id']);
@@ -248,7 +248,7 @@ class ClaimPaymentApproveListenerTest extends PluginTestCase
         $this->mockApiService(['res_cd' => '8123', 'res_msg' => '한도초과']);
         $payment = $this->makePendingPayment();
 
-        $result = (new ClaimPaymentApproveListener)->processApprove($this->defaultFilterValue(), $payment, $this->pgCallback());
+        $result = app(ClaimPaymentApproveListener::class)->processApprove($this->defaultFilterValue(), $payment, $this->pgCallback());
 
         $this->assertFalse($result['success']);
         $this->assertSame('8123', $result['error_code']);

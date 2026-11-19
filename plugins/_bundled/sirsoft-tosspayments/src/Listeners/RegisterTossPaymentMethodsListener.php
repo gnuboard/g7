@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\Tosspayments\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Support\LocalizedValue;
 use Plugins\Sirsoft\Tosspayments\Concerns\MapsTossPaymentMethods;
 
 /**
@@ -47,23 +48,23 @@ class RegisterTossPaymentMethodsListener implements HookListenerInterface
         'toss_mobile_phone' => ['icon' => 'mobile-screen-button'],
         'toss_tosspay' => [
             'icon' => 'wallet',
-            'brand_mark' => ['text' => 'T', 'class' => 'bg-blue-700 text-white'],
+            'brand_mark' => ['text' => 'T', 'class' => 'paytosspayments:bg-blue-700 paytosspayments:text-white'],
         ],
         'toss_kakaopay' => [
             'icon' => 'wallet',
-            'brand_mark' => ['text' => 'K', 'class' => 'bg-yellow-400 text-gray-950'],
+            'brand_mark' => ['text' => 'K', 'class' => 'paytosspayments:bg-yellow-400 paytosspayments:text-gray-950'],
         ],
         'toss_naverpay' => [
             'icon' => 'wallet',
-            'brand_mark' => ['text' => 'N', 'class' => 'bg-green-700 text-white'],
+            'brand_mark' => ['text' => 'N', 'class' => 'paytosspayments:bg-green-700 paytosspayments:text-white'],
         ],
         'toss_payco' => [
             'icon' => 'wallet',
-            'brand_mark' => ['text' => 'P', 'class' => 'bg-red-600 text-white'],
+            'brand_mark' => ['text' => 'P', 'class' => 'paytosspayments:bg-red-600 paytosspayments:text-white'],
         ],
         'toss_samsungpay' => [
             'icon' => 'mobile-screen-button',
-            'brand_mark' => ['text' => 'S', 'class' => 'bg-blue-600 text-white'],
+            'brand_mark' => ['text' => 'S', 'class' => 'paytosspayments:bg-blue-600 paytosspayments:text-white'],
         ],
     ];
 
@@ -148,14 +149,10 @@ class RegisterTossPaymentMethodsListener implements HookListenerInterface
 
         $entry = [
             'id' => $id,
-            'name' => [
-                'ko' => __($nameKey, [], 'ko'),
-                'en' => __($nameKey, [], 'en'),
-            ],
-            'description' => [
-                'ko' => __($descriptionKey, [], 'ko'),
-                'en' => __($descriptionKey, [], 'en'),
-            ],
+            // 이름·설명은 지원 언어(활성 언어팩) 전부로 채운다 — ko·en 만 실으면 일본어 등 언어팩을 켠 사이트의
+            // 그 언어 화면에 번역이 있는데도 사이트 기본 언어 이름이 보인다.
+            'name' => LocalizedValue::translateAll(fn () => __($nameKey)),
+            'description' => LocalizedValue::translateAll(fn () => __($descriptionKey)),
             'icon' => self::METHOD_PRESENTATION[$id]['icon'] ?? 'credit-card',
             'source' => 'plugin:sirsoft-tosspayments',
             'defaults' => [

@@ -4,6 +4,8 @@ namespace App\Privacy\Handlers;
 
 use App\Enums\UserStatus;
 use App\Extension\HookManager;
+use App\Fields\FieldSet;
+use App\Fields\FieldValueService;
 use App\Models\User;
 use App\Privacy\Contracts\PrivacyRetentionHandlerInterface;
 use App\Privacy\DTO\PrivacyRetentionTarget;
@@ -62,6 +64,9 @@ class WithdrawnUserRetentionHandler implements PrivacyRetentionHandlerInterface
         'signature',
         'ip_address',
         'nickname',
+        // 닉네임 파생 값(정규화, 중복 금지용) — 닉네임과 함께 지운다(7.2.0)
+        'nickname_normalized',
+        'nickname_unique_key',
         // 본인인증 파생 — 동일인 식별자를 남기면 이 기능의 존재 이유가 무너진다.
         'identity_hash',
         'identity_verified_at',
@@ -243,6 +248,9 @@ class WithdrawnUserRetentionHandler implements PrivacyRetentionHandlerInterface
 
         $updates['name'] = self::ANONYMIZED_NAME;
         $updates['email'] = 'withdrawn_'.$user->id.self::ANONYMIZED_EMAIL_DOMAIN;
+
+        // 운영자 추가 항목의 값과 확장 핸들러 항목의 값도 잔여 개인정보다 — 회원 행과 함께 지운다(7.2.0).
+        app(FieldValueService::class)->purgeOwner($user, FieldSet::CORE_USER);
 
         // 모델 이벤트를 타지 않는 직접 갱신 — 파기는 감사 로그·검색 색인 재작성이 필요한
         // 도메인 변경이 아니고, 대량 순회에서 이벤트 연쇄가 붙으면 배치가 중간에 죽는다.

@@ -122,9 +122,10 @@ const passthrough = (tag: string) => ({ children, text, className, ...rest }: an
  * @param multilingual 상품명 다국어 칸(`_partial_basic_info.json` 의 MultilingualInput)과 「복사해서 등록」 원본 데이터소스(copy_source)를 실을지
  * @param changeActions 정가 칸의 change 동작(디바운스 쓰기가 끝난 뒤 실행된다 — 없으면 동작 없음)
  * @param listPriceKey 정가 칸 props 의 `key`(레이아웃이 칸에 key 를 준 경우 — 없으면 key 없음)
+ * @param debounceMs 폼 감싸개 디바운스(ms) — 없으면 원본 그대로(300)
  * @returns 레이아웃 JSON
  */
-function buildLayout(debounce: boolean, multilingual = false, changeActions?: Node[], listPriceKey?: string): Node {
+function buildLayout(debounce: boolean, multilingual = false, changeActions?: Node[], listPriceKey?: string, debounceMs?: number): Node {
     const wrapper = findNode(productForm.slots, (n) => n.dataKey === 'form' && n.debounce === 300)!;
     const listPrice = findNode(salesInfo, (n) => n.name === 'Input' && n.props?.name === 'list_price')!;
     const productName = findNode(basicInfo, (n) => n.name === 'MultilingualInput' && n.props?.name === 'name')!;
@@ -141,7 +142,7 @@ function buildLayout(debounce: boolean, multilingual = false, changeActions?: No
         init_actions: productForm.init_actions.filter((a: Node) => a.handler === 'setState'),
         components: [
             {
-                ...(debounce ? wrapperAttrs : { ...wrapperAttrs, debounce: undefined }),
+                ...(debounce ? { ...wrapperAttrs, ...(debounceMs ? { debounce: debounceMs } : {}) } : { ...wrapperAttrs, debounce: undefined }),
                 children: [
                     // 칸의 change 동작(이커머스 핸들러)은 이 축이 아니다 — changeActions 사례만 시험용 동작을 단다
                     {
@@ -187,9 +188,28 @@ interface MountOptions {
     changeActions?: Node[];
     /** 정가 칸 props 의 `key` */
     listPriceKey?: string;
+    /**
+     * 폼 감싸개 디바운스(ms) — 없으면 원본(300). 「이동 순간에 대기 쓰기가 남아 있다」 가 전제인 사례에서 그 전제를 부하와 무관하게 둔다.
+     * 300ms 그대로면 부하로 칸 사이 입력·blur 가 늘어 이동 전에 타이머가 먼저 터지고, 그 쓰기의 확정 렌더가 커밋되기 전에 경로가 바뀌어
+     * 이 사례가 아니라 다른 경쟁(엔진 쪽, 아래 334 사례 주석)을 재게 됐다(#869 G6).
+     */
+    debounceMs?: number;
 }
 
 const settle = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+
+/** 마지막으로 시작한 화면 전환 — `mount` 가 매번 새로 둔다 */
+let pendingNavigation: Promise<void> = Promise.resolve();
+
+/**
+ * 마지막 화면 전환(레이아웃 로드·렌더)이 끝날 때까지 기다리고, 그 뒤 쌓인 렌더가 반영되게 한 틱 더 준다.
+ *
+ * @returns 전환이 끝나면 풀리는 약속
+ */
+async function navigationDone(): Promise<void> {
+    await pendingNavigation;
+    await settle(0);
+}
 
 /**
  * 실물 엔진을 올리고 수정 화면으로 들어간다.
@@ -198,6 +218,7 @@ const settle = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, m
  * @returns 앱과 이동 함수
  */
 async function mount(opts: MountOptions = {}): Promise<Mounted> {
+    pendingNavigation = Promise.resolve();
     document.body.innerHTML = '<div id="app"></div>';
     window.history.replaceState({}, '', '/admin');
     vi.spyOn(AuthManager.getInstance(), 'isAuthenticated').mockReturnValue(true);
@@ -220,7 +241,7 @@ async function mount(opts: MountOptions = {}): Promise<Mounted> {
     };
     const dispatcher = engine.getActionDispatcher()!;
     dispatcher.setGlobalStateUpdater((updates: any, o?: { render?: boolean }) => app.setGlobalState(updates, o));
-    const layout = buildLayout(opts.debounce !== false, opts.multilingual === true, opts.changeActions, opts.listPriceKey);
+    const layout = buildLayout(opts.debounce !== false, opts.multilingual === true, opts.changeActions, opts.listPriceKey, opts.debounceMs);
     (app as any).layoutLoader = {
         loadLayout: async () => {
             if (opts.loadDelay) await settle(opts.loadDelay);
@@ -233,7 +254,9 @@ async function mount(opts: MountOptions = {}): Promise<Mounted> {
         window.history.pushState({}, '', p);
         await (app as any).handleRouteChange(routeFor(p));
     };
-    const router = { navigate: (p: string) => { void go(p); } };
+    // 이동은 기다리지 않고 시작한다(실제 라우터와 같다). 시험은 그 약속을 `navigationDone()` 으로 기다린다 — 주소는 pushState 로
+    // 먼저 바뀌므로 주소만 보고 고정 시간 뒤 단언하면, 부하로 레이아웃 로드·렌더가 늦을 때 앞 화면 DOM 을 단언했다(#869 G6)
+    const router = { navigate: (p: string) => { pendingNavigation = go(p); } };
     (app as any).router = router;
     dispatcher.setDefaultContext({ navigate: router.navigate } as any);
     await go(EDIT);
@@ -300,6 +323,8 @@ describe('[case:state-closure-same-layout-route-dropped-debounce-display] 같은
         await settle(60);
         await dispatchNavigate(CREATE);
         await waitFor(() => expect(window.location.pathname).toBe(CREATE));
+
+        await navigationDone();
         await settle(500);
 
         expect(form(app).id ?? null).toBeNull();
@@ -313,6 +338,11 @@ describe('[case:state-closure-same-layout-route-dropped-debounce-display] 같은
      * @scenario case=same_value_before_and_after_blurred
      * @effects destination_field_shows_destination_value
      */
+    // 정가를 친 뒤 메모 칸까지 치고 옮기므로 정가 쓰기 대기 창(원본 300ms)의 대부분을 메모 입력이 쓴다. 부하로 그 입력이 늘면 정가 타이머가
+    // 이동 전에 터지고, 그 쓰기의 확정 렌더가 커밋되기 전에 경로가 바뀐다 — 칸이 받은 value 가 '' 로 그대로라 칸이 따라오지 않았다(#869 G6,
+    // engine-v1.95.0 에서 change 동작 없는 칸의 쓴 대기 값도 버림 기록을 남겨 고침). 원본 300ms 그대로 두고 부하에서도 통과해야 한다.
+    // 이 경쟁은 경로 전환의 상태 초기화가 확정 렌더보다 먼저 같은 렌더에 섞일 때만 난다(React 스케줄러가 밀릴 때) — 부하 없이 매번
+    // 만드는 방법이 없어 부하 재현으로 잠근다: 바쁜 루프 8개 + 이 파일 사본 6벌 병렬, 종전 엔진 12회 중 2회 실패 → 수정 뒤 36회 0 실패.
     it('수정 화면 원본이 빈 칸이면 포커스를 풀고 옮겨도 칸이 빈다(값이 안 바뀌는 경우)', async () => {
         (globalThis as any).__g29Product = { list_price: null };
         const { app } = await mount();
@@ -324,13 +354,21 @@ describe('[case:state-closure-same-layout-route-dropped-debounce-display] 같은
         await settle(60);
         await dispatchNavigate(CREATE);
         await waitFor(() => expect(window.location.pathname).toBe(CREATE));
+
+        await navigationDone();
         await settle(500);
 
         expect(form(app).list_price ?? null).toBeNull();
         expect(field().value).toBe('');
         // 같은 구조의 Textarea 도 같다
         expect(field('memo').value).toBe('');
-    });
+
+        // 옛 화면에서 예약한 쓰기 타이머가 새 화면에서 늦게 터져도(버림) 칸과 상태는 비어 있다
+        await settle(2100);
+        expect(form(app).list_price ?? null).toBeNull();
+        expect(field().value).toBe('');
+        expect(field('memo').value).toBe('');
+       }, 30000);
 
     /**
      * 레이아웃 로드가 디바운스(300ms)보다 늦으면 대기 쓰기는 타이머 쪽에서 버려진다 — 그 뒤의 첫 새 화면 렌더에서 칸이 빈다.
@@ -346,6 +384,8 @@ describe('[case:state-closure-same-layout-route-dropped-debounce-display] 같은
         await settle(60);
         void dispatchNavigate(CREATE);
         await settle(1200);
+
+        await navigationDone();
 
         expect(window.location.pathname).toBe(CREATE);
         expect(form(app).list_price ?? null).toBeNull();
@@ -365,6 +405,8 @@ describe('[case:state-closure-same-layout-route-dropped-debounce-display] 같은
         await settle(60);
         await dispatchNavigate(CREATE);
         await waitFor(() => expect(window.location.pathname).toBe(CREATE));
+
+        await navigationDone();
         await settle(500);
         expect(field().value).toBe('');
 
@@ -395,6 +437,8 @@ describe('[case:state-closure-same-layout-route-dropped-debounce-display] 같은
         await settle(60);
         await dispatchNavigate(CREATE);
         await waitFor(() => expect(window.location.pathname).toBe(CREATE));
+
+        await navigationDone();
         await settle(500);
 
         await retype('list_price', '7700');
@@ -421,6 +465,7 @@ describe('[case:state-closure-same-layout-route-dropped-debounce-display] 같은
         void dispatchNavigate(CREATE);
         // 디바운스 타이머(마지막 글자 + 300ms)는 이동 뒤 약 0.2초에 새 경로를 보고 대기 쓰기를 버린다. 레이아웃은 0.45초에 온다
         await settle(300);
+        await navigationDone();
         expect(window.location.pathname).toBe(CREATE);
         const before = field();
 
@@ -451,6 +496,8 @@ describe('[case:state-closure-same-layout-route-dropped-debounce-display] 같은
         await settle(60);
         await dispatchNavigate(CREATE);
         await waitFor(() => expect(window.location.pathname).toBe(CREATE));
+
+        await navigationDone();
         await settle(500);
 
         expect(form(app).name ?? null).toBeNull();
@@ -473,6 +520,8 @@ describe('[case:state-closure-same-layout-route-dropped-debounce-display] 같은
         await settle(60);
         await dispatchNavigate(`${CREATE}?copy_id=5`);
         await waitFor(() => expect(window.location.pathname).toBe(CREATE));
+
+        await navigationDone();
         await settle(500);
 
         expect(form(app).id ?? null).toBeNull();
@@ -516,6 +565,8 @@ describe('[case:state-closure-same-layout-route-dropped-debounce-display] 같은
         await retype('list_price', '32222', false);
         // 마지막 글자 + 300ms 에 타이머가 옛 경로에서 쓰기를 마치고, 이어서 change 동작이 navigate 한다
         await waitFor(() => expect(window.location.pathname).toBe(CREATE), { timeout: 1000 });
+
+        await navigationDone();
         await settle(500);
 
         expect(field() === before, '칸 요소 유지(다시 마운트 없음)').toBe(true);
@@ -541,6 +592,8 @@ describe('[case:state-closure-same-layout-route-dropped-debounce-display] 같은
         await settle(60);
         fireEvent.click(document.querySelector('button') as HTMLButtonElement);
         await waitFor(() => expect(window.location.pathname).toBe(CREATE));
+
+        await navigationDone();
         await settle(500);
 
         expect(form(app).id ?? null).toBeNull();
@@ -565,6 +618,7 @@ describe('[case:state-closure-same-layout-route-dropped-debounce-display] 같은
         void dispatchNavigate(CREATE);
         // 타이머(마지막 글자 + 300ms)가 새 경로를 보고 대기 쓰기를 버린 뒤 — 레이아웃은 0.45초에 온다
         await settle(300);
+        await navigationDone();
         expect(window.location.pathname).toBe(CREATE);
         const before = field();
         fireEvent.compositionStart(before, { data: '' });
@@ -590,6 +644,8 @@ describe('[case:state-closure-same-layout-route-dropped-debounce-display] 같은
         await settle(60);
         await dispatchNavigate(CREATE);
         await waitFor(() => expect(window.location.pathname).toBe(CREATE));
+
+        await navigationDone();
         await settle(500);
 
         expect(form(app).list_price ?? null).toBeNull();
@@ -601,23 +657,53 @@ describe('[case:state-closure-same-layout-route-dropped-debounce-display] 같은
      * pathname 만 보고 같은 화면에서 친 입력을 버리고 칸을 다시 마운트해 입력 전 값(10000)으로 되돌렸다.
      * 근거: `G7Core.updateQueryParams` 가 주소만 바꾼 경로를 같은 경로 전환 세대 안의 별칭으로 기록하고 경로 가드가 그것을 같은 화면으로 본다 (engine-v1.81.2).
      *
+     * 전제는 「replace 순간 정가 쓰기가 대기 중」이다 — 부하로 타이머가 replace 전에 터지면 쓰기가 먼저 끝나고, replace 의 다시 받기가 그 값을
+     * 서버 값으로 되돌린다(쿼리 갱신 계약, 바로 아래 사례). 그래서 디바운스를 길게 줘 전제를 부하와 무관하게 둔다(#869 — 부하에서 본
+     * `'10000' to be '32222'` 는 이 전제가 깨진 것이지 엔진 결함이 아니었다).
+     *
      * @scenario case=replace_navigate_path_change
      * @effects same_screen_keeps_typing
      */
     it('정가를 친 뒤 0.06초 안에 navigate replace 로 주소의 경로만 바꾸면 칸 요소·친 값이 그대로이고 상태에 쓰인다', async () => {
         (globalThis as any).__g29Product = { list_price: 10000 };
-        const { app } = await mount();
+        const { app } = await mount({ debounceMs: 2000 });
         const before = field();
 
         await retype('list_price', '32222');
         await settle(60);
         await (window as any).G7Core.dispatch({ handler: 'navigate', params: { path: '/admin/ecommerce/products/P-5/edit-renamed', replace: true } });
-        await settle(600);
+        // 다시 받기가 먼저 폼을 서버 값으로 되돌리고, 대기 중이던 정가 쓰기(2000ms)가 그 뒤에 친 값을 쓴다
+        await settle(2400);
 
         expect(window.location.pathname).toBe('/admin/ecommerce/products/P-5/edit-renamed');
         expect(field() === before, '칸 요소 유지(다시 마운트 없음)').toBe(true);
         expect(field().value).toBe('32222');
         expect(String(form(app).list_price)).toBe('32222');
+    }, 30000);
+
+    /**
+     * 정가 쓰기가 끝난 뒤 navigate replace 로 경로만 바꾸면, replace 의 다시 받기(`updateQueryParams`)가 쿼리 갱신 계약대로 폼을 서버 값으로
+     * 되돌린다(`TemplateApp.updateQueryParams.dirtyForm`). 같은 화면이라 칸은 다시 마운트되지 않고, 칸과 상태가 같은 값이다. 부하에서 앞 사례의
+     * 전제가 깨질 때 본 `'10000' to be '32222'` 가 이 경우다 — 쓰기 뒤 기다림(450ms)은 디바운스 타이머보다 늦게 예약돼 부하에서도 순서가 같다.
+     *
+     * @scenario case=replace_navigate_after_write
+     * @effects same_screen_keeps_typing
+     */
+    it('정가 쓰기가 끝난 뒤 navigate replace 로 경로만 바꾸면 칸 요소는 그대로이고 칸과 상태가 서버 값으로 함께 돌아간다', async () => {
+        (globalThis as any).__g29Product = { list_price: 10000 };
+        const { app } = await mount();
+        const before = field();
+
+        await retype('list_price', '32222');
+        await settle(450);
+        expect(String(form(app).list_price)).toBe('32222');
+        await (window as any).G7Core.dispatch({ handler: 'navigate', params: { path: '/admin/ecommerce/products/P-5/edit-renamed', replace: true } });
+        await settle(600);
+
+        expect(window.location.pathname).toBe('/admin/ecommerce/products/P-5/edit-renamed');
+        expect(field() === before, '칸 요소 유지(다시 마운트 없음)').toBe(true);
+        expect(String(form(app).list_price)).toBe('10000');
+        expect(field().value).toBe(String(form(app).list_price));
     });
 
     /**

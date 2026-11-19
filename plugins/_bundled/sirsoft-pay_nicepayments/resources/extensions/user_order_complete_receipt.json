@@ -13,7 +13,7 @@
                     "name": "Div",
                     "if": "{{orderData?.data?.payment?.pg_provider === 'nicepayments' && orderData?.data?.payment?.transaction_id && orderData?.data?.payment?.paid_at}}",
                     "props": {
-                        "className": "pt-4 mt-2 border-t border-gray-200 dark:border-gray-700"
+                        "className": "paynicepayments:pt-4 paynicepayments:mt-2 paynicepayments:border-t paynicepayments:border-gray-200 paynicepayments:dark:border-gray-700"
                     },
                     "children": [
                         {
@@ -23,14 +23,14 @@
                             "name": "Div",
                             "if": "{{(['naverpay','kakaopay','samsungpay','applepay','payco','skpay','ssgpay','lpay']).includes(_local._npOcEasyPayProvider)}}",
                             "props": {
-                                "className": "flex-between mb-2"
+                                "className": "pay-nicepayments-flex-between paynicepayments:mb-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-600 dark:text-gray-400 text-sm"
+                                        "className": "paynicepayments:text-gray-600 paynicepayments:dark:text-gray-400 paynicepayments:text-sm"
                                     },
                                     "text": "$t:sirsoft-pay_nicepayments.user.easy_pay_label"
                                 },
@@ -38,7 +38,7 @@
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                        "className": "paynicepayments:text-sm paynicepayments:font-medium paynicepayments:text-gray-900 paynicepayments:dark:text-white"
                                     },
                                     "text": "{{$t('sirsoft-pay_nicepayments.user.easy_pay_names.' + String(_local._npOcEasyPayProvider ?? '').toUpperCase())}}"
                                 }
@@ -77,14 +77,14 @@
                                 ]
                             },
                             "props": {
-                                "className": "flex-between"
+                                "className": "pay-nicepayments-flex-between"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-gray-600 dark:text-gray-400 text-sm"
+                                        "className": "paynicepayments:text-gray-600 paynicepayments:dark:text-gray-400 paynicepayments:text-sm"
                                     },
                                     "text": "$t:sirsoft-pay_nicepayments.user.receipt_label"
                                 },
@@ -92,7 +92,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex items-center gap-3"
+                                        "className": "paynicepayments:flex paynicepayments:items-center paynicepayments:gap-3"
                                     },
                                     "children": [
                                         {
@@ -105,7 +105,7 @@
                                                 "href": "{{_local._npOcPaymentReceiptUrl}}",
                                                 "target": "_blank",
                                                 "rel": "noopener noreferrer",
-                                                "className": "inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                                                "className": "paynicepayments:inline-flex paynicepayments:items-center paynicepayments:gap-1 paynicepayments:text-sm paynicepayments:text-blue-600 paynicepayments:dark:text-blue-400 paynicepayments:hover:underline"
                                             },
                                             "children": [
                                                 {
@@ -113,7 +113,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "file-text",
-                                                        "className": "text-sm"
+                                                        "className": "paynicepayments:text-sm paynicepayments:leading-none"
                                                     }
                                                 },
                                                 {
@@ -133,7 +133,7 @@
                                                 "href": "{{_local._npOcSalesSlipUrl}}",
                                                 "target": "_blank",
                                                 "rel": "noopener noreferrer",
-                                                "className": "inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                                                "className": "paynicepayments:inline-flex paynicepayments:items-center paynicepayments:gap-1 paynicepayments:text-sm paynicepayments:text-blue-600 paynicepayments:dark:text-blue-400 paynicepayments:hover:underline"
                                             },
                                             "children": [
                                                 {
@@ -141,7 +141,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "file-text",
-                                                        "className": "text-sm"
+                                                        "className": "paynicepayments:text-sm paynicepayments:leading-none"
                                                     }
                                                 },
                                                 {
@@ -161,7 +161,7 @@
                                                 "href": "{{_local._npOcCashReceiptUrl}}",
                                                 "target": "_blank",
                                                 "rel": "noopener noreferrer",
-                                                "className": "inline-flex items-center gap-1 text-sm text-green-700 dark:text-green-400 hover:underline"
+                                                "className": "paynicepayments:inline-flex paynicepayments:items-center paynicepayments:gap-1 paynicepayments:text-sm paynicepayments:text-green-700 paynicepayments:dark:text-green-400 paynicepayments:hover:underline"
                                             },
                                             "children": [
                                                 {
@@ -169,7 +169,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "receipt",
-                                                        "className": "text-sm"
+                                                        "className": "paynicepayments:text-sm paynicepayments:leading-none"
                                                     }
                                                 },
                                                 {

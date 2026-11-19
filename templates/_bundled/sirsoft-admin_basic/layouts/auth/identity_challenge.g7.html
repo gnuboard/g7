@@ -93,7 +93,7 @@
                         <fail>
                           <toast type="error" message="{{error.message}}"/>
                         </fail>
-                        <body purpose="{{_local.purpose ?? 'sensitive_action'}}" provider_id="{{_local.provider_id ?? ''}}" policy_key="{{_local.policy_key ?? ''}}"/>
+                        <body purpose="{{_local.purpose ?? 'sensitive_action'}}" scope="admin" provider_id="{{_local.provider_id ?? ''}}" policy_key="{{_local.policy_key ?? ''}}"/>
                       </api-call>
                     </sequence>
                   </on>

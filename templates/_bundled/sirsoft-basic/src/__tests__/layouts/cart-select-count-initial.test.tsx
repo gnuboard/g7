@@ -20,6 +20,7 @@
 
 import React from 'react';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { render, fireEvent, cleanup } from '@testing-library/react';
 import {
     createLayoutTest,
     createMockComponentRegistryWithBasics,
@@ -29,6 +30,8 @@ import {
 import cartListPartial from '../../../layouts/partials/shop/_cart_list.json';
 import cartOptionChangeModal from '../../../layouts/partials/shop/_modal_cart_option_change.json';
 import profileEditPartial from '../../../layouts/partials/mypage/profile/_edit.json';
+import memberFieldsPartial from '../../../layouts/partials/member/_member_fields.json';
+import MemberFieldInput from '../../components/composite/MemberFieldInput';
 
 // ========== 공통 유틸 ==========
 
@@ -308,21 +311,37 @@ describe('_cart_list.json — 빈 장바구니 (T8 에지)', () => {
 describe('_cart_list.json — 카운터 표시식 정적 가드 (#92)', () => {
     const counterTexts = collectStringsContaining(cartListPartial, '/{{cartItems');
 
+    /**
+     * @scenario mount_path=initial_load, selection=all
+     * @effects counter_matches_checked_state
+     */
     it('카운터 표시식이 존재한다', () => {
         expect(counterTexts.length, '카운터 표시식을 찾지 못했다').toBeGreaterThan(0);
     });
 
+    /**
+     * @scenario mount_path=initial_load, selection=all
+     * @effects counter_matches_checked_state
+     */
     it('초기화되지 않는 _local.selectedCount 를 더 이상 참조하지 않는다', () => {
         const json = JSON.stringify(cartListPartial);
         expect(json).not.toContain('_local.selectedCount');
     });
 
+    /**
+     * @scenario mount_path=initial_load, selection=all
+     * @effects counter_matches_checked_state
+     */
     it('선택 개수는 SSoT(selectedItems) 파생 + 0 폴백으로 표시한다', () => {
         const counter = counterTexts.find((t) => t.startsWith('('));
         expect(counter, '`(선택/전체)` 형태의 카운터가 없다').toBeTruthy();
         expect(counter).toContain('_local.selectedItems?.length ?? 0');
     });
 
+    /**
+     * @scenario mount_path=initial_load, selection=all
+     * @effects counter_matches_summary_panel
+     */
     it('분모는 주문 요약과 동일한 item_count 폴백을 쓴다', () => {
         const counter = counterTexts.find((t) => t.startsWith('('));
         expect(counter).toContain('cartItems.data.item_count ?? 0');
@@ -346,7 +365,7 @@ describe('_modal_cart_option_change.json — 재고 표시 옵셔널 가드 (B-6
     });
 });
 
-describe('_edit.json — 알림 수신 Checkbox 명시 바인딩', () => {
+describe('_edit.json — 알림 수신 칸은 확장별 카드가 그리고, 저장값 타입과 무관하게 체크를 정한다', () => {
     /** 게시판 알림 설정 체크박스 4종 */
     const NOTIFY_FIELDS = [
         'notify_post_complete',
@@ -355,36 +374,88 @@ describe('_edit.json — 알림 수신 Checkbox 명시 바인딩', () => {
         'notify_reply_comment',
     ];
 
-    /** 이름으로 Checkbox 노드를 찾는다 */
-    function findCheckbox(name: string): any {
-        let found: any = null;
-        walk(profileEditPartial, (n) => {
-            if (n.name === 'Checkbox' && (n.props as any)?.name === name) found = n;
+    /** 조건에 맞는 노드를 모두 모은다 */
+    function findNodes(tree: unknown, match: (n: Record<string, unknown>) => boolean): Record<string, any>[] {
+        const out: Record<string, any>[] = [];
+        walk(tree, (n) => {
+            if (match(n)) out.push(n);
         });
-        return found;
+        return out;
     }
 
+    /** 게시판이 회원 항목으로 선언한 알림 수신 칸의 항목 계약 표본 */
+    const notifyField = (name: string) => ({
+        key: name,
+        name,
+        type: 'boolean',
+        label: name,
+        required: false,
+        options: [],
+        constraints: { widget: 'checkbox' },
+    });
+
+    afterEach(() => {
+        cleanup();
+    });
+
     /**
-     * 자동바인딩은 저장값이 boolean 일 때만 checked 로 붙고, 아니면 빈 문자열을 보내
-     * 저장값을 null 로 고착시킨다. 값의 타입을 화면이 전제하지 않도록 명시 바인딩을 쓴다.
+     * 7.2.0: 알림 수신 칸은 수정 화면에 박혀 있지 않다. 게시판 모듈이 회원 항목으로 선언하고, 수정 화면의
+     * 확장별 카드가 공용 항목 조각(partials/member/_member_fields)으로 그린다. 종전 명시 바인딩이 막던 결함
+     * (저장값이 boolean 이 아닐 때 체크가 풀리고 빈 문자열이 전송되어 저장값이 null 로 고착)은 이제 공용 입력
+     * 컴포넌트(MemberFieldInput)가 막는다 — 값의 타입과 무관하게 checked 를 정하고 항상 true/false 를 내보낸다.
+     * 컴포넌트의 예/아니오 계약 자체는 src/components/composite/__tests__/MemberFieldInput.test.tsx 가 잠근다.
      *
      * 마운트 경로·선택 상태 축과 무관한 정적 계약이라 @scenario 는 달지 않는다
      * (조합 커버리지는 위 9건이 이미 전수 담당한다).
      *
      * @effects profile_notification_checkbox_explicit_binding
      */
-    it.each(NOTIFY_FIELDS)('%s 가 autoBinding:false + checked + change 액션을 갖는다', (field) => {
-        const node = findCheckbox(field);
-        expect(node, `${field} Checkbox 를 찾지 못했다`).toBeTruthy();
+    it('수정 화면에 박힌 알림 수신 칸이 없고, 확장별 카드가 공용 항목 조각으로 그린다', () => {
+        const raw = JSON.stringify(profileEditPartial);
+        for (const field of NOTIFY_FIELDS) {
+            expect(raw, `${field} 가 수정 화면에 박혀 있다`).not.toContain(field);
+        }
 
-        expect(node.props.autoBinding).toBe(false);
-        expect(node.props.checked).toBe(`{{!!_local.profileEditForm?.${field}}}`);
+        const cards = findNodes(profileEditPartial, (n) => n.id === 'profile_extension_card_{{memberFieldGroup.key}}');
+        expect(cards).toHaveLength(1);
+        expect(cards[0].iteration?.source).toBe('{{$computed.profileExtensionGroups ?? []}}');
+        expect(findNodes(cards[0], (n) => n.partial === 'partials/member/_member_fields.json')).toHaveLength(1);
 
-        const change = (node.actions ?? []).find((a: any) => a.type === 'change');
-        expect(change, `${field} 에 change 액션이 없다`).toBeTruthy();
-        expect(change.handler).toBe('setState');
-        expect(change.params.target).toBe('local');
-        expect(change.params[`profileEditForm.${field}`]).toBe('{{$event.target.checked}}');
+        // 공용 항목 조각은 항목 계약을 통째로 입력 컴포넌트에 넘긴다 — 자동바인딩에 기대는 낱개 Checkbox 가 없다
+        const inputs = findNodes(memberFieldsPartial, (n) => n.name === 'MemberFieldInput');
+        expect(inputs).toHaveLength(1);
+        expect(inputs[0].props.field).toBe('{{field}}');
+        expect(inputs[0].props.name).toBe('{{field.name}}');
+        expect(findNodes(memberFieldsPartial, (n) => n.name === 'Checkbox')).toEqual([]);
+    });
+
+    /**
+     * @effects profile_notification_checkbox_explicit_binding
+     */
+    it.each(NOTIFY_FIELDS)('%s 는 저장값의 타입과 무관하게 checked 를 정하고 true/false 를 내보낸다', (field) => {
+        const emitted: unknown[] = [];
+        (window as any).G7Core = {
+            ...((window as any).G7Core ?? {}),
+            t: (key: string) => key,
+            createChangeEvent: ({ value, name }: any) => ({ target: { value, name } }),
+        };
+        const onChange = (event: any) => emitted.push([event.target.name, event.target.value]);
+        const draw = (value: unknown) => <MemberFieldInput field={notifyField(field)} name={field} value={value} onChange={onChange} />;
+        const box = () => document.querySelector(`input[name="${field}"]`) as HTMLInputElement;
+
+        // 저장값이 boolean 이 아니어도(1, '1') 체크되고, 비어 있으면(null, undefined, 0, '') 풀린다
+        const { rerender } = render(draw(true));
+        for (const [value, checked] of [[true, true], [1, true], ['1', true], [false, false], [0, false], [null, false], [undefined, false], ['', false]] as const) {
+            rerender(draw(value));
+            expect(box().checked, `값 ${JSON.stringify(value)}`).toBe(checked);
+        }
+
+        // 누르면 빈 문자열이 아니라 boolean 을 항목 이름과 함께 내보낸다
+        rerender(draw(null));
+        fireEvent.click(box());
+        rerender(draw(1));
+        fireEvent.click(box());
+        expect(emitted).toEqual([[field, true], [field, false]]);
     });
 });
 

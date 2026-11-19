@@ -1,3 +1,4 @@
+// e2e:allow 업로드 응답 `urls` → CKEditor 어댑터 반환 모양만 바꾼다. 본문 `<img srcset>` 저장은 계획 §8 V7 Chrome MCP 실측으로 확인한다.
 /**
  * CKEditor5 이미지 업로드 어댑터 — 코어 API 클라이언트(`G7Core.api`)로 보낸다
  *
@@ -6,7 +7,7 @@
  * 저장 방식이 바뀌거나 토큰이 갱신되면 조용히 깨지고, 401 처리(재로그인 유도)도 받지 못했다.
  * 이제 Bearer 부착과 401 처리는 `G7Core.api` 가 맡고, 이 어댑터는 파일을 담아 보내기만 한다.
  *
- * 서버 응답 규격은 그대로다: 성공 `{ url }`, 실패 `{ error: { message } }`.
+ * 서버 응답 규격은 그대로다: 성공 `{ url }`(직접 URL 행이면 반응형 후보 `urls` 추가), 실패 `{ error: { message } }`.
  *
  * 화면이 본문 미디어 업로드 계약(`mediaUpload`, 코어 `G7Core.contentMedia`)을 넘기면 그 계약으로 올린다 — 업로드 주소·
  * 정책·응답 경로를 화면(확장)이 정하고, 이 어댑터는 계약을 읽기만 한다(#883 4단계). 계약이 없으면 종전 경로(이 플러그인의
@@ -22,6 +23,11 @@ export interface UploadLoader {
     /** 보낸 바이트 수 (진행률 표시용) */
     uploaded?: number;
 }
+
+/**
+ * CKEditor 업로드 어댑터 결과 — `default` 는 `<img src>`, 숫자 키(가로 px)가 있으면 `srcset` 후보
+ */
+export type UploadResult = { default: string } & Record<string, string>;
 
 /** 업로드 폼 필드 이름 — 서버 검증(`ImageUploadRequest`)과 같은 이름 */
 const UPLOAD_FIELD = 'upload';
@@ -126,9 +132,9 @@ export class G7UploadAdapter {
     /**
      * 파일을 올리고 CKEditor 가 이미지에 넣을 주소를 돌려줍니다.
      *
-     * @return `{ default: 이미지 주소 }`
+     * @return `{ default: 이미지 주소 }` — 종전 경로가 반응형 후보를 내리면 `{ default, '640': …, … }`
      */
-    async upload(): Promise<{ default: string }> {
+    async upload(): Promise<UploadResult> {
         const target = this.options.target ?? null;
         const contentMedia = (window as any).G7Core?.contentMedia;
         if (target && contentMedia && typeof contentMedia.upload === 'function') {
@@ -192,9 +198,13 @@ export class G7UploadAdapter {
     /**
      * 종전 경로(이 플러그인의 관리자 전용 업로드)로 올립니다.
      *
-     * @return `{ default: 이미지 주소 }`
+     * 서버가 반응형 후보(`urls`: `{ default, 가로: ?size= API 주소 }`)를 내리면 그대로 돌려준다 —
+     * CKEditor 는 `default` 외의 숫자 키가 있으면 본문 `<img>` 에 `srcset`·`sizes`·`width` 를 함께 저장한다.
+     * 공개 자산 디스크(CDN) 직접 주소로 저장된 이미지가 썸네일을 받는 유일한 길이다.
+     *
+     * @return `{ default: 이미지 주소 }` 또는 `{ default, '640': …, … }`
      */
-    private async uploadLegacy(): Promise<{ default: string }> {
+    private async uploadLegacy(): Promise<UploadResult> {
         const file = await this.loader.file;
         const fallback = uploadFailedMessage(file?.name ?? '');
         const api = (window as any).G7Core?.api;
@@ -230,6 +240,11 @@ export class G7UploadAdapter {
             throw extractUploadErrorMessage(error, fallback);
         }
 
+        const responsive = pickResponsiveUrls(response?.urls);
+        if (responsive !== null) {
+            return responsive;
+        }
+
         const url = response?.url ?? response?.urls?.default;
         if (typeof url !== 'string' || url === '') {
             throw extractUploadErrorMessage({ response: { data: response } }, fallback);
@@ -244,6 +259,39 @@ export class G7UploadAdapter {
     abort(): void {
         this.controller.abort();
     }
+}
+
+/**
+ * 서버 응답의 반응형 후보에서 CKEditor 가 받는 모양만 고릅니다.
+ *
+ * `default` 가 비지 않은 문자열이어야 하고, 그 밖에는 숫자 키(가로 px)의 비지 않은 문자열 값만 남긴다.
+ * 숫자 후보가 하나도 없으면 null — 호출부가 종전 `{ default: url }` 로 돌아간다.
+ *
+ * @param urls 서버 응답의 `urls`
+ * @return `{ default, '640': …, … }` 또는 null
+ */
+export function pickResponsiveUrls(urls: unknown): UploadResult | null {
+    if (urls === null || typeof urls !== 'object' || Array.isArray(urls)) {
+        return null;
+    }
+
+    const source = urls as Record<string, unknown>;
+    const fallbackUrl = source.default;
+    if (typeof fallbackUrl !== 'string' || fallbackUrl === '') {
+        return null;
+    }
+
+    const result: UploadResult = { default: fallbackUrl };
+    let candidates = 0;
+    for (const [key, value] of Object.entries(source)) {
+        if (key === 'default' || !/^[1-9][0-9]*$/.test(key) || typeof value !== 'string' || value === '') {
+            continue;
+        }
+        result[key] = value;
+        candidates++;
+    }
+
+    return candidates > 0 ? result : null;
 }
 
 /**

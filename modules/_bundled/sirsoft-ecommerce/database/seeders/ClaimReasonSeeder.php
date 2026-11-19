@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Database\Seeders;
 use App\Concerns\Seeder\HasTranslatableSeeder;
 use App\Contracts\Seeder\TranslatableSeederInterface;
 use App\Extension\Helpers\GenericEntitySyncHelper;
+use App\Support\LocalizedValue;
 use Illuminate\Database\Seeder;
 use Modules\Sirsoft\Ecommerce\Models\ClaimReason;
 use Modules\Sirsoft\Ecommerce\Services\ClaimReasonService;
@@ -338,12 +339,15 @@ class ClaimReasonSeeder extends Seeder implements TranslatableSeederInterface
             $preserved += count($inUse);
 
             // 정리 대상은 시더가 만든 행(created_by IS NULL)뿐이다 — 운영자가 설정 화면에서 만든 미사용 사유까지
-            // 지우면 언어팩을 켜고 끌 때마다 사라진다(#727 W7).
+            // 지우면 언어팩을 켜고 끌 때마다 사라진다(#727).
             $totalDeleted += $helper->cleanupStale(
                 ClaimReason::class,
                 ['type' => $type, 'created_by' => null],
                 'code',
                 [...$codes, ...$inUse],
+                // 운영자가 고친 시드 행을 지우기 직전 남기는 활동 로그의 항목 이름 — 클래스 이름 대신, 로그를 볼 때의 언어로 나온다
+                entityLabel: LocalizedValue::translateAll(fn () => __('sirsoft-ecommerce::messages.seeders.claim_reason.entity_label')),
+                ownerIdentifier: 'sirsoft-ecommerce',
             );
         }
 

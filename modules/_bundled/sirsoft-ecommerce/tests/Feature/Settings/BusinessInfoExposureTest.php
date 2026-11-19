@@ -14,21 +14,22 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 /**
  * 사업자 정보 공개 + 켜고 끄기 테스트
  *
- * 사용자 화면 푸터에 싣는 법정 사업자 항목만 공개 설정으로 내보내고, 운영자가 표시를 끄면
- * 응답(페이지 소스의 공개 설정 포함)에서 사업자 칸을 뺀다.
+ * 사용자 화면 푸터(쇼핑몰 사업자 정보 조각, user_global_footer)가 그리는 사업자 항목만 공개 설정으로 내보내고,
+ * 운영자가 표시(show_business_footer)를 끄면 응답(페이지 소스의 공개 설정 포함)에서 사업자 칸을 모두 뺀다.
  *
  * @scenario-manifest modules/_bundled/sirsoft-ecommerce/tests/scenarios/business-info-footer-exposure.yaml
  */
 class BusinessInfoExposureTest extends ModuleTestCase
 {
-    /** 푸터에 싣는 법정 항목 */
+    /** 푸터 조각이 그리는 사업자 항목 */
     private const LEGAL_KEYS = [
         'company_name', 'ceo_name', 'zipcode', 'base_address', 'detail_address',
-        'phone', 'email', 'business_number', 'mail_order_number', 'hosting_provider',
+        'phone', 'fax', 'email', 'business_number', 'mail_order_number', 'telecom_number',
+        'privacy_officer', 'privacy_officer_email', 'hosting_provider',
     ];
 
     /** 공개하지 않는 항목 */
-    private const PRIVATE_KEYS = ['fax', 'privacy_officer', 'privacy_officer_email', 'telecom_number', 'public_asset_disk', 'shop_name'];
+    private const PRIVATE_KEYS = ['business_type', 'business_category', 'public_asset_disk', 'shop_name'];
 
     /**
      * 사업자 정보를 채워 둡니다.
@@ -55,13 +56,15 @@ class BusinessInfoExposureTest extends ModuleTestCase
             'privacy_officer' => '김책임',
             'privacy_officer_email' => 'privacy@example.com',
             'hosting_provider' => '시험 호스팅',
+            'business_type' => '시험 업태',
+            'business_category' => '시험 종목',
         ] as $key => $value) {
             $settings->setSetting('basic_info.'.$key, $value);
         }
     }
 
     /**
-     * 기본(표시 켬)에서는 법정 항목만 공개 설정에 실린다.
+     * 기본(표시 켬)에서는 푸터 조각이 그리는 사업자 항목만 공개 설정에 실린다.
      *
      * @scenario path=module_frontend_settings, show_business_footer=on
      *
@@ -82,8 +85,10 @@ class BusinessInfoExposureTest extends ModuleTestCase
         foreach (self::PRIVATE_KEYS as $key) {
             $this->assertArrayNotHasKey($key, $basicInfo, $key);
         }
-        $this->assertStringNotContainsString('privacy@example.com', json_encode($basicInfo));
-        $this->assertStringNotContainsString('02-123-4568', json_encode($basicInfo));
+        $this->assertSame('02-123-4568', $basicInfo['fax']);
+        $this->assertSame('privacy@example.com', $basicInfo['privacy_officer_email']);
+        $this->assertStringNotContainsString('시험 업태', json_encode($basicInfo, JSON_UNESCAPED_UNICODE));
+        $this->assertArrayNotHasKey('footer_business_info_enabled', $basicInfo, '켜기 설정은 show_business_footer 하나');
     }
 
     /**
@@ -177,11 +182,13 @@ class BusinessInfoExposureTest extends ModuleTestCase
         HookManager::clearFilter('core.module_settings.filter_frontend_settings');
     }
 
+    // 이 시험은 켬·끔을 차례로 함께 잰다 (docblock 은 @scenario 를 1건만 인식하므로 끔 조합은 라인 주석으로 병기).
+    // @scenario path=core_collect, show_business_footer=off
+
     /**
-     * 코어가 사용자 화면 전역 설정(G7Config.modules)을 모으는 경로 그대로 — 켬이면 법정 칸만, 끔이면 사업자 칸 0개.
+     * 코어가 사용자 화면 전역 설정(G7Config.modules)을 모으는 경로 그대로 — 켬이면 조각이 그리는 사업자 칸만, 끔이면 사업자 칸 0개.
      *
      * @scenario path=core_collect, show_business_footer=on
-     * @scenario path=core_collect, show_business_footer=off
      *
      * @effects core_collect_exposes_legal_fields_only, core_collect_strips_business_fields_when_hidden
      *
@@ -213,8 +220,11 @@ class BusinessInfoExposureTest extends ModuleTestCase
         }
     }
 
+    // 이 시험은 켬·끔 두 값을 함께 잰다 (docblock 은 @scenario 를 1건만 인식하므로 끔 조합은 라인 주석으로 병기).
+    // @scenario path=settings_save, show_business_footer=off
+
     /**
-     * 저장 규칙이 새 두 칸을 받는다.
+     * 저장 규칙이 호스팅 제공자·표시 여부 두 칸을 받는다(켬·끔 모두 통과).
      *
      * @scenario path=settings_save, show_business_footer=on
      *
@@ -234,8 +244,13 @@ class BusinessInfoExposureTest extends ModuleTestCase
         $this->assertTrue($errors->has('basic_info.hosting_provider'));
         $this->assertTrue($errors->has('basic_info.show_business_footer'));
 
-        $ok = ['basic_info' => ['hosting_provider' => '시험 호스팅', 'show_business_footer' => false]];
-        $this->assertTrue(Validator::make($ok, $rules)->passes());
+        foreach ([true, false] as $shown) {
+            $ok = ['basic_info' => ['hosting_provider' => '시험 호스팅', 'show_business_footer' => $shown]];
+            $this->assertTrue(Validator::make($ok, $rules)->passes());
+        }
+
+        // 같은 뜻의 두 번째 토글은 규칙에 없다
+        $this->assertArrayNotHasKey('basic_info.footer_business_info_enabled', $request->rules());
     }
 
     /**
@@ -251,7 +266,7 @@ class BusinessInfoExposureTest extends ModuleTestCase
         }
 
         $json = json_encode($basicInfo, JSON_UNESCAPED_UNICODE);
-        foreach (['시험 상사', '홍길동', '02-123-4567', '123', 'help@example.com', '시험 호스팅', '서울강남'] as $needle) {
+        foreach (['시험 상사', '홍길동', '02-123-4567', '02-123-4568', '123', 'help@example.com', 'T-0001', '김책임', 'privacy@example.com', '시험 호스팅', '서울강남'] as $needle) {
             $this->assertStringNotContainsString($needle, $json, $needle);
         }
     }

@@ -386,6 +386,57 @@ class JsonConfigRepository implements ConfigRepositoryInterface
     }
 
     /**
+     * 설정 폴더에 이미 있는 설정 JSON 파일 이름 목록을 돌려줍니다 (하위 폴더 제외).
+     *
+     * 설정을 기본값으로 다시 만드는 경로(`settings:migrate-to-json` 등)가 운영 중인 설정을 덮기 전에 확인하는 근거다.
+     *
+     * @return list<string> 설정 디스크 기준 파일 이름 (예: `general.json`)
+     */
+    public function existingSettingFiles(): array
+    {
+        // audit:allow no-storage-disk-direct reason: 이 저장소는 SettingsServiceProvider::register() 에서
+        // `new` 로 직접 생성된다 — 컨테이너 바인딩 이전이라 StorageInterface 를 해석할 수 없다.
+        $disk = Storage::disk(self::STORAGE_DISK);
+
+        if (! $disk->exists('.')) {
+            return [];
+        }
+
+        $files = array_values(array_filter($disk->files('.'), static fn (string $file): bool => str_ends_with($file, '.json')));
+        sort($files);
+
+        return array_map('basename', $files);
+    }
+
+    /**
+     * 설정 JSON 파일을 백업 폴더 아래 새 폴더로 그대로 복사합니다 (zip 확장 없이도 되돌릴 수 있는 사본).
+     *
+     * @param  string  $label  사본 폴더 이름 앞부분 (예: `migrate-to-json`)
+     * @return string 설정 디스크 기준 사본 폴더 경로 (예: `backups/migrate-to-json_2026-11-18_041500`)
+     *
+     * @throws \RuntimeException 파일을 복사하지 못했을 때
+     */
+    public function copySettingFiles(string $label): string
+    {
+        $this->ensureBackupDirectoryExists();
+
+        // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
+        $directory = self::BACKUP_DIR.'/'.$label.'_'.now()->format('Y-m-d_His');
+        // audit:allow no-storage-disk-direct reason: 이 저장소는 SettingsServiceProvider::register() 에서
+        // `new` 로 직접 생성된다 — 컨테이너 바인딩 이전이라 StorageInterface 를 해석할 수 없다.
+        $disk = Storage::disk(self::STORAGE_DISK);
+        $disk->makeDirectory($directory);
+
+        foreach ($this->existingSettingFiles() as $file) {
+            if (! $disk->copy($file, $directory.'/'.$file)) {
+                throw new \RuntimeException(__('exceptions.settings.backup_creation_failed'));
+            }
+        }
+
+        return $directory;
+    }
+
+    /**
      * 백업·복원이 쓰는 zip 확장이 있는지 확인합니다. (#151 — 없으면 `ZipArchive` 미정의로 500 이 났다)
      *
      * 이 저장소는 컨테이너 바인딩 이전에 `new` 로 만들어지므로 조회기는 호출 시점에 컨테이너에서 받는다.

@@ -12,6 +12,7 @@
 | 배송유형 | 택배·직접배송·퀵서비스·화물·매장수령 등 (일부는 기본 꺼짐) |
 | 배송사 | 국내·해외 택배사와 배송 조회 주소 |
 | 클레임 사유 | 환불·교환·반품 사유와 귀책 구분 |
+| 이커머스 관리자 알림 권한 | 기본 역할 「이커머스 관리자」에 사이트 알림 조회·읽음 처리 권한(`core.notifications.read`·`.update`) — 이 모듈이 그 역할에게 보내는 새 주문·상품 문의·클레임·내보내기 알림을 종 아이콘에서 보게 한다. 운영자가 역할 관리에서 이 권한을 직접 조정했으면 다시 붙이지 않는다 |
 
 같은 기준 데이터는 `php artisan module:seed sirsoft-ecommerce` 로 다시 동기화할 수 있습니다. 이 명령은 회원 배송지 같은 운영 데이터를 건드리지 않습니다.
 
@@ -80,6 +81,8 @@ php artisan module:seed sirsoft-ecommerce --sample --force
 | `inquiry_rate` | 3 | 상품당 문의 최대 건수 |
 | `review_rate` | 60 | 배송완료·구매확정 상품 중 리뷰 작성 비율 (%) |
 
+샘플 알림 발송 이력의 본문 링크(주문, 클레임, 문의, 마일리지 화면)는 실제 알림과 같은 회원 화면 주소 규칙으로 만듭니다. 하위 폴더에 설치한 사이트에서도 설치 경로가 붙은 주소가 들어갑니다.
+
 ```bash
 php artisan module:seed sirsoft-ecommerce --sample --count=products=20 --count=orders=50
 ```
@@ -96,3 +99,20 @@ php artisan module:seed sirsoft-ecommerce --sample --count=products=20 --count=o
 
 - `playwright:seed-claim-detail` 은 `tests/Playwright/fixtures/claim-detail-seed.ts` 가 워커마다 다른 `--tag` 로 부르고, 워커가 끝나면 그 꼬리표만 지운다. 손으로 돌릴 일은 잔여 확인(`--teardown --json` 의 `deleted_orders` 가 0 인지) 정도다.
 - 이 명령은 주문을 실제 계산 경로(`OrderCalculationService`)로 만들고, 신청서는 팩토리로 목표 상태에 바로 세운다 — 접수·전이 서비스를 거치면 라이브 사이트에 고객·운영자 알림과 활동 로그가 나가 되돌릴 수 없기 때문이다.
+
+## 이미지 썸네일 실측 시더 (개발 DB 전용)
+
+상품, 카테고리, 리뷰, 클레임 이미지 썸네일(`?size=`, `?w=`)을 브라우저에서 직접 확인할 때 쓰는 시더입니다. `--sample` 에는 들어 있지 않고, 명령줄에서 `G7_PLAYWRIGHT_BYPASS=1` 을 그 실행에만 주었을 때만 돕니다. 주문은 팩토리로 만들므로 개발 의존성이 설치된 환경 전용입니다. 작성자 회원은 코어 실측 시더(`Database\Seeders\Sample\ThumbnailMeasureSeeder`)가 만들므로 그것을 먼저 실행합니다.
+
+| 시더 | 만드는 것 / 지우는 것 |
+| --- | --- |
+| `Sample\ThumbnailMeasureSeeder` | 무료 배송정책, 배너가 있는 카테고리 `thumb-measure`, 상품 `THUMBMEASUREA001`(이미지 4장)·`THUMBMEASUREB001`(1장), 작성자의 구매확정 주문과 노출·숨김 리뷰(이미지), 배송완료 주문과 반품 신청(이미지 2장) |
+| `Sample\ThumbnailMeasureCleanupSeeder` | 주문번호 접두 `THUMB-MEAS-` 이면서 실측 작성자 회원의 주문이거나 주문자 이름에 표지가 있는 주문, 상품 코드 접두 `THUMBMEASURE`, 카테고리 슬러그 `thumb-measure` 와 이름의 `[실측-썸네일]` 표지가 맞는 데이터와 그 이미지, 썸네일, 활동 로그 |
+
+```powershell
+$env:G7_PLAYWRIGHT_BYPASS='1'
+php artisan module:seed sirsoft-ecommerce --class="Modules\Sirsoft\Ecommerce\Database\Seeders\Sample\ThumbnailMeasureSeeder"
+php artisan module:seed sirsoft-ecommerce --class="Modules\Sirsoft\Ecommerce\Database\Seeders\Sample\ThumbnailMeasureCleanupSeeder"
+```
+
+확인이 끝나면 이 정리 시더를 코어 정리 시더(`Database\Seeders\Sample\ThumbnailMeasureCleanupSeeder`)보다 먼저 실행합니다.

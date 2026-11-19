@@ -6,7 +6,7 @@
  * @module composite/FileUploader/SortableThumbnailItem
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
@@ -21,6 +21,9 @@ import { Img } from '../../basic/Img';
 import type { Attachment, PendingFile } from './types';
 import { getFileIcon, t } from './utils';
 import { isDirectAssetUrl } from '../assetOrigin';
+import FileUploaderContext from './FileUploaderContext';
+import { attachmentThumbUrl } from '../../../support/thumbnail';
+import { keyboardActivationProps, FOCUS_VISIBLE_RING } from '../../../support/keyboardActivation';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const G7Core = (window as any).G7Core;
@@ -72,11 +75,36 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
 
   // 인증된 이미지 로딩을 위한 상태
   const [authenticatedImageUrl, setAuthenticatedImageUrl] = useState<string | undefined>(undefined);
-  const downloadUrl = !isPending && isImage ? (file as Attachment).download_url : undefined;
+  const attachment = !isPending && isImage ? (file as Attachment) : undefined;
+  const downloadUrl = attachment ? attachment.download_url : undefined;
+
+  // 미리보기 주소(없으면 다운로드 주소)가 서빙 경로면 sm 썸네일을 <img> 로 바로 그린다 — 원본 blob 을 받지 않는다.
+  // 썸네일이 실패하면(권한 거부 등) 그 칸만 종전 인증 요청 경로로 돌아간다 — 업로더 안이면 업로더가 받는다.
+  const thumbnailSrc = attachment ? attachmentThumbUrl(attachment, 'sm') : undefined;
+  const [thumbnailFailed, setThumbnailFailed] = useState(false);
+  useEffect(() => {
+    setThumbnailFailed(false);
+  }, [thumbnailSrc]);
+  const showThumbnail = Boolean(thumbnailSrc) && !thumbnailFailed;
+
+  // 업로더가 이미 가진 그림 주소(방금 올린 그림의 로컬 파일·업로더가 받아 둔 blob). 업로더 안에서는 업로더가
+  // 기존 첨부를 한 번 받으므로 이 칸이 다시 받지 않는다 — 종전 basic 은 업로더와 칸이 같은 원본을 두 번 받았다.
+  // 업로더 밖에서 단독으로 쓰일 때(Context 없음)만 이 칸이 받는다. 업로더 안에서 썸네일이 실패하면 업로더에 그 첨부를
+  // 받아 달라고 알린다 — 칸이 받으면 blob 이 칸 안에만 있어 확대 보기가 인증 없는 원본 주소를 열었다.
+  const uploaderContext = useContext(FileUploaderContext);
+  const cachedImageUrl = attachment ? uploaderContext?.authenticatedImageUrls?.get(attachment.id) : undefined;
+  const loadsItself = Boolean(downloadUrl) && !showThumbnail && !cachedImageUrl && !uploaderContext;
+  const requestUploaderImage = uploaderContext?.requestAuthenticatedImage;
+  const attachmentId = attachment?.id;
+  useEffect(() => {
+    if (thumbnailFailed && attachmentId !== undefined && requestUploaderImage) {
+      requestUploaderImage([attachmentId]);
+    }
+  }, [thumbnailFailed, attachmentId, requestUploaderImage]);
 
   // 기존 첨부파일의 경우 인증된 요청으로 이미지 로드
   useEffect(() => {
-    if (!downloadUrl) {
+    if (!downloadUrl || !loadsItself) {
       setAuthenticatedImageUrl(undefined);
       return;
     }
@@ -116,10 +144,10 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
         URL.revokeObjectURL(objectUrl);
       }
     };
-  }, [downloadUrl]);
+  }, [downloadUrl, loadsItself]);
 
-  // 기존 첨부파일의 경우 인증된 URL 사용
-  const existingImageUrl = authenticatedImageUrl;
+  // 기존 첨부파일 그림 주소 — 썸네일 → 업로더가 가진 주소 → 이 칸이 받은 주소
+  const existingImageUrl = showThumbnail ? thumbnailSrc : (cachedImageUrl ?? authenticatedImageUrl);
 
   return (
     <Div
@@ -132,7 +160,10 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
       <Div
         className={`aspect-square w-full flex items-center justify-center bg-gray-50 dark:bg-gray-900 relative ${
           (isImage || !isPending) ? 'cursor-pointer' : ''
+        } ${isImage && onImageClick ? FOCUS_VISIBLE_RING : ''
         }`}
+        // 이미지 크게 보기는 다른 단추가 없어 이 칸이 키보드 단추다. 다운로드는 아래 다운로드 단추가 맡는다(#869 키보드 접근)
+        {...(isImage && onImageClick ? { ...keyboardActivationProps(() => { if (!isUploading && !isCompressing) onImageClick(); }), 'aria-label': t('common.zoom_image_named', { name: file.original_filename }) } : {})}
         onClick={() => {
           // 업로드 중/압축 중이면 클릭 무시
           if (isUploading || isCompressing) return;
@@ -152,6 +183,7 @@ export const SortableThumbnailItem: React.FC<SortableThumbnailItemProps> = ({
             src={preview || existingImageUrl}
             alt={file.original_filename}
             className="w-full h-full object-cover"
+            onError={!preview && showThumbnail ? () => setThumbnailFailed(true) : undefined}
           />
         ) : (
           /* 파일 아이콘 */

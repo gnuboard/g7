@@ -1,0 +1,23 @@
+feature: sequence 안 커스텀 핸들러 상태 동기화
+
+description: |
+  sequence 안에서 커스텀 핸들러가 G7Core.state.setLocal() 로 상태를 바꾸면(__g7SequenceLocalSync),
+  후속 setState 는 그 상태를 바탕으로 병합하고 _computed 도 다시 계산한다.
+  동기화 값이 없으면 건너뛰고, setState 만 있는 sequence 와 순서가 바뀐 sequence 는 종전대로 동작한다.
+  emitEvent 결과(_eventResult)도 후속 액션에 전파된다.
+
+axes:
+  case: [custom_sets_sync_single_key, custom_sets_sync_multiple_keys, custom_without_sync, computed_recalculated, set_state_only, set_state_then_custom, emit_event_then_set_state, emit_event_sync_payload]
+
+effects:
+  - following_set_state_merges_on_custom_handler_state
+  - following_set_state_preserves_all_custom_handler_keys
+  - sync_skipped_without_sequence_local_sync
+  - computed_recalculated_after_custom_handler_sync
+  - set_state_only_sequence_unchanged
+  - set_state_then_custom_handler_state_passed
+  - emit_event_result_reaches_following_set_state
+  - emit_event_result_carried_in_sequence_local_sync
+
+test_files:
+  - resources/js/core/template-engine/__tests__/sequence-custom-handler-sync.test.ts

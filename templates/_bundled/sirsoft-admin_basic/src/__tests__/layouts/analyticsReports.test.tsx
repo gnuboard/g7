@@ -336,12 +336,30 @@ describe('리포트 화면 — 탭·엔드포인트·기간 바', () => {
     };
     roots.forEach(walk);
 
-    const words = (node: any): string[] => (typeof node?.props?.className === 'string' ? node.props.className.split(/\s+/) : []);
+    // 확장 레이아웃은 자기 CSS 의 앞글자 이름을 쓴다(접두 빌드 `{letters}:flex`, 의미 클래스 `{namespace}-kv-row` — #816).
+    // 앞글자를 떼고 읽어야 템플릿 화면과 같은 기준으로 판정한다. 앞글자는 manifest `assets.css.namespace` 에서 파생한다.
+    const prefixes = ['modules', 'plugins'].flatMap((kind) => {
+      const dir = path.join(repo, kind, '_bundled');
+      return fs.existsSync(dir) ? fs.readdirSync(dir).flatMap((id) => {
+        const manifest = path.join(dir, id, kind === 'modules' ? 'module.json' : 'plugin.json');
+        const ns = fs.existsSync(manifest) ? JSON.parse(fs.readFileSync(manifest, 'utf8'))?.assets?.css?.namespace : undefined;
+        return typeof ns === 'string' && ns ? [`${ns.replace(/[^a-z]/g, '')}:`, `${ns}-`] : [];
+      }) : [];
+    });
+    const unprefix = (w: string): string => {
+      const p = prefixes.find((x) => w.startsWith(x));
+      return p ? w.slice(p.length) : w;
+    };
+    const words = (node: any): string[] => (typeof node?.props?.className === 'string' ? node.props.className.split(/\s+/).map(unprefix) : []);
     const isPairRow = (row: any): boolean => {
       const kids = Array.isArray(row?.children) ? row.children : [];
       if (kids.length !== 2 || row.iteration) return false;
+      // 둘째가 단추·링크면 값이 아니라 「문구 + 이동 단추」 안내다(예: 저장이 잠긴 이유 + 그 칸으로 이동) — 짝이 아니다
+      if (['Button', 'A'].includes(kids[1]?.name)) return false;
       const label = typeof kids[0]?.text === 'string' ? kids[0].text : '';
       if (!/^\$t:[\w.-]+$/.test(label.trim())) return false;
+      // 둘째가 단추·링크면 값이 아니라 동작이다(「이유 문구 + 그 자리로 가기」 같은 안내 줄 — 히어로 저장 잠김 이유).
+      if (['Button', 'A', 'Link'].includes(kids[1]?.name)) return false;
       const cls = words(row);
       if (cls.includes('kv-row')) return true;
       const flex = cls.some((w) => ['flex', 'inline-flex', 'flex-center'].includes(w));
@@ -726,7 +744,7 @@ describe('CSV 저장 파일명', () => {
       const ctx: Record<string, any> = { query, route: { key: 'abc123' }, _computed: {} };
       ctx._computed.csvUrl = evalComputed(layout, 'csvUrl', ctx);
       ctx._computed.csvFilename = evalComputed(layout, 'csvFilename', ctx);
-      const [nameExpr] = scanBindings(String(download.params?.filename ?? '')).map((b) => b.expr);
+      const [nameExpr] = scanBindings(String(download?.params?.filename ?? '')).map((b) => b.expr);
       return { url: String(ctx._computed.csvUrl), name: evaluateSafeExpression(nameExpr, ctx) };
     };
 

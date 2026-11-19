@@ -196,7 +196,10 @@
                             "type": "basic",
                             "name": "Img",
                             "props": {
-                                "src": "{{review.images[0].download_url}}",
+                                "src": "{{review.images[0].preview_url ?? review.images[0].download_url}}",
+                                "thumbPreset": "sm",
+                                "loading": "lazy",
+                                "decoding": "async",
                                 "alt": "",
                                 "className": "w-full h-full object-cover"
                             }
@@ -246,7 +249,10 @@
                             "type": "basic",
                             "name": "Img",
                             "props": {
-                                "src": "{{review.images[1].download_url}}",
+                                "src": "{{review.images[1].preview_url ?? review.images[1].download_url}}",
+                                "thumbPreset": "sm",
+                                "loading": "lazy",
+                                "decoding": "async",
                                 "alt": "",
                                 "className": "w-full h-full object-cover"
                             }
@@ -296,7 +302,10 @@
                             "type": "basic",
                             "name": "Img",
                             "props": {
-                                "src": "{{review.images[2].download_url}}",
+                                "src": "{{review.images[2].preview_url ?? review.images[2].download_url}}",
+                                "thumbPreset": "sm",
+                                "loading": "lazy",
+                                "decoding": "async",
                                 "alt": "",
                                 "className": "w-full h-full object-cover"
                             }
@@ -346,7 +355,10 @@
                             "type": "basic",
                             "name": "Img",
                             "props": {
-                                "src": "{{review.images[3].download_url}}",
+                                "src": "{{review.images[3].preview_url ?? review.images[3].download_url}}",
+                                "thumbPreset": "sm",
+                                "loading": "lazy",
+                                "decoding": "async",
                                 "alt": "",
                                 "className": "w-full h-full object-cover"
                             }
@@ -396,7 +408,10 @@
                             "type": "basic",
                             "name": "Img",
                             "props": {
-                                "src": "{{review.images[3].download_url}}",
+                                "src": "{{review.images[3].preview_url ?? review.images[3].download_url}}",
+                                "thumbPreset": "sm",
+                                "loading": "lazy",
+                                "decoding": "async",
                                 "alt": "",
                                 "className": "w-full h-full object-cover"
                             }

@@ -1,0 +1,39 @@
+{
+  "comment": "다른 확장(가상의 acme-event 모듈)이 더한 동적 위치 event_page_hero(이벤트마다 배너) 조각 — 화면 주소 값 route.slug 를 대상으로 넘기고, 응답이 지금 주소 값의 것일 때만 배너를 넘긴다. docs/extension-points.md 예시와 같은 모양",
+  "extension_point": "event_page_hero",
+  "mode": "append",
+  "priority": 50,
+  "data_sources": [
+    {
+      "id": "acmeEventPageHero",
+      "type": "api",
+      "endpoint": "/api/plugins/sirsoft-hero_section/hero",
+      "method": "GET",
+      "auto_fetch": true,
+      "auth_mode": "optional",
+      "loading_strategy": "background",
+      "params": { "position": "event_page_hero", "target": "{{route?.slug}}" },
+      "fallback": { "data": null }
+    }
+  ],
+  "components": [
+    {
+      "id": "acmeEventPageHero_slider",
+      "type": "composite",
+      "name": "sirsoft-hero_section.HeroSlider",
+      "if": "{{_global.plugins?.['sirsoft-hero_section'] != null}}",
+      "responsive": {
+        "desktop": { "props": { "contentClass": "{{extensionPointProps?.contentClassDesktop ?? extensionPointProps?.contentClass ?? ''}}" } }
+      },
+      "props": {
+        "banners": "{{acmeEventPageHero?.data?.target === String(route?.slug ?? '') ? (acmeEventPageHero?.data?.banners ?? []) : []}}",
+        "loading": "{{acmeEventPageHero == null || (acmeEventPageHero?.data != null && acmeEventPageHero.data.target !== String(route?.slug ?? ''))}}",
+        "editable": "{{acmeEventPageHero?.data?.abilities?.can_update === true}}",
+        "settings": "{{acmeEventPageHero?.data?.settings}}",
+        "position": "event_page_hero",
+        "target": "{{String(route?.slug ?? '')}}",
+        "contentClass": "{{extensionPointProps?.contentClass ?? ''}}"
+      }
+    }
+  ]
+}

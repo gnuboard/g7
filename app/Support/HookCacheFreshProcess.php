@@ -26,7 +26,7 @@ class HookCacheFreshProcess
      */
     public static function run(array $arguments = ['hooks:cache']): array
     {
-        if (! function_exists('proc_open')) {
+        if (! ExecutionEnvironment::hasFunction('proc_open')) {
             return ['ok' => false, 'exit_code' => null, 'output' => 'proc_open 비활성'];
         }
 
@@ -34,6 +34,7 @@ class HookCacheFreshProcess
         $commandLine = implode(' ', array_map('escapeshellarg', $command)).' 2>&1';
 
         // 업데이트 트리 안이면 APP_VERSION·업데이트 플래그를 고정해 넘긴다 (#145 F10 — 훅 캐시의 core_version 표지).
+        // audit:allow web-artisan-spawn-requires-runner 이 헬퍼의 계약은 「새 코드로 부팅한 별도 프로세스」와 업데이트 자식 환경(UpdateChildEnv — APP_VERSION 고정)이다. 실행 모드 러너는 in-process 로 떨어질 수 있고 자식 환경을 고정하지 않아 둘 다 잃는다. proc_open 이 막힌 무CLI 호스팅은 위 판정에서 실패로 돌려주고 호출부가 수동 명령을 안내한다.
         $process = proc_open($commandLine, [0 => ['pipe', 'r'], 1 => ['pipe', 'w']], $pipes, base_path(), UpdateChildEnv::build());
         if (! is_resource($process)) {
             return ['ok' => false, 'exit_code' => null, 'output' => 'proc_open 자원 생성 실패'];

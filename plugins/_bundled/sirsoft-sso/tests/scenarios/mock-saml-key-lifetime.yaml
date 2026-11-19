@@ -1,0 +1,18 @@
+feature: mock_saml_key_lifetime
+
+description: |
+  모의 SAML IdP 서명 키(캐시 수명 = 모의 활성 최대 시간 240분)와 SP 메타데이터 캐시(하루)의 수명 차이. 모의 키가 새로 만들어지면
+  모의 메타데이터 주소를 쓰는 SAML IdP 의 SP 메타데이터 캐시를 함께 비워, 다음 로그인이 새 인증서로 검증한다. 키가 그대로면 캐시를 쓴다.
+  운영 IdP(모의 메타데이터 주소가 아닌 곳)의 캐시는 건드리지 않는다.
+
+axes:
+  key: ["same|regenerated"]
+  metadata: [url_cached]
+
+effects:
+  - metadata_cached_while_key_lives        # 같은 키로 두 번 로그인해도 메타데이터는 한 번만 받는다
+  - metadata_refetched_on_new_key          # 키 수명이 지나 새 키가 생기면 메타데이터를 다시 받는다
+  - mock_login_succeeds_after_key_expiry   # 그 뒤 모의 SAML 로그인이 saml_invalid 없이 인계 코드로 끝난다
+
+test_files:
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Saml/MockSamlKeyLifetimeTest.php

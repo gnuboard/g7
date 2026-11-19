@@ -9,6 +9,7 @@ use App\Services\SettingsService;
 use Plugins\Sirsoft\Totp\Listeners\CleanTotpCredentialOnUserDelete;
 use Plugins\Sirsoft\Totp\Listeners\CleanTotpCredentialOnUserWithdraw;
 use Plugins\Sirsoft\Totp\Listeners\ConsolePasswordResetNoticeListener;
+use Plugins\Sirsoft\Totp\Listeners\ExemptRequiredFieldsRoutesListener;
 use Plugins\Sirsoft\Totp\Listeners\ExtendLoginPurposeChannels;
 use Plugins\Sirsoft\Totp\Listeners\RegisterTotpProviderListener;
 use Plugins\Sirsoft\Totp\Listeners\TotpAdminResetActivityLogListener;
@@ -110,6 +111,7 @@ class Plugin extends AbstractPlugin
      *  - TotpAdminResetActivityLogListener: 관리자 강제 해제를 활동 로그에 기록
      *  - UserTotpEnrollmentInfoListener: 관리자 회원 상세 응답에 인증 앱 등록 여부(해제 권한자에게만)
      *  - ConsolePasswordResetNoticeListener: 터미널 비밀번호 재설정 결과에 인증 앱 초기화 안내(등록 회원만)
+     *  - ExemptRequiredFieldsRoutesListener: 추가 정보 미입력 회원에게도 열어 둘 등록 관리 라우트
      *  - TotpNotificationDataListener: 등록·해제·백업 코드 재발급 보안 알림의 치환 변수와 기본 정의 복원(1.0.3)
      *
      * @return array<class-string> 리스너 클래스 목록
@@ -124,6 +126,7 @@ class Plugin extends AbstractPlugin
             TotpAdminResetActivityLogListener::class,
             UserTotpEnrollmentInfoListener::class,
             ConsolePasswordResetNoticeListener::class,
+            ExemptRequiredFieldsRoutesListener::class,
             TotpNotificationDataListener::class,
         ];
     }
@@ -464,12 +467,7 @@ class Plugin extends AbstractPlugin
             $settings->setSetting($key, null);
         }
 
-        // 메뉴 삭제 — 비활성화는 메뉴 행을 보존하므로 제거가 직접 지운다.
-        app(ExtensionMenuSyncHelper::class)->cleanupStaleMenus(
-            ExtensionOwnerType::Plugin,
-            $this->getIdentifier(),
-            currentSlugs: [],
-        );
+        // 메뉴는 「데이터도 함께 삭제」를 고른 제거에서 코어가 지운다(코어 7.2.0) — 데이터 보존 제거는 메뉴를 남긴다.
 
         return true;
     }

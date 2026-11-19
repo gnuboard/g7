@@ -1,0 +1,45 @@
+feature: 모듈 설정 서비스의 조회, 저장, 화면 노출 선별, 초기화
+
+description: |
+  `ModuleSettingsService` 는 모듈 설정을 파일(모듈 스토리지의 settings/setting.json)로 읽고 쓴다.
+  조회는 키 없이 전체를, 키가 있으면 그 값을(점 표기 중첩 키 포함) 돌려주고, 모듈이나 키가 없으면 기본값을 돌려준다.
+  민감 필드로 선언된 값은 조회할 때 복호화된다. 저장은 모르는 모듈이면 false 다.
+  화면에 내보내는 설정(getAllActiveSettings)은 frontend_schema 의 expose 선언대로 카테고리와 필드를 걸러 낸다.
+  그 밖에 설정 파일 초기화(reset), 캐시 비우기(clearCache), 설정 폴더 삭제(deleteSettingsDirectory)가 있다.
+
+  저장 시험 셋(새 설정, 기존 파일 위 저장, 민감 필드 선언이 있는 저장)과 초기화, 폴더 삭제 시험은 스토리지를
+  목으로 두고 반환값만 잰다. 병합된 내용이나 암호문 자체는 재지 않으므로 효과 이름도 「성공한다」까지만 적는다.
+  캐시 비우기 시험은 예외 없이 끝나는지만 본다.
+
+axes:
+  operation: [get, save, frontend_exposure, reset, clear_cache, delete_directory]
+
+effects:
+  # 조회
+  - module_settings_get_returns_null_for_unknown_module
+  - module_settings_get_returns_given_default_for_unknown_module
+  - module_settings_get_returns_all_settings_without_key
+  - module_settings_get_returns_value_for_key
+  - module_settings_get_returns_default_for_missing_key
+  - module_settings_get_resolves_dot_notation_key
+  - module_settings_get_decrypts_sensitive_fields
+  # 저장
+  - module_settings_save_fails_for_unknown_module
+  - module_settings_save_succeeds_for_new_settings
+  - module_settings_save_succeeds_over_existing_settings_file
+  - module_settings_save_succeeds_with_sensitive_field_schema
+  # 화면 노출 선별
+  - module_settings_frontend_exposure_omits_module_without_frontend_schema
+  - module_settings_frontend_exposure_filters_by_category_expose
+  - module_settings_frontend_exposure_filters_by_field_expose
+  - module_settings_frontend_exposure_includes_whole_category_without_fields
+  - module_settings_frontend_exposure_skips_modules_without_settings
+  # 초기화와 정리
+  - module_settings_reset_succeeds_when_settings_file_deleted
+  - module_settings_clear_cache_drops_cached_entry
+  - module_settings_delete_settings_directory_succeeds
+
+# E2E axis 없음: 판정은 서버측 서비스 단위이고 화면 변경이 없다.
+
+test_files:
+  - tests/Unit/Services/ModuleSettingsServiceTest.php

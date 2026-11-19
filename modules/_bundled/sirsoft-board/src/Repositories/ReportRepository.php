@@ -15,6 +15,7 @@ use Illuminate\Database\QueryException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Modules\Sirsoft\Board\DisplayName\BoardDisplayNames;
 use Modules\Sirsoft\Board\Enums\ReportStatus;
 use Modules\Sirsoft\Board\Exceptions\DuplicateReportException;
 use Modules\Sirsoft\Board\Models\Comment;
@@ -166,7 +167,10 @@ class ReportRepository implements ReportRepositoryInterface
     }
 
     /**
-     * 신고를 영구 삭제합니다.
+     * 신고를 영구 삭제합니다 — 그 케이스의 신고 로그를 먼저 지운 뒤 케이스를 지웁니다.
+     *
+     * 로그(`boards_report_logs.report_id`)를 DB 외래키 연쇄에 맡기지 않는다(#888). 두 단계를 한 트랜잭션으로 묶어
+     * 케이스 삭제가 실패하면 로그도 되돌린다.
      *
      * @param  int  $id  신고 ID
      * @return bool 삭제 성공 여부
@@ -177,7 +181,11 @@ class ReportRepository implements ReportRepositoryInterface
     {
         $report = $this->findOrFail($id);
 
-        return $report->forceDelete();
+        return (bool) DB::transaction(function () use ($report) {
+            ReportLog::query()->where('report_id', $report->id)->delete();
+
+            return $report->forceDelete();
+        });
     }
 
     /**
@@ -426,17 +434,22 @@ class ReportRepository implements ReportRepositoryInterface
 
             // 작성자 검색
             if ($searchField === 'all' || $searchField === 'author_name') {
+                // 관리자 화면 검색 — 이름, 닉네임, 이메일을 모두 찾는다
                 $q->orWhereHas('author', function ($aq) use ($keyword) {
-                    $aq->where('name', 'like', "%{$keyword}%")
-                        ->orWhere('email', 'like', "%{$keyword}%");
+                    $aq->where(function ($w) use ($keyword) {
+                        app(BoardDisplayNames::class)->constrainUsersForAdmin($w, (string) $keyword);
+                        $w->orWhere('email', 'like', "%{$keyword}%");
+                    });
                 });
             }
 
             // 신고자 검색 (logs → reporter 관계)
             if ($searchField === 'all' || $searchField === 'reporter_name') {
                 $q->orWhereHas('logs.reporter', function ($rq) use ($keyword) {
-                    $rq->where('name', 'like', "%{$keyword}%")
-                        ->orWhere('email', 'like', "%{$keyword}%");
+                    $rq->where(function ($w) use ($keyword) {
+                        app(BoardDisplayNames::class)->constrainUsersForAdmin($w, (string) $keyword);
+                        $w->orWhere('email', 'like', "%{$keyword}%");
+                    });
                 });
             }
         });

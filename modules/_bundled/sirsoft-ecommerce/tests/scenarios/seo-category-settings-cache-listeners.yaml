@@ -1,0 +1,61 @@
+feature: seo_category_settings_cache_listeners
+
+description: |
+  카테고리 변경과 쇼핑몰 SEO 설정 저장 때 SEO 캐시를 비우는 두 리스너
+  (SeoCategoryCacheListener, SeoSettingsCacheListener)의 계약을 고정하는 Unit 테스트의
+  시나리오 소유 매니페스트.
+
+  핵심 동작:
+    - 카테고리 리스너는 생성, 수정 훅을 onCategoryChange 로, 삭제 훅을 onCategoryDelete 로
+      우선순위 20 에 구독한다.
+    - 카테고리가 바뀌면 shop/category, shop/index, home, search/index 레이아웃 캐시를 비운다.
+      카테고리는 객체, 스칼라 ID, null 어느 것으로 와도 처리한다.
+    - 설정 리스너는 core.module_settings.after_save 를 우선순위 20 에 구독하고, 쇼핑몰이 아닌
+      모듈의 저장은 무시한다.
+    - 저장된 설정에 든 SEO 키에 따라 해당 레이아웃만 골라 비운다. 상품 메타와 상품 상세 토글은
+      shop/show, 카테고리 메타와 카테고리 토글은 shop/category 와 shop/index, 검색 메타는
+      search/index 다. 비운 레이아웃이 있으면 사이트맵 캐시(seo.sitemap)도 지운다.
+    - SEO 와 무관한 설정만 저장되면 아무것도 비우지 않는다.
+    - 캐시 무효화가 실패해도 두 리스너 모두 경고 로그만 남기고 예외를 밖으로 내지 않는다.
+
+  카테고리 사이트맵 색인 주소가 상점 주소 설정을 따르는지는 shop-route-path-server-urls.yaml 이
+  선언한다. SeoCategoryCacheListenerTest 의 해당 시험은 그 매니페스트의 축과 효과로 표식한다.
+
+axes:
+  listener:
+    - category
+    - settings
+  area:
+    - subscription
+    - invalidation
+    - failure
+
+effects:
+  # 카테고리 리스너
+  - category_listener_subscribes_create_update_delete_hooks
+  - category_listener_handle_is_callable
+  - category_change_invalidates_shop_home_search_layouts
+  - category_change_logs_id_from_object
+  - category_change_logs_scalar_id
+  - category_change_tolerates_null_category
+  - category_cache_failure_logged_without_throwing
+  # 설정 리스너
+  - settings_listener_subscribes_module_settings_after_save
+  - settings_listener_handle_is_callable
+  - settings_listener_ignores_other_modules
+  - product_meta_change_invalidates_shop_show
+  - category_meta_change_invalidates_category_and_index
+  - search_meta_change_invalidates_search_index
+  - seo_product_detail_toggle_invalidates_shop_show_and_sitemap
+  - seo_category_toggle_invalidates_shop_layouts_and_sitemap
+  - non_seo_settings_change_skips_invalidation
+  - settings_cache_failure_logged_without_throwing
+
+# E2E axis 없음: 훅 리스너의 서버측 캐시 무효화이고 레이아웃 JSON, 컴포넌트 변경이 없다.
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/SeoCategoryCacheListenerTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Listeners/SeoSettingsCacheListenerTest.php
+
+validation:
+  audit_rule: test-scenario-coverage

@@ -8,8 +8,7 @@
  *  ③ 화면효과 토글(boolean + isEffect) → 캔버스 신호 발사
  */
 
-import React from 'react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { ComputedPreview, COMPUTED_EFFECT_PREVIEW_EVENT } from '../../../components/page-settings/ComputedPreview';
 
@@ -18,6 +17,10 @@ const t = (k: string) => k;
 beforeEach(() => cleanup());
 
 describe('ComputedPreview', () => {
+  /**
+   * @scenario subject=computed_preview
+   * @effects computed_preview_number_value_and_type
+   */
   it('숫자 결과값 + 타입을 표시한다', () => {
     const ctx = { products: { data: { data: [{ x: 1 }, { x: 2 }] } } };
     render(<ComputedPreview expr="{{ (products.data.data ?? []).length }}" sampleContext={ctx} t={t} />);
@@ -25,12 +28,20 @@ describe('ComputedPreview', () => {
     expect(screen.getByTestId('g7le-computed-preview-type').textContent).toContain('type_number');
   });
 
+  /**
+   * @scenario subject=computed_preview
+   * @effects computed_preview_string_value
+   */
   it('문자 결과값을 표시한다', () => {
     render(<ComputedPreview expr="{{ 'all' }}" sampleContext={{}} t={t} />);
     expect(screen.getByTestId('g7le-computed-preview-value').textContent).toBe('all');
     expect(screen.getByTestId('g7le-computed-preview-type').textContent).toContain('type_string');
   });
 
+  /**
+   * @scenario subject=computed_preview
+   * @effects computed_preview_list_length_summary
+   */
   it('목록 결과값은 길이 요약으로 표시한다', () => {
     const ctx = { items: [1, 2, 3, 4] };
     render(<ComputedPreview expr="{{ items }}" sampleContext={ctx} t={t} />);
@@ -38,15 +49,30 @@ describe('ComputedPreview', () => {
     expect(screen.getByTestId('g7le-computed-preview-value').textContent).toContain('layout_editor.computed.list_more');
   });
 
+  /**
+   * @scenario subject=computed_preview
+   * @effects computed_preview_eval_failure_shows_error
+   */
   it('평가 실패 시 에러 안내로 전환한다(별도 모달 없음)', () => {
-    // throw 를 유발하는 식 — 정의 안 된 변수 메서드 호출.
-    render(<ComputedPreview expr="{{ nope.deeply.missing.call() }}" sampleContext={{}} t={t} />);
-    // 평가 실패면 error, 성공(undefined)이면 null 타입 — 어느 쪽이든 value 단언 회피.
-    const hasError = screen.queryByTestId('g7le-computed-preview-error');
-    const hasType = screen.queryByTestId('g7le-computed-preview-type');
-    expect(hasError || hasType).toBeTruthy();
+    // 정의 안 된 경로는 평가기가 undefined 로 흡수해 실패가 아니다. 읽는 순간 던지는 샘플 데이터로
+    // 평가 자체를 실패시킨다.
+    const sampleContext = Object.defineProperty({}, 'boom', {
+      enumerable: true,
+      get() {
+        throw new Error('샘플 평가 실패');
+      },
+    });
+    render(<ComputedPreview expr="{{ boom.length }}" sampleContext={sampleContext} t={t} />);
+    // 같은 자리에 에러 안내가 나오고, 결과값/타입 줄은 그리지 않는다.
+    expect(screen.getByTestId('g7le-computed-preview-error').textContent).toContain('layout_editor.computed.preview_error');
+    expect(screen.queryByTestId('g7le-computed-preview-type')).toBeNull();
+    expect(screen.queryByTestId('g7le-computed-preview-value')).toBeNull();
   });
 
+  /**
+   * @scenario subject=computed_preview
+   * @effects computed_preview_effect_toggle_dispatches_signal
+   */
   it('boolean + isEffect → 화면효과 토글이 캔버스 신호를 발사한다', () => {
     const handler = vi.fn();
     window.addEventListener(COMPUTED_EFFECT_PREVIEW_EVENT, handler);
@@ -58,6 +84,10 @@ describe('ComputedPreview', () => {
     window.removeEventListener(COMPUTED_EFFECT_PREVIEW_EVENT, handler);
   });
 
+  /**
+   * @scenario subject=computed_preview
+   * @effects computed_preview_no_effect_toggle_without_is_effect
+   */
   it('boolean 이지만 isEffect 아니면 화면효과 토글 없음', () => {
     render(<ComputedPreview expr="{{ false }}" sampleContext={{}} t={t} />);
     expect(screen.queryByTestId('g7le-computed-preview-effect')).not.toBeInTheDocument();

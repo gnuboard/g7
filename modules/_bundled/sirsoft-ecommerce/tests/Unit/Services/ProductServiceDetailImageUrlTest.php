@@ -20,6 +20,11 @@ use PHPUnit\Framework\Attributes\Test;
  */
 class ProductServiceDetailImageUrlTest extends ModuleTestCase
 {
+    /**
+     * 가짜 공개 자산 디스크(fake_cdn)를 등록하고 드라이버 캐시를 비운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -32,6 +37,11 @@ class ProductServiceDetailImageUrlTest extends ModuleTestCase
         AssetStorage::flush();
     }
 
+    /**
+     * 드라이버 캐시를 비운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         AssetStorage::flush();
@@ -40,7 +50,11 @@ class ProductServiceDetailImageUrlTest extends ModuleTestCase
     }
 
     /**
-     * @effects mixed_rows_resolve_per_row_disk
+     * 상품 폼 직렬화가 행 disk 기준 download_url 과 항상 API 인 preview_url 을 함께 낸다.
+     *
+     * @effects mixed_rows_resolve_per_row_disk, preview_url_is_always_api_serving_url
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function detail_form_serializes_download_url_per_row_disk(): void
@@ -92,6 +106,16 @@ class ProductServiceDetailImageUrlTest extends ModuleTestCase
         $this->assertSame(
             'https://cdn.test/assets/sirsoft-ecommerce/images/products/'.$product->id.'/new.jpg',
             $byHash[$cdnImage->hash]['download_url'],
+        );
+
+        // 썸네일 기준 preview_url 은 두 행 모두 API 서빙 경로 — 폼의 미리보기·og 미리보기가 규격을 건다
+        $this->assertSame(
+            '/api/modules/sirsoft-ecommerce/product-image/'.$localImage->hash,
+            $byHash[$localImage->hash]['preview_url'],
+        );
+        $this->assertSame(
+            '/api/modules/sirsoft-ecommerce/product-image/'.$cdnImage->hash,
+            $byHash[$cdnImage->hash]['preview_url'],
         );
     }
 }

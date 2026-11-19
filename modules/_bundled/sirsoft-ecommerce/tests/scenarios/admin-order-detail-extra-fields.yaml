@@ -1,0 +1,23 @@
+feature: 관리자 주문 상세의 주문서 추가 항목 구획 (#490)
+
+description: |
+  운영자가 주문서에 더한 항목과 다른 확장이 기여한 항목의 값은 주문 응답의 extra_fields
+  ([{ key, label, section, display_value }], 값이 있는 것만)로 온다. 관리자 주문 상세의 주문 정보 탭은 값이 하나라도 있을 때만
+  「주문서 추가 항목」 구획(id admin_order_extra_fields)을 그리고, 항목마다 이름(받은 구획 포함)과 값을 읽기 전용으로 보인다.
+  줄의 id 는 admin_order_extra_field_{키} 다.
+
+# 축은 하나(case)로 편다.
+axes:
+  case: [block_visibility, rows, translations]
+
+effects:
+  - admin_order_extra_block_drawn_only_with_values
+  - admin_order_extra_rows_list_all_values_with_section
+  - admin_order_extra_rows_have_dark_pairs_and_wrap
+  - admin_order_extra_translation_keys_exist
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminOrderExtraFields.test.ts
+
+notes: |
+  E2E: 응답의 extra_fields 는 OrderContactFieldSetTest(PHPUnit)가 잰다. 실제 값이 보이는 화면은 브라우저 실측으로 확인한다.

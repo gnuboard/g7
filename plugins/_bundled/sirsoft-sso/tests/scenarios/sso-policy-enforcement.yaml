@@ -1,0 +1,118 @@
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 시험마다 따로 고른 입력 변수다 — 서로 곱하면 한 흐름에서 동시에 성립하지 않는 조합(예: 강제 꺼짐 + 비상 계정 2단계 요구)이 대부분이라 명목상이다.
+feature: sso_policy_enforcement
+description: |
+  SSO 강제와 비상 계정 — 비밀번호 인증 정책(강제 단위 4 × 1차/2차 × 비상 계정 × purpose 6), 진입 판정, 자동 이동, 셀프 가입 닫기, 2단계 인증 생략, 강제 해제 명령, 정책 저장 검증(W5, 최고관리자 전용 칸), 강제 전환 시 비밀번호 토큰 회수(W34), LDAP 도메인 판정 순서(W27), LDAP 회원의 로그인 폼 안내(버튼 없는 IdP).
+axes:
+  enforce_site: ["false|true", "true"]
+  auto_redirect_idp: ["none|enabled|disabled"]
+  guard: ["user|admin", admin, user]
+  domain: [owned_oidc, "other|disabled_idp|ldap", ldap_enforced]
+  linked_protocols: [ldap, ldap+oidc]
+  accept_username: ["true", "false"]
+  enabled_protocols: [ldap, none]
+  member: ["exists|absent", "newly_enforced|emergency|not_enforced", passwordless_linked, with_password_linked]
+  discovery_enabled: ["false"]
+  enforcement: ["on", "off|on"]
+  login_method: ["password|sso"]
+  emergency: ["no", "yes", "yes|no"]
+  site_two_factor: ["off"]
+  enforce: ["off", domain]
+  unit: [domain, role, linked, site, none]
+  phase: [identifier, user, "identifier|user"]
+  password: ["correct|wrong"]
+  link: ["active|inactive|none"]
+  purpose: ["login|login_password_change|reset_request|reset_complete|set_password|admin_set_password", reset_request, "set_password|reset_complete"]
+  allow_local_password: ["false|true", "false"]
+  prior_decision: [deny]
+  option: ["status|disable|restore", restore]
+  backup: [none]
+  path: [policy, idp_update]
+  token: ["password|sso"]
+  enforce_owned_domains: [false→true]
+  verifier: [absent, matches]
+  enforced: ["no"]
+  two_factor_mode: ["always_skip|skip_if_mfa|always"]
+  mfa: ["true|false|null"]
+  emergency_user_ids: [empty]
+  actor: [super, delegate]
+  enabled_idps: ["0|1"]
+  key: ["enforce_site|enforce_roles|emergency_user_ids|session_max_minutes"]
+  value: ["out_of_range|unknown_role|unknown_user"]
+effects:
+  - redirect_only_when_site_enforced
+  - external_with_redirect
+  - same_shape_regardless_of_member
+  - password_method
+  - activity_log_emergency_login
+  - emergency_hook_once
+  - nothing_recorded
+  - two_factor_required
+  - no_token
+  - token_issued
+  - login_403_with_redirect
+  - failed_attempts_unchanged
+  - redirect_guard_admin
+  - wrong_password_generic_failure
+  - correct_password_403
+  - linked_member_403
+  - inactive_link_allowed
+  - unlinked_allowed
+  - all_blocked
+  - emergency_allowed_with_2fa
+  - no_opinion
+  - purpose_matrix
+  - prior_deny_kept
+  - enforcement_off
+  - backup_saved
+  - activity_log_cli
+  - enforcement_restored
+  - restore_fails
+  - password_tokens_revoked
+  - sso_tokens_kept
+  - emergency_kept
+  - others_kept
+  - domain_password_tokens_revoked
+  - deny_without_redirect
+  - reason_ldap_unavailable
+  - verifier_called
+  - logged_in
+  - generic_success
+  - no_reset_token
+  - redirected_hook_once
+  - reset_422_with_redirect
+  - reset_token_created
+  - open_then_closed
+  - public_register_403
+  - skip_matrix
+  - emergency_required_422
+  - policy_unchanged
+  - site_enforce_requires_idp_422
+  - saved_with_idp
+  - super_only_403
+  - other_keys_saved
+  - validation_422
+  - directory_username_guidance
+  - no_redirect_button
+  - directory_email_guidance
+  - redirect_idp_preferred
+  - mail_guidance_redirect_idp
+  - mail_guidance_ldap_idp
+  - reset_422_directory_guidance
+  - site_directory_guidance
+  - account_contact_guidance
+  - linked_ldap_preferred_over_unlinked_redirect
+  - set_password_directory_guidance
+test_files:
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Policy/AutoRedirectTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Policy/DirectoryLoginGuidanceTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Policy/DiscoveryListenerTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Policy/EmergencyAccessTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Policy/EmergencyTwoFactorRequiredTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Policy/EnforcePasswordPolicyTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Policy/EnforcementCommandTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Policy/EnforcementTokenRevokeTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Policy/LdapDomainOrderTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Policy/ResetPasswordD22Test.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Policy/SelfRegistrationClosedTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Policy/TwoFactorContextTest.php
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Settings/SettingsValidationTest.php

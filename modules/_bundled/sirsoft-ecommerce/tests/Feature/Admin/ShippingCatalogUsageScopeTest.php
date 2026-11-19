@@ -20,7 +20,7 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * 배송사·배송유형이 "쓰이고 있는가" 를 판정하는 모집단 (S10 19차)
+ * 배송사·배송유형이 "쓰이고 있는가" 를 판정하는 모집단
  *
  * 이 판정에는 구멍이 두 종류 있었다.
  *
@@ -106,7 +106,7 @@ class ShippingCatalogUsageScopeTest extends ModuleTestCase
     public function every_column_that_holds_a_carrier_is_either_counted_or_declared_dormant(): void
     {
         // 이 검사가 손열거였다면 **네 번째 컬럼이 생겨도 케이스 없이 조용히 통과**한다 —
-        // 19차가 고친 결함이 정확히 그 형태였다(가드는 있는데 세는 컬럼 집합이 참조 컬럼
+        // 앞서 고친 결함이 정확히 그 형태였다(가드는 있는데 세는 컬럼 집합이 참조 컬럼
         // 전수와 달랐다). 그래서 모집단을 마이그레이션에서 파생하고, 각 컬럼이 ⓐ 사용량에
         // 계수되거나 ⓑ 휴면(쓰기 0)으로 **명시 선언**되었는지만 본다.
         //

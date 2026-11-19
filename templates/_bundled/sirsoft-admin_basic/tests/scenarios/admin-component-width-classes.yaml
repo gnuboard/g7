@@ -1,0 +1,39 @@
+feature: 관리자 템플릿 부품 폭 분기 — 렌더 폭으로 접두 없는 클래스 고르기
+
+description: |
+  부품(TSX) 안의 Tailwind 반응형 접두(`md:inline`, `sm:grid-cols-3` 등)와 폭 미디어를 품은 의미 클래스
+  (`page-title` 의 640px 이상 글자 크기, `page-actions`·`modal-footer-row` 의 640px 이하 배치,
+  `admin-footer-row` 의 768px 이상 가로 배치)는 브라우저 창 폭으로 판정되어 엔진 `responsive` 와 경계가 갈라지고
+  레이아웃 편집기 미리보기 기기 폭을 따르지 못했다. 부품이 렌더 폭(`useRenderWidth` — Provider 폭 우선, 훅이
+  없으면 창 폭과 resize)으로 경계를 판정해 접두 없는 클래스를 고르는지 잠근다.
+  대상 부품: CardGrid, FileUploader(FileList), PermissionTree, MultilingualInput, AdminHeader, AdminFooter,
+  PageHeader, Modal, ColumnSelector, CodeWorkspace. 부품마다 폭별 클래스, 접두 0, resize 갱신, 미리보기 폭,
+  훅 없는 환경의 창 폭 폴백을 같은 표로 잰다. 시험 하나가 시나리오 하나다.
+  부품은 폭 미디어를 품은 클래스를 아예 붙이지 않는다(미리보기 폭과 창 폭이 다를 때 CSS 미디어가 판정을 덮어쓴다) —
+  폭과 무관한 바탕 클래스(`page-heading`·`page-action-group`·`admin-footer-bar`·`modal-footer-bar`)를 쓰고, 템플릿 원본
+  CSS 에서 파생한 폭 미디어 클래스 집합과 부품 출력이 겹치지 않는지 잰다.
+
+axes:
+  case:
+    # templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/ComponentWidthClasses.test.tsx
+    - wcls_c01   # 경계 헬퍼 값(sm 640, md 768, lg 1024, xl 1280, 2xl 1536, 640 이하 포함 판정)
+    - wcls_c02   # 부품별 폭 경계 양쪽 클래스
+    - wcls_c03   # 어느 폭에서도 반응형 접두 클래스 0
+    - wcls_c04   # 창 크기 변경에 따라 갱신
+    - wcls_c05   # 편집기 미리보기 폭(overrideWidth) 우선
+    - wcls_c06   # G7Core 훅이 없으면 창 폭과 resize
+    - wcls_c07   # ColumnSelector labelClassName 지정 시 폭 무관
+    - wcls_c08   # FileList xs 크기는 폭 무관 두 칸 격자
+    - wcls_c09   # 부품 출력에 폭 미디어를 품은 클래스 0 (원본 CSS 에서 집합 파생, 수집기 자체 검사, 새 바탕 클래스 정의)
+
+effects:
+  - component_width_helper_matches_tailwind_breakpoints        # 헬퍼 경계 값이 Tailwind 와 같다
+  - component_width_classes_by_render_width                    # 렌더 폭에 맞는 접두 없는 클래스
+  - component_width_classes_have_no_breakpoint_prefix          # 부품 출력에 반응형 접두 클래스가 없다
+  - component_width_classes_follow_resize                      # 창 크기 변경을 따른다
+  - component_width_classes_follow_preview_width               # 편집기 미리보기 기기 폭을 창 폭보다 먼저 따른다
+  - component_width_classes_fall_back_to_window_without_hook   # 훅이 없으면 창 폭과 resize
+  - component_width_classes_avoid_width_media_semantic_classes # 폭 미디어를 품은 의미 클래스를 붙이지 않는다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/ComponentWidthClasses.test.tsx

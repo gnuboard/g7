@@ -6,7 +6,7 @@
  * 참조 화면과의 1:1 구조 대조라서 다음을 고정한다.
  *
  * - 슬롯 아웃렛 2개(basic_filters·detail_filters)가 있고 둘 다 `filter-grid` 를 가진다(#408 간격 회귀)
- * - 필터 행 12개가 등록 영역에 있고 `slotOrder` 가 1..12 로 끊김 없이 이어진다
+ * - 필터 행 14개가 등록 영역에 있고 `slotOrder` 가 1..14 로 끊김 없이 이어진다(#490 에서 회원 항목 조건 둘이 뒤에 붙었다)
  * - 초기 기본 행은 계정 상태·권한 그룹·가입일 3개다(D7) — 행마다 visibleFilters 로 슬롯이 갈린다
  * - 편집모드 토글 표현식이 참조 3화면과 문자 단위로 같다
  * - 확장점(admin_user_list_filters)이 상세 아웃렛 뒤에 있고 상세가 펼쳐질 때만 보인다
@@ -57,6 +57,8 @@ function slotKey(row: Node): string | null {
 const EXPECTED_KEYS = [
   'status', 'role', 'createdAt', 'lastLoginAt', 'adminScope', 'lockState',
   'dormantAt', 'statusChangedAt', 'language', 'country', 'emailVerified', 'identityVerified',
+  // #490 회원 항목 조건: 필수 항목 미입력, 닉네임 중복
+  'requiredMissing', 'nicknameDuplicate',
 ];
 
 const DEFAULT_FILTERS = ['searchField', 'searchKeyword', 'status', 'role', 'createdAt'];
@@ -86,32 +88,35 @@ describe('회원 목록 필터 조각 — 구조', () => {
 
   // @scenario filter_axis=status, outcome=narrows
   // @effects filter_section_slot_structure
-  it('필터 행 12개가 §5-1 순서대로 등록되고 slotOrder 가 1..12 로 이어진다', () => {
+  it('필터 행 14개가 §5-1 순서대로 등록되고 slotOrder 가 1..14 로 이어진다', () => {
     const rows = filterRows();
 
-    expect(rows).toHaveLength(12);
+    expect(rows).toHaveLength(14);
     expect(rows.map(slotKey)).toEqual(EXPECTED_KEYS);
-    expect(rows.map((r) => Number(r.slotOrder))).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    expect(rows.map((r) => Number(r.slotOrder))).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]);
   });
 
   // @scenario filter_axis=status, outcome=narrows
   // @effects filter_section_slot_structure
-  it('모든 행이 visibleFilters 에 따라 basic/detail 슬롯으로 갈리고 filter-row 를 쓴다', () => {
+  it('모든 행이 visibleFilters 에 따라 basic/detail 슬롯으로 갈리고 넓은 화면 가로·좁은 화면 세로로 놓인다', () => {
     for (const row of filterRows()) {
       const key = slotKey(row);
       expect(row.slot).toBe(`{{(_local.visibleFilters || []).includes('${key}') ? 'basic_filters' : 'detail_filters'}}`);
-      expect(row.props?.className).toContain('filter-row');
+      // 행 배치는 엔진 responsive 구간 값이다 — 1024 이상 가로(flex-row items-center), portable 세로(flex-col items-start).
+      expect(String(row.props?.className).split(/\s+/)).toEqual(expect.arrayContaining(['flex', 'flex-row', 'gap-2', 'items-center']));
+      expect(String(row.responsive?.portable?.props?.className).split(/\s+/)).toEqual(expect.arrayContaining(['flex', 'flex-col', 'gap-2', 'items-start']));
     }
   });
 
   // @scenario filter_axis=status, outcome=narrows
   // @effects filter_section_slot_structure
-  it('행 라벨은 filter-label w-32 다(코어 관리자 관례)', () => {
-    const labels = collect(filterSection, (n) => String(n?.props?.className ?? '').startsWith('filter-label'));
+  it('행 라벨은 filter-field-label w-32 다(코어 관리자 관례 — 폐지 예정 filter-label 은 쓰지 않는다)', () => {
+    // 구간 값(responsive 의 props)도 className 을 가지므로 컴포넌트 노드(name 있음)만 센다.
+    const labels = collect(filterSection, (n) => !!n?.name && /^filter-(field-)?label( |$)/.test(String(n?.props?.className ?? '')));
 
-    expect(labels).toHaveLength(12);
+    expect(labels).toHaveLength(14);
     for (const label of labels) {
-      expect(label.props.className).toMatch(/^filter-label w-32( |$)/);
+      expect(label.props.className).toMatch(/^filter-field-label w-32( |$)/);
     }
   });
 
@@ -238,11 +243,16 @@ describe('회원 목록 필터 조각 — 구조', () => {
 
   // @scenario filter_axis=status, outcome=narrows
   // @effects filter_section_slot_structure
-  it('검색어 대상은 7종이다 (A1 — 화면·다국어·서버 일치)', () => {
+  it('검색어 대상은 고정 7종이고 그 뒤에 운영자가 켠 추가 항목이 붙는다 (A1 — 화면·다국어·서버 일치, #490)', () => {
     const select = collect(filterSection, (n) => n?.id === 'search_field_select')[0];
-    const values = (select.props.options as Array<{ value: string }>).map((o) => o.value);
+    // 선택지는 식 하나다(고정 7종 뒤에 응답의 member_fields.search_fields 를 펼친다) — 고정 값은 식의 리터럴에서 읽는다.
+    const expression = String(select.props.options);
+    const values = [...expression.matchAll(/\{ value: '([^']+)', label: '\$t:admin\.users\.search_fields\.([a-z_]+)' \}/g)];
 
-    expect(values).toEqual(['all', 'name', 'nickname', 'email', 'contact', 'identifier', 'admin_memo']);
+    expect(values.map((m) => m[1])).toEqual(['all', 'name', 'nickname', 'email', 'contact', 'identifier', 'admin_memo']);
+    // 값과 문구 키가 같은 이름이다
+    expect(values.every((m) => m[1] === m[2])).toBe(true);
+    expect(expression.trim().endsWith(', ...(users?.data?.member_fields?.search_fields ?? [])]}}')).toBe(true);
   });
 
   // @scenario filter_axis=status, outcome=narrows

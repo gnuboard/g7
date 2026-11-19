@@ -858,7 +858,7 @@ G7Core.toast.show('메시지', { type: 'info', duration: 5000 });
 // 모달 열기/닫기
 G7Core.modal.open('confirm_modal');
 G7Core.modal.close();  // 최상위 모달 닫기 (ID 인자는 무시된다)
-// closeAll() 은 동작하지 않는다 — g7core-api.md 「알려진 제약」
+G7Core.modal.closeAll();  // 열린 모달 모두 닫기 (engine-v1.95.0+, closeModal 의 params.all)
 
 // 상태 확인
 G7Core.modal.isOpen('confirm_modal');  // boolean
@@ -888,10 +888,14 @@ const unsubscribe = G7Core.componentEvent.on('eventName', (data) => {
 // 이벤트 발생
 await G7Core.componentEvent.emit('eventName', { key: 'value' });
 
-// 리스너 제거
-G7Core.componentEvent.off('eventName');
-G7Core.componentEvent.clear();  // 모든 리스너 제거
+// 구독 해제 — on() 이 돌려준 해제 함수 (권장)
+unsubscribe();
+
+// 또는 콜백 참조로 그 구독만 해제 (engine-v1.94.0)
+G7Core.componentEvent.off('eventName', callback);
 ```
+
+콜백 없는 `off('eventName')`·`clear()` 는 다른 컴포넌트·확장의 구독까지 지우므로 폐지 예정이며, 구독이 있으면 경고를 냅니다 — [G7Core.componentEvent](g7core-api-advanced.md#컴포넌트-이벤트-g7corecomponentevent) 참조.
 
 ---
 

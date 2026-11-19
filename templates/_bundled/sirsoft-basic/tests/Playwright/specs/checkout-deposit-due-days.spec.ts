@@ -21,12 +21,15 @@
  *   이 spec 은 브라우저 수준 — 렌더된 안내 숫자가 설정 응답의 값과 같은지를 담당한다.
  *
  * @scenario checkout-deposit-due
- * @axes method=dbank,vbank
- * @effects due_notice_matches_auto_cancel_days, due_notice_has_no_unsubstituted_placeholder
+ * 커버 축(마커 아님 — 평문): method dbank·vbank (화면에 있는 결제수단만 한 시험 안에서 돈다 —
+ *   사이트 설정에 따라 한쪽만 있을 수 있어 매니페스트 축으로 두지 않는다)
+ * 효과 요약(마커 아님 — 평문): 설정 응답 SSoT 키 노출, 안내 일수 일치, 미치환 플레이스홀더 부재
+ *   — 효과 이름은 시험마다 마킹
  */
 import { test, expect, type Page } from '@playwright/test';
 
 import { issueToken, authenticatePage } from '../../../../../../tests/Playwright/fixtures/auth';
+import { seedOptionProduct, deleteSeededProduct, type SeededOptionProduct } from '../fixtures/option-product-seed';
 
 /** 서버 기본치 (`OrderProcessingService::AUTO_CANCEL_DAYS_DEFAULT`) */
 const SERVER_DEFAULT_DAYS = 3;
@@ -42,40 +45,32 @@ function resolveExpectedDays(raw: unknown): number {
 }
 
 /**
- * 판매 중인 상품 1건을 장바구니에 담습니다 (주문서 진입 조건 확보).
+ * 시드 상품 1건을 장바구니에 담습니다 (주문서 진입 조건 확보).
  *
  * 상품 상세 UI(옵션 드롭다운 → 바로 구매)를 거치지 않는다. 옵션 구성은 상품마다 다르고
  * 하위 옵션이 비동기로 열려, 그 경로를 통과하는 것 자체가 이 spec 의 검증 대상과 무관하게
  * 불안정하다(실측: 동일 코드에서 통과/타임아웃이 갈렸다). 검증 대상인 주문서 입금 기한 안내는
  * 담은 뒤 전부 브라우저 실렌더로 측정한다.
  *
+ * 담을 상품은 공개 목록에서 고르지 않고 spec 이 만든 시드 상품을 쓴다 — 목록 첫 상품이 다른 작업의
+ * 재고 0 시험 상품이면 담기가 422 `cart_unavailable` 로 거부된다(실측).
+ *
  * @param page 대상 페이지 (인증 토큰이 주입된 상태여야 한다)
+ * @param product 담을 시드 상품
  */
-async function seedCart(page: Page): Promise<void> {
-  const result = await page.evaluate(async () => {
+async function seedCart(page: Page, product: SeededOptionProduct): Promise<void> {
+  const result = await page.evaluate(async ({ productId, optionId }) => {
     const token = localStorage.getItem('auth_token');
     const headers = { 'Content-Type': 'application/json', Accept: 'application/json', Authorization: `Bearer ${token}` };
-
-    const listResponse = await fetch('/api/modules/sirsoft-ecommerce/products?per_page=1', { headers });
-    const productCode = (await listResponse.json())?.data?.data?.[0]?.product_code ?? null;
-    if (!productCode) {
-      return { status: 0, reason: '판매 중인 상품이 없습니다' };
-    }
-
-    const detail = await (await fetch(`/api/modules/sirsoft-ecommerce/products/${productCode}`, { headers })).json();
-    const product = detail?.data ?? {};
 
     const addResponse = await fetch('/api/modules/sirsoft-ecommerce/cart', {
       method: 'POST',
       headers,
-      body: JSON.stringify({
-        product_id: product.id,
-        items: [{ product_option_id: product.options?.[0]?.id ?? null, quantity: 1 }],
-      }),
+      body: JSON.stringify({ product_id: productId, items: [{ product_option_id: optionId, quantity: 1 }] }),
     });
 
     return { status: addResponse.status, reason: addResponse.ok ? null : JSON.stringify(await addResponse.json()) };
-  });
+  }, { productId: product.id, optionId: product.firstOptionId });
 
   expect(result.status, `장바구니 담기에 실패했습니다: ${result.reason}`).toBe(201);
 }
@@ -118,12 +113,13 @@ async function dismissCookieBanner(page: Page): Promise<void> {
  * 담긴 것만으로 열리지 않고, 장바구니에서 주문 대상을 확정해야 한다(실측).
  *
  * @param page 대상 페이지
+ * @param product 담을 시드 상품
  */
-async function gotoCheckout(page: Page): Promise<void> {
+async function gotoCheckout(page: Page, product: SeededOptionProduct): Promise<void> {
   await page.goto('/shop/products');
   await dismissCookieBanner(page);
 
-  await seedCart(page);
+  await seedCart(page, product);
 
   await page.goto('/shop/cart');
   await dismissCookieBanner(page);
@@ -133,6 +129,18 @@ async function gotoCheckout(page: Page): Promise<void> {
 }
 
 test.describe('#81 주문서 입금 기한 안내', () => {
+  /** 이 시험이 만든 상품 — 시험이 실패·시간 초과로 끝나도 공유 개발 DB 에 남기지 않도록 여기서 지운다 */
+  let seeded: { token: string; id: number } | null = null;
+
+  test.afterEach(async ({ request }) => {
+    if (seeded) {
+      await deleteSeededProduct(request, seeded.token, seeded.id);
+      seeded = null;
+    }
+  });
+
+  // @scenario case=settings_response_ssot
+  // @effects payment_settings_exposes_auto_cancel_days
   test('설정 응답이 입금 기한 SSoT(auto_cancel_days)를 노출한다', async ({ page }) => {
     await page.goto('/shop/products');
 
@@ -156,9 +164,20 @@ test.describe('#81 주문서 입금 기한 안내', () => {
     expect(Object.keys(orderSettings)).not.toContain('vbank_due_days');
   });
 
-  test('렌더된 안내가 설정값과 일치하고 미치환 플레이스홀더가 없다', async ({ page }) => {
-    await authenticatePage(page, issueToken());
-    await gotoCheckout(page);
+  // @scenario case=rendered_due_notice
+  // @effects due_notice_matches_auto_cancel_days, due_notice_has_no_unsubstituted_placeholder
+  test('렌더된 안내가 설정값과 일치하고 미치환 플레이스홀더가 없다', async ({ page, request }) => {
+    // 시험 상품 생성(공유 개발 서버 실측 최대 17초) 뒤 화면 3개(상품 목록 → 장바구니 → 주문서)를 거친다.
+    // 실측: 생성 없이도 주문서 도착이 29.1초(「주문하기」 클릭만 7초)라 기본 30초로는 결제수단을 재기 전에 끝난다.
+    test.setTimeout(120_000);
+
+    // 이 시험 계정(admin 역할 포함)으로 담을 상품을 직접 만든다. 지우기는 afterEach 가 성패와 무관하게 맡는다.
+    const token = issueToken();
+    const product = await seedOptionProduct(request, token);
+    seeded = { token, id: product.id };
+
+    await authenticatePage(page, token);
+    await gotoCheckout(page, product);
 
     const rawSetting = await page.evaluate(async () => {
       const response = await fetch('/api/modules/sirsoft-ecommerce/settings/payment', {
@@ -178,13 +197,17 @@ test.describe('#81 주문서 입금 기한 안내', () => {
     // 합계가 그려지면 계산이 끝난 것이므로 그때까지 기다린다.
     await expect(page.getByText('총 결제금액').first()).toBeVisible({ timeout: 15000 });
 
+    // 결제수단 버튼은 주문서 계산값(selectablePaymentMethods)이 채워진 뒤에 그려진다. 목록이 선 것을
+    // 먼저 확정해야 아래의 존재 판정이 "아직 안 그려짐"을 "수단 없음"으로 읽지 않는다
+    // (실측: 버튼별 3초 대기의 타임아웃을 없음으로 삼켜 측정 0건으로 실패했다).
+    const methodButtons = page.locator('[data-testid^="checkout-payment-method-"]');
+    await expect(methodButtons.first()).toBeVisible({ timeout: 20000 });
+
     // 활성 결제수단만 화면에 뜬다 — 사이트 설정에 따라 한쪽만 있을 수 있으므로 존재하는 것만 검사한다.
     let measured = 0;
-    for (const label of ['무통장입금', '가상계좌']) {
-      const method = page.getByRole('button', { name: new RegExp(label) }).first();
-      try {
-        await method.waitFor({ state: 'visible', timeout: 3000 });
-      } catch {
+    for (const [id, label] of [['dbank', '무통장입금'], ['vbank', '가상계좌']]) {
+      const method = page.getByTestId(`checkout-payment-method-${id}`);
+      if ((await method.count()) === 0) {
         continue;
       }
 

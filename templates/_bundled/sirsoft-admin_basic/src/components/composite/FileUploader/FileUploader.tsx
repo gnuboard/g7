@@ -16,14 +16,15 @@ import { forwardRef, useImperativeHandle, useMemo, useRef } from 'react';
 import { Div } from '../../basic/Div';
 import { ConfirmDialog } from '../ConfirmDialog';
 import { ImageGallery, GalleryImage } from '../ImageGallery';
+import { attachmentThumbUrl } from '../../../support/thumbnail';
 
 import { FileUploaderProvider } from './FileUploaderContext';
-import { useFileUploader } from './useFileUploader';
+import { useFileUploader, directZoomSource } from './useFileUploader';
 import { FileDropZone } from './FileDropZone';
 import { FileList } from './FileList';
 import { useFocusRecovery } from './useFocusRecovery';
 import type { FileUploaderProps, FileUploaderRef, Attachment, PendingFile } from './types';
-import { t } from './utils';
+import { t, resolveApiEndpoints } from './utils';
 
 // 생략된 배열 속성의 기본값 — 렌더마다 새 배열을 만들면 그 값을 의존성으로 쓰는 동기화 effect·콜백이
 // 렌더마다 다시 돌아 상태 갱신이 끝없이 이어진다(7.1.0). 얼려 두어 공유 상수가 바뀌지 않게 한다.
@@ -69,12 +70,8 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
     },
     ref
   ) => {
-    // API 엔드포인트 기본값 설정
-    const endpoints = {
-      upload: apiEndpoints?.upload ?? '/api/admin/attachments',
-      delete: apiEndpoints?.delete ?? '/api/admin/attachments/:id',
-      reorder: apiEndpoints?.reorder ?? '/api/admin/attachments/reorder',
-    };
+    // API 엔드포인트 기본값 설정 — 정렬 주소는 `reorder` 키가 있으면 그 값(`null`·빈 문자열이면 정렬 없음), 없을 때만 기본값
+    const endpoints = resolveApiEndpoints(apiEndpoints);
 
     // 핵심 로직 훅 사용
     const uploader = useFileUploader({
@@ -129,8 +126,15 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
         } else {
           // 기존 첨부파일은 인증된 URL 또는 다운로드 URL 사용
           const cachedUrl = uploader.authenticatedImageUrls.get(attachmentItem.id);
+          // 썸네일로 그리는 첨부는 업로더가 blob 을 받지 않을 수 있다. 확대 보기는 업로더가 받아 둔 blob → 미리보기 주소 순이고,
+          // 둘 다 없으면(다운로드 주소만 있는 권한 첨부) 확대 보기를 열 때 업로더가 받는 blob 을 기다린다 — 인증 없는
+          // 다운로드 주소를 열면 권한 첨부가 깨진다.
+          const thumbnailDrawn = Boolean(attachmentThumbUrl(attachmentItem, 'sm'));
+          const src = thumbnailDrawn
+            ? (cachedUrl || directZoomSource(attachmentItem) || '')
+            : (cachedUrl || attachmentItem.download_url);
           return {
-            src: cachedUrl || attachmentItem.download_url,
+            src,
             downloadUrl: attachmentItem.download_url,
             filename: attachmentItem.original_filename,
             title: attachmentItem.original_filename,
@@ -191,6 +195,7 @@ export const FileUploader = forwardRef<FileUploaderRef, FileUploaderProps>(
 
       // 인증된 이미지 URL 캐시
       authenticatedImageUrls: uploader.authenticatedImageUrls,
+      requestAuthenticatedImage: uploader.requestAuthenticatedImage,
     }), [uploader, maxFiles, maxSize, accept, endpoints, confirmBeforeRemove]);
 
     return (

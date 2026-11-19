@@ -41,9 +41,9 @@ use Tests\TestCase;
  * 2. 활동 기준은 로그인 시각만이 아니라 토큰 사용 시각까지 본다 (설계 확정) — 앱·토큰으로만
  *    쓰는 활동 중인 회원이 자동 탈퇴로 사라지는 것을 막는다.
  *
- * @scenario target=privacy_dormant_accounts, row_age=within_retention, row_age=beyond_retention
+ * 축 요약(마커 아님 — 평문): target=privacy_dormant_accounts, row_age=within_retention, row_age=beyond_retention
  *
- * @effects dormancy_requires_advance_notice_before_conversion, dormant_account_is_restored_on_login, dormant_activity_basis_includes_token_last_used_at
+ * 효과 요약(마커 아님 — 평문): dormancy_requires_advance_notice_before_conversion, dormant_account_is_restored_on_login, dormant_activity_basis_includes_token_last_used_at
  */
 class DormantLifecycleTest extends TestCase
 {
@@ -467,7 +467,7 @@ class DormantLifecycleTest extends TestCase
      *
      * @return void 반환값 없음
      *
-     * @scenario stage=withdraw, toggle=on, run_mode=dry_run
+     * @scenario stage=withdraw, toggle=on
      *
      * @effects dry_run_command_counts_match_the_preview_badge_source
      */
@@ -1597,22 +1597,20 @@ class DormantLifecycleTest extends TestCase
     }
 
     /**
-     * R7-B1: 관리자 로그인이 403 으로 거절해도 휴면 해제 사실은 안내된다.
+     * 관리자 로그인 화면은 관리자가 아닌 휴면 회원을 휴면 해제 **전에** 거절한다 (#40 R12).
      *
-     * 비관리자 휴면 회원이 관리자 로그인 화면을 쓰면 비밀번호 확인은 성공하므로
-     * `issueLoginSession()` 이 **먼저** 휴면을 해제하고 활동 로그까지 남긴다. 그 뒤 권한
-     * 판정이 403 으로 거절하면서 발급분만 회수하는데, 403 응답에는 `dormancy_restored` 가
-     * 실리지 않아 그 플래그에 묶인 토스트도 뜨지 않았다 — 회원은 **로그인이 실패한 줄 알지만
-     * 실제로는 휴면이 해제된** 상태로 돌아간다. 계획서 §5.2 3단계가 약속한 「해제 + 활동 로그
-     * + 안내」 중 안내만 사라지던 자리다.
+     * 종전(R7-B1)에는 비밀번호 확인 뒤 `issueLoginSession()` 이 먼저 휴면을 풀고 활동 로그를 남긴 다음 권한 판정이
+     * 403 으로 거절해, 해제 사실을 문구(`auth.admin_required_dormancy_restored`)로 알렸다. 관리자 판정을 세션을
+     * 여는 자리 앞으로 옮긴 뒤(2026-10-15 결정)에는 휴면이 풀리지 않으므로 안내도 일반 403 문구다 — 회원은
+     * 일반 로그인 화면에서 로그인하면 그때 해제된다.
      *
      * @return void 반환값 없음
      *
      * @scenario stage=restore, toggle=on
      *
-     * @effects admin_login_rejection_still_reports_dormancy_restoration
+     * @effects admin_login_rejection_keeps_dormancy
      */
-    public function test_admin_login_rejection_still_announces_the_restoration(): void
+    public function test_admin_login_rejection_keeps_the_dormancy(): void
     {
         $this->enableDormancy();
 
@@ -1628,18 +1626,17 @@ class DormantLifecycleTest extends TestCase
 
         $response->assertStatus(403);
 
-        // 해제는 실제로 일어났다 — 이 전제가 깨지면 이 검사는 다른 것을 재고 있다.
+        // 휴면은 그대로다 — 관리자 경로 거절이 휴면 해제(와 그 활동 로그)보다 앞선다.
         $this->assertSame(
-            UserStatus::Active->value,
+            UserStatus::Dormant->value,
             $dormant->fresh()->status,
-            '관리자 로그인 경로에서 휴면이 해제되지 않았습니다 — 이 검사가 안내 누락을 재지 못합니다.',
+            '관리자 로그인 경로가 거절하기 전에 휴면을 해제했습니다.',
         );
 
-        // 그리고 그 사실이 회원에게 전달된다.
+        // 해제되지 않았으니 해제 안내도 붙지 않는다.
         $this->assertSame(
-            __('auth.admin_required_dormancy_restored'),
+            __('auth.admin_required'),
             $response->json('message'),
-            '휴면이 해제됐는데 403 문구가 그 사실을 알리지 않습니다 — 회원은 로그인이 실패한 줄로만 압니다.',
         );
 
         // 평시(휴면이 아니던 비관리자)에는 기존 문구 그대로다 — 안내가 늘 뜨면 뜻이 사라진다.

@@ -1,0 +1,27 @@
+feature: member_field_files
+
+description: |
+  회원의 파일, 이미지 항목. 파일은 폼 저장이 아니라 전용 API(본인 /api/me/fields/{key}/file, 관리자
+  /api/admin/users/{user}/fields/{key}/file)로 올리고 지운다. 올린 파일은 본인과 회원 조회 권한이 있는 관리자만 받고,
+  공개 프로필에 노출하는 이미지 항목만 누구나 받는다. 탈퇴와 회원 삭제 때 파일이 함께 지워진다. 항목을 삭제하거나 그 항목을 선언한 확장을 지워도
+  회원들이 올린 파일이 함께 지워진다(값이 첨부라 값 테이블만 보던 삭제·값 수 세기가 놓쳤다).
+
+coverage_strategy: full
+
+axes:
+  case: [self_upload_and_delete, upload_limits, self_scope, delete_others, download_access, download_public_and_admin_only, admin_route, withdraw_and_delete, field_delete, extension_removal]
+
+effects:
+  - file_field_round_trips_through_dedicated_api
+  - file_field_enforces_extension_size_and_count
+  - self_route_rejects_fields_outside_self_scope
+  - member_cannot_delete_another_members_file
+  - field_file_download_limited_to_owner_and_admin
+  - public_image_is_open_and_admin_only_file_is_closed_to_owner
+  - admin_manages_member_files_with_update_permission
+  - field_files_are_removed_on_withdraw_and_delete
+  - deleting_file_field_counts_and_removes_member_files   # 항목 삭제 창의 값 수는 파일을 올린 회원 수, 삭제하면 첨부 행과 저장 파일이 함께 지워진다
+  - declared_file_field_removal_removes_member_files     # 확장 삭제·선언에서 빠져 정리된 파일 항목의 첨부도 함께 지워진다
+
+test_files:
+  - tests/Feature/User/FieldAttachmentAccessTest.php

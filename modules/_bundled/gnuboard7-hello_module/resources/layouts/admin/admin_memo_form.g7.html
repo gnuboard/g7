@@ -38,20 +38,21 @@
     </set-state>
   </init>
   <slot name="content">
-    <div data-ref="memo_form_wrapper" class="admin-page-content">
-      <div data-ref="memo_form_card" data-key="form" class="max-w-2xl mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
-        <p data-ref="memo_read_only_banner" data-if="{{_computed.readOnlyNoticeVisible}}" class="mb-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-sm text-amber-700 dark:text-amber-300">$t:gnuboard7-hello_module.admin.memos.form.read_only</p>
-        <h1 data-ref="memo_form_title" class="text-page-heading mb-6">{{route?.id ? '$t:gnuboard7-hello_module.admin.memos.form.title_edit' : '$t:gnuboard7-hello_module.admin.memos.form.title_create'}}</h1>
-        <div data-ref="memo_field_title" class="mb-4">
-          <label class="form-label-block">$t:gnuboard7-hello_module.admin.memos.form.fields.title</label>
+    <!-- 클래스는 모두 이 모듈 CSS(resources/css/main.css)의 hellomodule-* 다. 입력칸은 클래스를 주지 않아 템플릿 입력 컴포넌트 기본 모양을 쓴다. -->
+    <div data-ref="memo_form_wrapper" class="hellomodule-admin-page">
+      <div data-ref="memo_form_card" data-key="form" class="hellomodule-panel">
+        <p data-ref="memo_read_only_banner" data-if="{{_computed.readOnlyNoticeVisible}}" class="hellomodule-notice">$t:gnuboard7-hello_module.admin.memos.form.read_only</p>
+        <h1 data-ref="memo_form_title" class="hellomodule-page__title">{{route?.id ? '$t:gnuboard7-hello_module.admin.memos.form.title_edit' : '$t:gnuboard7-hello_module.admin.memos.form.title_create'}}</h1>
+        <div data-ref="memo_field_title" class="hellomodule-field">
+          <label class="hellomodule-label">$t:gnuboard7-hello_module.admin.memos.form.fields.title</label>
           <input type="text" name="title" class="" disabled="{{_computed.isReadOnly}}"/>
         </div>
-        <div data-ref="memo_field_content" class="mb-6">
-          <label class="form-label-block">$t:gnuboard7-hello_module.admin.memos.form.fields.content</label>
+        <div data-ref="memo_field_content" class="hellomodule-field">
+          <label class="hellomodule-label">$t:gnuboard7-hello_module.admin.memos.form.fields.content</label>
           <textarea name="content" :rows="6" class="" disabled="{{_computed.isReadOnly}}"/>
         </div>
-        <div data-ref="memo_form_actions" class="flex-center justify-end gap-2">
-          <a href="/admin/memos" :mergeQuery="true" data-ref="memo_cancel_button" class="button px-4 py-2 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 font-medium transition-colors">
+        <div data-ref="memo_form_actions" class="hellomodule-actions">
+          <a href="/admin/memos" :mergeQuery="true" data-ref="memo_cancel_button" class="hellomodule-button hellomodule-button--secondary">
             <on type="click">
               <!-- 취소하고 목록으로. 목록 상태를 그대로 넘겨 보던 페이지로 돌아간다 -->
               <navigate :mergeQuery="true">
@@ -60,7 +61,7 @@
             </on>
             <span>$t:gnuboard7-hello_module.admin.memos.form.actions.cancel</span>
           </a>
-          <button data-ref="memo_save_button" type="button" class="px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{_computed.isReadOnly}}">
+          <button data-ref="memo_save_button" type="button" class="hellomodule-button hellomodule-button--primary" disabled="{{_computed.isReadOnly}}">
             <on type="click">
               <!-- 저장 — route.id 유무로 생성(POST)과 수정(PUT)을 같은 버튼에서 가른다. 성공하면 목록으로 돌아간다. -->
               <api-call :auth_required="true" target="{{route?.id ? '/api/modules/gnuboard7-hello_module/admin/memos/' + route?.id : '/api/modules/gnuboard7-hello_module/admin/memos'}}" method="{{route?.id ? 'PUT' : 'POST'}}" body="{{_local.form}}">

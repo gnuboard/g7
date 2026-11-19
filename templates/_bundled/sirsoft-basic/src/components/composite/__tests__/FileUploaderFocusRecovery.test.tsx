@@ -14,7 +14,6 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -192,6 +191,8 @@ describe('[case:file-uploader-focus-recovery] FileUploader (sirsoft-basic) 삭�
           initialFiles={[attachment(112, 'a.txt'), attachment(113, 'b.txt')]}
           autoUpload={false}
           confirmBeforeRemove
+          /* 사용자 템플릿에는 기본 삭제 주소가 없다 — 서버 삭제가 늦게 끝나는 경로를 타려면 주소를 넘긴다 */
+          apiEndpoints={{ upload: '/api/x/attachments', delete: '/api/x/attachments/:id' }}
         />
       );
 

@@ -1,0 +1,38 @@
+feature: 업로드 파일의 원래 이름 저장 (브라우저 form-data 인코딩 복원)
+
+description: |
+  브라우저(WHATWG HTML 표준)는 multipart/form-data 의 파일 이름에서 큰따옴표를 `%22`, CR 을 `%0D`,
+  LF 를 `%0A` 로 바꿔 보낸다. 서버가 `getClientOriginalName()` 을 그대로 저장하면 `견적 "최종".pdf` 가
+  `견적 %22최종%22.pdf` 로 저장되고 목록과 내려받은 파일 이름에 그대로 보인다.
+
+  코어 도우미 `App\Support\UploadedFileName` 이 세 가지만(소문자 `%0d`·`%0a` 포함) 되돌린다. 다른 퍼센트
+  문자열(`%20`·`%25` 등)은 사용자가 붙인 이름이라 그대로 둔다. 업로드 이름을 저장하거나 보여 주는 모든
+  지점이 이 도우미로 이름을 읽는다. 이미 저장된 이름은 바꾸지 않는다.
+
+  되돌린 CR/LF 는 이름에 남는다. 내려받기 머리글은 `filename*` 퍼센트 인코딩과 ASCII 대체 이름의 제어 문자
+  제거로 줄바꿈을 싣지 않는다 — sub_flow `core_attachment` 의 머리글 주입 시험이 잰다.
+
+  확장 쪽 같은 계약: 페이지 첨부 → modules/_bundled/sirsoft-page/tests/scenarios/page-attachment-original-filename.yaml,
+  게시판 첨부 → modules/_bundled/sirsoft-board/tests/scenarios/board-attachment-original-filename.yaml.
+
+axes:
+  input: [quote, crlf_upper, crlf_lower, other_percent, plain, empty]
+
+sub_flows:
+  - id: core_attachment
+    description: 코어 첨부 업로드가 원래 이름으로 저장하고 내려받기 머리글에 원래 이름을 안전하게 싣는다
+    effects:
+      - core_attachment_stores_restored_name
+      - core_attachment_download_declares_restored_name
+      - core_attachment_download_header_has_no_raw_line_break
+
+effects:
+  - upload_name_quote_restored
+  - upload_name_crlf_restored
+  - upload_name_other_percent_kept
+  - upload_name_plain_unchanged
+  - upload_name_read_from_uploaded_file
+
+test_files:
+  - tests/Unit/Support/UploadedFileNameTest.php
+  - tests/Feature/Attachment/AttachmentQuotedFilenameTest.php

@@ -177,8 +177,10 @@ class ContentMediaLifecycleTest extends ModuleTestCase
             ->firstWhere('command', 'sirsoft-ecommerce:prune-temp-product-images');
 
         $this->assertNotNull($entry, '임시 상품 이미지·본문 미디어 정리 스케줄이 등록되어야 합니다.');
-        $this->assertSame('daily', $entry['schedule']);
-        $this->assertNull($entry['enabled_config'], '토글 없이 상시 동작한다');
+        // 7.2.0 스케줄 선언 형식 — 주기는 frequency 와 cron 식, 켜고 끄는 조건은 conditions 다
+        $this->assertSame('daily', $entry['frequency']);
+        $this->assertSame('0 0 * * *', $entry['expression']);
+        $this->assertArrayNotHasKey('conditions', $entry, '토글 없이 상시 동작한다');
     }
 
     /**

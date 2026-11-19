@@ -2,6 +2,8 @@
 
 namespace Modules\Sirsoft\Page\Services;
 
+use App\DisplayName\DisplayNameAreaRegistry;
+use App\DisplayName\MemberNamePresenter;
 use App\Exceptions\ContentMediaLimitExceededException;
 use App\Extension\HookManager;
 use App\Helpers\PermissionHelper;
@@ -194,9 +196,10 @@ class PageService
     }
 
     /**
-     * 페이지를 삭제합니다.
+     * 페이지를 영구 삭제합니다 (소프트 삭제 없음 — 되돌리기 수단은 버전 이력이다).
      *
      * 첨부파일과 본문 미디어도 파일과 행째 함께 지웁니다 — 파일은 커밋된 뒤에 지워 롤백과 어긋나지 않게 합니다.
+     * 버전 이력(`page_versions`)도 페이지 행보다 먼저 명시적으로 지웁니다 (DB CASCADE 비의존, #888).
      *
      * @param  Page  $page  페이지 모델
      * @return bool 삭제 성공 여부
@@ -217,8 +220,11 @@ class PageService
             }
 
             // 본문 미디어 삭제 — 첨부 목록 조회가 본문 미디어를 빼므로 따로 지운다. 빠뜨리면 파일이 영구히 남는다.
-            // 버전이 참조해 남겨 둔 것까지 모두 지운다(버전도 함께 지워진다). 행마다 core.content_media.before_delete (#887)
+            // 버전이 참조해 남겨 둔 것까지 모두 지운다(버전은 바로 아래에서 지운다). 행마다 core.content_media.before_delete (#887)
             $this->contentMediaService->deleteContentMediaForPage($page->id);
+
+            // 버전 이력 삭제 — 본문 미디어 정리가 버전 본문을 더는 보지 않게 된 뒤, 페이지 행보다 먼저 (DB CASCADE 의존 금지, #888)
+            $this->pageVersionRepository->deleteByPageId($page->id);
 
             $result = $this->pageRepository->delete($page);
 
@@ -412,12 +418,18 @@ class PageService
     /**
      * 페이지 버전 이력을 조회합니다.
      *
+     * 작성자 이름은 관리자 영역(`core:admin`) 표시 이름이다. 행마다 계산하기 전에 작성자를 모아
+     * 표시 이름 계산에 필요한 값(추가 항목 종류의 값)을 한 번에 읽어 둔다.
+     *
      * @param  Page  $page  페이지 모델
      * @return Collection 버전 목록 (최신순)
      */
     public function getVersions(Page $page): Collection
     {
-        return $this->pageVersionRepository->getVersionsByPage($page);
+        $versions = $this->pageVersionRepository->getVersionsByPage($page);
+        app(MemberNamePresenter::class)->preloadRelations($versions, ['creator'], null, DisplayNameAreaRegistry::AREA_ADMIN);
+
+        return $versions;
     }
 
     /**

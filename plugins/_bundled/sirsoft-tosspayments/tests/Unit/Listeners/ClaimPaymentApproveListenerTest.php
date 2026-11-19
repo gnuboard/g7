@@ -84,7 +84,7 @@ class ClaimPaymentApproveListenerTest extends PluginTestCase
     {
         $payment = $this->makePendingPayment(['pg_provider' => 'kginicis']);
 
-        $result = (new ClaimPaymentApproveListener)->processApprove($this->defaultFilterValue(), $payment, [
+        $result = app(ClaimPaymentApproveListener::class)->processApprove($this->defaultFilterValue(), $payment, [
             'paymentKey' => 'pk', 'orderId' => $payment->payment_number, 'amount' => 3000,
         ]);
 
@@ -103,7 +103,7 @@ class ClaimPaymentApproveListenerTest extends PluginTestCase
     {
         $payment = $this->makePendingPayment();
 
-        $result = (new ClaimPaymentApproveListener)->processApprove($this->defaultFilterValue(), $payment, []);
+        $result = app(ClaimPaymentApproveListener::class)->processApprove($this->defaultFilterValue(), $payment, []);
 
         $this->assertTrue($result['handled']);
         $this->assertFalse($result['success']);
@@ -123,7 +123,7 @@ class ClaimPaymentApproveListenerTest extends PluginTestCase
         Http::fake();
         $payment = $this->makePendingPayment();
 
-        $result = (new ClaimPaymentApproveListener)->processApprove($this->defaultFilterValue(), $payment, [
+        $result = app(ClaimPaymentApproveListener::class)->processApprove($this->defaultFilterValue(), $payment, [
             'paymentKey' => 'pk_other', 'orderId' => 'CP9999999999', 'amount' => 3000,
         ]);
 
@@ -155,7 +155,7 @@ class ClaimPaymentApproveListenerTest extends PluginTestCase
             ], 200),
         ]);
 
-        $result = (new ClaimPaymentApproveListener)->processApprove($this->defaultFilterValue(), $payment, [
+        $result = app(ClaimPaymentApproveListener::class)->processApprove($this->defaultFilterValue(), $payment, [
             'paymentKey' => 'pk_claim_1', 'orderId' => $payment->payment_number, 'amount' => 3000,
         ]);
 
@@ -187,7 +187,7 @@ class ClaimPaymentApproveListenerTest extends PluginTestCase
             'api.tosspayments.com/v1/payments/pk_vbank_1/cancel' => Http::response(['cancels' => []], 200),
         ]);
 
-        $result = (new ClaimPaymentApproveListener)->processApprove($this->defaultFilterValue(), $payment, [
+        $result = app(ClaimPaymentApproveListener::class)->processApprove($this->defaultFilterValue(), $payment, [
             'paymentKey' => 'pk_vbank_1', 'orderId' => $payment->payment_number, 'amount' => 3000,
         ]);
 
@@ -231,7 +231,7 @@ class ClaimPaymentApproveListenerTest extends PluginTestCase
         ]);
 
         // 결제창은 9,000원으로 열렸는데 그 사이 청구액이 5,000원으로 바뀐 상태.
-        $result = (new ClaimPaymentApproveListener)->processApprove($this->defaultFilterValue(), $payment, [
+        $result = app(ClaimPaymentApproveListener::class)->processApprove($this->defaultFilterValue(), $payment, [
             'paymentKey' => 'pk_stale_window', 'orderId' => $payment->payment_number, 'amount' => 9000,
         ]);
 
@@ -262,7 +262,7 @@ class ClaimPaymentApproveListenerTest extends PluginTestCase
             ], 200),
         ]);
 
-        $result = (new ClaimPaymentApproveListener)->processApprove($this->defaultFilterValue(), $payment, [
+        $result = app(ClaimPaymentApproveListener::class)->processApprove($this->defaultFilterValue(), $payment, [
             'paymentKey' => 'pk_ok', 'orderId' => $payment->payment_number, 'amount' => 3000,
         ]);
 
@@ -296,7 +296,7 @@ class ClaimPaymentApproveListenerTest extends PluginTestCase
             ], 404),
         ]);
 
-        $result = (new ClaimPaymentApproveListener)->processApprove($this->defaultFilterValue(), $payment, [
+        $result = app(ClaimPaymentApproveListener::class)->processApprove($this->defaultFilterValue(), $payment, [
             'paymentKey' => 'pk_missing', 'orderId' => $payment->payment_number, 'amount' => 3000,
         ]);
 
@@ -335,7 +335,7 @@ class ClaimPaymentApproveListenerTest extends PluginTestCase
             'api.tosspayments.com/v1/payments/confirm' => fn () => throw new \RuntimeException('connection refused'),
         ]);
 
-        $result = (new ClaimPaymentApproveListener)->processApprove($this->defaultFilterValue(), $payment, [
+        $result = app(ClaimPaymentApproveListener::class)->processApprove($this->defaultFilterValue(), $payment, [
             'paymentKey' => 'pk_down', 'orderId' => $payment->payment_number, 'amount' => 3000,
         ]);
 

@@ -2,12 +2,14 @@
 
 namespace App\Extension\Storage;
 
+use App\Contracts\Extension\ProvidesThumbnailSource;
 use App\Contracts\Extension\StreamingStorageInterface;
 use App\Exceptions\UnsafeStoragePathException;
 use App\Extension\Storage\Concerns\GuardsPublicDiskWrites;
 use App\Extension\Storage\Concerns\GuardsStoragePaths;
 use App\Extension\Storage\Concerns\ProvidesStreamingAccess;
 use App\Extension\Storage\Concerns\ResolvesPublicUrl;
+use App\Extension\Storage\Concerns\SyncsThumbnails;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -17,12 +19,13 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * 모듈별로 격리된 파일 저장소를 제공합니다.
  * 경로 패턴: storage/app/modules/{identifier}/{category}/{path}
  */
-class ModuleStorageDriver implements StreamingStorageInterface
+class ModuleStorageDriver implements ProvidesThumbnailSource, StreamingStorageInterface
 {
     use GuardsPublicDiskWrites;
     use GuardsStoragePaths;
     use ProvidesStreamingAccess;
     use ResolvesPublicUrl;
+    use SyncsThumbnails;
 
     /**
      * 모듈 식별자
@@ -111,8 +114,12 @@ class ModuleStorageDriver implements StreamingStorageInterface
         }
 
         $this->ensurePreservationMarker();
+        $this->syncThumbnailsBeforePut($fullPath);
 
-        return Storage::disk($this->disk)->put($fullPath, $content, $this->objectStorageWriteOptions($fullPath, $content));
+        $written = Storage::disk($this->disk)->put($fullPath, $content, $this->objectStorageWriteOptions($fullPath, $content));
+        $this->syncThumbnailsAfterPut($fullPath, $written);
+
+        return $written;
     }
 
     /**
@@ -146,7 +153,10 @@ class ModuleStorageDriver implements StreamingStorageInterface
     {
         $fullPath = $this->resolvePath($category, $path);
 
-        return Storage::disk($this->disk)->delete($fullPath);
+        $deleted = Storage::disk($this->disk)->delete($fullPath);
+        $this->syncThumbnailsAfterDelete($fullPath, $deleted);
+
+        return $deleted;
     }
 
     /**
@@ -191,7 +201,10 @@ class ModuleStorageDriver implements StreamingStorageInterface
             $category
         );
 
-        return Storage::disk($this->disk)->deleteDirectory($fullPath);
+        $deleted = Storage::disk($this->disk)->deleteDirectory($fullPath);
+        $this->syncThumbnailsAfterDeleteDirectory($fullPath, $deleted);
+
+        return $deleted;
     }
 
     /**
@@ -225,7 +238,10 @@ class ModuleStorageDriver implements StreamingStorageInterface
 
         $this->assertNotDestructiveOnRoot($fullPath, [$this->identifier], 'deleteAll', $category);
 
-        return Storage::disk($this->disk)->deleteDirectory($fullPath);
+        $deleted = Storage::disk($this->disk)->deleteDirectory($fullPath);
+        $this->syncThumbnailsAfterDeleteDirectory($fullPath, $deleted);
+
+        return $deleted;
     }
 
     /**

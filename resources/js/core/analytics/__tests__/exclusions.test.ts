@@ -5,12 +5,11 @@
  * 브라우저가 막았는데 서버는 셀 생각이었던(방문이 조용히 빠짐) 상태가 된다. 두 경우
  * 모두 화면에는 아무 증상이 없다.
  *
- * @scenario exclusion=disabled|dnt|opt_out|url_pattern|none
- * @effects tracker_honours_do_not_track_and_opt_out, client_and_server_exclusion_rules_agree,
- *   tracker_skips_excluded_requests_before_sending
+ * 꺼짐, 추적 거부, 제외 선택, 제외 경로, 정상 방문을 각 시험이 재고, 조합과 효과 표식은
+ * 그 시험 앞에 있다.
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import { hasOptOutCookie, isPrerendering, pathMatchesAny, shouldSkip } from '../exclusions';
 

@@ -63,6 +63,18 @@ function sessionProbeVerify(): array
 $sessionProbeLibraryMode = defined('SESSION_PROBE_LIBRARY') && constant('SESSION_PROBE_LIBRARY');
 
 if (! $sessionProbeLibraryMode) {
+    // installerHasFunction 의 출처 — 아래 출력 채널 가드가 쓴다 (전이 의존 금지, R4 취지).
+    // 최상위 실행문이 없고 BASE_PATH 를 자체 역산하므로 config/session 보다 앞에 와도 안전하다.
+    require_once __DIR__.'/../includes/execution-mode.php';
+
+    // 오류 텍스트가 JSON 본문에 섞이지 않게 한다 — **include 체인·가드보다
+    // 앞**. 이 진입점은 세션 진단 전용이라, 세션 warning 이 가장 잘 나는 자리(session.php 의
+    // session_start)가 배선보다 앞이면 진단하려는 그 실패가 JSON 본문을 오염시킨다.
+    if (installerHasFunction('ini_set')) {
+        @ini_set('display_errors', '0');
+    }
+    error_reporting(E_ALL);
+
     // 정식 진입점 — config / session / functions / guard 로드
     require_once __DIR__.'/../includes/config.php';
     require_once __DIR__.'/../includes/session.php';
@@ -70,12 +82,19 @@ if (! $sessionProbeLibraryMode) {
     require_once __DIR__.'/_guard.php';
     installer_guard_or_410();
 
+    // 다국어 로드 — 형제 6곳과 같은 규칙이다.
+    $currentLang = getCurrentLanguage();
+    $translations = loadTranslations($currentLang);
+
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: no-store, no-cache, must-revalidate');
 
     if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
         http_response_code(405);
-        echo installer_json_encode(['error' => 'GET method required'], JSON_UNESCAPED_UNICODE);
+        echo installer_json_encode([
+            'error' => lang('error_get_method_required'),
+            'message_key' => 'error_get_method_required',
+        ], JSON_UNESCAPED_UNICODE);
         exit;
     }
 

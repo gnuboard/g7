@@ -65,6 +65,7 @@
     - [loginTwoFactorResend](actions-handlers-ui.md#logintwofactorresend) - 인증번호 다시 받기
     - [loginPasswordChange](actions-handlers-ui.md#loginpasswordchange) - 비밀번호 변경 단계 완료
     - [loginPasswordChangePostpone](actions-handlers-ui.md#loginpasswordchangepostpone) - 비밀번호 변경 단계 연기
+    - [loginHandoff](actions-handlers-ui.md#loginhandoff) - 로그인 인계 코드 교환 (외부 인증 로그인)
 15. [openModal / closeModal](actions-handlers-ui.md#openmodal--closemodal) - 모달
 16. [showAlert / toast](actions-handlers-ui.md#showalert--toast) - 알림
 17. [confirm (액션 속성)](actions-handlers-ui.md#confirm-액션-속성) - 실행 전 확인 대화상자

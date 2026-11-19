@@ -1,9 +1,46 @@
+/* g7-extension-css:start — convert-layout-classes.mjs 가 생성·갱신하는 블록. 손으로 고치지 않는다. */
+@import "tailwindcss/theme.css" layer(theme) prefix(verificationnhnkcp);
+@import "tailwindcss/utilities.css" layer(utilities) prefix(verificationnhnkcp) source(none);
+@import "./g7-extension.generated.css";
+@source "../layouts";
+@source "../extensions";
+@source "../js";
+@source not "../js/**/__tests__";
+@source "../../src";
+@theme {
+  --font-sans: 'Pretendard Variable', 'Pretendard', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
+  --color-primary-950: #172554;
+  --color-success-50: #f0fdf4;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+  --color-warning-50: #fefce8;
+  --color-warning-500: #eab308;
+  --color-warning-600: #ca8a04;
+  --color-danger-50: #fef2f2;
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+}
+@custom-variant dark (&:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])));
+/* g7-extension-css:end */
+
 /**
  * sirsoft-verification_nhnkcp 화면 스타일 — NHN KCP 본인인증 환경설정에만 있는 상태 유틸리티
  *
  * 관리자 템플릿은 자기 layouts/ 만 훑어 CSS 를 만들므로, 이 플러그인 레이아웃에만 있는 포커스·다크 모드 짝은 규칙이
  * 생성되지 않는다. 그런 짝을 이 플러그인이 접두 클래스로 직접 제공한다(다른 확장·템플릿 클래스를 정의하거나 덮지 않는다).
- * 다크 모드: 관리자 템플릿은 `<html class="dark">` 로 전환하므로 `.dark` 조상 선택자로 짝을 둔다.
+ * 다크 모드: 템플릿 종류와 무관한 중립 표식(`<html data-g7-color-scheme="dark">`)으로 짝을 둔다.
+ * 「다크 안의 라이트」(관리자 다크 화면 속 라이트 미리보기)는 제외하는 규격이고, 특이도는 템플릿의 `.dark .x` 와 같다.
+ * 칸: 포커스 짝은 접두 유틸리티와 같은 일반 칸(층 없음), 의미 글자색(tone)은 템플릿이 덮을 수 있는 가장 낮은 칸 `@layer g7-extension` 에 둔다.
  */
 
 /* 입력+버튼 묶음 — 포커스 때 테두리를 지우고 다크 모드 포커스 링을 밝은 파랑으로 */
@@ -11,24 +48,39 @@
     border-color: transparent;
 }
 
-.dark .verification-nhnkcp-focus-group:focus-within {
+.verification-nhnkcp-focus-group:focus-within:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
     --tw-ring-color: oklch(70.7% 0.165 254.624); /* blue-400 */
 }
 
-/* 경고 글자색 — 관리자 템플릿 의미 클래스(text-warning-soft)와 같은 색을 이 확장이 직접 싣는다. 글자 크기는 레이아웃의 text-xs */
-.verification-nhnkcp-tone-warning {
-    color: var(--color-yellow-700, oklch(55.4% 0.135 66.442)); /* yellow-700 */
+@layer g7-extension {
+    /* 경고 글자색 — 관리자 템플릿 의미 클래스(text-warning-soft)와 같은 색을 이 확장이 직접 싣는다. 글자 크기는 레이아웃의 text-xs */
+    .verification-nhnkcp-tone-warning {
+        color: oklch(55.4% 0.135 66.442); /* yellow-700 */
+    }
+
+    .verification-nhnkcp-tone-warning:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        color: oklch(90.5% 0.182 98.111); /* yellow-300 */
+    }
+
+    /* 안내 글자색 — 관리자 템플릿 의미 클래스(text-info-soft)와 같은 색을 이 확장이 직접 싣는다. 글자 크기는 레이아웃의 text-xs */
+    .verification-nhnkcp-tone-info {
+        color: oklch(48.8% 0.243 264.376); /* blue-700 */
+    }
+
+    .verification-nhnkcp-tone-info:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        color: oklch(80.9% 0.105 251.813); /* blue-300 */
+    }
 }
 
-.dark .verification-nhnkcp-tone-warning {
-    color: var(--color-yellow-300, oklch(90.5% 0.182 98.111)); /* yellow-300 */
-}
-
-/* 안내 글자색 — 관리자 템플릿 의미 클래스(text-info-soft)와 같은 색을 이 확장이 직접 싣는다. 글자 크기는 레이아웃의 text-xs */
-.verification-nhnkcp-tone-info {
-    color: var(--color-blue-700, oklch(48.8% 0.243 264.376)); /* blue-700 */
-}
-
-.dark .verification-nhnkcp-tone-info {
-    color: var(--color-blue-300, oklch(80.9% 0.105 251.813)); /* blue-300 */
+/*
+ * 층 밖 의미 규칙 — 관리자 템플릿이 층 없이 둔 배치 규칙의 이 플러그인 사본.
+ *
+ * 생성 파일(g7-extension.generated.css)은 의미 클래스를 모두 가장 낮은 칸에 담지만, 템플릿에서 이 규칙은 층 밖이라
+ * 같은 요소의 유틸리티를 이겼다. 이 플러그인 유틸리티는 층 없이 실리므로 같은 우선순위를 지키려고
+ * 이 규칙만 층 밖(유틸리티 뒤)에 한 번 더 둔다. 값은 템플릿 정의와 같다.
+ */
+.verification-nhnkcp-flex-between {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }

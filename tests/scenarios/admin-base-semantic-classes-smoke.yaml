@@ -38,8 +38,9 @@ effects:
   - admin_sidebar_items_use_semantic_classes_without_inline_padding
   # 관리자 페이지 콘텐츠 영역이 .admin-page-content 로 마운트된다 (Phase 1.7).
   - admin_page_content_uses_semantic_class
-  # 환경설정 페이지 콘텐츠 영역이 .admin-page-content-responsive 로 마운트된다 (Phase 1.7 후속).
-  - settings_page_content_uses_responsive_semantic_class
+  # 환경설정 페이지 콘텐츠 영역의 여백이 엔진 responsive 구간(639 이하 p-4, 640~1023 p-6, 1024 이상 p-8)을 따른다
+  # (Phase 1.7 후속. 폭 미디어를 품은 의미 클래스 .admin-page-content-responsive 는 레이아웃에서 쓰지 않는다).
+  - settings_page_content_padding_by_engine_width
   # 페이지 헤더의 새로고침 버튼이 .btn-icon 으로 마운트된다 (Phase 1.8).
   - page_header_refresh_button_uses_btn_icon
   # 회원 목록 콘텐츠 영역·일괄 작업 바·버튼이 시맨틱 클래스로 마운트된다 (Phase 1.10).
@@ -50,7 +51,8 @@ effects:
   - identity_log_filter_sections_use_filter_grid_class
   # 회원 목록 옵션 영역이 .flex-center 로 마운트된다 (Phase 1.14).
   - user_list_options_use_flex_center_class
-  # AdminFooter 가 .admin-footer / .admin-footer-row 로 마운트된다 (Phase 1.15).
+  # AdminFooter 가 .admin-footer / .admin-footer-bar 로 마운트되고 줄 방향을 렌더 폭으로 고른다 (Phase 1.15,
+  # 폭 미디어를 품은 옛 .admin-footer-row 는 붙이지 않는다).
   - admin_footer_uses_semantic_classes
   # 환경설정 하단 취소/저장 버튼이 .btn-secondary / .btn-primary 로 마운트된다 (Phase 1.16).
   - settings_footer_buttons_use_btn_semantic_classes

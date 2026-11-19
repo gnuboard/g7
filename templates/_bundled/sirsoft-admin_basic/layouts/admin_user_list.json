@@ -1,5 +1,5 @@
 {
-    "comment": "회원 목록. 이 화면의 성격은 **상태를 URL 에 둔다**는 것이다 — 검색·필터·정렬·페이지·항목수를 전부\n  쿼리스트링으로 옮기고 데이터소스가 그 값을 파라미터로 읽으므로, 목록을 다시 부르는 대신 `navigate`\n  로 URL 만 바꾸면 갱신된다. 새로고침·뒤로가기·링크 공유가 그대로 되는 것이 그 대가로 얻는 것이다.\n  예외는 삭제 뒤 한 자리다(URL 이 안 바뀌므로 `refetch-data-source` 를 쓴다).\n\n  필터 영역은 쿠폰·상품·주문 목록과 같은 구조다(기본/상세 + 검색편집, #705) — 조각 파일 머리 주석 참조.\n  검색어 조건은 기존 `filters[0][*]` 형식을 그대로 두고(외부 링크·테스트가 이 형식에 묶여 있다),\n  새 조건은 평면 키(`status[]`·`role_ids[]`·`start_date` …)로 더했다. 확장이 더하는 조건은\n  `ext_filters[]` 배열 칸 하나로 모인다.\n  필터 선택지 두 벌은 `<defines>` 에 두고 computed(`userStatusOptions`·`countryOptions`)로 조각에 넘긴다 — 슬롯으로\n  옮겨 그려지는 필터 행에는 `_defines` 가 실리지 않는다(브라우저 실측에서 상태 체크박스가 사라진 원인). 계정 상태(`userStatusList`, 서버 Enum UserStatus 여섯 값과\n  같은 순서)와 국가(`countryList`, 회원 등록·수정 폼 admin_user_form 의 목록과 **같아야** 한다 — 갈리면\n  폼에서 넣은 나라를 필터로 찾지 못한다).\n\n  권한은 서버가 응답에 실어 준 `abilities` 로만 판정한다 — 역할 이름을 프론트에서 보지 않는다.\n  일괄 처리는 모바일(드롭다운)과 데스크톱(버튼 4개) 두 벌이 같은 확인 창을 연다.",
+    "comment": "회원 목록. 이 화면의 성격은 **상태를 URL 에 둔다**는 것이다 — 검색·필터·정렬·페이지·항목수를 전부\n  쿼리스트링으로 옮기고 데이터소스가 그 값을 파라미터로 읽으므로, 목록을 다시 부르는 대신 `navigate`\n  로 URL 만 바꾸면 갱신된다. 새로고침·뒤로가기·링크 공유가 그대로 되는 것이 그 대가로 얻는 것이다.\n  예외는 삭제 뒤 한 자리다(URL 이 안 바뀌므로 `refetch-data-source` 를 쓴다).\n\n  필터 영역은 쿠폰·상품·주문 목록과 같은 구조다(기본/상세 + 검색편집, #705) — 조각 파일 머리 주석 참조.\n  검색어 조건은 기존 `filters[0][*]` 형식을 그대로 두고(외부 링크·테스트가 이 형식에 묶여 있다),\n  새 조건은 평면 키(`status[]`·`role_ids[]`·`start_date` …)로 더했다. 확장이 더하는 조건은\n  `ext_filters[]` 배열 칸 하나로 모인다.\n  필터 선택지 두 벌은 `<defines>` 에 두고 computed(`userStatusOptions`·`countryOptions`)로 조각에 넘긴다 — 슬롯으로\n  옮겨 그려지는 필터 행에는 `_defines` 가 실리지 않는다(브라우저 실측에서 상태 체크박스가 사라진 원인). 계정 상태(`userStatusList`, 서버 Enum UserStatus 여섯 값과\n  같은 순서)와 국가(`countryList`, 회원 등록·수정 폼 admin_user_form 의 목록과 **같아야** 한다 — 갈리면\n  폼에서 넣은 나라를 필터로 찾지 못한다).\n\n  운영자가 환경설정에서 「회원 목록 열」로 켠 추가 항목은 응답 `member_fields.columns` 로 오고, computed\n  `memberFieldColumns` 하나가 표와 열 선택기 양쪽의 `dynamicColumns` 가 된다(닉네임 열 뒤). 두 곳이 같은 값을\n  읽어야 열 집합과 순서가 갈리지 않는다. 「회원 검색」으로 켠 항목(`member_fields.search_fields`)은 검색 대상\n  선택지 뒤에 붙는다. 회원 항목 조건 둘(필수 항목 미입력 `required_missing`, 닉네임 중복 `nickname_duplicate`)은\n  값이 `1` 인 평면 키다. 닉네임 정책 화면의 「겹치는 회원 보기」가 `?nickname_duplicate=1` 로 들어온다.\n\n  권한은 서버가 응답에 실어 준 `abilities` 로만 판정한다 — 역할 이름을 프론트에서 보지 않는다.\n  일괄 처리는 모바일(드롭다운)과 데스크톱(버튼 4개) 두 벌이 같은 확인 창을 연다.",
     "version": "1.0.0",
     "layout_name": "admin_user_list",
     "extends": "_admin_base",
@@ -50,6 +50,8 @@
                 "country": "{{query.country}}",
                 "email_verified": "{{query.email_verified}}",
                 "identity_verified": "{{query.identity_verified}}",
+                "required_missing": "{{query.required_missing}}",
+                "nickname_duplicate": "{{query.nickname_duplicate}}",
                 "ext_filters": "{{query['ext_filters[]'] || []}}"
             },
             "fallback": {
@@ -112,13 +114,16 @@
             "language": "",
             "country": "",
             "emailVerified": "all",
-            "identityVerified": "all"
+            "identityVerified": "all",
+            "requiredMissing": false,
+            "nicknameDuplicate": false
         },
         "userFilterExtraQuery": []
     },
     "computed": {
         "userStatusOptions": "{{(_defines?.userStatusList ?? []).map(d => ({ code: d.code, name: d.name }))}}",
-        "countryOptions": "{{(_defines?.countryList ?? []).map(c => ({ value: c.code, label: c.name }))}}"
+        "countryOptions": "{{(_defines?.countryList ?? []).map(c => ({ value: c.code, label: c.name }))}}",
+        "memberFieldColumns": "{{(users?.data?.member_fields?.columns ?? []).map(c => ({ field: c.field, header: c.header, sortable: false, emptyText: '-' }))}}"
     },
     "permissions": [
         "core.users.read"
@@ -383,6 +388,8 @@
                     "country": "{{_local.filter.country}}",
                     "email_verified": "{{_local.filter.emailVerified !== 'all' ? _local.filter.emailVerified : ''}}",
                     "identity_verified": "{{_local.filter.identityVerified !== 'all' ? _local.filter.identityVerified : ''}}",
+                    "required_missing": "{{_local.filter.requiredMissing ? '1' : ''}}",
+                    "nickname_duplicate": "{{_local.filter.nicknameDuplicate ? '1' : ''}}",
                     "ext_filters": "{{_local.userFilterExtraQuery || []}}"
                 }
             }
@@ -411,7 +418,7 @@
             "params": {
                 "target": "global",
                 "_local": {
-                    "showDetailFilter": "{{!!(query.admin_scope || query.lock_state || query.last_login_start || query.last_login_end || query.never_logged_in || query.dormant_start || query.dormant_end || query.status_changed_type || query.language || query.country || query.email_verified || query.identity_verified || (query['ext_filters[]'] || []).length > 0)}}",
+                    "showDetailFilter": "{{!!(query.admin_scope || query.lock_state || query.last_login_start || query.last_login_end || query.never_logged_in || query.dormant_start || query.dormant_end || query.status_changed_type || query.language || query.country || query.email_verified || query.identity_verified || query.required_missing || query.nickname_duplicate || (query['ext_filters[]'] || []).length > 0)}}",
                     "userFilterExtraQuery": "{{query['ext_filters[]'] || []}}",
                     "filter": {
                         "searchField": "{{query['filters[0][field]'] || 'all'}}",
@@ -433,7 +440,9 @@
                         "language": "{{query.language || ''}}",
                         "country": "{{query.country || ''}}",
                         "emailVerified": "{{query.email_verified || 'all'}}",
-                        "identityVerified": "{{query.identity_verified || 'all'}}"
+                        "identityVerified": "{{query.identity_verified || 'all'}}",
+                        "requiredMissing": "{{['1', 'true'].includes(query.required_missing)}}",
+                        "nicknameDuplicate": "{{['1', 'true'].includes(query.nickname_duplicate)}}"
                     }
                 }
             }
@@ -1192,6 +1201,8 @@
                             "idField": "uuid",
                             "showColumnSelector": false,
                             "visibleColumns": "{{_global.visibleColumns_admin_users}}",
+                            "dynamicColumns": "{{_computed.memberFieldColumns ?? []}}",
+                            "dynamicColumnsInsertAfter": "nickname",
                             "responsiveBreakpoint": 768,
                             "emptyMessage": "{{users === undefined ? '' : $t('common.no_data')}}",
                             "actionsColumnHeader": "$t:common.actions",
@@ -1288,6 +1299,22 @@
                                     "required": true
                                 },
                                 {
+                                    "field": "display_name",
+                                    "header": "$t:admin.users.list_member_fields.display_name_column",
+                                    "sortable": false,
+                                    "cellChildren": [
+                                        {
+                                            "comment": "「보이는 이름」 — 이 회원이 사이트 기본 자리에서 다른 회원에게 보이는 이름(표시 이름 설정과 회원이 고른 종류를 따른 값). 이름 열은 가리지 않은 실명 그대로다. 기본은 꺼진 열이다.",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "display-name-cell break-words"
+                                            },
+                                            "text": "{{row.display_name ?? '-'}}"
+                                        }
+                                    ]
+                                },
+                                {
                                     "field": "nickname",
                                     "header": "$t:admin.users.columns.nickname",
                                     "sortable": false,
@@ -1296,6 +1323,30 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "text": "{{row.nickname ?? ''}}"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "field": "pending_required_fields",
+                                    "header": "$t:admin.users.list_member_fields.pending_column",
+                                    "sortable": false,
+                                    "cellChildren": [
+                                        {
+                                            "comment": "「미입력」 배지. 비어 있는 필수 항목 개수를 보이고, 올리면 항목 이름이 나온다. 없으면 다른 빈 값처럼 「-」. 운영자가 켠 추가 항목 열(dynamicColumns)은 이 열 앞(닉네임 열 뒤)에 끼어든다.",
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{(row.pending_required_fields ?? []).length > 0}}",
+                                            "props": {
+                                                "title": "{{(row.pending_required_fields ?? []).map(f => f.label).join(', ')}}",
+                                                "className": "pending-required-badge inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 cursor-help"
+                                            },
+                                            "text": "{{$t('admin.users.list_member_fields.pending_count', { count: (row.pending_required_fields ?? []).length })}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{(row.pending_required_fields ?? []).length === 0}}",
+                                            "text": "-"
                                         }
                                     ]
                                 },
@@ -1404,7 +1455,129 @@
             "name": "Modal",
             "props": {
                 "title": "$t:admin.users.modals.bulk_activate_title",
-                "size": "sm"
+                "size": "sm",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "disabled": "{{_global.isProcessing}}",
+                            "className": "btn btn-secondary"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.cancel"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "bulk_activate_submit_button",
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "일괄 활성 실행. 성공하면 선택을 비우고(처리된 id 가 남아 있으면 다음 일괄이 그것을\n                 다시 보낸다) 빈 쿼리로 같은 URL 을 다시 밟아 목록을 새로 받는다 — 조건은 유지된다.\n                 실패는 토스트가 아니라 오류 창으로 띄운다(일괄은 몇 건이 왜 실패했는지가 길다).",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isProcessing": true
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/admin/users/bulk-status",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "PATCH",
+                                            "body": {
+                                                "ids": "{{_global.selectedIds_admin_users}}",
+                                                "status": "active"
+                                            }
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isProcessing": false,
+                                                    "selectedIds_admin_users": []
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal"
+                                            },
+                                            {
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/users",
+                                                    "mergeQuery": true,
+                                                    "query": {}
+                                                }
+                                            },
+                                            {
+                                                "comment": "서버는 슈퍼 관리자·관리 범위 밖 회원을 조용히 빼고 200 으로 끝낸다 — 그 수가 failed_count 로 오므로 읽지 않으면 일부만 바뀌었는데 전원 성공으로 안내된다.",
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}",
+                                                    "message": "{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_activate_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_status_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_status_partial|updated=' + (response.data?.updated_count ?? 0) + '|count=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"
+                                                }
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isProcessing": false,
+                                                    "errorMessage": "{{error.message}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "error_modal"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "disabled": "{{_global.isProcessing || !(_global.selectedIds_admin_users?.length > 0)}}",
+                            "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "if": "{{_global.isProcessing}}",
+                                "props": {
+                                    "name": "spinner",
+                                    "size": "sm",
+                                    "spin": true
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "{{_global.isProcessing ? $t:common.processing : $t:common.confirm}}"
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -1423,135 +1596,6 @@
                             "text": "$t:admin.users.modals.bulk_activate_confirm|count={{(_global.selectedIds_admin_users || []).length}}"
                         }
                     ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "modal-footer-buttons"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "disabled": "{{_global.isProcessing}}",
-                                "className": "btn btn-secondary"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "id": "bulk_activate_submit_button",
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "일괄 활성 실행. 성공하면 선택을 비우고(처리된 id 가 남아 있으면 다음 일괄이 그것을\n                 다시 보낸다) 빈 쿼리로 같은 URL 을 다시 밟아 목록을 새로 받는다 — 조건은 유지된다.\n                 실패는 토스트가 아니라 오류 창으로 띄운다(일괄은 몇 건이 왜 실패했는지가 길다).",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isProcessing": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/admin/users/bulk-status",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "PATCH",
-                                                "body": {
-                                                    "ids": "{{_global.selectedIds_admin_users}}",
-                                                    "status": "active"
-                                                }
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isProcessing": false,
-                                                        "selectedIds_admin_users": []
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                },
-                                                {
-                                                    "handler": "navigate",
-                                                    "params": {
-                                                        "path": "/admin/users",
-                                                        "mergeQuery": true,
-                                                        "query": {}
-                                                    }
-                                                },
-                                                {
-                                                    "comment": "서버는 슈퍼 관리자·관리 범위 밖 회원을 조용히 빼고 200 으로 끝낸다 — 그 수가 failed_count 로 오므로 읽지 않으면 일부만 바뀌었는데 전원 성공으로 안내된다.",
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}",
-                                                        "message": "{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_activate_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_status_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_status_partial|updated=' + (response.data?.updated_count ?? 0) + '|count=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"
-                                                    }
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isProcessing": false,
-                                                        "errorMessage": "{{error.message}}"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "openModal",
-                                                    "target": "error_modal"
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "disabled": "{{_global.isProcessing || !(_global.selectedIds_admin_users?.length > 0)}}",
-                                "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{_global.isProcessing}}",
-                                    "props": {
-                                        "name": "spinner",
-                                        "size": "sm",
-                                        "spin": true
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "{{_global.isProcessing ? $t:common.processing : $t:common.confirm}}"
-                                }
-                            ]
-                        }
-                    ]
                 }
             ],
             "meta": {
@@ -1565,7 +1609,129 @@
             "name": "Modal",
             "props": {
                 "title": "$t:admin.users.modals.bulk_deactivate_title",
-                "size": "sm"
+                "size": "sm",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "disabled": "{{_global.isProcessing}}",
+                            "className": "btn btn-secondary"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.cancel"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "bulk_deactivate_submit_button",
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "일괄 비활성 실행 — 활성 창과 갈래 구조가 같고 보내는 상태값(`inactive`)만 다르다.",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isProcessing": true
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/admin/users/bulk-status",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "PATCH",
+                                            "body": {
+                                                "ids": "{{_global.selectedIds_admin_users}}",
+                                                "status": "inactive"
+                                            }
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isProcessing": false,
+                                                    "selectedIds_admin_users": []
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal"
+                                            },
+                                            {
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/users",
+                                                    "mergeQuery": true,
+                                                    "query": {}
+                                                }
+                                            },
+                                            {
+                                                "comment": "서버는 슈퍼 관리자·관리 범위 밖 회원을 조용히 빼고 200 으로 끝낸다 — 그 수가 failed_count 로 오므로 읽지 않으면 일부만 바뀌었는데 전원 성공으로 안내된다.",
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}",
+                                                    "message": "{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_deactivate_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_status_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_status_partial|updated=' + (response.data?.updated_count ?? 0) + '|count=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"
+                                                }
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isProcessing": false,
+                                                    "errorMessage": "{{error.message}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "error_modal"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "disabled": "{{_global.isProcessing || !(_global.selectedIds_admin_users?.length > 0)}}",
+                            "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "if": "{{_global.isProcessing}}",
+                                "props": {
+                                    "name": "spinner",
+                                    "size": "sm",
+                                    "spin": true
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "{{_global.isProcessing ? $t:common.processing : $t:common.confirm}}"
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -1584,135 +1750,6 @@
                             "text": "$t:admin.users.modals.bulk_deactivate_confirm|count={{(_global.selectedIds_admin_users || []).length}}"
                         }
                     ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "modal-footer-buttons"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "disabled": "{{_global.isProcessing}}",
-                                "className": "btn btn-secondary"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "id": "bulk_deactivate_submit_button",
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "일괄 비활성 실행 — 활성 창과 갈래 구조가 같고 보내는 상태값(`inactive`)만 다르다.",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isProcessing": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/admin/users/bulk-status",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "PATCH",
-                                                "body": {
-                                                    "ids": "{{_global.selectedIds_admin_users}}",
-                                                    "status": "inactive"
-                                                }
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isProcessing": false,
-                                                        "selectedIds_admin_users": []
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                },
-                                                {
-                                                    "handler": "navigate",
-                                                    "params": {
-                                                        "path": "/admin/users",
-                                                        "mergeQuery": true,
-                                                        "query": {}
-                                                    }
-                                                },
-                                                {
-                                                    "comment": "서버는 슈퍼 관리자·관리 범위 밖 회원을 조용히 빼고 200 으로 끝낸다 — 그 수가 failed_count 로 오므로 읽지 않으면 일부만 바뀌었는데 전원 성공으로 안내된다.",
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}",
-                                                        "message": "{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_deactivate_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_status_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_status_partial|updated=' + (response.data?.updated_count ?? 0) + '|count=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"
-                                                    }
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isProcessing": false,
-                                                        "errorMessage": "{{error.message}}"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "openModal",
-                                                    "target": "error_modal"
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "disabled": "{{_global.isProcessing || !(_global.selectedIds_admin_users?.length > 0)}}",
-                                "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{_global.isProcessing}}",
-                                    "props": {
-                                        "name": "spinner",
-                                        "size": "sm",
-                                        "spin": true
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "{{_global.isProcessing ? $t:common.processing : $t:common.confirm}}"
-                                }
-                            ]
-                        }
-                    ]
                 }
             ],
             "meta": {
@@ -1726,7 +1763,121 @@
             "name": "Modal",
             "props": {
                 "title": "$t:admin.users.modals.delete_title",
-                "size": "sm"
+                "size": "sm",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "btn btn-secondary",
+                            "disabled": "{{_global.isDeleting}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.cancel"
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "삭제 실행. 이 화면에서 **유일하게 URL 을 바꾸지 않는 갱신**이라 목록을 직접 다시 부른다\n                 (일괄 처리 쪽은 같은 URL 을 다시 밟는 방식이다). 실패는 창을 연 채 토스트만 띄운다.",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isDeleting": true
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/admin/users/{{_global.modal_data.uuid}}",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "DELETE"
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isDeleting": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "refetchDataSource",
+                                                "params": {
+                                                    "dataSourceId": "users"
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "$t:admin.users.modals.delete_success"
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal"
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isDeleting": false
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message}}"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
+                            "disabled": "{{_global.isDeleting}}"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "if": "{{_global.isDeleting}}",
+                                "props": {
+                                    "name": "spinner",
+                                    "className": "spinner-sm"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "{{_global.isDeleting ? '$t:common.deleting' : '$t:common.delete'}}"
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -1743,127 +1894,6 @@
                                 "className": "text-gray-700 dark:text-gray-300"
                             },
                             "text": "$t:admin.users.modals.delete_confirm"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "modal-footer-buttons"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "btn btn-secondary",
-                                "disabled": "{{_global.isDeleting}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "삭제 실행. 이 화면에서 **유일하게 URL 을 바꾸지 않는 갱신**이라 목록을 직접 다시 부른다\n                 (일괄 처리 쪽은 같은 URL 을 다시 밟는 방식이다). 실패는 창을 연 채 토스트만 띄운다.",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isDeleting": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/admin/users/{{_global.modal_data.uuid}}",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "DELETE"
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isDeleting": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "refetchDataSource",
-                                                    "params": {
-                                                        "dataSourceId": "users"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "success",
-                                                        "message": "$t:admin.users.modals.delete_success"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isDeleting": false
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "error",
-                                                        "message": "{{error.message}}"
-                                                    }
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed",
-                                "disabled": "{{_global.isDeleting}}"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{_global.isDeleting}}",
-                                    "props": {
-                                        "name": "spinner",
-                                        "className": "spinner-sm"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "{{_global.isDeleting ? '$t:common.deleting' : '$t:common.delete'}}"
-                                }
-                            ]
                         }
                     ]
                 }
@@ -1941,7 +1971,129 @@
             "name": "Modal",
             "props": {
                 "title": "$t:admin.users.modals.bulk_block_title",
-                "size": "sm"
+                "size": "sm",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "disabled": "{{_global.isProcessing}}",
+                            "className": "btn btn-secondary"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.cancel"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "bulk_block_submit_button",
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "일괄 차단 실행 — 활성 창과 갈래 구조가 같고 보내는 상태값(`blocked`)만 다르다.",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isProcessing": true
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/admin/users/bulk-status",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "PATCH",
+                                            "body": {
+                                                "ids": "{{_global.selectedIds_admin_users}}",
+                                                "status": "blocked"
+                                            }
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isProcessing": false,
+                                                    "selectedIds_admin_users": []
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal"
+                                            },
+                                            {
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/users",
+                                                    "mergeQuery": true,
+                                                    "query": {}
+                                                }
+                                            },
+                                            {
+                                                "comment": "서버는 슈퍼 관리자·관리 범위 밖 회원을 조용히 빼고 200 으로 끝낸다 — 그 수가 failed_count 로 오므로 읽지 않으면 일부만 바뀌었는데 전원 성공으로 안내된다.",
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}",
+                                                    "message": "{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_block_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_status_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_status_partial|updated=' + (response.data?.updated_count ?? 0) + '|count=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"
+                                                }
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isProcessing": false,
+                                                    "errorMessage": "{{error.message}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "error_modal"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "disabled": "{{_global.isProcessing || !(_global.selectedIds_admin_users?.length > 0)}}",
+                            "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "if": "{{_global.isProcessing}}",
+                                "props": {
+                                    "name": "spinner",
+                                    "size": "sm",
+                                    "spin": true
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "{{_global.isProcessing ? $t:common.processing : $t:common.confirm}}"
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -1960,135 +2112,6 @@
                             "text": "$t:admin.users.modals.bulk_block_confirm|count={{(_global.selectedIds_admin_users || []).length}}"
                         }
                     ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "modal-footer-buttons"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "disabled": "{{_global.isProcessing}}",
-                                "className": "btn btn-secondary"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "id": "bulk_block_submit_button",
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "일괄 차단 실행 — 활성 창과 갈래 구조가 같고 보내는 상태값(`blocked`)만 다르다.",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isProcessing": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/admin/users/bulk-status",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "PATCH",
-                                                "body": {
-                                                    "ids": "{{_global.selectedIds_admin_users}}",
-                                                    "status": "blocked"
-                                                }
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isProcessing": false,
-                                                        "selectedIds_admin_users": []
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                },
-                                                {
-                                                    "handler": "navigate",
-                                                    "params": {
-                                                        "path": "/admin/users",
-                                                        "mergeQuery": true,
-                                                        "query": {}
-                                                    }
-                                                },
-                                                {
-                                                    "comment": "서버는 슈퍼 관리자·관리 범위 밖 회원을 조용히 빼고 200 으로 끝낸다 — 그 수가 failed_count 로 오므로 읽지 않으면 일부만 바뀌었는데 전원 성공으로 안내된다.",
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}",
-                                                        "message": "{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_block_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_status_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_status_partial|updated=' + (response.data?.updated_count ?? 0) + '|count=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"
-                                                    }
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isProcessing": false,
-                                                        "errorMessage": "{{error.message}}"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "openModal",
-                                                    "target": "error_modal"
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "disabled": "{{_global.isProcessing || !(_global.selectedIds_admin_users?.length > 0)}}",
-                                "className": "flex-center gap-2 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{_global.isProcessing}}",
-                                    "props": {
-                                        "name": "spinner",
-                                        "size": "sm",
-                                        "spin": true
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "{{_global.isProcessing ? $t:common.processing : $t:common.confirm}}"
-                                }
-                            ]
-                        }
-                    ]
                 }
             ],
             "meta": {
@@ -2102,7 +2125,129 @@
             "name": "Modal",
             "props": {
                 "title": "$t:admin.users.modals.bulk_withdraw_title",
-                "size": "sm"
+                "size": "sm",
+                "footer": [
+                    {
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "closeModal"
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "disabled": "{{_global.isProcessing}}",
+                            "className": "btn btn-secondary"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:common.cancel"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "bulk_withdraw_submit_button",
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "일괄 탈퇴 실행 — 활성 창과 갈래 구조가 같고 보내는 상태값(`withdrawn`)만 다르다.",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isProcessing": true
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/admin/users/bulk-status",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "PATCH",
+                                            "body": {
+                                                "ids": "{{_global.selectedIds_admin_users}}",
+                                                "status": "withdrawn"
+                                            }
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isProcessing": false,
+                                                    "selectedIds_admin_users": []
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal"
+                                            },
+                                            {
+                                                "handler": "navigate",
+                                                "params": {
+                                                    "path": "/admin/users",
+                                                    "mergeQuery": true,
+                                                    "query": {}
+                                                }
+                                            },
+                                            {
+                                                "comment": "탈퇴 불가 대상(관리자 계정 등)은 200 응답 안에서 건별로 실패한다 — failed_count 를 읽지 않으면 아무 일도 없었는데 성공으로 안내된다.",
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}",
+                                                    "message": "{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_withdraw_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_withdraw_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_withdraw_partial|updated=' + (response.data?.updated_count ?? 0) + '|count=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"
+                                                }
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isProcessing": false,
+                                                    "errorMessage": "{{error.message}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "error_modal"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "disabled": "{{_global.isProcessing || !(_global.selectedIds_admin_users?.length > 0)}}",
+                            "className": "flex-center gap-2 px-4 py-2 bg-yellow-700 dark:bg-yellow-700 text-white rounded-lg hover:bg-yellow-800 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "if": "{{_global.isProcessing}}",
+                                "props": {
+                                    "name": "spinner",
+                                    "size": "sm",
+                                    "spin": true
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "{{_global.isProcessing ? $t:common.processing : $t:common.confirm}}"
+                            }
+                        ]
+                    }
+                ]
             },
             "children": [
                 {
@@ -2119,135 +2264,6 @@
                                 "className": "text-gray-700 dark:text-gray-300"
                             },
                             "text": "$t:admin.users.modals.bulk_withdraw_confirm|count={{(_global.selectedIds_admin_users || []).length}}"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "modal-footer-buttons"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "type": "click",
-                                    "handler": "closeModal"
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "disabled": "{{_global.isProcessing}}",
-                                "className": "btn btn-secondary"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "$t:common.cancel"
-                                }
-                            ]
-                        },
-                        {
-                            "id": "bulk_withdraw_submit_button",
-                            "type": "basic",
-                            "name": "Button",
-                            "actions": [
-                                {
-                                    "comment": "일괄 탈퇴 실행 — 활성 창과 갈래 구조가 같고 보내는 상태값(`withdrawn`)만 다르다.",
-                                    "type": "click",
-                                    "handler": "sequence",
-                                    "actions": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isProcessing": true
-                                            }
-                                        },
-                                        {
-                                            "handler": "apiCall",
-                                            "target": "/api/admin/users/bulk-status",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "PATCH",
-                                                "body": {
-                                                    "ids": "{{_global.selectedIds_admin_users}}",
-                                                    "status": "withdrawn"
-                                                }
-                                            },
-                                            "onSuccess": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isProcessing": false,
-                                                        "selectedIds_admin_users": []
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                },
-                                                {
-                                                    "handler": "navigate",
-                                                    "params": {
-                                                        "path": "/admin/users",
-                                                        "mergeQuery": true,
-                                                        "query": {}
-                                                    }
-                                                },
-                                                {
-                                                    "comment": "탈퇴 불가 대상(관리자 계정 등)은 200 응답 안에서 건별로 실패한다 — failed_count 를 읽지 않으면 아무 일도 없었는데 성공으로 안내된다.",
-                                                    "handler": "toast",
-                                                    "params": {
-                                                        "type": "{{(response.data?.failed_count ?? 0) === 0 ? 'success' : ((response.data?.updated_count ?? 0) === 0 ? 'error' : 'warning')}}",
-                                                        "message": "{{(response.data?.failed_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_withdraw_success' : ((response.data?.updated_count ?? 0) === 0 ? '$t:admin.users.modals.bulk_withdraw_all_failed|reason=' + (response.data?.failed_reasons ?? []).join(' / ') : '$t:admin.users.modals.bulk_withdraw_partial|updated=' + (response.data?.updated_count ?? 0) + '|count=' + (response.data?.updated_count ?? 0) + '|failed=' + (response.data?.failed_count ?? 0) + '|reason=' + (response.data?.failed_reasons ?? []).join(' / '))}}"
-                                                    }
-                                                }
-                                            ],
-                                            "onError": [
-                                                {
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isProcessing": false,
-                                                        "errorMessage": "{{error.message}}"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "openModal",
-                                                    "target": "error_modal"
-                                                }
-                                            ]
-                                        }
-                                    ]
-                                }
-                            ],
-                            "props": {
-                                "type": "button",
-                                "disabled": "{{_global.isProcessing || !(_global.selectedIds_admin_users?.length > 0)}}",
-                                "className": "flex-center gap-2 px-4 py-2 bg-yellow-700 dark:bg-yellow-700 text-white rounded-lg hover:bg-yellow-800 dark:hover:bg-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "if": "{{_global.isProcessing}}",
-                                    "props": {
-                                        "name": "spinner",
-                                        "size": "sm",
-                                        "spin": true
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "text": "{{_global.isProcessing ? $t:common.processing : $t:common.confirm}}"
-                                }
-                            ]
                         }
                     ]
                 }

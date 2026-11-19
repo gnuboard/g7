@@ -122,7 +122,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -223,7 +223,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -281,7 +281,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | issue_to | string | `2026-08-29T14:36:17.000000Z` | 발급기간 종료일 (다운로드 가능 종료 시각) |
 | is_combinable | boolean | `true` | combinable 여부 |
 | target_scope | string | `categories` | 적용 범위 (all=전체 상품, products=특정 상품, categories=특정 카테고리) |
-| created_by | null | `null` | 쿠폰 등록자(관리자) 식별자 (users 참조, 삭제 시 null) |
+| created_by | integer | `1` | 쿠폰 등록자(관리자) 식별자 (users 참조, 삭제 시 null) |
 | created_at | string | `2026-07-30T14:36:17.000000Z` | 생성 일시 |
 | updated_at | string | `2026-07-31T12:51:54.000000Z` | 최종 수정 일시 |
 | deleted_at | null | `null` | 소프트 삭제 일시 (미삭제 시 null) |
@@ -564,7 +564,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -581,7 +581,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| couponId | path | string | 예 | — | 대상 coupon의 식별자 |
+| couponId | path | integer | 예 | — | 대상 coupon의 식별자 |
 | coupon_id | body | integer | 예 | — | coupon 식별자 |
 
 **요청 예시**

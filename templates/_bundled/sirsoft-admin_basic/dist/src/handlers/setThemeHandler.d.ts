@@ -9,6 +9,13 @@
  */
 export type ThemeMode = 'auto' | 'light' | 'dark';
 /**
+ * 저장값이 없을 때의 기본 모드 — 템플릿 설정 표준 키 `branding.color_scheme_default` 를 코어가 `<html data-g7-color-scheme-default>`
+ * 로 싣는다(#434). `system` 은 `auto` 다. 속성이 없거나 모르는 값이면 `auto`(종전 동작).
+ *
+ * @returns 기본 테마 모드
+ */
+export declare function getDefaultTheme(): ThemeMode;
+/**
  * 저장된 테마를 로드하여 적용합니다.
  *
  * 템플릿 초기화 시 호출되어 localStorage에 저장된 테마를 즉시 적용합니다.

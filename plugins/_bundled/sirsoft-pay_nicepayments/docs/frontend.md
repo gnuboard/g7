@@ -20,6 +20,10 @@
 다른 PG 플러그인들과 마찬가지로 이 플러그인이 소유한 화면 레이아웃은 관리자 설정 화면
 하나뿐입니다 — 체크아웃·주문상세·마이페이지의 결제 UI는 이 플러그인 소유가 아니라
 §레이아웃 확장(다른 확장/템플릿 레이아웃에 주입되는 조각)으로 존재합니다.
+
+화면 폭에 따라 달라지는 배치는 Tailwind 반응형 접두(`sm:`·`md:`·`lg:`)를 쓰지 않고 엔진 `responsive` 로 씁니다(예: `<responsive on="desktop" class="…"/>`, `on="640-"`). 갈래의 `class` 는 기본 `class` 를 통째로 바꾸므로 그 폭에서 필요한 토큰을 모두 적습니다. 한 노드에 커스텀 구간(예 설정 화면 바깥 여백의 `640-1023`)을 두면 나머지 구간도 커스텀(`1024-`)으로 적고 프리셋(`desktop`)과 섞지 않습니다. 확장 유틸리티는 화면에 층 없이 실려 의미 클래스 칸(`@layer g7-extension`)을 이깁니다 — 관리자 결제 조회 조각의 카드 머리 설명처럼 의미 클래스 `pay-nicepayments-hidden` 를 단 노드를 넓은 화면에서 보이려면 그 갈래에 `paynicepayments:block`·`paynicepayments:inline` 같은 표시 유틸리티를 함께 적어야 하고, 이것을 빼면 넓은 화면에서도 숨습니다.
+
+폭 미디어를 품은 의미 클래스 사본(`pay-nicepayments-grid-3col-responsive`·`pay-nicepayments-grid-2col-responsive`·`pay-nicepayments-page-title`·`pay-nicepayments-admin-page-content-responsive` 등)도 쓰지 않습니다. 같은 값을 접두 유틸과 `responsive` 구간으로 적습니다 — 예를 들어 넓은 화면에서 3열이 되는 입력 줄은 `class="paynicepayments:grid paynicepayments:grid-cols-1 paynicepayments:gap-4 paynicepayments:items-start"` 에 `<responsive on="1024-" class="paynicepayments:grid paynicepayments:grid-cols-3 paynicepayments:gap-4 paynicepayments:items-start"/>` 를 둡니다. 알림 상자 다음 칸 여백처럼 그 클래스에 기대던 형제 규칙은 그 자리에 여백 유틸(`paynicepayments:mb-4` 등)을 직접 줍니다.
 <!-- @intent END -->
 
 ## 액션 핸들러
@@ -80,11 +84,14 @@
 나이스페이먼츠가 제공하는 결제창 SDK는 이 목록에 없습니다 — `requestPayment` 핸들러가
 결제 시도 시점에 동적으로 로드하는 제3자 자산이라, 이 플러그인이 빌드 시 번들링하는
 `dist/` 산출물과는 다른 층입니다. 결제창 자체는 PG가 그리므로
-이 플러그인의 CSS 산출물(`dist/css/plugin.css`, 원본 `resources/css/main.css`)은 작습니다 — 환경설정 화면의
-안내 글자색(경고·성공·위험·안내, 다크 모드 짝 포함)을 접두 `pay-nicepayments-tone-*` 클래스로 직접 제공하는 것이
-전부입니다. 관리자 템플릿의 의미 글자색 클래스(`text-warning-soft` 등)에 기대면 템플릿이 그 클래스를 바꿀 때
-이 화면의 색이 함께 바뀌기 때문입니다(7.1.0 때 경고 본문이 초록으로 바뀐 사례). 다른 결제 플러그인도 같은
-이름 체계를 쓰지만 접두가 달라 서로를 참조하지 않습니다.
+이 플러그인의 CSS 산출물(`dist/css/plugin.css`, 원본 `resources/css/main.css`)은 이 플러그인 화면(환경설정 화면과
+다른 화면에 붙는 조각)의 스타일 전부를 싣습니다 — 템플릿 CSS 에 기대지 않습니다. 배치·색 유틸리티는 `paynicepayments:` 접두
+Tailwind 빌드로, 템플릿에서 가져온 의미 클래스는 `pay-nicepayments-*` 사본(가장 낮은 칸 `@layer g7-extension`, 생성 파일
+`resources/css/g7-extension.generated.css`)으로, 안내 글자색(경고·성공·위험·안내, 다크 모드 짝 포함)은 접두
+`pay-nicepayments-tone-*` 손 CSS 로 둡니다. 다크 모드는 템플릿의 `.dark` 대신 코어의 중립 표식(`data-g7-color-scheme`)을 따릅니다.
+템플릿이 의미 클래스의 이름·색을 바꾸거나 다른 CSS 라이브러리를 써도 이 화면은 따라 바뀌지 않습니다(7.1.0 때 템플릿
+의미 클래스에 기댄 경고 본문이 초록으로 바뀐 사례). 다른 결제 플러그인도 같은 이름 체계를 쓰지만 앞글자가 달라
+서로를 참조하지 않습니다.
 <!-- @intent END -->
 
 ## 화면 표시는 레이아웃 조각만 그린다
@@ -196,4 +203,16 @@
 신청은 그대로 남고, 신청서 상세가 「결제를 취소하셨습니다」 안내와 함께 [결제하기]를 다시 연다.
 
 처리 위치: `resources/js/handlers/requestPayment.ts` 의 결제창 닫힘 처리(정리 후 이동).
+<!-- @intent END -->
+
+## 클레임 추가결제 창을 열기 전 실패
+
+<!-- @intent START -->
+교환·반품·환불 신청서의 추가결제(`pg_payment_data.claim_cancel_return_url` 이 있는 결제)에서 결제창을 열기 **전에** 실패하면
+주문서 전용 오류 모달·토스트를 띄우지 않고 사용자 문구를 담은 `Error` 를 던진다. 신청서 화면에는 그 모달이 없어, 종전에는 안내 없이
+「결제 진행 중…」에 멈췄다. 쇼핑몰 신청서 핸들러가 `G7Core.dispatch` 결과로 받아 진행 표시를 내리고 문구를 보여 준다(계약:
+쇼핑몰 `modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md` 「결제 플러그인 연동 계약」, 쇼핑몰 1.4.0 이상). 상태 코드 없는 오류라 템플릿의 상태 코드별 오류 처리는
+타지 않는다. 주문 결제는 종전대로 주문서 오류 안내를 쓴다.
+
+처리 위치: `resources/js/handlers/requestPayment.ts` 의 `reportPaymentError()`. 종전에는 오류 토스트만 띄워 신청서의 [결제하기]가 멈췄다. 클레임 결제에서는 토스트를 띄우지 않는다 — 같은 문구가 버튼 아래에 남는다.
 <!-- @intent END -->

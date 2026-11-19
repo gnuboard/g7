@@ -313,7 +313,7 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
         it('기본(bottom_bar) 위치는 풀폭 팝업 카드 (bottom-4 left-4 right-4 rounded-lg)', () => {
             // 회귀 가드: 이전엔 화면 하단에 딱 붙는 띠(bottom-0)였지만,
             // 설계 결정으로 화면에서 살짝 떠 있는 풀폭 카드 형태로 변경됨.
-            expect(className).toContain('bottom-4 left-4 right-4 rounded-lg');
+            expect(className).toContain('gdpr:bottom-4 gdpr:left-4 gdpr:right-4 gdpr:rounded-lg');
         });
 
         /** @effects banner_position_variants_render_as_popup_box */
@@ -617,18 +617,22 @@ describe('extensions/cookie_banner.json — 쿠키 동의 배너', () => {
     /**
      * 처리방침 링크 — 운영자가 설정에 적은 주소를 그대로 쓴다. 1.0.x 는 페이지 모듈 주소 규칙
      * (`/page/{slug}`)으로 화면에서 조합해, 페이지 모듈이 없거나 주소 규칙이 바뀌면 404 로 이어졌다.
-     *
-     * @scenario surface=public_show
-     * @effects banner_links_operator_privacy_policy_url
+     * 마킹은 각 it 앞에 있다.
      */
     describe('정책 링크', () => {
-        /** @effects banner_links_operator_privacy_policy_url */
+        /**
+         * @scenario surface=public_show
+         * @effects banner_links_operator_privacy_policy_url
+         */
         it('privacy_policy_available일 때만 링크 표시', () => {
             const text = serializeForSearch(extension);
             expect(text).toContain('privacy_policy_available === true');
         });
 
-        /** @effects banner_links_operator_privacy_policy_url */
+        /**
+         * @scenario surface=public_show
+         * @effects banner_links_operator_privacy_policy_url
+         */
         it('링크 href 는 공개 설정의 privacy_policy_url 을 그대로 쓰고 /page/ 를 조합하지 않는다', () => {
             const text = JSON.stringify(extension);
             expect(text).toContain(`"href":"{{gdprPublicSettings?.data?.privacy_policy_url ?? ''}}"`);

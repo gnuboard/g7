@@ -26,6 +26,7 @@ return [
     'deactivate_validation_failed' => '플러그인 비활성화 검증에 실패했습니다: :error',
     'deactivate_error' => '플러그인 비활성화 중 오류가 발생했습니다.',
     'refresh_layouts_success' => '플러그인 레이아웃이 성공적으로 갱신되었습니다.',
+    'refresh_layouts_preview_success' => '레이아웃 갱신 미리보기를 만들었습니다.',
     'refresh_layouts_failed' => '플러그인 레이아웃 갱신에 실패했습니다: :error',
     'uninstall_info_success' => '플러그인 삭제 정보를 성공적으로 조회했습니다.',
     'uninstall_info_failed' => '플러그인 삭제 정보 조회에 실패했습니다: :error',
@@ -59,7 +60,7 @@ return [
     'move_failed' => '플러그인 ":plugin" 이동에 실패했습니다: :error',
 
     // 의존성 관련 메시지
-    'dependency_not_active' => '의존하는 :type ":dependency"이(가) 설치되지 않았거나 비활성 상태입니다.',
+    'dependency_not_active' => '의존하는 :type ":dependency" — 설치되지 않았거나 비활성 상태입니다.',
     'dependency_version_unmet' => '의존하는 ":dependency" 의 설치 버전(:installed)이 요구 버전(:required)을 충족하지 않습니다. 의존 확장을 먼저 업데이트하세요.',
 
     // 플러그인 서비스 오류 메시지
@@ -175,7 +176,7 @@ return [
             'success' => '플러그인 ":plugin" 활성화 완료',
             'language_packs_restored' => '언어팩 :count개를 함께 켰습니다: :list',
             'language_packs_kept' => '다시 켜지 않은 언어팩: :list (관리자 화면에서 다시 켤 수 있습니다)',
-            'language_pack_restore_failed' => '언어팩 ":pack" 을(를) 다시 켜지 못했습니다: :error',
+            'language_pack_restore_failed' => '언어팩 ":pack" 다시 켜기에 실패했습니다: :error',
             'option_without_language_packs' => '이 확장을 끌 때 함께 꺼진 언어팩을 다시 켜지 않습니다 (기본은 함께 켭니다)',
             'not_installed' => '":plugin" 플러그인이 설치되지 않았습니다.',
             'already_active' => '":plugin" 플러그인은 이미 활성화되어 있습니다.',
@@ -217,6 +218,8 @@ return [
             ],
             'confirm_question' => '정말로 삭제하시겠습니까?',
             'aborted' => '플러그인 삭제가 취소되었습니다.',
+            'confirm_unavailable' => '확인 질문에 답할 수 없는 실행(터미널 없음 또는 --no-interaction)이라 ":plugin" 플러그인을 삭제하지 않았습니다.',
+            'confirm_unavailable_hint' => 'cron, CI, 원격 명령처럼 확인 없이 삭제해야 하면 --yes(확인만 생략) 또는 --force 옵션을 붙여 다시 실행하세요. 예: php artisan plugin:uninstall :plugin --yes',
             'not_installed' => '":plugin" 플러그인이 설치되지 않았습니다.',
             // `plugin:uninstall` --delete-data 경고
             'delete_data_warning' => '--delete-data: 마이그레이션 롤백 및 환경설정 파일이 함께 삭제됩니다.',
@@ -253,8 +256,10 @@ return [
             'update_source' => '업데이트 소스: :source',
             'confirm_question' => '업데이트를 진행하시겠습니까?',
             'aborted' => '업데이트가 취소되었습니다.',
+            'confirm_unavailable' => '확인 질문에 답할 수 없는 실행(터미널 없음 또는 --no-interaction)이라 ":plugin" 플러그인 업데이트를 시작하지 않았습니다. (플러그인은 바뀌지 않았습니다)',
+            'confirm_unavailable_hint' => 'cron, CI, 원격 명령처럼 확인 없이 진행해야 하면 --yes 옵션(확인만 생략)을 붙여 다시 실행하세요. --force 는 6가지를 함께 켭니다 — ① 확인 생략 ② 같은 판 재적용 ③ 다운그레이드 허용 ④ 코어 호환 검사 생략 ⑤ 같은 판 업그레이드 스텝 재실행 ⑥ 멈춘 업데이트 정리. 예: php artisan plugin:update :plugin --yes',
             'backup_restored' => '백업에서 이전 버전이 복원되었습니다.',
-            'force_mode' => '강제 업데이트 모드: 버전 비교를 건너뛰고 재설치합니다.',
+            'force_mode' => '강제 업데이트 모드(--force): 6가지를 함께 켭니다 — ① 확인 생략 ② 같은 판 재적용 ③ 다운그레이드 허용 ④ 코어 호환 검사 생략 ⑤ 같은 판 업그레이드 스텝 재실행 ⑥ 멈춘 업데이트 정리.',
             'layout_strategy' => '레이아웃 전략: :strategy',
             'modified_layouts_warning' => '관리자가 수정한 레이아웃·확장 조각 :count개가 덮어씌워집니다:',
             'modified_layout_item' => '  - :name (수정일: :date)',

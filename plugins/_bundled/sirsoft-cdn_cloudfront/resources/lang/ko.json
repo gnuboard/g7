@@ -1,0 +1,70 @@
+{
+    "editor": {
+        "data_source": {
+            "settings": "설정",
+            "purge_status": "무효화 대기 현황"
+        },
+        "state": {
+            "default_view": "기본 화면",
+            "connection_ok": "연결 시험 성공",
+            "connection_host_mismatch": "연결 시험 — CDN 주소 불일치",
+            "connection_disabled": "연결 시험 — 배포 꺼짐",
+            "not_ready": "무효화 보낼 수 없음",
+            "status_forbidden": "현황 조회 권한 없음"
+        }
+    },
+    "plugin_read_only": "이 플러그인 설정을 수정할 권한이 없어 읽기 전용으로 표시됩니다.",
+    "settings": {
+        "title": "CloudFront CDN 설정",
+        "description": "CloudFront 배포 주소와 캐시 무효화 자격을 정하고, 무효화가 밀려 있지 않은지 확인합니다.",
+        "notice": "파일은 환경설정 > 드라이버 탭의 S3 설정(버킷, 지역, 자격 증명)이 가리키는 곳에 저장되고, 화면에는 아래 CDN 주소로 나갑니다. 이 플러그인을 켠 뒤 환경설정 > 업로드 탭 「저장 위치 · 캐시」의 「공개 이미지 썸네일」 줄에서 저장 디스크를 CloudFront 로 고르세요.",
+        "section_basic": "배포",
+        "section_purge": "캐시 무효화",
+        "fields": {
+            "cdn_base_url": {
+                "label": "CDN 주소",
+                "hint": "CloudFront 배포의 도메인 주소입니다(예: https://cdn.example.com). 비워 두면 파일은 S3 에 저장되지만 화면에는 서버를 거친 주소로 나갑니다."
+            },
+            "distribution_id": {
+                "label": "배포 ID",
+                "hint": "캐시 무효화를 보낼 CloudFront 배포의 ID 입니다."
+            },
+            "access_key": {
+                "label": "무효화용 액세스 키",
+                "hint": "CloudFront 무효화 권한만 가진 IAM 키를 따로 넣습니다. S3 키를 대신 쓰지 않으며, 비워 두면 캐시 무효화를 보내지 않습니다."
+            },
+            "secret_key": {
+                "label": "무효화용 비밀 키",
+                "hint": "위 액세스 키의 비밀 키입니다. 저장된 값은 가려서 보여 주며, 바꿀 때만 새로 입력하세요."
+            },
+            "purge_enabled": {
+                "label": "캐시 자동 무효화",
+                "hint": "썸네일이 지워지면 CDN 캐시 무효화를 보냅니다. 배포 ID 와 무효화용 키가 모두 있어야 동작합니다."
+            }
+        },
+        "connection": {
+            "title": "연결 시험",
+            "hint": "저장된 배포 ID 와 무효화용 키로 배포 정보를 조회합니다. 고친 값은 먼저 저장하세요.",
+            "button": "연결 시험",
+            "testing": "시험 중",
+            "status": "배포 상태",
+            "status_deployed": "배포 완료",
+            "status_in_progress": "배포 중",
+            "domain": "배포 도메인",
+            "disabled": "이 배포는 CloudFront 에서 꺼져 있습니다. 켜기 전에는 CDN 주소로 파일이 나가지 않습니다.",
+            "host_mismatch": "CDN 주소의 도메인이 이 배포의 도메인이나 대체 도메인과 다릅니다. 무효화가 화면에 나가는 주소의 캐시를 지우지 못할 수 있습니다."
+        },
+        "purge_status": {
+            "title": "무효화 대기 현황",
+            "hint": "실패한 무효화는 5분 뒤부터 대기 시간을 두 배씩 늘려 다시 보내고, 5번 실패하면 멈춥니다. 멈춘 건은 30일 뒤 목록에서 지웁니다.",
+            "refresh": "새로 고침",
+            "pending": "재시도 대기",
+            "abandoned": "재시도 멈춤",
+            "last_success_at": "마지막 성공 시각",
+            "last_error": "마지막 오류",
+            "last_failed_at": "마지막 실패 시각",
+            "not_ready": "배포 ID, 무효화용 키, CDN 주소 가운데 비어 있는 값이 있거나 자동 무효화가 꺼져 있어 지금은 무효화를 보내지 않습니다.",
+            "forbidden": "무효화 대기 현황을 볼 권한이 없습니다."
+        }
+    }
+}

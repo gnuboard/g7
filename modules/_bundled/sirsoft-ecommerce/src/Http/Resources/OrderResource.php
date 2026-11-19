@@ -6,11 +6,13 @@ use App\Helpers\PermissionHelper;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Enums\TaxInvoiceStatusEnum;
+use Modules\Sirsoft\Ecommerce\Fields\OrderContactFields;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
 use Modules\Sirsoft\Ecommerce\Models\OrderCashReceipt;
 use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
 use Modules\Sirsoft\Ecommerce\Services\CurrencyConversionService;
 use Modules\Sirsoft\Ecommerce\Services\OrderRefundRequestService;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 use Modules\Sirsoft\Ecommerce\Support\OrderProgressSteps;
 use Modules\Sirsoft\Ecommerce\Support\ShippingPolicySnapshot;
 
@@ -205,10 +207,11 @@ class OrderResource extends BaseApiResource
             'total_tax_free_amount' => $this->roundToOrderCurrency($this->total_tax_free_amount, $orderCurrency),
             'total_tax_free_amount_formatted' => $this->formatOrderCurrency($this->total_tax_free_amount, $orderCurrency),
 
-            // 회원 정보
+            // 회원 정보 — 이름은 표시 이름이다(관리자 화면은 이커머스 관리자 영역, 그 밖은 사이트 기본). 실명은 회원 조회 권한이
+            // 있는 관리자에게만 `real_name` 으로 더해진다. 아래 주문자 이름과 수령인은 표시 이름과 무관하게 주문서에 적힌 그대로다.
             'user' => $this->whenLoaded('user', fn () => [
                 'uuid' => $this->user->uuid,
-                'name' => $this->user->name,
+                ...MemberDisplayName::staffFields($this->user, $request),
                 'email' => $this->canExposeMemberEmail($request, $this->user->id) ? $this->user->email : null,
             ]),
             'user_id' => $this->user?->uuid,
@@ -229,6 +232,9 @@ class OrderResource extends BaseApiResource
             'recipient_detail_address' => $this->shippingAddress?->address_detail,
             'delivery_memo' => $this->shippingAddress?->delivery_memo,
             'delivery_memo_label' => $this->shippingAddress?->delivery_memo_label,
+
+            // 주문서 추가 항목 값 (운영자가 추가한 항목, 다른 확장이 기여한 항목). 값이 있는 것만 `{key, label, section, display_value}`
+            'extra_fields' => app(OrderContactFields::class)->valuesFor($this->resource),
 
             // 주문 옵션 (품목) — 주문 시점 통화를 자식에 전파. 클레임 점유 수량은 옵션마다 구하면
             // 옵션 수 × 3 쿼리라 여기서 한 번에 구해 주입한다.

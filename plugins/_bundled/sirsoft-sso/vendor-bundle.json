@@ -1,0 +1,45 @@
+{
+    "schema_version": "1.0",
+    "generated_at": "2026-11-19T07:42:11+00:00",
+    "generator": "g7 vendor-bundle:build",
+    "target": "plugin:sirsoft-sso",
+    "composer_json_sha256": "e3fd3e1dea94535d3d2c64a664d1e93c6322f7f1653abc2436ad1dd1f043dfbc",
+    "composer_lock_sha256": "58d5131a043be0fde46c1ffdc72e9c8c771c6005eab3fa1900ef6e4b156a908c",
+    "zip_sha256": "6a27728af961e41e0581aafc61b509b89f26a331b6ec20f27822c05218aa2eb6",
+    "zip_size": 845041,
+    "package_count": 6,
+    "php_requirement": "^8.2",
+    "g7_version": "7.2.0",
+    "packages": [
+        {
+            "name": "firebase/php-jwt",
+            "version": "v7.2.2",
+            "type": "library"
+        },
+        {
+            "name": "onelogin/php-saml",
+            "version": "4.5.0",
+            "type": "library"
+        },
+        {
+            "name": "paragonie/constant_time_encoding",
+            "version": "v3.1.5",
+            "type": "library"
+        },
+        {
+            "name": "paragonie/random_compat",
+            "version": "v9.99.100",
+            "type": "library"
+        },
+        {
+            "name": "phpseclib/phpseclib",
+            "version": "3.0.58",
+            "type": "library"
+        },
+        {
+            "name": "robrichards/xmlseclibs",
+            "version": "4.0.2",
+            "type": "library"
+        }
+    ]
+}

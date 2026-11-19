@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Repositories;
 use App\Helpers\PermissionHelper;
 use App\Repositories\Concerns\ResolvesSortSpec;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Modules\Sirsoft\Ecommerce\Models\ShippingPolicy;
@@ -21,6 +22,11 @@ class ShippingPolicyRepository implements ShippingPolicyRepositoryInterface
     /** 허용 정렬 컬럼 (ShippingPolicyListRequest 와 동일 집합) */
     private const SORTABLE_COLUMNS = ['id', 'name', 'is_active', 'sort_order', 'created_at', 'updated_at'];
 
+    /**
+     * 배송정책 모델을 주입받습니다.
+     *
+     * @param  ShippingPolicy  $model  배송정책 모델
+     */
     public function __construct(
         protected ShippingPolicy $model
     ) {}
@@ -37,6 +43,29 @@ class ShippingPolicyRepository implements ShippingPolicyRepositoryInterface
      * {@inheritDoc}
      */
     public function getListWithFilters(array $filters, int $perPage = 20): LengthAwarePaginator
+    {
+        // audit:allow repository-paginate-column-pruning reason: 배송정책 "정의" 목록 —
+        // 행 수가 운영자가 만든 정책 수에 묶여 OFFSET 이 깊어질 수 없다
+        return $this->buildListQuery($filters)->paginate($perPage);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getAllWithFilters(array $filters): Collection
+    {
+        // 상품 등록·수정 화면 선택지가 쪽 하나(100건)에서 잘리지 않게 쓴다.
+        // audit:allow query-unbounded-get reason: 행 수가 운영자가 만든 배송정책 정의 수에 묶인다
+        return $this->buildListQuery($filters)->get();
+    }
+
+    /**
+     * 목록 조회 쿼리를 만듭니다 — 쪽 나눔 조회와 전체 조회가 같은 필터·정렬·관계를 쓴다.
+     *
+     * @param  array<string, mixed>  $filters  검색·필터·정렬 조건
+     * @return Builder 목록 쿼리
+     */
+    private function buildListQuery(array $filters): Builder
     {
         // 국가별 설정은 목록이 실제로 그리는 컬럼만 싣는다.
         //
@@ -110,9 +139,13 @@ class ShippingPolicyRepository implements ShippingPolicyRepositoryInterface
             $query->orderBy($sort['column'], $sort['direction']);
         }
 
-        // audit:allow repository-paginate-column-pruning reason: 배송정책 "정의" 목록 —
-        // 행 수가 운영자가 만든 정책 수에 묶여 OFFSET 이 깊어질 수 없다
-        return $query->paginate($perPage);
+        // 정렬 컬럼(이름·사용 여부·순서·작성일 등)은 고유하지 않다 — 동률 구간의 순서가 쪽마다 흔들려
+        // 쪽을 넘길 때 같은 정책이 겹치거나 빠지지 않게 고유 키로 끝을 고정한다.
+        if ($sort['column'] !== 'id') {
+            $query->orderBy('id', $sort['direction']);
+        }
+
+        return $query;
     }
 
     /**
@@ -219,6 +252,7 @@ class ShippingPolicyRepository implements ShippingPolicyRepositoryInterface
         // `getCountriesWithFlags()` 와 `getFeeSummary()` 를 호출한다. 두 메서드는 관계가
         // 로드돼 있지 않으면 **행마다** 국가별 설정을 다시 조회하므로, 싣지 않으면 정책 수
         // × 2 쿼리가 된다 — 페이로드를 줄이려다 쿼리를 늘리는 맞바꿈이 된다.
+        // audit:allow query-unbounded-get reason: 행 수가 운영자가 만든 배송정책 정의 수에 묶인다
         return $this->model
             ->with('listCountrySettings')
             ->active()

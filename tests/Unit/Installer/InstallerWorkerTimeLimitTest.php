@@ -3,7 +3,10 @@
 namespace Tests\Unit\Installer;
 
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 설치 워커 실행 시간 제한·비정상 종료 회귀 테스트.
@@ -33,9 +36,20 @@ use PHPUnit\Framework\TestCase;
  * 초과시킨다(Linux 는 CPU 시간, Windows 는 경과 시간으로 재므로 두 OS 모두에서 초과한다).
  *
  * 시나리오 SSoT: tests/scenarios/installer-worker-termination.yaml
+ *
+ * `BASE_PATH` 는 하위 프로세스 스크립트 안에서만 정의하지만, 인스톨러 격리 게이트는 문자열 속 정의도
+ * 정의로 본다(판정 불가를 정의로 치는 fail-closed). 그래서 클래스 단위 격리를 선언하고, 임시 트리는
+ * 메서드마다(tearDown) 지우되 setUp 이 도중에 실패해 tearDown 이 돌지 않은 트리까지 클래스 끝에서 지운다.
  */
+#[RunClassInSeparateProcess]
+#[PreserveGlobalState(false)]
 class InstallerWorkerTimeLimitTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
+    /** @var array<int, string> 이 클래스가 만든 임시 BASE_PATH 트리 (tearDownAfterClass 가 남은 것을 지운다) */
+    private static array $createdBases = [];
+
     private string $projectRoot = '';
 
     private string $tempBase = '';
@@ -51,6 +65,7 @@ class InstallerWorkerTimeLimitTest extends TestCase
 
         $this->projectRoot = str_replace('\\', '/', dirname(__DIR__, 3));
         $this->tempBase = str_replace('\\', '/', sys_get_temp_dir()).'/g7-worker-timelimit-'.bin2hex(random_bytes(4));
+        self::$createdBases[] = $this->tempBase;
         @mkdir($this->tempBase.'/storage/logs', 0755, true);
         @mkdir($this->tempBase.'/storage/installer', 0755, true);
     }
@@ -65,6 +80,23 @@ class InstallerWorkerTimeLimitTest extends TestCase
         $this->removeDirectory($this->tempBase);
 
         parent::tearDown();
+    }
+
+    /**
+     * 메서드 tearDown 이 돌지 못한 임시 트리(setUp 이 도중에 실패한 경우)를 지운다.
+     *
+     * @return void 반환값 없음
+     */
+    public static function tearDownAfterClass(): void
+    {
+        foreach (self::$createdBases as $base) {
+            if (is_dir($base)) {
+                (new self('cleanup'))->removeDirectory($base);
+            }
+        }
+        self::$createdBases = [];
+
+        parent::tearDownAfterClass();
     }
 
     /**
@@ -249,6 +281,11 @@ function g7_test_busy_task(): array
     }
     $GLOBALS['g7_test_ran'] = ($GLOBALS['g7_test_ran'] ?? 0) + 1;
 
+    // 실제 작업 함수처럼 완료 마커를 남긴다 — 루프는 성공한 작업의 마커가 저장됐는지 확인하고
+    // 없으면 실패로 멈춘다(runSingleInstallationTask). 실행 중 작업은 루프가 전역에 적어 둔다.
+    $running = $GLOBALS['g7_installer_running_task'];
+    markTaskCompleted($running['target'] !== null ? $running['id'].':'.$running['target'] : $running['id']);
+
     return ['success' => true];
 }
 
@@ -318,7 +355,7 @@ PHP);
 
         $this->assertFalse($result['timed_out']);
         $this->assertStringContainsString('UNLIMITED:0', $result['stdout'], "제한 없는 실행에 작업당 제한이 새로 걸렸다:\n".$result['output']);
-        $this->assertStringContainsString('LIMITED:'.self::taskTimeLimit(), $result['stdout'], "제한이 있는 실행은 작업당 제한으로 다시 걸려야 한다:\n".$result['output']);
+        $this->assertStringContainsString('LIMITED:'.$this->taskTimeLimit(), $result['stdout'], "제한이 있는 실행은 작업당 제한으로 다시 걸려야 한다:\n".$result['output']);
     }
 
     /**
@@ -326,9 +363,9 @@ PHP);
      *
      * @return int 제한(초)
      */
-    private static function taskTimeLimit(): int
+    private function taskTimeLimit(): int
     {
-        $config = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/includes/config.php');
+        $config = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/config.php');
         preg_match("/define\\('INSTALLER_TASK_TIME_LIMIT', (\\d+)\\)/", $config, $m);
 
         return (int) ($m[1] ?? 0);
@@ -344,7 +381,7 @@ PHP);
     public function test_both_worker_entrypoints_register_worker_shutdown_handler(): void
     {
         foreach (['public/install/api/install-worker.php', 'public/install/api/install-process.php'] as $file) {
-            $source = (string) file_get_contents($this->projectRoot.'/'.$file);
+            $source = $this->sourceWithoutComments($this->projectRoot.'/'.$file);
 
             $this->assertMatchesRegularExpression(
                 "/register_shutdown_function\\('installerHandleWorkerShutdown', \\\$workerId, '(sse|polling)'\\)/",
@@ -500,6 +537,7 @@ PHP;
 
         proc_close($process);
 
+        // meta:allow raw-source-read — 소스가 아니라 자식 프로세스의 표준 출력과 표준 오류를 읽는다.
         $stdout = (string) @file_get_contents($stdoutFile);
         $stderr = (string) @file_get_contents($stderrFile);
 

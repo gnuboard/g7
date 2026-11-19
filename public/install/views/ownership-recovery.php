@@ -30,7 +30,7 @@ if (($lockedState['owner_kind'] ?? null) === 'cli') {
 
     <p class="installer-description"><?= htmlspecialchars(lang('ownership_locked_desc')) ?></p>
 
-    <div id="recovery-result" class="alert hidden" role="alert"></div>
+    <div id="recovery-result" class="alert hidden" role="alert" aria-live="assertive"></div>
 
     <form id="recovery-form" class="installer-form" data-action="submitRecoveryToken" data-event="submit">
         <div class="form-group form-group-full">

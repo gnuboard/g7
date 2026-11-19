@@ -1,0 +1,26 @@
+# 시나리오 매니페스트 — 창을 닫는 성공 갈래는 창 상태를 다시 받기보다 먼저 비운다
+# 참조: docs/frontend/modal-usage.md 「편집 모달의 form 데이터 — _global namespace 패턴」(저장 onSuccess — 명시적 정리)
+
+feature: admin_modal_success_clear_before_refetch
+
+description: >-
+  게시판 본인인증 정책 추가·편집 창의 저장 성공 갈래가 「창 닫기 → 정책 목록 다시 받기 → 창 상태 비우기」 순서라, 다시 받는
+  동안 다시 연 창의 상태가 늦은 비우기에 지워졌다. 비우기를 창 닫기 바로 뒤로 옮긴다.
+
+test_files:
+  - modules/_bundled/sirsoft-board/resources/js/__tests__/layouts/admin-modal-success-clear-before-refetch.test.ts
+
+axes:
+  surface:
+    - identity_policy_modal   # 게시판 환경설정 본인인증 정책 추가·편집 창
+  branch:
+    - success   # 저장 성공으로 닫힘
+
+effects:
+  - modal_state_cleared_before_refetch   # closeModal → refetchDataSource 뒤에 창 상태를 비우는 액션 목록이 게시판 레이아웃 전체에 없다
+
+validation:
+  audit_rule: frontend-change-requires-e2e
+  browser_check: — 정책 저장 직후 [정책 추가]를 다시 눌러 창 상태가 유지되는지
+  note: |
+    수정 전 red(2026-11-18, HEAD JSON 대조): 위반 1건(admin_board_settings/_modal_identity_policy_form: identity_policy_form_modal). 수정 후 green 2 / 2.

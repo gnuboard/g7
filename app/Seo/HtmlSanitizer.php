@@ -3,6 +3,7 @@
 namespace App\Seo;
 
 use App\Support\Content\ContentHtmlPolicy;
+use App\Thumbnails\ThumbnailUrl;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -81,6 +82,43 @@ class HtmlSanitizer
      * `data:` URL 중 허용하는 형태 (이미지 한정 — svg 는 스크립트 실행 벡터라 제외).
      */
     private const ALLOWED_DATA_URL = '/^data:image\/(png|jpe?g|gif|webp|avif|bmp);/i';
+
+    /**
+     * 본문 이미지 `sizes` 기본값 — 일반 화면 HtmlContent 의 prop `imageSizes` 기본값과 같다.
+     */
+    public const DEFAULT_IMAGE_SIZES = '(min-width: 1024px) 768px, 100vw';
+
+    /**
+     * 본문 이미지 후처리에 쓸 `sizes` (null 이면 후처리하지 않는다 — `sanitize()` 단독 호출).
+     */
+    private ?string $contentImageSizes = null;
+
+    /**
+     * 본문(HtmlContent) HTML 을 정화하고 본문 이미지를 썸네일 주소로 바꿔 반환합니다.
+     *
+     * 일반 화면 HtmlContent 가 정화 뒤 하는 이미지 처리와 같은 계약이다 — 같은 출처 + 등록된 서빙 경로의
+     * `<img>` 만 `src` 를 본문 이미지 규격(`upload.thumbnail_content_preset`)으로 바꾼다. `srcset` 은 img 의 `width`
+     * 속성(정수)을 알 때만 그 가로 이하의 숫자 요청 대상 규격(`w` 기술자)으로 덮어쓴다 — 원본보다 큰 후보를 두면 서버는
+     * 키우지 않고 원본을 보내는데 브라우저는 후보 가로로 알고 작게 그린다. width 를 모르면 srcset 을 넣지 않는다(작성자
+     * srcset 은 그대로). `sizes` 는 srcset 을 넣을 때, `loading="lazy"`·`decoding="async"` 는 작성자가 적지 않았을 때만 넣는다.
+     * 외부·정적(`/storage/…`)·`data:` 이미지는 그대로다. 저장된 HTML 은 바꾸지 않는다(렌더 시점 변환).
+     *
+     * @param  string  $html  정화할 HTML
+     * @param  string|null  $imageSizes  본문 이미지 `sizes` (비면 기본값)
+     * @return string 정화된 HTML
+     */
+    public function sanitizeContent(string $html, ?string $imageSizes = null): string
+    {
+        $this->contentImageSizes = is_string($imageSizes) && trim($imageSizes) !== ''
+            ? trim($imageSizes)
+            : self::DEFAULT_IMAGE_SIZES;
+
+        try {
+            return $this->sanitize($html);
+        } finally {
+            $this->contentImageSizes = null;
+        }
+    }
 
     /**
      * 이번 정화에서 코어 「본문 콘텐츠」 규칙이 켠 후보 태그(그림 캡션·업로드 동영상·오디오·외부 영상) — 제거·언랩 목록에서 뺀다 (#883).
@@ -251,10 +289,23 @@ class HtmlSanitizer
                 continue;
             }
 
+            // srcset 은 후보마다 주소가 있다 — 첫 후보만 보면 `안전 1x, javascript:… 2x` 가 통과한다.
+            if ($lower === 'srcset') {
+                if (! $this->isAllowedSrcset($element->getAttribute($name))) {
+                    $element->removeAttribute($name);
+                }
+
+                continue;
+            }
+
             if (in_array($lower, self::URL_ATTRS, true)
                 && ! $this->isAllowedUrl($element->getAttribute($name))) {
                 $element->removeAttribute($name);
             }
+        }
+
+        if ($this->contentImageSizes !== null && strtolower($element->tagName) === 'img') {
+            $this->applyContentImage($element, $this->contentImageSizes);
         }
 
         // 외부 링크에 rel 보강 (일반 화면의 HtmlContent 후처리와 동일)
@@ -264,6 +315,105 @@ class HtmlSanitizer
                 $element->setAttribute('rel', 'noopener noreferrer');
             }
         }
+    }
+
+    /**
+     * 본문 이미지를 썸네일 주소로 바꿉니다 (등록된 서빙 경로의 이미지만).
+     *
+     * @param  \DOMElement  $element  img 요소 (속성 정화 뒤)
+     * @param  string  $sizes  `sizes` 값
+     * @return void 반환값 없음
+     */
+    private function applyContentImage(\DOMElement $element, string $sizes): void
+    {
+        $src = trim($element->getAttribute('src'));
+
+        if ($src === '' || ! ThumbnailUrl::isThumbnailable($src)) {
+            return;
+        }
+
+        $element->setAttribute('src', ThumbnailUrl::for($src, ThumbnailUrl::contentPreset()));
+
+        $width = $this->intrinsicWidth($element);
+        $srcset = $width !== null ? $this->limitSrcsetToWidth(ThumbnailUrl::contentSrcset($src), $width) : '';
+
+        if ($srcset !== '') {
+            $element->setAttribute('srcset', $srcset);
+
+            if (! $element->hasAttribute('sizes')) {
+                $element->setAttribute('sizes', $sizes);
+            }
+        }
+
+        if (! $element->hasAttribute('loading')) {
+            $element->setAttribute('loading', 'lazy');
+        }
+
+        if (! $element->hasAttribute('decoding')) {
+            $element->setAttribute('decoding', 'async');
+        }
+    }
+
+    /**
+     * img 의 `width` 속성을 정수로 읽습니다 (앞뒤 공백 허용, `50%`·`800px`·소수·0 은 모름).
+     *
+     * 사람 화면 `contentImages.ts::intrinsicWidth()` 와 같은 판정이다.
+     *
+     * @param  \DOMElement  $element  img 요소
+     * @return int|null 가로(px) 또는 null
+     */
+    private function intrinsicWidth(\DOMElement $element): ?int
+    {
+        $raw = trim($element->getAttribute('width'));
+
+        if (preg_match('/^\d+$/D', $raw) !== 1) {
+            return null;
+        }
+
+        $width = (int) $raw;
+
+        return $width > 0 ? $width : null;
+    }
+
+    /**
+     * 가로 기술자 srcset 후보 중 주어진 가로 이하만 남깁니다.
+     *
+     * 후보는 `ThumbnailUrl::contentSrcset()` 이 만든 「주소 N w」 를 `, ` 로 이은 것이다(주소 안 공백은 `%20`).
+     *
+     * @param  string  $srcset  가로 기술자 srcset
+     * @param  int  $maxWidth  원본 가로
+     * @return string 남은 후보 srcset (없으면 빈 문자열)
+     */
+    private function limitSrcsetToWidth(string $srcset, int $maxWidth): string
+    {
+        $kept = array_filter(
+            preg_split('/,\s+/', trim($srcset)) ?: [],
+            static fn (string $candidate): bool => preg_match('/\s(\d+)w$/', trim($candidate), $m) === 1
+                && (int) $m[1] <= $maxWidth
+        );
+
+        return implode(', ', $kept);
+    }
+
+    /**
+     * srcset 의 후보 주소가 전부 허용된 스킴인지 판정합니다.
+     *
+     * @param  string  $srcset  srcset 값
+     * @return bool 허용 여부
+     */
+    private function isAllowedSrcset(string $srcset): bool
+    {
+        // 후보 경계는 쉼표다 — 쉼표 뒤 공백이 없어도 브라우저는 다음 후보로 읽는다(예: a.png 1x,javascript:x 2x).
+        // 주소 안 쉼표(`data:image/png;base64,…`)도 경계로 갈리지만, 잘린 앞부분이 그대로 스킴 검사를 받아 안전한 쪽이다.
+        foreach (preg_split('/\s*,\s*/', trim($srcset)) ?: [] as $candidate) {
+            $url = preg_split('/\s+/', trim($candidate))[0] ?? '';
+
+            if (! $this->isAllowedUrl($url)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Models;
 
 use App\Models\User;
+use App\Support\AssetUrl;
 use App\Support\LocalizedValue;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -149,6 +150,6 @@ class ProductImage extends Model
      */
     protected function apiDownloadUrl(): string
     {
-        return '/api/modules/sirsoft-ecommerce/product-image/'.$this->hash;
+        return AssetUrl::basePrefix().'/api/modules/sirsoft-ecommerce/product-image/'.$this->hash;
     }
 }

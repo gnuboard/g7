@@ -20,7 +20,7 @@
             "cache": false,
             "refetchOnMount": true,
             "initLocal": {
-                "claimOrderId": "data.id",
+                "claimOrderId": "id",
                 "claimApiBase": "{{'/api/modules/sirsoft-ecommerce/user/orders/' + data.id}}"
             },
             "onSuccess": [

@@ -113,8 +113,8 @@
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 21개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 17개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 5개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 구독 훅 | 19개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 6개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 0개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -153,7 +153,7 @@
 - [ ] 스키마 변경 시 마이그레이션(한국어 comment + `down()`) + 기설치본 백필용 업그레이드 스텝
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=module:sirsoft-page` 재실행 + `docs/api/**` 갱신
-- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 관리자 템플릿의 빌드된 CSS 에 존재하는지 확인하고 없으면 `resources/css/main.css` 에 `page-` 접두 클래스로 정의한 뒤 `php artisan module:build sirsoft-page --production`
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 클래스를 새로 쓰지 않았으면 빌드 없이 update 만, 새 클래스(`page:` 유틸리티·`page-*`)를 쓰면 `module:build` 로 자기 CSS 를 다시 만든다(「화면 클래스 규약」)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] 다국어 값(JSON 다국어 컬럼·설정)을 표시용으로 고를 때는 `App\Support\LocalizedValue::pick($value)` — 요청 언어 → 사이트 기본 언어 → 영어 순(7.1.1, #148). `['ko']`·`config('app.fallback_locale')` 고정 대체는 강제 검사(`tests/Unit/I18n/MultilingualValueFallbackGuardTest.php`)가 막는다
 - [ ] 페이지 저장 경로를 추가·변경했다면 버전 스냅샷 적재와 `current_version` 증가가 같은 트랜잭션에 있는지 확인
@@ -186,10 +186,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 62개 | `modules/_bundled/sirsoft-page/tests` |
-| Vitest | 20개 | `vitest.config.ts` |
-| Playwright | 7개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 57개 | `tests/scenarios` |
+| PHPUnit | 72개 | `modules/_bundled/sirsoft-page/tests` |
+| Vitest | 22개 | `vitest.config.ts` |
+| Playwright | 8개 | `tests/Playwright` |
+| 시나리오 매니페스트 | 67개 | `tests/scenarios` |
 
 기저 TestCase: `tests/ModuleTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 
@@ -223,3 +223,27 @@ cd modules/_bundled/sirsoft-page && npm run test:e2e -- specs/<대상>.spec.ts
 | [docs/api/](docs/api/README.md) | API 레퍼런스 (엔드포인트별 파라미터·응답 필드) | ✅ |
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->
+
+## 화면 클래스 규약 — 이 모듈이 자기 CSS 를 싣는다
+
+관리자 레이아웃은 **템플릿 CSS 에 기대지 않는다.** 모든 클래스는 이
+모듈 앞글자를 쓰고, 규칙은 이 모듈의 `dist/css/module.css` 에 실재한다(manifest `assets.css.namespace: page`).
+
+1. **배치·색 유틸리티는 `page:` 접두 Tailwind 로 쓴다**(`page:flex page:dark:bg-gray-800`).
+   Tailwind 는 이 모듈의 작성 도구일 뿐이고(preflight 없음), `resources/css/main.css` 맨 앞 생성 블록이
+   `resources/{layouts,extensions,js}` 를 훑어 쓰인 클래스만 만든다. 새 클래스를 쓰면
+   `php artisan module:build sirsoft-page --production` 으로 CSS 를 다시 만들고 update 한다 — 빌드하지 않으면
+   그 스타일만 조용히 빠진다. 앞글자 없는 `flex` 를 쓰면 정적 검사가 막는다.
+2. **템플릿 의미 클래스는 `page-*` 사본을 쓴다**(`page-btn`·`page-input`·`page-admin-card`).
+   정의는 `resources/css/g7-extension.generated.css`(생성 파일, 손으로 고치지 않는다)의 가장 낮은 칸
+   `@layer g7-extension` 에 있어 템플릿이 같은 이름을 덮을 수 있다. 템플릿 의미 클래스를 새로 가져오려면
+   원래 이름으로 적은 뒤 `node scripts/extension-css/convert-layout-classes.mjs modules/_bundled/sirsoft-page` 를
+   다시 돌린다(같은 입력이면 결과가 같다).
+3. **이 모듈 고유의 호버·다크 짝과 의미 색은 손 CSS 다** — `resources/css/main.css` 의 생성 블록 아래.
+   호버·다크 짝은 층 없이 두고, 의미 색 `page-tone-*` 는 `@layer g7-extension` 안에 둔다(색만 맡는다).
+   템플릿 표지 `group` 대신 레이아웃은 `page:group`, 손 CSS 선택자는 `.page\:group` 을 쓴다.
+4. **다크 모드는 `page:dark:` 변형이나 중립 표식(`[data-g7-color-scheme="dark"]`)으로 쓴다.** 템플릿 표지
+   `.dark` 를 손 CSS 선택자에 쓰지 않는다.
+
+정적 검사가 레이아웃·조각의 클래스 앞글자와 `dist/css` 실재를, CSS 선택자의 앞글자와 `.dark` 사용을 대조한다.
+규약 전문은 `docs/extension/module-assets.md` 「확장 CSS 자기 공급 규약」이다.

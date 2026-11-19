@@ -1,0 +1,89 @@
+feature: 이미지 썸네일 설정 백엔드 — 이미지 엔진 드라이버 카테고리, 업로드 탭 썸네일 설정 검증·저장·조회, SEO 캐시 (#869)
+
+description: |
+  드라이버 탭 「이미지 처리」(drivers.image_driver → core.image.driver)는 드라이버 레지스트리의 `image` 카테고리다.
+  코어 엔진 gd·imagick 중 이 서버에서 쓸 수 없는 엔진은 선택지에서 빠지고(imagick 확장이 없으면 gd 만), 직접 보내면
+  사유와 함께 422 다.
+
+  업로드 탭 썸네일 설정(upload.thumbnail_*)은 규격 표를 행마다 검증해 오류 키가 `upload.thumbnail_presets.{i}.{칸}` 처럼
+  칸 하나를 가리킨다. 저장은 `ThumbnailPresetSettings::mergeForSave` 로 고정 슬롯 5행을 보충하고 og 를 빼고 꺼진 확장의
+  수정값을 이어 붙인다. 저장 직후 같은 요청의 config 와 저장 응답의 표가 새 값이어야 화면이 옛 표로 되돌아가지 않는다.
+  관리자 조회 응답은 표(thumbnail_presets_rows)와 메타(thumbnail_engine_available, thumbnail_disk_options)를 싣는다.
+
+  업로드 탭에서 썸네일 값이 실제로 바뀌면 SEO 캐시를 비운다(봇 화면에 규격 주소가 구워진다). 확장 활성·비활성은
+  SeoExtensionCacheListener 가 이미 비운다.
+
+  축 surface 는 진입점이다 — 드라이버 카탈로그, 저장 검증, 저장 변환·반영, 관리자 조회 응답, SEO 캐시 리스너.
+
+axes:
+  surface: [driver_catalog, save_validation, save_storage, admin_response, seo_cache, server_limits]
+
+effects:
+  # 이미지 엔진 드라이버 카테고리
+  - image_category_registered_with_apply_keys
+  - unusable_image_engines_hidden_from_catalog
+  - single_key_save_of_preset_table_is_rejected
+  - single_key_save_of_thumbnail_allowlisted_keys_is_rejected
+  - image_engine_usability_follows_php_extension
+  - unusable_image_engine_rejected_with_reason
+  - image_engine_saved_reaches_config
+  - engine_availability_meta_reported
+  # 업로드 탭 검증
+  - preset_table_errors_point_at_a_field
+  - preset_boundaries_accepted
+  - locked_row_rename_rejected
+  - og_row_size_not_validated
+  - content_preset_must_be_enabled_after_save
+  - thumbnail_disks_limited_per_kind
+  - gated_thumbnail_disk_options_include_private_catalog  # 권한 썸네일 선택지 = thumbnails·s3·비공개 첨부 저장소 카탈로그, 공개 자산 디스크(public·플러그인 공개 디스크)와 정의 없는 디스크는 선택지에 없고 저장도 422
+  - gated_thumbnail_same_bucket_warning                   # 공개 자산 디스크와 권한 썸네일 디스크가 둘 다 s3 이면 저장 응답 warnings 에 같은 버킷 경고, 한쪽만이면 없음
+  # 저장 변환·반영
+  - retired_disk_purge_leaves_the_save_request
+  - reenable_purges_stale_derivatives            # 썸네일을 다시 켜면 지금 쓰는 썸네일 디스크를 저장 요청 밖(큐·응답 뒤)에서 비운다, 켠 채 저장·끄기는 비우지 않는다
+  - fixed_slots_always_stored
+  - locked_rows_keep_name_and_source
+  - disabled_extension_rows_preserved
+  - custom_rows_normalized
+  - keyless_install_reads_defaults
+  - saved_values_reach_storage_config_and_response
+  - upload_thumbnail_setting_change_restarts_workers  # 썸네일 값이 실제로 바뀐 저장(벌크·단건)만 queue:restart, 다른 업로드 키·같은 값은 없음
+  - label_not_stored_nor_fingerprinted            # 표시 이름(label)은 저장 행에 남지 않고 지문을 바꾸지 않는다
+  # 관리자 조회
+  - admin_response_carries_table_and_disk_options
+  - extension_label_resolved_per_locale           # 확장 행 label 다국어 키를 활성 로케일마다 풀어 로케일 맵으로 싣는다(번역 없는 로케일 제외)
+  - missing_label_falls_back_to_name              # label 이 없거나 풀리지 않으면 null(화면이 name 으로 폴백), 고정·og·운영자 행도 null
+  # SEO 캐시
+  - seo_cache_cleared_on_thumbnail_change_only
+  # 서버 보호 값 다섯 (.env G7_THUMBNAIL_* + 업로드 탭 「고급」, 우선순위는 EnvPriority)
+  - thumbnail_server_limits_read_from_env                    # config/core.php 가 G7_THUMBNAIL_* 를 읽고 빈 값·숫자 아닌 값은 기본값, 비운 칸용 값도 같다
+  - thumbnail_server_limits_registered_for_env_priority      # 다섯 키가 EnvPriority::MAP 에 있고 기본값 파일은 null
+  - thumbnail_server_limits_env_wins_when_locked             # .env 우선 모드 + .env 명시면 저장값이 있어도 .env 값
+  - thumbnail_server_limits_saved_value_applies              # 잠기지 않으면 저장값(정수)이 런타임 값
+  - thumbnail_server_limits_blank_falls_back_to_server_default  # 저장값이 비면 서버 기본값, 저장 직후 같은 요청도 낡은 값이 남지 않는다
+  - thumbnail_server_limits_saved_and_returned               # 정수로 저장되고 조회가 값·limits·thumbnail_server_defaults 를 싣는다
+  - thumbnail_server_limits_locked_key_not_saved             # 잠긴 키는 탭 저장이 버리고 조회는 잠김·적용 값, 단건·명령은 거부
+  - thumbnail_server_limits_out_of_range_rejected            # 범위 밖·정수 아닌 값은 탭·단건 모두 422, 저장본 그대로
+  - thumbnail_server_limits_boundaries_accepted              # 하한·상한은 저장된다
+  # 드라이버 레지스트리 기존 계약 — image 카테고리를 넣으며 두 테스트 파일이 이 작업 범위에 들어와 드러난 매핑 부채.
+  # 카테고리 전반의 카탈로그·가용성·기본값·키 표는 image 엔진 선택지와 같은 진입점(surface=driver_catalog)을 지난다.
+  - core_drivers_listed_per_category             # storage·mail 의 코어 드라이버가 목록과 관리자 응답에 있다
+  - all_driver_categories_returned_at_once       # 10개 카테고리를 한 번에 돌려준다(관리자 응답 available_drivers 포함)
+  - core_driver_identified_per_category          # 코어 드라이버 판별은 카테고리별이고 모르는 카테고리는 false
+  - registered_drivers_available_unregistered_unavailable
+  - default_driver_per_category_empty_for_unknown  # 카테고리별 폴백 기본값, 모르는 카테고리는 빈 문자열
+  - plugin_drivers_join_catalog_via_filter_hook  # 필터 훅으로 넣은 드라이버가 목록에 들고 사용 가능으로 판정된다
+  - driver_entries_carry_localized_labels        # 항목마다 id 와 ko·en 라벨
+  - settings_and_config_keys_resolved_per_category  # 설정 키·config 키 표, websocket 은 설정 키 없음
+  - redis_usable_through_bundled_predis          # 확장 없이도 코어 의존성 predis 로 redis 를 쓸 수 있다
+  - capability_free_and_plugin_drivers_always_usable
+  - log_driver_written_to_stack_channels_as_array  # log 는 logging.channels.stack.channels 에 채널 배열로 기록
+
+test_files:
+  - tests/Unit/Services/DriverRegistryServiceTest.php
+  - tests/Unit/Services/DriverRegistryServiceUsabilityTest.php
+  - tests/Feature/Api/Admin/SettingsControllerDriverOptionsTest.php
+  - tests/Unit/Thumbnails/ThumbnailPresetSettingsTest.php
+  - tests/Feature/Settings/ThumbnailSettingsSaveTest.php
+  - tests/Unit/Seo/Listeners/SeoSettingsCacheListenerTest.php
+  - tests/Unit/Services/SettingsServiceThumbnailWorkerRestartTest.php
+  - tests/Feature/Settings/ThumbnailServerLimitsSettingsTest.php

@@ -87,7 +87,7 @@ class DevVendorDetectionTest extends TestCase
      *
      * @scenario vendor_state=present_no_dev, surface=install_log
      *
-     * @effects installer_reports_no_dev_packages_for_no_dev_vendor
+     * @effects installer_reports_no_dev_packages_for_no_dev_vendor, installer_reports_production_vendor_as_pass
      *
      * @return void 반환값 없음
      */

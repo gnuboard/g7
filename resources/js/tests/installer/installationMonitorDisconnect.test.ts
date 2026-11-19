@@ -24,7 +24,7 @@
  */
 import { readFileSync } from 'fs';
 import path from 'path';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 
 type Listener = (e: { data?: string }) => void;
 
@@ -83,21 +83,23 @@ function jsonResponse(body: unknown) {
 }
 
 describe('SseMonitor 연결 끊김 뒤 결말 판정', () => {
-    let callbacks: Record<string, ReturnType<typeof vi.fn>>;
+    /** SseMonitor 가 받는 콜백 시그니처 */
+    type MonitorCallback = (...args: unknown[]) => void;
+    let callbacks: Record<string, Mock<MonitorCallback>>;
     let fetchMock: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
         vi.useFakeTimers();
         FakeEventSource.instances = [];
         callbacks = {
-            onConnected: vi.fn(),
-            onTaskStart: vi.fn(),
-            onTaskComplete: vi.fn(),
-            onLog: vi.fn(),
-            onError: vi.fn(),
-            onAbort: vi.fn(),
-            onComplete: vi.fn(),
-            onConnectionTimeout: vi.fn(),
+            onConnected: vi.fn<MonitorCallback>(),
+            onTaskStart: vi.fn<MonitorCallback>(),
+            onTaskComplete: vi.fn<MonitorCallback>(),
+            onLog: vi.fn<MonitorCallback>(),
+            onError: vi.fn<MonitorCallback>(),
+            onAbort: vi.fn<MonitorCallback>(),
+            onComplete: vi.fn<MonitorCallback>(),
+            onConnectionTimeout: vi.fn<MonitorCallback>(),
         };
         fetchMock = vi.fn();
         vi.stubGlobal('fetch', fetchMock);
@@ -253,11 +255,16 @@ describe('SseMonitor 연결 끊김 뒤 결말 판정', () => {
         es2.emit('task_start', { task: 'module_activate', target: 'sirsoft-board', name: '게시판 모듈 활성화' });
         es2.emit('task_complete', { task: 'module_activate', target: 'sirsoft-board', message: 'done' });
         expect(callbacks.onTaskStart).toHaveBeenCalledWith('module_activate', '게시판 모듈 활성화', 'sirsoft-board');
-        expect(callbacks.onTaskComplete).toHaveBeenCalledWith('module_activate', 'done', 'sirsoft-board');
+        // 네 번째 인자는 건너뜀 여부다(onTaskComplete(taskId, message, target, skipped)) — 정상 완료는 false
+        expect(callbacks.onTaskComplete).toHaveBeenCalledWith('module_activate', 'done', 'sirsoft-board', false);
 
         // 이어 받는 동안에는 상태를 묻지 않고, 멈춤으로 판정하지도 않는다
+        // 살아 있는 워커는 작업 사이에도 heartbeat 를 보낸다 — 무응답 30초는 멈춤으로 판정한다
         const calls = fetchMock.mock.calls.length;
-        await vi.advanceTimersByTimeAsync(60000);
+        for (let i = 0; i < 6; i++) {
+            es2.emit('heartbeat', {});
+            await vi.advanceTimersByTimeAsync(10000);
+        }
         expect(fetchMock.mock.calls.length).toBe(calls);
         expect(callbacks.onError).not.toHaveBeenCalled();
 

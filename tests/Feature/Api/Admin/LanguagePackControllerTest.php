@@ -1121,6 +1121,8 @@ class LanguagePackControllerTest extends TestCase
                     'pack.zip', 'application/zip', null, true
                 ),
                 'auto_activate' => true,
+                // 시험 패키지는 서명이 없다 — 미서명 확인(7.2.0)을 거친 요청으로 보낸다
+                'allow_unsigned' => true,
             ])->assertSuccessful();
 
             $pack = LanguagePack::query()->where('identifier', $identifier)->firstOrFail();
@@ -1133,6 +1135,7 @@ class LanguagePackControllerTest extends TestCase
                     $this->makeLanguagePackZip($identifier, '1.0.1', "<?php\nreturn ['greeting' => 'overwritten'];\n"),
                     'pack.zip', 'application/zip', null, true
                 ),
+                'allow_unsigned' => true,
             ])->assertSuccessful();
 
             $pack->refresh();

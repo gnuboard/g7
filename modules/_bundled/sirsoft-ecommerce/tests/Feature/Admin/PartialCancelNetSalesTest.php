@@ -69,7 +69,8 @@ class PartialCancelNetSalesTest extends ModuleTestCase
             ['order_option_id' => $row->id, 'cancel_quantity' => 1],
         ]);
 
-        app(EcommerceDashboardService::class)->aggregateRecentDays(7);
+        $dashboard = app(EcommerceDashboardService::class);
+        $dashboard->aggregateRecentDays(7);
 
         $alive = $row->fresh();
         $this->assertSame(OrderStatusEnum::PAYMENT_COMPLETE, $alive->option_status);
@@ -77,7 +78,8 @@ class PartialCancelNetSalesTest extends ModuleTestCase
         // 카운터는 이력으로 남는다(의미 고정)
         $this->assertSame(1, (int) $alive->cancelled_quantity);
 
-        $stat = EcommerceStat::where('date', CarbonImmutable::today()->toDateString())->first();
+        // 집계 행은 사이트 표준시의 하루다 — UTC 오늘로 찾으면 한국 시각 0~9시에 전날 행(0건)을 읽는다.
+        $stat = EcommerceStat::where('date', $dashboard->siteToday()->toDateString())->first();
         $this->assertNotNull($stat);
         $this->assertSame(5, $stat->sales_quantity);
         $this->assertSame('20000.00', $stat->sales_amount);

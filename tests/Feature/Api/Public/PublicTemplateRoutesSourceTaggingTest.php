@@ -28,6 +28,16 @@ class PublicTemplateRoutesSourceTaggingTest extends TestCase
         'plugins/sirsoft-gdpr',
     ];
 
+    /**
+     * 공개 routes.json 응답에서 템플릿 자체 라우트는 source.kind=template, identifier=null 로 태깅되고
+     * 템플릿 설정 화면 라우트는 그 템플릿 식별자를 identifier 로 싣는지 검증한다.
+     *
+     * @scenario route_source=template, target_template=active
+     *
+     * @effects get_routes_data_with_modules_attaches_source_kind_and_identifier_to_template_routes
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function template_routes_response_attaches_source_kind_template_with_null_identifier(): void
     {
@@ -58,15 +68,42 @@ class PublicTemplateRoutesSourceTaggingTest extends TestCase
 
         $this->assertNotEmpty($templateRoutes, '템플릿 자체 라우트에 source.kind=template 이 부여되어야 함');
 
-        foreach ($templateRoutes as $route) {
+        // 템플릿 설정 화면 라우트(#434, `*/admin/templates/{id}/settings`)는 코어가 설치 템플릿마다 만들어 붙이며,
+        // 그 템플릿을 가리키도록 source.identifier 에 템플릿 식별자를 싣는다(TemplateService::loadTemplateSettingsRoutesData).
+        // routes.json 에서 온 템플릿 자체 라우트만 identifier 가 null 이다.
+        $settingsPattern = '#^\*/admin/templates/([^/]+)/settings$#';
+        $ownRoutes = array_filter($templateRoutes, fn ($r) => preg_match($settingsPattern, (string) ($r['path'] ?? '')) !== 1);
+        $settingsRoutes = array_filter($templateRoutes, fn ($r) => preg_match($settingsPattern, (string) ($r['path'] ?? '')) === 1);
+
+        $this->assertNotEmpty($ownRoutes, 'routes.json 에서 온 템플릿 자체 라우트가 있어야 함');
+
+        foreach ($ownRoutes as $route) {
             $this->assertSame('template', $route['source']['kind']);
             $this->assertNull(
                 $route['source']['identifier'],
                 '템플릿 자체 라우트의 source.identifier 는 null'
             );
         }
+
+        foreach ($settingsRoutes as $route) {
+            preg_match($settingsPattern, $route['path'], $m);
+            $this->assertSame(
+                $m[1],
+                $route['source']['identifier'],
+                '템플릿 설정 화면 라우트의 source.identifier 는 그 설정의 템플릿 식별자'
+            );
+        }
     }
 
+    /**
+     * source 태깅이 기존 path 필드를 지우지 않고 모든 라우트에 source.kind, source.identifier 키를 더하는지 검증한다.
+     *
+     * @scenario route_source=template, target_template=active
+     *
+     * @effects get_routes_data_with_modules_preserves_meta_title_editor_label_hidden_parent, every_merged_route_carries_source_kind_and_identifier
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function template_routes_response_preserves_existing_meta_fields_non_destructively(): void
     {
@@ -92,6 +129,13 @@ class PublicTemplateRoutesSourceTaggingTest extends TestCase
         }
     }
 
+    /**
+     * 존재하지 않는 템플릿의 routes.json 요청은 source 태깅과 무관하게 404 와 success=false 로 끝나는지 검증한다.
+     *
+     * @effects routes_request_for_unavailable_template_fails_unchanged_by_source_tagging
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function nonexistent_template_returns_404_unchanged_by_source_tagging(): void
     {

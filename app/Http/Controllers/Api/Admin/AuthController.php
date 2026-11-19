@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Exceptions\Auth\AccountLockedException;
+use App\Exceptions\Auth\ExternalStepRequiredException;
+use App\Exceptions\Auth\PasswordAuthDisallowedException;
 use App\Exceptions\Auth\PasswordChangeUnavailableException;
 use App\Exceptions\Auth\TwoFactorDeliveryFailedException;
 use App\Exceptions\Auth\TwoFactorEnrollmentRequiredException;
@@ -12,11 +14,15 @@ use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Controllers\Concerns\BuildsAuthFailureResponses;
 use App\Http\Requests\Auth\AuthenticatedRequest;
 use App\Http\Requests\Auth\CompletePasswordChangeRequest;
+use App\Http\Requests\Auth\LoginDiscoverRequest;
+use App\Http\Requests\Auth\LoginHandoffRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\PostponePasswordChangeRequest;
 use App\Http\Requests\Auth\TwoFactorChallengeRequest;
 use App\Http\Requests\Auth\TwoFactorResendRequest;
 use App\Http\Resources\UserResource;
+use App\Services\Auth\LoginEntryService;
+use App\Services\Auth\LoginHandoffService;
 use App\Services\AuthService;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
@@ -30,9 +36,13 @@ class AuthController extends AdminBaseController
      * 관리자 인증 컨트롤러를 생성합니다.
      *
      * @param  AuthService  $authService  인증 서비스
+     * @param  LoginHandoffService  $loginHandoffService  로그인 인계 코드 서비스
+     * @param  LoginEntryService  $loginEntryService  로그인 진입 판정 서비스
      */
     public function __construct(
-        private AuthService $authService
+        private AuthService $authService,
+        private LoginHandoffService $loginHandoffService,
+        private LoginEntryService $loginEntryService,
     ) {
         // 부모 생성자 호출하지 않음 - 인증 미들웨어를 수동으로 설정
         // parent::__construct();
@@ -41,6 +51,10 @@ class AuthController extends AdminBaseController
         // 식별하며, 관리자 여부는 코드 확인에 성공한 뒤 서비스가 돌려준 사용자로 판정한다.
         $this->middleware(['auth:sanctum', 'admin'])->except([
             'login',
+            // 로그인 인계 교환 — 주체는 인계 코드가 식별한다(외부 인증이 본인 확인을 마쳤다)
+            'loginHandoff',
+            // 로그인 진입 판정 — 로그인 전 화면이 부른다
+            'discover',
             'verifyTwoFactor',
             'resendTwoFactor',
             // 비밀번호 변경 단계도 토큰이 없는 상태에서 호출된다 — 주체는 변경 단계 식별자가 식별한다
@@ -64,33 +78,14 @@ class AuthController extends AdminBaseController
                 'admin'
             );
 
-            // 2단계 인증이 켜져 있으면 아직 토큰도 사용자도 없다 — 관리자 판정은 코드 확인
-            // 뒤로 미룬다. 이 분기가 없으면 $data['user'] 가 없어 500 이 되고, 관리자까지
-            // 로그인할 수 없어 설정을 되돌릴 수단이 사라진다.
-            if ($data['two_factor_required'] ?? false) {
-                return $this->success($this->twoFactorRequiredMessageKey($data), $data);
-            }
-
-            // 비밀번호를 바꿔야 하는 관리자 — 아직 토큰이 없다. 비관리자는 서비스가 이 단계를 열지 않는다(A16).
-            if ($data['password_change_required'] ?? false) {
-                return $this->success($this->passwordChangeRequiredMessageKey($data), $data);
-            }
-
-            $user = $data['user'];
-
-            // 관리자 권한 확인
-            if (! $user->isAdmin()) {
-                // 이 시점에는 이미 토큰과 web 세션이 발급되어 있다 — 거절하면서 남겨 두면
-                // 관리자가 아닌 사용자가 응답만 403 을 받을 뿐 세션은 그대로 유효해진다.
-                $this->authService->revokeIssuedSession($user, $data['token']);
-
-                return $this->forbidden($this->adminRequiredMessageKey($data));
-            }
-
-            // 사용자 정보는 Resource로, 토큰은 그대로
-            $data['user'] = new UserResource($user);
-
-            return $this->success('auth.admin_login_success', $data);
+            return $this->adminLoginStepResponse($data);
+        } catch (PasswordAuthDisallowedException $e) {
+            return $this->passwordAuthDisabledResponse($e);
+        } catch (ExternalStepRequiredException $e) {
+            return $this->externalStepRequiredResponse($e);
+        } catch (AuthorizationException $e) {
+            // 관리자가 아닌 회원 — 휴면 해제·로그인 완료 훅·2단계 인증 메일 전에 거절됐다.
+            return $this->forbidden('auth.admin_required');
         } catch (AccountLockedException $e) {
             return $this->lockedResponse($e);
         } catch (TwoFactorEnrollmentRequiredException $e) {
@@ -102,6 +97,94 @@ class AuthController extends AdminBaseController
         } catch (ValidationException $e) {
             return $this->unauthorized('auth.login_failed');
         }
+    }
+
+    /**
+     * 관리자 로그인 진입 판정 — 입력한 식별자의 로그인 수단을 돌려줍니다 (사용자 경로와 같은 응답 모양).
+     *
+     * @param  LoginDiscoverRequest  $request  진입 판정 요청
+     * @return JsonResponse 판정 결과
+     *
+     * @since 7.2.0
+     */
+    public function discover(LoginDiscoverRequest $request): JsonResponse
+    {
+        return $this->success('auth.login_discovery_success', $this->loginEntryService->discover((string) $request->validated()['identifier'], 'admin'));
+    }
+
+    /**
+     * 관리자 로그인 인계 코드를 교환합니다 — 외부 인증이 관리자 경로(`admin`)로 발급한 코드만 통한다.
+     *
+     * 응답은 `login` 과 같은 세 형태(인증 완료 · 2단계 인증 · 비밀번호 변경)이고, 관리자가 아닌 회원은 휴면 해제·로그인 완료 훅 전에
+     * 403 이다. 사용자 경로 코드·묶음 쿠키 불일치·재사용·만료는 같은 422 다.
+     *
+     * @param  LoginHandoffRequest  $request  인계 코드 교환 요청
+     * @return JsonResponse `login` 과 같은 모양의 응답, 코드 무효 422, 비관리자 403, 상태 거절 401, 잠금 423
+     *
+     * @since 7.2.0
+     */
+    public function loginHandoff(LoginHandoffRequest $request): JsonResponse
+    {
+        $handoff = $this->loginHandoffService->redeem((string) $request->validated()['code'], 'admin', $request);
+
+        if ($handoff === null) {
+            return $this->validationError(['code' => [__('auth.login_handoff_invalid')]], 'auth.login_handoff_invalid');
+        }
+
+        try {
+            $data = $this->authService->loginVerifiedUser($handoff['user'], $handoff['context'], 'admin');
+
+            return $this->adminLoginStepResponse($data);
+        } catch (AuthorizationException $e) {
+            return $this->forbidden('auth.admin_required');
+        } catch (AccountLockedException $e) {
+            return $this->lockedResponse($e);
+        } catch (TwoFactorEnrollmentRequiredException $e) {
+            return $this->enrollmentRequiredResponse();
+        } catch (TwoFactorDeliveryFailedException $e) {
+            return $this->deliveryFailedResponse();
+        } catch (PasswordChangeUnavailableException $e) {
+            return $this->passwordChangeUnavailableResponse();
+        } catch (ValidationException $e) {
+            // 회원 상태 거절(차단·탈퇴·비활성) — 사용자 인계와 같은 401 이고 상태별 코어 문구를 `errors.email` 에 싣는다.
+            return $this->error('auth.login_failed', 401, $e->errors());
+        }
+    }
+
+    /**
+     * 관리자 로그인 결과를 단계별 응답으로 바꿉니다 — 비밀번호 로그인과 로그인 인계가 같은 빌더를 쓴다.
+     *
+     * @param  array<string, mixed>  $data  `AuthService::login()`·`loginVerifiedUser()` 결과
+     * @return JsonResponse 2단계 인증 안내 / 비밀번호 변경 안내 / 로그인 성공 / 비관리자 403(방어선)
+     */
+    private function adminLoginStepResponse(array $data): JsonResponse
+    {
+        // 2단계 인증이 켜져 있으면 아직 토큰도 사용자도 없다 — 관리자 판정은 코드 확인
+        // 뒤로 미룬다. 이 분기가 없으면 $data['user'] 가 없어 500 이 되고, 관리자까지
+        // 로그인할 수 없어 설정을 되돌릴 수단이 사라진다.
+        if ($data['two_factor_required'] ?? false) {
+            return $this->success($this->twoFactorRequiredMessageKey($data), $data);
+        }
+
+        // 비밀번호를 바꿔야 하는 관리자 — 아직 토큰이 없다. 비관리자는 서비스가 이 단계를 열지 않는다(A16).
+        if ($data['password_change_required'] ?? false) {
+            return $this->success($this->passwordChangeRequiredMessageKey($data), $data);
+        }
+
+        $user = $data['user'];
+
+        // 관리자 권한 확인 — 서비스가 세션을 열기 전에 이미 거절한다(AuthorizationException). 여기는 방어선이다:
+        // 이 시점에는 토큰과 web 세션이 발급되어 있으므로, 도달하면 회수하고 거절한다.
+        if (! $user->isAdmin()) {
+            $this->authService->revokeIssuedSession($user, $data['token']);
+
+            return $this->forbidden($this->adminRequiredMessageKey($data));
+        }
+
+        // 사용자 정보는 Resource로, 토큰은 그대로
+        $data['user'] = new UserResource($user);
+
+        return $this->success('auth.admin_login_success', $data);
     }
 
     /**
@@ -130,10 +213,8 @@ class AuthController extends AdminBaseController
 
             $user = $data['user'];
 
+            // 방어선 — 서비스가 세션을 열기 전에 거절한다(아래 AuthorizationException). 도달하면 발급분을 회수한다.
             if (! $user->isAdmin()) {
-                // completeTwoFactor() 는 코드 확인에 성공한 시점에 토큰을 발급한다.
-                // 관리자 판정으로 거절하면서 그 발급분을 회수하지 않으면 관리자가 아닌
-                // 사용자가 유효한 세션을 손에 쥔 채 응답만 403 을 받는다.
                 $this->authService->revokeIssuedSession($user, $data['token']);
 
                 return $this->forbidden($this->adminRequiredMessageKey($data));
@@ -142,6 +223,8 @@ class AuthController extends AdminBaseController
             $data['user'] = new UserResource($user);
 
             return $this->success('auth.admin_login_success', $data);
+        } catch (AuthorizationException $e) {
+            return $this->forbidden('auth.admin_required');
         } catch (AccountLockedException $e) {
             // 세션을 여는 지점이므로 `login` 과 같은 423 계약을 따른다.
             return $this->lockedResponse($e);
@@ -233,11 +316,11 @@ class AuthController extends AdminBaseController
 
             $data = $this->authService->resendTwoFactorChallenge(
                 $request->validated()['challenge_id'],
-                $resolvedUser
+                $resolvedUser,
+                'admin'
             );
 
-            // 이 단계는 토큰을 발급하지 않으므로 회수할 것이 없다 — 다만 완료할 수 없는
-            // 상대에게 새 인증번호를 계속 보내지는 않는다.
+            // 서비스가 재발송 전에 관리자 판정을 하므로 여기는 방어선이다(도달하지 않음을 시험이 고정).
             if ($resolvedUser === null || ! $resolvedUser->isAdmin()) {
                 return $this->forbidden('auth.admin_required');
             }
@@ -251,6 +334,8 @@ class AuthController extends AdminBaseController
                 ->header('Retry-After', (string) $e->retryAfterSeconds);
         } catch (AccountLockedException $e) {
             return $this->lockedResponse($e);
+        } catch (AuthorizationException $e) {
+            return $this->forbidden('auth.admin_required');
         } catch (TwoFactorEnrollmentRequiredException $e) {
             return $this->enrollmentRequiredResponse();
         } catch (TwoFactorDeliveryFailedException $e) {
@@ -268,9 +353,10 @@ class AuthController extends AdminBaseController
      */
     public function logout(AuthenticatedRequest $request): JsonResponse
     {
-        $this->authService->logout($request->user());
+        // 로그아웃 뒤 갈 곳(외부 인증의 IdP 로그아웃 등) — 없으면 null, 화면이 로그인 화면으로 간다(7.2.0)
+        $redirectUrl = $this->authService->logout($request->user(), 'admin');
 
-        return $this->success('auth.logout_success');
+        return $this->success('auth.logout_success', ['redirect_url' => $redirectUrl]);
     }
 
     /**

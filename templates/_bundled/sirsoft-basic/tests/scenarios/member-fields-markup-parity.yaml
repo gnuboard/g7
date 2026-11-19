@@ -1,0 +1,22 @@
+feature: 공용 회원 항목 조각과 오버라이드 조각의 항목 반복 구획은 같은 구조다
+
+description: |
+  확장 조각은 include 를 풀지 않아, 소셜 가입 창과 SSO 동의 창의 오버라이드는 공용 조각 partials/member/_member_fields 의
+  묶음 노드(항목 반복 구획)를 파일 안에 옮겨 적었다(창마다 두 번: 항목 묶음, 약관 묶음).
+  옮겨 적은 구획이 공용 조각과 어긋나지 않게 잠근다. 허용한 차이는 창의 전역 상태 이름, 노드 id 접두, 주소 검색 단추 자리 없음,
+  주소 칸의 읽기 전용 조건, 파일 갈래 없음 다섯 가지다.
+
+coverage_strategy: full
+
+axes:
+  subject: [shared_partial, override_copy]
+
+effects:
+  - shared_group_is_the_partial_root_with_one_field_iteration
+  - override_copies_group_twice_per_modal
+  - copied_group_equals_shared_group_modulo_allowed_differences
+  - copied_group_does_not_read_screen_context
+  - copied_group_is_fed_by_member_field_group_iteration
+
+test_files:
+  - templates/_bundled/sirsoft-basic/__tests__/layouts/member-fields-markup-parity.test.ts

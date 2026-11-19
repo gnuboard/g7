@@ -7,11 +7,14 @@
  * responsive.portable 을 검증한다.
  *
  * @scenario toss_payment_methods_vbank_escrow
- * @effects escrow_operation_notice_shown_when_escrow_enabled
- * @effects webhook_url_display_and_copy_use_absolute_url
+ *
+ * 효과 요약(마커 아님 — 평문): 에스크로 운영 안내 노출 조건, 웹훅 URL 표시·복사의 전체 주소 사용.
+ * 마킹은 그 효과를 재는 각 it 앞에 있다.
  */
 
 import { describe, it, expect } from 'vitest';
+import { dataBindingEngine } from '@core/template-engine/DataBindingEngine';
+import { evaluateIfCondition } from '@core/template-engine/helpers/RenderHelpers';
 import pluginSettingsLayout from '../../../layouts/admin/plugin_settings.json';
 
 /** 레이아웃 트리를 순회하며 조건을 만족하는 모든 노드를 수집한다. */
@@ -195,16 +198,45 @@ describe('plugin_settings — 가상계좌 섹션', () => {
 
   /**
    * @scenario use_escrow=on
-   * @effects admin_payment_methods_layout_contract
+   * @effects admin_payment_methods_layout_contract, escrow_operation_notice_shown_when_escrow_enabled
    */
   it('에스크로 운영 안내(부분취소 불가 · 배송정보 등록)가 use_escrow !== off 일 때만 노출된다 (W-6)', () => {
     const notice = findById(pluginSettingsLayout, 'escrow_operation_notice');
     expect(notice).toBeDefined();
-    expect(notice!.if).toBe("{{settings !== undefined && (_local.form?.use_escrow !== 'off')}}");
+    expect(notice!.if).toBe("{{(_local.form?.use_escrow ?? settings?.data?.use_escrow ?? 'off') !== 'off'}}");
 
     const texts = collect(notice, (n) => typeof n.text === 'string').map((n) => n.text as string);
     expect(texts).toContain('$t:sirsoft-tosspayments.settings.escrow_no_partial_cancel_notice');
     expect(texts).toContain('$t:sirsoft-tosspayments.settings.escrow_shipping_info_notice');
+  });
+
+  /**
+   * 설정을 받은 직후, 받은 값이 폼(`_local.form`, initLocal)에 들어오기 전 한 박자에도 에스크로를 쓰지 않으면
+   * 안내가 보이지 않는다. 진행형 소스의 initLocal 은 받은 데이터를 그린 다음 박자에 들어오므로, 종전 조건
+   * (`settings !== undefined && _local.form?.use_escrow !== 'off'`)은 그 박자에 `undefined !== 'off'` 로 참이 되어
+   * 안내가 30~50ms 번쩍였다(#915 결함군).
+   *
+   * @scenario use_escrow=off
+   * @effects escrow_operation_notice_not_flashed_before_form_filled
+   */
+  it('에스크로를 쓰지 않으면 받는 중·받은 직후(폼 채우기 전)에도 운영 안내가 보이지 않는다', () => {
+    const notice = findById(pluginSettingsLayout, 'escrow_operation_notice');
+    const shows = (settings: unknown, form: unknown): boolean => {
+      const ctx: any = { settings, _local: form === undefined ? {} : { form }, _global: {}, _computed: {}, query: {}, route: {} };
+      return evaluateIfCondition(notice!.if as string, ctx, dataBindingEngine);
+    };
+
+    // 받는 중 / 받기 실패
+    expect(shows(undefined, undefined)).toBe(false);
+    expect(shows(null, undefined)).toBe(false);
+    // 받은 직후, 폼 채우기 전 — 서버 값으로 판단한다
+    expect(shows({ data: { use_escrow: 'off' } }, undefined)).toBe(false);
+    expect(shows({ data: { use_escrow: 'on' } }, undefined)).toBe(true);
+    expect(shows({ data: { use_escrow: 'buyer_choice' } }, undefined)).toBe(true);
+    // 폼이 채워진 뒤 — 운영자가 고른 값이 우선한다
+    expect(shows({ data: { use_escrow: 'off' } }, { use_escrow: 'off' })).toBe(false);
+    expect(shows({ data: { use_escrow: 'off' } }, { use_escrow: 'on' })).toBe(true);
+    expect(shows({ data: { use_escrow: 'on' } }, { use_escrow: 'off' })).toBe(false);
   });
 
   /**
@@ -247,7 +279,7 @@ describe('plugin_settings — 가상계좌 섹션', () => {
 
   /**
    * @scenario use_escrow=on
-   * @effects admin_payment_methods_layout_contract
+   * @effects admin_payment_methods_layout_contract, webhook_url_display_and_copy_use_absolute_url
    */
   it('웹훅 URL 은 서버가 만든 전체 주소(webhook_info 데이터소스)를 받아 쓴다', () => {
     // 레이아웃에 경로만 적어 두면 운영자가 사이트 주소를 손으로 붙여야 했다.
@@ -264,7 +296,7 @@ describe('plugin_settings — 가상계좌 섹션', () => {
 
   /**
    * @scenario use_escrow=on
-   * @effects admin_payment_methods_layout_contract
+   * @effects admin_payment_methods_layout_contract, webhook_url_display_and_copy_use_absolute_url
    */
   it('웹훅 URL 표시와 복사는 같은 전체 주소 값을 쓴다 (경로 문자열 하드코딩 금지)', () => {
     const field = findById(pluginSettingsLayout, 'field_webhook_url');

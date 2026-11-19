@@ -86,5 +86,25 @@ describe('[case:components-datagrid-row-class-resolved-without-row] DataGrid row
     expect(cardOf('답글')).toContain('bg-gray-50');
     expect(cardOf('일반')).toContain('bg-white');
   });
+
+  // @scenario row_type=notice
+  // @effects datagrid_row_class_receives_selected
+  it('행 표현식에 선택 여부($selected)를 넘겨 선택된 행에 다른 클래스를 줄 수 있다', () => {
+    // 확장 앞글자 클래스(`board:bg-blue-50`)는 층 밖이라 표가 붙이는 선택 강조(층 안)를 늘 이긴다 —
+    // 선택된 공지 행이 옅어지지 않던 것(#816). 행 표현식이 선택 여부를 보고 직접 색을 고르게 한다.
+    const SELECTED_CLASS = "{{row.row_type === 'notice' ? ($selected ? 'notice-selected' : 'notice-plain') : ''}}";
+    const { container } = render(
+      <DataGrid columns={columns} data={data} rowClassName={SELECTED_CLASS} selectable selectedIds={[1]} />,
+    );
+    const rows = rowsByTitle(container);
+
+    expect(rows['공지']).toContain('notice-selected');
+    expect(rows['공지']).not.toContain('notice-plain');
+
+    const { container: unselected } = render(
+      <DataGrid columns={columns} data={data} rowClassName={SELECTED_CLASS} selectable selectedIds={[]} />,
+    );
+    expect(rowsByTitle(unselected)['공지']).toContain('notice-plain');
+  });
 });
 

@@ -114,6 +114,8 @@ describe('회원 수정 폼 — 코어 회원 저장 한 번에 주입 칸까지
             name: '회원',
             ecommerce_preferred_currency: 'USD',
             ecommerce_preferred_shipping_country: 'US',
+            // 운영자가 추가한 회원 항목의 값(#490) — 공용 조각의 칸이 폼 경로 `custom_fields.{키}` 로 폼 상태에 담는다
+            custom_fields: { job: 'worker', period: { start: '2026-01-01', end: '2026-01-31' } },
           },
         },
       },
@@ -137,5 +139,22 @@ describe('회원 수정 폼 — 코어 회원 저장 한 번에 주입 칸까지
     const body = String(saves[0][1]?.body ?? '');
     expect(body).toContain('"ecommerce_preferred_currency":"USD"');
     expect(body).toContain('"ecommerce_preferred_shipping_country":"US"');
+    // 회원 항목 값도 같은 요청 본문에 실린다 — 항목마다 따로 저장하지 않는다(파일 항목만 예외로 바로 올린다)
+    expect(JSON.parse(body).custom_fields).toEqual({ job: 'worker', period: { start: '2026-01-01', end: '2026-01-31' } });
+    expect(calls.filter(([url]) => url.includes('/fields/'))).toEqual([]);
+  });
+
+  /**
+   * @scenario entry_point=admin_update, extension_state=subscribed
+   * @effects form_calls_only_core_save_api
+   */
+  it('항목 정의(데이터소스 memberFields)는 폼 상태에 섞이지 않는다 — 저장 본문에 정의가 실려 나가지 않는다', () => {
+    const source = (userForm as Json).data_sources.find((d: Json) => d.id === 'memberFields');
+
+    expect(source).toBeDefined();
+    expect(source.initLocal).toBeUndefined();
+    expect(source.initGlobal).toBeUndefined();
+    // 파일 항목만 폼 저장과 따로 간다 — 그 요청은 공용 조각의 파일 갈래가 보낸다(저장 버튼이 아니다)
+    expect(JSON.stringify(findById(userForm.slots.content, 'footer_save_button'))).not.toContain('/fields/');
   });
 });

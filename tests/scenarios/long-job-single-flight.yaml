@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 잡 3종 × 사건 5종 × 배치 2종 중 대표 조합만 @scenario 로 매핑 — 같은 가드(JobSingleFlight·failed 가드·생성자 배치)를 공유해 나머지 조합은 동치.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#780 잡 3종 × 사건 5종 × 배치 2종 중 대표 조합만 @scenario 로 매핑 — 같은 가드(JobSingleFlight·failed 가드·생성자 배치)를 공유해 나머지 조합은 동치.
 # audit:allow scenario-scale-axis-required reason: 큐 배치·단일 실행 가드, 처리 규모 경로 무변경
 
 feature: long_job_single_flight

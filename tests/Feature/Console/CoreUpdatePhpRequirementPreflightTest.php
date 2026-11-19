@@ -244,8 +244,16 @@ class CoreUpdatePhpRequirementPreflightTest extends TestCase
     private function mockService(): MockInterface
     {
         $service = Mockery::mock(CoreUpdateService::class);
+        // handle() 은 본문 전에 동시 실행 잠금을 잡고 finally 에서 놓는다 — 잠금 획득 성공으로 둬
+        // 사전점검 분기까지 실제 커맨드가 진행하게 한다.
+        $service->shouldReceive('acquireRunLock')->andReturn(true)->byDefault();
+        $service->shouldReceive('releaseRunLock')->byDefault();
         $service->shouldReceive('normalizeRuntimeOwnershipAfterRootRun')->byDefault();
         $service->shouldReceive('generateFailureReport')->andReturn('report.log')->byDefault();
+        // 패키지 서명 검증(7.2.0)은 이 시험의 관심사가 아니다 — 통과(미서명 확인됨)로 둔다
+        $service->shouldReceive('preflightReleaseIntegrity')->byDefault();
+        $service->shouldReceive('verifyCoreZipIntegrity')->andReturn(\App\Extension\Integrity\PackageVerification::unsigned())->byDefault();
+        $service->shouldReceive('confirmCoreIntegrity')->andReturnUsing(fn ($verification) => $verification)->byDefault();
         $this->app->instance(CoreUpdateService::class, $service);
 
         return $service;

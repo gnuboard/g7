@@ -9,7 +9,7 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "admin-card"
+        "className": "board-admin-card"
     },
     "children": [
         {
@@ -17,7 +17,7 @@
             "type": "basic",
             "name": "H2",
             "props": {
-                "className": "card-title"
+                "className": "board-card-title"
             },
             "text": "$t:sirsoft-board.admin.reports.detail.histories_title"
         },
@@ -31,7 +31,7 @@
                     "name": "DataGrid",
                     "if": "{{report_detail?.data?.histories && report_detail?.data?.histories.length > 0}}",
                     "props": {
-                        "className": "histories-compact-grid",
+                        "className": "board-histories-compact-grid",
                         "data": "{{report_detail?.data?.histories ?? []}}",
                         "sortable": false,
                         "pagination": false,
@@ -50,7 +50,7 @@
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "text-tertiary"
+                                            "className": "board-text-tertiary"
                                         },
                                         "text": "{{row.created_at}}"
                                     }
@@ -66,7 +66,7 @@
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "text-xs text-gray-900 dark:text-white"
+                                            "className": "board:text-xs board:text-gray-900 board:dark:text-white"
                                         },
                                         "text": "{{row.processor_name}}{{row.processor_email ? ' (' + row.processor_email + ')' : ''}}"
                                     }
@@ -82,7 +82,7 @@
                                         "type": "basic",
                                         "name": "Span",
                                         "props": {
-                                            "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{row.type === 'reported' ? 'bg-blue-100 text-blue-800 dark:bg-blue-600 dark:text-white' : row.type === 're_reported' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-600 dark:text-white' : row.type === 'rejected' ? 'bg-purple-100 text-purple-800 dark:bg-purple-600 dark:text-white' : row.type === 'suspended' ? 'bg-orange-100 text-orange-800 dark:bg-orange-700 dark:text-white' : row.type === 'deleted' ? 'bg-gray-600 text-white dark:bg-gray-500 dark:text-white' : row.type === 'restored' ? 'bg-green-100 text-green-800 dark:bg-green-700 dark:text-white' : row.type === 'review' ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-700 dark:text-white' : row.type === 'report_cancelled' ? 'bg-slate-100 text-slate-800 dark:bg-slate-600 dark:text-white' : 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-100'}}"
+                                            "className": "board:inline-flex board:items-center board:px-2 board:py-0.5 board:rounded board:text-xs board:font-medium {{row.type === 'reported' ? 'board:bg-blue-100 board:text-blue-800 board:dark:bg-blue-600 board:dark:text-white' : row.type === 're_reported' ? 'board:bg-indigo-100 board:text-indigo-800 board:dark:bg-indigo-600 board:dark:text-white' : row.type === 'rejected' ? 'board:bg-purple-100 board:text-purple-800 board:dark:bg-purple-600 board:dark:text-white' : row.type === 'suspended' ? 'board:bg-orange-100 board:text-orange-800 board:dark:bg-orange-700 board:dark:text-white' : row.type === 'deleted' ? 'board:bg-gray-600 board:text-white board:dark:bg-gray-500 board:dark:text-white' : row.type === 'restored' ? 'board:bg-green-100 board:text-green-800 board:dark:bg-green-700 board:dark:text-white' : row.type === 'review' ? 'board:bg-cyan-100 board:text-cyan-800 board:dark:bg-cyan-700 board:dark:text-white' : row.type === 'report_cancelled' ? 'board:bg-slate-100 board:text-slate-800 board:dark:bg-slate-600 board:dark:text-white' : 'board:bg-gray-100 board:text-gray-800 board:dark:bg-gray-600 board:dark:text-gray-100'}}"
                                         },
                                         "text": "{{row.type === 'reported' ? '$t:sirsoft-board.admin.reports.detail.history_timeline.reported' : row.type === 're_reported' ? '$t:sirsoft-board.admin.reports.detail.history_timeline.re_reported' : row.type === 'rejected' ? '$t:sirsoft-board.admin.reports.detail.history_timeline.rejected' : row.type === 'suspended' ? '$t:sirsoft-board.admin.reports.detail.history_timeline.suspended' : row.type === 'deleted' ? '$t:sirsoft-board.admin.reports.detail.history_timeline.deleted' : row.type === 'restored' ? '$t:sirsoft-board.admin.reports.detail.history_timeline.restored' : row.type === 'review' ? '$t:sirsoft-board.admin.reports.detail.history_timeline.review' : row.type === 'report_cancelled' ? '$t:sirsoft-board.admin.reports.detail.history_timeline.report_cancelled' : row.action_label ?? row.type}}"
                                     }
@@ -98,7 +98,7 @@
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "text-xs text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line break-words max-w-md"
+                                            "className": "board:text-xs board:text-gray-600 board:dark:text-gray-400 board:leading-relaxed board:whitespace-pre-line board:break-words board-break-words board:max-w-md"
                                         },
                                         "text": "{{row.reason}}"
                                     }
@@ -115,14 +115,14 @@
             "name": "Div",
             "if": "{{report_detail !== undefined && report_detail !== null && (!report_detail?.data?.histories || report_detail?.data?.histories.length === 0)}}",
             "props": {
-                "className": "text-center py-8"
+                "className": "board:text-center board:py-8"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-label-subtle"
+                        "className": "board-text-label-subtle"
                     },
                     "text": "$t:sirsoft-board.admin.reports.detail.no_histories"
                 }
@@ -136,7 +136,7 @@
             "if": "{{report_detail === null}}",
             "props": {
                 "role": "alert",
-                "className": "text-center py-8 text-sm text-red-600 dark:text-red-400"
+                "className": "board:text-center board:py-8 board:text-sm board:text-red-600 board:dark:text-red-400"
             },
             "text": "$t:sirsoft-board.common.list_load_failed"
         }

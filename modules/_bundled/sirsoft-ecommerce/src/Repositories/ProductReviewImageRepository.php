@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
+use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Models\ProductReviewImage;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductReviewImageRepositoryInterface;
 
@@ -10,6 +11,9 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductReviewImageRepositor
  */
 class ProductReviewImageRepository implements ProductReviewImageRepositoryInterface
 {
+    /**
+     * @param  ProductReviewImage  $model  리뷰 이미지 모델
+     */
     public function __construct(
         protected ProductReviewImage $model
     ) {}
@@ -48,5 +52,28 @@ class ProductReviewImageRepository implements ProductReviewImageRepositoryInterf
         }
 
         return $this->model->whereIn('id', $ids)->delete();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function countByMimeTypes(array $mimeTypes): int
+    {
+        return $this->model->newQuery()
+            ->whereIn('mime_type', $mimeTypes)
+            ->count();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function chunkByMimeTypes(array $mimeTypes, int $afterId, int $limit): Collection
+    {
+        return $this->model->newQuery()
+            ->whereIn('mime_type', $mimeTypes)
+            ->where('id', '>', $afterId)
+            ->orderBy('id')
+            ->limit($limit)
+            ->get(['id', 'disk', 'path', 'mime_type', 'width', 'height']);
     }
 }

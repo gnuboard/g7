@@ -7,11 +7,15 @@ use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Enums\LanguagePackScope;
 use App\Extension\ExtensionManager;
 use App\Extension\Helpers\ExtensionProviderRegistrar;
+use App\Extension\ModuleManager;
+use App\Extension\PluginManager;
 use App\Extension\Support\LifecycleWarnings;
 use App\Models\LanguagePack;
 use App\Providers\LanguagePackServiceProvider;
 use App\Services\LanguagePack\LanguagePackRegistry;
 use App\Services\LanguagePack\LanguagePackSeedInjector;
+use Database\Seeders\CoreFieldDefinitionSeeder;
+use Database\Seeders\CoreScheduleSeeder;
 use Database\Seeders\IdentityPolicySeeder;
 use Database\Seeders\NotificationDefinitionSeeder;
 use Illuminate\Foundation\Application;
@@ -32,6 +36,7 @@ use Throwable;
  *   - 신규 활성 언어팩의 seed/{entity}.json 필터를 동적으로 추가 등록 (boot 시점에만 등록되던 회귀 보완)
  *   - 시더는 GenericEntitySyncHelper 의 sync + cleanupStale 패턴이라 idempotent — user_overrides 보존
  *   - dot-path sub-key 단위 보존: 사용자가 ko 만 수정한 row 는 ko 보존, 신규 locale (ja) 자동 추가
+ *   - 대상 확장이 비활성이거나, 활성 행만 남고 활성 디렉터리에 파일이 없으면 건너뛴다(경고 없음)
  *
  * @since 7.0.0-beta.4
  */
@@ -42,6 +47,8 @@ class RunSeedersOnLanguagePackLifecycle
     private const CORE_ENTITY_SEEDERS = [
         NotificationDefinitionSeeder::class,
         IdentityPolicySeeder::class,
+        CoreScheduleSeeder::class,
+        CoreFieldDefinitionSeeder::class,
     ];
 
     /**
@@ -230,11 +237,38 @@ class RunSeedersOnLanguagePackLifecycle
         if ($type === 'module') {
             if (in_array($targetIdentifier, $this->moduleRepository->getActiveModuleIdentifiers(), true)) {
                 $this->runModuleSeeder($targetIdentifier);
+                $this->resyncFieldDefinitions('module', $targetIdentifier);
             }
         } elseif ($type === 'plugin') {
             if (in_array($targetIdentifier, $this->pluginRepository->getActivePluginIdentifiers(), true)) {
                 $this->runPluginSeeder($targetIdentifier);
+                $this->resyncFieldDefinitions('plugin', $targetIdentifier);
             }
+        }
+    }
+
+    /**
+     * 대상 확장의 회원 항목 선언을 다시 동기화합니다 (7.2.0).
+     *
+     * 확장이 선언한 항목의 이름은 선언 동기화 때 확장 언어 파일과 활성 언어팩 파일에서 읽어 DB 행에 저장된다
+     * (`ExtensionLangTexts`). 시더 명령은 선언을 다시 맞추지 않으므로, 팩을 켜도 항목 이름에 그 언어가 들어가지 않고
+     * 끈 뒤에도 남는다. 활성 디렉터리에 파일이 없는 확장은 건너뛴다(시더와 같은 기준).
+     *
+     * @param  string  $type  module 또는 plugin
+     * @param  string  $identifier  확장 식별자
+     * @return void 반환값 없음
+     */
+    private function resyncFieldDefinitions(string $type, string $identifier): void
+    {
+        if (! $this->hasActiveFiles($type === 'module' ? 'modules' : 'plugins', $identifier)) {
+            return;
+        }
+
+        try {
+            $manager = $this->app->make($type === 'module' ? ModuleManager::class : PluginManager::class);
+            $manager->resyncFieldDefinitions($identifier);
+        } catch (Throwable $e) {
+            $this->warn('field_definitions', $identifier, $e->getMessage());
         }
     }
 
@@ -246,6 +280,14 @@ class RunSeedersOnLanguagePackLifecycle
      */
     private function runModuleSeeder(string $identifier): void
     {
+        // DB 에는 활성으로 남았지만 활성 디렉터리에 파일이 없는 확장(파일만 지워진 사이트)은 건너뛴다 — 코드가 없어 돌지 않는
+        // 확장이라 다시 시딩할 것이 없고, 시더 명령은 「찾을 수 없습니다」로 실패해 언어팩 작업 전체를 「일부 실패」로 만든다
+        if (! $this->hasActiveFiles('modules', $identifier)) {
+            Log::info('[language-pack] 활성 디렉터리에 파일이 없는 확장의 시더 재실행을 건너뜁니다', ['type' => 'modules', 'identifier' => $identifier]);
+
+            return;
+        }
+
         try {
             // 같은 요청에서 방금 설치·활성화된 확장이면 프로바이더가 없다 — 시더가 저장소를 해석하기 전에 등록(7.1.3)
             ExtensionManager::registerExtensionAutoloadPaths('modules', $identifier);
@@ -274,6 +316,14 @@ class RunSeedersOnLanguagePackLifecycle
      */
     private function runPluginSeeder(string $identifier): void
     {
+        // DB 에는 활성으로 남았지만 활성 디렉터리에 파일이 없는 확장(파일만 지워진 사이트)은 건너뛴다 — 코드가 없어 돌지 않는
+        // 확장이라 다시 시딩할 것이 없고, 시더 명령은 「찾을 수 없습니다」로 실패해 언어팩 작업 전체를 「일부 실패」로 만든다
+        if (! $this->hasActiveFiles('plugins', $identifier)) {
+            Log::info('[language-pack] 활성 디렉터리에 파일이 없는 확장의 시더 재실행을 건너뜁니다', ['type' => 'plugins', 'identifier' => $identifier]);
+
+            return;
+        }
+
         try {
             // 같은 요청에서 방금 설치·활성화된 확장이면 프로바이더가 없다 — 시더가 저장소를 해석하기 전에 등록(7.1.3)
             ExtensionManager::registerExtensionAutoloadPaths('plugins', $identifier);
@@ -292,6 +342,20 @@ class RunSeedersOnLanguagePackLifecycle
         } catch (Throwable $e) {
             $this->warn('plugin:seed', $identifier, $e->getMessage());
         }
+    }
+
+    /**
+     * 확장의 활성 디렉터리에 진입 파일(module.php · plugin.php)이 있는지 판정합니다.
+     *
+     * @param  string  $type  modules 또는 plugins
+     * @param  string  $identifier  확장 식별자
+     * @return bool 있으면 true
+     */
+    protected function hasActiveFiles(string $type, string $identifier): bool
+    {
+        $entry = $type === 'modules' ? 'module.php' : 'plugin.php';
+
+        return is_file(base_path("{$type}/{$identifier}/{$entry}"));
     }
 
     /**

@@ -9,6 +9,7 @@ use App\Support\LayoutMarkup\ComponentRegistry;
 use App\Support\LayoutMarkup\LayoutLinter;
 use App\Support\LayoutMarkup\LintWarning;
 use App\Support\LayoutMarkup\MarkupCompileContextResolver;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * LayoutLinter 단위 테스트 (`.g7.html` 마크업 형식 S6 — 정적 lint 5종).
@@ -324,6 +325,113 @@ class LayoutLinterTest extends LayoutMarkupTestCase
         ]];
 
         $this->assertNoLint(LayoutMarkupLintCode::ResponsiveBreakpointMix, $json);
+    }
+
+    // ---------------------------------------------------------------------
+    // ⑮ 한 노드의 열린 구간 겹침
+    // ---------------------------------------------------------------------
+
+    /**
+     * 열린 커스텀 구간이 다른 열린 커스텀 구간이나 프리셋과 같은 폭에서 함께 맞으면 경고하고, 겹친 키를 알린다.
+     *
+     * 엔진은 맞는 키 하나만 고른다 — `768-`·`1024-` 는 넓이가 둘 다 무한이라 먼저 적은 `768-` 이 늘 이기고,
+     * `-767`·`-1023` 은 767px 이하에서 `-1023` 값을 버리며, `768-`·`desktop` 은 커스텀이 이겨 `desktop` 값이 버려진다.
+     *
+     * @scenario compile_unit=linter,source_health=valid
+     *
+     * @effects open_responsive_range_overlap_is_warned
+     *
+     * @param  array<string, array<string, mixed>>  $responsive  노드 responsive
+     * @param  string  $keys  경고가 알려야 할 겹친 키 (선언 순서)
+     * @return void 반환값 없음
+     */
+    #[DataProvider('overlappingOpenRangeProvider')]
+    public function test_open_range_overlap_in_one_node_warns(array $responsive, string $keys): void
+    {
+        $json = ['components' => [
+            ['type' => 'basic', 'name' => 'Div', 'responsive' => $responsive],
+        ]];
+
+        $warnings = array_values(array_filter(
+            $this->linter->lint($json, 'layout', new CompileContext),
+            fn (LintWarning $w): bool => $w->getCode() === LayoutMarkupLintCode::ResponsiveOpenRangeOverlap,
+        ));
+
+        $this->assertCount(1, $warnings, '한 노드에는 경고 하나만 낸다');
+        $this->assertSame(['name' => 'Div', 'keys' => $keys], $warnings[0]->getParams());
+    }
+
+    /**
+     * 경고해야 하는 열린 구간 조합.
+     *
+     * @return array<string, array{0: array<string, array<string, mixed>>, 1: string}> 사례명 → [responsive, 겹친 키]
+     */
+    public static function overlappingOpenRangeProvider(): array
+    {
+        return [
+            '위가 열린 구간 둘' => [['768-' => ['props' => []], '1024-' => ['props' => []]], '768-, 1024-'],
+            '아래가 열린 구간 둘' => [['-767' => ['props' => []], '-1023' => ['props' => []]], '-767, -1023'],
+            '열린 구간과 겹치는 프리셋' => [['768-' => ['props' => []], 'desktop' => ['props' => []]], '768-, desktop'],
+            '방향이 다른 열린 구간이 겹침' => [['-1023' => ['props' => []], '768-' => ['props' => []]], '-1023, 768-'],
+            '겹치지 않는 키는 빼고 알림' => [['mobile' => ['props' => []], '768-' => ['props' => []], 'tablet' => ['props' => []]], '768-, tablet'],
+        ];
+    }
+
+    /**
+     * 폭마다 맞는 키가 하나뿐이거나, 겹쳐도 좁은 닫힌 구간이 이기는 의도된 덮어쓰기면 경고하지 않는다.
+     *
+     * @scenario compile_unit=linter,source_health=valid
+     *
+     * @effects disjoint_or_closed_responsive_ranges_are_not_warned
+     *
+     * @param  array<string, array<string, mixed>>  $responsive  노드 responsive
+     * @return void 반환값 없음
+     */
+    #[DataProvider('nonOverlappingRangeProvider')]
+    public function test_disjoint_or_closed_ranges_do_not_warn(array $responsive): void
+    {
+        $json = ['components' => [
+            ['type' => 'basic', 'name' => 'Div', 'responsive' => $responsive],
+        ]];
+
+        $this->assertNoLint(LayoutMarkupLintCode::ResponsiveOpenRangeOverlap, $json);
+    }
+
+    /**
+     * 경고하지 않는 대조군.
+     *
+     * @return array<string, array{0: array<string, array<string, mixed>>}> 사례명 → [responsive]
+     */
+    public static function nonOverlappingRangeProvider(): array
+    {
+        return [
+            '닫힌 구간과 그 위 열린 구간' => [['0-767' => ['props' => []], '768-' => ['props' => []]]],
+            '프리셋만' => [['mobile' => ['props' => []], 'tablet' => ['props' => []], 'desktop' => ['props' => []]]],
+            '닫힌 구간만' => [['640-767' => ['props' => []], '768-1023' => ['props' => []], '1024-1279' => ['props' => []]]],
+            '서로 안 겹치는 열린 구간' => [['-767' => ['props' => []], '768-' => ['props' => []]]],
+            '열린 구간과 안 겹치는 프리셋' => [['mobile' => ['props' => []], '768-' => ['props' => []]]],
+            '닫힌 구간이 프리셋 안을 덮어씀' => [['mobile' => ['props' => []], '0-480' => ['props' => []]]],
+            '열린 구간 하나' => [['1024-' => ['props' => []]]],
+        ];
+    }
+
+    /**
+     * 판정은 노드 단위다 — 서로 다른 노드에 흩어진 열린 구간은 겹쳐도 경고하지 않는다.
+     *
+     * @scenario compile_unit=linter,source_health=valid
+     *
+     * @effects disjoint_or_closed_responsive_ranges_are_not_warned
+     *
+     * @return void 반환값 없음
+     */
+    public function test_open_ranges_on_different_nodes_do_not_warn(): void
+    {
+        $json = ['components' => [
+            ['type' => 'basic', 'name' => 'Div', 'responsive' => ['768-' => ['props' => []]]],
+            ['type' => 'basic', 'name' => 'Span', 'responsive' => ['1024-' => ['props' => []], 'mobile' => ['props' => []]]],
+        ]];
+
+        $this->assertNoLint(LayoutMarkupLintCode::ResponsiveOpenRangeOverlap, $json);
     }
 
     // ---------------------------------------------------------------------
@@ -674,7 +782,7 @@ class LayoutLinterTest extends LayoutMarkupTestCase
     // ---------------------------------------------------------------------
 
     /**
-     * `sirsoft-basic` 의 Modal 은 hoist 3종을 하나도 선언하지 않는다 — 마크업이 조용히 사라진다.
+     * `sirsoft-basic` 의 Modal 은 hoist 3종 중 `footer` 만 선언한다 — 나머지 둘은 마크업이 조용히 사라진다.
      *
      * @scenario compile_unit=linter,source_health=valid
      *
@@ -686,7 +794,10 @@ class LayoutLinterTest extends LayoutMarkupTestCase
     {
         $linter = $this->linterFor('sirsoft-basic');
 
-        foreach (['footer', 'titlePrefix', 'titleSuffix'] as $prop) {
+        // `footer` 는 #869 에서 sirsoft-basic Modal 이 고정 하단으로 선언했다 — 그 prop 만 경고하지 않는다.
+        $this->assertNoLint(LayoutMarkupLintCode::HoistPropNotSupportedByTemplate, $this->modalJson('footer'), linter: $linter);
+
+        foreach (['titlePrefix', 'titleSuffix'] as $prop) {
             $this->assertHasLint(
                 LayoutMarkupLintCode::HoistPropNotSupportedByTemplate,
                 $this->modalJson($prop),

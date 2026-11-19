@@ -17,11 +17,7 @@ import { LayoutEditorProvider, useLayoutEditor } from '../../LayoutEditorContext
 
 function makeWrapper(): React.FC<{ children: React.ReactNode }> {
   return ({ children }) =>
-    React.createElement(
-      LayoutEditorProvider,
-      { templateIdentifier: 'sirsoft-basic', initialLocale: 'ko' },
-      children,
-    );
+    React.createElement(LayoutEditorProvider, { templateIdentifier: 'sirsoft-basic', initialLocale: 'ko', children });
 }
 
 function combinedHook() {
@@ -42,6 +38,10 @@ describe('useLayoutDocument', () => {
     }
   });
 
+  /**
+   * @scenario hook=layout_document
+   * @effects layout_doc_no_route_skips_fetch
+   */
   it('selectedRoute 가 null 이면 fetch 미발생 + document=null', async () => {
     fetchSpy.mockResolvedValue({
       ok: true,
@@ -60,6 +60,10 @@ describe('useLayoutDocument', () => {
     expect(result.current.document.isDirty).toBe(false);
   });
 
+  /**
+   * @scenario hook=layout_document
+   * @effects layout_doc_fetch_url_carries_source_meta_query
+   */
   it('SELECT_ROUTE 후 with_source_meta=1 쿼리 포함된 URL 로 fetch 발생', async () => {
     fetchSpy.mockResolvedValue({
       ok: true,
@@ -88,6 +92,10 @@ describe('useLayoutDocument', () => {
     expect((result.current.document.document?.raw as any).components[0].id).toBe('root');
   });
 
+  /**
+   * @scenario hook=layout_document
+   * @effects layout_doc_fetch_attaches_bearer_token
+   */
   it('Sanctum 토큰이 있으면 Authorization Bearer 헤더 부착', async () => {
     if (typeof window !== 'undefined') {
       window.localStorage.setItem('auth_token', 'test-token-xyz');
@@ -114,6 +122,10 @@ describe('useLayoutDocument', () => {
     expect(headers.Authorization).toBe('Bearer test-token-xyz');
   });
 
+  /**
+   * @scenario hook=layout_document
+   * @effects layout_doc_403_maps_forbidden_with_permissions
+   */
   it('403 응답 → error.kind=forbidden + status + 백엔드 메시지 + 필요 권한 보존', async () => {
     fetchSpy.mockResolvedValue({
       ok: false,
@@ -146,6 +158,10 @@ describe('useLayoutDocument', () => {
     expect(result.current.document.document).toBeNull();
   });
 
+  /**
+   * @scenario hook=layout_document
+   * @effects layout_doc_401_maps_unauthorized_with_permissions
+   */
   it('401 응답 → error.kind=unauthorized + 필요 권한 보존 (세션 만료 분기)', async () => {
     fetchSpy.mockResolvedValue({
       ok: false,
@@ -175,6 +191,10 @@ describe('useLayoutDocument', () => {
     expect(err.requiredPermissions).toBe('core.templates.layouts.edit');
   });
 
+  /**
+   * @scenario hook=layout_document
+   * @effects layout_doc_404_maps_not_found
+   */
   it('404 응답 → error.kind=not_found', async () => {
     fetchSpy.mockResolvedValue({
       ok: false,
@@ -197,6 +217,10 @@ describe('useLayoutDocument', () => {
     });
   });
 
+  /**
+   * @scenario hook=layout_document
+   * @effects layout_doc_500_maps_server_error
+   */
   it('500 응답 → error.kind=server_error', async () => {
     fetchSpy.mockResolvedValue({
       ok: false,
@@ -219,6 +243,10 @@ describe('useLayoutDocument', () => {
     });
   });
 
+  /**
+   * @scenario hook=layout_document
+   * @effects layout_doc_fetch_reject_maps_network
+   */
   it('fetch reject → error.kind=network', async () => {
     fetchSpy.mockRejectedValue(new Error('connection refused'));
 
@@ -237,6 +265,10 @@ describe('useLayoutDocument', () => {
     expect(result.current.document.error?.message).toContain('connection refused');
   });
 
+  /**
+   * @scenario hook=layout_document
+   * @effects layout_doc_slash_layout_name_kept_as_path_segment
+   */
   it('슬래시 포함 layoutName(`auth/login`) 도 fetch URL 에 그대로 path segment 로 들어가야 함 (%2F 인코딩 금지)', async () => {
     // 회귀 시그널: 슬래시가 `%2F` 로 인코딩되면 Laravel 라우터의 segment
     // 경계 검출이 깨져 404 반환. 정공 패턴인 `LayoutLoader.ts:742` 는
@@ -267,6 +299,10 @@ describe('useLayoutDocument', () => {
     expect(url).toContain('/api/layouts/sirsoft-basic/auth/login.json');
   });
 
+  /**
+   * @scenario hook=layout_document
+   * @effects layout_doc_reload_refetches
+   */
   it('reload() 호출 시 fetch 재발생', async () => {
     fetchSpy.mockResolvedValue({
       ok: true,
@@ -297,6 +333,10 @@ describe('useLayoutDocument', () => {
   // reload 가 캐시-버스트 nonce 를 올리지 않아 fetch URL `?v=<ver>.<nonce>` 이 복원 전과 동일 →
   // 브라우저 HTTP 캐시가 stale 응답을 줘 캔버스가 복원 버전으로 갱신되지 않고 새로고침해야 했다
   // reload 는 항상 nonce 를 올려 새 URL 로 fetch 한다.
+  /**
+   * @scenario hook=layout_document
+   * @effects layout_doc_reload_bumps_cache_bust_nonce
+   */
   it('reload() 시 fetch URL 의 cache-bust nonce 가 증가 (버전 복원 stale 회피)', async () => {
     fetchSpy.mockResolvedValue({
       ok: true,
@@ -343,6 +383,10 @@ describe('useLayoutDocument — 세션 편집 캐시', () => {
     });
   }
 
+  /**
+   * @scenario hook=layout_document
+   * @effects layout_doc_session_cache_restores_dirty_without_refetch
+   */
   it('A 편집(dirty) → B 이동 → A 복귀 시 캐시 복원(재fetch 없음) + dirty 유지', async () => {
     fetchSpy.mockImplementation(async (url: string) => ({
       ok: true,
@@ -376,6 +420,10 @@ describe('useLayoutDocument — 세션 편집 캐시', () => {
     expect(comps.some((c) => c.id === 'added')).toBe(true);
   });
 
+  /**
+   * @scenario hook=layout_document
+   * @effects layout_doc_reset_ignores_cache_and_clears_dirty
+   */
   it('reload(초기화) → 캐시 무시하고 서버 재fetch + dirty 키 해제 + reloadCounter 증가', async () => {
     fetchSpy.mockResolvedValue({
       ok: true,
@@ -404,6 +452,10 @@ describe('useLayoutDocument — 세션 편집 캐시', () => {
     expect(comps.some((c) => c.id === 'x')).toBe(false);
   });
 
+  /**
+   * @scenario hook=layout_document
+   * @effects layout_doc_save_success_clears_dirty
+   */
   it('저장 성공 → dirty 키 해제(트리 배지 사라짐)', async () => {
     fetchSpy.mockImplementation(async (_url: string, init?: RequestInit) => {
       if (init?.method === 'PUT') {
@@ -428,6 +480,10 @@ describe('useLayoutDocument — 세션 편집 캐시', () => {
     expect(result.current.document.dirtyLayoutNames.has('home')).toBe(false);
   });
 
+  /**
+   * @scenario hook=layout_document
+   * @effects layout_doc_save_returns_current_version
+   */
   it('저장 성공 응답의 current_version 을 SaveResult 로 반환 (트리 버전 배지 동기화)', async () => {
     fetchSpy.mockImplementation(async (_url: string, init?: RequestInit) => {
       if (init?.method === 'PUT') {
@@ -453,6 +509,10 @@ describe('useLayoutDocument — 세션 편집 캐시', () => {
     expect(saveResult.savedLayoutName).toBe('home');
   });
 
+  /**
+   * @scenario hook=layout_document
+   * @effects layout_doc_save_without_version_degrades_undefined
+   */
   it('저장 성공 응답에 current_version 이 없으면(구버전 백엔드) newContentVersion=undefined 로 디그레이드', async () => {
     fetchSpy.mockImplementation(async (_url: string, init?: RequestInit) => {
       if (init?.method === 'PUT') {
@@ -482,11 +542,19 @@ describe('useLayoutDocument — 세션 편집 캐시', () => {
 // 모달 편집 모드 저장 격리 (modals[i] 패치)
 // ============================================================================
 describe('extractModalIdFromPath', () => {
+  /**
+   * @scenario hook=layout_document
+   * @effects layout_doc_extracts_modal_id_from_path
+   */
   it('__modal__/{modalId} 에서 modalId 추출 (reducer/matchStateScope 와 동일 형식)', () => {
     expect(extractModalIdFromPath('__modal__/login')).toBe('login');
     expect(extractModalIdFromPath('__modal__/delete_confirm_modal')).toBe('delete_confirm_modal');
   });
 
+  /**
+   * @scenario hook=layout_document
+   * @effects layout_doc_extracts_modal_id_from_path
+   */
   it('형식 불일치 / null → null', () => {
     expect(extractModalIdFromPath('/about')).toBeNull();
     expect(extractModalIdFromPath('__base__/_user_base')).toBeNull();
@@ -499,12 +567,20 @@ describe('extractModalIdFromPath', () => {
 });
 
 describe('extractIterationSourcePath', () => {
+  /**
+   * @scenario hook=layout_document
+   * @effects layout_doc_extracts_iteration_source_path
+   */
   it('__iteration__/{sourcePath} 에서 sourcePath 추출', () => {
     expect(extractIterationSourcePath('__iteration__/0.children.2')).toBe('0.children.2');
     expect(extractIterationSourcePath('__iteration__/2.children.5.children.0')).toBe(
       '2.children.5.children.0',
     );
   });
+  /**
+   * @scenario hook=layout_document
+   * @effects layout_doc_extracts_iteration_source_path
+   */
   it('형식 불일치 → null', () => {
     expect(extractIterationSourcePath('/about')).toBeNull();
     expect(extractIterationSourcePath('__modal__/x')).toBeNull();
@@ -551,6 +627,10 @@ describe('useLayoutDocument — 반복 항목 편집 저장 격리', () => {
     });
   }
 
+  /**
+   * @scenario hook=layout_document
+   * @effects layout_doc_iteration_load_exposes_item_template_only
+   */
   it('iteration 모드 로드 → 원본 노드 children(항목 템플릿) 단독 노출 + iterationContext', async () => {
     fetchSpy.mockResolvedValue({ ok: true, json: async () => ({ data: hostLayout }) });
     const { result } = renderHook(() => combinedHook(), { wrapper: makeWrapper() });
@@ -570,6 +650,10 @@ describe('useLayoutDocument — 반복 항목 편집 저장 격리', () => {
     expect((doc.iterationContext?.hostRaw as any).components[0].id).toBe('header');
   });
 
+  /**
+   * @scenario hook=layout_document
+   * @effects layout_doc_iteration_save_patches_only_source_children
+   */
   it('iteration 저장 → 호스트 PUT, 원본 노드 children 만 갱신, iteration 정의/본체/data_sources 보존', async () => {
     fetchSpy.mockResolvedValue({ ok: true, json: async () => ({ data: hostLayout }) });
     const { result } = renderHook(() => combinedHook(), { wrapper: makeWrapper() });
@@ -620,6 +704,10 @@ describe('useLayoutDocument — 반복 항목 편집 저장 격리', () => {
   // 저장은 그 호스트 layoutName 의 route 모드 캐시도 stale 로 만들고, 클라이언트는 부팅 시점
   // cache_version 만 알아 GET 이 옛 URL 로 stale 응답을 받을 수 있었다. 수정 후엔 (1) 호스트
   // route 캐시가 비워져 서버 재fetch (2) GET URL `?v=` 에 단조 증가 nonce 가 붙어 신선 응답.
+  /**
+   * @scenario hook=layout_document
+   * @effects layout_doc_iteration_exit_refetches_host_route
+   */
   it('iteration 저장 → 편집 종료 시 호스트 route 모드가 서버 재fetch + cache-bust nonce 증가', async () => {
     fetchSpy.mockResolvedValue({ ok: true, json: async () => ({ data: hostLayout }) });
     const { result } = renderHook(() => combinedHook(), { wrapper: makeWrapper() });
@@ -737,6 +825,10 @@ describe('useLayoutDocument — 모달 편집 모드 저장 격리', () => {
     });
   }
 
+  /**
+   * @scenario hook=layout_document
+   * @effects layout_doc_modal_load_extracts_modal_fragment
+   */
   it('모달 모드 로드 → 호스트에서 modals[i] 조각 추출(raw.components = 모달 components) + modalContext 보유', async () => {
     fetchSpy.mockResolvedValue({ ok: true, json: async () => ({ data: hostLayout }) });
 
@@ -766,6 +858,10 @@ describe('useLayoutDocument — 모달 편집 모드 저장 격리', () => {
     expect((doc.modalContext?.hostRaw as any).components[0].id).toBe('host-body');
   });
 
+  /**
+   * @scenario hook=layout_document
+   * @effects layout_doc_modal_save_patches_only_that_modal
+   */
   it('모달 저장 → 호스트 레이아웃 PUT, modals[i].components 만 갱신하고 본체/타모달/data_sources 보존', async () => {
     fetchSpy.mockResolvedValue({ ok: true, json: async () => ({ data: hostLayout }) });
 
@@ -827,6 +923,10 @@ describe('useLayoutDocument — 모달 편집 모드 저장 격리', () => {
   // editIndexPath[0] 인덱스로 모달 노드를 찾으려 했다. 마스킹이 배열 길이/인덱스를 재정렬해
   // editedComps[editIndexPath[0]] 이 모달 노드가 아닌 엉뚱한 route 자식(또는 undefined)을 가리켜
   // modals[i] 가 미갱신 → node.text 키화가 DB content 에 영속되지 않음.
+  /**
+   * @scenario hook=layout_document
+   * @effects layout_doc_modal_save_from_base_host_persists_modal
+   */
   it('base 출처 호스트(extends)에서도 모달 편집분이 modals[i] 로 정확히 영속', async () => {
     // register 형: 호스트 components 가 전부 base 출처(_fromBase). slot 래퍼 Div 는 children 끌어올림.
     const baseHostLayout = {

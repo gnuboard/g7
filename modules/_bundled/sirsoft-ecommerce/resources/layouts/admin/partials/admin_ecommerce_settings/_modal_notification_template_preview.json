@@ -25,7 +25,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "ecommerce-form-label"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.preview_modal.rendered_subject"
                         },
@@ -33,7 +33,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-primary text-sm bg-gray-50 dark:bg-gray-900 rounded-md p-3 border border-gray-200 dark:border-gray-700"
+                                "className": "ecommerce-text-primary ecommerce:text-sm ecommerce:bg-gray-50 ecommerce:dark:bg-gray-900 ecommerce:rounded-md ecommerce:p-3 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700"
                             },
                             "text": "{{_global.ecommerce_notification_template_form_modal?.preview?.subject ?? ''}}"
                         }
@@ -47,7 +47,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "ecommerce-form-label"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.preview_modal.rendered_body"
                         },
@@ -58,7 +58,7 @@
                             "props": {
                                 "content": "{{_global.ecommerce_notification_template_form_modal?.preview?.body ?? ''}}",
                                 "isHtml": "{{((availableChannels?.data?.channels ?? []).find(c => c.id === (_global.ecommerce_notification_template_form_modal?.template?.channel ?? query.channel ?? 'mail'))?.template_editor ?? 'plain') === 'rich'}}",
-                                "className": "prose dark:prose-invert prose-sm max-w-none bg-white dark:bg-gray-900 rounded-md p-4 border border-gray-200 dark:border-gray-700 max-h-[400px] overflow-y-auto"
+                                "className": "ecommerce:prose ecommerce:dark:prose-invert ecommerce:prose-sm ecommerce:max-w-none ecommerce:bg-white ecommerce:dark:bg-gray-900 ecommerce:rounded-md ecommerce:p-4 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:max-h-[400px] ecommerce:overflow-y-auto"
                             }
                         }
                     ]
@@ -67,7 +67,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex justify-end border-t border-gray-200 dark:border-gray-700"
+                        "className": "ecommerce:flex ecommerce:justify-end ecommerce:border-t ecommerce:border-gray-200 ecommerce:dark:border-gray-700"
                     },
                     "children": [
                         {
@@ -83,7 +83,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                "className": "ecommerce-text-body ecommerce:px-4 ecommerce:py-2 ecommerce:rounded-md ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700 ecommerce:transition-colors"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.settings.notification_definitions.preview_modal.btn_close"
                         }

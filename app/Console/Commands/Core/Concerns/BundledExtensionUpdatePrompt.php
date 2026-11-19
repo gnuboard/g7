@@ -12,11 +12,15 @@ use App\Extension\Vendor\VendorMode;
 use App\Search\SearchIndexMaintenanceManager;
 use App\Services\CoreUpdateService;
 use App\Services\LanguagePackService;
+use App\Support\ConfigCacheHelper;
+use App\Support\ExecutionEnvironment;
 use App\Support\ExtensionDependencyOrder;
+use App\Support\RouteCacheHelper;
 use App\Support\UpdateChildEnv;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 /**
  * 코어 업데이트 완료 후 _bundled 번들에 신버전이 포함된
@@ -38,6 +42,19 @@ use Illuminate\Support\Facades\Log;
 trait BundledExtensionUpdatePrompt
 {
     use RendersLayoutSyncResult;
+
+    /**
+     * 자식 프로세스에 넘길 번들 업데이트 매니페스트의 위치 (`storage/` 기준 상대 경로).
+     *
+     * 정리 주체는 아래 `spawnBundledUpdates()` 의 `finally` 하나뿐이었다 — FPM 타임아웃 ·
+     * OOM-kill 로 그 코드가 돌지 않으면 파일이 영구히 남는다. 회수는
+     * `StorageLeftoverPruneService` 의 `core_pending` 대상군이 맡고, 이름 규약의 일치는
+     * 계약 테스트가 이 상수를 소스에서 읽어 잠근다.
+     */
+    private const BUNDLED_MANIFEST_DIR = 'app/core_pending';
+
+    /** 번들 업데이트 매니페스트 파일 이름 접두사. */
+    private const BUNDLED_MANIFEST_PREFIX = 'bundled-updates-manifest_';
 
     /**
      * 번들 업데이트 목록 수집.
@@ -114,18 +131,7 @@ trait BundledExtensionUpdatePrompt
         }
 
         // 전역 레이아웃 전략
-        $globalStrategy = 'overwrite';
-        if (! $force) {
-            $answer = $this->unifiedChoice(
-                __('extensions.commands.bundled_update.strategy_question'),
-                [
-                    'overwrite' => __('extensions.commands.bundled_update.strategy_options.overwrite'),
-                    'keep' => __('extensions.commands.bundled_update.strategy_options.keep'),
-                ],
-                'overwrite',
-            );
-            $globalStrategy = $answer;
-        }
+        $globalStrategy = $this->askGlobalLayoutStrategy($force);
 
         // 확장별 전략 오버라이드
         $strategies = $this->collectPerExtensionStrategies($updates, $globalStrategy, $force);
@@ -171,6 +177,32 @@ trait BundledExtensionUpdatePrompt
     }
 
     /**
+     * 모든 확장에 기본 적용할 레이아웃 전략을 정합니다.
+     *
+     * 질문을 띄울 수 없는 실행(콘솔 없음·`--no-interaction`)은 묻지 않고 기본값 overwrite 를 쓴다. 콘솔이 없는데
+     * choice() 를 부르면 Windows 처럼 비대화 감지가 없는 환경에서 오지 않을 응답을 무한히 기다린다. `--yes` 는 확인
+     * 질문에만 답하므로 이 선택을 정하지 않는다 — 콘솔이 없으면 `--yes` 가 있어도 기본값이다.
+     *
+     * @param  bool  $force  true 면 묻지 않고 overwrite
+     * @return string 레이아웃 전략 (overwrite|keep)
+     */
+    private function askGlobalLayoutStrategy(bool $force): string
+    {
+        if ($force || ! $this->canShowPrompt()) {
+            return 'overwrite';
+        }
+
+        return (string) $this->choice(
+            __('extensions.commands.bundled_update.strategy_question'),
+            [
+                'overwrite' => __('extensions.commands.bundled_update.strategy_options.overwrite'),
+                'keep' => __('extensions.commands.bundled_update.strategy_options.keep'),
+            ],
+            'overwrite',
+        );
+    }
+
+    /**
      * 확장별 전략 오버라이드 수집.
      *
      * @param  array  $updates  collectBundledUpdates() 반환값
@@ -189,11 +221,13 @@ trait BundledExtensionUpdatePrompt
             }
         }
 
-        if ($force) {
+        // 질문을 띄울 수 없는 실행은 확장별 덮어쓰기를 묻지 않는다(전역 전략 그대로).
+        // 선택 질문이라 `--yes` 가 「예」로 답하지 않는다 — 답하면 뒤따르는 ask() 가 콘솔 없는 실행을 멈춰 세운다.
+        if ($force || ! $this->canShowPrompt()) {
             return $strategies;
         }
 
-        if (! $this->unifiedConfirm(__('extensions.commands.bundled_update.override_confirm'), false, optional: true)) {
+        if (! $this->optionalConfirm(__('extensions.commands.bundled_update.override_confirm'), false)) {
             return $strategies;
         }
 
@@ -211,7 +245,7 @@ trait BundledExtensionUpdatePrompt
         $overrideStrategy = $globalStrategy === 'overwrite' ? 'keep' : 'overwrite';
 
         $this->info(__('extensions.commands.bundled_update.override_notice', ['strategy' => $overrideStrategy]));
-        $selected = $this->unifiedAsk(__('extensions.commands.bundled_update.override_ask'), '');
+        $selected = $this->ask(__('extensions.commands.bundled_update.override_ask'), '');
 
         if (trim((string) $selected) === '') {
             return $strategies;
@@ -364,11 +398,15 @@ trait BundledExtensionUpdatePrompt
      */
     private function spawnBundledUpdates(array $manifest): ?array
     {
-        if (! function_exists('proc_open')) {
+        // 가용성 판정은 SSoT 한 곳이 소유한다 (#609 D34 이관 완료) — 판정이 틀리면
+        // in-process 폴백으로 넘어가지 못하고 그 자리에서 `Error` 로 죽는다.
+        if (! ExecutionEnvironment::hasFunction('proc_open')) {
             return null;
         }
 
-        $manifestPath = storage_path('app/core_pending'.DIRECTORY_SEPARATOR.'bundled-updates-manifest_'.uniqid().'.json');
+        // 고유 이름은 차단 가능한 `uniqid()` 가 아니라 `Str::random()` 으로 만든다 —
+        // 이 경로는 무CLI 환경에서 웹 요청 안(in-process)으로도 도달한다.
+        $manifestPath = storage_path(self::BUNDLED_MANIFEST_DIR.DIRECTORY_SEPARATOR.self::BUNDLED_MANIFEST_PREFIX.Str::random(16).'.json');
         File::ensureDirectoryExists(dirname($manifestPath));
         File::put($manifestPath, json_encode($manifest, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
 
@@ -391,7 +429,10 @@ trait BundledExtensionUpdatePrompt
             ];
 
             // ENV 합집합 + 업데이트 트리면 APP_VERSION·G7_UPDATE_IN_PROGRESS 고정 (#145 F10 — 상속 env 의 옛 버전이
-            // 자식의 config/hooks 캐시에 구워지지 않게 한다)
+            // 자식의 config/hooks 캐시에 구워지지 않게 한다).
+            // 상속 env 의 `getenv` 판정과 `$_SERVER` 폴백은 형제 러너(SubprocessCommandRunner::inheritedEnvironment)
+            // 가 SSoT 로 갖는다 — 이 자리는 `proc_open` 가드 안쪽이라 「proc_open 은 되는데 getenv 만 막힌」
+            // 조합에서 무가드 호출이 치명 종료한다. UpdateChildEnv::build() 가 그 러너를 경유한다.
             $env = UpdateChildEnv::build();
 
             // audit:allow spawn-after-vendor-swap-clears-package-manifest 이 spawn 은 vendor 를 바꾸지 않고,
@@ -432,30 +473,47 @@ trait BundledExtensionUpdatePrompt
             fclose($pipes[2]);
             $exitCode = proc_close($process);
 
-            if ($resultPayload === null) {
-                // 결과를 못 남기고 비정상 종료한 자식(치명 오류·메모리 초과 등)은 실패 1건으로 센다 — 0/0 으로 두면
-                // 부모가 성공으로 끝내 자동화 스크립트가 실패를 알 수 없다(#144). 정상 종료인데 결과가 없으면 종전대로 0/0.
-                if ($exitCode !== 0) {
-                    Log::warning('번들 spawn 자식이 결과 페이로드 없이 비정상 종료 — 실패 1건으로 처리', ['exit_code' => $exitCode]);
-
-                    return ['success' => 0, 'failed' => 1];
-                }
-
-                Log::warning('번들 spawn 자식이 결과 페이로드를 출력하지 않음 — 카운트 0 으로 처리', ['exit_code' => $exitCode]);
-
-                return ['success' => 0, 'failed' => 0];
-            }
-
-            return [
-                'success' => (int) ($resultPayload['success'] ?? 0),
-                'failed' => (int) ($resultPayload['failed'] ?? 0),
-                'skipped' => (int) ($resultPayload['skipped'] ?? 0),
-            ];
+            return $this->bundledSpawnOutcome($resultPayload, $exitCode);
         } finally {
             if (File::exists($manifestPath)) {
                 File::delete($manifestPath);
             }
         }
+    }
+
+    /**
+     * spawn 자식의 결과 페이로드와 종료 코드로 일괄 업데이트 결과를 정합니다.
+     *
+     * 자식(`core:execute-bundled-updates`)은 대상이 0건이어도 정상 종료 경로에서 결과 줄(`[BUNDLED-RESULT]`)을 늘 출력한다.
+     * 그러니 결과 줄이 없으면 종료 코드와 무관하게 결과를 알 수 없는 것이고, 실패 1건으로 센다 — 0/0 으로 두면 부모가
+     * 성공으로 끝내 자동화 스크립트가 실패를 알 수 없다(비정상 종료 #144, 정상 종료인데 결과 없음 #888).
+     *
+     * @param  array<string, mixed>|null  $resultPayload  결과 줄에서 읽은 페이로드 (없으면 null)
+     * @param  int  $exitCode  자식 종료 코드
+     * @return array{success: int, failed: int, skipped?: int} 일괄 업데이트 결과
+     */
+    private function bundledSpawnOutcome(?array $resultPayload, int $exitCode): array
+    {
+        if ($resultPayload !== null) {
+            return [
+                'success' => (int) ($resultPayload['success'] ?? 0),
+                'failed' => (int) ($resultPayload['failed'] ?? 0),
+                'skipped' => (int) ($resultPayload['skipped'] ?? 0),
+            ];
+        }
+
+        // 어느 항목까지 갱신됐는지 알 수 없다 — 화면에 실패 항목이 없으므로 무엇을 확인할지 알린다
+        if ($exitCode !== 0) {
+            // 결과를 못 남기고 비정상 종료한 자식(치명 오류·메모리 초과 등)
+            Log::warning('번들 spawn 자식이 결과 페이로드 없이 비정상 종료 — 실패 1건으로 처리', ['exit_code' => $exitCode]);
+            $this->warn(__('extensions.commands.bundled_update.child_aborted', ['code' => $exitCode]));
+        } else {
+            // 정상 종료인데 결과 줄이 없다(출력이 잘렸거나 결과 줄을 내지 않는 자식)
+            Log::warning('번들 spawn 자식이 결과 페이로드 없이 정상 종료 — 실패 1건으로 처리', ['exit_code' => $exitCode]);
+            $this->warn(__('extensions.commands.bundled_update.child_no_result'));
+        }
+
+        return ['success' => 0, 'failed' => 1];
     }
 
     /**
@@ -480,8 +538,40 @@ trait BundledExtensionUpdatePrompt
         array $strategies,
         bool $rebuildSearchIndex = false,
     ): array {
+        // proc_open 이 없는 서버: 확장마다 config·라우트 캐시를 다시 굽는 일회용 앱 부팅이 이 프로세스에 쌓이지 않도록
+        // 재굽기를 끝에 한 번으로 모은다(그 사이 캐시를 읽는 새 프로세스는 뜰 수 없다). proc_open 은 있는데 자식을
+        // 못 띄운 경우는 종전대로 항목마다 굽는다 — 그 사이 뜨는 composer 등이 옛 캐시로 부팅하지 않게.
+        if (! ExecutionEnvironment::hasFunction('proc_open')) {
+            return ConfigCacheHelper::deferRebuilds(fn () => RouteCacheHelper::deferRebuilds(fn () => $this->runBulkUpdateItemsInProcess(
+                $moduleManager, $pluginManager, $templateManager, $updates, $strategies, $rebuildSearchIndex,
+            )));
+        }
+
+        return $this->runBulkUpdateItemsInProcess($moduleManager, $pluginManager, $templateManager, $updates, $strategies, $rebuildSearchIndex);
+    }
+
+    /**
+     * {@see executeBulkUpdateInProcess()} 의 항목 반복 — 실패 항목은 이름과 다시 실행할 명령을 끝에 출력한다.
+     *
+     * @param  ModuleManager  $moduleManager  모듈 업데이트에 사용할 매니저
+     * @param  PluginManager  $pluginManager  플러그인 업데이트에 사용할 매니저
+     * @param  TemplateManager  $templateManager  템플릿 업데이트에 사용할 매니저
+     * @param  array  $updates  collectBundledUpdates() 반환값
+     * @param  array  $strategies  확장별 레이아웃 전략 (key: "{type}:{identifier}")
+     * @param  bool  $rebuildSearchIndex  업데이트 후 검색 인덱스 재생성 여부
+     * @return array{success: int, failed: int, skipped: int, has_updates: bool}
+     */
+    private function runBulkUpdateItemsInProcess(
+        ModuleManager $moduleManager,
+        PluginManager $pluginManager,
+        TemplateManager $templateManager,
+        array $updates,
+        array $strategies,
+        bool $rebuildSearchIndex,
+    ): array {
         $success = 0;
         $failed = 0;
+        $failedItems = [];
         // 잠금 저장소 장애로 멈췄는지 — 처리한 항목 수로 남은(건너뛴) 항목 수를 센다(#161 D8)
         $aborted = false;
         $attempted = 0;
@@ -520,6 +610,7 @@ trait BundledExtensionUpdatePrompt
                 break;
             } catch (\Throwable $e) {
                 $failed++;
+                $failedItems[] = ['type' => $type, 'identifier' => $id, 'strategy' => $strategy, 'reason' => $e->getMessage()];
                 $this->warn(__('extensions.commands.bundled_update.item_failed', ['message' => $e->getMessage()]));
                 Log::error('번들 일괄 업데이트 실패', ['type' => $type, 'id' => $id, 'error' => $e->getMessage()]);
             }
@@ -543,6 +634,7 @@ trait BundledExtensionUpdatePrompt
                 break;
             } catch (\Throwable $e) {
                 $failed++;
+                $failedItems[] = ['type' => 'template', 'identifier' => $id, 'strategy' => $strategy, 'reason' => $e->getMessage()];
                 $this->warn(__('extensions.commands.bundled_update.item_failed', ['message' => $e->getMessage()]));
                 Log::error('번들 일괄 업데이트 실패', ['type' => 'template', 'id' => $id, 'error' => $e->getMessage()]);
             }
@@ -568,6 +660,7 @@ trait BundledExtensionUpdatePrompt
                 break;
             } catch (\Throwable $e) {
                 $failed++;
+                $failedItems[] = ['type' => 'lang_pack', 'identifier' => $id, 'strategy' => null, 'reason' => $e->getMessage()];
                 $this->warn(__('extensions.commands.bundled_update.item_failed', ['message' => $e->getMessage()]));
                 Log::error('번들 일괄 업데이트 실패', ['type' => 'lang_pack', 'id' => $id, 'error' => $e->getMessage()]);
             }
@@ -578,8 +671,9 @@ trait BundledExtensionUpdatePrompt
 
         $this->newLine();
         $this->info(__('extensions.commands.bundled_update.completed', ['success' => $success, 'failed' => $failed]));
+        ExecuteBundledUpdatesCommand::renderFailedItems($this, $failedItems);
         if ($aborted) {
-            $this->error(__('extensions.commands.bundled_update.lock_unavailable_aborted', ['count' => $skipped]));
+            $this->error(trans_count('extensions.commands.bundled_update.lock_unavailable_aborted', ['count' => $skipped]));
         }
 
         // 잠금 저장소 장애로 멈췄으면 검색 인덱스 재생성도 하지 않는다 — 확장 갱신이 끝나지 않았다
@@ -611,7 +705,8 @@ trait BundledExtensionUpdatePrompt
             return true;
         }
 
-        if ($force) {
+        // 선택 질문 — `--yes` 는 확인 질문에만 답하므로 재생성을 켜지 않는다. 질문을 띄울 수 없으면 기본값(아니오)
+        if ($force || ! $this->canShowPrompt()) {
             return false;
         }
 
@@ -625,7 +720,7 @@ trait BundledExtensionUpdatePrompt
         $this->newLine();
         $this->line('  '.__('search.index.rebuild_cost_warning'));
 
-        return $this->unifiedConfirm(__('search.index.rebuild_after_bulk_confirm'), false, optional: true);
+        return $this->optionalConfirm(__('search.index.rebuild_after_bulk_confirm'), false);
     }
 
     /**
@@ -647,6 +742,11 @@ trait BundledExtensionUpdatePrompt
 
         foreach ($report->failed as $identifier => $message) {
             $this->warn('  '.__('search.index.rebuild_failed_item', ['index' => $identifier, 'error' => $message]));
+        }
+
+        // 재생성으로 고쳐지지 않는 손상은 표 재구축 명령을 안내한다(실행하지 않음)
+        foreach ($report->adviceLines() as $line) {
+            $this->warn('  '.$line);
         }
     }
 }

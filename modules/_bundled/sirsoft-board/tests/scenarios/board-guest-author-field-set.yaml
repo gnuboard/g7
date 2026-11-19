@@ -1,0 +1,65 @@
+feature: 게시판 비회원 작성자 항목 집합 (#490 11단계)
+
+description: |
+  집합 sirsoft-board.guest_author 의 선언, 게시판별(글과 댓글별) 사용과 필수, 요청 규칙, 값 저장과 파기, 다른 확장이 기여한 항목, 게시판 설정 폼, 추가 정보를 입력하지 않은 회원의 쓰기 차단과 허용 라우트.
+
+axes:
+  case:
+    - set_and_field_declared
+    - default_board_unchanged
+    - board_requires_email_on_post
+    - surface_settings_are_independent
+    - member_writing_unaffected
+    - form_payload_for_guest_screens
+    - hooks_fire_in_order
+    - contributed_field
+    - values_purged
+    - board_form_round_trip
+    - pending_member_write_gate
+    - module_defaults          # 「게시판 기본 설정」의 비회원 항목 기본값과 새 게시판 물려받기
+    - custom_field_rows        # 운영자 항목 행의 ID 와 is_custom
+    - admin_detail_values      # 관리자 글 상세의 비회원 항목 값과 권한
+
+effects:
+  - guest_author_set_registered
+  - guest_email_field_declared_disabled
+  - fixed_fields_outside_engine
+  - default_board_guest_post_needs_only_name_and_password
+  - default_board_ignores_disabled_field_input
+  - fixed_rules_still_required
+  - required_guest_field_missing_is_422
+  - invalid_guest_field_is_422
+  - guest_field_value_stored_for_post
+  - comment_surface_follows_its_own_setting
+  - guest_field_value_stored_for_comment
+  - optional_guest_field_can_be_omitted
+  - member_post_has_no_guest_field_rule
+  - member_post_stores_no_guest_field_value
+  - form_meta_carries_guest_fields
+  - post_detail_carries_guest_fields_for_guests
+  - guest_fields_hidden_from_members_on_detail
+  - field_rules_filter_fires_with_guest_surface
+  - existing_post_validation_filter_receives_guest_field_rules
+  - existing_comment_validation_filter_receives_guest_field_rules
+  - contributed_field_listed_with_source
+  - contributed_lock_cannot_be_overridden_by_board
+  - contributed_field_validated_and_stored
+  - guest_field_values_purged_for_owner
+  - guest_field_values_purged_on_board_delete
+  - board_form_carries_display_name_setting_and_options
+  - board_form_carries_guest_field_rows
+  - board_update_saves_normalized_settings
+  - board_update_rejects_unavailable_kind
+  - pending_member_post_write_rejected
+  - module_defaults_carry_guest_field_table
+  - module_defaults_save_normalized_values_without_rows
+  - new_board_inherits_module_defaults
+  - board_form_rows_mark_custom_fields_with_id
+  - admin_post_detail_shows_guest_values_to_managers
+  - admin_post_detail_hides_guest_values_without_manage
+  - user_post_detail_never_carries_guest_values
+  - pending_member_comment_write_rejected
+  - password_verify_routes_exempt_for_pending_member
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/GuestAuthorFieldSetTest.php

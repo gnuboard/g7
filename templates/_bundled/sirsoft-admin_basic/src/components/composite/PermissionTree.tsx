@@ -9,6 +9,9 @@ import { IconName } from '../basic/IconTypes';
 import type { EditorAttrs } from '../../types';
 import { Accordion } from './Accordion';
 import { ExtensionBadge, ExtensionInfo } from './ExtensionBadge';
+import { useRenderWidth } from '../../hooks/useRenderWidth';
+import { gridColsClass, resolveGridCols } from '../layout/gridColumns';
+import { activateOnKey, FOCUS_VISIBLE_RING } from '../../support/keyboardActivation';
 
 // G7Core 전역 객체에서 createChangeEvent 가져오기
 const G7Core = (window as any).G7Core;
@@ -81,6 +84,8 @@ const ScopeDropdown: React.FC<{
   const valueId = `${domId}-scope-value`;
   const [menuStyle, setMenuStyle] = useState<React.CSSProperties>({});
   const triggerRef = useRef<HTMLDivElement>(null);
+  // 여는 칸 — 고르거나 Esc 로 닫은 뒤 포커스를 돌려받는다(선택지가 사라져 body 로 빠지지 않게, #869 키보드 접근)
+  const buttonRef = useRef<HTMLDivElement>(null);
 
   const currentOption = options.find((opt) => opt.value === value) ?? options[0];
 
@@ -133,6 +138,7 @@ const ScopeDropdown: React.FC<{
         {tOr('common.scope_of', `${permissionName} scope`, { name: permissionName })}
       </Span>
       <Div
+        ref={buttonRef}
         role="button"
         tabIndex={0}
         aria-labelledby={`${nameId} ${valueId}`}
@@ -181,9 +187,26 @@ const ScopeDropdown: React.FC<{
                   e.preventDefault();
                   onChange(option.value);
                   setIsOpen(false);
+                  buttonRef.current?.focus();
                 }}
                 onMouseDown={(e: React.MouseEvent) => e.stopPropagation()}
-                className={`px-3 py-2 cursor-pointer transition-colors ${
+                // 펼친 선택지도 Tab 으로 닿고 Enter·Space 로 고른다 — 종전에는 여는 단추만 키보드를 받았다(#869 키보드 접근)
+                tabIndex={0}
+                onKeyDown={(e: React.KeyboardEvent) => {
+                  if (e.key === 'Escape') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsOpen(false);
+                    buttonRef.current?.focus();
+                    return;
+                  }
+                  activateOnKey(() => {
+                    onChange(option.value);
+                    setIsOpen(false);
+                    buttonRef.current?.focus();
+                  })(e);
+                }}
+                className={`px-3 py-2 cursor-pointer transition-colors ${FOCUS_VISIBLE_RING} ${
                   isSelected
                     ? 'bg-blue-50 dark:bg-blue-900/30'
                     : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
@@ -322,6 +345,8 @@ export const PermissionTree: React.FC<PermissionTreeProps> = ({
   editorAttrs,
 }) => {
   const domId = useDomId();
+  // 권한 격자 열 수를 고르는 렌더 폭 — Provider 폭 우선(편집기 미리보기에서는 기기 폭)
+  const renderWidth = useRenderWidth();
 
   // onChange를 이벤트 객체 형식으로 변환하는 핸들러
   const handleChange = useCallback((newValue: PermissionValue[]) => {
@@ -553,12 +578,8 @@ export const PermissionTree: React.FC<PermissionTreeProps> = ({
     // 하위에 카테고리가 더 있는 경우 재귀 렌더링
     const hasSubCategories = category.children.some((child) => !child.is_assignable);
 
-    const gridColsClass =
-      desktopColumns === 1
-        ? 'grid-cols-1'
-        : desktopColumns === 3
-          ? 'grid-cols-1 md:grid-cols-3'
-          : 'grid-cols-1 md:grid-cols-2';
+    // 768 미만은 1열, 768 이상은 desktopColumns 열 — 렌더 폭으로 골라 접두 없는 클래스 하나만 낸다
+    const leafGridColsClass = gridColsClass(resolveGridCols(1, { md: desktopColumns }, renderWidth));
 
     return (
       <Accordion key={category.id} defaultOpen={false} className="border-0 rounded-none">
@@ -591,7 +612,7 @@ export const PermissionTree: React.FC<PermissionTreeProps> = ({
         </Div>
 
         {/* Content */}
-        <Div slot="content" className={`pl-8 grid ${gridColsClass} gap-2 py-2`}>
+        <Div slot="content" className={`pl-8 grid ${leafGridColsClass} gap-2 py-2`}>
           {hasSubCategories
             ? // 하위 카테고리가 있으면 재귀 렌더링
               category.children.map((child) =>

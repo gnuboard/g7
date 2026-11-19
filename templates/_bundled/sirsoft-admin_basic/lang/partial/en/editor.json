@@ -167,6 +167,9 @@
     "img_alt": {
       "label": "Alt text"
     },
+    "img_thumb_preset": {
+      "label": "Thumbnail Preset"
+    },
     "link_href": {
       "label": "Link URL"
     },
@@ -1181,6 +1184,7 @@
     "tab_navigation": "Tab navigation",
     "tab_navigation_scroll": "Scroll tab navigation",
     "toggle": "Toggle switch",
+    "member_field_input": "Member field input",
     "input": "Input",
     "textarea": "Textarea",
     "label": "Label",
@@ -1498,7 +1502,8 @@
       "connection": "Connection tab",
       "alimtalk_templates": "Alimtalk templates tab",
       "settings": "Settings tab",
-      "history": "Run history tab"
+      "history": "Run history tab",
+      "schedules": "Schedules"
     },
     "extensions_list_view_gallery": "Extension list — gallery view",
     "extensions_list_view_list": "Extension list — list view",
@@ -1680,6 +1685,7 @@
     "admin_menu": "Admin Menu",
     "appKey": "App Key",
     "auto_deactivated_banner": "Auto-deactivated Notice",
+    "thumbnailStats": "Thumbnail usage by storage",
     "unplaced_bundled_notice": "Unplaced Official Bundle Notice",
     "availableChannels": "Available Channels",
     "clone_source": "Clone Source",
@@ -1745,6 +1751,8 @@
     "trustedProxy": "Trusted proxy diagnostic",
     "user": "User",
     "users": "Users",
+    "system_status": "Execution method and scheduled task status",
+    "core_update_status": "Core update status",
     "analytics_overview": "Analytics overview",
     "analytics_realtime": "Realtime visitors",
     "analytics_realtime_ws": "Realtime broadcast",
@@ -1772,6 +1780,18 @@
     "analytics_row_trend": "Analytics item trend",
     "passwordExpiryPreview": "Password expiry target counts",
     "passwordExpiryManualRuns": "Password expiry manual run status",
-    "user_check": "User Create Check"
+    "user_check": "User Create Check",
+    "schedule_owners": "Schedule owners",
+    "schedule_status": "Scheduler status",
+    "queue_status": "Queue registry",
+    "queue_pending": "Pending queue jobs",
+    "queue_failed": "Failed queue jobs",
+    "queue_logs": "Queue processing log",
+    "coreSchedules": "Core scheduled tasks",
+    "template_settings": "Template settings",
+    "memberFieldDefs": "Member Field Definitions",
+    "memberFields": "Member Fields",
+    "memberNicknameRecompute": "Nickname Duplicate Check Preparation Status",
+    "extensionTrustKeys": "Extension trust keys"
   }
 }

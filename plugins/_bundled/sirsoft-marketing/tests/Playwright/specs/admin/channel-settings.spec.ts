@@ -24,13 +24,13 @@ test.describe('마케팅 동의 설정 — 채널', () => {
     await page.goto(SETTINGS_URL);
     await page.waitForLoadState('networkidle', { timeout: 30_000 });
 
-    const rowKeys = async () => page.locator('div.grid.grid-cols-12 span.font-mono').allInnerTexts();
+    const rowKeys = async () => page.locator('div.marketing\\:grid.marketing\\:grid-cols-12 span.marketing\\:font-mono').allInnerTexts();
     const before = await rowKeys();
 
     await page.getByRole('button', { name: '채널 추가' }).click();
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
-    const hint = dialog.locator('p.text-error-soft', { hasText: LABEL_REQUIRED });
+    const hint = dialog.locator('p.marketing-text-error-soft', { hasText: LABEL_REQUIRED });
     const confirm = dialog.getByRole('button', { name: '저장', exact: true });
 
     // 열자마자: 안내 없음, 키가 비어 확정은 잠김
@@ -53,17 +53,17 @@ test.describe('마케팅 동의 설정 — 채널', () => {
     // 취소 뒤 다시 열면 안내가 초기화된다
     await dialog.getByRole('button', { name: '취소', exact: true }).click();
     await page.getByRole('button', { name: '채널 추가' }).click();
-    await expect(page.getByRole('dialog').locator('p.text-error-soft', { hasText: LABEL_REQUIRED })).toHaveCount(0);
+    await expect(page.getByRole('dialog').locator('p.marketing-text-error-soft', { hasText: LABEL_REQUIRED })).toHaveCount(0);
 
     // 항목명 칸에 들어갔다가 떠나면 안내가 뜨고, 이름을 넣으면 사라진다
     const reopened = page.getByRole('dialog');
     const labelInput = reopened.locator('input[type="text"]').nth(1);
     await labelInput.click();
-    await expect(reopened.locator('p.text-error-soft', { hasText: LABEL_REQUIRED })).toHaveCount(0);
+    await expect(reopened.locator('p.marketing-text-error-soft', { hasText: LABEL_REQUIRED })).toHaveCount(0);
     await page.keyboard.press('Tab');
-    await expect(reopened.locator('p.text-error-soft', { hasText: LABEL_REQUIRED })).toHaveCount(1);
+    await expect(reopened.locator('p.marketing-text-error-soft', { hasText: LABEL_REQUIRED })).toHaveCount(1);
     await labelInput.fill('E2E 채널');
-    await expect(reopened.locator('p.text-error-soft', { hasText: LABEL_REQUIRED })).toHaveCount(0);
+    await expect(reopened.locator('p.marketing-text-error-soft', { hasText: LABEL_REQUIRED })).toHaveCount(0);
 
     // 저장하지 않고 닫는다
     await reopened.getByRole('button', { name: '취소', exact: true }).click();
@@ -77,11 +77,11 @@ test.describe('마케팅 동의 설정 — 채널', () => {
     await page.goto(SETTINGS_URL);
     await page.waitForLoadState('networkidle', { timeout: 30_000 });
 
-    const systemRow = page.locator('div.grid.grid-cols-12', { has: page.locator('span.font-mono', { hasText: /^email_subscription$/ }) }).first();
+    const systemRow = page.locator('div.marketing\\:grid.marketing\\:grid-cols-12', { has: page.locator('span.marketing\\:font-mono', { hasText: /^email_subscription$/ }) }).first();
     await expect(systemRow).toBeVisible({ timeout: 15_000 });
-    await expect(systemRow.locator('span.text-heading').first()).toHaveText('광고성 이메일 수신');
+    await expect(systemRow.locator('span.marketing-text-heading').first()).toHaveText('광고성 이메일 수신');
     // 원문 키가 화면에 새지 않는다
-    const listText = await page.locator('div.grid.grid-cols-12').allInnerTexts();
+    const listText = await page.locator('div.marketing\\:grid.marketing\\:grid-cols-12').allInnerTexts();
     expect(listText.join('|')).not.toContain('sirsoft-marketing.');
   });
 

@@ -105,7 +105,7 @@ class StateContractsTest extends TestCase
     }
 
     /**
-     * 코어 예약 이름은 D13 목록 + #822 활성 확장 식별자 2종(activeModules·activePlugins)이다.
+     * 코어 예약 이름은 D13 목록 + #822 활성 확장 식별자 2종(activeModules·activePlugins) + #434 활성 템플릿 공개 설정(templateSettings)이다.
      *
      * @scenario case=core_reserved_list
      *
@@ -116,7 +116,7 @@ class StateContractsTest extends TestCase
     public function test_core_reserved_names(): void
     {
         $this->assertSame(
-            ['consent', 'identityChallenge', 'currentUser', 'settings', 'plugins', 'modules', 'appConfig', 'activeModules', 'activePlugins'],
+            ['consent', 'identityChallenge', 'currentUser', 'settings', 'plugins', 'modules', 'templateSettings', 'appConfig', 'activeModules', 'activePlugins'],
             array_keys(StateContracts::CORE_CONTRACTS),
         );
     }

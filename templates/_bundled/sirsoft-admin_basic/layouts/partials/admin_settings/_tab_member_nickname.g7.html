@@ -1,0 +1,126 @@
+<!-- 회원 탭의 **닉네임 정책** 구획(#490). 중복 금지, 금지어, 변경 주기 세 값을 다룬다.
+  가입 항목 표와 달리 **즉시 저장이 아니다.** 세 값은 설정 폼(`_local.form.member`)에 담고 화면 하단 「저장」이 회원 탭 몫을 한 번에 보낸다.
+  저장 본문은 `form.member` 를 통째로 싣는다. 이 화면이 건드리지 않는 표시 이름 키도 받은 값 그대로 실려 지워지지 않는다.
+
+  「중복 금지」 스위치만 자동 바인딩이 아니라 명시 배선이다(U13). 켤 때 이미 겹치는 닉네임이 있는지 먼저 받아, 있으면 겹치는 닉네임 종 수와 회원 수를
+  보이고 확인을 받은 뒤 켠다. 0건이면 확인 없이 켠다. 켜도 기존 닉네임은 그대로 두고, 그 회원이 닉네임을 바꿀 때부터 겹치지 않게 막는다.
+  스위치는 누른다고 스스로 바뀌지 않고(`awaitConfirmation`) 폼 값이 바뀔 때만 바뀐다.
+
+  중복 금지를 켜고 저장하면 서버가 기존 회원의 닉네임 비교 값을 다시 계산한다(U14). 그 진행 상태(`memberNicknameRecompute`)가 「진행 중」이면
+  진행 막대를, 「끝남」이면 완료 문구를 보인다. -->
+<partial description="환경설정 > 회원 탭 닉네임 정책 — 중복 금지(겹침 안내 뒤 켬), 금지어, 변경 주기. 하단 저장 단추로 저장">
+  <div data-ref="member_nickname_card" class="admin-card">
+    <h3 class="section-title">$t:admin.settings.member.nickname.title</h3>
+    <p class="text-label-subtle mb-4">$t:admin.settings.member.nickname.description</p>
+    <div class="row-stack">
+      <div data-ref="toggle_nickname_unique" class="flex-between gap-3">
+        <div class="min-w-0">
+          <div class="flex-center">
+            <span class="text-heading">$t:admin.settings.member.nickname.unique</span>
+          </div>
+          <p class="text-label-subtle break-words">$t:admin.settings.member.nickname.unique_desc</p>
+          <span data-if="{{_local.errors?.['member.nickname_unique']}}" class="form-error">{{_local.errors?.['member.nickname_unique']?.[0] ?? ''}}</span>
+        </div>
+        <toggle data-type="composite" data-testid="member-nickname-unique" checked="{{_local.form?.member?.nickname_unique === true}}" ariaLabel="$t:admin.settings.member.nickname.unique" size="md" :awaitConfirmation="true" pending="{{_local.memberNicknameChecking === true}}" disabled="{{_computed.isReadOnly}}">
+          <on type="change">
+            <!-- 중복 금지 스위치(U13). 끌 때는 바로 폼에 담는다. 켤 때는 겹치는 닉네임을 먼저 받아, 한 종이라도 있으면 안내 상자를 띄우고
+                 (그 상자의 「켜기」가 폼에 담는다) 없으면 바로 폼에 담는다. 어느 쪽이든 폼에 담을 때 「변경 있음」을 세워 하단 저장이 열린다.
+                 받기에 실패하면 켜지 않고 알린다(겹침을 모르는 채 켜지 않게). -->
+            <conditions>
+              <when if="{{_local.form?.member?.nickname_unique === true}}">
+                <set-state target="local" :form.member.nickname_unique="false" :hasChanges="true" :memberNicknameDuplicates="null"/>
+              </when>
+              <else>
+                <sequence>
+                  <set-state target="local" :memberNicknameChecking="true"/>
+                  <api-call :auth_required="true" target="/api/admin/member-fields/nickname-duplicates" method="GET">
+                    <success>
+                      <conditions>
+                        <when if="{{Number(response?.data?.duplicate_nicknames ?? 0) &gt; 0}}">
+                          <set-state target="local" :memberNicknameChecking="false">
+                            <field name="memberNicknameDuplicates">
+                              <field name="duplicate_nicknames" value="{{Number(response?.data?.duplicate_nicknames ?? 0)}}"/>
+                              <field name="duplicate_members" value="{{Number(response?.data?.duplicate_members ?? 0)}}"/>
+                            </field>
+                          </set-state>
+                        </when>
+                        <else>
+                          <set-state target="local" :memberNicknameChecking="false" :memberNicknameDuplicates="null" :form.member.nickname_unique="true" :hasChanges="true"/>
+                        </else>
+                      </conditions>
+                    </success>
+                    <fail>
+                      <set-state target="local" :memberNicknameChecking="false"/>
+                      <toast type="error" message="{{error.message ?? '$t:admin.settings.member.nickname.duplicates_failed'}}"/>
+                    </fail>
+                  </api-call>
+                </sequence>
+              </else>
+            </conditions>
+          </on>
+        </toggle>
+      </div>
+      <div data-ref="member_nickname_duplicates_notice" data-if="{{!!_local.memberNicknameDuplicates}}" role="alert" class="alert-warning">
+        <div class="flex gap-3">
+          <icon name="triangle-exclamation" class="text-xl text-yellow-700 dark:text-yellow-400 flex-shrink-0 mt-0.5"/>
+          <div class="min-w-0 flex-1">
+            <p data-testid="member-nickname-duplicates-message" class="text-warning-soft break-words">$t:admin.settings.member.nickname.duplicates_message|nicknames={{_local.memberNicknameDuplicates?.duplicate_nicknames ?? 0}}|members={{_local.memberNicknameDuplicates?.duplicate_members ?? 0}}</p>
+            <p class="text-warning-soft break-words mt-1">$t:admin.settings.member.nickname.duplicates_hint</p>
+            <div class="flex-center flex-wrap gap-2 mt-3">
+              <a data-testid="member-nickname-duplicates-link" href="/admin/users?nickname_duplicate=1" target="_blank" class="text-sm font-medium text-blue-600 dark:text-blue-400 underline">$t:admin.settings.member.nickname.duplicates_view</a>
+              <button data-testid="member-nickname-duplicates-cancel" type="button" class="px-3 py-1.5 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+                <on type="click">
+                  <!-- 켜지 않기. 안내 상자만 거두고 폼은 그대로 둔다(스위치는 꺼진 그대로다). -->
+                  <set-state target="local" :memberNicknameDuplicates="null"/>
+                </on>
+                <span>$t:common.cancel</span>
+              </button>
+              <button data-testid="member-nickname-duplicates-confirm" type="button" class="px-3 py-1.5 text-sm font-medium bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-600 text-white rounded-lg">
+                <on type="click">
+                  <!-- 그래도 켜기. 폼에 담고 「변경 있음」을 세운다. 실제 적용은 하단 「저장」을 눌러야 일어난다. -->
+                  <set-state target="local" :form.member.nickname_unique="true" :hasChanges="true" :memberNicknameDuplicates="null"/>
+                </on>
+                <span>$t:admin.settings.member.nickname.duplicates_confirm</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-ref="member_nickname_recompute" data-if="{{['running', 'done'].includes(memberNicknameRecompute?.data?.status ?? 'idle')}}" class="space-y-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-3">
+        <div data-if="{{memberNicknameRecompute?.data?.status === 'running'}}" class="space-y-2">
+          <div class="flex-between gap-2">
+            <span class="text-heading">$t:admin.settings.member.nickname.recompute_running</span>
+            <span data-testid="member-nickname-recompute-count" class="text-label-subtle text-sm tabular-nums">$t:admin.settings.member.nickname.recompute_count|processed={{Number(memberNicknameRecompute?.data?.processed ?? 0)}}|total={{Number(memberNicknameRecompute?.data?.total ?? 0)}}</span>
+          </div>
+          <div role="progressbar" aria-label="$t:admin.settings.member.nickname.recompute_running" :aria-valuemin="0" :aria-valuemax="100" aria-valuenow="{{Number(memberNicknameRecompute?.data?.total ?? 0) &gt; 0 ? Math.min(100, Math.round(Number(memberNicknameRecompute?.data?.processed ?? 0) / Number(memberNicknameRecompute?.data?.total) * 100)) : 0}}" class="h-2 rounded bg-gray-200 dark:bg-gray-700 overflow-hidden">
+            <div class="h-2 bg-indigo-600 dark:bg-indigo-400" style="{{'width:' + (Number(memberNicknameRecompute?.data?.total ?? 0) &gt; 0 ? Math.min(100, Math.round(Number(memberNicknameRecompute?.data?.processed ?? 0) / Number(memberNicknameRecompute?.data?.total) * 100)) : 0) + '%'}}"/>
+          </div>
+          <p class="text-label-subtle text-xs break-words">$t:admin.settings.member.nickname.recompute_running_hint</p>
+        </div>
+        <p data-if="{{memberNicknameRecompute?.data?.status === 'done'}}" data-testid="member-nickname-recompute-done" role="status" class="text-success-soft break-words">$t:admin.settings.member.nickname.recompute_done|total={{Number(memberNicknameRecompute?.data?.total ?? 0)}}</p>
+      </div>
+      <div data-ref="field_nickname_banned_words">
+        <label class="form-label">$t:admin.settings.member.nickname.banned_words</label>
+        <tag-input data-type="composite" data-ref="member_nickname_banned_words_input" name="member.nickname_banned_words" :creatable="true" placeholder="$t:admin.settings.member.nickname.banned_words_placeholder" class="w-full" defaultVariant="blue" disabled="{{_computed.isReadOnly}}"/>
+        <p class="form-hint">$t:admin.settings.member.nickname.banned_words_hint</p>
+        <span data-if="{{Object.keys(_local.errors ?? {}).some(k =&gt; k.startsWith('member.nickname_banned_words'))}}" class="form-error">{{(Object.entries(_local.errors ?? {}).find(([k]) =&gt; k.startsWith('member.nickname_banned_words')) ?? [])[1]?.[0] ?? ''}}</span>
+      </div>
+      <div data-ref="field_nickname_change_interval">
+        <label class="form-label">$t:admin.settings.member.nickname.change_interval</label>
+        <div class="flex-center gap-2">
+          <!-- audit:allow layout-input-boundary-hardcoded 이 칸의 한계값은 서버가 내려주지 않는다(`_meta.limits` 에 회원 탭 키가 없다). 저장 규칙이 `min:0`, `max:3650` 고정이라 같은 값을 적는다. 규칙을 바꾸면 여기도 함께 바꾼다. -->
+          <input type="number" name="member.nickname_change_interval_days" aria-label="$t:admin.settings.member.nickname.change_interval" placeholder="0" :min="0" :max="3650" disabled="{{_computed.isReadOnly}}" class="input input-w-md {{_local.errors?.['member.nickname_change_interval_days'] ? 'input-error' : ''}}"/>
+          <span class="text-label-subtle">$t:admin.settings.member.nickname.change_interval_unit</span>
+        </div>
+        <p class="form-hint">$t:admin.settings.member.nickname.change_interval_hint</p>
+        <span data-if="{{_local.errors?.['member.nickname_change_interval_days']}}" class="form-error">{{_local.errors?.['member.nickname_change_interval_days']?.[0] ?? ''}}</span>
+      </div>
+      <div data-ref="member_nickname_display_note" class="alert-info">
+        <div class="flex-center gap-3">
+          <icon name="circle-info" class="text-xl text-blue-600 dark:text-blue-400 flex-shrink-0"/>
+          <p class="text-info-soft break-words">$t:admin.settings.member.nickname.display_note</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</partial>

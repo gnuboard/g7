@@ -154,16 +154,17 @@ describe('업데이트 창 — 경고와 강제 업데이트', () => {
    * @effects extension_update_force_flag_reset_on_open
    */
   it('창을 여는 모든 경로가 강제 체크를 거짓으로 되돌린다(다른 확장에 force 가 새지 않게)', () => {
-    const openers: Array<[string, Json, string, string, string]> = [
-      ['모듈', moduleList, 'selectedModule', 'moduleLayoutStrategy', 'moduleForceUpdate'],
-      ['플러그인', pluginList, 'selectedPlugin', 'pluginLayoutStrategy', 'pluginForceUpdate'],
-      ['템플릿 관리자', templateTabAdmin, 'selectedTemplate', 'templateLayoutStrategy', 'templateForceUpdate'],
-      ['템플릿 사용자', templateTabUser, 'selectedTemplate', 'templateLayoutStrategy', 'templateForceUpdate'],
+    const openers: Array<[string, Json, string, string]> = [
+      ['모듈', moduleList, 'selectedModule', 'moduleForceUpdate'],
+      ['플러그인', pluginList, 'selectedPlugin', 'pluginForceUpdate'],
+      ['템플릿 관리자', templateTabAdmin, 'selectedTemplate', 'templateForceUpdate'],
+      ['템플릿 사용자', templateTabUser, 'selectedTemplate', 'templateForceUpdate'],
     ];
-    for (const [label, tree, selected, strategy, force] of openers) {
+    for (const [label, tree, selected, force] of openers) {
       const setStates = collect(tree, (n) => n.handler === 'setState'
         && typeof n.params?.[selected] === 'string' && n.params[selected].includes('$args')
-        && strategy in (n.params ?? {}));
+        // 업데이트 창을 여는 시드는 업데이트 미리보기 요청(…/update/preview)을 함께 정한다(#888)
+        && String(n.params?.layoutPreviewRequest ?? '').includes('/update/preview'));
       expect(setStates.length, `${label}: 업데이트 창을 여는 setState 가 없습니다.`).toBeGreaterThan(0);
       for (const s of setStates) {
         // 멈춘 업데이트(`stuck_update`)의 「정리 후 다시 업데이트」만 강제를 켠다(서버는 force 일 때만 정리한다) —

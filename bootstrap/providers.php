@@ -5,6 +5,7 @@ use App\Providers\AuthServiceProvider;
 use App\Providers\BladeServiceProvider;
 use App\Providers\BroadcastServiceProvider;
 use App\Providers\CoreServiceProvider;
+use App\Providers\CustomReservedServiceProvider;
 use App\Providers\EventServiceProvider;
 use App\Providers\InstallerRuntimeServiceProvider;
 use App\Providers\LanguagePackServiceProvider;
@@ -34,4 +35,5 @@ return [
     LanguagePackServiceProvider::class,
     ScoutServiceProvider::class,
     SeoServiceProvider::class,
+    CustomReservedServiceProvider::class,  // custom 예약 자리(#792) — 반드시 마지막. 개발자 App\Custom\CustomServiceProvider 를 가장 늦게 등록
 ];

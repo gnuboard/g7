@@ -11,11 +11,10 @@
  */
 
 import React from 'react';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
   createLayoutTest,
   screen,
-  waitFor,
 } from '@/core/template-engine/__tests__/utils/layoutTestUtils';
 import { ComponentRegistry } from '@/core/template-engine/ComponentRegistry';
 
@@ -331,6 +330,8 @@ describe('로그인 폼 레이아웃 렌더링 (Issue #72)', () => {
   });
 
   describe('기본 렌더링', () => {
+    // @scenario phase=idle
+    // @effects login_form_fields_render
     it('로그인 폼이 이메일, 비밀번호, 제출 버튼과 함께 렌더링된다', async () => {
       // Given
       const testUtils = createLayoutTest(loginFormFixture, {
@@ -351,6 +352,8 @@ describe('로그인 폼 레이아웃 렌더링 (Issue #72)', () => {
       testUtils.cleanup();
     });
 
+    // @scenario phase=idle
+    // @effects login_no_error_initially
     it('초기 상태에서 에러 메시지가 표시되지 않는다', async () => {
       // Given: loginError가 없는 초기 상태
       const testUtils = createLayoutTest(loginFormFixture, {
@@ -368,6 +371,8 @@ describe('로그인 폼 레이아웃 렌더링 (Issue #72)', () => {
   });
 
   describe('로딩 상태 (isLoggingIn)', () => {
+    // @scenario phase=logging_in
+    // @effects login_no_blur_overlay_while_submitting
     it('로그인 중 블러 오버레이가 표시되지 않는다 (Issue #72 핵심)', async () => {
       // Given: isLoggingIn=true 상태
       const testUtils = createLayoutTest(loginFormFixture, {
@@ -391,6 +396,8 @@ describe('로그인 폼 레이아웃 렌더링 (Issue #72)', () => {
       testUtils.cleanup();
     });
 
+    // @scenario phase=logging_in
+    // @effects login_button_spinner_while_submitting
     it('로그인 중 버튼에 스피너와 "로그인 중..." 텍스트가 표시된다', async () => {
       // Given
       const testUtils = createLayoutTest(loginFormFixture, {
@@ -408,6 +415,8 @@ describe('로그인 폼 레이아웃 렌더링 (Issue #72)', () => {
       testUtils.cleanup();
     });
 
+    // @scenario phase=logging_in
+    // @effects login_inputs_disabled_while_submitting
     it('로그인 중 입력 필드가 비활성화된다', async () => {
       // Given
       const testUtils = createLayoutTest(loginFormFixture, {
@@ -426,6 +435,8 @@ describe('로그인 폼 레이아웃 렌더링 (Issue #72)', () => {
       testUtils.cleanup();
     });
 
+    // @scenario phase=idle
+    // @effects login_no_spinner_when_idle
     it('로그인 중이 아닐 때 스피너가 표시되지 않는다', async () => {
       // Given: isLoggingIn=false (기본)
       const testUtils = createLayoutTest(loginFormFixture, {
@@ -445,6 +456,8 @@ describe('로그인 폼 레이아웃 렌더링 (Issue #72)', () => {
   });
 
   describe('에러 표시', () => {
+    // @scenario phase=error
+    // @effects login_error_message_shown
     it('loginError 설정 시 에러 메시지가 표시된다', async () => {
       // Given
       const testUtils = createLayoutTest(loginFormFixture, {
@@ -467,6 +480,8 @@ describe('로그인 폼 레이아웃 렌더링 (Issue #72)', () => {
   // 발급받는다. 이 fixture 의 `if` 는 실제 `_login_form.json` 과 같은 조건이므로, 한쪽이 바뀌면
   // 이 케이스가 red 가 된다.
   describe('2단계 인증 단계 전환', () => {
+    // @scenario phase=idle
+    // @effects login_credentials_shown_without_two_factor
     it('twoFactor 가 없으면 자격 증명 입력이 보인다', async () => {
       // Given
       const testUtils = createLayoutTest(loginFormFixture, {
@@ -485,6 +500,8 @@ describe('로그인 폼 레이아웃 렌더링 (Issue #72)', () => {
       testUtils.cleanup();
     });
 
+    // @scenario phase=two_factor
+    // @effects login_credentials_hidden_on_two_factor
     it('인증번호가 요구되면 자격 증명 입력과 제출 버튼이 사라진다', async () => {
       // Given
       const testUtils = createLayoutTest(loginFormFixture, {

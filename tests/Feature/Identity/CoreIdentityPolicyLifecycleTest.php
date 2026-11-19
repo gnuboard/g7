@@ -67,9 +67,12 @@ class CoreIdentityPolicyLifecycleTest extends TestCase
      */
     public function test_signup_before_submit_full_http_lifecycle(): void
     {
+        // 「확인 직후」 재시도는 유예 0분 정책에서 확인 시각과 같은 초여야 통과한다 — 부하로 초 경계를 넘으면 428 로 흔들리므로 시각을 고정한다.
+        $this->freezeSecond();
+
         $policy = $this->enableSignupPolicy('core.auth.signup_before_submit');
 
-        // 1단계 — 보호된 register 호출은 428 (정책 위반)
+        // 1단계 — 보호된 register 호출은 428 (정책 위반). 가입은 입력 검증(422)을 먼저 하므로 바른 입력이어야 428 에 닿는다(7.2.0).
         $email = 'newuser_'.uniqid().'@example.test';
 
         $payload = $this->assertProtectedRouteIssues428(
@@ -84,7 +87,8 @@ class CoreIdentityPolicyLifecycleTest extends TestCase
                 'email' => $email,
                 'password' => 'StrongPass!23',
                 'password_confirmation' => 'StrongPass!23',
-                'agreement' => true,
+                'agree_terms' => true,
+                'agree_privacy' => true,
             ],
         );
 
@@ -103,7 +107,8 @@ class CoreIdentityPolicyLifecycleTest extends TestCase
             'email' => $email,
             'password' => 'StrongPass!23',
             'password_confirmation' => 'StrongPass!23',
-            'agreement' => true,
+            'agree_terms' => true,
+            'agree_privacy' => true,
         ]);
 
         // verify 직후라 정책 미들웨어는 통과해야 한다 — 응답 코드는 register 비즈니스 로직 결과에 따라
@@ -222,6 +227,9 @@ class CoreIdentityPolicyLifecycleTest extends TestCase
         }
 
         // 2. challenge 발급 + verify
+        // 시각을 초 단위로 고정한다. grace=0 정책의 「직후」 판정은 verified_at(초 단위 저장) >= 지금 이라,
+        // verify 와 enforce 사이에 초 경계를 넘으면(부하가 큰 묶음 실행에서 실제로 넘었다) 같은 직후인데도 throw 한다.
+        Carbon::setTestNow(Carbon::now()->startOfSecond());
         $logRepository = $this->app->make(IdentityVerificationLogRepositoryInterface::class);
         $provider = new TestIdentityProvider($logRepository);
         $challenge = $provider->requestChallenge($user, ['purpose' => $purpose]);
@@ -231,6 +239,7 @@ class CoreIdentityPolicyLifecycleTest extends TestCase
         // 3. verified 직후 enforce 는 통과
         $this->service->enforce($policy, $user->fresh(), $context);
         $this->assertTrue(true, "정책 '{$policyKey}' verified 직후 enforce 통과");
+        Carbon::setTestNow();
 
         // 4~5. grace > 0 정책만 grace 윈도우 만료 후 다시 throw
         if ($graceMinutes > 0) {

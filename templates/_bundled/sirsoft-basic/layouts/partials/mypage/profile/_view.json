@@ -1,5 +1,5 @@
 {
-    "comment": "내 정보 보기 본체 — 읽기 전용이다. 고치기·비밀번호 변경·탈퇴로 나가는 입구가 여기 모여 있다.",
+    "comment": "내 정보 보기 본체 — 읽기 전용이다. 고치기·비밀번호 변경·탈퇴로 나가는 입구가 여기 모여 있다.\n     연락처, 위치, 서명·자기소개와 운영자가 추가한 항목은 서버가 준 항목 계약(데이터소스 profileFields)대로 보기 조각(partials/member/_member_fields_view)이 카드마다 그린다 —\n     수정 화면과 같은 소스, 같은 묶음이라 수정 화면에 있는 항목은 여기에도 있다. 맨 위 프로필 카드(아바타, 이름, 닉네임, 이메일, 가입일)는 이 조각이 직접 그리고, 모듈과 플러그인이 선언한 항목은 확장별 카드(computed profileExtensionGroups)로 보인다.",
     "meta": {
         "is_partial": true,
         "_e2e_allow": "e2e:allow S4-D15 — 배송국가 칸에 미적용 안내 문장 하나를 조건부로 더했다. 대체 검증: Vitest 조건 평가 + 전용 Chrome 실측(배송 가능 국가를 바꾸는 배타 창에서만 재현되어 공용 E2E 환경 설정을 바꿀 수 없다)",
@@ -480,9 +480,10 @@
             ]
         },
         {
-            "comment": "2컬럼 카드 - 연락처 정보 / 위치 정보",
+            "comment": "연락처 카드와 위치 카드 — 둘 다 있으면 넓은 화면에서 나란히, 하나만 있으면 한 줄을 다 쓴다. 묶음에 항목이 없는 카드는 그리지 않는다.",
             "type": "basic",
             "name": "Div",
+            "if": "{{($computed.profileFieldGroups ?? []).some(function(g) { return g.key === 'contact' || g.key === 'location'; })}}",
             "responsive": {
                 "portable": {
                     "props": {
@@ -491,13 +492,15 @@
                 }
             },
             "props": {
-                "className": "grid grid-cols-2 gap-6"
+                "className": "{{($computed.profileFieldGroups ?? []).filter(function(g) { return g.key === 'contact' || g.key === 'location'; }).length === 2 ? 'grid grid-cols-2 gap-6' : 'grid grid-cols-1 gap-6'}}"
             },
             "children": [
                 {
-                    "comment": "연락처 정보 카드",
+                    "comment": "연락처 정보 카드 (휴대폰, 전화, 홈페이지)",
+                    "id": "profile_view_contact_card",
                     "type": "basic",
                     "name": "Div",
+                    "if": "{{($computed.profileFieldGroups ?? []).some(function(g) { return g.key === 'contact'; })}}",
                     "responsive": {
                         "portable": {
                             "props": {
@@ -520,96 +523,24 @@
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": "space-y-3"
+                            "iteration": {
+                                "source": "{{($computed.profileFieldGroups ?? []).filter(function(g) { return g.key === 'contact'; })}}",
+                                "item_var": "memberFieldGroup"
                             },
                             "children": [
                                 {
-                                    "comment": "휴대폰 번호",
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "props": {
-                                        "className": "flex justify-between items-center"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "props": {
-                                                "className": "text-sm text-gray-600 dark:text-gray-400"
-                                            },
-                                            "text": "$t:mypage.profile.mobile"
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "props": {
-                                                "className": "text-sm text-gray-900 dark:text-white"
-                                            },
-                                            "text": "{{user.data?.mobile ?? '-'}}"
-                                        }
-                                    ]
-                                },
-                                {
-                                    "comment": "전화번호",
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "props": {
-                                        "className": "flex justify-between items-center"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "props": {
-                                                "className": "text-sm text-gray-600 dark:text-gray-400"
-                                            },
-                                            "text": "$t:mypage.profile.phone"
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "props": {
-                                                "className": "text-sm text-gray-900 dark:text-white"
-                                            },
-                                            "text": "{{user.data?.phone ?? '-'}}"
-                                        }
-                                    ]
-                                },
-                                {
-                                    "comment": "홈페이지",
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "props": {
-                                        "className": "flex justify-between items-center"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "props": {
-                                                "className": "text-sm text-gray-600 dark:text-gray-400"
-                                            },
-                                            "text": "$t:mypage.profile.homepage"
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "props": {
-                                                "className": "text-sm text-gray-900 dark:text-white"
-                                            },
-                                            "text": "{{user.data?.homepage ?? '-'}}"
-                                        }
-                                    ]
+                                    "partial": "partials/member/_member_fields_view.json"
                                 }
                             ]
                         }
                     ]
                 },
                 {
-                    "comment": "위치 정보 카드",
+                    "comment": "위치 정보 카드 (언어, 국가, 시간대, 주소)",
+                    "id": "profile_view_location_card",
                     "type": "basic",
                     "name": "Div",
+                    "if": "{{($computed.profileFieldGroups ?? []).some(function(g) { return g.key === 'location'; })}}",
                     "responsive": {
                         "portable": {
                             "props": {
@@ -632,113 +563,13 @@
                         {
                             "type": "basic",
                             "name": "Div",
-                            "props": {
-                                "className": "space-y-3"
+                            "iteration": {
+                                "source": "{{($computed.profileFieldGroups ?? []).filter(function(g) { return g.key === 'location'; })}}",
+                                "item_var": "memberFieldGroup"
                             },
                             "children": [
                                 {
-                                    "comment": "국가",
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "props": {
-                                        "className": "flex justify-between items-center"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "props": {
-                                                "className": "text-sm text-gray-600 dark:text-gray-400"
-                                            },
-                                            "text": "$t:mypage.profile.country"
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "props": {
-                                                "className": "text-sm text-gray-900 dark:text-white"
-                                            },
-                                            "text": "{{user.data?.country_name ?? user.data?.country ?? '-'}}"
-                                        }
-                                    ]
-                                },
-                                {
-                                    "comment": "언어",
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "props": {
-                                        "className": "flex justify-between items-center"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "props": {
-                                                "className": "text-sm text-gray-600 dark:text-gray-400"
-                                            },
-                                            "text": "$t:mypage.profile.language"
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "props": {
-                                                "className": "text-sm text-gray-900 dark:text-white"
-                                            },
-                                            "text": "{{user.data?.language_label ?? user.data?.language ?? '-'}}"
-                                        }
-                                    ]
-                                },
-                                {
-                                    "comment": "시간대",
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "props": {
-                                        "className": "flex justify-between items-center"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "props": {
-                                                "className": "text-sm text-gray-600 dark:text-gray-400"
-                                            },
-                                            "text": "$t:mypage.profile.timezone"
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "props": {
-                                                "className": "text-sm text-gray-900 dark:text-white"
-                                            },
-                                            "text": "{{user.data?.timezone ?? '-'}}"
-                                        }
-                                    ]
-                                },
-                                {
-                                    "comment": "주소",
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "props": {
-                                        "className": "flex justify-between items-start"
-                                    },
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "props": {
-                                                "className": "text-sm text-gray-600 dark:text-gray-400 flex-shrink-0"
-                                            },
-                                            "text": "$t:mypage.profile.address"
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "props": {
-                                                "className": "text-sm text-gray-900 dark:text-white text-right max-w-[60%] break-words"
-                                            },
-                                            "text": "{{user.data?.zipcode || user.data?.address || user.data?.address_detail ? ((user.data?.zipcode ? '(' + user.data.zipcode + ') ' : '') + (user.data?.address ?? '') + (user.data?.address_detail ? ' ' + user.data.address_detail : '')) : '-'}}"
-                                        }
-                                    ]
+                                    "partial": "partials/member/_member_fields_view.json"
                                 }
                             ]
                         }
@@ -747,10 +578,11 @@
             ]
         },
         {
-            "comment": "결제 통화 표시 (A3 — 이커머스 모듈 설치 시에만. 읽기 전용. 변경은 회원정보 수정에서 통화도 함께 저장 — D9)",
+            "comment": "추가 정보 카드 — 운영자가 환경설정에서 추가한 항목(파일 항목 포함). 항목이 없으면 그리지 않는다.",
+            "id": "profile_view_extra_card",
             "type": "basic",
             "name": "Div",
-            "if": "{{user.data?.ecommerce_preferred_currency !== undefined}}",
+            "if": "{{($computed.profileFieldGroups ?? []).some(function(g) { return g.key === 'extra'; })}}",
             "responsive": {
                 "portable": {
                     "props": {
@@ -764,123 +596,33 @@
             "children": [
                 {
                     "type": "basic",
-                    "name": "Div",
+                    "name": "H3",
                     "props": {
-                        "className": "flex items-center gap-2 mb-4 pb-3 border-b border-gray-200 dark:border-gray-700"
+                        "className": "text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700"
+                    },
+                    "text": "$t:member.fields.section_extra"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "iteration": {
+                        "source": "{{($computed.profileFieldGroups ?? []).filter(function(g) { return g.key === 'extra'; })}}",
+                        "item_var": "memberFieldGroup"
                     },
                     "children": [
                         {
-                            "type": "basic",
-                            "name": "Icon",
-                            "props": {
-                                "name": "coins",
-                                "size": "md",
-                                "className": "text-gray-600 dark:text-gray-400"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "H3",
-                            "props": {
-                                "className": "text-base font-semibold text-gray-900 dark:text-white"
-                            },
-                            "text": "$t:mypage.currency_settings.title"
+                            "partial": "partials/member/_member_fields_view.json"
                         }
                     ]
-                },
-                {
-                    "type": "basic",
-                    "name": "P",
-                    "props": {
-                        "className": "text-base text-gray-900 dark:text-white font-medium"
-                    },
-                    "text": "{{user.data?.ecommerce_preferred_currency ?? _global.modules?.['sirsoft-ecommerce']?.language_currency?.default_currency}}"
-                },
-                {
-                    "type": "basic",
-                    "name": "P",
-                    "props": {
-                        "className": "text-xs text-gray-500 dark:text-gray-400 mt-2"
-                    },
-                    "text": "$t:mypage.currency_settings.edit_hint"
                 }
             ]
         },
         {
-            "comment": "배송국가 표시 (MP08 후속 — 이커머스 설치 + 해외배송 활성 시에만. 읽기 전용. 변경은 회원정보 수정에서 함께 저장).",
-            "type": "basic",
-            "name": "Div",
-            "if": "{{user.data?.ecommerce_preferred_shipping_country !== undefined && _global.modules?.['sirsoft-ecommerce']?.shipping?.international_shipping_enabled === true}}",
-            "responsive": {
-                "portable": {
-                    "props": {
-                        "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4"
-                    }
-                }
-            },
-            "props": {
-                "className": "bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "flex items-center gap-2 mb-4 pb-3 border-b border-gray-200 dark:border-gray-700"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "props": {
-                                "name": "earth-asia",
-                                "size": "md",
-                                "className": "text-gray-600 dark:text-gray-400"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "H3",
-                            "props": {
-                                "className": "text-base font-semibold text-gray-900 dark:text-white"
-                            },
-                            "text": "$t:mypage.shipping_country_settings.title"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "P",
-                    "props": {
-                        "className": "text-base text-gray-900 dark:text-white font-medium"
-                    },
-                    "text": "{{$localized((_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).find(c => c.code === (user.data?.ecommerce_preferred_shipping_country ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR'))?.name) || (user.data?.ecommerce_preferred_shipping_country ?? _global.modules?.['sirsoft-ecommerce']?.shipping?.default_country ?? 'KR')}}"
-                },
-                {
-                    "comment": "저장해 둔 국가를 운영자가 배송 가능 목록에서 내리면 화면·서버는 기본 국가로 계산한다 — 그 사실과 지금 적용 중인 국가를 함께 보인다.",
-                    "type": "basic",
-                    "name": "P",
-                    "if": "{{user.data?.ecommerce_preferred_shipping_country !== undefined && user.data?.ecommerce_preferred_shipping_country !== null && !(_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).some(c => c.is_active && c.code === user.data?.ecommerce_preferred_shipping_country)}}",
-                    "props": {
-                        "className": "mt-2 text-sm text-amber-700 dark:text-amber-300"
-                    },
-                    "text": "$t:mypage.shipping_country_settings.saved_not_applied|saved={{$localized((_global.modules?.['sirsoft-ecommerce']?.shipping?.available_countries ?? []).find(c => c.code === user.data?.ecommerce_preferred_shipping_country)?.name, 'sirsoft-ecommerce::settings.countries.' + (user.data?.ecommerce_preferred_shipping_country ?? '') + '.name') || user.data?.ecommerce_preferred_shipping_country}}|applied={{(_global.availableShippingCountries ?? []).find(c => c.code === _global.preferredShippingCountry)?.name ?? _global.preferredShippingCountry ?? ''}}"
-                },
-                {
-                    "type": "basic",
-                    "name": "P",
-                    "props": {
-                        "className": "text-xs text-gray-500 dark:text-gray-400 mt-2"
-                    },
-                    "text": "$t:mypage.shipping_country_settings.edit_hint"
-                }
-            ]
-        },
-        {
-            "comment": "서명 및 자기소개 카드",
+            "comment": "서명 및 자기소개 카드 — 두 항목이 모두 꺼져 있으면 그리지 않는다. 확장이 이 카드 뒤에 자기 카드를 붙이므로 노드와 이름은 그대로 둔다.",
             "id": "profile_view_bio_card",
             "type": "basic",
             "name": "Div",
+            "if": "{{($computed.profileFieldGroups ?? []).some(function(g) { return g.key === 'profile'; })}}",
             "responsive": {
                 "portable": {
                     "props": {
@@ -903,71 +645,27 @@
                 {
                     "type": "basic",
                     "name": "Div",
-                    "props": {
-                        "className": "space-y-5"
+                    "iteration": {
+                        "source": "{{($computed.profileFieldGroups ?? []).filter(function(g) { return g.key === 'profile'; })}}",
+                        "item_var": "memberFieldGroup"
                     },
                     "children": [
                         {
-                            "comment": "서명",
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "space-y-2"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "props": {
-                                        "className": "block text-sm font-medium text-gray-600 dark:text-gray-400"
-                                    },
-                                    "text": "$t:mypage.profile.signature"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "P",
-                                    "props": {
-                                        "className": "text-sm text-gray-900 dark:text-white whitespace-pre-wrap"
-                                    },
-                                    "text": "{{user.data?.signature ?? '-'}}"
-                                }
-                            ]
-                        },
-                        {
-                            "comment": "자기소개",
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "space-y-2"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Span",
-                                    "props": {
-                                        "className": "block text-sm font-medium text-gray-600 dark:text-gray-400"
-                                    },
-                                    "text": "$t:mypage.profile.bio"
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "P",
-                                    "props": {
-                                        "className": "text-sm text-gray-900 dark:text-white whitespace-pre-wrap"
-                                    },
-                                    "text": "{{user.data?.bio ?? '-'}}"
-                                }
-                            ]
+                            "partial": "partials/member/_member_fields_view.json"
                         }
                     ]
                 }
             ]
         },
         {
-            "comment": "게시판 알림 설정 (sirsoft-board 모듈 설치 시 표시)",
+            "comment": "확장별 카드 — 모듈과 플러그인이 회원 항목으로 선언한 값(게시판 알림, 결제 통화, 배송 국가, 마케팅 동의 등)을 확장마다 한 카드로 보인다. 카드 제목은 그 확장의 이름이다.",
+            "id": "profile_view_extension_card_{{memberFieldGroup.key}}",
             "type": "basic",
             "name": "Div",
-            "if": "{{user.data?.notify_comment !== undefined}}",
+            "iteration": {
+                "source": "{{$computed.profileExtensionGroups ?? []}}",
+                "item_var": "memberFieldGroup"
+            },
             "responsive": {
                 "portable": {
                     "props": {
@@ -981,236 +679,14 @@
             "children": [
                 {
                     "type": "basic",
-                    "name": "Div",
-                    "responsive": {
-                        "portable": {
-                            "props": {
-                                "className": "flex items-center justify-between mb-3"
-                            }
-                        }
-                    },
+                    "name": "H3",
                     "props": {
-                        "className": "flex items-center justify-between mb-4"
+                        "className": "text-base font-semibold text-gray-900 dark:text-white mb-4 pb-3 border-b border-gray-200 dark:border-gray-700 break-words"
                     },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "flex items-center gap-2"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Icon",
-                                    "props": {
-                                        "name": "bell",
-                                        "size": "md",
-                                        "className": "text-gray-600 dark:text-gray-400"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "H3",
-                                    "responsive": {
-                                        "portable": {
-                                            "props": {
-                                                "className": "text-base font-semibold text-gray-900 dark:text-white"
-                                            }
-                                        }
-                                    },
-                                    "props": {
-                                        "className": "text-lg font-semibold text-gray-900 dark:text-white"
-                                    },
-                                    "text": "$t:mypage.notification_settings.title"
-                                }
-                            ]
-                        }
-                    ]
+                    "text": "{{memberFieldGroup.title}}"
                 },
                 {
-                    "type": "basic",
-                    "name": "Div",
-                    "responsive": {
-                        "portable": {
-                            "props": {
-                                "className": "grid grid-cols-1 gap-3"
-                            }
-                        }
-                    },
-                    "props": {
-                        "className": "grid grid-cols-2 gap-4"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "flex items-start gap-3 p-3 rounded-lg"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Checkbox",
-                                    "props": {
-                                        "name": "notify_post_complete",
-                                        "aria-label": "$t:mypage.notification_settings.post_complete",
-                                        "checked": "{{!!user.data?.notify_post_complete}}",
-                                        "disabled": true,
-                                        "className": "w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "props": {
-                                                "className": "block text-sm font-medium text-gray-900 dark:text-white"
-                                            },
-                                            "text": "$t:mypage.notification_settings.post_complete"
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "props": {
-                                                "className": "block text-xs text-gray-500 dark:text-gray-400"
-                                            },
-                                            "text": "$t:mypage.notification_settings.post_complete_desc"
-                                        }
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "flex items-start gap-3 p-3 rounded-lg"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Checkbox",
-                                    "props": {
-                                        "name": "notify_post_reply",
-                                        "aria-label": "$t:mypage.notification_settings.post_reply",
-                                        "checked": "{{!!user.data?.notify_post_reply}}",
-                                        "disabled": true,
-                                        "className": "w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "props": {
-                                                "className": "block text-sm font-medium text-gray-900 dark:text-white"
-                                            },
-                                            "text": "$t:mypage.notification_settings.post_reply"
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "props": {
-                                                "className": "block text-xs text-gray-500 dark:text-gray-400"
-                                            },
-                                            "text": "$t:mypage.notification_settings.post_reply_desc"
-                                        }
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "flex items-start gap-3 p-3 rounded-lg"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Checkbox",
-                                    "props": {
-                                        "name": "notify_comment",
-                                        "aria-label": "$t:mypage.notification_settings.comment",
-                                        "checked": "{{!!user.data?.notify_comment}}",
-                                        "disabled": true,
-                                        "className": "w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "props": {
-                                                "className": "block text-sm font-medium text-gray-900 dark:text-white"
-                                            },
-                                            "text": "$t:mypage.notification_settings.comment"
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "props": {
-                                                "className": "block text-xs text-gray-500 dark:text-gray-400"
-                                            },
-                                            "text": "$t:mypage.notification_settings.comment_desc"
-                                        }
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Div",
-                            "props": {
-                                "className": "flex items-start gap-3 p-3 rounded-lg"
-                            },
-                            "children": [
-                                {
-                                    "type": "basic",
-                                    "name": "Checkbox",
-                                    "props": {
-                                        "name": "notify_reply_comment",
-                                        "aria-label": "$t:mypage.notification_settings.reply_comment",
-                                        "checked": "{{!!user.data?.notify_reply_comment}}",
-                                        "disabled": true,
-                                        "className": "w-5 h-5 mt-0.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 rounded cursor-not-allowed"
-                                    }
-                                },
-                                {
-                                    "type": "basic",
-                                    "name": "Div",
-                                    "children": [
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "props": {
-                                                "className": "block text-sm font-medium text-gray-900 dark:text-white"
-                                            },
-                                            "text": "$t:mypage.notification_settings.reply_comment"
-                                        },
-                                        {
-                                            "type": "basic",
-                                            "name": "Span",
-                                            "props": {
-                                                "className": "block text-xs text-gray-500 dark:text-gray-400"
-                                            },
-                                            "text": "$t:mypage.notification_settings.reply_comment_desc"
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    ]
+                    "partial": "partials/member/_member_fields_view.json"
                 }
             ]
         },

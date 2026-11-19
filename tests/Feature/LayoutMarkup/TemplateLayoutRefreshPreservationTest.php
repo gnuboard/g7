@@ -3,6 +3,7 @@
 namespace Tests\Feature\LayoutMarkup;
 
 use App\Enums\ExtensionStatus;
+use App\Enums\LayoutSyncMode;
 use App\Extension\TemplateManager;
 use App\Models\Template;
 use App\Models\TemplateLayout;
@@ -116,7 +117,8 @@ class TemplateLayoutRefreshPreservationTest extends TestCase
     }
 
     /**
-     * 편집기에서 지운 번들 레이아웃은 다음 갱신에서 파일 기준으로 되살아난다.
+     * 편집기에서 지운 번들 레이아웃은 덮어쓰기 갱신(`overwrite`)에서 파일 기준으로 되살아난다 — 기본 갱신(keep)은
+     * 운영자가 지운 화면을 건드리지 않는다(`kept_deleted_by_operator`).
      *
      * @scenario compile_unit=install,source_health=valid
      *
@@ -134,6 +136,9 @@ class TemplateLayoutRefreshPreservationTest extends TestCase
         $this->assertSoftDeleted($row);
 
         $manager->refreshTemplateLayouts($this->template->identifier);
+        $this->assertTrue(TemplateLayout::withTrashed()->findOrFail($row->id)->trashed(), '기본 갱신(keep)은 운영자가 지운 화면을 되살리지 않는다');
+
+        $manager->refreshTemplateLayouts($this->template->identifier, LayoutSyncMode::Overwrite);
 
         $live = TemplateLayout::where('template_id', $this->template->id)->where('name', 'refresh_home')->first();
         $this->assertNotNull($live, '지워진 행이 유니크 키를 차지해 갱신의 생성이 중복 키로 실패했다');

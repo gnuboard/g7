@@ -1,0 +1,1199 @@
+{
+    "comment": "소셜 로그인 진단 — 로그인·웹훅이 조용히 실패하는 지점을 한 화면에 모은다: 제공자 상태, 큐(워커가 멈추면 웹훅이 200 을 받고도 연결이 남는다),\n     메일(인증번호 발송 실패), 모의 제공자 표지, 비밀번호 없는 회원 수, 최근 실패 시도, 웹훅 수신 이력. 고치는 화면이 아니라 보는 화면이다.",
+    "version": "1.0.0",
+    "layout_name": "social_login_diagnostics",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-social_login.admin.diagnostics.title",
+        "description": "$t:sirsoft-social_login.admin.diagnostics.description"
+    },
+    "data_sources": [
+        {
+            "id": "diagnostics",
+            "label_key": "$t:sirsoft-social_login.editor.data_source.diagnostics",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-social_login/admin/diagnostics",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "refetchOnMount": true,
+            "errorHandling": {
+                "403": {
+                    "handler": "showErrorPage",
+                    "params": {
+                        "target": "content"
+                    }
+                }
+            },
+            "comment": "요약 카드 — 들어올 때마다 새로 받는다"
+        },
+        {
+            "id": "attempts",
+            "label_key": "$t:sirsoft-social_login.editor.data_source.attempts",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-social_login/admin/attempts",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "page": "{{query.attempt_page || 1}}",
+                "per_page": "20",
+                "provider": "{{query.attempt_provider || ''}}",
+                "outcome": "{{query.attempt_outcome === 'all' ? '' : (query.attempt_outcome || 'failed')}}"
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "pagination": {
+                        "current_page": 1,
+                        "last_page": 1,
+                        "per_page": 20,
+                        "total": 0
+                    }
+                }
+            },
+            "comment": "시도 기록 — 기본은 실패만. 제공자·결과는 주소(query)에서 읽어 새로고침해도 같은 조건이 남는다.\n       「모든 결과」는 빈 값 대신 all 로 싣는다 — 빈 쿼리 값은 주소에서 빠져 기본값(실패만)으로 되돌아간다"
+        },
+        {
+            "id": "webhookEvents",
+            "label_key": "$t:sirsoft-social_login.editor.data_source.webhook_events",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-social_login/admin/webhook-events",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "progressive",
+            "params": {
+                "page": "{{query.webhook_page || 1}}",
+                "per_page": "20",
+                "provider": "{{query.webhook_provider || ''}}",
+                "status": "{{query.webhook_status || ''}}"
+            },
+            "fallback": {
+                "data": {
+                    "data": [],
+                    "pagination": {
+                        "current_page": 1,
+                        "last_page": 1,
+                        "per_page": 20,
+                        "total": 0
+                    }
+                }
+            },
+            "comment": "웹훅 수신 이력 — 제공자·상태로 거른다"
+        }
+    ],
+    "permissions": [
+        "sirsoft-social_login.settings.view"
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "social_login_diagnostics_content",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "sl-admin-page-content"
+                },
+                "children": [
+                    {
+                        "id": "page_header",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "sl-flex-between sl:mb-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H1",
+                                        "responsive": {
+                                            "640-": {
+                                                "props": {
+                                                    "className": "sl:text-2xl sl:font-semibold sl:text-gray-900 sl:dark:text-white"
+                                                }
+                                            }
+                                        },
+                                        "props": {
+                                            "className": "sl:text-xl sl:font-semibold sl:text-gray-900 sl:dark:text-white"
+                                        },
+                                        "text": "$t:sirsoft-social_login.admin.diagnostics.title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "sl-text-label-subtle sl:mt-1"
+                                        },
+                                        "text": "$t:sirsoft-social_login.admin.diagnostics.description"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "sl-flex-center sl:gap-2"
+                                },
+                                "children": [
+                                    {
+                                        "id": "stats_link",
+                                        "type": "basic",
+                                        "name": "A",
+                                        "props": {
+                                            "href": "/admin/plugins/sirsoft-social_login/stats",
+                                            "className": "sl-btn sl-btn-secondary sl:text-sm"
+                                        },
+                                        "text": "$t:sirsoft-social_login.admin.stats.title"
+                                    },
+                                    {
+                                        "id": "settings_link",
+                                        "type": "basic",
+                                        "name": "A",
+                                        "props": {
+                                            "href": "/admin/plugins/sirsoft-social_login/settings",
+                                            "className": "sl-btn sl-btn-secondary sl:text-sm"
+                                        },
+                                        "text": "$t:sirsoft-social_login.settings.title"
+                                    },
+                                    {
+                                        "id": "refresh_button",
+                                        "type": "basic",
+                                        "name": "Button",
+                                        "actions": [
+                                            {
+                                                "comment": "진단 요약·시도 기록·웹훅 기록을 다시 받는다",
+                                                "type": "click",
+                                                "handler": "sequence",
+                                                "actions": [
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "diagnostics"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "attempts"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "webhookEvents"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "props": {
+                                            "type": "button",
+                                            "className": "sl-btn-icon",
+                                            "title": "$t:sirsoft-social_login.admin.diagnostics.refresh",
+                                            "aria-label": "$t:sirsoft-social_login.admin.diagnostics.refresh"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Icon",
+                                                "props": {
+                                                    "name": "arrows-rotate",
+                                                    "className": "sl:text-xl sl:leading-none"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "comment": "요약 응답 전에는 값 자리를 비우고 불러오는 중을, 받기에 실패하면 오류를 알린다 — 아직 오지 않은 값을 「메일 안 나감」, 「연결 회원 0명」으로 그리지 않는다",
+                        "id": "diagnostics_loading",
+                        "type": "basic",
+                        "name": "P",
+                        "if": "{{diagnostics === undefined}}",
+                        "props": {
+                            "role": "status",
+                            "className": "sl:text-sm sl:text-gray-500 sl:dark:text-gray-400 sl:mb-3"
+                        },
+                        "text": "$t:common.loading"
+                    },
+                    {
+                        "id": "diagnostics_load_failed",
+                        "type": "basic",
+                        "name": "P",
+                        "if": "{{diagnostics === null}}",
+                        "props": {
+                            "role": "alert",
+                            "className": "sl:text-sm sl:text-red-700 sl:dark:text-red-300 sl:mb-3"
+                        },
+                        "text": "$t:common.error_occurred"
+                    },
+                    {
+                        "id": "summary_cards",
+                        "type": "basic",
+                        "name": "Div",
+                        "responsive": {
+                            "768-1279": {
+                                "props": {
+                                    "className": "sl:grid sl:grid-cols-2 sl:gap-4 sl:mb-6"
+                                }
+                            },
+                            "1280-": {
+                                "props": {
+                                    "className": "sl:grid sl:grid-cols-4 sl:gap-4 sl:mb-6"
+                                }
+                            }
+                        },
+                        "props": {
+                            "className": "sl:grid sl:grid-cols-1 sl:gap-4 sl:mb-6"
+                        },
+                        "children": [
+                            {
+                                "id": "queue_card",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "sl-admin-card"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H2",
+                                        "props": {
+                                            "className": "sl:text-sm sl:font-semibold sl:text-gray-900 sl:dark:text-white sl:mb-2"
+                                        },
+                                        "text": "$t:sirsoft-social_login.admin.diagnostics.queue.title"
+                                    },
+                                    {
+                                        "id": "queue_values",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{!!diagnostics?.data}}",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
+                                                },
+                                                "text": "{{$t('sirsoft-social_login.admin.diagnostics.queue.connection') + ': ' + (diagnostics?.data?.queue?.connection ?? '-')}}"
+                                            },
+                                            {
+                                                "id": "queue_pending_value",
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "sl:text-sm sl:text-gray-800 sl:dark:text-gray-200"
+                                                },
+                                                "text": "{{$t('sirsoft-social_login.admin.diagnostics.queue.pending') + ': ' + (diagnostics?.data?.queue?.pending ?? '-')}}"
+                                            },
+                                            {
+                                                "id": "queue_failed_value",
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "{{(diagnostics?.data?.queue?.failed_jobs ?? 0) > 0 ? 'sl:text-sm sl:text-red-700 sl:dark:text-red-300' : 'sl:text-sm sl:text-gray-800 sl:dark:text-gray-200'}}"
+                                                },
+                                                "text": "{{$t('sirsoft-social_login.admin.diagnostics.queue.failed_jobs') + ': ' + (diagnostics?.data?.queue?.failed_jobs ?? '-')}}"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "if": "{{diagnostics?.data?.queue?.connection === 'sync'}}",
+                                                "props": {
+                                                    "className": "sl:text-xs sl:text-amber-700 sl:dark:text-amber-300 sl:mt-1"
+                                                },
+                                                "text": "$t:sirsoft-social_login.admin.diagnostics.queue.sync_hint"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "mail_card",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "sl-admin-card"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H2",
+                                        "props": {
+                                            "className": "sl:text-sm sl:font-semibold sl:text-gray-900 sl:dark:text-white sl:mb-2"
+                                        },
+                                        "text": "$t:sirsoft-social_login.admin.diagnostics.mail.title"
+                                    },
+                                    {
+                                        "id": "mail_values",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{!!diagnostics?.data}}",
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
+                                                },
+                                                "text": "{{$t('sirsoft-social_login.admin.diagnostics.mail.mailer') + ': ' + (diagnostics?.data?.mail?.mailer ?? '-')}}"
+                                            },
+                                            {
+                                                "id": "mail_status_value",
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "{{diagnostics?.data?.mail?.delivering ? 'sl:text-sm sl:text-green-700 sl:dark:text-green-300' : 'sl:text-sm sl:text-red-700 sl:dark:text-red-300'}}"
+                                                },
+                                                "text": "{{diagnostics?.data?.mail?.delivering ? $t('sirsoft-social_login.admin.diagnostics.mail.delivering') : $t('sirsoft-social_login.admin.diagnostics.mail.not_delivering')}}"
+                                            },
+                                            {
+                                                "id": "mail_failures_value",
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "sl:text-sm sl:text-gray-800 sl:dark:text-gray-200"
+                                                },
+                                                "text": "$t:sirsoft-social_login.admin.diagnostics.mail.recent_failures|count={{diagnostics?.data?.mail?.recent_code_failures ?? 0}}"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "mock_card",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "sl-admin-card"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H2",
+                                        "props": {
+                                            "className": "sl:text-sm sl:font-semibold sl:text-gray-900 sl:dark:text-white sl:mb-2"
+                                        },
+                                        "text": "$t:sirsoft-social_login.admin.diagnostics.mock.title"
+                                    },
+                                    {
+                                        "id": "mock_badge_on",
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{diagnostics?.data?.mock?.enabled}}",
+                                        "props": {
+                                            "className": "sl:inline-flex sl:items-center sl:px-2 sl:py-0.5 sl:rounded-full sl:text-xs sl:font-medium sl:bg-red-100 sl:text-red-800 sl:dark:bg-red-900/30 sl:dark:text-red-300"
+                                        },
+                                        "text": "$t:sirsoft-social_login.admin.diagnostics.mock.on|until={{diagnostics?.data?.mock?.expires_at ?? ''}}"
+                                    },
+                                    {
+                                        "id": "mock_badge_off",
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{diagnostics?.data && !diagnostics?.data?.mock?.enabled}}",
+                                        "props": {
+                                            "className": "sl:inline-flex sl:items-center sl:px-2 sl:py-0.5 sl:rounded-full sl:text-xs sl:font-medium sl:bg-gray-100 sl:text-gray-700 sl:dark:bg-gray-700 sl:dark:text-gray-300"
+                                        },
+                                        "text": "$t:sirsoft-social_login.admin.diagnostics.mock.off"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "P",
+                                        "props": {
+                                            "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400 sl:mt-2"
+                                        },
+                                        "text": "$t:sirsoft-social_login.admin.diagnostics.mock.hint"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "members_card",
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "sl-admin-card"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H2",
+                                        "props": {
+                                            "className": "sl:text-sm sl:font-semibold sl:text-gray-900 sl:dark:text-white sl:mb-2"
+                                        },
+                                        "text": "$t:sirsoft-social_login.admin.diagnostics.members.title"
+                                    },
+                                    {
+                                        "id": "members_values",
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "if": "{{!!diagnostics?.data}}",
+                                        "children": [
+                                            {
+                                                "id": "members_linked_value",
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "sl:text-sm sl:text-gray-800 sl:dark:text-gray-200"
+                                                },
+                                                "text": "$t:sirsoft-social_login.admin.diagnostics.members.linked|count={{diagnostics?.data?.members?.linked_users ?? 0}}"
+                                            },
+                                            {
+                                                "id": "members_passwordless_value",
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "sl:text-sm sl:text-gray-800 sl:dark:text-gray-200"
+                                                },
+                                                "text": "$t:sirsoft-social_login.admin.diagnostics.members.passwordless|count={{diagnostics?.data?.members?.passwordless_users ?? 0}}"
+                                            },
+                                            {
+                                                "id": "webhook_summary_value",
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400 sl:mt-2"
+                                                },
+                                                "text": "$t:sirsoft-social_login.admin.diagnostics.webhooks.summary|days={{diagnostics?.data?.webhooks?.days ?? 7}}|received={{diagnostics?.data?.webhooks?.received ?? 0}}|ignored={{diagnostics?.data?.webhooks?.ignored ?? 0}}|failed={{diagnostics?.data?.webhooks?.failed ?? 0}}"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "P",
+                                                "if": "{{(diagnostics?.data?.webhooks?.ignored ?? 0) > 0 && !diagnostics?.data?.webhooks?.trusted_proxy_configured}}",
+                                                "props": {
+                                                    "className": "sl:text-xs sl:text-amber-700 sl:dark:text-amber-300 sl:mt-1"
+                                                },
+                                                "text": "$t:sirsoft-social_login.admin.diagnostics.webhooks.proxy_hint"
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "providers_status_card",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "sl-admin-card sl:mb-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "H2",
+                                "props": {
+                                    "className": "sl:text-base sl:font-semibold sl:text-gray-900 sl:dark:text-white sl:mb-3"
+                                },
+                                "text": "$t:sirsoft-social_login.admin.diagnostics.providers.title"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "sl:overflow-x-auto"
+                                },
+                                "children": [
+                                    {
+                                        "id": "providers_status_table",
+                                        "type": "basic",
+                                        "name": "Table",
+                                        "props": {
+                                            "className": "sl:w-full sl:text-sm"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "Thead",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Tr",
+                                                        "props": {
+                                                            "className": "sl:text-left sl:text-xs sl:text-gray-500 sl:dark:text-gray-400 sl:border-b sl:border-gray-200 sl:dark:border-gray-700"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Th",
+                                                                "props": {
+                                                                    "className": "sl:py-2 sl:pr-3"
+                                                                },
+                                                                "text": "$t:sirsoft-social_login.admin.diagnostics.providers.provider"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Th",
+                                                                "props": {
+                                                                    "className": "sl:py-2 sl:pr-3"
+                                                                },
+                                                                "text": "$t:sirsoft-social_login.admin.diagnostics.providers.state"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Th",
+                                                                "props": {
+                                                                    "className": "sl:py-2 sl:pr-3"
+                                                                },
+                                                                "text": "$t:sirsoft-social_login.admin.diagnostics.providers.last_success"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Th",
+                                                                "props": {
+                                                                    "className": "sl:py-2 sl:pr-3"
+                                                                },
+                                                                "text": "$t:sirsoft-social_login.admin.diagnostics.providers.last_error"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Th",
+                                                                "props": {
+                                                                    "className": "sl:py-2 sl:pr-3"
+                                                                },
+                                                                "text": "$t:sirsoft-social_login.admin.diagnostics.providers.last_webhook"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Tbody",
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Tr",
+                                                        "iteration": {
+                                                            "source": "diagnostics?.data?.providers ?? []",
+                                                            "item_var": "row"
+                                                        },
+                                                        "dataKey": "{{row.key}}",
+                                                        "props": {
+                                                            "className": "sl:border-b sl:border-gray-100 sl:dark:border-gray-700"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Td",
+                                                                "props": {
+                                                                    "className": "sl:py-2 sl:pr-3 sl:whitespace-nowrap sl:text-gray-900 sl:dark:text-white"
+                                                                },
+                                                                "text": "{{row.label}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Td",
+                                                                "props": {
+                                                                    "className": "sl:py-2 sl:pr-3 sl:whitespace-nowrap"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "props": {
+                                                                            "className": "{{row.credentials_unreadable ? 'sl:text-red-700 sl:dark:text-red-300' : (row.enabled ? 'sl:text-green-700 sl:dark:text-green-300' : 'sl:text-gray-600 sl:dark:text-gray-300')}}"
+                                                                        },
+                                                                        "text": "{{row.credentials_unreadable ? $t('sirsoft-social_login.admin.diagnostics.providers.unreadable') : (row.enabled ? $t('sirsoft-social_login.admin.providers.enabled') : (row.configured ? $t('sirsoft-social_login.admin.diagnostics.providers.configured') : $t('sirsoft-social_login.admin.diagnostics.providers.not_configured')))}}"
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Td",
+                                                                "props": {
+                                                                    "className": "sl:py-2 sl:pr-3 sl:whitespace-nowrap sl:text-gray-700 sl:dark:text-gray-300"
+                                                                },
+                                                                "text": "{{row.last_success_at ?? '-'}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Td",
+                                                                "props": {
+                                                                    "className": "sl:py-2 sl:pr-3 sl:whitespace-nowrap sl:text-gray-700 sl:dark:text-gray-300"
+                                                                },
+                                                                "text": "{{row.last_error_at ? row.last_error_at + ' (' + (row.last_error_code ?? '') + ')' : '-'}}"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Td",
+                                                                "props": {
+                                                                    "className": "sl:py-2 sl:pr-3 sl:whitespace-nowrap sl:text-gray-700 sl:dark:text-gray-300"
+                                                                },
+                                                                "text": "{{row.last_webhook_at ?? '-'}}"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "attempts_section",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "sl-admin-card sl:mb-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "sl:flex sl:flex-wrap sl:items-center sl:justify-between sl:gap-2 sl:mb-3"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H2",
+                                        "props": {
+                                            "className": "sl:text-base sl:font-semibold sl:text-gray-900 sl:dark:text-white"
+                                        },
+                                        "text": "$t:sirsoft-social_login.admin.diagnostics.attempts.title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "sl:flex sl:flex-wrap sl:items-center sl:gap-2"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "attempt_provider_filter",
+                                                "type": "basic",
+                                                "name": "Select",
+                                                "actions": [
+                                                    {
+                                                        "comment": "시도 기록을 제공자로 거른다 — 주소 쿼리에 담아 새로고침 뒤에도 남기고, 첫 쪽으로 돌린다",
+                                                        "type": "change",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/plugins/sirsoft-social_login/diagnostics",
+                                                            "mergeQuery": true,
+                                                            "query": {
+                                                                "attempt_provider": "{{$event.target.value}}",
+                                                                "attempt_page": 1
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "className": "sl:w-40",
+                                                    "value": "{{query.attempt_provider || ''}}",
+                                                    "aria-label": "$t:sirsoft-social_login.admin.diagnostics.filters.provider"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Option",
+                                                        "props": {
+                                                            "value": ""
+                                                        },
+                                                        "text": "$t:sirsoft-social_login.admin.diagnostics.filters.all_providers"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Option",
+                                                        "iteration": {
+                                                            "source": "diagnostics?.data?.providers ?? []",
+                                                            "item_var": "row"
+                                                        },
+                                                        "props": {
+                                                            "value": "{{row.key}}"
+                                                        },
+                                                        "text": "{{row.label}}"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "attempt_outcome_filter",
+                                                "type": "basic",
+                                                "name": "Select",
+                                                "actions": [
+                                                    {
+                                                        "comment": "시도 기록을 결과로 거른다 — 주소 쿼리에 담고 첫 쪽으로 돌린다",
+                                                        "type": "change",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/plugins/sirsoft-social_login/diagnostics",
+                                                            "mergeQuery": true,
+                                                            "query": {
+                                                                "attempt_outcome": "{{$event.target.value}}",
+                                                                "attempt_page": 1
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "className": "sl:w-40",
+                                                    "value": "{{query.attempt_outcome || 'failed'}}",
+                                                    "aria-label": "$t:sirsoft-social_login.admin.diagnostics.filters.outcome"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Option",
+                                                        "props": {
+                                                            "value": "all"
+                                                        },
+                                                        "text": "$t:sirsoft-social_login.admin.diagnostics.filters.all_outcomes"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Option",
+                                                        "props": {
+                                                            "value": "failed"
+                                                        },
+                                                        "text": "$t:sirsoft-social_login.admin.diagnostics.outcomes.failed"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Option",
+                                                        "props": {
+                                                            "value": "denied"
+                                                        },
+                                                        "text": "$t:sirsoft-social_login.admin.diagnostics.outcomes.denied"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Option",
+                                                        "props": {
+                                                            "value": "handoff"
+                                                        },
+                                                        "text": "$t:sirsoft-social_login.admin.diagnostics.outcomes.handoff"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Option",
+                                                        "props": {
+                                                            "value": "signup"
+                                                        },
+                                                        "text": "$t:sirsoft-social_login.admin.diagnostics.outcomes.signup"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Option",
+                                                        "props": {
+                                                            "value": "link"
+                                                        },
+                                                        "text": "$t:sirsoft-social_login.admin.diagnostics.outcomes.link"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Option",
+                                                        "props": {
+                                                            "value": "login"
+                                                        },
+                                                        "text": "$t:sirsoft-social_login.admin.diagnostics.outcomes.login"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "attempts_datagrid",
+                                "type": "composite",
+                                "name": "DataGrid",
+                                "actions": [
+                                    {
+                                        "comment": "시도 기록 쪽 이동 — 다른 필터는 그대로 두고 쪽 번호만 바꾼다",
+                                        "type": "change",
+                                        "event": "onPageChange",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/plugins/sirsoft-social_login/diagnostics",
+                                            "mergeQuery": true,
+                                            "query": {
+                                                "attempt_page": "{{$args[0]}}"
+                                            }
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "data": "{{attempts?.data?.data}}",
+                                    "pagination": true,
+                                    "serverSidePagination": true,
+                                    "serverCurrentPage": "{{attempts?.data?.pagination?.current_page ?? 1}}",
+                                    "serverTotalPages": "{{attempts?.data?.pagination?.last_page ?? null}}",
+                                    "pageSize": "20",
+                                    "idField": "id",
+                                    "selectable": false,
+                                    "emptyMessage": "{{attempts === undefined ? '' : $t('sirsoft-social_login.admin.diagnostics.attempts.empty')}}",
+                                    "columns": [
+                                        {
+                                            "field": "created_at",
+                                            "header": "$t:sirsoft-social_login.admin.diagnostics.attempts.col.created_at",
+                                            "sortable": false,
+                                            "width": "170px",
+                                            "cellChildren": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "sl-text-label sl:whitespace-nowrap"
+                                                    },
+                                                    "text": "{{row.created_at ?? '-'}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "field": "provider_key",
+                                            "header": "$t:sirsoft-social_login.admin.diagnostics.attempts.col.provider",
+                                            "sortable": false,
+                                            "width": "120px",
+                                            "cellChildren": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "sl-text-body"
+                                                    },
+                                                    "text": "{{row.provider_key}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "field": "intent",
+                                            "header": "$t:sirsoft-social_login.admin.diagnostics.attempts.col.intent",
+                                            "sortable": false,
+                                            "width": "90px",
+                                            "cellChildren": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "sl-text-body"
+                                                    },
+                                                    "text": "{{$t('sirsoft-social_login.admin.diagnostics.intents.' + row.intent)}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "field": "outcome",
+                                            "header": "$t:sirsoft-social_login.admin.diagnostics.attempts.col.outcome",
+                                            "sortable": false,
+                                            "width": "90px",
+                                            "cellChildren": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "{{row.outcome === 'failed' || row.outcome === 'denied' ? 'sl:text-red-700 sl:dark:text-red-300' : 'sl:text-gray-800 sl:dark:text-gray-200'}}"
+                                                    },
+                                                    "text": "{{$t('sirsoft-social_login.admin.diagnostics.outcomes.' + row.outcome)}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "field": "error_code",
+                                            "header": "$t:sirsoft-social_login.admin.diagnostics.attempts.col.error",
+                                            "sortable": false,
+                                            "cellChildren": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "sl:text-xs sl:font-mono sl:text-gray-700 sl:dark:text-gray-300 sl:break-all sl-break-all"
+                                                    },
+                                                    "text": "{{(row.error_code ?? '-') + (row.error_message ? ' — ' + row.error_message : '')}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "id": "webhooks_section",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "sl-admin-card"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "sl:flex sl:flex-wrap sl:items-center sl:justify-between sl:gap-2 sl:mb-3"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "H2",
+                                        "props": {
+                                            "className": "sl:text-base sl:font-semibold sl:text-gray-900 sl:dark:text-white"
+                                        },
+                                        "text": "$t:sirsoft-social_login.admin.diagnostics.webhooks.title"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "sl:flex sl:flex-wrap sl:items-center sl:gap-2"
+                                        },
+                                        "children": [
+                                            {
+                                                "id": "webhook_provider_filter",
+                                                "type": "basic",
+                                                "name": "Select",
+                                                "actions": [
+                                                    {
+                                                        "comment": "웹훅 기록을 제공자로 거른다 — 주소 쿼리에 담고 첫 쪽으로 돌린다",
+                                                        "type": "change",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/plugins/sirsoft-social_login/diagnostics",
+                                                            "mergeQuery": true,
+                                                            "query": {
+                                                                "webhook_provider": "{{$event.target.value}}",
+                                                                "webhook_page": 1
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "className": "sl:w-40",
+                                                    "value": "{{query.webhook_provider || ''}}",
+                                                    "aria-label": "$t:sirsoft-social_login.admin.diagnostics.filters.provider"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Option",
+                                                        "props": {
+                                                            "value": ""
+                                                        },
+                                                        "text": "$t:sirsoft-social_login.admin.diagnostics.filters.all_providers"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Option",
+                                                        "props": {
+                                                            "value": "kakao"
+                                                        },
+                                                        "text": "$t:sirsoft-social_login.admin.diagnostics.webhooks.providers.kakao"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Option",
+                                                        "props": {
+                                                            "value": "naver"
+                                                        },
+                                                        "text": "$t:sirsoft-social_login.admin.diagnostics.webhooks.providers.naver"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Option",
+                                                        "props": {
+                                                            "value": "facebook"
+                                                        },
+                                                        "text": "$t:sirsoft-social_login.admin.diagnostics.webhooks.providers.facebook"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "webhook_status_filter",
+                                                "type": "basic",
+                                                "name": "Select",
+                                                "actions": [
+                                                    {
+                                                        "comment": "웹훅 기록을 처리 상태로 거른다 — 주소 쿼리에 담고 첫 쪽으로 돌린다",
+                                                        "type": "change",
+                                                        "handler": "navigate",
+                                                        "params": {
+                                                            "path": "/admin/plugins/sirsoft-social_login/diagnostics",
+                                                            "mergeQuery": true,
+                                                            "query": {
+                                                                "webhook_status": "{{$event.target.value}}",
+                                                                "webhook_page": 1
+                                                            }
+                                                        }
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "className": "sl:w-40",
+                                                    "value": "{{query.webhook_status || ''}}",
+                                                    "aria-label": "$t:sirsoft-social_login.admin.diagnostics.filters.status"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Option",
+                                                        "props": {
+                                                            "value": ""
+                                                        },
+                                                        "text": "$t:sirsoft-social_login.admin.diagnostics.filters.all_statuses"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Option",
+                                                        "props": {
+                                                            "value": "received"
+                                                        },
+                                                        "text": "$t:sirsoft-social_login.admin.diagnostics.statuses.received"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Option",
+                                                        "props": {
+                                                            "value": "processed"
+                                                        },
+                                                        "text": "$t:sirsoft-social_login.admin.diagnostics.statuses.processed"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Option",
+                                                        "props": {
+                                                            "value": "ignored"
+                                                        },
+                                                        "text": "$t:sirsoft-social_login.admin.diagnostics.statuses.ignored"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Option",
+                                                        "props": {
+                                                            "value": "failed"
+                                                        },
+                                                        "text": "$t:sirsoft-social_login.admin.diagnostics.statuses.failed"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "webhooks_datagrid",
+                                "type": "composite",
+                                "name": "DataGrid",
+                                "actions": [
+                                    {
+                                        "comment": "웹훅 기록 쪽 이동 — 다른 필터는 그대로 두고 쪽 번호만 바꾼다",
+                                        "type": "change",
+                                        "event": "onPageChange",
+                                        "handler": "navigate",
+                                        "params": {
+                                            "path": "/admin/plugins/sirsoft-social_login/diagnostics",
+                                            "mergeQuery": true,
+                                            "query": {
+                                                "webhook_page": "{{$args[0]}}"
+                                            }
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "data": "{{webhookEvents?.data?.data}}",
+                                    "pagination": true,
+                                    "serverSidePagination": true,
+                                    "serverCurrentPage": "{{webhookEvents?.data?.pagination?.current_page ?? 1}}",
+                                    "serverTotalPages": "{{webhookEvents?.data?.pagination?.last_page ?? null}}",
+                                    "pageSize": "20",
+                                    "idField": "id",
+                                    "selectable": false,
+                                    "emptyMessage": "{{webhookEvents === undefined ? '' : $t('sirsoft-social_login.admin.diagnostics.webhooks.empty')}}",
+                                    "columns": [
+                                        {
+                                            "field": "received_at",
+                                            "header": "$t:sirsoft-social_login.admin.diagnostics.webhooks.col.received_at",
+                                            "sortable": false,
+                                            "width": "170px",
+                                            "cellChildren": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "sl-text-label sl:whitespace-nowrap"
+                                                    },
+                                                    "text": "{{row.received_at ?? '-'}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "field": "provider_key",
+                                            "header": "$t:sirsoft-social_login.admin.diagnostics.webhooks.col.provider",
+                                            "sortable": false,
+                                            "width": "100px",
+                                            "cellChildren": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "sl-text-body"
+                                                    },
+                                                    "text": "{{row.provider_key}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "field": "event_type",
+                                            "header": "$t:sirsoft-social_login.admin.diagnostics.webhooks.col.event_type",
+                                            "sortable": false,
+                                            "width": "140px",
+                                            "cellChildren": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "sl-text-body"
+                                                    },
+                                                    "text": "{{$t('sirsoft-social_login.admin.diagnostics.event_types.' + row.event_type)}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "field": "status",
+                                            "header": "$t:sirsoft-social_login.admin.diagnostics.webhooks.col.status",
+                                            "sortable": false,
+                                            "width": "100px",
+                                            "cellChildren": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "{{row.status === 'failed' ? 'sl:text-red-700 sl:dark:text-red-300' : (row.status === 'ignored' ? 'sl:text-amber-700 sl:dark:text-amber-300' : 'sl:text-gray-800 sl:dark:text-gray-200')}}"
+                                                    },
+                                                    "text": "{{$t('sirsoft-social_login.admin.diagnostics.statuses.' + row.status)}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "field": "error",
+                                            "header": "$t:sirsoft-social_login.admin.diagnostics.webhooks.col.detail",
+                                            "sortable": false,
+                                            "cellChildren": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "props": {
+                                                        "className": "sl:text-xs sl:font-mono sl:text-gray-700 sl:dark:text-gray-300 sl:break-all sl-break-all"
+                                                    },
+                                                    "text": "{{(row.provider_user_id_prefix ? row.provider_user_id_prefix + '… ' : '') + (row.error ?? '') + ' · ' + $t('sirsoft-social_login.admin.diagnostics.webhooks.attempts') + ' ' + (row.attempts ?? 0)}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

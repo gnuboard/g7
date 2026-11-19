@@ -28,16 +28,35 @@ PG·통신사 업무 규칙이라 `Asia/Seoul` 로 고정합니다. INIAPI 요�
 Controllers (PaymentCallbackController 등 — PG 콜백 수신, 화이트리스트·재처리 방지 검증)
         │
         ▼
-Services (KgInicisApiService — 승인/취소/CBT API 호출, 서명·해시 생성)
+Services (KgInicisApiService — 승인/취소/CBT API 호출, 서명·해시 생성,
+          CbtCvsOperationsService — CBT 편의점 입금 통보·운영)
         │
-        ├──▶ Repositories (CbtCvsOperationsRepository/CbtReconciliationRepository
-        │     — sirsoft-ecommerce 의 Order 모델을 조회, 자체 테이블 없음)
+        ├──▶ 이커머스 공개 결제 계약 (PaymentGatewayBridge — 주문·결제 조회와 상태 전환)
+        │     Repositories (CbtReconciliationRepository/EscrowDeliveryRepository) 도 이 계약을 감쌀 뿐,
+        │     자체 테이블 없음
         │
         └──▶ 훅 발행 (before/after_authorize·cancel·cbt_refund) ──▶ 다른 확장 리스너
 
 Listeners (RegisterPgProviderListener 등 — 이커머스 레지스트리 등록,
            레이아웃 확장 주입, 설정 검증)
 ```
+
+**이커머스 접근 경계(#916)**: 이 플러그인은 이커머스 내부 클래스(Service·Repository·Model 정적 조회·테이블)를
+쓰지 않습니다. 주문·결제 조회와 쓰기는 이커머스 `public_api` 의 결제 계약
+`Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge`(하위 `PaymentLookup`·`OrderAccess`·
+`ClaimPaymentLookup`·`PaymentLifecycle`)를 생성자로 주입받아 하고, 결과는 DTO(`OrderRecord`·`PaymentRecord`·
+`ClaimPaymentRecord` 등)로 받습니다. 시험 상품은 `Contracts\Catalog\ProductProvisioner`, 금액 표기는
+`Contracts\Currency\PriceFormatter`, API 문서 샘플 결제는 `Contracts\Payment\PaymentSampleProvisioner` 로 맡깁니다.
+읽기 전용 Model(`Order`·`OrderPayment`·`ClaimPayment`)은 이커머스 훅이 넘겨 준 인자의 타입힌트·속성 읽기와,
+이 플러그인 공개 훅(`payment.before_authorize`·`after_authorize`)과 공개 Support(`ClaimPaymentCallback`·
+`ClaimPaymentRedirect`)에 넘길 인자(계약의 `findOrderModel`·`findClaimPaymentModel`)로만 씁니다. 판정 메서드
+(`isVirtualAccount` 등)는 Model 이 아니라 `describePayment()` DTO 로 읽습니다.
+
+조회는 이 결제사 결제 행만 봅니다(주문번호 단건 조회는 아직 결제 전인 다른 결제사 id 행도 보임). 쓰기는 결제 전 행이면
+결제사 id 를 넘겨받고(가상계좌 발급·결제 완료의 `takeOverProvider`), 다른 결제사가 결제한 행이면 계약이
+`ProviderMismatch` 를 던집니다. 결제 meta 누적(통보 이력·비과세 소진액·구매거절확인 중복 차단)은 결제 행 잠금 아래에서
+계산하고(`mutatePaymentMetaWithLock`), 일본 CBT 대사 기록은 주문 meta 의 자기 키(`kginicis_cbt_reconciliation`)만
+주문 행 잠금 아래 바꿉니다(`mutateOrderMetaWithLock`).
 
 미들웨어(`InicisNotifyIpWhitelist`)는 이 흐름과 별도 레인에서 가상계좌/CBT 편의점 입금통보
 라우트 앞단을 지킵니다 — Service 계층이 아니라 라우팅 계층에서 걸러야 신뢰할 수 없는 발신자의

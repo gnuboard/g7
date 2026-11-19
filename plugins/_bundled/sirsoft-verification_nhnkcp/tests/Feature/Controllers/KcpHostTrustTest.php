@@ -216,7 +216,10 @@ class KcpHostTrustTest extends PluginTestCase
 
         $bridge = (string) file_get_contents(dirname(__DIR__, 3).'/assets/bridge/kcp-bridge.js');
         $this->assertStringContainsString('function toSafeReturnPath(', $bridge);
-        $this->assertStringContainsString("var dest = (stash && toSafeReturnPath(stash.return_url)) || '/';", $bridge);
+        // 복귀 주소가 없으면 화면 주소 키 home(기본 '/')으로 간다 (#792 F1-17) — 값은 데이터 블록의 homeUrl, 동작은 정적 브리지 파일(#158)
+        $this->assertStringContainsString('"homeUrl":"\/"', $html);
+        $this->assertStringContainsString("var HOME_URL = data.homeUrl || '/';", $bridge);
+        $this->assertStringContainsString("var dest = (stash && toSafeReturnPath(stash.return_url)) || HOME_URL;", $bridge);
     }
 
     /**

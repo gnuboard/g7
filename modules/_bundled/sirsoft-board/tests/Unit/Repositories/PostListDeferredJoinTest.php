@@ -20,9 +20,7 @@ use Modules\Sirsoft\Board\Tests\BoardTestCase;
  * 읽는" 2단계 조회다. 이 화면은 공지 병합·답글 트리·다음 페이지 판정이 얽혀 있어, 조회 방식
  * 변경이 조용히 깨지면 화면에서 빈 값이나 누락으로만 드러난다. 그 성질들을 고정한다.
  *
- * @scenario case=post_list_deferred_join
- *
- * @effects self_scoped_list_returns_only_own_rows, soft_deleted_rows_stay_excluded, with_trashed_scope_is_preserved
+ * @scenario columns=pruned, relations=eager_load
  */
 class PostListDeferredJoinTest extends BoardTestCase
 {
@@ -31,6 +29,11 @@ class PostListDeferredJoinTest extends BoardTestCase
     /** 수집된 실행 쿼리 SQL 목록 */
     private array $queries = [];
 
+    /**
+     * 게시판을 준비하고 시험 대상 게시글 저장소를 컨테이너에서 꺼내 둔다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -38,7 +41,11 @@ class PostListDeferredJoinTest extends BoardTestCase
         $this->repository = app(PostRepository::class);
     }
 
-    /** 쿼리 로그 수집을 시작합니다. */
+    /**
+     * 쿼리 로그 수집을 시작합니다.
+     *
+     * @return void 반환값 없음
+     */
     private function startCapture(): void
     {
         $this->queries = [];
@@ -59,6 +66,15 @@ class PostListDeferredJoinTest extends BoardTestCase
         return array_values(array_filter($this->queries, fn (string $sql) => str_contains($sql, $needle)));
     }
 
+    /**
+     * 2쪽 조회의 OFFSET 쿼리가 본문 컬럼이나 SUBSTRING 잘라 읽기를 포함하지 않는지 확인한다.
+     *
+     * @scenario page_position=middle, columns=pruned
+     *
+     * @effects inner_excludes_wide_columns_from_offset_scan
+     *
+     * @return void 반환값 없음
+     */
     public function test_offset_scan_does_not_read_content_preview(): void
     {
         for ($i = 1; $i <= 25; $i++) {
@@ -80,6 +96,15 @@ class PostListDeferredJoinTest extends BoardTestCase
         }
     }
 
+    /**
+     * 공지가 1쪽 선두에만 붙고 2쪽에는 다시 나오지 않는지 확인한다.
+     *
+     * @scenario page_position=first
+     *
+     * @effects notices_appear_only_on_first_page
+     *
+     * @return void 반환값 없음
+     */
     public function test_page_one_shows_notices_and_page_two_does_not(): void
     {
         $this->createTestPost(['title' => '공지사항', 'is_notice' => true]);
@@ -98,6 +123,15 @@ class PostListDeferredJoinTest extends BoardTestCase
         $this->assertNotContains('공지사항', $titles2, '공지는 2페이지에 반복되지 않아야 한다');
     }
 
+    /**
+     * 답글이 같은 쪽 안에서 원글 바로 뒤에 순서대로 붙는지 확인한다.
+     *
+     * @scenario relations=eager_load
+     *
+     * @effects outer_result_order_matches_inner_order
+     *
+     * @return void 반환값 없음
+     */
     public function test_replies_follow_their_parent_in_the_same_page(): void
     {
         $parentId = $this->createTestPost(['title' => '원글']);
@@ -110,6 +144,15 @@ class PostListDeferredJoinTest extends BoardTestCase
         $this->assertSame(['원글', '답글 1', '답글 2'], $titles);
     }
 
+    /**
+     * 답글 행도 원글과 같은 컬럼 목록으로 조회돼 본문 미리보기 원문이 비지 않는지 확인한다.
+     *
+     * @scenario columns=pruned
+     *
+     * @effects outer_filters_by_id_set_without_offset
+     *
+     * @return void 반환값 없음
+     */
     public function test_reply_content_preview_is_available_like_parent(): void
     {
         $parentId = $this->createTestPost(['title' => '원글', 'content' => '원글 본문입니다.']);
@@ -130,6 +173,15 @@ class PostListDeferredJoinTest extends BoardTestCase
         }
     }
 
+    /**
+     * 25건을 10건씩 나눴을 때 1쪽과 2쪽의 ID 가 겹치지 않는지 확인한다.
+     *
+     * @scenario page_position=middle, sort_column=key
+     *
+     * @effects pages_do_not_overlap_or_drop_rows
+     *
+     * @return void 반환값 없음
+     */
     public function test_pages_do_not_overlap(): void
     {
         for ($i = 1; $i <= 25; $i++) {
@@ -146,6 +198,15 @@ class PostListDeferredJoinTest extends BoardTestCase
         $this->assertEmpty(array_intersect($ids1, $ids2));
     }
 
+    /**
+     * 15건 목록에서 1쪽은 다음 쪽이 있고 마지막 2쪽은 다음 쪽이 없다고 판정하는지 확인한다.
+     *
+     * @scenario page_position=last
+     *
+     * @effects simple_mode_reports_last_page_without_next
+     *
+     * @return void 반환값 없음
+     */
     public function test_last_page_reports_no_more_pages(): void
     {
         for ($i = 1; $i <= 15; $i++) {
@@ -159,6 +220,15 @@ class PostListDeferredJoinTest extends BoardTestCase
         $this->assertFalse($page2->hasMorePages(), '마지막 페이지에서 다음 버튼이 남으면 안 된다');
     }
 
+    /**
+     * 기본 조회에서 소프트 삭제된 게시글이 목록에 나오지 않는지 확인한다.
+     *
+     * @scenario soft_delete=default_excluded
+     *
+     * @effects soft_deleted_rows_stay_excluded
+     *
+     * @return void 반환값 없음
+     */
     public function test_soft_deleted_posts_are_excluded_by_default(): void
     {
         $this->createTestPost(['title' => '살아있는 글']);
@@ -171,6 +241,15 @@ class PostListDeferredJoinTest extends BoardTestCase
         $this->assertNotContains('삭제된 글', $titles);
     }
 
+    /**
+     * 휴지통 포함 조회 인자를 주면 삭제된 게시글도 목록에 포함되는지 확인한다.
+     *
+     * @scenario soft_delete=with_trashed
+     *
+     * @effects with_trashed_scope_is_preserved
+     *
+     * @return void 반환값 없음
+     */
     public function test_with_trashed_includes_deleted_posts(): void
     {
         $this->createTestPost(['title' => '살아있는 글']);
@@ -182,6 +261,15 @@ class PostListDeferredJoinTest extends BoardTestCase
         $this->assertContains('삭제된 글', $titles);
     }
 
+    /**
+     * 조회수가 모두 같은 동률 정렬에서도 키 컬럼(id) 내림차순이 2차 정렬로 붙어 순서가 고정되는지 확인한다.
+     *
+     * @scenario sort_column=tied_values
+     *
+     * @effects key_column_appended_to_sort_for_total_order
+     *
+     * @return void 반환값 없음
+     */
     public function test_sort_order_is_applied_and_deterministic(): void
     {
         // 조회수가 모두 같은 상태 — 2차 정렬(id)이 없으면 페이지 경계가 흔들린다
@@ -209,6 +297,12 @@ class PostListDeferredJoinTest extends BoardTestCase
      * 지연 조인은 이 쿼리를 clone 해 inner/outer 두 번 실행하므로, 스코프가 한쪽에만
      * 걸리면 목록에 타인 글이 노출되거나(권한 누출) 페이지가 비게 된다. 이 실패는
      * 예외 없이 조용히 일어나므로 결과 집합으로 직접 단언한다.
+     *
+     * @scenario filter=scoped
+     *
+     * @effects self_scoped_list_returns_only_own_rows
+     *
+     * @return void 반환값 없음
      */
     public function test_self_scoped_list_returns_only_own_rows(): void
     {
@@ -262,6 +356,7 @@ class PostListDeferredJoinTest extends BoardTestCase
      * @param  string  $identifier  권한 식별자
      * @param  string  $scopeType  스코프 유형 (self/role)
      * @param  array  $scopeMeta  config 의 scope 정의 (resource_route_key / owner_key)
+     * @return void 반환값 없음
      */
     private function grantScopedPermission(User $user, string $identifier, string $scopeType, array $scopeMeta): void
     {

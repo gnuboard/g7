@@ -7,7 +7,6 @@
  *  - readSupportedLocales — G7Config.appConfig.supportedLocales 합집합 읽기.
  */
 
-import React from 'react';
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 
@@ -33,6 +32,10 @@ afterEach(() => {
 });
 
 describe('LocaleSwitcher', () => {
+  /**
+   * @scenario subject=locale_switcher
+   * @effects locale_switcher_renders_locales_current_active
+   */
   it('주입된 로케일 목록을 버튼으로 렌더, 현재 로케일 active', () => {
     renderWith(['ko', 'en', 'ja'], 'ko');
     expect(screen.getByTestId('g7le-locale-ko').getAttribute('aria-pressed')).toBe('true');
@@ -40,6 +43,10 @@ describe('LocaleSwitcher', () => {
     expect(screen.getByTestId('g7le-locale-ja')).toBeTruthy();
   });
 
+  /**
+   * @scenario subject=locale_switcher
+   * @effects locale_switcher_click_switches_active
+   */
   it('전환 클릭 → 그 로케일이 active 로 변경 (SET_LOCALE 반영)', () => {
     renderWith(['ko', 'en', 'ja'], 'ko');
     fireEvent.click(screen.getByTestId('g7le-locale-en'));
@@ -47,16 +54,28 @@ describe('LocaleSwitcher', () => {
     expect(screen.getByTestId('g7le-locale-ko').getAttribute('aria-pressed')).toBe('false');
   });
 
+  /**
+   * @scenario subject=locale_switcher
+   * @effects locale_switcher_single_locale_label_only
+   */
   it('로케일 1개 → 전환 토글 없이 라벨만', () => {
     renderWith(['ko'], 'ko');
     expect(screen.queryByTestId('g7le-locale-switcher')).toBeNull();
     expect(screen.getByTestId('g7le-locale-switcher-single')).toBeTruthy();
   });
 
+  /**
+   * @scenario subject=locale_switcher
+   * @effects locale_switcher_adds_missing_current_locale
+   */
   it('현재 로케일이 목록에 없으면 앞에 추가해 선택 가능하게', () => {
     renderWith(['en', 'ja'], 'ko');
     expect(screen.getByTestId('g7le-locale-ko')).toBeTruthy();
     expect(screen.getByTestId('g7le-locale-ko').getAttribute('aria-pressed')).toBe('true');
+    // 「앞에」: 현재 로케일 버튼이 목록 맨 앞에 온다.
+    const order = Array.from(screen.getByTestId('g7le-locale-switcher').querySelectorAll('[data-testid^="g7le-locale-"]'))
+      .map((el) => el.getAttribute('data-testid'));
+    expect(order).toEqual(['g7le-locale-ko', 'g7le-locale-en', 'g7le-locale-ja']);
   });
 });
 
@@ -65,6 +84,10 @@ describe('readSupportedLocales', () => {
     delete (window as unknown as { G7Config?: unknown }).G7Config;
   });
 
+  /**
+   * @scenario subject=locale_switcher
+   * @effects locale_switcher_reads_supported_locales
+   */
   it('G7Config.appConfig.supportedLocales 를 읽는다', () => {
     (window as unknown as { G7Config?: unknown }).G7Config = {
       appConfig: { supportedLocales: ['ko', 'en', 'ja'] },
@@ -72,15 +95,27 @@ describe('readSupportedLocales', () => {
     expect(readSupportedLocales()).toEqual(['ko', 'en', 'ja']);
   });
 
+  /**
+   * @scenario subject=locale_switcher
+   * @effects locale_switcher_reads_supported_locales
+   */
   it('미주입 시 빈 배열', () => {
     expect(readSupportedLocales()).toEqual([]);
   });
 });
 
 describe('localeDisplayLabel', () => {
+  /**
+   * @scenario subject=locale_switcher
+   * @effects locale_switcher_display_label_resolves
+   */
   it('정의된 로케일 라벨 키 해석', () => {
     expect(localeDisplayLabel('ko', (k) => (k === 'layout_editor.locale.ko' ? '한국어' : k))).toBe('한국어');
   });
+  /**
+   * @scenario subject=locale_switcher
+   * @effects locale_switcher_display_label_resolves
+   */
   it('미정 로케일은 코드 대문자 폴백', () => {
     expect(localeDisplayLabel('xx', (k) => k)).toBe('XX');
   });

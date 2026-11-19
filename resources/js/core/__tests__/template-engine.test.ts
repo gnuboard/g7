@@ -2,6 +2,12 @@
  * template-engine.ts 테스트
  *
  * 템플릿 엔진의 초기화, 렌더링, 데이터 업데이트, 정리 기능 테스트
+ * (매니페스트 core-template-engine-entry-nu2.yaml)
+ *
+ * #869: 건너뛰던 시험 5건을 현재 계약으로 살렸다. 네 건은 initTemplateEngine 이 컴포넌트를 로드하던
+ * 옛 설계를 전제로 했다(지금은 TemplateApp 이 routes.json 과 병렬로 로드). 실패와 롤백은 지금도 인스턴스
+ * 준비 중 예외로 일어나므로 그 지점에서 잰다. startTransition 시험은 react 를 실제 구현으로 통과시키는
+ * 모의로 호출만 센다.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -16,6 +22,15 @@ import TemplateEngine, {
 import { ComponentRegistry } from '../template-engine/ComponentRegistry';
 import { markLocalInitConsumed, resetLocalInitTracking } from '../template-engine/localInitSlot';
 import { Logger } from '../utils/Logger';
+import { TranslationEngine } from '../template-engine/TranslationEngine';
+
+// startTransition 호출만 세고 실제 구현으로 통과시킨다 (template-engine.ts 는 이름으로 import 하므로 spy 를 걸 수 없다)
+const { startTransitionSpy } = vi.hoisted(() => ({ startTransitionSpy: vi.fn() }));
+vi.mock('react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react')>();
+  startTransitionSpy.mockImplementation((callback: () => void) => actual.startTransition(callback));
+  return { ...actual, startTransition: startTransitionSpy };
+});
 
 /**
  * React 스케줄러가 pending work를 완료할 수 있도록 대기
@@ -134,6 +149,8 @@ describe('TemplateEngine - initTemplateEngine()', () => {
     await flushReactScheduler();
   });
 
+  // @scenario area=init
+  // @effects engine_init_sets_state
   it('정상적으로 초기화되어야 함', async () => {
     await initTemplateEngine({
       templateId: 'test-template',
@@ -151,6 +168,8 @@ describe('TemplateEngine - initTemplateEngine()', () => {
     expect(state.actionDispatcher).not.toBeNull();
   });
 
+  // @scenario area=init
+  // @effects engine_init_validates_options
   it('templateId가 필수여야 함', async () => {
     // TemplateNotFoundError가 던져짐 (다국어 키 사용)
     await expect(
@@ -161,6 +180,8 @@ describe('TemplateEngine - initTemplateEngine()', () => {
     expect(state.isInitialized).toBe(false);
   });
 
+  // @scenario area=init
+  // @effects engine_init_sets_state
   it('locale 기본값은 "ko"여야 함', async () => {
     await initTemplateEngine({ templateId: 'test-template' });
 
@@ -168,6 +189,8 @@ describe('TemplateEngine - initTemplateEngine()', () => {
     expect(state.locale).toBe('ko');
   });
 
+  // @scenario area=init
+  // @effects engine_init_sets_state
   it('locale을 지정할 수 있어야 함', async () => {
     await initTemplateEngine({
       templateId: 'test-template',
@@ -178,6 +201,8 @@ describe('TemplateEngine - initTemplateEngine()', () => {
     expect(state.locale).toBe('en');
   });
 
+  // @scenario area=init
+  // @effects engine_init_validates_options
   it('중복 초기화를 방지해야 함', async () => {
     await initTemplateEngine({ templateId: 'test-template' });
 
@@ -186,24 +211,25 @@ describe('TemplateEngine - initTemplateEngine()', () => {
     ).rejects.toThrow('템플릿 엔진이 이미 초기화되었습니다');
   });
 
-  // NOTE: ComponentRegistry.loadComponents()는 initTemplateEngine에서 호출되지 않음
-  // TemplateApp에서 routes.json과 함께 병렬로 로드됨 (성능 최적화)
-  it.skip('ComponentRegistry.loadComponents()를 호출해야 함', async () => {
+  // ComponentRegistry.loadComponents()는 initTemplateEngine 이 부르지 않는다.
+  // TemplateApp 이 routes.json 과 함께 병렬로 로드한다(성능 최적화). 엔진이 다시 부르면 이중 로드다.
+  // @scenario area=init
+  // @effects engine_init_does_not_load_components
+  it('ComponentRegistry.loadComponents()를 직접 호출하지 않아야 함', async () => {
     const mockRegistry = ComponentRegistry.getInstance();
 
     await initTemplateEngine({ templateId: 'test-template' });
 
-    expect(mockRegistry.loadComponents).toHaveBeenCalledWith('test-template', 'admin');
-    expect(mockRegistry.loadComponents).toHaveBeenCalledTimes(1);
+    expect(mockRegistry.loadComponents).not.toHaveBeenCalled();
   });
 
-  // NOTE: ComponentRegistry.loadComponents()는 initTemplateEngine에서 호출되지 않음
-  // TemplateApp에서 별도로 로드됨
-  it.skip('초기화 실패 시 상태를 롤백해야 함', async () => {
-    const mockRegistry = ComponentRegistry.getInstance();
-    (mockRegistry.loadComponents as any).mockRejectedValueOnce(
-      new Error('Load failed')
-    );
+  // 인스턴스 준비 중 예외(여기서는 번역 엔진)가 나면 이미 만든 인스턴스까지 되돌린다
+  // @scenario area=init
+  // @effects engine_init_rolls_back_on_failure
+  it('초기화 실패 시 상태를 롤백해야 함', async () => {
+    vi.mocked(TranslationEngine.getInstance).mockImplementationOnce(() => {
+      throw new Error('Load failed');
+    });
 
     await expect(
       initTemplateEngine({ templateId: 'test-template' })
@@ -213,10 +239,13 @@ describe('TemplateEngine - initTemplateEngine()', () => {
     expect(state.isInitialized).toBe(false);
     expect(state.registry).toBeNull();
     expect(state.bindingEngine).toBeNull();
+    expect(state.translationEngine).toBeNull();
   });
 
+  // @scenario area=init
+  // @effects engine_init_sets_state
   it('debug 모드를 설정할 수 있어야 함', async () => {
-    // debug: true로 초기화 (로그 출력 확인은 수동)
+    // DevTools 가 읽는 G7Config.debug 에 옵션이 실린다
     await initTemplateEngine({
       templateId: 'test-template',
       debug: true,
@@ -224,6 +253,11 @@ describe('TemplateEngine - initTemplateEngine()', () => {
 
     const state = getState();
     expect(state.isInitialized).toBe(true);
+    expect((window as any).G7Config.debug).toBe(true);
+
+    destroyTemplate();
+    await initTemplateEngine({ templateId: 'test-template' });
+    expect((window as any).G7Config.debug).toBe(false);
   });
 });
 
@@ -245,6 +279,8 @@ describe('TemplateEngine - renderTemplate()', () => {
     document.body.innerHTML = '';
   });
 
+  // @scenario area=render
+  // @effects engine_render_sets_root_and_layout
   it('정상적으로 렌더링되어야 함', async () => {
     const layoutJson = {
       version: '1.0.0',
@@ -269,6 +305,8 @@ describe('TemplateEngine - renderTemplate()', () => {
     expect(state.currentLayoutJson).toEqual(layoutJson);
   });
 
+  // @scenario area=render
+  // @effects engine_render_validates_input
   it('초기화 없이 렌더링 시 에러를 던져야 함', async () => {
     destroyTemplate();
 
@@ -280,6 +318,8 @@ describe('TemplateEngine - renderTemplate()', () => {
     ).rejects.toThrow('템플릿 엔진이 초기화되지 않았습니다');
   });
 
+  // @scenario area=render
+  // @effects engine_render_validates_input
   it('containerId가 필수여야 함', async () => {
     await expect(
       renderTemplate({
@@ -289,6 +329,8 @@ describe('TemplateEngine - renderTemplate()', () => {
     ).rejects.toThrow('containerId는 필수입니다');
   });
 
+  // @scenario area=render
+  // @effects engine_render_validates_input
   it('layoutJson이 필수여야 함', async () => {
     await expect(
       renderTemplate({
@@ -298,6 +340,8 @@ describe('TemplateEngine - renderTemplate()', () => {
     ).rejects.toThrow('layoutJson은 필수입니다');
   });
 
+  // @scenario area=render
+  // @effects engine_render_validates_input
   it('존재하지 않는 containerId 시 에러를 던져야 함', async () => {
     await expect(
       renderTemplate({
@@ -307,6 +351,8 @@ describe('TemplateEngine - renderTemplate()', () => {
     ).rejects.toThrow('컨테이너를 찾을 수 없습니다: #non-existent');
   });
 
+  // @scenario area=render
+  // @effects engine_render_builds_contexts
   it('dataContext를 전달할 수 있어야 함', async () => {
     const dataContext = { userName: 'John', age: 30 };
 
@@ -323,6 +369,8 @@ describe('TemplateEngine - renderTemplate()', () => {
     expect(state.currentDataContext.$locale).toBe('ko');
   });
 
+  // @scenario area=render
+  // @effects engine_render_builds_contexts
   it('dataContext 기본값에 전역 변수가 포함되어야 함', async () => {
     await renderTemplate({
       containerId: 'app',
@@ -335,6 +383,8 @@ describe('TemplateEngine - renderTemplate()', () => {
     expect(state.currentDataContext.$locales).toBeDefined();
   });
 
+  // @scenario area=render
+  // @effects engine_render_builds_contexts
   it('translationContext를 전달할 수 있어야 함', async () => {
     const translationContext = {
       templateId: 'custom-template',
@@ -351,6 +401,8 @@ describe('TemplateEngine - renderTemplate()', () => {
     expect(state.translationContext).toEqual(translationContext);
   });
 
+  // @scenario area=render
+  // @effects engine_render_builds_contexts
   it('translationContext 기본값은 templateId와 locale이어야 함', async () => {
     await renderTemplate({
       containerId: 'app',
@@ -364,6 +416,8 @@ describe('TemplateEngine - renderTemplate()', () => {
     });
   });
 
+  // @scenario area=render
+  // @effects engine_render_warns_empty_components
   it('components가 비어있으면 경고를 출력해야 함', async () => {
     // Logger 디버그 모드 활성화
     Logger.getInstance().setDebug(true);
@@ -404,6 +458,8 @@ describe('TemplateEngine - updateTemplateData()', () => {
     document.body.innerHTML = '';
   });
 
+  // @scenario area=update
+  // @effects engine_update_merges_data
   it('데이터를 병합하고 재렌더링해야 함', () => {
     updateTemplateData({ b: 3, c: 4 });
 
@@ -415,6 +471,8 @@ describe('TemplateEngine - updateTemplateData()', () => {
     expect(state.currentDataContext.$locale).toBe('ko');
   });
 
+  // @scenario area=update
+  // @effects engine_call_order_errors
   it('초기화 없이 업데이트 시 에러를 던져야 함', () => {
     destroyTemplate();
 
@@ -423,15 +481,27 @@ describe('TemplateEngine - updateTemplateData()', () => {
     );
   });
 
+  // @scenario area=update
+  // @effects engine_update_queues_until_rendered
   it('렌더링 없이 업데이트 시 예외 없이 pendingDataUpdates 큐에 저장되어야 함', async () => {
     // engine 변경: 렌더링 전 updateTemplateData 호출은 throw 하지 않고
     // pendingDataUpdates 큐에 저장하여 reactRoot 준비 후 자동 반영됨
     destroyTemplate();
     await initTemplateEngine({ templateId: 'test-template' });
 
-    expect(() => updateTemplateData({ a: 1 })).not.toThrow();
+    expect(() => updateTemplateData({ queued: 1 })).not.toThrow();
+    expect(getState().currentDataContext.queued).toBeUndefined();
+
+    // 렌더링이 끝나면 큐의 업데이트가 반영된다 (컴포넌트가 없으면 렌더가 일찍 끝나 큐를 적용하지 않으므로 하나 둔다)
+    await renderTemplate({
+      containerId: 'app',
+      layoutJson: { components: [{ id: 'q-1', type: 'basic', name: 'Div' }] },
+    });
+    expect(getState().currentDataContext.queued).toBe(1);
   });
 
+  // @scenario area=update
+  // @effects engine_update_merges_data
   it('기존 데이터를 유지해야 함', () => {
     updateTemplateData({ c: 3 });
 
@@ -441,6 +511,8 @@ describe('TemplateEngine - updateTemplateData()', () => {
     expect(state.currentDataContext.c).toBe(3);
   });
 
+  // @scenario area=update
+  // @effects engine_update_merges_data
   it('빈 객체로 업데이트해도 작동해야 함', () => {
     updateTemplateData({});
 
@@ -451,6 +523,8 @@ describe('TemplateEngine - updateTemplateData()', () => {
     expect(state.currentDataContext.$locale).toBe('ko');
   });
 
+  // @scenario area=local_init
+  // @effects engine_local_init_slot_merge
   it('_localInit 데이터를 데이터 컨텍스트에 저장해야 함', () => {
     updateTemplateData({
       _localInit: {
@@ -479,6 +553,8 @@ describe('TemplateEngine - updateTemplateData()', () => {
    *
    * @see troubleshooting-state-global.md
    */
+  // @scenario area=local_init
+  // @effects engine_local_init_slot_merge
   it('소비되지 않은 _localInit 슬롯은 후속 payload와 누적 병합되어야 함', () => {
     // settings 소스 응답 (refetchOnMount → _forceLocalInit 보유)
     updateTemplateData({
@@ -501,6 +577,8 @@ describe('TemplateEngine - updateTemplateData()', () => {
     expect(state.currentDataContext._localInit._forceLocalInit).toBe(1700000000000);
   });
 
+  // @scenario area=local_init
+  // @effects engine_local_init_slot_merge
   it('이미 소비된 _localInit 슬롯은 교체되어 stale 재적용이 없어야 함', () => {
     updateTemplateData({ _localInit: { form: { name: 'shipping' } } });
 
@@ -516,6 +594,8 @@ describe('TemplateEngine - updateTemplateData()', () => {
     expect(state.currentDataContext._localInit.notificationDefinitionCurrentPage).toBe(2);
   });
 
+  // @scenario area=update
+  // @effects engine_update_merges_data
   it('sync 옵션으로 업데이트해도 정상 작동해야 함', () => {
     updateTemplateData({ c: 5 }, { sync: true });
 
@@ -525,6 +605,8 @@ describe('TemplateEngine - updateTemplateData()', () => {
     expect(state.currentDataContext.c).toBe(5);
   });
 
+  // @scenario area=local_init
+  // @effects engine_local_init_slot_merge
   it('_localInit과 sync 옵션을 함께 사용해도 정상 작동해야 함', () => {
     updateTemplateData(
       {
@@ -545,44 +627,19 @@ describe('TemplateEngine - updateTemplateData()', () => {
     expect(state.currentDataContext._localInit.form.permission_ids).toEqual([10, 20, 30]);
   });
 
-  // NOTE: vi.doMock으로 이미 로드된 react 모듈을 동적 모킹하면 ESM 환경에서 정상 작동하지 않음
-  // 실제 startTransition 호출은 template-engine.ts의 updateTemplateData 구현에서 확인 가능
-  it.skip('startTransition으로 렌더링을 래핑해야 함', async () => {
-    // React의 startTransition을 모킹
-    const mockStartTransition = vi.fn((callback) => callback());
+  // 파일 머리의 react 모의가 실제 startTransition 으로 통과시키며 호출만 센다
+  // @scenario area=update
+  // @effects engine_update_uses_transition
+  it('startTransition으로 렌더링을 래핑해야 함', () => {
+    startTransitionSpy.mockClear();
 
-    // React 모듈을 동적으로 모킹
-    vi.doMock('react', () => ({
-      default: vi.fn(),
-      startTransition: mockStartTransition,
-      useDeferredValue: vi.fn(),
-    }));
+    updateTemplateData({ b: 5 });
+    expect(startTransitionSpy).toHaveBeenCalledTimes(1);
+    expect(startTransitionSpy).toHaveBeenCalledWith(expect.any(Function));
 
-    // 새로운 환경에서 template-engine을 재로드
-    const { updateTemplateData: updateFn } = await import('../template-engine');
-
-    // 테스트 환경 재설정
-    destroyTemplate();
-    document.body.innerHTML = '<div id="app"></div>';
-    await initTemplateEngine({ templateId: 'test-template' });
-    await renderTemplate({
-      containerId: 'app',
-      layoutJson: { components: [] },
-      dataContext: { a: 1 },
-    });
-
-    // 모킹 초기화
-    mockStartTransition.mockClear();
-
-    // 데이터 업데이트 실행
-    updateFn({ b: 2 });
-
-    // startTransition이 호출되었는지 검증
-    expect(mockStartTransition).toHaveBeenCalledTimes(1);
-    expect(mockStartTransition).toHaveBeenCalledWith(expect.any(Function));
-
-    // 모킹 해제
-    vi.doUnmock('react');
+    // sync 옵션은 startTransition 없이 즉시 그린다
+    updateTemplateData({ b: 6 }, { sync: true });
+    expect(startTransitionSpy).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -599,6 +656,8 @@ describe('TemplateEngine - destroyTemplate()', () => {
     document.body.innerHTML = '';
   });
 
+  // @scenario area=destroy
+  // @effects engine_destroy_resets_state
   it('모든 상태를 초기화해야 함', async () => {
     await initTemplateEngine({ templateId: 'test-template' });
     await renderTemplate({
@@ -626,10 +685,14 @@ describe('TemplateEngine - destroyTemplate()', () => {
     expect(state.actionDispatcher).toBeNull();
   });
 
+  // @scenario area=destroy
+  // @effects engine_destroy_resets_state
   it('초기화하지 않고 정리해도 에러가 발생하지 않아야 함', () => {
     expect(() => destroyTemplate()).not.toThrow();
   });
 
+  // @scenario area=destroy
+  // @effects engine_destroy_resets_state
   it('정리 후 재초기화가 가능해야 함', async () => {
     await initTemplateEngine({ templateId: 'test-template-1' });
     destroyTemplate();
@@ -652,6 +715,8 @@ describe('TemplateEngine - getState()', () => {
     await flushReactScheduler();
   });
 
+  // @scenario area=get_state
+  // @effects engine_state_readable
   it('현재 상태를 반환해야 함', async () => {
     await initTemplateEngine({ templateId: 'test-template', locale: 'en' });
 
@@ -664,6 +729,8 @@ describe('TemplateEngine - getState()', () => {
     expect(state.locale).toBe('en');
   });
 
+  // @scenario area=get_state
+  // @effects engine_state_readable
   it('읽기 전용 상태를 반환해야 함', () => {
     const state = getState();
 
@@ -673,6 +740,8 @@ describe('TemplateEngine - getState()', () => {
     }).toThrow();
   });
 
+  // @scenario area=get_state
+  // @effects engine_state_readable
   it('초기화 전 상태를 반환해야 함', () => {
     const state = getState();
 
@@ -695,6 +764,8 @@ describe('TemplateEngine - 전체 라이프사이클 통합 테스트', () => {
     document.body.innerHTML = '';
   });
 
+  // @scenario area=lifecycle
+  // @effects engine_full_lifecycle
   it('초기화 → 렌더링 → 업데이트 → 정리 흐름이 정상 작동해야 함', async () => {
     // 1. 초기화
     await initTemplateEngine({
@@ -737,6 +808,8 @@ describe('TemplateEngine - 전체 라이프사이클 통합 테스트', () => {
     expect(state.reactRoot).toBeNull();
   });
 
+  // @scenario area=lifecycle
+  // @effects engine_root_reused
   it('여러 번 렌더링해도 동일한 React Root를 재사용해야 함', async () => {
     await initTemplateEngine({ templateId: 'test-template' });
 
@@ -759,25 +832,28 @@ describe('TemplateEngine - 전체 라이프사이클 통합 테스트', () => {
 });
 
 describe('TemplateEngine - 전역 객체 노출 검증', () => {
+  // @scenario area=global_exposure
+  // @effects engine_global_api_exposed
   it('window.G7Core.TemplateEngine이 존재해야 함', () => {
     expect(window.G7Core).toBeDefined();
-    expect(window.G7Core.TemplateEngine).toBeDefined();
+    expect(window.G7Core?.TemplateEngine).toBeDefined();
   });
 
+  // @scenario area=global_exposure
+  // @effects engine_global_api_exposed
   it('전역 객체와 ESM export가 동일해야 함', () => {
-    expect(window.G7Core.TemplateEngine).toBe(TemplateEngine);
+    expect(window.G7Core?.TemplateEngine).toBe(TemplateEngine);
   });
 
+  // @scenario area=global_exposure
+  // @effects engine_global_api_exposed
   it('모든 공개 함수가 노출되어야 함', () => {
-    expect(window.G7Core.TemplateEngine.initTemplateEngine).toBe(
-      initTemplateEngine
-    );
-    expect(window.G7Core.TemplateEngine.renderTemplate).toBe(renderTemplate);
-    expect(window.G7Core.TemplateEngine.updateTemplateData).toBe(
-      updateTemplateData
-    );
-    expect(window.G7Core.TemplateEngine.destroyTemplate).toBe(destroyTemplate);
-    expect(window.G7Core.TemplateEngine.getState).toBe(getState);
+    const exposed = window.G7Core?.TemplateEngine;
+    expect(exposed?.initTemplateEngine).toBe(initTemplateEngine);
+    expect(exposed?.renderTemplate).toBe(renderTemplate);
+    expect(exposed?.updateTemplateData).toBe(updateTemplateData);
+    expect(exposed?.destroyTemplate).toBe(destroyTemplate);
+    expect(exposed?.getState).toBe(getState);
   });
 });
 
@@ -792,12 +868,13 @@ describe('TemplateEngine - 에러 처리 시나리오', () => {
     await flushReactScheduler();
   });
 
-  // NOTE: ComponentRegistry.loadComponents()는 initTemplateEngine에서 호출되지 않음
-  // TemplateApp에서 별도로 로드됨
-  it.skip('ComponentRegistry 로드 실패 시 적절한 에러를 던져야 함', async () => {
-    const mockRegistry = ComponentRegistry.getInstance();
-    const loadError = new Error('Network error');
-    (mockRegistry.loadComponents as any).mockRejectedValueOnce(loadError);
+  // 컴포넌트 로드는 TemplateApp 몫이라, 엔진에서 레지스트리 실패는 인스턴스 준비 실패로 난다
+  // @scenario area=error_handling
+  // @effects engine_init_rolls_back_on_failure
+  it('ComponentRegistry 준비 실패 시 그 에러를 그대로 던져야 함', async () => {
+    vi.mocked(ComponentRegistry.getInstance).mockImplementationOnce(() => {
+      throw new Error('Network error');
+    });
 
     await expect(
       initTemplateEngine({ templateId: 'test-template' })
@@ -807,6 +884,8 @@ describe('TemplateEngine - 에러 처리 시나리오', () => {
     expect(state.isInitialized).toBe(false);
   });
 
+  // @scenario area=error_handling
+  // @effects engine_render_validates_input
   it('잘못된 layoutJson으로 렌더링 시 에러를 던져야 함', async () => {
     document.body.innerHTML = '<div id="app"></div>';
 
@@ -820,6 +899,8 @@ describe('TemplateEngine - 에러 처리 시나리오', () => {
     ).rejects.toThrow('layoutJson은 필수입니다');
   });
 
+  // @scenario area=error_handling
+  // @effects engine_call_order_errors
   it('순서가 잘못된 호출 시 명확한 에러 메시지를 제공해야 함', async () => {
     // renderTemplate before init
     await expect(
@@ -839,23 +920,20 @@ describe('TemplateEngine - 에러 처리 시나리오', () => {
     expect(() => updateTemplateData({ a: 1 })).not.toThrow();
   });
 
-  // NOTE: ComponentRegistry.loadComponents()는 initTemplateEngine에서 호출되지 않음
-  // TemplateApp에서 별도로 로드됨
-  it.skip('초기화 실패 후 재시도가 가능해야 함', async () => {
-    const mockRegistry = ComponentRegistry.getInstance();
-
+  // 실패가 「이미 초기화됨」 상태를 남기지 않아야 다시 부를 수 있다
+  // @scenario area=error_handling
+  // @effects engine_init_retry_after_failure
+  it('초기화 실패 후 재시도가 가능해야 함', async () => {
     // 첫 번째 시도 실패
-    (mockRegistry.loadComponents as any).mockRejectedValueOnce(
-      new Error('First attempt failed')
-    );
+    vi.mocked(TranslationEngine.getInstance).mockImplementationOnce(() => {
+      throw new Error('First attempt failed');
+    });
 
     await expect(
       initTemplateEngine({ templateId: 'test-template' })
     ).rejects.toThrow('First attempt failed');
 
     // 두 번째 시도 성공
-    (mockRegistry.loadComponents as any).mockResolvedValueOnce(undefined);
-
     await initTemplateEngine({ templateId: 'test-template' });
 
     const state = getState();

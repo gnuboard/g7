@@ -39,6 +39,133 @@
 ---
 
 ### GET /api/modules/sirsoft-ecommerce/admin/carts
+<!-- @generated:start:api.modules.sirsoft-ecommerce.admin.carts.index -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.carts.index`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminCartController@index`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.carts.read`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| page | query | integer | 아니오 | min 1 | 조회할 페이지 번호 (1부터 시작) |
+| per_page | query | integer | 아니오 | min 1, max 100 | 페이지당 항목 수 |
+| sort | query | string | 아니오 | `created_at_desc`(기본), `created_at_asc` | 정렬 |
+| search_field | query | string | 아니오 | `member`, `member_id`, `email`, `product` | 검색 대상 |
+| search_keyword | query | string | 아니오 | max 100 | 검색어 |
+| user_id | query | integer | 아니오 | min 1 | user 식별자 |
+| user_uuid | query | string(uuid) | 아니오 | uuid | 회원 한정. 없는 uuid 면 빈 결과 |
+| start_date | query | date | 아니오 | — | 조회 기간 시작일 (이 날짜 이후 데이터) |
+| end_date | query | date | 아니오 | — | 조회 기간 종료일 (이 날짜 이전 데이터) |
+| owner | query | string | 아니오 | `all`(기본), `member`, `guest` | 회원/비회원 장바구니 구분 |
+
+**요청 예시**
+
+```http
+GET /api/modules/sirsoft-ecommerce/admin/carts?page=1&per_page=1&sort=created_at_desc&search_field=member&search_keyword=%EC%98%88%EC%8B%9C%EA%B0%92&user_id=1&user_uuid=%EC%98%88%EC%8B%9C%EA%B0%92&start_date=2026-01-01&end_date=2026-01-01&owner=all HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| number | integer | `358` | 목록에서의 순번 (페이지네이션 반영 행 번호 — HasRowNumber 파생) |
+| id | integer | `1074` | 식별자 (삭제가 받는 값) |
+| member | null | `null` | 회원. 지워졌으면 `null` |
+| product | object | `{"id":424,"name":"프리미엄 샤인머스캣 2kg #10","display_status":"v…` | 담은 상품 |
+| option_name | null | `null` | 선택한 옵션 |
+| quantity | integer | `2` | 수량 |
+| owner | string | `guest` | 행의 소유 구분. 회원 행(`user_id` 있음)은 `member`, 비회원 세션 행은 `guest` |
+| guest_key | string | `ck_v7OEx` | 비회원 행의 `cart_key` 앞 8자리 (같은 비회원 세션의 행을 알아보는 용도). 키 전체는 싣지 않습니다. 회원 행은 `null` |
+| created_at | string | `2026-10-10 17:19:04` | 생성 시각 (뷰어 시간대) |
+
+**응답 예시**
+
+<!-- @probed -->
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "장바구니 목록을 조회했습니다.",
+    "data": {
+        "data": [
+            {
+                "number": 358,
+                "id": 1074,
+                "member": null,
+                "product": {
+                    "id": 424,
+                    "name": "프리미엄 샤인머스캣 2kg #10",
+                    "display_status": "visible",
+                    "display_status_label": "전시",
+                    "sales_status": "on_sale",
+                    "sales_status_label": "판매중"
+                },
+                "option_name": null,
+                "quantity": 2,
+                "owner": "guest",
+                "guest_key": "ck_v7OEx",
+                "created_at": "2026-10-10 17:19:04"
+            },
+            {
+                "number": 357,
+                "id": 1073,
+                "member": null,
+                "product": {
+                    "id": 471,
+                    "name": "무선 마우스 세트 #57",
+                    "display_status": "visible",
+                    "display_status_label": "전시",
+                    "sales_status": "on_sale",
+                    "sales_status_label": "판매중"
+                },
+                "option_name": null,
+                "quantity": 3,
+                "owner": "guest",
+                "guest_key": "ck_v7OEx",
+                "created_at": "2026-10-10 17:19:04"
+            },
+            "... (총 25건 중 2건 표시)"
+        ],
+        "abilities": {
+            "can_manage": true
+        },
+        "pagination": {
+            "current_page": 1,
+            "per_page": 25,
+            "from": 1,
+            "to": 25,
+            "has_more_pages": true,
+            "last_page": 15,
+            "total": 358,
+            "total_relation": "exact",
+            "total_is_exact": true,
+            "result_cap": 10000
+        }
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.carts.read`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
+
+<!-- @generated:end -->
+
+**설명**
 
 - **인증/권한**: `auth:sanctum` + `permission:admin,sirsoft-ecommerce.carts.read`
 
@@ -71,12 +198,114 @@
 ---
 
 ### DELETE /api/modules/sirsoft-ecommerce/admin/carts/{id}
+<!-- @generated:start:api.modules.sirsoft-ecommerce.admin.carts.destroy -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.carts.destroy`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminCartController@destroy`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.carts.manage`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| id | path | integer | 예 | — | 대상 리소스의 식별자 |
+
+**요청 예시**
+
+```http
+DELETE /api/modules/sirsoft-ecommerce/admin/carts/{id} HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+_이 엔드포인트는 `data` 를 반환하지 않습니다 (성공 메시지만 — `data` 는 `null`)._
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "장바구니 항목을 삭제했습니다.",
+    "data": null
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.carts.manage`)이 없거나, 대상 행의 회원이 요청자의 권한 범위 밖인 경우 (`auth.scope_denied`) |
+| 404 | Not Found | 해당 `id` 의 장바구니 행이 없는 경우 (`common.not_found`) |
+
+<!-- @generated:end -->
+
+**설명**
 
 - **권한**: `sirsoft-ecommerce.carts.manage`
 
 ---
 
 ### DELETE /api/modules/sirsoft-ecommerce/admin/carts/bulk
+<!-- @generated:start:api.modules.sirsoft-ecommerce.admin.carts.bulk-destroy -->
+- **라우트명**: `api.modules.sirsoft-ecommerce.admin.carts.bulk-destroy`
+- **컨트롤러**: `Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminCartController@bulkDestroy`
+- **인증/권한**: `auth:sanctum` + `permission:sirsoft-ecommerce.carts.manage`
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| ids | query | array | 예 | min 1, max 100 | 대상 리소스 식별자 배열 (대량 작업 대상) |
+
+**요청 예시**
+
+```http
+DELETE /api/modules/sirsoft-ecommerce/admin/carts/bulk?ids=%EC%98%88%EC%8B%9C%EA%B0%92 HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| deleted_count | integer | `2` | 실제로 삭제된 행 수 |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "2개의 장바구니 항목을 삭제했습니다.",
+    "data": {
+        "deleted_count": 2
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.carts.manage`)이 없거나, 대상 중 하나라도 요청자의 권한 범위 밖인 경우 (`auth.scope_denied` — 전체 거부, 아무것도 지우지 않음) |
+| 422 | Unprocessable Entity | `ids` 가 비었거나 100개를 넘는 경우, 중복 ID 또는 없는 ID 가 섞인 경우 (`error.errors` 에 필드별 메시지) |
+
+<!-- @generated:end -->
+
+**설명**
 
 - **권한**: `sirsoft-ecommerce.carts.manage`
 - 라우트는 `{id}` 보다 **먼저** 선언되어 있습니다 — 그러지 않으면 `bulk` 가 id 로 잡힙니다.

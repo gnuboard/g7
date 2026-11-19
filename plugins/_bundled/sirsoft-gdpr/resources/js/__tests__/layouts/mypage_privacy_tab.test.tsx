@@ -448,7 +448,7 @@ describe('extensions/mypage_privacy_tab.json — 마이페이지 GDPR 동의 매
         it('이슈 #430 (3안) — 상태 배지는 라벨 줄에, 날짜 줄은 날짜+동의 순서 (배지↔날짜 동의 중복 제거)', () => {
             const text = serializeForSearch(section);
             // 배지가 라벨 옆 flex-wrap 줄에 위치 (라벨 label_suffix 와 같은 컨테이너)
-            expect(text).toContain('items-center gap-2 flex-wrap');
+            expect(text).toContain('gdpr:items-center gdpr:gap-2 gdpr:flex-wrap');
             expect(text).toContain('consent?.status_badge_label');
             // 날짜 줄은 날짜가 먼저, 그 뒤에 동의 라벨 (동사 중복 회피 — 상태는 배지가 말함)
             const idxDate = text.indexOf('status_at_formatted');

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { LoginForm } from '../LoginForm';
 import type { LoginFormProps } from '../LoginForm';
@@ -15,10 +15,10 @@ const koreanLabels = {
 };
 
 describe('LoginForm', () => {
-  let onSubmitMock: ReturnType<typeof vi.fn>;
+  let onSubmitMock: Mock<NonNullable<LoginFormProps['onSubmit']>>;
 
   beforeEach(() => {
-    onSubmitMock = vi.fn();
+    onSubmitMock = vi.fn<NonNullable<LoginFormProps['onSubmit']>>();
     // localStorage 모킹
     const localStorageMock = {
       getItem: vi.fn(),
@@ -44,6 +44,8 @@ describe('LoginForm', () => {
   });
 
   describe('렌더링 테스트', () => {
+    // @scenario component=login_form
+    // @effects login_form_renders_fields_and_links
     it('이메일 input이 렌더링되어야 함', () => {
       render(<LoginForm {...koreanLabels} />);
       const emailInput = screen.getByLabelText('이메일');
@@ -51,6 +53,8 @@ describe('LoginForm', () => {
       expect(emailInput).toHaveAttribute('type', 'email');
     });
 
+    // @scenario component=login_form
+    // @effects login_form_renders_fields_and_links
     it('비밀번호 input이 렌더링되어야 함', () => {
       render(<LoginForm {...koreanLabels} />);
       const passwordInput = screen.getByLabelText('비밀번호');
@@ -58,12 +62,16 @@ describe('LoginForm', () => {
       expect(passwordInput).toHaveAttribute('type', 'password');
     });
 
+    // @scenario component=login_form
+    // @effects login_form_renders_fields_and_links
     it('제출 버튼이 렌더링되어야 함', () => {
       render(<LoginForm {...koreanLabels} />);
       const submitButton = screen.getByRole('button', { name: /로그인/i });
       expect(submitButton).toBeInTheDocument();
     });
 
+    // @scenario component=login_form
+    // @effects login_form_renders_fields_and_links
     it('비밀번호 찾기 링크가 렌더링되어야 함', () => {
       render(<LoginForm {...koreanLabels} />);
       const forgotPasswordLink = screen.getByText('비밀번호를 잊으셨나요?');
@@ -71,6 +79,8 @@ describe('LoginForm', () => {
       expect(forgotPasswordLink).toHaveAttribute('href', '/admin/password/reset');
     });
 
+    // @scenario component=login_form
+    // @effects login_form_renders_fields_and_links
     it('커스텀 props가 올바르게 적용되어야 함', () => {
       const props: LoginFormProps = {
         submitButtonText: '로그인하기',
@@ -90,6 +100,8 @@ describe('LoginForm', () => {
   });
 
   describe('유효성 검증 테스트', () => {
+    // @scenario component=login_form
+    // @effects login_form_validates_before_submit
     it('빈 이메일 제출 시 에러 메시지가 표시되어야 함', async () => {
       render(<LoginForm {...koreanLabels} onSubmit={onSubmitMock} />);
 
@@ -103,6 +115,8 @@ describe('LoginForm', () => {
       expect(onSubmitMock).not.toHaveBeenCalled();
     });
 
+    // @scenario component=login_form
+    // @effects login_form_validates_before_submit
     it('잘못된 이메일 형식 제출 시 에러 메시지가 표시되어야 함', async () => {
       render(<LoginForm {...koreanLabels} onSubmit={onSubmitMock} />);
 
@@ -127,6 +141,8 @@ describe('LoginForm', () => {
       }
     });
 
+    // @scenario component=login_form
+    // @effects login_form_validates_before_submit
     it('빈 비밀번호 제출 시 에러 메시지가 표시되어야 함', async () => {
       render(<LoginForm {...koreanLabels} onSubmit={onSubmitMock} />);
 
@@ -143,6 +159,8 @@ describe('LoginForm', () => {
       expect(onSubmitMock).not.toHaveBeenCalled();
     });
 
+    // @scenario component=login_form
+    // @effects login_form_validates_before_submit
     it('올바른 입력 시 에러 메시지가 표시되지 않아야 함', async () => {
       render(<LoginForm {...koreanLabels} onSubmit={onSubmitMock} />);
 
@@ -164,6 +182,8 @@ describe('LoginForm', () => {
   });
 
   describe('상태 관리 테스트', () => {
+    // @scenario component=login_form
+    // @effects login_form_tracks_typed_values
     it('이메일 입력 시 상태가 업데이트되어야 함', () => {
       render(<LoginForm {...koreanLabels} />);
 
@@ -173,6 +193,8 @@ describe('LoginForm', () => {
       expect(emailInput.value).toBe('test@example.com');
     });
 
+    // @scenario component=login_form
+    // @effects login_form_tracks_typed_values
     it('비밀번호 입력 시 상태가 업데이트되어야 함', () => {
       render(<LoginForm {...koreanLabels} />);
 
@@ -184,6 +206,8 @@ describe('LoginForm', () => {
   });
 
   describe('이벤트 핸들러 테스트', () => {
+    // @scenario component=login_form
+    // @effects login_form_submits_form_event
     it('올바른 입력 시 onSubmit 콜백이 호출되어야 함', async () => {
       render(<LoginForm {...koreanLabels} onSubmit={onSubmitMock} />);
 
@@ -200,8 +224,12 @@ describe('LoginForm', () => {
         // LoginForm은 FormEvent를 onSubmit에 전달함
         expect(onSubmitMock).toHaveBeenCalled();
       });
+      // 넘겨받는 값은 {email,password} 객체가 아니라 폼 제출 이벤트다
+      expect(onSubmitMock.mock.calls[0][0].type).toBe('submit');
     });
 
+    // @scenario component=login_form
+    // @effects login_form_submits_form_event
     it('유효성 검증 실패 시 preventDefault가 호출되어야 함', async () => {
       // LoginForm은 유효성 검증 실패 시에만 자체적으로 preventDefault를 호출함
       // onSubmit이 있는 경우, 검증 통과 후에는 핸들러에게 제어를 넘김
@@ -220,6 +248,8 @@ describe('LoginForm', () => {
   });
 
   describe('접근성 테스트', () => {
+    // @scenario component=login_form
+    // @effects login_form_fields_labelled_and_named
     it('이메일 input에 올바른 label이 연결되어야 함', () => {
       render(<LoginForm {...koreanLabels} />);
 
@@ -227,6 +257,8 @@ describe('LoginForm', () => {
       expect(emailInput).toHaveAttribute('id', 'email');
     });
 
+    // @scenario component=login_form
+    // @effects login_form_fields_labelled_and_named
     it('비밀번호 input에 올바른 label이 연결되어야 함', () => {
       render(<LoginForm {...koreanLabels} />);
 
@@ -234,6 +266,8 @@ describe('LoginForm', () => {
       expect(passwordInput).toHaveAttribute('id', 'password');
     });
 
+    // @scenario component=login_form
+    // @effects login_form_fields_labelled_and_named
     it('이메일과 비밀번호 input에 name 속성이 있어야 함', () => {
       render(<LoginForm {...koreanLabels} />);
 
@@ -246,6 +280,8 @@ describe('LoginForm', () => {
   });
 
   describe('스타일 테스트', () => {
+    // @scenario component=login_form
+    // @effects login_form_validates_before_submit
     it('에러 상태에서 input에 에러 스타일이 적용되어야 함', async () => {
       render(<LoginForm {...koreanLabels} onSubmit={onSubmitMock} />);
 
@@ -258,12 +294,16 @@ describe('LoginForm', () => {
       });
     });
 
+    // @scenario component=login_form
+    // @effects login_form_custom_class_and_style
     it('커스텀 className이 적용되어야 함', () => {
       const { container } = render(<LoginForm className="custom-class" />);
       const formContainer = container.firstChild;
       expect(formContainer).toHaveClass('custom-class');
     });
 
+    // @scenario component=login_form
+    // @effects login_form_custom_class_and_style
     it('커스텀 style이 적용되어야 함', () => {
       const customStyle = { backgroundColor: 'red' };
       const { container } = render(<LoginForm style={customStyle} />);
@@ -274,6 +314,8 @@ describe('LoginForm', () => {
   });
 
   describe('템플릿 엔진 통합 테스트 (ActionDispatcher와 함께)', () => {
+    // @scenario component=login_form
+    // @effects login_form_action_dispatcher_integration
     it('ActionDispatcher를 통한 API 호출이 성공하면 onSubmit이 호출되어야 함', async () => {
       render(<LoginForm {...koreanLabels} onSubmit={onSubmitMock} />);
 
@@ -292,6 +334,8 @@ describe('LoginForm', () => {
       });
     });
 
+    // @scenario component=login_form
+    // @effects login_form_action_dispatcher_integration
     it('CSRF 토큰 요청이 올바른 옵션으로 호출되는지 확인 (ActionDispatcher 통합)', async () => {
       const csrfFetchMock = vi.fn().mockResolvedValue({
         ok: true,
@@ -360,6 +404,8 @@ describe('LoginForm', () => {
       });
     });
 
+    // @scenario component=login_form
+    // @effects login_form_action_dispatcher_integration
     it('로그인 API 요청이 올바른 body와 headers로 호출되는지 확인 (ActionDispatcher 통합)', async () => {
       const csrfFetchMock = vi.fn().mockResolvedValue({
         ok: true,

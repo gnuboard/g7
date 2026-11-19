@@ -39,6 +39,7 @@ class Ckeditor5ReferenceSourcesListener implements HookListenerInterface
      * 이 메서드는 인터페이스 요구사항 충족을 위해서만 존재합니다.
      *
      * @param  mixed  ...$args  훅에서 전달된 인수들
+     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 

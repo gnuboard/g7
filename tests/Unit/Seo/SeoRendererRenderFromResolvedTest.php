@@ -50,6 +50,11 @@ class SeoRendererRenderFromResolvedTest extends TestCase
 
     private SeoRenderer $renderer;
 
+    /**
+     * 렌더러의 협력 객체를 목으로 만들고 공통 파이프라인이 부르는 메서드의 기본 응답을 채운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -101,13 +106,26 @@ class SeoRendererRenderFromResolvedTest extends TestCase
         );
     }
 
+    /**
+     * Mockery 기대를 검증하고 닫은 뒤 부모 정리를 실행한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
-    /** 최소 meta 결과 — SeoMetaResolver::resolve 흉내 */
+    /**
+     * SeoMetaResolver::resolve 가 돌려주는 모양을 흉내 낸 최소 메타 결과를 만든다.
+     *
+     * @param  string  $title  결과에 담을 제목
+     * @return array<string, mixed> 제목만 채운 메타 결과
+     */
     private function metaResult(string $title): array
     {
         return [
@@ -127,6 +145,11 @@ class SeoRendererRenderFromResolvedTest extends TestCase
         ];
     }
 
+    /**
+     * SEO 가 켜져 있고 컴포넌트 하나를 가진 최소 레이아웃을 만든다.
+     *
+     * @return array<string, mixed> 레이아웃 배열
+     */
     private function enabledLayout(): array
     {
         return [
@@ -137,6 +160,12 @@ class SeoRendererRenderFromResolvedTest extends TestCase
 
     /**
      * renderFromResolved 는 이미 해석된 컨텍스트로 완성 HTML 을 생성한다(편집기 봇 미리보기 경로).
+     *
+     * @scenario entry=render_from_resolved
+     *
+     * @effects renderer_render_from_resolved_builds_html_from_resolved_context
+     *
+     * @return void 반환값 없음
      */
     public function test_render_from_resolved_produces_html_from_seed_context(): void
     {
@@ -170,6 +199,12 @@ class SeoRendererRenderFromResolvedTest extends TestCase
     /**
      * enabled=false 면 renderFromResolved 도 render() 단계3 게이트와 동일하게 null 을 반환한다.
      * (편집기 봇 미리보기가 render() 를 거치지 않고 직접 호출해도 "검색엔진 미노출"과 일치.)
+     *
+     * @scenario entry=render_from_resolved
+     *
+     * @effects renderer_render_from_resolved_returns_null_when_seo_disabled
+     *
+     * @return void 반환값 없음
      */
     public function test_render_from_resolved_returns_null_when_disabled(): void
     {
@@ -195,6 +230,12 @@ class SeoRendererRenderFromResolvedTest extends TestCase
 
     /**
      * meta.seo 자체가 없으면 null (render() 단계3 `! $seoConfig` 와 동일).
+     *
+     * @scenario entry=render_from_resolved
+     *
+     * @effects renderer_render_from_resolved_returns_null_without_seo_config
+     *
+     * @return void 반환값 없음
      */
     public function test_render_from_resolved_returns_null_when_no_seo_config(): void
     {
@@ -219,6 +260,12 @@ class SeoRendererRenderFromResolvedTest extends TestCase
     /**
      * defaultLocale=null 이면 config('app.locale') 폴백으로 canonical 을 구성한다(render() 가
      * seo_default_locale request attribute 에서 추출해 넘기는 값의 폴백).
+     *
+     * @scenario entry=render_from_resolved
+     *
+     * @effects renderer_render_from_resolved_default_locale_falls_back_to_app_locale
+     *
+     * @return void 반환값 없음
      */
     public function test_render_from_resolved_default_locale_falls_back_to_config(): void
     {
@@ -252,6 +299,12 @@ class SeoRendererRenderFromResolvedTest extends TestCase
     /**
      * render(Request) 는 컨텍스트 해석 후 같은 입력에 대해 renderFromResolved 와 동일한 최종
      * HTML 을 만든다 — 추출 위임 동등성(부분 목으로 renderFromResolved 호출을 검증).
+     *
+     * @scenario entry=render_request
+     *
+     * @effects renderer_render_delegates_to_render_from_resolved
+     *
+     * @return void 반환값 없음
      */
     public function test_render_delegates_to_render_from_resolved_with_resolved_context(): void
     {

@@ -8,7 +8,7 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Profile 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
@@ -120,6 +120,8 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toProfileArray()` 산물
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 `GET /api/me` 와 동일하게 `ProfileController@show` 를 호출해 현재 사용자의 프로필을 조회하지만, `permission:core.profile.read` 권한 미들웨어가 추가된 경로다. 응답 형태는 `UserResource::toProfileArray()` 산물로 `GET /api/me` 와 같으며, 필드별 소유(확장 병합) 규칙도 동일하다. 실측 예시가 비어 있는 것은 문서 생성 시 샘플 사용자가 해당 권한을 갖지 못해 403 이 반환되었기 때문이며, 응답 필드는 `GET /api/me` 문서를 참조한다.
@@ -135,11 +137,13 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toProfileArray()` 산물
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| name | body | string | 예 | max 255 | 대상의 이름/명칭 |
-| nickname | body | string | 아니오 | max 50 | 닉네임 |
-| email | body | email | 예 | max 255 | 이메일 주소 |
+| name | body | string | 항목 설정에 따름 (기본값 예) | max 255 | 이름. 회원 항목이라 운영자가 환경설정 > 회원에서 사용과 필수를 정한다. 기본 설정은 사용, 필수다 |
+| nickname | body | string | 항목 설정에 따름 (기본값 아니오) | max 50 | 닉네임. 닉네임 정책(중복 금지, 금지어, 변경 주기)에 걸리면 422 |
+| display_name_kind | body | string\|null | 아니오 | 운영자가 허용한 종류 | 표시 이름 종류 선택. 보내지 않으면 지금 값 유지, null 이면 고른 종류를 지운다(회원 기본 종류로 보인다). 고를 권한이 없거나 허용하지 않은 종류면 422 |
+| custom_fields.{키} | body | 항목 유형에 따름 | 항목 설정에 따름 | 항목 설정에 따름 | 운영자가 추가한 회원 항목의 값. 범위가 「본인 수정」인 항목만 받는다. 파일, 이미지 항목은 이 본문이 아니라 `POST /api/me/fields/{key}/file` 로 올린다. 폼 경로와 오류 키는 `GET /api/me/fields` 의 `fields[].name` 이다 |
+| email | body | email | 예 | max 255 | 이메일 주소. 항목이 아닌 고정 칸이라 늘 필수다 |
 | password | body | string | 아니오 | 보안 설정의 작성 규칙 | 새 비밀번호 — 보안 설정의 작성 규칙(길이·특수문자·조합·추측 방지)을 따른다. 바꾸면 현재 기기만 남기고 다른 기기는 로그아웃된다(#736) |
-| current_password | body | string | password 를 보낼 때 | — | 현재 비밀번호 (변경 전 확인용). password 를 함께 보내면 전용 경로(`PUT /api/me/password`)와 같은 본인인증 정책(`core.profile.password_change`)과 재사용 금지가 걸린다 — 정책 위반이면 `428`(#736 D18) |
+| current_password | body | string | password 를 보낼 때 | — | 현재 비밀번호 (변경 전 확인용). password 를 함께 보내면 전용 경로(`PUT /api/me/password`)와 같은 본인인증 정책(`core.profile.password_change`)과 재사용 금지가 걸린다 — 정책 위반이면 `428`(#736 D18). 비밀번호가 없는 회원(외부 인증 전용)이 보내면 그 값은 버린다(7.2.0) |
 | language | body | string | 아니오 | — | 언어 코드 |
 | country | body | string | 아니오 | — | 국가 코드 (ISO 3166-1 alpha-2) |
 | timezone | body | string | 아니오 | — | 타임존 식별자 |
@@ -160,6 +164,8 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toProfileArray()` 산물
 | third_party_consent | body | boolean | 아니오 | — | 제3자 정보 제공 동의 여부 (법적 필수 항목, sirsoft-marketing 훅 주입 파라미터) |
 | info_disclosure | body | boolean | 아니오 | — | 개인정보 이용 안내 동의 여부 (법적 필수 항목, sirsoft-marketing 훅 주입 파라미터) |
 
+> 이름, 닉네임, 언어, 국가, 시간대, 연락처, 주소, 서명, 자기소개와 운영자 추가 항목은 회원 항목입니다. 받는 키와 필수 여부는 운영자의 회원 항목 설정에서 오고, 이 표의 필수 칸은 기본 설정 기준입니다. 지금 사이트가 받는 항목과 잠긴 칸은 `GET /api/me/fields` 가 알려 줍니다. 회원 항목을 그리는 화면은 항목 응답의 `fields_version` 을 이 요청에 싣습니다(회원 항목을 아는 화면이라는 표식이고, 버전을 대조하지 않아 409 를 내지 않습니다). 싣지 않은 요청은 회원 항목을 모르는 옛 화면(7.1.x 템플릿)으로 보고, 운영자 추가 항목과 확장이 선언한 항목의 필수 규칙을 값을 보냈을 때만 겁니다. 보내지 않은 항목은 저장된 값이 그대로 남고, 비어 있는 필수 항목은 추가 정보 입력 요구가 받습니다. 형식 규칙과 이름, 닉네임, 연락처 같은 기본 항목 규칙은 그대로입니다.
+>
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.user.update_profile_validation_rules`).
 
 **요청 예시**
@@ -227,6 +233,8 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toArray()` 산물 — `s
 | bio | string\|null | `null` | 자기소개 |
 | last_login_at | string\|null | `2026-07-05 19:15:16` | 마지막 로그인 일시 (사용자 시간대 기준) |
 | email_verified_at | string\|null | `null` | 이메일 인증 완료 일시 (미인증 시 null) |
+| has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | timezone | string\|null | `Asia/Seoul` | 사용자 시간대 식별자 |
 | created_at | string\|null | `2026-07-06 19:15:16` | 가입 일시 |
 | updated_at | string\|null | `2026-07-08 10:41:24` | 최종 수정 일시 |
@@ -284,14 +292,16 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toArray()` 산물 — `s
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 403 | Forbidden | 요구 권한(`core.profile.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지. 오류 키는 항목의 폼 경로다). 잠긴 칸에 현재 값과 다른 값을 보낸 경우도 422 다: 본인인증으로 채워져 잠긴 항목(`fields.validation.locked_identity`), 외부가 관리하는 칸(`user.field_locked`), 변경 주기가 지나지 않은 닉네임. 표시 이름 종류를 고를 권한이 없거나 허용하지 않은 종류를 보낸 경우는 `errors.display_name_kind`, 적용될 종류가 닉네임이 필요한데 닉네임이 비면 `errors.nickname` |
 | 428 | Precondition Required | `password` 를 보냈는데 비밀번호 변경 본인인증 정책(`core.profile.password_change`)이 요구하는 인증을 마치지 않은 경우 — 인증 뒤 `verification_token` 으로 다시 요청한다 (#736 D18). 이메일·전화(`phone`)·휴대폰(`mobile`)을 **저장된 값과 다르게** 보냈는데 연락처 변경 본인인증 정책(`core.profile.contact_change`, 기본 켜짐)의 인증을 마치지 않은 경우도 같다 — 같은 값·앞뒤 공백·빈 칸(=null)은 변경이 아니고, 관리자는 대상이 아니다 |
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
-`PUT /api/me` 와 동일하게 `ProfileController@update` 를 호출해 프로필을 수정하되, `permission:core.profile.update` 권한 미들웨어가 추가된 경로다. 요청 파라미터와 검증 규칙(`UpdateProfileRequest`), 확장 소유 파라미터 병합(`core.user.update_profile_validation_rules`)은 `PUT /api/me` 와 동일하다. 성공 시 갱신된 프로필이 `UserResource` 형태로 반환된다.
+`PUT /api/me` 와 동일하게 `ProfileController@update` 를 호출해 프로필을 수정하되, `permission:core.profile.update` 권한 미들웨어가 추가된 경로다. 요청 파라미터와 검증 규칙(`UpdateProfileRequest`), 확장 소유 파라미터 병합(`core.user.update_profile_validation_rules`)은 `PUT /api/me` 와 동일하다. `name` 을 비롯한 회원 항목의 필수 여부는 운영자의 항목 설정을 따르고(이름은 기본 설정이 필수), `email` 만 고정 필수다. `custom_fields.{키}`, `display_name_kind`, 잠긴 칸의 422 도 `PUT /api/me` 와 같다. 성공 시 갱신된 프로필이 `UserResource` 형태로 반환된다.
 
 
 ### GET /api/user/profile/activity-log
@@ -356,6 +366,8 @@ _단건 응답: `data` 객체에 `activities` 배열이 담긴다 (페이지네�
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 현재 사용자의 최근 활동 로그를 조회한다(`permission:core.profile.read` 필요). `data.activities` 에 최대 50건의 로그가 최신순으로 담기며, 각 항목은 `id`·`action`·`action_label`·`description`(로케일 반영)·`ip_address`·`created_at`(ISO 8601) 필드를 가진다. `ip_address` 는 항상 `null` 이다 — 접속 IP 는 관리자 전용 값이라 관리자 활동 로그 API(`/api/admin/activity-logs`)에서만 제공한다. 실측 예시가 비어 있는 것은 문서 생성 시 샘플 사용자가 권한을 갖지 못해 403 이 반환되었기 때문이다.
@@ -408,6 +420,8 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toArray()` 산물 — `P
 | bio | string\|null | `null` | 자기소개 |
 | last_login_at | string\|null | `2026-07-05 19:15:16` | 마지막 로그인 일시 |
 | email_verified_at | string\|null | `null` | 이메일 인증 완료 일시 |
+| has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | timezone | string\|null | `Asia/Seoul` | 사용자 시간대 식별자 |
 | created_at | string\|null | `2026-07-06 19:15:16` | 가입 일시 |
 | updated_at | string\|null | `2026-07-08 10:41:24` | 최종 수정 일시 |
@@ -465,6 +479,8 @@ _단건 응답: `data` 객체의 필드 (`UserResource::toArray()` 산물 — `P
 | 403 | Forbidden | 요구 권한(`core.profile.read`)이 없는 경우 |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 

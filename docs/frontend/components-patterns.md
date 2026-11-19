@@ -303,6 +303,7 @@ DynamicRenderer가 props를 처리할 때 `{{...}}` 바인딩 표현식을 즉�
 1. **기본값**: `['cellChildren', 'expandChildren', 'expandContext', 'render']`
 2. **병합**: 기본값 + 컴포넌트별 설정 (중복 제거)
 3. **하위 호환성**: `skipBindingKeys` 없는 컴포넌트는 기본값만 사용
+4. **직접 그리는 배열 prop 도 대상**: 컴포넌트가 배열 prop 의 컴포넌트 정의를 엔진 렌더러(`G7Core.getDynamicRenderer()`)로 직접 그리면(Modal 의 `footer`·`titlePrefix`·`titleSuffix`) 그 prop 도 넣는다. 넣지 않으면 부모 렌더러가 정의 안의 `{{…}}` 를 미리 풀어, 컴포넌트가 그리는 렌더러의 문맥(Modal 자신의 `isolatedState` 등)이 아니라 바깥 값으로 굳는다(#869). 감사 규칙 `component-skipbinding-keys-complete` 가 검사한다
 
 ### 적용 예시
 
@@ -310,6 +311,8 @@ DynamicRenderer가 props를 처리할 때 `{{...}}` 바인딩 표현식을 즉�
 |----------|-----------------|------|
 | DataGrid | `cellChildren`, `expandChildren`, `expandContext`, `render`, `subRowChildren`, `subRowCondition`, `footerCells`, `footerCardChildren` | row 컨텍스트로 평가 필요 |
 | CardGrid | `cardColumns` | item 컨텍스트로 평가 필요 |
+| Modal(관리자) | `titlePrefix`, `titleSuffix`, `footer` | 직접 그리는 렌더러의 문맥(격리 범위 포함)으로 평가 필요 |
+| Modal(사용자) | `footer` | 같음 |
 
 ### 관련 파일
 

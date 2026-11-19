@@ -1,0 +1,16 @@
+feature: KG 이니시스 클라이언트 설정의 준비 상태와 간편결제 노출
+
+description: |
+  RegisterPgProviderListener::getClientConfig 가 화면에 내려 주는 결제 준비 상태를 잠근다.
+  운영 모드에서 운영 MID 가 비어 있으면 서명 키가 있어도 표준결제와 모바일결제를 미설정으로
+  알려야 결제창이 빈 MID 로 열리지 않는다. 간편결제는 운영자가 켠 수단만 목록에 실려야 한다.
+
+axes:
+  mode: [live, test]
+
+effects:
+  - live_mode_without_live_mid_reports_unconfigured
+  - client_config_lists_only_enabled_easy_pay_methods
+
+test_files:
+  - plugins/_bundled/sirsoft-pay_kginicis/tests/Unit/Listeners/RegisterPgProviderListenerTest.php

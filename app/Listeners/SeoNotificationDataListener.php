@@ -3,6 +3,8 @@
 namespace App\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Support\ScreenUrl;
+use App\Support\SiteUrl;
 
 /**
  * SEO 알림 데이터 필터 리스너
@@ -37,6 +39,7 @@ class SeoNotificationDataListener implements HookListenerInterface
      * 훅 이벤트를 처리합니다(HookListenerInterface 필수 메서드).
      *
      * @param  mixed  ...$args  훅에서 전달된 인수들
+     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 
@@ -72,7 +75,6 @@ class SeoNotificationDataListener implements HookListenerInterface
 
         $result = is_array($args[0] ?? null) ? $args[0] : [];
         $data = $result['data'] ?? [];
-        $baseUrl = config('app.url');
 
         return [
             'notifiable' => null,
@@ -81,8 +83,8 @@ class SeoNotificationDataListener implements HookListenerInterface
                 'app_name' => config('app.name'),
                 'url_count' => (string) ($data['url_count'] ?? 0),
                 'child_count' => (string) ($data['child_count'] ?? 1),
-                'action_url' => "{$baseUrl}/admin/settings?tab=seo",
-                'site_url' => $baseUrl,
+                'action_url' => ScreenUrl::absoluteForLinks('admin.settings.seo', '/admin/settings?tab=seo', [], ScreenUrl::SCOPE_ADMIN),
+                'site_url' => SiteUrl::forOutboundLinks(),
             ],
             'context' => [
                 'trigger_user_id' => $triggeredBy,
@@ -104,7 +106,6 @@ class SeoNotificationDataListener implements HookListenerInterface
         }
 
         $result = is_array($args[0] ?? null) ? $args[0] : [];
-        $baseUrl = config('app.url');
 
         return [
             'notifiable' => null,
@@ -112,8 +113,8 @@ class SeoNotificationDataListener implements HookListenerInterface
             'data' => [
                 'app_name' => config('app.name'),
                 'error' => (string) ($result['message'] ?? ''),
-                'action_url' => "{$baseUrl}/admin/settings?tab=seo",
-                'site_url' => $baseUrl,
+                'action_url' => ScreenUrl::absoluteForLinks('admin.settings.seo', '/admin/settings?tab=seo', [], ScreenUrl::SCOPE_ADMIN),
+                'site_url' => SiteUrl::forOutboundLinks(),
             ],
             'context' => [
                 'trigger_user_id' => $triggeredBy,

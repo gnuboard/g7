@@ -13,4 +13,13 @@ return [
             'comment' => 'コメント',
         ],
     ],
+    'display_name' => [
+        'areas' => [
+            'posts' => '掲示板 (投稿、コメント)',
+            'admin' => '掲示板管理画面',
+        ],
+    ],
+    'guest_author_fields' => [
+        'set_label' => '掲示板の非会員投稿者項目',
+    ],
 ];

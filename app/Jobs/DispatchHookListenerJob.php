@@ -14,7 +14,6 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\Jobs\SyncJob;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -103,21 +102,10 @@ class DispatchHookListenerJob implements ShouldQueue
         // restore() 가 재구성 Request 를 바인딩하면 그 뒤로 이어지는 같은 요청의 코드는
         // 헤더·입력·메서드가 전부 지워진 가짜 GET 요청을 보게 된다 — 뒤 순위 훅 리스너가
         // 전송 헤더를 읽지 못해 조용히 건너뛰는 사고가 여기서 난다.
-        // 워커 프로세스에서는 원래 바인딩이 없어 아래 원복이 아무 일도 하지 않는다.
-        $previousRequest = app()->bound('request') ? app('request') : null;
-        // 데몬 워커는 컨테이너를 작업 간에 재사용하므로, 복원한 진입점도 끝나면 되돌린다
-        // — 남겨 두면 다음 작업(다른 진입점에서 온 것)이 이 값을 물려받는다.
-        $previousOrigin = app()->bound(HookContextCapture::ORIGIN_BINDING)
-            ? app(HookContextCapture::ORIGIN_BINDING)
-            : null;
-        // 인증 사용자도 같은 이유로 되돌린다. restore() 는 컨텍스트에 user_id 가 없으면 인증을 건드리지
-        // 않으므로, 앞 작업(회원)이 setUser() 한 사용자가 다음 작업(CLI·스케줄러)에 남아 활동 로그
-        // 행위자가 그 회원으로 기록됐다(#138 실측). hasUser() 로 읽어 인증 해석을 새로 일으키지 않는다.
-        $previousUser = Auth::hasUser() ? Auth::user() : null;
-        // 이벤트 ID 도 같은 이유로 되돌린다 — 데몬 워커의 다음 잡이 앞 잡의 ID 를 물려받으면 안 된다.
-        $previousEventId = app()->bound(HookContextCapture::EVENT_ID_BINDING)
-            ? app(HookContextCapture::EVENT_ID_BINDING)
-            : null;
+        // 데몬 워커는 컨테이너를 작업 간에 재사용하므로 복원한 진입점·인증 사용자·로케일·이벤트 ID 도
+        // 끝나면 되돌린다 — 남겨 두면 다음 작업(다른 진입점·다른 사용자에서 온 것)이 이 값을 물려받아
+        // 활동 로그 행위자가 앞 작업의 사용자로 기록된다(#138 실측).
+        $snapshot = HookContextCapture::snapshot();
 
         try {
             HookContextCapture::restore($this->context);
@@ -161,27 +149,7 @@ class DispatchHookListenerJob implements ShouldQueue
                 }
             }
         } finally {
-            if ($previousRequest !== null) {
-                app()->instance('request', $previousRequest);
-            }
-
-            if ($previousOrigin !== null) {
-                app()->instance(HookContextCapture::ORIGIN_BINDING, $previousOrigin);
-            } else {
-                app()->forgetInstance(HookContextCapture::ORIGIN_BINDING);
-            }
-
-            if ($previousUser !== null) {
-                Auth::setUser($previousUser);
-            } else {
-                Auth::forgetUser();
-            }
-
-            if ($previousEventId !== null) {
-                app()->instance(HookContextCapture::EVENT_ID_BINDING, $previousEventId);
-            } else {
-                app()->forgetInstance(HookContextCapture::EVENT_ID_BINDING);
-            }
+            HookContextCapture::revert($snapshot);
         }
     }
 

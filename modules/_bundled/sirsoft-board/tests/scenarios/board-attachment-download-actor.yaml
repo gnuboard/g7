@@ -34,6 +34,7 @@ effects:
   - member_download_records_user_id
   - guest_download_keeps_user_id_null
   - download_failure_shows_error_toast
+  - download_skips_request_without_url
 
 test_files:
   - templates/_bundled/sirsoft-basic/src/handlers/__tests__/downloadAttachment.test.ts
@@ -49,6 +50,8 @@ validation:
         download_failure_shows_error_toast:
         downloadAttachment.test.ts (basic + admin) — G7Core.api.get(url, {responseType:'blob'})
         호출 인자, blob → objectURL → click → revoke, 실패 시 toast.error 단언.
+      - download_skips_request_without_url:
+        downloadAttachment.test.ts (admin) — 주소(url)가 없으면 api.get 을 부르지 않고 조용히 돌아온다.
       - download_card_uses_handler_not_anchor:
         board-attachment-download-handler.test.tsx (사용자 카드),
         admin-attachment-download-handler.test.tsx (관리자 게시글/답변 카드) —

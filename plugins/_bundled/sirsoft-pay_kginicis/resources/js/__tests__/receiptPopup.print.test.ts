@@ -15,7 +15,7 @@ describe('CBT 결제확인서 인쇄 버튼 (#158)', () => {
     });
 
     /**
-     * @scenario surface=receipt_popup
+     * @scenario page=receipt_popup
      * @effects receipt_print_button_without_inline_handler
      */
     it('팝업 HTML 에 on* 속성이 없고 인쇄 버튼 click 이 팝업 print 를 부른다', () => {

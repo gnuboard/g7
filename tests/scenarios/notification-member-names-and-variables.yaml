@@ -1,0 +1,65 @@
+feature: notification_member_names_and_variables
+
+description: |
+  알림의 받는 사람 이름과 회원 항목 변수.
+  받는 사람 이름 자리표시자(`{recipient_name}`)는 채널의 표시 이름 영역(`core:notification:{채널}`)으로 풀리고,
+  큐 분할 발송을 거쳐도 같은 값이 나간다. 뒤따르는 개인화 필터의 인자는 그대로다.
+  템플릿이 참조한 회원 항목 변수(`{member.<키>}`, `{member.custom.<키>}`, `{member.display_name}`)만 채우고,
+  수신자 묶음마다 값을 한 번에 읽으며, 「관리자만 열람」 항목은 넣지 않는다.
+  없는 변수를 쓴 템플릿은 저장되되 응답의 `warnings` 로 알려 준다.
+
+coverage_strategy: full
+
+axes:
+  case:
+    - channel_names_differ
+    - default_settings_unchanged
+    - fanout_chunks
+    - personalize_filter_contract
+    - core_listeners_use_placeholder
+    - name_service
+    - referenced_keys_only
+    - admin_only_not_injected
+    - guest_recipient
+    - extension_channel_filter
+    - template_variable_list
+    - unknown_variable_warning
+
+effects:
+  - recipient_name_follows_channel_area
+  - recipient_name_differs_between_channels
+  - every_placeholder_value_is_replaced
+  - default_recipient_name_equals_name
+  - fanout_chunk_resolves_same_recipient_name
+  - chunk_job_entry_resolves_same_recipient_name
+  - personalize_filter_arguments_unchanged
+  - personalize_filter_sees_resolved_name
+  - core_auth_listener_emits_recipient_placeholder
+  - core_privacy_listener_emits_recipient_placeholder
+  - unregistered_channel_uses_notification_area
+  - other_member_uses_notification_area
+  - log_snapshot_uses_admin_area
+  - guest_recipient_keeps_given_name
+  - only_referenced_member_variables_are_injected
+  - member_values_are_read_once_per_recipient_batch
+  - core_and_custom_and_display_name_variables_resolve
+  - template_without_member_variables_adds_nothing
+  - admin_only_field_value_is_never_injected
+  - disabled_field_variable_is_blank
+  - admin_only_field_is_not_listed_as_variable
+  - guest_display_name_variable_uses_given_name
+  - guest_member_variables_are_blank
+  - extension_channel_adds_member_variable_keys
+  - member_variable_key_filter_receives_type_and_channel
+  - non_member_keys_from_filter_are_ignored
+  - member_variables_are_appended_to_template_variable_list
+  - template_variable_filter_can_add_variables
+  - identity_notifications_get_no_member_variables
+  - preview_shows_member_variable_descriptions
+  - template_with_unknown_member_variable_is_saved
+  - save_response_lists_unknown_member_variables
+  - save_response_has_empty_warnings_when_all_known
+
+test_files:
+  - tests/Feature/Notifications/RecipientDisplayNameTest.php
+  - tests/Feature/Notifications/MemberVariablesTest.php

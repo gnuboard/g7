@@ -31,7 +31,7 @@ function findAllNodes(node: any, predicate: (n: any) => boolean): any[] {
     if (!node || typeof node !== 'object') return results;
     if (predicate(node)) results.push(node);
     if (Array.isArray(node.children)) {
-        for (const child of node.children) {
+        for (const child of [...node.children, ...(node.props?.footer ?? [])]) {
             results.push(...findAllNodes(child, predicate));
         }
     }
@@ -45,7 +45,7 @@ function findNode(node: any, predicate: (n: any) => boolean): any | undefined {
     if (!node || typeof node !== 'object') return undefined;
     if (predicate(node)) return node;
     if (Array.isArray(node.children)) {
-        for (const child of node.children) {
+        for (const child of [...node.children, ...(node.props?.footer ?? [])]) {
             const found = findNode(child, predicate);
             if (found) return found;
         }
@@ -451,7 +451,8 @@ describe('관리자 취소 모달 — 액션 버튼', () => {
     it('닫기 버튼이 sequence(상태 정리 + closeModal) 패턴을 사용해야 함', () => {
         // closeModal 단독 → sequence(setState 정리 + closeModal) 로 변경
         // (모달 partial 분리 후 부모 _local 정리가 필요함)
-        const footerDiv = modalCancelOrder.children[1];
+        // 닫기·취소 실행 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
+        const footerDiv = { children: modalCancelOrder.props.footer };
         const closeBtn = footerDiv.children[0];
         const clickAction = actionsOf(closeBtn)[0];
         expect(clickAction.type).toBe('click');
@@ -465,7 +466,8 @@ describe('관리자 취소 모달 — 액션 버튼', () => {
     // @scenario section=action_buttons
     // @effects cancel_modal_action_buttons_contract
     it('취소 실행 버튼이 executeCancelOrder 핸들러를 호출해야 함', () => {
-        const footerDiv = modalCancelOrder.children[1];
+        // 닫기·취소 실행 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
+        const footerDiv = { children: modalCancelOrder.props.footer };
         const cancelBtn = footerDiv.children[1];
         const clickAction = actionsOf(cancelBtn)[0];
         expect(clickAction.type).toBe('click');
@@ -483,7 +485,8 @@ describe('관리자 취소 모달 — 액션 버튼', () => {
     // @scenario section=action_buttons
     // @effects cancel_modal_action_buttons_contract
     it('취소 실행 버튼이 isCancelling 또는 refundLoading 중 비활성화되어야 함', () => {
-        const footerDiv = modalCancelOrder.children[1];
+        // 닫기·취소 실행 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
+        const footerDiv = { children: modalCancelOrder.props.footer };
         const cancelBtn = footerDiv.children[1];
         expect(cancelBtn.props.disabled).toContain('isCancelling');
         expect(cancelBtn.props.disabled).toContain('refundLoading');
@@ -492,7 +495,8 @@ describe('관리자 취소 모달 — 액션 버튼', () => {
     // @scenario section=action_buttons
     // @effects cancel_modal_action_buttons_contract
     it('취소 실행 버튼에 로딩 스피너가 있어야 함', () => {
-        const footerDiv = modalCancelOrder.children[1];
+        // 닫기·취소 실행 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1)
+        const footerDiv = { children: modalCancelOrder.props.footer };
         const cancelBtn = footerDiv.children[1];
         const spinner = findNode(cancelBtn, (n) => n.name === 'Icon' && n.props?.name === 'spinner');
         expect(spinner).toBeDefined();

@@ -1,0 +1,14 @@
+<!-- 내보내기 관리 상단 경고 띠 — 설치 상태가 운영에 위험할 때 그 사실을 화면 맨 위에 둔다.
+  sync 큐(요청 안에서 바로 처리)·공개 디스크(주소만 알면 누구나 받음)는 허용하되 알리는 것이 정책이고(운영자 책임),
+  「대기 지연」은 큐 워커가 멈춘 것으로 보일 때만 붙는다. 경고 코드와 문장은 목록 응답(`warnings`)이 함께 준다. -->
+<partial description="Export Index Warnings">
+  <div data-ref="export_warnings" data-if="{{(exports?.data?.warnings ?? []).length > 0}}" class="ecommerce:flex ecommerce:flex-col ecommerce:gap-2 ecommerce:mb-6">
+    <div data-each="warning in exports?.data?.warnings ?? []" class="ecommerce-alert-warning">
+      <icon name="triangle-exclamation" class="ecommerce:text-xl ecommerce:text-amber-600 ecommerce:dark:text-amber-400 ecommerce:flex-shrink-0 ecommerce:mt-0.5"/>
+      <div class="ecommerce:text-xs ecommerce:text-yellow-700 ecommerce:dark:text-yellow-300">
+        <p class="ecommerce:font-medium">{{$t('sirsoft-ecommerce.admin.export.warnings.' + warning.code + '.title')}}</p>
+        <p class="ecommerce:mt-1">{{warning.message}}</p>
+      </div>
+    </div>
+  </div>
+</partial>

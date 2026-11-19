@@ -1,0 +1,126 @@
+{
+    "_meta": {
+        "version": "2.0.0",
+        "description": "Admin Basic 관리자 템플릿 환경설정",
+        "categories": [
+            "branding"
+        ]
+    },
+    "sections": {
+        "branding": {
+            "label": "$t:settings.sections.branding.label",
+            "hint": "$t:settings.sections.branding.hint"
+        }
+    },
+    "defaults": {
+        "branding": {
+            "favicon": [],
+            "accent": "blue",
+            "color_scheme_default": "system",
+            "logo": []
+        }
+    },
+    "schema": {
+        "branding": {
+            "favicon": {
+                "type": "attachments",
+                "max_files": 1,
+                "accept": [
+                    "ico",
+                    "png",
+                    "svg",
+                    "gif",
+                    "jpg",
+                    "jpeg",
+                    "webp"
+                ],
+                "label": "$t:settings.favicon.label",
+                "hint": "$t:settings.favicon.hint"
+            },
+            "accent": {
+                "type": "enum",
+                "options": [
+                    {
+                        "value": "blue",
+                        "label": "$t:settings.accent.blue"
+                    },
+                    {
+                        "value": "indigo",
+                        "label": "$t:settings.accent.indigo"
+                    },
+                    {
+                        "value": "violet",
+                        "label": "$t:settings.accent.violet"
+                    },
+                    {
+                        "value": "green",
+                        "label": "$t:settings.accent.green"
+                    },
+                    {
+                        "value": "teal",
+                        "label": "$t:settings.accent.teal"
+                    },
+                    {
+                        "value": "orange",
+                        "label": "$t:settings.accent.orange"
+                    },
+                    {
+                        "value": "rose",
+                        "label": "$t:settings.accent.rose"
+                    },
+                    {
+                        "value": "slate",
+                        "label": "$t:settings.accent.slate"
+                    }
+                ],
+                "label": "$t:settings.accent.label",
+                "hint": "$t:settings.accent.hint"
+            },
+            "color_scheme_default": {
+                "type": "enum",
+                "options": [
+                    {
+                        "value": "system",
+                        "label": "$t:settings.color_scheme.system"
+                    },
+                    {
+                        "value": "light",
+                        "label": "$t:settings.color_scheme.light"
+                    },
+                    {
+                        "value": "dark",
+                        "label": "$t:settings.color_scheme.dark"
+                    }
+                ],
+                "label": "$t:settings.color_scheme.label",
+                "hint": "$t:settings.color_scheme.hint"
+            },
+            "logo": {
+                "type": "image",
+                "max_files": 1,
+                "max_size_kb": 2048,
+                "label": "$t:settings.logo.label",
+                "hint": "$t:settings.logo.hint"
+            }
+        }
+    },
+    "frontend_schema": {
+        "branding": {
+            "expose": true,
+            "fields": {
+                "favicon_url": {
+                    "expose": true
+                },
+                "accent": {
+                    "expose": true
+                },
+                "color_scheme_default": {
+                    "expose": true
+                },
+                "logo_url": {
+                    "expose": true
+                }
+            }
+        }
+    }
+}

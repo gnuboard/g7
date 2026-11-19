@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 축은 복원 입력 변수 목록(SSoT)이고 조합은 독립적이다 — 각 시험은 한 축의 값만 바꿔 효과를 잠근다(이동 종류·문서가 자라는 시점·설정 층·사용자 입력). 교차곱 대부분(새 이동 × 설정 층 등)은 「새 이동은 복원하지 않는다」 한 규칙으로 같은 결과다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#860 축은 복원 입력 변수 목록(SSoT)이고 조합은 독립적이다 — 각 시험은 한 축의 값만 바꿔 효과를 잠근다(이동 종류·문서가 자라는 시점·설정 층·사용자 입력). 교차곱 대부분(새 이동 × 설정 층 등)은 「새 이동은 복원하지 않는다」 한 규칙으로 같은 결과다.
 
 feature: 뒤로/앞으로 가기·새로고침 스크롤 위치 복원과 더보기 스냅샷
 
@@ -46,6 +46,8 @@ effects:
   - screen_scroll_action_during_restore_stops_restore # 복원 중 화면이 스크롤 액션을 실행하면 복원을 멈춘다
   - snapshot_ttl_counts_from_first_capture            # 되살린 스냅샷으로 오가도 유효 시간은 처음 기억한 때부터 잰다
   - invalid_mode_ignored_with_warning                 # 정해진 값·선택자가 아닌 mode 는 경고와 함께 버리고 앞 층 값을 쓴다
+  - subpath_mount_scroll_keys_match_history_address   # 하위 폴더 설치(/g7)에서 접두사 붙은 히스토리 주소와 스크롤 기억의 키가 같아 뒤로, 앞으로 가기에서 되돌린다
+  - auth_unavailable_screen_keeps_entry_scroll_record # 뒤로 가기가 인증 확인 불가 화면으로 빠지면 표를 버리고 그 항목의 기억을 덮지 않으며, 다음 화면에서 저장이 다시 돈다
 
 test_files:
   - tests/Playwright/specs/scroll-restoration.spec.ts

@@ -37,8 +37,9 @@
       </div>
     </div>
     <div data-ref="filter_grid" class="filter-grid">
-      <div data-ref="status_filter" class="filter-row">
-        <span class="filter-label w-32">$t:admin.identity.logs.filter.status_label</span>
+      <div data-ref="status_filter" class="flex flex-col gap-2">
+        <responsive on="768-" class="flex flex-row gap-2 items-center"/>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.identity.logs.filter.status_label</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="inline-clickable">
             <input type="checkbox" class="checkbox" checked="{{!_local.filter.statuses || _local.filter.statuses.length === 0}}">
@@ -64,8 +65,9 @@
           </label>
         </div>
       </div>
-      <div data-ref="purpose_filter" class="filter-row">
-        <span class="filter-label w-32">$t:admin.identity.logs.filter.purpose_label</span>
+      <div data-ref="purpose_filter" class="flex flex-col gap-2">
+        <responsive on="768-" class="flex flex-row gap-2 items-center"/>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.identity.logs.filter.purpose_label</span>
         <div class="flex-center flex-wrap gap-2">
           <label class="inline-clickable">
             <input type="checkbox" class="checkbox" checked="{{!_local.filter.purposes || _local.filter.purposes.length === 0}}">
@@ -88,8 +90,9 @@
         </div>
       </div>
     </div>
-    <div data-ref="date_range_filter" class="filter-row">
-      <span class="filter-label w-32">$t:admin.identity.logs.filter.date_range_label</span>
+    <div data-ref="date_range_filter" class="flex flex-col gap-2">
+      <responsive on="768-" class="flex flex-row gap-2 items-center"/>
+      <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.identity.logs.filter.date_range_label</span>
       <div class="flex-center flex-wrap gap-2">
         <input type="date" aria-label="$t:common.range_start|label={{$t('admin.identity.logs.filter.date_range_label')}}" name="dateFrom" class="input w-40" value="{{_local.filter.dateFrom || ''}}">
           <on type="change">
@@ -106,8 +109,9 @@
         </input>
       </div>
     </div>
-    <div data-ref="channel_filter" data-if="{{(identityProviders?.data ?? []).some(p => Array.isArray(p.channels) &amp;&amp; p.channels.length > 0)}}" class="filter-row">
-      <span class="filter-label w-32">$t:admin.identity.logs.filter.channel_label</span>
+    <div data-ref="channel_filter" data-if="{{(identityProviders?.data ?? []).some(p => Array.isArray(p.channels) &amp;&amp; p.channels.length > 0)}}" class="flex flex-col gap-2">
+      <responsive on="768-" class="flex flex-row gap-2 items-center"/>
+      <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.identity.logs.filter.channel_label</span>
       <div class="flex-center flex-wrap gap-2">
         <label data-each="ch in {{Array.from(new Set((identityProviders?.data ?? []).flatMap(p => Array.isArray(p.channels) ? p.channels : [])))}}" class="inline-clickable">
           <input type="checkbox" class="checkbox" checked="{{(_local.filter.channels || []).includes(ch)}}">
@@ -131,8 +135,9 @@
       </button>
     </div>
     <div data-ref="advanced_filters" data-if="{{_local.filter.advancedOpen === true}}" class="filter-grid mt-3 pt-3">
-      <div data-ref="origin_type_filter" class="filter-row">
-        <span class="filter-label w-32">$t:admin.identity.logs.filter.origin_type_label</span>
+      <div data-ref="origin_type_filter" class="flex flex-col gap-2">
+        <responsive on="768-" class="flex flex-row gap-2 items-center"/>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.identity.logs.filter.origin_type_label</span>
         <div class="flex-center flex-wrap gap-2">
           <label data-each="ot in {{['route','hook','policy','middleware','api','custom','system']}}" class="inline-clickable">
             <input type="checkbox" class="checkbox" checked="{{(_local.filter.originTypes || []).includes(ot)}}">
@@ -145,8 +150,9 @@
           </label>
         </div>
       </div>
-      <div data-ref="source_type_filter" class="filter-row">
-        <span class="filter-label w-32">$t:admin.identity.logs.filter.source_type_label</span>
+      <div data-ref="source_type_filter" class="flex flex-col gap-2">
+        <responsive on="768-" class="flex flex-row gap-2 items-center"/>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.identity.logs.filter.source_type_label</span>
         <select name="sourceType" class="input w-48" value="{{_local.filter.sourceType || ''}}">
           <options>
             <option value="">$t:admin.identity.logs.filter.source_type_any</option>
@@ -161,8 +167,9 @@
           </on>
         </select>
       </div>
-      <div data-ref="source_identifier_filter" class="filter-row">
-        <span class="filter-label w-32">$t:admin.identity.logs.filter.source_identifier_label</span>
+      <div data-ref="source_identifier_filter" class="flex flex-col gap-2">
+        <responsive on="768-" class="flex flex-row gap-2 items-center"/>
+        <span class="filter-field-label w-32"><responsive on="768-" class="filter-field-label mb-0 shrink-0 flex items-center w-32"/>$t:admin.identity.logs.filter.source_identifier_label</span>
         <input type="text" name="sourceIdentifier" placeholder="$t:admin.identity.logs.filter.source_identifier_placeholder" class="input w-64" value="{{_local.filter.sourceIdentifier || ''}}">
           <on type="change">
             <!-- 위 구분을 좁힌 뒤 확장 식별자까지 직접 적는 칸이다. 고르는 목록이 아니라 자유 입력이라 철자가 정확해야 걸린다. -->

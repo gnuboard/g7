@@ -1,4 +1,5 @@
-# audit:allow test-scenario-coverage[cross_product,effects] reason: |
+# audit:allow test-scenario-coverage[cross_product,effects] reason: issue:#609 |
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 #   cross product 자동 전개는 audit 실행 환경의 fallback YAML 파서가 nested axes 를 읽지 못해
 #   검출되지 않는다(다른 번들 시나리오와 동일 한계). 본 변경은 백엔드 전용(첨부 검증·설정 참조)이며
 #   PHPUnit Feature 테스트가 축 조합을 커버하고 green 이다.
@@ -42,9 +43,16 @@ effects:
   - existing_plus_new_over_limit_is_blocked
   - zero_limit_is_unrestricted
   - storage_disk_independent_of_module_settings
+  # 실제 업로드 요청의 응답까지 확인 (라우트 결선과 422 매핑)
+  - disallowed_type_upload_rejected_over_http         # 허용 목록에 없는 형식은 422 이고 행이 생기지 않는다
+  - allowed_type_upload_passes_over_http              # 허용 목록의 형식은 201 로 저장된다
+  - oversize_upload_rejected_over_http                # 설정 상한을 넘는 용량은 422
+  - within_size_upload_passes_over_http               # 설정 상한 이내 용량은 201
+  - direct_upload_over_limit_returns_422_with_code    # 개수 상한 초과 업로드는 422 와 attachment_limit_exceeded 코드, 행 수는 그대로
 
 test_files:
   - modules/_bundled/sirsoft-page/tests/Feature/PageAttachmentPolicyTest.php
+  - modules/_bundled/sirsoft-page/tests/Feature/PageAttachmentPolicyHttpTest.php
 
 rules_layer_coverage:
   - rule: formrequest-numeric-boundary-drift

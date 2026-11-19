@@ -76,8 +76,6 @@ class PageContentThumbnailBackfillTest extends ModuleTestCase
     /**
      * 썸네일이 비어 있던 HTML 페이지는 첫 내부 이미지로 채우고, 텍스트 모드와 이미 채워진 페이지는 건드리지 않는다.
      *
-     * @scenario backfill=legacy_row
-     *
      * @effects backfill_fills_legacy_pages
      *
      * @return void 반환값 없음
@@ -108,8 +106,6 @@ class PageContentThumbnailBackfillTest extends ModuleTestCase
 
     /**
      * 두 번 실행해도 결과가 같다.
-     *
-     * @scenario backfill=idempotent
      *
      * @effects backfill_idempotent_second_run
      *

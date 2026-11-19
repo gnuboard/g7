@@ -3,16 +3,23 @@
 namespace Tests\Unit\Installer;
 
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 설치 확장 선택 해석기(PHP) 검증 — 웹 화면 JS 사본과 같은 픽스처로 같은 결과를 내는지 잠근다.
  *
- * 같은 픽스처(tests/fixtures/installer/extension-resolver-cases.json)를 vitest
+ * 같은 픽스처(tests/Fixtures/installer/extension-resolver-cases.json)를 vitest
  * `installer-extension-resolver.test.ts` 가 JS 해석기로 돌린다. 두 테스트가 모두 초록이면 두 구현이 같다.
  */
+#[RunClassInSeparateProcess]
+#[PreserveGlobalState(false)]
 class ExtensionSelectionResolverTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
     /**
      * 해석기 함수를 로드한다.
      *
@@ -30,7 +37,7 @@ class ExtensionSelectionResolverTest extends TestCase
      */
     private static function fixture(): array
     {
-        return json_decode((string) file_get_contents(dirname(__DIR__, 2).'/fixtures/installer/extension-resolver-cases.json'), true);
+        return json_decode((string) file_get_contents(dirname(__DIR__, 2).'/Fixtures/installer/extension-resolver-cases.json'), true);
     }
 
     /**
@@ -241,7 +248,7 @@ class ExtensionSelectionResolverTest extends TestCase
      */
     public function test_save_api_stores_resolved_selection(): void
     {
-        $source = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/api/save-extensions.php');
+        $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/api/save-extensions.php');
 
         $this->assertStringContainsString("require_once dirname(__DIR__).'/includes/extension-selection.php';", $source);
         $this->assertStringContainsString("\$state['selected_extensions'] = \$resolution['selection'];", $source);
@@ -252,12 +259,12 @@ class ExtensionSelectionResolverTest extends TestCase
         );
         // Step 5 「…에 필요」 표시용 앞당김 기록도 같은 해석 결과에서 저장한다(#153 D9) — 웹·터미널 같은 키
         $this->assertStringContainsString("\$state['install_pulled_by'] = \$resolution['pulled_by'];", $source);
-        $cli = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/includes/cli/install-flow.php');
+        $cli = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/includes/cli/install-flow.php');
         $this->assertStringContainsString("\$state['install_pulled_by'] = \$selection['pulled_by'];", $cli);
-        $view = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/views/5-installation.php');
+        $view = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/views/5-installation.php');
         // 서버 값은 비실행 JSON 데이터 블록으로, 전역 대입은 단계 스크립트가 한다(#158 strict CSP)
         $this->assertStringContainsString("'pulled_by' => (object) (\$state['install_pulled_by'] ?? []),", $view);
-        $stepScript = (string) file_get_contents(dirname(__DIR__, 3).'/public/install/assets/js/step-5-installation.js');
+        $stepScript = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/assets/js/step-5-installation.js');
         $this->assertStringContainsString('window.INSTALLER_PULLED_BY = data.pulled_by || {};', $stepScript);
     }
 

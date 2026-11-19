@@ -1,0 +1,27 @@
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 축은 시험 주석(@scenario)에서 모은 입력 변종이고, 회귀 가드는 effects 다 — 모든 effect 가 test_files 의 @effects 로 귀속된다(#798 A1).
+
+feature: "로그인 진입 판정과 자동 이동 (#798 K5 · W19 · W20)"
+
+description: |
+  로그인 진입 판정과 자동 이동 (#798 K5 · W19 · W20)
+  이메일 먼저 입력 화면은 `POST /api/auth/login/discover`(관리자 `…/admin/login/discover`)로 수단을 묻는다. 응답은 항상
+  `{method, label, redirect_url}` 이고 회원 유무와 무관하다. 외부 주소는 비밀번호로 낮춘다. 자동 이동 경로는 프론트 설정
+  `appConfig.auth.auto_redirect` 로 노출한다.
+
+axes:
+  extension: [none, external]
+  guard: [user, admin]
+  redirect: [external, protocol_relative]
+  user: [present, absent]
+  auto_redirect: [set, unset]
+
+effects:
+  - discovery_defaults_to_password
+  - discovery_returns_external
+  - external_redirect_normalized
+  - discovery_shape_independent_of_user
+  - auto_redirect_exposed_in_app_config
+  - login_identifier_exposed
+
+test_files:
+  - tests/Feature/Auth/LoginDiscoveryTest.php

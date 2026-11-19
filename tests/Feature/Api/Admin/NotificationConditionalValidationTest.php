@@ -63,6 +63,12 @@ class NotificationConditionalValidationTest extends TestCase
 
     /**
      * subject 미전송(부분 수정)이 통과해야 한다 (스키마 정합)
+     *
+     * @scenario case=subject_omitted
+     *
+     * @effects notification_template_subject_is_optional
+     *
+     * @return void 반환값 없음
      */
     public function test_template_subject_can_be_omitted(): void
     {
@@ -80,6 +86,12 @@ class NotificationConditionalValidationTest extends TestCase
 
     /**
      * subject null 전송이 통과해야 한다 (컬럼이 nullable)
+     *
+     * @scenario case=subject_null
+     *
+     * @effects notification_template_subject_is_optional
+     *
+     * @return void 반환값 없음
      */
     public function test_template_subject_can_be_null(): void
     {
@@ -98,6 +110,12 @@ class NotificationConditionalValidationTest extends TestCase
 
     /**
      * subject 를 전송하면 다국어 배열 계약은 그대로 검증되어야 한다 (완화가 검증을 무력화하지 않음)
+     *
+     * @scenario case=subject_not_array
+     *
+     * @effects notification_template_subject_validated_when_present
+     *
+     * @return void 반환값 없음
      */
     public function test_template_subject_still_validated_when_present(): void
     {
@@ -114,6 +132,12 @@ class NotificationConditionalValidationTest extends TestCase
 
     /**
      * body 는 계속 필수여야 한다 (컬럼이 NOT NULL)
+     *
+     * @scenario case=body_omitted
+     *
+     * @effects notification_template_body_remains_required
+     *
+     * @return void 반환값 없음
      */
     public function test_template_body_remains_required(): void
     {
@@ -127,6 +151,12 @@ class NotificationConditionalValidationTest extends TestCase
 
     /**
      * 사용 가능한 채널은 통과해야 한다
+     *
+     * @scenario case=channel_available
+     *
+     * @effects notification_definition_accepts_available_channel
+     *
+     * @return void 반환값 없음
      */
     public function test_definition_accepts_available_channel(): void
     {
@@ -143,6 +173,12 @@ class NotificationConditionalValidationTest extends TestCase
 
     /**
      * 알 수 없는 채널은 차단되어야 한다 (기존에는 임의 문자열이 그대로 저장됨)
+     *
+     * @scenario case=channel_unknown
+     *
+     * @effects notification_definition_rejects_unknown_channel
+     *
+     * @return void 반환값 없음
      */
     public function test_definition_rejects_unknown_channel(): void
     {
@@ -159,6 +195,12 @@ class NotificationConditionalValidationTest extends TestCase
      * 이미 저장된 채널은 목록 밖이어도 통과해야 한다
      *
      * 채널을 제공하던 플러그인이 비활성화된 뒤에도 기존 레코드 수정이 막히면 안 된다.
+     *
+     * @scenario case=channel_persisted_unavailable
+     *
+     * @effects notification_definition_accepts_persisted_channel
+     *
+     * @return void 반환값 없음
      */
     public function test_definition_accepts_persisted_channel_even_if_unavailable(): void
     {
@@ -175,6 +217,12 @@ class NotificationConditionalValidationTest extends TestCase
 
     /**
      * 플러그인이 훅으로 추가한 채널도 허용되어야 한다 (하드코딩 화이트리스트 금지)
+     *
+     * @scenario case=channel_added_by_hook
+     *
+     * @effects notification_definition_accepts_hook_added_channel
+     *
+     * @return void 반환값 없음
      */
     public function test_definition_accepts_channel_added_by_hook(): void
     {
@@ -194,11 +242,16 @@ class NotificationConditionalValidationTest extends TestCase
     }
 
     /**
-     * 테스트 정리
+     * Mockery 기대를 검증하고 닫은 뒤 부모 정리를 실행한다.
+     *
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
-        \Mockery::close();
-        parent::tearDown();
+        try {
+            \Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 }

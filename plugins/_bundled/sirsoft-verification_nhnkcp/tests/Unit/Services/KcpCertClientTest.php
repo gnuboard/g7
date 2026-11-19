@@ -29,9 +29,13 @@ class KcpCertClientTest extends PluginTestCase
     private const LIVE_SITE_CD = 'SMA1B2C';
 
     /**
+     * 거래등록 요청이 사이트 코드와 rv 헤더를 싣고, 본문이 사이트 자격증명으로 복호화되는 암호문이며 challenge 식별자를 param_opt_1 로 동봉하는지 확인한다.
+     *
      * @scenario mode=test,kcp_response=success
      *
      * @effects request_body_is_encrypted_and_decryptable_with_site_credentials
+     *
+     * @return void 반환값 없음
      */
     public function test_register_trade_sends_encrypted_body_with_site_headers(): void
     {
@@ -77,9 +81,13 @@ class KcpCertClientTest extends PluginTestCase
     }
 
     /**
+     * 운영 모드 자격증명으로 거래등록하면 운영 호스트(cert.kcp.co.kr)로 운영 사이트 코드를 실어 보내는지 확인한다.
+     *
      * @scenario mode=live,kcp_response=success
      *
      * @effects live_mode_uses_live_host_and_prefixed_site_cd
+     *
+     * @return void 반환값 없음
      */
     public function test_live_mode_uses_live_host(): void
     {
@@ -106,9 +114,13 @@ class KcpCertClientTest extends PluginTestCase
     }
 
     /**
+     * KCP 게이트웨이가 502 를 돌려주면 거래등록이 RemoteCallException 을 던지는지 확인한다.
+     *
      * @scenario mode=test,kcp_response=http_error
      *
      * @effects http_error_raises_remote_call_exception_without_challenge_row
+     *
+     * @return void 반환값 없음
      */
     public function test_http_error_raises_remote_call_exception(): void
     {
@@ -122,9 +134,13 @@ class KcpCertClientTest extends PluginTestCase
     }
 
     /**
+     * 200 응답이라도 본문이 JSON 이 아니면 거래등록이 RemoteCallException 을 던지는지 확인한다.
+     *
      * @scenario mode=test,kcp_response=malformed
      *
      * @effects http_error_raises_remote_call_exception_without_challenge_row
+     *
+     * @return void 반환값 없음
      */
     public function test_non_json_response_raises_remote_call_exception(): void
     {
@@ -138,9 +154,13 @@ class KcpCertClientTest extends PluginTestCase
     }
 
     /**
-     * @scenario cert_query=success
+     * (cert_query=success — 미선언 축은 평문으로)
+     *
+     * @scenario outcome=success
      *
      * @effects success_issues_verification_token_and_marks_log_verified
+     *
+     * @return void 반환값 없음
      */
     public function test_fetch_cert_data_decrypts_identity_payload(): void
     {
@@ -186,9 +206,13 @@ class KcpCertClientTest extends PluginTestCase
     }
 
     /**
-     * @scenario cert_query=success,identifier_case=lowercase
+     * (cert_query=success, identifier_case=lowercase — 미선언 축은 평문으로)
+     *
+     * @scenario outcome=success
      *
      * @effects success_issues_verification_token_and_marks_log_verified
+     *
+     * @return void 반환값 없음
      */
     public function test_fetch_cert_data_accepts_lowercase_identifier_keys(): void
     {
@@ -214,9 +238,13 @@ class KcpCertClientTest extends PluginTestCase
     }
 
     /**
-     * @scenario cert_query=res_cd_error
+     * (cert_query=res_cd_error — 미선언 축은 평문으로)
+     *
+     * @scenario outcome=provider_error
      *
      * @effects provider_error_marks_log_failed_with_res_cd
+     *
+     * @return void 반환값 없음
      */
     public function test_fetch_cert_data_returns_error_code_without_identity(): void
     {
@@ -234,9 +262,13 @@ class KcpCertClientTest extends PluginTestCase
     }
 
     /**
-     * @scenario cert_query=decrypt_failure
+     * (cert_query=decrypt_failure — 미선언 축은 평문으로)
+     *
+     * @scenario outcome=decrypt_failure
      *
      * @effects decrypt_failure_returns_decrypt_failed
+     *
+     * @return void 반환값 없음
      */
     public function test_fetch_cert_data_raises_decrypt_exception_on_broken_payload(): void
     {
@@ -262,9 +294,13 @@ class KcpCertClientTest extends PluginTestCase
      *
      * 식별값이 비면 중복 가입 차단이 조용히 무력화되므로, 규격 변형 응답에서도 잃지 않는다.
      *
-     * @scenario cert_query=success,identifier_case=url_encoded
+     * (cert_query=success, identifier_case=url_encoded — 미선언 축은 평문으로)
+     *
+     * @scenario outcome=success
      *
      * @effects identifier_recovered_from_url_encoded_key
+     *
+     * @return void 반환값 없음
      */
     public function test_fetch_cert_data_recovers_identifiers_from_url_encoded_keys(): void
     {
@@ -298,9 +334,13 @@ class KcpCertClientTest extends PluginTestCase
     /**
      * 표준 키가 채워져 있으면 URL 인코딩 사본보다 우선한다.
      *
-     * @scenario cert_query=success,identifier_case=uppercase
+     * (cert_query=success, identifier_case=uppercase — 미선언 축은 평문으로)
+     *
+     * @scenario outcome=success
      *
      * @effects identifier_recovered_from_url_encoded_key
+     *
+     * @return void 반환값 없음
      */
     public function test_fetch_cert_data_prefers_plain_identifier_over_url_encoded(): void
     {
@@ -341,6 +381,8 @@ class KcpCertClientTest extends PluginTestCase
      * @scenario mode=test,kcp_response=res_cd_error
      *
      * @effects oversized_field_is_rejected_before_remote_call
+     *
+     * @return void 반환값 없음
      */
     #[DataProvider('oversizedFieldProvider')]
     public function test_register_trade_rejects_oversized_field_before_sending(string $field): void
@@ -383,6 +425,11 @@ class KcpCertClientTest extends PluginTestCase
         ];
     }
 
+    /**
+     * 테스트 사이트 코드와 암호화 키로 테스트 모드 KCP 클라이언트를 만든다.
+     *
+     * @return KcpCertClient 테스트 모드 자격증명을 실은 클라이언트
+     */
     private function client(): KcpCertClient
     {
         return (new KcpCertClient)->withCredentials(self::SITE_CD, self::ENC_KEY, true);

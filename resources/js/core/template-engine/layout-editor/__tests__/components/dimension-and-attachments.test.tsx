@@ -35,6 +35,10 @@ describe('DimensionWidget', () => {
     options: [{ value: '100%', label: '100%' }, { value: '50%', label: '50%' }],
   };
 
+  /**
+   * @scenario subject=dimension_and_attachments
+   * @effects dimension_enter_commits_trimmed_value
+   */
   it('자유 입력 후 Enter → onChange(trim 문자열)', () => {
     const onChange = vi.fn();
     render(<DimensionWidget control={ctrl} value={undefined} onChange={onChange} t={t} />);
@@ -44,6 +48,10 @@ describe('DimensionWidget', () => {
     expect(onChange).toHaveBeenLastCalledWith('320px');
   });
 
+  /**
+   * @scenario subject=dimension_and_attachments
+   * @effects dimension_blur_commits_value
+   */
   it('자유 입력 후 blur → onChange', () => {
     const onChange = vi.fn();
     render(<DimensionWidget control={ctrl} value={undefined} onChange={onChange} t={t} />);
@@ -53,6 +61,10 @@ describe('DimensionWidget', () => {
     expect(onChange).toHaveBeenLastCalledWith('24rem');
   });
 
+  /**
+   * @scenario subject=dimension_and_attachments
+   * @effects dimension_preset_chip_commits_and_fills_input
+   */
   it('프리셋 칩 클릭 → 그 값으로 onChange + 입력칸 채움', () => {
     const onChange = vi.fn();
     render(<DimensionWidget control={ctrl} value={undefined} onChange={onChange} t={t} />);
@@ -60,6 +72,10 @@ describe('DimensionWidget', () => {
     expect(onChange).toHaveBeenLastCalledWith('50%');
   });
 
+  /**
+   * @scenario subject=dimension_and_attachments
+   * @effects dimension_empty_commit_emits_undefined
+   */
   it('빈값 commit → onChange(undefined) (기본)', () => {
     const onChange = vi.fn();
     render(<DimensionWidget control={ctrl} value="320px" onChange={onChange} t={t} />);
@@ -69,6 +85,10 @@ describe('DimensionWidget', () => {
     expect(onChange).toHaveBeenLastCalledWith(undefined);
   });
 
+  /**
+   * @scenario subject=dimension_and_attachments
+   * @effects dimension_default_button_emits_undefined
+   */
   it('기본 버튼 클릭 → onChange(undefined)', () => {
     const onChange = vi.fn();
     render(<DimensionWidget control={ctrl} value="320px" onChange={onChange} t={t} />);
@@ -76,6 +96,10 @@ describe('DimensionWidget', () => {
     expect(onChange).toHaveBeenLastCalledWith(undefined);
   });
 
+  /**
+   * @scenario subject=dimension_and_attachments
+   * @effects dimension_external_value_syncs_input
+   */
   it('외부 value 변경(리사이즈 동기) → 입력칸 반영', () => {
     const onChange = vi.fn();
     const { rerender } = render(
@@ -111,6 +135,10 @@ describe('LayoutAttachmentManager', () => {
     } as unknown as Storage);
   });
 
+  /**
+   * @scenario subject=dimension_and_attachments
+   * @effects attachments_mount_lists_cards_with_bearer
+   */
   it('마운트 시 목록 GET → 카드 렌더 + Bearer 토큰 첨부', async () => {
     const fn = mockFetch(() => ({ ok: true, json: async () => ({ success: true, data: sampleList }) }));
     render(<LayoutAttachmentManager templateIdentifier="sirsoft-basic" layoutName="home" t={t} onClose={vi.fn()} />);
@@ -121,18 +149,30 @@ describe('LayoutAttachmentManager', () => {
     expect((init as RequestInit).headers).toMatchObject({ Authorization: 'Bearer TESTTOKEN' });
   });
 
+  /**
+   * @scenario subject=dimension_and_attachments
+   * @effects attachments_empty_list_shows_empty_notice
+   */
   it('빈 목록 → empty 안내', async () => {
     mockFetch(() => ({ ok: true, json: async () => ({ success: true, data: [] }) }));
     render(<LayoutAttachmentManager templateIdentifier="sirsoft-basic" layoutName="home" t={t} onClose={vi.fn()} />);
     await screen.findByTestId('g7le-attachment-manager-empty');
   });
 
+  /**
+   * @scenario subject=dimension_and_attachments
+   * @effects attachments_load_error_shows_error_bar
+   */
   it('로드 에러 → error 바', async () => {
     mockFetch(() => ({ ok: false, status: 500, json: async () => ({ message: 'boom' }) }));
     render(<LayoutAttachmentManager templateIdentifier="sirsoft-basic" layoutName="home" t={t} onClose={vi.fn()} />);
     await screen.findByTestId('g7le-attachment-manager-error');
   });
 
+  /**
+   * @scenario subject=dimension_and_attachments
+   * @effects attachments_use_as_background_calls_on_select
+   */
   it('onSelect 보유 → "배경으로 사용" 클릭 시 url 콜백', async () => {
     mockFetch(() => ({ ok: true, json: async () => ({ success: true, data: sampleList }) }));
     const onSelect = vi.fn();
@@ -142,6 +182,10 @@ describe('LayoutAttachmentManager', () => {
     expect(onSelect).toHaveBeenCalledWith('/storage/hero.png');
   });
 
+  /**
+   * @scenario subject=dimension_and_attachments
+   * @effects attachments_hide_use_button_without_on_select
+   */
   it('onSelect 미전달(툴바 진입) → "배경으로 사용" 버튼 숨김', async () => {
     mockFetch(() => ({ ok: true, json: async () => ({ success: true, data: sampleList }) }));
     render(<LayoutAttachmentManager templateIdentifier="sirsoft-basic" layoutName="home" t={t} onClose={vi.fn()} />);
@@ -149,9 +193,13 @@ describe('LayoutAttachmentManager', () => {
     expect(screen.queryByTestId('g7le-attachment-use-1')).toBeNull();
   });
 
+  /**
+   * @scenario subject=dimension_and_attachments
+   * @effects attachments_delete_confirm_calls_delete_and_removes
+   */
   it('삭제 confirm 승인 → DELETE 호출 + 목록 제거', async () => {
     let deleted = false;
-    const fn = mockFetch((url, init) => {
+    const fn = mockFetch((_url, init) => {
       if ((init as RequestInit)?.method === 'DELETE') {
         deleted = true;
         return { ok: true, json: async () => ({ success: true }) };
@@ -169,6 +217,10 @@ describe('LayoutAttachmentManager', () => {
     expect((delCall![1] as RequestInit).headers).toMatchObject({ Authorization: 'Bearer TESTTOKEN' });
   });
 
+  /**
+   * @scenario subject=dimension_and_attachments
+   * @effects attachments_delete_cancel_skips_delete
+   */
   it('삭제 confirm 취소 → DELETE 미호출', async () => {
     const fn = mockFetch(() => ({ ok: true, json: async () => ({ success: true, data: sampleList }) }));
     vi.spyOn(window, 'confirm').mockReturnValue(false);

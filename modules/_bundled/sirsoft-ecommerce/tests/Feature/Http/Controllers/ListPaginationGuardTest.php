@@ -92,7 +92,7 @@ class ListPaginationGuardTest extends ModuleTestCase
      * 상품 문의 목록(공개): 쿼리 스트링의 불리언 표기 4종을 모두 받아들이는지 검증합니다.
      *
      * 쿼리는 언제나 문자열로 도착하므로 `boolean` 규칙만 두면 화면이 보내는
-     * `exclude_secret=false` 에서 목록 전체가 422 가 되고 문의 탭이 비어 보인다 (#492 7차 D-38).
+     * `exclude_secret=false` 에서 목록 전체가 422 가 되고 문의 탭이 비어 보인다 (#492).
      *
      * @return void
      */

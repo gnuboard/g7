@@ -152,7 +152,8 @@
     "label": "$t:editor.component.img",
     "propControls": [
       "imgSrc",
-      "imgAlt"
+      "imgAlt",
+      "imgThumbPreset"
     ],
     "styleControls": [
       "width",
@@ -729,6 +730,23 @@
     ],
     "events": [
       "onChange"
+    ]
+  },
+  "MemberFieldInput": {
+    "label": "$t:editor.component.member_field_input",
+    "styleControls": [
+      "marginAll",
+      "width"
+    ],
+    "events": [
+      "onChange"
+    ],
+    "dataProps": [
+      {
+        "propKey": "value",
+        "shape": "scalar",
+        "label": "$t:editor.data_prop.value"
+      }
     ]
   },
   "FormField": {

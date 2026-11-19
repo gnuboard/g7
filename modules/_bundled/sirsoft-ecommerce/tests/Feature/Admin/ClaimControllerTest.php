@@ -98,8 +98,11 @@ class ClaimControllerTest extends ModuleTestCase
     {
         Carbon::setTestNow();
         $this->clearTestCurrencySettings();
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**

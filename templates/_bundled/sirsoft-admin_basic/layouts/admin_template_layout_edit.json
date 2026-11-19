@@ -592,8 +592,25 @@
                 "id": "page_container",
                 "type": "basic",
                 "name": "Div",
+                "responsive": {
+                    "640-767": {
+                        "props": {
+                            "className": "p-6 min-h-screen bg-gray-50 dark:bg-gray-900 pb-24"
+                        }
+                    },
+                    "768-1023": {
+                        "props": {
+                            "className": "p-6 min-h-screen bg-gray-50 dark:bg-gray-900 pb-0"
+                        }
+                    },
+                    "1024-": {
+                        "props": {
+                            "className": "p-8 min-h-screen bg-gray-50 dark:bg-gray-900 pb-0"
+                        }
+                    }
+                },
                 "props": {
-                    "className": "admin-page-content-responsive pb-24 md:pb-0"
+                    "className": "p-4 min-h-screen bg-gray-50 dark:bg-gray-900 pb-24"
                 },
                 "children": [
                     {
@@ -633,6 +650,13 @@
                                 "comment": "머리말 버튼은 `md`(768) 이상에서만 펼친다. 모바일에서는 보조 동작(내려받기·복사)을 아래의\n             ⋯ 더보기로 접고, 저장·미리보기는 하단 고정 바로 내린다(계획서 §7.5).",
                                 "type": "basic",
                                 "name": "Button",
+                                "responsive": {
+                                    "768-": {
+                                        "props": {
+                                            "className": "flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                        }
+                                    }
+                                },
                                 "actions": [
                                     {
                                         "comment": "HTML 버퍼를 `.g7.html` 파일로 내려받는다 — 설치본은 서버에 파일이 없으므로 브라우저가 만든다.\n                 파일명은 레이아웃 이름(확장 갈래면 조각 식별자)이다.",
@@ -646,7 +670,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "hidden md:flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
+                                    "className": "hidden items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
                                     "data-testid": "layout-download-markup"
                                 },
                                 "children": [
@@ -661,8 +685,15 @@
                                     {
                                         "type": "basic",
                                         "name": "Span",
+                                        "responsive": {
+                                            "640-": {
+                                                "props": {
+                                                    "className": "inline"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "hidden sm:inline"
+                                            "className": "hidden"
                                         },
                                         "text": "$t:admin.templates.layout_edit.download_markup"
                                     }
@@ -671,6 +702,13 @@
                             {
                                 "type": "basic",
                                 "name": "Button",
+                                "responsive": {
+                                    "768-": {
+                                        "props": {
+                                            "className": "flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                        }
+                                    }
+                                },
                                 "actions": [
                                     {
                                         "comment": "HTML 버퍼를 클립보드에 담는다 — 위 내려받기와 같은 값을 파일 대신 붙여넣기로 넘기는 자리다.\n                 성공·실패 문구를 둘 다 넘기는 이유는 클립보드 권한이 거부될 수 있어서다(브라우저가 막으면\n                 예외가 아니라 거부로 돌아온다). 그때 조용히 지나가면 복사된 줄 알고 빈 값을 붙여넣게 된다.",
@@ -685,7 +723,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "hidden md:flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
+                                    "className": "hidden items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
                                     "data-testid": "layout-copy-markup"
                                 },
                                 "children": [
@@ -700,8 +738,15 @@
                                     {
                                         "type": "basic",
                                         "name": "Span",
+                                        "responsive": {
+                                            "640-": {
+                                                "props": {
+                                                    "className": "inline"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "hidden sm:inline"
+                                            "className": "hidden"
                                         },
                                         "text": "$t:admin.templates.layout_edit.copy_markup"
                                     }
@@ -711,6 +756,13 @@
                                 "type": "basic",
                                 "name": "Button",
                                 "if": "{{_global.selectedNodeKind !== 'extension'}}",
+                                "responsive": {
+                                    "768-": {
+                                        "props": {
+                                            "className": "flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                        }
+                                    }
+                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -719,7 +771,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "hidden md:flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
+                                    "className": "hidden items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
                                     "data-testid": "layout-preview"
                                 },
                                 "children": [
@@ -734,8 +786,15 @@
                                     {
                                         "type": "basic",
                                         "name": "Span",
+                                        "responsive": {
+                                            "640-": {
+                                                "props": {
+                                                    "className": "inline"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "hidden sm:inline"
+                                            "className": "hidden"
                                         },
                                         "text": "$t:admin.templates.layout_edit.preview"
                                     }
@@ -745,6 +804,13 @@
                                 "type": "basic",
                                 "name": "Button",
                                 "if": "{{_global.selectedNodeKind === 'extension'}}",
+                                "responsive": {
+                                    "768-": {
+                                        "props": {
+                                            "className": "flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                        }
+                                    }
+                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -753,7 +819,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "hidden md:flex items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
+                                    "className": "hidden items-center gap-2 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
                                     "data-testid": "extension-preview"
                                 },
                                 "children": [
@@ -768,8 +834,15 @@
                                     {
                                         "type": "basic",
                                         "name": "Span",
+                                        "responsive": {
+                                            "640-": {
+                                                "props": {
+                                                    "className": "inline"
+                                                }
+                                            }
+                                        },
                                         "props": {
-                                            "className": "hidden sm:inline"
+                                            "className": "hidden"
                                         },
                                         "text": "$t:admin.templates.layout_edit.preview"
                                     }
@@ -779,6 +852,13 @@
                                 "type": "basic",
                                 "name": "Button",
                                 "if": "{{_global.selectedNodeKind !== 'extension' && current_layout?.data?.abilities?.can_update === true}}",
+                                "responsive": {
+                                    "768-": {
+                                        "props": {
+                                            "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50"
+                                        }
+                                    }
+                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -787,7 +867,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "hidden md:flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50",
+                                    "className": "hidden items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50",
                                     "disabled": "{{_global.isSaving}}",
                                     "data-testid": "layout-save"
                                 },
@@ -821,6 +901,13 @@
                                 "type": "basic",
                                 "name": "Button",
                                 "if": "{{_global.selectedNodeKind === 'extension' && current_extension?.data?.abilities?.can_update === true}}",
+                                "responsive": {
+                                    "768-": {
+                                        "props": {
+                                            "className": "flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50"
+                                        }
+                                    }
+                                },
                                 "actions": [
                                     {
                                         "type": "click",
@@ -829,7 +916,7 @@
                                 ],
                                 "props": {
                                     "type": "button",
-                                    "className": "hidden md:flex items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50",
+                                    "className": "hidden items-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors disabled:opacity-50",
                                     "disabled": "{{_global.isSaving}}",
                                     "data-testid": "extension-save"
                                 },
@@ -863,8 +950,15 @@
                                 "comment": "모바일 ⋯ 더보기 — 내려받기·복사를 접는다. 같은 동작을 위 버튼과 두 벌로 적는 이유는\n             `<action handler>` 가 문서 층 `<action name>` 으로 올릴 수 없는 인라인 핸들러이기 때문이다.",
                                 "type": "basic",
                                 "name": "Div",
+                                "responsive": {
+                                    "768-": {
+                                        "props": {
+                                            "className": "relative hidden"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "relative md:hidden"
+                                    "className": "relative"
                                 },
                                 "children": [
                                     {
@@ -1014,11 +1108,47 @@
                         ]
                     },
                     {
+                        "comment": "검수용 저장 띠(#888) — 실행 역할이 stage 인 서버에서 이 편집기의 저장은 그 서버 전용 레이아웃에만 들어가고\n           운영 사이트에는 반영되지 않는다. 다음 배포가 검수 서버의 편집분을 버리므로, 저장 전에 그 사실을 알린다.",
+                        "id": "stage_editor_banner",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_global.appConfig?.runtime_role === 'stage'}}",
+                        "props": {
+                            "role": "status",
+                            "className": "alert-warning mt-4"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "flask",
+                                    "className": "text-amber-700 dark:text-amber-300 flex-shrink-0"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "P",
+                                "props": {
+                                    "className": "text-warning-soft"
+                                },
+                                "text": "$t:admin.stage_role.editor_banner"
+                            }
+                        ]
+                    },
+                    {
                         "comment": "모바일 하단 고정 바(계획서 §7.5) — 저장·미리보기만 남긴다. 아래 여백에 safe-area 를 더해\n           홈 인디케이터에 가리지 않게 하고, 페이지 컨테이너는 그만큼 바닥 여백을 둔다.",
                         "type": "basic",
                         "name": "Div",
+                        "responsive": {
+                            "768-": {
+                                "props": {
+                                    "className": "hidden fixed bottom-0 inset-x-0 z-30 gap-2 px-3 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700"
+                                }
+                            }
+                        },
                         "props": {
-                            "className": "md:hidden fixed bottom-0 inset-x-0 z-30 flex gap-2 px-3 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700",
+                            "className": "fixed bottom-0 inset-x-0 z-30 flex gap-2 px-3 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700",
                             "data-testid": "mobile-action-bar"
                         },
                         "children": [
@@ -1440,6 +1570,13 @@
                                                                         "id": "code_editor_info_toggle",
                                                                         "type": "basic",
                                                                         "name": "Button",
+                                                                        "responsive": {
+                                                                            "768-": {
+                                                                                "props": {
+                                                                                    "className": "hidden ml-auto flex-center gap-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                                                }
+                                                                            }
+                                                                        },
                                                                         "actions": [
                                                                             {
                                                                                 "type": "click",
@@ -1452,7 +1589,7 @@
                                                                         ],
                                                                         "props": {
                                                                             "type": "button",
-                                                                            "className": "md:hidden ml-auto flex-center gap-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700",
+                                                                            "className": "ml-auto flex-center gap-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 text-body rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700",
                                                                             "aria-controls": "code_editor_file_desc code_editor_file_meta code_editor_inline_notice",
                                                                             "aria-expanded": "{{_global.codeEditorInfoOpen ? 'true' : 'false'}}"
                                                                         },
@@ -1480,9 +1617,16 @@
                                                                 "type": "basic",
                                                                 "name": "P",
                                                                 "if": "{{_global.selectedNodeKind !== 'extension' && (current_layout !== undefined && (!_global.selectedLayoutName || current_layout?.data?.name === _global.selectedLayoutName))}}",
+                                                                "responsive": {
+                                                                    "768-": {
+                                                                        "props": {
+                                                                            "className": "mt-1 text-label-subtle {{_global.codeEditorInfoOpen ? '' : 'block'}}"
+                                                                        }
+                                                                    }
+                                                                },
                                                                 "props": {
                                                                     "id": "code_editor_file_desc",
-                                                                    "className": "mt-1 text-label-subtle {{_global.codeEditorInfoOpen ? '' : 'hidden md:block'}}"
+                                                                    "className": "mt-1 text-label-subtle {{_global.codeEditorInfoOpen ? '' : 'hidden'}}"
                                                                 },
                                                                 "text": "{{raw:current_layout?.data?.description || ''}}"
                                                             }
@@ -1491,9 +1635,16 @@
                                                     {
                                                         "type": "basic",
                                                         "name": "Div",
+                                                        "responsive": {
+                                                            "768-": {
+                                                                "props": {
+                                                                    "className": "{{_global.codeEditorInfoOpen ? 'flex-center' : 'flex items-center'}} gap-3 shrink-0"
+                                                                }
+                                                            }
+                                                        },
                                                         "props": {
                                                             "id": "code_editor_file_meta",
-                                                            "className": "{{_global.codeEditorInfoOpen ? 'flex-center' : 'hidden md:flex md:items-center'}} gap-3 shrink-0"
+                                                            "className": "{{_global.codeEditorInfoOpen ? 'flex-center' : 'hidden'}} gap-3 shrink-0"
                                                         },
                                                         "children": [
                                                             {
@@ -2069,9 +2220,16 @@
                                     {
                                         "type": "basic",
                                         "name": "Div",
+                                        "responsive": {
+                                            "768-": {
+                                                "props": {
+                                                    "className": "p-3 mt-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 {{_global.codeEditorInfoOpen ? '' : 'block'}}"
+                                                }
+                                            }
+                                        },
                                         "props": {
                                             "id": "code_editor_inline_notice",
-                                            "className": "p-3 mt-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 {{_global.codeEditorInfoOpen ? '' : 'hidden md:block'}}"
+                                            "className": "p-3 mt-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 {{_global.codeEditorInfoOpen ? '' : 'hidden'}}"
                                         },
                                         "children": [
                                             {

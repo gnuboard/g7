@@ -69,7 +69,7 @@ class AdminWebhookUrlTest extends PluginTestCase
     }
 
     /**
-     * 조회 라우트는 다른 결제사 플러그인의 입금통보 URL 조회와 같은 권한을 요구한다.
+     * 조회 라우트는 다른 결제사 플러그인의 입금통보 URL 조회와 같은 권한(쇼핑몰 설정 읽기 또는 플러그인 보기)을 요구한다.
      *
      * @effects webhook_url_lookup_requires_settings_read
      *
@@ -82,7 +82,26 @@ class AdminWebhookUrlTest extends PluginTestCase
         $this->assertNotNull($route, 'Route ['.self::ROUTE_NAME.'] should exist.');
         $this->assertContains('GET', $route->methods());
         $this->assertContains('auth:sanctum', $route->gatherMiddleware());
-        $this->assertContains('permission:admin,sirsoft-ecommerce.settings.read', $route->gatherMiddleware());
+        $this->assertContains('permission:admin,sirsoft-ecommerce.settings.read|core.plugins.read,false', $route->gatherMiddleware());
+    }
+
+    /**
+     * 「플러그인 보기」 권한만 있는 관리자도 읽기 전용 설정 화면이 보여 주는 웹훅 전체 URL 을 받는다.
+     *
+     * 화면은 `core.plugins.read` 로 열리는데 주소 조회가 쇼핑몰 설정 읽기 권한만 받아, 들어갈 때마다
+     * 「해당 권한이 없습니다」 알림이 뜨고 주소 칸이 경로만 남았다.
+     *
+     * @effects webhook_url_lookup_open_to_plugin_settings_viewers
+     *
+     * @return void 반환값 없음
+     */
+    public function test_plugin_view_admin_receives_webhook_url(): void
+    {
+        $admin = $this->createAdminUser(['core.plugins.read']);
+
+        $this->actingAs($admin)->getJson(self::ENDPOINT)
+            ->assertOk()
+            ->assertJsonPath('data.url', url('/plugins/sirsoft-tosspayments/webhook/deposit'));
     }
 
     /**

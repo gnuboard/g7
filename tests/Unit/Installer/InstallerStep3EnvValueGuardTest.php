@@ -3,6 +3,8 @@
 namespace Tests\Unit\Installer;
 
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 
@@ -19,10 +21,10 @@ use PHPUnit\Framework\TestCase;
  * 저장/리다이렉트 분기에 도달하지 않도록 DB 검증을 일부러 실패시켜 상태 파일·세션을
  * 건드리지 않는다.
  *
- * @scenario vector=handleStep3Post, payload_class=env_line_injection, expected_outcome=return_invalid_message
- *
- * @effects step3_post_rejects_env_line_breaks_before_save
+ * 효과 요약(마커 아님 — 평문): Step 3 저장 시점에 .env 대상 필드의 개행을 거부한다. 시나리오 표식은 메서드마다 단다.
  */
+#[RunClassInSeparateProcess]
+#[PreserveGlobalState(false)]
 class InstallerStep3EnvValueGuardTest extends TestCase
 {
     /**
@@ -42,6 +44,10 @@ class InstallerStep3EnvValueGuardTest extends TestCase
             define('SUPPORTED_LANGUAGES', ['ko' => '한국어', 'en' => 'English']);
         }
 
+        // 검증 상한 상수(MAX_APP_NAME_LENGTH 등)의 정의처. 종전에는 같은 프로세스의
+        // 다른 클래스가 이미 로드해 둔 것에 기대고 있어, 프로세스를 격리하면 상수가
+        // 없다 — 그 전이 의존이 바로 격리가 막는 형태다 (리베이스 4차).
+        require_once $projectRoot.'/public/install/includes/config.php';
         require_once $projectRoot.'/public/install/includes/functions.php';
         require_once $projectRoot.'/public/install/includes/binary-path-policy.php';
         require_once $projectRoot.'/public/install/includes/request-handler.php';
@@ -86,11 +92,12 @@ class InstallerStep3EnvValueGuardTest extends TestCase
     /**
      * 개행이 섞인 .env 대상 필드는 저장 시점에 거부된다.
      *
-     * @param  string  $field  필드명
-     * @param  string  $payload  주입 시도 값
+     * @scenario vector=handleStep3Post, payload_class=newline_lf, payload_class=newline_crlf, payload_class=null_byte, expected_outcome=return_invalid_message
      *
      * @effects step3_post_rejects_env_line_breaks_before_save
      *
+     * @param  string  $field  필드명
+     * @param  string  $payload  주입 시도 값
      * @return void 반환값 없음
      */
     #[Test]
@@ -126,6 +133,8 @@ class InstallerStep3EnvValueGuardTest extends TestCase
     /**
      * 스킴 없는 URL 은 거부된다.
      *
+     * @scenario vector=handleStep3Post, expected_outcome=return_invalid_message
+     *
      * @effects step3_post_rejects_url_without_http_scheme
      *
      * @return void 반환값 없음
@@ -140,6 +149,8 @@ class InstallerStep3EnvValueGuardTest extends TestCase
 
     /**
      * 정상 값은 이 게이트에 걸리지 않는다 (회귀 방지).
+     *
+     * @scenario vector=handleStep3Post, payload_class=normal, expected_outcome=accept_normal
      *
      * @effects step3_post_accepts_normal_env_values
      *
@@ -162,7 +173,9 @@ class InstallerStep3EnvValueGuardTest extends TestCase
     /**
      * 값이 비어 있으면 URL 형태 검사는 건너뛴다 (선택 입력 보존).
      *
-     * @effects step3_empty_app_url_reports_required_not_url_shape
+     * @scenario vector=handleStep3Post, payload_class=empty, expected_outcome=accept_normal
+     *
+     * @effects step3_post_skips_url_shape_check_for_empty_values, step3_empty_app_url_reports_required_not_url_shape
      *
      * @return void 반환값 없음
      */

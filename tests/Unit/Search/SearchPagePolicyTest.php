@@ -11,12 +11,7 @@ use Tests\PureTestCase;
  * 이 판정을 도메인마다 각자 구현하면 규칙이 검색 모듈 수만큼 갈라진다.
  * 코어가 규칙을 소유한다는 것을 여기서 고정한다.
  *
- * @scenario case=search_cursor_policy
- *
- * @effects cursor_starts_on_first_page,
- *          deep_page_without_cursor_stays_on_offset,
- *          cursor_requires_real_columns,
- *          unknown_sort_name_falls_back_to_offset
+ * @scenario navigation=keyset_cursor
  */
 class SearchPagePolicyTest extends PureTestCase
 {

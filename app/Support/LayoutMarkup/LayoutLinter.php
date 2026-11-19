@@ -12,7 +12,7 @@ use App\Enums\LayoutMarkupLintCode;
  * "만들 수는 있으나 권하지 않는다" 다. 그래서 예외가 아니라 `LintWarning` 목록을 모아 돌려준다.
  *
  * 아래 열네 가지를 본다:
- *  ① **미등록 핸들러** — 액션 handler 가 코어 49종·템플릿 등록·확장(`.`) 어디에도 없음(D30⑦).
+ *  ① **미등록 핸들러** — 액션 handler 가 코어 51종·템플릿 등록·확장(`.`) 어디에도 없음(D30⑦).
  *  ② **플러그인 완전 레이아웃** — 플러그인은 layout_extensions·설정 화면만 두는 관례이나 완전
  *     레이아웃을 정의함(gdpr_consent_log·plugin_settings 예외, D15).
  *  ③ **nesting 위반** — 부모 컨테이너의 accepts 가 허용하지 않는 자식(빈 accepts 부모는 제외 —
@@ -105,6 +105,18 @@ final class LayoutLinter
      */
     private const ENTRY_ONLY_KEYS = ['key', 'stopPropagation'];
 
+    /**
+     * ⑮ — 엔진 반응형 프리셋 구간(ResponsiveManager BREAKPOINT_PRESETS 와 같은 값). [min, max], max 무한은 INF.
+     *
+     * @var array<string, array{0: int, 1: int|float}>
+     */
+    private const BREAKPOINT_PRESETS = [
+        'mobile' => [0, 767],
+        'tablet' => [768, 1023],
+        'desktop' => [1024, INF],
+        'portable' => [0, 1023],
+    ];
+
     private readonly ActionHandlerManifest $handlers;
 
     /**
@@ -134,6 +146,7 @@ final class LayoutLinter
         $this->lintUnregisteredHandlers($json, $context, $path, $warnings);
         $this->lintNesting($json, $context, $path, $warnings);
         $this->lintResponsiveMix($json, $path, $warnings);
+        $this->lintResponsiveOpenRangeOverlap($json, $path, $warnings);
         $this->lintStandaloneGlobalHost($json, $rootKind, $path, $warnings);
         $this->lintSwitchValuePlacement($json, $path, $warnings);
         $this->lintSetStateUnderscoreGlobal($json, $path, $warnings);
@@ -690,7 +703,7 @@ final class LayoutLinter
     }
 
     /**
-     * 핸들러가 코어 49종·확장(`.`)·템플릿 등록·custom 디스패치 중 하나인지 판정합니다.
+     * 핸들러가 코어 51종·확장(`.`)·템플릿 등록·custom 디스패치 중 하나인지 판정합니다.
      *
      * @param  string  $handler  핸들러명
      * @param  CompileContext  $context  문맥
@@ -795,6 +808,109 @@ final class LayoutLinter
             $splitNode = $this->firstNodeWithBreakpoint($json, ['mobile', 'tablet']);
             $warnings[] = new LintWarning(LayoutMarkupLintCode::ResponsiveBreakpointMix, self::line($splitNode), self::column($splitNode), [], $path);
         }
+    }
+
+    /**
+     * ⑮ 한 노드의 responsive 에서 열린 커스텀 구간이 다른 열린 커스텀 구간이나 프리셋과 같은 폭에 함께 맞는지 확인합니다.
+     *
+     * 엔진(ResponsiveManager::getMatchingKey)은 맞는 키 하나만 골라 그 키의 값만 기본값 위에 덮어 쓴다(props 는
+     * 얕은 병합, children·text·if·iteration 은 교체). 고르는 순서는 커스텀 > 프리셋(넓이와 상관없이), 커스텀끼리는
+     * 좁은 구간(max - min) 먼저이고, 위가 열린 구간끼리는 넓이가 둘 다 무한이라 비교가 0 이 되어 먼저 적은 키가
+     * 남는다. 그래서 두 키가 함께 맞는 폭에서는 고르지 않은 키의 값이 그 폭에서 쓰이지 않는다.
+     *
+     * 판정 대상 쌍은 「열린 커스텀 + 열린 커스텀」과 「열린 커스텀 + 프리셋」이고, 두 구간의 교집합이 비지 않으면 낸다.
+     * 닫힌 커스텀이 낀 쌍(닫힌끼리, 닫힌 + 프리셋, 닫힌 + 열린)은 보지 않는다. 닫힌끼리·닫힌 + 열린은 좁은 쪽이 이긴다.
+     * 닫힌 + 프리셋은 커스텀이 넓이와 상관없이 먼저라 닫힌 쪽이 이기고, 프리셋보다 좁은 닫힌 구간을 함께 두는 것
+     * (`mobile` 안의 `0-480` 등)은 의도된 덮어쓰기라 경고하지 않는다. 닫힌 커스텀이 프리셋 구간을 다 덮으면 그 프리셋
+     * 값은 쓰이지 않는데, 이것은 이 경고의 범위 밖이다. 프리셋끼리의 겹침은 문서 단위 ④ 가 맡는다.
+     *
+     * @param  array<string, mixed>  $json  산출 JSON
+     * @param  string|null  $path  소스 파일 경로
+     * @param  array<int, LintWarning>  $warnings  경고 목록 (참조)
+     * @return void 반환값 없음
+     */
+    private function lintResponsiveOpenRangeOverlap(array $json, ?string $path, array &$warnings): void
+    {
+        foreach ($this->collectNodes($json) as $node) {
+            $responsive = $node['responsive'] ?? null;
+
+            if (! is_array($responsive) || count($responsive) < 2) {
+                continue;
+            }
+
+            $ranges = [];
+
+            foreach (array_keys($responsive) as $key) {
+                $range = self::parseBreakpoint((string) $key);
+
+                if ($range !== null) {
+                    $ranges[(string) $key] = $range;
+                }
+            }
+
+            $keys = array_keys($ranges);
+            $involved = [];
+
+            foreach ($keys as $i => $a) {
+                foreach (array_slice($keys, $i + 1) as $b) {
+                    $ra = $ranges[$a];
+                    $rb = $ranges[$b];
+
+                    // 열린 커스텀 구간이 한쪽 이상이고, 다른 쪽은 열린 커스텀이거나 프리셋이어야 한다.
+                    $aOpen = ! $ra['preset'] && $ra['open'];
+                    $bOpen = ! $rb['preset'] && $rb['open'];
+
+                    if (! ($aOpen && ($bOpen || $rb['preset'])) && ! ($bOpen && $ra['preset'])) {
+                        continue;
+                    }
+
+                    if (max($ra['min'], $rb['min']) <= min($ra['max'], $rb['max'])) {
+                        $involved[$a] = true;
+                        $involved[$b] = true;
+                    }
+                }
+            }
+
+            if ($involved === []) {
+                continue;
+            }
+
+            $warnings[] = new LintWarning(LayoutMarkupLintCode::ResponsiveOpenRangeOverlap, self::line($node), self::column($node), [
+                'name' => (string) $node['name'],
+                'keys' => implode(', ', array_values(array_filter($keys, fn (string $key): bool => isset($involved[$key])))),
+            ], $path);
+        }
+    }
+
+    /**
+     * 반응형 구간 키를 엔진(ResponsiveManager::parseRange)과 같은 규칙으로 해석합니다.
+     *
+     * 프리셋을 먼저 보고, 아니면 `min-max` 형식에서 빈 min 은 0, 빈 max 는 무한으로 읽는다. 한쪽 끝을 비운
+     * 키(`768-`, `-1023`)가 열린 구간이다 — `0-767` 처럼 끝을 적으면 값이 같아도 닫힌 구간이다.
+     *
+     * @param  string  $key  구간 키
+     * @return array{min: int|float, max: int|float, preset: bool, open: bool}|null 구간, 해석할 수 없으면 null
+     */
+    private static function parseBreakpoint(string $key): ?array
+    {
+        if (isset(self::BREAKPOINT_PRESETS[$key])) {
+            [$min, $max] = self::BREAKPOINT_PRESETS[$key];
+
+            return ['min' => $min, 'max' => $max, 'preset' => true, 'open' => false];
+        }
+
+        if (preg_match('/^(-?\d*)-(-?\d*)$/', $key, $match) !== 1) {
+            return null;
+        }
+
+        $min = $match[1] === '' ? 0 : (int) $match[1];
+        $max = $match[2] === '' ? INF : (int) $match[2];
+
+        if ($min > $max) {
+            return null;
+        }
+
+        return ['min' => $min, 'max' => $max, 'preset' => false, 'open' => $match[1] === '' || $match[2] === ''];
     }
 
     /**

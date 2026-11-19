@@ -1,0 +1,22 @@
+feature: 마이페이지 배송지 관리 목록
+
+description: |
+  마이페이지 배송지 화면은 배송지 목록과 수령인 정보를 그리고, 기본 배송지에만 뱃지를 단다. 배송지가 없으면 빈 상태를
+  보인다. 새 주소 추가, 수정, 삭제 단추가 있고 삭제는 확인 문구를 거친다.
+
+# axis 의미:
+#   list — 응답의 배송지 목록(있음 / 없음)
+axes:
+  list: [with_addresses, empty]
+
+effects:
+  - address_list_renders                  # 배송지 목록이 그려진다
+  - address_empty_state_shown             # 배송지가 없으면 빈 상태가 보인다
+  - default_address_badge_only_on_default # 기본 배송지에만 뱃지가 있다
+  - address_add_button_renders            # 새 주소 추가 단추가 그려진다
+  - address_edit_delete_buttons_render    # 항목마다 수정, 삭제 단추가 그려진다
+  - address_recipient_info_renders        # 수령인 이름과 연락처가 그려진다
+  - address_delete_requires_confirm       # 삭제 apiCall(DELETE)에 확인 문구가 있다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/mypage-addresses.test.tsx

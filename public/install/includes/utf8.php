@@ -1,5 +1,6 @@
 <?php
 
+use App\Support\ExecutionEnvironment;
 use App\Support\ProcessOutputEncoding;
 
 /**
@@ -26,6 +27,16 @@ if (! class_exists(ProcessOutputEncoding::class, false)) {
     unset($processOutputEncodingPath);
 }
 
+// 그 클래스가 mb_* 가용성을 판정할 때 쓰는 SSoT. 함께 로드해야 인스톨러에서도
+// `disable_functions` 까지 보고 판정한다 (없으면 function_exists 폴백으로 내려간다).
+if (! class_exists(ExecutionEnvironment::class, false)) {
+    $executionEnvironmentPath = dirname(__DIR__, 3).'/app/Support/ExecutionEnvironment.php';
+    if (is_file($executionEnvironmentPath)) {
+        require_once $executionEnvironmentPath;
+    }
+    unset($executionEnvironmentPath);
+}
+
 if (! function_exists('installer_utf8_normalize')) {
     /**
      * 문자열 하나를 항상 유효한 UTF-8 로 만듭니다.
@@ -40,7 +51,13 @@ if (! function_exists('installer_utf8_normalize')) {
         }
 
         // 코어 파일이 없는 비정상 배치에서도 응답은 살린다.
-        return mb_check_encoding($value, 'UTF-8') ? $value : mb_scrub($value, 'UTF-8');
+        // mbstring 이 `disable_functions` 로 막힌 호스팅에서는 판정도 불가능하므로 원문을
+        // 그대로 돌려준다 — 여기서 죽으면 살리려던 응답이 사라진다.
+        if (! function_exists('mb_check_encoding') || mb_check_encoding($value, 'UTF-8')) {
+            return $value;
+        }
+
+        return function_exists('mb_scrub') ? mb_scrub($value, 'UTF-8') : $value;
     }
 }
 
@@ -103,7 +120,7 @@ if (! function_exists('installer_normalize_process_output')) {
      */
     function installer_normalize_process_output(string $value, string $source): string
     {
-        if ($value === '' || mb_check_encoding($value, 'UTF-8')) {
+        if ($value === '' || ! function_exists('mb_check_encoding') || mb_check_encoding($value, 'UTF-8')) {
             return $value;
         }
 
@@ -115,7 +132,11 @@ if (! function_exists('installer_normalize_process_output')) {
             $reported[$source] = true;
             $notice = '[env] '.$source.' output was not UTF-8 — normalized (os: '.PHP_OS_FAMILY.
                 ', oem cp: '.(function_exists('sapi_windows_cp_get') ? (string) sapi_windows_cp_get('oem') : 'n/a').')';
-            error_log($notice);
+            // `error_log` 도 `disable_functions` 대상이 될 수 있다. 이 진단 한 줄 때문에
+            // 정규화가 죽으면 살리려던 응답이 사라지므로, 있을 때만 부르고 addLog 로 남긴다.
+            if (function_exists('error_log')) {
+                error_log($notice);
+            }
             if (function_exists('addLog')) {
                 addLog($notice);
             }
@@ -157,7 +178,11 @@ if (! function_exists('installer_json_encode')) {
         $message = '[installer-json] encode failed ('.$reason.')'.
             ($paths === [] ? '' : ' at: '.implode(', ', array_slice($paths, 0, 20)));
 
-        error_log($message);
+        // 여기는 json_encode 가 이미 실패한 폴백 경로다 — 차단된 `error_log` 를 부르면
+        // 폴백 자신이 치명 오류가 되어 빈 본문(HTTP 200)이 그대로 나간다.
+        if (function_exists('error_log')) {
+            error_log($message);
+        }
         if (function_exists('addLog')) {
             addLog($message);
         }

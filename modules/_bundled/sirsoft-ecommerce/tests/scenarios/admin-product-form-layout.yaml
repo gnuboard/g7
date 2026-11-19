@@ -42,6 +42,7 @@ effects:
   - purchase_quantity_inputs_autobind   # 최소·최대 구매 수량은 name 자동바인딩(값 setState 없음)
   - product_form_layout_semantics_intact   # sticky 서브탭·카드 머리·옵션 표 정렬·다통화 환산값 위치
   - product_form_requests_active_common_infos_only   # common_infos 데이터소스는 활성 항목만 요청
+  - product_form_selectors_fetch_every_row   # 공통정보·배송정책·상품정보고시 선택지는 per_page=all 로 전부(100건에서 잘리지 않음)
   - master_detail_layouts_keep_grid_ratio   # 마스터-디테일 화면들의 목록·상세 비율
   - master_detail_content_uses_page_scroll   # 마스터-디테일 콘텐츠는 페이지 스크롤 컨테이너를 쓴다
   - seo_inputs_multilingual_autobind   # SEO 제목·설명은 MultilingualInput 자동바인딩·$localized 카운터·동기화 미러

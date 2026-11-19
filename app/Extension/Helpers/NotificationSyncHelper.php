@@ -2,9 +2,11 @@
 
 namespace App\Extension\Helpers;
 
+use App\Extension\Helpers\Concerns\RecordsSyncDeletion;
 use App\Extension\HookManager;
 use App\Models\NotificationDefinition;
 use App\Models\NotificationTemplate;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -20,6 +22,8 @@ use Illuminate\Support\Facades\Log;
  */
 class NotificationSyncHelper
 {
+    use RecordsSyncDeletion;
+
     /**
      * 알림 정의 시딩 공통 필터 훅 이름 (7.1.0).
      *
@@ -173,6 +177,9 @@ class NotificationSyncHelper
                 'recipients' => $data['recipients'] ?? null,
                 'is_active' => $data['is_active'] ?? true,
                 'is_default' => $data['is_default'] ?? true,
+                // 운영자가 먼저 켜서 만든 행이라도 확장이 그 수단을 선언하면 선언 행이 된다 — 운영자가 고친 칸은
+                // user_overrides 로 보존되고, 이후 stale 정리도 선언 기준으로 다룬다.
+                'is_user_created' => false,
             ]
         );
 
@@ -182,8 +189,9 @@ class NotificationSyncHelper
     /**
      * seeder/정의에 없는 stale 알림 정의를 삭제합니다 (완전 동기화 원칙).
      *
-     * 정책: `user_overrides` 무관 — config/seeder 에 없는 정의는 삭제.
-     * FK cascade 로 연관 `notification_templates` 도 자동 정리됩니다.
+     * 정책: config/seeder 에 없는 정의는 삭제한다. 그 정의의 템플릿은 모델 순회로 먼저 명시 삭제한다(캐시 무효화 이벤트 —
+     * DB CASCADE 에 기대지 않는다). 정의·템플릿에 운영자가 고친 필드(`user_overrides`)나 운영자가 만든 템플릿
+     * (`is_user_created`)가 있으면 지우기 직전 활동 로그 `notification_definition.sync_deleted` 에 정의와 모든 템플릿을 남긴다.
      *
      * @param  string  $extensionType  확장 타입: 'core', 'module', 'plugin'
      * @param  string  $extensionIdentifier  확장 식별자
@@ -195,14 +203,28 @@ class NotificationSyncHelper
         string $extensionIdentifier,
         array $currentTypes,
     ): int {
-        // audit:allow service-direct-data-access reason: 선언형 산출물 동기화 헬퍼다 — 확장이 선언에서 지운 정의를 찾아 지우는 일회성 정리 쿼리이며, 모델의 `booted()` 캐시 무효화가 삭제마다 돌아야 해서 대량 delete 가 아니라 모델 순회를 쓴다. Repository 로 옮기면 "선언에 없는 것" 이라는 조건이 동기화 계층과 저장 계층으로 갈린다
-        $query = NotificationDefinition::query()
-            ->where('extension_type', $extensionType)
-            ->where('extension_identifier', $extensionIdentifier)
-            ->whereNotIn('type', $currentTypes);
+        // 검수 서버(stage)는 공유 DB 의 선언 항목을 지우지 않고 대장에 미룬다 — 운영 서버가 extension:apply-deferred-cleanup 으로 같은 규칙대로 지운다
+        if (DeferredDeclarativeCleanup::shouldDefer()) {
+            return DeferredDeclarativeCleanup::defer($this, __FUNCTION__, func_get_args());
+        }
 
-        $targets = $query->get(['id', 'type']);
+        $targets = $this->staleDefinitionsQuery($extensionType, $extensionIdentifier, $currentTypes)->get();
         foreach ($targets as $def) {
+            // 템플릿을 모델 순회로 먼저 지운다(캐시 무효화 이벤트가 행마다 돈다) — DB CASCADE 에 기대지 않는다.
+            // audit:allow service-direct-data-access reason: 선언형 동기화 정리의 하위 트리·자식 조회 — 「선언에서 빠진 행과 그 자식」 판정이 정리와 미리보기(planCleanup)에서 같은 식이어야 해 동기화 계층에 둔다
+            $templates = NotificationTemplate::query()->where('definition_id', $def->id)->get();
+
+            if ($this->definitionHasOperatorData($def, $templates)) {
+                $this->recordSyncDeletion('notification_definition', (string) $def->type, $extensionType, $extensionIdentifier, [
+                    'definition' => $def->toArray(),
+                    'templates' => $templates->map(fn (NotificationTemplate $t) => $t->toArray())->all(),
+                ]);
+            }
+
+            foreach ($templates as $template) {
+                $template->delete();
+            }
+
             $def->delete();
         }
 
@@ -222,9 +244,10 @@ class NotificationSyncHelper
     /**
      * 주어진 definition 의 channel 목록 기준으로 stale template 을 삭제합니다.
      *
-     * 정책: `user_overrides` 무관 — seeder 에 없는 (definition_id, channel)
-     * 조합은 삭제. definition 삭제 시 FK cascade 로 자동 정리되는 경로와 별개로,
-     * definition 은 유지되지만 channel 이 재구성된 경우에 사용됩니다.
+     * 정책: seeder 에 없는 (definition_id, channel) 조합은 삭제한다 — definition 은 유지되지만 channel 이 재구성된 경우에
+     * 쓴다. 운영자가 고친 템플릿(`user_overrides`)이면 지우기 직전 활동 로그 `notification_template.sync_deleted` 에 남긴다.
+     * 운영자가 발송 수단을 켜서 만든 행(`is_user_created`)은 처음부터 선언에 없으므로 대상이 아니다 —
+     * 지우면 확장을 업데이트할 때마다 운영자가 써 둔 템플릿이 사라진다. 정의가 지워질 때는 정의 정리가 명시적으로 함께 지운다.
      *
      * @param  int  $definitionId  대상 definition id
      * @param  array<int, string>  $currentChannels  현재 유효한 channel 목록
@@ -232,13 +255,26 @@ class NotificationSyncHelper
      */
     public function cleanupStaleTemplates(int $definitionId, array $currentChannels): int
     {
-        // audit:allow service-direct-data-access reason: 위 `cleanupStaleDefinitions` 와 같은 축 — 선언에서 사라진 (definition, channel) 조합만 지우는 동기화 정리 쿼리다
-        $query = NotificationTemplate::query()
-            ->where('definition_id', $definitionId)
-            ->whereNotIn('channel', $currentChannels);
+        // 검수 서버(stage)는 공유 DB 의 선언 항목을 지우지 않고 대장에 미룬다 — 운영 서버가 extension:apply-deferred-cleanup 으로 같은 규칙대로 지운다
+        if (DeferredDeclarativeCleanup::shouldDefer()) {
+            return DeferredDeclarativeCleanup::defer($this, __FUNCTION__, func_get_args());
+        }
 
-        $targets = $query->get(['id', 'channel']);
+        $targets = $this->staleTemplatesQuery($definitionId, $currentChannels)->get();
         foreach ($targets as $template) {
+            if ($this->hasOperatorOverrides($template)) {
+                // audit:allow service-direct-data-access reason: 선언형 동기화 정리의 하위 트리·자식 조회 — 「선언에서 빠진 행과 그 자식」 판정이 정리와 미리보기(planCleanup)에서 같은 식이어야 해 동기화 계층에 둔다
+                $definition = NotificationDefinition::query()->find($definitionId);
+                $this->recordSyncDeletion(
+                    'notification_template',
+                    ($definition?->type ?? (string) $definitionId).':'.$template->channel,
+                    (string) ($definition?->extension_type ?? ''),
+                    (string) ($definition?->extension_identifier ?? ''),
+                    ['template' => $template->toArray()],
+                    ['channel' => (string) $template->channel]
+                );
+            }
+
             $template->delete();
         }
 
@@ -283,5 +319,120 @@ class NotificationSyncHelper
         }
 
         return $template;
+    }
+
+    /**
+     * 지워질 stale 알림 정의를 미리 계산합니다 — 쓰기 없음, 실제 정리와 같은 조회식.
+     *
+     * @param  string  $extensionType  확장 타입
+     * @param  string  $extensionIdentifier  확장 식별자
+     * @param  array<int, string>  $currentTypes  새 판이 선언한 type 목록
+     * @return list<array{type: string, key: string, has_operator_overrides: bool}> 삭제 예정
+     */
+    public function planCleanup(string $extensionType, string $extensionIdentifier, array $currentTypes): array
+    {
+        $plan = [];
+
+        foreach ($this->staleDefinitionsQuery($extensionType, $extensionIdentifier, $currentTypes)->get() as $def) {
+            // audit:allow service-direct-data-access reason: 선언형 동기화 정리의 하위 트리·자식 조회 — 「선언에서 빠진 행과 그 자식」 판정이 정리와 미리보기(planCleanup)에서 같은 식이어야 해 동기화 계층에 둔다
+            $templates = NotificationTemplate::query()->where('definition_id', $def->id)->get();
+            $plan[] = ['type' => 'notification_definition', 'key' => (string) $def->type, 'has_operator_overrides' => $this->definitionHasOperatorData($def, $templates)];
+        }
+
+        return $plan;
+    }
+
+    /**
+     * 남는 정의에서 지워질 stale 알림 템플릿을 미리 계산합니다 — 쓰기 없음, `cleanupStaleTemplates()` 와 같은 조회식.
+     *
+     * 동기화처럼 공통 시딩 훅(채널 제공 확장이 더하는 템플릿)을 거친 선언의 발송 수단을 남길 목록으로 쓴다 — 훅을 빼면
+     * 다른 확장이 더한 발송 수단이 지워질 것처럼 보인다. 아직 DB 에 없는 정의(새로 생길 정의)는 지울 템플릿이 없다.
+     *
+     * @param  string  $extensionType  확장 타입
+     * @param  string  $extensionIdentifier  확장 식별자
+     * @param  array<int, array<string, mixed>>  $definitions  새 판 알림 정의 선언
+     * @return list<array{type: string, key: string, has_operator_overrides: bool}> 삭제 예정 (`{정의 type}:{발송 수단}`)
+     */
+    public function planTemplateCleanup(string $extensionType, string $extensionIdentifier, array $definitions): array
+    {
+        $plan = [];
+
+        foreach ($this->applySeedDefinitionsFilter($definitions, $extensionType, $extensionIdentifier) as $data) {
+            if (! is_string($data['type'] ?? null)) {
+                continue;
+            }
+
+            // audit:allow service-direct-data-access reason: 선언형 동기화 정리의 하위 트리·자식 조회 — 「선언에서 빠진 행과 그 자식」 판정이 정리와 미리보기(planCleanup)에서 같은 식이어야 해 동기화 계층에 둔다
+            $definition = NotificationDefinition::query()->where('type', $data['type'])->first();
+            if ($definition === null) {
+                continue;
+            }
+
+            $channels = [];
+            foreach ($data['templates'] ?? [] as $template) {
+                $channels[] = $template['channel'];
+            }
+
+            foreach ($this->staleTemplatesQuery($definition->id, $channels)->get() as $template) {
+                $plan[] = ['type' => 'notification_template', 'key' => $data['type'].':'.$template->channel, 'has_operator_overrides' => $this->hasOperatorOverrides($template)];
+            }
+        }
+
+        return $plan;
+    }
+
+    /**
+     * stale 정의 조회식 — 정리와 미리보기가 함께 쓴다.
+     *
+     * @param  string  $extensionType  확장 타입
+     * @param  string  $extensionIdentifier  확장 식별자
+     * @param  array<int, string>  $currentTypes  유효한 type 목록
+     * @return Builder<NotificationDefinition> 조회식
+     */
+    private function staleDefinitionsQuery(string $extensionType, string $extensionIdentifier, array $currentTypes)
+    {
+        // audit:allow service-direct-data-access reason: 선언형 산출물 동기화 헬퍼의 「선언에 없는 것」 조회식 — 정리와 미리보기가 같은 식을 쓴다
+        return NotificationDefinition::query()
+            ->where('extension_type', $extensionType)
+            ->where('extension_identifier', $extensionIdentifier)
+            ->whereNotIn('type', $currentTypes);
+    }
+
+    /**
+     * stale 템플릿 조회식 — 운영자가 만든 템플릿은 대상이 아니다.
+     *
+     * @param  int  $definitionId  정의 ID
+     * @param  array<int, string>  $currentChannels  유효한 channel 목록
+     * @return Builder<NotificationTemplate> 조회식
+     */
+    private function staleTemplatesQuery(int $definitionId, array $currentChannels)
+    {
+        // audit:allow service-direct-data-access reason: 위 staleDefinitionsQuery 와 같은 축
+        return NotificationTemplate::query()
+            ->where('definition_id', $definitionId)
+            ->where('is_user_created', false)
+            ->whereNotIn('channel', $currentChannels);
+    }
+
+    /**
+     * 정의에 운영자 데이터(고친 필드·운영자가 만든 템플릿)가 있는지 판정합니다.
+     *
+     * @param  NotificationDefinition  $definition  정의
+     * @param  iterable<NotificationTemplate>  $templates  그 정의의 템플릿
+     * @return bool 있으면 true
+     */
+    private function definitionHasOperatorData(NotificationDefinition $definition, iterable $templates): bool
+    {
+        if ($this->hasOperatorOverrides($definition)) {
+            return true;
+        }
+
+        foreach ($templates as $template) {
+            if ($this->hasOperatorOverrides($template) || (bool) $template->is_user_created) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

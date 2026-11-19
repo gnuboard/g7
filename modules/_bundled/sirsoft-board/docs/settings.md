@@ -188,6 +188,7 @@ board 의 라우트가 20개 안팎으로 한 파일에서 관리 가능한 규�
 | 확장 | 유형 | 요구 버전 |
 |---|---|---|
 | `sirsoft-ecommerce` | 모듈 | `*` |
+| `sirsoft-hero_section` | 플러그인 | `>=1.3.0` |
 | `sirsoft-message_bizppurio` | 플러그인 | `*` |
 | `sirsoft-basic` | 템플릿 | `>=1.2.1` |
 <!-- @generated:dependencies END -->

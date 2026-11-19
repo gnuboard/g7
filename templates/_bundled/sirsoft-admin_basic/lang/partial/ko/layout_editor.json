@@ -142,6 +142,10 @@
       "label": "토글",
       "default_label": "토글"
     },
+    "member_field_input": {
+      "label": "회원 항목 입력칸",
+      "default_label": "항목"
+    },
     "form_field": {
       "label": "폼 필드",
       "default_label": "필드명"

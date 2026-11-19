@@ -653,4 +653,34 @@ describe('RecentSearchCombobox (주소 따라가기 — resultPath, 설계 합�
     await go('/board/free');
     expect(input().value).toBe('코펠');
   });
+
+  /**
+   * 하위 폴더 설치(`https://host/g7/`)에서 브라우저 주소는 `/g7/search` 인데 resultPath 는 접두사 없는 라우트 경로(`/search`)다.
+   * 접두사를 벗기지 않고 대조하면 결과 화면에서도 늘 「다른 화면」이라 검색어가 비어 보인다.
+   *
+   * @scenario surface=component
+   * @effects search_box_follows_result_url
+   */
+  it.each([
+    ['코어 주소 API(G7Core.url.route)', true],
+    ['옛 코어(G7Config.basePath 만)', false],
+  ])('하위 폴더 설치에서도 결과 화면을 알아본다 — %s', async (_label, withCoreApi) => {
+    (window as any).G7Config = { basePath: '/g7' };
+    if (withCoreApi) {
+      (window as any).G7Core.url = { route: (p: string) => p.replace(/^\/g7(?=$|[/?#])/, '') || '/' };
+    }
+    try {
+      window.history.pushState({}, '', '/g7/search?q=%EB%93%B1%EC%82%B0%ED%99%94');
+      render(<RecentSearchCombobox resultPath="/search" />);
+      expect(input().value).toBe('등산화');
+
+      await go('/g7/board/free');
+      expect(input().value).toBe('');
+
+      await go('/g7/search?q=%EC%B9%A8%EB%82%AD');
+      expect(input().value).toBe('침낭');
+    } finally {
+      delete (window as any).G7Config;
+    }
+  });
 });

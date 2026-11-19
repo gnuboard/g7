@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product,effects] reason: 7축 cross product 는 조건부 축(actor 는 controller=admin 에서만,
+# audit:allow test-scenario-coverage[cross_product,effects] reason: issue:#657 7축 cross product 는 조건부 축(actor 는 controller=admin 에서만,
 # lock_state 는 세션을 여는 단계에서만, delivery 는 비밀번호 단계에서만 의미가 있다)을 곱해 낸 명목상 조합이라
 # 개별 케이스에 docblock 을 매핑할 실체가 없다. 실제 회귀 가드는 effects 22건이며 전부 test_files 의
 # PHPUnit·Playwright 테스트에 @effects 로 귀속되어 있다(미검증 0건).
@@ -10,10 +10,10 @@ description: |
   인증 요청(challenge)만 돌려준다. 즉 로그인 응답은 **두 가지 형태의 200** 이다.
 
   핵심 동작:
-    - 사용자·관리자 두 경로가 같은 규칙으로 challenge 를 발급한다. 관리자 판정은
-      코드 확인에 성공한 뒤에 수행한다 (그 전에는 사용자도 토큰도 없다).
-    - 코드 확인 시점에 토큰이 발급되므로, 그 뒤 관리자 판정으로 거부하는 경로는
-      발급분을 반드시 회수한다.
+    - 사용자·관리자 두 경로가 같은 규칙으로 challenge 를 발급한다. 단 관리자 로그인은
+      관리자가 아닌 계정을 challenge 발급 전에 거절한다(#40 R12 — 인증번호 메일도 보내지 않는다).
+    - 사용자 로그인에서 받은 challenge 를 관리자 완료 경로에 들고 오면 코드 확인 시점에
+      토큰이 발급되므로, 관리자 판정으로 거부하는 그 경로는 발급분을 반드시 회수한다.
     - 재발송은 기존 challenge 를 취소하고 새로 발행한다 — 유효한 코드를 여러 개
       살려 두면 대입 시도의 표적이 넓어진다.
     - 인증번호를 보내지 못하면 401 이 아니라 503 으로 답한다. 자격 증명은 올바른데
@@ -96,6 +96,16 @@ effects:
   - layout_handler_skips_request_without_required_input
   - layout_handler_surfaces_server_message
   - layout_handler_resend_returns_new_challenge
+  # 2026-09-11 issue609 ← develop 병합: 유입 테스트가 실제로 재는 효과를 선언 (메서드 단위 마킹 규율)
+  - enter_key_submits_verify_without_issuing_new_challenge
+  - code_step_layout_holds_on_mobile_width_and_japanese_locale
+  - dispatcher_login_returns_challenge_in_layout_readable_shape
+  - dispatcher_login_returns_user_for_non_challenge_response
+  - dispatcher_two_factor_completes_login_with_challenge_id_and_code
+  - dispatcher_two_factor_applies_global_headers_to_admin_verify_request
+  - dispatcher_two_factor_skips_request_without_code_or_challenge_id
+  - dispatcher_two_factor_rewraps_server_error_message
+  - dispatcher_resend_returns_new_challenge
 
 test_files:
   - tests/Feature/Auth/TwoFactorAuthTest.php

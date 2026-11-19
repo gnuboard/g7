@@ -23,7 +23,7 @@ class ApiRouteInventoryFallbackTest extends TestCase
      *
      * @scenario case=uninstalled_fallback
      *
-     * @effects uninstalled_scope_falls_back_to_bundled_route_files
+     * @effects uninstalled_module_routes_collected_from_bundle, uninstalled_scope_falls_back_to_bundled_route_files
      *
      * @return void 반환값 없음
      */
@@ -45,7 +45,7 @@ class ApiRouteInventoryFallbackTest extends TestCase
      *
      * @scenario case=fallback_url_convention
      *
-     * @effects fallback_routes_follow_provider_url_convention
+     * @effects fallback_routes_follow_provider_conventions, fallback_routes_follow_provider_url_convention
      *
      * @return void 반환값 없음
      */
@@ -73,7 +73,7 @@ class ApiRouteInventoryFallbackTest extends TestCase
      *
      * @scenario case=fallback_admin_web_excluded
      *
-     * @effects admin_web_screens_excluded_admin_api_included
+     * @effects fallback_excludes_web_admin_routes, admin_web_screens_excluded_admin_api_included
      *
      * @return void 반환값 없음
      */
@@ -91,6 +91,8 @@ class ApiRouteInventoryFallbackTest extends TestCase
         }
 
         $names = array_column($routes, 'name');
+        // hello_module 의 관리자 메모 CRUD 는 #492 에서 `api/` 라우트(`api.modules.{id}.admin.memos.*`)로
+        // 옮겨졌다 — machine-facing 이므로 문서 대상이다. 배제되는 것은 web 관리자 화면뿐이다.
         $this->assertContains('api.modules.gnuboard7-hello_module.admin.memos.store', $names);
         $this->assertNotContains('web.modules.gnuboard7-hello_module.admin.memos.store', $names);
     }
@@ -100,7 +102,7 @@ class ApiRouteInventoryFallbackTest extends TestCase
      *
      * @scenario case=no_route_file
      *
-     * @effects scope_without_route_file_returns_empty
+     * @effects missing_route_file_returns_empty, scope_without_route_file_returns_empty
      *
      * @return void 반환값 없음
      */

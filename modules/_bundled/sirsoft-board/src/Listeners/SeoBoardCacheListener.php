@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Repositories\Contracts\BoardRepositoryInterface;
+use Modules\Sirsoft\Board\Support\BoardScreenUrl;
 
 /**
  * 게시글 변경 시 SEO 캐시 무효화 리스너
@@ -115,6 +116,12 @@ class SeoBoardCacheListener implements HookListenerInterface
                 'priority' => 20,
                 'sync' => true,
             ],
+            // 회원의 이름, 닉네임, 표시 이름 종류, 표시용 항목 값이 바뀌면 그 회원의 글과 댓글이 실린 화면의 작성자가 달라진다
+            'core.user.display_name_changed' => [
+                'method' => 'onUserDisplayNameChanged',
+                'priority' => 20,
+                'sync' => true,
+            ],
         ];
     }
 
@@ -197,7 +204,7 @@ class SeoBoardCacheListener implements HookListenerInterface
             }
 
             try {
-                app(SeoCacheManagerInterface::class)->invalidateByUrl("/board/{$slug}/{$postId}");
+                app(SeoCacheManagerInterface::class)->invalidateByUrl(BoardScreenUrl::defaultPath(BoardScreenUrl::POST, ['slug' => $slug, 'id' => $postId]));
             } catch (\Throwable $e) {
                 Log::warning('[SEO] Board post cache invalidation on comment change failed', [
                     'error' => $e->getMessage(),
@@ -236,15 +243,16 @@ class SeoBoardCacheListener implements HookListenerInterface
                 // 봇 캐시 키는 쿼리스트링 변종(`?`, `?page=2`, `?_escaped_fragment_=` 등)을
                 // 포함해 저장되므로(SeoMiddleware::buildCacheUrl), 와일드카드로 변종까지 무효화한다.
                 // matchesPattern 이 ^...$ 정확 매칭이라 와일드카드 없이는 `/board/{slug}?` 가 누락된다.
-                $cache->invalidateByUrl("/board/{$slug}");
-                $cache->invalidateByUrl("/board/{$slug}?*");
+                $listPath = BoardScreenUrl::defaultPath(BoardScreenUrl::LIST, ['slug' => $slug]);
+                $cache->invalidateByUrl($listPath);
+                $cache->invalidateByUrl($listPath.'?*');
 
                 // 그 게시판의 글 상세 (게시판 이름을 렌더한다)
-                $cache->invalidateByUrl("/board/{$slug}/*");
+                $cache->invalidateByUrl($listPath.'/*');
 
                 // 게시판 인덱스 페이지 (게시판명 목록 노출 가능)
-                $cache->invalidateByUrl('/boards');
-                $cache->invalidateByUrl('/boards?*');
+                $cache->invalidateByUrl(BoardScreenUrl::INDEX);
+                $cache->invalidateByUrl(BoardScreenUrl::INDEX.'?*');
 
                 // 홈 / 검색 페이지 (게시판명이 함께 노출될 수 있음)
                 $cache->invalidateByLayout('home');
@@ -288,6 +296,38 @@ class SeoBoardCacheListener implements HookListenerInterface
                 Log::debug('[SEO] Board cache invalidated on board reorder');
             } catch (\Throwable $e) {
                 Log::warning('[SEO] Board cache invalidation on board reorder failed', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        });
+    }
+
+    /**
+     * 회원의 표시 이름이 바뀌면 게시판 화면의 SEO 캐시를 무효화합니다.
+     *
+     * 표시 이름은 저장하지 않고 볼 때마다 계산하지만, 검색 엔진용으로 미리 그려 둔 화면에는 그린 시점의 이름이 구워져 있다.
+     * 그 회원의 글과 댓글이 어느 게시판의 어느 쪽에 실렸는지 찾으려면 글과 댓글 전체를 훑어야 하므로, 게시판 화면
+     * (글 목록, 글 상세, 게시판 목록)과 홈, 검색 화면을 통째로 비운다. 회원 한 명의 이름 변경은 드문 일이다.
+     *
+     * @param  mixed  ...$args  훅 인자 (첫 번째: 회원, 두 번째: 바뀐 값의 키 목록)
+     * @return void 반환값 없음
+     */
+    public function onUserDisplayNameChanged(...$args): void
+    {
+        DB::afterCommit(function () {
+            try {
+                $cache = app(SeoCacheManagerInterface::class);
+
+                // `*` 는 슬래시를 포함한 모든 글자에 걸린다. 글 목록과 글 상세, 쿼리 변종까지 한 번에 지운다.
+                $cache->invalidateByUrl(BoardScreenUrl::defaultPath(BoardScreenUrl::LIST, ['slug' => '*']));
+                $cache->invalidateByUrl(BoardScreenUrl::INDEX);
+                $cache->invalidateByUrl(BoardScreenUrl::INDEX.'?*');
+                $cache->invalidateByLayout('home');
+                $cache->invalidateByLayout('search/index');
+
+                Log::debug('[SEO] Board cache invalidated on member display name change');
+            } catch (\Throwable $e) {
+                Log::warning('[SEO] Board cache invalidation on member display name change failed', [
                     'error' => $e->getMessage(),
                 ]);
             }
@@ -381,7 +421,7 @@ class SeoBoardCacheListener implements HookListenerInterface
 
             if ($visible) {
                 $indexer->indexResource('board_post', $post->id, 'sirsoft-board', [[
-                    'url' => "/board/{$slug}/{$post->id}",
+                    'url' => BoardScreenUrl::post((string) $slug, $post->id),
                     'lastmod' => $post->updated_at?->toW3cString(),
                     'changefreq' => SitemapChangeFreq::Monthly->value,
                     'priority' => 0.5,
@@ -423,7 +463,7 @@ class SeoBoardCacheListener implements HookListenerInterface
 
             if ($visible) {
                 $indexer->indexResource('board', $board->id, 'sirsoft-board', [[
-                    'url' => "/board/{$board->slug}",
+                    'url' => BoardScreenUrl::list((string) $board->slug),
                     'lastmod' => $board->updated_at?->toW3cString(),
                     'changefreq' => SitemapChangeFreq::Daily->value,
                     'priority' => 0.6,
@@ -476,13 +516,14 @@ class SeoBoardCacheListener implements HookListenerInterface
 
             // 해당 게시글 상세 페이지 캐시 무효화 (정확한 URL)
             if ($post && isset($post->id) && $slug) {
-                $cache->invalidateByUrl("/board/{$slug}/{$post->id}");
+                $cache->invalidateByUrl(BoardScreenUrl::defaultPath(BoardScreenUrl::POST, ['slug' => $slug, 'id' => $post->id]));
             }
 
             // 해당 게시판의 목록 페이지만 무효화 (다른 게시판은 유지) — 쪽 변종(`?page=2`)까지
             if ($slug) {
-                $cache->invalidateByUrl("/board/{$slug}");
-                $cache->invalidateByUrl("/board/{$slug}?*");
+                $listPath = BoardScreenUrl::defaultPath(BoardScreenUrl::LIST, ['slug' => $slug]);
+                $cache->invalidateByUrl($listPath);
+                $cache->invalidateByUrl($listPath.'?*');
             }
 
             // 홈 페이지 캐시 무효화 (최근 게시글 등이 표시될 수 있음)

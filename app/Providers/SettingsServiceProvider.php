@@ -6,9 +6,13 @@ use App\Repositories\JsonConfigRepository;
 use App\Support\AllowedExtensions;
 use App\Support\EnvPriority;
 use App\Support\ExtensionSettingsMirror;
+use App\Support\FileServing\FileDelegation;
 use App\Support\LocalizedValue;
 use App\Support\OutboundProxy;
+use App\Support\RuntimeRole;
+use App\Support\TrustedProxySetting;
 use App\Support\WorkerSettingsRefresher;
+use App\Thumbnails\ThumbnailConfig;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Queue;
@@ -51,6 +55,8 @@ class SettingsServiceProvider extends ServiceProvider
         // 드라이버 계열은 부팅 때만 적용한다 — 큐 워커 도중에는 바꾸지 않고 저장 시 queue:restart 가 맡는다
         $this->applyDriverConfig($configRepository);
         $this->applyPublicAssetDiskConfig($configRepository);
+        $this->applyPrivateAttachmentDiskConfig($configRepository);
+        $this->applyFileDelegationConfig($configRepository);
 
         // 코어 설정을 g7_settings.core prefix로 저장
         $this->loadCoreSettingsToConfig($configRepository);
@@ -224,6 +230,12 @@ class SettingsServiceProvider extends ServiceProvider
         // .env 우선 모드: `.env` 가 소유한 키 제거 (스위치 OFF 면 무동작).
         $generalSettings = EnvPriority::filterLocked('general', $generalSettings);
 
+        // 검수 서버(stage)가 `.env` 에 자기 주소(APP_URL)를 적었으면 공유 설정의 사이트 URL(운영 주소)로 덮지 않는다 —
+        // 덮으면 정규 주소 이동이 검수 서버 화면을 모두 운영 주소로 보낸다. 공유 설정보다 우선
+        if (RuntimeRole::siteUrlFromLocalEnv()) {
+            unset($generalSettings['site_url']);
+        }
+
         if (! empty($generalSettings['site_name'])) {
             // site_name 이 다국어 JSON array 일 수 있으므로 현재/폴백 로케일 string 으로 정규화한다
             // (공개#49). raw array 를 config('app.name') 에 넣으면 app.blade.php 의
@@ -232,8 +244,12 @@ class SettingsServiceProvider extends ServiceProvider
             Config::set('app.name', $this->localizeSettingValue($generalSettings['site_name']));
         }
 
-        if (! empty($generalSettings['site_url'])) {
-            Config::set('app.url', $generalSettings['site_url']);
+        if (! empty($generalSettings['site_url']) && is_string($generalSettings['site_url'])) {
+            // 후행 슬래시·앞뒤 공백은 여기서 걷어낸다 — 관리자 저장 경로(SaveSettingsRequest)는
+            // 이미 정규화하지만 인스톨러는 그 경로를 우회해 원값을 저장한다(task-runner). 저장된
+            // 값이 모두 이 한 지점을 지나 app.url 이 되므로, 정규화를 여기 두면 저장 경로와
+            // 무관하게 app.url 이 후행 슬래시 없는 형태로 고정된다.
+            Config::set('app.url', rtrim(trim($generalSettings['site_url']), '/'));
         }
 
         if (! empty($generalSettings['timezone'])) {
@@ -354,6 +370,22 @@ class SettingsServiceProvider extends ServiceProvider
             Config::set('g7.sql_query_log', (bool) $debugSettings['sql_query_log']);
         }
 
+        // 신뢰 프록시 — 저장값이 null 이면 **주입하지 않는다**.
+        //
+        // null 은 "화면에서 한 번도 정한 적 없음" 이고, 그 설치의 권위는 여전히
+        // `config/trustedproxy.php` 의 `env('TRUSTED_PROXIES')` 다. 빈 배열([])과 구분해야
+        // 한다 — 빈 배열은 운영자가 「신뢰하지 않음」을 고른 명시적 선택이라 주입 대상이다.
+        //
+        // 이 구분이 없으면 `.env` 로 프록시를 설정해 둔 기존 설치가, 고급 탭의 **무관한**
+        // 항목(캐시 TTL 등)을 저장하는 순간 신뢰 설정을 잃는다. 오류도 로그도 없고,
+        // 방문자 IP 가 전부 프록시 주소로 바뀌는 것으로만 드러난다.
+        if (($debugSettings['trusted_proxies'] ?? null) !== null) {
+            Config::set(
+                'trustedproxy.proxies',
+                TrustedProxySetting::toConfigValue((array) $debugSettings['trusted_proxies'])
+            );
+        }
+
         // 아웃바운드 HTTP 프록시 설정.
         // 적용 여부 판정은 OutboundProxy 가 단독으로 소유한다 — 디버그 모드가 꺼져 있으면
         // 저장값이 남아 있어도 null 이 되어 주입되지 않는다.
@@ -417,6 +449,11 @@ class SettingsServiceProvider extends ServiceProvider
             Config::set('queue.default', $driverSettings['queue_driver']);
         }
 
+        // 검수 서버는 공유 큐에 잡을 넣지 않는다 — 운영 서버 워커가 검수 서버 코드 기준의 잡을 받게 된다. 공유 설정보다 우선
+        if (RuntimeRole::isStage()) {
+            Config::set('queue.default', 'sync');
+        }
+
         // Redis 설정 (캐시, 세션, 큐에서 공통 사용)
         $this->applyRedisConfig($driverSettings);
 
@@ -454,6 +491,11 @@ class SettingsServiceProvider extends ServiceProvider
         // 검색엔진 드라이버 설정
         if (! empty($driverSettings['search_engine_driver'])) {
             Config::set('scout.driver', $driverSettings['search_engine_driver']);
+        }
+
+        // 이미지 처리 엔진 — 업로드 축소·썸네일 생성 공용. 쓸 수 없는 엔진이면 해석기가 gd 로 폴백한다.
+        if (! empty($driverSettings['image_driver'])) {
+            Config::set('core.image.driver', (string) $driverSettings['image_driver']);
         }
 
         // 로그 설정
@@ -506,6 +548,95 @@ class SettingsServiceProvider extends ServiceProvider
         $extensions = AllowedExtensions::normalize($driverSettings['public_asset_extensions'] ?? null);
         if ($extensions !== []) {
             Config::set('core.storage.public_asset_extensions', $extensions);
+        }
+    }
+
+    /**
+     * 비공개 첨부 저장소 설정을 적용합니다 (#916).
+     *
+     * 공개 자산 디스크(`applyPublicAssetDiskConfig`)와 같은 꼴이다 — testing 환경에서는 dev 공유 drivers.json 값이 테스트로
+     * 흘러들지 않도록 주입을 건너뛰고, 실제 주입·정규화는 `injectPrivateAttachmentDiskConfig()` 가 맡는다.
+     *
+     * @param  JsonConfigRepository  $configRepository  설정 저장소
+     * @return void 반환값 없음
+     */
+    private function applyPrivateAttachmentDiskConfig(JsonConfigRepository $configRepository): void
+    {
+        if (app()->environment('testing')) {
+            return;
+        }
+
+        $this->injectPrivateAttachmentDiskConfig($configRepository);
+    }
+
+    /**
+     * drivers.private_attachment_disk 저장값을 core.storage.private_attachment_disk 로 주입합니다.
+     *
+     * 「기본」(`default`)·빈 값은 미설정('')으로 정규화한다 — 해석기(`PrivateAttachmentDisk`)가 지금까지의 디스크로 폴백한다.
+     * 플러그인 디스크가 아직 정의되지 않았어도(booted 전) 값은 그대로 둔다. 고아 디스크는 해석기가 쓰는 시점에 거른다(#916 A7).
+     *
+     * @param  JsonConfigRepository  $configRepository  설정 저장소
+     * @return void 반환값 없음
+     */
+    private function injectPrivateAttachmentDiskConfig(JsonConfigRepository $configRepository): void
+    {
+        // audit:allow env-priority-filter-wiring 이 지점이 drivers 에서 읽는 키는 private_attachment_disk 하나뿐이고
+        // 그 키는 EnvPriority::EXEMPT 다 (env 대응 없음 — 코어 첨부 env 는 ATTACHMENT_DISK 가 별도 축으로 우선한다).
+        $driverSettings = $configRepository->getCategory('drivers');
+
+        $disk = (string) ($driverSettings['private_attachment_disk'] ?? '');
+
+        Config::set('core.storage.private_attachment_disk', $disk === 'default' ? '' : $disk);
+    }
+
+    /**
+     * 웹서버 파일 위임 설정을 적용합니다 (#878).
+     *
+     * 공개 자산 디스크(`applyPublicAssetDiskConfig`)와 같은 꼴이다 — testing 환경에서는 dev 공유 drivers.json 값이
+     * 테스트로 흘러들지 않도록 주입을 건너뛰고, 실제 주입·정규화는 `injectFileDelegationConfig()` 가 맡는다
+     * (가드와 분리해 두어야 정규화 규칙을 테스트에서 단언할 수 있다).
+     *
+     * @param  JsonConfigRepository  $configRepository  설정 저장소
+     * @return void 반환값 없음
+     */
+    private function applyFileDelegationConfig(JsonConfigRepository $configRepository): void
+    {
+        // env() 직접 호출은 config:cache 환경에서 null 로 고정되어 가드가 무력해진다.
+        if (app()->environment('testing')) {
+            return;
+        }
+
+        $this->injectFileDelegationConfig($configRepository);
+    }
+
+    /**
+     * drivers.file_delegation·drivers.file_delegation_accel_prefix 저장값을 core.file_serving 으로 주입합니다.
+     *
+     * - 모드: 빈 값·모르는 값은 'none' 으로 정규화한다(위임 안 함 — 현 동작).
+     * - 접두사: 빈 값이면 주입하지 않아 config/core.php 의 값(`.env` 또는 기본값)이 남는다. 끝 `/` 를 보정한다.
+     * - `.env` 우선 모드에서 `.env` 가 소유한 키(G7_FILE_DELEGATION·G7_FILE_DELEGATION_ACCEL_PREFIX)는 걸러져
+     *   주입되지 않는다(EnvPriority::MAP).
+     *
+     * @param  JsonConfigRepository  $configRepository  설정 저장소
+     * @return void 반환값 없음
+     */
+    private function injectFileDelegationConfig(JsonConfigRepository $configRepository): void
+    {
+        $driverSettings = EnvPriority::filterLocked('drivers', $configRepository->getCategory('drivers'));
+
+        if (array_key_exists('file_delegation', $driverSettings)) {
+            $mode = strtolower(trim((string) $driverSettings['file_delegation']));
+
+            Config::set(
+                'core.file_serving.delegation',
+                in_array($mode, FileDelegation::modes(), true) ? $mode : FileDelegation::MODE_NONE
+            );
+        }
+
+        $prefix = FileDelegation::normalizeAccelPrefix((string) ($driverSettings['file_delegation_accel_prefix'] ?? ''));
+
+        if ($prefix !== '') {
+            Config::set('core.file_serving.accel_prefix', $prefix);
         }
     }
 
@@ -898,6 +1029,12 @@ class SettingsServiceProvider extends ServiceProvider
             if (isset($uploadSettings[$key]) && $uploadSettings[$key] !== '') {
                 Config::set("attachment.{$key}", (int) $uploadSettings[$key]);
             }
+        }
+
+        // 이미지 썸네일 — 규격 목록은 저장 행 그대로 넘기고, 고정 슬롯 보충·확장 규격 병합은 레지스트리가 한다.
+        // 대응표는 저장 직후 반영(SettingsService)과 같은 한 곳(ThumbnailConfig)을 쓴다.
+        foreach (ThumbnailConfig::fromUploadSettings($uploadSettings) as $configKey => $value) {
+            Config::set($configKey, $value);
         }
     }
 }

@@ -7,7 +7,6 @@
  *  - dataSourceConditionAdapter: node ↔ data_source if 왕복
  */
 
-import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ActionListBuilder } from '../../components/page-settings/ActionListBuilder';
@@ -28,6 +27,8 @@ describe('ActionListBuilder', () => {
     },
   };
 
+  // @scenario area=action_list
+  // @effects action_list_builder_summary_reorder_remove_add
   it('친화 요약을 표시하고 순서·삭제·추가가 동작한다', () => {
     const onChange = vi.fn();
     const actions = [
@@ -66,6 +67,8 @@ describe('ActionListBuilder', () => {
     expect(onChange).toHaveBeenLastCalledWith([...actions, { handler: 'closeModal' }]);
   });
 
+  // @scenario area=action_list
+  // @effects action_list_builder_code_view_shows_json
   it('코드 보기 토글은 실제 JSON 을 노출한다', () => {
     render(
       <ActionListBuilder
@@ -83,6 +86,8 @@ describe('ActionListBuilder', () => {
 });
 
 describe('ErrorHandlingRows', () => {
+  // @scenario area=error_rows
+  // @effects error_rows_render_code_rows_badge_and_warning
   it('코드 행·default 경고·출처 배지를 렌더한다', () => {
     render(
       <ErrorHandlingRows
@@ -103,6 +108,8 @@ describe('ErrorHandlingRows', () => {
     expect(screen.getByTestId('g7le-error-rows-default-warn-default')).toBeInTheDocument();
   });
 
+  // @scenario area=error_rows
+  // @effects error_rows_clear_removes_code_key
   it('동작 정리(clear) 시 그 코드 키가 제거된다', () => {
     const onChange = vi.fn();
     render(
@@ -119,6 +126,8 @@ describe('ErrorHandlingRows', () => {
 });
 
 describe('dataSourceConditionAdapter', () => {
+  // @scenario area=ds_condition
+  // @effects ds_condition_adapter_round_trips_if
   it('data_source 의 if 를 노드로 노출하고 다시 역적용한다', () => {
     const ds = { id: 'products', endpoint: '/api/products', if: '{{ route.id }}' };
     const node = dataSourceToConditionNode(ds);
@@ -133,6 +142,8 @@ describe('dataSourceConditionAdapter', () => {
     expect(next.endpoint).toBe('/api/products');
   });
 
+  // @scenario area=ds_condition
+  // @effects ds_condition_adapter_empty_node_removes_if
   it('빈 if 노드는 data_source 의 if 키를 제거한다', () => {
     const ds = { id: 'x', if: '{{ a }}' };
     const next = applyConditionNodeToDataSource({} as never, ds);

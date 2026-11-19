@@ -580,4 +580,5 @@ config 소스(`config/*.php`, `.env`, `storage/app/settings/*.json`, 활성 확�
 
 - [middleware.md](./middleware.md) - 미들웨어 등록 규칙
 - [authentication.md](./authentication.md) - 인증 및 세션 처리
+- [custom-development.md](../custom-development.md) - 사이트 개발자의 `App\Custom\CustomServiceProvider`(있으면 코어가 마지막에 등록, 7.2.0+)
 - [README.md](./README.md) - 백엔드 가이드 인덱스

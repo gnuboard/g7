@@ -60,7 +60,7 @@ describe('ActionDispatcher 상태 참조 (7.1.3)', () => {
     globalState = { perm: false, modalStack: [] };
     const definitions = { canManage: '{{_global.perm === true}}', label: "{{_local.name ?? 'none'}}" };
 
-    await dispatcher.executeAction({ handler: 'openModal', target: 'type_modal' } as any, {
+    await dispatcher['executeAction']({ handler: 'openModal', target: 'type_modal' } as any, {
       state: { name: 'board' },
       setState: vi.fn(),
       data: {
@@ -91,7 +91,7 @@ describe('ActionDispatcher 상태 참조 (7.1.3)', () => {
    */
   it('E10. computed 정의가 없으면 $parent._computed 는 연 시점 값 그대로다(종전 동작)', async () => {
     globalState = { modalStack: [] };
-    await dispatcher.executeAction({ handler: 'openModal', target: 'm' } as any, {
+    await dispatcher['executeAction']({ handler: 'openModal', target: 'm' } as any, {
       state: {}, setState: vi.fn(), data: { _global: {}, _computed: { a: 1 } },
     } as any);
     const entry = (window as any).__g7LayoutContextStack.at(-1);
@@ -103,10 +103,10 @@ describe('ActionDispatcher 상태 참조 (7.1.3)', () => {
    * @effects remount_key_increments_each_time
    */
   it('E11. 같은 컴포넌트를 두 번 remount 하면 key 가 1 → 2 로 는다', async () => {
-    await dispatcher.executeAction({ handler: 'remount', params: { componentId: 'editor' } } as any, { data: {} } as any);
+    await dispatcher['executeAction']({ handler: 'remount', params: { componentId: 'editor' } } as any, { data: {} } as any);
     expect(globalState._remountKeys).toEqual({ editor: 1 });
 
-    await dispatcher.executeAction({ handler: 'remount', params: { componentId: 'editor' } } as any, { data: {} } as any);
+    await dispatcher['executeAction']({ handler: 'remount', params: { componentId: 'editor' } } as any, { data: {} } as any);
     expect(globalState._remountKeys).toEqual({ editor: 2 }); // 결함: { editor: 1 } — 두 번째부터 다시 마운트되지 않음
   });
 

@@ -5,6 +5,9 @@ namespace App\Seo;
 use App\Seo\Concerns\LocalizesSeoValues;
 use App\Seo\Concerns\SubstitutesSeoVariables;
 use App\Services\SettingsService;
+use App\Support\AssetUrl;
+use App\Thumbnails\ThumbnailPresetRegistry;
+use App\Thumbnails\ThumbnailUrl;
 
 class SeoMetaResolver
 {
@@ -563,6 +566,8 @@ class SeoMetaResolver
             'image_width' => $this->resolveIntOrSetting($og['image_width'] ?? null, 'seo.og_image_default_width', $context),
             'image_height' => $this->resolveIntOrSetting($og['image_height'] ?? null, 'seo.og_image_default_height', $context),
             'image_type' => $this->safeEval($og['image_type'] ?? '', $context),
+            // 레이아웃이 이미지 크기를 직접 선언했으면 그 이미지는 이미 그 크기다 — 렌더가 og 썸네일로 바꾸지 않는다.
+            'image_size_declared' => isset($og['image_width']) || isset($og['image_height']),
             'image_alt' => $this->stripHtml($this->safeEval($og['image_alt'] ?? $og['title'] ?? '', $context)),
             'site_name' => $explicitSiteName !== '' ? $explicitSiteName : $this->resolveLocalizedValue($siteNameFallback),
             'locale' => $this->safeEval($og['locale'] ?? '', $context) ?: app()->getLocale(),
@@ -605,6 +610,7 @@ class SeoMetaResolver
             'image_alt' => isset($tw['image_alt'])
                 ? $this->stripHtml($this->safeEval($tw['image_alt'], $context))
                 : (string) ($ogData['image_alt'] ?? ''),
+            'image_size_declared' => ! isset($tw['image']) && (bool) ($ogData['image_size_declared'] ?? false),
             'extra' => is_array($tw['extra'] ?? null) ? $tw['extra'] : [],
         ];
     }
@@ -653,11 +659,11 @@ class SeoMetaResolver
             $tags .= '    <meta property="og:description" content="'.e($description).'">'."\n";
         }
 
-        $image = (string) ($og['image'] ?? '');
+        $image = $this->ogThumbnail((string) ($og['image'] ?? ''), $og);
         if ($image !== '') {
             $tags .= '    <meta property="og:image" content="'.e($image).'">'."\n";
 
-            $secure = (string) ($og['image_secure_url'] ?? '');
+            $secure = $this->ogThumbnail((string) ($og['image_secure_url'] ?? ''), $og);
             if ($secure !== '' && str_starts_with($secure, 'https://')) {
                 $tags .= '    <meta property="og:image:secure_url" content="'.e($secure).'">'."\n";
             }
@@ -699,6 +705,28 @@ class SeoMetaResolver
     }
 
     /**
+     * og·twitter 이미지 주소를 og 규격 썸네일 주소로 바꿉니다.
+     *
+     * 모든 og 경로(레이아웃 선언·사이트 기본·모듈 기본값 채우기·`core.seo.filter_og_data`)가 마지막에 이 렌더를
+     * 지나므로 여기 한 곳에서 바꾼다 — 선언한 `og:image:width/height`(SEO 탭 기본 1200×630)와 실제 이미지 크기가
+     * 맞게 된다. 레이아웃이 크기를 직접 선언했으면 바꾸지 않고, 등록된 서빙 경로가 아니면(외부·정적) 그대로다.
+     *
+     * 편집기 미리보기(`SeoOgPreviewService`)도 이 함수로 주소를 내 실제 카드와 같은 주소를 보인다.
+     *
+     * @param  string  $url  이미지 주소
+     * @param  array  $data  og 또는 twitter 데이터
+     * @return string 주소
+     */
+    public function ogThumbnail(string $url, array $data): string
+    {
+        if ($url === '' || (bool) ($data['image_size_declared'] ?? false)) {
+            return $url;
+        }
+
+        return ThumbnailUrl::for($url, ThumbnailPresetRegistry::OG);
+    }
+
+    /**
      * Twitter 데이터 배열을 HTML 메타태그로 렌더합니다.
      *
      * @param  array  $tw  Twitter 데이터 배열
@@ -715,6 +743,9 @@ class SeoMetaResolver
 
         foreach (['site', 'creator', 'title', 'description', 'image'] as $key) {
             $val = (string) ($tw[$key] ?? '');
+            if ($key === 'image') {
+                $val = $this->ogThumbnail($val, $tw);
+            }
             if ($val !== '') {
                 $tags .= '    <meta name="twitter:'.$key.'" content="'.e($val).'">'."\n";
             }
@@ -786,18 +817,31 @@ class SeoMetaResolver
     }
 
     /**
-     * 상대 경로 URL 을 사이트 주소 기준 절대 URL 로 변환 (요청 Host 비의존 — SeoUrl 참고).
+     * 상대 경로 URL 을 절대 URL 로 변환.
      *
-     * @param  string  $url  URL 또는 상대 경로
-     * @return string 절대 URL (빈 값이면 빈 문자열)
+     * `url()` 을 쓰지 않는다 — 그 헬퍼는 오리진 **과 마운트 접두사**를 함께 붙이는데,
+     * 이 자리에 오는 값은 레이아웃이 선언한 표현식의 평가 결과이고 그 표현식을
+     * **모듈이 편집기 칩으로 광고한다**(`{{product.data.thumbnail_url}}` ·
+     * `{{post.data.thumbnail}}`). 그 두 값의 생산자는 `AssetUrl::basePrefix()` 를
+     * 이미 실어 주므로, 운영자가 칩을 고르는 순간 `og:image` 가
+     * `https://host/g7/g7/api/…` 로 나가고 그 주소는 404 다 (앞서 게시판 모듈의
+     * *기본값* 경로에서 고친 것과 같은 실패가 한 계층 위에 남아 있었다).
+     *
+     * 반대로 오리진만 붙이면 레이아웃이 리터럴로 적은 사이트 경로(`/img/og.png`)에
+     * 접두사를 붙일 주체가 사라진다. 두 입력이 같은 자리에 오므로 **접두사를 멱등으로
+     * 보정한 뒤 오리진을 붙인다**.
+     *
+     * 그 보정 규칙은 `AssetUrl::siteAbsolute()` 가 소유하고, 절대 주소의 본체는 사이트 주소 기준
+     * `SiteUrl::absolute()`(`SeoUrl::absolute()` 와 같은 출처 — 요청 Host 비의존)다. 종전에는 같은 규칙이
+     * 여기와 `ComponentHtmlMapper` 두 곳에 **세 벌의 독립 사본**으로 살아 있었고, 갈려도
+     * 예외가 나지 않아(그 자산만 404) 대조할 장치가 없었다.
+     *
+     * @param  string  $url  레이아웃 표현식 평가 결과
+     * @return string 절대 URL (판정 대상이 아니면 원본 그대로)
      */
     private function absoluteUrl(string $url): string
     {
-        if ($url === '') {
-            return '';
-        }
-
-        return str_starts_with($url, 'http') ? $url : SeoUrl::absolute($url);
+        return AssetUrl::siteAbsolute($url);
     }
 
     /**

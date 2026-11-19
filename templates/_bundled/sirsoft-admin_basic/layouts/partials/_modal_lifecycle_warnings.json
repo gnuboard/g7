@@ -10,7 +10,30 @@
     "name": "Modal",
     "props": {
         "title": "{{(_global.lifecycleWarnings ?? []).some(w => w?.level !== 'notice' && w?.cause !== 'declaration') ? $t('admin.extensions.lifecycle_warnings.title') : ((_global.lifecycleWarnings ?? []).some(w => w?.level !== 'notice') ? $t('admin.extensions.lifecycle_warnings.declaration_title') : $t('admin.extensions.lifecycle_warnings.notice_title'))}}",
-        "size": "md"
+        "size": "md",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-secondary"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:common.close"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -213,36 +236,6 @@
                                     "text": "$t:admin.extensions.lifecycle_warnings.declaration_hint"
                                 }
                             ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-secondary"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:common.close"
                         }
                     ]
                 }

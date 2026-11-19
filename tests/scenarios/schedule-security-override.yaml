@@ -1,0 +1,61 @@
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#17 |
+#   덮어쓰기 해석은 「파일 상태(없음·정상·형식 오류)」 하나가 결과를 가르고, 대상 목록(허용·거부·접두사·Job)은 서로 독립인
+#   합집합 규칙이다. 각 테스트는 자기가 바꾸는 축만 @scenario 로 고정한다 — 전 축 곱은 같은 합집합 판정을 반복할 뿐이다.
+#   effects·test_files 는 그대로 검사한다.
+
+feature: 스케줄 보안 정책 서버 덮어쓰기(storage/app/schedule_security.json)와 읽기 전용 조회 API (#17 U5)
+
+description: |
+  스케줄 실행 보안 정책(`config/schedule_security.php`)은 코드 소유라 서버 관리자가 바꾸려면 코어 파일을 고쳐야 했고,
+  코어 업데이트가 그 수정을 덮어썼다. 관리자 화면에는 정책이 보이지 않아 「왜 이 명령이 거부되는가」를 알 수 없었다.
+
+  - 서버 관리자는 선택 파일 `storage/app/schedule_security.json` 으로 정책에 **더하기만** 한다(코어 업데이트 보존 위치,
+    관리자 환경설정 저장소 `storage/app/settings/` 와 분리). Artisan 허용목록(명령 → 옵션·위치 인자 상한)·거부목록·
+    거부 접두사·Job 허용 클래스를 더할 수 있고, 코어 거부 항목은 풀 수 없다. 허용·거부가 겹치면 거부가 이긴다.
+  - 형식이 하나라도 어긋나면 덮어쓰기 전체를 무시하고 경고 로그를 남기며 API 가 그 사실을 알린다.
+  - Shell 게이트·허용 실행 파일은 기존 `.env` 만 따른다(덮어쓰기 파일의 `shell` 키는 형식 오류).
+  - 저장 검증(FormRequest)·실행기·즉시 실행이 같은 해석기(ScheduleSecurityPolicy)를 쓴다.
+  - `GET /api/admin/schedules/security` 가 항목별 출처(core/override/extension)와 파일 상태를 주고,
+    `GET /api/admin/schedules/status` 가 `shell_enabled` 를 싣는다(등록 창의 Shell 선택지 잠금용).
+
+axes:
+  override_state: [missing, valid, invalid_json, invalid_shape, locked_key]
+  target: [artisan_allowlist, artisan_denylist, denylist_prefixes, job_classes, shell]
+  enforcement_point: [policy_unit, validator, store, run, api]
+  permission: [read, none]
+
+effects:
+  # 덮어쓰기가 새 Artisan 명령을 허용목록에 더한다(옵션·위치 인자 상한 포함)
+  - override_adds_artisan_allowlist_entries
+  # 코어 허용 항목에 덮어쓰기 옵션을 합집합으로 더한다
+  - override_extends_core_allowlist_options
+  # 덮어쓰기가 거부목록·거부 접두사를 더한다
+  - override_adds_denylist_and_prefixes
+  # 덮어쓰기로 코어 거부 항목을 풀 수 없다
+  - override_cannot_remove_core_denylist
+  # 덮어쓰기 허용 항목이 거부목록에도 있으면 거부가 이긴다
+  - denylist_wins_over_override_allowlist
+  # 덮어쓰기가 Job 허용 클래스를 더한다(저장 검증·실행기 공통)
+  - override_adds_job_allowed_classes
+  # 형식 오류 파일은 전체를 무시하고 코어 정책만 적용한다
+  - invalid_override_is_ignored_entirely
+  # 형식 오류는 경고 로그를 남긴다
+  - invalid_override_logs_warning
+  # shell·확장 자동 허용 같은 잠금 키는 덮어쓸 수 없다(형식 오류)
+  - locked_keys_are_not_overridable
+  # 파일을 고치면 프로세스 재시작 없이 반영된다
+  - override_file_change_is_picked_up_without_restart
+  # 보안 API 가 유효 정책을 항목별 출처와 함께 준다
+  - security_api_returns_effective_policy_with_sources
+  # 보안 API 는 core.schedules.read 권한이 없으면 403 이다
+  - security_api_requires_read_permission
+  # 보안 API 가 형식 오류 파일을 valid=false·error 로 알린다
+  - security_api_reports_invalid_override
+  # 보안 API 는 서버 절대경로를 내보내지 않는다
+  - security_api_hides_absolute_paths
+  # 상태 API 가 shell_enabled 를 싣는다(게이트 on + 허용 실행 파일 1개 이상)
+  - status_api_exposes_shell_enabled
+
+test_files:
+  - tests/Unit/Services/Schedule/ScheduleSecurityPolicyTest.php
+  - tests/Feature/Api/Admin/ScheduleSecurityApiTest.php

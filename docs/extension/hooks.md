@@ -209,6 +209,42 @@ HookManager::addFilter('core.privacy.manual_run_targets', function (array $runne
 다시 계산하면 집행 시점과 하루 어긋날 수 있습니다. 배치 훅은 표지(이번 주기 처리 기록)를 먼저 남긴 뒤 발행하고,
 발행이 던지면 표지를 되돌립니다(휴면 사전 안내와 같은 규칙) — 큐 안에서 실패한 발송은 표지를 되돌리지 못합니다.
 
+### 로그인 완료 훅의 로그인 수단 (7.2.0)
+
+`core.auth.after_login` 의 두 번째 인자(컨텍스트 배열)에 `login_method` 키가 더해졌습니다. 기존 키(`email`·`login_time`·
+`ip_address`·`user_agent`)는 그대로입니다.
+
+| 값 | 언제 |
+| --- | --- |
+| `password` | 비밀번호 로그인(일반·관리자) |
+| 외부 인증이 정한 이름(예 `social:kakao`) | 로그인 인계(`LoginHandoffService::issue()`) 또는 `AuthService::loginVerifiedUser()` 로 들어온 로그인 — 2단계 인증(인증번호 재발송 포함)·비밀번호 변경 단계를 거쳐도 같은 이름이 실린다 |
+
+- 외부 인증은 이름을 반드시 넘깁니다 — 비어 있으면 `issue()`·`loginVerifiedUser()` 가 거절합니다(비밀번호 로그인으로 잘못 기록되지 않게).
+- 활동 로그·통계처럼 수단별로 세는 리스너는 이 키로 가릅니다. 키가 없는 경우(7.2.0 이전 코어)는 `password` 로 봅니다.
+- 같은 문맥에 `token_id`(이번 로그인으로 발급한 토큰 id)와 `external_ref`(외부 인증이 넘긴 외부 세션 참조, 없으면 `null`)도 실립니다.
+  외부 로그아웃(IdP 쪽 세션 종료)을 코어 토큰과 짝지을 때 씁니다.
+- 계약 전체는 [인증 문서 — 외부 인증 로그인·로그인 인계](../backend/authentication.md) 를 봅니다.
+
+### 외부 인증 확장점 훅 (7.2.0)
+
+SSO·디렉터리 로그인·헤더 인증처럼 **비밀번호가 아닌 수단으로 로그인시키는 확장**이 코어 관문에 끼어드는 자리입니다. 확장이 등록하지
+않으면 모두 지금 동작 그대로입니다(필터는 기본값을 돌려준다). 필터가 돌려준 경로는 **같은 출처 경로만** 쓰이고 다른 출처 주소는
+버려집니다. 쓰는 법은 [인증 문서](../backend/authentication.md#외부-인증-확장점-720)에 있습니다.
+
+| 훅 | 종류 | 인자 | 언제 · 돌려줄 것 |
+| --- | --- | --- | --- |
+| `core.auth.password_auth_decision` | filter | `(?PasswordAuthDecision $decision = null, array $subject)` — `$subject` = `identifier`·`user`(없으면 식별자 기준 1차 판정)·`guard`·`purpose`(`login`·`reset_request`·`reset_complete`·`set_password`·`admin_set_password`·`login_password_change`) | 비밀번호 로그인·재설정·설정 직전. `PasswordAuthDecision::deny()` 를 돌려주면 막힌다(로그인 403·재설정 422 `auth.password_auth_disabled`). `null`·이상한 값은 허용 |
+| `core.auth.password_reset_blocked` | action | `(User $user, PasswordAuthDecision $decision)` | 재설정 요청이 회원 기준으로 막혔을 때 1회 — 응답은 계정 열거를 막으려고 일반 성공 응답이다 |
+| `core.auth.registered_credential_verifiers` | filter | `(array $verifiers)` — `id => ExternalCredentialVerifierInterface` | 외부 자격 증명 검증자(디렉터리 로그인 등) 등록. 계약 미구현 값은 버려진다 |
+| `core.auth.login_discovery` | filter | `(?LoginDiscoveryResult $result = null, string $identifier, string $guard)` | 로그인 화면 이메일 칸을 벗어날 때(`POST /api/auth/login/discover`·`/api/auth/admin/login/discover`). `LoginDiscoveryResult::external($label, $path)` 이면 비밀번호 칸 대신 그 수단으로 안내. 회원 유무가 드러나지 않게 식별자 모양(도메인)으로만 판정한다 |
+| `core.auth.login_discover_validation_rules` | filter | `(array $rules, LoginDiscoverRequest $request)` | 진입 판정 요청 검증 규칙 |
+| `core.auth.login_auto_redirect` | filter | `(?string $path = null, string $guard)` | 로그인 화면에 오면 바로 보낼 경로(사이트 전체 SSO). 화면은 `?local=1`·인계·오류 쿼리가 있으면 이동하지 않는다 |
+| `core.auth.logout_redirect_url` | filter | `(?string $path = null, User $user, array{guard: string, token_id: ?int})` | 로그아웃 응답 `data.redirect_url`(토큰을 지우기 **전**에 부른다 — IdP 로그아웃 주소 계산용). 엔진은 같은 출처 경로면 그리로, 아니면 로그인 화면으로 간다 |
+| `core.auth.self_registration_open` | filter | `(bool $open)` | 「일반 회원가입 받기」 판정(`AuthService::isSelfRegistrationOpen()`). 거짓이면 공개 가입 API 403 `auth.registration_disabled` — 확장 내부 가입(`AuthService::register()` 직접 호출)은 막지 않는다 |
+| `core.user.locked_fields` | filter | `(array $fields = [], User $user, string $surface)` — `$surface` = `profile`·`admin` | 외부에서 관리하는 회원 칸. 허용 이름(`name`·`nickname`·`mobile`·`phone`·`language`·`email`)만 남고, 요청으로 다른 값이 오면 422 `user.field_locked`. 응답 `locked_fields` 로 화면이 읽기 전용으로 그린다. 서비스 직접 호출(동기화)은 막지 않는다 |
+| `core.user.after_block` | action | `(User $user, array $context)` — `reason_key`·`source` | `UserService::blockUser()` 뒤(토큰 전량 회수 뒤, 이미 차단이어도) |
+| `core.user.after_unblock` | action | `(User $user, array $context)` | `UserService::unblockUser()` 뒤 |
+| `core.user.after_sessions_revoked` | action | `(User $user, ?User $actor, array{count: int})` | `UserService::revokeAllSessions()` 뒤(관리자 「모든 기기에서 로그아웃」 또는 시스템 경로 — 행위자 없음) |
 ### 가입 트랜잭션 안 훅 `core.auth.registering` (7.1.6)
 
 회원가입(`AuthService::register()`)은 사용자 행 생성·역할 연결·토큰 발급을 한 DB 트랜잭션으로 묶습니다.
@@ -265,7 +301,18 @@ HookManager::addFilter('core.privacy.manual_run_targets', function (array $runne
 - 그 데이터를 볼 권한이 없는 운영자에게는 조건을 **적용하지 않는다**(화면 행도 같은 권한의 노드 `<permissions>`
   로 숨긴다). 조건을 적용하면 결과 건수로 값을 추정할 수 있다.
 - 목록 응답 행에 확장 값을 싣는 `core.user.filter_resource_data` 는 쓰지 않는다 — 행마다 발화해 N+1 이 된다.
-  목록에 값을 보여야 하면 자기 데이터소스로 현재 페이지 id 를 배치 조회한다.
+  목록 열에 값을 보여야 하면 아래 `core.user.filter_list_rows` 로 현재 페이지 회원을 **한 번에** 조회해 붙인다
+  (또는 자기 데이터소스로 현재 페이지 id 를 배치 조회한다).
+
+**목록 열 데이터 — `core.user.filter_list_rows`** (7.2.0)
+
+| 훅 | 타입 | 인자 | 용도 |
+| --- | --- | --- | --- |
+| `core.user.filter_list_rows` | filter | `(array $rows, Collection $users)` | 관리자 회원 목록 응답의 한 페이지 행 전체와 그 회원 모델 묶음을 요청당 **한 번** 받는다. `$users->pluck('id')` 로 한 번 조회해 각 행에 자기 키를 **더한다** |
+
+- 행 수와 순서를 바꾸지 않는다 — 돌려준 값이 배열이 아니거나 행 수가 다르면 코어가 원래 행을 쓰고 경고를 남긴다.
+- 기존 키를 덮어쓰지 않는다. 키 이름은 자기 확장을 알 수 있게 짓는다(예: `social_providers`).
+- 볼 권한이 없는 운영자에게 보이면 안 되는 값은 싣지 않는다(응답에 실리면 화면이 숨겨도 노출이다).
 
 예제: 이커머스 `UserListMileageFilterListener`(마일리지 잔액 범위)·`UserListAddressFilterListener`(배송지 국가·등록 여부).
 화면 쪽 규약은 [관리자 목록 필터 컨벤션](../frontend/admin-list-filter-convention.md) 을 본다.
@@ -335,6 +382,14 @@ if ($order->isGuestOrder() && $phone !== '') {
 }
 ```
 
+### 언어별 변수 값 (7.2.0)
+
+`extract_data` 반환의 `data` 값은 문자열 대신 `{로케일: 문자열}` 배열을 줄 수 있습니다
+(`'idp_label' => ['ko' => '회사 계정', 'en' => 'Company account']`). 코어가 수신자 언어 → 사이트 기본 언어 →
+영어 → 첫 유효값 순으로 골라 제목·본문·`click_url`·저장 data·`to_{채널}` 필터 data 에 씁니다. 자체 템플릿으로
+본문을 만드는 채널 드라이버는 `getData()` 대신 `$notification->getDataFor($notifiable)` 로 같은 값을 받습니다.
+상세: [알림 시스템 — 언어별 변수 값](../backend/notification-system.md#언어별-변수-값-720).
+
 ### 알림 정의 시딩 계약 (7.1.0)
 
 채널을 제공하는 확장이 **모든 도메인의 알림 정의에 자기 채널 템플릿을 더할 때** 답하는 코어 훅입니다.
@@ -367,6 +422,234 @@ public static function getSubscribedHooks(): array
     ];
 }
 ```
+
+### 예약 작업(스케줄) 실행 훅 (7.2.0)
+
+7.2.0 부터 예약 작업은 DB 에 저장된 스케줄을 실행기 한 곳(`ScheduleExecutor`)이 실행합니다. 매분 틱·관리자
+「즉시 실행」·큐로 보낸 실행 잡이 모두 이 실행기를 거치므로, 아래 실행 훅은 실행 계기와 관계없이 같은 자리에서
+발행됩니다. 소유 확장이 비활성이거나, 수동 실행인데 앞선 실행이 아직 끝나지 않아 **실행 전에 거부**되면 어떤 실행
+훅도 발행하지 않습니다. 예약 실행이 중복 방지 잠금으로 건너뛸 때도 마찬가지입니다.
+
+| 훅 | 종류 | 인자 | 발행 시점 |
+| --- | --- | --- | --- |
+| `core.schedule.before_run` | action | `(Schedule $schedule)` | 실행 직전 (인자 변경 없음) |
+| `core.schedule.after_run` | action | `(Schedule $schedule, ScheduleHistory $history)` | 실행이 끝나고 이력·스케줄 상태를 확정한 뒤 — **성공과 실패 모두**. 결과는 `$history->status` 로 구분한다 |
+| `core.schedule.run_failed` | action | `(Schedule $schedule, ?ScheduleHistory $history, \Throwable\|string $error)` | 실행이 실패했을 때 `after_run` 다음, 그리고 큐 워커가 실행 잡 도중 죽어(timeout·kill) 실행 중 이력을 실패로 마감할 때 |
+| `core.schedule.filter_allowed_job_classes` | filter | `(array $classes)` — 기본값 `config('schedule_security.job.allowed_classes')` | `job` 유형 스케줄의 저장 검증과 실행 직전 검증 |
+| `core.schedules.config` | filter | `(array $catalog)` — 스케줄 `name` ⇒ 선언 | 코어 예약 작업 카탈로그(`config('core.schedules')`)를 DB 와 동기화하기 직전 |
+| `seed.{확장 식별자}.schedules.translations` | filter | `(array $definitions)` — 정규화된 선언 목록 | 모듈·플러그인의 `getSchedules()` 선언을 새 형식으로 정규화한 뒤, DB 와 동기화하기 직전 |
+
+- **`after_run` 의 의미가 넓어졌습니다.** 7.2.0 이전에는 성공한 실행에서만 발행했습니다. 성공만 다뤄야 하는
+  구독자는 `$history->status` 를 확인하십시오. 실패를 따로 다루려면 `run_failed` 를 구독합니다.
+- 이력 방식이 「실패만 기록」인 스케줄이 성공하면 이력 행을 남기지 않지만, `after_run` 은 인자 모양을 지키기 위해
+  **저장되지 않은** `ScheduleHistory` 인스턴스를 넘깁니다(`$history->exists === false`, `id` 없음). 이력 ID 를
+  저장하거나 이력을 다시 조회하는 구독자는 `exists` 를 먼저 확인하십시오.
+- `run_failed` 는 수동·예약 실행을 가리지 않고 실패마다 발행합니다. 구독자는 `$error` 를 `\Throwable|string` 으로 받으십시오 — 코어 실행기는 실패 사유 **문자열**을 넘깁니다. 큐로
+  가는 리스너가 예외 객체를 직렬화하지 못하기 때문입니다. 워커가 죽어 마감하는 경로에서는 `after_run` 없이
+  `run_failed` 만 발행합니다. 코어 알림 정의 `schedule_failed` 가 이 훅을 구독하며, 스케줄의 「실패 시 알림」 설정·
+  수동 실행 제외·같은 스케줄 하루 1회 제한은 알림 쪽에서 판정합니다.
+- `filter_allowed_job_classes` 는 `job` 유형 스케줄이 실행할 수 있는 Job 클래스(FQCN, 앞 `\` 없이) 목록입니다.
+  확장은 자기 Job 을 **더하기만** 합니다. 저장 검증과 실행기가 같은 필터를 거치므로 두 곳의 목록이 어긋나지 않습니다.
+- `core.schedules.config` 는 코어 언어팩이 카탈로그의 `label`·`description` 에 자기 로케일 문구를 병합하는 데
+  씁니다. 반환한 카탈로그가 그대로 코어 스케줄로 동기화되므로, 항목을 더하거나 지우지 말고 기존 항목의 값만
+  보강하십시오. 확장이 자기 예약 작업을 등록하는 경로는 이 필터가 아니라 확장 자신의 스케줄 선언(`getSchedules()`)입니다.
+- `seed.{확장 식별자}.schedules.translations` 는 확장 언어팩이 자기 확장 스케줄의 `label`·`description` 에 로케일
+  문구를 병합하는 데 씁니다(매칭 키 `name`). 언어팩 병합 전용이므로 다른 확장이 구독해 선언을 바꾸지 않습니다.
+
+### 큐 관리 훅 (7.2.0)
+
+관리자 큐 관리 화면의 실패 작업 재시도·삭제와 처리 기록 정리(`queue:prune-records`)가 발행합니다.
+대상은 `failed_jobs.uuid` 문자열입니다. 결과 배열 원소는 `uuid` · `ok`(bool) · `message`(다국어 키)이며, 재시도
+결과에는 다시 넣은 `connection`·`queue` 가 더 붙을 수 있습니다. 한 건이 실패해도 나머지는 계속 처리하므로
+`after_*` 는 일부 실패가 섞인 결과로도 발행됩니다 — 성공 여부는 원소의 `ok` 로 판단합니다.
+
+| 훅 | 종류 | 인자 | 발행 시점 |
+| --- | --- | --- | --- |
+| `core.queue_job.before_retry` | action | `(string $uuid)` | 실패 작업 1건 재시도 전 |
+| `core.queue_job.after_retry` | action | `(string $uuid, array $result)` | 실패 작업 1건 재시도 후 |
+| `core.queue_job.before_retry_many` | action | `(array $uuids)` | 실패 작업 일괄 재시도 전 |
+| `core.queue_job.after_retry_many` | action | `(array $uuids, array $results)` — 건별 결과 목록 | 실패 작업 일괄 재시도 후 |
+| `core.queue_job.before_delete` | action | `(string $uuid)` | 실패 작업 1건 삭제 전 |
+| `core.queue_job.after_delete` | action | `(string $uuid, array $result)` | 실패 작업 1건 삭제 후 |
+| `core.queue_job.before_delete_many` | action | `(array $uuids)` | 실패 작업 일괄 삭제 전 |
+| `core.queue_job.after_delete_many` | action | `(array $uuids, array $results)` — 건별 결과 목록 | 실패 작업 일괄 삭제 후 |
+| `core.queue_job.before_prune` | action | `(int $days)` | 보관 기간이 지난 처리 기록·실패 작업 정리 전 |
+| `core.queue_job.after_prune` | action | `(int $days, array $result)` — `days` · `before`(기준 시각, ISO8601) · `logs`(지운 처리 기록 수) · `failed`(지운 실패 작업 수) | 정리 후 |
+| `core.queue_job.pending_list_validation_rules` | filter | `(array $rules, FormRequest $request)` | 대기 작업 목록 요청 검증 |
+| `core.queue_job.failed_list_validation_rules` | filter | `(array $rules, FormRequest $request)` | 실패 작업 목록 요청 검증 |
+| `core.queue_job.log_list_validation_rules` | filter | `(array $rules, FormRequest $request)` | 처리 기록 목록 요청 검증 |
+| `core.queue_job.bulk_retry_validation_rules` | filter | `(array $rules, FormRequest $request)` | 실패 작업 일괄 재시도 요청 검증 |
+| `core.queue_job.bulk_delete_validation_rules` | filter | `(array $rules, FormRequest $request)` | 실패 작업 일괄 삭제 요청 검증 |
+
+`core.queue_job.after_prune` 의 두 번째 인자는 다른 보존 기간 파기 훅(`(보존일, 삭제건수)`)과 달리 결과 배열입니다 —
+처리 기록과 실패 작업 두 대상을 한 번에 정리하기 때문입니다.
+### 이미지 썸네일 훅 (7.2.0)
+
+이미지 썸네일(`?size=`·`?w=`)의 규격·서빙 경로·원본 제공자·주소·엔진을 확장이 더하거나 바꾸는 지점과, 파생본을 지운 뒤의
+알림입니다. 계약 전체와 예제는 [이미지 썸네일](../backend/image-thumbnails.md) 을 보십시오.
+
+| 훅 | 종류 | 값·인자 | 쓰임 |
+| --- | --- | --- | --- |
+| `core.thumbnail.filter_presets` | filter | `(array $presets)` — 규격 행 목록. 이름은 `{확장 식별자}.{키}` 만 받는다. 행의 `label`(선택)은 관리자 표에 보일 이름의 다국어 키(`{확장 식별자}::messages.…`)로, 코어가 로케일 맵으로 풀어 싣고 생략하면 식별자를 보인다 | 확장 규격 등록 |
+| `core.thumbnail.filter_url_patterns` | filter | `(array $patterns)` — `/api/…` 고정 접두 + `*` 한 조각 와일드카드 | 화면·SEO 가 `size` 를 붙여도 되는 자기 서빙 경로 |
+| `core.thumbnail.filter_source_providers` | filter | `(array $providers)` — `App\Thumbnails\Contracts\ThumbnailSourceProvider` 구현체 목록 | 원본의 게이트 여부·소속 경로 판정, 기존 이미지 순회 |
+| `core.thumbnail.filter_url` | filter | `(string $url, string $originalUrl, string $preset)` | 봇 화면과 `og:image` 의 썸네일 주소를 이미지 변환 서비스 주소로 바꾸기. 사람 화면 주소는 바뀌지 않는다 |
+| `core.thumbnail.filter_processors` | filter | `(array $processors)` — `[엔진 id => ImageProcessorInterface]` | 이미지 처리 엔진 추가(드라이버 카탈로그 `core.settings.available_image_drivers` 와 짝). 배열이 아니면 코어 엔진만 쓰고, 엔진이 아닌 항목은 버리며, 비거나 빠진 코어 id(`gd`·`imagick`) 자리는 코어 엔진이다 |
+| `core.thumbnail.filter_animated_original` | filter | `(bool $serveOriginal, string $format, ThumbnailSource $source, ThumbnailSpec $spec)` — 형식 `gif`·`webp`·`png`, 기본값은 설정 `upload.thumbnail_animated_original` | 움직이는 이미지를 원본으로 낼지(`true`) 첫 프레임 썸네일로 만들지(`false`) 형식·원본·규격별로 바꾸기 |
+| `core.thumbnail.before_purge` | action | `(string $location, ?string $preset)` | 관리자 「비우기」 직전 |
+| `core.thumbnail.before_pregenerate` / `after_pregenerate` | action | `(?string $cursor, array $sources, array $presets)` / `(array $result, array $sources, array $presets)` | 「기존 이미지 썸네일 만들기」 한 번분 앞뒤 |
+| `core.thumbnail.after_purge` | action | `(array $items)` — `[{source_disk, prefix, thumbnail_disk, public_url_prefix, original_public_url, original_is_directory}]` | 원본 삭제·덮어쓰기·「비우기」로 지운 접두. 요청 하나(큐 작업 하나) 동안 모아 한 번 발행 — CDN 무효화용 |
+
+`after_purge` 의 `public_url_prefix` 는 썸네일 디스크가 직접 URL 을 내는 공개 자산 디스크일 때만 값이 있고,
+`original_public_url` 은 원본이 공개 자산 디스크에 있을 때만 값이 있습니다(그 밖에는 `null`).
+
+### 회원 항목 훅 (7.2.0)
+
+회원이 가입, 내 정보 수정, 관리자 회원 폼에서 채우는 칸은 코어의 항목 등록소가 관리합니다. 항목의 사용 여부, 필수 여부, 가입 화면 표시는
+운영자가 환경설정의 회원 탭에서 정하고, 요청 검증 규칙과 화면 계약이 모두 그 설정에서 만들어집니다. 확장은 보통 확장 게터
+(`getFieldSets()`, `getFields()`, `getFieldTypes()`)로 집합, 항목, 유형을 선언하고, 요청 시점에만 정할 수 있는 것(선택지, 초기값,
+요청 한 번의 잠금)을 아래 필터로 조정합니다. 선언 방법은 [회원 항목과 항목 집합](field-sets.md)을 봅니다.
+
+| 훅 | 종류 | 인자 | 쓰임 |
+| --- | --- | --- | --- |
+| `core.field.filter_sets` | filter | `(array $sets)` — `집합 키 => FieldSet` | 코어와 확장이 선언한 항목 집합을 모은 뒤 한 번. 집합을 더하거나 뺀다. `FieldSet` 이 아닌 값은 버려지고, 배열이 아닌 값을 돌려주면 원래 목록을 쓴다 |
+| `core.field.filter_types` | filter | `(array $types)` — `유형 키 => FieldTypeInterface` | 항목 유형을 모은 뒤 한 번. 유형을 더하거나 뺀다. 계약을 구현하지 않은 값은 버려진다 |
+| `core.fields.config` | filter | `(array $declarations)` | 코어 기본 항목의 선언 배열(`field_set`, `key`, `type`, `name` 등). 저장된 코어 항목이 아직 없는 집합에서 선언으로 항목을 만들 때 읽는다. 확장의 항목은 이 필터가 아니라 `getFields()` 로 선언한다 |
+| `core.field.filter_definitions` | filter | `(Collection $definitions, string $set, ?string $scopeKey, array $context)` — `$context` = `surface`, `owner`, `actor`, `scope_key`, `only_keys`, `extra` | 집합의 항목 목록을 만들 때마다(화면 계약, 요청 검증, 저장이 모두 이 목록을 쓴다). 넘어오는 항목은 요청 한 번만 쓰는 사본이라 고쳐도 저장되지 않는다. 선택지(`options`), 초기값(`constraints.default`), 요청 한정 잠금(`ui.readonly`, `ui.locked_reason`)을 채우거나 항목을 뺀다. `Collection` 을 돌려줘야 하고 `FieldDefinition` 이 아닌 원소는 버려진다. 문맥 없이 불리는 경우(운영자 항목 표 등)는 `$context` 가 빈 배열이다 |
+| `core.field.filter_rules` | filter | `(array $rules, string $set, string $surface, array $context)` | 항목 설정에서 만든 검증 규칙(`폼 경로 => 규칙 배열`)을 조정한다. 요청 클래스의 고정 규칙과 합쳐지기 전에 돈다. 배열이 아닌 값을 돌려주면 원래 규칙을 쓴다 |
+| `core.auth.register_validation_rules` | filter | `(array $rules, FormRequest $request)` | 가입 요청의 최종 검증 규칙. 고정 규칙(이메일, 비밀번호, 약관 동의, `fields_version`, `verification_token`)과 회원 항목 규칙, 표시 이름 종류 선택 규칙을 합친 뒤에 돈다. 호출 지점은 아래 표를 본다 |
+| `core.auth.register_fields_validation_rules` | filter | `(array $rules, RegisterFieldsRequest $request)` | 가입 화면 항목 조회(`GET /api/auth/register/fields`)의 조회 인자 규칙. 여기서 받은 인자는 미리보기 인자를 빼고 `core.field.filter_definitions` 의 `$context['extra']` 로 넘어간다 |
+| `core.user.profile_fields_validation_rules` | filter | `(array $rules, ProfileFieldsRequest $request)` | 내 정보 항목 조회(`GET /api/me/fields`)의 조회 인자 규칙 |
+| `core.user.admin_form_fields_validation_rules` | filter | `(array $rules = [], AdminUserFormFieldsRequest $request)` | 관리자 회원 폼 항목 조회(`GET /api/admin/users/form-fields`, `GET /api/admin/users/{user}/form-fields`)의 조회 인자 규칙 |
+| `core.auth.filter_register_data` | filter | `(array $userData, array $data, array $options)` — `$data` 는 가입 요청 데이터, `$options` 는 `AuthService::register()` 의 옵션 | 가입으로 만들 회원 행의 컬럼 값을 조정한다. 이메일, 비밀번호, 상태, 접속 IP 는 필터가 돌려준 값과 상관없이 코어 값으로 덮인다. 컬럼이 아닌 항목 값(운영자 추가 항목, 확장 핸들러 항목)은 여기에 없다. 배열이 아닌 값을 돌려주면 원래 값을 쓴다 |
+| `core.user.locked_field_reasons` | filter | `(array $reasons = [], User $user, string $surface)` — `$surface` = `profile`, `admin` | `core.user.locked_fields` 로 잠근 칸의 사유를 `칸 이름 => 사유` 로 준다(회사 계정 연동은 `sso`, 본인인증은 `identity`). 화면 계약의 `locked_reason` 과 회원 응답의 `locked_reasons` 로 나가 화면이 안내 문구를 고른다. 사유를 주지 않은 잠긴 칸은 `locked`, 잠기지 않은 칸의 사유는 버려진다. 먼저 준 사유를 덮지 않으려면 `??=` 로 넣는다 |
+| `core.field_definition.after_create` | action | `(FieldDefinition $definition)` | 운영자가 추가 항목을 만든 뒤 |
+| `core.field_definition.after_update` | action | `(FieldDefinition $definition, array $attributes)` — `$attributes` 는 실제로 저장한 속성(잠긴 속성은 빠져 있다) | 운영자가 항목 설정을 고친 뒤. 선언 항목의 사용, 필수 변경도 여기로 온다 |
+| `core.field_definition.after_delete` | action | `(FieldDefinition $snapshot)` — 삭제 직전의 사본 | 운영자가 추가 항목과 그 값을 지운 뒤 |
+| `core.user.fields.after_update` | action | `(User $user, array $changes, string $surface)` — `$changes` = `항목 키 => ['old' => 값, 'new' => 값]` | 회원 수정으로 컬럼이 아닌 항목 값(운영자 추가 항목, 확장 핸들러 항목)이 실제로 바뀐 뒤. `core.user.after_update` 뒤에 발화하고 바뀐 것이 없으면 발화하지 않는다. 회원 행의 스냅샷에는 이 값이 없으므로 항목 값 변경을 기록하려면 이 액션을 구독한다 |
+| `core.user.nickname_rejected` | action | `(User $user, string $nickname, string $reason, array $context)` — `$reason` = `duplicate`, `forbidden_word`, `change_interval`, `$context` = `surface`, `operation`(`register`, `update`) | 닉네임이 닉네임 정책에 걸렸는데 호출 쪽이 옵션 `nickname_policy => 'skip_field'` 로 닉네임만 버리고 저장하게 한 경우(화면 없는 외부 인증 가입과 동기화). 옵션이 없는 요청은 이 액션 없이 422 로 끝난다 |
+| `core.user.field_file.after_upload` | action | `(User $owner, FieldDefinition $definition, Attachment $attachment)` | 회원의 파일, 이미지 항목에 파일을 올린 뒤 |
+| `core.user.field_file.after_delete` | action | `(User $owner, FieldDefinition $definition, int $attachmentId)` | 회원의 파일, 이미지 항목에서 파일을 지운 뒤 |
+
+`core.auth.register_validation_rules` 는 코어 가입 요청만이 아니라 가입 창을 따로 가진 번들 플러그인도 태웁니다. 구독자는 두 번째 인자가
+`RegisterRequest` 가 아닐 수 있다는 점을 알고 써야 합니다(공통 부모인 `FormRequest` 로 받습니다).
+
+| 호출 지점 | 조건 | 차이 |
+| --- | --- | --- |
+| 코어 가입 (`POST /api/auth/register`) | 항상 | 없음 |
+| sirsoft-social_login 의 소셜 가입 완료 요청 | 가입 창이 `fields_version` 을 실어 보낸 요청(코어 가입 화면과 같은 회원 항목을 그린 창)일 때만 | 비밀번호 규칙이 없다. 이 라우트는 코어 가입과 같은 본인인증 미들웨어를 가지므로 필터 결과를 그대로 쓴다 |
+| sirsoft-sso 의 처음 로그인 동의 완료 요청 | 동의 창이 `fields_version` 을 실어 보낸 요청일 때만 | 필터 결과에서 `verification_token` 규칙을 뺀다(이 라우트에는 본인인증 미들웨어가 없고 본인 확인은 IdP 가 했다). IdP 가 값을 주는 칸의 규칙도 뺀다 |
+
+코어는 이 필터로 가입 전 본인인증 정책이 켜진 사이트에서 `verification_token` 을 필수 규칙으로 바꿉니다. 번들 마케팅 플러그인은
+동의 항목의 옛 요청 키(`agree_*`)를 받는 규칙을 이 필터로 더합니다. 새 확장이 가입에서 값을 받으려면 이 필터에 규칙을 더하기보다
+`getFields()` 로 회원 항목을 선언하는 쪽을 씁니다. 선언한 항목은 가입, 내 정보, 관리자 폼, 추가 정보 입력 화면에 함께 나타나고
+운영자가 사용과 필수를 정할 수 있습니다.
+
+세 요청 모두 `fields_version` 이 지금 항목 정의 버전과 다르면 검증보다 먼저 409 `fields_changed` 로 답하므로, 그 경우에는 이 필터가
+불리지 않습니다.
+
+### 기존 회원 입력 요구와 본인인증 값 훅 (7.2.0)
+
+운영자가 회원 항목에 「기존 회원에게도 입력 요구」를 켜면, 그 필수 항목이 비어 있는 회원의 쓰기 요청(POST, PUT, PATCH, DELETE)을
+코어가 `api` 미들웨어 그룹 전체에서 `403` + `error_code: required_fields_pending` 으로 거부합니다. 모듈과 플러그인의 API 도
+`api` 그룹을 받으므로 따로 할 일 없이 같은 판정을 받습니다. 필수 항목을 건너뛰고 만들어진 회원(`AuthService::register()` 의
+`required_fields => 'defer'`)은 요구를 켜지 않은 필수 항목까지 대상입니다.
+
+거부하지 않는 요청은 다음과 같습니다.
+
+| 조건 | 설명 |
+| --- | --- |
+| 인증된 회원이 없음 | 비회원 요청과 인증 미들웨어(`auth:sanctum`, `optional.sanctum`)가 없는 라우트 |
+| 읽기 요청 | GET, HEAD, OPTIONS |
+| 관리자 API | URI 에 `admin` 구간이 있거나 `admin` 미들웨어가 붙은 라우트 |
+| 통과 표식 | 라우트에 미들웨어 별칭 `allow.pending_required_fields` 를 붙인 경우 |
+| 확장 필터 | 필터 `core.required_fields.filter_exempt_routes` 가 돌려준 라우트 이름 |
+
+확장은 회원이 추가 정보를 입력하는 동안에도 열려 있어야 하는 자기 라우트를 둘 중 하나로 통과시킵니다. 대상은 결제 결과 처리,
+외부 계정 연결과 해제, 2단계 인증 등록처럼 「막으면 회원이 빠져나갈 길이 없거나 진행 중인 거래가 끊기는」 요청입니다.
+글쓰기, 주문처럼 사용자 콘텐츠를 만드는 요청은 통과시키지 않습니다.
+
+```php
+// 1) 라우트에 표식을 붙인다
+Route::post('payment/close-report', [PaymentController::class, 'closeReport'])
+    ->middleware(['optional.sanctum', 'allow.pending_required_fields'])
+    ->name('payment.close-report');
+
+// 2) 또는 리스너에서 라우트 이름을 보탠다 (이름 끝의 * 는 접두가 같은 라우트 전부)
+public static function getSubscribedHooks(): array
+{
+    return [
+        'core.required_fields.filter_exempt_routes' => ['method' => 'exemptRoutes', 'priority' => 10, 'type' => 'filter'],
+    ];
+}
+
+public function exemptRoutes(array $routes, Request $request): array
+{
+    return [...$routes, 'api.plugins.vendor-plugin.me.accounts.*'];
+}
+```
+
+| 훅 | 종류 | 인자 | 쓰임 |
+| --- | --- | --- | --- |
+| `core.required_fields.filter_exempt_routes` | filter | `(array $routeNames = [], Request $request)` | 미입력 회원의 쓰기 요청을 막지 않을 라우트 이름 목록. 미입력 회원의 쓰기 요청에서만 불린다 |
+| `core.user.complete_required_fields_validation_rules` | filter | `(array $rules, CompleteRequiredFieldsRequest $request)` | 추가 정보 저장(`PUT /api/me/required-fields`) 요청 검증 규칙 |
+| `core.identity.filter_verified_claims` | filter | `(?VerifiedClaims $claims, IdentityVerificationLog $log, ?User $user)` | 본인인증 수단이 준 인증 값(이름, 휴대폰, 생년월일, 성별)을 고치거나, 선택 계약을 구현하지 않은 수단의 값을 대신 준다. `VerifiedClaims` 가 아닌 값을 돌려주면 인증 값이 없는 것으로 본다 |
+| `core.identity.verified_claims_validation_rules` | filter | `(array $rules, VerifiedClaimsRequest $request)` | 본인인증 채움값 조회(`POST /api/identity/claims`) 요청 검증 규칙 |
+
+비어 있는 필수 항목 판정은 회원과 항목 정의 버전별로 캐시됩니다. 확장이 회원 항목 값을 저장할 때 `UserService::updateUser()` 나
+항목 값 서비스(`FieldValueService::write()`)를 거치면 캐시가 자동으로 지워집니다. 자기 저장소(핸들러 저장 항목)에 값을 직접 쓰는
+확장은 저장 뒤 `app(\App\Services\RequiredFieldsChecker::class)->forget($user)` 를 부르십시오. 부르지 않아도 쓰기 요청을 거부하기
+직전에는 항상 다시 판정하므로 회원이 낡은 판정으로 막히지는 않지만, 화면의 추가 정보 유도가 최대 10분 늦게 풀립니다.
+
+본인인증 값을 회원 항목에 채우는 계약(`ProvidesVerifiedClaimsInterface`)은 [본인인증 정책](../backend/identity-policies.md#53-본인인증-값을-회원-항목에-채우기-720) 문서에 있습니다.
+
+### 시스템 정보 카드 훅 (7.2.0)
+
+관리자 환경설정 > 정보 탭의 「시스템 정보」 카드 옆에 확장이 카드를 더합니다(#888). 코어는 카드를 그리는 일반 렌더러(배지·항목·접는 목록·알림)만
+갖고, 무엇을 싣는지는 확장이 정합니다 — 예: 서버 상태를 보여 주는 플러그인이 큐 적체·디스크 경고를 한 카드로 냅니다.
+
+| 훅 | 종류 | 인자 | 쓰임 |
+| --- | --- | --- | --- |
+| `core.settings.filter_system_info_sections` | filter | `(array $sections = [])` | 시스템 정보 응답(`GET /api/admin/settings/system-info`)의 `extra_sections`. 받은 배열에 자기 섹션을 더해 돌려준다 |
+
+섹션 형식(서버가 검증한 뒤 화면에 넘긴다):
+
+| 키 | 형식 | 필수 | 뜻 |
+| --- | --- | --- | --- |
+| `id` | 문자열 | 예 | 확장 식별자로 시작(`vendor-name`, 뒤에 `.`·`:` 로 이은 이름 가능, 100자 이하). 겹치면 뒤 섹션을 버린다 |
+| `title` | 문자열 | 예 | 카드 제목 — 다국어는 확장이 풀어서 넘긴다(`__()`) |
+| `badge` | `{text, tone}` | 아니오 | 제목 옆 배지. `tone`: `neutral`·`success`·`warning`·`danger` |
+| `rows` | `[{label, value, mono?}]` | 예(빈 목록 가능) | 라벨/값 행. `value` 는 문자열·숫자(문자열로 바뀐다), `mono: true` 면 고정폭 글꼴 |
+| `list` | `{title, items: [문자열], collapsible}` | 아니오 | 항목 목록. `collapsible: true` 면 단추로 열고 닫는다 |
+| `notice` | `{tone, text}` | 아니오 | 카드 안 알림 상자(색조는 배지와 같다) |
+
+```php
+// 서버 상태 플러그인의 리스너 — getSubscribedHooks() 에 'core.settings.filter_system_info_sections' => ['method' => 'addCard', 'type' => 'filter']
+public function addCard(array $sections): array
+{
+    $pending = $this->queueStats->pendingCount();
+
+    $sections[] = [
+        'id' => 'acme-server_status.overview',
+        'title' => __('acme-server_status::admin.card_title'),
+        'badge' => ['text' => $pending > 100 ? __('acme-server_status::admin.busy') : __('acme-server_status::admin.ok'),
+            'tone' => $pending > 100 ? 'warning' : 'success'],
+        'rows' => [
+            ['label' => __('acme-server_status::admin.queue_pending'), 'value' => $pending],
+            ['label' => __('acme-server_status::admin.host'), 'value' => gethostname() ?: '-', 'mono' => true],
+        ],
+    ];
+
+    return $sections;
+}
+```
+
+- **매 요청 새로 계산한다** — 코어 정보는 1시간 캐시지만 이 훅은 캐시 밖에서 돈다. 무거운 조회는 확장이 스스로 캐시한다.
+- 형식이 틀린 섹션은 통째로 버리고 경고 로그를 남긴다. 알 수 없는 키는 지운다.
+- 리스너가 던지면 `report()` 로 남기고 **그 리스너의 섹션만** 뺀다 — 응답은 계속 200 이다. 이때 다른 리스너가 한 번 더 불릴 수 있으므로
+  리스너는 섹션을 만들기만 하고 상태를 바꾸지 않는다.
+- 화면은 모든 값을 글자로 그린다(HTML 해석 없음). 응답 권한은 시스템 정보 API 그대로 `core.settings.read` 다 — 그 권한의 관리자에게
+  보여도 되는 정보만 싣는다(비밀번호·토큰 금지).
 
 ### 1. Action Hooks (액션 훅)
 
@@ -447,6 +730,12 @@ core.attachment.download
 core.attachment.update
 core.attachment.delete
 
+# 이미지 썸네일 (7.2.0) — 아래 「이미지 썸네일 훅」 표 참조
+core.thumbnail.filter_presets           core.thumbnail.filter_url_patterns
+core.thumbnail.filter_source_providers  core.thumbnail.filter_url
+core.thumbnail.filter_processors        core.thumbnail.after_purge
+core.thumbnail.filter_animated_original
+
 # 본문 미디어 공용 훅 (7.1.5) — 모든 확장(모듈·플러그인)의 편집기 본문 미디어. 마지막 인자는 ContentMediaContext
 # (어느 확장·문서의 미디어인지). 확장별 첨부 훅은 본문 미디어에 발화하지 않는다. 상세: content-media.md 「공용 훅」
 core.content_media.before_upload        # (UploadedFile, ctx) 저장 전
@@ -465,6 +754,7 @@ core.storage.filter_url
 core.activity_log.before_prune          core.activity_log.after_prune
 core.notification_log.before_prune      core.notification_log.after_prune
 core.schedule.before_prune_history      core.schedule.after_prune_history
+core.queue_job.before_prune             core.queue_job.after_prune      # 7.2.0 — 두 번째 인자가 건수 대신 결과 배열 (아래 「큐 관리 훅」)
 
 # 개인정보 보유기간 파기 (7.1.0, privacy:process-retention) — 핸들러마다 자기 접두사로 발행한다.
 # 같은 (보존일) / (보존일, 처리건수) 인자 규약이다. --dry-run 에서는 발행하지 않는다 —
@@ -516,6 +806,17 @@ sirsoft-ckeditor5.image.filter_reference_sources        # 에디터 이미지 �
 core.user.create_validation_rules
 core.user.update_validation_rules
 core.user.update_profile_validation_rules          # 본인 프로필 수정 (PUT /api/me)
+core.auth.register_validation_rules                # 가입 (POST /api/auth/register). 소셜 가입 완료, SSO 동의 완료 요청도 탄다
+core.auth.register_fields_validation_rules         # 가입 화면 항목 조회 (GET /api/auth/register/fields)
+core.user.profile_fields_validation_rules          # 내 정보 항목 조회 (GET /api/me/fields)
+core.user.complete_required_fields_validation_rules # 추가 정보 저장 (PUT /api/me/required-fields)
+core.user.admin_form_fields_validation_rules       # 관리자 회원 폼 항목 조회
+core.user.field_file_upload_validation_rules       # 회원 항목 파일 올리기
+core.user.field_file_delete_validation_rules       # 회원 항목 파일 지우기
+core.field_definition.show_validation_rules        # 회원 항목 설정 조회와 삭제
+core.field_definition.store_validation_rules       # 회원 항목 추가
+core.field_definition.update_validation_rules      # 회원 항목 설정 수정
+core.field_definition.reorder_validation_rules     # 회원 항목 순서 변경
 core.role.store_validation_rules
 core.role.update_validation_rules
 core.permission.store_validation_rules
@@ -557,6 +858,7 @@ core.layout.search_validation_rules
 # 항목 3키 구조는 아래 "스토리지·드라이버 확장 훅 페이로드" 표 참조
 core.settings.available_storage_drivers
 core.settings.available_public_asset_drivers   # 공개 자산 직접 URL 서빙 디스크 (공개#100)
+core.settings.available_image_drivers          # 이미지 처리 엔진 (구현체는 core.thumbnail.filter_processors)
 core.settings.available_cache_drivers
 core.settings.available_session_drivers
 core.settings.available_queue_drivers
@@ -756,7 +1058,7 @@ $boards = $this->cache->remember('board_menu', function () {
 | 적용 시점 | 규칙 판정 **이전**. 제외에 걸리면 그 요청은 규칙을 보지 않고 통과합니다 |
 | 적용 한계 | **관리자 영역은 이 훅으로 열 수 없습니다** — 관리자 화면·관리자 API·관리자 로그인 API 는 제외 판정 자체를 건너뜁니다 |
 
-코어는 관례적인 콜백 경로(`plugins/*/payment/*`, `plugins/*/webhook`, `api/plugins/*/webhook*`, `plugins/*/plugin/*/callback`)를 이미 제외하므로, 그 관례를 따르는 확장은 훅을 구독하지 않아도 됩니다. 관례 밖 경로로 외부 통보를 받는 확장만 등록하면 됩니다 — 등록하지 않으면 운영자가 `plugins/*` 류 규칙을 넣는 순간 결제 승인·입금 통보가 403 으로 끊기고, 실패는 상대편 재시도 로그에만 남습니다.
+코어는 관례적인 콜백 경로(`plugins/*/payment/*`, `plugins/*/webhook`, `plugins/*/webhooks`, `api/plugins/*/webhook*`, `plugins/*/plugin/*/callback`)를 이미 제외하므로, 그 관례를 따르는 확장은 훅을 구독하지 않아도 됩니다. 관례 밖 경로로 외부 통보를 받는 확장만 등록하면 됩니다 — 등록하지 않으면 운영자가 `plugins/*` 류 규칙을 넣는 순간 결제 승인·입금 통보가 403 으로 끊기고, 실패는 상대편 재시도 로그에만 남습니다.
 
 ```php
 public static function getSubscribedHooks(): array
@@ -1014,6 +1316,8 @@ public static function getSubscribedHooks(): array
 | `sync` 필수 | 저장 트랜잭션 안 훅(`sirsoft-board.post.before_create_commit`·`before_update_commit`, `sirsoft-ecommerce.product.before_create_commit`·`before_update_commit`) — 큐로 가면 커밋 뒤에 돌아 같은 트랜잭션에 저장할 수 없고 실패해도 저장을 되돌리지 못한다 |
 | 기본값(큐) 유지 | 활동 로그, 알림 발송, 통계 갱신 등 실패해도 호출자를 되돌리지 않는 후속 처리 |
 
+큐로 도는 리스너는 **발행 시점의 페이로드로 처리**한다. 작업은 워커가 돌 때(워커가 1분마다 돌면 최대 1분 뒤) 실행되므로, 그 사이 대상이 지워지거나 다시 고쳐질 수 있다. 넘겨받은 ID 로 DB 를 다시 읽어 기록하면 지워진 대상은 조용히 빠지고, 남은 대상은 나중 상태가 섞인다. 모델 인자는 코어가 속성 스냅숏을 함께 실어 지워져도 복원하지만, ID 목록은 그렇지 않다 — 일괄 처리 훅은 변경 전 값(스냅숏)을 인자로 넘기고 리스너는 그것으로 기록한다.
+
 선언만으로는 검증되지 않는다 — 회귀 테스트는 리스너를 손으로 `addAction` 하지 말고 실제 등록 경로(`HookListenerRegistrar::register()`)를 태운 뒤, **호출자 트랜잭션 안에서 반영되는지**와 **예외가 호출자를 롤백시키는지**를 단언한다. 손으로 등록하면 프로덕션이 쓰지 않는 경로를 검증하게 되어, 커밋 이후 실행 문제를 그대로 통과시킨다.
 
 #### 저장 트랜잭션 안 훅
@@ -1108,6 +1412,24 @@ public static function getSubscribedHooks(): array
 | `path` | `request()->path()` | `ResolvesActivityLogType`이 워커에서 정상 동작 |
 
 리스너 코드는 변경 불필요 — 평소처럼 `Auth::user()`, `request()->ip()` 호출하면 됩니다.
+
+컨텍스트에 `user_id` 가 없으면(비회원·시스템 작업) 복원은 인증 사용자를 비웁니다. 상주 워커(`queue:work`)는 컨테이너를 작업 사이에 재사용하므로, 확장이 자기 큐 작업에서 컨텍스트를 복원할 때는 작업이 끝나면 되돌려야 합니다 — 남기면 같은 워커가 이어서 처리한 다른 사람의 작업이 그 사용자로 기록되거나 그 사용자의 권한으로 돕니다.
+
+```php
+// 복원한 채 콜백을 실행하고, 끝나면(예외여도) 작업 전 상태로 되돌린다
+HookContextCapture::within($export->context, fn () => $this->run($export));
+
+// 또는 짝으로
+$snapshot = HookContextCapture::snapshot();
+try {
+    HookContextCapture::restore($context);
+    // ...
+} finally {
+    HookContextCapture::revert($snapshot);
+}
+```
+
+`revert()` 는 코어 항목(요청·인증 사용자·로케일·진입점·이벤트 ID)만 되돌립니다. 확장이 `hook.context.restore` 에서 따로 바꾼 상태나 직접 바인딩한 값(예: 보는 사람 시간대 `user_timezone`)은 그 확장이 되돌립니다. 워커는 작업을 집을 때마다 사용자 없음·콘솔 요청·기본 로케일로 한 번 더 돌립니다(`sync` 연결 제외).
 
 #### 확장 컨텍스트 추가 (플러그인)
 
@@ -1519,6 +1841,7 @@ HookManager::doAction('...payment_completed', $claim, $payment);
 - `$info` 는 확장 정보 배열이며 정보를 구할 수 없으면 빈 배열이다(템플릿 활성화는 `['identifier' => ...]`). 리스너는 `$info['version'] ?? null` 처럼 키 부재를 전제로 읽는다.
 - 모듈·플러그인 `$info['permissions']` 는 권한 분류 목록(분류마다 `identifier`·`name`·`permissions[]`)이다. 플러그인은 7.1.0 부터 이 모양이며, 종전에는 권한 선언 전체(`{name, description, categories}`)였다 — 그때 `$info['permissions']['categories']` 를 읽던 리스너는 `$info['permissions']` 를 그대로 읽는다.
 - 직전 훅도 Manager 가 CLI·어드민 UI 공통으로 한 번 발화한다(7.1.0~). 인자는 종전 Service 발화와 같다 — 모듈 `before_install(id)`·`before_activate(id, force)`·`before_deactivate(id, force)`·`before_update(id)`·`before_uninstall(id, deleteData)`, 플러그인 `before_install|activate|deactivate|update(id)`·`before_uninstall(id, deleteData)`, 템플릿 `before_install|activate|deactivate|version_update(id)`·`before_uninstall(id, deleteData)`.
+- **켜진 확장의 제거는 비활성화를 먼저 거친다(7.2.0).** 순서는 `before_uninstall` → 진행 중 상태 가드 → 의존 확장 검사(모듈·플러그인. 템플릿은 어드민 UI 의 「유형의 마지막 활성 템플릿」 거절이 그보다 먼저) → `before_deactivate` → `after_deactivate` → 제거 → `after_uninstall` 이다. 가드나 검사에 막히면 끄지 않는다. 비활성화는 제거 트랜잭션 밖에서 끝나므로 제거가 실패해 롤백되면 확장은 꺼진 채 남는다. 종전에는 켜진 확장을 바로 지워 비활성화 훅이 돌지 않았다 — 끌 때 하던 정리를 제거 훅에 따로 두던 리스너는 비활성화 훅 하나로 합칠 수 있다(이미 꺼진 확장의 제거는 비활성화 훅이 다시 돌지 않는다).
 - 직전 훅은 "시도" 시점에 발화하므로 없는 식별자처럼 실패할 호출에서도 발화한다. 직전 훅 리스너가 예외를 던지면 그 작업이 멈춘다 — 이제 CLI 설치·업데이트에도 똑같이 적용된다.
 
 **구훅 (deprecated)** — `core.{modules,plugins,templates}.installed` · `activated` · `updated` 9개는 식별자 1개만 넘기는 이전 이름이다. 코어·번들 확장은 모두 정규 훅으로 옮겼고, 사외 확장 호환을 위해 성공 시 계속 발화하지만 다음 메이저에서 제거할 예정이다. 새 구독은 위 정규 훅을 쓴다(구훅 목록은 아래 「사용 중단 훅」). 구훅은 "업데이트할 것 없음" 에서는 발화하지 않는다.
@@ -1567,6 +1890,8 @@ HookManager::doAction('...payment_completed', $claim, $payment);
 | `core.identity.message.after_send` | `core.notification.after_channel_send` | 있음 | 〃 |
 | `core.identity.message.send_failed` | `core.notification.channel_send_failed` | 있음 | 〃 |
 | `core.identity.message.resolve_failed` | — | 있음 | 〃 — 정책·목적·기본 문구가 모두 없을 때만 발화하며 알림 쪽 대응 훅은 없다 |
+| `core.templates.before_delete` | `core.templates.before_uninstall` | 있음 | 7.2.0 폐지 예정 — `TemplateService::deleteTemplate()` 안에서만 발화하는데 그 메서드도 폐지 예정이다(코어 안 호출처 없음). 템플릿 제거는 `TemplateManager::uninstallTemplate()` 를 쓰고, 제거 전후는 `core.templates.before_uninstall`·`after_uninstall` 로 구독한다(인자 모양이 다르다: 식별자·데이터 삭제 여부). 메서드와 함께 다음 메이저에서 지운다 |
+| `core.templates.after_delete` | `core.templates.after_uninstall` | 있음 | 〃 |
 
 **7.1.0 사용 중단 — 본인인증 메시지 관리 훅 23종** — 본인인증 메시지 전용 관리 기능이 알림 정의(`category = identity`)로 합쳐졌다.
 옛 이름은 **본인인증 분류의 정의·템플릿을 다룰 때만** 새 알림 훅과 같은 시점·같은 인자 개수로 계속 발화한다(공개 배포 발화 이력 있음,
@@ -1613,6 +1938,17 @@ HookManager::applyFilters("{$prefix}.notification.personalize_data", $data, $not
 **규약 — `personalize` 는 `$context` 의 스칼라만 읽는다.** `$args` 의 모델을 다시 읽으면 안 된다. 알림은 큐를 타고 나중에 실행되므로 그 시점의 모델은 **"지금" 상태**다. 과거 사건을 알리는 알림에 현재 상태가 실리고, 오류도 로그도 남지 않는다. 필요한 값은 발행 시점에 `$context` 에 스칼라로 실어 둔다.
 
 **링크 승격은 역할 이름이 아니라 권한으로 가른다.** "이 사람에게 관리자 주소를 줘도 되는가" 는 그 사람이 실제로 그 화면을 열 수 있는지(`NotificationRecipientCapability::can()`)로 판정한다. 역할 이름을 리스너에 박으면 상점이 새 역할을 만들 때마다 리스너를 고쳐야 하고, 권한 없는 사람에게 관리자 주소가 간다.
+
+**받는 사람 이름과 회원 항목 변수는 이 필터 앞에서 채워진다(7.2.0).** 값이 `{recipient_name}` 인 칸은 받는 사람의 그 채널 표시 이름으로 바뀌고, 템플릿이 참조한 회원 항목 변수(`member.…`)가 `$data` 에 들어간 뒤에 이 필터가 돈다. 필터의 인자는 그대로다(채널은 넘어오지 않는다).
+
+### 알림의 회원 항목 변수 훅
+
+템플릿은 받는 회원의 항목 값을 `{member.<키>}`, `{member.custom.<키>}`, `{member.display_name}` 으로 쓸 수 있다. 자세한 규칙은 [알림 시스템](../backend/notification-system.md)의 「회원 항목 변수」를 본다.
+
+| 훅 | 종류 | 인자 | 쓰임 |
+| --- | --- | --- | --- |
+| `core.notification.filter_member_variable_keys` | 필터 | `array $keys, string $type, string $channel` | 이번 발송에서 채울 회원 변수 이름 목록. 코어는 템플릿의 제목, 본문, 이동 주소에서 뽑는다. 자기 문구를 코어가 읽지 못하는 확장 채널이 이름을 보탠다. `member.` 로 시작하지 않는 이름은 버려진다 |
+| `core.notification.filter_template_variables` | 필터 | `array $variables, NotificationDefinition $definition` | 템플릿 편집 화면의 변수 목록(`[{key, description, group?}]`). 코어가 회원 공통 변수(`group: member`)를 덧붙인 뒤에 돈다. 여기서 더한 `member.…` 변수는 저장 응답의 없는 변수 경고에서 빠진다 |
 
 ---
 
@@ -1761,6 +2097,18 @@ class UserNotificationSettingsListener implements HookListenerInterface
     }
 }
 ```
+
+### 표시 이름 훅
+
+회원을 어떤 이름으로 보일지는 코어의 표시 이름 계산기가 정한다. 확장은 아래 훅으로 종류와 영역을 더하고 결과를 조정한다. 구조와 등록 방법은 [표시 이름](display-name.md)을 본다.
+
+| 훅 | 종류 | 인자 | 쓰임 |
+| --- | --- | --- | --- |
+| `core.display_name.filter_kinds` | 필터 | `array $kinds` | 표시 이름 종류를 더하거나 뺀다. 보통은 확장 게터 `getDisplayNameKinds()` 를 쓴다 |
+| `core.display_name.filter_areas` | 필터 | `array $areas` | 표시 이름 영역을 더하거나 뺀다. 보통은 확장 게터 `getDisplayNameAreas()` 를 쓴다 |
+| `core.display_name.filter_resolved` | 필터 | `?string $name, ?User $user, string $area, array $context` | 계산된 표시 이름을 바꾼다. 목록에서는 회원마다 불리므로 쿼리를 하지 않는다 |
+| `core.user.display_name_changed` | 액션 | `User $user, array $changed` | 회원의 이름, 닉네임, 이메일, 고른 종류, 표시 이름으로 쓰는 추가 항목 값이 바뀐 뒤. 이름이 구워진 캐시를 무효화할 때 구독한다 |
+| `core.field_definition.filter_usages` | 필터 | `array $usages, FieldDefinition $definition` | 항목 삭제 전에 그 항목을 쓰는 곳을 보탠다. 하나라도 있으면 삭제가 409 로 막힌다 |
 
 ### 회원 수정 화면에 확장 필드를 싣는 계약
 

@@ -1,0 +1,62 @@
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#40 제공자 3사는 검증 방식과 응답 계약이 서로 달라 축을 곱하면 성립하지 않는 조합(카카오 서명·네이버 어드민 키 등)만 늘어난다 — 제공자별 시험으로 나눴다.
+feature: social_login_webhooks
+coverage_strategy: pairwise
+description: |
+  제공자 웹훅 수신과 처리. 카카오 연결 끊기(어드민 키 + 발신 IP, 언제나 200), 네이버 연동 해제(서명 + 고유 ID 복호화, 204,
+  다시 보내지 않으므로 요청 안에서 검증·저장), 페이스북 앱 권한 해제·데이터 삭제 요청(signed_request 서명, 삭제 상태 페이지).
+  같은 알림은 한 번만 처리하고, 검증에 실패한 요청은 처리하지 않고 사유를 남긴다. 처리는 큐 잡(5회 다시 시도)이 맡아 정책대로
+  연결만 지우거나 회원을 탈퇴시키고(관리자는 코어가 거부 → failed + 관리자 알림), 로그인할 수단이 사라진 회원에게 안내 훅을 쏜다.
+axes:
+  provider: [kakao, naver, facebook]
+  referrer: [ACCOUNT_DELETE, FORCED_ACCOUNT_DELETE, UNLINK_FROM_ADMIN, UNLINK_FROM_APPS, INCOMPLETE_SIGN_UP]
+  policy: [unlink_only, withdraw_user]
+  member: [passwordless_single, regular, admin, password_set]
+  auth: [wrong_key, outside_ip, allowlist_off, malformed_payload, app_id_mismatch]
+  signature: [valid, tampered, other_client, undecryptable, wrong_secret, wrong_algorithm, malformed_payload]
+  kind: [deauthorize, data_deletion]
+  queue: [faked]
+  retries: [exhausted, already_processed]
+effects:
+  - kakao_200
+  - webhook_processed
+  - link_removed_without_revoke
+  - last_method_notice
+  - webhook_unlink_activity_logged
+  - resend_deduplicated
+  - bad_key_ignored_200
+  - outside_ip_ignored_200
+  - allowlist_toggle
+  - referrer_types_mapped
+  - incomplete_signup_no_notice
+  - unknown_member_ignored
+  - withdraw_policy_withdraws_member
+  - withdraw_refused_for_admin_marks_failed
+  - webhook_failed_hook
+  - password_member_no_notice
+  - naver_fixture_decrypts
+  - naver_204
+  - payload_strips_secrets
+  - naver_bad_signature_ignored
+  - naver_client_mismatch_ignored
+  - naver_undecryptable_ignored
+  - facebook_deauthorize_200
+  - data_deletion_returns_url_and_code
+  - data_deletion_same_code_on_resend
+  - deletion_status_page
+  - deletion_unknown_code_404
+  - facebook_bad_signature_400
+  - job_queued_on_default
+  - job_retry_contract
+  - event_received_until_job_runs
+  - job_processes_event
+  - failed_job_marks_event
+  - processed_event_not_overwritten
+  - malformed_payload_ignored_200
+  - naver_malformed_ignored_204
+  - facebook_malformed_400
+  - app_id_mismatch_ignored_200
+test_files:
+  - plugins/_bundled/sirsoft-social_login/tests/Feature/Webhooks/KakaoWebhookTest.php
+  - plugins/_bundled/sirsoft-social_login/tests/Feature/Webhooks/NaverWebhookTest.php
+  - plugins/_bundled/sirsoft-social_login/tests/Feature/Webhooks/FacebookWebhookTest.php
+  - plugins/_bundled/sirsoft-social_login/tests/Feature/Webhooks/ProcessWebhookEventJobTest.php

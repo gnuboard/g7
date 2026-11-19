@@ -23,6 +23,11 @@ class CancelOrphanClaimPaymentsCommandTest extends ModuleTestCase
 {
     use BuildsClaimFlowOrders;
 
+    /**
+     * 통화 설정·클레임 사유를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -30,6 +35,11 @@ class CancelOrphanClaimPaymentsCommandTest extends ModuleTestCase
         $this->seedClaimReasons();
     }
 
+    /**
+     * 테스트 통화 설정을 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->clearTestCurrencySettings();
@@ -39,6 +49,7 @@ class CancelOrphanClaimPaymentsCommandTest extends ModuleTestCase
     /**
      * 신청 시점 결제 반품(결제대기 + 결제 대기 건)을 만들고 결제 건 나이를 조정합니다.
      *
+     * @param  int  $paymentAgeDays  결제 대기 건이 만들어진 지 지난 일수
      * @return array{return: OrderReturn, payment: ClaimPayment} 신청서와 결제 대기 건
      */
     protected function makePayOnRequestReturn(int $paymentAgeDays): array
@@ -57,6 +68,15 @@ class CancelOrphanClaimPaymentsCommandTest extends ModuleTestCase
         return ['return' => $return->fresh(), 'payment' => $payment->fresh()];
     }
 
+    /**
+     * 종결된 신청서에 남은 오래된 결제 대기 건만 취소하고 살아 있는 신청서·보존 기간 이내·결제 완료 건은 남기는지 확인합니다.
+     *
+     * @scenario command=cancel_orphan_claim_payments, path=prune
+     *
+     * @effects only_stale_orphans_are_cleaned, live_or_recent_rows_are_kept
+     *
+     * @return void 반환값 없음
+     */
     public function test_cancels_only_stale_pending_payments_of_settled_or_missing_claims(): void
     {
         // ① 반려된 신청서의 오래된 대기 건 — 취소 대상.
@@ -83,6 +103,15 @@ class CancelOrphanClaimPaymentsCommandTest extends ModuleTestCase
         $this->assertSame(ClaimPaymentStatusEnum::PAID, $paid->fresh()->payment_status);
     }
 
+    /**
+     * 신청서 행이 사라진 오래된 결제 대기 건을 취소하는지 확인합니다.
+     *
+     * @scenario command=cancel_orphan_claim_payments, path=prune
+     *
+     * @effects only_stale_orphans_are_cleaned
+     *
+     * @return void 반환값 없음
+     */
     public function test_cancels_a_stale_pending_payment_whose_claim_row_is_gone(): void
     {
         ['return' => $return, 'payment' => $payment] = $this->makePayOnRequestReturn(3);
@@ -95,6 +124,15 @@ class CancelOrphanClaimPaymentsCommandTest extends ModuleTestCase
         $this->assertSame(ClaimPaymentStatusEnum::CANCELLED, $payment->fresh()->payment_status);
     }
 
+    /**
+     * dry-run 은 대상 건수만 알리고 취소하지 않는지 확인합니다.
+     *
+     * @scenario command=cancel_orphan_claim_payments, path=dry_run
+     *
+     * @effects dry_run_changes_nothing
+     *
+     * @return void 반환값 없음
+     */
     public function test_dry_run_reports_without_cancelling(): void
     {
         ['return' => $rejected, 'payment' => $orphan] = $this->makePayOnRequestReturn(3);
@@ -109,6 +147,12 @@ class CancelOrphanClaimPaymentsCommandTest extends ModuleTestCase
 
     /**
      * 모듈이 이 커맨드를 스케줄로 등록한다 (등록 누락 회귀 차단).
+     *
+     * @scenario command=cancel_orphan_claim_payments, path=schedule
+     *
+     * @effects command_declared_in_module_schedules
+     *
+     * @return void 반환값 없음
      */
     public function test_command_is_registered_in_module_schedules(): void
     {
@@ -116,6 +160,7 @@ class CancelOrphanClaimPaymentsCommandTest extends ModuleTestCase
             ->firstWhere('command', 'sirsoft-ecommerce:cancel-orphan-claim-payments');
 
         $this->assertNotNull($entry, '고아 결제 대기 건 취소 스케줄이 등록되어야 합니다.');
-        $this->assertSame('daily', $entry['schedule']);
+        // 옛 등록(daily)과 같은 시각 — 매일 자정
+        $this->assertSame(['daily', '0 0 * * *'], [$entry['frequency'], $entry['expression']]);
     }
 }

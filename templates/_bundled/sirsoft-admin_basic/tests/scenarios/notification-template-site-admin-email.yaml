@@ -1,0 +1,15 @@
+feature: 코어 환경설정 알림 템플릿 편집 창 — 받는 사람 「사이트 관리자 이메일」
+
+description: |
+  받는 사람 규칙의 종류에 「사이트 관리자 이메일」(환경설정 > 일반의 관리자 이메일, 메일만)이 있다. 고르면 값 칸 없이
+  메일만 간다는 사실과 비워 두면 보내지 않는다는 안내(`rcpt_site_admin_email_hint_*`)만 보이고, 다른 종류의 줄에는
+  안내가 없다. 다른 종류에서 바꾸면 그 줄에 앞 종류의 값·관계·행위자 제외가 남지 않는다 (#888).
+
+axes:
+  case: [site_admin_email]
+
+effects:
+  - recipient_site_admin_email_offered_with_hint
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-notification-template-site-admin-email.test.tsx

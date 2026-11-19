@@ -13,6 +13,11 @@ use Modules\Sirsoft\Board\Services\BoardTypeService;
 
 class BoardTypeController extends AdminBaseController
 {
+    /**
+     * 게시판 유형 관리 컨트롤러 생성자
+     *
+     * @param  BoardTypeService  $boardTypeService  게시판 유형 서비스
+     */
     public function __construct(
         private BoardTypeService $boardTypeService
     ) {

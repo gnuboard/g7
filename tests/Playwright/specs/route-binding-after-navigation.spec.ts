@@ -7,8 +7,7 @@
  * form-data 로 403). 화면 전환은 새 컨텍스트로 다시 그릴 뿐이므로, 같은 페이지에서
  * 배포 번들의 공유 바인딩 엔진에 컨텍스트만 바꿔 두 번 그려 결과를 잠근다.
  *
- * @scenario surface=cache
- * @effects route_query_bindings_follow_current_screen
+ * 재는 조합: 바인딩 캐시 축(surface=cache), 효과는 화면 전환 뒤 route·query 바인딩이 새 화면 값을 따름 — 표식은 각 test 앞에 있다.
  */
 import { test, expect } from '../fixtures/auth';
 

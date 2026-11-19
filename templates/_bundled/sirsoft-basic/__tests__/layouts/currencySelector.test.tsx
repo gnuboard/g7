@@ -103,11 +103,15 @@ describe('A1 — _user_base.json 통화 주입', () => {
   const initActions = userBase.init_actions ?? [];
   const initText = JSON.stringify(initActions);
 
+  // @scenario base_currency=KRW, exchange_rate=configured
+  // @effects selector_renders_available_currencies
   it('defaultCurrency 를 default_currency 노출값에서 _global 에 주입한다', () => {
     expect(initText).toContain('defaultCurrency');
     expect(initText).toContain('language_currency?.default_currency');
   });
 
+  // @scenario base_currency=KRW, exchange_rate=configured
+  // @effects selector_renders_available_currencies
   it('선호 통화 초기화는 이커머스 모듈 소유 핸들러(sirsoft-ecommerce.initPreferredCurrency)로 호출한다', () => {
     // 통화 = 커머스 책임 → init 핸들러는 모듈 네임스페이스. 모듈 미설치 시 미등록 핸들러로 무동작.
     const inject = initActions.find(
@@ -117,11 +121,15 @@ describe('A1 — _user_base.json 통화 주입', () => {
     expect(inject.params?.defaultCurrency).toContain('defaultCurrency');
   });
 
+  // @scenario base_currency=KRW, exchange_rate=configured
+  // @effects selector_renders_available_currencies
   it('템플릿 전용(미네임스페이스) initPreferredCurrency 호출이 남아있지 않다 (모듈 이전 회귀)', () => {
     const bare = initActions.find((a: any) => a.handler === 'initPreferredCurrency');
     expect(bare).toBeUndefined();
   });
 
+  // @scenario base_currency=KRW, exchange_rate=configured
+  // @effects selector_renders_available_currencies
   it('깨진 _local 라운드트립(loadFromLocalStorage stateKey=preferredCurrency)을 사용하지 않는다', () => {
     const brokenLoad = initActions.find(
       (a: any) => a.handler === 'loadFromLocalStorage'
@@ -130,6 +138,8 @@ describe('A1 — _user_base.json 통화 주입', () => {
     expect(brokenLoad).toBeUndefined();
   });
 
+  // @scenario base_currency=KRW, exchange_rate=configured
+  // @effects selector_renders_available_currencies
   it('availableCurrencies 를 is_default || exchange_rate>0 필터로 주입한다(U11-B)', () => {
     const inject = initActions.find(
       (a: any) => a.params?.availableCurrencies !== undefined
@@ -140,6 +150,8 @@ describe('A1 — _user_base.json 통화 주입', () => {
     expect(inject.params.availableCurrencies).toContain('exchange_rate');
   });
 
+  // @scenario base_currency=KRW, exchange_rate=configured
+  // @effects selector_renders_available_currencies
   it('globalHeaders 의 이커머스 패턴에 X-Currency 헤더가 있다', () => {
     const headers = userBase.globalHeaders ?? [];
     const ecommerce = headers.find((h: any) => h.pattern === '/api/modules/sirsoft-ecommerce/*');
@@ -148,6 +160,8 @@ describe('A1 — _user_base.json 통화 주입', () => {
     expect(ecommerce.headers['X-Currency']).toContain('preferredCurrency');
   });
 
+  // @scenario base_currency=KRW, exchange_rate=configured
+  // @effects selector_renders_available_currencies
   it('current_user 로드 후 모듈 통화 핸들러를 재실행해 계정 통화를 덮어쓴다 (D-LOGIN-CUR 회귀)', () => {
     const dataSources = userBase.data_sources ?? [];
     const currentUser = dataSources.find((d: any) => d.id === 'current_user');
@@ -164,11 +178,15 @@ describe('헤더 통화 슬롯(이커머스 주입) + 언어 버튼(코어 내�
   const userBaseText = loadRaw('layouts/_user_base.json');
   const headerTsx = loadRaw('src/components/composite/Header.tsx');
 
+  // @scenario base_currency=KRW, exchange_rate=configured
+  // @effects selector_renders_available_currencies
   it('Header.tsx 가 header_currency 슬롯 컨테이너를 렌더한다 (통화는 모듈 주입)', () => {
     expect(headerTsx).toContain('SlotContainer');
     expect(headerTsx).toContain('header_currency');
   });
 
+  // @scenario base_currency=KRW, exchange_rate=configured
+  // @effects selector_renders_available_currencies
   it('Header.tsx 는 이커머스/통화 코드를 모른다 (모듈 무지 — 결합 제거 회귀)', () => {
     // 헤더가 통화 코드·이커머스 식별자·통화 영속 엔드포인트를 직접 들고 있으면 결합 회귀.
     expect(headerTsx).not.toContain('availableCurrencies');
@@ -177,12 +195,16 @@ describe('헤더 통화 슬롯(이커머스 주입) + 언어 버튼(코어 내�
     expect(headerTsx).not.toContain('user/currency');
   });
 
+  // @scenario base_currency=KRW, exchange_rate=configured
+  // @effects selector_renders_available_currencies
   it('Header.tsx 에 언어 독립 버튼(코어 기능)이 있다', () => {
     expect(headerTsx).toContain('showLangMenu');
     expect(headerTsx).toContain('handleLocaleChange');
     expect(headerTsx).toContain('currentLocale');
   });
 
+  // @scenario base_currency=KRW, exchange_rate=configured
+  // @effects selector_renders_available_currencies
   it('모바일 표면(_user_base.json)도 header_currency 슬롯(SlotContainer)을 마운트한다', () => {
     // 마운트 위치는 헤더 우측 그룹 → 모바일 드로어로 이동했으나, 슬롯 소비 자체는 유지된다.
     expect(userBaseText).toContain('mobile_drawer_currency_wrap');
@@ -208,6 +230,8 @@ describe('헤더 통화 슬롯(이커머스 주입) + 언어 버튼(코어 내�
    *
    * 되돌리려면 먼저 390px 오버플로를 다른 방법으로 해소해야 한다.
    */
+  // @scenario base_currency=KRW, exchange_rate=configured
+  // @effects selector_renders_available_currencies
   it('모바일 헤더 우측 그룹에 언어/통화가 없다 (390px 오버플로 해소 — 데스크톱 패리티 모바일 한정 해제)', () => {
     const userBase = loadJson('layouts/_user_base.json');
     const mobileRight = findNode(userBase.components, 'mobile_header_right');
@@ -217,6 +241,8 @@ describe('헤더 통화 슬롯(이커머스 주입) + 언어 버튼(코어 내�
     expect(ids).not.toContain('mobile_currency_selector_wrap');
   });
 
+  // @scenario base_currency=KRW, exchange_rate=configured
+  // @effects selector_renders_available_currencies
   it('언어/통화는 모바일 드로어 최상단(mobile_drawer_prefs)에 있다', () => {
     const userBase = loadJson('layouts/_user_base.json');
     const drawer = findNode(userBase.components, 'mobile_nav_drawer');
@@ -244,6 +270,8 @@ describe('헤더 통화 슬롯(이커머스 주입) + 언어 버튼(코어 내�
    * flex 컨테이너에 iteration 을 걸면 컨테이너가 복제되어 각 칩이 자기 컨테이너를 갖고
    * 세로로 쌓인다. 가로 나열을 유지하려면 iteration 은 반드시 Button 자신에 있어야 한다.
    */
+  // @scenario base_currency=KRW, exchange_rate=configured
+  // @effects selector_renders_available_currencies
   it('드로어 언어 칩은 flex-wrap 컨테이너 + Button 에 iteration (가로 나열)', () => {
     const userBase = loadJson('layouts/_user_base.json');
     const prefs = findNode(userBase.components, 'mobile_drawer_prefs');
@@ -279,6 +307,8 @@ describe('헤더 통화 슬롯(이커머스 주입) + 언어 버튼(코어 내�
    * 언어 = 템플릿 소유(_global.mobileLanguageOpen),
    * 통화/배송국가 = 이커머스 주입 조각 소유(_local.showCurrencyDropdown) → 서로 독립.
    */
+  // @scenario base_currency=KRW, exchange_rate=configured
+  // @effects selector_renders_available_currencies
   it('드로어 언어 섹션은 기본 접힘 + 트리거에 현재 언어를 요약 표기한다', () => {
     const userBase = loadJson('layouts/_user_base.json');
     const langSection = findNode(userBase.components, 'mobile_drawer_language');
@@ -310,6 +340,8 @@ describe('헤더 통화 슬롯(이커머스 주입) + 언어 버튼(코어 내�
     expect(body.props.className).toContain("'max-h-screen opacity-100 mt-2' : 'max-h-0 opacity-0 mt-0'");
   });
 
+  // @scenario base_currency=KRW, exchange_rate=configured
+  // @effects selector_renders_available_currencies
   it('언어 토글은 통화 플래그를 건드리지 않는다 (독립 개폐)', () => {
     const userBase = loadJson('layouts/_user_base.json');
     const toggle = findNode(userBase.components, 'mobile_drawer_language_toggle');
@@ -318,6 +350,8 @@ describe('헤더 통화 슬롯(이커머스 주입) + 언어 버튼(코어 내�
     expect(JSON.stringify(toggle)).not.toContain('showCurrencyDropdown');
   });
 
+  // @scenario base_currency=KRW, exchange_rate=configured
+  // @effects selector_renders_available_currencies
   it('드로어 언어/통화 섹션은 비회원에게도 노출된다 (아코디언 currentUser 게이트 바깥)', () => {
     const userBase = loadJson('layouts/_user_base.json');
     const drawer = findNode(userBase.components, 'mobile_nav_drawer');
@@ -327,6 +361,8 @@ describe('헤더 통화 슬롯(이커머스 주입) + 언어 버튼(코어 내�
     expect(prefs.if).toBeUndefined();
   });
 
+  // @scenario base_currency=KRW, exchange_rate=configured
+  // @effects selector_renders_available_currencies
   it('로그인 아코디언 안에 중복 언어 블록이 남아있지 않다 (드로어 단일 소스)', () => {
     const userBase = loadJson('layouts/_user_base.json');
     const drawer = findNode(userBase.components, 'mobile_nav_drawer');
@@ -337,10 +373,14 @@ describe('헤더 통화 슬롯(이커머스 주입) + 언어 버튼(코어 내�
     expect(JSON.stringify(accordion)).not.toContain('setLocale');
   });
 
+  // @scenario base_currency=KRW, exchange_rate=configured
+  // @effects selector_renders_available_currencies
   it('헤더 드롭다운 잔여 상태(mobileLangMenuOpen)가 제거되었다', () => {
     expect(userBaseText).not.toContain('mobileLangMenuOpen');
   });
 
+  // @scenario base_currency=KRW, exchange_rate=configured
+  // @effects selector_renders_available_currencies
   it('통화 슬롯 주입 앵커(header_currency_inject_anchor)가 _user_base 에 있다', () => {
     expect(userBaseText).toContain('header_currency_inject_anchor');
   });
@@ -354,12 +394,16 @@ describe('이커머스 헤더 통화 주입 확장 (slot=header_currency)', () =
     loadRepo('modules/_bundled/sirsoft-ecommerce/resources/extensions/header-currency-selector-admin.json')
   );
 
+  // @scenario base_currency=KRW, exchange_rate=configured
+  // @effects selector_renders_available_currencies
   it('유저 확장이 _user_base 에 header_currency 슬롯 노드를 주입한다', () => {
     expect(userExt.target_layout).toBe('_user_base');
     const node = userExt.injections[0].components[0];
     expect(node.slot).toBe('header_currency');
   });
 
+  // @scenario base_currency=KRW, exchange_rate=configured
+  // @effects selector_renders_available_currencies
   it('유저 통화 선택은 로그인 회원이면 PUT user/currency 로 영속 저장한다 (비회원=localStorage)', () => {
     const raw = loadRepo('modules/_bundled/sirsoft-ecommerce/resources/extensions/header-currency-selector-user.json');
     expect(raw).toContain('g7_preferred_currency');
@@ -367,6 +411,8 @@ describe('이커머스 헤더 통화 주입 확장 (slot=header_currency)', () =
     expect(raw).toContain('currentUser?.uuid');
   });
 
+  // @scenario base_currency=KRW, exchange_rate=configured
+  // @effects selector_renders_available_currencies
   it('PUT user/currency apiCall 은 auth_mode:required 로 Bearer 토큰을 싣는다 (401 회귀 차단)', () => {
     // G7 은 Sanctum Bearer 인증. apiCall 기본 auth_mode 는 'none' 이라 Bearer 미부착 → 401.
     // 로그인 회원 통화 영속 PUT 은 반드시 auth_mode:required 여야 Authorization 헤더가 붙는다.
@@ -387,6 +433,8 @@ describe('이커머스 헤더 통화 주입 확장 (slot=header_currency)', () =
     expect(apiAction.auth_mode).toBe('required');
   });
 
+  // @scenario base_currency=KRW, exchange_rate=configured
+  // @effects selector_renders_available_currencies
   it('관리자 통화 표시는 영속 PUT 이 없다 (표시 전용 — auth_mode 불요, D-USERCUR-3)', () => {
     const raw = loadRepo('modules/_bundled/sirsoft-ecommerce/resources/extensions/header-currency-selector-admin.json');
     expect(raw).not.toContain('/api/modules/sirsoft-ecommerce/user/currency');
@@ -400,6 +448,8 @@ describe('이커머스 헤더 통화 주입 확장 (slot=header_currency)', () =
    * portable 에서는 팝오버가 아니라 드로어 안 인라인 아코디언이 되며, 개폐는 데스크톱과 같은
    * `_local.showCurrencyDropdown` 이 결정한다(기본 접힘).
    */
+  // @scenario base_currency=KRW, exchange_rate=configured
+  // @effects selector_renders_available_currencies
   it('유저 확장 트리거는 portable 에서 아코디언 행 + 현재값 요약을 노출한다', () => {
     const node = userExt.injections[0].components[0];
     const trigger = (node.children ?? []).find((c: any) => c.name === 'Button');
@@ -418,6 +468,8 @@ describe('이커머스 헤더 통화 주입 확장 (slot=header_currency)', () =
     expect(summary).toContain('chevron-down');
   });
 
+  // @scenario base_currency=KRW, exchange_rate=configured
+  // @effects selector_renders_available_currencies
   it('유저 확장 패널은 portable 에서도 _local.showCurrencyDropdown 으로 게이트된다 (기본 접힘)', () => {
     const node = userExt.injections[0].components[0];
     const panel = (node.children ?? []).find(
@@ -440,15 +492,21 @@ describe('이커머스 헤더 통화 주입 확장 (slot=header_currency)', () =
     expect(portable.props.role).toBe('listbox');
   });
 
+  // @scenario base_currency=KRW, exchange_rate=configured
+  // @effects selector_renders_available_currencies
   it('유저 확장 백드롭은 portable 에서 꺼진다 (드로어 클릭 가로채기 방지)', () => {
     const node = userExt.injections[0].components[0];
-    const backdrop = (node.children ?? []).find(
-      (c: any) => c.name === 'Div' && (c.props?.className ?? '').includes('fixed inset-0')
-    );
+    // 이커머스 조각은 자기 CSS 의 접두 빌드 클래스(`ecommerce:fixed`)를 쓴다(#816) — 앞글자를 떼고 읽는다
+    const backdrop = (node.children ?? []).find((c: any) => {
+      const words = String(c.props?.className ?? '').split(/\s+/).map((w: string) => w.replace(/^ecommerce:/, ''));
+      return c.name === 'Div' && words.includes('fixed') && words.includes('inset-0');
+    });
     expect(backdrop).toBeTruthy();
     expect(backdrop.responsive?.portable?.if).toBe('{{false}}');
   });
 
+  // @scenario base_currency=KRW, exchange_rate=configured
+  // @effects selector_renders_available_currencies
   it('관리자 확장이 _admin_base 에 header_currency 슬롯 + init_actions(통화 복원)를 기여한다', () => {
     expect(adminExt.target_layout).toBe('_admin_base');
     const node = adminExt.injections[0].components[0];

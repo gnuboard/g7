@@ -9,7 +9,6 @@
  * 부착하도록 보강했다. 본 테스트는 그 동작을 잠근다.
  */
 
-import React from 'react';
 import { render } from '@testing-library/react';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { ImageGallery } from '../ImageGallery';
@@ -34,6 +33,8 @@ const sampleImages = [
 ];
 
 describe('ImageGallery 편집 모드 placeholder', () => {
+  // @scenario render_mode=editor
+  // @effects image_gallery_editor_placeholder_carries_editor_attrs
   it('editorAttrs 주입 시 인라인 placeholder 루트에 editorAttrs 와 id 가 부착된다', () => {
     const { container } = render(
       <ImageGallery
@@ -50,6 +51,8 @@ describe('ImageGallery 편집 모드 placeholder', () => {
     expect(node).toHaveAttribute('id', 'ig-edit');
   });
 
+  // @scenario render_mode=editor
+  // @effects image_gallery_editor_placeholder_prefers_thumbnail
   it('editorAttrs 주입 시 이미지 썸네일이 placeholder 에 렌더된다 (썸네일 우선)', () => {
     const { container } = render(
       <ImageGallery
@@ -65,6 +68,8 @@ describe('ImageGallery 편집 모드 placeholder', () => {
     expect(imgs[1]).toHaveAttribute('src', 'https://example.com/b-thumb.jpg');
   });
 
+  // @scenario render_mode=editor
+  // @effects image_gallery_editor_placeholder_empty_label
   it('이미지가 없으면 placeholder 안내 라벨을 렌더한다', () => {
     const { container } = render(
       <ImageGallery images={[]} isOpen={false} onClose={() => {}} editorAttrs={editorAttrs} />
@@ -74,6 +79,8 @@ describe('ImageGallery 편집 모드 placeholder', () => {
     expect(node?.textContent).toContain('editor.component.image_gallery');
   });
 
+  // @scenario render_mode=runtime
+  // @effects image_gallery_runtime_skips_editor_placeholder
   it('editorAttrs 미주입(런타임)이면 인라인 placeholder 를 렌더하지 않는다', () => {
     const { container } = render(
       <ImageGallery images={sampleImages} isOpen={false} onClose={() => {}} />

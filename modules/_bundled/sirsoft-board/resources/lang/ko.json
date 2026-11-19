@@ -3,6 +3,7 @@
         "data_source": {
             "availableChannels": "사용 가능 채널",
             "boardIdentityPolicies": "게시판 본인인증 정책",
+            "boardSchedules": "게시판 스케줄",
             "boardIdentityPurposes": "게시판 본인인증 목적",
             "boardPrivacyRetentionPreview": "게시판 개인정보 보유기간 대상 건수",
             "boardNotificationDefinitions": "게시판 알림 정의",

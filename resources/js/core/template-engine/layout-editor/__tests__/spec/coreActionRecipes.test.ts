@@ -24,7 +24,7 @@ const EXPECTED_HANDLERS = [
   // C14~C16 데이터
   'refetchDataSource', 'appendDataSource', 'updateDataSource',
   // C17~C22 기타
-  'scrollIntoView', 'login', 'loginTwoFactor', 'loginTwoFactorResend', 'loginPasswordChange', 'loginPasswordChangePostpone', 'logout', 'setLocale', 'emitEvent', 'apiCall',
+  'scrollIntoView', 'login', 'loginTwoFactor', 'loginTwoFactorResend', 'loginPasswordChange', 'loginPasswordChangePostpone', 'loginHandoff', 'logout', 'setLocale', 'emitEvent', 'apiCall',
   // 방문자 동의 스냅샷 다시 읽기 (engine-v1.78.0)
   'refreshConsent',
   // 검색창 제출 검색어를 최근 검색어에 기록 (engine-v1.87.0)

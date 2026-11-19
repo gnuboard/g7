@@ -43,6 +43,19 @@
 - `--reset-state` 는 이 소유 판정을 통과한 뒤에만 지운다 — 웹 소유 state 는 `--takeover` 와 같은 규칙을 거친다.
 - PHP·Composer 경로를 주지 않으면 웹 Step 3 와 같이 탐지한다(`installer_detect_php_binaries()`): 기본 `php` 를 쓸 수 없을 때만 찾은 첫 PHP, Composer 는 PATH 의 `composer` 가 아닌 찾은 경로(`composer.phar`).
 - 같은 사이트의 터미널 설치 동시 실행은 `storage/installer/cli.lock`(flock)으로 막는다(종료 5). 워커 잠금은 웹과 같은 `acquireWorkerLock()`.
+- 잠금을 얻은 입구는 곧바로 `installerCurrentWorkerId($workerId)` 로 자기 워커 ID 를 알린다(웹 `run-task.php`·`install-worker.php`·`install-process.php`, 터미널 `cli/install-flow.php`). 알리지 않으면 상태를 읽을 때마다 도는 「예산을 넘긴 점유자 = 죽은 워커」 승격이 자기 잠금을 지워, 심장박동 없이 오래 걸린 단계가 끝나는 순간 「다른 설치 작업이 잠금을 넘겨받았다」로 멈춘다. 하위 명령 직전의 점유 시간 연장(`extendWorkerStaleWindow()`)도 이 값으로 자기 잠금을 찾는다. 새 입구를 만들면 같은 배선을 둔다.
+
+## 이어 하기·건너뛰기·테이블 삭제 동의 (7.1.4~)
+
+설치 완료 판정(`installer_is_completed()`)과 진행 상태(`owner_kind`)에 따라 `g7_cli_main()`·`g7_cli_run_install()` 이 갈린다. 사용자 안내는 INSTALL.md 방법 5 의 옵션 표.
+
+| 옵션 (환경변수) | 동작 | 종료 코드 |
+|------|------|------|
+| `--resume` (`G7_INSTALL_RESUME`) | 터미널 소유(`owner_kind=cli`) state 를 `g7_cli_resume()` 로 이어 간다 — 완료 작업은 건너뜀(웹 「이어서 설치」와 같은 의미). `runtime.php` 가 남아 있으면 비밀값을 다시 받지 않고, 없으면 환경변수·파일·숨김 입력으로 다시 받는다. 설치 작업은 끝났는데 `.env` 확정 전에 멈췄으면(완료 표식 + `runtime.php`) 확정만 한다 | 이어 갈 state 가 없으면 2. 워커가 아직 실행 중이거나 단계 5 전(`current_step` < 5·관리자 템플릿 미선택) state 면 5. 중단된 터미널 설치가 있는데 `--resume` 없이 실행하면 5 |
+| `--skip-if-installed` (`G7_INSTALL_SKIP_IF_INSTALLED`) | 이미 설치된 사이트면 아무것도 하지 않고 끝낸다 — JSON `summary` 에 `already_installed: true`. 컨테이너 재기동마다 같은 설치 명령을 부르는 배치용 | 0 (옵션이 없으면 3) |
+| `--drop-existing-tables` (`G7_INSTALL_DROP_EXISTING_TABLES`, config `drop_existing_tables`) | [3] DB 검사에서 같은 접두사의 기존 테이블이 있을 때의 삭제 동의 — 삭제 대상은 접두사 일치 테이블뿐(`installer_issue_drop_confirm`). 대화형은 묻고, 비대화형은 이 옵션이 있어야 진행. `--reinstall` 에는 필수 | 동의 없이 접두사 일치 테이블이 있으면 2. `--reinstall` 에 빠지면 2 |
+
+`--takeover`·`--reset-state` 의 소유 판정은 위 「소유권·동시성」.
 
 ## JSON 출력 (`--output=json`)
 
@@ -63,11 +76,16 @@
 
 항상 지우는 대상에 애플리케이션 파일 캐시(`storage/framework/cache/data`, `.gitignore` 보존)가 들어 있다 — 확장 상태 목록 캐시(`ext.modules.active_identifiers` 등)는 G7 설정의 캐시 드라이버(기본 file)에 있어 DB 를 비워도 남는다. 남으면 이번 설치에 넣지 않은 확장이 켜진 것으로 보여 그 라우트를 오토로드 없이 싣고 artisan 부팅이 죽는다(설치 단계의 롤백도 같은 오류로 실패).
 
+웹 마법사도 같은 대상을 지운다 — 설치 완료 표식(`storage/app/g7_installed`)이 없으면 db_cleanup 단계 진입부에서(테이블 삭제 여부와 무관, [강제 진행] 재설치·새 DB 위 재설치 모두)
+`clearStaleExtensionCaches()`(`public/install/includes/vendor-bundle-installer.php`)가 `bootstrap/cache` 의 훅·오토로드·예약 명령·라우트 매핑과 애플리케이션 파일 캐시를 비운다.
+남기면 아직 설치 전인 플러그인 리스너가 등록돼 모듈 활성화가 「… is not instantiable」 로 실패했다.
+한계(CLI·웹 공통): G7 설정의 캐시 드라이버가 파일이 아니면(redis·memcached 등) 확장 상태 목록 캐시는 이 정리로 지워지지 않는다 — 그런 사이트는 재설치 전에 그 캐시 저장소를 비운다.
+
 ## 운영 명령 (설치 뒤)
 
 | 명령 | 저장 경로 (웹과 같음) |
 |------|------|
-| `user:reset-password` | `PasswordResetService::resetByOperator()`(메일 재설정과 공용). 웹 재설정 직전 가드 훅 `core.auth.before_reset_password` 는 발화하지 않는다(브라우저 본인인증을 마칠 수 없다). 확장 안내는 filter `core.auth.console_password_reset_notices` |
+| `user:reset-password` | `PasswordResetService::resetByOperator()`(메일 재설정과 공용). 웹 재설정 직전 가드 훅 `core.auth.before_reset_password` 는 발화하지 않는다(브라우저 본인인증을 마칠 수 없다). 확장 안내는 filter `core.auth.console_password_reset_notices`. 이메일을 생략하면 `UserRepositoryInterface::getSuperAdmins()`(탈퇴 제외, 가입 순)에서 대상을 고르고 `unifiedConfirm()` 으로 확인한다 — 확인에 답할 수 없는 실행은 대상을 추측하지 않고 최고관리자 이메일 목록과 재실행 명령을 보여 준 뒤 종료 1. 재설정 뒤 회원 상태가 로그인을 막으면(로그인 경로와 같은 `UserStatus::allowsLogin()` — 활성·휴면 외) 경고만 하고 상태는 바꾸지 않는다 |
 | `settings:get`·`settings:set` | `SettingsConsoleService` — 코어는 탭 경로(`SaveSettingsRequest` → `saveSettings`) 또는 단건 경로(`UpdateSettingRequest` → `setSetting`), 플러그인은 `UpdatePluginSettingsRequest` → `PluginSettingsService::save`, 모듈은 선택 메서드 `settingsSaveRequestClass()` 가 돌려주는 FormRequest → 모듈 `saveSettings` + `core.module_settings.after_save` |
 | `module:install`·`plugin:install`·`template:install --with-dependencies` | `CascadeInstallOrchestrator`(관리자 설치 창과 공용) |
 | 같은 세 명령 `--with-language-packs[=all\|none\|id,...]` | 후보는 `ExtensionInstallPreviewBuilder` 의 `language_packs`(설치 창과 같은 목록)를 **본 확장 설치 전에** 계산해 둔다(설치 뒤에는 미리보기가 후보를 다시 내지 못한다). 설치는 본 확장 설치 뒤 `CascadeInstallOrchestrator::installLanguagePacks()` — 자동 활성화. 하나가 실패해도 나머지는 계속 설치하고(본 확장 설치는 유지) 실패가 있으면 종료 코드 1. `all` 은 `available=false` 후보(코어 언어팩이 꺼진 언어, 이미 설치된 대상 확장 버전이 언어팩 요구보다 낮음)를 사유 문장과 함께 건너뛴다. 후보에 없는 식별자는 설치 전에 오류. 옵션 처리는 trait `App\Console\Commands\Concerns\RunsCascadeInstall` |
@@ -76,7 +94,7 @@
 
 ## 테스트
 
-인스톨러 단위 테스트는 임시 `BASE_PATH` 서브프로세스(`tests/Unit/Installer/Concerns/RunsInstallerCli.php`)로만 돌린다. CLI 파일의 함수는 `function_exists` 로 감싸 있으므로, 환경에 묶인 단계(요구사항·DB 연결·설치 작업·root 판정)는 같은 이름의 함수를 먼저 정의해 주입한다. 실제 chown·root 실행·도커는 WSL 실측으로 본다.
+인스톨러 단위 테스트는 임시 `BASE_PATH` 서브프로세스(`tests/Unit/Installer/Concerns/RunsInstallerCli.php`)로만 돌린다. CLI 파일의 함수는 `function_exists` 로 감싸 있으므로, 환경에 묶인 단계(요구사항·DB 연결·설치 작업·root 판정)는 같은 이름의 함수를 먼저 정의해 주입한다. 실제 chown·root 실행·도커는 Linux 환경(WSL 등)에서 직접 실행해 확인한다.
 
 ## 관련 문서
 

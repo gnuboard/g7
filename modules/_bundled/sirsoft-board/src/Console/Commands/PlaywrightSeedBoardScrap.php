@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Hash;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Models\PostScrap;
+use Modules\Sirsoft\Board\Repositories\Contracts\BoardPermissionRepositoryInterface;
 use Modules\Sirsoft\Board\Services\BoardPermissionService;
 
 /**
@@ -231,21 +232,16 @@ class PlaywrightSeedBoardScrap extends Command
         // 게시판마다 딸린 권한도 함께 지운다. 시드가 만든 것을 지우지 않으면 개발 DB 의 권한 목록에
         // `sirsoft-board.e2e-*` 가 회차마다 쌓인다. 게시판 행으로 찾지 않고 **고정 slug 로** 찾는 것은
         // 시드가 tmpboard 를 스스로 지워 행이 이미 없을 수 있기 때문이다.
-        // 카테고리 권한을 지우면 자식 권한은 CASCADE 로 함께 사라진다(BoardPermissionService 와 같은 규약).
-        // 카테고리를 지우면 자식은 CASCADE 로 따라 사라지지만, `parent_id` 가 비어 있는 행은 그 사슬에
-        // 걸리지 않는다(등록 경로가 둘이라 실제로 그런 행이 남는다). 그래서 사슬에 기대지 않고
-        // **identifier 접두**로 모집단을 직접 훑어 전량을 지운다.
+        // 자식 권한은 DB 연쇄에 맡기지 않고 명시적으로 지운다(BoardPermissionService 와 같은 규약, #888).
+        // `parent_id` 가 비어 있는 행은 카테고리 사슬에 걸리지 않으므로(등록 경로가 둘이라 실제로 그런 행이
+        // 남는다) 사슬 대신 **identifier 접두**로 모집단을 직접 훑는다 — 시드 전용 고정 slug 라 접두가 겹칠
+        // 다른 권한이 없다. 깊은 식별자(자식)부터 역할 부여·훅 매핑을 떼고 지운다.
         $permissions = 0;
+        $boardPermissionRepository = app(BoardPermissionRepositoryInterface::class);
         foreach ([self::SLUG_FREE, self::SLUG_NOTICE, self::SLUG_TEMP] as $slug) {
-            $prefix = 'sirsoft-board.'.$slug;
-            $rows = Permission::where('identifier', $prefix)
-                ->orWhere('identifier', 'like', $prefix.'.%')
-                ->get();
-            foreach ($rows as $row) {
-                $row->roles()->detach();
-                $row->delete();
-                $permissions++;
-            }
+            $rows = $boardPermissionRepository->getByIdentifierTree('sirsoft-board.'.$slug)
+                ->sortByDesc(fn (Permission $row) => substr_count((string) $row->identifier, '.'));
+            $permissions += $boardPermissionRepository->deleteWithRelations($rows);
         }
 
         $activities = 0;

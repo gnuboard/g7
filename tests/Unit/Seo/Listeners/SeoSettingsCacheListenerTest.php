@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Seo\Listeners;
 
+use App\Contracts\Repositories\ConfigRepositoryInterface;
+use App\Listeners\SeoExtensionCacheListener;
 use App\Listeners\SeoSettingsCacheListener;
 use App\Seo\Contracts\SeoCacheManagerInterface;
 use Illuminate\Support\Facades\DB;
@@ -42,8 +44,11 @@ class SeoSettingsCacheListenerTest extends TestCase
      */
     protected function tearDown(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     // ─── 훅 구독 등록 ──────────────────────────────────────
@@ -132,7 +137,7 @@ class SeoSettingsCacheListenerTest extends TestCase
     // ─── 비-SEO 탭 저장 ──────────────────────────────────────
 
     /**
-     * SEO 탭이 아닌 경우 아무 동작도 하지 않는지 확인
+     * 봇 화면에 쓰이지 않는 탭(메일 등)은 아무 동작도 하지 않는지 확인
      *
      * @scenario case=core_seo_sync
      *
@@ -144,7 +149,66 @@ class SeoSettingsCacheListenerTest extends TestCase
     {
         $this->cacheMock->shouldNotReceive('clearAll');
 
-        $this->listener->onSettingsSave('general', ['site_name' => 'Test'], ['success' => true]);
+        $this->listener->onSettingsSave('mail', ['host' => 'smtp.example.com'], ['success' => true]);
+
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * 일반 탭 저장도 SEO 캐시를 비운다 (#434 결함 ②).
+     *
+     * 봇 화면은 사이트 이름(제목 접미 폴백)·로고·파비콘을 일반 탭에서 읽는다. 종전에는 SEO 탭만 구독해
+     * 이름·아이콘을 바꿔도 봇 화면이 캐시 TTL 까지 옛 값이었다.
+     *
+     * @scenario case=core_seo_sync
+     *
+     * @effects seo_cache_cleared_on_general_save
+     *
+     * @return void 반환값 없음
+     */
+    public function test_on_settings_save_clears_all_cache_for_general_tab(): void
+    {
+        $this->cacheMock->shouldReceive('clearAll')->once();
+
+        $this->listener->onSettingsSave('general', ['site_name' => 'Test'], true);
+
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * 템플릿 설정 저장(파비콘 등)도 SEO 캐시를 비운다 (#434).
+     *
+     * @scenario case=core_seo_sync
+     *
+     * @effects seo_cache_cleared_on_save
+     *
+     * @return void 반환값 없음
+     */
+    public function test_template_settings_save_clears_all_cache(): void
+    {
+        $hooks = SeoSettingsCacheListener::getSubscribedHooks();
+        $this->assertSame('onTemplateSettingsSave', $hooks['core.template_settings.after_save']['method']);
+        $this->assertTrue($hooks['core.template_settings.after_save']['sync']);
+
+        $this->cacheMock->shouldReceive('clearAll')->once();
+
+        $this->listener->onTemplateSettingsSave('sirsoft-basic', ['favicon' => [1]], true);
+    }
+
+    /**
+     * 템플릿 설정 저장이 실패했으면 캐시를 두는지 확인 (#434).
+     *
+     * @scenario case=core_seo_sync
+     *
+     * @effects seo_cache_cleared_on_save
+     *
+     * @return void 반환값 없음
+     */
+    public function test_failed_template_settings_save_keeps_cache(): void
+    {
+        $this->cacheMock->shouldNotReceive('clearAll');
+
+        $this->listener->onTemplateSettingsSave('sirsoft-basic', [], false);
 
         $this->addToAssertionCount(1);
     }
@@ -165,6 +229,113 @@ class SeoSettingsCacheListenerTest extends TestCase
         $this->listener->onSettingsSave(null);
 
         $this->addToAssertionCount(1);
+    }
+
+    // ─── 업로드 탭 썸네일 설정 (#869) ──────────────────────────
+
+    /**
+     * 업로드 탭에서 썸네일 값이 실제로 바뀌면 SEO 캐시를 비웁니다.
+     *
+     * 봇 화면의 og:image 와 본문 이미지 주소에 규격(`?size=`)이 구워져 있어, 바꾼 뒤에도 캐시가 남으면
+     * 봇이 옛 규격 주소를 계속 받는다.
+     *
+     * @scenario surface=seo_cache
+     *
+     * @effects seo_cache_cleared_on_thumbnail_change_only
+     *
+     * @return void 반환값 없음
+     */
+    public function test_upload_tab_clears_cache_when_thumbnail_values_change(): void
+    {
+        app(ConfigRepositoryInterface::class)->saveCategory('upload', ['max_file_size' => 10, 'thumbnail_enabled' => true]);
+        $this->cacheMock->shouldReceive('clearAll')->once();
+
+        $this->listener->onBeforeSettingsSave(['_tab' => 'upload', 'upload' => ['thumbnail_enabled' => false]]);
+        $this->listener->onSettingsSave('upload', ['max_file_size' => 10, 'thumbnail_enabled' => false], true);
+
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * 업로드 탭의 다른 칸만 바꾼 저장은 SEO 캐시를 비우지 않습니다 — 저장할 때마다 전체 캐시를 다시 만들지 않는다.
+     *
+     * @scenario surface=seo_cache
+     *
+     * @effects seo_cache_cleared_on_thumbnail_change_only
+     *
+     * @return void 반환값 없음
+     */
+    public function test_upload_tab_keeps_cache_when_only_other_values_change(): void
+    {
+        app(ConfigRepositoryInterface::class)->saveCategory('upload', ['max_file_size' => 10, 'thumbnail_enabled' => true]);
+        $this->cacheMock->shouldNotReceive('clearAll');
+
+        $this->listener->onBeforeSettingsSave(['_tab' => 'upload', 'upload' => ['max_file_size' => 20]]);
+
+        // after_save 는 저장소 값(기본값 병합)에 보낸 값을 덮은 결과를 넘긴다 — SettingsService::saveSettings 와 같게 만든다.
+        $merged = array_merge(app(ConfigRepositoryInterface::class)->getCategory('upload'), ['max_file_size' => 20]);
+        $this->listener->onSettingsSave('upload', $merged, true);
+
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * 저장 전 사본이 없으면(before_save 를 거치지 않은 발화) 바뀌었는지 알 수 없어 비웁니다. 실패한 저장은 비우지 않습니다.
+     *
+     * @scenario surface=seo_cache
+     *
+     * @effects seo_cache_cleared_on_thumbnail_change_only
+     *
+     * @return void 반환값 없음
+     */
+    public function test_upload_tab_without_snapshot_clears_and_failed_save_does_not(): void
+    {
+        $this->cacheMock->shouldReceive('clearAll')->once();
+
+        // 앞선 사본이 남아 있지 않게 다른 탭 before_save 로 비운다
+        $this->listener->onBeforeSettingsSave(['_tab' => 'general']);
+        $this->listener->onSettingsSave('upload', ['thumbnail_enabled' => true], true);
+        $this->listener->onSettingsSave('upload', ['thumbnail_enabled' => false], false);
+
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * 단건 저장으로 썸네일 키를 바꿔도 비웁니다.
+     *
+     * @scenario surface=seo_cache
+     *
+     * @effects seo_cache_cleared_on_thumbnail_change_only
+     *
+     * @return void 반환값 없음
+     */
+    public function test_on_setting_set_clears_cache_for_upload_thumbnail_key(): void
+    {
+        $this->cacheMock->shouldReceive('clearAll')->once();
+
+        $this->listener->onSettingSet('upload.thumbnail_content_preset', 'md', true);
+        $this->listener->onSettingSet('upload.max_file_size', 20, true);
+
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * 확장 활성·비활성(규격과 서빙 경로 패턴이 바뀐다)은 확장 리스너가 이미 전체를 비웁니다 — 이 리스너가 다시 구독하지 않는다.
+     *
+     * @scenario surface=seo_cache
+     *
+     * @effects seo_cache_cleared_on_thumbnail_change_only
+     *
+     * @return void 반환값 없음
+     */
+    public function test_extension_lifecycle_is_covered_by_extension_listener(): void
+    {
+        $extensionHooks = SeoExtensionCacheListener::getSubscribedHooks();
+
+        foreach (['core.modules.after_activate', 'core.modules.after_deactivate', 'core.plugins.after_activate', 'core.plugins.after_deactivate'] as $hook) {
+            $this->assertArrayHasKey($hook, $extensionHooks);
+            $this->assertArrayNotHasKey($hook, SeoSettingsCacheListener::getSubscribedHooks(), '한 사건에 SEO 캐시를 두 번 비우게 됩니다.');
+        }
     }
 
     // ─── 예외 처리 ──────────────────────────────────────
@@ -249,6 +420,24 @@ class SeoSettingsCacheListenerTest extends TestCase
     public function test_on_setting_set_ignores_non_seo_key(): void
     {
         $this->cacheMock->shouldNotReceive('clearAll');
+
+        $this->listener->onSettingSet('mail.host', 'smtp.example.com', true);
+
+        $this->addToAssertionCount(1);
+    }
+
+    /**
+     * 일반 범주 단건 저장도 SEO 캐시를 비운다 (#434 결함 ②).
+     *
+     * @scenario case=core_seo_sync
+     *
+     * @effects seo_cache_cleared_on_general_save
+     *
+     * @return void 반환값 없음
+     */
+    public function test_on_setting_set_clears_cache_for_general_key(): void
+    {
+        $this->cacheMock->shouldReceive('clearAll')->once();
 
         $this->listener->onSettingSet('general.site_name', 'Test', true);
 

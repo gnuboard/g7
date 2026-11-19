@@ -20,11 +20,13 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Board\DisplayName\BoardDisplayNames;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\ReplyDeletePolicy;
 use Modules\Sirsoft\Board\Enums\TriggerType;
 use Modules\Sirsoft\Board\Exceptions\DeletedContentBlindException;
 use Modules\Sirsoft\Board\Exceptions\PostHasRepliesException;
+use Modules\Sirsoft\Board\Fields\GuestAuthorFields;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Models\Post;
 use Modules\Sirsoft\Board\Repositories\Contracts\AttachmentRepositoryInterface;
@@ -295,6 +297,10 @@ class PostService
         unset($data['temp_key']);
         unset($data['attachment_ids']);
 
+        // 비회원 작성자 항목 값(이메일 등)은 글의 컬럼이 아니다 — 글을 만든 뒤 같은 트랜잭션에서 따로 저장한다
+        $guestFields = $data[GuestAuthorFields::BUNDLE] ?? null;
+        unset($data[GuestAuthorFields::BUNDLE]);
+
         // 실패하면 정리할 것은 이 요청이 이을 수 있던 임시 첨부뿐이다 — 트랜잭션 전에 고른다 (#883 F5)
         $rollbackIds = $this->attachmentService->filterLinkableAttachmentIds($attachmentIds, $slug, $tempKey);
 
@@ -319,6 +325,9 @@ class PostService
 
             // 게시글 생성
             $post = $this->postRepository->create($slug, $data);
+
+            // 비회원 글이면 게시판이 켠 비회원 작성자 항목 값을 저장한다 (회원 글에는 저장하지 않는다)
+            app(GuestAuthorFields::class)->store($post, $board, GuestAuthorFields::SURFACE_POST, $guestFields);
 
             // 첨부파일 연결 처리
             $this->linkAttachments($slug, $post->id, $attachmentIds, $tempKey, $files, '생성');
@@ -1115,12 +1124,15 @@ class PostService
 
         $extensions = PostQueryExtensions::collect(['adjacent'], ['audience' => $context, 'board' => $board]);
 
-        $adjacent = $this->cache->remember(
-            $cacheKey,
-            fn () => $this->postRepository->getAdjacentPosts($slug, $id, $filters, $withTrashed, $board->id, $extensions),
-            $ttl,
-            tags: ['board-posts']
-        );
+        // 작성자순은 화면에 보이는 이름 순서다 — 관리자 화면과 사용자 화면의 표시 이름 영역이 다르다
+        $filters['author_area'] = $context === 'admin' ? BoardDisplayNames::AREA_ADMIN : BoardDisplayNames::AREA_POSTS;
+        $compute = fn () => $this->postRepository->getAdjacentPosts($slug, $id, $filters, $withTrashed, $board->id, $extensions);
+
+        // 작성자순의 이전/다음 글은 캐시하지 않는다. 회원이 이름을 바꾸거나 표시 이름 설정이 바뀌면 순서가 달라지는데,
+        // 이 캐시는 글이 바뀔 때만 비워지기 때문이다.
+        $adjacent = ($orderBy instanceof \BackedEnum ? $orderBy->value : $orderBy) === 'author'
+            ? $compute()
+            : $this->cache->remember($cacheKey, $compute, $ttl, tags: ['board-posts']);
 
         if ($hookContext !== null) {
             // 캐시를 읽은 뒤에 발행한다 — 리스너가 고친 값은 공용 캐시에 남지 않는다
@@ -2115,7 +2127,8 @@ class PostService
             'action' => $action,
             'reason' => $reason,
             'admin_id' => Auth::id(),
-            'admin_name' => Auth::user()?->name ?? 'Unknown',
+            // 기록물이다. 조치한 시점의 관리자 화면 표시 이름을 그대로 남기고, 표시 이름 설정이 바뀌어도 고치지 않는다.
+            'admin_name' => app(BoardDisplayNames::class)->name(Auth::user(), null, BoardDisplayNames::AREA_ADMIN) ?? 'Unknown',
             'ip_address' => request()->ip(),
             // audit:allow datetime-display-user-timezone reason: UTC 저장 — 표시 시 Resource 에서 변환
             'created_at' => now()->toDateTimeString(),

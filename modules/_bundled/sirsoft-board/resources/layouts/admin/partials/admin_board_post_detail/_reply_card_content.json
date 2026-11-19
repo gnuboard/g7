@@ -12,7 +12,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "p-6 border-b border-gray-200 dark:border-gray-700"
+                "className": "board:p-6 board:border-b board:border-gray-200 board:dark:border-gray-700"
             },
             "children": [
                 {
@@ -22,12 +22,12 @@
                     "responsive": {
                         "portable": {
                             "props": {
-                                "className": "row-stack mb-4"
+                                "className": "board-row-stack board:mb-4"
                             }
                         }
                     },
                     "props": {
-                        "className": "flex-start flex-row justify-between gap-4 mb-4"
+                        "className": "board-flex-start board:flex-row board:justify-between board:gap-4 board:mb-4"
                     },
                     "children": [
                         {
@@ -35,7 +35,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-1 min-w-0"
+                                "className": "board:flex-1 board:min-w-0"
                             },
                             "children": [
                                 {
@@ -45,12 +45,12 @@
                                     "responsive": {
                                         "portable": {
                                             "props": {
-                                                "className": "section-heading flex-center gap-2 flex-wrap"
+                                                "className": "board-section-heading board-flex-center board:gap-2 board:flex-wrap"
                                             }
                                         }
                                     },
                                     "props": {
-                                        "className": "text-primary text-xl font-semibold flex-center gap-2 flex-wrap"
+                                        "className": "board-text-primary board:text-xl board:font-semibold board-flex-center board:gap-2 board:flex-wrap"
                                     },
                                     "children": [
                                         {
@@ -59,7 +59,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "arrow-right",
-                                                "className": "text-base text-blue-600 dark:text-blue-400 flex-shrink-0"
+                                                "className": "board:text-base board:text-blue-600 board:dark:text-blue-400 board:flex-shrink-0"
                                             }
                                         },
                                         {
@@ -68,7 +68,7 @@
                                             "name": "Span",
                                             "if": "{{item.category}}",
                                             "props": {
-                                                "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                                                "className": "board:inline-flex board:items-center board:px-2.5 board:py-0.5 board:rounded-full board:text-xs board:font-medium board:bg-blue-100 board:text-blue-800 board:dark:bg-blue-900 board:dark:text-blue-200"
                                             },
                                             "text": "{{item.category}}"
                                         },
@@ -78,7 +78,7 @@
                                             "name": "Span",
                                             "if": "{{item.is_notice}}",
                                             "props": {
-                                                "className": "text-blue-600 dark:text-blue-400"
+                                                "className": "board:text-blue-600 board:dark:text-blue-400"
                                             },
                                             "text": "$t:sirsoft-board.admin.posts.badge.notice"
                                         },
@@ -95,7 +95,7 @@
                                             "if": "{{item.has_attachment}}",
                                             "props": {
                                                 "name": "paperclip",
-                                                "className": "text-base text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                                "className": "board:text-base board:text-gray-500 board:dark:text-gray-400 board:flex-shrink-0"
                                             }
                                         },
                                         {
@@ -104,7 +104,7 @@
                                             "name": "Span",
                                             "if": "{{item.is_new}}",
                                             "props": {
-                                                "className": "inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                                                "className": "board:inline-flex board:items-center board:px-2 board:py-0.5 board:rounded board:text-xs board:font-bold board:bg-red-100 board:text-red-800 board:dark:bg-red-900 board:dark:text-red-200"
                                             },
                                             "text": "$t:sirsoft-board.common.new"
                                         },
@@ -115,7 +115,7 @@
                                             "if": "{{item.is_secret}}",
                                             "props": {
                                                 "name": "lock",
-                                                "className": "text-xl text-yellow-700 dark:text-yellow-400 flex-shrink-0"
+                                                "className": "board:text-xl board:text-yellow-700 board:dark:text-yellow-400 board:flex-shrink-0"
                                             }
                                         },
                                         {
@@ -124,7 +124,7 @@
                                             "name": "Span",
                                             "if": "{{item.status === 'blinded'}}",
                                             "props": {
-                                                "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200"
+                                                "className": "board:inline-flex board:items-center board:px-2.5 board:py-0.5 board:rounded-full board:text-xs board:font-medium board:bg-orange-100 board:text-orange-800 board:dark:bg-orange-900 board:dark:text-orange-200"
                                             },
                                             "text": "$t:sirsoft-board.admin.posts.detail.status_blinded"
                                         },
@@ -134,7 +134,7 @@
                                             "name": "Span",
                                             "if": "{{item.deleted_at}}",
                                             "props": {
-                                                "className": "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-800 text-white dark:bg-gray-600 dark:text-gray-100"
+                                                "className": "board:inline-flex board:items-center board:px-2.5 board:py-0.5 board:rounded-full board:text-xs board:font-medium board:bg-gray-800 board:text-white board:dark:bg-gray-600 board:dark:text-gray-100"
                                             },
                                             "text": "$t:sirsoft-board.admin.posts.detail.status_deleted"
                                         }
@@ -161,7 +161,7 @@
                             "props": {
                                 "href": "/admin/board/{{route.slug}}/post/{{item.id}}",
                                 "mergeQuery": true,
-                                "className": "button flex-center gap-1.5 px-3 py-1.5 text-sm bg-gray-800 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-900 dark:hover:bg-gray-600 transition-colors"
+                                "className": "board-button board-flex-center board:gap-1.5 board:px-3 board:py-1.5 board:text-sm board:bg-gray-800 board:dark:bg-gray-700 board:text-white board:rounded-lg board:hover:bg-gray-900 board:dark:hover:bg-gray-600 board:transition-colors"
                             },
                             "children": [
                                 {
@@ -178,7 +178,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-center flex-wrap gap-2 text-label"
+                        "className": "board-flex-center board:flex-wrap board:gap-2 board-text-label"
                     },
                     "children": [
                         {
@@ -205,7 +205,7 @@
                             "props": {
                                 "triggerLabel": "{{item.author?.name}}",
                                 "triggerIconName": "",
-                                "triggerClassName": "font-medium text-gray-900 dark:text-white",
+                                "triggerClassName": "board:font-medium board:text-gray-900 board:dark:text-white",
                                 "position": "right",
                                 "items": [
                                     {
@@ -222,16 +222,28 @@
                             "name": "Span",
                             "if": "{{item.author?.is_guest || !item.author?.uuid}}",
                             "props": {
-                                "className": "text-heading"
+                                "className": "board-text-heading"
                             },
                             "text": "{{item.author?.name ?? '$t:sirsoft-board.admin.posts.unknown_author'}}"
+                        },
+                        {
+                            "comment": "실명 보조 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490)",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!!item.author?.real_name}}",
+                            "props": {
+                                "data-testid": "author-real-name",
+                                "className": "board-text-label-subtle",
+                                "aria-label": "{{$t('sirsoft-board.common.real_name_label', { name: item.author?.real_name })}}"
+                            },
+                            "text": "{{$t('sirsoft-board.common.real_name_label', { name: item.author?.real_name })}}"
                         },
                         {
                             "type": "basic",
                             "name": "Span",
                             "if": "{{item.author?.email}}",
                             "props": {
-                                "className": "text-label-subtle"
+                                "className": "board-text-label-subtle"
                             },
                             "text": "({{item.author?.email}})"
                         },
@@ -240,7 +252,7 @@
                             "name": "Span",
                             "if": "{{item.author?.is_guest}}",
                             "props": {
-                                "className": "inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+                                "className": "board:inline-flex board:items-center board:px-1.5 board:py-0.5 board:rounded board:text-xs board:font-medium board:bg-gray-100 board:text-gray-600 board:dark:bg-gray-700 board:dark:text-gray-300"
                             },
                             "text": "$t:sirsoft-board.admin.posts.guest"
                         },
@@ -267,7 +279,7 @@
                             "name": "Div",
                             "if": "{{(item.comment_count ?? 0) > 0}}",
                             "props": {
-                                "className": "flex-center gap-1"
+                                "className": "board-flex-center board:gap-1"
                             },
                             "children": [
                                 {
@@ -275,7 +287,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "comment",
-                                        "className": "text-base"
+                                        "className": "board:text-base"
                                     }
                                 },
                                 {
@@ -296,7 +308,7 @@
                             "name": "Span",
                             "if": "{{item.ip_address}}",
                             "props": {
-                                "className": "text-tertiary"
+                                "className": "board-text-tertiary"
                             },
                             "text": "IP: {{item.ip_address}}"
                         }
@@ -310,7 +322,7 @@
             "name": "Div",
             "if": "{{item.has_attachment}}",
             "props": {
-                "className": "panel-header-row"
+                "className": "board-panel-header-row"
             },
             "children": [
                 {
@@ -330,7 +342,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "flex-between w-full text-left cursor-pointer",
+                        "className": "board-flex-between board:w-full board:text-left board:cursor-pointer",
                         "aria-expanded": "{{!!_local.expandedReplyAttachments?.[item.id]}}",
                         "aria-controls": "reply_attachments_list_{{item.id}}"
                     },
@@ -339,7 +351,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "flex-center gap-2 text-body font-medium"
+                                "className": "board-flex-center board:gap-2 board-text-body board:font-medium"
                             },
                             "children": [
                                 {
@@ -347,7 +359,7 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "paperclip",
-                                        "className": "text-base"
+                                        "className": "board:text-base"
                                     }
                                 },
                                 {
@@ -362,7 +374,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "{{_local.expandedReplyAttachments?.[item.id] ? 'chevron-up' : 'chevron-down'}}",
-                                "className": "text-base text-gray-500 dark:text-gray-400"
+                                "className": "board:text-base board:text-gray-500 board:dark:text-gray-400"
                             }
                         }
                     ]
@@ -384,7 +396,7 @@
                                 "index_var": "index"
                             },
                             "props": {
-                                "className": "mt-3 ml-4 grid grid-cols-1 gap-2"
+                                "className": "board:mt-3 board:ml-4 board:grid board:grid-cols-1 board:gap-2"
                             },
                             "children": [
                                 {
@@ -412,7 +424,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "flex-center justify-start w-full text-left gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-800/50 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer group"
+                                        "className": "board-flex-center board:justify-start board:w-full board:text-left board:gap-2 board:px-3 board:py-2 board:bg-gray-50 board:dark:bg-gray-800/50 board:rounded board:hover:bg-gray-100 board:dark:hover:bg-gray-800 board:transition-colors board:cursor-pointer board:group"
                                     },
                                     "children": [
                                         {
@@ -420,14 +432,14 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "download",
-                                                "className": "text-base text-gray-500 dark:text-gray-400 group-hover:text-blue-600 board-attachment-icon transition-colors flex-shrink-0"
+                                                "className": "board:text-base board:text-gray-500 board:dark:text-gray-400 board:group-hover:text-blue-600 board-attachment-icon board:transition-colors board:flex-shrink-0"
                                             }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-primary text-sm truncate flex-1"
+                                                "className": "board-text-primary board:text-sm board:truncate board:flex-1"
                                             },
                                             "text": "{{attachment.original_filename}} ({{attachment.size_formatted}})"
                                         }
@@ -444,7 +456,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "p-6"
+                "className": "board:p-6"
             },
             "children": [
                 {
@@ -454,7 +466,7 @@
                     "props": {
                         "content": "{{item?.content}}",
                         "isHtml": "{{(item?.content_mode ?? 'text') === 'html'}}",
-                        "className": "{{_local.expandedReplies?.[item.id] ? 'prose dark:prose-invert max-w-none' : 'line-clamp-3'}} text-gray-900 dark:text-gray-100"
+                        "className": "{{_local.expandedReplies?.[item.id] ? (item?.content_mode === 'html' ? 'board:prose board:dark:prose-invert board:prose-p:my-2 board:prose-headings:font-bold board:prose-headings:mt-6 board:prose-headings:mb-4 board:prose-h1:text-2xl board:prose-h2:text-xl board:prose-h3:text-lg board:prose-a:text-blue-600 board:dark:prose-a:text-blue-400 board:prose-a:no-underline board:hover:prose-a:underline board:prose-blockquote:border-l-4 board:prose-blockquote:border-gray-300 board:dark:prose-blockquote:border-gray-600 board:prose-blockquote:pl-4 board:prose-blockquote:italic board:prose-code:bg-gray-100 board:dark:prose-code:bg-gray-800 board:prose-code:px-1 board:prose-code:py-0.5 board:prose-code:rounded board:prose-pre:bg-gray-100 board:dark:prose-pre:bg-gray-800 board:prose-pre:p-4 board:prose-pre:rounded-lg board:prose-pre:overflow-x-auto board:max-w-none' : 'board:prose board:dark:prose-invert board:max-w-none') : 'board:line-clamp-3'}} board:text-gray-900 board:dark:text-gray-100"
                     },
                     "default": [
                         {
@@ -463,7 +475,7 @@
                             "props": {
                                 "content": "{{item?.content}}",
                                 "isHtml": "{{(item?.content_mode ?? 'text') === 'html'}}",
-                                "className": "{{_local.expandedReplies?.[item.id] ? 'prose dark:prose-invert max-w-none' : 'line-clamp-3'}} text-gray-900 dark:text-gray-100"
+                                "className": "{{_local.expandedReplies?.[item.id] ? (item?.content_mode === 'html' ? 'board:prose board:dark:prose-invert board:prose-p:my-2 board:prose-headings:font-bold board:prose-headings:mt-6 board:prose-headings:mb-4 board:prose-h1:text-2xl board:prose-h2:text-xl board:prose-h3:text-lg board:prose-a:text-blue-600 board:dark:prose-a:text-blue-400 board:prose-a:no-underline board:hover:prose-a:underline board:prose-blockquote:border-l-4 board:prose-blockquote:border-gray-300 board:dark:prose-blockquote:border-gray-600 board:prose-blockquote:pl-4 board:prose-blockquote:italic board:prose-code:bg-gray-100 board:dark:prose-code:bg-gray-800 board:prose-code:px-1 board:prose-code:py-0.5 board:prose-code:rounded board:prose-pre:bg-gray-100 board:dark:prose-pre:bg-gray-800 board:prose-pre:p-4 board:prose-pre:rounded-lg board:prose-pre:overflow-x-auto board:max-w-none' : 'board:prose board:dark:prose-invert board:max-w-none') : 'board:line-clamp-3'}} board:text-gray-900 board:dark:text-gray-100"
                             }
                         }
                     ]
@@ -485,7 +497,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "flex-center mt-2 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors gap-1"
+                        "className": "board-flex-center board:mt-2 board:text-xs board:text-blue-600 board:dark:text-blue-400 board:hover:text-blue-700 board:dark:hover:text-blue-300 board:font-medium board:transition-colors board:gap-1"
                     },
                     "children": [
                         {
@@ -498,7 +510,7 @@
                             "name": "Icon",
                             "props": {
                                 "name": "{{_local.expandedReplies?.[item.id] ? 'chevron-up' : 'chevron-down'}}",
-                                "className": "text-xs"
+                                "className": "board:text-xs"
                             }
                         }
                     ]

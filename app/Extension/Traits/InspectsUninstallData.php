@@ -2,6 +2,7 @@
 
 namespace App\Extension\Traits;
 
+use App\Extension\ExtensionManager;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
@@ -28,7 +29,7 @@ trait InspectsUninstallData
         $tables = [];
 
         foreach ($migrationPaths as $migrationPath) {
-            $migrationFiles = glob($migrationPath.'/*.php');
+            $migrationFiles = ExtensionManager::listDirectoryFiles($migrationPath, '.php');
             if (empty($migrationFiles)) {
                 continue;
             }
@@ -275,6 +276,7 @@ trait InspectsUninstallData
      *
      * @param  string  $type  확장 타입 ('modules' 또는 'plugins')
      * @param  string  $dirName  디렉토리명
+     * @return void 반환값 없음
      */
     protected function deleteVendorDirectory(string $type, string $dirName): void
     {

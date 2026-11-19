@@ -14,6 +14,7 @@
 4. 수동 갱신: php artisan extension:update-autoload
 5. _bundled/_pending 디렉토리 자동 제외 (str_starts_with($name, '_') → skip)
 6. src_classmap: 확장 소스 FQCN→경로 사전 계산 → findFile 파일시스템 stat 제거 (지연 로드·vendor 격리 유지)
+7. ZIP 업로드·GitHub 설치는 패키지 서명을 검증(7.2.0) — GitHub 는 태그 릴리스만, 업로드는 선택 「서명 파일」 칸 (package-signing.md)
 ```
 
 ---
@@ -27,6 +28,7 @@
 5. [관리자 UI 필터링 (hidden 플래그)](#관리자-ui-필터링-hidden-플래그)
 6. [Artisan 커맨드](#artisan-커맨드)
 7. [서비스 등록](#서비스-등록)
+8. [패키지 설치 경로와 서명 검증](#패키지-설치-경로와-서명-검증)
 
 ---
 
@@ -473,10 +475,32 @@ DB 컬럼: `modules/plugins/templates` 테이블의 `deactivated_reason` (string
 
 ---
 
+## 패키지 설치 경로와 서명 검증
+
+모듈·플러그인·템플릿을 새로 설치하는 경로는 셋이고, 7.2.0 부터 바깥에서 받는 두 경로는 패키지 서명을 검증합니다.
+
+| 경로 | 진입점 | 서명 |
+| --- | --- | --- |
+| `_bundled`·`_pending` 원본 | `{type}:install`, 관리자 화면 설치 버튼 | `_bundled` 는 코어 배포본 서명이 덮으므로 따로 보지 않음(기록 `bundled`). 운영자가 `_pending` 에 둔 원본은 기록 없음 |
+| 수동 ZIP 업로드 | 관리자 화면 「수동 설치」 창의 파일 업로드 → `POST /api/admin/{modules,plugins,templates}/install-from-file` | 선택 칸 「서명 파일 (.sig.json)」(`signature`). 업로드 ZIP 은 옆 파일을 자동으로 찾지 않으므로 이 칸으로만 준다 |
+| GitHub 설치 | 관리자 화면 「수동 설치」 창의 GitHub 저장소 → `POST /api/admin/{modules,plugins,templates}/install-from-github` | 태그 릴리스 자산 `{identifier}-{version}.zip` + `.sig.json` 짝 |
+
+- GitHub 설치는 **태그 릴리스만** 받습니다. 최신 릴리스가 없으면 `main`·`master` 브랜치를 받지 않고 실패합니다(7.2.0 변경).
+  서명 자산 짝이 없는 릴리스는 태그 압축본을 미서명으로 다루며, 받기 전에 확인을 묻습니다.
+- 미서명·검증 불가는 409 경고 창의 「미서명으로 계속」으로 진행하고(같은 요청을 `allow_unsigned=1` 로 다시 보냄), 서명 불일치·신뢰하지
+  않는 키는 422 로 멈춥니다. 환경설정 > 보안 「미서명 패키지 차단」이 켜져 있으면 미서명도 진행할 수 없습니다.
+- 검증은 ZIP 을 풀기 전과, 풀어서 `_pending` 에서 활성 디렉토리로 옮기기 전에 합니다. 거절된 패키지는 활성 디렉토리에 파일을 남기지 않습니다.
+- 결과는 설치 행 `integrity_status`·`integrity_key_id` 에 남고 확장 상세 창 「패키지 서명」 배지로 보입니다.
+
+서명 파일 형식·제작자 서명 절차·신뢰 키 등록은 [패키지 서명](package-signing.md) 에 있습니다.
+
+---
+
 ## 관련 문서
 
 - [모듈 개발 기초](module-basics.md) - 모듈 구조 및 설정
 - [플러그인 개발](plugin-development.md) - 플러그인 구조 및 설정
 - [모듈 Artisan 커맨드](module-commands.md) - 모듈 관련 커맨드
 - [확장 업데이트 시스템](extension-update-system.md) - _bundled/_pending 및 업데이트
+- [패키지 서명](package-signing.md) - 설치·업데이트 패키지의 서명 검증
 - [인덱스](README.md) - 확장 시스템 전체 문서 목록

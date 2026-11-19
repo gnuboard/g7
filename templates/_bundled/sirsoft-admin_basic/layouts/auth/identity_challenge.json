@@ -294,6 +294,7 @@
                                                                                     "method": "POST",
                                                                                     "body": {
                                                                                         "purpose": "{{_local.purpose ?? 'sensitive_action'}}",
+                                                                                        "scope": "admin",
                                                                                         "provider_id": "{{_local.provider_id ?? ''}}",
                                                                                         "policy_key": "{{_local.policy_key ?? ''}}"
                                                                                     }

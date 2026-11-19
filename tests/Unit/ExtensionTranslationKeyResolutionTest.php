@@ -16,9 +16,7 @@ use Tests\TestCase;
  * **코어 lang 그룹일 때만** 해석된다. 호출 지점을 손으로 열거하면 새 확장·새 호출이 같은
  * 함정을 다시 밟으므로, 저장소를 훑어 모든 호출을 검사한다.
  *
- * @scenario case=extension_translation_key_resolution
- *
- * @effects extension_non_namespaced_key_resolves_to_core_group
+ * @scenario surface=module_search
  */
 class ExtensionTranslationKeyResolutionTest extends TestCase
 {
@@ -35,6 +33,8 @@ class ExtensionTranslationKeyResolutionTest extends TestCase
      * 확장의 네임스페이스 없는 다국어 키가 전부 코어 그룹으로 해석되는지 확인
      *
      * @effects extension_non_namespaced_key_resolves_to_core_group
+     *
+     * @return void 반환값 없음
      */
     public function test_every_non_namespaced_key_in_extensions_resolves_to_a_core_group(): void
     {
@@ -67,6 +67,10 @@ class ExtensionTranslationKeyResolutionTest extends TestCase
      * 검사기가 실제로 위반을 잡아내는지 합성 표본으로 확인
      *
      * 이 단언이 없으면 패턴이 아무것도 매칭하지 못하게 되어도 위 테스트는 계속 초록이다.
+     *
+     * @effects extension_translation_key_detector_flags_non_core_groups
+     *
+     * @return void 반환값 없음
      */
     public function test_detector_flags_a_key_whose_group_is_not_in_core(): void
     {
@@ -82,6 +86,10 @@ class ExtensionTranslationKeyResolutionTest extends TestCase
 
     /**
      * 네임스페이스가 붙은 키는 검사 대상이 아님을 확인
+     *
+     * @effects extension_translation_key_detector_ignores_namespaced_keys
+     *
+     * @return void 반환값 없음
      */
     public function test_detector_ignores_namespaced_keys(): void
     {
@@ -94,7 +102,7 @@ class ExtensionTranslationKeyResolutionTest extends TestCase
     /**
      * 확장 소스에서 네임스페이스 없는 키 호출을 모읍니다.
      *
-     * @return array<int, array{file: string, line: int, group: string, key: string}>
+     * @return array<int, array{file: string, line: int, group: string, key: string}> 네임스페이스 없는 키 호출 목록
      */
     private function collectCalls(): array
     {
@@ -127,13 +135,17 @@ class ExtensionTranslationKeyResolutionTest extends TestCase
      * 소스 문자열에서 네임스페이스 없는 키 호출을 뽑습니다.
      *
      * @param  string  $contents  PHP 소스
-     * @return array<int, array{line: int, group: string, key: string}>
+     * @return array<int, array{line: int, group: string, key: string}> 소스 안 네임스페이스 없는 키 호출 목록
      */
     private function matchesIn(string $contents): array
     {
         $found = [];
 
-        foreach (preg_split('/\R/', $contents) as $index => $line) {
+        // `\R` 은 UTF-8 모드가 아니면 **바이트 0x85**(NEL)도 개행으로 본다. 한국어 문구의
+        // 흔한 글자가 그 바이트로 끝나(`종` = EC A2 85) 한 줄이 글자 중간에서 쪼개지면,
+        // 그 자리를 지나는 키 호출이 두 조각으로 갈려 아래 패턴에 잡히지 않고 줄 번호도
+        // 밀린다 — 누락을 찾는 검사가 조용히 통과한다. 실제 줄 종결자만 본다.
+        foreach (preg_split('~\r\n|\r|\n~', $contents) as $index => $line) {
             if (! preg_match_all(self::KEY_PATTERN, $line, $matches, PREG_SET_ORDER)) {
                 continue;
             }

@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Listeners;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Models\User;
 use Illuminate\Support\Facades\Request;
+use Modules\Sirsoft\Ecommerce\Fields\UserPreferenceFieldHandler;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\EcommerceUserProfileRepositoryInterface;
 use Modules\Sirsoft\Ecommerce\Services\ShippingCountryResolver;
 
@@ -44,36 +45,7 @@ class AssignDefaultShippingCountryOnRegisterListener implements HookListenerInte
             'core.auth.after_register' => ['method' => 'handleRegister', 'priority' => 20, 'sync' => true],
             // 관리자 회원생성
             'core.user.after_create' => ['method' => 'handleAdminCreate', 'priority' => 20, 'sync' => true],
-            // 가입 검증 규칙: preferred_shipping_country 를 활성 국가로 제한(무효 국가 강제 전송 차단)
-            'core.auth.register_validation_rules' => [
-                'method' => 'addShippingCountryRule',
-                'type' => 'filter',
-                'priority' => 20,
-            ],
         ];
-    }
-
-    /**
-     * 가입 검증 규칙에 배송국가(preferred_shipping_country) 규칙을 추가합니다. (filter 훅)
-     *
-     * 선택값이라 nullable. 값이 있으면 활성 배송가능 국가여야 한다.
-     *
-     * @param  array<string, mixed>  $rules  기존 가입 검증 규칙
-     * @return array<string, mixed> 배송국가 규칙이 추가된 규칙
-     */
-    public function addShippingCountryRule(array $rules): array
-    {
-        $rules['preferred_shipping_country'] = [
-            'nullable',
-            'string',
-            function (string $attribute, mixed $value, \Closure $fail): void {
-                if (! $this->resolver->isAllowed(is_string($value) ? $value : null)) {
-                    $fail(__('sirsoft-ecommerce::validation.custom.user_shipping_country.invalid'));
-                }
-            },
-        ];
-
-        return $rules;
     }
 
     /**
@@ -96,7 +68,13 @@ class AssignDefaultShippingCountryOnRegisterListener implements HookListenerInte
      */
     public function handleRegister(User $user, array $context = []): void
     {
-        $submitted = $context['registration_data']['preferred_shipping_country'] ?? null;
+        // 가입 화면이 낸 배송국가는 회원 항목 선언대로 코어가 검증해 가입 트랜잭션 안에서 이미 저장했다
+        // (`UserPreferenceFieldHandler`). 그때는 아래 「이미 설정돼 있으면 유지」에 걸려 아무것도 하지 않는다.
+        // 여기서 가입 데이터를 다시 읽는 것은 요청 검증을 거치지 않는 내부 가입 호출을 위한 것이다(정식 키 우선, 옛 키 수용).
+        $registration = is_array($context['registration_data'] ?? null) ? $context['registration_data'] : [];
+        $submitted = $registration[UserPreferenceFieldHandler::SHIPPING_COUNTRY_FIELD]
+            ?? $registration[UserPreferenceFieldHandler::LEGACY_SHIPPING_COUNTRY_FIELD]
+            ?? null;
         $this->assignShippingCountry($user, is_string($submitted) ? $submitted : null);
     }
 

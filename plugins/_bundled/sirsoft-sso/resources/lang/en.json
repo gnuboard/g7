@@ -1,0 +1,574 @@
+{
+    "common": {
+        "company_account": "Company account",
+        "retry": "Sign in again"
+    },
+    "errors": {
+        "generic": "Could not sign in with your company account. Please try again.",
+        "access_denied": "The company sign-in was cancelled or rejected by the IdP.",
+        "state_expired": "The sign-in request has expired. Please try again.",
+        "bind_mismatch": "You returned in a different browser than the one that started sign-in. Please start over.",
+        "code_reused": "This sign-in request has already been used. Please try again.",
+        "token_error": "Could not reach the company account server. Please try again later.",
+        "id_token_invalid": "Could not verify the response from the company account server. Please contact an administrator.",
+        "saml_invalid": "Could not verify the response from the company account server. Please contact an administrator.",
+        "saml_unsolicited": "This sign-in response was not started by this site.",
+        "response_replayed": "This sign-in response has already been processed.",
+        "ldap_invalid_credentials": "The username or password is incorrect.",
+        "ldap_unavailable": "Cannot connect to the company directory. Please try again later.",
+        "not_registered": "This account is not registered on this site. Please contact an administrator.",
+        "email_in_use": "Another member already uses this email address. Please contact an administrator.",
+        "already_linked": "This company account is already linked to another member.",
+        "deprovisioned": "This account was deactivated by your company. Please contact an administrator.",
+        "idp_disabled": "Sign-in with this company account is not available right now.",
+        "driver_unavailable": "This sign-in method is not available on the server. Please contact an administrator.",
+        "admin_required": "Only administrator accounts can sign in here.",
+        "pending_expired": "The sign-up confirmation has expired. Please sign in with your company account again.",
+        "link_expired": "The account link confirmation has expired or exceeded the attempt limit. Please sign in with your company account again.",
+        "ticket_required": "Please start again while signed in.",
+        "ticket_invalid": "The request has expired or is invalid. Please try again.",
+        "admin_target_manual_only": "Administrator accounts are linked by a super administrator.",
+        "directory_unavailable": "Cannot connect to the company directory."
+    },
+    "consent": {
+        "title": "First sign-in with {{idp}}",
+        "intro": "This is your first visit. Agree to the terms and a member account is created from your company account, and you are signed in.",
+        "expired": "The sign-up confirmation has expired. Please sign in with your company account again.",
+        "name": "Name",
+        "email": "Email",
+        "agree_terms": "I agree to the Terms of Service (required)",
+        "agree_privacy": "I agree to the Privacy Policy (required)",
+        "submit": "Agree and continue"
+    },
+    "link": {
+        "title": "Link to your existing account",
+        "intro": "An account {{email}} already exists. Confirm it is yours to link it with your {{idp}} account and sign in.",
+        "expired": "The account link confirmation has expired or exceeded the attempt limit. Please sign in with your company account again.",
+        "method_password": "Confirm with password",
+        "method_email": "Confirm with email code",
+        "password": "Existing account password",
+        "request_code": "Send code",
+        "resend_code": "Resend code",
+        "code": "Verification code",
+        "code_sent": "A verification code has been sent by email.",
+        "submit": "Link and sign in"
+    },
+    "buttons": {
+        "company_account": "Sign in with a company account",
+        "login_with": "Sign in with {{idp}}"
+    },
+    "editor": {
+        "data_source": {
+            "public_idps": "Company accounts on the sign-in screen",
+            "my_accounts": "My company account links",
+            "admin_idps": "SSO IdP list",
+            "admin_idp": "SSO IdP details",
+            "admin_policy": "SSO policy",
+            "admin_accounts": "SSO member links",
+            "admin_attempts": "SSO sign-in attempts",
+            "admin_scim_events": "SCIM request log"
+        },
+        "state": {
+            "consent_pending": "Sign-up consent — before input",
+            "consent_expired": "Sign-up consent — expired",
+            "link_password": "Account link — password",
+            "link_email_code": "Account link — email code",
+            "link_expired": "Account link — expired",
+            "unlink_confirm": "Unlink — confirm"
+        }
+    },
+    "mypage": {
+        "title": "Linked company accounts",
+        "empty": "No company account is linked.",
+        "enforced": "This account signs in with a company account only. Links cannot be removed.",
+        "inactive": "This link was deactivated by your company.",
+        "linked_at": "Linked",
+        "last_login_at": "Last sign-in",
+        "linkable": "You can link another company account.",
+        "link_with": "Link {{idp}}",
+        "linked_toast": "Company account linked.",
+        "unlink": "Unlink",
+        "unlink_named": "Unlink {{idp}}",
+        "unlink_title": "Unlink company account",
+        "unlink_confirm": "Unlink {{idp}}? You will no longer be able to sign in to this site with that company account.",
+        "unlinked_toast": "Company account unlinked.",
+        "unlink_block": {
+            "last_method": "This link is your only way to sign in because you have no password. Set a password first.",
+            "unlink_enforced": "This account signs in with a company account only, so the link cannot be removed."
+        }
+    },
+    "admin": {
+        "common": {
+            "copy": "Copy",
+            "copy_named": "Copy {{name}}",
+            "copied": "Copied.",
+            "copy_failed": "Could not copy. Please select and copy it manually.",
+            "remove_row": "Remove row",
+            "search": "Search",
+            "real_name_sub": "Real name {{name}}"
+        },
+        "protocols": {
+            "oidc": "OpenID Connect",
+            "saml": "SAML 2.0",
+            "ldap": "LDAP/AD"
+        },
+        "attribute_keys": {
+            "department": "Department",
+            "title": "Title",
+            "employee_number": "Employee number"
+        },
+        "settings": {
+            "title": "Single Sign-On settings",
+            "description": "Configure company IdPs (SAML 2.0, OpenID Connect, LDAP/AD), company sign-in enforcement, emergency accounts and log retention.",
+            "read_only": "You do not have permission to change settings, so this screen is read-only.",
+            "save_failed": "Could not save.",
+            "tabs": {
+                "idps": "IdPs",
+                "policy": "Policy",
+                "retention": "Retention"
+            },
+            "idp": {
+                "list_hint": "{{count}} IdPs registered (up to {{max}})",
+                "add": "Add IdP",
+                "add_title": "Add an IdP",
+                "create": "Add and open settings",
+                "created": "IdP added. Fill in the connection details, run a connection test and then enable it.",
+                "protocol_unavailable": "not available on this server",
+                "empty": "No IdP is registered.",
+                "col": {
+                    "label": "Name",
+                    "protocol": "Protocol",
+                    "status": "Status",
+                    "domains": "Owned domains",
+                    "last": "Last result",
+                    "accounts": "Linked"
+                },
+                "enabled": "Enabled",
+                "disabled": "Disabled",
+                "unavailable": "Unavailable on server",
+                "enforced": "Password sign-in blocked",
+                "last_success": "Last success",
+                "last_error": "Last error",
+                "edit": "Edit",
+                "edit_named": "Edit {{idp}}",
+                "back": "Back to IdPs",
+                "saved": "IdP settings saved.",
+                "deleted": "IdP deleted.",
+                "delete_hint": "Only IdPs without linked members can be deleted.",
+                "delete_confirm": "Delete this IdP? This cannot be undone.",
+                "unavailable_notice": "This protocol is not available on this server (for example, the PHP LDAP extension is missing), so the IdP cannot be enabled. You can still save the settings.",
+                "tabs": {
+                    "basic": "Basic",
+                    "connection": "Connection",
+                    "accounts": "Accounts and linking",
+                    "attributes": "Attributes",
+                    "roles": "Role mapping",
+                    "security": "Security",
+                    "provisioning": "Provisioning",
+                    "diagnostics": "Diagnostics"
+                },
+                "fields": {
+                    "protocol": "Protocol",
+                    "key": "Key",
+                    "label": "Display name",
+                    "enabled": "Enabled",
+                    "sort_order": "Order",
+                    "button_visible": "Show a button on the sign-in screen",
+                    "button_bg": "Button background",
+                    "button_fg": "Button text color",
+                    "button_border": "Button border color",
+                    "provisioning_mode": "First-time users",
+                    "owned_domains": "Owned domains",
+                    "enforce_owned_domains": "Block password sign-in for these domains",
+                    "link_methods": "Linking existing members",
+                    "link_domain_auto": "Automatic linking by owned domain",
+                    "link_verify": "Link after verification",
+                    "link_admin": "Administrator linking",
+                    "require_consent": "Ask for terms consent on first sign-in",
+                    "identity_policy": "Identity verification signup policy",
+                    "allow_local_password": "Allow creating a site password",
+                    "attribute_field": "Member field",
+                    "attribute_source": "IdP attribute name",
+                    "attribute_mode": "Sync mode",
+                    "role_sync_mode": "Role sync mode",
+                    "group_source": "Group source",
+                    "role_group": "IdP group",
+                    "role_role": "Role identifier",
+                    "two_factor_mode": "G7 two-factor authentication",
+                    "logout_mode": "Sign-out scope",
+                    "idp_initiated": "Accept IdP-initiated sign-in",
+                    "max_session_minutes": "Session lifetime cap (minutes)",
+                    "scim": "Use SCIM",
+                    "scim_match": "SCIM match key",
+                    "periodic": "Periodic check",
+                    "periodic_minutes": "Check interval (minutes)",
+                    "on_login": "Block deactivated accounts at next sign-in",
+                    "withdraw_after_days": "Days until withdrawal after deprovisioning",
+                    "group_case_sensitive": "Case-sensitive group names",
+                    "group_dn_cn": "Compare only the CN of DNs"
+                },
+                "hints": {
+                    "key": "Lowercase letters, digits and underscores, starting with a letter. Used in sign-in URLs and cannot be changed later.",
+                    "enabled": "When on, the button appears on the sign-in screen and members can sign in with this IdP. Valid connection details are required.",
+                    "button_visible": "When off, members reach this IdP only through email-first sign-in or automatic redirect.",
+                    "provisioning_mode": "Automatic creation turns first-time users verified by the IdP into members. Pre-registered allows only members registered in advance.",
+                    "owned_domains": "Email domains owned by this company. Email-first sign-in, enforcement and automatic linking use these domains.",
+                    "enforce_owned_domains": "When on, emails in these domains cannot sign in with a password and are directed to this IdP. Their password sessions end immediately.",
+                    "link_domain_auto": "Links right away when the email from the IdP is in an owned domain and exactly one member uses it. Administrator accounts are never linked automatically.",
+                    "link_verify": "If a member with the same email exists, links after that member confirms with a password or an email code.",
+                    "link_admin": "Administrators link members on the member links screen or import a CSV.",
+                    "require_consent": "Asks automatically created members to accept the terms and privacy policy. When off, consent is assumed to be collected by the company and only a log is kept.",
+                    "identity_policy": "When skipped, the site identity verification signup policy does not apply to automatic creation through this IdP.",
+                    "allow_local_password": "When off (default), members linked to this IdP cannot create a site password. Enforced members cannot create one even when on.",
+                    "attribute_map": "Member fields are name, nickname, mobile, phone, language, email or attr:key (extra attributes such as department). Choose sync and lock, sync, first time only, or ignore.",
+                    "email_sync": "Email is changed only to an address in this IdP's owned domains. If another member uses it, it is not changed and administrators are notified.",
+                    "two_factor_mode": "Skip only when the IdP reports multi-factor authentication (default), always skip, or always require G7 two-factor authentication.",
+                    "logout_mode": "Sign out of G7 only, sign out of G7 and then the IdP, or also sign out of G7 when the IdP signs out (both ways).",
+                    "logout_unsupported": "This protocol does not support IdP sign-out.",
+                    "max_session_minutes": "Leave empty to use the site default. Members must sign in again after this time (480 minutes recommended).",
+                    "scim": "When on, the IdP creates, updates and deprovisions members through SCIM 2.0. Enter the URL and token below in the IdP.",
+                    "scim_match": "Choose the value that equals the sign-in unique identifier. For example, Entra ID uses the same object ID for OIDC oid and SCIM externalId.",
+                    "periodic_oidc": "Asks the IdP with the stored refresh token and deprovisions deactivated accounts. The IdP must allow the offline_access scope.",
+                    "periodic_saml": "Checks through the directory when a LDAP/AD IdP of the same company is set as the employment lookup directory.",
+                    "periodic_ldap": "Looks up accounts in the directory and deprovisions disabled or missing accounts.",
+                    "periodic_saml_no_directory": "SAML periodic checks need an employment lookup directory in the connection details. Use SCIM or a session lifetime cap instead.",
+                    "on_login": "Always on — links turned off by deprovisioning (SCIM, periodic check, administrator) are always refused at the next sign-in with this IdP.",
+                    "withdraw_after_days": "Leave empty to keep accounts. Administrator accounts are not withdrawn; administrators are notified instead."
+                },
+                "options": {
+                    "provisioning_mode": {
+                        "preregistered": "Pre-registered members only",
+                        "jit": "Create automatically"
+                    },
+                    "identity_policy": {
+                        "skip": "Skip (default)",
+                        "apply": "Apply the site policy"
+                    },
+                    "attribute_mode": {
+                        "sync_lock": "Sync on every sign-in and lock",
+                        "sync": "Sync on every sign-in",
+                        "first_only": "First time only",
+                        "ignore": "Do not import"
+                    },
+                    "role_sync_mode": {
+                        "managed_only": "Revoke only mapped roles",
+                        "authoritative": "IdP groups decide all roles",
+                        "first_only": "First time only"
+                    },
+                    "group_source": {
+                        "assertion": "Sign-in response",
+                        "scim": "SCIM groups",
+                        "ldap": "Directory membership (memberOf)"
+                    },
+                    "two_factor_mode": {
+                        "skip_if_mfa": "Skip only when the IdP reports MFA",
+                        "always_skip": "Always skip",
+                        "always": "Always require G7 two-factor"
+                    },
+                    "logout_mode": {
+                        "local": "G7 only",
+                        "rp": "G7, then the IdP",
+                        "both": "Both ways"
+                    }
+                },
+                "placeholders": {
+                    "group": "e.g. HR"
+                },
+                "warnings": {
+                    "domain_auto": "Turn this on only if the IdP really verifies the email. Otherwise members may be linked to someone else's account.",
+                    "authoritative": "Roles not covered by IdP groups are revoked, including roles granted manually by administrators (the default role is kept)."
+                },
+                "role_rules_locked": "Administrator accounts are linked to this IdP, so only super administrators can change the role sync mode and group source.",
+                "super_only": "Super administrators only",
+                "add_attribute": "Add attribute rule",
+                "add_role_rule": "Add role rule",
+                "sp_info_title": "Values for the IdP console",
+                "sp_info_hint": "Paste these values into the IdP admin console as they are.",
+                "sp_keys": "Generate SP keys",
+                "sp_keys_confirm": "Generate new SP keys? You must register the new SP metadata with the IdP again.",
+                "sp_keys_done": "SP keys generated. Register the new SP metadata with the IdP again.",
+                "scim_token_issue": "Issue SCIM token",
+                "scim_token_reissue": "Reissue SCIM token",
+                "scim_token_reissue_confirm": "Reissuing makes the current token unusable immediately. Continue?",
+                "scim_token_issued_at": "Token issued",
+                "scim_token_none": "No token has been issued.",
+                "scim_token_once": "This token is shown only once. Copy it into the IdP now.",
+                "test": "Test connection",
+                "browser_test": "Test sign-in in the browser",
+                "test_ok": "All checks passed.",
+                "test_not_ok": "Some checks failed.",
+                "test_failed": "Could not run the connection test.",
+                "periodic_checked_at": "Last periodic check",
+                "cert_expires_at": "IdP certificate expiry",
+                "recent_attempts": "Last 10 attempts",
+                "response_summary": {
+                    "signed": "Response signed",
+                    "unsigned": "Response not signed",
+                    "not_on_or_after": "Valid until",
+                    "audiences": "Audience"
+                },
+                "no_lookup_directory": "No lookup directory"
+            },
+            "policy": {
+                "super_only_notice": "Only super administrators can change site-wide enforcement, role enforcement and emergency accounts.",
+                "deactivate_notice": "If this plugin is deactivated or deleted, every enforcement set here is lifted and password sign-in reopens for all members. Notify members before deactivating it.",
+                "enforcement": "Company sign-in enforcement",
+                "fields": {
+                    "enforce_site": "Enforce for the whole site",
+                    "enforce_roles": "Enforced roles",
+                    "enforce_linked": "Enforce for all SSO-linked members",
+                    "auto_redirect_idp": "Automatic redirect IdP",
+                    "session_max_minutes": "Site session lifetime cap (minutes)",
+                    "discovery_enabled": "Email-first sign-in"
+                },
+                "hints": {
+                    "enforce_site": "When on, nobody except emergency accounts can sign in with a password, and self-signup closes. An enabled IdP and an emergency account are required.",
+                    "enforce_roles": "Members with these roles cannot sign in with a password. Enter role identifiers.",
+                    "enforce_linked": "Members linked to a company account cannot sign in with a password.",
+                    "auto_redirect_idp": "With site-wide enforcement, the sign-in screen sends members straight to this IdP. Add ?local=1 to the URL to open the emergency sign-in screen.",
+                    "session_max_minutes": "0 turns it off. If an IdP has its own value, the smaller one applies (480 minutes recommended).",
+                    "discovery_enabled": "After an email is entered on the sign-in screen, company domains are directed to company sign-in.",
+                    "emergency": "Accounts that can still sign in with a password and two-factor authentication during an IdP outage, even under enforcement. At least one is required."
+                },
+                "warnings": {
+                    "enforce_site": "First make sure the emergency accounts can sign in with a password and two-factor authentication. You can lift enforcement on the server with sirsoft-sso:enforcement --disable."
+                },
+                "no_auto_redirect": "No automatic redirect",
+                "emergency": "Emergency accounts",
+                "emergency_no_password": "This account has no password and cannot work as an emergency account.",
+                "emergency_search_placeholder": "Search members by name or email",
+                "add_emergency": "Add as emergency account",
+                "remove_emergency": "Remove {{name}} from emergency accounts",
+                "session": "Sessions and entry",
+                "preview_impact": "Preview impact",
+                "impact_users": "With this setting, {{count}} members who sign in with a password will no longer be able to.",
+                "impact_sessions": "{{count}} members currently signed in with a password will be signed out.",
+                "saved": "SSO policy saved. {{revoked}} password sessions were signed out.",
+                "errors": {
+                    "enforce_roles": "Some roles do not exist. Check the role identifiers.",
+                    "super_only": "Some items can only be changed by super administrators.",
+                    "emergency_required": "Assign at least one emergency account.",
+                    "site_enforce_requires_idp": "Site-wide enforcement needs at least one enabled IdP."
+                }
+            },
+            "retention": {
+                "title": "Log retention",
+                "fields": {
+                    "attempts_retention_days": "Sign-in attempts (days)",
+                    "scim_retention_days": "SCIM requests (days)",
+                    "session_retention_days": "Ended sessions (days)",
+                    "failure_alert": "IdP failure alert",
+                    "failure_alert_count": "Failures",
+                    "failure_alert_window_minutes": "Window (minutes)",
+                    "cert_expiry_notice_days": "Certificate expiry notice (days before)",
+                    "ttl": "Wait times",
+                    "state_ttl_minutes": "Sign-in request (minutes)",
+                    "pending_ttl_minutes": "Consent and link confirmation (minutes)"
+                },
+                "alerts": "Alert thresholds",
+                "hints": {
+                    "failure_alert": "Notifies administrators once a day when an IdP's sign-in failures reach this count within the window.",
+                    "cert_expiry_notice_days": "e.g. 30, 7",
+                    "ttl": "How long to wait for the IdP round trip, first sign-in consent and existing account confirmation."
+                }
+            }
+        },
+        "accounts": {
+            "title": "Member links",
+            "description": "View, add and remove links between members and company accounts.",
+            "add": "Add link",
+            "add_title": "Add a link",
+            "add_hint": "Only super administrators can link administrator accounts.",
+            "add_submit": "Link",
+            "created": "Link added.",
+            "fields": {
+                "idp": "IdP",
+                "subject": "IdP unique identifier",
+                "new_name": "Name",
+                "new_email": "Email"
+            },
+            "hints": {
+                "subject": "The permanent value the IdP assigns to the employee (OIDC sub, SAML NameID, LDAP entryUUID, ...). Case-sensitive.",
+                "new_user": "Created without a password and linked. The member signs in with the company account."
+            },
+            "mode_existing": "Link to an existing member",
+            "mode_new": "Pre-register a new member",
+            "user_search_placeholder": "Search members by name or email",
+            "selected_user": "Selected member: {{name}}",
+            "choose": "Choose",
+            "select_idp": "Choose an IdP",
+            "empty": "No links.",
+            "col": {
+                "user": "Member",
+                "idp": "IdP",
+                "subject": "Identifier",
+                "via": "Linked via",
+                "status": "Status",
+                "linked_at": "Linked",
+                "last_login_at": "Last sign-in",
+                "deprovisioned_at": "Deprovisioned"
+            },
+            "status": {
+                "active": "Active",
+                "deprovisioned": "Deprovisioned"
+            },
+            "via": {
+                "jit": "Auto signup",
+                "domain": "Owned domain",
+                "verify": "Verification",
+                "admin": "Administrator",
+                "csv": "CSV",
+                "scim": "SCIM"
+            },
+            "deprovision_reason": {
+                "scim": "SCIM",
+                "periodic": "Periodic check",
+                "login": "Sign-in check",
+                "admin": "Administrator"
+            },
+            "filters": {
+                "all_idps": "All IdPs",
+                "all_status": "All statuses",
+                "all_via": "All methods",
+                "search": "Member name, nickname, or email"
+            },
+            "unlink": "Unlink",
+            "unlink_named": "Unlink {{name}}",
+            "unlink_confirm": "Remove this link?",
+            "unlinked": "Link removed.",
+            "last_method_warning": "{{name}} has no password, so this link is the last way to sign in. After removing it, the member cannot sign in.",
+            "unlink_anyway": "Remove anyway",
+            "csv": {
+                "open": "Import CSV",
+                "title": "Import CSV",
+                "hint": "The first line must be email,name,idp_key,subject. Missing members are created without a password and linked. Administrator rows are skipped. Up to 1000 lines.",
+                "file": "CSV file",
+                "text": "CSV content",
+                "preview": "Preview",
+                "execute": "Import",
+                "execute_confirm": "Process the create and link rows from the preview?",
+                "done": "CSV import finished.",
+                "failed": "Could not process the CSV.",
+                "download": "Download result",
+                "read_failed": "Could not read the file.",
+                "too_large": "The file is too large (1 MB max).",
+                "col": {
+                    "line": "Line",
+                    "email": "Email",
+                    "idp": "IdP",
+                    "outcome": "Result",
+                    "reason": "Reason"
+                },
+                "outcomes": {
+                    "create": "Create",
+                    "link": "Link",
+                    "exists": "Already linked",
+                    "conflict": "Conflict",
+                    "admin_target_manual_only": "Administrator (skipped)",
+                    "error": "Error"
+                },
+                "reasons": {
+                    "email_invalid": "Not a valid email.",
+                    "subject_invalid": "The identifier is empty or too long.",
+                    "idp_not_found": "Unknown IdP key.",
+                    "duplicate_in_file": "Duplicated in the file.",
+                    "subject_linked_to_other": "This identifier is linked to another member.",
+                    "user_linked_other_subject": "This member is linked to another identifier of this IdP.",
+                    "admin_target_manual_only": "Super administrators link administrator accounts manually.",
+                    "user_not_found": "Member not found.",
+                    "already_linked": "Already linked.",
+                    "email_in_use": "A member with this email exists.",
+                    "email_required": "Email is required."
+                }
+            }
+        },
+        "logs": {
+            "title": "SSO logs",
+            "description": "View company sign-in attempts and SCIM requests.",
+            "tabs": {
+                "attempts": "Sign-in attempts",
+                "scim": "SCIM requests"
+            },
+            "empty": "No records.",
+            "filters": {
+                "idp": "IdP",
+                "outcome": "Result",
+                "all_outcomes": "All results",
+                "status": "Response",
+                "all_status": "All responses",
+                "from": "From",
+                "to": "To"
+            },
+            "status": {
+                "success": "Success",
+                "error": "Error"
+            },
+            "col": {
+                "created_at": "Time",
+                "idp": "IdP",
+                "intent": "Intent",
+                "guard": "Path",
+                "outcome": "Result",
+                "reason": "Reason",
+                "ip": "IP",
+                "request": "Request",
+                "target": "Target",
+                "status": "Status"
+            },
+            "intents": {
+                "login": "Sign-in",
+                "link": "Link",
+                "reauth": "Re-verification",
+                "test": "Test"
+            },
+            "guards": {
+                "user": "User",
+                "admin": "Admin"
+            },
+            "outcomes": {
+                "handoff": "Signed in",
+                "pending": "Awaiting consent",
+                "link_pending": "Awaiting link confirmation",
+                "linked": "Linked",
+                "reauth": "Re-verified",
+                "test": "Tested",
+                "failed": "Failed",
+                "denied": "Denied"
+            }
+        },
+        "user_tab": {
+            "tab_label": "SSO",
+            "title": "Company accounts",
+            "forbidden": "You need permission to view member links.",
+            "empty": "No company account is linked.",
+            "email_differs": "Differs from the IdP email — the IdP reported {{email}}.",
+            "attributes": "Extra attributes",
+            "attribute_key": "Item",
+            "attribute_value": "Value",
+            "attribute_idp": "IdP",
+            "role_sources": "Role sources",
+            "role_mapped": "Mapped",
+            "role_manual": "Manual",
+            "manage_links": "Manage on member links"
+        },
+        "user_list": {
+            "filter_label": "SSO IdP",
+            "filter_all": "All",
+            "filter_unlinked": "No SSO link",
+            "department": "Department",
+            "title": "Title"
+        },
+        "idp": {
+            "ldap_extension_missing": "The PHP LDAP extension is not installed on the server. This IdP cannot be turned on.",
+            "ldap_plaintext_warning": "An unencrypted connection sends passwords in plain text. It cannot be saved in production.",
+            "ldap_test_account": "Test with an account",
+            "ldap_test_account_hint": "The password you enter is not saved. Only part of the returned details is shown.",
+            "ldap_test_identifier": "Email or company ID to test",
+            "ldap_test_password": "Password of the account to test",
+            "saml_generate_sp_keys_confirm": "After generating a new SP key, register the new certificate in the IdP console. The previous key keeps working for 30 days.",
+            "saml_idp_initiated_warning": "G7 did not start these requests, so the forgery risk is higher. Each response is accepted once and its validity time is checked strictly.",
+            "saml_lookup_directory_none": "Without a directory for employment checks, SAML periodic checks stay off. Use SCIM or a session lifetime cap.",
+            "saml_site_url_invalid": "The site URL host contains an underscore (_) or similar, so SAML cannot be used. Change the site URL to a host without underscores."
+        }
+    }
+}

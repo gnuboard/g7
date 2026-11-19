@@ -30,6 +30,26 @@ enum ScheduleResultStatus: string
     case Never = 'never';
 
     /**
+     * 거절됨 — 큐로 보낸 수동 실행을 워커가 시작하지 않고 돌려보냈다 (실행 이력 전용)
+     *
+     * 실행이 아니므로 스케줄 행의 `last_result` 에는 쓰지 않는다. 사유는 이력 행의 `reject_reason`
+     * (`ScheduleRejectReason`)이 가른다.
+     */
+    case Rejected = 'rejected';
+
+    /**
+     * 스케줄 행의 마지막 실행 결과(`last_result`)로 쓸 수 있는 값을 반환합니다.
+     *
+     * 거절은 실행이 아니라서 빠진다 — 이력 행에만 남는다.
+     *
+     * @return array<string>
+     */
+    public static function lastResultValues(): array
+    {
+        return array_values(array_diff(self::values(), [self::Rejected->value]));
+    }
+
+    /**
      * 모든 상태 값을 문자열 배열로 반환합니다.
      *
      * @return array<string>
@@ -42,7 +62,7 @@ enum ScheduleResultStatus: string
     /**
      * 유효한 상태 값인지 확인합니다.
      *
-     * @param string $value 검증할 상태 값
+     * @param  string  $value  검증할 상태 값
      * @return bool 유효 여부
      */
     public static function isValid(string $value): bool
@@ -57,7 +77,7 @@ enum ScheduleResultStatus: string
      */
     public function label(): string
     {
-        return __('schedule.result.' . $this->value);
+        return __('schedule.result.'.$this->value);
     }
 
     /**
@@ -72,6 +92,7 @@ enum ScheduleResultStatus: string
             self::Failed => 'red',
             self::Running => 'yellow',
             self::Never => 'gray',
+            self::Rejected => 'gray',
         };
     }
 }

@@ -4,11 +4,12 @@ namespace Plugins\Sirsoft\PayKginicis\Support\ApiDoc;
 
 use App\Contracts\ApiDoc\ApiDocSampleSeeder;
 use App\Models\User;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\SamplePaymentSpec;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\ShippingAddress;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentSampleProvisioner;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentMethodEnum;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
 use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Models\OrderAddress;
-use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
 
 /**
  * sirsoft-pay_kginicis API 문서 실측용 완전 샘플 시더
@@ -35,6 +36,10 @@ use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
  *
  * `api:docgen --scope=plugin:sirsoft-pay_kginicis --seed` 실행 시 커맨드가 규약 위치
  * (`Plugins\Sirsoft\PayKginicis\Support\ApiDoc\ApiDocSampleService`)로 자동 발견한다.
+ *
+ * 주문·결제 행·배송지 생성은 이커머스 공개 계약 {@see PaymentSampleProvisioner} 에 맡긴다(#916) — 이커머스가 자기 팩토리로
+ * 같은 행을 멱등 생성하고 주문번호를 돌려준다(팩토리를 쓰므로 개발 환경 전용). 반환 맵의 `'model' => Order::class` 는
+ * docgen 이 라우트 바인딩을 맞추는 클래스 이름 참조라 그대로 둔다.
  */
 class ApiDocSampleService implements ApiDocSampleSeeder
 {
@@ -55,8 +60,8 @@ class ApiDocSampleService implements ApiDocSampleSeeder
      */
     public function seed(): array
     {
-        // ecommerce 모델이 없으면(모듈 비활성) 실측 폴백 없이 빈 맵 반환.
-        if (! class_exists(Order::class)) {
+        // 이커머스 모듈이 없거나 비활성이면(계약 미바인딩) 실측 폴백 없이 빈 맵 반환.
+        if (! app()->bound(PaymentSampleProvisioner::class)) {
             return [];
         }
 
@@ -65,22 +70,23 @@ class ApiDocSampleService implements ApiDocSampleSeeder
             return [];
         }
 
-        $order = $this->seedOrder($actor);
-        $this->seedPayment($order);
-        $this->seedShippingAddress($order);
+        $orderNumber = app(PaymentSampleProvisioner::class)->ensureSamplePayment($this->sampleSpec($actor));
+        if ($orderNumber === null) {
+            return [];
+        }
 
         // orders/{orderNumber} 계열 GET(cbt-cvs·cbt-reconciliation·escrow-delivery·
         // transaction-status)과 user/orders/{orderNumber}/receipt 를 실측하기 위한
         // path 파라미터 맵. route-model binding 이 없는 문자열 param 을 실제 주문번호로
         // 정확 일치 치환한다.
         $orderParams = [
-            'orderNumber' => (string) $order->order_number,
+            'orderNumber' => $orderNumber,
         ];
 
         $entry = [
             'model' => Order::class,
             'key' => 'order_number',
-            'value' => (string) $order->order_number,
+            'value' => $orderNumber,
             'path_params' => $orderParams,
         ];
 
@@ -96,58 +102,37 @@ class ApiDocSampleService implements ApiDocSampleSeeder
     }
 
     /**
-     * 실측 사용자 소유의 완전 샘플 kginicis 주문을 멱등 생성합니다.
+     * 실측 사용자 소유의 완전 샘플 kginicis 결제 주문 명세를 만듭니다.
      *
-     * @param  User  $actor  실측 사용자
-     * @return Order 대표 주문 레코드
-     */
-    private function seedOrder(User $actor): Order
-    {
-        $order = Order::query()->where('order_number', self::SAMPLE_ORDER_NUMBER)->first();
-        if ($order) {
-            return $order;
-        }
-
-        return Order::factory()->forUser($actor)->create([
-            'order_number' => self::SAMPLE_ORDER_NUMBER,
-        ]);
-    }
-
-    /**
-     * 완전 샘플 kginicis 결제(에스크로 + CBT 편의점 메타)를 멱등 생성합니다.
-     *
-     * 채우는 특화 필드:
-     *   - pg_provider = 'kginicis' (모든 조회 컨트롤러의 WHERE 조건)
+     * 결제 행에 채우는 특화 필드:
+     *   - pg_provider = 'kginicis' (모든 조회 컨트롤러의 결제사 조건)
      *   - is_escrow = true (escrow-delivery formData 의 findEscrowPayment 조건)
      *   - payment_meta.is_cbt = true + pay_method = 'CVS' (cbt-cvs summary 의 is_cbt_cvs 판정)
      *   - transaction_id (모든 조회 컨트롤러가 요구하는 non-null TID)
      *
-     * @param  Order  $order  대표 주문
-     * @return OrderPayment 대표 결제 레코드
+     * 배송지는 escrow-delivery formData 의 배송지 prefill 실측용이다.
+     *
+     * @param  User  $actor  실측 사용자 (주문 소유자)
+     * @return SamplePaymentSpec 샘플 명세
      */
-    private function seedPayment(Order $order): OrderPayment
+    private function sampleSpec(User $actor): SamplePaymentSpec
     {
-        $payment = OrderPayment::query()
-            ->where('order_id', $order->id)
-            ->where('pg_provider', 'kginicis')
-            ->first();
-
-        if ($payment) {
-            return $payment;
-        }
-
-        return OrderPayment::factory()->forOrder($order)->create([
-            'pg_provider' => 'kginicis',
-            'transaction_id' => self::SAMPLE_TID,
-            'merchant_order_id' => 'MO-'.self::SAMPLE_ORDER_NUMBER,
-            'payment_status' => PaymentStatusEnum::PAID,
-            'payment_method' => PaymentMethodEnum::VBANK->value,
-            'is_escrow' => true,
-            'buyer_name' => 'API 문서 샘플 구매자',
-            'buyer_email' => 'apidoc-sample-user@example.com',
-            'buyer_phone' => '010-0000-0001',
-            'payment_name' => 'API 문서 샘플 CBT 결제',
-            'payment_meta' => [
+        return new SamplePaymentSpec(
+            orderNumber: self::SAMPLE_ORDER_NUMBER,
+            ownerUserId: (int) $actor->id,
+            pgProvider: 'kginicis',
+            paymentAttributes: [
+                'transaction_id' => self::SAMPLE_TID,
+                'merchant_order_id' => 'MO-'.self::SAMPLE_ORDER_NUMBER,
+                'payment_status' => PaymentStatusEnum::PAID,
+                'payment_method' => PaymentMethodEnum::VBANK->value,
+                'is_escrow' => true,
+                'buyer_name' => 'API 문서 샘플 구매자',
+                'buyer_email' => 'apidoc-sample-user@example.com',
+                'buyer_phone' => '010-0000-0001',
+                'payment_name' => 'API 문서 샘플 CBT 결제',
+            ],
+            paymentMeta: [
                 'mid' => 'apidocmid1',
                 'is_test_mode' => true,
                 'is_cbt' => true,
@@ -171,42 +156,18 @@ class ApiDocSampleService implements ApiDocSampleSeeder
                     'currency' => 'JPY',
                 ],
             ],
-        ]);
-    }
-
-    /**
-     * escrow-delivery formData 의 배송지 prefill 을 실측하기 위한 배송지를 멱등 생성합니다.
-     *
-     * @param  Order  $order  대표 주문
-     * @return void 반환값 없음
-     */
-    private function seedShippingAddress(Order $order): void
-    {
-        // 주문·결제 샘플과 같이 이커머스 모델·팩토리 계약으로 만든다 — 표 이름·칸을 직접 적지 않는다.
-        $exists = OrderAddress::query()
-            ->where('order_id', $order->id)
-            ->where('address_type', 'shipping')
-            ->exists();
-
-        if ($exists) {
-            return;
-        }
-
-        OrderAddress::factory()->forOrder($order)->shipping()->create([
-            'orderer_name' => 'API 문서 샘플 주문자',
-            'orderer_phone' => '010-0000-0001',
-            'orderer_email' => 'apidoc-sample-user@example.com',
-            'recipient_name' => 'API 문서 샘플 수령인',
-            'recipient_phone' => '010-0000-0002',
-            'zipcode' => '06134',
-            'address' => '서울특별시 강남구 테헤란로 001',
-            'address_detail' => 'API 문서 샘플 빌딩 1층',
-            // 팩토리가 무작위로 채우는 칸은 비워 둔다 — 문서 샘플은 실행마다 같아야 한다.
-            'orderer_locale' => null,
-            'delivery_memo' => null,
-            'delivery_memo_label' => null,
-            'recipient_country_code' => null,
-        ]);
+            // 팩토리가 무작위로 채우는 칸(주문자 언어·배송 메모·수령 국가)은 계약 구현이 비워 둔다 — 문서 샘플은 실행마다 같아야 한다.
+            shippingAddress: new ShippingAddress(
+                ordererName: 'API 문서 샘플 주문자',
+                ordererEmail: 'apidoc-sample-user@example.com',
+                ordererPhone: '010-0000-0001',
+                recipientName: 'API 문서 샘플 수령인',
+                recipientPhone: '010-0000-0002',
+                zipcode: '06134',
+                address: '서울특별시 강남구 테헤란로 001',
+                addressDetail: 'API 문서 샘플 빌딩 1층',
+            ),
+        );
     }
 
     /**

@@ -1,0 +1,149 @@
+{
+  "sections": {
+    "branding": {
+      "label": "ブランディング",
+      "hint": "サイトのアイコン・色・ロゴ。空欄は環境設定の値(なければ既定値)を使います。"
+    },
+    "header": {
+      "label": "ヘッダー"
+    },
+    "footer": {
+      "label": "フッター"
+    },
+    "home": {
+      "label": "ホーム",
+      "hint": "ホーム画面に表示する領域と件数です。該当モジュールがオフの間は表示されません。"
+    }
+  },
+  "favicon": {
+    "label": "ファビコン",
+    "hint": "このテンプレートが有効なとき、ユーザー画面のブラウザタブに表示されるアイコンです。"
+  },
+  "accent": {
+    "label": "アクセントカラー",
+    "hint": "ボタン・リンク・案内ボックスの色です。",
+    "blue": "青(既定)",
+    "indigo": "藍",
+    "violet": "紫",
+    "green": "緑",
+    "teal": "青緑",
+    "orange": "オレンジ",
+    "rose": "ローズ",
+    "slate": "グレー"
+  },
+  "color_scheme": {
+    "label": "既定の表示モード",
+    "hint": "初めて訪れた人に表示するモードです。すでにモードを選んだ訪問者(このブラウザを含む)はその値を使います。",
+    "system": "システム設定に従う",
+    "light": "ライト",
+    "dark": "ダーク"
+  },
+  "logo_dark": {
+    "label": "ダークモード用ロゴ",
+    "hint": "暗い画面で使うロゴです。空欄なら環境設定のサイトロゴをそのまま使います。"
+  },
+  "header": {
+    "max_boards": {
+      "label": "掲示板メニューの数",
+      "hint": "「掲示板すべて(自動)」が上位メニューにあるとき、直接表示する掲示板の数です。残りは「もっと見る」に入ります。"
+    },
+    "show_theme_toggle": {
+      "label": "テーマボタンを表示"
+    },
+    "menu": {
+      "label": "ヘッダーメニュー",
+      "hint": "上部メニューとモバイルメニューにそのまま使われます。ドラッグで順序を変え、右へドラッグするとサブメニュー(プルダウン)になります。",
+      "auto": {
+        "home": {
+          "label": "ホーム",
+          "hint": "サイトのトップページへのリンクです。"
+        },
+        "popular": {
+          "label": "人気投稿",
+          "hint": "人気の投稿一覧です。掲示板モジュールがオフのときは表示されません。"
+        },
+        "shop": {
+          "label": "ショッピング",
+          "hint": "商品一覧です。ショッピングモジュールがオフのときは表示されません。"
+        },
+        "boards": {
+          "label": "掲示板すべて(自動)",
+          "hint": "掲示板を作成すると自動でここに追加されます。上位メニューに置くと「掲示板メニュー数」だけ表示し残りは「もっと見る」に、サブメニューに置くとそのメニューを開いたときにすべて表示します。"
+        }
+      }
+    }
+  },
+  "footer": {
+    "copyright": {
+      "label": "著作権表示",
+      "hint": "空欄なら「© 年 サイト名」を使います。空欄の言語は既定言語の文言を使います。"
+    },
+    "show_powered_by": {
+      "label": "「Powered by Gnuboard7」を表示"
+    },
+    "social": {
+      "youtube": "YouTube",
+      "instagram": "Instagram",
+      "facebook": "Facebook",
+      "x": "X(Twitter)",
+      "github": "GitHub",
+      "discord": "Discord",
+      "blog": "ブログ"
+    }
+  },
+  "home": {
+    "show_welcome": "ウェルカムカード",
+    "show_stats": "統計カード",
+    "show_feature_row": "最近の投稿・人気掲示板",
+    "show_board_summaries": "掲示板の要約",
+    "show_shop_sections": "人気商品・新商品",
+    "product_count": {
+      "label": "商品数",
+      "hint": "人気商品・新商品のまとまりごとに表示する商品数です。"
+    }
+  },
+  "screen": {
+    "fields": {
+      "row_title": "{{number}}件目",
+      "move_up": "上へ",
+      "move_down": "下へ",
+      "remove_item": "削除",
+      "add_item": "追加 ({{current}}/{{max}})",
+      "max_items_reached": "最大{{max}}件まで追加できます。"
+    },
+    "menu": {
+      "add_link": "リンクを追加",
+      "add_child": "サブメニューを追加",
+      "auto_used": "すでにメニューにあります",
+      "count": "{{current}} / {{max}}",
+      "empty": "メニューは空です。「リンクを追加」から始めてください。",
+      "drag_handle": "{{name}} をドラッグして移動",
+      "drag_hint": "ハンドルをドラッグして順序を変えます。右へドラッグすると上のメニューのサブメニューになり、左へドラッグすると上位に戻ります。",
+      "select_hint": "左で項目を選ぶとここで編集できます。",
+      "untitled": "(名前なし)",
+      "badge_auto": "自動",
+      "badge_child": "サブメニュー",
+      "badge_inactive": "オフ",
+      "has_error": "修正が必要です",
+      "label": "メニュー名",
+      "auto_label_hint": "空にすると既定の名前を使います。",
+      "url": "リンク先",
+      "url_hint": "サイト内のパス(/board/notice)または完全なアドレス(https://…)。サブメニューを持つ上位メニューは空にできます。",
+      "new_tab": "新しいタブで開く",
+      "visibility": "表示対象",
+      "visibility_all": "全員",
+      "visibility_members": "会員のみ",
+      "visibility_guests": "非会員のみ",
+      "visibility_roles": "特定のロールのみ",
+      "visibility_hint": "メニュー項目を隠すだけで、ページへのアクセスは制限しません。",
+      "roles_unavailable": "選べるロールがありません。",
+      "is_active": "この項目を表示",
+      "indent": "サブメニューにする",
+      "outdent": "上位に戻す",
+      "delete": "削除",
+      "delete_confirm": "この項目を削除しますか?",
+      "delete_confirm_children": "サブメニュー{{count}}個も一緒に削除されます。削除しますか?",
+      "cancel": "キャンセル"
+    }
+  }
+}

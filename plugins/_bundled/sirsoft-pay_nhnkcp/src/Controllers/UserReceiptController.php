@@ -9,10 +9,9 @@ use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Services\PluginSettingsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
-use Modules\Sirsoft\Ecommerce\Services\GuestOrderAuthService;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\PaymentFilters;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\ReceiptRequester;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\IssuesReceiptCookie;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\ResolvesEasyPayDisplay;
 use Plugins\Sirsoft\PayNhnkcp\Services\NhnKcpApiService;
@@ -35,14 +34,16 @@ class UserReceiptController extends PublicBaseController
     private const CASH_URL_LIVE = 'https://admin.kcp.co.kr/Modules/Service/Cash/Cash_Bill_Common_View.jsp?term_id=PGNW';
 
     /**
+     * 의존성을 주입받습니다.
+     *
      * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 서비스(테스트 모드 판정)
      * @param  NhnKcpApiService  $apiService  KCP API 서비스(현금영수증 주소의 사이트 코드)
-     * @param  GuestOrderAuthService  $guestOrderAuthService  비회원 조회 토큰 검증 서비스
+     * @param  PaymentGatewayBridge  $bridge  이커머스 결제 계약 (요청자 조건을 건 영수증 결제 행 조회, 비회원 토큰 검증)
      */
     public function __construct(
         private readonly PluginSettingsService $pluginSettingsService,
         private readonly NhnKcpApiService $apiService,
-        private readonly GuestOrderAuthService $guestOrderAuthService,
+        private readonly PaymentGatewayBridge $bridge,
     ) {
         parent::__construct();
     }
@@ -62,44 +63,25 @@ class UserReceiptController extends PublicBaseController
     // audit:allow controller-base-request-injection reason: 본문 입력을 읽지 않음 — user()/비회원 영수증 쿠키만 참조 (검증 대상 필드 없음)
     public function show(Request $request, string $orderNumber): JsonResponse
     {
+        // 요청자 조건 — 회원은 본인 주문, 비회원은 이 주문의 조회 토큰(계약이 검증) 또는 이 플러그인의 영수증 쿠키(비회원 주문만)
         $user = $request->user();
-        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
-        $query = DB::table((new OrderPayment)->getTable().' as p')
-            ->join((new Order)->getTable().' as o', 'o.id', '=', 'p.order_id')
-            ->where('o.order_number', $orderNumber)
-            ->where('p.pg_provider', 'nhnkcp')
-            ->whereNotNull('p.transaction_id');
-
         if ($user) {
-            $query->where('o.user_id', $user->id);
+            $requester = ReceiptRequester::member((int) $user->id);
         } else {
-            $order = $this->guestOrderAuthService->verifyToken($request->header('X-Guest-Order-Token'), $orderNumber);
+            $guestToken = $request->header('X-Guest-Order-Token');
 
-            if ($order) {
-                $query->whereNull('o.user_id')->where('o.id', $order->id);
+            if ($this->bridge->verifyGuestOrderToken($guestToken, $orderNumber)) {
+                $requester = ReceiptRequester::guestToken($guestToken);
             } elseif ($this->verifyReceiptCookie($request->cookie(self::RECEIPT_COOKIE_NAME), $orderNumber)) {
-                $query->whereNull('o.user_id')
-                    ->where('o.id', function ($sub) use ($orderNumber) {
-                        $sub->select('id')->from((new Order)->getTable())->where('order_number', $orderNumber);
-                    });
+                $requester = ReceiptRequester::guestVerifiedByPg();
             } else {
                 return ResponseHelper::notFound();
             }
         }
 
-        $payment = $query
-            ->select([
-                'p.transaction_id',
-                'p.payment_meta',
-                'p.payment_method',
-                'p.embedded_pg_provider',
-                'p.payment_device',
-                'p.paid_amount_local',
-                'o.order_number',
-            ])
-            ->first();
+        $payment = $this->bridge->findReceiptPayment('nhnkcp', $orderNumber, $requester, new PaymentFilters(hasTransactionId: true));
 
-        if (! $payment || ! $payment->transaction_id) {
+        if (! $payment || ! $payment->transactionId) {
             return ResponseHelper::notFound();
         }
 
@@ -109,10 +91,10 @@ class UserReceiptController extends PublicBaseController
         $billBaseUrl = $isTest ? self::BILL_URL_TEST : self::BILL_URL_LIVE;
         $cashBaseUrl = $isTest ? self::CASH_URL_TEST : self::CASH_URL_LIVE;
 
-        $tno = $payment->transaction_id;
-        $orderNo = $payment->order_number;
-        $tradeMony = (int) round((float) ($payment->paid_amount_local ?? 0));
-        $method = $payment->payment_method ?? '';
+        $tno = $payment->transactionId;
+        $orderNo = (string) $payment->orderNumber;
+        $tradeMony = (int) round($payment->paidAmountLocal);
+        $method = $payment->paymentMethod ?? '';
         $display = $this->resolvePaymentDisplay($payment);
 
         // 결제수단 분류 — KCP 영수증 cmd 는 결제수단(휴대폰결제 vs 그 외) 으로만 분기.
@@ -131,7 +113,7 @@ class UserReceiptController extends PublicBaseController
         // 현금영수증 URL (계좌이체 · 가상계좌만 해당)
         $cashReceiptUrl = null;
         if ($isCashMethod) {
-            $meta = $this->decodePaymentMeta($payment->payment_meta ?? null);
+            $meta = $payment->paymentMeta;
             $pgRaw = $meta['pg_raw_response'] ?? $meta;
             $authNo = $pgRaw['app_no'] ?? $pgRaw['receipt_no'] ?? $tno;
             $siteCd = $this->apiService->getSiteCd();

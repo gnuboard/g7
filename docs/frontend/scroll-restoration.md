@@ -86,7 +86,7 @@
 
 ```text
 엔진 기본값
-  < template.json 의 scroll_restoration        (템플릿 제작자가 배포하는 초깃값 — /api/templates/{id}/config.json 으로 서빙)
+  < template.json 의 scroll_restoration        (템플릿 제작자가 배포하는 초깃값 — template.json `expose` 에 선언하면 셸 HTML 에 실리고, 아니면 /api/templates/{id}/config.json 으로 서빙)
   < 베이스 레이아웃 meta.scroll_restoration     (사이트 운영자가 편집기에서 고치는 「템플릿 기본값」)
   < 화면 레이아웃 meta.scroll_restoration       (화면마다)
   < navigate 액션의 returnScroll                (그 이동으로 떠나는 화면에 돌아올 때 — mode 만)

@@ -6,7 +6,7 @@
  * @see 트러블슈팅 가이드 troubleshooting-state-setstate.md
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import { ActionDispatcher } from '../ActionDispatcher';
 import { DataBindingEngine } from '../DataBindingEngine';
 import { deepMergeState, removeMatchingLeafKeys } from '../DynamicRenderer';
@@ -31,9 +31,9 @@ vi.mock('../../api/ApiClient', () => ({
 
 describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
   let dispatcher: ActionDispatcher;
-  let mockNavigate: ReturnType<typeof vi.fn>;
-  let mockSetState: ReturnType<typeof vi.fn>;
-  let mockGlobalStateUpdater: ReturnType<typeof vi.fn>;
+  let mockNavigate: Mock;
+  let mockSetState: Mock;
+  let mockGlobalStateUpdater: Mock;
   let capturedState: Record<string, any>;
   let capturedGlobalState: Record<string, any>;
 
@@ -76,6 +76,8 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
   });
 
   describe('[사례 0] TabNavigation 탭 클릭 시 탭 강조 미반영', () => {
+    // @scenario case=tab_navigation_highlight
+    // @effects global_setstate_then_navigate_applies_immediately
     it('setState global 후 navigate를 sequence로 실행하면 상태가 즉시 반영되어야 함', async () => {
       const context = {
         state: {},
@@ -85,6 +87,7 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
 
       // setState로 전역 상태 업데이트
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'global',
@@ -92,7 +95,7 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
         },
       };
 
-      await dispatcher.executeAction(action, context);
+      await dispatcher['executeAction'](action, context);
 
       expect(mockGlobalStateUpdater).toHaveBeenCalled();
       const callArgs = mockGlobalStateUpdater.mock.calls[0][0];
@@ -101,6 +104,8 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
   });
 
   describe('[사례 1] sequence 내 여러 setState에서 상태 덮어쓰기', () => {
+    // @scenario case=sequence_multi_setstate
+    // @effects single_setstate_applies_all_changes
     it('단일 setState로 병합하면 모든 변경사항이 반영되어야 함', async () => {
       const context = {
         state: { currencies: ['USD'], isAddingCurrency: true },
@@ -109,6 +114,7 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
       };
 
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -118,7 +124,7 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
         },
       };
 
-      await dispatcher.executeAction(action, context);
+      await dispatcher['executeAction'](action, context);
 
       expect(capturedState.currencies).toEqual(['USD', 'EUR']);
       expect(capturedState.isAddingCurrency).toBe(false);
@@ -127,6 +133,8 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
   });
 
   describe('[사례 2] 같은 루트를 공유하는 dot notation 키 충돌 (해결됨)', () => {
+    // @scenario case=shared_root_dot_keys
+    // @effects setstate_shared_root_dot_keys_applied
     it('여러 dot notation 키가 같은 루트를 공유해도 모두 반영되어야 함', async () => {
       const context = {
         state: { form: { existing: 'value' } },
@@ -135,6 +143,7 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
       };
 
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -143,7 +152,7 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
         },
       };
 
-      await dispatcher.executeAction(action, context);
+      await dispatcher['executeAction'](action, context);
 
       // engine-v1.24.6: context.setState에는 변경 필드만 전달 (전체 _local 축적 방지)
       expect(capturedState.form.use_default_common_info).toBe(false);
@@ -156,6 +165,8 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
       expect(pending.form.common_info_id).toBe(218);
     });
 
+    // @scenario case=shared_root_dot_keys
+    // @effects setstate_shared_root_dot_keys_applied
     it('3개 이상의 dot notation 키도 모두 반영되어야 함', async () => {
       const context = {
         state: { form: {} },
@@ -164,6 +175,7 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
       };
 
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -173,7 +185,7 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
         },
       };
 
-      await dispatcher.executeAction(action, context);
+      await dispatcher['executeAction'](action, context);
 
       expect(capturedState.form.field1).toBe('value1');
       expect(capturedState.form.field2).toBe('value2');
@@ -182,6 +194,8 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
   });
 
   describe('[사례 3] sequence 액션에서 조건부 실행 (if 속성)', () => {
+    // @scenario case=sequence_if_condition
+    // @effects sequence_runs_only_true_if_actions
     it('if 조건이 true인 액션만 실행되어야 함', async () => {
       const context = {
         state: { items: [{ code: 'A' }], newItem: { code: 'B' } },
@@ -194,6 +208,7 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
 
       // 중복이 아닌 경우 항목 추가
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -201,13 +216,15 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
         },
       };
 
-      await dispatcher.executeAction(action, context);
+      await dispatcher['executeAction'](action, context);
 
       expect(capturedState.items).toHaveLength(2);
     });
   });
 
   describe('[사례 4] dot notation 키에 null 값 설정', () => {
+    // @scenario case=dot_key_null
+    // @effects dot_key_null_sets_without_error
     it('dot notation 키에 null 값을 설정해도 오류가 발생하지 않아야 함', async () => {
       const context = {
         state: { form: { newCurrency: { name: 'test' } } },
@@ -216,6 +233,7 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
       };
 
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -223,12 +241,14 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
         },
       };
 
-      await expect(dispatcher.executeAction(action, context)).resolves.not.toThrow();
+      await expect(dispatcher['executeAction'](action, context)).resolves.not.toThrow();
       expect(capturedState.form.newCurrency).toBeNull();
     });
   });
 
   describe('[사례 5] setNestedValue에서 배열이 객체로 변환됨', () => {
+    // @scenario case=nested_array_item
+    // @effects nested_item_update_keeps_array
     it('배열 내 항목의 속성 변경 시 배열 구조가 유지되어야 함', async () => {
       const context = {
         state: {
@@ -245,6 +265,7 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
 
       // 배열 전체를 업데이트하는 방식
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -255,7 +276,7 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
         },
       };
 
-      await dispatcher.executeAction(action, context);
+      await dispatcher['executeAction'](action, context);
 
       expect(Array.isArray(capturedState.form.items)).toBe(true);
       expect(capturedState.form.items).toHaveLength(2);
@@ -264,6 +285,8 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
   });
 
   describe('[사례 7] sequence 내 setState 후 상태가 이전 값으로 병합됨', () => {
+    // @scenario case=sequence_errors_clear
+    // @effects cleared_errors_stay_null
     it('errors 클리어 후 다른 상태 변경 시 errors가 null로 유지되어야 함', async () => {
       capturedState = { errors: { field: 'error message' }, data: 'old' };
 
@@ -275,6 +298,7 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
 
       // 단일 setState로 errors 클리어와 data 업데이트 병합
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -283,7 +307,7 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
         },
       };
 
-      await dispatcher.executeAction(action, context);
+      await dispatcher['executeAction'](action, context);
 
       expect(capturedState.errors).toBeNull();
       expect(capturedState.data).toBe('new');
@@ -291,6 +315,8 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
   });
 
   describe('[사례 10] 커스텀 컴포넌트 change 이벤트가 setState 트리거', () => {
+    // @scenario case=custom_change_event
+    // @effects custom_change_event_calls_setstate
     it('change 이벤트 핸들러가 정상적으로 setState를 호출해야 함', async () => {
       const context = {
         state: { form: { name: { ko: '', en: '' } } },
@@ -299,6 +325,7 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
       };
 
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -306,7 +333,7 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
         },
       };
 
-      await dispatcher.executeAction(action, context);
+      await dispatcher['executeAction'](action, context);
 
       expect(capturedState.form.name.ko).toBe('테스트');
       expect(capturedState.form.name.en).toBe('test');
@@ -314,6 +341,8 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
   });
 
   describe('[사례 11] setState global에서 dot notation 사용', () => {
+    // @scenario case=global_dot_notation
+    // @effects global_dot_notation_keeps_existing_state
     it('global에 dot notation 사용 시 기존 전역 상태가 유지되어야 함', async () => {
       capturedGlobalState = { theme: 'dark', user: { id: 1 } };
 
@@ -324,6 +353,7 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
       };
 
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'global',
@@ -331,7 +361,7 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
         },
       };
 
-      await dispatcher.executeAction(action, context);
+      await dispatcher['executeAction'](action, context);
 
       expect(mockGlobalStateUpdater).toHaveBeenCalled();
       const callArgs = mockGlobalStateUpdater.mock.calls[0][0];
@@ -340,6 +370,8 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
   });
 
   describe('[사례 12] sequence 내 closeModal 후 setState', () => {
+    // @scenario case=close_modal_order
+    // @effects setstate_runs_before_close_modal
     it('setState를 먼저 실행하고 closeModal을 나중에 실행해야 함', async () => {
       // 이 테스트는 순서가 중요함을 문서화
       const executionOrder: string[] = [];
@@ -353,6 +385,7 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
       };
 
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -360,7 +393,7 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
         },
       };
 
-      await dispatcher.executeAction(action, context);
+      await dispatcher['executeAction'](action, context);
 
       expect(context.setState).toHaveBeenCalled();
       expect(executionOrder).toContain('setState');
@@ -368,6 +401,8 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
   });
 
   describe('[사례 14] 커스텀 핸들러의 onSuccess가 apiCall 내에서 동작', () => {
+    // @scenario case=custom_handler_on_success
+    // @effects on_success_defined_as_array
     it('onSuccess 콜백이 배열 형태로 정의되어야 함', () => {
       // 올바른 패턴 문서화
       const correctPattern = {
@@ -392,6 +427,8 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
      * 참고: __g7PendingLocalState는 마이크로태스크 플러시로 null 클리어되므로
      *       전용 변수 __g7SequenceLocalSync 사용
      */
+    // @scenario case=sequence_local_sync
+    // @effects sequence_local_sync_preserved_by_setstate
     it('커스텀 핸들러가 __g7SequenceLocalSync를 설정하면 후속 setState가 해당 변경을 보존해야 함', async () => {
       const initialState = {
         form: { country_settings: [] },
@@ -474,6 +511,8 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
      *       deepMerge하여 자동 바인딩 값을 덮어씀
      * 해결: handleSetState에서 __g7PendingLocalState를 context.state보다 우선 사용
      */
+    // @scenario case=auto_binding_change_race
+    // @effects setstate_merges_on_pending_local_state
     it('pendingLocalState가 있으면 context.state 대신 pendingLocalState 기반으로 병합해야 함', async () => {
       const staleState = {
         form: { issue_method: 'direct', issue_condition: 'manual' },
@@ -491,6 +530,7 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
       };
 
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: '_local',
@@ -498,7 +538,7 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
         },
       };
 
-      await dispatcher.executeAction(action, context);
+      await dispatcher['executeAction'](action, context);
 
       expect(mockSetState).toHaveBeenCalled();
       // engine-v1.24.6: context.setState에는 변경 필드만 전달
@@ -511,6 +551,8 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
       expect(pending.form.issue_condition).toBe('signup');
     });
 
+    // @scenario case=auto_binding_change_race
+    // @effects setstate_merges_on_pending_local_state
     it('pendingLocalState가 없으면 기존 context.state 기반으로 병합해야 함', async () => {
       (window as any).__g7PendingLocalState = undefined;
 
@@ -521,6 +563,7 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
       };
 
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: '_local',
@@ -528,7 +571,7 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
         },
       };
 
-      await dispatcher.executeAction(action, context);
+      await dispatcher['executeAction'](action, context);
 
       expect(mockSetState).toHaveBeenCalled();
       // engine-v1.24.6: context.setState에는 변경 필드만 전달
@@ -541,6 +584,8 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
       expect(pending.form.issue_condition).toBe('signup');
     });
 
+    // @scenario case=auto_binding_change_race
+    // @effects setstate_merges_on_pending_local_state
     it('deep merge 모드에서도 pendingLocalState 기반으로 병합해야 함', async () => {
       const staleState = {
         form: { issue_method: 'direct', issue_condition: 'manual', name: 'coupon1' },
@@ -558,6 +603,7 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
       };
 
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: '_local',
@@ -565,7 +611,7 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
         },
       };
 
-      await dispatcher.executeAction(action, context);
+      await dispatcher['executeAction'](action, context);
 
       expect(mockSetState).toHaveBeenCalled();
       // engine-v1.24.6: context.setState에는 변경 필드만 전달 (dot notation 변환 후)
@@ -582,8 +628,8 @@ describe('트러블슈팅 회귀 테스트 - setState 액션 관련', () => {
 });
 
 describe('트러블슈팅 회귀 테스트 - init_actions 관련', () => {
-  let mockNavigate: ReturnType<typeof vi.fn>;
-  let mockSetState: ReturnType<typeof vi.fn>;
+  let mockNavigate: Mock;
+  let mockSetState: Mock;
   let capturedState: Record<string, any>;
 
   beforeEach(() => {
@@ -604,6 +650,8 @@ describe('트러블슈팅 회귀 테스트 - init_actions 관련', () => {
   });
 
   describe('[사례 1] init_actions에서 setState local 동작', () => {
+    // @scenario case=init_setstate_local
+    // @effects init_setstate_updates_component_state
     it('componentContext가 있으면 setState를 통해 상태가 업데이트되어야 함', async () => {
       const dispatcher = new ActionDispatcher({
         navigate: mockNavigate,
@@ -616,6 +664,7 @@ describe('트러블슈팅 회귀 테스트 - init_actions 관련', () => {
       };
 
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -623,7 +672,7 @@ describe('트러블슈팅 회귀 테스트 - init_actions 관련', () => {
         },
       };
 
-      await dispatcher.executeAction(action, context);
+      await dispatcher['executeAction'](action, context);
 
       expect(mockSetState).toHaveBeenCalled();
       expect(capturedState.filter).toEqual({
@@ -642,6 +691,8 @@ describe('트러블슈팅 회귀 테스트 - init_actions 관련', () => {
   });
 
   describe('[사례 5] 여러 resultTo가 _local을 덮어씀', () => {
+    // @scenario case=multi_result_to
+    // @effects separate_result_to_keys_do_not_overwrite
     it('resultTo를 다른 키로 분리하면 덮어쓰지 않아야 함', async () => {
       const dispatcher = new ActionDispatcher({
         navigate: mockNavigate,
@@ -655,8 +706,9 @@ describe('트러블슈팅 회귀 테스트 - init_actions 관련', () => {
         actionId: 'test-resultto-1',
       };
 
-      await dispatcher.executeAction(
+      await dispatcher['executeAction'](
         {
+          type: 'click' as const,
           handler: 'setState' as const,
           params: { target: 'local', data2: 'result2' },
         },
@@ -669,6 +721,8 @@ describe('트러블슈팅 회귀 테스트 - init_actions 관련', () => {
   });
 
   describe('[사례 6] init_actions에서 target: "_local" 사용', () => {
+    // @scenario case=init_underscore_local
+    // @effects init_underscore_local_equals_local
     it('target: "_local"이 "local"과 동일하게 처리되어야 함', async () => {
       const dispatcher = new ActionDispatcher({
         navigate: mockNavigate,
@@ -681,6 +735,7 @@ describe('트러블슈팅 회귀 테스트 - init_actions 관련', () => {
       };
 
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: '_local',
@@ -688,7 +743,7 @@ describe('트러블슈팅 회귀 테스트 - init_actions 관련', () => {
         },
       };
 
-      await dispatcher.executeAction(action, context);
+      await dispatcher['executeAction'](action, context);
 
       expect(mockSetState).toHaveBeenCalled();
       expect(capturedState.formData).toEqual({ name: 'test' });
@@ -697,6 +752,8 @@ describe('트러블슈팅 회귀 테스트 - init_actions 관련', () => {
   });
 
   describe('[사례 7] Composite 컴포넌트 콜백에서 setState 렌더링', () => {
+    // @scenario case=composite_callback_render
+    // @effects composite_callback_setstate_renders
     it('setState 호출 후 렌더링이 트리거되어야 함', async () => {
       const dispatcher = new ActionDispatcher({
         navigate: mockNavigate,
@@ -718,8 +775,9 @@ describe('트러블슈팅 회귀 테스트 - init_actions 관련', () => {
         actionId: 'test-composite-callback',
       };
 
-      await dispatcher.executeAction(
+      await dispatcher['executeAction'](
         {
+          type: 'click' as const,
           handler: 'setState' as const,
           params: { target: 'local', value: 'test' },
         },
@@ -735,23 +793,20 @@ describe('트러블슈팅 회귀 테스트 - init_actions 관련', () => {
      * 증상: 캐시 있는 페이지 진입 시 initTheme, initCartKey 등 템플릿 핸들러가 등록 전에 호출됨
      * 해결: TemplateApp.init()에서 reinitializeTemplateHandlers() 호출하여 window.G7TemplateHandlers에서 동기적으로 등록
      */
+    // @scenario case=template_handler_unknown
+    // @effects template_handlers_registered_before_init
     it('ActionDispatcher에 등록되지 않은 핸들러는 "Unknown action handler" 오류가 발생해야 함', async () => {
       const dispatcher = new ActionDispatcher({
         navigate: mockNavigate,
       });
 
-      // initTheme 핸들러가 등록되지 않은 상태에서 호출 시도
-      const context = {
-        state: {},
-        setState: mockSetState,
-        actionId: 'test-unknown-handler',
-      };
-
       // 핸들러 미등록 상태 확인
-      expect(dispatcher.customHandlers.has('initTheme')).toBe(false);
-      expect(dispatcher.customHandlers.has('initCartKey')).toBe(false);
+      expect(dispatcher['customHandlers'].has('initTheme')).toBe(false);
+      expect(dispatcher['customHandlers'].has('initCartKey')).toBe(false);
     });
 
+    // @scenario case=template_handler_unknown
+    // @effects template_handlers_registered_before_init
     it('registerHandler로 핸들러 등록 후 실행 가능해야 함', async () => {
       const dispatcher = new ActionDispatcher({
         navigate: mockNavigate,
@@ -764,8 +819,8 @@ describe('트러블슈팅 회귀 테스트 - init_actions 관련', () => {
       dispatcher.registerHandler('initTheme', mockInitTheme);
       dispatcher.registerHandler('initCartKey', mockInitCartKey);
 
-      expect(dispatcher.customHandlers.has('initTheme')).toBe(true);
-      expect(dispatcher.customHandlers.has('initCartKey')).toBe(true);
+      expect(dispatcher['customHandlers'].has('initTheme')).toBe(true);
+      expect(dispatcher['customHandlers'].has('initCartKey')).toBe(true);
 
       // 등록 후 실행 시 정상 동작해야 함
       const context = {
@@ -774,14 +829,16 @@ describe('트러블슈팅 회귀 테스트 - init_actions 관련', () => {
         actionId: 'test-registered-handler',
       };
 
-      await dispatcher.executeAction(
-        { handler: 'initTheme' as any, params: {} },
+      await dispatcher['executeAction'](
+        { type: 'click', handler: 'initTheme' as any, params: {} },
         context
       );
 
       expect(mockInitTheme).toHaveBeenCalled();
     });
 
+    // @scenario case=template_handler_unknown
+    // @effects template_handlers_registered_before_init
     it('window.G7TemplateHandlers에서 핸들러 맵을 읽어 등록하는 패턴이 동작해야 함', () => {
       const dispatcher = new ActionDispatcher({
         navigate: mockNavigate,
@@ -806,9 +863,9 @@ describe('트러블슈팅 회귀 테스트 - init_actions 관련', () => {
       }
 
       // 모든 핸들러가 등록되어야 함
-      expect(dispatcher.customHandlers.has('initTheme')).toBe(true);
-      expect(dispatcher.customHandlers.has('initCartKey')).toBe(true);
-      expect(dispatcher.customHandlers.has('setTheme')).toBe(true);
+      expect(dispatcher['customHandlers'].has('initTheme')).toBe(true);
+      expect(dispatcher['customHandlers'].has('initCartKey')).toBe(true);
+      expect(dispatcher['customHandlers'].has('setTheme')).toBe(true);
 
       // cleanup
       delete (window as any).G7TemplateHandlers;
@@ -819,9 +876,8 @@ describe('트러블슈팅 회귀 테스트 - init_actions 관련', () => {
 
 
 describe('트러블슈팅 회귀 테스트 - dataKey 자동 바인딩', () => {
-  let mockNavigate: ReturnType<typeof vi.fn>;
-  let mockSetState: ReturnType<typeof vi.fn>;
-  let mockGlobalStateUpdater: ReturnType<typeof vi.fn>;
+  let mockNavigate: Mock;
+  let mockSetState: Mock;
   let capturedState: Record<string, any>;
 
   beforeEach(() => {
@@ -834,7 +890,6 @@ describe('트러블슈팅 회귀 테스트 - dataKey 자동 바인딩', () => {
         capturedState = { ...capturedState, ...updater };
       }
     });
-    mockGlobalStateUpdater = vi.fn();
     Logger.getInstance().setDebug(false);
 
     (window as any).__g7PendingLocalState = undefined;
@@ -850,6 +905,8 @@ describe('트러블슈팅 회귀 테스트 - dataKey 자동 바인딩', () => {
   });
 
   describe('[사례 1] dataKey="_global.xxx"가 동작하지 않음', () => {
+    // @scenario case=datakey_global
+    // @effects datakey_supports_local_only
     it('dataKey는 _local 경로만 지원해야 함 (global은 미지원)', () => {
       // 문서화: dataKey는 _local 전용
       const validDataKey = 'form';
@@ -861,10 +918,11 @@ describe('트러블슈팅 회귀 테스트 - dataKey 자동 바인딩', () => {
   });
 
   describe('[사례 2] dataKey 경로 내 필드를 setState/setLocal로 업데이트', () => {
+    // @scenario case=datakey_setstate_forced
+    // @effects setstate_accumulates_forced_local_fields
     it('setState 실행 시 __g7ForcedLocalFields가 업데이트되어야 함', async () => {
       const dispatcher = new ActionDispatcher({
         navigate: mockNavigate,
-        globalStateUpdater: mockGlobalStateUpdater,
       });
 
       const context = {
@@ -874,6 +932,7 @@ describe('트러블슈팅 회귀 테스트 - dataKey 자동 바인딩', () => {
       };
 
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -882,7 +941,7 @@ describe('트러블슈팅 회귀 테스트 - dataKey 자동 바인딩', () => {
         },
       };
 
-      await dispatcher.executeAction(action, context);
+      await dispatcher['executeAction'](action, context);
 
       const forcedFields = (window as any).__g7ForcedLocalFields;
       expect(forcedFields).toBeDefined();
@@ -890,10 +949,11 @@ describe('트러블슈팅 회귀 테스트 - dataKey 자동 바인딩', () => {
       expect(forcedFields.form.common_info_id).toBe(218);
     });
 
+    // @scenario case=datakey_setstate_forced
+    // @effects setstate_accumulates_forced_local_fields
     it('연속 setState 호출 시 __g7ForcedLocalFields가 누적되어야 함', async () => {
       const dispatcher = new ActionDispatcher({
         navigate: mockNavigate,
-        globalStateUpdater: mockGlobalStateUpdater,
       });
 
       const context = {
@@ -903,8 +963,9 @@ describe('트러블슈팅 회귀 테스트 - dataKey 자동 바인딩', () => {
       };
 
       // 첫 번째 setState
-      await dispatcher.executeAction(
+      await dispatcher['executeAction'](
         {
+          type: 'click' as const,
           handler: 'setState' as const,
           params: { target: 'local', 'form.field1': 'value1' },
         },
@@ -912,8 +973,9 @@ describe('트러블슈팅 회귀 테스트 - dataKey 자동 바인딩', () => {
       );
 
       // 두 번째 setState
-      await dispatcher.executeAction(
+      await dispatcher['executeAction'](
         {
+          type: 'click' as const,
           handler: 'setState' as const,
           params: { target: 'local', 'form.field2': 'value2' },
         },
@@ -925,10 +987,11 @@ describe('트러블슈팅 회귀 테스트 - dataKey 자동 바인딩', () => {
       expect(forcedFields.form.field2).toBe('value2');
     });
 
+    // @scenario case=datakey_setstate_forced
+    // @effects setstate_accumulates_forced_local_fields
     it('__g7PendingLocalState가 최신 상태를 반영해야 함', async () => {
       const dispatcher = new ActionDispatcher({
         navigate: mockNavigate,
-        globalStateUpdater: mockGlobalStateUpdater,
       });
 
       const context = {
@@ -938,6 +1001,7 @@ describe('트러블슈팅 회귀 테스트 - dataKey 자동 바인딩', () => {
       };
 
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -945,7 +1009,7 @@ describe('트러블슈팅 회귀 테스트 - dataKey 자동 바인딩', () => {
         },
       };
 
-      await dispatcher.executeAction(action, context);
+      await dispatcher['executeAction'](action, context);
 
       const pendingState = (window as any).__g7PendingLocalState;
       expect(pendingState).toBeDefined();
@@ -1001,6 +1065,8 @@ describe('트러블슈팅 회귀 테스트 - dataKey 자동 바인딩', () => {
       (window as any).__g7ActionContext = undefined;
     });
 
+    // @scenario case=child_setlocal_parent_form
+    // @effects child_setlocal_preserves_parent_form
     it('자식 컴포넌트의 actionContext.state가 빈 객체여도 globalLocal 데이터가 보존되어야 함', () => {
       // 시나리오: ChipCheckbox 클릭 시 actionContext가 설정됨
       // ChipCheckbox의 state는 빈 객체 (부모 폼 데이터 없음)
@@ -1014,7 +1080,6 @@ describe('트러블슈팅 회귀 테스트 - dataKey 자동 바인딩', () => {
       };
 
       // G7Core.state.setLocal() 시뮬레이션
-      const G7Core = (window as any).G7Core || {};
       const templateApp = (window as any).__templateApp;
 
       // setLocal 로직 (engine-v1.17.7)
@@ -1058,6 +1123,8 @@ describe('트러블슈팅 회귀 테스트 - dataKey 자동 바인딩', () => {
       expect(resultPending.form.label_assignments).toHaveLength(3);
     });
 
+    // @scenario case=child_setlocal_parent_form
+    // @effects child_setlocal_preserves_parent_form
     it('연속 setLocal 호출 시 이전 변경사항이 누적되어야 함', () => {
       const childSetState = vi.fn();
       (window as any).__g7ActionContext = {
@@ -1158,6 +1225,8 @@ describe('트러블슈팅 회귀 테스트 - dataKey 자동 바인딩', () => {
       (window as any).__g7ActionContext = undefined;
     });
 
+    // @scenario case=setlocal_open_modal_dynamic
+    // @effects setlocal_includes_dynamic_state
     it('actionContext.state에 있는 dynamicState 값이 setLocal 결과에 포함되어야 함', () => {
       // actionContext.state = DynamicRenderer의 dynamicState (setState target: "_local"로 설정된 값 포함)
       const dynamicState = {
@@ -1216,6 +1285,8 @@ describe('트러블슈팅 회귀 테스트 - dataKey 자동 바인딩', () => {
       expect(result.ui.activeTab).toBe('products');
     });
 
+    // @scenario case=setlocal_open_modal_dynamic
+    // @effects setlocal_includes_dynamic_state
     it('actionContext.state가 빈 객체일 때 기존 동작과 동일 (ChipCheckbox 호환)', () => {
       // engine-v1.17.7 호환: 자식 컴포넌트의 state가 빈 객체인 경우
       const emptyState = {};
@@ -1258,6 +1329,8 @@ describe('트러블슈팅 회귀 테스트 - dataKey 자동 바인딩', () => {
       expect(result.ui.activeTab).toBe('products');
     });
 
+    // @scenario case=setlocal_open_modal_dynamic
+    // @effects setlocal_includes_dynamic_state
     it('pendingState가 이미 존재하면 dynamicState보다 pendingState 우선', () => {
       // 이전 setLocal 호출로 pendingState가 이미 설정된 경우
       (window as any).__g7PendingLocalState = {
@@ -1404,6 +1477,8 @@ describe('트러블슈팅 회귀 테스트 - dataKey 자동 바인딩', () => {
 
     // ─── 시나리오 A: 자동바인딩 단독 ─────────────────────────────────────
 
+    // @scenario case=dual_store_spec
+    // @effects dual_store_behavior_matches_spec
     it('[A] 자동바인딩 단독 — pending 에 baseState 기반 전체 스냅샷이 저장됨', () => {
       // 사용자가 title 입력 — parentFormContext.state(=React state)는 init 값
       const baseAfterInit = { form: { title: null, content: null, category: null, is_notice: false } };
@@ -1415,6 +1490,8 @@ describe('트러블슈팅 회귀 테스트 - dataKey 자동 바인딩', () => {
       expect(pending.hasChanges).toBe(true);
     });
 
+    // @scenario case=dual_store_spec
+    // @effects dual_store_behavior_matches_spec
     it('[A] 자동바인딩 연속 입력 — React 리렌더 후 pending 이 클리어되었어도 새 입력은 baseState 로부터 재구성됨', () => {
       // 첫 입력
       const baseAfterInit = { loginForm: { email: null, password: null } };
@@ -1435,6 +1512,8 @@ describe('트러블슈팅 회귀 테스트 - dataKey 자동 바인딩', () => {
 
     // ─── 시나리오 B: setLocal(render:false) 단독 ──────────────────────────
 
+    // @scenario case=dual_store_spec
+    // @effects dual_store_behavior_matches_spec
     it('[B] setLocal(render:false) 단독 — globalState._local 과 pending 에 deepMerge 로 병합됨', () => {
       // CKEditor 가 content + content_mode 갱신
       performSetLocalRenderFalse({ form: { content: '<p>CKEditor 내용</p>', content_mode: 'html' } });
@@ -1451,6 +1530,8 @@ describe('트러블슈팅 회귀 테스트 - dataKey 자동 바인딩', () => {
       expect(globalState._local.form.content).toBe('<p>CKEditor 내용</p>');
     });
 
+    // @scenario case=dual_store_spec
+    // @effects dual_store_behavior_matches_spec
     it('[B] setLocal 연속 호출 — pending 이 누적 deepMerge 됨', () => {
       performSetLocalRenderFalse({ form: { content: '<p>1차</p>' } });
       performSetLocalRenderFalse({ form: { content_mode: 'html' } });
@@ -1462,6 +1543,8 @@ describe('트러블슈팅 회귀 테스트 - dataKey 자동 바인딩', () => {
 
     // ─── 시나리오 C: 혼합 사용 (이중화의 비대칭성 노출) ───────────────────
 
+    // @scenario case=dual_store_spec
+    // @effects dual_store_behavior_matches_spec
     it('[C] setLocal 후 자동바인딩 — pending 이 자동바인딩의 stale baseState 로 덮어써짐 (알려진 한계)', () => {
       // 1) CKEditor 가 setLocal(render:false) 로 content 기록 — pending + globalState 에 저장
       performSetLocalRenderFalse({ form: { content: '<p>CKEditor 내용</p>', content_mode: 'html' } });
@@ -1483,6 +1566,8 @@ describe('트러블슈팅 회귀 테스트 - dataKey 자동 바인딩', () => {
       expect(globalState._local.form.content_mode).toBe('html');
     });
 
+    // @scenario case=dual_store_spec
+    // @effects dual_store_behavior_matches_spec
     it('[C] 두 저장소 분리 검증 — pending 과 globalState 가 서로 다른 값을 보유함', () => {
       // [C] 시나리오 후의 두 저장소 상태를 명확히 명세.
       // 단순 deepMerge 로 합치면 pending 의 null 이 globalState 의 값을 덮어쓰므로,
@@ -1507,6 +1592,8 @@ describe('트러블슈팅 회귀 테스트 - dataKey 자동 바인딩', () => {
       //    이것이 사례 6 의 본질적 비대칭성이며 SSOT 재설계의 동기.
     });
 
+    // @scenario case=dual_store_spec
+    // @effects dual_store_behavior_matches_spec
     it('[C] non-null 우선 통합 패턴의 한계 — 두 저장소가 모두 non-null 인 충돌 키는 단순 정책으로 해결 불가', () => {
       // 향후 사용처 통합 정책 후보로 가장 간단한 "non-null 우선" 을 시뮬레이션하되,
       // 충돌 키(여기서는 content_mode)에 대해 잘못된 결과가 나옴을 명시 — 더 정교한
@@ -1542,6 +1629,8 @@ describe('트러블슈팅 회귀 테스트 - dataKey 자동 바인딩', () => {
       expect(integrated.form.content_mode).toBe('text'); // 알려진 한계 — globalState 의 'html' 이 손실됨
     });
 
+    // @scenario case=dual_store_spec
+    // @effects dual_store_behavior_matches_spec
     it('[C] 자동바인딩 후 setLocal — setLocal 이 pending 을 base 로 deepMerge 하므로 자동바인딩 값 보존됨', () => {
       // 1) 자동바인딩이 title 기록 — pending 에 저장
       const baseAfterInit = { form: { title: null, content: null, content_mode: 'text', category: null, is_notice: false } };
@@ -1565,6 +1654,8 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState replaceOnlyKeys', ()
      * 근본 원인: DynamicRenderer의 deepMergeState가 errors 객체를 깊은 병합하여 이전 에러 키가 남아있음
      * 해결: deepMergeState에 replaceOnlyKeys = ['errors'] 추가하여 errors는 완전 교체
      */
+    // @scenario case=validation_errors_merge
+    // @effects errors_replaced_not_deep_merged
     it('errors 객체는 깊은 병합 대신 완전히 교체되어야 함', () => {
       const target = {
         errors: {
@@ -1606,6 +1697,8 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState replaceOnlyKeys', ()
       expect(result.form.name).toBe('테스트 상품');
     });
 
+    // @scenario case=validation_errors_merge
+    // @effects errors_replaced_not_deep_merged
     it('errors를 null로 설정하면 완전히 초기화되어야 함', () => {
       const target = {
         errors: {
@@ -1620,6 +1713,8 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState replaceOnlyKeys', ()
       expect(result.errors).toBeNull();
     });
 
+    // @scenario case=validation_errors_merge
+    // @effects errors_replaced_not_deep_merged
     it('일반 중첩 객체(form 등)는 여전히 깊은 병합되어야 함', () => {
       const target = {
         form: { name: '기존값', price: 1000 },
@@ -1642,6 +1737,8 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState replaceOnlyKeys', ()
       expect(result.filter.status).toBe('active');
     });
 
+    // @scenario case=validation_errors_merge
+    // @effects errors_replaced_not_deep_merged
     it('extendedDataContext 시나리오: dataContext._local과 dynamicState 병합 시 errors 교체', () => {
       // dataContext._local (전역에서 전달된 이전 상태 - 8개 에러 포함)
       const dataContextLocal = {
@@ -1685,6 +1782,8 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState replaceOnlyKeys', ()
      *       [null × 1634, ["9047"]] 형태의 sparse array 생성
      * 해결: 숫자 키가 배열 범위를 크게 초과하면 객체로 처리 (배열 확장 대신)
      */
+    // @scenario case=sparse_array_merge
+    // @effects merge_never_creates_sparse_array
     it('빈 배열과 큰 숫자 키 객체 병합 시 sparse array가 생성되지 않아야 함', () => {
       const target = {
         checkout: {
@@ -1707,6 +1806,8 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState replaceOnlyKeys', ()
       expect(json).not.toContain('null,null');
     });
 
+    // @scenario case=sparse_array_merge
+    // @effects merge_never_creates_sparse_array
     it('작은 배열과 작은 인덱스의 숫자 키 객체는 정상적으로 배열 병합해야 함', () => {
       const target = {
         items: [{ name: 'a' }, { name: 'b' }, { name: 'c' }],
@@ -1725,6 +1826,8 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState replaceOnlyKeys', ()
       expect(result.items[2]).toEqual({ name: 'c' });
     });
 
+    // @scenario case=sparse_array_merge
+    // @effects merge_never_creates_sparse_array
     it('빈 배열에 작은 인덱스 키 병합도 정상 동작해야 함', () => {
       const target = {
         options: [{ id: 1 }, { id: 2 }],
@@ -1740,6 +1843,8 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState replaceOnlyKeys', ()
       expect(result.options[1]).toEqual({ id: 2 });
     });
 
+    // @scenario case=sparse_array_merge
+    // @effects merge_never_creates_sparse_array
     it('여러 개의 큰 숫자 키도 sparse array 없이 객체로 처리해야 함', () => {
       const target = {
         couponMap: [],
@@ -1761,9 +1866,9 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState replaceOnlyKeys', ()
 
 describe('3모드 merge 기능 (replace/shallow/deep)', () => {
   let dispatcher: ActionDispatcher;
-  let mockNavigate: ReturnType<typeof vi.fn>;
-  let mockSetState: ReturnType<typeof vi.fn>;
-  let mockGlobalStateUpdater: ReturnType<typeof vi.fn>;
+  let mockNavigate: Mock;
+  let mockSetState: Mock;
+  let mockGlobalStateUpdater: Mock;
   let capturedState: Record<string, any>;
   let capturedGlobalState: Record<string, any>;
 
@@ -1804,6 +1909,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
   });
 
   describe('deepMergeState 기본 동작 (deep 모드)', () => {
+    // @scenario case=deep_merge_default
+    // @effects deep_merge_recurses_objects_replaces_arrays
     it('중첩 객체를 재귀적으로 병합해야 함', () => {
       const prev = { form: { name: '기존', price: 1000 }, ui: { tab: 'basic' } };
       const update = { form: { name: '신규' } };
@@ -1814,6 +1921,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       expect(result.ui.tab).toBe('basic');
     });
 
+    // @scenario case=deep_merge_default
+    // @effects deep_merge_recurses_objects_replaces_arrays
     it('배열은 교체(덮어쓰기)해야 함', () => {
       const prev = { items: [1, 2, 3], name: 'test' };
       const update = { items: [4, 5] };
@@ -1825,6 +1934,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
   });
 
   describe('setState merge: "replace" 모드', () => {
+    // @scenario case=merge_replace
+    // @effects merge_replace_discards_existing_state
     it('기존 상태를 완전히 교체해야 함 (global target)', async () => {
       capturedGlobalState = { existingKey: 'old', nested: { a: 1 } };
 
@@ -1835,6 +1946,7 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       };
 
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'global',
@@ -1843,7 +1955,7 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
         },
       };
 
-      await dispatcher.executeAction(action, context);
+      await dispatcher['executeAction'](action, context);
 
       const callArgs = mockGlobalStateUpdater.mock.calls[0][0];
       expect(callArgs.newKey).toBe('fresh');
@@ -1852,6 +1964,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       expect(callArgs.nested).toBeUndefined();
     });
 
+    // @scenario case=merge_replace
+    // @effects merge_replace_discards_existing_state
     it('기존 상태를 완전히 교체해야 함 (local target)', async () => {
       capturedState = { form: { name: '기존', price: 1000 }, ui: { tab: 'basic' } };
 
@@ -1862,6 +1976,7 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       };
 
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -1870,7 +1985,7 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
         },
       };
 
-      await dispatcher.executeAction(action, context);
+      await dispatcher['executeAction'](action, context);
 
       // __g7PendingLocalState에 replace 된 값이 있어야 함
       const pendingState = (window as any).__g7PendingLocalState;
@@ -1882,6 +1997,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
   });
 
   describe('setState merge: "shallow" 모드', () => {
+    // @scenario case=merge_shallow
+    // @effects merge_shallow_overwrites_top_level_only
     it('최상위 키만 덮어써야 함 (global target)', async () => {
       const context = {
         state: {},
@@ -1890,6 +2007,7 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       };
 
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'global',
@@ -1898,13 +2016,15 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
         },
       };
 
-      await dispatcher.executeAction(action, context);
+      await dispatcher['executeAction'](action, context);
 
       const callArgs = mockGlobalStateUpdater.mock.calls[0][0];
       // shallow 모드에서도 globalStateUpdater는 payload를 전달함
       expect(callArgs.form).toEqual({ name: '신규' });
     });
 
+    // @scenario case=merge_shallow
+    // @effects merge_shallow_overwrites_top_level_only
     it('local target에서 shallow 모드가 적용되어야 함', async () => {
       capturedState = { form: { name: '기존', price: 1000 }, ui: { tab: 'basic' } };
 
@@ -1915,6 +2035,7 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       };
 
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -1923,7 +2044,7 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
         },
       };
 
-      await dispatcher.executeAction(action, context);
+      await dispatcher['executeAction'](action, context);
 
       const pendingState = (window as any).__g7PendingLocalState;
       expect(pendingState).toBeDefined();
@@ -1934,6 +2055,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
   });
 
   describe('setState merge 기본값 (deep 모드)', () => {
+    // @scenario case=merge_default_deep
+    // @effects merge_defaults_to_deep
     it('merge 옵션 없이 deep 병합이 기본 동작이어야 함', async () => {
       capturedState = { form: { name: '기존', price: 1000 }, ui: { tab: 'basic' } };
 
@@ -1944,6 +2067,7 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       };
 
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -1951,7 +2075,7 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
         },
       };
 
-      await dispatcher.executeAction(action, context);
+      await dispatcher['executeAction'](action, context);
 
       const pendingState = (window as any).__g7PendingLocalState;
       expect(pendingState).toBeDefined();
@@ -1966,6 +2090,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
     const initialState = { form: { name: '기존', price: 1000 }, ui: { tab: 'basic' } };
     const updatePayload = { form: { name: '신규' } };
 
+    // @scenario case=merge_mode_comparison
+    // @effects merge_modes_differ_as_specified
     it('replace: 기존 상태 완전 무시, 새 값만 남음', () => {
       // replace는 업데이트 값만 사용
       const result = { ...updatePayload };
@@ -1973,12 +2099,16 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       expect((result as any).ui).toBeUndefined();
     });
 
+    // @scenario case=merge_mode_comparison
+    // @effects merge_modes_differ_as_specified
     it('shallow: 최상위 키만 덮어쓰기', () => {
       const result = { ...initialState, ...updatePayload };
       expect(result.form).toEqual({ name: '신규' }); // form 전체 교체
       expect(result.ui).toEqual({ tab: 'basic' }); // ui 유지
     });
 
+    // @scenario case=merge_mode_comparison
+    // @effects merge_modes_differ_as_specified
     it('deep: 재귀적 깊은 병합', () => {
       const result = deepMergeState(initialState, updatePayload);
       expect(result.form.name).toBe('신규');
@@ -1988,6 +2118,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
   });
 
   describe('setState merge: "replace" + isolated target', () => {
+    // @scenario case=merge_isolated
+    // @effects merge_mode_passed_to_isolated_context
     it('isolated context에 replace 모드가 전달되어야 함', async () => {
       const mockMergeState = vi.fn();
       const mockIsolatedContext = {
@@ -1998,6 +2130,7 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       };
 
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'isolated',
@@ -2013,11 +2146,13 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
         setState: vi.fn(),
       };
 
-      await dispatcher.executeAction(action, context);
+      await dispatcher['executeAction'](action, context);
 
       expect(mockMergeState).toHaveBeenCalledWith({ step: 2 }, 'replace');
     });
 
+    // @scenario case=merge_isolated
+    // @effects merge_mode_passed_to_isolated_context
     it('isolated context에 shallow 모드가 전달되어야 함', async () => {
       const mockMergeState = vi.fn();
       const mockIsolatedContext = {
@@ -2028,6 +2163,7 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       };
 
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'isolated',
@@ -2044,7 +2180,7 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
         setState: vi.fn(),
       };
 
-      await dispatcher.executeAction(action, context);
+      await dispatcher['executeAction'](action, context);
 
       expect(mockMergeState).toHaveBeenCalledWith(
         { step: 2, newField: 'value' },
@@ -2054,6 +2190,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
   });
 
   describe('setState merge + __mergeMode 메타데이터 전파', () => {
+    // @scenario case=merge_mode_metadata
+    // @effects merge_mode_metadata_only_for_non_deep
     it('replace 모드에서 __mergeMode가 payload에 포함되어야 함', async () => {
       const mockSetStateFn = vi.fn();
 
@@ -2064,6 +2202,7 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       };
 
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -2072,7 +2211,7 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
         },
       };
 
-      await dispatcher.executeAction(action, context);
+      await dispatcher['executeAction'](action, context);
 
       // setState가 호출되었고, payload에 __mergeMode가 포함되어야 함
       expect(mockSetStateFn).toHaveBeenCalled();
@@ -2083,6 +2222,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       expect(payload.newData).toBe('value');
     });
 
+    // @scenario case=merge_mode_metadata
+    // @effects merge_mode_metadata_only_for_non_deep
     it('deep 모드에서는 __mergeMode가 포함되지 않아야 함', async () => {
       const mockSetStateFn = vi.fn();
 
@@ -2093,6 +2234,7 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       };
 
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -2100,7 +2242,7 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
         },
       };
 
-      await dispatcher.executeAction(action, context);
+      await dispatcher['executeAction'](action, context);
 
       expect(mockSetStateFn).toHaveBeenCalled();
       const calledArg = mockSetStateFn.mock.calls[0][0];
@@ -2110,6 +2252,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
   });
 
   describe('setState merge: "replace" + $parent scope', () => {
+    // @scenario case=merge_parent_scope
+    // @effects merge_mode_passed_to_parent_scope
     it('$parent._local 경로에서 replace 모드가 전달되어야 함', async () => {
       const parentSetState = vi.fn();
 
@@ -2126,6 +2270,7 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       };
 
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: '$parent._local',
@@ -2134,7 +2279,7 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
         },
       };
 
-      await dispatcher.executeAction(action, context);
+      await dispatcher['executeAction'](action, context);
 
       // parentSetState가 호출되어야 함
       expect(parentSetState).toHaveBeenCalled();
@@ -2152,6 +2297,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
   });
 
   describe('__g7ForcedLocalFields replace 모드 처리', () => {
+    // @scenario case=forced_fields_replace
+    // @effects replace_resets_forced_local_fields
     it('replace 모드에서 __g7ForcedLocalFields가 payload로만 리셋되어야 함', async () => {
       // 기존 forcedFields 설정
       (window as any).__g7ForcedLocalFields = { existingField: 'old' };
@@ -2163,6 +2310,7 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       };
 
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -2171,7 +2319,7 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
         },
       };
 
-      await dispatcher.executeAction(action, context);
+      await dispatcher['executeAction'](action, context);
 
       const forcedFields = (window as any).__g7ForcedLocalFields;
       expect(forcedFields).toBeDefined();
@@ -2203,6 +2351,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       (window as any).__g7SetLocalOverrideKeys = undefined;
     });
 
+    // @scenario case=setlocal_stale_dynamic_state
+    // @effects setlocal_clears_stale_dynamic_state
     it('setLocal 호출 후 localDynamicState가 stale 값으로 남으면 안 됨 (버그 재현)', () => {
       // 1. dataContext._local (setLocal으로 업데이트된 상태)
       const dataContextLocal = {
@@ -2256,6 +2406,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       expect(resultAfterCleanup.form.name.ko).toBe('테스트 상품');
     });
 
+    // @scenario case=setlocal_stale_dynamic_state
+    // @effects setlocal_clears_stale_dynamic_state
     it('빈 배열로 setLocal 후에도 stale localDynamicState의 배열이 남으면 안 됨', () => {
       const staleDynamicState = {
         form: {
@@ -2279,6 +2431,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       expect(result.form.notice_items).toHaveLength(0);
     });
 
+    // @scenario case=setlocal_stale_dynamic_state
+    // @effects setlocal_clears_stale_dynamic_state
     it('연속 setLocal 호출 시 마지막 값이 유지되어야 함', () => {
       let dynamicState: Record<string, any> = {
         form: { notice_items: [{ key: '1', name: { ko: '항목1' } }] },
@@ -2318,6 +2472,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
   });
 
   describe('[사례 17 보조] removeMatchingLeafKeys 유틸리티', () => {
+    // @scenario case=remove_matching_leaf_keys
+    // @effects remove_matching_leaf_keys_prunes_payload_leaves
     it('setLocal payload의 리프 키만 제거하고 다른 키는 보존해야 함', () => {
       const state = {
         form: { name: { ko: '상품명' }, notice_items: [{ key: '1' }], price: 10000 },
@@ -2341,6 +2497,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       expect(result.loadingActions).toEqual({});
     });
 
+    // @scenario case=remove_matching_leaf_keys
+    // @effects remove_matching_leaf_keys_prunes_payload_leaves
     it('target에 없는 키는 무시해야 함', () => {
       const state = { form: { name: { ko: '상품명' } } };
       const keysToRemove = { form: { notice_items: [] }, ui: { tab: 'info' } };
@@ -2350,6 +2508,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       expect(result.ui).toBeUndefined();
     });
 
+    // @scenario case=remove_matching_leaf_keys
+    // @effects remove_matching_leaf_keys_prunes_payload_leaves
     it('빈 객체가 되면 부모 키도 제거해야 함', () => {
       const state = { form: { notice_items: [{ key: '1' }] } };
       const keysToRemove = { form: { notice_items: [] } };
@@ -2359,6 +2519,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       expect(result.form).toBeUndefined();
     });
 
+    // @scenario case=remove_matching_leaf_keys
+    // @effects remove_matching_leaf_keys_prunes_payload_leaves
     it('__g7SetLocalOverrideKeys가 ROOT에서만 처리되어야 함 (isRootRenderer 시뮬레이션)', () => {
       const setLocalPayload = { form: { notice_items: [{ key: 'new' }] } };
       (window as any).__g7SetLocalOverrideKeys = { ...setLocalPayload };
@@ -2392,6 +2554,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       expect((window as any).__g7SetLocalOverrideKeys).toBeUndefined();
     });
 
+    // @scenario case=remove_matching_leaf_keys
+    // @effects remove_matching_leaf_keys_prunes_payload_leaves
     it('__g7ForcedLocalFields가 ROOT에서만 클리어되어야 함 (engine-v1.17.8 모달 시나리오)', () => {
       // setLocal()이 설정한 forcedLocalFields
       const forcedFields = {
@@ -2456,6 +2620,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       (window as any).__g7PendingLocalState = undefined;
     });
 
+    // @scenario case=sequence_forced_fields_overwrite
+    // @effects sequence_custom_handler_state_survives_forced_fields
     it('deep 모드 setState에서 __g7ForcedLocalFields에 변경 필드만 저장해야 함', async () => {
       // 현재 상태: selectedOptionItems: [], currentSelection: {}
       const currentState = {
@@ -2472,6 +2638,7 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
 
       // setState: currentSelection만 업데이트 (deep 모드 기본)
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -2479,7 +2646,7 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
         },
       };
 
-      await dispatcher.executeAction(action, context);
+      await dispatcher['executeAction'](action, context);
 
       const forcedFields = (window as any).__g7ForcedLocalFields;
       expect(forcedFields).toBeDefined();
@@ -2492,6 +2659,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       expect(forcedFields.someOtherField).toBeUndefined();
     });
 
+    // @scenario case=sequence_forced_fields_overwrite
+    // @effects sequence_custom_handler_state_survives_forced_fields
     it('sequence 내 setState 후 커스텀 핸들러가 localDynamicState에 설정한 값이 보존되어야 함', () => {
       // 시뮬레이션: sequence step 1 → setState → forcedLocalFields 설정
       // step 1: currentSelection만 변경
@@ -2535,6 +2704,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       expect(localState.currentSelection).toEqual({ '색상': '그레이', '사이즈': 'M' });
     });
 
+    // @scenario case=sequence_forced_fields_overwrite
+    // @effects sequence_custom_handler_state_survives_forced_fields
     it('커스텀 핸들러의 명시적 setState(__mergeMode 포함)가 forcedLocalFields를 업데이트해야 함', () => {
       // 시뮬레이션: sequence step 1 → setState → forcedLocalFields 설정
       (window as any).__g7ForcedLocalFields = {
@@ -2567,6 +2738,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       expect(forcedFields.currentSelection).toEqual({});
     });
 
+    // @scenario case=sequence_forced_fields_overwrite
+    // @effects sequence_custom_handler_state_survives_forced_fields
     it('커스텀 핸들러 forcedLocalFields 업데이트 후 extendedDataContext에서 최신 값이 반영되어야 함', () => {
       // step 1 setState가 forcedLocalFields 설정
       (window as any).__g7ForcedLocalFields = {
@@ -2609,6 +2782,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       expect(localState.currentSelection).toEqual({});
     });
 
+    // @scenario case=sequence_forced_fields_overwrite
+    // @effects sequence_custom_handler_state_survives_forced_fields
     it('__mergeMode가 없는 호출(Form 자동바인딩 등)은 forcedLocalFields를 업데이트하지 않아야 함', () => {
       // sequence step 1이 forcedLocalFields 설정
       (window as any).__g7ForcedLocalFields = {
@@ -2636,6 +2811,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       expect(forcedFields.formField).toBeUndefined();
     });
 
+    // @scenario case=sequence_forced_fields_overwrite
+    // @effects sequence_custom_handler_state_survives_forced_fields
     it('렌더 사이클 시작 시 __g7PendingLocalState가 클리어되어야 함 (isRootRenderer=true)', () => {
       /**
        * 증상: 옵션 선택 후 수량 변경 시 드롭다운이 이전 선택 상태로 리버트되고 수량 변경 미반영
@@ -2663,6 +2840,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       expect((window as any).__g7ForcedLocalFields).toBeUndefined();
     });
 
+    // @scenario case=sequence_forced_fields_overwrite
+    // @effects sequence_custom_handler_state_survives_forced_fields
     it('__g7PendingLocalState 클리어 후 수량 변경이 정상 동작해야 함', () => {
       /**
        * 증상: 수량 변경 핸들러가 setState({selectedOptionItems: updatedItems})를 호출하지만
@@ -2709,6 +2888,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       expect(result.someField).toBe('preserved');
     });
 
+    // @scenario case=sequence_forced_fields_overwrite
+    // @effects sequence_custom_handler_state_survives_forced_fields
     it('__g7PendingLocalState가 stale일 때 수량 변경 시 currentSelection이 오염되는 문제 재현', () => {
       /**
        * engine-v1.17.10 이전 동작 재현:
@@ -2756,6 +2937,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       expect(resultClean.currentSelection).toEqual({}); // 오염 없음
     });
 
+    // @scenario case=sequence_forced_fields_overwrite
+    // @effects sequence_custom_handler_state_survives_forced_fields
     it('isRootRenderer=false인 컴포넌트에서도 globals가 클리어되어야 함 (engine-v1.17.11)', () => {
       /**
        * 증상: user_layout_root(isRootRenderer=false)의 수량 변경이 반영되지 않음
@@ -2811,6 +2994,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       expect(localState.currentSelection).toEqual({});
     });
 
+    // @scenario case=sequence_forced_fields_overwrite
+    // @effects sequence_custom_handler_state_survives_forced_fields
     it('engine-v1.17.8 isRootRenderer 제한으로 stale forcedLocalFields가 수량 변경을 덮어쓰는 문제 재현', () => {
       /**
        * engine-v1.17.8 버그 재현:
@@ -2864,6 +3049,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       expect(localState.selectedOptionItems[0].quantity).toBe(1); // 버그!
     });
 
+    // @scenario case=sequence_forced_fields_overwrite
+    // @effects sequence_custom_handler_state_survives_forced_fields
     it('shallow 모드 setState에서도 __g7ForcedLocalFields에 변경 필드만 저장해야 함', async () => {
       const currentState = {
         selectedOptionItems: [{ id: 'existing' }],
@@ -2878,6 +3065,7 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       };
 
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -2886,7 +3074,7 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
         },
       };
 
-      await dispatcher.executeAction(action, context);
+      await dispatcher['executeAction'](action, context);
 
       const forcedFields = (window as any).__g7ForcedLocalFields;
       expect(forcedFields).toBeDefined();
@@ -2917,6 +3105,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
    * - 실행 시점에 resolveParams가 최신 상태로 해소
    */
   describe('[사례 20] 콜백 prop 내 액션 정의 {{_local.xxx}} 선평가 방지', () => {
+    // @scenario case=callback_action_preeval
+    // @effects action_definitions_not_pre_evaluated
     it('resolveObject가 액션 정의 객체의 템플릿 문자열을 보존한다', () => {
       const engine = new DataBindingEngine();
       const actionDef = {
@@ -2951,6 +3141,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       expect(result.actions[0].params['checkout.zipcode']).toBe('{{$event.zipcode}}');
     });
 
+    // @scenario case=callback_action_preeval
+    // @effects action_definitions_not_pre_evaluated
     it('단일 액션 정의(handler + params)도 선평가를 건너뛴다', () => {
       const engine = new DataBindingEngine();
       const actionDef = {
@@ -2975,6 +3167,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       expect(result.onSuccess[0].params.data).toBe('{{response}}');
     });
 
+    // @scenario case=callback_action_preeval
+    // @effects action_definitions_not_pre_evaluated
     it('비-액션 정의 객체는 기존처럼 해소된다', () => {
       const engine = new DataBindingEngine();
       const normalObj = {
@@ -2989,6 +3183,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       expect(result.style.color).toBe('red');
     });
 
+    // @scenario case=callback_action_preeval
+    // @effects action_definitions_not_pre_evaluated
     it('handler 키가 있어도 params/actions/target/onSuccess/onError 없으면 일반 객체로 해소', () => {
       const engine = new DataBindingEngine();
       const obj = {
@@ -3006,6 +3202,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       expect(result.label).toBe('버튼');
     });
 
+    // @scenario case=callback_action_preeval
+    // @effects action_definitions_not_pre_evaluated
     it('$switch 객체는 기존처럼 처리된다 (isActionDefinition보다 우선)', () => {
       const engine = new DataBindingEngine();
       const switchObj = {
@@ -3042,6 +3240,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
      * 해결: executeCallbackAction에서 handlerContext.state를 getLocal()보다 우선 사용
      */
 
+    // @scenario case=async_handler_context_state
+    // @effects handler_context_state_preferred_over_get_local
     it('handlerContext.state가 있으면 getLocal()보다 우선 사용된다', () => {
       // 시뮬레이션: 비동기 콜백 환경
       // - getLocal()은 globalState._local만 반환 (item_coupons: [])
@@ -3070,6 +3270,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       expect(currentLocalState.checkout.use_points).toBe(500);
     });
 
+    // @scenario case=async_handler_context_state
+    // @effects handler_context_state_preferred_over_get_local
     it('handlerContext.state가 없으면 getLocal()로 폴백한다', () => {
       const globalLocal = {
         checkout: { zipcode: null, country_code: 'KR', item_coupons: [], use_points: 0 },
@@ -3085,6 +3287,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       expect(currentLocalState).toBe(globalLocal);
     });
 
+    // @scenario case=async_handler_context_state
+    // @effects handler_context_state_preferred_over_get_local
     it('__g7ActionContext에 handlerContext.state 기반 _local이 설정된다', () => {
       // executeCallbackAction이 __g7ActionContext를 올바르게 구성하는지 검증
       const handlerState = {
@@ -3121,6 +3325,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       expect(actionContext.data.$event.zipcode).toBe('13479');
     });
 
+    // @scenario case=async_handler_context_state
+    // @effects handler_context_state_preferred_over_get_local
     it('sequence에서 setState 후 apiCall의 body가 최신 _local을 참조한다', () => {
       // handleSequence가 handlerContext.state 기반 initialState에서 시작하면
       // deep merge로 기존 필드(item_coupons)가 보존되는지 검증
@@ -3132,7 +3338,6 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       };
 
       // sequence 내 setState #1: shipping.zipcode 업데이트
-      const setState1Payload = { 'shipping.zipcode': '13479', 'shipping.address': '경기도 성남시' };
       // dot notation을 nested object로 변환
       const nestedUpdate1 = { shipping: { zipcode: '13479', address: '경기도 성남시' } };
 
@@ -3157,6 +3362,8 @@ describe('3모드 merge 기능 (replace/shallow/deep)', () => {
       expect(afterSetState2.shipping.zipcode).toBe('13479');
     });
 
+    // @scenario case=async_handler_context_state
+    // @effects handler_context_state_preferred_over_get_local
     it('getLocal()에 __g7CommittedLocalState를 추가하면 모달 컨텍스트 혼입 위험', () => {
       // __g7CommittedLocalState를 getLocal()에 사용하면
       // 다중 root-level DynamicRenderer(메인 + 모달)에서
@@ -3205,6 +3412,8 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState 배열+숫자키 객
      * 해결: deepMergeState에 hasOnlyNumericKeys 체크 추가하여
      *       배열+숫자키 객체를 인덱스별로 병합
      */
+    // @scenario case=set_parent_local_array
+    // @effects numeric_key_merge_keeps_array
     it('target 배열 + source 숫자키 객체 → 배열 유지하며 인덱스별 병합', () => {
       const target = {
         ui: {
@@ -3243,6 +3452,8 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState 배열+숫자키 객
       expect(result.ui.optionInputs[1].values).toEqual([]);
     });
 
+    // @scenario case=set_parent_local_array
+    // @effects numeric_key_merge_keeps_array
     it('빈 배열이 아닌 실제 배열에서도 인덱스 병합 동작', () => {
       const target = {
         items: [
@@ -3267,6 +3478,8 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState 배열+숫자키 객
       expect(result.items[2]).toEqual({ id: 3, label: 'C', count: 30 }); // 변경 없음
     });
 
+    // @scenario case=set_parent_local_array
+    // @effects numeric_key_merge_keeps_array
     it('범위 초과 인덱스는 배열 확장', () => {
       const target = {
         items: [{ id: 1 }],
@@ -3285,6 +3498,8 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState 배열+숫자키 객
       expect(result.items[2]).toEqual({ id: 3 });
     });
 
+    // @scenario case=set_parent_local_array
+    // @effects numeric_key_merge_keeps_array
     it('source가 배열이면 기존처럼 배열 교체 (새 코드 미적용)', () => {
       const target = { items: [1, 2, 3] };
       const source = { items: [4, 5] };
@@ -3294,6 +3509,8 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState 배열+숫자키 객
       expect(result.items).toEqual([4, 5]);
     });
 
+    // @scenario case=set_parent_local_array
+    // @effects numeric_key_merge_keeps_array
     it('source 객체에 비숫자 키가 섞여있으면 기존 덮어쓰기 동작 유지', () => {
       const target = { items: [1, 2, 3] };
       const source = { items: { '0': 10, name: 'test' } };
@@ -3304,6 +3521,8 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState 배열+숫자키 객
       expect(result.items).toEqual({ '0': 10, name: 'test' });
     });
 
+    // @scenario case=set_parent_local_array
+    // @effects numeric_key_merge_keeps_array
     it('replaceOnlyKeys(errors)는 새 코드 이전에 가드됨', () => {
       const target = {
         errors: ['에러1', '에러2'],
@@ -3319,6 +3538,8 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState 배열+숫자키 객
       expect(result.errors).toEqual({ '0': '새에러' });
     });
 
+    // @scenario case=set_parent_local_array
+    // @effects numeric_key_merge_keeps_array
     it('기존 사례15 회귀 확인: errors 깊은 병합 방지', () => {
       const target = {
         errors: {
@@ -3338,6 +3559,8 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState 배열+숫자키 객
       expect(result.form.name).toBe('테스트');
     });
 
+    // @scenario case=set_parent_local_array
+    // @effects numeric_key_merge_keeps_array
     it('실제 시나리오: setParentLocal → __g7PendingLocalState → handleLocalSetState', () => {
       // 1단계: React 현재 상태 (prev)
       const prev = {
@@ -3371,6 +3594,8 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState 배열+숫자키 객
       expect(effectivePrev.form.name).toBe('테스트 상품');
     });
 
+    // @scenario case=set_parent_local_array
+    // @effects numeric_key_merge_keeps_array
     it('실제 시나리오: __g7ForcedLocalFields 적용 시에도 배열 유지', () => {
       // extendedDataContext 병합 결과
       const localState = {
@@ -3404,6 +3629,8 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState 배열+숫자키 객
       expect(result.ui.optionInputs[1].name).toBe('사이즈');
     });
 
+    // @scenario case=set_parent_local_array
+    // @effects numeric_key_merge_keeps_array
     it('다중 인덱스 동시 업데이트', () => {
       const target = {
         ui: {
@@ -3433,6 +3660,8 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState 배열+숫자키 객
       expect(result.ui.optionInputs[2].values).toEqual([{ ko: '면' }]);
     });
 
+    // @scenario case=set_parent_local_array
+    // @effects numeric_key_merge_keeps_array
     it('원시 값 배열에 대한 인덱스 업데이트', () => {
       const target = { scores: [100, 200, 300] };
       const source = { scores: { '1': 250 } };
@@ -3451,7 +3680,7 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState 배열+숫자키 객
      * 해결: resolveParams에서 키에 {{ 포함 시 logger.warn 출력
      */
     let localDispatcher: ActionDispatcher;
-    let localSetState: ReturnType<typeof vi.fn>;
+    let localSetState: Mock;
 
     beforeEach(() => {
       localDispatcher = new ActionDispatcher({ navigate: vi.fn() });
@@ -3461,6 +3690,8 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState 배열+숫자키 객
       });
     });
 
+    // @scenario case=setstate_expression_key
+    // @effects expression_key_in_setstate_warns
     it('키에 {{}} 표현식이 포함되면 console.warn이 출력되어야 함', async () => {
       Logger.getInstance().setDebug(true);
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -3479,6 +3710,7 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState 배열+숫자키 객
       };
 
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -3486,7 +3718,7 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState 배열+숫자키 객
         },
       };
 
-      await localDispatcher.executeAction(action, context);
+      await localDispatcher['executeAction'](action, context);
 
       // logger.warn이 호출되었는지 확인
       expect(warnSpy).toHaveBeenCalledWith(
@@ -3498,6 +3730,8 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState 배열+숫자키 객
       Logger.getInstance().setDebug(false);
     });
 
+    // @scenario case=setstate_expression_key
+    // @effects expression_key_in_setstate_warns
     it('정적 키만 사용하면 경고가 출력되지 않아야 함', async () => {
       Logger.getInstance().setDebug(true);
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -3509,6 +3743,7 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState 배열+숫자키 객
       };
 
       const action = {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: {
           target: 'local',
@@ -3516,7 +3751,7 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState 배열+숫자키 객
         },
       };
 
-      await localDispatcher.executeAction(action, context);
+      await localDispatcher['executeAction'](action, context);
 
       // resolveParams 관련 경고가 없어야 함
       const resolveParamsWarns = warnSpy.mock.calls.filter(
@@ -3542,6 +3777,8 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState 배열+숫자키 객
      *
      * @see modules/sirsoft-ecommerce/resources/layouts/admin/partials/admin_ecommerce_product_list
      */
+    // @scenario case=setlocal_array_overwrite
+    // @effects setlocal_merges_override_keys_only
     it('setLocal 시 __g7SetLocalOverrideKeys만 병합하여 expandedRows 보존', () => {
       // prev: 사용자가 row 301을 펼친 상태
       const prev = {
@@ -3577,6 +3814,8 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState 배열+숫자키 객
       expect(effectivePrev.filterStatus).toBe('all');
     });
 
+    // @scenario case=setlocal_array_overwrite
+    // @effects setlocal_merges_override_keys_only
     it('setLocalOverrides 없으면 pendingState 전체 병합 (setParentLocal 경로)', () => {
       // prev: 사용자가 row 301을 펼친 상태
       const prev = {
@@ -3603,6 +3842,8 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState 배열+숫자키 객
       expect(effectivePrev.parentData).toEqual({ key: 'value' });
     });
 
+    // @scenario case=setlocal_array_overwrite
+    // @effects setlocal_merges_override_keys_only
     it('setLocal으로 selectedItems와 selectedOptionIds 동시 변경 시 다른 키 보존', () => {
       // prev: 이미 확장된 row와 필터 상태가 있는 경우
       const prev = {
@@ -3630,6 +3871,8 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState 배열+숫자키 객
       expect(effectivePrev.searchKeyword).toBe('테스트');
     });
 
+    // @scenario case=setlocal_array_overwrite
+    // @effects setlocal_merges_override_keys_only
     it('빈 setLocalOverrides({})인 경우 prev가 그대로 유지', () => {
       const prev = {
         expandedRows: [301],
@@ -3652,6 +3895,8 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState 배열+숫자키 객
      * 해결: 배열 요소 수정 시 spread operator로 새 객체 생성
      */
 
+    // @scenario case=shallow_copy_mutation
+    // @effects new_references_needed_for_change_detection
     it('shallow copy 배열의 요소를 직접 mutation하면 원본과 동일 참조이므로 deepMerge에서 변경 감지 불가', () => {
       const originalState = {
         form: {
@@ -3678,6 +3923,8 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState 배열+숫자키 객
       expect(shallowCopied[0]).toBe(originalState.form.country_settings[0]);
     });
 
+    // @scenario case=shallow_copy_mutation
+    // @effects new_references_needed_for_change_detection
     it('spread operator로 새 객체를 생성하면 원본과 다른 참조이므로 deepMerge에서 변경 감지 가능', () => {
       const originalState = {
         form: {
@@ -3708,6 +3955,8 @@ describe('트러블슈팅 회귀 테스트 - deepMergeState 배열+숫자키 객
       expect(merged.form.country_settings[1].base_fee).toBe(5000);
     });
 
+    // @scenario case=shallow_copy_mutation
+    // @effects new_references_needed_for_change_detection
     it('중첩 객체(ranges)를 수정할 때도 spread operator로 새 객체 생성 필수', () => {
       const originalState = {
         form: {
@@ -3750,8 +3999,8 @@ describe('[사례 26] 컴포넌트가 raw value를 전달하는 onChange 처리 
    * 해결: 엔진 fallback 제거, 컴포넌트에서 { target: { value } } 패턴 사용
    */
   let dispatcher: ActionDispatcher;
-  let mockSetState: ReturnType<typeof vi.fn>;
-  let mockGlobalStateUpdater: ReturnType<typeof vi.fn>;
+  let mockSetState: Mock;
+  let mockGlobalStateUpdater: Mock;
 
   beforeEach(() => {
     mockSetState = vi.fn((updater) => {
@@ -3770,6 +4019,8 @@ describe('[사례 26] 컴포넌트가 raw value를 전달하는 onChange 처리 
     vi.clearAllMocks();
   });
 
+  // @scenario case=raw_value_on_change
+  // @effects raw_value_callback_skips_event_handler
   it('bindActionsToProps에서 raw value(이벤트가 아닌 값)는 핸들러를 실행하지 않아야 함', () => {
     const props = {
       actions: [
@@ -3802,6 +4053,8 @@ describe('[사례 26] 컴포넌트가 raw value를 전달하는 onChange 처리 
     expect(mockSetState).not.toHaveBeenCalled();
   });
 
+  // @scenario case=raw_value_on_change
+  // @effects raw_value_callback_skips_event_handler
   it('{ target: { value } } 패턴의 커스텀 이벤트는 정상 처리되어야 함', () => {
     const props = {
       actions: [
@@ -3886,6 +4139,8 @@ describe('[engine-v1.21.2] getLocal() __g7LastSetLocalSnapshot fallback', () => 
     (window as any).__g7LastSetLocalSnapshot = undefined;
   });
 
+  // @scenario case=get_local_snapshot_fallback
+  // @effects get_local_falls_back_to_last_snapshot
   it('__g7PendingLocalState가 있으면 우선 사용해야 함', () => {
     (window as any).__g7PendingLocalState = { form: { name: 'pending' } };
     (window as any).__g7LastSetLocalSnapshot = { form: { name: 'snapshot' } };
@@ -3894,6 +4149,8 @@ describe('[engine-v1.21.2] getLocal() __g7LastSetLocalSnapshot fallback', () => 
     expect(result.form.name).toBe('pending');
   });
 
+  // @scenario case=get_local_snapshot_fallback
+  // @effects get_local_falls_back_to_last_snapshot
   it('__g7PendingLocalState가 null이면 __g7LastSetLocalSnapshot을 fallback으로 사용해야 함', () => {
     (window as any).__g7PendingLocalState = null;
     (window as any).__g7LastSetLocalSnapshot = { form: { name: 'snapshot-value' } };
@@ -3902,6 +4159,8 @@ describe('[engine-v1.21.2] getLocal() __g7LastSetLocalSnapshot fallback', () => 
     expect(result.form.name).toBe('snapshot-value');
   });
 
+  // @scenario case=get_local_snapshot_fallback
+  // @effects get_local_falls_back_to_last_snapshot
   it('__g7LastSetLocalSnapshot이 globalLocal과 동일 참조이면 스킵해야 함', () => {
     const globalLocal = { form: { name: 'initial' } };
     mockTemplateApp.getGlobalState.mockReturnValue({ _local: globalLocal });
@@ -3912,6 +4171,8 @@ describe('[engine-v1.21.2] getLocal() __g7LastSetLocalSnapshot fallback', () => 
     expect(result.form.name).toBe('initial');
   });
 
+  // @scenario case=get_local_snapshot_fallback
+  // @effects get_local_falls_back_to_last_snapshot
   it('모든 fallback이 없으면 globalLocal만 반환해야 함', () => {
     (window as any).__g7PendingLocalState = null;
     (window as any).__g7LastSetLocalSnapshot = undefined;
@@ -3920,6 +4181,8 @@ describe('[engine-v1.21.2] getLocal() __g7LastSetLocalSnapshot fallback', () => 
     expect(result.form.name).toBe('initial');
   });
 
+  // @scenario case=get_local_snapshot_fallback
+  // @effects get_local_falls_back_to_last_snapshot
   it('await 후 getLocal() stale 시나리오: pendingState 클리어 후에도 snapshot으로 최신 값 반환', async () => {
     // 1. setLocal 호출 시뮬레이션 (pendingState + snapshot 모두 설정)
     const updatedState = { form: { name: 'updated-by-setLocal', items: [1, 2, 3] } };
@@ -3938,6 +4201,8 @@ describe('[engine-v1.21.2] getLocal() __g7LastSetLocalSnapshot fallback', () => 
     expect(afterAwait.form.items).toEqual([1, 2, 3]);
   });
 
+  // @scenario case=get_local_snapshot_fallback
+  // @effects get_local_falls_back_to_last_snapshot
   it('dataContext._local 갱신 후 snapshot이 클리어되면 globalLocal만 반환해야 함', () => {
     // 1. setLocal 호출 → snapshot 설정
     (window as any).__g7LastSetLocalSnapshot = { form: { name: 'from-setLocal' } };
@@ -3959,9 +4224,9 @@ describe('[engine-v1.21.2] getLocal() __g7LastSetLocalSnapshot fallback', () => 
 
 describe('[engine-v1.24.6] handleSetState isRealComponentContext — 변경 필드만 전달', () => {
   let dispatcher: ActionDispatcher;
-  let mockNavigate: ReturnType<typeof vi.fn>;
-  let mockSetState: ReturnType<typeof vi.fn>;
-  let mockGlobalStateUpdater: ReturnType<typeof vi.fn>;
+  let mockNavigate: Mock;
+  let mockSetState: Mock;
+  let mockGlobalStateUpdater: Mock;
   let setStateCalls: any[];
 
   beforeEach(() => {
@@ -4004,6 +4269,8 @@ describe('[engine-v1.24.6] handleSetState isRealComponentContext — 변경 필�
    *       localDynamicState에 전체 상태가 축적됨 → SPA 이동 후 stale 필드 잔존
    * 해결: context.setState에는 변경 필드만 전달, __g7PendingLocalState에만 전체 병합
    */
+  // @scenario case=real_component_context_changed_fields
+  // @effects component_setstate_receives_changed_fields_only
   it('deep 모드에서 context.setState에 변경 필드만 전달해야 함 (전체 _local 축적 방지)', async () => {
     const fullLocalState = {
       filter: 'active',
@@ -4021,6 +4288,7 @@ describe('[engine-v1.24.6] handleSetState isRealComponentContext — 변경 필�
 
     // cancelReason만 변경
     const action = {
+      type: 'click' as const,
       handler: 'setState' as const,
       params: {
         target: 'local',
@@ -4028,7 +4296,7 @@ describe('[engine-v1.24.6] handleSetState isRealComponentContext — 변경 필�
       },
     };
 
-    await dispatcher.executeAction(action, context);
+    await dispatcher['executeAction'](action, context);
 
     expect(mockSetState).toHaveBeenCalledTimes(1);
     const passedPayload = setStateCalls[0];
@@ -4049,6 +4317,8 @@ describe('[engine-v1.24.6] handleSetState isRealComponentContext — 변경 필�
     expect(pending.perPage).toBe(20);
   });
 
+  // @scenario case=real_component_context_changed_fields
+  // @effects component_setstate_receives_changed_fields_only
   it('sequence 내 연속 setState에서 __g7PendingLocalState를 통한 동기화가 정상 동작해야 함', async () => {
     const context = {
       state: { count: 0, name: '' },
@@ -4057,7 +4327,8 @@ describe('[engine-v1.24.6] handleSetState isRealComponentContext — 변경 필�
     };
 
     // 첫 번째 setState
-    await dispatcher.executeAction({
+    await dispatcher['executeAction']({
+      type: 'click' as const,
       handler: 'setState' as const,
       params: { target: 'local', count: 1 },
     }, context);
@@ -4067,7 +4338,8 @@ describe('[engine-v1.24.6] handleSetState isRealComponentContext — 변경 필�
     expect((window as any).__g7PendingLocalState.name).toBe('');
 
     // 두 번째 setState — pendingLocal을 통해 count: 1 상태 인지
-    await dispatcher.executeAction({
+    await dispatcher['executeAction']({
+      type: 'click' as const,
       handler: 'setState' as const,
       params: { target: 'local', name: 'test' },
     }, context);
@@ -4134,6 +4406,8 @@ describe('[engine-v1.24.7] setLocal() 모달 내부 호출 시 globalState._loca
     (window as any).__g7SetLocalOverrideKeys = undefined;
   });
 
+  // @scenario case=modal_setlocal_pollution
+  // @effects modal_setlocal_keeps_global_local_clean
   it('모달 내부 setLocal(): actionContext.state(모달 상태)가 globalState._local에 병합되지 않아야 함', () => {
     // 모달의 localDynamicState (취소 모달의 상태)
     const modalDynamicState = {
@@ -4194,6 +4468,8 @@ describe('[engine-v1.24.7] setLocal() 모달 내부 호출 시 globalState._loca
     expect(result.selectedProducts).toEqual([1, 3]);
   });
 
+  // @scenario case=modal_setlocal_pollution
+  // @effects modal_setlocal_keeps_global_local_clean
   it('페이지 컨텍스트 setLocal(): actionContext.state가 정상 병합되어야 함 (engine-v1.22.1 호환)', () => {
     // 모달 미사용: layoutContextStack 비어있음
     (window as any).__g7LayoutContextStack = [];
@@ -4239,6 +4515,8 @@ describe('[engine-v1.24.7] setLocal() 모달 내부 호출 시 globalState._loca
     expect(result.bulkConfirmItems).toEqual([{ id: 1 }]);
   });
 
+  // @scenario case=modal_setlocal_pollution
+  // @effects modal_setlocal_keeps_global_local_clean
   it('debounce 콜백 시나리오: actionContext가 null이어도 globalLocal 기반으로 동작', () => {
     // debounce 콜백에서는 actionContext가 null (ActionDispatcher finally에서 복원됨)
     (window as any).__g7ActionContext = undefined;
@@ -4292,6 +4570,8 @@ describe('[사례 29] init_actions에서 conditions 핸들러 사용 시 조건 
    * 증상: init_actions에서 conditions 핸들러 사용 시 conditions 배열이 전달되지 않음
    * 해결: InitActionDefinition 타입에 conditions 추가, executeInitActions에서 conditions 전달
    */
+  // @scenario case=init_conditions
+  // @effects init_actions_carry_conditions
   it('InitActionDefinition에 conditions 프로퍼티가 존재해야 함', async () => {
     // LayoutLoader의 InitActionDefinition 타입이 conditions를 포함하는지 검증
     // 런타임에서 conditions 프로퍼티가 actionDef에 전달되는지 확인
@@ -4320,6 +4600,8 @@ describe('[사례 29] init_actions에서 conditions 핸들러 사용 시 조건 
     expect(actionDef.conditions[0].if).toBe('{{!!query.error}}');
   });
 
+  // @scenario case=init_conditions
+  // @effects init_actions_carry_conditions
   it('conditions 프로퍼티가 누락되면 undefined로 전달됨을 검증', () => {
     // 수정 전: conditions가 actionDef에 포함되지 않아 항상 undefined
     const initActionWithoutConditions = {
@@ -4354,6 +4636,8 @@ describe('[사례 12] _localInit + 자식 useEffect setState가 API 데이터를
     (window as any).__g7SetLocalOverrideKeys = undefined;
   });
 
+  // @scenario case=local_init_child_effect_stale
+  // @effects layout_effect_syncs_api_data_before_child_effects
   it('__g7SetLocalOverrideKeys에 stale 값이 있으면 handleLocalSetState에서 pendingState 대신 사용됨 (문제 재현)', () => {
     // init_actions가 설정한 stale overrides (빈 배열)
     const staleOverrides = {
@@ -4375,6 +4659,8 @@ describe('[사례 12] _localInit + 자식 useEffect setState가 API 데이터를
     expect(pendingToMerge.form.options).toHaveLength(0); // stale 빈 배열!
   });
 
+  // @scenario case=local_init_child_effect_stale
+  // @effects layout_effect_syncs_api_data_before_child_effects
   it('useLayoutEffect에서 __g7SetLocalOverrideKeys를 API 데이터로 갱신하면 stale 방지', () => {
     // init_actions가 설정한 stale overrides
     const staleOverrides = {
@@ -4408,6 +4694,8 @@ describe('[사례 12] _localInit + 자식 useEffect setState가 API 데이터를
     expect(pendingToMerge.form.options).toHaveLength(6);
   });
 
+  // @scenario case=local_init_child_effect_stale
+  // @effects layout_effect_syncs_api_data_before_child_effects
   it('useLayoutEffect에서 __g7PendingLocalState도 API 데이터로 사전 설정', () => {
     // 초기 상태: clearing useLayoutEffect가 null로 클리어
     (window as any).__g7PendingLocalState = null;
@@ -4431,6 +4719,8 @@ describe('[사례 12] _localInit + 자식 useEffect setState가 API 데이터를
     expect(pendingState.form.category_ids).toHaveLength(3);
   });
 
+  // @scenario case=local_init_child_effect_stale
+  // @effects layout_effect_syncs_api_data_before_child_effects
   it('__g7SetLocalOverrideKeys가 없으면 갱신하지 않음 (SPA 네비게이션 시나리오)', () => {
     // SPA 네비게이션: init_actions 미실행 → __g7SetLocalOverrideKeys = undefined
     (window as any).__g7SetLocalOverrideKeys = undefined;
@@ -4454,6 +4744,8 @@ describe('[사례 12] _localInit + 자식 useEffect setState가 API 데이터를
     expect(pendingToMerge.form.options).toHaveLength(3);
   });
 
+  // @scenario case=local_init_child_effect_stale
+  // @effects layout_effect_syncs_api_data_before_child_effects
   it('ref 해시 추적으로 동일 데이터 재설정 방지 (사용자 입력 덮어쓰기 방지)', () => {
     const apiData = { form: { options: [1, 2, 3] } };
     const syncKey = `${JSON.stringify(apiData)}:no-force`;
@@ -4513,6 +4805,8 @@ describe('[사례 32] 이슈 #282 이중 저장소 동기화 + 자동 승격 (en
   }
 
   describe('flattenLeafPaths — 자동 승격 판정용 리프 경로 추출', () => {
+    // @scenario case=flatten_leaf_paths
+    // @effects flatten_leaf_paths_lists_leaf_paths
     it('중첩 객체의 리프 경로를 dot notation으로 반환', () => {
       expect(flattenLeafPaths({ form: { title: 'X', content: 'Y' } })).toEqual([
         'form.title',
@@ -4520,10 +4814,14 @@ describe('[사례 32] 이슈 #282 이중 저장소 동기화 + 자동 승격 (en
       ]);
     });
 
+    // @scenario case=flatten_leaf_paths
+    // @effects flatten_leaf_paths_lists_leaf_paths
     it('배열은 리프로 취급 (자동바인딩은 배열 전체 값에 매핑)', () => {
       expect(flattenLeafPaths({ form: { tags: ['a', 'b'] } })).toEqual(['form.tags']);
     });
 
+    // @scenario case=flatten_leaf_paths
+    // @effects flatten_leaf_paths_lists_leaf_paths
     it('최상위 scalar (hasChanges 등)와 중첩 객체 혼합', () => {
       expect(flattenLeafPaths({ hasChanges: true, form: { title: 'X' } })).toEqual([
         'hasChanges',
@@ -4531,12 +4829,16 @@ describe('[사례 32] 이슈 #282 이중 저장소 동기화 + 자동 승격 (en
       ]);
     });
 
+    // @scenario case=flatten_leaf_paths
+    // @effects flatten_leaf_paths_lists_leaf_paths
     it('빈 객체/null/undefined 입력 시 빈 배열 반환', () => {
       expect(flattenLeafPaths({})).toEqual([]);
       expect(flattenLeafPaths(null as any)).toEqual([]);
       expect(flattenLeafPaths(undefined as any)).toEqual([]);
     });
 
+    // @scenario case=flatten_leaf_paths
+    // @effects flatten_leaf_paths_lists_leaf_paths
     it('중첩 배열 경로 (iteration 시나리오)', () => {
       expect(flattenLeafPaths({ form: { items: [1, 2, 3] } })).toEqual(['form.items']);
     });
@@ -4565,6 +4867,8 @@ describe('[사례 32] 이슈 #282 이중 저장소 동기화 + 자동 승격 (en
       };
     }
 
+    // @scenario case=auto_binding_registry_refcount
+    // @effects auto_binding_registry_counts_mounts
     it('동일 fullPath iteration 3회 마운트 → count=3, 순차 언마운트 시 정확히 감소', () => {
       const registry = (window as any).__g7AutoBindingPaths as Map<string, number>;
       const fullPath = 'form.items';
@@ -4582,6 +4886,8 @@ describe('[사례 32] 이슈 #282 이중 저장소 동기화 + 자동 승격 (en
       expect(registry.has(fullPath)).toBe(false);
     });
 
+    // @scenario case=auto_binding_registry_refcount
+    // @effects auto_binding_registry_counts_mounts
     it('React Strict Mode 이중 마운트 (mount→cleanup→mount) 후 count=1 정확 복원', () => {
       const registry = (window as any).__g7AutoBindingPaths as Map<string, number>;
       const fullPath = 'form.title';
@@ -4596,6 +4902,8 @@ describe('[사례 32] 이슈 #282 이중 저장소 동기화 + 자동 승격 (en
       expect(registry.has(fullPath)).toBe(false);
     });
 
+    // @scenario case=auto_binding_registry_refcount
+    // @effects auto_binding_registry_counts_mounts
     it('서로 다른 fullPath 여러 개 독립 관리', () => {
       const registry = (window as any).__g7AutoBindingPaths as Map<string, number>;
 
@@ -4640,6 +4948,8 @@ describe('[사례 32] 이슈 #282 이중 저장소 동기화 + 자동 승격 (en
       return leafPaths.some((p) => registry.has(p));
     }
 
+    // @scenario case=auto_promotion_decision
+    // @effects render_false_promotes_only_registered_paths
     it('render:false + 레지스트리 미등록 경로 → 승격 안 함 (CKEditor form.content 시나리오: 레지스트리 비어있을 때)', () => {
       const registry = (window as any).__g7AutoBindingPaths as Map<string, number>;
       registry.set('form.title', 1);
@@ -4650,6 +4960,8 @@ describe('[사례 32] 이슈 #282 이중 저장소 동기화 + 자동 승격 (en
       ).toBe(false);
     });
 
+    // @scenario case=auto_promotion_decision
+    // @effects render_false_promotes_only_registered_paths
     it('render:false + 레지스트리 등록 경로 → 승격 (미래 플러그인 실수 방어)', () => {
       const registry = (window as any).__g7AutoBindingPaths as Map<string, number>;
       registry.set('form.title', 1);
@@ -4660,6 +4972,8 @@ describe('[사례 32] 이슈 #282 이중 저장소 동기화 + 자동 승격 (en
       ).toBe(true);
     });
 
+    // @scenario case=auto_promotion_decision
+    // @effects render_false_promotes_only_registered_paths
     it('selfManaged:true → 레지스트리 겹쳐도 승격 안 함 (CKEditor 성능 보존)', () => {
       const registry = (window as any).__g7AutoBindingPaths as Map<string, number>;
       registry.set('form.content', 1); // HtmlEditor 내부 Textarea가 자동바인딩 등록
@@ -4673,6 +4987,8 @@ describe('[사례 32] 이슈 #282 이중 저장소 동기화 + 자동 승격 (en
       ).toBe(false);
     });
 
+    // @scenario case=auto_promotion_decision
+    // @effects render_false_promotes_only_registered_paths
     it('render 옵션 생략 (기본 render:true) → 분기 진입 자체 안 함', () => {
       const registry = (window as any).__g7AutoBindingPaths as Map<string, number>;
       registry.set('form.title', 1);
@@ -4681,6 +4997,8 @@ describe('[사례 32] 이슈 #282 이중 저장소 동기화 + 자동 승격 (en
       expect(shouldPromoteRender({ form: { title: 'X' } }, undefined)).toBe(false);
     });
 
+    // @scenario case=auto_promotion_decision
+    // @effects render_false_promotes_only_registered_paths
     it('빈 레지스트리 → 승격 안 함 (SPA 네비게이션 직후 등)', () => {
       // 레지스트리가 빈 Map인 상태 (handleRouteChange 재초기화 후)
       expect(
@@ -4688,6 +5006,8 @@ describe('[사례 32] 이슈 #282 이중 저장소 동기화 + 자동 승격 (en
       ).toBe(false);
     });
 
+    // @scenario case=auto_promotion_decision
+    // @effects render_false_promotes_only_registered_paths
     it('dot notation 키 + 중첩 객체 혼합 입력도 올바르게 판정', () => {
       const registry = (window as any).__g7AutoBindingPaths as Map<string, number>;
       registry.set('form.content', 1);
@@ -4704,6 +5024,8 @@ describe('[사례 32] 이슈 #282 이중 저장소 동기화 + 자동 승격 (en
       delete (window as any).__g7AutoBindingPaths;
     });
 
+    // @scenario case=registry_reset_on_navigation
+    // @effects registry_resets_on_route_change
     it('handleRouteChange 시뮬레이션: 기존 경로 비우고 빈 Map으로 재초기화', () => {
       // 이전 페이지 상태
       const oldRegistry = new Map<string, number>();
@@ -4720,6 +5042,8 @@ describe('[사례 32] 이슈 #282 이중 저장소 동기화 + 자동 승격 (en
       expect(newRegistry.has('form.title')).toBe(false);
     });
 
+    // @scenario case=registry_reset_on_navigation
+    // @effects registry_resets_on_route_change
     it('재초기화 후 이전 페이지 cleanup의 registry.delete 호출이 에러 없이 noop', () => {
       const oldRegistry = new Map<string, number>();
       oldRegistry.set('form.title', 1);
@@ -4866,6 +5190,8 @@ describe('[사례 36] _localInit useLayoutEffect 의 stale pending baseline (eng
   };
 
   describe('본 이슈: init_actions tempKey 손실', () => {
+    // @scenario case=local_init_temp_key
+    // @effects local_init_keeps_init_action_temp_key
     it('수정 전: stale pending baseline 으로 globalState 의 tempKey 가 pending 에 흡수되지 않음 (버그 재현)', () => {
       // 시나리오:
       // 1. init_actions setState_3 (tempKey) → globalState._local = {form, tempKey} 정상
@@ -4892,6 +5218,8 @@ describe('[사례 36] _localInit useLayoutEffect 의 stale pending baseline (eng
       expect(merged.tempKey).toBeUndefined(); // ← stale pending 우선 사용으로 손실
     });
 
+    // @scenario case=local_init_temp_key
+    // @effects local_init_keeps_init_action_temp_key
     it('수정 후: fresh globalState baseline 으로 tempKey 가 pending 에 보존', () => {
       (window as any).G7Core = {
         state: {
@@ -4916,6 +5244,8 @@ describe('[사례 36] _localInit useLayoutEffect 의 stale pending baseline (eng
   });
 
   describe('사례 12 의도 보존 — useLayoutEffect 사전 동기화', () => {
+    // @scenario case=local_init_layout_sync
+    // @effects local_init_presyncs_api_data
     it('수정 후: API 데이터(form) 가 pending 에 사전 동기화되어 자식 useEffect 의 ActionDispatcher base 정확', () => {
       (window as any).G7Core = {
         state: { get: () => ({ _local: { form: { id: 1 } } }) },
@@ -4932,6 +5262,8 @@ describe('[사례 36] _localInit useLayoutEffect 의 stale pending baseline (eng
   });
 
   describe('정상 케이스 회귀 방지', () => {
+    // @scenario case=local_init_normal_cases
+    // @effects local_init_normal_cases_unchanged
     it('수정 후: pending 이 이미 fresh 한 직전 setState 결과인 경우 보존', () => {
       // 직전 setState 가 pending 에 박은 값
       (window as any).__g7PendingLocalState = {
@@ -4952,6 +5284,8 @@ describe('[사례 36] _localInit useLayoutEffect 의 stale pending baseline (eng
       expect(pending.otherField).toBe('set-by-prev-setState');
     });
 
+    // @scenario case=local_init_normal_cases
+    // @effects local_init_normal_cases_unchanged
     it('수정 후: G7Core 미초기화 환경(테스트/SSR)에서 fallback 동작', () => {
       (window as any).G7Core = undefined;
       (window as any).__g7PendingLocalState = null;
@@ -4964,6 +5298,8 @@ describe('[사례 36] _localInit useLayoutEffect 의 stale pending baseline (eng
       expect(pending.hasChanges).toBe(false);
     });
 
+    // @scenario case=local_init_normal_cases
+    // @effects local_init_normal_cases_unchanged
     it('수정 후: 모든 mergeStrategy(shallow/deep/replace) 에서 정상 동작', () => {
       const testStrategy = (strategy: 'shallow' | 'deep' | 'replace') => {
         (window as any).G7Core = {
@@ -4991,6 +5327,8 @@ describe('[사례 36] _localInit useLayoutEffect 의 stale pending baseline (eng
   });
 
   describe('사례 32 의도 보존 — 이중 저장소 정합성 강화', () => {
+    // @scenario case=local_init_dual_store
+    // @effects local_init_baseline_keeps_dual_store_in_sync
     it('수정 후: pending baseline 이 fresh 해서 이중 저장소(A/B) 동기화 정확도 향상', () => {
       // 저장소 B (globalState._local) 에 init_actions 결과 + 자동바인딩 결과가 있는 상태
       (window as any).G7Core = {
@@ -5028,7 +5366,7 @@ describe('[사례 38] 액션을 event 로 적은 경우의 prop 이름과 $event
    * 두 경로(type/event)가 같은 표·같은 이벤트 해석을 쓰는지 고정한다.
    */
   let dispatcher: ActionDispatcher;
-  let mockSetState: ReturnType<typeof vi.fn>;
+  let mockSetState: Mock;
   let captured: any;
 
   const componentContext = () => ({ state: {}, setState: mockSetState });
@@ -5048,6 +5386,8 @@ describe('[사례 38] 액션을 event 로 적은 경우의 prop 이름과 $event
     vi.clearAllMocks();
   });
 
+  // @scenario case=event_prop_name
+  // @effects event_key_normalizes_prop_and_payload
   it('event 에 적은 DOM 이벤트명이 React prop 이름으로 정규화된다', () => {
     const bound = dispatcher.bindActionsToProps(
       {
@@ -5064,6 +5404,8 @@ describe('[사례 38] 액션을 event 로 적은 경우의 prop 이름과 $event
     expect((bound as any).click).toBeUndefined();
   });
 
+  // @scenario case=event_prop_name
+  // @effects event_key_normalizes_prop_and_payload
   it('컴포넌트 콜백·네임스페이스 이벤트 이름은 정규화하지 않는다', () => {
     const bound = dispatcher.bindActionsToProps(
       {
@@ -5084,6 +5426,8 @@ describe('[사례 38] 액션을 event 로 적은 경우의 prop 이름과 $event
     expect((bound as any).onOnSortEnd).toBeUndefined();
   });
 
+  // @scenario case=event_prop_name
+  // @effects event_key_normalizes_prop_and_payload
   it('event 경로도 합성 컴포넌트 이벤트의 $event.target 을 보존한다', () => {
     const bound = dispatcher.bindActionsToProps(
       {
@@ -5106,6 +5450,8 @@ describe('[사례 38] 액션을 event 로 적은 경우의 prop 이름과 $event
     expect(captured?.form?.description).toBe('사용자가 입력한 본문');
   });
 
+  // @scenario case=event_prop_name
+  // @effects event_key_normalizes_prop_and_payload
   it('type 경로와 event 경로가 같은 값을 기록한다 (경로별 비대칭 금지)', () => {
     const params = { target: 'local', 'form.title': '{{$event.target.value}}' };
     const payload = { target: { name: 'title', value: '같은 값' } };
@@ -5130,6 +5476,8 @@ describe('[사례 38] 액션을 event 로 적은 경우의 prop 이름과 $event
     expect(captured?.form?.title).toBe(fromType?.form?.title);
   });
 
+  // @scenario case=event_prop_name
+  // @effects event_key_normalizes_prop_and_payload
   it('raw value 콜백은 event 경로에서도 $event.target 을 만들지 않는다 (사례 26 의도 유지)', () => {
     const bound = dispatcher.bindActionsToProps(
       {
@@ -5207,23 +5555,27 @@ describe('[사례 39] dot notation setState 의 canonical source 동기화 (engi
     actionId: 'case-39',
   });
 
+  // @scenario case=dot_setstate_canonical_sync
+  // @effects dot_setstate_syncs_canonical_local
   it('결함 재현: 선택값이 _global._local 에 반영되어 getLocal() 경로로 읽힌다', async () => {
-    await dispatcher.executeAction(
-      { handler: 'setState' as const, params: { target: '_local.paymentMethod', value: 'toss_naverpay' } },
+    await dispatcher['executeAction'](
+      { type: 'click', handler: 'setState' as const, params: { target: '_local.paymentMethod', value: 'toss_naverpay' } },
       context()
     );
 
     expect(globalState._local.paymentMethod).toBe('toss_naverpay');
   });
 
+  // @scenario case=dot_setstate_canonical_sync
+  // @effects dot_setstate_syncs_canonical_local
   it('사례 13·24 핀: canonical source 의 기존 키를 하나도 잃지 않는다 (leaf partial context 에서도)', async () => {
     // 커스텀 핸들러의 setLocal 등으로 이미 canonical store 에 쌓여 있는 값
     globalState._local = { orderer: { name: '관리자' }, shipping: { zipcode: '94271' }, couponId: 7 };
     // 클릭된 리프 컴포넌트의 context.state 는 페이지 _local 전체가 아니다
     componentState = { paymentMethod: 'toss_card' };
 
-    await dispatcher.executeAction(
-      { handler: 'setState' as const, params: { target: '_local.paymentMethod', value: 'toss_naverpay' } },
+    await dispatcher['executeAction'](
+      { type: 'click', handler: 'setState' as const, params: { target: '_local.paymentMethod', value: 'toss_naverpay' } },
       context()
     );
 
@@ -5233,20 +5585,25 @@ describe('[사례 39] dot notation setState 의 canonical source 동기화 (engi
     expect(globalState._local.couponId).toBe(7);
   });
 
+  // @scenario case=dot_setstate_canonical_sync
+  // @effects dot_setstate_syncs_canonical_local
   it('사례 22 핀: __g7PendingLocalState 를 건드리지 않는다 (React 전용 배열 오염 경로 차단)', async () => {
     (window as any).__g7PendingLocalState = { expandedRows: [301] };
 
-    await dispatcher.executeAction(
-      { handler: 'setState' as const, params: { target: '_local.paymentMethod', value: 'toss_naverpay' } },
+    await dispatcher['executeAction'](
+      { type: 'click', handler: 'setState' as const, params: { target: '_local.paymentMethod', value: 'toss_naverpay' } },
       context()
     );
 
     expect((window as any).__g7PendingLocalState).toEqual({ expandedRows: [301] });
   });
 
+  // @scenario case=dot_setstate_canonical_sync
+  // @effects dot_setstate_syncs_canonical_local
   it('사례 29 핀: scope parent/root 는 동기화 대상이 아니다 (모달 컨텍스트 오염 방지)', async () => {
-    await dispatcher.executeAction(
+    await dispatcher['executeAction'](
       {
+        type: 'click' as const,
         handler: 'setState' as const,
         params: { target: '_local.paymentMethod', scope: 'parent', value: 'toss_naverpay' },
       },
@@ -5256,11 +5613,13 @@ describe('[사례 39] dot notation setState 의 canonical source 동기화 (engi
     expect(globalState._local.paymentMethod).toBeUndefined();
   });
 
+  // @scenario case=dot_setstate_canonical_sync
+  // @effects dot_setstate_syncs_canonical_local
   it('기존 동작 유지: context.setState 에는 여전히 중첩 경로 변경분만 전달된다', async () => {
     componentState = { form: { title: '기존', body: '유지' } };
 
-    await dispatcher.executeAction(
-      { handler: 'setState' as const, params: { target: '_local.form.title', value: '변경' } },
+    await dispatcher['executeAction'](
+      { type: 'click', handler: 'setState' as const, params: { target: '_local.form.title', value: '변경' } },
       context()
     );
 
@@ -5315,6 +5674,7 @@ describe('[사례 40] 리사이즈 후 저장 시 편집기 본문이 저장소 
     actionId: 'case-40',
   });
 
+  /** @effects setstate_local_preserves_canonical_keys_when_pending_is_null */
   it('1. 결함 재현 핀: B 의 편집기 본문이 stale A 스냅샷으로 덮이지 않는다', async () => {
     // @scenario save_flow=create, resize_kind=same_breakpoint
     // @effects canonical_local_keeps_editor_content_after_resize, setstate_local_preserves_canonical_keys_when_pending_is_null
@@ -5323,8 +5683,8 @@ describe('[사례 40] 리사이즈 후 저장 시 편집기 본문이 저장소 
     // 리사이즈 렌더로 memo 가 재계산되지 않아 context.state 는 본문 타이핑 이전 스냅샷
     componentState = { form: { title: '제목', content: '' }, isSaving: false };
 
-    await dispatcher.executeAction(
-      { handler: 'setState' as const, params: { isSaving: true, errors: null } },
+    await dispatcher['executeAction'](
+      { type: 'click', handler: 'setState' as const, params: { isSaving: true, errors: null } },
       context()
     );
 
@@ -5332,14 +5692,15 @@ describe('[사례 40] 리사이즈 후 저장 시 편집기 본문이 저장소 
     expect(globalState._local.isSaving).toBe(true);
   });
 
+  /** @effects setstate_local_preserves_canonical_keys_when_pending_is_null */
   it('2. body 회귀 핀: 반환값에도 원문 본문이 실린다 (없으면 422 가 남는다)', async () => {
     // @scenario save_flow=edit, resize_kind=crossed_breakpoint
     // @effects request_body_content_matches_editor_getdata, edit_save_persists_typed_addition
     globalState._local = { form: { title: '제목', content: '<p>본문</p>' } };
     componentState = { form: { title: '제목', content: '' } };
 
-    const result = await dispatcher.executeAction(
-      { handler: 'setState' as const, params: { isSaving: true } },
+    const result = await dispatcher['executeAction'](
+      { type: 'click', handler: 'setState' as const, params: { isSaving: true } },
       context()
     );
 
@@ -5348,12 +5709,13 @@ describe('[사례 40] 리사이즈 후 저장 시 편집기 본문이 저장소 
     expect(result.data.__target).toBe('local');
   });
 
+  /** @effects setstate_local_preserves_canonical_keys_when_pending_is_null */
   it('3. 사례 22 핀: __g7PendingLocalState 는 A 계열 기반으로 유지된다', async () => {
     globalState._local = { form: { content: '<p>본문</p>' }, expandedRows: [] };
     componentState = { form: { content: '' }, expandedRows: [301] };
 
-    await dispatcher.executeAction(
-      { handler: 'setState' as const, params: { isSaving: true } },
+    await dispatcher['executeAction'](
+      { type: 'click', handler: 'setState' as const, params: { isSaving: true } },
       context()
     );
 
@@ -5361,12 +5723,13 @@ describe('[사례 40] 리사이즈 후 저장 시 편집기 본문이 저장소 
     expect((window as any).__g7PendingLocalState.expandedRows).toEqual([301]);
   });
 
+  /** @effects setstate_local_preserves_canonical_keys_when_pending_is_null */
   it('4. 중첩 경로 핀: 다국어 form.{name}.{locale} 에서 형제 로케일/필드가 보존된다', async () => {
     globalState._local = { form: { content: { ko: '<p>본문</p>', en: '<p>body</p>' }, title: { ko: '제목' } } };
     componentState = { form: { content: { ko: '', en: '' }, title: { ko: '제목' } } };
 
-    await dispatcher.executeAction(
-      { handler: 'setState' as const, params: { 'form.title.ko': '새 제목' } },
+    await dispatcher['executeAction'](
+      { type: 'click', handler: 'setState' as const, params: { 'form.title.ko': '새 제목' } },
       context()
     );
 
@@ -5374,12 +5737,13 @@ describe('[사례 40] 리사이즈 후 저장 시 편집기 본문이 저장소 
     expect(globalState._local.form.title.ko).toBe('새 제목');
   });
 
+  /** @effects setstate_local_preserves_canonical_keys_when_pending_is_null */
   it('5. 사례 17 핀: merge replace 는 live B 를 base 로 쓰지 않는다', async () => {
     globalState._local = { form: { content: '<p>본문</p>' }, keep: 1 };
     componentState = { form: { content: '' } };
 
-    await dispatcher.executeAction(
-      { handler: 'setState' as const, params: { merge: 'replace', only: 'this' } },
+    await dispatcher['executeAction'](
+      { type: 'click', handler: 'setState' as const, params: { merge: 'replace', only: 'this' } },
       context()
     );
 
@@ -5387,13 +5751,14 @@ describe('[사례 40] 리사이즈 후 저장 시 편집기 본문이 저장소 
     expect(globalState._local.only).toBe('this');
   });
 
+  /** @effects setstate_local_preserves_canonical_keys_when_pending_is_null */
   it('6. 사례 29 핀: 모달 컨텍스트 스택이 있으면 종전 동작(전체 스냅샷)을 유지한다', async () => {
     (window as any).__g7LayoutContextStack = [{ state: {}, setState: vi.fn() }];
     globalState._local = { form: { content: '<p>페이지 본문</p>' } };
     componentState = { modalField: 'x' };
 
-    await dispatcher.executeAction(
-      { handler: 'setState' as const, params: { modalField: 'y' } },
+    await dispatcher['executeAction'](
+      { type: 'click', handler: 'setState' as const, params: { modalField: 'y' } },
       context()
     );
 
@@ -5402,24 +5767,26 @@ describe('[사례 40] 리사이즈 후 저장 시 편집기 본문이 저장소 
     expect(globalState._local.form).toBeUndefined();
   });
 
+  /** @effects setstate_local_preserves_canonical_keys_when_pending_is_null */
   it('7. 폴백 핀: __templateApp 이 없으면 종전 전체 스냅샷 경로를 탄다', async () => {
     delete (window as any).__templateApp;
     componentState = { form: { content: '' }, a: 1 };
 
-    await dispatcher.executeAction(
-      { handler: 'setState' as const, params: { b: 2 } },
+    await dispatcher['executeAction'](
+      { type: 'click', handler: 'setState' as const, params: { b: 2 } },
       context()
     );
 
     expect(globalState._local).toEqual({ form: { content: '' }, a: 1, b: 2 });
   });
 
+  /** @effects setstate_local_preserves_canonical_keys_when_pending_is_null */
   it('8. A 전용 키 핀: loadingActions 가 반환값에 남는다', async () => {
     globalState._local = { form: { content: '<p>본문</p>' } };
     componentState = { form: { content: '' }, loadingActions: { save: true } };
 
-    const result = await dispatcher.executeAction(
-      { handler: 'setState' as const, params: { isSaving: true } },
+    const result = await dispatcher['executeAction'](
+      { type: 'click', handler: 'setState' as const, params: { isSaving: true } },
       context()
     );
 
@@ -5427,13 +5794,14 @@ describe('[사례 40] 리사이즈 후 저장 시 편집기 본문이 저장소 
     expect(result.data.form.content).toBe('<p>본문</p>');
   });
 
+  /** @effects setstate_local_preserves_canonical_keys_when_pending_is_null */
   it('9. B 의 중첩 객체가 in-place 변이되지 않는다', async () => {
     const liveForm = { title: '제목', content: '<p>본문</p>' };
     globalState._local = { form: liveForm };
     componentState = { form: { title: '제목', content: '' } };
 
-    await dispatcher.executeAction(
-      { handler: 'setState' as const, params: { 'form.title': '변경' } },
+    await dispatcher['executeAction'](
+      { type: 'click', handler: 'setState' as const, params: { 'form.title': '변경' } },
       context()
     );
 
@@ -5442,13 +5810,14 @@ describe('[사례 40] 리사이즈 후 저장 시 편집기 본문이 저장소 
     expect(globalState._local.form.title).toBe('변경');
   });
 
+  /** @effects setstate_local_preserves_canonical_keys_when_pending_is_null */
   it('10. merge shallow 핀(F3): payload 밖 키를 live B 값으로 보존한다', async () => {
     // 모집단: admin_ecommerce_{order,product}_list 필터 (#421 회귀 핀 대상)
     globalState._local = { filters: { status: 'paid' }, search: '주문번호', page: 3 };
     componentState = { filters: { status: 'paid' } };
 
-    await dispatcher.executeAction(
-      { handler: 'setState' as const, params: { merge: 'shallow', page: 1 } },
+    await dispatcher['executeAction'](
+      { type: 'click', handler: 'setState' as const, params: { merge: 'shallow', page: 1 } },
       context()
     );
 
@@ -5457,12 +5826,13 @@ describe('[사례 40] 리사이즈 후 저장 시 편집기 본문이 저장소 
     expect(globalState._local.filters).toEqual({ status: 'paid' });
   });
 
+  /** @effects setstate_local_preserves_canonical_keys_when_pending_is_null */
   it('11. A 전용 키 핀(F2): loadingActions 가 B 에도 보충된다 (setLocal 선례와 대칭)', async () => {
     globalState._local = { form: { content: '<p>본문</p>' } };
     componentState = { form: { content: '' }, loadingActions: { save: true }, apiError: null };
 
-    await dispatcher.executeAction(
-      { handler: 'setState' as const, params: { isSaving: true } },
+    await dispatcher['executeAction'](
+      { type: 'click', handler: 'setState' as const, params: { isSaving: true } },
       context()
     );
 
@@ -5470,14 +5840,15 @@ describe('[사례 40] 리사이즈 후 저장 시 편집기 본문이 저장소 
     expect(globalState._local.form.content).toBe('<p>본문</p>');
   });
 
+  /** @effects setstate_local_preserves_canonical_keys_when_pending_is_null */
   it('12. 편집기 프리뷰 핀(F5): 격리 façade 에서도 canonical 경로를 타고 폴백이 발생하지 않는다', async () => {
     // PreviewCanvas 는 _local 을 항상 객체로 보장하므로 폴백이 발생하지 않는다
     const isolatedStore: Record<string, any> = { _local: { previewOnly: true } };
     (window as any).__templateApp = { getGlobalState: () => isolatedStore };
     componentState = { form: { content: '' } };
 
-    await dispatcher.executeAction(
-      { handler: 'setState' as const, params: { isSaving: true } },
+    await dispatcher['executeAction'](
+      { type: 'click', handler: 'setState' as const, params: { isSaving: true } },
       context()
     );
 

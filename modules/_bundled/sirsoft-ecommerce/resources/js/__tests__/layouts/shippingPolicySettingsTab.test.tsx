@@ -63,6 +63,7 @@ function flattenAll(node: any): any[] {
     }
     result.push(node);
     if (node.children) result.push(...flattenAll(node.children));
+    if (node.props?.footer) result.push(...flattenAll(node.props.footer)); // 고정 하단 (#869 P1 — 바닥 단추가 Modal 고정 하단으로 옮김)
     if (node.slots) {
         Object.values(node.slots).forEach((s: any) => result.push(...flattenAll(s)));
     }
@@ -528,10 +529,10 @@ describe('배송가능국가 테이블 (_shipping_country_table.json)', () => {
          */
         it('국가코드가 국기 아이콘과 함께 표시된다', () => {
             const spans = allNodes.filter((n: any) => n.name === 'Span');
-            // 국기 아이콘 Span (fi fi-xx 클래스)
-            const flagSpan = spans.find((s: any) => s.props?.className?.includes('fi fi-'));
+            // 국기 아이콘 Span (ecommerce-flag ecommerce-flag-xx 클래스)
+            const flagSpan = spans.find((s: any) => s.props?.className?.includes('ecommerce-flag ecommerce-flag-'));
             expect(flagSpan).toBeDefined();
-            expect(flagSpan.props.className).toContain('fis');
+            expect(flagSpan.props.className).toContain('ecommerce-flag--square');
             expect(flagSpan.props.className).toContain('rounded');
             // 국가코드 텍스트 Span
             const codeSpan = spans.find((s: any) => s.text === '{{country.code}}');
@@ -1079,7 +1080,7 @@ describe('배송가능국가 모바일 카드 — 헤더 구조', () => {
      */
     it('excel-card-header가 존재한다', () => {
         const header = allNodes.find(
-            (n: any) => n.props?.className === 'excel-card-header'
+            (n: any) => n.props?.className === 'ecommerce-excel-card-header'
         );
         expect(header).toBeDefined();
     });
@@ -1088,12 +1089,12 @@ describe('배송가능국가 모바일 카드 — 헤더 구조', () => {
      * @scenario surface=country_cards
      * @effects country_cards_mirror_table_rows
      */
-    it('국기 아이콘 Span이 fi fi- 클래스로 표시된다', () => {
+    it('국기 아이콘 Span이 ecommerce-flag 클래스로 표시된다', () => {
         const flagSpan = allNodes.find(
-            (s: any) => s.name === 'Span' && s.props?.className?.includes('fi fi-')
+            (s: any) => s.name === 'Span' && s.props?.className?.includes('ecommerce-flag ecommerce-flag-')
         );
         expect(flagSpan).toBeDefined();
-        expect(flagSpan.props.className).toContain('fis');
+        expect(flagSpan.props.className).toContain('ecommerce-flag--square');
         expect(flagSpan.props.className).toContain('rounded');
     });
 

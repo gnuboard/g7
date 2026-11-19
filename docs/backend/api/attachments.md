@@ -8,7 +8,7 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Attachments 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
@@ -141,6 +141,8 @@ _단건 응답: `data` 객체의 필드 (`AttachmentResource`)._
 | 500 | Internal Server Error | 파일 저장/DB 기록 중 예외 발생 시 (`attachment.upload_failed` — "파일 업로드에 실패했습니다.") |
 
 <!-- @generated:end -->
+
+
 
 **설명** 단일 파일을 업로드해 첨부파일(Attachment) 레코드로 등록합니다. `attachmentable_type`/`attachmentable_id`로 대상 모델과의 다형성 연결을, `collection`으로 그룹을 지정하며 미지정 시 각각 미연결·`default` 컬렉션으로 저장됩니다. `core.attachments.create` 권한이 필요하며, 성공 시 201과 함께 생성된 첨부파일 리소스를 반환합니다. 확장은 `core.attachment.upload_validation_rules` 훅으로 검증 규칙을 추가할 수 있고, `source_type`/`source_identifier`로 업로드 출처(코어/확장)를 식별합니다.
 
@@ -284,6 +286,8 @@ _배열 응답: `data` 는 `AttachmentResource` 객체의 배열입니다 (페�
 
 <!-- @generated:end -->
 
+
+
 **설명** 여러 파일을 한 번의 요청으로 일괄 업로드합니다. `files` 배열의 각 파일이 개별 첨부파일 레코드로 등록되며, `attachmentable_type`/`attachmentable_id`/`collection` 등의 옵션은 배치 전체에 공통 적용됩니다. `core.attachments.create` 권한이 필요하고, 성공 시 201과 함께 생성된 첨부파일 리소스 컬렉션을 반환합니다. 갤러리·다중 이미지 첨부처럼 한 대상에 여러 파일을 붙이는 시나리오에 사용합니다.
 
 
@@ -342,6 +346,8 @@ _이 엔드포인트는 데이터를 반환하지 않습니다 (`data` 는 `null
 
 <!-- @generated:end -->
 
+
+
 **설명** 첨부파일의 표시 순서를 재정렬합니다. `order` 배열에 담긴 순서대로 각 첨부파일의 정렬 값이 갱신됩니다. `core.attachments.update` 권한이 필요합니다. 갤러리에서 드래그 앤 드롭으로 이미지 순서를 바꾸는 등 이미 등록된 첨부파일의 나열 순서만 변경할 때 사용합니다.
 
 
@@ -391,6 +397,7 @@ _이 엔드포인트는 데이터를 반환하지 않습니다 (`data` 는 `null
 | 500 | Internal Server Error | 파일/DB 삭제 중 예외 발생 시 (`attachment.delete_failed` — "파일 삭제에 실패했습니다.") |
 
 <!-- @generated:end -->
+
 
 **설명** 지정한 첨부파일을 삭제합니다. 경로의 `{attachment}`는 라우트 모델 바인딩으로 첨부파일 ID를 받으며, 서비스가 DB 레코드와 실제 저장 파일을 함께 제거합니다. `core.attachments.delete` 권한이 필요합니다. 존재하지 않는 ID면 404가 반환됩니다.
 

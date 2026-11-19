@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#747 |
 #   회원 상태 × 사건 × 마일리지 유형의 전 조합 중 갈래는 둘이다 — 탈퇴·삭제 처리(forfeitForWithdrawal·
 #   detachForUserDeletion)와 탈퇴 뒤 지급(forfeitIfWithdrawn, 유형과 무관한 공통 경로). 갈래마다 대표 조합과
 #   멱등·안전망(외래키)·집계 방어를 못박는다. effects 축은 면제하지 않는다.

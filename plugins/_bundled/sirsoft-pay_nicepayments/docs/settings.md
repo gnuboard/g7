@@ -62,6 +62,11 @@ _등록하는 메뉴가 없습니다._
 난립합니다.
 <!-- @intent END -->
 
+## 설정 화면 권한
+
+- 들어가기: 「플러그인 보기」(`core.plugins.read`). 「플러그인 수정」 권한이 없으면 읽기 전용 안내와 함께 보이고 입력·저장·변경 단추가 잠깁니다 — 화면 계산값 `isPluginReadOnly` 는 조회 응답 `abilities.can_update !== true` 입니다.
+- 저장·변경: 서버가 수정 권한으로 막습니다(아래 「라우트」 표의 권한). 화면 진입 권한을 「수정」으로 올리지 마세요 — 보기 권한만 있는 운영자가 「레이아웃 접근 권한이 없습니다」 오류 화면만 보게 됩니다(#434, 잠금 시험 `tests/Unit/Plugins/PluginSettingsLayoutPermissionTest.php`).
+
 ## 라우트
 
 <!-- @generated:routes START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
@@ -87,7 +92,7 @@ _등록하는 메뉴가 없습니다._
 
 | 확장 | 유형 | 버전 제약 | 번들 |
 |---|---|---|---|
-| `sirsoft-ecommerce` | 모듈 | `>=1.3.3` | ✅ |
+| `sirsoft-ecommerce` | 모듈 | `>=1.4.0` | ✅ |
 
 **이 확장에 의존하는 확장** (이 확장을 비활성화하면 함께 영향을 받습니다)
 
@@ -95,9 +100,10 @@ _등록하는 메뉴가 없습니다._
 <!-- @generated:dependencies END -->
 
 <!-- @intent START -->
-`sirsoft-ecommerce >=1.3.0` 하드 의존은 §data-model.md 에서 설명한 구조(결제 상태는
+`sirsoft-ecommerce >=1.4.0` 하드 의존은 §data-model.md 에서 설명한 구조(결제 상태는
 이커머스가 소유, 이 플러그인은 절차만 소유)의 직접적 결과입니다 — 이커머스 없이는 이
-플러그인이 다룰 주문 자체가 존재하지 않습니다. 이커머스의 PG 등록 훅이나 `Order` 모델
-구조가 바뀌면 이 최소 버전을 올려야 합니다(§코어 AGENTS.md "확장 → 확장 동기화").
-최소 버전 1.3.0 은 관리자 주문 목록 결제수단 칸의 표시 자리(확장점 `admin_order_list_payment_method_badges`)와 표시 라벨 필터 훅(`sirsoft-ecommerce.order.filter_payment_method_display_label`)이 도입된 버전입니다.
+플러그인이 다룰 주문 자체가 존재하지 않습니다. 이커머스의 PG 등록 훅이나 공개 결제 계약
+(`Contracts\Payment`)이 바뀌면 이 최소 버전을 올려야 합니다(§코어 AGENTS.md "확장 → 확장 동기화").
+최소 버전 1.4.0 은 이 플러그인이 쓰는 공개 결제 계약(`PaymentGatewayBridge`, `PriceFormatter`)이 도입된 버전입니다.
+그 전 최소 버전 1.3.0 은 관리자 주문 목록 결제수단 칸의 표시 자리(확장점 `admin_order_list_payment_method_badges`)와 표시 라벨 필터 훅(`sirsoft-ecommerce.order.filter_payment_method_display_label`)이 도입된 버전입니다.
 <!-- @intent END -->

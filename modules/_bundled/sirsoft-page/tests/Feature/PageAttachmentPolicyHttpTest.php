@@ -34,6 +34,8 @@ class PageAttachmentPolicyHttpTest extends FeatureTestCase
 
     /**
      * 테스트 환경 설정
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -61,18 +63,24 @@ class PageAttachmentPolicyHttpTest extends FeatureTestCase
 
     /**
      * 테스트 정리
+     *
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
         Page::where('slug', 'like', 'policy-http-%')->forceDelete();
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**
      * 첨부 설정을 주입합니다.
      *
      * @param  array  $overrides  덮어쓸 설정 값
+     * @return void 반환값 없음
      */
     private function writeAttachmentSettings(array $overrides = []): void
     {
@@ -102,6 +110,12 @@ class PageAttachmentPolicyHttpTest extends FeatureTestCase
      * 허용 목록에 없는 형식(docx)은 422 로 거부된다
      *
      * 수정 전에는 `mimes:` 16종 하드코딩이 설정과 무관하게 docx 를 통과시켰다.
+     *
+     * @scenario entry_point=direct_upload, type_setting=configured_list, file_type=disallowed
+     *
+     * @effects allowed_types_rule_reads_setting_mimetypes, disallowed_type_upload_rejected_over_http
+     *
+     * @return void 반환값 없음
      */
     public function test_disallowed_mime_type_is_rejected_over_http(): void
     {
@@ -133,6 +147,12 @@ class PageAttachmentPolicyHttpTest extends FeatureTestCase
 
     /**
      * 허용 목록에 있는 형식은 그대로 통과한다 (과잉 차단 방지 대조군)
+     *
+     * @scenario entry_point=direct_upload, type_setting=configured_list, file_type=allowed
+     *
+     * @effects allowed_type_upload_passes_over_http
+     *
+     * @return void 반환값 없음
      */
     public function test_allowed_mime_type_still_passes_over_http(): void
     {
@@ -161,6 +181,12 @@ class PageAttachmentPolicyHttpTest extends FeatureTestCase
      * 설정한 최대 용량을 넘는 파일은 422 로 거부된다
      *
      * 설정을 5MB 로 낮춘 뒤 6MB 를 올린다 — 기본값(10MB) 상태였다면 통과했을 크기다.
+     *
+     * @scenario entry_point=direct_upload, size_setting=lowered
+     *
+     * @effects max_size_rule_reads_setting_not_literal, oversize_upload_rejected_over_http
+     *
+     * @return void 반환값 없음
      */
     public function test_file_over_configured_max_size_is_rejected_over_http(): void
     {
@@ -182,6 +208,12 @@ class PageAttachmentPolicyHttpTest extends FeatureTestCase
 
     /**
      * 상한 이내 용량은 통과한다 (경계 대조군)
+     *
+     * @scenario entry_point=direct_upload, size_setting=lowered
+     *
+     * @effects within_size_upload_passes_over_http
+     *
+     * @return void 반환값 없음
      */
     public function test_file_within_configured_max_size_passes_over_http(): void
     {
@@ -204,6 +236,12 @@ class PageAttachmentPolicyHttpTest extends FeatureTestCase
      *
      * Service 예외가 컨트롤러에서 422 로 매핑되는지까지 확인한다
      * (매핑이 없으면 generic 500 으로 떨어진다).
+     *
+     * @scenario entry_point=direct_upload, count_state=over_limit
+     *
+     * @effects direct_upload_over_limit_returns_422_with_code
+     *
+     * @return void 반환값 없음
      */
     public function test_upload_beyond_max_count_returns_422_with_code(): void
     {
@@ -235,6 +273,12 @@ class PageAttachmentPolicyHttpTest extends FeatureTestCase
 
     /**
      * 상한 미설정(0)이면 개수를 제한하지 않는다 (기존 동작 보존)
+     *
+     * @scenario entry_point=direct_upload, count_state=unlimited_zero
+     *
+     * @effects zero_limit_is_unrestricted
+     *
+     * @return void 반환값 없음
      */
     public function test_zero_max_count_is_unrestricted_over_http(): void
     {

@@ -1,0 +1,24 @@
+feature: root_owned_entry_reclaim
+
+description: |
+  root 로 돈 업데이트·설치 계열 명령이 끝나면 설치 트리에 남긴 root 소유 폴더·파일을 상위 폴더의 소유자·그룹과
+  그룹·기타 권한으로 되돌린다(7.2.0 검수 서버 실측: storage/app/templates root 700 · storage/app/core-update root 755 ·
+  정리 대기 잠금 파일 root 664 — 업데이트가 처음 만든 경로라 업데이트 전 소유권 스냅샷·복원 목록에 없었다).
+  root 가 아닌 프로세스(웹 업데이트·CLI 를 못 쓰는 호스팅·일반 계정 CLI)와 설치 루트가 root 소유인 서버에서는 아무것도
+  하지 않고, 웹서버가 만든 비공개 폴더처럼 root 가 아닌 소유 항목은 건드리지 않는다.
+
+coverage_strategy: full
+
+axes:
+  case: [root_update_left_new_paths, non_root_process, root_owned_install, excluded_directories, command_selection, command_end]
+
+effects:
+  - root_created_paths_inherit_parent_owner_and_group_perms   # 새 root 소유 폴더·파일이 상위 폴더 소유·그룹 권한으로 돌아오고 비-root 항목은 그대로
+  - non_root_process_is_noop                                  # 웹 업데이트·CLI 불가 호스팅·일반 계정 CLI 는 아무것도 하지 않는다
+  - root_owned_install_is_left_alone                          # 설치 루트가 root 소유면 그 구성을 존중한다
+  - excluded_directories_not_walked                           # .git·node_modules 는 훑지 않는다
+  - reclaim_targets_update_family_commands_only               # 업데이트·설치 계열 명령만, 일괄 갱신 항목 프로세스는 제외
+  - update_command_end_reclaims_install_tree                  # 명령이 끝날 때(앱 종료) 한 번 정리한다
+
+test_files:
+  - tests/Unit/Support/RootOwnedEntryReclaimerTest.php

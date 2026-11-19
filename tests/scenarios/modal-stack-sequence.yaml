@@ -14,13 +14,15 @@ test_files:
 
 axes:
   # 순서와 문맥 사본 상태는 서로 독립이 아니다 — 결함은 sequence 안(낡은 사본)에서만, 범위 고정은 사본 없는 문맥에서만 뜻이 있다
-  case: [close_then_open_stale, open_then_close_stale, single_open_no_snapshot, single_open_close_fresh]
+  case: [close_then_open_stale, open_then_close_stale, single_open_no_snapshot, single_open_close_fresh, close_all_nested, close_all_flag_absent]
 
 effects:
   - close_then_open_keeps_only_new_modal              # 결함 축 — 닫힌 창이 되살아나지 않는다
   - open_then_close_removes_the_opened_modal          # 대칭 축 — 낡은 사본의 맨 위(처음 창)를 빼지 않는다
   - no_snapshot_context_keeps_legacy_empty_stack_start  # 범위 고정 — 문맥 없는 dispatch 경로는 종전 그대로
   - single_open_close_unchanged                       # 회귀 축 — 단일 액션의 쌓기·중복 무시·빼기
+  - close_all_empties_stack_and_layout_contexts       # closeModal params.all — 겹친 창과 창 문맥을 모두 비운다(engine-v1.95.0, #490 D-A3)
+  - close_without_all_flag_pops_only_top              # all 이 참(true)이 아니면 종전처럼 맨 위 하나만
 
 notes: |
   브라우저 실측(2026-10-02, 엔진 회귀 검사):

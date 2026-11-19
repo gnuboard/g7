@@ -20,6 +20,7 @@ return [
     'channel_skipped_no_template' => ':channel チャネルに :type タイプのアクティブテンプレートがないため、送信をスキップしました。',
     'channel_disabled_by_extension' => '拡張環境設定でそのチャネルが無効化されているため、送信をスキップしました。',
     'channel_guest_not_allowed' => 'そのチャネルは非会員送信を許可していないため、送信をスキップしました。',
+    'recipient_email_undeliverable' => 'メールを受信できない宛先(代替メールアドレス)のため、メール送信をスキップしました。',
     'channel_unavailable' => 'そのチャネルを提供する拡張が無効または削除されているため、送信をスキップしました。',
     'template_updated' => '通知テンプレートが編集されました。',
     'template_update_failed' => '通知テンプレートの編集に失敗しました。',
@@ -74,7 +75,6 @@ return [
             'description' => 'サイト内通知センターに表示',
         ],
     ],
-    // 発送スキップ理由に記載する受信者ルール名
     'recipient_rules' => [
         'trigger_user' => 'イベント発生者',
         'related_user' => '関連ユーザー(:relation)',
@@ -82,6 +82,7 @@ return [
         'specific_users' => '特定ユーザー :count人',
         'exclude_trigger_user' => ':rule — イベント発生者を除外',
         'legacy' => '定義の既定受信者',
+        'site_admin_email' => 'サイト管理者メールアドレス',
     ],
     'skipped' => [
         'no_recipient_resolved' => '受信者ルールで受取人が見つからなかったため、発送しませんでした。適用ルール: :rule_names (ルールコード: :rules)',
@@ -91,6 +92,8 @@ return [
     ],
     'validation' => [
         'role_value_shape' => 'ロール受信者の値は識別子文字列または文字列配列である必要があります。',
+        'user_template_needs_recipients' => '受信者を先に設定して保存してから有効にできます。[テンプレート編集] で受信者ルールを追加してください。',
+        'user_template_needs_body' => '本文を先に入力して保存してから有効にできます。[テンプレート編集] で内容を入力してください。',
         'attributes' => [
             'recipients' => '受信者ルール',
             'recipient_type' => '受信者の種類',
@@ -101,7 +104,13 @@ return [
             'body' => '通知の本文',
         ],
     ],
-    // 通知テンプレート編集ウィンドウ「使用可能な変数」の説明 — common は変数キーごとの既定、by_type はその通知でのみ意味が異なる変数、identity は本人認証通知の共通変数。キーがない場合は宣言文字列をそのまま使う。
+    'member_variables' => [
+        'display_name' => '受信する会員に表示される名前',
+        'field' => '会員項目: :name',
+    ],
+    'warnings' => [
+        'unknown_variable' => '現在存在しない変数です: :variable (会員項目が削除されているかオフになっている場合は空文字で送信されます)',
+    ],
     'variables' => [
         'common' => [
             'name' => '受信者名',
@@ -162,6 +171,13 @@ return [
             'password_expiry_notice' => [
                 'action_url' => 'パスワード変更画面URL',
             ],
+            'schedule_failed' => [
+                'schedule_label' => 'タスク表示名',
+                'schedule_name' => 'タスク識別子(name)',
+                'owner' => '所有者(コア・拡張名・直接登録)',
+                'failed_at' => '失敗日時',
+                'schedule_url' => 'スケジュール管理画面URL',
+            ],
         ],
         'identity' => [
             'code' => '認証コード（text_code フロー）',
@@ -173,7 +189,6 @@ return [
             'recipient_email' => '受信者メールアドレス',
         ],
     ],
-    // `notification:cleanup` コマンド出力
     'console' => [
         'cleanup' => [
             'start' => '通知のクリーンアップを開始...',

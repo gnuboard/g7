@@ -3,11 +3,13 @@
 namespace App\Repositories;
 
 use App\Contracts\Repositories\ScheduleHistoryRepositoryInterface;
+use App\Enums\ScheduleResultStatus;
 use App\Models\ScheduleHistory;
 use App\Repositories\Concerns\DeletesInBatches;
 use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Repositories\Concerns\ResolvesSortSpec;
+use App\Scheduling\ScheduleRunner;
 use App\Support\Query\PaginationLimits;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
@@ -39,6 +41,36 @@ class ScheduleHistoryRepository implements ScheduleHistoryRepositoryInterface
     public function create(array $data): ScheduleHistory
     {
         return ScheduleHistory::create($data);
+    }
+
+    /**
+     * 저장하지 않은 실행 이력 인스턴스를 만듭니다.
+     *
+     * 「실패만 기록」 스케줄이 성공하면 이력 행을 남기지 않지만, 실행 후 훅은 이력 인자를 받으므로
+     * 같은 값을 담은 미저장 인스턴스를 넘긴다.
+     *
+     * @param  array  $data  이력 데이터
+     * @return ScheduleHistory 저장되지 않은 이력 모델
+     */
+    public function make(array $data): ScheduleHistory
+    {
+        return new ScheduleHistory($data);
+    }
+
+    /**
+     * 스케줄의 가장 최근 「실행 중」 이력을 찾습니다.
+     *
+     * @param  int  $scheduleId  스케줄 ID
+     * @return ScheduleHistory|null 실행 중 이력 또는 null
+     */
+    public function findLatestRunning(int $scheduleId): ?ScheduleHistory
+    {
+        return ScheduleHistory::query()
+            ->where('schedule_id', $scheduleId)
+            ->where('status', ScheduleResultStatus::Running)
+            ->orderByDesc('started_at')
+            ->orderByDesc('id')
+            ->first();
     }
 
     /**
@@ -142,6 +174,58 @@ class ScheduleHistoryRepository implements ScheduleHistoryRepositoryInterface
     }
 
     /**
+     * 출처별 최근 실행 이력을 조회합니다.
+     *
+     * 정렬 마지막에 기본키를 덧붙여 전순서를 만든다 — `started_at` 은 같은 초에 여러
+     * 건이 쌓일 수 있어(한 번의 러너 호출이 여러 예약을 연달아 실행한다) 그것만으로는
+     * 같은 시각 구간의 순서가 호출마다 달라진다.
+     *
+     * @param  string  $source  이력 출처 (database|code)
+     * @param  int  $limit  최대 건수
+     * @return Collection 시각 역순 이력
+     */
+    public function getRecentBySource(string $source, int $limit = 20): Collection
+    {
+        return ScheduleHistory::where('source', $source)
+            ->orderByDesc('started_at')
+            ->orderByDesc('id')
+            ->limit(max(1, $limit))
+            ->get();
+    }
+
+    /**
+     * 출처를 가리지 않고 최근 실행 이력을 조회합니다 (스케줄 행을 함께 싣는다).
+     *
+     * 정렬은 `getRecentBySource()` 와 같다(시각 역순 + 기본키로 전순서).
+     *
+     * @param  int  $limit  최대 건수
+     * @param  string|null  $excludeCodeEventPrefix  빼낼 코드 이력의 이벤트 이름 접두사 (null 이면 빼지 않음)
+     * @return Collection 시각 역순 이력
+     */
+    public function getRecentRuns(int $limit = 20, ?string $excludeCodeEventPrefix = null): Collection
+    {
+        // 거절 행은 실행이 아니다 — 「최근 실행」 목록에 싣지 않는다(그 스케줄의 이력 창에서 본다).
+        $query = ScheduleHistory::query()->with('schedule')
+            ->where('status', '!=', ScheduleResultStatus::Rejected);
+
+        if ($excludeCodeEventPrefix !== null && $excludeCodeEventPrefix !== '') {
+            $pattern = addcslashes($excludeCodeEventPrefix, '\\%_').'%';
+
+            $query->where(function ($q) use ($pattern): void {
+                $q->where('source', '!=', ScheduleRunner::HISTORY_SOURCE)
+                    ->orWhereNull('event_name')
+                    ->orWhere('event_name', 'not like', $pattern);
+            });
+        }
+
+        return $query
+            ->orderByDesc('started_at')
+            ->orderByDesc('id')
+            ->limit(max(1, $limit))
+            ->get();
+    }
+
+    /**
      * 여러 이력을 일괄 삭제합니다.
      *
      * @param  array  $ids  이력 ID 배열
@@ -161,6 +245,21 @@ class ScheduleHistoryRepository implements ScheduleHistoryRepositoryInterface
     public function deleteByScheduleId(int $scheduleId): int
     {
         return ScheduleHistory::where('schedule_id', $scheduleId)->delete();
+    }
+
+    /**
+     * 여러 스케줄의 모든 이력을 삭제합니다.
+     *
+     * @param  array<int, int>  $scheduleIds  스케줄 ID 목록
+     * @return int 삭제된 레코드 수
+     */
+    public function deleteByScheduleIds(array $scheduleIds): int
+    {
+        if ($scheduleIds === []) {
+            return 0;
+        }
+
+        return ScheduleHistory::whereIn('schedule_id', $scheduleIds)->delete();
     }
 
     /**

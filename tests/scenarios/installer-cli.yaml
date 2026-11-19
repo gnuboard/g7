@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 입력 채널 × 설치 상태 × 실행 계정 × OS × vendor 방식 × 재설치 옵션의 곱은 수백 조합이고 OS·실행 계정 축은 PHPUnit 한 프로세스에서 만들 수 없다. 축별 대표값은 test_files 의 effects 로, OS·root·도커 조합은 manual_verification(CLI 실측 매트릭스)으로 덮는다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#819 입력 채널 × 설치 상태 × 실행 계정 × OS × vendor 방식 × 재설치 옵션의 곱은 수백 조합이고 OS·실행 계정 축은 PHPUnit 한 프로세스에서 만들 수 없다. 축별 대표값은 test_files 의 effects 로, OS·root·도커 조합은 manual_verification(CLI 실측 매트릭스)으로 덮는다.
 feature: 터미널(CLI) 설치 명령 — 웹 설치 마법사와 같은 공유 함수 + 마법사 결함 6건 정리
 
 description: |
@@ -29,6 +29,8 @@ axes:
   os: [windows, linux, docker]
   vendor_mode: [auto, composer, bundled]
   reinstall_options: [none, delete_extensions, delete_settings, delete_uploads, delete_vendor]
+  # 웹 설치 마법사 쪽 결함 정리 시험(마무리 구간 재진입·CLI 소유 안내)이 표시하는 표면 (#839)
+  surface: [installer]
 
 effects:
   # 결함 ① — 사이트 언어
@@ -61,7 +63,8 @@ effects:
 
   # 결함 ⑥ — .env 확정 뒤 설정 캐시 재생성
   - finalize_rebuilds_config_cache_after_env_merge
-  - finalize_skips_rebuild_without_config_cache
+  - finalize_rebuilds_config_cache_even_without_prior_cache
+  - finalize_leaves_no_stale_config_cache_on_rebuild_failure
   # 완료 요약 .env 권한 안내 — 웹 완료 화면과 같은 두 선택지(--web-user 설치는 640)
   - cli_env_hardening_hint_matches_web_completion
   # 결함 ⑥ 의 폴링 경로 — 완료 표식 뒤 마무리 작업(설정·라우트 캐시·정적 게시)이 끝나야 완료 처리
@@ -110,12 +113,17 @@ effects:
   - installer_cli_and_web_reject_same_fields
   - installer_cli_parity_cases_cover_validated_fields
   - installer_cli_detects_php_and_composer_like_web
+  - installer_shared_validation_gates_explicit_execution_mode
+  # 설치 시작·마무리 — 웹과 같은 실행 방식 고정·노출 점검 잔여물 정리
+  - cli_install_start_pins_execution_mode_and_php_binary
+  - cli_finalize_sweeps_exposure_probe_leftovers
   # 종료 코드 0~7
   - cli_exit_0_help_and_skip_if_installed
   - cli_exit_1_installation_failed
   - cli_exit_2_invalid_input
   - cli_exit_3_already_installed
   - cli_exit_4_requirements_not_met
+  - cli_exit_4_env_not_writable_at_start
   - cli_exit_5_another_cli_running
   - cli_exit_6_aborted_marks_state
   - cli_exit_7_root_refused_without_web_user
@@ -123,6 +131,7 @@ effects:
   - cli_claim_marks_owner_kind_cli
   - cli_refuses_web_owned_installation
   - cli_takeover_refused_while_web_worker_active
+  - cli_worker_liveness_follows_shared_judgment
   - cli_reset_state_respects_web_ownership
   - cli_reset_state_refused_while_web_worker_active
   - cli_reset_state_clears_cli_owned_installation
@@ -130,6 +139,7 @@ effects:
   - cli_takeover_discards_web_runtime_and_drop_confirm
   - cli_interrupted_cli_install_requires_resume
   - reclaim_refused_for_cli_owned_installation
+  - cli_worker_lock_survives_long_blocking_task   # 심장박동 없이 오래 걸린 단계 뒤에도 터미널 설치가 자기 잠금을 잃지 않는다
   # 터미널 소유 설치의 웹 잠금 화면 — 이어서 설치 명령은 멈춘 경우에만 안내
   - cli_owned_notice_hides_resume_while_running
   - cli_owned_notice_shows_resume_when_stopped
@@ -142,6 +152,7 @@ effects:
   - cli_json_emitter_matches_sse_event_fields
   - cli_emitter_suppresses_heartbeat
   - cli_emitter_abort_flag_maps_to_connection_aborted
+  - cli_emitter_separates_command_output_lines
   # 재설치 (5.4)
   - reinstall_all_options_delete_exact_targets
   - reinstall_without_options_keeps_data_and_app_key
@@ -181,6 +192,7 @@ test_files:
   - tests/Unit/Installer/InstallerCliOwnershipTest.php
   - tests/Unit/Installer/InstallerCliWebUserTest.php
   - tests/Unit/Installer/InstallerCliEmitterTest.php
+  - tests/Unit/Installer/InstallerCliStartFinalizeParityTest.php
   - tests/Unit/Installer/InstallerReinstallTest.php
   - tests/Unit/Installer/InstallerLangPlaceholderTest.php
   - tests/Unit/Installer/InstallerAutoVendorFallbackTest.php

@@ -3,6 +3,7 @@
 namespace App\Console\Commands\Traits;
 
 use App\Console\Helpers\ConsoleConfirm;
+use App\Console\Helpers\PromptCapability;
 use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\StreamableInputInterface;
@@ -14,9 +15,15 @@ use Symfony\Component\Console\Input\StreamableInputInterface;
  * expectsQuestion() / expectsConfirmation() 헬퍼와 호환된다. 입력 정규화 및
  * 재질문 루프는 ConsoleConfirm::parse() 와 공유한다.
  *
- * - `--yes`(`-y`) 시: 묻지 않고 true (부가 선택 질문은 $default)
+ * - `--yes`(`-y`) 옵션(확인만 생략)이 있는 명령에서 지정 시: 「예」로 답한 것으로 보고 true 반환 — `--force` 의 다른 효과는 없다
+ *   (부가 선택 질문 `$optional` 은 $default). 이 트레이트를 쓰는 명령에는 `configure()` 가 `--yes` 를 자동으로 붙인다(7.1.6 과 같음).
+ *   명령이 시그니처에 `{--y|yes : …}` 로 직접 선언했으면(7.2.0 — 명령별 설명) 붙이지 않고 그 선언을 쓴다
  * - `--no-interaction` 시: $default 즉시 반환
  * - 응답을 받을 수 없는 실행(콘솔 없는 STDIN) 시: $default 즉시 반환
+ *   (기본값 「아니오」가 곧 작업 취소인 확인은 `canAnswerConfirmation()` 으로 먼저 갈라
+ *   `refuseUnanswerableConfirmation()` 으로 실패를 알린다 — 취소가 종료 코드 0 으로 끝나면 자동화가 성공으로 읽는다)
+ * - 확인 외의 질문(choice·ask·secret)과 선택 질문은 `canShowPrompt()` 로 가르고 `optionalConfirm()` 을 쓴다 — `--yes` 가 답하지 않는다
+ *   (7.1.6 의 `unifiedChoice()`·`unifiedAsk()` 는 물을 수 없거나 `--yes` 면 기다리지 않고 기본값을 돌려준다)
  * - empty 입력 시: $default 반환
  * - yes/y → true, no/n → false (대소문자 무시)
  * - 그 외 입력: "yes, y, no, n 중 하나로 입력해 주세요." 출력 후 재질문
@@ -33,40 +40,54 @@ trait HasUnifiedConfirm
     protected bool $declinedNonInteractive = false;
 
     /**
-     * 모든 확인 질문에 「예」로 답하는 `--yes`(`-y`) 옵션을 더한다.
+     * 이 트레이트를 쓰는 명령에 `--yes`(`-y`) 옵션을 붙입니다 (7.1.6 의 자동 부착 — 확장 명령의 `-y` 호환).
      *
-     * 시그니처(`$signature`)를 쓰는 명령은 `getOptions()` 가 무시되므로 Symfony 의 `configure()` 로 더한다.
-     * `configure()` 는 시그니처 옵션보다 먼저 실행된다 — 시그니처에 같은 이름의 옵션을 두면 생성 시 오류가 난다.
+     * Laravel 은 시그니처 옵션을 이 `configure()` 뒤에 정의에 넣는다. 그래서 정의(`hasOption`)로는 시그니처 선언을 볼 수 없고,
+     * 선언한 명령에 또 붙이면 시그니처 옵션을 넣을 때 「이미 있는 옵션」 오류가 난다 — 시그니처 문자열로 선언 여부를 본다.
      *
-     * @return void 반환값 없음
+     * @return void
      */
     protected function configure(): void
     {
         parent::configure();
 
-        if (! $this->getDefinition()->hasOption('yes')) {
-            $this->addOption('yes', 'y', InputOption::VALUE_NONE, '모든 확인 질문에 예로 답하고 진행 (터미널 없는 실행용)');
+        if ($this->getDefinition()->hasOption('yes') || $this->declaresYesOptionInSignature()) {
+            return;
         }
+
+        $this->addOption('yes', 'y', InputOption::VALUE_NONE, '모든 확인 질문에 예로 답하고 진행 (터미널 없는 실행용)');
     }
 
     /**
-     * `--yes` 옵션이 주어졌는지.
+     * 명령 시그니처가 `--yes` 옵션을 직접 선언했는지 판정합니다 (축약 `-y` 를 함께 둔 선언, 축약 없는 선언, 설명 붙은 선언 모두).
+     *
+     * @return bool 선언했으면 true
+     */
+    private function declaresYesOptionInSignature(): bool
+    {
+        $signature = property_exists($this, 'signature') ? (string) ($this->signature ?? '') : '';
+
+        return $signature !== '' && preg_match('/\{\s*--(?:[A-Za-z]\|)?yes(?:\s*[:=}])/', $signature) === 1;
+    }
+
+    /**
+     * `--yes` 옵션이 주어졌는지 (7.1.6 이름 — `confirmationPreApproved()` 와 같다).
      *
      * @return bool 주어졌으면 true
      */
     protected function yesOptionGiven(): bool
     {
-        return $this->input->hasOption('yes') && (bool) $this->input->getOption('yes');
+        return $this->confirmationPreApproved();
     }
 
     /**
-     * 이 실행이 질문을 던질 수 없는지 (비대화 실행이거나 응답을 받을 수 없는 환경).
+     * 이 실행이 질문을 던질 수 없는지 (7.1.6 이름 — `! canShowPrompt()` 와 같다).
      *
      * @return bool 물을 수 없으면 true
      */
     protected function cannotPrompt(): bool
     {
-        return ! $this->input->isInteractive() || ! $this->canPromptForAnswer();
+        return ! $this->canShowPrompt();
     }
 
     /**
@@ -92,11 +113,11 @@ trait HasUnifiedConfirm
      */
     protected function unifiedConfirm(string $question, bool $default = false, bool $optional = false): bool
     {
-        if ($this->yesOptionGiven()) {
+        if ($this->confirmationPreApproved()) {
             return $optional ? $default : true;
         }
 
-        if ($this->cannotPrompt()) {
+        if (! $this->canAnswerConfirmation()) {
             if (! $default && ! $optional) {
                 $this->warn(__('common.console.confirm_requires_yes', ['question' => $question]));
                 $this->declinedNonInteractive = true;
@@ -105,6 +126,38 @@ trait HasUnifiedConfirm
             return $default;
         }
 
+        return $this->askYesNo($question, $default);
+    }
+
+    /**
+     * 선택 질문용 yes/no 프롬프트 — `--yes` 가 「예」로 답하지 않는다.
+     *
+     * 선택 질문은 기본값이 문서화된 진행 방식이고 거절이 작업 취소가 아닌 질문이다(예: 확장별 덮어쓰기 변경 여부,
+     * 검색 인덱스 재생성 여부). `--yes` 는 확인 질문에만 「예」로 답하므로, 여기서는 그 옵션을 보지 않는다.
+     * 질문을 띄울 수 없는 실행이면 묻지 않고 $default 를 돌려준다.
+     *
+     * @param  string  $question  질문 메시지
+     * @param  bool  $default  기본값 (true=[yes], false=[no])
+     * @return bool yes 면 true, no 면 false (질문을 띄울 수 없거나 빈 입력이면 $default)
+     */
+    protected function optionalConfirm(string $question, bool $default = false): bool
+    {
+        if (! $this->canShowPrompt()) {
+            return $default;
+        }
+
+        return $this->askYesNo($question, $default);
+    }
+
+    /**
+     * yes/no 를 묻고 유효한 답이 올 때까지 다시 묻습니다.
+     *
+     * @param  string  $question  질문 메시지
+     * @param  bool  $default  기본값 (빈 입력일 때)
+     * @return bool yes 면 true, no 면 false
+     */
+    private function askYesNo(string $question, bool $default): bool
+    {
         $hint = $default ? '[yes]' : '[no]';
         $prompt = "{$question} (yes/no) {$hint}";
 
@@ -121,6 +174,67 @@ trait HasUnifiedConfirm
 
             $this->warn('  '.__('common.console.console_confirm.invalid_answer'));
         }
+    }
+
+    /**
+     * 이 실행이 확인 질문에 답을 받을 수 있는지 판정합니다 — 답할 수 없는 실행 판정의 단일 지점.
+     *
+     * `--no-interaction` 이거나 입력이 콘솔이 아닌 실행(cron, CI, 원격 명령)은 답할 수 없다. `unifiedConfirm()` 은 그런
+     * 실행에서 묻지 않고 기본값을 돌려준다. 업데이트, 제거처럼 기본값 「아니오」가 곧 작업 취소인 확인은 이 판정으로 먼저
+     * 갈라 `refuseUnanswerableConfirmation()` 으로 끝낸다. 대화형에서 운영자가 직접 답한 「아니오」는 의도한 취소라 그대로 둔다.
+     *
+     * @return bool 답을 받을 수 있으면 true
+     */
+    protected function canAnswerConfirmation(): bool
+    {
+        if ($this->confirmationPreApproved()) {
+            return true;
+        }
+
+        return $this->canShowPrompt();
+    }
+
+    /**
+     * 이 실행에서 질문을 실제로 띄워 답을 받을 수 있는지 판정합니다 — `--yes` 는 보지 않습니다.
+     *
+     * `canAnswerConfirmation()` 은 `--yes` 로 미리 답한 실행도 true 로 본다. 확인 외의 질문(`choice()`·`ask()`·`secret()`)과
+     * 선택 질문은 `--yes` 로 답이 정해지지 않으므로 이 판정으로 갈라야 한다. 그렇지 않으면 `--yes` 를 준 콘솔 없는 실행이
+     * 오지 않을 응답을 무한히 기다린다. false 면 질문하지 않고 기본값을 쓴다.
+     *
+     * @return bool `--no-interaction` 이 아니고 입력이 콘솔이면 true
+     */
+    protected function canShowPrompt(): bool
+    {
+        return $this->input->isInteractive() && $this->canPromptForAnswer();
+    }
+
+    /**
+     * `--yes`(확인만 생략)로 확인에 미리 답했는지 판정합니다.
+     *
+     * `--force` 는 확인 생략 외에 같은 판 재적용·다운그레이드 허용·코어 호환 검사 생략 등을 함께 켠다. 비대화형 자동화가
+     * 확인만 건너뛰고 싶을 때 `--force` 를 쓰면 그 효과까지 따라온다. `--yes` 는 확인 질문에만 「예」로 답한다.
+     * 그 옵션을 선언하지 않은 명령에서는 늘 false 다.
+     *
+     * @return bool `--yes` 가 주어졌으면 true
+     */
+    protected function confirmationPreApproved(): bool
+    {
+        return $this->input->hasOption('yes') && (bool) $this->input->getOption('yes');
+    }
+
+    /**
+     * 확인에 답할 수 없어 작업을 시작하지 않았음을 알리고 실패 종료 코드를 돌려줍니다.
+     *
+     * @param  string  $reason  시작하지 않은 사유 (오류로 출력)
+     * @param  string  $hint  확인 없이 진행하는 방법 안내
+     * @return int Command::FAILURE
+     */
+    protected function refuseUnanswerableConfirmation(string $reason, string $hint): int
+    {
+        $this->error($reason);
+        $this->line($hint);
+
+        return Command::FAILURE;
     }
 
     /**
@@ -173,6 +287,11 @@ trait HasUnifiedConfirm
      */
     protected function canPromptForAnswer(): bool
     {
+        // 시험이 「콘솔 없는 실행」 갈래를 고정했으면 그 값을 쓴다 (PromptCapability::fake)
+        if (PromptCapability::override() !== null) {
+            return PromptCapability::override();
+        }
+
         // 테스트는 QuestionHelper 를 대체하거나 입력을 주입하므로 STDIN 을 쓰지 않는다
         if ($this->laravel !== null && $this->laravel->runningUnitTests()) {
             return true;

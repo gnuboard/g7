@@ -1,0 +1,65 @@
+feature: 히어로섹션 영상 배너 (영상 파일)
+
+description: |
+  배너마다 미디어 종류(이미지 기본 · 영상 파일)를 고른다. 어느 종류든 PC 이미지는 대표 이미지로 필수다 — 영상은 받는 동안·
+  움직임 줄이기에서 대신 보인다. 영상 파일(MP4·WEBM)은 이미지처럼 임시 묶음에 올린 뒤 저장 때 붙고, PC·모바일 각각 둘 수
+  있으며(모바일이 없으면 PC), 공개 응답은 범위 요청(206)을 받는다. 활성 장이 영상이면 간격 넘김을 멈추고 영상이 끝나면 다음
+  장으로 넘긴다(한 장이면 반복). 재생할 수 없는 영상(파일 오류)은 이미지처럼 간격으로 넘긴다. 일시정지 단추는 자동 넘김과
+  영상 재생을 함께 멈춘다. 영상 최대 용량은 이미지와 따로(기본 30MB, 서버 PHP 한도 이하)다.
+  유튜브 등 제3자 영상 플랫폼은 받지 않는다(추후 보완 출시) — 등록·수정에서 그 종류를 거절하고, 옛 응답에 남은 유튜브 종류는
+  대표 이미지로만 그린다. 옛 유튜브 배너는 업그레이드 때 이미지 배너로 바뀐다.
+  입력 변종(미디어 종류 image·video·옛 youtube × 기기 pc·mobile)은 surface 마다 해당 조합을 시험 본문에서 돌린다(기기 영상은 video_device_source).
+
+axes:
+  surface:
+    - video_follows_core_file_serving_contract
+    - media_urls_carry_site_mount_prefix
+    - video_upload_accepted
+    - video_upload_rejects_disguised
+    - video_upload_size_limit
+    - video_and_image_slots_independent
+    - youtube_media_type_rejected
+    - youtube_url_ignored
+    - video_store_requires_pc_video
+    - video_selection_rejects_foreign
+    - video_update_switch_and_keep
+    - video_public_range_response
+    - video_plays_muted_inline
+    - video_device_source
+    - video_ends_then_next
+    - video_ends_while_hovered
+    - single_video_loops
+    - pause_stops_video
+    - pause_keeps_video_position
+    - video_play_abort_is_not_failure
+    - video_poster_matches_device
+    - reduced_motion_starts_paused
+    - video_preload_by_turn
+    - video_error_falls_back_to_interval
+    - video_only_when_media_type_video
+    - youtube_legacy_renders_image
+    - form_media_type_fields
+    - form_section_order_image_first
+    - form_save_blocked_reason
+
+effects:
+  - file_serving_contract_matches_core
+  - media_served_inside_site_mount
+  - public_hero_media_fields
+  - image_files_deleted
+  - activity_log_per_item
+  - accessible_names_present
+  - video_plays_muted_with_device_source   # 영상 배너는 소리 없이 화면 안에서 재생하고, 기기 폭에 맞는 영상과 대표 이미지를 쓰며, 미디어 종류가 이미지면 이미지로 그린다
+  - video_drives_slide_advance   # 영상이 끝나면 다음 장으로 넘기고(마우스가 올라가 있으면 기다림), 한 장이면 반복하며, 재생 실패·중단·시간 초과는 간격 넘김으로 돌린다
+  - pause_controls_video_playback   # 일시정지 단추와 움직임 줄이기가 영상을 멈추고, 멈춘 자리에서 이어 보며 다른 장으로 넘어가면 처음으로 돌린다
+  - video_downloaded_only_on_its_turn   # 영상은 재생 차례인 장만 다 받고 다음 장은 정보만, 그 밖과 움직임 줄이기·데이터 절약은 재생 전까지 받지 않는다
+  - legacy_youtube_renders_poster_only   # 옛 응답에 유튜브 종류가 와도 대표 이미지만 그리고 외부 플레이어·재생 단추를 두지 않는다
+  - media_type_choice_switches_form_fields   # 등록 화면 미디어 종류는 이미지·영상 파일만 고르고, 종류에 따라 영상 칸과 저장 잠김 이유가 바뀐다
+
+test_files:
+  - plugins/_bundled/sirsoft-hero_section/tests/Unit/Models/MediaUrlBasePrefixTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Feature/Admin/BannerMediaTest.php
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroSliderMedia.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/hero_section_banner_form.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/media-banner.spec.ts
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/site-media-prefix.spec.ts

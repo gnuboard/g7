@@ -8,188 +8,159 @@
  *   jsdom 에는 생성형 스타일시트가 없어 `<style id>` 폴백으로 붙는다 — 실제 브라우저 경로(<style> 0개)는
  *   `TemplateApp.overlayNoInlineStyle.test.ts` 가 실제 TemplateApp 메서드로 잠근다 (#163, engine-v1.91.0)
  * - target 미지정 시: DOM 오버레이 (document.body에 fixed)
+ * - spinner 스타일: 대상 안에 빈 컨테이너(#g7-skeleton-overlay)를 넣고 기본 스피너를 그린다.
+ *   기본 스피너 모양·색은 코어 정적 CSS(g7-core.css)의 클래스가 준다 — 요소에 style 속성이 없다 (#163)
+ *
+ * #869: 종전에는 TemplateApp 의 덮개 로직을 이 파일 안에 베껴 두고 그 사본만 검사했다. 원본이 깨져도 통과했고,
+ * 스피너 사본은 원본과 이미 달랐다(원본은 ::after 배경과 position:fixed 를 쓰지 않고, 색은 CSS 변수로 받는다).
+ * 지금은 실제 TemplateApp 의 showTransitionOverlay 와 hideTransitionOverlay 를 부른다.
+ * (매니페스트 core-transition-overlay-nu2.yaml, strict-style-csp-compat.yaml)
  *
  * @since engine-v1.23.0
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { remove as removeRuntimeStyleRules, setRules as setRuntimeStyleRules } from '../style/RuntimeStyleSheet';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
-type SkeletonConfig = {
-    component: string;
-    animation?: 'pulse' | 'wave' | 'none';
-    iteration_count?: number;
-};
+vi.mock('../template-engine', () => ({
+    initTemplateEngine: vi.fn().mockResolvedValue(undefined),
+    renderTemplate: vi.fn().mockResolvedValue(undefined),
+    destroyTemplate: vi.fn(),
+    releaseTemplateRoot: vi.fn(),
+    updateTemplateData: vi.fn(),
+    getActionDispatcher: vi.fn().mockReturnValue(null),
+    getState: vi.fn().mockReturnValue({ currentLayoutJson: null, currentDataContext: {} }),
+}));
 
-type SpinnerConfig = {
-    component?: string;
-    text?: string;
-};
+vi.mock('../routing/Router', () => ({
+    Router: vi.fn(function (this: any) {
+        this.on = vi.fn();
+    }),
+}));
 
-type TransitionOverlayConfig = boolean | { enabled: boolean; style?: string; target?: string; skeleton?: SkeletonConfig; spinner?: SpinnerConfig };
+vi.mock('../template-engine/ComponentRegistry', () => {
+    const mockInstance: any = {
+        loadComponents: vi.fn().mockResolvedValue(undefined),
+        getComponent: vi.fn(() => null),
+        hasComponent: vi.fn().mockReturnValue(true),
+        getInstance: vi.fn(),
+    };
+    mockInstance.getInstance.mockReturnValue(mockInstance);
+    return { ComponentRegistry: { getInstance: vi.fn(() => mockInstance) } };
+});
 
-interface NormalizedConfig {
+import { TemplateApp } from '../TemplateApp';
+
+/** 기본 스피너 모양·색을 주는 코어 정적 CSS(주석 제외) */
+const coreCss = (): string => readFileSync(resolve(__dirname, '../../../../public/assets/core/css/g7-core.css'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '');
+
+type OverlayConfig = boolean | {
     enabled: boolean;
-    style: string;
+    style?: string;
     target?: string;
-    skeleton?: SkeletonConfig;
-    spinner?: SpinnerConfig;
-}
-
-/**
- * config 정규화 (TemplateApp.showTransitionOverlay 내부 로직)
- */
-function normalizeConfig(config: TransitionOverlayConfig): NormalizedConfig {
-    return typeof config === 'boolean'
-        ? { enabled: config, style: 'opaque' }
-        : { enabled: config.enabled, style: config.style || 'opaque', target: config.target, skeleton: config.skeleton, spinner: config.spinner };
-}
-
-/**
- * 스타일별 CSS 생성
- */
-function getStyleCss(style: string, isDark: boolean): { bgCss: string; extraCss: string } {
-    switch (style) {
-        case 'blur':
-            return {
-                bgCss: isDark ? 'rgba(17,24,39,0.3)' : 'rgba(255,255,255,0.3)',
-                extraCss: 'backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);',
-            };
-        case 'fade':
-            return {
-                bgCss: isDark ? 'rgba(17,24,39,0.8)' : 'rgba(255,255,255,0.8)',
-                extraCss: '',
-            };
-        case 'opaque':
-        default:
-            return {
-                bgCss: isDark ? 'rgb(17,24,39)' : 'rgb(249,250,251)',
-                extraCss: '',
-            };
-    }
-}
-
-/**
- * 오버레이 생성 (TemplateApp.showTransitionOverlay 로직)
- *
- * - target 지정 시: <style> 태그를 <head>에 삽입 (::after 의사 요소)
- * - target 미지정 시: <div> 오버레이를 body에 삽입 (position:fixed)
- */
-function showTransitionOverlay(config: TransitionOverlayConfig): HTMLElement | null {
-    const normalized = normalizeConfig(config);
-    if (!normalized.enabled) return null;
-
-    // 기존 오버레이 제거
-    hideTransitionOverlay();
-
-    const isDark = document.documentElement.classList.contains('dark');
-    const { bgCss, extraCss } = getStyleCss(normalized.style, isDark);
-
-    if (normalized.target) {
-        // 런타임 규칙 방식 — 실제 구현과 같이 RuntimeStyleSheet 를 거친다(jsdom 은 <style id> 폴백으로 붙는다) (#163)
-        const selector = `#${normalized.target}`;
-        setRuntimeStyleRules(
-            'g7-transition-overlay',
-            `${selector}{position:relative;z-index:0;}${selector}::after{content:'';position:absolute;inset:0;background:${bgCss};${extraCss}z-index:2147483647;pointer-events:none;}`
-        );
-        return document.getElementById('g7-transition-overlay');
-    } else {
-        // DOM 오버레이 방식 (폴백) — TemplateApp.showTransitionOverlay 와 동일하게 개별 속성으로
-        // 설정한다. cssText 일괄 설정은 backdrop-filter(jsdom 미지원) 가 섞이면 그 선언 블록 전체가
-        // 거부되어 앞선 background 까지 무효화된다. 개별 setProperty 는 미지원 속성만 무시되고
-        // background 는 보존된다(실제 브라우저 동작은 cssText 일괄과 동일).
-        const overlay = document.createElement('div');
-        overlay.id = 'g7-transition-overlay';
-        overlay.setAttribute('aria-hidden', 'true');
-        overlay.style.position = 'fixed';
-        overlay.style.inset = '0';
-        overlay.style.zIndex = '9999';
-        overlay.style.pointerEvents = 'none';
-        overlay.style.background = bgCss;
-        for (const decl of extraCss.split(';')) {
-            const idx = decl.indexOf(':');
-            if (idx === -1) continue;
-            overlay.style.setProperty(decl.slice(0, idx).trim(), decl.slice(idx + 1).trim());
-        }
-        document.body.appendChild(overlay);
-        return overlay;
-    }
-}
-
-/**
- * 오버레이 제거 (TemplateApp.hideTransitionOverlay 로직)
- */
-function hideTransitionOverlay(): void {
-    removeRuntimeStyleRules('g7-transition-overlay');
-    const existing = document.getElementById('g7-transition-overlay');
-    if (existing) existing.remove();
-}
+    fallback_target?: string;
+    skeleton?: { component: string; animation?: string; iteration_count?: number };
+    spinner?: { component?: string; text?: string };
+};
 
 describe('transition_overlay', () => {
+    let app: TemplateApp;
+
+    /** 실제 TemplateApp.showTransitionOverlay 를 부르고 만들어진 덮개 요소를 돌려준다 */
+    const show = (config: OverlayConfig, layoutData?: unknown): HTMLElement | null => {
+        (app as any).showTransitionOverlay(config, layoutData);
+        return document.getElementById('g7-transition-overlay');
+    };
+
+    /** 실제 TemplateApp.hideTransitionOverlay */
+    const hide = (): void => {
+        (app as any).hideTransitionOverlay();
+    };
+
+    const createTargetContainer = (id: string, parent: HTMLElement = document.body): HTMLDivElement => {
+        const container = document.createElement('div');
+        container.id = id;
+        parent.appendChild(container);
+        return container;
+    };
+
     beforeEach(() => {
-        hideTransitionOverlay();
+        document.body.innerHTML = '';
+        document.head.querySelectorAll('#g7-transition-overlay, #g7-skeleton-overlay-style').forEach(el => el.remove());
         document.documentElement.classList.remove('dark');
+        app = new TemplateApp({ templateId: 'sirsoft-basic', templateType: 'user', locale: 'ko' } as any);
     });
 
     afterEach(() => {
-        hideTransitionOverlay();
+        hide();
         document.documentElement.classList.remove('dark');
-        const target = document.getElementById('main_content_area');
-        if (target) target.remove();
+        document.body.innerHTML = '';
     });
 
-    describe('normalizeConfig', () => {
-        /**
-         * @scenario case=overlay_legacy_algorithm
-         * @effects overlay_config_normalized
-         */
-        it('true를 opaque 스타일로 정규화해야 한다', () => {
-            expect(normalizeConfig(true)).toEqual({ enabled: true, style: 'opaque' });
+    describe('설정 해석', () => {
+        // @scenario area=config
+        // @scenario case=overlay_legacy_algorithm
+        // @effects overlay_config_normalized
+        it('true 는 opaque 전체 화면 덮개로 그린다', () => {
+            const el = show(true);
+            expect(el?.tagName).toBe('DIV');
+            expect(el?.style.background).toBe('rgb(249, 250, 251)');
         });
 
-        /** @effects overlay_config_normalized */
-        it('false를 enabled: false로 정규화해야 한다', () => {
-            expect(normalizeConfig(false)).toEqual({ enabled: false, style: 'opaque' });
+        // @scenario area=config
+        // @effects overlay_config_normalized
+        it('false 는 덮개를 만들지 않는다', () => {
+            expect(show(false)).toBeNull();
         });
 
-        /** @effects overlay_config_normalized */
-        it('객체 config를 그대로 반환해야 한다', () => {
-            expect(normalizeConfig({ enabled: true, style: 'blur' })).toEqual({ enabled: true, style: 'blur' });
+        // @scenario area=config
+        // @effects overlay_config_normalized
+        it('객체 설정의 style 을 그대로 쓴다', () => {
+            const el = show({ enabled: true, style: 'blur' });
+            expect(el?.style.background).toBe('rgba(255, 255, 255, 0.3)');
         });
 
-        /** @effects overlay_config_normalized */
+        // @scenario area=config
+        // @effects overlay_config_normalized
         it('style 미지정 시 opaque를 기본값으로 사용해야 한다', () => {
-            expect(normalizeConfig({ enabled: true })).toEqual({ enabled: true, style: 'opaque' });
+            const el = show({ enabled: true });
+            expect(el?.style.background).toBe('rgb(249, 250, 251)');
         });
 
-        /** @effects overlay_config_normalized */
-        it('target을 보존해야 한다', () => {
-            expect(normalizeConfig({ enabled: true, target: 'my_container' }))
-                .toEqual({ enabled: true, style: 'opaque', target: 'my_container' });
+        // @scenario area=config
+        // @effects overlay_config_normalized
+        it('target 을 덮개 CSS 의 선택자로 쓴다', () => {
+            createTargetContainer('my_container');
+            const el = show({ enabled: true, target: 'my_container' });
+            expect(el?.textContent).toContain('#my_container::after{');
         });
     });
 
     describe('target 미지정 — DOM 오버레이 (폴백)', () => {
-        /** @effects overlay_fullpage_div_via_cssom */
+        // @scenario area=dom_overlay
+        // @effects overlay_dom_fallback_rendered, overlay_fullpage_div_via_cssom
         it('transition_overlay: true 시 body에 fixed 오버레이를 생성해야 한다', () => {
-            const el = showTransitionOverlay(true);
+            const el = show(true);
 
             expect(el).not.toBeNull();
-            expect(el!.tagName).toBe('DIV');
             expect(el!.id).toBe('g7-transition-overlay');
-            expect(document.body.contains(el!)).toBe(true);
+            expect(el!.parentElement).toBe(document.body);
+            expect(el!.getAttribute('aria-hidden')).toBe('true');
         });
 
-        /** @effects overlay_fullpage_div_via_cssom */
+        // @scenario area=dom_overlay
+        // @effects overlay_dom_fallback_rendered, overlay_fullpage_div_via_cssom
         it('transition_overlay: false 시 오버레이를 생성하지 않아야 한다', () => {
-            const el = showTransitionOverlay(false);
-            expect(el).toBeNull();
+            show(false);
             expect(document.getElementById('g7-transition-overlay')).toBeNull();
         });
 
-        /** @effects overlay_fullpage_div_via_cssom */
+        // @scenario area=dom_overlay
+        // @effects overlay_dom_fallback_rendered, overlay_fullpage_div_via_cssom
         it('공통 스타일(fixed, inset, z-index, pointer-events)이 적용되어야 한다', () => {
-            const el = showTransitionOverlay(true) as HTMLDivElement;
+            const el = show(true)!;
 
             expect(el.style.position).toBe('fixed');
             expect(el.style.inset).toBe('0');
@@ -197,41 +168,36 @@ describe('transition_overlay', () => {
             expect(el.style.pointerEvents).toBe('none');
         });
 
-        /** @effects overlay_fullpage_div_via_cssom */
+        // @scenario area=dom_overlay
+        // @effects overlay_style_colors, overlay_fullpage_div_via_cssom
         it('opaque 스타일 시 gray-50 배경을 사용해야 한다', () => {
-            const el = showTransitionOverlay(true) as HTMLDivElement;
+            const el = show({ enabled: true, style: 'opaque' })!;
             expect(el.style.background).toBe('rgb(249, 250, 251)');
         });
 
-        /** @effects overlay_fullpage_div_via_cssom */
-        it('blur 스타일 시 backdrop-filter를 적용해야 한다', () => {
-            const el = showTransitionOverlay({ enabled: true, style: 'blur' }) as HTMLDivElement;
-            // jsdom 은 backdrop-filter 를 CSS 프로퍼티로 인식하지 않는다. 개별 속성 설정이라
-            // backdrop-filter 는 빈 값이 되지만 background 는 보존된다(cssText 일괄이면 동반 무효화).
-            // backdrop-filter 적용 자체는 CSS <style> 주입 모드 테스트(css.toContain)에서 검증.
+        // @scenario area=dom_overlay
+        // @effects overlay_style_colors, overlay_fullpage_div_via_cssom
+        it('blur 스타일 시 반투명 배경이 backdrop-filter 와 함께 보존되어야 한다', () => {
+            // jsdom 은 backdrop-filter 를 모른다. 미지원 선언이 섞여도 배경이 지워지지 않는지가 회귀선이다.
+            const el = show({ enabled: true, style: 'blur' })!;
             expect(el.style.background).toBe('rgba(255, 255, 255, 0.3)');
         });
 
-        /** @effects overlay_fullpage_div_via_cssom */
+        // @scenario area=dom_overlay
+        // @effects overlay_style_colors, overlay_fullpage_div_via_cssom
         it('fade 스타일 시 반투명 배경을 적용해야 한다', () => {
-            const el = showTransitionOverlay({ enabled: true, style: 'fade' }) as HTMLDivElement;
+            const el = show({ enabled: true, style: 'fade' })!;
             expect(el.style.background).toBe('rgba(255, 255, 255, 0.8)');
         });
     });
 
     describe('target 지정 — CSS <style> 주입', () => {
-        function createTargetContainer(id: string): HTMLDivElement {
-            const container = document.createElement('div');
-            container.id = id;
-            document.body.appendChild(container);
-            return container;
-        }
-
-        /** @effects overlay_target_rules_via_runtime_sheet */
+        // @scenario area=target_css
+        // @effects overlay_target_css_injected, overlay_target_rules_via_runtime_sheet
         it('target 지정 시 <style> 태그를 <head>에 삽입해야 한다', () => {
             createTargetContainer('main_content_area');
 
-            const el = showTransitionOverlay({ enabled: true, target: 'main_content_area' });
+            const el = show({ enabled: true, target: 'main_content_area' });
 
             expect(el).not.toBeNull();
             expect(el!.tagName).toBe('STYLE');
@@ -239,13 +205,13 @@ describe('transition_overlay', () => {
             expect(document.head.contains(el!)).toBe(true);
         });
 
-        /** @effects overlay_target_rules_via_runtime_sheet */
+        // @scenario area=target_css
+        // @effects overlay_target_css_injected, overlay_target_rules_via_runtime_sheet
         it('CSS에 타겟 selector와 ::after 규칙이 포함되어야 한다', () => {
             createTargetContainer('main_content_area');
 
-            const el = showTransitionOverlay({ enabled: true, target: 'main_content_area' });
+            const css = show({ enabled: true, target: 'main_content_area' })!.textContent!;
 
-            const css = el!.textContent!;
             expect(css).toContain('#main_content_area{position:relative;z-index:0;}');
             expect(css).toContain('#main_content_area::after{');
             expect(css).toContain('position:absolute;');
@@ -253,424 +219,348 @@ describe('transition_overlay', () => {
             expect(css).toContain('pointer-events:none;');
         });
 
-        /** @effects overlay_target_rules_via_runtime_sheet */
+        // @scenario area=target_css
+        // @effects overlay_style_colors, overlay_target_rules_via_runtime_sheet
         it('opaque 스타일 시 gray-50 배경 CSS가 포함되어야 한다', () => {
             createTargetContainer('main_content_area');
 
-            const el = showTransitionOverlay({ enabled: true, target: 'main_content_area' });
+            const el = show({ enabled: true, target: 'main_content_area' });
             expect(el!.textContent).toContain('background:rgb(249,250,251)');
         });
 
-        /** @effects overlay_target_rules_via_runtime_sheet */
+        // @scenario area=target_css
+        // @effects overlay_style_colors, overlay_target_rules_via_runtime_sheet
         it('blur 스타일 시 backdrop-filter CSS가 포함되어야 한다', () => {
             createTargetContainer('main_content_area');
 
-            const el = showTransitionOverlay({ enabled: true, target: 'main_content_area', style: 'blur' });
-            const css = el!.textContent!;
-            expect(css).toContain('backdrop-filter:blur(4px)');
+            const css = show({ enabled: true, style: 'blur', target: 'main_content_area' })!.textContent!;
             expect(css).toContain('background:rgba(255,255,255,0.3)');
+            expect(css).toContain('backdrop-filter:blur(4px)');
+            expect(css).toContain('-webkit-backdrop-filter:blur(4px)');
         });
 
-        /** @effects overlay_target_rules_via_runtime_sheet */
+        // @scenario area=target_css
+        // @effects overlay_style_colors, overlay_target_rules_via_runtime_sheet
         it('fade 스타일 시 반투명 배경 CSS가 포함되어야 한다', () => {
             createTargetContainer('main_content_area');
 
-            const el = showTransitionOverlay({ enabled: true, target: 'main_content_area', style: 'fade' });
+            const el = show({ enabled: true, style: 'fade', target: 'main_content_area' });
             expect(el!.textContent).toContain('background:rgba(255,255,255,0.8)');
         });
 
-        /** @effects overlay_target_rules_via_runtime_sheet */
+        // @scenario area=target_css
+        // @effects overlay_removed_cleanly, overlay_target_rules_via_runtime_sheet
         it('제거 시 <style> 태그가 <head>에서 삭제되어야 한다', () => {
             createTargetContainer('main_content_area');
+            show({ enabled: true, target: 'main_content_area' });
+            expect(document.head.querySelector('#g7-transition-overlay')).toBeTruthy();
 
-            showTransitionOverlay({ enabled: true, target: 'main_content_area' });
-            expect(document.getElementById('g7-transition-overlay')).toBeTruthy();
+            hide();
 
-            hideTransitionOverlay();
-            expect(document.getElementById('g7-transition-overlay')).toBeNull();
+            expect(document.head.querySelector('#g7-transition-overlay')).toBeNull();
         });
     });
 
     describe('다크 모드', () => {
-        /** @effects overlay_dark_mode_colors */
+        // @scenario area=dark_mode
+        // @effects overlay_style_colors, overlay_dark_mode_colors
         it('다크 모드에서 opaque DOM 오버레이 시 gray-900 배경을 사용해야 한다', () => {
             document.documentElement.classList.add('dark');
-            const el = showTransitionOverlay(true) as HTMLDivElement;
+            const el = show(true)!;
             expect(el.style.background).toBe('rgb(17, 24, 39)');
         });
 
-        /** @effects overlay_dark_mode_colors */
+        // @scenario area=dark_mode
+        // @effects overlay_style_colors, overlay_dark_mode_colors
         it('다크 모드에서 target CSS 주입 시 gray-900 배경이 포함되어야 한다', () => {
             document.documentElement.classList.add('dark');
-            const container = document.createElement('div');
-            container.id = 'main_content_area';
-            document.body.appendChild(container);
+            createTargetContainer('main_content_area');
 
-            const el = showTransitionOverlay({ enabled: true, target: 'main_content_area' });
+            const el = show({ enabled: true, target: 'main_content_area' });
             expect(el!.textContent).toContain('background:rgb(17,24,39)');
         });
 
-        /** @effects overlay_dark_mode_colors */
+        // @scenario area=dark_mode
+        // @effects overlay_style_colors, overlay_dark_mode_colors
         it('다크 모드에서 blur 스타일 시 dark 반투명 배경을 사용해야 한다', () => {
             document.documentElement.classList.add('dark');
-            const el = showTransitionOverlay({ enabled: true, style: 'blur' }) as HTMLDivElement;
+            const el = show({ enabled: true, style: 'blur' })!;
             expect(el.style.background).toBe('rgba(17, 24, 39, 0.3)');
         });
     });
 
     describe('라우트 변경 시나리오', () => {
-        /** @effects overlay_show_hide_idempotent */
+        // @scenario area=lifecycle
+        // @effects overlay_removed_cleanly, overlay_show_hide_idempotent
         it('오버레이 표시 후 제거가 정상 동작해야 한다', () => {
-            showTransitionOverlay(true);
+            show(true);
             expect(document.getElementById('g7-transition-overlay')).toBeTruthy();
 
-            hideTransitionOverlay();
+            hide();
             expect(document.getElementById('g7-transition-overlay')).toBeNull();
         });
 
-        /** @effects overlay_show_hide_idempotent */
+        // @scenario area=lifecycle
+        // @effects overlay_removed_cleanly, overlay_show_hide_idempotent
         it('target CSS 주입 후 제거가 정상 동작해야 한다', () => {
-            const container = document.createElement('div');
-            container.id = 'content';
-            document.body.appendChild(container);
+            createTargetContainer('content');
 
-            showTransitionOverlay({ enabled: true, target: 'content' });
+            show({ enabled: true, target: 'content' });
             expect(document.getElementById('g7-transition-overlay')).toBeTruthy();
 
-            hideTransitionOverlay();
+            hide();
             expect(document.getElementById('g7-transition-overlay')).toBeNull();
-            container.remove();
         });
 
-        /** @effects overlay_show_hide_idempotent */
+        // @scenario area=lifecycle
+        // @effects overlay_not_duplicated, overlay_show_hide_idempotent
         it('중복 호출 시 기존 오버레이를 제거하고 새로 생성해야 한다', () => {
-            showTransitionOverlay(true);
-            showTransitionOverlay(true);
+            show(true);
+            show(true);
 
-            const overlays = document.querySelectorAll('#g7-transition-overlay');
-            expect(overlays.length).toBe(1);
+            expect(document.querySelectorAll('#g7-transition-overlay').length).toBe(1);
         });
 
-        /** @effects overlay_show_hide_idempotent */
+        // @scenario area=lifecycle
+        // @effects overlay_removed_cleanly, overlay_show_hide_idempotent
         it('hideTransitionOverlay 중복 호출 시 에러 없이 처리해야 한다', () => {
+            show(true);
             expect(() => {
-                hideTransitionOverlay();
-                hideTransitionOverlay();
+                hide();
+                hide();
             }).not.toThrow();
         });
     });
 
     describe('skeleton 스타일 (@since engine-v1.24.0)', () => {
-        /** @effects skeleton_overlay_config_and_fallback */
-        it('skeleton 스타일을 정규화해야 한다', () => {
-            const config: TransitionOverlayConfig = {
+        // @scenario area=skeleton
+        // @effects overlay_skeleton_fallback, skeleton_overlay_config_and_fallback
+        it('skeleton 설정이 있어도 레이아웃 데이터가 없으면 target opaque CSS 로 폴백한다', () => {
+            createTargetContainer('main_content_area');
+
+            const el = show({
                 enabled: true,
                 style: 'skeleton',
                 target: 'main_content_area',
-                skeleton: {
-                    component: 'PageSkeleton',
-                    animation: 'pulse',
-                    iteration_count: 5,
-                },
-            };
-            const normalized = normalizeConfig(config);
-
-            expect(normalized.style).toBe('skeleton');
-            expect(normalized.target).toBe('main_content_area');
-            expect(normalized.skeleton).toEqual({
-                component: 'PageSkeleton',
-                animation: 'pulse',
-                iteration_count: 5,
+                skeleton: { component: 'PageSkeleton', animation: 'pulse', iteration_count: 5 },
             });
+
+            expect(el?.tagName).toBe('STYLE');
+            expect(el?.textContent).toContain('#main_content_area::after{');
+            expect(el?.textContent).toContain('background:rgb(249,250,251)');
+            expect(document.getElementById('g7-skeleton-overlay')).toBeNull();
         });
 
-        /** @effects skeleton_overlay_config_and_fallback */
+        // @scenario area=skeleton
+        // @effects overlay_skeleton_fallback, skeleton_overlay_config_and_fallback
         it('skeleton 설정 없이 skeleton 스타일 시 opaque 폴백 CSS를 생성해야 한다', () => {
-            // skeleton 스타일이지만 skeleton 설정이 없으면 CSS 폴백
-            const el = showTransitionOverlay({ enabled: true, style: 'skeleton' }) as HTMLDivElement;
+            const el = show({ enabled: true, style: 'skeleton' })!;
             expect(el).not.toBeNull();
-            // opaque와 동일한 배경 (폴백)
             expect(el.style.background).toBe('rgb(249, 250, 251)');
         });
 
-        /** @effects skeleton_overlay_config_and_fallback */
-        it('skeleton 설정의 기본값이 올바르게 적용되어야 한다', () => {
-            const config: TransitionOverlayConfig = {
-                enabled: true,
-                style: 'skeleton',
-                target: 'main_content_area',
-                skeleton: {
-                    component: 'PageSkeleton',
-                },
-            };
-            const normalized = normalizeConfig(config);
+        // @scenario area=skeleton
+        // @effects overlay_skeleton_fallback, skeleton_overlay_config_and_fallback
+        it('skeleton 컴포넌트가 있어도 target 이 없으면 전체 화면 opaque 덮개로 폴백한다', () => {
+            const el = show({ enabled: true, style: 'skeleton', skeleton: { component: 'PageSkeleton' } }, { components: [] });
 
-            expect(normalized.skeleton!.component).toBe('PageSkeleton');
-            expect(normalized.skeleton!.animation).toBeUndefined();
-            expect(normalized.skeleton!.iteration_count).toBeUndefined();
+            expect(el?.tagName).toBe('DIV');
+            expect(el?.style.background).toBe('rgb(249, 250, 251)');
         });
 
-        /** @effects skeleton_overlay_config_and_fallback */
+        // @scenario area=skeleton
+        // @effects overlay_skeleton_fallback, skeleton_overlay_config_and_fallback
         it('skeleton 스타일 다크 모드에서 opaque 폴백 시 gray-900 배경을 사용해야 한다', () => {
             document.documentElement.classList.add('dark');
-            const el = showTransitionOverlay({ enabled: true, style: 'skeleton' }) as HTMLDivElement;
+            const el = show({ enabled: true, style: 'skeleton' })!;
             expect(el.style.background).toBe('rgb(17, 24, 39)');
         });
     });
 
     describe('spinner 스타일 (@since engine-v1.29.0)', () => {
-        /**
-         * renderSpinnerOverlay 로직을 테스트 환경에서 재현
-         * (TemplateApp.renderSpinnerOverlay의 핵심 로직)
-         */
-        function renderSpinnerOverlay(
-            target: string,
-            spinnerConfig?: SpinnerConfig,
-            fallbackTarget?: string
-        ): { container: HTMLDivElement | null; style: HTMLStyleElement | null; scope: string } {
-            // 3단계 fallback chain
-            let targetEl = document.getElementById(target);
-            let scope = 'target';
+        const spinner = (target: string, fallbackTarget?: string): void => {
+            show({ enabled: true, style: 'spinner', target, fallback_target: fallbackTarget });
+        };
+        const container = (): HTMLElement | null => document.getElementById('g7-skeleton-overlay');
+        const spinnerStyle = (): HTMLElement | null => document.getElementById('g7-skeleton-overlay-style');
 
-            if (!targetEl && fallbackTarget) {
-                targetEl = document.getElementById(fallbackTarget);
-                scope = 'fallback';
-            }
-            if (!targetEl) {
-                targetEl = document.getElementById('app');
-                scope = 'fullpage';
-            }
-            if (!targetEl) {
-                return { container: null, style: null, scope };
-            }
-
-            // 기존 오버레이 제거
-            hideSpinnerOverlay();
-
-            const isDark = document.documentElement.classList.contains('dark');
-            const bgColor = isDark ? 'rgb(17,24,39)' : 'rgb(249,250,251)';
-            const spinnerColor = isDark ? '#6b7280' : '#9ca3af';
-
-            // Step 1: CSS ::after 주입
-            const cssTargetId = scope === 'fullpage' ? 'app'
-                : scope === 'fallback' ? fallbackTarget!
-                : target;
-            const selector = `#${cssTargetId}`;
-            // 회전 keyframes(g7-spin)는 코어 정적 CSS(g7-core.css)에 있다 — 런타임 규칙에 넣지 않는다 (#163)
-            setRuntimeStyleRules('g7-skeleton-overlay-style', [
-                `${selector}{position:relative;z-index:0;}`,
-                `${selector}::after{content:'';position:absolute;inset:0;background:${bgColor};z-index:2147483646;pointer-events:none;}`,
-            ]);
-            const styleEl = document.getElementById('g7-skeleton-overlay-style') as HTMLElement;
-
-            // Step 2: 스피너 컨테이너 생성
-            const container = document.createElement('div');
-            container.id = 'g7-skeleton-overlay';
-            container.setAttribute('role', 'status');
-            container.setAttribute('aria-busy', 'true');
-
-            if (scope === 'fullpage') {
-                container.style.cssText = `position:fixed;inset:0;z-index:20;overflow:hidden;pointer-events:none;background:${bgColor};`;
-            } else {
-                container.style.cssText = `position:absolute;z-index:20;overflow:hidden;pointer-events:none;background:${bgColor};`;
-            }
-
-            // 기본 스피너 (커스텀 컴포넌트 없을 때)
-            // 모양은 코어 정적 CSS 클래스, 색만 CSS 변수로 (#163 — HTML 문자열 style 속성 금지)
-            const fallbackOverlay = document.createElement('div');
-            fallbackOverlay.className = 'g7-spinner-overlay';
-            const fallbackSpinner = document.createElement('div');
-            fallbackSpinner.className = 'g7-spinner';
-            fallbackSpinner.style.setProperty('--g7-spinner-color', spinnerColor);
-            fallbackOverlay.appendChild(fallbackSpinner);
-            container.replaceChildren(fallbackOverlay);
-
-            document.body.appendChild(container);
-            return { container, style: styleEl, scope };
-        }
-
-        function hideSpinnerOverlay(): void {
-            const container = document.getElementById('g7-skeleton-overlay');
-            if (container) container.remove();
-            removeRuntimeStyleRules('g7-skeleton-overlay-style');
-        }
-
-        function createTargetContainer(id: string): HTMLDivElement {
-            const container = document.createElement('div');
-            container.id = id;
-            document.body.appendChild(container);
-            return container;
-        }
-
-        afterEach(() => {
-            hideSpinnerOverlay();
-            const app = document.getElementById('app');
-            if (app) app.remove();
-            const mypage = document.getElementById('mypage_tab_content');
-            if (mypage) mypage.remove();
-        });
-
-        /** @effects spinner_overlay_container_contract */
-        it('spinner 스타일을 정규화해야 한다', () => {
-            const config: TransitionOverlayConfig = {
-                enabled: true,
-                style: 'spinner',
-                target: 'main_content_area',
-                spinner: { component: 'PageLoading' },
-            };
-            const normalized = normalizeConfig(config);
-
-            expect(normalized.style).toBe('spinner');
-            expect(normalized.target).toBe('main_content_area');
-            expect(normalized.spinner).toEqual({ component: 'PageLoading' });
-        });
-
-        /** @effects spinner_overlay_container_contract */
-        it('target 존재 시 해당 영역에 스피너 컨테이너를 생성해야 한다', () => {
+        // @scenario area=spinner
+        // @effects spinner_overlay_mounted_in_target, spinner_overlay_container_contract
+        it('spinner 스타일과 target 이 있으면 일반 덮개 대신 스피너를 그린다', () => {
             createTargetContainer('main_content_area');
 
-            const result = renderSpinnerOverlay('main_content_area');
+            spinner('main_content_area');
 
-            expect(result.container).not.toBeNull();
-            expect(result.container!.id).toBe('g7-skeleton-overlay');
-            expect(result.scope).toBe('target');
-            expect(document.body.contains(result.container!)).toBe(true);
+            expect(container()).not.toBeNull();
+            expect(document.querySelector('div#g7-transition-overlay')).toBeNull();
         });
 
-        /** @effects spinner_overlay_container_contract */
-        it('CSS ::after 스타일이 <head>에 주입되어야 한다', () => {
+        // @scenario area=spinner
+        // @effects spinner_overlay_mounted_in_target, spinner_overlay_container_contract
+        it('target 존재 시 해당 영역 안에 스피너 컨테이너를 생성해야 한다', () => {
+            const target = createTargetContainer('main_content_area');
+
+            spinner('main_content_area');
+
+            expect(container()!.parentElement).toBe(target);
+        });
+
+        // @scenario area=spinner
+        // @effects spinner_overlay_mounted_in_target, spinner_overlay_container_contract
+        it('대상에 position:relative 규칙만 주입하고 회전 keyframes 는 넣지 않는다(코어 정적 CSS 에 있다, #163)', () => {
             createTargetContainer('main_content_area');
 
-            const result = renderSpinnerOverlay('main_content_area');
+            spinner('main_content_area');
 
-            expect(result.style).not.toBeNull();
-            expect(result.style!.id).toBe('g7-skeleton-overlay-style');
-            expect(document.head.contains(result.style!)).toBe(true);
-            expect(result.style!.textContent).toContain('#main_content_area::after{');
-            expect(result.style!.textContent).not.toContain('@keyframes');
+            expect(document.head.contains(spinnerStyle())).toBe(true);
+            expect(spinnerStyle()!.textContent).toContain('#main_content_area{position:relative;}');
+            expect(spinnerStyle()!.textContent).not.toContain('@keyframes');
+            expect(coreCss()).toContain('@keyframes g7-spin{to{transform:rotate(360deg)}}');
         });
 
-        /** @effects spinner_overlay_container_contract */
+        // @scenario area=spinner
+        // @effects spinner_default_rendered, spinner_overlay_container_contract
         it('기본 스피너 DOM이 생성되어야 한다 (컴포넌트 미지정 시)', () => {
             createTargetContainer('main_content_area');
 
-            const result = renderSpinnerOverlay('main_content_area');
+            spinner('main_content_area');
 
-            expect(result.container!.querySelector('.g7-spinner-overlay > .g7-spinner')).not.toBeNull();
-            expect(result.container!.innerHTML).not.toContain('border-radius');
+            expect(container()!.querySelector('.g7-spinner-overlay > .g7-spinner')).not.toBeNull();
+            expect(container()!.innerHTML).not.toContain('border-radius');
+            expect(container()!.innerHTML).not.toMatch(/\sstyle=/);
         });
 
-        /** @effects spinner_overlay_container_contract */
+        // @scenario area=spinner
+        // @effects spinner_default_rendered, spinner_overlay_container_contract
         it('aria 속성이 올바르게 설정되어야 한다', () => {
             createTargetContainer('main_content_area');
 
-            const result = renderSpinnerOverlay('main_content_area');
+            spinner('main_content_area');
 
-            expect(result.container!.getAttribute('role')).toBe('status');
-            expect(result.container!.getAttribute('aria-busy')).toBe('true');
+            expect(container()!.getAttribute('role')).toBe('status');
+            expect(container()!.getAttribute('aria-busy')).toBe('true');
         });
 
-        /** @effects spinner_overlay_container_contract */
+        // @scenario area=spinner_fallback
+        // @effects spinner_target_fallback_chain, spinner_overlay_container_contract
         it('3단계 fallback chain: target 미존재 시 fallback_target 사용', () => {
-            createTargetContainer('main_content_area');
+            const fallback = createTargetContainer('main_content_area');
 
-            const result = renderSpinnerOverlay('mypage_tab_content', undefined, 'main_content_area');
+            spinner('mypage_tab_content', 'main_content_area');
 
-            expect(result.scope).toBe('fallback');
-            expect(result.style!.textContent).toContain('#main_content_area::after{');
+            expect(container()!.parentElement).toBe(fallback);
+            expect(spinnerStyle()!.textContent).toContain('#main_content_area{position:relative;}');
         });
 
-        /** @effects spinner_overlay_container_contract */
+        // @scenario area=spinner_fallback
+        // @effects spinner_target_fallback_chain, spinner_overlay_container_contract
         it('3단계 fallback chain: target과 fallback 모두 미존재 시 #app 사용', () => {
-            createTargetContainer('app');
+            const appEl = createTargetContainer('app');
 
-            const result = renderSpinnerOverlay('nonexistent', undefined, 'also_nonexistent');
+            spinner('nonexistent', 'also_nonexistent');
 
-            expect(result.scope).toBe('fullpage');
-            expect(result.container!.style.position).toBe('fixed');
-            expect(result.style!.textContent).toContain('#app::after{');
+            expect(container()!.parentElement).toBe(appEl);
+            expect(spinnerStyle()!.textContent).toContain('#app{position:relative;}');
         });
 
-        /** @effects spinner_overlay_container_contract */
-        it('모든 DOM 미존재 시 null 반환', () => {
-            const result = renderSpinnerOverlay('nonexistent');
+        // @scenario area=spinner_fallback
+        // @effects spinner_target_fallback_chain, spinner_overlay_container_contract
+        it('모든 대상 DOM 이 없으면 스피너 대신 target 기준 opaque 덮개 CSS 로 폴백한다', () => {
+            spinner('nonexistent');
 
-            expect(result.container).toBeNull();
-            expect(result.style).toBeNull();
+            expect(container()).toBeNull();
+            expect(spinnerStyle()).toBeNull();
+            const overlay = document.getElementById('g7-transition-overlay');
+            expect(overlay?.tagName).toBe('STYLE');
+            expect(overlay?.textContent).toContain('#nonexistent::after{');
         });
 
-        /** @effects spinner_overlay_container_contract */
-        it('다크 모드에서 올바른 배경색을 사용해야 한다', () => {
+        // @scenario area=spinner
+        // @effects spinner_default_rendered, spinner_overlay_container_contract
+        it('기본 스피너 배경은 CSS 변수 --g7-overlay-bg 로 받고 밝은 회색이 기본값이다', () => {
+            createTargetContainer('main_content_area');
+
+            spinner('main_content_area');
+
+            expect(container()!.querySelector('.g7-spinner-overlay')).not.toBeNull();
+            expect(container()!.querySelector('.g7-spinner-overlay--dark')).toBeNull();
+            expect(coreCss()).toContain('background:var(--g7-overlay-bg, rgb(249,250,251))');
+        });
+
+        // @scenario area=spinner
+        // @effects spinner_default_rendered, spinner_overlay_container_contract
+        it('기본 스피너 선 색은 CSS 변수 --g7-spinner-color 로 받고 gray-400 이 기본값이다', () => {
+            createTargetContainer('main_content_area');
+
+            spinner('main_content_area');
+
+            expect(container()!.querySelector('.g7-spinner')).not.toBeNull();
+            expect(coreCss()).toContain('var(--g7-spinner-color, #9ca3af)');
+        });
+
+        // 정의하는 곳이 없는 CSS 변수에만 맡겨, 다크 모드에서도 밝은 회색 덮개가 그려졌다(#869).
+        // 다른 덮개(opaque, blur, target CSS)와 같이 다크 모드 기본값은 gray-900 이다. 변수가 있으면 변수가 이긴다.
+        // @scenario area=dark_mode
+        // @effects overlay_style_colors, overlay_dark_mode_colors
+        it('다크 모드의 기본 스피너 배경 기본값은 다른 덮개와 같은 gray-900 이다', () => {
+            createTargetContainer('main_content_area');
             document.documentElement.classList.add('dark');
-            createTargetContainer('main_content_area');
 
-            const result = renderSpinnerOverlay('main_content_area');
+            spinner('main_content_area');
 
-            expect(result.container!.style.background).toBe('rgb(17, 24, 39)');
-            expect(result.style!.textContent).toContain('background:rgb(17,24,39)');
+            // 엄격한 스타일 정책(#163)으로 style 속성 대신 수식 클래스 + g7-core.css 규칙이 준다
+            expect(container()!.querySelector('.g7-spinner-overlay.g7-spinner-overlay--dark')).not.toBeNull();
+            expect(coreCss()).toMatch(/\.g7-spinner-overlay--dark\{[^}]*background:var\(--g7-overlay-bg, rgb\(17,24,39\)\)/);
         });
 
-        /** @effects spinner_overlay_container_contract */
-        it('다크 모드에서 스피너 색상이 gray-500이어야 한다', () => {
-            document.documentElement.classList.add('dark');
+        // @scenario area=spinner
+        // @effects overlay_removed_cleanly, spinner_overlay_container_contract
+        it('hideTransitionOverlay 로 스피너 컨테이너와 스타일이 모두 제거되어야 한다', () => {
             createTargetContainer('main_content_area');
+            spinner('main_content_area');
 
-            const result = renderSpinnerOverlay('main_content_area');
+            expect(container()).toBeTruthy();
+            expect(spinnerStyle()).toBeTruthy();
 
-            expect(result.container!.innerHTML).toContain('#6b7280');
+            hide();
+
+            expect(container()).toBeNull();
+            expect(spinnerStyle()).toBeNull();
         });
 
-        /** @effects spinner_overlay_container_contract */
-        it('라이트 모드에서 스피너 색상이 gray-400이어야 한다', () => {
-            createTargetContainer('main_content_area');
-
-            const result = renderSpinnerOverlay('main_content_area');
-
-            expect(result.container!.innerHTML).toContain('#9ca3af');
-        });
-
-        /** @effects spinner_overlay_container_contract */
-        it('hideSpinnerOverlay로 컨테이너와 스타일이 모두 제거되어야 한다', () => {
-            createTargetContainer('main_content_area');
-            renderSpinnerOverlay('main_content_area');
-
-            expect(document.getElementById('g7-skeleton-overlay')).toBeTruthy();
-            expect(document.getElementById('g7-skeleton-overlay-style')).toBeTruthy();
-
-            hideSpinnerOverlay();
-
-            expect(document.getElementById('g7-skeleton-overlay')).toBeNull();
-            expect(document.getElementById('g7-skeleton-overlay-style')).toBeNull();
-        });
-
-        /** @effects spinner_overlay_container_contract */
+        // @scenario area=spinner
+        // @effects overlay_not_duplicated, spinner_overlay_container_contract
         it('중복 호출 시 기존 오버레이를 제거하고 새로 생성해야 한다', () => {
             createTargetContainer('main_content_area');
 
-            renderSpinnerOverlay('main_content_area');
-            renderSpinnerOverlay('main_content_area');
+            spinner('main_content_area');
+            spinner('main_content_area');
 
             expect(document.querySelectorAll('#g7-skeleton-overlay').length).toBe(1);
             expect(document.querySelectorAll('#g7-skeleton-overlay-style').length).toBe(1);
         });
 
-        /** @effects spinner_overlay_container_contract */
-        it('fullpage 모드에서 position:fixed를 사용해야 한다', () => {
-            createTargetContainer('app');
+        // @scenario area=spinner_fallback
+        // @effects spinner_target_fallback_chain, spinner_overlay_container_contract
+        it('fullpage(#app) 모드에서도 컨테이너는 #app 안에 들어간다', () => {
+            const appEl = createTargetContainer('app');
 
-            const result = renderSpinnerOverlay('nonexistent');
+            spinner('nonexistent');
 
-            expect(result.container!.style.position).toBe('fixed');
-            expect(result.container!.style.inset).toBe('0');
+            expect(appEl.contains(container())).toBe(true);
         });
 
-        /** @effects spinner_overlay_container_contract */
-        it('target 모드에서 position:absolute를 사용해야 한다', () => {
+        // @scenario area=spinner
+        // @effects spinner_overlay_mounted_in_target, spinner_overlay_container_contract
+        it('기본 스피너 덮개는 대상 안에서 position:absolute 로 대상 전체를 덮는다', () => {
             createTargetContainer('main_content_area');
 
-            const result = renderSpinnerOverlay('main_content_area');
+            spinner('main_content_area');
 
-            expect(result.container!.style.position).toBe('absolute');
+            const cover = container()!.firstElementChild as HTMLElement;
+            expect(cover.classList.contains('g7-spinner-overlay')).toBe(true);
+            expect(cover.getAttribute('style')).toBeNull();
+            expect(coreCss()).toContain('.g7-spinner-overlay{position:absolute;inset:0;');
         });
     });
 });

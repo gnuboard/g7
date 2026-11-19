@@ -49,7 +49,9 @@ class InicisVerifyTransitionAtomicityTest extends PluginTestCase
     /**
      * 첫 콜백이 verified 로 바꾼 뒤, 낡은 상태 검사를 통과한 두 번째 콜백은 전이에서 져 이미 처리됨으로 끝나는지 확인합니다.
      *
-     * @scenario flow=self_idv_verify, log_user_id=null, read_timing=stale
+     * 케이스(마커 아님 — 평문): read_timing stale — 이 파일 안의 구분자라 매니페스트 축이 아니다. 매핑은 아래 @effects.
+     *
+     * @scenario flow=self_idv_verify, log_user_id=null
      *
      * @effects second_callback_with_stale_log_is_already_consumed, single_token_per_inicis_challenge
      *
@@ -84,7 +86,9 @@ class InicisVerifyTransitionAtomicityTest extends PluginTestCase
     /**
      * 로그인 사용자 재인증에서 진 쪽 콜백은 선점·record 를 남기지 않고, 이긴 쪽은 자기 식별값을 선점표에 채우는지 확인합니다.
      *
-     * @scenario flow=self_idv_verify, log_user_id=present, read_timing=stale
+     * 케이스(마커 아님 — 평문): read_timing stale — 이 파일 안의 구분자라 매니페스트 축이 아니다. 매핑은 아래 @effects.
+     *
+     * @scenario flow=self_idv_verify, log_user_id=present
      *
      * @effects second_callback_with_stale_log_is_already_consumed, login_verify_soft_claims_identity_hashes
      *
@@ -260,6 +264,17 @@ class InicisVerifyTransitionAtomicityTest extends PluginTestCase
             public function findChallengeIdByMtxid(string $mtxid): ?string
             {
                 return null;
+            }
+
+            /**
+             * 보관주기 정리 전 매핑 삭제 — 호출되지 않는다(7.2.0 이 인터페이스에 더한 메서드).
+             *
+             * @param  array<int, string>  $challengeIds  코어 IdentityVerificationLog UUID 목록
+             * @return int 늘 0
+             */
+            public function deleteByChallengeIds(array $challengeIds): int
+            {
+                return 0;
             }
 
             /**

@@ -264,4 +264,12 @@ class OrderOptionRepository implements OrderOptionRepositoryInterface
             ->where("{$ordersTable}.ordered_at", '>=', $siteDay->utc())
             ->where("{$ordersTable}.ordered_at", '<', $siteDay->addDay()->utc());
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getIdsByOrderId(int $orderId): array
+    {
+        return array_map('intval', $this->model->newQuery()->where('order_id', $orderId)->pluck('id')->all());
+    }
 }

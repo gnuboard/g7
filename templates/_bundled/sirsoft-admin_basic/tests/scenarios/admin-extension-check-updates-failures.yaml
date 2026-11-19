@@ -1,0 +1,21 @@
+feature: 관리자 [업데이트 확인]의 GitHub 최신 판 조회 실패 알림
+
+description: |
+  모듈·플러그인·템플릿 일괄 확인 응답은 GitHub 조회에 실패한 확장을 `failures`(식별자·사유)로, 언어팩 확인 응답은 팩별
+  결과 `details[].error` 로 돌려준다. 화면은 실패가 있으면 경고 토스트(`extensions.alerts.check_updates_github_failed`,
+  언어팩은 `admin.language_packs.messages.check_updates_github_failed`)에 개수·식별자·첫 사유를 싣고, 「모두 최신」 문구는
+  실패가 없을 때만 띄운다. 새 판을 찾았으면 그 성공 문구는 실패와 함께 띄운다. 언어팩 목록은 넓은·좁은 화면 단추 두 벌이 같다.
+
+axes:
+  case: [extension_bulk_failures, language_pack_detail_errors]
+
+effects:
+  - check_updates_failures_surfaced
+  - check_updates_up_to_date_only_without_failures
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-extension-check-updates-failures.test.tsx
+
+notes: |
+  서버 쪽 판정(조회 실패 시 `failures`·`details[].error` 를 싣고 DB 업데이트 정보를 덮지 않음)은 코어 매니저·
+  `LanguagePackServiceTest::test_update_check_reports_github_failure_and_keeps_latest_version` 이 잠근다.

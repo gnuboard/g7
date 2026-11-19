@@ -8,7 +8,7 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Search 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
@@ -30,18 +30,20 @@
 | q | query | string | 아니오 | min 2, max 200 | 검색어 (부분 일치) |
 | type | query | string | 아니오 | — | 유형 필터 (해당 유형의 항목만 조회) |
 | sort | query | string | 아니오 | `relevance`, `latest`, `oldest`, `views`, `popular`, `price_asc`, `price_desc` | 정렬 기준 (필드명, `-` 접두 시 내림차순) |
-| page | query | integer | 아니오 | min 1, max = 목록 한계값 설정 | 조회할 페이지 번호 (1부터 시작). 상한은 관리자 > 환경설정 > 고급의 «페이지 번호 상한» 이며 남용 차단용입니다 — 정상 탐색은 `has_more_pages` 로 계속 열려 있습니다 |
+| page | query | integer | 아니오 | min 1, max 1000 | 조회할 페이지 번호 (1부터 시작). 상한은 관리자 > 환경설정 > 고급의 «페이지 번호 상한» 이며 남용 차단용입니다 — 정상 탐색은 `has_more_pages` 로 계속 열려 있습니다 |
 | per_page | query | integer | 아니오 | min 1, max 100 | 페이지당 항목 수 |
 | cursor | query | string | 아니오 | max 500 | 커서(키셋) 페이지 이동용 커서. 응답의 `next_cursor` / `prev_cursor` 를 그대로 돌려보냅니다. 특정 탭을 볼 때만 유효하며(전체 탭은 무시), 실제 컬럼 기준 정렬(`latest`·`oldest`·`views`·`popular`·`price_asc`·`price_desc`)에서만 적용됩니다. 관련도순은 계산값 정렬이라 커서를 쓸 수 없어 `page` 기반 이동을 유지합니다. 형식이 깨진 값은 오류 없이 첫 페이지로 처리됩니다 |
+| with_counts | query | boolean | 아니오 | — | 지금 보고 있지 않은 탭의 배지 건수까지 셀지 여부 (기본 `true`) |
 | board_slug | query | string | 아니오 | max 100 | 검색 범위를 특정 게시판으로 한정 (게시판 모듈이 `core.search.index_validation_rules` 훅으로 추가하는 파라미터, 해당 slug의 게시판 글만 검색) |
 | category_id | query | integer | 아니오 | — | category 식별자 |
 
 **요청 예시**
 
 ```http
-GET /api/search?q=%EC%98%88%EC%8B%9C%EA%B0%92&type=%EC%98%88%EC%8B%9C%EA%B0%92&sort=relevance&page=1&per_page=1&board_slug=example-key&category_id=1 HTTP/1.1
+GET /api/search?q=%EC%98%88%EC%8B%9C%EA%B0%92&type=%EC%98%88%EC%8B%9C%EA%B0%92&sort=relevance&page=1&per_page=1&cursor=%EC%98%88%EC%8B%9C%EA%B0%92&with_counts=1&board_slug=example-key&category_id=1 HTTP/1.1
 Host: api.example.com
 Accept: application/json
+Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생략 가능)
 ```
 
 **응답 필드** (`data` 내부)
@@ -101,6 +103,8 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 

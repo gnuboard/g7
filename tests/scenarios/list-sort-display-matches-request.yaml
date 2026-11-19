@@ -10,6 +10,8 @@ description: |
 
 test_files:
   - tests/Playwright/specs/pagination/list-sort-and-page-reset.spec.ts
+  # 레이아웃이 내놓는 정렬 옵션을 서버 게이트(FormRequest)의 허용 집합과 정적으로 대조한다(코어, 템플릿, 플러그인).
+  - tests/Unit/Layouts/LayoutSortOptionGateParityTest.php
 
 axes:
   case:
@@ -21,9 +23,11 @@ axes:
     - coupon_back_keeps_filter_controls
     - order_sort_shipped_at
     - menu_api_sort_only
+    - screen_sort_options_within_gate
 
 effects:
   - sort_change_resets_page
   - header_sort_targets_clicked_column
   - screen_sort_options_all_succeed
+  - screen_sort_options_within_server_gate
   - list_filter_controls_restored_on_back

@@ -6,6 +6,7 @@ use App\Enums\UserStatus;
 use App\Http\Resources\BaseApiResource;
 use App\Http\Resources\Traits\ExposesMemberContact;
 use Illuminate\Http\Request;
+use Modules\Sirsoft\Board\DisplayName\BoardDisplayNames;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Services\ReactionService;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
@@ -59,6 +60,8 @@ class AdminReactionResource extends BaseApiResource
         $status = $target?->status instanceof PostStatus
             ? $target->status
             : PostStatus::tryFrom((string) ($target->status ?? ''));
+        $authorName = $target !== null ? $this->resolveAuthorName($target) : null;
+        $authorRealName = $target !== null ? $this->resolveAuthorRealName($target, $authorName, $request) : null;
 
         return [
             'id' => (int) $this->id,
@@ -92,7 +95,9 @@ class AdminReactionResource extends BaseApiResource
             'target_status_label' => $isDeleted ? PostStatus::Deleted->label() : ($status?->label() ?? PostStatus::Published->label()),
             'is_target_deleted' => $isDeleted,
 
-            'author_name' => $target !== null ? $this->resolveAuthorName($target) : null,
+            'author_name' => $authorName,
+            // 실명 보조 — 회원 조회 권한이 있고 표시 이름과 다를 때만 싣는다
+            ...($authorRealName !== null ? ['author_real_name' => $authorRealName] : []),
 
             'reaction_type' => $type === null ? null : [
                 'id' => (int) $type->id,
@@ -124,12 +129,16 @@ class AdminReactionResource extends BaseApiResource
     {
         $isWithdrawn = UserStatus::tryFrom((string) $member->status) === UserStatus::Withdrawn;
 
-        return [
+        // 이름 키에는 관리자 화면의 표시 이름만 싣는다. 실명은 회원 조회 권한이 있고 표시 이름과 다를 때만 `real_name` 으로 더한다.
+        $displayNames = app(BoardDisplayNames::class);
+        $displayName = $displayNames->name($member, null, BoardDisplayNames::AREA_ADMIN);
+
+        return $displayNames->withRealName([
             'uuid' => $member->uuid,
-            'name' => $isWithdrawn ? __('user.withdrawn_user') : $member->name,
+            'name' => $displayName,
             'email' => $this->canExposeMemberEmail($request, (int) $member->id) ? $member->email : null,
             'is_withdrawn' => $isWithdrawn,
-        ];
+        ], $member, $displayName, $request);
     }
 
     /**

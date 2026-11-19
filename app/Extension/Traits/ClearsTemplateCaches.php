@@ -3,7 +3,9 @@
 namespace App\Extension\Traits;
 
 use App\Contracts\Extension\CacheInterface;
+use App\Extension\Cache\CacheDriverFactory;
 use App\Extension\Cache\CoreCacheDriver;
+use App\Extension\Layout\LayoutSyncOptions;
 use App\Services\ExtensionStaticCacheService;
 use Illuminate\Support\Facades\Log;
 
@@ -64,6 +66,11 @@ trait ClearsTemplateCaches
      */
     protected function incrementExtensionCacheVersion(): void
     {
+        // 레이아웃 동기화 미리보기(dry-run)는 판정만 한다 — 캐시 버전도 올리지 않는다.
+        if (! LayoutSyncOptions::writes()) {
+            return;
+        }
+
         try {
             $current = (int) self::resolveExtensionCache()->get(self::$extensionCacheVersionKey, 0);
             $newVersion = max(time(), $current + 1);
@@ -218,7 +225,7 @@ trait ClearsTemplateCaches
      */
     private static function resolveExtensionCache(): CacheInterface
     {
-        return new CoreCacheDriver(self::extensionCacheStore());
+        return CacheDriverFactory::core(null, self::extensionCacheStore());
     }
 
     /**
@@ -233,7 +240,7 @@ trait ClearsTemplateCaches
      */
     protected static function customSignatureCache(): CacheInterface
     {
-        return new CoreCacheDriver(self::extensionCacheStore());
+        return CacheDriverFactory::core(null, self::extensionCacheStore());
     }
 
     /**

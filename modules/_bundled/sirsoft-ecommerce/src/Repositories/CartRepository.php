@@ -3,6 +3,7 @@
 namespace Modules\Sirsoft\Ecommerce\Repositories;
 
 use App\Helpers\PermissionHelper;
+use App\Models\User;
 use App\Repositories\Concerns\FiltersByDateRange;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use App\Support\Query\PaginationLimits;
@@ -13,6 +14,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection as SupportCollection;
 use Modules\Sirsoft\Ecommerce\Models\Cart;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\CartRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 /**
  * 장바구니 Repository 구현체
@@ -338,7 +340,7 @@ class CartRepository implements CartRepositoryInterface
             sort: [['column' => 'created_at', 'direction' => $direction]],
             perPage: $perPage,
             relations: [
-                'user:id,uuid,name,email,status',
+                'user:'.User::displayColumns(),
                 'product:id,name,display_status,sales_status',
                 'productOption',
             ],
@@ -372,9 +374,8 @@ class CartRepository implements CartRepositoryInterface
                     }
                 });
             }),
-            default => $query->whereHas('user', fn (Builder $u) => $u->where(
-                fn (Builder $w) => $w->where('name', 'like', $needle)->orWhere('email', 'like', $needle)
-            )),
+            // 회원 검색은 이름과 닉네임을 모두 찾는다(화면에 보이는 표시 이름이 어느 쪽이든 찾을 수 있게). 이메일도 종전대로 찾는다.
+            default => $query->whereHas('user', fn (Builder $u) => MemberDisplayName::constrainUsersForAdmin($u, trim($keyword), withEmail: true)),
         };
     }
 
@@ -400,5 +401,39 @@ class CartRepository implements CartRepositoryInterface
     public function countByUser(int $userId): int
     {
         return (int) $this->model->where('user_id', $userId)->count();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getIdsByUserId(int $userId): array
+    {
+        // audit:allow query-unbounded-get reason: 한 회원의 장바구니 행 ID 한 열만 고른다 — 행 수가 그 회원의 담기 행위에 묶인다
+        return array_map('intval', $this->model->newQuery()->where('user_id', $userId)->pluck('id')->all());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getIdsByProductId(int $productId): array
+    {
+        // audit:allow query-unbounded-get reason: 삭제할 상품 한 개를 담은 행의 ID 한 열만 고른다 — 삭제 정리 경로 전용
+        return array_map('intval', $this->model->newQuery()->where('product_id', $productId)->pluck('id')->all());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getIdsByProductOptionIds(array $productOptionIds): array
+    {
+        if ($productOptionIds === []) {
+            return [];
+        }
+
+        // audit:allow query-unbounded-get reason: 삭제할 옵션을 담은 행의 ID 한 열만 고른다 — 옵션 삭제 정리 경로 전용
+        return array_map('intval', $this->model->newQuery()
+            ->whereIn('product_option_id', $productOptionIds)
+            ->pluck('id')
+            ->all());
     }
 }

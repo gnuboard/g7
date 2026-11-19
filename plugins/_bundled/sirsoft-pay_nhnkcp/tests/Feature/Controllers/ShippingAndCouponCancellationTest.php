@@ -509,7 +509,7 @@ class ShippingAndCouponCancellationTest extends PluginTestCase
         $this->assertTrue($lock->get(), 'precondition: refund lock should be acquired');
 
         try {
-            $listener = new PaymentRefundListener;
+            $listener = app(PaymentRefundListener::class);
 
             $result = $listener->processRefund([], $order, $payment, 23000, '동시 환불 테스트');
 

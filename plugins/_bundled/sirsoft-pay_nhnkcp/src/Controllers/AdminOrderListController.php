@@ -10,9 +10,7 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Services\PluginSettingsService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
-use Modules\Sirsoft\Ecommerce\Models\Order;
-use Modules\Sirsoft\Ecommerce\Models\OrderPayment;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 use Plugins\Sirsoft\PayNhnkcp\Concerns\GuardsOrderScope;
 
 class AdminOrderListController extends AdminBaseController
@@ -27,9 +25,12 @@ class AdminOrderListController extends AdminBaseController
      * 관리자 주문 목록 보조 컨트롤러를 생성하고 현재 테스트 모드 여부를 읽습니다.
      *
      * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 서비스
+     * @param  PaymentGatewayBridge  $bridge  이커머스 결제 계약 (이 PG 결제 행 목록·권한 범위)
      */
-    public function __construct(PluginSettingsService $pluginSettingsService)
-    {
+    public function __construct(
+        PluginSettingsService $pluginSettingsService,
+        private readonly PaymentGatewayBridge $bridge,
+    ) {
         parent::__construct();
         $settings = $pluginSettingsService->get(self::PLUGIN_IDENTIFIER) ?? [];
         $this->isTest = $settings['is_test_mode'] ?? true;
@@ -45,26 +46,19 @@ class AdminOrderListController extends AdminBaseController
      */
     public function testModeMap(): JsonResponse
     {
-        // audit:allow controller-direct-data-access reason: PG 플러그인의 결제 레코드 직접 조회/기록 — ecommerce Repository 의존 시 모듈 버전 제약 연쇄(PaymentLimits 선례). Service/Repository 이관은 후속 백로그
-        $query = DB::table((new Order)->getTable().' as o')
-            ->join((new OrderPayment)->getTable().' as p', 'p.order_id', '=', 'o.id')
-            ->where('p.pg_provider', 'nhnkcp')
-            ->where('p.created_at', '>=', now()->subMonths(6));
+        // 최근 6개월 이 PG 결제 행(라이브 모드는 결제 meta 가 있는 행만) — 배지에 필요한 세 칸만 싣는 요약 조회를 쓴다
+        $payments = array_filter(
+            $this->bridge->listPaymentBriefsByProvider('nhnkcp', now()->subMonths(6), requireMeta: ! $this->isTest),
+            fn ($payment): bool => $payment->orderNumber !== '',
+        );
 
         if ($this->isTest) {
-            $orderNumbers = $query->pluck('o.order_number');
-            $map = array_fill_keys($orderNumbers->all(), true);
+            $map = array_fill_keys(array_map(fn ($payment) => $payment->orderNumber, $payments), true);
         } else {
-            $rows = $query
-                ->whereNotNull('p.payment_meta')
-                ->select(['o.order_number', 'p.payment_meta'])
-                ->get();
-
             $map = [];
-            foreach ($rows as $row) {
-                $meta = json_decode($row->payment_meta, true) ?? [];
-                if ($meta['is_test_mode'] ?? false) {
-                    $map[$row->order_number] = true;
+            foreach ($payments as $payment) {
+                if ($payment->paymentMeta['is_test_mode'] ?? false) {
+                    $map[(string) $payment->orderNumber] = true;
                 }
             }
         }

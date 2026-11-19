@@ -34,6 +34,11 @@ function baseState(overrides: Partial<LayoutEditorState> = {}): LayoutEditorStat
     isPaletteOpen: false,
     availableStates: [],
     activeStateId: null,
+    lastActiveStateId: null,
+    activeStateScopeKey: null,
+    lastActiveStateScopeKey: null,
+    layoutVersions: {},
+    extensionVersions: {},
     ...overrides,
   };
 }
@@ -57,6 +62,10 @@ describe('layoutEditorReducer — SELECT_ROUTE 가 별도 편집 모드를 종�
     expect(next.returnEditMode).toBeNull();
   });
 
+  /**
+   * @scenario reducer_action=select_route
+   * @effects select_route_exits_separate_edit_mode
+   */
   it('modal 편집 모드 → SELECT_ROUTE → editMode=route 복원', () => {
     const start = baseState({
       editMode: 'modal',
@@ -70,6 +79,10 @@ describe('layoutEditorReducer — SELECT_ROUTE 가 별도 편집 모드를 종�
     expect(next.selectedRoute?.path).toBe('/admin/orders');
   });
 
+  /**
+   * @scenario reducer_action=select_route
+   * @effects select_route_exits_separate_edit_mode
+   */
   it('base 편집 모드 → SELECT_ROUTE → editMode=route 복원', () => {
     const start = baseState({
       editMode: 'base',
@@ -82,6 +95,10 @@ describe('layoutEditorReducer — SELECT_ROUTE 가 별도 편집 모드를 종�
     expect(next.editMode).toBe('route');
   });
 
+  /**
+   * @scenario reducer_action=select_route
+   * @effects select_route_in_route_mode_only_swaps_route
+   */
   it('이미 route 모드면 동작 변화 없음 (라우트만 교체)', () => {
     const start = baseState({ editMode: 'route' });
     const next = layoutEditorReducer(start, {
@@ -92,6 +109,10 @@ describe('layoutEditorReducer — SELECT_ROUTE 가 별도 편집 모드를 종�
     expect(next.selectedRoute?.path).toBe('/about');
   });
 
+  /**
+   * @scenario reducer_action=select_route
+   * @effects select_route_null_restores_route_mode
+   */
   it('SELECT_ROUTE route=null (선택 해제) 도 route 모드로 복원', () => {
     const start = baseState({
       editMode: 'extension',

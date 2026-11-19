@@ -19,12 +19,13 @@
     "notification_definitions": "Notifications",
     "identity_policies": "Identity Policies",
     "mileage": "Mileage",
-    "privacy_retention": "Privacy Retention"
+    "privacy_retention": "Privacy Retention",
+    "schedules": "Schedules"
   },
   "save_success": "Settings saved successfully.",
   "save_error": "Failed to save settings.",
   "save_pending_currency": "Confirm (check button) or cancel the currency you are adding before saving.",
-  "save_pending_form": "Confirm the open :forms form with its Add button, or cancel it, before saving.",
+  "save_pending_form": "Confirm the open {forms} form with its Add button, or cancel it, before saving.",
   "save_pending_form_targets": {
     "exchange_reason": "exchange reason",
     "return_reason": "return reason",
@@ -75,11 +76,11 @@
       "mail_order_number_placeholder": "e.g., 2024-Seoul-12345",
       "telecom_number": "Telecom Business Number",
       "telecom_number_placeholder": "Telecom business number",
+      "postcode_plugin_required": "Daum Postcode plugin is not installed or inactive. Please activate it in Admin > Plugins.",
       "hosting_provider": "Hosting provider",
       "hosting_provider_placeholder": "e.g. the hosting company name",
       "show_business_footer": "Show business information at the bottom of the storefront",
-      "show_business_footer_hint": "When on, the storefront footer shows whichever of these have a value: company name, representative, business address, phone, email, business registration number, mail-order registration number, hosting provider. When off, these values are not sent to the storefront.",
-      "postcode_plugin_required": "Daum Postcode plugin is not installed or inactive. Please activate it in Admin > Plugins."
+      "show_business_footer_hint": "When on, the bottom of user screens shows whichever of these have a value: company name, representative, business address, business registration number, mail-order business number, value-added telecom number, phone, fax, email, privacy officer, hosting provider (a legal display duty for online stores in Korea). Nothing is shown while the company name and the business registration number are both empty. When off, these values are not sent to user screens."
     },
     "public_asset_storage": {
       "title": "Public Asset Storage",
@@ -88,6 +89,13 @@
       "follow_core": "Follow core setting",
       "help": "Select to use a different disk for this module only. Leave empty to follow the public asset storage setting in core system settings.",
       "unavailable": "The saved disk ({disk}) is no longer available, so images are being streamed. Select another disk and save to change it."
+    },
+    "export_retention": {
+      "title": "Export file retention",
+      "description": "How long files created in Export Management are kept on the server. When the period ends, the file is deleted and the job is marked Expired. Job records and download history are kept.",
+      "prefix": "Keep for",
+      "suffix": "days after completion",
+      "help": "Choose 1–30 days so files containing customer personal data do not stay on the server for long. A new value applies to files completed from now on."
     },
     "inquiry_settings": {
       "title": "1:1 Inquiry Board Settings",
@@ -815,5 +823,111 @@
       "preview_failed": "Could not load the target count.",
       "editor_label": "Shop retention manual run"
     }
+  },
+  "schedules": {
+    "title": "Schedules",
+    "description": "Schedules registered by the Ecommerce module. You can only activate or deactivate them here.",
+    "manage_notice": "Change the frequency and run mode in Schedule Management.",
+    "manage_link": "Change in Schedule Management",
+    "read_only_notice": "You do not have permission to update schedules, so you cannot activate or deactivate them.",
+    "empty": "No schedules registered.",
+    "no_read_permission": "You do not have permission to view the schedules of this module.",
+    "condition_unmet": "Off in settings",
+    "toggle_success": "Schedule status has been changed.",
+    "toggle_failed": "Failed to change the schedule status.",
+    "columns": {
+      "name": "Task name",
+      "frequency": "Frequency",
+      "next_run": "Next run",
+      "last_result": "Last run result",
+      "status": "Status"
+    },
+    "result": {
+      "success": "Success",
+      "failed": "Failed",
+      "running": "Running",
+      "never": "Not run yet"
+    }
+  },
+  "checkout_fields": {
+    "title": "Checkout fields",
+    "description": "Choose which orderer and shipping address fields the checkout form asks for, and which are required.",
+    "instant_save_notice": "Changes in this table are saved immediately.",
+    "no_read_permission": "You do not have permission to view checkout fields.",
+    "add_button": "Add field",
+    "empty": "There are no fields.",
+    "col": {
+      "group": "Section",
+      "name": "Field",
+      "source": "Source",
+      "enabled": "Enabled",
+      "required": "Required"
+    },
+    "group": {
+      "orderer": "Orderer",
+      "shipping": "Shipping address"
+    },
+    "source": {
+      "custom": "Added",
+      "extension": "Extension"
+    },
+    "unavailable": "Unavailable",
+    "unavailable_desc": "The extension that provides this field type is turned off.",
+    "saved": "Saved.",
+    "save_failed": "Could not save.",
+    "changed_by_other": "Another administrator changed the fields. The list has been reloaded.",
+    "form": {
+      "editor_label": "Shop checkout field add/edit",
+      "title": {
+        "create": "Add checkout field",
+        "edit": "Edit checkout field"
+      },
+      "group": "Section",
+      "type": "Type",
+      "type_placeholder": "Choose a type",
+      "type_locked": "The type cannot be changed after the field is created.",
+      "key": "Key",
+      "key_hint": "Start with a lowercase letter and use only lowercase letters, numbers and underscores (2 to 50 characters). It cannot be changed after the field is created.",
+      "name": "Name",
+      "description": "Help text",
+      "options": {
+        "title": "Options",
+        "add_button": "Add option",
+        "hint": "If you remove an option and save, values entered with that option are cleared as well.",
+        "empty": "There are no options. Add at least one.",
+        "value": "Value",
+        "value_placeholder": "Value in English (e.g. door)",
+        "label": "Label",
+        "label_placeholder": "Label shown on the checkout form"
+      }
+    },
+    "delete": {
+      "editor_label": "Shop checkout field delete confirmation",
+      "title": "Delete checkout field",
+      "message": "Delete this field?",
+      "warning": "Values entered for this field are deleted as well and cannot be restored.",
+      "success": "Deleted.",
+      "failed": "Could not delete."
+    }
+  },
+  "display_name": {
+    "title": "Author display name",
+    "review_description": "Choose the author name shown on product reviews.",
+    "inquiry_description": "Choose the author name shown on product inquiries.",
+    "mode_label": "Display method",
+    "review_mode_aria": "Review author display method",
+    "review_kind_aria": "Review author display name kind",
+    "inquiry_mode_aria": "Inquiry author display method",
+    "inquiry_kind_aria": "Inquiry author display name kind",
+    "mode": {
+      "inherit": "Follow the parent area",
+      "fixed": "Fix to one kind",
+      "member": "Use the member's choice"
+    },
+    "kind_placeholder": "Choose a kind",
+    "kind_option": "{{label}} (e.g. {{preview}})",
+    "effective": "Currently shown as {{kind}}.",
+    "effective_with_source": "Currently shown as {{kind}}. (Set by {{source}})",
+    "requires_nickname_hint": "This kind needs a nickname. After saving, the nickname member field may be fixed to enabled and required."
   }
 }

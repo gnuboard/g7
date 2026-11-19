@@ -6,8 +6,8 @@
  * 이 spec 은 `ContentPolicyRuntime` 이 같은 탭에서 새 규칙으로 캡션을 지우고 외부 영상을 링크로 바꾸는지, 새로고침 뒤에도 같은지 잰다.
  * 사이트의 본문 콘텐츠 설정을 바꾸므로 실행 전 값을 떠 두고 afterAll 에서 되돌린다(serial). 만든 글은 영구 삭제한다.
  *
- * // @scenario case=runtime_same_tab_e2e
- * // @effects same_tab_policy_applied_without_reload
+ * 조합 요약(마커 아님 — 평문): case=runtime_same_tab_e2e
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): same_tab_policy_applied_without_reload
  */
 import { execSync } from 'node:child_process';
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';

@@ -25,7 +25,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "totp-form-label"
                             },
                             "text": "$t:sirsoft-totp.admin.notifications.preview_modal.rendered_subject"
                         },
@@ -33,7 +33,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-primary text-sm bg-gray-50 dark:bg-gray-900 rounded-md p-3 border border-gray-200 dark:border-gray-700"
+                                "className": "totp-text-primary totp:text-sm totp:bg-gray-50 totp:dark:bg-gray-900 totp:rounded-md totp:p-3 totp:border totp:border-gray-200 totp:dark:border-gray-700"
                             },
                             "text": "{{_global.totp_notification_template_form_modal?.preview?.subject ?? ''}}"
                         }
@@ -47,7 +47,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "totp-form-label"
                             },
                             "text": "$t:sirsoft-totp.admin.notifications.preview_modal.rendered_body"
                         },
@@ -57,7 +57,7 @@
                             "props": {
                                 "content": "{{_global.totp_notification_template_form_modal?.preview?.body ?? ''}}",
                                 "isHtml": true,
-                                "className": "text-sm max-w-none bg-white dark:bg-gray-900 rounded-md p-4 border border-gray-200 dark:border-gray-700 max-h-[400px] overflow-y-auto"
+                                "className": "totp:text-sm totp:max-w-none totp:bg-white totp:dark:bg-gray-900 totp:rounded-md totp:p-4 totp:border totp:border-gray-200 totp:dark:border-gray-700 totp:max-h-[400px] totp:overflow-y-auto"
                             }
                         }
                     ]
@@ -66,7 +66,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex justify-end border-t border-gray-200 dark:border-gray-700"
+                        "className": "totp:flex totp:justify-end totp:border-t totp:border-gray-200 totp:dark:border-gray-700"
                     },
                     "children": [
                         {
@@ -82,7 +82,7 @@
                             ],
                             "props": {
                                 "type": "button",
-                                "className": "text-body px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                "className": "totp-text-body totp:px-4 totp:py-2 totp:rounded-md totp:border totp:border-gray-300 totp:dark:border-gray-600 totp:hover:bg-gray-50 totp:dark:hover:bg-gray-700 totp:transition-colors"
                             },
                             "text": "$t:sirsoft-totp.admin.notifications.preview_modal.btn_close"
                         }

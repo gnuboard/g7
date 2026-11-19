@@ -62,6 +62,14 @@ return [
         'template_init_error' => 'An error occurred while initializing the template engine',
         'contact_admin_for_template' => 'Please contact your system administrator to activate a template.',
 
+        // template.json extension CSS contract validation messages
+        'color_scheme_invalid_strategy' => 'features.color_scheme.strategy must be one of ancestor-class, media-query, none.',
+        'color_scheme_selector_required' => 'The ancestor-class strategy of features.color_scheme requires a selector.',
+        'extension_css_overrides_not_list' => 'extension_css_overrides must be an array.',
+        'extension_css_override_invalid' => 'Item :index of extension_css_overrides needs a target and a path under dist/.',
+        'extension_css_override_invalid_version' => 'The targetVersion of the :target item in extension_css_overrides cannot be parsed.',
+        'extension_css_override_duplicate' => ':target is declared twice in extension_css_overrides.',
+
         // Error layout validation messages
         'missing_error_config' => 'Template is missing error_config section. Error page layout configuration is required.',
         'missing_error_layout' => 'Error layout for :code is not defined.',
@@ -215,6 +223,7 @@ return [
     'fetch_success' => 'Template information retrieved successfully.',
     'license_not_found' => 'Template license file not found.',
     'refresh_layouts_success' => 'Template layouts have been refreshed successfully.',
+    'refresh_layouts_preview_success' => 'Layout refresh preview created.',
     'refresh_layouts_failed' => 'Failed to refresh template layouts: :error',
 
     // Update related messages
@@ -280,6 +289,7 @@ return [
             'success' => 'Template ":template" deactivated successfully',
             'not_active' => 'Template ":template" is not active.',
             'no_active_warning' => 'No active :type template currently.',
+            'last_active_force_hint' => 'To deactivate it anyway, run again with --force: php artisan template:deactivate :template --force',
         ],
         'uninstall' => [
             'success' => 'Template ":template" uninstalled successfully',
@@ -290,9 +300,11 @@ return [
             ],
             'confirm_question' => 'Do you want to continue?',
             'layouts_deleted' => ':count layout deleted|:count layouts deleted',
-            'versions_deleted' => ':count version(s) deleted',
+            'versions_deleted' => 'Version history entries deleted: :count',
             'custom_preserved' => 'Operator files (:directory) were archived to :archive.',
             'aborted' => 'Uninstall aborted.',
+            'confirm_unavailable' => 'Template ":template" was not uninstalled because this run cannot answer the confirmation prompt (no terminal, or --no-interaction).',
+            'confirm_unavailable_hint' => 'To uninstall without confirmation from cron, CI or a remote command, run it again with --yes (skips only the confirmation) or --force. Example: php artisan template:uninstall :template --yes',
             'delete_data_notice' => '⚠️  --delete-data: Uninstalls as if "Also delete data" was chosen (passed to the activity log and to extensions that subscribe to uninstall).',
         ],
         'list' => [
@@ -347,8 +359,10 @@ return [
             'modified_layout_item' => '  - :name (modified: :date)',
             'confirm_question' => 'Do you want to proceed with the update?',
             'aborted' => 'Update cancelled.',
+            'confirm_unavailable' => 'The update of template ":template" was not started because this run cannot answer the confirmation prompt (no terminal, or --no-interaction). (The template was not changed.)',
+            'confirm_unavailable_hint' => 'To proceed without confirmation from cron, CI or a remote command, run it again with --yes (skips only the confirmation). --force turns on six things together — (1) skip confirmation (2) re-apply the same version (3) allow downgrade (4) skip the core compatibility check (5) re-run upgrade steps of the same version (6) clean up a stalled update. Example: php artisan template:update :template --yes',
             'backup_restored' => 'Previous version has been restored from backup.',
-            'force_mode' => 'Force update mode: Skipping version comparison and reinstalling.',
+            'force_mode' => 'Force update mode (--force): turns on six things together — (1) skip confirmation (2) re-apply the same version (3) allow downgrade (4) skip the core compatibility check (5) re-run upgrade steps of the same version (6) clean up a stalled update.',
         ],
         // `template:build` command output
         'build' => [
@@ -403,6 +417,62 @@ return [
             'file_extensions' => 'This file type cannot be uploaded. Allowed types: :extensions',
             'file_max' => 'The file size may not exceed :max MB.',
             'layout_name_max' => 'The layout name may not exceed 150 characters.',
+        ],
+    ],
+
+    // Template settings (#434)
+    'settings' => [
+        'updated' => 'Template settings saved.',
+        'reset' => 'Template settings were restored to defaults.',
+        'attributes' => [
+            'section' => 'settings section',
+        ],
+        'reset_failed' => 'Could not restore template settings to defaults: :error',
+        'warnings' => [
+            'owned_elsewhere' => 'Settings fields :fields of template ":template" share a name with a value the core or another extension already owns — read that value instead of storing it again.',
+        ],
+        'update_failed' => 'Failed to save template settings: :error',
+        'not_found' => 'This template has no settings screen.',
+        'errors' => [
+            'invalid_json' => 'The settings declaration (config/settings/defaults.json) of template ":template" is not valid JSON: :error',
+            'invalid_schema' => 'The settings declaration of template ":template" does not follow the contract: :errors',
+            'not_available' => 'Template ":template" is not installed or has no settings declaration.',
+            'save_failed' => 'Could not write the settings file.',
+        ],
+        'menu' => [
+            'not_list' => 'The menu value must be a list of items.',
+            'item_invalid' => 'The menu item format is invalid.',
+            'id_invalid' => 'The menu item identifier is invalid.',
+            'id_duplicate' => 'Two or more menu items share the same identifier.',
+            'kind_invalid' => 'Unknown menu item type.',
+            'auto_duplicate' => 'An automatic item can appear only once in the menu.',
+            'auto_no_children' => 'Automatic items cannot have sub-menus.',
+            'label_required' => 'Enter a menu name.',
+            'url_required' => 'Enter a link address. Only a parent menu with sub-menus may leave it empty.',
+            'too_deep' => 'Menus can be nested only :depth levels deep.',
+            'visibility_invalid' => 'The visibility setting is invalid.',
+            'roles_required' => 'Select at least one role when "Specific roles" is chosen.',
+            'too_many' => 'The menu can have at most :max items, including sub-menus.',
+        ],
+        // Display names for menu/list item validation errors — field name, 1-based position and item name instead of the internal key
+        'item_attributes' => [
+            'item' => ':field item :position',
+            'item_named' => ':field item :position (:name)',
+            'child' => ':parent sub-item :position',
+            'child_named' => ':parent sub-item :position (:name)',
+            'key' => ':key of :item',
+            'row' => ':key of :field item :position',
+            'keys' => [
+                'id' => 'identifier',
+                'kind' => 'type',
+                'label' => 'menu name',
+                'url' => 'link address',
+                'new_tab' => 'open in new tab',
+                'is_active' => 'enabled',
+                'visibility' => 'visibility',
+                'roles' => 'roles',
+                'children' => 'sub-menus',
+            ],
         ],
     ],
 ];

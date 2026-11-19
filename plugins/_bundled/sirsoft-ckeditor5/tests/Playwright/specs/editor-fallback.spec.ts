@@ -179,6 +179,36 @@ test.describe('편집기 자산 실패 폴백', () => {
     });
 
     /**
+     * 코어 레이아웃 스크립트 로더의 시도(첫 시도 + 재시도 2)가 모두 실패한 뒤 플러그인이 본체를 직접 실어 편집기를
+     * 세우면, 코어가 띄운 「편집기 불러오기에 실패했습니다」 띠가 남지 않아야 한다. 하위 폴더 설치에서 첫 요청이
+     * 사이트 밖으로 나가던 때 이 상태로 띠가 상시 떠 있었다.
+     *
+     * @scenario asset_class=vendored, outcome=failed
+     * @effects editor_vendor_recovery_withdraws_core_script_notice
+     */
+    test('코어 로더가 실패한 뒤 플러그인 직접 로드로 편집기가 서면 실패 띠가 남지 않는다', async ({ page, editorToken }) => {
+        let coreAttempts = 0;
+        const CORE_ATTEMPTS = 3;
+
+        await page.route(EDITOR_BUNDLE, (route) => {
+            coreAttempts += 1;
+
+            return coreAttempts <= CORE_ATTEMPTS ? route.abort() : route.continue();
+        });
+        await authenticatePage(page, editorToken);
+
+        await page.goto('/admin/board/notice/create');
+        await page.waitForLoadState('networkidle');
+
+        await expect(page.locator('.ck-editor')).toBeVisible({ timeout: 40_000 });
+        expect(coreAttempts).toBeGreaterThan(CORE_ATTEMPTS);
+        await expect(page.locator('[data-ckeditor5-fallback]')).toHaveCount(0, { timeout: 20_000 });
+        // 늦게 도착하는 코어 안내까지 걷히는지 본다
+        await page.waitForTimeout(3_000);
+        await expect(page.locator('#g7-asset-failure-notice')).toHaveCount(0, { timeout: 10_000 });
+    });
+
+    /**
      * @scenario asset_class=vendored, outcome=loaded
      * @effects runtime_asset_served_same_origin
      */

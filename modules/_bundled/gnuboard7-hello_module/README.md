@@ -5,9 +5,9 @@
 
 <!-- @generated:badges START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.2.2-0066FF?style=flat-square" alt="version 0.2.2">
+  <img src="https://img.shields.io/badge/version-0.3.0-0066FF?style=flat-square" alt="version 0.3.0">
   <img src="https://img.shields.io/badge/type-%EB%AA%A8%EB%93%88-555555?style=flat-square" alt="type 모듈">
-  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.1.1-1F883D?style=flat-square" alt="그누보드7 &gt;=7.1.1">
+  <img src="https://img.shields.io/badge/%EA%B7%B8%EB%88%84%EB%B3%B4%EB%93%9C7-%3E%3D7.2.0-1F883D?style=flat-square" alt="그누보드7 &gt;=7.2.0">
   <img src="https://img.shields.io/badge/license-MIT-8250DF?style=flat-square" alt="license MIT">
 </p>
 <!-- @generated:badges END -->
@@ -44,6 +44,7 @@
 | 권한 | 메모 관리 권한 4종(읽기·생성·수정·삭제) |
 | 다국어 | 한국어·영어 (관리자 문구와 화면 문구 각각) |
 | 확장 지점 | 메모 생성 시점 알림용 연결점 1개 |
+| 썸네일 규격 | 확장이 이미지 썸네일 규격을 더하는 예시 1개 (가로 480 · 세로 270 자르기) |
 | 테스트 | 기능 테스트와 단위 테스트 예시 |
 <!-- @intent END -->
 
@@ -70,7 +71,7 @@ flowchart LR
 <!-- @generated:requirements START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 항목 | 값 |
 |---|---|
-| 그누보드7 코어 | `>=7.1.1` |
+| 그누보드7 코어 | `>=7.2.0` |
 | PHP | `^8.2` |
 <!-- @generated:requirements END -->
 

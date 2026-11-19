@@ -1,0 +1,10 @@
+{
+    "id": "10158765432109876",
+    "name": "Facebook User",
+    "email": "fb.user@example.test",
+    "picture": {
+        "data": {
+            "url": "https://example.test/avatar.png"
+        }
+    }
+}

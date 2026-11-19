@@ -129,6 +129,7 @@ class SeoCacheController extends AdminBaseController
      */
     public function regenerateSitemap(): JsonResponse
     {
+        // 검수 서버(stage)는 라우트 미들웨어 `deny.stage:sitemap` 이 409 `errors.stage_role_locked_sitemap` 으로 막는다
         if (! (bool) g7_core_settings('seo.sitemap_enabled', true)) {
             return $this->error('seo.sitemap_disabled', 400);
         }

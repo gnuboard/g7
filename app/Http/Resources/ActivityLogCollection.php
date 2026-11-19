@@ -31,6 +31,9 @@ class ActivityLogCollection extends BaseApiCollection
     {
         $abilities = $this->resolveCollectionAbilities($request);
 
+        // 행위자 이름은 표시 이름으로 나간다. 추가 항목 값이 필요한 설정이면 여기서 한 번에 읽는다.
+        $this->preloadMemberDisplayNames($this->collection, ['user'], $request);
+
         return [
             'data' => $this->mapWithRowNumber(function ($activityLog) {
                 return (new ActivityLogResource($activityLog))->toArray(request());

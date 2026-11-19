@@ -12,7 +12,6 @@
  *  ⑦ 디그레이드(recipes 없음 → 코드 편집 안내)
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { ErrorHandlingForm } from '../../../components/page-settings/ErrorHandlingForm';
@@ -43,6 +42,10 @@ beforeEach(() => {
 });
 
 describe('ErrorHandlingForm', () => {
+  /**
+   * @scenario subject=error_handling_form
+   * @effects error_form_rows_from_config_without_maintenance
+   */
   it('error_config − maintenance + default 로 코드 행 생성(maintenance 부재)', () => {
     render(<ErrorHandlingForm value={{}} onChange={vi.fn()} t={t} errorConfigCodes={CODES} recipes={RECIPES} />);
     expect(screen.getByTestId('g7le-error-rows-row-401')).toBeInTheDocument();
@@ -51,6 +54,10 @@ describe('ErrorHandlingForm', () => {
     expect(screen.queryByTestId('g7le-error-rows-row-maintenance')).not.toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=error_handling_form
+   * @effects error_form_source_badges
+   */
   it('출처 배지 — 자체/상속/템플릿/없음', () => {
     render(
       <ErrorHandlingForm
@@ -70,6 +77,10 @@ describe('ErrorHandlingForm', () => {
     expect(screen.getByTestId('g7le-error-rows-source-404').textContent).toContain('source_none');
   });
 
+  /**
+   * @scenario subject=error_handling_form
+   * @effects error_form_handler_select_builds_action
+   */
   it('동작 7종 select + 핸들러 변경 시 buildAction', () => {
     const onChange = vi.fn();
     render(<ErrorHandlingForm value={{}} onChange={onChange} t={t} errorConfigCodes={['401']} recipes={RECIPES} />);
@@ -82,6 +93,10 @@ describe('ErrorHandlingForm', () => {
     expect(next['401']).toMatchObject({ handler: 'navigate' });
   });
 
+  /**
+   * @scenario subject=error_handling_form
+   * @effects error_form_show_error_page_target_param
+   */
   it('showErrorPage 선택 시 표시 위치 입력 분기(공용 ParamFieldList)', () => {
     // 동작별 입력칸은 공용 ParamFieldList 가 그린다(자작 폼 폐기). showErrorPage 의 target param
     // wrapper(`-edit-param-target`)가 존재해야 한다.
@@ -89,6 +104,10 @@ describe('ErrorHandlingForm', () => {
     expect(screen.getByTestId('g7le-error-action-403-edit-param-target')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=error_handling_form
+   * @effects error_form_navigate_toast_param_fields
+   */
   it('navigate 선택 시 이동화면 칸, toast 선택 시 메시지 칸(공용 ParamFieldList)', () => {
     const { rerender } = render(<ErrorHandlingForm value={{ '401': { handler: 'navigate', params: { path: '/login' } } }} onChange={vi.fn()} t={t} errorConfigCodes={['401']} recipes={RECIPES} pageCandidates={[]} />);
     expect(screen.getByTestId('g7le-error-action-401-edit-param-path')).toBeInTheDocument();
@@ -97,19 +116,31 @@ describe('ErrorHandlingForm', () => {
     expect(screen.getByTestId('g7le-error-action-401-edit-param-message')).toBeInTheDocument();
   });
 
-  it('"설정 안 함" 선택 → 빈 액션(ErrorHandlingRows clear 가 키 제거)', () => {
+  /**
+   * @scenario subject=error_handling_form
+   * @effects error_form_unset_handler_removes_code_key
+   */
+  it('"설정 안 함" 선택 → 그 코드 키 제거(빈 액션을 남기지 않음)', () => {
     const onChange = vi.fn();
     render(<ErrorHandlingForm value={{ '401': { handler: 'navigate' } }} onChange={onChange} t={t} errorConfigCodes={['401']} recipes={RECIPES} />);
     fireEvent.change(screen.getByTestId('g7le-error-handler-401'), { target: { value: '' } });
-    // 빈 액션 패치(셸/Rows 가 후속 정리).
-    expect(onChange).toHaveBeenCalled();
+    // 빈 액션 패치를 ErrorHandlingRows 가 키 제거로 받는다(빈 항목은 런타임 대체 처리를 가린다).
+    expect(onChange).toHaveBeenLastCalledWith({});
   });
 
+  /**
+   * @scenario subject=error_handling_form
+   * @effects error_form_default_row_shadow_warning
+   */
   it('default 행 가림 경고', () => {
     render(<ErrorHandlingForm value={{ default: { handler: 'toast' } }} onChange={vi.fn()} t={t} errorConfigCodes={['401']} recipes={RECIPES} />);
     expect(screen.getByTestId('g7le-error-rows-default-warn-default')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=error_handling_form
+   * @effects error_form_no_recipes_degrades
+   */
   it('디그레이드(recipes 없음) → 코드 편집 안내', () => {
     render(<ErrorHandlingForm value={{ '401': { handler: 'navigate' } }} onChange={vi.fn()} t={t} errorConfigCodes={CODES} recipes={{}} />);
     expect(screen.getByTestId('g7le-error-degrade')).toBeInTheDocument();

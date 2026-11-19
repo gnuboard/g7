@@ -47,7 +47,8 @@ export interface StateDiff {
 /** 액션 로그 */
 export interface ActionLog {
     id: string;
-    type: string;
+    /** 액션 타입. 엔진이 type 을 적지 않은 액션(event 만 적은 진입점, 풀리지 않은 actionRef)은 undefined 로 기록한다 */
+    type: string | undefined;
     params?: Record<string, any>;
     /** 바인딩이 해석된 params (템플릿 표현식 → 실제 값) */
     resolvedParams?: Record<string, any>;
@@ -545,7 +546,7 @@ export interface ExpressionEvalInfo {
     duration?: number;            // 평가 소요 시간 (ms)
     steps?: EvaluationStep[];     // 추적 단계
     warning?: ExpressionWarning;  // 경고 정보
-    method?: 'resolve' | 'resolveBindings' | 'evaluateExpression';  // 사용된 메서드
+    method?: 'resolve' | 'resolveBindings' | 'evaluateExpression' | 'evaluatePipeExpression';  // 사용된 메서드 (파이프 식은 evaluatePipeExpression)
     skipCache?: boolean;          // skipCache 옵션 사용 여부
 }
 
@@ -2145,8 +2146,8 @@ export interface NamedActionRefLog {
     id: string;
     /** 참조한 named action 이름 */
     actionRefName: string;
-    /** 해석된 핸들러명 */
-    resolvedHandler: string;
+    /** 해석된 핸들러명 (핸들러 없이 actionRef 만 적은 정의면 undefined) */
+    resolvedHandler: string | undefined;
     /** 해석 시각 */
     timestamp: number;
 }

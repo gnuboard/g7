@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { render, screen, act, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
@@ -100,6 +100,8 @@ describe('IsolatedStateContext', () => {
   });
 
   describe('초기화', () => {
+    // @scenario area=init
+    // @effects isolated_state_initialized
     it('initialState로 초기 상태를 설정한다', () => {
       render(
         <IsolatedStateProvider initialState={{ count: 0 }}>
@@ -110,6 +112,8 @@ describe('IsolatedStateContext', () => {
       expect(screen.getByTestId('consumer')).toHaveTextContent('{"count":0}');
     });
 
+    // @scenario area=init
+    // @effects isolated_state_initialized
     it('initialState 없이도 빈 객체로 초기화된다', () => {
       render(
         <IsolatedStateProvider>
@@ -120,6 +124,8 @@ describe('IsolatedStateContext', () => {
       expect(screen.getByTestId('consumer')).toHaveTextContent('{}');
     });
 
+    // @scenario area=init
+    // @effects isolated_state_initialized
     it('중첩된 초기 상태를 올바르게 설정한다', () => {
       const initialState = {
         user: { name: 'Kim', profile: { age: 30 } },
@@ -137,6 +143,8 @@ describe('IsolatedStateContext', () => {
   });
 
   describe('setState', () => {
+    // @scenario area=set_state
+    // @effects isolated_state_set_by_path
     it('단일 경로 업데이트가 정상 동작한다', async () => {
       const user = userEvent.setup();
 
@@ -156,6 +164,8 @@ describe('IsolatedStateContext', () => {
       });
     });
 
+    // @scenario area=set_state
+    // @effects isolated_state_set_by_path
     it('중첩 경로 업데이트가 정상 동작한다', async () => {
       const user = userEvent.setup();
 
@@ -173,6 +183,8 @@ describe('IsolatedStateContext', () => {
       });
     });
 
+    // @scenario area=set_state
+    // @effects isolated_state_set_by_path
     it('기존 값을 유지하면서 업데이트한다', async () => {
       const user = userEvent.setup();
 
@@ -192,6 +204,8 @@ describe('IsolatedStateContext', () => {
   });
 
   describe('getState', () => {
+    // @scenario area=get_state
+    // @effects isolated_state_read_by_path
     it('경로로 값을 조회한다', async () => {
       const user = userEvent.setup();
       let capturedValue: any;
@@ -207,6 +221,8 @@ describe('IsolatedStateContext', () => {
       expect(capturedValue).toBe('Kim');
     });
 
+    // @scenario area=get_state
+    // @effects isolated_state_read_by_path
     it('존재하지 않는 경로는 undefined를 반환한다', async () => {
       const user = userEvent.setup();
       let capturedValue: any = 'initial';
@@ -222,6 +238,8 @@ describe('IsolatedStateContext', () => {
       expect(capturedValue).toBeUndefined();
     });
 
+    // @scenario area=get_state
+    // @effects isolated_state_read_by_path
     it('빈 경로는 전체 상태를 반환한다', async () => {
       const user = userEvent.setup();
       let capturedValue: any;
@@ -240,6 +258,8 @@ describe('IsolatedStateContext', () => {
   });
 
   describe('mergeState', () => {
+    // @scenario area=merge_state
+    // @effects isolated_state_merged
     it('얕은 객체를 병합한다', async () => {
       const user = userEvent.setup();
 
@@ -257,6 +277,8 @@ describe('IsolatedStateContext', () => {
       });
     });
 
+    // @scenario area=merge_state
+    // @effects isolated_state_merged
     it('깊은 객체를 재귀적으로 병합한다', async () => {
       const user = userEvent.setup();
 
@@ -274,6 +296,8 @@ describe('IsolatedStateContext', () => {
       });
     });
 
+    // @scenario area=merge_state
+    // @effects isolated_state_merged
     it('배열은 교체된다 (병합 아님)', async () => {
       const user = userEvent.setup();
 
@@ -298,6 +322,8 @@ describe('IsolatedStateContext', () => {
       return <div data-testid="scope-check">{isInScope ? 'in-scope' : 'out-scope'}</div>;
     };
 
+    // @scenario area=scope_detection
+    // @effects isolated_scope_detected
     it('IsolatedStateProvider 내부에서 true를 반환한다', () => {
       render(
         <IsolatedStateProvider>
@@ -308,6 +334,8 @@ describe('IsolatedStateContext', () => {
       expect(screen.getByTestId('scope-check')).toHaveTextContent('in-scope');
     });
 
+    // @scenario area=scope_detection
+    // @effects isolated_scope_detected
     it('IsolatedStateProvider 외부에서 false를 반환한다', () => {
       render(<ScopeChecker />);
 
@@ -316,6 +344,8 @@ describe('IsolatedStateContext', () => {
   });
 
   describe('useIsolatedState 컨텍스트 외부 동작', () => {
+    // @scenario area=scope_detection
+    // @effects isolated_scope_detected
     it('IsolatedStateProvider 외부에서 null을 반환한다', () => {
       let capturedContext: IsolatedStateContextValue | null | undefined;
 
@@ -329,6 +359,8 @@ describe('IsolatedStateContext', () => {
   });
 
   describe('DevTools 연동', () => {
+    // @scenario area=devtools
+    // @effects isolated_state_tracked_in_devtools
     it('마운트 시 G7Core._isolatedStates에 등록된다', () => {
       render(
         <IsolatedStateProvider initialState={{ count: 1 }} scopeId="test-scope">
@@ -339,6 +371,8 @@ describe('IsolatedStateContext', () => {
       expect((window as any).G7Core._isolatedStates['test-scope']).toEqual({ count: 1 });
     });
 
+    // @scenario area=devtools
+    // @effects isolated_state_tracked_in_devtools
     it('언마운트 시 G7Core._isolatedStates에서 제거된다', () => {
       const { unmount } = render(
         <IsolatedStateProvider initialState={{ count: 1 }} scopeId="test-scope">
@@ -353,6 +387,8 @@ describe('IsolatedStateContext', () => {
       expect((window as any).G7Core._isolatedStates['test-scope']).toBeUndefined();
     });
 
+    // @scenario area=devtools
+    // @effects isolated_state_tracked_in_devtools
     it('상태 변경 시 G7Core._isolatedStates가 업데이트된다', async () => {
       const user = userEvent.setup();
 
@@ -373,6 +409,8 @@ describe('IsolatedStateContext', () => {
   });
 
   describe('Stale Closure 방지', () => {
+    // @scenario area=stale_closure
+    // @effects isolated_state_ref_reads_latest
     it('stateRef를 통해 항상 최신 상태에 접근할 수 있다', async () => {
       const user = userEvent.setup();
       let capturedRef: React.MutableRefObject<Record<string, any>> | undefined;
@@ -404,6 +442,8 @@ describe('IsolatedStateContext', () => {
   });
 
   describe('scopeId 자동 생성', () => {
+    // @scenario area=scope_id
+    // @effects isolated_scope_id_assigned
     it('scopeId를 제공하지 않으면 자동 생성된다', () => {
       render(
         <IsolatedStateProvider initialState={{ count: 1 }}>
@@ -416,6 +456,8 @@ describe('IsolatedStateContext', () => {
       expect(keys[0]).toMatch(/^isolated-\d+-[a-z0-9]+$/);
     });
 
+    // @scenario area=scope_id
+    // @effects isolated_scope_id_assigned
     it('제공된 scopeId가 사용된다', () => {
       render(
         <IsolatedStateProvider initialState={{ count: 1 }} scopeId="custom-scope">
@@ -428,6 +470,8 @@ describe('IsolatedStateContext', () => {
   });
 
   describe('중첩된 IsolatedStateProvider', () => {
+    // @scenario area=nesting
+    // @effects isolated_nested_providers_independent
     it('중첩된 Provider는 각각 독립적인 상태를 가진다', async () => {
       const user = userEvent.setup();
 
@@ -492,9 +536,9 @@ describe('IsolatedStateContext - 모달 상태 스코프 회귀 테스트', () =
    * 해결: 모달 데이터는 반드시 _global에 저장
    */
   describe('[TS-MODAL-SCOPE-1] 모달 격리 상태 - _local 접근 불가 시나리오', () => {
+    // @scenario area=modal_scope
+    // @effects modal_isolated_state_scoped
     it('모달(IsolatedStateProvider)은 자신의 격리된 상태만 접근 가능해야 함', async () => {
-      const user = userEvent.setup();
-
       // 부모 컴포넌트 상태 확인용
       const ParentStateViewer: React.FC = () => {
         const ctx = useIsolatedState();
@@ -537,9 +581,9 @@ describe('IsolatedStateContext - 모달 상태 스코프 회귀 테스트', () =
       expect(screen.getByTestId('modal-state')).not.toHaveTextContent('selectedItem');
     });
 
+    // @scenario area=modal_scope
+    // @effects modal_isolated_state_scoped
     it('모달에서 부모 상태를 사용하려면 명시적으로 전달해야 함', async () => {
-      const user = userEvent.setup();
-
       // 부모에서 모달에 전달할 데이터를 명시적으로 복사
       const parentData = { selectedItem: { id: 1, name: '상품A' } };
       const modalInitialState = {
@@ -576,6 +620,8 @@ describe('IsolatedStateContext - 모달 상태 스코프 회귀 테스트', () =
    * 해결: 언마운트 시 G7Core._isolatedStates에서 제거되어야 함
    */
   describe('[TS-MODAL-SCOPE-2] 모달 상태 정리', () => {
+    // @scenario area=modal_scope
+    // @effects modal_isolated_state_scoped
     it('모달(IsolatedStateProvider) 언마운트 시 상태가 완전히 제거되어야 함', async () => {
       const user = userEvent.setup();
 
@@ -640,6 +686,8 @@ describe('IsolatedStateContext - 모달 상태 스코프 회귀 테스트', () =
    * 해결: 각 모달은 고유한 scopeId로 완전히 격리된 상태를 가져야 함
    */
   describe('[TS-MODAL-SCOPE-3] 다중 모달 상태 격리', () => {
+    // @scenario area=modal_scope
+    // @effects modal_isolated_state_scoped
     it('여러 모달이 동시에 열려도 각각 독립적인 상태를 유지해야 함', async () => {
       const user = userEvent.setup();
 

@@ -13,7 +13,6 @@
  * @since engine-v1.50.0
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { InitialStateForm } from '../../../components/page-settings/InitialStateForm';
@@ -23,6 +22,10 @@ const t = (k: string) => k;
 beforeEach(() => cleanup());
 
 describe('initial-state-inheritance — 부모/자식 상속 매트릭스 (I1~I15)', () => {
+  /**
+   * @scenario subject=initial_state_inheritance
+   * @effects init_state_inherit_parent_only_badge_editable
+   */
   it('I1: 부모만 initLocal(자식 0) → 부모 키 전부 🔗상속 배지, 전부 편집 가능(🔒 아님)', () => {
     // 병합본엔 부모 키 있고 own(자기 선언)엔 없음 → 상속(🔗).
     render(
@@ -40,6 +43,10 @@ describe('initial-state-inheritance — 부모/자식 상속 매트릭스 (I1~I1
     expect(screen.getByTestId('g7le-initstate-type-keyword')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=initial_state_inheritance
+   * @effects init_state_inherit_child_only_no_badge_removable
+   */
   it('I2: 자식만 initLocal(부모 0) → 자식 키만, 무배지, [✕] 삭제 가능', () => {
     render(
       <InitialStateForm
@@ -54,6 +61,10 @@ describe('initial-state-inheritance — 부모/자식 상속 매트릭스 (I1~I1
     expect(screen.getByTestId('g7le-initstate-remove-mine')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=initial_state_inheritance
+   * @effects init_state_inherit_distinct_keys_badge_by_source
+   */
   it('I3: 부모+자식 다른 키 → 출처 구분(부모=🔗/자식=무배지), 병합본 모든 키 표시', () => {
     render(
       <InitialStateForm
@@ -70,6 +81,10 @@ describe('initial-state-inheritance — 부모/자식 상속 매트릭스 (I1~I1
     expect(screen.queryByTestId('g7le-initstate-inherited-fromChild')).not.toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=initial_state_inheritance
+   * @effects init_state_inherit_child_override_is_own
+   */
   it('I4: 부모+자식 같은 키(자식 덮음) → 병합본=자식 값, 자기 선언으로 분류(🔗 미표시, [✕])', () => {
     // own 에 그 키가 있으면(덮음) → 자기(self) 분류 → 🔗 부재, [✕] 노출.
     render(
@@ -84,6 +99,10 @@ describe('initial-state-inheritance — 부모/자식 상속 매트릭스 (I1~I1
     expect(screen.getByTestId('g7le-initstate-remove-shared')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=initial_state_inheritance
+   * @effects init_state_inherit_parent_key_value_editable
+   */
   it('I5: 부모만(키 K) → 상속 키 K 값 변경 가능(값 위젯 노출, 편집=덮어쓰기 경로)', () => {
     const patch = vi.fn();
     render(
@@ -100,6 +119,10 @@ describe('initial-state-inheritance — 부모/자식 상속 매트릭스 (I1~I1
     expect(patch).toHaveBeenCalledWith('initLocal', { keyword: 'overridden' });
   });
 
+  /**
+   * @scenario subject=initial_state_inheritance
+   * @effects init_state_inherit_parent_key_commit_patches_child
+   */
   it('I6: 상속 키 K 값 확정 → patch(initLocal) 로 K=자식 값(병합본 덮음)', () => {
     const patch = vi.fn();
     render(
@@ -116,6 +139,10 @@ describe('initial-state-inheritance — 부모/자식 상속 매트릭스 (I1~I1
     expect(patch).toHaveBeenCalledWith('initLocal', { count: 10 });
   });
 
+  /**
+   * @scenario subject=initial_state_inheritance
+   * @effects init_state_inherit_revert_removes_override
+   */
   it('I7: 상속 키 덮은 상태 → [되돌림] 클릭 → 자식 override 제거(키 제거 patch)', () => {
     const patch = vi.fn();
     render(
@@ -131,6 +158,10 @@ describe('initial-state-inheritance — 부모/자식 상속 매트릭스 (I1~I1
     expect(patch).toHaveBeenLastCalledWith('initLocal', { own: 1 });
   });
 
+  /**
+   * @scenario subject=initial_state_inheritance
+   * @effects init_state_inherit_delete_child_key_keeps_parent
+   */
   it('I8: 부모+자식 → 자식 고유 키 삭제 → 자식 키만 patch, 부모 키 불변', () => {
     const patch = vi.fn();
     render(
@@ -146,6 +177,10 @@ describe('initial-state-inheritance — 부모/자식 상속 매트릭스 (I1~I1
     expect(patch).toHaveBeenLastCalledWith('initLocal', { parentK: 1 });
   });
 
+  /**
+   * @scenario subject=initial_state_inheritance
+   * @effects init_state_inherit_add_duplicate_parent_key_rejected
+   */
   it('I9: 부모(키 K) 상속 → 새 값 추가 시 이름 K 입력 = 병합본 내 중복이라 거부(추가 안 됨)', () => {
     const patch = vi.fn();
     render(
@@ -163,6 +198,10 @@ describe('initial-state-inheritance — 부모/자식 상속 매트릭스 (I1~I1
     // 상속 키 덮기는 값 위젯 편집(I5/I6) 경로로 수행.
   });
 
+  /**
+   * @scenario subject=initial_state_inheritance
+   * @effects init_state_inherit_save_payload_own_values
+   */
   it('I10: 자식 저장(💾) — 폼 patch 페이로드는 자기 분(미덮은 부모 키 strip 은 호스트), 덮은 키는 자식 값 포함', () => {
     const patch = vi.fn();
     render(
@@ -179,6 +218,10 @@ describe('initial-state-inheritance — 부모/자식 상속 매트릭스 (I1~I1
     expect(patch).toHaveBeenLastCalledWith('initLocal', { parentK: 99, childK: 2 });
   });
 
+  /**
+   * @scenario subject=initial_state_inheritance
+   * @effects init_state_inherit_base_mode_no_badge
+   */
   it('I11: base 편집 모드(부모 직접) → 자기 레이어 편집 시 🔗상속 배지 부재', () => {
     // base 편집 모드에서는 호스트가 own=병합본(자기 레이어) 로 주입 → 모든 키 자기(self) → 🔗 부재.
     render(
@@ -193,6 +236,10 @@ describe('initial-state-inheritance — 부모/자식 상속 매트릭스 (I1~I1
     expect(screen.getByTestId('g7le-initstate-remove-baseKey')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=initial_state_inheritance
+   * @effects init_state_inherit_nested_key_shallow_merge
+   */
   it('I12: 부모(중첩 K={a:{b:1}})+자식 → 상속 중첩 키 통째 표시(shallow merge — 중첩 통째 교체)', () => {
     render(
       <InitialStateForm
@@ -208,6 +255,10 @@ describe('initial-state-inheritance — 부모/자식 상속 매트릭스 (I1~I1
     expect(screen.getByTestId('g7le-initstate-type-filter.sort')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=initial_state_inheritance
+   * @effects init_state_inherit_three_level_nearest_wins
+   */
   it('I13: 3단 상속(조부모→부모→자식) → 같은 키 다단 시 최하위(자식) 유효, 상위 유래는 🔗', () => {
     // 병합본 = 자식 우선. own 에 있는 키(자식 덮음)=self, own 에 없는 키(상위 유래)=🔗.
     render(
@@ -223,6 +274,10 @@ describe('initial-state-inheritance — 부모/자식 상속 매트릭스 (I1~I1
     expect(screen.queryByTestId('g7le-initstate-inherited-overridden')).not.toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=initial_state_inheritance
+   * @effects init_state_inherit_global_same_policy
+   */
   it('I14: 부모 initGlobal + 자식 initGlobal → initLocal 과 동일 정책(전역 섹션 상속/덮기/되돌림)', () => {
     const patch = vi.fn();
     render(
@@ -241,6 +296,10 @@ describe('initial-state-inheritance — 부모/자식 상속 매트릭스 (I1~I1
     expect(patch).toHaveBeenLastCalledWith('initGlobal', { mine: 'x' });
   });
 
+  /**
+   * @scenario subject=initial_state_inheritance
+   * @effects init_state_inherit_legacy_state_normalized_put
+   */
   it('I15: legacy state(부모) + initLocal(자식) → 정규화 후 병합(state→initLocal 취급), 저장 시 initLocal 로만 PUT', () => {
     const patch = vi.fn();
     render(

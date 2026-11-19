@@ -91,17 +91,26 @@ final class StuckUpdateRecovery
      * @param  object  $record  확장 행 (`status`, `updated_at`)
      * @param  callable(array<string, mixed>): mixed  $update  행 갱신 함수 (Repository 의 updateByIdentifier 위임)
      * @param  bool  $lockHeld  호출한 쪽이 이미 작업 잠금을 잡았는지 (업데이트·활성화 진입점)
+     * @param  bool  $holderGone  그 업데이트를 하던 프로세스가 사라진 것을 호출한 쪽이 확인했는지 (코어 업데이트의 고아 자식 정리 —
+     *                            시간 조건 없이 `updating` 이면 정리한다)
+     * @param  string|null  $restoreStatus  파일을 바꾸기 전에 멈췄을 때 되돌릴 상태 (업데이트 전 상태 — active|inactive 만, 그 밖은 inactive)
      * @return string|null 되돌린 상태 (고착이 아니면 null)
      */
-    public static function recover(string $type, string $identifier, object $record, callable $update, bool $lockHeld = false): ?string
+    public static function recover(string $type, string $identifier, object $record, callable $update, bool $lockHeld = false, bool $holderGone = false, ?string $restoreStatus = null): ?string
     {
-        if (! self::looksStale($record)) {
-            return null;
-        }
+        if ($holderGone) {
+            if (($record->status ?? null) !== ExtensionStatus::Updating->value) {
+                return null;
+            }
+        } else {
+            if (! self::looksStale($record)) {
+                return null;
+            }
 
-        // 잠금이 비어 있어야 그 업데이트를 하는 프로세스가 없다 — 판정할 수 없으면(저장소 오류) 정리하지 않는다.
-        if (! $lockHeld && ExtensionOperationLock::isFree($type, $identifier) !== true) {
-            return null;
+            // 잠금이 비어 있어야 그 업데이트를 하는 프로세스가 없다 — 판정할 수 없으면(저장소 오류) 정리하지 않는다.
+            if (! $lockHeld && ExtensionOperationLock::isFree($type, $identifier) !== true) {
+                return null;
+            }
         }
 
         $restored = ExtensionStatus::Inactive->value;
@@ -109,6 +118,10 @@ final class StuckUpdateRecovery
         $unfinished = self::unfinishedVersionChange($type, $identifier, $record);
         if ($unfinished !== null) {
             $attributes += self::revertVersionAttributes($unfinished);
+        } elseif (in_array($restoreStatus, [ExtensionStatus::Active->value, ExtensionStatus::Inactive->value], true)) {
+            // 파일을 바꾸기 전에 멈췄다 — 옛 판 그대로이므로 업데이트 전 상태로 되돌려도 안전하다(바꾼 뒤라면 반쯤 바뀐 파일로 켜지 않는다).
+            $restored = $restoreStatus;
+            $attributes['status'] = $restored;
         }
         $update($attributes);
 

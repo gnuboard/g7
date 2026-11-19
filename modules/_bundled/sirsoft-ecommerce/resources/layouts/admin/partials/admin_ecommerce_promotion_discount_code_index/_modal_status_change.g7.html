@@ -7,19 +7,19 @@
 <partial description="Discount Code Status Change Modal">
   <modal data-type="composite" data-ref="modal_status_change" title="$t:sirsoft-ecommerce.admin.promotion_discount_code.modal.status_change.title" size="sm">
     <footer>
-      <button type="button" class="btn btn-outline">
+      <button type="button" class="ecommerce-btn ecommerce-btn-outline">
         <on type="click">
           <close-modal/>
         </on>
         $t:sirsoft-ecommerce.admin.promotion_discount_code.modal.status_change.cancel
       </button>
-      <button type="button" class="btn btn-primary">
+      <button type="button" class="ecommerce-btn ecommerce-btn-primary">
         <on type="click">
           <close-modal/>
         </on>
         $t:sirsoft-ecommerce.admin.promotion_discount_code.modal.status_change.confirm
       </button>
     </footer>
-    <p class="text-sm text-secondary">$t:sirsoft-ecommerce.admin.promotion_discount_code.modal.status_change.description|count={{($parent?._local?.selectedItems ?? []).length}}|status={{$parent?._local?.bulkStatus === 'active' ? $t('sirsoft-ecommerce.admin.promotion_discount_code.status.active') : ($parent?._local?.bulkStatus === 'inactive' ? $t('sirsoft-ecommerce.admin.promotion_discount_code.status.inactive') : '-')}}</p>
+    <p class="ecommerce:text-sm ecommerce-text-secondary">$t:sirsoft-ecommerce.admin.promotion_discount_code.modal.status_change.description|count={{($parent?._local?.selectedItems ?? []).length}}|status={{$parent?._local?.bulkStatus === 'active' ? $t('sirsoft-ecommerce.admin.promotion_discount_code.status.active') : ($parent?._local?.bulkStatus === 'inactive' ? $t('sirsoft-ecommerce.admin.promotion_discount_code.status.inactive') : '-')}}</p>
   </modal>
 </partial>

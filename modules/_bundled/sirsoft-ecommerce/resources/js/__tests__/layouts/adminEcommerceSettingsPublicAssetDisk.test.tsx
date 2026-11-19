@@ -10,7 +10,7 @@
  * 계약 단언에 더해, 실제 카드 서브트리를 createLayoutTest 로 렌더링해
  * "코어 설정 따름" 선두 옵션 + 카탈로그 $localized 매핑 계산까지 검증한다.
  *
- * @effects settings_catalog_includes_plugin_registered_disks
+ * 효과 요약(마커 아님, 평문): settings_catalog_includes_plugin_registered_disks — 각 it 의 주석이 그 효과를 잰다
  */
 
 import React from 'react';
@@ -278,7 +278,7 @@ describe('이커머스 공개 자산 디스크 오버라이드 필드 — 렌더
         testUtils = makeUtils();
         const { container } = await testUtils.render();
 
-        expect(container.querySelector('h3.card-title')?.textContent ?? '').toContain(
+        expect(container.querySelector('h3.ecommerce-card-title')?.textContent ?? '').toContain(
             '공개 자산 스토리지',
         );
         expect(container.textContent ?? '').toContain('미설정 시 코어 전역 설정을 따릅니다.');

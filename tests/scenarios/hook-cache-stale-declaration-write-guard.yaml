@@ -1,0 +1,16 @@
+feature: 옛 진입 클래스를 쥔 프로세스의 훅 캐시 재생성 쓰기 거절
+
+description: |
+  확장 파일 교체 중 부팅한 웹 요청은 지문 변화를 보고 요청 끝에 훅 캐시를 다시 굽는다. 그 요청이 쥔 진입 클래스가 옛 정의이면
+  교체 쪽이 새 선언으로 구운 캐시를 지운 리스너가 든 캐시로 덮었다(지문은 지금 디스크로 적혀 스스로 고쳐지지 않음). 훅 캐시 쓰기 직전에
+  각 확장이 실제로 쓴 진입 정의의 지문을 지금 디스크와 비교해 다르면 쓰지 않는다 — 다음 요청이 새 정의로 굽는다.
+
+axes:
+  case: [stale_declaration, current_declaration]
+
+effects:
+  - stale_process_does_not_overwrite_hook_cache
+  - used_declaration_tracked_per_class
+
+test_files:
+  - tests/Feature/Extension/HookCacheStaleDeclarationWriteGuardTest.php

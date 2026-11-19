@@ -8,6 +8,7 @@
   "translation_load_failed_with_locale": "Failed to load {locale} translation file",
   "template_init_error": "An error occurred while initializing the template engine",
   "network_request_failed": "The request could not be sent. Check your network connection and try again.",
+  "api_request_failed": "The request could not be processed. Please try again in a moment.",
   "page_load_failed": "Page failed to load",
   "init_failed": "Initialization failed",
   "reload": "Reload",
@@ -17,5 +18,6 @@
   "layout_editor_bundle_failed": "The editor could not be loaded. Check your network connection and try again.",
   "layout_editor_init_failed": "The editor was loaded but could not start. Please reload the page.",
   "refresh_failed": "Could not reload the latest content. What is on the screen has been kept. Please try again in a moment.",
+  "auth_checking": "Checking your sign-in status. Please wait a moment.",
   "login_required_for_action": "Sign in to use this feature. Your input is kept."
 }

@@ -11,8 +11,15 @@
             "comment": "필터 영역",
             "type": "basic",
             "name": "Div",
+            "responsive": {
+                "640-": {
+                    "props": {
+                        "className": "flex flex-row gap-3 mb-4"
+                    }
+                }
+            },
             "props": {
-                "className": "flex flex-col sm:flex-row gap-3 mb-4"
+                "className": "flex flex-col gap-3 mb-4"
             },
             "children": [
                 {
@@ -400,8 +407,15 @@
                         {
                             "type": "basic",
                             "name": "Label",
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "items-center gap-2 cursor-pointer hidden"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "flex items-center gap-2 cursor-pointer sm:hidden"
+                                "className": "flex items-center gap-2 cursor-pointer"
                             },
                             "children": [
                                 {
@@ -568,8 +582,15 @@
             "type": "basic",
             "name": "Div",
             "if": "{{(myReactions?.data?.data ?? []).length > 0}}",
+            "responsive": {
+                "640-": {
+                    "props": {
+                        "className": "block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-x-auto"
+                    }
+                }
+            },
             "props": {
-                "className": "hidden sm:block bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-x-auto"
+                "className": "hidden bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-x-auto"
             },
             "children": [
                 {
@@ -737,11 +758,14 @@
                                                     },
                                                     "children": [
                                                         {
+                                                            "comment": "thumb-exempt: 반응 아이콘은 contain 표시라 자르기 규격이 모양을 바꾼다",
                                                             "type": "basic",
                                                             "name": "Img",
                                                             "if": "{{!!reaction.reaction_type?.icon_url}}",
                                                             "props": {
                                                                 "src": "{{reaction.reaction_type?.icon_url}}",
+                                                                "loading": "lazy",
+                                                                "decoding": "async",
                                                                 "alt": "",
                                                                 "className": "w-4 h-4 object-contain"
                                                             }
@@ -962,11 +986,14 @@
                                                     },
                                                     "children": [
                                                         {
+                                                            "comment": "thumb-exempt: 반응 아이콘은 contain 표시라 자르기 규격이 모양을 바꾼다",
                                                             "type": "basic",
                                                             "name": "Img",
                                                             "if": "{{!!reaction.reaction_type?.icon_url}}",
                                                             "props": {
                                                                 "src": "{{reaction.reaction_type?.icon_url}}",
+                                                                "loading": "lazy",
+                                                                "decoding": "async",
                                                                 "alt": "",
                                                                 "className": "w-4 h-4 object-contain"
                                                             }
@@ -1188,11 +1215,14 @@
                                                     },
                                                     "children": [
                                                         {
+                                                            "comment": "thumb-exempt: 반응 아이콘은 contain 표시라 자르기 규격이 모양을 바꾼다",
                                                             "type": "basic",
                                                             "name": "Img",
                                                             "if": "{{!!reaction.reaction_type?.icon_url}}",
                                                             "props": {
                                                                 "src": "{{reaction.reaction_type?.icon_url}}",
+                                                                "loading": "lazy",
+                                                                "decoding": "async",
                                                                 "alt": "",
                                                                 "className": "w-4 h-4 object-contain"
                                                             }
@@ -1359,8 +1389,15 @@
             "type": "basic",
             "name": "Div",
             "if": "{{(myReactions?.data?.data ?? []).length > 0}}",
+            "responsive": {
+                "640-": {
+                    "props": {
+                        "className": "hidden space-y-3"
+                    }
+                }
+            },
             "props": {
-                "className": "sm:hidden space-y-3"
+                "className": "space-y-3"
             },
             "children": [
                 {
@@ -1434,11 +1471,14 @@
                                                     },
                                                     "children": [
                                                         {
+                                                            "comment": "thumb-exempt: 반응 아이콘은 contain 표시라 자르기 규격이 모양을 바꾼다",
                                                             "type": "basic",
                                                             "name": "Img",
                                                             "if": "{{!!reaction.reaction_type?.icon_url}}",
                                                             "props": {
                                                                 "src": "{{reaction.reaction_type?.icon_url}}",
+                                                                "loading": "lazy",
+                                                                "decoding": "async",
                                                                 "alt": "",
                                                                 "className": "w-4 h-4 object-contain"
                                                             }

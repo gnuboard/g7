@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\PayNicepayments\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
+use App\Support\LocalizedValue;
 
 /**
  * 나이스페이먼츠 간편결제를 이커머스 결제수단 목록에 등록한다.
@@ -26,28 +27,28 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
             'name_key' => 'sirsoft-pay_nicepayments::payment_methods.naverpay.name',
             'description_key' => 'sirsoft-pay_nicepayments::payment_methods.naverpay.description',
             'icon' => 'wallet',
-            'brand_mark' => ['text' => 'N', 'class' => 'bg-green-700 text-white'],
+            'brand_mark' => ['text' => 'N', 'class' => 'paynicepayments:bg-green-700 paynicepayments:text-white'],
         ],
         [
             'id' => 'nicepay_kakaopay',
             'name_key' => 'sirsoft-pay_nicepayments::payment_methods.kakaopay.name',
             'description_key' => 'sirsoft-pay_nicepayments::payment_methods.kakaopay.description',
             'icon' => 'comment',
-            'brand_mark' => ['text' => 'K', 'class' => 'bg-yellow-400 text-gray-950'],
+            'brand_mark' => ['text' => 'K', 'class' => 'paynicepayments:bg-yellow-400 paynicepayments:text-gray-950'],
         ],
         [
             'id' => 'nicepay_samsungpay',
             'name_key' => 'sirsoft-pay_nicepayments::payment_methods.samsungpay.name',
             'description_key' => 'sirsoft-pay_nicepayments::payment_methods.samsungpay.description',
             'icon' => 'mobile-screen',
-            'brand_mark' => ['text' => 'S', 'class' => 'bg-blue-600 text-white'],
+            'brand_mark' => ['text' => 'S', 'class' => 'paynicepayments:bg-blue-600 paynicepayments:text-white'],
         ],
         [
             'id' => 'nicepay_applepay',
             'name_key' => 'sirsoft-pay_nicepayments::payment_methods.applepay.name',
             'description_key' => 'sirsoft-pay_nicepayments::payment_methods.applepay.description',
             'icon' => 'mobile-screen',
-            'brand_mark' => ['text' => 'A', 'class' => 'bg-gray-900 text-white'],
+            'brand_mark' => ['text' => 'A', 'class' => 'paynicepayments:bg-gray-900 paynicepayments:text-white'],
             // 애플페이는 iOS 기기에서만 노출(과거 injector iOS 게이팅 이관).
             'requires_ios' => true,
         ],
@@ -56,28 +57,28 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
             'name_key' => 'sirsoft-pay_nicepayments::payment_methods.payco.name',
             'description_key' => 'sirsoft-pay_nicepayments::payment_methods.payco.description',
             'icon' => 'wallet',
-            'brand_mark' => ['text' => 'P', 'class' => 'bg-red-600 text-white'],
+            'brand_mark' => ['text' => 'P', 'class' => 'paynicepayments:bg-red-600 paynicepayments:text-white'],
         ],
         [
             'id' => 'nicepay_skpay',
             'name_key' => 'sirsoft-pay_nicepayments::payment_methods.skpay.name',
             'description_key' => 'sirsoft-pay_nicepayments::payment_methods.skpay.description',
             'icon' => 'wallet',
-            'brand_mark' => ['text' => '11', 'class' => 'bg-orange-700 text-white'],
+            'brand_mark' => ['text' => '11', 'class' => 'paynicepayments:bg-orange-700 paynicepayments:text-white'],
         ],
         [
             'id' => 'nicepay_ssgpay',
             'name_key' => 'sirsoft-pay_nicepayments::payment_methods.ssgpay.name',
             'description_key' => 'sirsoft-pay_nicepayments::payment_methods.ssgpay.description',
             'icon' => 'shopping-bag',
-            'brand_mark' => ['text' => 'SSG', 'class' => 'bg-red-700 text-white'],
+            'brand_mark' => ['text' => 'SSG', 'class' => 'paynicepayments:bg-red-700 paynicepayments:text-white'],
         ],
         [
             'id' => 'nicepay_lpay',
             'name_key' => 'sirsoft-pay_nicepayments::payment_methods.lpay.name',
             'description_key' => 'sirsoft-pay_nicepayments::payment_methods.lpay.description',
             'icon' => 'wallet',
-            'brand_mark' => ['text' => 'L', 'class' => 'bg-purple-600 text-white'],
+            'brand_mark' => ['text' => 'L', 'class' => 'paynicepayments:bg-purple-600 paynicepayments:text-white'],
         ],
     ];
 
@@ -197,14 +198,10 @@ class RegisterEasyPayMethodsListener implements HookListenerInterface
     ): array {
         $entry = [
             'id' => $id,
-            'name' => [
-                'ko' => __($nameKey, [], 'ko'),
-                'en' => __($nameKey, [], 'en'),
-            ],
-            'description' => [
-                'ko' => __($descriptionKey, [], 'ko'),
-                'en' => __($descriptionKey, [], 'en'),
-            ],
+            // 이름·설명은 지원 언어(활성 언어팩) 전부로 채운다 — ko·en 만 실으면 일본어 등 언어팩을 켠 사이트의
+            // 그 언어 화면에 번역이 있는데도 사이트 기본 언어 이름이 보인다.
+            'name' => LocalizedValue::translateAll(fn () => __($nameKey)),
+            'description' => LocalizedValue::translateAll(fn () => __($descriptionKey)),
             'icon' => $icon,
             'source' => 'plugin:'.self::PLUGIN_IDENTIFIER,
             'defaults' => [

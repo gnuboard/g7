@@ -141,8 +141,15 @@
                     "comment": "=== 바로구매 + 장바구니 버튼 (PC 2단, 모바일 1단) ===",
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "grid grid-cols-2 gap-2"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "grid md:grid-cols-2 gap-2"
+                        "className": "grid gap-2"
                     },
                     "children": [
                         {

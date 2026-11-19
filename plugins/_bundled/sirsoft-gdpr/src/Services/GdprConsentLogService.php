@@ -2,6 +2,8 @@
 
 namespace Plugins\Sirsoft\Gdpr\Services;
 
+use App\DisplayName\DisplayNameAreaRegistry;
+use App\DisplayName\MemberNamePresenter;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Plugins\Sirsoft\Gdpr\Repositories\Contracts\GdprUserConsentHistoryRepositoryInterface;
 
@@ -20,8 +22,7 @@ class GdprConsentLogService
      */
     public function __construct(
         private readonly GdprUserConsentHistoryRepositoryInterface $historyRepository,
-    ) {
-    }
+    ) {}
 
     /**
      * 동의 로그 페이지네이션 응답을 반환합니다.
@@ -33,12 +34,18 @@ class GdprConsentLogService
      * - actions: granted|revoked 배열 (whereIn). 비어 있으면 전체
      * - sources: banner|preference_center|mypage 배열 (whereIn). 비어 있으면 전체
      *
+     * 회원 칸의 이름은 관리자 영역(`core:admin`) 표시 이름이다. 행마다 계산하기 전에 한 페이지의 회원을 모아
+     * 표시 이름 계산에 필요한 값(추가 항목 종류의 값)을 한 번에 읽어 둔다.
+     *
      * @param  array<string, mixed>  $filters  필터 조건
      * @param  int  $perPage  페이지당 행 수 (1~100)
      * @return LengthAwarePaginator
      */
     public function paginateForAdmin(array $filters, int $perPage = 20): LengthAwarePaginator
     {
-        return $this->historyRepository->paginateForAdmin($filters, $perPage);
+        $page = $this->historyRepository->paginateForAdmin($filters, $perPage);
+        app(MemberNamePresenter::class)->preloadRelations($page->items(), ['user'], null, DisplayNameAreaRegistry::AREA_ADMIN);
+
+        return $page;
     }
 }

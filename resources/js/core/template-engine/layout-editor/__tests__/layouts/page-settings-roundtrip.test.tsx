@@ -55,15 +55,28 @@ vi.mock('../../hooks/useBindingCandidates', () => ({
 vi.mock('../../hooks/useSeoBindingCandidates', () => ({ useSeoBindingCandidates: () => [] }));
 
 import { PageSettingsModal } from '../../components/page-settings/PageSettingsModal';
+import type { EditorSpec } from '../../spec/specTypes';
 
 const t = (k: string, p?: Record<string, string | number>) => (p ? `${k}` : k);
 const resolveLabel = (k: string) => k;
 
-function renderShell(initialTab: 'computed' | 'meta' | 'scroll' = 'computed') {
+/** [자동 계산] 보기 1종 — 추가 목록에 프리셋 버튼이 생기게 하는 최소 스펙. */
+const SPEC_WITH_COMPUTED_RECIPE = {
+  computedRecipes: {
+    filterDefault: {
+      label: '$t:필터 자동 채우기',
+      group: 'common',
+      params: [{ key: 'localPath', widget: 'text' }],
+      expr: "_local.{localPath} ?? ''",
+    },
+  },
+} as unknown as EditorSpec;
+
+function renderShell(initialTab: 'computed' | 'meta' | 'scroll' = 'computed', spec: EditorSpec | null = null) {
   const shell = (): React.ReactElement => (
     <PageSettingsModal
       templateIdentifier="sirsoft-basic"
-      spec={null}
+      spec={spec}
       t={t}
       resolveLabel={resolveLabel}
       onClose={vi.fn()}
@@ -85,19 +98,35 @@ beforeEach(() => {
 
 describe('페이지 설정 패치 라운드트립 —', () => {
   /**
-   * @effects shell_no_save_button_patches_immediately_via_patchDocumentRaw
+   * @scenario roundtrip=page_settings
+   * @effects computed_add_patches_merged_and_reappears, shell_no_save_button_patches_immediately_via_patchDocumentRaw
    */
   it('computed 추가 → onChange patch(computed, 병합본) → raw 반영 후 재현', () => {
-    liveRaw = { computed: {} };
-    renderShell('computed');
-    // ComputedForm 의 추가 UI(프리셋 0 → 직접 만들기) 대신 직접 patch 경로 검증:
-    // 카드가 비어 있으면 '항목 없음'. 여기서는 patch 계약(merged 반영)을 직접 확인하기 위해
-    // computed 가 1키 있는 상태로 시작해 되돌리기 분리 patch 를 본다(아래 it).
-    expect(screen.getByTestId('g7le-computed-form')).toBeInTheDocument();
+    liveRaw = { computed: { keep: '{{ 1 }}' } };
+    renderShell('computed', SPEC_WITH_COMPUTED_RECIPE);
+    // 추가 → 보기(filterDefault) 선택 = ComputedForm.onChange → 셸 patch('computed', 병합본).
+    fireEvent.click(screen.getByTestId('g7le-computed-add'));
+    fireEvent.click(screen.getByTestId('g7le-computed-preset-filterDefault'));
+    const last = patchCalls.at(-1)!;
+    expect(last.key).toBe('computed');
+    // 병합본 = 기존 키 보존 + 새 키 1개. 추가는 own 분리 patch 가 아니다.
+    const merged = last.value as Record<string, string>;
+    expect(Object.keys(merged).sort()).toEqual(['filterDefault', 'keep']);
+    expect(merged.keep).toBe('{{ 1 }}');
+    expect(typeof merged.filterDefault).toBe('string');
+    expect(merged.filterDefault).not.toBe('');
+    expect(last.own).toBeUndefined();
+    // raw 반영 후 다시 열면 새 키 카드가 재현된다.
+    expect(liveRaw.computed).toEqual(merged);
+    cleanup();
+    renderShell('computed', SPEC_WITH_COMPUTED_RECIPE);
+    expect(screen.getByTestId('g7le-computed-item-filterDefault')).toBeInTheDocument();
+    expect(screen.getByTestId('g7le-computed-item-keep')).toBeInTheDocument();
   });
 
   /**
-   * @effects computed_route_override_revert_button_removes_child_definition_only
+   * @scenario roundtrip=page_settings
+   * @effects computed_route_override_revert_patches_merged_and_own, computed_route_override_revert_button_removes_child_definition_only
    */
   it("route-override 되돌리기 → patch('computed', 부모식남은병합본, 자식original에서키제거)", () => {
     // 부모+자식 동시 선언(route-override) 상태: 병합본 computed.isReadOnly = 자식 식,
@@ -120,7 +149,8 @@ describe('페이지 설정 패치 라운드트립 —', () => {
   });
 
   /**
-   * @effects computed_pure_child_route_no_badge_no_revert
+   * @scenario roundtrip=page_settings
+   * @effects computed_plain_remove_patches_merged_only, computed_pure_child_route_no_badge_no_revert
    */
   it('computed 일반 편집(순수 자식 키 제거) → 병합본 patch 만(own 분리 없음)', () => {
     liveRaw = {
@@ -134,6 +164,8 @@ describe('페이지 설정 패치 라운드트립 —', () => {
     const last = patchCalls.at(-1)!;
     expect(last.key).toBe('computed');
     expect(last.value).toEqual({}); // 병합본에서 제거.
+    // 순수 자식 키 제거는 own(자식 original) 분리 patch 를 싣지 않는다.
+    expect(last.own).toBeUndefined();
   });
 
   /**

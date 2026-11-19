@@ -19,108 +19,122 @@
   </data-source>
   <computed name="isPluginReadOnly">{{settings?.data?.abilities?.can_update !== true}}</computed>
   <permissions>
-    <permission>core.plugins.update</permission>
+    <permission>core.plugins.read</permission>
   </permissions>
   <slot name="content">
-    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="admin-page-content-responsive">
+    <div data-ref="plugin_settings_content" data-key="form" data-track-changes class="verificationnhnkcp:p-4 verificationnhnkcp:min-h-screen verificationnhnkcp:bg-gray-50 verificationnhnkcp:dark:bg-gray-900">
+      <responsive on="640-1023" class="verificationnhnkcp:p-6 verificationnhnkcp:min-h-screen verificationnhnkcp:bg-gray-50 verificationnhnkcp:dark:bg-gray-900"/>
+      <responsive on="1024-" class="verificationnhnkcp:p-8 verificationnhnkcp:min-h-screen verificationnhnkcp:bg-gray-50 verificationnhnkcp:dark:bg-gray-900"/>
       <page-header data-type="composite" data-ref="page_header" title="$t:sirsoft-verification_nhnkcp.settings.title" description="$t:sirsoft-verification_nhnkcp.settings.description" backPath="/admin/plugins" backLabel="$t:admin.plugins.back_to_list"/>
-      <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="alert-warning mt-6">
-        <icon name="lock" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"/>
-        <span class="text-xs verification-nhnkcp-tone-warning">$t:sirsoft-verification_nhnkcp.plugin_read_only</span>
+      <div data-ref="plugin_read_only_banner" data-if="{{_computed.isPluginReadOnly &amp;&amp; !!settings?.data}}" role="status" class="verification-nhnkcp-alert-warning verificationnhnkcp:mt-6">
+        <icon name="lock" class="verificationnhnkcp:text-xl verificationnhnkcp:leading-none verificationnhnkcp:text-amber-600 verificationnhnkcp:dark:text-amber-400 verificationnhnkcp:flex-shrink-0"/>
+        <span class="verificationnhnkcp:text-xs verification-nhnkcp-tone-warning">$t:sirsoft-verification_nhnkcp.plugin_read_only</span>
       </div>
-      <div data-ref="info_panel" class="alert-info">
-        <div class="flex gap-3">
-          <icon name="circle-info" class="text-xl text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"/>
-          <div class="space-y-1 text-xs verification-nhnkcp-tone-info">
+      <div data-ref="info_panel" class="verification-nhnkcp-alert-info">
+        <div class="verificationnhnkcp:flex verificationnhnkcp:gap-3">
+          <icon name="circle-info" class="verificationnhnkcp:text-xl verificationnhnkcp:leading-none verificationnhnkcp:text-blue-600 verificationnhnkcp:dark:text-blue-400 verificationnhnkcp:flex-shrink-0 verificationnhnkcp:mt-0.5"/>
+          <div class="verificationnhnkcp:space-y-1 verificationnhnkcp:text-xs verification-nhnkcp-tone-info">
             <p>$t:sirsoft-verification_nhnkcp.settings.info.activation</p>
             <p>$t:sirsoft-verification_nhnkcp.settings.info.logs</p>
           </div>
         </div>
       </div>
-      <div data-ref="validation_error" data-if="{{_local.errors}}" class="mt-6 alert-danger">
-        <div class="flex gap-3">
-          <icon name="triangle-exclamation" class="text-xl text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"/>
+      <div data-ref="validation_error" data-if="{{_local.errors}}" class="verificationnhnkcp:mt-6 verification-nhnkcp-alert-danger">
+        <div class="verificationnhnkcp:flex verificationnhnkcp:gap-3">
+          <icon name="triangle-exclamation" class="verificationnhnkcp:text-xl verificationnhnkcp:leading-none verificationnhnkcp:text-red-600 verificationnhnkcp:dark:text-red-400 verificationnhnkcp:flex-shrink-0 verificationnhnkcp:mt-0.5"/>
           <div>
-            <h3 class="text-error-strong">$t:admin.plugins.settings.validation_error</h3>
-            <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="mt-2 list-disc list-inside space-y-1">
-              <li class="text-error-soft">{{message}}</li>
+            <h3 class="verification-nhnkcp-text-error-strong">$t:admin.plugins.settings.validation_error</h3>
+            <ul data-if="{{typeof _local.errors === 'object' &amp;&amp; Object.keys(_local.errors).length > 0}}" data-each="message in Object.entries(_local.errors ?? {}).flatMap(([field, messages]) => Array.isArray(messages) ? messages : [messages])" class="verificationnhnkcp:mt-2 verificationnhnkcp:list-disc verificationnhnkcp:list-inside verificationnhnkcp:space-y-1">
+              <li class="verification-nhnkcp-text-error-soft">{{message}}</li>
             </ul>
           </div>
         </div>
       </div>
-      <div data-ref="test_mode_card" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div class="p-6">
-          <div class="flex-between">
+      <div data-ref="test_mode_card" class="verificationnhnkcp:mt-6 verificationnhnkcp:bg-white verificationnhnkcp:dark:bg-gray-800 verificationnhnkcp:rounded-lg verificationnhnkcp:shadow-sm verificationnhnkcp:border verificationnhnkcp:border-gray-200 verificationnhnkcp:dark:border-gray-700">
+        <div class="verificationnhnkcp:p-6">
+          <div class="verification-nhnkcp-flex-between">
             <div>
-              <label class="form-label">$t:sirsoft-verification_nhnkcp.settings.test_mode</label>
-              <p class="form-hint">$t:sirsoft-verification_nhnkcp.settings.test_mode_hint</p>
+              <label class="verification-nhnkcp-form-label">$t:sirsoft-verification_nhnkcp.settings.test_mode</label>
+              <p class="verification-nhnkcp-form-hint">$t:sirsoft-verification_nhnkcp.settings.test_mode_hint</p>
             </div>
             <toggle data-type="composite" name="is_test_mode" disabled="{{_computed.isPluginReadOnly}}"/>
           </div>
         </div>
       </div>
-      <div data-ref="live_mode_warning" data-if="{{_local.form &amp;&amp; !_local.form.is_test_mode}}" class="mt-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-4">
-        <div class="flex gap-3">
-          <icon name="triangle-exclamation" class="text-xl text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"/>
+      <div data-ref="live_mode_warning" data-if="{{_local.form &amp;&amp; !_local.form.is_test_mode}}" class="verificationnhnkcp:mt-6 verificationnhnkcp:bg-amber-50 verificationnhnkcp:dark:bg-amber-900/20 verificationnhnkcp:border verificationnhnkcp:border-amber-200 verificationnhnkcp:dark:border-amber-700 verificationnhnkcp:rounded-lg verificationnhnkcp:p-4">
+        <div class="verificationnhnkcp:flex verificationnhnkcp:gap-3">
+          <icon name="triangle-exclamation" class="verificationnhnkcp:text-xl verificationnhnkcp:leading-none verificationnhnkcp:text-amber-600 verificationnhnkcp:dark:text-amber-400 verificationnhnkcp:flex-shrink-0 verificationnhnkcp:mt-0.5"/>
           <div>
-            <h3 class="text-sm font-semibold verification-nhnkcp-tone-warning">$t:sirsoft-verification_nhnkcp.settings.live_mode_warning_title</h3>
-            <p class="mt-1 text-xs verification-nhnkcp-tone-warning">$t:sirsoft-verification_nhnkcp.settings.live_mode_warning_body</p>
+            <h3 class="verificationnhnkcp:text-sm verificationnhnkcp:font-semibold verification-nhnkcp-tone-warning">$t:sirsoft-verification_nhnkcp.settings.live_mode_warning_title</h3>
+            <p class="verificationnhnkcp:mt-1 verificationnhnkcp:text-xs verification-nhnkcp-tone-warning">$t:sirsoft-verification_nhnkcp.settings.live_mode_warning_body</p>
           </div>
         </div>
       </div>
-      <div data-ref="live_keys_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div class="panel-header-row">
-          <h3 class="section-heading-md">$t:sirsoft-verification_nhnkcp.settings.section_live_keys</h3>
+      <div data-ref="live_keys_section" class="verificationnhnkcp:mt-6 verificationnhnkcp:bg-white verificationnhnkcp:dark:bg-gray-800 verificationnhnkcp:rounded-lg verificationnhnkcp:shadow-sm verificationnhnkcp:border verificationnhnkcp:border-gray-200 verificationnhnkcp:dark:border-gray-700">
+        <div class="verification-nhnkcp-panel-header-row">
+          <h3 class="verification-nhnkcp-section-heading-md">$t:sirsoft-verification_nhnkcp.settings.section_live_keys</h3>
         </div>
-        <div class="p-6 space-y-6">
-          <div data-ref="field_live_site_cd" class="grid-3col-responsive">
-            <div class="lg:col-span-1">
-              <label class="form-label">$t:sirsoft-verification_nhnkcp.settings.live_site_cd</label>
-              <p class="form-hint">$t:sirsoft-verification_nhnkcp.settings.live_site_cd_hint</p>
+        <div class="verificationnhnkcp:p-6 verificationnhnkcp:space-y-6">
+          <div data-ref="field_live_site_cd" class="verificationnhnkcp:grid verificationnhnkcp:grid-cols-1 verificationnhnkcp:gap-4 verificationnhnkcp:items-start">
+            <responsive on="1024-" class="verificationnhnkcp:grid verificationnhnkcp:grid-cols-3 verificationnhnkcp:gap-4 verificationnhnkcp:items-start"/>
+            <div>
+              <responsive on="desktop" class="verificationnhnkcp:col-span-1"/>
+              <label class="verification-nhnkcp-form-label">$t:sirsoft-verification_nhnkcp.settings.live_site_cd</label>
+              <p class="verification-nhnkcp-form-hint">$t:sirsoft-verification_nhnkcp.settings.live_site_cd_hint</p>
             </div>
-            <div class="lg:col-span-2">
-              <div class="{{_local.errors?.live_site_cd ? 'flex rounded-lg border border-red-500 dark:border-red-500 overflow-hidden' : 'flex rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 verification-nhnkcp-focus-group'}}">
-                <span class="inline-flex items-center px-3 bg-gray-100 dark:bg-gray-600 border-r border-gray-300 dark:border-gray-600 text-body font-mono font-bold select-none">SM</span>
-                <input type="text" name="live_site_cd" autoComplete="one-time-code" placeholder="A1B2C" class="flex-1 font-mono outline-none border-0" disabled="{{_computed.isPluginReadOnly}}"/>
+            <div>
+              <responsive on="desktop" class="verificationnhnkcp:col-span-2"/>
+              <div class="{{_local.errors?.live_site_cd ? 'verificationnhnkcp:flex verificationnhnkcp:rounded-lg verificationnhnkcp:border verificationnhnkcp:border-red-500 verificationnhnkcp:dark:border-red-500 verificationnhnkcp:overflow-hidden' : 'verificationnhnkcp:flex verificationnhnkcp:rounded-lg verificationnhnkcp:border verificationnhnkcp:border-gray-300 verificationnhnkcp:dark:border-gray-600 verificationnhnkcp:overflow-hidden verificationnhnkcp:focus-within:ring-2 verificationnhnkcp:focus-within:ring-blue-500 verification-nhnkcp-focus-group'}}">
+                <span class="verificationnhnkcp:inline-flex verificationnhnkcp:items-center verificationnhnkcp:px-3 verificationnhnkcp:bg-gray-100 verificationnhnkcp:dark:bg-gray-600 verificationnhnkcp:border-r verificationnhnkcp:border-gray-300 verificationnhnkcp:dark:border-gray-600 verification-nhnkcp-text-body verificationnhnkcp:font-mono verificationnhnkcp:font-bold verificationnhnkcp:select-none">SM</span>
+                <input type="text" name="live_site_cd" autoComplete="one-time-code" placeholder="A1B2C" class="verificationnhnkcp:flex-1 verificationnhnkcp:font-mono verificationnhnkcp:outline-none verificationnhnkcp:border-0" disabled="{{_computed.isPluginReadOnly}}"/>
               </div>
-              <p data-ref="field_live_site_cd_error" data-if="{{_local.errors?.live_site_cd}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{_local.errors?.live_site_cd?.[0] ?? ''}}</p>
+              <p data-ref="field_live_site_cd_error" data-if="{{_local.errors?.live_site_cd}}" class="verificationnhnkcp:mt-1 verificationnhnkcp:text-sm verificationnhnkcp:text-red-600 verificationnhnkcp:dark:text-red-400">{{_local.errors?.live_site_cd?.[0] ?? ''}}</p>
             </div>
           </div>
-          <div data-ref="field_live_enc_key" class="grid-3col-responsive">
-            <div class="lg:col-span-1">
-              <label class="form-label">$t:sirsoft-verification_nhnkcp.settings.live_enc_key</label>
-              <p class="form-hint">$t:sirsoft-verification_nhnkcp.settings.live_enc_key_hint</p>
+          <div data-ref="field_live_enc_key" class="verificationnhnkcp:grid verificationnhnkcp:grid-cols-1 verificationnhnkcp:gap-4 verificationnhnkcp:items-start">
+            <responsive on="1024-" class="verificationnhnkcp:grid verificationnhnkcp:grid-cols-3 verificationnhnkcp:gap-4 verificationnhnkcp:items-start"/>
+            <div>
+              <responsive on="desktop" class="verificationnhnkcp:col-span-1"/>
+              <label class="verification-nhnkcp-form-label">$t:sirsoft-verification_nhnkcp.settings.live_enc_key</label>
+              <p class="verification-nhnkcp-form-hint">$t:sirsoft-verification_nhnkcp.settings.live_enc_key_hint</p>
             </div>
-            <div class="lg:col-span-2">
-              <input type="password" name="live_enc_key" autoComplete="new-password" placeholder="••••••••••••••••" class="{{_local.errors?.live_enc_key ? 'dark:focus:ring-red-400 font-mono border border-red-500 dark:border-red-500 focus:ring-red-500' : 'dark:focus:ring-blue-400 focus:border-transparent font-mono'}}" disabled="{{_computed.isPluginReadOnly}}"/>
-              <p data-ref="field_live_enc_key_error" data-if="{{_local.errors?.live_enc_key}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{_local.errors?.live_enc_key?.[0] ?? ''}}</p>
+            <div>
+              <responsive on="desktop" class="verificationnhnkcp:col-span-2"/>
+              <input type="password" name="live_enc_key" autoComplete="new-password" placeholder="••••••••••••••••" class="{{_local.errors?.live_enc_key ? 'verificationnhnkcp:dark:focus:ring-red-400 verificationnhnkcp:font-mono verificationnhnkcp:border verificationnhnkcp:border-red-500 verificationnhnkcp:dark:border-red-500 verificationnhnkcp:focus:ring-red-500' : 'verificationnhnkcp:dark:focus:ring-blue-400 verificationnhnkcp:focus:border-transparent verificationnhnkcp:font-mono'}}" disabled="{{_computed.isPluginReadOnly}}"/>
+              <p data-ref="field_live_enc_key_error" data-if="{{_local.errors?.live_enc_key}}" class="verificationnhnkcp:mt-1 verificationnhnkcp:text-sm verificationnhnkcp:text-red-600 verificationnhnkcp:dark:text-red-400">{{_local.errors?.live_enc_key?.[0] ?? ''}}</p>
             </div>
           </div>
-          <div data-ref="field_web_siteid" class="grid-3col-responsive">
-            <div class="lg:col-span-1">
-              <label class="form-label">$t:sirsoft-verification_nhnkcp.settings.web_siteid</label>
-              <p class="form-hint">$t:sirsoft-verification_nhnkcp.settings.web_siteid_hint</p>
+          <div data-ref="field_web_siteid" class="verificationnhnkcp:grid verificationnhnkcp:grid-cols-1 verificationnhnkcp:gap-4 verificationnhnkcp:items-start">
+            <responsive on="1024-" class="verificationnhnkcp:grid verificationnhnkcp:grid-cols-3 verificationnhnkcp:gap-4 verificationnhnkcp:items-start"/>
+            <div>
+              <responsive on="desktop" class="verificationnhnkcp:col-span-1"/>
+              <label class="verification-nhnkcp-form-label">$t:sirsoft-verification_nhnkcp.settings.web_siteid</label>
+              <p class="verification-nhnkcp-form-hint">$t:sirsoft-verification_nhnkcp.settings.web_siteid_hint</p>
             </div>
-            <div class="lg:col-span-2">
-              <input type="text" name="web_siteid" autoComplete="off" placeholder="" class="font-mono" disabled="{{_computed.isPluginReadOnly}}"/>
-              <p data-ref="field_web_siteid_error" data-if="{{_local.errors?.web_siteid}}" class="mt-1 text-sm text-red-600 dark:text-red-400">{{_local.errors?.web_siteid?.[0] ?? ''}}</p>
+            <div>
+              <responsive on="desktop" class="verificationnhnkcp:col-span-2"/>
+              <input type="text" name="web_siteid" autoComplete="off" placeholder="" class="verificationnhnkcp:font-mono" disabled="{{_computed.isPluginReadOnly}}"/>
+              <p data-ref="field_web_siteid_error" data-if="{{_local.errors?.web_siteid}}" class="verificationnhnkcp:mt-1 verificationnhnkcp:text-sm verificationnhnkcp:text-red-600 verificationnhnkcp:dark:text-red-400">{{_local.errors?.web_siteid?.[0] ?? ''}}</p>
             </div>
           </div>
         </div>
       </div>
-      <div data-ref="duplicate_section" class="mt-6 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-        <div data-ref="section_duplicate_header" class="panel-header-row">
-          <h3 class="section-heading-md">$t:sirsoft-verification_nhnkcp.settings.section.duplicate_field</h3>
+      <div data-ref="duplicate_section" class="verificationnhnkcp:mt-6 verificationnhnkcp:bg-white verificationnhnkcp:dark:bg-gray-800 verificationnhnkcp:rounded-lg verificationnhnkcp:shadow-sm verificationnhnkcp:border verificationnhnkcp:border-gray-200 verificationnhnkcp:dark:border-gray-700">
+        <div data-ref="section_duplicate_header" class="verification-nhnkcp-panel-header-row">
+          <h3 class="verification-nhnkcp-section-heading-md">$t:sirsoft-verification_nhnkcp.settings.section.duplicate_field</h3>
         </div>
-        <div data-ref="section_duplicate_body" class="p-6 space-y-6">
-          <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-            <div class="lg:col-span-8">
-              <label class="form-label">$t:sirsoft-verification_nhnkcp.settings.fields.duplicate_field.label</label>
-              <p class="form-hint">$t:sirsoft-verification_nhnkcp.settings.fields.duplicate_field.hint</p>
+        <div data-ref="section_duplicate_body" class="verificationnhnkcp:p-6 verificationnhnkcp:space-y-6">
+          <div class="verificationnhnkcp:grid verificationnhnkcp:grid-cols-1 verificationnhnkcp:gap-4 verificationnhnkcp:items-start">
+            <responsive on="desktop" class="verificationnhnkcp:grid verificationnhnkcp:grid-cols-12 verificationnhnkcp:gap-4 verificationnhnkcp:items-start"/>
+            <div>
+              <responsive on="desktop" class="verificationnhnkcp:col-span-8"/>
+              <label class="verification-nhnkcp-form-label">$t:sirsoft-verification_nhnkcp.settings.fields.duplicate_field.label</label>
+              <p class="verification-nhnkcp-form-hint">$t:sirsoft-verification_nhnkcp.settings.fields.duplicate_field.hint</p>
             </div>
-            <div class="lg:col-span-4 space-y-3">
-              <div class="flex-center justify-end gap-6">
-                <label class="inline-clickable text-body">
+            <div class="verificationnhnkcp:space-y-3">
+              <responsive on="desktop" class="verificationnhnkcp:col-span-4 verificationnhnkcp:space-y-3"/>
+              <div class="verification-nhnkcp-flex-center verificationnhnkcp:justify-end verificationnhnkcp:gap-6">
+                <label class="verification-nhnkcp-inline-clickable verification-nhnkcp-text-body">
                   <on type="click">
                     <!-- 중복 판정 기준을 DI 로 둔다 — DI 는 같은 사이트 안에서만 같은 사람을 가리키므로, 다른 서비스와 회원을 대조할 일이 없으면 이쪽이 안전하다. 라디오 자체가 아니라 라벨 클릭으로 값을 바꾸는 것은 입력에 pointer-events 를 꺼 두었기 때문이다 -->
                     <set-state if="{{!_computed.isPluginReadOnly}}" target="local" :hasChanges="true">
@@ -129,10 +143,19 @@
                       </field>
                     </set-state>
                   </on>
-                  <input type="radio" name="duplicate_field" value="di" checked="{{(_local.form?.duplicate_field ?? 'di') === 'di'}}" class="radio pointer-events-none" disabled="{{_computed.isPluginReadOnly}}"/>
+                  <input type="radio" :autoBinding="false" name="duplicate_field" value="di" checked="{{(_local.form?.duplicate_field ?? 'di') === 'di'}}" class="verification-nhnkcp-radio verificationnhnkcp:pointer-events-none" disabled="{{_computed.isPluginReadOnly}}">
+                    <on type="change">
+                      <!-- 키보드 방향키 조작은 click 이 아니라 change 로 온다 — 감싼 Label 의 click 과 같은 값을 저장한다(자동 바인딩은 꺼 두었다) -->
+                      <set-state if="{{!_computed.isPluginReadOnly}}" target="local" :hasChanges="true">
+                        <field name="form">
+                          <field name="duplicate_field" value="di"/>
+                        </field>
+                      </set-state>
+                    </on>
+                  </input>
                   <span>$t:sirsoft-verification_nhnkcp.settings.duplicate_field.di</span>
                 </label>
-                <label class="inline-clickable text-body">
+                <label class="verification-nhnkcp-inline-clickable verification-nhnkcp-text-body">
                   <on type="click">
                     <!-- CI 로 두면 사이트를 넘어 같은 사람을 알아볼 수 있지만, 그만큼 식별 범위가 넓어 화면 아래 경고가 함께 뜬다 -->
                     <set-state if="{{!_computed.isPluginReadOnly}}" target="local" :hasChanges="true">
@@ -141,33 +164,45 @@
                       </field>
                     </set-state>
                   </on>
-                  <input type="radio" name="duplicate_field" value="ci" checked="{{_local.form?.duplicate_field === 'ci'}}" class="radio pointer-events-none" disabled="{{_computed.isPluginReadOnly}}"/>
+                  <input type="radio" :autoBinding="false" name="duplicate_field" value="ci" checked="{{_local.form?.duplicate_field === 'ci'}}" class="verification-nhnkcp-radio verificationnhnkcp:pointer-events-none" disabled="{{_computed.isPluginReadOnly}}">
+                    <on type="change">
+                      <!-- 키보드 방향키 조작은 click 이 아니라 change 로 온다 — 감싼 Label 의 click 과 같은 값을 저장한다(자동 바인딩은 꺼 두었다) -->
+                      <set-state if="{{!_computed.isPluginReadOnly}}" target="local" :hasChanges="true">
+                        <field name="form">
+                          <field name="duplicate_field" value="ci"/>
+                        </field>
+                      </set-state>
+                    </on>
+                  </input>
                   <span>$t:sirsoft-verification_nhnkcp.settings.duplicate_field.ci</span>
                 </label>
               </div>
-              <p class="text-xs text-amber-700 dark:text-amber-400 text-right">$t:sirsoft-verification_nhnkcp.settings.duplicate_field.warning</p>
+              <p class="verificationnhnkcp:text-xs verificationnhnkcp:text-amber-700 verificationnhnkcp:dark:text-amber-400 verificationnhnkcp:text-right">$t:sirsoft-verification_nhnkcp.settings.duplicate_field.warning</p>
             </div>
           </div>
-          <div data-ref="field_duplicate_block_enabled" class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start pt-6 border-t border-gray-200 dark:border-gray-700">
-            <div class="lg:col-span-8">
-              <label class="form-label">$t:sirsoft-verification_nhnkcp.settings.fields.duplicate_block_enabled.label</label>
-              <p class="form-hint">$t:sirsoft-verification_nhnkcp.settings.fields.duplicate_block_enabled.hint</p>
-              <p class="text-hint mt-1 italic">$t:sirsoft-verification_nhnkcp.settings.fields.duplicate_block_enabled.note</p>
+          <div data-ref="field_duplicate_block_enabled" class="verificationnhnkcp:grid verificationnhnkcp:grid-cols-1 verificationnhnkcp:gap-4 verificationnhnkcp:items-start verificationnhnkcp:pt-6 verificationnhnkcp:border-t verificationnhnkcp:border-gray-200 verificationnhnkcp:dark:border-gray-700">
+            <responsive on="desktop" class="verificationnhnkcp:grid verificationnhnkcp:grid-cols-12 verificationnhnkcp:gap-4 verificationnhnkcp:items-start verificationnhnkcp:pt-6 verificationnhnkcp:border-t verificationnhnkcp:border-gray-200 verificationnhnkcp:dark:border-gray-700"/>
+            <div>
+              <responsive on="desktop" class="verificationnhnkcp:col-span-8"/>
+              <label class="verification-nhnkcp-form-label">$t:sirsoft-verification_nhnkcp.settings.fields.duplicate_block_enabled.label</label>
+              <p class="verification-nhnkcp-form-hint">$t:sirsoft-verification_nhnkcp.settings.fields.duplicate_block_enabled.hint</p>
+              <p class="verification-nhnkcp-text-hint verificationnhnkcp:mt-1 verificationnhnkcp:italic">$t:sirsoft-verification_nhnkcp.settings.fields.duplicate_block_enabled.note</p>
             </div>
-            <div class="flex-center lg:col-span-4 justify-end">
+            <div class="verification-nhnkcp-flex-center verificationnhnkcp:justify-end">
+              <responsive on="desktop" class="verification-nhnkcp-flex-center verificationnhnkcp:col-span-4 verificationnhnkcp:justify-end"/>
               <toggle data-type="composite" name="duplicate_block_enabled" disabled="{{_computed.isPluginReadOnly}}"/>
             </div>
           </div>
         </div>
       </div>
-      <div data-ref="footer_buttons" class="sticky-footer-buttons">
-        <a href="/admin/plugins" data-ref="cancel_button" class="button btn btn-secondary">
+      <div data-ref="footer_buttons" class="verification-nhnkcp-sticky-footer-buttons">
+        <a href="/admin/plugins" data-ref="cancel_button" class="verification-nhnkcp-button verification-nhnkcp-btn verification-nhnkcp-btn-secondary">
           <on type="click">
             <navigate :bypassLeaveGuard="true"/>
           </on>
           <span>$t:common.cancel</span>
         </a>
-        <button data-ref="save_button" type="button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="btn btn-primary flex-center gap-1.5">
+        <button data-ref="save_button" type="button" disabled="{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}" class="verification-nhnkcp-btn verification-nhnkcp-btn-primary verification-nhnkcp-flex-center verificationnhnkcp:gap-1.5">
           <on type="click">
             <!-- 저장. 성공 응답을 폼에 되돌리는 것이 핵심이다 — 서버가 사이트코드 프리픽스를 떼고 암호화 키를 마스크해 돌려주는데, 뒤이은 refetch 만으로는 운영자가 직접 친 입력칸이 갱신되지 않아 화면에만 옛 입력이 남는다 -->
             <sequence>

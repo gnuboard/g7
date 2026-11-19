@@ -34,6 +34,10 @@ function collectNodes(node: any, predicate: (n: any) => boolean, acc: any[] = []
   if (node.children && !Array.isArray(node.children)) {
     collectNodes(node.children, predicate, acc);
   }
+  // 첨부 업로더는 attachment_uploader 확장점의 기본 노드(default) 안에 있다
+  if (node.type === 'extension_point' && Array.isArray(node.default)) {
+    for (const child of node.default) collectNodes(child, predicate, acc);
+  }
   return acc;
 }
 
@@ -41,6 +45,7 @@ const showLayout = loadJson('layouts/mypage/orders/show.json');
 const reviewModal = loadJson('layouts/partials/mypage/orders/_modal_write_review.json');
 
 describe('A6 리뷰 모달 이미지 정책', () => {
+  // @effects front_props_reflect_settings
   it('show.json 에 reviewSettings 데이터소스가 공개 settings/review endpoint 로 등록된다', () => {
     const ds = (showLayout.data_sources ?? []).find((d: any) => d.id === 'reviewSettings');
     expect(ds).toBeTruthy();
@@ -49,6 +54,7 @@ describe('A6 리뷰 모달 이미지 정책', () => {
     expect(ds.auto_fetch).toBe(true);
   });
 
+  // @effects front_hides_attach_when_zero
   it('이미지 첨부 영역에 max_images > 0 조건부 if 가 부착된다', () => {
     const attachDivs = collectNodes(
       reviewModal,
@@ -60,6 +66,7 @@ describe('A6 리뷰 모달 이미지 정책', () => {
     expect(attachDivs.length).toBeGreaterThanOrEqual(1);
   });
 
+  // @effects front_props_reflect_settings
   it('FileUploader maxFiles/maxSize 가 reviewSettings 에 동적 바인딩되며 폴백을 가진다', () => {
     const uploaders = collectNodes(reviewModal, (n) => n.name === 'FileUploader');
     expect(uploaders.length).toBe(1);
@@ -69,6 +76,7 @@ describe('A6 리뷰 모달 이미지 정책', () => {
     expect(props.maxSize).toBe('{{reviewSettings?.data?.review_settings?.max_image_size_mb ?? 10}}');
   });
 
+  // @effects front_props_reflect_settings
   it('이미지 첨부 라벨이 max_images 설정값을 동적 count 파라미터로 받는다', () => {
     const labels = collectNodes(
       reviewModal,

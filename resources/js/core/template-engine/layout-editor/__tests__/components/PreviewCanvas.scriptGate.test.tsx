@@ -120,22 +120,18 @@ describe('PreviewCanvas — scripts[] 출처 게이트', () => {
         } as any;
 
         return render(
-            React.createElement(
-                TranslationProvider,
-                {
-                    translationEngine: engine,
-                    translationContext: { templateId: 'sirsoft-admin_basic', locale: 'ko' },
-                },
-                React.createElement(
-                    LayoutEditorProvider,
-                    { templateIdentifier: 'sirsoft-basic', initialLocale: 'ko' },
-                    React.createElement(
-                        LayoutDocumentProvider,
-                        { value: docValue },
-                        React.createElement(PreviewCanvas)
-                    )
-                )
-            )
+            React.createElement(TranslationProvider, {
+                translationEngine: engine,
+                translationContext: { templateId: 'sirsoft-admin_basic', locale: 'ko' },
+                children: React.createElement(LayoutEditorProvider, {
+                    templateIdentifier: 'sirsoft-basic',
+                    initialLocale: 'ko',
+                    children: React.createElement(LayoutDocumentProvider, {
+                        value: docValue,
+                        children: React.createElement(PreviewCanvas),
+                    }),
+                }),
+            }),
         );
     };
 
@@ -234,6 +230,42 @@ describe('PreviewCanvas — scripts[] 출처 게이트', () => {
             expect(injectedTag(ckSrc)).not.toBeNull();
         });
         expect(injectedTag(ckSrc)?.getAttribute('src')).toBe(ckSrc);
+    });
+
+    /**
+     * 하위 폴더 설치(`/g7`)에서는 캔버스도 런타임처럼 마운트 접두사를 붙여 싣는다 — 두 자산 방식 모두.
+     *
+     * @scenario asset_class=vendored, outcome=loaded
+     * @effects layout_script_url_carries_the_site_base_prefix
+     */
+    it('하위 폴더 설치에서는 캔버스도 마운트 접두사를 붙여 싣는다 (확장자 방식)', async () => {
+        (window as any).G7Config = { trustedScriptHosts: [], basePath: '/g7' };
+        layoutScripts = [{ src: ckSrc, id: 'ckeditor5_script' }];
+
+        renderCanvas();
+
+        await waitFor(() => {
+            expect(injectedTag(ckSrc)).not.toBeNull();
+        });
+        expect(injectedTag(ckSrc)?.getAttribute('src')).toBe(`/g7${ckSrc}`);
+    });
+
+    /**
+     * @scenario asset_class=vendored, outcome=loaded
+     * @effects layout_script_url_carries_the_site_base_prefix
+     */
+    it('하위 폴더 설치에서는 캔버스도 마운트 접두사를 붙여 싣는다 (확장자 없는 방식)', async () => {
+        (window as any).G7Config = { trustedScriptHosts: [], basePath: '/g7', assetUrlMode: 'extensionless' };
+        layoutScripts = [{ src: ckSrc, id: 'ckeditor5_script' }];
+
+        renderCanvas();
+
+        await waitFor(() => {
+            expect(injectedTag(ckSrc)).not.toBeNull();
+        });
+        expect(injectedTag(ckSrc)?.getAttribute('src')).toBe(
+            '/g7/api/plugins/assets/sirsoft-ckeditor5?file=dist%2Fvendor%2Fckeditor5%2F43.3.1%2Fckeditor5.umd.js'
+        );
     });
 
     /**

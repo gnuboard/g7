@@ -1,0 +1,30 @@
+# π3 (#869) 레이아웃 편집기 시험 표식 부채 채우기 — 이 매니페스트는 아래 test_files 의 각 시험이 재는 효과를
+# 시험 단위로 선언한다. 축 behavior 은 그 파일 안의 동작 묶음이다.
+
+feature: 레이아웃 편집기 반응형 분기 경로 — 분기 세그먼트 보존, base 불변, 스냅샷 격리, 분기 분리와 병합
+
+description: |
+  responsive 분기 children 을 가리키는 편집기 경로의 직렬화, 조회, 변형, DnD 경계 판정, 삽입 위치, 스냅샷 격리,
+  separateBranch 와 mergeBranch 를 잰다.
+
+axes:
+  behavior: [merge_missing_key_no_op, merge_roundtrip_restores, merge_removes_branch_children, separate_uses_source_key, separate_idempotent_or_no_op, separate_creates_deep_copy, number_only_tree_unchanged, snapshot_isolated_from_input, mutation_leaves_base_intact, insert_target_keeps_branch_segment, context_guard_for_dnd, find_descends_branch_children, segment_equality_by_value, path_roundtrip_keeps_segments]
+
+effects:
+  - branch_merge_missing_key_no_op
+  - branch_merge_roundtrip_restores
+  - branch_merge_removes_branch_children
+  - branch_separate_uses_source_key
+  - branch_separate_idempotent_or_no_op
+  - branch_separate_creates_deep_copy
+  - branch_number_only_tree_unchanged
+  - branch_snapshot_isolated_from_input
+  - branch_mutation_leaves_base_intact
+  - branch_insert_target_keeps_branch_segment
+  - branch_context_guard_for_dnd
+  - branch_find_descends_branch_children
+  - branch_segment_equality_by_value
+  - branch_path_roundtrip_keeps_segments
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/utils/responsiveBranchPath.test.ts

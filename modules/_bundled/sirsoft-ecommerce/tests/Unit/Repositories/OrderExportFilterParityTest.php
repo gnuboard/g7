@@ -23,6 +23,11 @@ class OrderExportFilterParityTest extends ModuleTestCase
 {
     protected OrderRepository $repository;
 
+    /**
+     * 주문 저장소를 직접 만들어 둡니다(목록·내려받기 두 경로를 같은 인스턴스로 비교한다).
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -83,6 +88,8 @@ class OrderExportFilterParityTest extends ModuleTestCase
             'search_field' => 'search_keyword',
             'start_date' => 'date_type',
             'end_date' => 'date_type',
+            // 기간을 어느 하루 경계(보는 사람·사이트 표준시)로 자를지만 정한다 — 단독으로는 거르지 못하고 date_type 케이스의 분기다
+            'date_basis' => 'date_type',
         ];
     }
 
@@ -133,6 +140,15 @@ class OrderExportFilterParityTest extends ModuleTestCase
         return array_values(array_unique($keys));
     }
 
+    /**
+     * 목록 필터(`applyListFilters`) 소스에서 파생한 필터 축마다 파리티 케이스가 있다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario path=excel_download, axis=derived
+     *
+     * @effects order_list_filter_axes_all_covered
+     */
     #[Test]
     public function derived_filter_axes_all_have_a_parity_case(): void
     {
@@ -158,6 +174,15 @@ class OrderExportFilterParityTest extends ModuleTestCase
         );
     }
 
+    /**
+     * 축마다 목록이 걸러낸 주문은 엑셀 내려받기(`getForExport`)도 걸러낸다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario path=excel_download, axis=excluding_payload
+     *
+     * @effects order_excel_download_matches_list_filter
+     */
     #[Test]
     public function export_applies_every_list_filter_axis(): void
     {
@@ -190,6 +215,8 @@ class OrderExportFilterParityTest extends ModuleTestCase
     }
 
     /**
+     * 주문 목록 경로로 걸러진 주문 ID 를 돌려줍니다.
+     *
      * @param  array  $filters  필터
      * @return array<int, int> 목록 결과 주문 ID
      */
@@ -200,6 +227,8 @@ class OrderExportFilterParityTest extends ModuleTestCase
     }
 
     /**
+     * 엑셀 내려받기 경로로 걸러진 주문 ID 를 돌려줍니다.
+     *
      * @param  array  $filters  필터
      * @return array<int, int> 내려받기 결과 주문 ID
      */

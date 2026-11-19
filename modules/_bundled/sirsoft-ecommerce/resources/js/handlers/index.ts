@@ -10,6 +10,7 @@ import { updateOptionFieldHandler } from './updateOptionField';
 import { calculateCurrencyPricesHandler } from './calculateCurrencyPrices';
 import { initPreferredCurrencyHandler } from './initPreferredCurrency';
 import { initPreferredShippingCountryHandler } from './initPreferredShippingCountry';
+import { watchAccountPreferencesHandler } from './watchAccountPreferences';
 import { setDateRangeHandler } from './setDateRange';
 import { focusElementHandler } from './focusElement';
 import { stopEventPropagationHandler } from './stopEventPropagation';
@@ -333,6 +334,8 @@ import {
 
 // 파일 내려받기·다국어 태그 편집 창 (관리자 템플릿 핸들러에 기대지 않도록 모듈이 소유)
 import { downloadFileHandler } from './downloadFile';
+// 내보내기 파일 일회용 주소 받기 (#787)
+import { downloadExportFileHandler } from './downloadExportFile';
 import {
     updateMultilingualTagValueHandler,
     cancelMultilingualTagHandler,
@@ -364,6 +367,8 @@ export const handlerMap = {
     calculateCurrencyPrices: calculateCurrencyPricesHandler,
     initPreferredCurrency: initPreferredCurrencyHandler,
     initPreferredShippingCountry: initPreferredShippingCountryHandler,
+    // 로그인 사용자 응답이 바뀔 때 계정의 결제 통화와 배송국가를 전역 표시 값에 맞춘다(내 정보 수정 저장 뒤 등)
+    watchAccountPreferences: watchAccountPreferencesHandler,
     setDateRange: setDateRangeHandler,
     // 펼침 목록 Esc 닫기 때 초점을 트리거로 돌려준다(헤더 통화 선택)
     focusElement: focusElementHandler,
@@ -493,6 +498,7 @@ export const handlerMap = {
     buildOrderBulkConfirmData: buildOrderBulkConfirmDataHandler,
     executeOrderBulkAction: executeOrderBulkActionHandler,
     downloadFile: downloadFileHandler,
+    downloadExportFile: downloadExportFileHandler,
     saveVisibleColumns: saveVisibleColumnsHandler,
     loadVisibleColumns: loadVisibleColumnsHandler,
     loadVisibleFilters: loadVisibleFiltersHandler,

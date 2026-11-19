@@ -1,4 +1,6 @@
 {
+  "zoom_image": "View larger image",
+  "zoom_image_named": "View larger: {{name}}",
   "range_start": "{{label}} start date",
   "range_end": "{{label}} end date",
   "all": "All",
@@ -103,6 +105,7 @@
   "refresh": "Refresh",
   "activate": "Activate",
   "skip": "Skip",
+  "copy": "Copy",
   "tag_input": {
     "remove": "Remove {{label}}",
     "results": "{{count}} results available",
@@ -120,7 +123,10 @@
     "guidance_input": "{{label}} is focused. Type to refine the list, press Down to open the menu",
     "guidance_input_multi": "press Left to focus selected values",
     "guidance_value": "Use Left and Right to move between selected values, press Backspace to remove the focused value",
-    "default_label": "Select"
+    "default_label": "Select",
+    "placeholder": "Search or type...",
+    "no_options": "No results found",
+    "create_label": "Add {{value}}"
   },
   "select_all": "Select all",
   "select_row": "Select row",

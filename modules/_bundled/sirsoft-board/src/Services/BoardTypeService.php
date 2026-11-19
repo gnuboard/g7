@@ -13,6 +13,13 @@ use Modules\Sirsoft\Board\Repositories\Contracts\BoardTypeRepositoryInterface;
 
 class BoardTypeService
 {
+    /**
+     * 게시판 유형 서비스 생성자
+     *
+     * @param  BoardTypeRepositoryInterface  $boardTypeRepository  게시판 유형 리포지토리
+     * @param  BoardRepositoryInterface  $boardRepository  게시판 리포지토리
+     * @param  BoardSettingsService  $boardSettingsService  게시판 환경설정 서비스
+     */
     public function __construct(
         protected BoardTypeRepositoryInterface $boardTypeRepository,
         protected BoardRepositoryInterface $boardRepository,

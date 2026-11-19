@@ -119,6 +119,36 @@ class ProductCodePathSafetyTest extends ModuleTestCase
     }
 
     /**
+     * by-code 수정 경로(`PUT admin/products/by-code/{code}`)도 {product} 경로처럼 중복 검사에서 자기 자신을 뺀다.
+     *
+     * 종전에는 중복 검사 제외 대상을 {product} 인자에서만 구해 by-code 경로에서는 null 이 되어, 현재 코드를 그대로 보내면
+     * 「이미 사용중인 상품코드입니다」로, 빼면 「상품코드를 입력해주세요」로 거절돼 이 경로로는 어떤 수정도 할 수 없었다.
+     * 다른 상품의 코드로 바꾸려는 수정은 계속 중복으로 거절된다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=by_code_update
+     *
+     * @effects by_code_update_excludes_self_from_duplicate_check
+     */
+    public function test_by_code_update_excludes_the_product_itself_from_duplicate_check(): void
+    {
+        $product = Product::factory()->create(['product_code' => 'BYCODE-SELF']);
+        Product::factory()->create(['product_code' => 'BYCODE-OTHER']);
+
+        $this->actingAs($this->admin)
+            ->putJson('/api/modules/sirsoft-ecommerce/admin/products/by-code/BYCODE-SELF', ['product_code' => 'BYCODE-SELF'])
+            ->assertJsonMissingValidationErrors('product_code');
+
+        $this->actingAs($this->admin)
+            ->putJson('/api/modules/sirsoft-ecommerce/admin/products/by-code/BYCODE-SELF', ['product_code' => 'BYCODE-OTHER'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('product_code');
+
+        $this->assertSame('BYCODE-SELF', $product->fresh()->product_code);
+    }
+
+    /**
      * 규칙 이전에 저장된 비정상 코드의 상품도 삭제된다 — 이미지 폴더는 건너뛰고 경고를 남긴다.
      *
      * @return void 반환값 없음

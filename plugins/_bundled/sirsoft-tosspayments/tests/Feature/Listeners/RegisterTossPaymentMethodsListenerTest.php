@@ -3,6 +3,7 @@
 namespace Plugins\Sirsoft\Tosspayments\Tests\Feature\Listeners;
 
 use App\Services\PluginSettingsService;
+use Illuminate\Support\Arr;
 use Plugins\Sirsoft\Tosspayments\Listeners\RegisterPgProviderListener;
 use Plugins\Sirsoft\Tosspayments\Listeners\RegisterTossPaymentMethodsListener;
 use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
@@ -13,8 +14,6 @@ use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
  * order_sheet_mode / 결제수단 토글 / 삽입 위치 / core_payment_method 선언을 검증한다.
  *
  * @scenario order_sheet_mode=true, payment_method=toss_card
- *
- * @effects enabled_methods_exposed_with_core_mapping
  */
 class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
 {
@@ -118,6 +117,52 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
         $this->assertContains('toss_card', $ids);
         $this->assertContains('toss_virtual_account', $ids);
         $this->assertNotContains('toss_transfer', $ids);
+    }
+
+    /**
+     * 토스 결제수단 이름·설명이 ko·en 두 언어로 고정되지 않고 지원 언어(활성 언어팩) 전부로 채워지는지 검증한다.
+     *
+     * 종전에는 두 언어만 실려 일본어 언어팩을 켠 사이트의 일본어 화면(쇼핑몰 환경설정 결제수단 목록·주문서)에
+     * 언어팩 번역이 있는데도 한국어 이름이 보였다.
+     *
+     * @scenario order_sheet_mode=true, payment_method=toss_card
+     *
+     * @effects toss_method_labels_cover_supported_locales
+     *
+     * @return void 반환값 없음
+     */
+    public function test_method_labels_cover_every_supported_locale(): void
+    {
+        $this->mockSettings([
+            'order_sheet_mode' => true,
+            'method_card' => true,
+            'method_kakaopay' => true,
+        ]);
+        $this->app['translator']->addNamespace(
+            'sirsoft-tosspayments',
+            base_path('plugins/_bundled/sirsoft-tosspayments/lang')
+        );
+        config(['app.supported_locales' => ['ko', 'en', 'ja']]);
+        $this->app['translator']->addLines(
+            Arr::dot(['payment_methods' => require base_path('lang-packs/_bundled/g7-plugin-sirsoft-tosspayments-ja/backend/ja/payment_methods.php')]),
+            'ja',
+            'sirsoft-tosspayments',
+        );
+        $localeBefore = app()->getLocale();
+
+        $methods = collect($this->listener->injectTossMethods($this->builtinMethods()))
+            ->filter(fn (array $method): bool => str_starts_with((string) $method['id'], 'toss_'));
+
+        $this->assertNotEmpty($methods);
+        foreach ($methods as $method) {
+            $this->assertSame(['ko', 'en', 'ja'], array_keys($method['name']), $method['id']);
+            $this->assertSame(['ko', 'en', 'ja'], array_keys($method['description']), $method['id']);
+        }
+
+        $card = $methods->firstWhere('id', 'toss_card');
+        $this->assertSame('クレジットカード (Toss Payments)', $card['name']['ja']);
+        $this->assertSame('クレジット·デビットカードで決済 — Toss Paymentsを通じて処理', $card['description']['ja']);
+        $this->assertSame($localeBefore, app()->getLocale(), '번역하는 동안 바꾼 앱 언어는 되돌려야 한다');
     }
 
     /**
@@ -346,9 +391,17 @@ class RegisterTossPaymentMethodsListenerTest extends PluginTestCase
 
         foreach ($expected as $id => $mark) {
             $this->assertArrayHasKey($id, $byId, "{$id} 가 주입되지 않았다");
+
+            // 7.2.0 부터 PG 플러그인마다 자기 CSS 접두사(`paytosspayments:` 등)로 클래스를 공급한다 —
+            // 같은 브랜드인지는 접두사를 뗀 유틸리티로 비교한다(다른 PG 도 같은 색, 다른 접두사).
+            $actual = $byId[$id]['brand_mark'] ?? null;
+            if (is_array($actual) && isset($actual['class'])) {
+                $actual['class'] = (string) preg_replace('/(^|\s)paytosspayments:/', '$1', (string) $actual['class']);
+            }
+
             $this->assertSame(
                 $mark,
-                $byId[$id]['brand_mark'] ?? null,
+                $actual,
                 "{$id} 의 브랜드 마크가 다른 PG 와 다르다 — 같은 브랜드가 PG 마다 달라 보인다"
             );
         }

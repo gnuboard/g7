@@ -1,5 +1,5 @@
 # audit:allow scenario-scale-axis-required reason: SendMessageJob 은 알림 1건당 1 dispatch(payload 1건·refkey 1건)로 볼륨 무관 상수 메모리다. 루프/chunk/대량 적재가 없어 #79 형 붕괴 구조가 아니므로 scale 축이 무의미하다.
-# audit:allow test-scenario-coverage reason: |
+# audit:allow test-scenario-coverage reason: issue:#597 |
 #   발송 결과 기록·webhook 수신·결과코드 해석의 axes cross product 는 PHPUnit
 #   (BizppurioWebhookTest·ResultCodeResolverTest·SmsChannelDriverTest·SendMessageJobTest·
 #   BizppurioDispatchTest·리포지토리·Installation)로 실제 HTTP/DB 왕복을 관찰한다.
@@ -59,6 +59,34 @@ effects:
   # DB (마이그레이션)
   - phase4_tables_created_with_expected_columns
   - migration_roundtrip_up_down_up_preserves_repository_ops
+  # 아래는 테스트가 이미 재고 있으나 선언이 빠져 있던 이름이다 (원장 축소).
+  - balance_low_hook_fired
+  - balance_low_notification_deduplicated_within_cooldown
+  - both_dispatches_marked_failed
+  - dispatch_status_updated_to_failed
+  - dispatch_status_updated_to_success
+  - dispatch_unchanged
+  - fallback_status_remains_null_when_not_requested
+  - fallback_status_set_when_resend_was_requested
+  - reported_at_set
+  - webhook_balance_low_marks_failed
+  - webhook_blocked_ip_returns_403
+  - webhook_replay_is_idempotent
+  - webhook_unknown_refkey_absorbed_200
+  # 모델, 리포지토리, 결과코드 사유 세부 (PHPUnit 이 이미 재던 것을 #609 에서 명시)
+  - dispatch_model_casts_channel_and_status_to_enums
+  - dispatch_masked_number_hides_middle_four_digits
+  - dispatch_user_relation_loads_member_by_to_user_id
+  - dispatch_by_refkey_scope_finds_single_record
+  - repository_find_by_refkey_returns_match_or_null
+  - repository_update_persists_status_and_result_code
+  - repository_paginate_filters_by_channel_and_status
+  - repository_paginate_keyword_matches_number_or_refkey
+  - postpaid_limit_code_9071_has_reason
+  - newly_added_result_codes_have_reason
+  - retryable_codes_all_have_reason
+  - success_uncertain_7305_not_retryable
+  - reason_resolves_defined_codes_and_null_for_unknown
 
 test_files:
   - plugins/_bundled/sirsoft-message_bizppurio/tests/Feature/Webhook/BizppurioWebhookTest.php

@@ -5,11 +5,21 @@ declare(strict_types=1);
 namespace Plugins\Sirsoft\PayKginicis\Tests\Unit\Listeners;
 
 use App\Services\PluginSettingsService;
+use Illuminate\Support\Arr;
 use Plugins\Sirsoft\PayKginicis\Listeners\RegisterEasyPayMethodsListener;
 use Plugins\Sirsoft\PayKginicis\Tests\PluginTestCase;
 
 class RegisterEasyPayMethodsListenerTest extends PluginTestCase
 {
+    /**
+     * 간편결제 4종과 일본 결제 2종이 휴대폰 결제 뒤, 포인트·무통장 앞에 순서대로 들어가는지 검증한다.
+     *
+     * @scenario contract=catalog_position
+     *
+     * @effects easy_pay_methods_follow_phone_before_point
+     *
+     * @return void 반환값 없음
+     */
     public function test_injects_easy_pay_methods_between_phone_and_point(): void
     {
         $this->mockSettings([
@@ -43,6 +53,15 @@ class RegisterEasyPayMethodsListenerTest extends PluginTestCase
         ], array_column($methods, 'id'));
     }
 
+    /**
+     * 간편결제 수단이 PG 를 KG이니시스로 고정 선언하고 설치 직후 비활성·결제 완료 시점 차감으로 등록되는지 검증한다.
+     *
+     * @scenario contract=method_defaults
+     *
+     * @effects easy_pay_methods_locked_to_own_pg, easy_pay_methods_installed_inactive_with_payment_complete_timing
+     *
+     * @return void 반환값 없음
+     */
     public function test_easy_pay_methods_are_locked_to_own_pg_provider(): void
     {
         $this->mockSettings([
@@ -87,6 +106,15 @@ class RegisterEasyPayMethodsListenerTest extends PluginTestCase
         }
     }
 
+    /**
+     * 네이버페이 브랜드 단추 설정이 꺼져 있으면 네이버페이 설명이 종전의 긴 문구로 나오는지 검증한다.
+     *
+     * @scenario contract=display_labels
+     *
+     * @effects naverpay_description_follows_brand_button_setting
+     *
+     * @return void 반환값 없음
+     */
     public function test_naverpay_uses_legacy_description_without_brand_button_setting(): void
     {
         $this->mockSettings([
@@ -109,6 +137,15 @@ class RegisterEasyPayMethodsListenerTest extends PluginTestCase
         $this->assertSame('네이버페이로 결제 — KG 이니시스를 통해 처리', $naverpay['description']['ko'] ?? null);
     }
 
+    /**
+     * 네이버페이 브랜드 단추 설정이 켜져 있으면 네이버페이 설명이 주문서용 짧은 문구로 나오는지 검증한다.
+     *
+     * @scenario contract=display_labels
+     *
+     * @effects naverpay_description_follows_brand_button_setting
+     *
+     * @return void 반환값 없음
+     */
     public function test_brand_button_option_uses_short_checkout_description_for_naverpay(): void
     {
         $this->mockSettings([
@@ -131,6 +168,15 @@ class RegisterEasyPayMethodsListenerTest extends PluginTestCase
         $this->assertSame('wallet', $naverpay['icon'] ?? null);
     }
 
+    /**
+     * 플러그인 설정에서 끈 간편결제도 관리자가 켤 수 있도록 비활성 상태로 목록에 들어가는지(일본 결제는 끄면 빠지는지) 검증한다.
+     *
+     * @scenario contract=activation_state
+     *
+     * @effects disabled_easy_pay_injected_inactive_for_admin_toggle
+     *
+     * @return void 반환값 없음
+     */
     public function test_disabled_easy_pay_settings_are_injected_as_inactive_for_admin_toggle(): void
     {
         $this->mockSettings([
@@ -165,9 +211,13 @@ class RegisterEasyPayMethodsListenerTest extends PluginTestCase
     }
 
     /**
+     * 네이버페이·카카오페이가 SVG 로고 형태의 브랜드 마크를 등록 데이터로 싣고, 애플페이가 없으므로 iOS 전용 플래그는 싣지 않는지 검증한다.
+     *
      * @scenario mark_form=svg, requires_ios=false, device=ipados_desktop_ua
      *
      * @effects brand_mark_flows_to_cached, svg_renders_inline_logo, shared_helpers_preserved
+     *
+     * @return void 반환값 없음
      */
     public function test_easy_pay_methods_carry_svg_brand_mark(): void
     {
@@ -204,6 +254,15 @@ class RegisterEasyPayMethodsListenerTest extends PluginTestCase
         }
     }
 
+    /**
+     * 예전 플러그인 설정의 간편결제 켬/끔 값이 결제수단 기본 활성 상태로 이어지는지 검증한다.
+     *
+     * @scenario contract=activation_state
+     *
+     * @effects legacy_easy_pay_settings_seed_default_active_state
+     *
+     * @return void 반환값 없음
+     */
     public function test_legacy_easy_pay_settings_are_used_as_default_active_state(): void
     {
         $this->mockSettings([
@@ -227,6 +286,58 @@ class RegisterEasyPayMethodsListenerTest extends PluginTestCase
         $this->assertFalse($methods->get('kginicis_kakaopay')['defaults']['is_active'] ?? true);
     }
 
+    /**
+     * 간편결제·일본 결제 이름·설명이 ko·en 두 언어로 고정되지 않고 지원 언어(활성 언어팩) 전부로 채워지는지 검증한다.
+     *
+     * 종전에는 두 언어만 실려 일본어 언어팩을 켠 사이트의 일본어 화면(쇼핑몰 환경설정 결제수단 목록·주문서)에
+     * 언어팩 번역이 있는데도 한국어 이름이 보였다.
+     *
+     * @scenario contract=display_labels
+     *
+     * @effects easy_pay_labels_cover_supported_locales
+     *
+     * @return void 반환값 없음
+     */
+    public function test_easy_pay_method_labels_cover_every_supported_locale(): void
+    {
+        $this->mockSettings([
+            'easy_pay_samsung_pay' => true,
+            'easy_pay_naverpay' => true,
+            'easy_pay_lpay' => true,
+            'easy_pay_kakaopay' => true,
+            'japan_enabled' => true,
+        ]);
+        config(['app.supported_locales' => ['ko', 'en', 'ja']]);
+        $this->app['translator']->addLines(
+            Arr::dot(['payment_methods' => require base_path('lang-packs/_bundled/g7-plugin-sirsoft-pay_kginicis-ja/backend/ja/payment_methods.php')]),
+            'ja',
+            'sirsoft-pay_kginicis',
+        );
+        $localeBefore = app()->getLocale();
+
+        $methods = collect((new RegisterEasyPayMethodsListener)->injectEasyPayMethods([
+            ['id' => 'phone'],
+            ['id' => 'point'],
+        ]))->filter(fn (array $method): bool => str_starts_with((string) $method['id'], 'kginicis_'));
+
+        $this->assertCount(6, $methods);
+        foreach ($methods as $method) {
+            $this->assertSame(['ko', 'en', 'ja'], array_keys($method['name']), $method['id']);
+            $this->assertSame(['ko', 'en', 'ja'], array_keys($method['description']), $method['id']);
+        }
+
+        $kakaopay = $methods->firstWhere('id', 'kginicis_kakaopay');
+        $this->assertSame('Kakao Pay (KGイニシス)', $kakaopay['name']['ja']);
+        $this->assertSame('Kakao Payで決済 — KGイニシスを通じて処理', $kakaopay['description']['ja']);
+        $this->assertSame($localeBefore, app()->getLocale(), '번역하는 동안 바꾼 앱 언어는 되돌려야 한다');
+    }
+
+    /**
+     * 플러그인 설정 서비스를 주어진 설정 값으로 바꿔 끼운다.
+     *
+     * @param  array<string, mixed>  $settings  KG이니시스 플러그인 설정 값
+     * @return void 반환값 없음
+     */
     private function mockSettings(array $settings): void
     {
         $settingsService = $this->createMock(PluginSettingsService::class);

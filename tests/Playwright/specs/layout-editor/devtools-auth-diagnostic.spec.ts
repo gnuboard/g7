@@ -1,11 +1,20 @@
 /**
  * 실제 배포 번들의 인증 진단이 빈 사용자와 남은 토큰을 로그인으로 오인하지 않는다.
  * 브라우저 컨텍스트 안에서만 입력을 교체하며 실제 인증·저장소·덤프는 변경하지 않는다.
- * @scenario link=devtools_auth_diagnostic
+ * @scenario probe=empty_array_user_logged_out
  * @effects empty_user_is_not_authenticated
  */
 import { test, expect } from '@playwright/test';
 
+/**
+ * // @scenario probe=empty_array_user_logged_out
+ * // @scenario probe=empty_object_user_logged_out
+ * // @scenario probe=null_user_logged_out
+ * // @scenario probe=user_object_logged_out
+ * // @scenario probe=null_user_auth_manager_authenticated
+ * // @scenario probe=user_object_without_auth_manager
+ * // @effects empty_user_is_not_authenticated, auth_manager_verdict_outranks_empty_fallback_user, real_user_object_fallback_is_kept
+ */
 test('DevTools 인증 진단: 빈 사용자·명시적 로그아웃·상태 fallback', async ({ page }) => {
   await page.goto('/');
   await page.waitForFunction(() => Boolean((window as any).G7Core?.__runtime?.G7DevToolsCore));

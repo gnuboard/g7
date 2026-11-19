@@ -232,7 +232,7 @@ class LayoutSourceMatrixTest extends TestCase
             "fragment 등록 집합이 기대와 다릅니다 (소스: {$source}) — 짝 접기가 깨지면 하나가 둘이 된다");
 
         // 경로가 아니라 **내용**으로 승자를 본다 — 소스는 `Div`, 원본 `.json` 은 `Span` 을 낸다.
-        // 경로 접미사만 보면 "골랐지만 다른 것을 읽는" 형태(29차가 실물로 겪은 자리)를 놓친다.
+        // 경로 접미사만 보면 "골랐지만 다른 것을 읽는" 형태(실물로 겪은 자리)를 놓친다.
         $this->assertSame($markupWins ? 'Div' : 'Span',
             $definitions[0]['data']['components'][0]['name'] ?? null,
             "fragment 소스 선택이 기대와 다릅니다 (소스: {$source})");

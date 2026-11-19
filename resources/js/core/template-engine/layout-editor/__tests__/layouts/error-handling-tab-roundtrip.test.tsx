@@ -40,7 +40,9 @@ describe('[에러 처리] 탭 errorHandling 런타임 라운드트립', () => {
     resolver = getErrorHandlingResolver();
 
     effects = [];
-    const navigate = vi.fn((path: string) => effects.push({ kind: 'navigate', payload: path }));
+    const navigate = vi.fn((path: string) => {
+      effects.push({ kind: 'navigate', payload: path });
+    });
     dispatcher = new ActionDispatcher({ navigate });
     dispatcher.setGlobalStateUpdater((updates: Record<string, any>) => {
       if (updates.toasts) {
@@ -57,8 +59,14 @@ describe('[에러 처리] 탭 errorHandling 런타임 라운드트립', () => {
 
   afterEach(() => {
     ErrorHandlingResolver.resetInstance();
+    // 시험 도중 단언이 실패해도 fetch 스파이가 다음 시험으로 새지 않게 되돌린다.
+    vi.restoreAllMocks();
   });
 
+  /**
+   * @scenario roundtrip=error_handling
+   * @effects error_handling_registered_code_dispatches_handler
+   */
   it('① 레이아웃 errorHandling[code] 등록 → 해당 코드 에러 시 그 핸들러가 실제 dispatch 된다', async () => {
     // [에러 처리] 탭이 패치한 레이아웃 errorHandling.
     const layoutErrorHandling: ErrorHandlingMap = {
@@ -80,6 +88,10 @@ describe('[에러 처리] 탭 errorHandling 런타임 라운드트립', () => {
     expect(effects[0].payload).toMatchObject({ type: 'error', message: '없는 페이지' });
   });
 
+  /**
+   * @scenario roundtrip=error_handling
+   * @effects error_handling_default_row_falls_back
+   */
   it('② default 행은 미정의 코드에 폴백된다', async () => {
     const layoutErrorHandling: ErrorHandlingMap = {
       404: { handler: 'navigate', params: { path: '/not-found' } },
@@ -103,6 +115,10 @@ describe('[에러 처리] 탭 errorHandling 런타임 라운드트립', () => {
     expect(effects[0].payload).toMatchObject({ type: 'warning' });
   });
 
+  /**
+   * @scenario roundtrip=error_handling
+   * @effects error_handling_stripped_child_matches_merged_runtime
+   */
   it('③ 상속 strip 후 부모 병합본이 런타임 동일하다 (자기 strip + 부모 = 병합본)', async () => {
     // 부모(템플릿/베이스) errorHandling 과 자식(레이아웃) errorHandling.
     // 자식이 자기 선언분만 저장(상속분 strip)해도, 런타임 병합(레이아웃<템플릿 폴백)으로
@@ -117,8 +133,47 @@ describe('[에러 처리] 탭 errorHandling 런타임 라운드트립', () => {
       500: { handler: 'toast', params: { type: 'error', message: '자식 500' } },
     };
 
+    // 비교 기준 = 병합본: 상속 401 + 자식 404/500 을 한 레이아웃 설정으로 가진 경우.
+    const mergedLayoutErrorHandling: ErrorHandlingMap = {
+      ...parentTemplateErrorHandling,
+      ...childLayoutErrorHandling,
+    };
+    const CODES = [401, 404, 500, 418];
+    // 토스트의 id/createdAt 은 실행 시각이라 비교에서 뺀다(종류/메시지만 본다).
+    const snapshot = () =>
+      effects.map((e) =>
+        e.kind === 'toast' ? { kind: e.kind, payload: { type: e.payload?.type, message: e.payload?.message } } : e,
+      );
+    resolver.setLayoutConfig(mergedLayoutErrorHandling);
+    const mergedHandlers = CODES.map((code) => resolver.resolve(code).handler ?? null);
+    const mergedEffects: Array<Array<{ kind: string; payload: any }>> = [];
+    for (const code of CODES) {
+      effects.length = 0;
+      await resolver.resolveAndExecute(code, { status: code, message: String(code) });
+      mergedEffects.push(snapshot());
+    }
+
+    // strip 본: 레이아웃에는 자기 선언분만, 상속분은 템플릿(부모) 설정으로.
+    ErrorHandlingResolver.resetInstance();
+    resolver = getErrorHandlingResolver();
+    resolver.setActionExecutor((handler, ctx) =>
+      dispatcher.dispatchAction({ type: 'click', ...(handler as any) }, ctx),
+    );
     resolver.setTemplateConfig(parentTemplateErrorHandling);
     resolver.setLayoutConfig(childLayoutErrorHandling);
+    const strippedHandlers = CODES.map((code) => resolver.resolve(code).handler ?? null);
+    const strippedEffects: Array<Array<{ kind: string; payload: any }>> = [];
+    for (const code of CODES) {
+      effects.length = 0;
+      await resolver.resolveAndExecute(code, { status: code, message: String(code) });
+      strippedEffects.push(snapshot());
+    }
+    effects.length = 0;
+
+    // 코드별로 고른 핸들러와 실제 실행 효과가 병합본과 같다.
+    expect(strippedHandlers).toEqual(mergedHandlers);
+    expect(strippedEffects).toEqual(mergedEffects);
+    expect(mergedEffects[0]).toEqual([{ kind: 'navigate', payload: '/login' }]);
 
     // 자식이 덮은 500 → 자식 핸들러(레이아웃 우선)
     const r500 = resolver.resolve(500);
@@ -139,6 +194,10 @@ describe('[에러 처리] 탭 errorHandling 런타임 라운드트립', () => {
     expect(effects).toContainEqual({ kind: 'navigate', payload: '/login' });
   });
 
+  /**
+   * @scenario roundtrip=error_handling
+   * @effects error_page_resolves_layout_by_error_config_code
+   */
   it('④ showErrorPage 는 error_config.layouts 경로로 레이아웃 이름을 해석해 렌더한다', async () => {
     // template.json 의 error_config.layouts 매핑을 fetch 로 모킹.
     const errorConfig = { layouts: { 404: '404', 403: '403', 500: '500', default: 'error' } };
@@ -183,24 +242,37 @@ describe('[에러 처리] 탭 errorHandling 런타임 라운드트립', () => {
     fetchSpy.mockRestore();
   });
 
-  it('④-b error_config.layouts 에 default 매핑이 있으면 default 행으로 렌더 경로 해석', async () => {
+  /**
+   * @scenario roundtrip=error_handling
+   * @effects error_page_default_key_renders_undefined_code
+   */
+  it('④-b error_config.layouts 의 default 키는 설정에 보존되고, 미정의 코드는 그 공통 오류 레이아웃으로 그린다', async () => {
+    // 코드별 레이아웃이 없으면 템플릿의 공통 오류 레이아웃(`layouts.default`)으로 그린다(engine-v1.95.0,
+    // ErrorPageHandler.renderError). 다른 코드의 레이아웃(500 등)으로 대신하지 않는다.
     const errorConfig = { layouts: { 404: '404', default: 'error' } };
-    vi.spyOn(window, 'fetch').mockResolvedValue({
+    const fetchSpy = vi.spyOn(window, 'fetch').mockResolvedValue({
       ok: true,
       json: async () => ({ success: true, data: { error_config: errorConfig } }),
     } as Response);
+    const loadLayout = vi.fn().mockResolvedValue({ layout_name: 'error', components: [] });
 
     const handler = new ErrorPageHandler({
       templateId: 'sirsoft-basic',
-      layoutLoader: { loadLayout: vi.fn() } as any,
+      layoutLoader: { loadLayout } as any,
       locale: 'ko',
       debug: false,
       renderFunction: vi.fn() as any,
       dataSourceManager: {} as any,
     });
 
-    // 'default' 매핑 존재 — error_config.layouts 가 default 행을 갖는다.
+    // 'default' 매핑은 설정에 그대로 실린다.
     const config = await handler.loadConfig();
     expect(config?.layouts.default).toBe('error');
+
+    // 미정의 코드(418)는 'default' 매핑의 공통 오류 레이아웃('error')을 적재한다. 404 레이아웃은 쓰지 않는다.
+    await handler.renderError(418, 'main_content');
+    expect(loadLayout).toHaveBeenCalledWith('sirsoft-basic', 'error');
+    expect(loadLayout).not.toHaveBeenCalledWith('sirsoft-basic', '404');
+    fetchSpy.mockRestore();
   });
 });

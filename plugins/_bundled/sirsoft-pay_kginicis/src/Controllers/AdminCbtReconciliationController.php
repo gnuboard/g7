@@ -8,12 +8,15 @@ use App\Helpers\ResponseHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
+use Plugins\Sirsoft\PayKginicis\Concerns\DescribesRefundFailure;
 use Plugins\Sirsoft\PayKginicis\Concerns\GuardsOrderScope;
 use Plugins\Sirsoft\PayKginicis\Services\CbtReconciliationService;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 
 class AdminCbtReconciliationController extends AdminBaseController
 {
+    use DescribesRefundFailure;
     use GuardsOrderScope;
 
     /**
@@ -21,10 +24,12 @@ class AdminCbtReconciliationController extends AdminBaseController
      *
      * @param  CbtReconciliationService  $reconciliationService  해외 결제 정산 레코드 서비스
      * @param  KgInicisApiService  $apiService  KG이니시스 API 서비스
+     * @param  PaymentGatewayBridge  $bridge  이커머스 결제 공개 계약 (주문 권한 범위 판정)
      */
     public function __construct(
         private readonly CbtReconciliationService $reconciliationService,
         private readonly KgInicisApiService $apiService,
+        private readonly PaymentGatewayBridge $bridge,
     ) {
         parent::__construct();
     }
@@ -102,18 +107,22 @@ class AdminCbtReconciliationController extends AdminBaseController
             Log::error('KG Inicis CBT admin refund retry failed', [
                 'order_number' => $orderNumber,
                 'tid' => $tid,
+                'exception_class' => $e::class,
                 'error' => $e->getMessage(),
             ]);
+
+            // 이 기록은 관리자 주문 상세 「환불 오류」 칸에 그대로 보인다 — 원문은 위 로그에만 남긴다(#858)
+            $failureReason = $this->refundFailureReason($e);
 
             $this->reconciliationService->record($orderNumber, [
                 'status' => CbtReconciliationService::STATUS_MANUAL_REFUND_REQUIRED,
                 'manual_action_required' => true,
                 'tid' => $tid,
                 'amount' => $amount,
-                'refund_error' => $e->getMessage(),
+                'refund_error' => $failureReason,
                 // audit:allow datetime-display-user-timezone reason: ISO8601(오프셋 포함) API 기계값 — 표시는 *_formatted
                 'last_retry_at' => now()->toIso8601String(),
-                'last_retry_error' => $e->getMessage(),
+                'last_retry_error' => $failureReason,
                 'retry_count' => $retryCount,
             ]);
 

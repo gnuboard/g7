@@ -5,27 +5,27 @@
   기능을 끈 상태에서도 카드는 남고 안내문만 대신 나온다(관리자 회원 상세의 마일리지 탭과 같은 규약). -->
 <extension target-layout="mypage/profile" priority="320">
   <inject target-id="mypage_tab_content" position="append_child">
-    <div data-ref="ext_my_mileage_card" data-if="{{!!user?.data?.ecommerce_mileage}}" class="mt-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-5">
-      <div class="flex items-center justify-between mb-3">
-        <h3 class="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-          <icon name="coins" class="text-base text-gray-600 dark:text-gray-400"/>
+    <div data-ref="ext_my_mileage_card" data-if="{{!!user?.data?.ecommerce_mileage}}" class="ecommerce:mt-4 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg ecommerce:p-5">
+      <div class="ecommerce:flex ecommerce:items-center ecommerce:justify-between ecommerce:mb-3">
+        <h3 class="ecommerce:text-base ecommerce:font-semibold ecommerce:text-gray-900 ecommerce:dark:text-white ecommerce:flex ecommerce:items-center ecommerce:gap-2">
+          <icon name="coins" class="ecommerce:text-base ecommerce:text-gray-600 ecommerce:dark:text-gray-400"/>
           <span>$t:sirsoft-ecommerce.user_mileage.title</span>
         </h3>
       </div>
       <!-- 비활성화 안내 (mileage.enabled=false) -->
-      <span data-if="{{!user?.data?.ecommerce_mileage?.enabled}}" class="block text-sm text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.user_mileage.disabled_notice</span>
-      <div data-if="{{user?.data?.ecommerce_mileage?.enabled}}" class="flex items-center justify-between">
+      <span data-if="{{!user?.data?.ecommerce_mileage?.enabled}}" class="ecommerce:block ecommerce:text-sm ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.user_mileage.disabled_notice</span>
+      <div data-if="{{user?.data?.ecommerce_mileage?.enabled}}" class="ecommerce:flex ecommerce:items-center ecommerce:justify-between">
         <div>
-          <span class="block text-xs text-gray-500 dark:text-gray-400">$t:sirsoft-ecommerce.user_mileage.available</span>
-          <span class="block text-xl font-bold text-gray-900 dark:text-white">{{(user?.data?.ecommerce_mileage?.available ?? 0).toLocaleString()}} P</span>
-          <span data-if="{{(user?.data?.ecommerce_mileage?.expiring_soon ?? 0) > 0}}" class="block text-xs text-amber-700 dark:text-amber-400 mt-1">$t:sirsoft-ecommerce.user_mileage.expiring_soon|amount={{(user?.data?.ecommerce_mileage?.expiring_soon ?? 0).toLocaleString()}}</span>
+          <span class="ecommerce:block ecommerce:text-xs ecommerce:text-gray-500 ecommerce:dark:text-gray-400">$t:sirsoft-ecommerce.user_mileage.available</span>
+          <span class="ecommerce:block ecommerce:text-xl ecommerce:font-bold ecommerce:text-gray-900 ecommerce:dark:text-white">{{(user?.data?.ecommerce_mileage?.available ?? 0).toLocaleString()}} P</span>
+          <span data-if="{{(user?.data?.ecommerce_mileage?.expiring_soon ?? 0) > 0}}" class="ecommerce:block ecommerce:text-xs ecommerce:text-amber-700 ecommerce:dark:text-amber-400 ecommerce:mt-1">$t:sirsoft-ecommerce.user_mileage.expiring_soon|amount={{(user?.data?.ecommerce_mileage?.expiring_soon ?? 0).toLocaleString()}}</span>
         </div>
-        <a href="/mypage/mileage" data-ref="view_my_mileage_history" class="flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline">
+        <a href="/mypage/mileage" data-ref="view_my_mileage_history" class="ecommerce:flex ecommerce:items-center ecommerce:gap-1 ecommerce:text-sm ecommerce:text-blue-600 ecommerce:dark:text-blue-400 ecommerce:hover:underline">
           <on type="click">
             <navigate/>
           </on>
           <span>$t:sirsoft-ecommerce.user_mileage.view_history</span>
-          <icon name="arrow-right" class="text-sm"/>
+          <icon name="arrow-right" class="ecommerce:text-sm"/>
         </a>
       </div>
     </div>

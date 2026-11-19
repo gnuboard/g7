@@ -282,6 +282,14 @@
       }
     },
     {
+      "path": "/mypage/required-info",
+      "layout": "mypage/required-info",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:member.required_info.title"
+      }
+    },
+    {
       "path": "/mypage/orders",
       "layout": "mypage/orders",
       "requires": {"modules": ["sirsoft-ecommerce"]},

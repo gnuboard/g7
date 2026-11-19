@@ -35,6 +35,7 @@ effects:
   - country_setting_queries_do_not_grow_with_rows
   - detail_still_provides_full_country_settings
   - product_form_selector_still_draws_country_chips
+  - admin_list_per_page_all_returns_every_row   # per_page=all 이면 쪽 나눔 없이 전부(상품 폼 선택지가 100건에서 잘리지 않음) — 숫자 쪽당 상한 100 은 그대로
   # 브라우저에서 국가 칩·배송비 요약 열이 실제로 채워지는지 — 컬럼 한정 관계로 바꾼 뒤에도
   # 화면이 빈칸이 되지 않는다는 것은 응답 단언만으로는 증명되지 않는다.
   - shipping_policy_list_renders_country_summary

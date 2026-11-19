@@ -115,26 +115,25 @@ describe('PreviewCanvas — guest_only currentUser 시드 제외', () => {
   function renderCanvas(path: string, layoutName: string) {
     const engine = new TranslationEngine();
     return render(
-      React.createElement(
-        TranslationProvider,
-        {
-          translationEngine: engine,
-          translationContext: { templateId: 'sirsoft-admin_basic', locale: 'ko' },
-        },
-        React.createElement(
-          LayoutEditorProvider,
-          { templateIdentifier: 'sirsoft-basic', initialLocale: 'ko' },
-          React.createElement(
+      React.createElement(TranslationProvider, {
+        translationEngine: engine,
+        translationContext: { templateId: 'sirsoft-admin_basic', locale: 'ko' },
+        children: React.createElement(LayoutEditorProvider, {
+          templateIdentifier: 'sirsoft-basic',
+          initialLocale: 'ko',
+          children: React.createElement(
             EditorModalProvider,
             null,
             React.createElement(SelectRoute, { path, layoutName }),
-            React.createElement(PreviewCanvas, { sampleGlobalSources: templateSampleGlobalSources }),
+            <PreviewCanvas sampleGlobalSources={templateSampleGlobalSources} />,
           ),
-        ),
-      ),
+        }),
+      }),
     );
   }
 
+  // @scenario area=guest_only_seed
+  // @effects preview_guest_only_layout_skips_user_seed
   it('guest_only 레이아웃 → 격리 store _global.currentUser 미시드 (비로그인 분기)', async () => {
     installFetchMock({ guest_only: true });
     renderCanvas('/forgot-password', 'auth/forgot_password');
@@ -154,6 +153,8 @@ describe('PreviewCanvas — guest_only currentUser 시드 제외', () => {
     expect(globalState.settings?.general?.site_name).toBe('샘플 사이트');
   });
 
+  // @scenario area=guest_only_seed
+  // @effects preview_regular_layout_seeds_current_user
   it('일반 레이아웃(guest_only 아님) → currentUser 정상 시드 (로그인 분기 보존)', async () => {
     installFetchMock(undefined);
     renderCanvas('/', 'home');

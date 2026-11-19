@@ -6,8 +6,6 @@ namespace Plugins\Sirsoft\PayKginicis\Providers;
 
 use App\Extension\BasePluginServiceProvider;
 use Illuminate\Cookie\Middleware\EncryptCookies;
-use Plugins\Sirsoft\PayKginicis\Repositories\CbtCvsOperationsRepository;
-use Plugins\Sirsoft\PayKginicis\Repositories\CbtCvsOperationsRepositoryInterface;
 use Plugins\Sirsoft\PayKginicis\Repositories\CbtReconciliationRepository;
 use Plugins\Sirsoft\PayKginicis\Repositories\CbtReconciliationRepositoryInterface;
 use Plugins\Sirsoft\PayKginicis\Repositories\EscrowDeliveryRepository;
@@ -26,7 +24,6 @@ class PayKginicisServiceProvider extends BasePluginServiceProvider
      */
     protected array $repositories = [
         CbtReconciliationRepositoryInterface::class => CbtReconciliationRepository::class,
-        CbtCvsOperationsRepositoryInterface::class => CbtCvsOperationsRepository::class,
         EscrowDeliveryRepositoryInterface::class => EscrowDeliveryRepository::class,
     ];
 
@@ -46,7 +43,7 @@ class PayKginicisServiceProvider extends BasePluginServiceProvider
     /**
      * KG 이니시스 플러그인 부팅 처리를 수행합니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     public function boot(): void
     {
@@ -65,7 +62,7 @@ class PayKginicisServiceProvider extends BasePluginServiceProvider
     /**
      * KG 이니시스 플러그인의 루트 lang 디렉토리를 로드합니다.
      *
-     * @return void
+     * @return void 반환값 없음
      */
     protected function loadExtensionTranslations(): void
     {

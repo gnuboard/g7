@@ -1,0 +1,12 @@
+{
+    "id": 4123456792,
+    "kakao_account": {
+        "email_needs_agreement": false,
+        "email": "kakao.unverified@example.test",
+        "is_email_valid": true,
+        "is_email_verified": false,
+        "profile": {
+            "nickname": "카카오닉"
+        }
+    }
+}

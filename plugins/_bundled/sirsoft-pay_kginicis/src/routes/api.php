@@ -72,7 +72,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
                 ],
             ],
         ]);
-    })->middleware('permission:admin,sirsoft-ecommerce.settings.read')
+    })->middleware('permission:admin,sirsoft-ecommerce.settings.read|core.plugins.read,false') // 설정 화면 안내 — 화면 권한(플러그인 보기)으로도 읽는다(OR)
         ->name('vbank.notify.url');
 
     Route::get('/settings/test-mode-status', [AdminSettingsStatusController::class, 'testMode'])

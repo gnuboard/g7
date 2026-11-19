@@ -69,9 +69,11 @@ class DeliveryReportTest extends TestCase
     {
         app(NotificationTemplateService::class)->invalidateCache(self::TYPE, 'mail');
         app(NotificationDefinitionService::class)->invalidateAllCache();
-        Mockery::close();
-
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**

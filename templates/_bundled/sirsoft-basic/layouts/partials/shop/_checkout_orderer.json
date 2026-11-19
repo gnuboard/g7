@@ -231,9 +231,11 @@
             ]
         },
         {
-            "comment": "이메일",
+            "comment": "이메일 — 사용과 필수 여부는 운영자 설정(계산값 checkoutFields.orderer_email)을 따른다. 설정이 없는 응답에서는 종전대로 늘 그리고 비회원만 필수다.\n         비회원은 이메일이 주문 확인 수단이라 서버가 늘 사용과 필수로 준다.",
+            "id": "checkout_field_orderer_email",
             "type": "basic",
             "name": "Div",
+            "if": "{{_computed.checkoutFields?.orderer_email?.enabled !== false}}",
             "children": [
                 {
                     "type": "basic",
@@ -248,9 +250,10 @@
                             "text": "$t:shop.checkout.orderer_email"
                         },
                         {
+                            "id": "checkout_field_orderer_email_required",
                             "type": "basic",
                             "name": "Span",
-                            "if": "{{_global.currentUser !== undefined && !_global.currentUser?.uuid}}",
+                            "if": "{{!!_computed.checkoutFields?.orderer_email?.required}}",
                             "props": {
                                 "className": "text-red-600 dark:text-red-400 ml-1"
                             },
@@ -270,7 +273,7 @@
                     },
                     "actions": [
                         {
-                            "comment": "주문 확인 메일이 가는 주소. 비회원에게는 필수라 별표가 조건부로 붙는다",
+                            "comment": "주문 확인 메일이 가는 주소. 필수 여부는 운영자 설정을 따르고 비회원에게는 늘 필수다",
                             "type": "change",
                             "handler": "setState",
                             "params": {
@@ -281,6 +284,8 @@
                     ],
                     "props": {
                         "aria-label": "$t:shop.checkout.orderer_email",
+                        "aria-required": "{{!!_computed.checkoutFields?.orderer_email?.required}}",
+                        "required": "{{!!_computed.checkoutFields?.orderer_email?.required}}",
                         "type": "email",
                         "name": "orderer_email",
                         "value": "{{_local.orderer?.email ?? _global.currentUser?.email ?? ''}}",
@@ -483,6 +488,20 @@
                             ]
                         }
                     ]
+                }
+            ]
+        },
+        {
+            "comment": "주문자 구획의 추가 항목 — 운영자가 더한 항목과 다른 확장이 보탠 항목. 항목이 없으면 묶음 자체를 그리지 않는다",
+            "type": "basic",
+            "name": "Div",
+            "iteration": {
+                "source": "{{(_computed.checkoutFields?.orderer ?? []).length > 0 ? [{ key: 'orderer', label: $t('shop.checkout_fields.orderer_extra'), fields: _computed.checkoutFields.orderer }] : []}}",
+                "item_var": "checkoutFieldGroup"
+            },
+            "children": [
+                {
+                    "partial": "partials/shop/_checkout_extra_fields.json"
                 }
             ]
         }

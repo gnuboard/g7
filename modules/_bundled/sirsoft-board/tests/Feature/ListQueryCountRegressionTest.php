@@ -18,10 +18,7 @@ use Tests\Concerns\CountsQueries;
  * 행 수를 늘려도 쿼리 수가 늘지 않는지 단언한다 — 그것이 N+1 의 정의이고,
  * 정상적인 구조 변경(관계 추가 등)에는 반응하지 않는다.
  *
- * @scenario case=list_query_count
- *
- * @effects post_list_query_count_stable,
- *          comment_tree_query_count_stable
+ * @scenario consumer=list_page
  */
 class ListQueryCountRegressionTest extends BoardTestCase
 {

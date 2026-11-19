@@ -1,5 +1,7 @@
 <?php
 
+// changelog:allow 무CLI 실행 모드 축의 신규 키 — 사용자 노출 경로 미구현 단계라 공개 CHANGELOG 는 기능 완성 릴리즈 섹션에 일괄 기재 (#609)
+
 return [
     // 사용자 관련 예외
     'cannot_delete_super_admin' => '슈퍼 관리자는 삭제할 수 없습니다.',
@@ -8,6 +10,8 @@ return [
     'cannot_modify_protected_role' => '시스템 또는 확장이 소유한 역할은 수정할 권한이 없습니다.',
     'cannot_delete_self' => '본인 계정은 관리자 화면에서 삭제할 수 없습니다. 탈퇴는 마이페이지에서 진행하세요.',
     'role_active_state_locked' => '최고관리자 역할은 사용 여부를 바꿀 수 없습니다. 끄면 모든 운영자의 관리 권한이 회수됩니다.',
+    'login_method_required' => '외부 인증 로그인에는 로그인 수단 이름(login_method, 예 social:kakao)이 필요합니다.',
+    'external_step_redirect_not_same_origin' => '외부 자격 증명 검증자의 다음 단계 경로는 이 사이트 안의 경로(/로 시작)여야 합니다.',
 
     'circular_reference' => '레이아웃 순환 참조 감지: :trace',
     'max_depth_exceeded' => '레이아웃 중첩 깊이가 최대 허용 깊이(:max)를 초과했습니다.',
@@ -202,6 +206,7 @@ return [
         'unregistered_handler' => '등록되지 않은 핸들러입니다: :handler — 코어·템플릿·확장 어디에도 없습니다.',
         'nesting_violation' => ':parent 는 자식으로 :child 를 받도록 선언되지 않았습니다.',
         'responsive_breakpoint_mix' => 'portable 프리셋과 mobile/tablet 프리셋을 함께 썼습니다 — 범위가 겹쳐 예측이 어렵습니다.',
+        'responsive_open_range_overlap' => ':name 의 responsive 구간 :keys 가 같은 폭에서 함께 맞습니다 — 엔진은 그중 하나만 골라(커스텀 구간이 프리셋보다, 좁은 구간이 넓은 구간보다 먼저이며, 위가 열린 구간끼리는 먼저 적은 것) 그 키의 값만 기본값 위에 덮어 쓰므로, 다른 키의 값은 그 폭에서 쓰이지 않습니다. 겹치지 않는 닫힌 구간으로 나누고 위가 열린 구간은 맨 위 하나만 두세요(예: 768-1023, 1024-).',
         'standalone_missing_global_host' => '독립 레이아웃이 :handler 를 발화하지만 그 전역 상태(:state)를 받는 자리가 없습니다 — 화면에 나타나지 않습니다. extends 로 베이스 레이아웃을 상속하거나 그 상태를 받는 컴포넌트를 두세요.',
         'switch_value_not_consumed' => '<switch value="…"> 는 엔진이 읽지 않습니다 — 분기 대상은 <switch on="…"> 으로 적어야 params.value 로 전달됩니다.',
         'set_state_underscore_global_target' => 'setState 의 target="_global" 은 전역이 아니라 지역 상태에 씁니다 — 전역 상태는 target="global" 로 적으세요.',
@@ -258,6 +263,18 @@ return [
         'composer_binary_not_found' => 'Composer 바이너리를 찾을 수 없습니다. COMPOSER_BINARY 환경변수를 설정하거나 composer를 PATH에 추가하세요.',
     ],
 
+    // 실행 모드(커맨드 러너) 관련 예외
+    'execution' => [
+        'spawn_unavailable' => '이 서버에서는 외부 프로세스를 실행할 수 없습니다 (:reason). 실행 모드를 확인하세요.',
+        'spawn_failed' => '커맨드 실행 프로세스를 시작하지 못했습니다: :command',
+    ],
+
+    // 스케줄 이벤트에서 Artisan 커맨드 되뽑기 실패
+    'schedule_extraction' => [
+        'not_artisan' => 'Artisan 실행 문자열이 아닙니다 (php/artisan 접두사 없음).',
+        'command_name_missing' => '커맨드명을 찾지 못했습니다.',
+    ],
+
     // 스토리지 드라이버 경로 가드 예외
     'storage' => [
         'unsafe_path' => '허용되지 않는 저장 경로입니다.',
@@ -266,6 +283,23 @@ return [
     ],
 
     // SEO / Sitemap 관련 예외
+    // 파일 서빙 헬퍼 — 호출부 계약 위반 (개발자 대상)
+    'file_serving' => [
+        'meta_key_missing' => '파일 서빙 메타에 필수 키가 없습니다: :key',
+    ],
+
+    // 업그레이드 스텝 실행 대장 — 같은 DB 를 쓰는 다른 실행이 같은 스텝을 선점함 (콘솔·웹 업데이트 공통)
+    'upgrade_step_already_running' => '같은 업그레이드 스텝을 다른 실행이 진행 중입니다(:target :version :step) — 같은 DB 를 쓰는 다른 서버의 업데이트가 끝난 뒤 다시 실행하세요. 그 실행이 비정상 종료됐다면 업데이트를 --force 로 다시 실행하세요(시작한 지 :hours시간이 지난 실행 중 표시는 다음 실행이 자동으로 회수합니다).',
+
+    // 미뤄 둔 선언형 정리 — 대장 행의 정리 메서드가 허용 목록에 없음
+    'deferred_cleanup_helper_not_allowed' => '허용 목록에 없는 정리 메서드라 실행하지 않았습니다: :helper',
+    'deferred_cleanup_core_resync_failed' => '코어 선언 재동기화의 한 단계가 실패해 정리를 마치지 않았습니다(행을 남깁니다): :message',
+    'deferred_cleanup_seeder_failed' => '시드 정리 시더가 실패했습니다: :seeder (종료 코드 :code)',
+    'deferred_cleanup_target_not_allowed' => '실행할 수 없는 정리 대상이라 실행하지 않았습니다(확장이 선언하지 않은 시더이거나 알 수 없는 범위): :target',
+
+    // 실행 역할(stage/live)과 맞지 않는 레이아웃 테이블 쓰기
+    'stage_layout_write' => '실행 역할과 맞지 않는 레이아웃 테이블에 쓰려 했습니다: :table',
+
     'seo' => [
         'sitemap_write_failed' => 'Sitemap 파일 기록에 실패했습니다: :path',
         'sitemap_gzip_failed' => 'Sitemap 자식 파일 압축에 실패했습니다: :file',

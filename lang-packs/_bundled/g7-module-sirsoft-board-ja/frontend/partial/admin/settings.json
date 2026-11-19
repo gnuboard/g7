@@ -23,7 +23,8 @@
     "notification_definitions": "通知設定",
     "seo": "SEO設定",
     "identity_policies": "本人認証ポリシー",
-    "privacy_retention": "個人情報の保有期間"
+    "privacy_retention": "個人情報の保有期間",
+    "schedules": "スケジュール"
   },
   "board_settings_tabs": {
     "basic": "基本",
@@ -48,6 +49,7 @@
     "list_description": "掲示板リストページに関連する設定です",
     "post": "投稿設定",
     "post_description": "投稿作成に関連する設定です",
+    "guest_author_fields": "非会員投稿者項目",
     "reply": "回答投稿設定",
     "reply_description": "回答投稿に関連する設定です",
     "comment": "コメント設定",
@@ -633,5 +635,34 @@
     "no_permission": "管理者・スタッフを一括指定するには掲示板の編集権限が必要です。",
     "load_failed": "掲示板一覧を読み込めなかったため、一括指定を使用できません。しばらくしてから再度開いてください。",
     "failed": "掲示板管理者・スタッフの一括指定に失敗しました。"
+  },
+  "schedules": {
+    "title": "スケジュール",
+    "description": "掲示板モジュールが登録したスケジュールです。ここでは有効/無効のみ切り替えます。",
+    "manage_notice": "実行周期・実行方式はスケジュール管理で変更します。",
+    "manage_link": "スケジュール管理で変更",
+    "read_only_notice": "スケジュールの編集権限がないため、有効/無効を切り替えられません。",
+    "empty": "登録されたスケジュールはありません。",
+    "no_read_permission": "スケジュールの閲覧権限がないため、このモジュールのスケジュールを表示できません。",
+    "condition_unmet": "設定でオフ",
+    "toggle_success": "スケジュールのステータスが変更されました。",
+    "toggle_failed": "スケジュールのステータス変更に失敗しました。",
+    "columns": {
+      "name": "タスク名",
+      "frequency": "実行周期",
+      "next_run": "次回実行",
+      "last_result": "最近の実行結果",
+      "status": "状態"
+    },
+    "result": {
+      "success": "成功",
+      "failed": "失敗",
+      "running": "実行中",
+      "never": "未実行"
+    }
+  },
+  "guest_author_fields": {
+    "label": "非会員投稿者項目の既定値",
+    "description": "新しい掲示板を作成するとき、その掲示板の非会員投稿者項目の設定としてコピーされます。作成済みの掲示板は変わりません。名前とパスワードは常に入力を求めます。"
   }
 }

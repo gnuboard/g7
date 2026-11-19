@@ -44,7 +44,7 @@
     </error-handling>
   </data-source>
   <!-- 최근 글 5건 — 게시판을 가리지 않고 새로 올라온 순서다(인기순인 아래 목록과 다르다). -->
-  <data-source id="recent_posts" label_key="$t:editor.data_source.recent_posts" type="api" endpoint="/api/modules/sirsoft-board/boards/posts/recent?limit=5" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive" if="{{_global.activeModules?.includes('sirsoft-board') ?? true}}">
+  <data-source id="recent_posts" label_key="$t:editor.data_source.recent_posts" type="api" endpoint="/api/modules/sirsoft-board/boards/posts/recent?limit=5" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive" if="{{(_global.activeModules?.includes('sirsoft-board') ?? true) && (_global.templateSettings?.home?.show_feature_row ?? true)}}">
     <fallback>
       <field name="data" :value="[]"/>
     </fallback>
@@ -55,7 +55,7 @@
     </error-handling>
   </data-source>
   <!-- 활발한 게시판 4개 — 게시판 자체의 순위다(개별 인기글을 모으는 인기글 화면과 다르다). -->
-  <data-source id="popular_boards" label_key="$t:editor.data_source.popular_boards" type="api" endpoint="/api/modules/sirsoft-board/boards/popular-boards?limit=4" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive" if="{{_global.activeModules?.includes('sirsoft-board') ?? true}}">
+  <data-source id="popular_boards" label_key="$t:editor.data_source.popular_boards" type="api" endpoint="/api/modules/sirsoft-board/boards/popular-boards?limit=4" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive" if="{{(_global.activeModules?.includes('sirsoft-board') ?? true) && (_global.templateSettings?.home?.show_feature_row ?? true)}}">
     <fallback>
       <field name="data" :value="[]"/>
     </fallback>
@@ -66,7 +66,7 @@
     </error-handling>
   </data-source>
   <!-- 게시판 소개 3개 — 헤더 메뉴가 쓰는 boards 와 같은 곳에서 오지만 첫 화면 카드용으로 개수를 줄여 따로 받는다(상속원의 그 데이터소스는 개수 제한이 없다). -->
-  <data-source id="home_boards" label_key="$t:editor.data_source.home_boards" type="api" endpoint="/api/modules/sirsoft-board/boards?limit=3" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive" if="{{_global.activeModules?.includes('sirsoft-board') ?? true}}">
+  <data-source id="home_boards" label_key="$t:editor.data_source.home_boards" type="api" endpoint="/api/modules/sirsoft-board/boards?limit=3" method="GET" :auto_fetch="true" auth_mode="optional" loading_strategy="progressive" if="{{(_global.activeModules?.includes('sirsoft-board') ?? true) && (_global.templateSettings?.home?.show_board_summaries ?? true)}}">
     <fallback>
       <field name="data" :value="[]"/>
     </fallback>
@@ -78,7 +78,7 @@
   </data-source>
   <!-- 인기 상품 8개 — 쇼핑몰만 켠 사이트의 첫 화면을 채운다. 쇼핑 목록 화면과 같은 id·endpoint 라 그 화면의 상품 줄 조각을 그대로 쓴다.
        쇼핑몰 모듈이 꺼져 있으면 부르지 않는다. 비회원 상품 열람 권한이 꺼진 사이트(401·403)와 옛 코어에서 꺼진 모듈(404)의 실패는 삼키고 섹션만 비운다. -->
-  <data-source id="popularProducts" label_key="$t:editor.data_source.popularProducts" type="api" endpoint="/api/modules/sirsoft-ecommerce/products/popular?limit=8" method="GET" auth_mode="optional" :auto_fetch="true" loading_strategy="progressive" if="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}">
+  <data-source id="popularProducts" label_key="$t:editor.data_source.popularProducts" type="api" endpoint="/api/modules/sirsoft-ecommerce/products/popular?limit={{_global.templateSettings?.home?.product_count ?? 8}}" method="GET" auth_mode="optional" :auto_fetch="true" loading_strategy="progressive" if="{{(_global.activeModules?.includes('sirsoft-ecommerce') ?? true) && (_global.templateSettings?.home?.show_shop_sections ?? true)}}">
     <fallback>
       <field name="data" :value="[]"/>
     </fallback>
@@ -95,7 +95,7 @@
     </error-handling>
   </data-source>
   <!-- 신상품 8개 — 위 인기 상품과 같은 성격의 고정 줄이다. -->
-  <data-source id="newProducts" label_key="$t:editor.data_source.newProducts" type="api" endpoint="/api/modules/sirsoft-ecommerce/products/new?limit=8" method="GET" auth_mode="optional" :auto_fetch="true" loading_strategy="progressive" if="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}">
+  <data-source id="newProducts" label_key="$t:editor.data_source.newProducts" type="api" endpoint="/api/modules/sirsoft-ecommerce/products/new?limit={{_global.templateSettings?.home?.product_count ?? 8}}" method="GET" auth_mode="optional" :auto_fetch="true" loading_strategy="progressive" if="{{(_global.activeModules?.includes('sirsoft-ecommerce') ?? true) && (_global.templateSettings?.home?.show_shop_sections ?? true)}}">
     <fallback>
       <field name="data" :value="[]"/>
     </fallback>
@@ -112,6 +112,16 @@
     </error-handling>
   </data-source>
   <permissions/>
+  <slot name="page_top">
+    <!-- 사이트 홈 상단 히어로 자리 — 본문 상자 밖 전폭 자리(_user_base page_top)에 히어로섹션 플러그인이 배너 슬라이더를 붙인다. 붙인 플러그인이 없거나 노출 중인 배너가 없으면 아무것도 그리지 않는다.
+      본문 폭·화면 전체 중 어느 폭으로 그릴지는 붙는 확장이 정한다 — 그 기준이 되도록 본문 상자 클래스를 넘긴다(contentClass 기본·contentClassDesktop 데스크톱).
+      홈 본문은 _user_base main_content 여백(px-4, 데스크톱 px-8) 안에 아래 컨테이너 여백(px-4, 태블릿 px-6, 데스크톱 px-8)을 한 번 더 두므로,
+      히어로가 카드 영역과 같은 폭이 되게 두 여백을 더한 값을 넘긴다(휴대폰 32px · 태블릿 40px · 데스크톱 64px). 폭마다 바뀌는 값은 Tailwind 폭 접두가 아니라
+      기기별 속성(contentClass 기본 · contentClassTablet 태블릿 · contentClassDesktop 데스크톱)으로 넘기고, 조각이 엔진 responsive 로 고른다 -->
+    <extension-point name="home_hero" data-ref="home_hero_slot" contentClass="px-8" contentClassTablet="px-10" contentClassDesktop="max-w-7xl mx-auto px-16">
+      <default/>
+    </extension-point>
+  </slot>
   <slot name="content">
     <container data-type="layout" class="py-6 px-4">
       <responsive on="tablet" class="py-6 px-6"/>
@@ -121,7 +131,7 @@
       <div data-ref="home_top_row" class="{{(_global.activeModules?.includes('sirsoft-board') ?? true) ? 'grid grid-cols-3 grid-rows-2 gap-4 mb-4' : ((_global.activeModules?.includes('sirsoft-ecommerce') ?? true) ? 'grid grid-cols-3 gap-4 mb-4' : 'grid grid-cols-1 gap-4 mb-4')}}">
         <responsive on="portable" class="grid grid-cols-1 gap-4 mb-4"/>
         <!-- === 좌측: 웰컴 카드 (통계 카드 옆에서는 row-span-2, 쇼핑 홍보 카드 옆에서는 col-span-2) === -->
-        <div class="{{(_global.activeModules?.includes('sirsoft-board') ?? true) ? 'row-span-2' : ((_global.activeModules?.includes('sirsoft-ecommerce') ?? true) ? 'col-span-2' : '')}}">
+        <div data-ref="home_welcome_slot" data-if="{{_global.templateSettings?.home?.show_welcome ?? true}}" class="{{(_global.activeModules?.includes('sirsoft-board') ?? true) ? 'row-span-2' : ((_global.activeModules?.includes('sirsoft-ecommerce') ?? true) ? 'col-span-2' : '')}}">
           <responsive on="portable" class="row-span-2"/>
           <include src="partials/home/_welcome_card.g7.html"/>
         </div>
@@ -130,7 +140,7 @@
           <include src="partials/home/_shop_promo.g7.html"/>
         </div>
         <!-- === 통계 카드 4개 (PC: 개별 배치, 모바일: 2x2 그리드) — 게시판 모듈 통계라 게시판이 꺼져 있으면 숨긴다 === -->
-        <div data-ref="home_stat_cards" data-if="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" class="contents">
+        <div data-ref="home_stat_cards" data-if="{{(_global.activeModules?.includes('sirsoft-board') ?? true) && (_global.templateSettings?.home?.show_stats ?? true)}}" class="contents">
           <responsive on="portable" class="col-span-1 grid grid-cols-2 gap-4"/>
           <!-- === 회원 통계 === -->
           <include src="partials/home/_stat_card_users.g7.html"/>
@@ -144,7 +154,7 @@
       </div>
       <!-- === 2행: 최근 게시글 + 인기 게시판 + 쇼핑몰/가이드 (PC: 3컬럼) — 카드마다 자기 모듈 가드를 조각 뿌리에 단다.
            게시판이 꺼지면 쇼핑 홍보 카드만 남는데 그 카드는 1행으로 올라가므로 줄째 숨긴다 === -->
-      <div data-ref="home_feature_row" data-if="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" class="grid grid-cols-3 gap-4 mb-4">
+      <div data-ref="home_feature_row" data-if="{{(_global.activeModules?.includes('sirsoft-board') ?? true) && (_global.templateSettings?.home?.show_feature_row ?? true)}}" class="grid grid-cols-3 gap-4 mb-4">
         <responsive on="portable" class="grid grid-cols-1 gap-4 mb-4"/>
         <!-- === 좌측: 최근 게시글 === -->
         <include src="partials/home/_recent_posts.g7.html"/>
@@ -157,14 +167,14 @@
         </div>
       </div>
       <!-- === 하단: 게시판 요약 카드 (PC: 3컬럼, 모바일: 2컬럼) — 게시판 모듈이 꺼져 있으면 숨긴다 === -->
-      <div data-ref="home_board_summaries" data-if="{{_global.activeModules?.includes('sirsoft-board') ?? true}}" class="grid grid-cols-3 gap-4">
+      <div data-ref="home_board_summaries" data-if="{{(_global.activeModules?.includes('sirsoft-board') ?? true) && (_global.templateSettings?.home?.show_board_summaries ?? true)}}" class="grid grid-cols-3 gap-4">
         <responsive on="portable" class="grid grid-cols-1 gap-4"/>
         <div data-each="item in {{home_boards.data ?? []}}">
           <include src="partials/home/_board_summary.g7.html"/>
         </div>
       </div>
       <!-- === 상품 섹션: 인기 상품 + 신상품 — 쇼핑 목록 화면의 줄 조각을 그대로 쓴다(데이터가 없으면 조각이 스스로 숨는다). 쇼핑몰 모듈이 꺼져 있으면 숨긴다 === -->
-      <div data-ref="home_shop_sections" data-if="{{_global.activeModules?.includes('sirsoft-ecommerce') ?? true}}" class="mt-8">
+      <div data-ref="home_shop_sections" data-if="{{(_global.activeModules?.includes('sirsoft-ecommerce') ?? true) && (_global.templateSettings?.home?.show_shop_sections ?? true)}}" class="mt-8">
         <include src="partials/shop/list/_popular_products.g7.html"/>
         <include src="partials/shop/list/_new_products.g7.html"/>
       </div>

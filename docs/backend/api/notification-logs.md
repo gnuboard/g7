@@ -8,7 +8,7 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Notification Logs 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
@@ -30,20 +30,22 @@
 | sender_user_id | query | integer | 아니오 | — | sender user 식별자 |
 | recipient_user_id | query | integer | 아니오 | — | recipient user 식별자 |
 | search | query | string | 아니오 | max 255 | 검색어 (지정한 검색 대상 필드에서 부분 일치) |
+| search_type | query | string | 아니오 | `all`, `recipient`, `subject` | 검색 대상 (all: 수신자명·수신자 식별자·제목·알림 타입 / recipient: 수신자명·수신자 식별자 / subject: 제목, 생략 시 all) |
 | channel | query | string | 아니오 | max 50 | 발송 채널 필터 (해당 채널로 발송된 이력만 조회 — mail, database, fcm 등) |
 | notification_type | query | string | 아니오 | max 100 | 알림 타입 필터 (해당 타입의 이력만 조회 — welcome, order_confirmed 등) |
-| extension_type | query | string | 아니오 | `core`, `module`, `plugin` | 확장 유형 (core/module/plugin/template) |
-| status | query | string | 아니오 | — | 상태 필터 (해당 상태의 항목만 조회) |
+| extension_type | query | array | 아니오 | 각 항목 `core`, `module`, `plugin` | 확장 유형 다중 선택 (`extension_type[]=core&extension_type[]=module` — 고른 유형 중 하나에 해당하는 이력, 스칼라 한 값도 받는다) |
+| status | query | array | 아니오 | 각 항목 `sent`, `failed`, `skipped` | 상태 다중 선택 (`status[]=sent&status[]=failed` — 고른 상태 중 하나에 해당하는 이력, 스칼라 한 값도 받는다) |
 | per_page | query | integer | 아니오 | min 1, max 100 | 페이지당 항목 수 |
 | sort_by | query | string | 아니오 | `id`, `channel`, `notification_type`, `status`, `sent_at`, `created_at`, `recipient_name`, `subject` | 정렬 기준 필드명 (`recipient_name`·`subject` 는 관리자 화면의 "수신자명순"·"제목순" 정렬에 대응) |
 | sort_order | query | string | 아니오 | `asc`, `desc` | 정렬 방향 (asc 오름차순 / desc 내림차순) |
+| cursor | query | string | 아니오 | max 500 | 커서 기반 페이지네이션의 다음 페이지 커서 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.notification_log.index_validation_rules`).
 
 **요청 예시**
 
 ```http
-GET /api/admin/notification-logs?sender_user_id=1&recipient_user_id=1&search=%EC%98%88%EC%8B%9C%EA%B0%92&channel=%EC%98%88%EC%8B%9C%EA%B0%92&notification_type=%EC%98%88%EC%8B%9C%EA%B0%92&extension_type=core&status=%EC%98%88%EC%8B%9C%EA%B0%92&per_page=1&sort_by=id&sort_order=asc HTTP/1.1
+GET /api/admin/notification-logs?sender_user_id=1&recipient_user_id=1&search=%EC%98%88%EC%8B%9C%EA%B0%92&channel=%EC%98%88%EC%8B%9C%EA%B0%92&notification_type=%EC%98%88%EC%8B%9C%EA%B0%92&extension_type=core&status=%EC%98%88%EC%8B%9C%EA%B0%92&per_page=1&sort_by=id&sort_order=asc&cursor=%EC%98%88%EC%8B%9C%EA%B0%92 HTTP/1.1
 Host: api.example.com
 Accept: application/json
 Authorization: Bearer {YOUR_TOKEN}
@@ -63,10 +65,10 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | extension_identifier | string | `` | 확장 식별자 |
 | recipient_user_id | integer | `1240` | recipient user 식별자 (연관 리소스 참조) |
 | recipient_identifier | string | `apidoc-sample-user@example.com` | 수신자 식별자 (채널별: 이메일, 디바이스토큰, user_id 등) |
-| recipient_name | string | `API 문서 샘플 사용자` | 수신자 표시명 (발송 시점 스냅샷) |
+| recipient_name | string | `API 문서 샘플 사용자` | 수신자 표시명 (발송 시점 스냅샷. 회원이면 그 시점의 관리자 화면 영역 표시 이름이고 뒤에 설정이 바뀌어도 그대로다) |
 | sender_user_id | integer | `1240` | sender user 식별자 (연관 리소스 참조) |
-| sender | object | `{"uuid":"a2640dae-e87c-4a28-b4f1-481fd961dc02","name":"AP…` | 발신자 사용자 객체 (uuid/name/email — senderUser 관계 파생) |
-| recipient | object | `{"uuid":"a2640dae-e87c-4a28-b4f1-481fd961dc02","name":"AP…` | 수신자 사용자 객체 (uuid/name/email — recipientUser 관계 파생) |
+| sender | object | `{"uuid":"a2640dae-e87c-4a28-b4f1-481fd961dc02","name":"AP…` | 발신자 사용자 객체 (uuid/name/email, 조건부 real_name — senderUser 관계 파생). `name` 은 관리자 화면 영역의 표시 이름, `real_name` 은 회원 조회 권한이 있는 관리자에게만 실명이 표시 이름과 다를 때 실린다 |
+| recipient | object | `{"uuid":"a2640dae-e87c-4a28-b4f1-481fd961dc02","name":"AP…` | 수신자 사용자 객체 (uuid/name/email, 조건부 real_name — recipientUser 관계 파생). `name` 은 지금의 관리자 화면 영역 표시 이름, `real_name` 은 회원 조회 권한이 있는 관리자에게만 실명이 표시 이름과 다를 때 실린다 |
 | subject | string | `API 문서 샘플 알림` | 렌더링된 제목 |
 | body | string | `문서 실측용 알림 본문입니다.` | 렌더링된 본문 |
 | status | string | `sent` | 상태: sent, failed, skipped |
@@ -175,7 +177,7 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
-**설명** 알림 발송 이력을 페이지네이션으로 조회합니다. 인증(`auth:sanctum`)과 `core.notification-logs.read` 권한이 필요합니다. 발송자/수신자 ID, `search`, `channel`, `notification_type`, `extension_type`, `status` 로 필터링하고 `sort_by`/`sort_order` 로 정렬하며, 확장이 `core.notification_log.index_validation_rules` 훅으로 필터를 추가할 수 있습니다. 요청 사용자(`request->user()`)를 Service 에 전달해 열람 범위를 결정하며, 관리자 알림 발송 이력 화면을 렌더링할 때 사용합니다.
+**설명** 알림 발송 이력을 페이지네이션으로 조회합니다. 인증(`auth:sanctum`)과 `core.notification-logs.read` 권한이 필요합니다. 발송자/수신자 ID, `search`(+ 검색 대상 `search_type`), `channel`, `notification_type`, `extension_type`(다중), `status`(다중) 로 필터링하고 `sort_by`/`sort_order` 로 정렬하며, 확장이 `core.notification_log.index_validation_rules` 훅으로 필터를 추가할 수 있습니다. 요청 사용자(`request->user()`)를 Service 에 전달해 열람 범위를 결정하며, 관리자 알림 발송 이력 화면을 렌더링할 때 사용합니다.
 
 
 ### POST /api/admin/notification-logs/bulk-delete
@@ -240,6 +242,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 알림 발송 이력을 ID 배열(`ids`)로 다건 삭제하고 삭제 건수(`deleted_count`)를 반환합니다. 인증(`auth:sanctum`)과 `core.notification-logs.delete` 권한이 필요합니다. 복구 불가능한 삭제이므로 주의가 필요하며, 관리자가 목록에서 여러 이력을 선택해 일괄 정리할 때 사용합니다.
 
 
@@ -292,6 +296,7 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
 
 **설명** 단일 알림 발송 이력을 삭제합니다. 인증(`auth:sanctum`)과 `core.notification-logs.delete` 권한이 필요합니다. `notificationLog` 경로 파라미터로 대상을 지정하며, 복구 불가능한 삭제입니다. 관리자가 개별 발송 이력 한 건을 제거할 때 사용합니다.
 

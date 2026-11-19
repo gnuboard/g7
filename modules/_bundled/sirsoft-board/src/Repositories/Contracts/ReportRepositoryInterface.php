@@ -71,7 +71,7 @@ interface ReportRepositoryInterface
     public function delete(int $id): bool;
 
     /**
-     * 신고를 영구 삭제합니다.
+     * 신고를 영구 삭제합니다 — 그 케이스의 신고 로그를 먼저 명시 삭제한다(DB 외래키 연쇄에 맡기지 않는다).
      *
      * @param  int  $id  신고 ID
      * @return bool 삭제 성공 여부

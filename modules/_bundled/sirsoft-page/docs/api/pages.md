@@ -57,7 +57,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드._
 | published | boolean | `true` | 발행 여부 (true: 발행, false: 미발행) |
 | published_at | string | `2026-07-06 23:57:18` | published 일시 |
 | current_version | integer | `2` | 현재 버전 번호 |
-| creator | object | `{"uuid":"a231747f-e82e-4cf2-9ae1-a261849dce40","name":"AP…` | 생성자 정보 객체 (uuid/name/email — creator 관계 파생) |
+| creator | object | `{"uuid":"a231747f-e82e-4cf2-9ae1-a261849dce40","name":"AP…` | 생성자 정보 객체 (uuid/name, 실명 보조가 실릴 때 real_name — creator 관계 파생). `name` 은 관리자 화면 영역 표시 이름 |
 | created_at | string | `2026-07-06 23:57:18` | 생성 일시 |
 | updated_at | string | `2026-07-06 23:57:18` | 최종 수정 일시 |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
@@ -135,11 +135,13 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-page.pages.read`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
 **설명** 관리자 페이지 목록을 조회합니다. `published`, `search`/`search_field`(제목·슬러그), `filters` 로 필터링하고 `sort_by`(created_at, published_at)·`sort_order` 로 정렬하며 `per_page`·`page` 로 페이지네이션합니다. `PageService::getPages()` 가 반환하는 `PageCollection` 으로 래핑되어 목록 항목마다 `is_owner`·`abilities` 권한 메타가 함께 내려갑니다. 관리자 페이지 관리 화면(목록 그리드)의 데이터 소스입니다.
+
+관리자 페이지 응답(목록, 상세, 등록, 수정, 발행 전환, 버전 이력, 버전 상세, 복원)의 `creator.name`, `updater.name` 은 관리자 화면 영역(`core:admin`)의 표시 이름입니다. 보는 관리자에게 회원 조회 권한(`core.users.read`)이 있고 실명이 표시 이름과 다를 때만 같은 묶음에 `real_name` 이 더해지며, 그렇지 않으면 키 자체가 없습니다.
 
 
 ### POST /api/modules/sirsoft-page/admin/pages
@@ -205,8 +207,8 @@ _단건 응답: `data` 객체의 필드 (`PageResource`, HTTP 201)._
 | published_at | string\|null | `2026-07-08 10:51:59` | 발행 일시 (미발행 시 null) |
 | seo_meta | object\|null | `{"title":"...","description":"...","keywords":"..."}` | SEO 메타 정보 (title, description, keywords) |
 | current_version | integer | `1` | 현재 버전 번호 |
-| creator | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 생성자 정보 (uuid/name — creator 관계 eager load) |
-| updater | object\|null | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 최종 수정자 정보 (uuid/name — updater 관계 eager load) |
+| creator | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 생성자 정보 (uuid/name, 실명 보조가 실릴 때 real_name — creator 관계 eager load). `name` 은 관리자 화면 영역 표시 이름 |
+| updater | object\|null | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 최종 수정자 정보 (uuid/name, 실명 보조가 실릴 때 real_name — updater 관계 eager load). `name` 은 관리자 화면 영역 표시 이름 |
 | attachments | array | `[]` | 페이지에 귀속된 첨부파일 목록 (`temp_key` 로 귀속된 임시 첨부 포함) |
 | created_at | string | `2026-07-08 10:51:59` | 생성 일시 |
 | updated_at | string | `2026-07-08 10:51:59` | 최종 수정 일시 |
@@ -403,7 +405,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`sirsoft-page.pages.create`)이 없는 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-page.pages.create\|sirsoft-page.pages.update`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). 대표 케이스: `slug` 누락, `exclude_id` 가 정수가 아님 |
 
 <!-- @generated:end -->
@@ -412,6 +414,9 @@ HTTP/1.1 200
 
 
 ### DELETE /api/modules/sirsoft-page/admin/pages/{page}
+
+페이지를 영구 삭제한다(소프트 삭제 없음). 본문 미디어·첨부, 버전 이력을 페이지 행보다 먼저 명시적으로 지운다 — DB 연쇄 삭제에 기대지 않는다(#888).
+
 <!-- @generated:start:api.modules.sirsoft-page.admin.pages.destroy -->
 - **라우트명**: `api.modules.sirsoft-page.admin.pages.destroy`
 - **컨트롤러**: `Modules\Sirsoft\Page\Http\Controllers\Admin\PageController@destroy`
@@ -499,8 +504,8 @@ _단건 응답: `data` 객체의 필드._
 | published_at | string | `2026-07-06 23:57:18` | published 일시 |
 | seo_meta | object | `{"title":"Et qui sapiente veritatis.","description":"Et m…` | SEO 메타 정보 (title, description, keywords) |
 | current_version | integer | `2` | 현재 버전 번호 |
-| creator | object | `{"uuid":"a231747f-e82e-4cf2-9ae1-a261849dce40","name":"AP…` | 생성자 정보 객체 (uuid/name/email — creator 관계 파생) |
-| updater | object | `{"uuid":"a231747f-e82e-4cf2-9ae1-a261849dce40","name":"AP…` | 최종 수정자 정보 객체 (uuid/name — updater 관계 파생, 로드된 경우에만 포함) |
+| creator | object | `{"uuid":"a231747f-e82e-4cf2-9ae1-a261849dce40","name":"AP…` | 생성자 정보 객체 (uuid/name, 실명 보조가 실릴 때 real_name — creator 관계 파생). `name` 은 관리자 화면 영역 표시 이름 |
+| updater | object | `{"uuid":"a231747f-e82e-4cf2-9ae1-a261849dce40","name":"AP…` | 최종 수정자 정보 객체 (uuid/name, 실명 보조가 실릴 때 real_name — updater 관계 파생, 로드된 경우에만 포함). `name` 은 관리자 화면 영역 표시 이름 |
 | attachments | array | `[{"id":9,"hash":"xtfalwomchas","original_filename":"deser…` | 페이지에 귀속된 첨부파일 목록 (PageAttachmentResource 배열 — id/hash/원본파일명/URL 등, 로드된 경우에만 포함) |
 | created_at | string | `2026-07-06 23:57:18` | 생성 일시 |
 | updated_at | string | `2026-07-06 23:57:18` | 최종 수정 일시 |
@@ -649,8 +654,8 @@ _단건 응답: `data` 객체의 필드 (`PageResource` — `show` 와 동일 sh
 | published_at | string\|null | `2026-07-08 10:51:59` | 발행 일시 (미발행 시 null) |
 | seo_meta | object\|null | `{"title":"...","description":"...","keywords":"..."}` | SEO 메타 정보 (title, description, keywords) |
 | current_version | integer | `3` | 현재 버전 번호 (수정 시 이전 상태가 버전 이력으로 적재되며 증가) |
-| creator | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 생성자 정보 (uuid/name — creator 관계 eager load) |
-| updater | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 최종 수정자 정보 (uuid/name — updater 관계 eager load) |
+| creator | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 생성자 정보 (uuid/name, 실명 보조가 실릴 때 real_name — creator 관계 eager load). `name` 은 관리자 화면 영역 표시 이름 |
+| updater | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 최종 수정자 정보 (uuid/name, 실명 보조가 실릴 때 real_name — updater 관계 eager load). `name` 은 관리자 화면 영역 표시 이름 |
 | attachments | array | `[{"id":4,"hash":"ninrdtsmhhta","original_filename":"nesciunt.jpg", ...}]` | 페이지에 귀속된 첨부파일 목록 (`PageAttachmentResource` 배열) |
 | created_at | string | `2026-07-08 10:51:59` | 생성 일시 |
 | updated_at | string | `2026-07-08 15:03:15` | 최종 수정 일시 |
@@ -819,7 +824,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-page.pages.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -859,7 +864,7 @@ Authorization: Bearer {YOUR_TOKEN}
 | content_mode | string | `html` | 본문 형식 (html, text) |
 | seo_meta | null | `null` | SEO 메타 정보 (title, description, keywords) |
 | changes_summary | string | `본문 보강` | 이 버전에서 무엇이 바뀌었는지 요약한 변경 설명 (버전 생성 시 기록, 없으면 null) |
-| creator | object | `{"uuid":"a231747f-e82e-4cf2-9ae1-a261849dce40","name":"AP…` | 생성자 정보 객체 (uuid/name/email — creator 관계 파생) |
+| creator | object | `{"uuid":"a231747f-e82e-4cf2-9ae1-a261849dce40","name":"AP…` | 생성자 정보 객체 (uuid/name, 실명 보조가 실릴 때 real_name — creator 관계 파생). `name` 은 관리자 화면 영역 표시 이름 |
 | created_at | string | `2026-07-06 23:57:18` | 생성 일시 |
 
 **응답 예시**
@@ -943,7 +948,7 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | page | path | string | 예 | — | 조회할 페이지 번호 (1부터 시작) |
-| versionId | path | string | 예 | — | 대상 version의 식별자 |
+| versionId | path | integer | 예 | — | 대상 version의 식별자 |
 
 **요청 예시**
 
@@ -968,7 +973,7 @@ _단건 응답: `data` 객체의 필드 (`PageVersionResource` — `versions.ind
 | content_mode | string | `html` | 그 시점의 본문 형식 (`html`, `text` — 미지정 시 `html`) |
 | seo_meta | object\|null | `null` | 그 시점의 SEO 메타 스냅샷 (title, description, keywords) |
 | changes_summary | string\|null | `본문 보강` | 이 버전에서 무엇이 바뀌었는지 요약한 변경 설명 (없으면 null) |
-| creator | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 이 버전을 만든 사용자 정보 (uuid/name — creator 관계 eager load) |
+| creator | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 이 버전을 만든 사용자 정보 (uuid/name, 실명 보조가 실릴 때 real_name — creator 관계 eager load). `name` 은 관리자 화면 영역 표시 이름 |
 | created_at | string | `2026-07-08 10:51:59` | 버전 생성 일시 |
 
 **응답 예시**
@@ -1030,7 +1035,7 @@ HTTP/1.1 200
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | page | path | string | 예 | — | 조회할 페이지 번호 (1부터 시작) |
-| versionId | path | string | 예 | — | 대상 version의 식별자 |
+| versionId | path | integer | 예 | — | 대상 version의 식별자 |
 
 **요청 예시**
 
@@ -1056,8 +1061,8 @@ _단건 응답: `data` 객체의 필드 (복원된 페이지의 `PageResource` �
 | published_at | string\|null | `2026-07-08 10:51:59` | 발행 일시 (미발행 시 null) |
 | seo_meta | object\|null | `null` | SEO 메타 정보 (title, description, keywords — 대상 버전의 스냅샷) |
 | current_version | integer | `3` | 현재 버전 번호 (복원 자체도 새 버전으로 적재되어 증가) |
-| creator | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 생성자 정보 (uuid/name — creator 관계 eager load) |
-| updater | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 최종 수정자(복원 수행자) 정보 (uuid/name — updater 관계 eager load) |
+| creator | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 생성자 정보 (uuid/name, 실명 보조가 실릴 때 real_name — creator 관계 eager load). `name` 은 관리자 화면 영역 표시 이름 |
+| updater | object | `{"uuid":"a234c2b1-cde8-437f-b28b-23323be2b98d","name":"관리자"}` | 최종 수정자(복원 수행자) 정보 (uuid/name, 실명 보조가 실릴 때 real_name — updater 관계 eager load). `name` 은 관리자 화면 영역 표시 이름 |
 | attachments | array | `[]` | 페이지에 귀속된 첨부파일 목록 (`PageAttachmentResource` 배열) |
 | created_at | string | `2026-07-08 10:51:59` | 생성 일시 |
 | updated_at | string | `2026-07-08 15:10:02` | 최종 수정 일시 (복원 시각) |
@@ -1211,10 +1216,27 @@ _이 엔드포인트는 JSON 봉투를 반환하지 않습니다. 성공 시 이
 ```http
 HTTP/1.1 200
 Content-Type: image/jpeg
-Content-Disposition: inline
+Content-Disposition: inline; filename=photo.jpg
 X-Content-Type-Options: nosniff
+Cache-Control: public, max-age=31536000, must-revalidate
+ETag: "9f2c1d5a0b7e4c3f8a6d2e1b9c0f7a5d"
+Last-Modified: Tue, 14 Nov 2023 22:13:20 GMT
+Expires: Wed, 13 Nov 2024 22:13:20 GMT
 
 (이미지 바이너리 스트림)
+```
+
+조건부 요청 (HTTP 304) — `If-None-Match` 가 현재 ETag 와 일치하거나, `If-None-Match` 없이 `If-Modified-Since` 가 수정 시각 이후이면 본문 없이 응답합니다. 304 는 200 이 실었을 `ETag`·`Last-Modified`·`Cache-Control`·`Expires` 를 그대로 싣습니다:
+
+```http
+GET /api/modules/sirsoft-page/pages/attachment/{hash}/preview HTTP/1.1
+If-None-Match: "9f2c1d5a0b7e4c3f8a6d2e1b9c0f7a5d"
+
+HTTP/1.1 304 Not Modified
+ETag: "9f2c1d5a0b7e4c3f8a6d2e1b9c0f7a5d"
+Last-Modified: Tue, 14 Nov 2023 22:13:20 GMT
+Cache-Control: public, max-age=31536000, must-revalidate
+Expires: Wed, 13 Nov 2024 22:13:20 GMT
 ```
 
 실패 시(첨부 미존재 · 이미지가 아닌 첨부 · 스토리지에 파일 없음):
@@ -1237,7 +1259,25 @@ X-Content-Type-Options: nosniff
 
 **설명** 이미지 첨부 썸네일을 인라인으로 미리봅니다(해시 기반, 12자). `download` 와 동일한 발행상태 게이트를 적용합니다 — 발행된 페이지의 썸네일은 누구나, 미발행 페이지의 썸네일은 `sirsoft-page.pages.read` 권한 관리자만 미리볼 수 있습니다. 무인가 사용자에게는 미발행 썸네일이 차단됩니다.
 
-브라우저 `<img src>` 는 Authorization 헤더를 실을 수 없으므로, 미발행 페이지의 관리자 응답(관리자 상세·미발행 미리보기)에는 `expires`·`signature` 쿼리가 붙은 **한시 서명 URL** 이 `preview_url` 로 직렬화되며, 이 엔드포인트는 유효한 서명을 권한과 동등한 자격으로 허용합니다. 서명이 변조·만료된 요청은 404 로 차단됩니다. 발행 페이지의 `preview_url` 은 종전과 동일한 무서명 공개 경로입니다. 이미지 스트리밍 응답이므로 실측 대상이 아닙니다.
+브라우저 `<img src>` 는 Authorization 헤더를 실을 수 없으므로, 미발행 페이지의 관리자 응답(관리자 상세·미발행 미리보기)에는 `expires`·`signature` 쿼리가 붙은 **한시 서명 URL** 이 `preview_url` 로 직렬화되며, 이 엔드포인트는 유효한 서명을 권한과 동등한 자격으로 허용합니다. 서명이 변조·만료된 요청은 404 로 차단됩니다. 발행 페이지의 `preview_url` 은 종전과 동일한 무서명 공개 경로입니다. 사이트를 하위 폴더(예: `/g7`)에 설치하면 이 서명 URL 은 설치 폴더 접두사를 실은 경로(`/g7/api/…`)로 내려간다 — 서명은 접두사를 뺀 경로에 걸리고 검증도 접두사를 뺀 요청 경로로 하므로, 그 주소 그대로 열면 서명이 유효하다. 무서명 `preview_url`·`download_url` 도 같은 접두사를 싣는다. 이미지 스트리밍 응답이므로 실측 대상이 아닙니다.
+
+**조건부 요청**: 응답은 행 메타(디스크·경로·수정 시각·크기) 기반 `ETag` 와 `Last-Modified` 를 싣고, 되돌아온 `If-None-Match`(우선) / `If-Modified-Since` 를 판정해 변경이 없으면 본문 없는 304 로 응답합니다. 판정은 코어 파일 서빙 헬퍼(`streamedFileResponse()`)가 하므로 다중값·`W/` 약한 검증자·압축 표현의 `-gzip` 접미사가 모두 인정되며, 304 에도 200 과 같은 캐시 헤더가 실립니다. 주소에 자산 버전(`?v=`)이 없으므로 `immutable` 은 붙지 않고(비운영 환경은 `no-cache`), 같은 주소의 이미지가 교체되면 재검증으로 도달합니다. 파일 이름 선언(`Content-Disposition`)은 스토리지 계층이 원본 파일명으로 만듭니다.
+
+**캐시**: 미발행 페이지 첨부의 원본은 `Cache-Control: private` 로 냅니다(공유 캐시 저장 금지 — 운영 환경 `private, max-age={TTL}`, 그 외 `private, no-cache`). 발행 페이지 원본은 종전과 같습니다. 썸네일을 요청했는데 원본을 낸 응답(`X-G7-Thumbnail: bypass:{사유}`)은 운영 환경에서 `max-age` 가 썸네일과 같은 코어 레이아웃 캐시 유지 시간(`cache.layout_ttl`, 1년 이하)으로 줄고, 생성 제한·일시 오류면 `no-store` 입니다.
+
+**썸네일 (코어 7.2.0+)**: 쿼리에 규격을 붙이면 발행상태 게이트를 지난 뒤 환경설정 > 업로드 「썸네일 규격」 크기로 줄인 이미지를 냅니다. 둘 다 없으면 원본입니다. 페이지 첨부는 권한이 걸린 원본이라 썸네일은 항상 `Cache-Control: private` 이고, 게이트에 막히는 요청은 썸네일을 붙여도 원본과 같은 404 입니다. 서명은 `size`·`w` 를 빼고 검증하므로 서명 주소 뒤에 `size` 를 덧붙여도 유효합니다(변조·만료는 그대로 404). 저장소에서 원본 파일만 사라진 첨부는 썸네일 파생본이 남아 있어도 원본과 같은 404(`첨부파일이 스토리지에 존재하지 않습니다.`)입니다 — 원본 확인을 썸네일 판정보다 먼저 합니다.
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| size | query | string | 아니오 | 규격 이름 (`xs`·`sm`·`md`·`lg`·`xl`·`og`·확장·운영자 규격) | 그 규격으로 줄인 이미지. `w` 보다 우선 |
+| w | query | integer | 아니오 | 1~10000 | 「숫자 요청 대상」 규격 중 가로가 이 값 이상인 가장 작은 규격(없으면 가장 큰 규격) |
+
+| 응답 헤더 | 값 | 의미 |
+| --- | --- | --- |
+| `X-G7-Thumbnail` | `hit` · `miss` | 썸네일을 냄 — 이미 있던 파일(`hit`) 또는 이번에 만든 파일(`miss`) |
+| `X-G7-Thumbnail` | `bypass:{사유}` | 썸네일을 요청했지만 원본을 냄. 사유: `disabled`·`no-engine`·`not-raster`·`animated`·`unknown-preset`(미정의 규격·배열 파라미터·같은 키 두 번)·`smaller-than-preset`·`rate-limited`·`too-large`·`error` |
+
+`size`·`w` 를 붙이지 않은 요청에는 이 헤더가 없습니다. 자세한 규약은 [이미지 썸네일](../../../../../docs/backend/image-thumbnails.md) 문서를 봅니다.
 
 
 ### GET /api/modules/sirsoft-page/pages/{slug}

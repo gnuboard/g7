@@ -1,0 +1,46 @@
+feature: 확장 수동 설치 모달 (모듈, 플러그인, 템플릿 목록 화면)
+
+description: |
+  모듈, 플러그인, 템플릿 목록 화면의 「수동 설치」 모달(`partials/admin_{type}_list/_modal_manual_install`)은
+  파일 업로드와 GitHub 주소 두 갈래로 확장을 설치한다. 세 모달은 같은 구조여야 하고, 실패는 토스트가
+  아니라 창 안(에러 배너, 상세 메시지, 필드별 오류)에 남아 바로 고쳐 다시 시도할 수 있어야 한다.
+
+  두 계층으로 잰다.
+    - 구조: 세 모달 JSON 을 모두 읽어 탭(underline, file_upload/github), if 기반 분기, 에러 배너,
+      FileInput 과 `$event.target.value` 바인딩, 상세 오류(errors.error), 필드 오류(.form-error-xs),
+      설치 버튼 아이콘(download/spinner)을 대조한다.
+    - 렌더: 모듈 모달의 본문과 고정 하단(`props.footer`, #869 P1 에서 설치 단추가 옮겨 감)을 실제로 그려
+      탭 전환, 오류 표시, 설치 중 아이콘, 설치 버튼 잠금 조건을 본다. 세 모달 구조가 같다는 것은
+      구조 계층이 세 종류 전수로 잡으므로 렌더 계층은 모듈 하나로 잰다.
+
+axes:
+  extension_type: [module, plugin, template]
+
+effects:
+  # 구조 (세 모달 전수)
+  - manual_install_tabs_use_underline_variant             # TabNavigation variant 가 underline 이다
+  - manual_install_tabs_are_file_upload_and_github        # 탭 id 가 file_upload, github 순서다
+  - manual_install_error_banner_uses_if_and_alert_danger  # 에러 배너가 {type}InstallError if 로 뜨고 alert-danger 다
+  - manual_install_uses_if_not_condition                  # condition 속성을 쓰지 않는다
+  - manual_install_button_has_download_and_spinner_icons  # 설치 버튼에 download, spinner 아이콘이 있다
+  - manual_install_uses_file_input_component              # 파일 선택은 FileInput 컴포넌트다
+  - file_input_change_stores_event_target_value           # FileInput change 가 $event.target.value 와 그 name 을 담는다
+  - detail_error_message_bound_to_errors_error            # 상세 오류 P 가 {type}InstallErrors.error 로 뜨고 그 값을 그린다
+  - field_errors_use_form_error_xs                        # file, github_url 필드 오류가 .form-error-xs 로 2곳 이상 있다
+  # 렌더 (모듈 모달)
+  - file_upload_tab_active_by_default                     # 처음에는 underline 탭과 파일 입력이 보인다
+  - github_tab_shows_url_input_instead_of_file_input      # github 탭이면 저장소 주소 입력이 보이고 파일 입력은 빠진다
+  - error_banner_hidden_without_install_error             # 설치 오류가 없으면 에러 배너가 없다
+  - error_banner_shown_with_install_error                 # 설치 오류가 있으면 에러 배너가 뜬다
+  - file_field_red_border_on_file_error                   # 파일 필드 오류가 있으면 입력 테두리가 붉다
+  - detail_error_message_shown_with_general_message       # errors.error 가 있으면 상세 메시지와 일반 메시지가 함께 보인다
+  - detail_error_message_hidden_without_errors_error      # errors.error 가 없으면 상세 메시지는 없다
+  - installing_shows_spinner_hides_download               # 설치 중이면 spinner 가 보이고 download 는 빠진다
+  - idle_shows_download_hides_spinner                     # 설치 중이 아니면 download 가 보이고 spinner 는 빠진다
+  - install_button_locked_until_selected_tab_input_filled # 설치 버튼이 고른 탭의 입력(파일 또는 주소)이 비면 잠기고, 설치 중이면 늘 잠긴다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-manual-install-modal.test.tsx
+
+validation:
+  audit_rule: test-scenario-coverage

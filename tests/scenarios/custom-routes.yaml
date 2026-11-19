@@ -1,0 +1,62 @@
+feature: custom 예약 자리 라우트·뷰·번역·마이그레이션·개발자 프로바이더 (#792)
+
+description: |
+  routes/web.php 맨 앞에서 routes/custom.php 를 custom.screen 묶음(정식 주소 이동·봇 표식·봇 기록·
+  서버 폴백 집계)으로 불러와 G7 화면 catch-all 보다 먼저 등록한다. 등록하지 않은 주소는 G7 셸이 그린다.
+  코어 예약 주소(/api·/plugins·/modules·/_boost·/build·/storage·/install·/dev, /sitemap.xml·/sitemap-{n}.xml, 정적 자산 확장자)를 가리는
+  라우트는 등록하지 않고 경고한다. .html 뷰는 custom 뷰에서만 파일 그대로, lang/custom 은 custom 번역
+  네임스페이스, database/migrations/custom 은 마이그레이션 경로, App\Custom\CustomServiceProvider 는 마지막에 등록.
+
+test_files:
+  - tests/Feature/Custom/CustomRouteTest.php
+  - tests/Feature/Custom/CustomReservedServiceProviderTest.php
+  - tests/Feature/Custom/CustomCheckCommandTest.php
+
+axes:
+  case:
+    - custom_wins_over_catch_all
+    - canonical_path
+    - unregistered_falls_back_to_shell
+    - forbidden_rejected
+    - forbidden_rules
+    - no_user_template
+    - bot_marked
+    - patterns
+    - no_file
+    - inspect_sandbox
+    - html_view
+    - core_views_unchanged
+    - wiring_present
+    - wiring_absent
+    - check_command_clean
+    - check_command_problems
+    - custom_autoload
+
+effects:
+  - custom_route_wins_user
+  - custom_route_wins_admin
+  - custom_screen_middleware_applied
+  - custom_screen_trailing_slash_redirects
+  - unregistered_address_is_shell
+  - forbidden_route_not_registered
+  - forbidden_route_logged
+  - core_response_kept
+  - forbidden_reason_is_exact
+  - custom_route_independent_of_template
+  - bot_marked_on_custom_screen
+  - bot_excluded_from_server_fallback_on_custom_screen
+  - bot_mark_follows_detection_setting
+  - custom_route_patterns_scoped
+  - custom_route_patterns_cached_with_route_cache
+  - missing_file_is_noop
+  - inspect_does_not_touch_router
+  - html_view_served_raw
+  - html_ignored_outside_custom
+  - core_view_resolution_unchanged
+  - custom_lang_namespace_loaded
+  - custom_migration_path_registered
+  - developer_provider_registered_last
+  - missing_reserved_paths_are_noop
+  - check_reports_status
+  - check_fails_on_rejected_or_conflict
+  - custom_autoload_appended_after_core

@@ -91,26 +91,25 @@ describe('PreviewCanvas — frame 클리핑 컨텍스트(fixed 드로어 노출 
   function renderCanvas(path: string, layoutName: string) {
     const engine = new TranslationEngine();
     return render(
-      React.createElement(
-        TranslationProvider,
-        {
-          translationEngine: engine,
-          translationContext: { templateId: 'sirsoft-admin_basic', locale: 'ko' },
-        },
-        React.createElement(
-          LayoutEditorProvider,
-          { templateIdentifier: 'sirsoft-basic', initialLocale: 'ko' },
-          React.createElement(
+      React.createElement(TranslationProvider, {
+        translationEngine: engine,
+        translationContext: { templateId: 'sirsoft-admin_basic', locale: 'ko' },
+        children: React.createElement(LayoutEditorProvider, {
+          templateIdentifier: 'sirsoft-basic',
+          initialLocale: 'ko',
+          children: React.createElement(
             EditorModalProvider,
             null,
             React.createElement(SelectRoute, { path, layoutName }),
             React.createElement(PreviewCanvas),
           ),
-        ),
-      ),
+        }),
+      }),
     );
   }
 
+  // @scenario area=frame_clipping
+  // @effects preview_frame_owns_transform_and_clipping
   it('frame 은 overflow:hidden + 자체 transform 을 동시에 보유해 fixed 자손을 클리핑한다', async () => {
     installFetchMock();
     const { findByTestId } = renderCanvas('/', 'home');

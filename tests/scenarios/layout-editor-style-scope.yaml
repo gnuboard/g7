@@ -1,4 +1,7 @@
-# audit:allow test-scenario-coverage reason: axes cross product 의 핵심 회귀 가드는 test_files 의 단위(recipeEngine.scope/styleScope/flexModel/StyleScopeTabs/property-controls/s7-property-controls)·렌더(DynamicRenderer.responsive)·Feature(LayoutControllerEditorSaveTest) 가 cover. E2E axis 는 property-editor-scope.spec.ts 의 // @scenario/@effects docblock 으로 매핑.
+# audit:allow test-scenario-coverage reason: issue:#609 axes cross product 의 핵심 회귀 가드는 test_files 의 단위(recipeEngine.scope/styleScope/flexModel/StyleScopeTabs/property-controls/s7-property-controls)·렌더(DynamicRenderer.responsive)·Feature(LayoutControllerEditorSaveTest) 가 cover. E2E axis 는 property-editor-scope.spec.ts 의 // @scenario/@effects docblock 으로 매핑.
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
+# 원장: 이 매니페스트는 :cross-product 로 좁히면 effects 22건이 미검증으로 드러난다.
+#   그 짝 맞추기는 이 공정(레이아웃 편집기)의 몫이며, 좁히는 시점에 함께 처리한다.
 
 feature: 레이아웃 편집기 스타일 탭 — 색 모드(라이트/다크) × 디바이스별 스타일 편집
 
@@ -70,6 +73,8 @@ effects:
   - real_user_page_honors_dark_token_under_dark_ancestor
   # 프리뷰 토글
   - preview_color_scheme_toggle_applies_dark_wrapper_to_preview_frame_only
+  # 2026-10-31 issue609 테스트 매핑 부채 정리: 레이아웃 편집기 단위 테스트가 실제로 재는 효과 (메서드 단위 마킹)
+  - dark_scope_classToken_control_stays_editable   # 다크 scope 에서도 classToken 컨트롤은 읽기 전용이 아니라 편집된다
 
 test_files:
   - resources/js/core/template-engine/layout-editor/__tests__/spec/styleScope.test.ts

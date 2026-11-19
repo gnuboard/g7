@@ -92,7 +92,8 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.read\|sirsoft-ecommerce.claims.read\|sirsoft-ecommerce.orders.read`)이 없는 경우 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -181,6 +182,7 @@ HTTP/1.1 201
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update\|sirsoft-ecommerce.claims.read\|sirsoft-ecommerce.orders.read`)이 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). 동일 사용자·동일 화면에 같은 이름의 프리셋이 이미 있으면 `name` 에 "동일한 이름의 프리셋이 이미 존재합니다." |
 
 <!-- @generated:end -->
@@ -198,7 +200,7 @@ HTTP/1.1 201
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| preset | path | string | 예 | — | 대상 preset의 식별자 |
+| preset | path | integer | 예 | — | 대상 preset의 식별자 |
 
 **요청 예시**
 
@@ -238,6 +240,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update\|sirsoft-ecommerce.claims.read\|sirsoft-ecommerce.orders.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 500 | UnauthorizedPresetAccessException | 다른 사용자 소유의 프리셋을 삭제하려는 경우 (`SearchPresetService::delete()` 의 소유권 검사 — "프리셋(ID: :preset_id)에 대한 접근 권한이 없습니다."). 이 예외는 전용 status 나 `render()` 를 갖지 않아 기본 예외 처리로 500 이 됩니다 (테스트 하네스 `ModuleTestCase` 에서만 403 으로 매핑) |
 
@@ -256,7 +259,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| preset | path | string | 예 | — | 대상 preset의 식별자 |
+| preset | path | integer | 예 | — | 대상 preset의 식별자 |
 | name | body | string | 예 | max 100 | 대상의 이름/명칭 |
 | conditions | body | array | 예 | — | 저장할 검색 조건 배열 (필터 필드/값 조합, 적용 시 그대로 복원됨) |
 | sort_order | body | integer | 아니오 | min 0 | 표시 정렬 순서 값 (작을수록 우선) |
@@ -329,6 +332,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.products.update\|sirsoft-ecommerce.claims.read\|sirsoft-ecommerce.orders.read`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지). 동일 사용자·동일 화면에 같은 이름의 다른 프리셋이 있으면 `name` 에 "동일한 이름의 프리셋이 이미 존재합니다." |
 | 500 | UnauthorizedPresetAccessException | 다른 사용자 소유의 프리셋을 수정하려는 경우 (`SearchPresetService::update()` 의 소유권 검사). 전용 status/`render()` 가 없어 기본 예외 처리로 500 (테스트 하네스에서만 403 매핑) |

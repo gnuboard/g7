@@ -1,0 +1,34 @@
+feature: 파비콘 우선순위·서빙·업로드 정책
+
+description: |
+  #434. 우선순위: ① 그 화면 종류의 활성 템플릿 설정 favicon > ② 환경설정 일반 탭 site_favicon > ③ 번들 기본
+  (운영자가 직접 바꾼 public/favicon.ico 가 있으면 그것). ①·② 의 첨부는 행이 있고 그 계층 컬렉션 소속이며 MIME 이
+  파비콘 목록 안이어야 유효 — 아니면 다음 계층으로 내려간다. 업로드는 파비콘 컬렉션에서만 ico·svg 포함 7형식을 받고,
+  서빙은 전용 공개 경로 /api/favicon/{hash} 로만 한다. 정적 화면(오류·점검·DB 오류·설치기)은 ③ 만.
+
+axes:
+  # 표면 하나로 열거한다 — 계층·형식·첨부 상태는 각 표면 시험이 effects 로 덮는다(교차곱 대부분이 성립하지 않음)
+  surface: [spa, seo, static_error, api, update, admin_settings]
+
+effects:
+  - highest_valid_tier_wins
+  - falls_through_on_missing_row
+  - svg_served_with_restrictive_csp
+  - non_favicon_collection_404
+  - static_pages_bundled_only
+  - update_preserves_public_favicon_ico
+  - favicon_upload_policy_scoped_to_collection
+  - unsafe_svg_rejected
+  - site_favicon_saved_and_replaced
+  - save_response_carries_frontend_settings
+  - priority_meta_described
+
+test_files:
+  - tests/Feature/Services/FaviconServiceTest.php
+  - tests/Feature/View/FaviconTagsRenderingTest.php
+  - tests/Feature/Api/Public/FaviconControllerTest.php
+  - tests/Feature/Attachment/FaviconUploadValidationTest.php
+  - tests/Feature/Services/SettingsServiceSiteFaviconTest.php
+  - tests/Feature/Services/CoreUpdateFaviconPreserveTest.php
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-favicon.test.ts
+  - tests/Playwright/specs/admin/template-settings-favicon.spec.ts

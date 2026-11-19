@@ -10,21 +10,21 @@
             "name": "Div",
             "if": "{{order.data.payment?.pg_provider === 'nicepayments' && order.data.payment?.payment_method === 'vbank' && order.data.payment?.vbank_number && order.data.payment?.payment_status !== 'cancelled' && order.data.order_status !== 'cancelled'}}",
             "props": {
-                "className": "pt-4 mt-2 border-t border-gray-200 dark:border-gray-700"
+                "className": "paynicepayments:pt-4 paynicepayments:mt-2 paynicepayments:border-t paynicepayments:border-gray-200 paynicepayments:dark:border-gray-700"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4"
+                        "className": "paynicepayments:bg-blue-50 paynicepayments:dark:bg-blue-900/30 paynicepayments:border paynicepayments:border-blue-200 paynicepayments:dark:border-blue-700 paynicepayments:rounded-lg paynicepayments:p-4"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "H3",
                             "props": {
-                                "className": "text-sm font-semibold text-xs text-blue-700 dark:text-blue-300 mb-3"
+                                "className": "paynicepayments:text-sm paynicepayments:font-semibold paynicepayments:text-xs paynicepayments:text-blue-700 paynicepayments:dark:text-blue-300 paynicepayments:mb-3"
                             },
                             "text": "$t:sirsoft-pay_nicepayments.user.vbank_deposit_info"
                         },
@@ -32,21 +32,21 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "space-y-2"
+                                "className": "paynicepayments:space-y-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex justify-between text-sm"
+                                        "className": "paynicepayments:flex paynicepayments:justify-between paynicepayments:text-sm"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-600 dark:text-gray-400"
+                                                "className": "paynicepayments:text-gray-600 paynicepayments:dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-pay_nicepayments.user.vbank_bank"
                                         },
@@ -54,7 +54,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-900 dark:text-white font-medium"
+                                                "className": "paynicepayments:text-gray-900 paynicepayments:dark:text-white paynicepayments:font-medium"
                                             },
                                             "text": "{{order.data.payment?.vbank_name}}"
                                         }
@@ -64,14 +64,14 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex justify-between text-sm"
+                                        "className": "paynicepayments:flex paynicepayments:justify-between paynicepayments:text-sm"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-600 dark:text-gray-400"
+                                                "className": "paynicepayments:text-gray-600 paynicepayments:dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-pay_nicepayments.user.vbank_account"
                                         },
@@ -79,7 +79,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-900 dark:text-white font-medium font-mono"
+                                                "className": "paynicepayments:text-gray-900 paynicepayments:dark:text-white paynicepayments:font-medium paynicepayments:font-mono"
                                             },
                                             "text": "{{order.data.payment?.vbank_number}}"
                                         }
@@ -89,14 +89,14 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex justify-between text-sm"
+                                        "className": "paynicepayments:flex paynicepayments:justify-between paynicepayments:text-sm"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-600 dark:text-gray-400"
+                                                "className": "paynicepayments:text-gray-600 paynicepayments:dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-pay_nicepayments.user.vbank_holder"
                                         },
@@ -104,7 +104,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-900 dark:text-white font-medium"
+                                                "className": "paynicepayments:text-gray-900 paynicepayments:dark:text-white paynicepayments:font-medium"
                                             },
                                             "text": "{{order.data.payment?.vbank_holder}}"
                                         }
@@ -114,14 +114,14 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex justify-between text-sm"
+                                        "className": "paynicepayments:flex paynicepayments:justify-between paynicepayments:text-sm"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-600 dark:text-gray-400"
+                                                "className": "paynicepayments:text-gray-600 paynicepayments:dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-pay_nicepayments.user.vbank_amount"
                                         },
@@ -129,7 +129,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "font-bold text-blue-600 dark:text-blue-400"
+                                                "className": "paynicepayments:font-bold paynicepayments:text-blue-600 paynicepayments:dark:text-blue-400"
                                             },
                                             "text": "{{order.data.total_due_amount_formatted ?? order.data.total_amount_formatted ?? ''}}"
                                         }
@@ -140,14 +140,14 @@
                                     "name": "Div",
                                     "if": "{{order.data.payment?.vbank_due_at_formatted}}",
                                     "props": {
-                                        "className": "flex justify-between text-sm pt-2 border-t border-blue-200 dark:border-blue-700 mt-2"
+                                        "className": "paynicepayments:flex paynicepayments:justify-between paynicepayments:text-sm paynicepayments:pt-2 paynicepayments:border-t paynicepayments:border-blue-200 paynicepayments:dark:border-blue-700 paynicepayments:mt-2"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-gray-600 dark:text-gray-400"
+                                                "className": "paynicepayments:text-gray-600 paynicepayments:dark:text-gray-400"
                                             },
                                             "text": "$t:sirsoft-pay_nicepayments.user.vbank_due"
                                         },
@@ -155,7 +155,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "font-medium text-red-700 dark:text-red-400"
+                                                "className": "paynicepayments:font-medium paynicepayments:text-red-700 paynicepayments:dark:text-red-400"
                                             },
                                             "text": "{{order.data.payment?.vbank_due_at_formatted}}"
                                         }
@@ -168,7 +168,7 @@
                             "name": "P",
                             "if": "{{!order.data.payment?.paid_at}}",
                             "props": {
-                                "className": "text-xs text-blue-700 dark:text-blue-300 mt-3"
+                                "className": "paynicepayments:text-xs paynicepayments:text-blue-700 paynicepayments:dark:text-blue-300 paynicepayments:mt-3"
                             },
                             "text": "$t:sirsoft-pay_nicepayments.user.vbank_notice"
                         }
@@ -181,14 +181,14 @@
             "name": "Div",
             "if": "{{order.data.payment?.pg_provider === 'nicepayments' && (order.data.total_vat_amount > 0 || order.data.total_tax_free_amount > 0 || order.data.total_zero_rated_amount > 0)}}",
             "props": {
-                "className": "pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 space-y-1.5"
+                "className": "paynicepayments:pt-4 paynicepayments:mt-2 paynicepayments:border-t paynicepayments:border-gray-200 paynicepayments:dark:border-gray-700 paynicepayments:space-y-1.5"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1"
+                        "className": "paynicepayments:text-sm paynicepayments:font-semibold paynicepayments:text-gray-800 paynicepayments:dark:text-gray-200 paynicepayments:mb-1"
                     },
                     "text": "$t:sirsoft-pay_nicepayments.user.tax_breakdown_title"
                 },
@@ -196,14 +196,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-between text-sm"
+                        "className": "pay-nicepayments-flex-between paynicepayments:text-sm"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-pay_nicepayments.user.supply_amount"
                         },
@@ -211,7 +211,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-gray-900 dark:text-white font-medium"
+                                "className": "paynicepayments:text-gray-900 paynicepayments:dark:text-white paynicepayments:font-medium"
                             },
                             "text": "{{order.data.total_taxable_supply_amount_formatted}}"
                         }
@@ -221,14 +221,14 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-between text-sm"
+                        "className": "pay-nicepayments-flex-between paynicepayments:text-sm"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-pay_nicepayments.user.vat_amount"
                         },
@@ -236,7 +236,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-gray-900 dark:text-white font-medium"
+                                "className": "paynicepayments:text-gray-900 paynicepayments:dark:text-white paynicepayments:font-medium"
                             },
                             "text": "{{order.data.total_vat_amount_formatted}}"
                         }
@@ -247,14 +247,14 @@
                     "name": "Div",
                     "if": "{{order.data.total_tax_free_amount > 0}}",
                     "props": {
-                        "className": "flex-between text-sm"
+                        "className": "pay-nicepayments-flex-between paynicepayments:text-sm"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-pay_nicepayments.user.tax_free_amount"
                         },
@@ -262,7 +262,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-gray-900 dark:text-white font-medium"
+                                "className": "paynicepayments:text-gray-900 paynicepayments:dark:text-white paynicepayments:font-medium"
                             },
                             "text": "{{order.data.total_tax_free_amount_formatted}}"
                         }
@@ -273,14 +273,14 @@
                     "name": "Div",
                     "if": "{{order.data.total_zero_rated_amount > 0}}",
                     "props": {
-                        "className": "flex-between text-sm"
+                        "className": "pay-nicepayments-flex-between paynicepayments:text-sm"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-gray-500 dark:text-gray-400"
+                                "className": "paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-pay_nicepayments.user.zero_rated_amount"
                         },
@@ -288,7 +288,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-gray-900 dark:text-white font-medium"
+                                "className": "paynicepayments:text-gray-900 paynicepayments:dark:text-white paynicepayments:font-medium"
                             },
                             "text": "{{order.data.total_zero_rated_amount_formatted}}"
                         }
@@ -301,7 +301,7 @@
             "name": "Div",
             "if": "{{order.data.payment?.pg_provider === 'nicepayments' && order.data.payment?.transaction_id && order.data.payment?.paid_at}}",
             "props": {
-                "className": "pt-4 mt-2 border-t border-gray-200 dark:border-gray-700"
+                "className": "paynicepayments:pt-4 paynicepayments:mt-2 paynicepayments:border-t paynicepayments:border-gray-200 paynicepayments:dark:border-gray-700"
             },
             "children": [
                 {
@@ -311,14 +311,14 @@
                     "name": "Div",
                     "if": "{{(['naverpay','kakaopay','samsungpay','applepay','payco','skpay','ssgpay','lpay']).includes(_local._npMpEasyPayProvider)}}",
                     "props": {
-                        "className": "flex-between mb-2"
+                        "className": "pay-nicepayments-flex-between paynicepayments:mb-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                "className": "paynicepayments:text-sm paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-pay_nicepayments.user.easy_pay_label"
                         },
@@ -326,7 +326,7 @@
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-sm font-medium text-gray-900 dark:text-white"
+                                "className": "paynicepayments:text-sm paynicepayments:font-medium paynicepayments:text-gray-900 paynicepayments:dark:text-white"
                             },
                             "text": "{{$t('sirsoft-pay_nicepayments.user.easy_pay_names.' + String(_local._npMpEasyPayProvider ?? '').toUpperCase())}}"
                         }
@@ -362,14 +362,14 @@
                         ]
                     },
                     "props": {
-                        "className": "flex-between"
+                        "className": "pay-nicepayments-flex-between"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-sm text-gray-500 dark:text-gray-400"
+                                "className": "paynicepayments:text-sm paynicepayments:text-gray-500 paynicepayments:dark:text-gray-400"
                             },
                             "text": "$t:sirsoft-pay_nicepayments.user.receipt_label"
                         },
@@ -377,7 +377,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex items-center gap-3"
+                                "className": "paynicepayments:flex paynicepayments:items-center paynicepayments:gap-3"
                             },
                             "children": [
                                 {
@@ -389,7 +389,7 @@
                                         "href": "{{_local._npMpPaymentReceiptUrl}}",
                                         "target": "_blank",
                                         "rel": "noopener noreferrer",
-                                        "className": "inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                                        "className": "paynicepayments:inline-flex paynicepayments:items-center paynicepayments:gap-1 paynicepayments:text-sm paynicepayments:text-blue-600 paynicepayments:dark:text-blue-400 paynicepayments:hover:underline"
                                     },
                                     "children": [
                                         {
@@ -397,7 +397,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "file-text",
-                                                "className": "text-sm"
+                                                "className": "paynicepayments:text-sm paynicepayments:leading-none"
                                             }
                                         },
                                         {
@@ -416,7 +416,7 @@
                                         "href": "{{_local._npMpSalesSlipUrl}}",
                                         "target": "_blank",
                                         "rel": "noopener noreferrer",
-                                        "className": "inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                                        "className": "paynicepayments:inline-flex paynicepayments:items-center paynicepayments:gap-1 paynicepayments:text-sm paynicepayments:text-blue-600 paynicepayments:dark:text-blue-400 paynicepayments:hover:underline"
                                     },
                                     "children": [
                                         {
@@ -424,7 +424,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "file-text",
-                                                "className": "text-sm"
+                                                "className": "paynicepayments:text-sm paynicepayments:leading-none"
                                             }
                                         },
                                         {
@@ -485,7 +485,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "inline-flex items-center gap-1 text-sm text-green-700 dark:text-green-400 hover:underline disabled:opacity-50"
+                                        "className": "paynicepayments:inline-flex paynicepayments:items-center paynicepayments:gap-1 paynicepayments:text-sm paynicepayments:text-green-700 paynicepayments:dark:text-green-400 paynicepayments:hover:underline paynicepayments:disabled:opacity-50"
                                     },
                                     "children": [
                                         {
@@ -493,7 +493,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "receipt",
-                                                "className": "text-sm"
+                                                "className": "paynicepayments:text-sm paynicepayments:leading-none"
                                             }
                                         },
                                         {
@@ -512,7 +512,7 @@
                                         "href": "{{_local._npMpCashReceiptUrl}}",
                                         "target": "_blank",
                                         "rel": "noopener noreferrer",
-                                        "className": "inline-flex items-center gap-1 text-sm text-green-700 dark:text-green-400 hover:underline"
+                                        "className": "paynicepayments:inline-flex paynicepayments:items-center paynicepayments:gap-1 paynicepayments:text-sm paynicepayments:text-green-700 paynicepayments:dark:text-green-400 paynicepayments:hover:underline"
                                     },
                                     "children": [
                                         {
@@ -520,7 +520,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "receipt",
-                                                "className": "text-sm"
+                                                "className": "paynicepayments:text-sm paynicepayments:leading-none"
                                             }
                                         },
                                         {

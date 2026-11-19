@@ -28,6 +28,8 @@
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | hash | path | string | 예 | — | 업로드 시 발급된 12자리 소문자 16진수 이미지 해시(라우트 제약 `[a-f0-9]{12}`). 저장된 `<img src>` 의 마지막 경로 세그먼트로, 이 값으로 서빙할 이미지를 조회한다. |
+| size | query | string | 아니오 | 사용 중인 썸네일 규격 이름 (`xs`·`sm`·`md`·`lg`·`xl`·운영자 규격·확장 규격) | 이 규격의 썸네일을 낸다. `w` 보다 우선한다. 미정의·꺼진 규격·배열(`size[]=`)·같은 키 두 번이면 원본을 내고 `X-G7-Thumbnail: bypass:unknown-preset` 을 붙인다. |
+| w | query | integer | 아니오 | 1~10000 | 숫자 요청 대상 규격 중 가로가 이 값 이상인 가장 작은 규격으로 올려 맞춘다(없으면 가로가 가장 큰 규격). 정수가 아니면 원본 + `bypass:unknown-preset`. |
 
 **요청 예시**
 
@@ -46,9 +48,13 @@ _이 엔드포인트는 JSON `data` 를 반환하지 않습니다. 성공 시 `R
 | 헤더 | 타입 | 예시값 | 용도/설명 |
 | --- | --- | --- | --- |
 | Content-Type | string | `image/jpeg` | 업로드 레코드의 `mime_type` 값. 허용 MIME: `image/jpeg`, `image/png`, `image/gif`, `image/webp` |
-| Cache-Control | string | `public, max-age=31536000` | 공개 콘텐츠 이미지의 장기 캐싱 (1년) |
+| Cache-Control | string | `public, max-age=31536000, must-revalidate` | 공개 콘텐츠 이미지의 장기 캐싱 (1년). 주소에 자산 버전(`?v=`)이 없어 `immutable` 은 붙지 않는다. 비운영 환경에서는 `no-cache`. 썸네일을 요청했는데 원본을 낸 응답(`X-G7-Thumbnail: bypass:{사유}`)은 운영 환경에서 `max-age` 가 썸네일과 같은 코어 레이아웃 캐시 유지 시간(`cache.layout_ttl`, 1년 이하)으로 줄고, 생성 제한·일시 오류면 `no-store` 다 |
+| ETag | string | `"9f2c…"` | 행 메타(디스크·경로·수정 시각·크기) 기반 검증자 — 따옴표를 포함한 entity-tag |
+| Last-Modified | string | `Tue, 14 Nov 2023 22:13:20 GMT` | 업로드 레코드의 수정 시각 |
+| Expires | string | `Wed, 13 Nov 2024 22:13:20 GMT` | 캐시 만료 시각 (`max-age` 와 같은 근거) |
 | Content-Disposition | string | `inline; filename="photo.jpg"` | 원본 파일명(`original_name`). 래스터 이미지(JPEG·PNG·GIF·WebP 등)만 `inline`, 그 밖(SVG 포함)은 `attachment` + CSP sandbox. 모든 응답에 `X-Content-Type-Options: nosniff` (KVE-2026-2366) |
 | X-Content-Type-Options | string | `nosniff` | 브라우저의 형식 추측 차단 |
+| X-G7-Thumbnail | string | `hit` · `miss` · `bypass:smaller-than-preset` | `size`·`w` 를 보낸 요청에만 붙는다. `hit`(이미 만든 썸네일)·`miss`(이번 요청에 만듦)·`bypass:{사유}`(원본을 냄 — 사유는 `disabled`·`no-engine`·`not-raster`·`animated`·`unknown-preset`·`smaller-than-preset`·`rate-limited`·`too-large`·`error`) |
 
 **응답 예시**
 
@@ -57,11 +63,50 @@ _이 엔드포인트는 JSON `data` 를 반환하지 않습니다. 성공 시 `R
 ```http
 HTTP/1.1 200 OK
 Content-Type: image/jpeg
-Cache-Control: public, max-age=31536000
+Cache-Control: public, max-age=31536000, must-revalidate
+ETag: "9f2c1d5a0b7e4c3f8a6d2e1b9c0f7a5d"
+Last-Modified: Tue, 14 Nov 2023 22:13:20 GMT
+Expires: Wed, 13 Nov 2024 22:13:20 GMT
 Content-Disposition: inline; filename="photo.jpg"
 X-Content-Type-Options: nosniff
 
 <binary image data>
+```
+
+조건부 요청 (HTTP 304) — `If-None-Match` 가 현재 ETag 와 일치하거나, `If-None-Match` 없이 `If-Modified-Since` 가 수정 시각 이후이면 본문 없이 응답합니다. 304 는 200 이 실었을 `ETag`·`Last-Modified`·`Cache-Control`·`Expires` 를 그대로 싣습니다:
+
+```http
+GET /api/plugins/sirsoft-ckeditor5/images/{hash} HTTP/1.1
+If-None-Match: "9f2c1d5a0b7e4c3f8a6d2e1b9c0f7a5d"
+
+HTTP/1.1 304 Not Modified
+ETag: "9f2c1d5a0b7e4c3f8a6d2e1b9c0f7a5d"
+Last-Modified: Tue, 14 Nov 2023 22:13:20 GMT
+Cache-Control: public, max-age=31536000, must-revalidate
+Expires: Wed, 13 Nov 2024 22:13:20 GMT
+```
+
+썸네일 (HTTP 200) — `?size=sm` 처럼 규격을 붙이면 원본 대신 그 규격의 썸네일 바이너리를 낸다. 캐시 검증자는 썸네일 파일 기준이다:
+
+```http
+GET /api/plugins/sirsoft-ckeditor5/images/{hash}?size=sm HTTP/1.1
+
+HTTP/1.1 200 OK
+Content-Type: image/jpeg
+X-G7-Thumbnail: hit
+ETag: "4b1e…"
+X-Content-Type-Options: nosniff
+
+<binary thumbnail data>
+```
+
+썸네일 (HTTP 302) — 공개 이미지 썸네일 저장 위치를 공개 자산 디스크(CDN 등)로 고른 사이트는 썸네일 직접 주소로 보낸다:
+
+```http
+HTTP/1.1 302 Found
+Location: https://cdn.example.com/thumbnails/plugins/sirsoft-ckeditor5/images/2026/04/06/{uuid}.jpg/sm_1a2b3c4d.jpg
+Cache-Control: public, max-age=86400
+X-G7-Thumbnail: hit
 ```
 
 실패 시 (HTTP 404) — 표준 JSON envelope:
@@ -89,6 +134,10 @@ CKEditor5 본문에 삽입된 이미지를 실제로 내려주는 공개 서빙 
 - `{hash}` 는 라우트 제약 `where('hash', '[a-f0-9]{12}')` 로 12자리 소문자 16진수만 매칭된다. 형식이 어긋나면 라우트 자체가 매칭되지 않아 404 가 된다. 이 값은 이미지 업로드 시 발급된 `download_url` 의 마지막 경로 세그먼트다.
 - 성공 응답은 JSON 이 아니라 **이미지 바이너리 스트림**(`StreamedResponse`, `Content-Type` 은 이미지 MIME)이다. `ResponseHelper` envelope 로 감싸지 않는다.
 - `ImageServeService::findByHash()` 가 레코드를 찾지 못하거나 스토리지에 실제 파일이 없어 `serve()` 가 null 을 반환하면 `messages.image.not_found`(404) 표준 JSON 을 반환한다.
+- **조건부 요청**: 응답은 `ETag`(행 메타 기반)·`Last-Modified` 를 싣고, 되돌아온 `If-None-Match`(우선) / `If-Modified-Since` 를 판정해 변경이 없으면 본문 없는 304 로 응답한다. 판정은 코어 파일 서빙 헬퍼(`streamedFileResponse()`)가 하므로 다중값·`W/` 약한 검증자·압축 표현의 `-gzip` 접미사가 모두 인정되며, 304 에도 200 과 같은 캐시 헤더가 실린다. 주소에 자산 버전이 없으므로 `immutable` 은 붙지 않는다 — 같은 주소의 이미지가 교체되면 재검증으로 도달한다.
+
+- **썸네일**: `?size={규격}` 또는 `?w={숫자}` 를 붙이면 래스터 이미지(JPEG·PNG·WebP 등)는 환경설정 > 업로드 탭의 썸네일 규격으로 줄인 사본을 낸다. 첫 요청에 만들어 저장해 두고 다음부터는 저장본을 낸다. 본문 이미지는 인증 없이 보이는 공개 원본이라 썸네일도 공개 이미지 썸네일 저장 위치에 두며, 그 위치가 공개 자산 디스크면 302 로 직접 주소를 알려 준다. 규격보다 작은 원본(확대 끔)·움직이는 GIF·WebP·APNG(「움직이는 이미지는 원본 사용」이 켜져 있을 때)·SVG·꺼진 기능에서는 원본을 그대로 내고 `X-G7-Thumbnail: bypass:{사유}` 로 이유를 밝힌다. 파라미터가 없으면 응답은 이전과 같다(헤더도 붙지 않는다). 원본 이미지를 덮어쓰거나 지우면 그 썸네일도 함께 지워진다.
+- 화면과 SEO 는 이 경로(`/api/plugins/sirsoft-ckeditor5/images/*`)에만 규격을 붙인다. 공개 자산 디스크 직접 주소로 저장된 본문 이미지는 이 엔드포인트를 지나지 않으므로 원본 그대로다.
 
 **응답 예시** (실패 시에만 JSON — 성공 시에는 이미지 바이너리)
 

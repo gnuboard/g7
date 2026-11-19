@@ -2,13 +2,13 @@
 <partial description="게시판 설정 > 게시글 탭">
   <div data-ref="post" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}">
     <div>
-      <section-layout data-type="layout" data-ref="section_post" class="admin-card">
-        <h3 class="card-title">$t:sirsoft-board.admin.settings.sections.post</h3>
-        <div class="row-stack">
+      <section-layout data-type="layout" data-ref="section_post" class="board-admin-card">
+        <h3 class="board-card-title">$t:sirsoft-board.admin.settings.sections.post</h3>
+        <div class="board-row-stack">
           <div data-ref="field_min_title_length" class="">
-            <div class="flex-center gap-4">
-              <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
-                <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('min_title_length')}}" disabled="{{!_computed.canBulkApply}}">
+            <div class="board-flex-center board:gap-4">
+              <label class="board-flex-start board:gap-2 board-text-body board:font-medium board:flex-1 board:cursor-pointer">
+                <input type="checkbox" class="board-checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('min_title_length')}}" disabled="{{!_computed.canBulkApply}}">
                   <on type="change">
                     <!-- 「제목 최소 글자 수」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
                     <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('min_title_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'min_title_length') : [...(_local.bulkApplyFields ?? []), 'min_title_length']}}"/>
@@ -16,19 +16,19 @@
                 </input>
                 <div>
                   <span>$t:sirsoft-board.admin.settings.fields.min_title_length</span>
-                  <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.min_title_length|min={{_local?.form?._meta?.limits?.min_title_length_min ?? 0}}|max={{_local?.form?._meta?.limits?.min_title_length_max ?? 200}}</p>
+                  <p class="board-text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.min_title_length|min={{_local?.form?._meta?.limits?.min_title_length_min ?? 0}}|max={{_local?.form?._meta?.limits?.min_title_length_max ?? 200}}</p>
                 </div>
               </label>
-              <div class="flex-shrink-0">
-                <input aria-label="$t:sirsoft-board.admin.settings.fields.min_title_length" type="number" name="basic_defaults.min_title_length" min="{{_local?.form?._meta?.limits?.min_title_length_min ?? 0}}" max="{{_local?.form?._meta?.limits?.min_title_length_max ?? 200}}" class="{{(_local.errors?.['basic_defaults.min_title_length']) ? 'w-32 input-error' : 'w-32'}}" disabled="{{_computed.isReadOnly}}"/>
-                <span data-if="{{_local.errors?.['basic_defaults.min_title_length']}}" class="text-xs text-red-600 dark:text-red-400 block mt-1">{{(Array.isArray(_local.errors?.['basic_defaults.min_title_length']) ? _local.errors['basic_defaults.min_title_length'][0] : _local.errors?.['basic_defaults.min_title_length']) ?? ''}}</span>
+              <div class="board:flex-shrink-0">
+                <input aria-label="$t:sirsoft-board.admin.settings.fields.min_title_length" type="number" name="basic_defaults.min_title_length" min="{{_local?.form?._meta?.limits?.min_title_length_min ?? 0}}" max="{{_local?.form?._meta?.limits?.min_title_length_max ?? 200}}" class="{{(_local.errors?.['basic_defaults.min_title_length']) ? 'board:w-32 board-input-error' : 'board:w-32'}}" disabled="{{_computed.isReadOnly}}"/>
+                <span data-if="{{_local.errors?.['basic_defaults.min_title_length']}}" class="board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1">{{(Array.isArray(_local.errors?.['basic_defaults.min_title_length']) ? _local.errors['basic_defaults.min_title_length'][0] : _local.errors?.['basic_defaults.min_title_length']) ?? ''}}</span>
               </div>
             </div>
           </div>
           <div data-ref="field_max_title_length" class="">
-            <div class="flex-center gap-4">
-              <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
-                <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('max_title_length')}}" disabled="{{!_computed.canBulkApply}}">
+            <div class="board-flex-center board:gap-4">
+              <label class="board-flex-start board:gap-2 board-text-body board:font-medium board:flex-1 board:cursor-pointer">
+                <input type="checkbox" class="board-checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('max_title_length')}}" disabled="{{!_computed.canBulkApply}}">
                   <on type="change">
                     <!-- 「제목 최대 글자 수」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
                     <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('max_title_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_title_length') : [...(_local.bulkApplyFields ?? []), 'max_title_length']}}"/>
@@ -36,19 +36,19 @@
                 </input>
                 <div>
                   <span>$t:sirsoft-board.admin.settings.fields.max_title_length</span>
-                  <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.max_title_length|min={{_local?.form?._meta?.limits?.max_title_length_min ?? 1}}|max={{_local?.form?._meta?.limits?.max_title_length_max ?? 1000}}</p>
+                  <p class="board-text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.max_title_length|min={{_local?.form?._meta?.limits?.max_title_length_min ?? 1}}|max={{_local?.form?._meta?.limits?.max_title_length_max ?? 1000}}</p>
                 </div>
               </label>
-              <div class="flex-shrink-0">
-                <input aria-label="$t:sirsoft-board.admin.settings.fields.max_title_length" type="number" name="basic_defaults.max_title_length" min="{{_local?.form?._meta?.limits?.max_title_length_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_title_length_max ?? 1000}}" class="{{(_local.errors?.['basic_defaults.max_title_length']) ? 'w-32 input-error' : 'w-32'}}" disabled="{{_computed.isReadOnly}}"/>
-                <span data-if="{{_local.errors?.['basic_defaults.max_title_length']}}" class="text-xs text-red-600 dark:text-red-400 block mt-1">{{(Array.isArray(_local.errors?.['basic_defaults.max_title_length']) ? _local.errors['basic_defaults.max_title_length'][0] : _local.errors?.['basic_defaults.max_title_length']) ?? ''}}</span>
+              <div class="board:flex-shrink-0">
+                <input aria-label="$t:sirsoft-board.admin.settings.fields.max_title_length" type="number" name="basic_defaults.max_title_length" min="{{_local?.form?._meta?.limits?.max_title_length_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_title_length_max ?? 1000}}" class="{{(_local.errors?.['basic_defaults.max_title_length']) ? 'board:w-32 board-input-error' : 'board:w-32'}}" disabled="{{_computed.isReadOnly}}"/>
+                <span data-if="{{_local.errors?.['basic_defaults.max_title_length']}}" class="board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1">{{(Array.isArray(_local.errors?.['basic_defaults.max_title_length']) ? _local.errors['basic_defaults.max_title_length'][0] : _local.errors?.['basic_defaults.max_title_length']) ?? ''}}</span>
               </div>
             </div>
           </div>
           <div data-ref="field_min_content_length" class="">
-            <div class="flex-center gap-4">
-              <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
-                <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('min_content_length')}}" disabled="{{!_computed.canBulkApply}}">
+            <div class="board-flex-center board:gap-4">
+              <label class="board-flex-start board:gap-2 board-text-body board:font-medium board:flex-1 board:cursor-pointer">
+                <input type="checkbox" class="board-checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('min_content_length')}}" disabled="{{!_computed.canBulkApply}}">
                   <on type="change">
                     <!-- 「본문 최소 글자 수」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
                     <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('min_content_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'min_content_length') : [...(_local.bulkApplyFields ?? []), 'min_content_length']}}"/>
@@ -56,19 +56,19 @@
                 </input>
                 <div>
                   <span>$t:sirsoft-board.admin.settings.fields.min_content_length</span>
-                  <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.min_content_length|min={{_local?.form?._meta?.limits?.min_content_length_min ?? 0}}|max={{_local?.form?._meta?.limits?.min_content_length_max ?? 10000}}</p>
+                  <p class="board-text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.min_content_length|min={{_local?.form?._meta?.limits?.min_content_length_min ?? 0}}|max={{_local?.form?._meta?.limits?.min_content_length_max ?? 10000}}</p>
                 </div>
               </label>
-              <div class="flex-shrink-0">
-                <input aria-label="$t:sirsoft-board.admin.settings.fields.min_content_length" type="number" name="basic_defaults.min_content_length" min="{{_local?.form?._meta?.limits?.min_content_length_min ?? 0}}" max="{{_local?.form?._meta?.limits?.min_content_length_max ?? 10000}}" class="{{(_local.errors?.['basic_defaults.min_content_length']) ? 'w-32 input-error' : 'w-32'}}" disabled="{{_computed.isReadOnly}}"/>
-                <span data-if="{{_local.errors?.['basic_defaults.min_content_length']}}" class="text-xs text-red-600 dark:text-red-400 block mt-1">{{(Array.isArray(_local.errors?.['basic_defaults.min_content_length']) ? _local.errors['basic_defaults.min_content_length'][0] : _local.errors?.['basic_defaults.min_content_length']) ?? ''}}</span>
+              <div class="board:flex-shrink-0">
+                <input aria-label="$t:sirsoft-board.admin.settings.fields.min_content_length" type="number" name="basic_defaults.min_content_length" min="{{_local?.form?._meta?.limits?.min_content_length_min ?? 0}}" max="{{_local?.form?._meta?.limits?.min_content_length_max ?? 10000}}" class="{{(_local.errors?.['basic_defaults.min_content_length']) ? 'board:w-32 board-input-error' : 'board:w-32'}}" disabled="{{_computed.isReadOnly}}"/>
+                <span data-if="{{_local.errors?.['basic_defaults.min_content_length']}}" class="board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1">{{(Array.isArray(_local.errors?.['basic_defaults.min_content_length']) ? _local.errors['basic_defaults.min_content_length'][0] : _local.errors?.['basic_defaults.min_content_length']) ?? ''}}</span>
               </div>
             </div>
           </div>
           <div data-ref="field_max_content_length" class="">
-            <div class="flex-center gap-4">
-              <label class="flex-start gap-2 text-body font-medium flex-1 cursor-pointer">
-                <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('max_content_length')}}" disabled="{{!_computed.canBulkApply}}">
+            <div class="board-flex-center board:gap-4">
+              <label class="board-flex-start board:gap-2 board-text-body board:font-medium board:flex-1 board:cursor-pointer">
+                <input type="checkbox" class="board-checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('max_content_length')}}" disabled="{{!_computed.canBulkApply}}">
                   <on type="change">
                     <!-- 「본문 최대 글자 수」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
                     <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('max_content_length') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'max_content_length') : [...(_local.bulkApplyFields ?? []), 'max_content_length']}}"/>
@@ -76,19 +76,19 @@
                 </input>
                 <div>
                   <span>$t:sirsoft-board.admin.settings.fields.max_content_length</span>
-                  <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.max_content_length|min={{_local?.form?._meta?.limits?.max_content_length_min ?? 1}}|max={{_local?.form?._meta?.limits?.max_content_length_max ?? 100000}}</p>
+                  <p class="board-text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.max_content_length|min={{_local?.form?._meta?.limits?.max_content_length_min ?? 1}}|max={{_local?.form?._meta?.limits?.max_content_length_max ?? 100000}}</p>
                 </div>
               </label>
-              <div class="flex-shrink-0">
-                <input aria-label="$t:sirsoft-board.admin.settings.fields.max_content_length" type="number" name="basic_defaults.max_content_length" min="{{_local?.form?._meta?.limits?.max_content_length_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_content_length_max ?? 100000}}" class="{{(_local.errors?.['basic_defaults.max_content_length']) ? 'w-32 input-error' : 'w-32'}}" disabled="{{_computed.isReadOnly}}"/>
-                <span data-if="{{_local.errors?.['basic_defaults.max_content_length']}}" class="text-xs text-red-600 dark:text-red-400 block mt-1">{{(Array.isArray(_local.errors?.['basic_defaults.max_content_length']) ? _local.errors['basic_defaults.max_content_length'][0] : _local.errors?.['basic_defaults.max_content_length']) ?? ''}}</span>
+              <div class="board:flex-shrink-0">
+                <input aria-label="$t:sirsoft-board.admin.settings.fields.max_content_length" type="number" name="basic_defaults.max_content_length" min="{{_local?.form?._meta?.limits?.max_content_length_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_content_length_max ?? 100000}}" class="{{(_local.errors?.['basic_defaults.max_content_length']) ? 'board:w-32 board-input-error' : 'board:w-32'}}" disabled="{{_computed.isReadOnly}}"/>
+                <span data-if="{{_local.errors?.['basic_defaults.max_content_length']}}" class="board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1">{{(Array.isArray(_local.errors?.['basic_defaults.max_content_length']) ? _local.errors['basic_defaults.max_content_length'][0] : _local.errors?.['basic_defaults.max_content_length']) ?? ''}}</span>
               </div>
             </div>
           </div>
           <div data-ref="field_blocked_keywords" class="">
-            <div class="px-3 py-2">
-              <label class="flex-start gap-2 text-heading cursor-pointer mb-2">
-                <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('blocked_keywords')}}" disabled="{{!_computed.canBulkApply}}">
+            <div class="board:px-3 board:py-2">
+              <label class="board-flex-start board:gap-2 board-text-heading board:cursor-pointer board:mb-2">
+                <input type="checkbox" class="board-checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('blocked_keywords')}}" disabled="{{!_computed.canBulkApply}}">
                   <on type="change">
                     <!-- 「금지어 목록」을 일괄 적용 대상에 넣었다 뺐다 한다 -->
                     <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('blocked_keywords') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'blocked_keywords') : [...(_local.bulkApplyFields ?? []), 'blocked_keywords']}}"/>
@@ -96,16 +96,16 @@
                 </input>
                 <div>
                   <span>$t:sirsoft-board.admin.settings.fields.blocked_keywords</span>
-                  <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.blocked_keywords</p>
+                  <p class="board-text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.blocked_keywords</p>
                 </div>
               </label>
-              <tag-input aria-label="$t:sirsoft-board.admin.settings.fields.blocked_keywords" data-type="composite" name="basic_defaults.blocked_keywords" placeholder="$t:sirsoft-board.admin.settings.fields.blocked_keywords_placeholder" :creatable="true" class="w-full" disabled="{{_computed.isReadOnly}}"/>
+              <tag-input aria-label="$t:sirsoft-board.admin.settings.fields.blocked_keywords" data-type="composite" name="basic_defaults.blocked_keywords" placeholder="$t:sirsoft-board.admin.settings.fields.blocked_keywords_placeholder" :creatable="true" class="board:w-full" disabled="{{_computed.isReadOnly}}"/>
             </div>
           </div>
           <div data-ref="field_new_display_hours" class="">
-            <div class="flex-center gap-4">
-              <label class="flex-start gap-2 text-heading flex-1 cursor-pointer">
-                <input type="checkbox" class="checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('new_display_hours')}}" disabled="{{!_computed.canBulkApply}}">
+            <div class="board-flex-center board:gap-4">
+              <label class="board-flex-start board:gap-2 board-text-heading board:flex-1 board:cursor-pointer">
+                <input type="checkbox" class="board-checkbox-aligned" checked="{{(_local.bulkApplyFields ?? []).includes('new_display_hours')}}" disabled="{{!_computed.canBulkApply}}">
                   <on type="change">
                     <!-- 「새 글 표시가 몇 시간 유지되는지」를 일괄 적용 대상에 넣었다 뺐다 한다 -->
                     <set-state target="local" bulkApplyFields="{{(_local.bulkApplyFields ?? []).includes('new_display_hours') ? (_local.bulkApplyFields ?? []).filter(f => f !== 'new_display_hours') : [...(_local.bulkApplyFields ?? []), 'new_display_hours']}}"/>
@@ -113,15 +113,107 @@
                 </input>
                 <div>
                   <span>$t:sirsoft-board.admin.settings.fields.new_display_hours</span>
-                  <p class="text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.new_display_hours</p>
+                  <p class="board-text-field-hint">$t:sirsoft-board.admin.settings.fields.descriptions.new_display_hours</p>
                 </div>
               </label>
-              <div class="flex-shrink-0">
-                <input aria-label="$t:sirsoft-board.admin.settings.fields.new_display_hours" type="number" name="basic_defaults.new_display_hours" min="{{_local?.form?._meta?.limits?.new_display_hours_min ?? 1}}" max="{{_local?.form?._meta?.limits?.new_display_hours_max ?? 720}}" class="{{(_local.errors?.['basic_defaults.new_display_hours']) ? 'w-32 input-error' : 'w-32'}}" disabled="{{_computed.isReadOnly}}"/>
-                <span data-if="{{_local.errors?.['basic_defaults.new_display_hours']}}" class="text-xs text-red-600 dark:text-red-400 block mt-1">{{(Array.isArray(_local.errors?.['basic_defaults.new_display_hours']) ? _local.errors['basic_defaults.new_display_hours'][0] : _local.errors?.['basic_defaults.new_display_hours']) ?? ''}}</span>
+              <div class="board:flex-shrink-0">
+                <input aria-label="$t:sirsoft-board.admin.settings.fields.new_display_hours" type="number" name="basic_defaults.new_display_hours" min="{{_local?.form?._meta?.limits?.new_display_hours_min ?? 1}}" max="{{_local?.form?._meta?.limits?.new_display_hours_max ?? 720}}" class="{{(_local.errors?.['basic_defaults.new_display_hours']) ? 'board:w-32 board-input-error' : 'board:w-32'}}" disabled="{{_computed.isReadOnly}}"/>
+                <span data-if="{{_local.errors?.['basic_defaults.new_display_hours']}}" class="board:text-xs board:text-red-600 board:dark:text-red-400 board:block board:mt-1">{{(Array.isArray(_local.errors?.['basic_defaults.new_display_hours']) ? _local.errors['basic_defaults.new_display_hours'][0] : _local.errors?.['basic_defaults.new_display_hours']) ?? ''}}</span>
               </div>
             </div>
           </div>
+        </div>
+      </section-layout>
+      <!-- 비회원 작성자 항목 기본값 카드 — 새 게시판을 만들 때 그 게시판의 비회원 작성자 항목 설정으로 복사된다(이미 만든 게시판은 그대로) -->
+      <section-layout data-type="layout" data-ref="section_guest_author_defaults" class="board-admin-card">
+        <h3 class="board-card-title">$t:sirsoft-board.admin.settings.sections.guest_author_fields</h3>
+        <!-- 비회원 작성자 항목 기본값 — 새 게시판이 물려받는 사용, 필수(모듈 설정 basic_defaults.guest_author_fields). 게시판 수정 화면의 표와 같은 모양이다(#490).
+             행은 서버가 준 `form.guest_author_field_rows`(고정 항목 이름과 비밀번호 + 항목 엔진의 항목)이고,
+             스위치가 바꾸는 값은 `form.guest_author_fields[항목 키].{post|comment}.{enabled|required}`(불리언)이다.
+             행마다 `_v` 에 지금 값(폼 값 우선, 없으면 서버가 준 행 값)을 얹어 네 칸이 같은 값을 읽는다. 「사용」이 꺼지면 「필수」도 꺼진 것으로 본다.
+             이 표에서는 항목을 더하거나 지우지 않는다(다른 확장이 기여한 항목은 그 확장이, 추가 항목은 항목 관리 화면이 맡는다).
+             넓은 화면은 표, 좁은 화면은 항목별 카드로 같은 값을 그린다 -->
+        <div data-ref="default_guest_author_fields_field" class="">
+          <label data-ref="default_guest_author_fields_label" class="board-form-label">
+            <span>$t:sirsoft-board.admin.settings.guest_author_fields.label</span>
+          </label>
+          <p data-ref="default_guest_author_fields_description" class="board-form-hint">$t:sirsoft-board.admin.settings.guest_author_fields.description</p>
+          <div data-ref="default_guest_author_fields_list" class="board:overflow-x-clip board:mt-2">
+            <responsive on="portable" class="board:mt-2">
+              <div data-ref="default_board_guest_author_fields_cards">
+                <div data-ref="default_guest_field_card_{{row.key}}" data-each="row in (_local.form?.basic_defaults?.guest_author_field_rows ?? []).map(r => ({...r, _v: {post: {enabled: (_local.form?.basic_defaults?.guest_author_fields?.[r.key]?.post?.enabled ?? r.post?.enabled) === true, required: (_local.form?.basic_defaults?.guest_author_fields?.[r.key]?.post?.enabled ?? r.post?.enabled) === true &amp;&amp; (_local.form?.basic_defaults?.guest_author_fields?.[r.key]?.post?.required ?? r.post?.required) === true}, comment: {enabled: (_local.form?.basic_defaults?.guest_author_fields?.[r.key]?.comment?.enabled ?? r.comment?.enabled) === true, required: (_local.form?.basic_defaults?.guest_author_fields?.[r.key]?.comment?.enabled ?? r.comment?.enabled) === true &amp;&amp; (_local.form?.basic_defaults?.guest_author_fields?.[r.key]?.comment?.required ?? r.comment?.required) === true}}}))" class="board-excel-card board:mb-3">
+                  <div class="board-excel-card-header">
+                    <div class="board:min-w-0">
+                      <div class="board-excel-card-title board:min-w-0 board:wrap-anywhere">{{row.label}}</div>
+                      <p data-if="{{row.fixed === true}}" class="board-form-hint">$t:sirsoft-board.admin.form.guest_author_fields.fixed_hint</p>
+                      <p data-if="{{row.fixed !== true &amp;&amp; row.available !== false &amp;&amp; !!(row.post?.lock_reason ?? row.comment?.lock_reason)}}" class="board-form-hint">{{row.post?.lock_reason ?? row.comment?.lock_reason ?? ''}}</p>
+                    </div>
+                    <span class="board:inline-flex board:items-center board:px-2 board:py-0.5 board:rounded board:text-xs board:font-medium board:bg-gray-100 board:text-gray-800 board:dark:bg-gray-700 board:dark:text-gray-200 board:shrink-0">{{row.source_label ? row.source_label : (row.source_type === 'custom' ? $t('sirsoft-board.admin.form.guest_author_fields.source.custom') : $t('sirsoft-board.admin.form.guest_author_fields.source.board'))}}</span>
+                  </div>
+                  <div class="board-excel-card-body">
+                    <div data-if="{{row.available === false}}" class="board-excel-card-row">
+                      <span class="board-badge board-badge-yellow">$t:sirsoft-board.admin.form.guest_author_fields.unavailable</span>
+                      <span class="board-excel-card-value board-text-tertiary">{{row.post?.lock_reason ?? row.comment?.lock_reason ?? $t('sirsoft-board.admin.form.guest_author_fields.unavailable_hint')}}</span>
+                    </div>
+                    <div data-each="cell in (row.available === false ? [] : [{s: 'post', p: 'enabled', label: $t('sirsoft-board.admin.form.guest_author_fields.columns.post_enabled')}, {s: 'post', p: 'required', label: $t('sirsoft-board.admin.form.guest_author_fields.columns.post_required')}, {s: 'comment', p: 'enabled', label: $t('sirsoft-board.admin.form.guest_author_fields.columns.comment_enabled')}, {s: 'comment', p: 'required', label: $t('sirsoft-board.admin.form.guest_author_fields.columns.comment_required')}])" class="board-excel-card-row">
+                      <span class="board-excel-card-label">{{cell.label}}</span>
+                      <div class="board-excel-card-value">
+                        <toggle data-type="composite" data-ref="default_guest_field_{{row.key}}_{{cell.s}}_{{cell.p}}_m" checked="{{row._v[cell.s][cell.p]}}" ariaLabel="$t:common.row_cell|row={{row.label}}|column={{cell.label}}" size="sm" disabled="{{_computed.isReadOnly || row.fixed === true || row[cell.s]?.[cell.p + '_locked'] === true || (cell.p === 'required' &amp;&amp; !row._v[cell.s].enabled)}}">
+                          <on type="change">
+                            <!-- 넓은 화면 표의 스위치와 같은 규칙으로 같은 값을 바꾼다 -->
+                            <set-state target="local" form.basic_defaults.guest_author_fields="{{Object.assign({}, _local.form?.basic_defaults?.guest_author_fields ?? {}, Object.fromEntries([[row.key, Object.assign({}, row._v, Object.fromEntries([[cell.s, cell.p === 'enabled' ? {enabled: !row._v[cell.s].enabled, required: false} : {enabled: row._v[cell.s].enabled, required: !row._v[cell.s].required}]]))]]))}}" :hasChanges="true"/>
+                          </on>
+                        </toggle>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </responsive>
+            <table data-ref="default_board_guest_author_fields_table" class="board:w-full">
+              <thead>
+                <tr>
+                  <th class="board-text-tertiary board:text-left board:font-medium board:px-4 board:py-2">$t:sirsoft-board.admin.form.guest_author_fields.columns.field</th>
+                  <th class="board-text-tertiary board:text-left board:font-medium board:px-4 board:py-2 board:w-32">$t:sirsoft-board.admin.form.guest_author_fields.columns.source</th>
+                  <th class="board-text-tertiary board:text-center board:font-medium board:px-4 board:py-2 board:w-20">$t:sirsoft-board.admin.form.guest_author_fields.columns.post_enabled</th>
+                  <th class="board-text-tertiary board:text-center board:font-medium board:px-4 board:py-2 board:w-20">$t:sirsoft-board.admin.form.guest_author_fields.columns.post_required</th>
+                  <th class="board-text-tertiary board:text-center board:font-medium board:px-4 board:py-2 board:w-20">$t:sirsoft-board.admin.form.guest_author_fields.columns.comment_enabled</th>
+                  <th class="board-text-tertiary board:text-center board:font-medium board:px-4 board:py-2 board:w-20">$t:sirsoft-board.admin.form.guest_author_fields.columns.comment_required</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-ref="default_guest_field_row_{{row.key}}" data-each="row in (_local.form?.basic_defaults?.guest_author_field_rows ?? []).map(r => ({...r, _v: {post: {enabled: (_local.form?.basic_defaults?.guest_author_fields?.[r.key]?.post?.enabled ?? r.post?.enabled) === true, required: (_local.form?.basic_defaults?.guest_author_fields?.[r.key]?.post?.enabled ?? r.post?.enabled) === true &amp;&amp; (_local.form?.basic_defaults?.guest_author_fields?.[r.key]?.post?.required ?? r.post?.required) === true}, comment: {enabled: (_local.form?.basic_defaults?.guest_author_fields?.[r.key]?.comment?.enabled ?? r.comment?.enabled) === true, required: (_local.form?.basic_defaults?.guest_author_fields?.[r.key]?.comment?.enabled ?? r.comment?.enabled) === true &amp;&amp; (_local.form?.basic_defaults?.guest_author_fields?.[r.key]?.comment?.required ?? r.comment?.required) === true}}}))" class="board:border-t board:border-gray-200 board:dark:border-gray-700">
+                  <td class="board:px-4 board:py-2">
+                    <div class="board-flex-center board:gap-2 board:min-w-0">
+                      <icon data-if="{{row.fixed === true}}" name="lock" class="board:text-xs board:text-gray-500 board:dark:text-gray-400 board:flex-shrink-0"/>
+                      <span class="board-text-heading board:min-w-0 board:wrap-anywhere">{{row.label}}</span>
+                    </div>
+                    <p data-if="{{row.fixed === true}}" class="board-form-hint">$t:sirsoft-board.admin.form.guest_author_fields.fixed_hint</p>
+                    <p data-ref="default_guest_field_lock_reason_{{row.key}}" data-if="{{row.fixed !== true &amp;&amp; row.available !== false &amp;&amp; !!(row.post?.lock_reason ?? row.comment?.lock_reason)}}" class="board-form-hint">{{row.post?.lock_reason ?? row.comment?.lock_reason ?? ''}}</p>
+                  </td>
+                  <td class="board:px-4 board:py-2">
+                    <span data-ref="default_guest_field_source_{{row.key}}" class="board:inline-flex board:items-center board:px-2 board:py-0.5 board:rounded board:text-xs board:font-medium board:bg-gray-100 board:text-gray-800 board:dark:bg-gray-700 board:dark:text-gray-200">{{row.source_label ? row.source_label : (row.source_type === 'custom' ? $t('sirsoft-board.admin.form.guest_author_fields.source.custom') : $t('sirsoft-board.admin.form.guest_author_fields.source.board'))}}</span>
+                  </td>
+                  <!-- 유형을 제공한 확장이 꺼진 항목은 스위치 대신 「사용 불가」 한 칸으로 남긴다(행을 지우지 않는다 — 확장을 다시 켜면 설정이 그대로 돌아온다) -->
+                  <td data-ref="default_guest_field_unavailable_{{row.key}}" data-if="{{row.available === false}}" :colSpan="4" class="board:px-4 board:py-2">
+                    <div class="board-flex-center board:gap-2">
+                      <span class="board-badge board-badge-yellow">$t:sirsoft-board.admin.form.guest_author_fields.unavailable</span>
+                      <span class="board-text-tertiary">{{row.post?.lock_reason ?? row.comment?.lock_reason ?? $t('sirsoft-board.admin.form.guest_author_fields.unavailable_hint')}}</span>
+                    </div>
+                  </td>
+                  <td data-each="cell in (row.available === false ? [] : [{s: 'post', p: 'enabled', label: $t('sirsoft-board.admin.form.guest_author_fields.columns.post_enabled')}, {s: 'post', p: 'required', label: $t('sirsoft-board.admin.form.guest_author_fields.columns.post_required')}, {s: 'comment', p: 'enabled', label: $t('sirsoft-board.admin.form.guest_author_fields.columns.comment_enabled')}, {s: 'comment', p: 'required', label: $t('sirsoft-board.admin.form.guest_author_fields.columns.comment_required')}])" class="board:px-4 board:py-2 board:text-center">
+                    <toggle data-type="composite" data-ref="default_guest_field_{{row.key}}_{{cell.s}}_{{cell.p}}" checked="{{row._v[cell.s][cell.p]}}" ariaLabel="$t:common.row_cell|row={{row.label}}|column={{cell.label}}" size="sm" disabled="{{_computed.isReadOnly || row.fixed === true || row[cell.s]?.[cell.p + '_locked'] === true || (cell.p === 'required' &amp;&amp; !row._v[cell.s].enabled)}}">
+                      <on type="change">
+                        <!-- 한 칸을 뒤집는다. 「사용」을 끄면 같은 표면의 「필수」도 끈다(쓰지 않는 항목이 필수일 수 없다). 값은 항목 키 아래 네 칸을 통째로 불리언으로 다시 쓴다 — 서버가 문자열 값을 받지 않는다 -->
+                        <set-state target="local" form.basic_defaults.guest_author_fields="{{Object.assign({}, _local.form?.basic_defaults?.guest_author_fields ?? {}, Object.fromEntries([[row.key, Object.assign({}, row._v, Object.fromEntries([[cell.s, cell.p === 'enabled' ? {enabled: !row._v[cell.s].enabled, required: false} : {enabled: row._v[cell.s].enabled, required: !row._v[cell.s].required}]]))]]))}}" :hasChanges="true"/>
+                      </on>
+                    </toggle>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <span data-ref="default_guest_author_fields_error" data-if="{{_local.errors?.['basic_defaults.guest_author_fields']}}" class="board-form-error-xs board:mt-1">{{_local.errors?.['basic_defaults.guest_author_fields']?.[0] ?? ''}}</span>
         </div>
       </section-layout>
     </div>

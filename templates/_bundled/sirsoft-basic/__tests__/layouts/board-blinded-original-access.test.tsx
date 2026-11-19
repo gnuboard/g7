@@ -1,3 +1,6 @@
+// @scenario viewer=guest
+// (매니페스트 소속 표기 — 회차 16 W6: 선언된 파일은 마킹을 최소 1개 가진다)
+
 /**
  * @file board-blinded-original-access.test.tsx
  * @description 블라인드 게시글/댓글 '원글 보기' 게이트 회귀 (이슈 #413-34)
@@ -53,6 +56,7 @@ function findByComment(root: unknown, commentText: string): Node[] {
 }
 
 describe('이슈 #413-34 — 블라인드 게시글 원문 게이트 (basic/show.json)', () => {
+    /** @effects blinded_content_null_for_guest, blinded_content_null_for_other_member */
     it("'원글 보기' 토글 버튼의 if 가 content 존재에 의존한다", () => {
         const buttons = findByComment(basicShow, '원글 보기/숨기기 토글 버튼');
         expect(buttons.length).toBeGreaterThan(0);
@@ -64,6 +68,7 @@ describe('이슈 #413-34 — 블라인드 게시글 원문 게이트 (basic/show
         }
     });
 
+    /** @effects blinded_content_null_for_guest, blinded_content_null_for_other_member */
     it('블라인드 원본 내용 표시 블록의 if 가 content 존재에 의존한다', () => {
         const blocks = findByComment(basicShow, '블라인드 게시글 원본 내용 표시');
         expect(blocks.length).toBeGreaterThan(0);
@@ -76,6 +81,7 @@ describe('이슈 #413-34 — 블라인드 게시글 원문 게이트 (basic/show
         }
     });
 
+    /** @effects blinded_notice_shown_regardless_of_content */
     it('블라인드 안내·제목은 content 와 무관하게 노출된다 (status 만 게이트)', () => {
         // "블라인드 처리된 게시글 - 상세 사유 표시" 안내 박스는 status 만 보고, content 의존 금지
         const noticeBoxes = findByComment(basicShow, '블라인드 처리된 게시글 - 상세 사유 표시');
@@ -91,6 +97,7 @@ describe('이슈 #413-34 — 블라인드 게시글 원문 게이트 (basic/show
 });
 
 describe('이슈 #413-34 — 블라인드 댓글 원문 게이트 (_comment_item.json)', () => {
+    /** @effects blinded_comment_content_matrix */
     it("댓글 '원글 보기' 토글 버튼의 if 가 content 존재에 의존한다", () => {
         const buttons = findByComment(commentItem, '원글 보기/숨기기 토글 버튼');
         expect(buttons.length).toBeGreaterThan(0);
@@ -101,6 +108,7 @@ describe('이슈 #413-34 — 블라인드 댓글 원문 게이트 (_comment_item
         }
     });
 
+    /** @effects blinded_comment_content_matrix */
     it('블라인드 댓글 원본 내용 표시 블록의 if 가 content 존재에 의존한다', () => {
         const blocks = findByComment(commentItem, '블라인드 댓글 원본 내용 표시');
         expect(blocks.length).toBeGreaterThan(0);

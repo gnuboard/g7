@@ -19,14 +19,14 @@
                     "type": "layout",
                     "name": "SectionLayout",
                     "props": {
-                        "className": "admin-card"
+                        "className": "board-admin-card"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "H3",
                             "props": {
-                                "className": "card-title"
+                                "className": "board-card-title"
                             },
                             "text": "$t:sirsoft-board.admin.settings.sections.auto_hide"
                         },
@@ -34,7 +34,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "card-description"
+                                "className": "board-card-description"
                             },
                             "text": "$t:sirsoft-board.admin.settings.sections.auto_hide_description"
                         },
@@ -42,7 +42,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "row-stack"
+                                "className": "board-row-stack"
                             },
                             "children": [
                                 {
@@ -54,7 +54,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "board-form-label"
                                             },
                                             "children": [
                                                 {
@@ -72,7 +72,7 @@
                                                 "name": "report_policy.auto_hide_threshold",
                                                 "min": "{{_local?.form?._meta?.limits?.auto_hide_threshold_min ?? 0}}",
                                                 "max": "{{_local?.form?._meta?.limits?.auto_hide_threshold_max ?? 100}}",
-                                                "className": "{{(_local.errors?.['report_policy.auto_hide_threshold']) ? 'input-error' : ''}}",
+                                                "className": "{{(_local.errors?.['report_policy.auto_hide_threshold']) ? 'board-input-error' : ''}}",
                                                 "disabled": "{{_computed.isReadOnly}}"
                                             }
                                         },
@@ -81,7 +81,7 @@
                                             "name": "Span",
                                             "if": "{{_local.errors?.['report_policy.auto_hide_threshold']}}",
                                             "props": {
-                                                "className": "text-xs text-red-600 dark:text-red-400 block"
+                                                "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block"
                                             },
                                             "text": "{{(Array.isArray(_local.errors?.['report_policy.auto_hide_threshold']) ? _local.errors['report_policy.auto_hide_threshold'][0] : _local.errors?.['report_policy.auto_hide_threshold']) ?? ''}}"
                                         },
@@ -89,7 +89,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-tertiary block"
+                                                "className": "board-text-tertiary board:block"
                                             },
                                             "text": "$t:sirsoft-board.admin.settings.fields.auto_hide_threshold_hint"
                                         }
@@ -104,7 +104,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "board-form-label"
                                             },
                                             "children": [
                                                 {
@@ -119,7 +119,7 @@
                                             "name": "Select",
                                             "props": {
                                                 "name": "report_policy.auto_hide_target",
-                                                "className": "w-full text-sm",
+                                                "className": "board:w-full board:text-sm",
                                                 "disabled": "{{_computed.isReadOnly}}",
                                                 "options": [
                                                     {
@@ -141,7 +141,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-tertiary block"
+                                                "className": "board-text-tertiary board:block"
                                             },
                                             "text": "$t:sirsoft-board.admin.settings.fields.auto_hide_target_hint"
                                         }
@@ -157,14 +157,14 @@
                     "type": "layout",
                     "name": "SectionLayout",
                     "props": {
-                        "className": "admin-card"
+                        "className": "board-admin-card"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "H3",
                             "props": {
-                                "className": "card-title"
+                                "className": "board-card-title"
                             },
                             "text": "$t:sirsoft-board.admin.settings.sections.report_abuse_prevention"
                         },
@@ -172,7 +172,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "card-description"
+                                "className": "board-card-description"
                             },
                             "text": "$t:sirsoft-board.admin.settings.sections.report_abuse_prevention_description"
                         },
@@ -180,7 +180,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "row-stack"
+                                "className": "board-row-stack"
                             },
                             "children": [
                                 {
@@ -192,7 +192,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "board-form-label"
                                             },
                                             "children": [
                                                 {
@@ -210,7 +210,7 @@
                                                 "name": "report_policy.daily_report_limit",
                                                 "min": "{{_local?.form?._meta?.limits?.daily_report_limit_min ?? 0}}",
                                                 "max": "{{_local?.form?._meta?.limits?.daily_report_limit_max ?? 100}}",
-                                                "className": "{{(_local.errors?.['report_policy.daily_report_limit']) ? 'input-error' : ''}}",
+                                                "className": "{{(_local.errors?.['report_policy.daily_report_limit']) ? 'board-input-error' : ''}}",
                                                 "disabled": "{{_computed.isReadOnly}}"
                                             }
                                         },
@@ -219,7 +219,7 @@
                                             "name": "Span",
                                             "if": "{{_local.errors?.['report_policy.daily_report_limit']}}",
                                             "props": {
-                                                "className": "text-xs text-red-600 dark:text-red-400 block"
+                                                "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block"
                                             },
                                             "text": "{{(Array.isArray(_local.errors?.['report_policy.daily_report_limit']) ? _local.errors['report_policy.daily_report_limit'][0] : _local.errors?.['report_policy.daily_report_limit']) ?? ''}}"
                                         },
@@ -227,7 +227,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-tertiary block"
+                                                "className": "board-text-tertiary board:block"
                                             },
                                             "text": "$t:sirsoft-board.admin.settings.fields.daily_report_limit_hint"
                                         }
@@ -242,7 +242,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "board-form-label"
                                             },
                                             "children": [
                                                 {
@@ -256,7 +256,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "grid-2col"
+                                                "className": "board-grid-2col"
                                             },
                                             "children": [
                                                 {
@@ -271,7 +271,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-tertiary"
+                                                                        "className": "board-text-tertiary"
                                                                     },
                                                                     "text": "$t:sirsoft-board.admin.settings.fields.rejection_limit_count"
                                                                 },
@@ -284,7 +284,7 @@
                                                                         "aria-label": "$t:sirsoft-board.admin.settings.fields.rejection_limit_count",
                                                                         "min": "{{_local?.form?._meta?.limits?.rejection_limit_count_min ?? 0}}",
                                                                         "max": "{{_local?.form?._meta?.limits?.rejection_limit_count_max ?? 50}}",
-                                                                        "className": "{{(_local.errors?.['report_policy.rejection_limit_count']) ? 'input-error' : ''}}",
+                                                                        "className": "{{(_local.errors?.['report_policy.rejection_limit_count']) ? 'board-input-error' : ''}}",
                                                                         "disabled": "{{_computed.isReadOnly}}"
                                                                     }
                                                                 },
@@ -293,7 +293,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{_local.errors?.['report_policy.rejection_limit_count']}}",
                                                                     "props": {
-                                                                        "className": "text-xs text-red-600 dark:text-red-400 block"
+                                                                        "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block"
                                                                     },
                                                                     "text": "{{(Array.isArray(_local.errors?.['report_policy.rejection_limit_count']) ? _local.errors['report_policy.rejection_limit_count'][0] : _local.errors?.['report_policy.rejection_limit_count']) ?? ''}}"
                                                                 }
@@ -313,7 +313,7 @@
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "text-tertiary"
+                                                                        "className": "board-text-tertiary"
                                                                     },
                                                                     "text": "$t:sirsoft-board.admin.settings.fields.rejection_limit_days"
                                                                 },
@@ -326,7 +326,7 @@
                                                                         "aria-label": "$t:sirsoft-board.admin.settings.fields.rejection_limit_days",
                                                                         "min": "{{_local?.form?._meta?.limits?.rejection_limit_days_min ?? 1}}",
                                                                         "max": "{{_local?.form?._meta?.limits?.rejection_limit_days_max ?? 365}}",
-                                                                        "className": "{{(_local.errors?.['report_policy.rejection_limit_days']) ? 'input-error' : ''}}",
+                                                                        "className": "{{(_local.errors?.['report_policy.rejection_limit_days']) ? 'board-input-error' : ''}}",
                                                                         "disabled": "{{_computed.isReadOnly}}"
                                                                     }
                                                                 },
@@ -335,7 +335,7 @@
                                                                     "name": "Span",
                                                                     "if": "{{_local.errors?.['report_policy.rejection_limit_days']}}",
                                                                     "props": {
-                                                                        "className": "text-xs text-red-600 dark:text-red-400 block"
+                                                                        "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block"
                                                                     },
                                                                     "text": "{{(Array.isArray(_local.errors?.['report_policy.rejection_limit_days']) ? _local.errors['report_policy.rejection_limit_days'][0] : _local.errors?.['report_policy.rejection_limit_days']) ?? ''}}"
                                                                 }
@@ -349,7 +349,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-tertiary block"
+                                                "className": "board-text-tertiary board:block"
                                             },
                                             "text": "$t:sirsoft-board.admin.settings.fields.rejection_limit_hint"
                                         }
@@ -371,7 +371,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "form-label"
+                                                        "className": "board-form-label"
                                                     },
                                                     "children": [
                                                         {
@@ -389,7 +389,7 @@
                                                         "name": "spam_security.report_cooldown_seconds",
                                                         "min": "{{_local?.form?._meta?.limits?.report_cooldown_seconds_min ?? 0}}",
                                                         "max": "{{_local?.form?._meta?.limits?.report_cooldown_seconds_max ?? 3600}}",
-                                                        "className": "{{(_local.errors?.['spam_security.report_cooldown_seconds']) ? 'input-error' : ''}}",
+                                                        "className": "{{(_local.errors?.['spam_security.report_cooldown_seconds']) ? 'board-input-error' : ''}}",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     }
                                                 },
@@ -398,7 +398,7 @@
                                                     "name": "Span",
                                                     "if": "{{_local.errors?.['spam_security.report_cooldown_seconds']}}",
                                                     "props": {
-                                                        "className": "text-xs text-red-600 dark:text-red-400 block"
+                                                        "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block"
                                                     },
                                                     "text": "{{(Array.isArray(_local.errors?.['spam_security.report_cooldown_seconds']) ? _local.errors['spam_security.report_cooldown_seconds'][0] : _local.errors?.['spam_security.report_cooldown_seconds']) ?? ''}}"
                                                 },
@@ -406,7 +406,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "text-tertiary block"
+                                                        "className": "board-text-tertiary board:block"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.settings.fields.report_cooldown_seconds_hint"
                                                 }
@@ -424,14 +424,14 @@
                     "type": "layout",
                     "name": "SectionLayout",
                     "props": {
-                        "className": "admin-card"
+                        "className": "board-admin-card"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "H3",
                             "props": {
-                                "className": "card-title"
+                                "className": "board-card-title"
                             },
                             "text": "$t:sirsoft-board.admin.settings.sections.report_permissions"
                         },
@@ -439,7 +439,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "card-description"
+                                "className": "board-card-description"
                             },
                             "text": "$t:sirsoft-board.admin.settings.sections.report_permissions_description"
                         },
@@ -447,7 +447,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "row-stack"
+                                "className": "board-row-stack"
                             },
                             "children": [
                                 {
@@ -459,7 +459,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "block text-sm font-semibold text-gray-800 dark:text-gray-200"
+                                                "className": "board:block board:text-sm board:font-semibold board:text-gray-800 board:dark:text-gray-200"
                                             },
                                             "text": "$t:sirsoft-board.admin.settings.fields.report_view_roles"
                                         },
@@ -467,7 +467,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "block text-tertiary mb-1.5"
+                                                "className": "board:block board-text-tertiary board:mb-1.5"
                                             },
                                             "text": "$t:sirsoft-board.admin.settings.fields.report_view_roles_description"
                                         },
@@ -477,7 +477,7 @@
                                             "props": {
                                                 "name": "report_permissions.view_roles",
                                                 "options": "{{_computed.roleOptions ?? []}}",
-                                                "className": "{{(_local.errors?.['report_permissions.view_roles']) ? 'w-full input-error' : 'w-full'}}",
+                                                "className": "{{(_local.errors?.['report_permissions.view_roles']) ? 'board:w-full board-input-error' : 'board:w-full'}}",
                                                 "disabled": "{{_computed.isReadOnly}}"
                                             }
                                         },
@@ -486,7 +486,7 @@
                                             "name": "Span",
                                             "if": "{{_local.errors?.['report_permissions.view_roles']}}",
                                             "props": {
-                                                "className": "text-xs text-red-600 dark:text-red-400 block"
+                                                "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block"
                                             },
                                             "text": "{{(Array.isArray(_local.errors?.['report_permissions.view_roles']) ? _local.errors['report_permissions.view_roles'][0] : _local.errors?.['report_permissions.view_roles']) ?? ''}}"
                                         }
@@ -508,7 +508,7 @@
                                                     "type": "basic",
                                                     "name": "Label",
                                                     "props": {
-                                                        "className": "block text-sm font-semibold text-gray-800 dark:text-gray-200"
+                                                        "className": "board:block board:text-sm board:font-semibold board:text-gray-800 board:dark:text-gray-200"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.settings.fields.report_manage_roles"
                                                 },
@@ -516,7 +516,7 @@
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {
-                                                        "className": "block text-tertiary mb-1.5"
+                                                        "className": "board:block board-text-tertiary board:mb-1.5"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.settings.fields.report_manage_roles_description"
                                                 },
@@ -526,7 +526,7 @@
                                                     "props": {
                                                         "name": "report_permissions.manage_roles",
                                                         "options": "{{_computed.roleOptions ?? []}}",
-                                                        "className": "{{(_local.errors?.['report_permissions.manage_roles']) ? 'w-full input-error' : 'w-full'}}",
+                                                        "className": "{{(_local.errors?.['report_permissions.manage_roles']) ? 'board:w-full board-input-error' : 'board:w-full'}}",
                                                         "disabled": "{{_computed.isReadOnly}}"
                                                     }
                                                 },
@@ -535,7 +535,7 @@
                                                     "name": "Span",
                                                     "if": "{{_local.errors?.['report_permissions.manage_roles']}}",
                                                     "props": {
-                                                        "className": "text-xs text-red-600 dark:text-red-400 block"
+                                                        "className": "board:text-xs board:text-red-600 board:dark:text-red-400 board:block"
                                                     },
                                                     "text": "{{(Array.isArray(_local.errors?.['report_permissions.manage_roles']) ? _local.errors['report_permissions.manage_roles'][0] : _local.errors?.['report_permissions.manage_roles']) ?? ''}}"
                                                 }
@@ -553,14 +553,14 @@
                     "type": "layout",
                     "name": "SectionLayout",
                     "props": {
-                        "className": "admin-card"
+                        "className": "board-admin-card"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "H3",
                             "props": {
-                                "className": "card-title"
+                                "className": "board-card-title"
                             },
                             "text": "$t:sirsoft-board.admin.settings.sections.report_notification"
                         },
@@ -568,7 +568,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "card-description"
+                                "className": "board-card-description"
                             },
                             "text": "$t:sirsoft-board.admin.settings.sections.report_notification_description"
                         },
@@ -576,7 +576,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "card-stack"
+                                "className": "board-card-stack"
                             },
                             "children": [
                                 {
@@ -585,7 +585,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "option-card"
+                                        "className": "board-option-card"
                                     },
                                     "children": [
                                         {
@@ -593,21 +593,21 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex items-start gap-4"
+                                                "className": "board:flex board:items-start board:gap-4"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-1 min-w-0"
+                                                        "className": "board:flex-1 board:min-w-0"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "block text-heading"
+                                                                "className": "board:block board-text-heading"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.settings.fields.notify_admin_on_report"
                                                         },
@@ -615,7 +615,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "block text-tertiary mt-0.5"
+                                                                "className": "board:block board-text-tertiary board:mt-0.5"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.settings.fields.notify_admin_on_report_description"
                                                         }
@@ -628,7 +628,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "space-y-4"
+                                                "className": "board:space-y-4"
                                             },
                                             "children": [
                                                 {
@@ -636,14 +636,14 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "stack-tight"
+                                                        "className": "board-stack-tight"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Label",
                                                             "props": {
-                                                                "className": "text-tertiary"
+                                                                "className": "board-text-tertiary"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.settings.fields.notify_admin_on_report_scope"
                                                         },
@@ -674,14 +674,14 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "stack-tight"
+                                                        "className": "board-stack-tight"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Label",
                                                             "props": {
-                                                                "className": "text-tertiary"
+                                                                "className": "board-text-tertiary"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.settings.fields.report_notification_template_status_title"
                                                         },
@@ -690,7 +690,7 @@
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "space-y-2"
+                                                                "className": "board:space-y-2"
                                                             },
                                                             "children": [
                                                                 {
@@ -702,14 +702,14 @@
                                                                         "index_var": "tplIndex"
                                                                     },
                                                                     "props": {
-                                                                        "className": "flex items-center justify-between gap-2 px-3 py-2 rounded-lg board-notification-template-row"
+                                                                        "className": "board:flex board:items-center board:justify-between board:gap-2 board:px-3 board:py-2 board:rounded-lg board-notification-template-row"
                                                                     },
                                                                     "children": [
                                                                         {
                                                                             "type": "basic",
                                                                             "name": "Div",
                                                                             "props": {
-                                                                                "className": "flex items-center gap-2 min-w-0"
+                                                                                "className": "board:flex board:items-center board:gap-2 board:min-w-0"
                                                                             },
                                                                             "children": [
                                                                                 {
@@ -718,21 +718,21 @@
                                                                                     "props": {
                                                                                         "name": "{{tpl.channel === 'mail' ? 'envelope' : 'bell'}}",
                                                                                         "size": "sm",
-                                                                                        "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                                                                        "className": "board:text-gray-500 board:dark:text-gray-400 board:flex-shrink-0"
                                                                                     }
                                                                                 },
                                                                                 {
                                                                                     "type": "basic",
                                                                                     "name": "Div",
                                                                                     "props": {
-                                                                                        "className": "min-w-0"
+                                                                                        "className": "board:min-w-0"
                                                                                     },
                                                                                     "children": [
                                                                                         {
                                                                                             "type": "basic",
                                                                                             "name": "Span",
                                                                                             "props": {
-                                                                                                "className": "block text-xs font-medium text-gray-500 dark:text-gray-300"
+                                                                                                "className": "board:block board:text-xs board:font-medium board:text-gray-500 board:dark:text-gray-300"
                                                                                             },
                                                                                             "text": "{{tpl.channel === 'mail' ? $t('sirsoft-board.admin.settings.fields.notification_channels.mail') : (tpl.channel === 'database' ? $t('sirsoft-board.admin.settings.fields.notification_channels.database') : tpl.channel)}}"
                                                                                         },
@@ -740,7 +740,7 @@
                                                                                             "type": "basic",
                                                                                             "name": "Span",
                                                                                             "props": {
-                                                                                                "className": "block text-sm text-gray-800 dark:text-gray-200 truncate"
+                                                                                                "className": "board:block board:text-sm board:text-gray-800 board:dark:text-gray-200 board:truncate"
                                                                                             },
                                                                                             "text": "{{$localized(tpl.subject) || $t('sirsoft-board.admin.settings.fields.report_notification_template_status_empty')}}"
                                                                                         }
@@ -752,7 +752,7 @@
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "props": {
-                                                                                "className": "{{tpl.is_active ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}} inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0"
+                                                                                "className": "{{tpl.is_active ? 'board:bg-green-50 board:text-green-700 board:dark:bg-green-900/30 board:dark:text-green-300' : 'board:bg-gray-100 board:text-gray-600 board:dark:bg-gray-700 board:dark:text-gray-300'}} board:inline-flex board:items-center board:px-2.5 board:py-0.5 board:rounded-full board:text-xs board:font-medium board:flex-shrink-0"
                                                                             },
                                                                             "text": "{{tpl.is_active ? $t('sirsoft-board.admin.settings.fields.report_notification_template_status_active') : $t('sirsoft-board.admin.settings.fields.report_notification_template_status_inactive')}}"
                                                                         }
@@ -763,7 +763,7 @@
                                                                     "name": "Div",
                                                                     "if": "{{boardNotificationDefinitions !== undefined && ((((boardNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'report_received_admin')?.templates) ?? []).length === 0)}}",
                                                                     "props": {
-                                                                        "className": "px-3 py-2 text-sm text-gray-500 dark:text-gray-400"
+                                                                        "className": "board:px-3 board:py-2 board:text-sm board:text-gray-500 board:dark:text-gray-400"
                                                                     },
                                                                     "text": "$t:sirsoft-board.admin.settings.fields.report_notification_template_status_empty"
                                                                 }
@@ -773,14 +773,14 @@
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "flex items-center justify-between gap-2 flex-wrap mt-1"
+                                                                "className": "board:flex board:items-center board:justify-between board:gap-2 board:flex-wrap board:mt-1"
                                                             },
                                                             "children": [
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "block text-xs text-gray-500 dark:text-gray-400"
+                                                                        "className": "board:block board:text-xs board:text-gray-500 board:dark:text-gray-400"
                                                                     },
                                                                     "text": "$t:sirsoft-board.admin.settings.fields.report_notification_template_status_hint"
                                                                 },
@@ -815,7 +815,7 @@
                                                                     ],
                                                                     "props": {
                                                                         "type": "button",
-                                                                        "className": "flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                                                        "className": "board:flex board:items-center board:gap-1.5 board:px-3 board:py-2 board:text-sm board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:transition-colors"
                                                                     },
                                                                     "children": [
                                                                         {
@@ -847,7 +847,7 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "option-card"
+                                        "className": "board-option-card"
                                     },
                                     "children": [
                                         {
@@ -855,21 +855,21 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "flex items-start gap-4"
+                                                "className": "board:flex board:items-start board:gap-4"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-1 min-w-0"
+                                                        "className": "board:flex-1 board:min-w-0"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "block text-heading"
+                                                                "className": "board:block board-text-heading"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.settings.fields.notify_author_on_report_action"
                                                         },
@@ -877,7 +877,7 @@
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "block text-tertiary mt-0.5"
+                                                                "className": "board:block board-text-tertiary board:mt-0.5"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.settings.fields.notify_author_on_report_action_description"
                                                         }
@@ -890,7 +890,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "space-y-4"
+                                                "className": "board:space-y-4"
                                             },
                                             "children": [
                                                 {
@@ -898,14 +898,14 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "stack-tight"
+                                                        "className": "board-stack-tight"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Label",
                                                             "props": {
-                                                                "className": "text-tertiary"
+                                                                "className": "board-text-tertiary"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.settings.fields.report_notification_template_status_title"
                                                         },
@@ -914,7 +914,7 @@
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "space-y-2"
+                                                                "className": "board:space-y-2"
                                                             },
                                                             "children": [
                                                                 {
@@ -926,14 +926,14 @@
                                                                         "index_var": "tplIndex"
                                                                     },
                                                                     "props": {
-                                                                        "className": "flex items-center justify-between gap-2 px-3 py-2 rounded-lg board-notification-template-row"
+                                                                        "className": "board:flex board:items-center board:justify-between board:gap-2 board:px-3 board:py-2 board:rounded-lg board-notification-template-row"
                                                                     },
                                                                     "children": [
                                                                         {
                                                                             "type": "basic",
                                                                             "name": "Div",
                                                                             "props": {
-                                                                                "className": "flex items-center gap-2 min-w-0"
+                                                                                "className": "board:flex board:items-center board:gap-2 board:min-w-0"
                                                                             },
                                                                             "children": [
                                                                                 {
@@ -942,21 +942,21 @@
                                                                                     "props": {
                                                                                         "name": "{{tpl.channel === 'mail' ? 'envelope' : 'bell'}}",
                                                                                         "size": "sm",
-                                                                                        "className": "text-gray-500 dark:text-gray-400 flex-shrink-0"
+                                                                                        "className": "board:text-gray-500 board:dark:text-gray-400 board:flex-shrink-0"
                                                                                     }
                                                                                 },
                                                                                 {
                                                                                     "type": "basic",
                                                                                     "name": "Div",
                                                                                     "props": {
-                                                                                        "className": "min-w-0"
+                                                                                        "className": "board:min-w-0"
                                                                                     },
                                                                                     "children": [
                                                                                         {
                                                                                             "type": "basic",
                                                                                             "name": "Span",
                                                                                             "props": {
-                                                                                                "className": "block text-xs font-medium text-gray-500 dark:text-gray-300"
+                                                                                                "className": "board:block board:text-xs board:font-medium board:text-gray-500 board:dark:text-gray-300"
                                                                                             },
                                                                                             "text": "{{tpl.channel === 'mail' ? $t('sirsoft-board.admin.settings.fields.notification_channels.mail') : (tpl.channel === 'database' ? $t('sirsoft-board.admin.settings.fields.notification_channels.database') : tpl.channel)}}"
                                                                                         },
@@ -964,7 +964,7 @@
                                                                                             "type": "basic",
                                                                                             "name": "Span",
                                                                                             "props": {
-                                                                                                "className": "block text-sm text-gray-800 dark:text-gray-200 truncate"
+                                                                                                "className": "board:block board:text-sm board:text-gray-800 board:dark:text-gray-200 board:truncate"
                                                                                             },
                                                                                             "text": "{{$localized(tpl.subject) || $t('sirsoft-board.admin.settings.fields.report_notification_template_status_empty')}}"
                                                                                         }
@@ -976,7 +976,7 @@
                                                                             "type": "basic",
                                                                             "name": "Span",
                                                                             "props": {
-                                                                                "className": "{{tpl.is_active ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}} inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0"
+                                                                                "className": "{{tpl.is_active ? 'board:bg-green-50 board:text-green-700 board:dark:bg-green-900/30 board:dark:text-green-300' : 'board:bg-gray-100 board:text-gray-600 board:dark:bg-gray-700 board:dark:text-gray-300'}} board:inline-flex board:items-center board:px-2.5 board:py-0.5 board:rounded-full board:text-xs board:font-medium board:flex-shrink-0"
                                                                             },
                                                                             "text": "{{tpl.is_active ? $t('sirsoft-board.admin.settings.fields.report_notification_template_status_active') : $t('sirsoft-board.admin.settings.fields.report_notification_template_status_inactive')}}"
                                                                         }
@@ -987,7 +987,7 @@
                                                                     "name": "Div",
                                                                     "if": "{{boardNotificationDefinitions !== undefined && ((((boardNotificationDefinitions?.data?.data ?? []).find(d => d.type === 'report_action')?.templates) ?? []).length === 0)}}",
                                                                     "props": {
-                                                                        "className": "px-3 py-2 text-sm text-gray-500 dark:text-gray-400"
+                                                                        "className": "board:px-3 board:py-2 board:text-sm board:text-gray-500 board:dark:text-gray-400"
                                                                     },
                                                                     "text": "$t:sirsoft-board.admin.settings.fields.report_notification_template_status_empty"
                                                                 }
@@ -997,14 +997,14 @@
                                                             "type": "basic",
                                                             "name": "Div",
                                                             "props": {
-                                                                "className": "flex items-center justify-between gap-2 flex-wrap mt-1"
+                                                                "className": "board:flex board:items-center board:justify-between board:gap-2 board:flex-wrap board:mt-1"
                                                             },
                                                             "children": [
                                                                 {
                                                                     "type": "basic",
                                                                     "name": "Span",
                                                                     "props": {
-                                                                        "className": "block text-xs text-gray-500 dark:text-gray-400"
+                                                                        "className": "board:block board:text-xs board:text-gray-500 board:dark:text-gray-400"
                                                                     },
                                                                     "text": "$t:sirsoft-board.admin.settings.fields.report_notification_template_status_hint"
                                                                 },
@@ -1039,7 +1039,7 @@
                                                                     ],
                                                                     "props": {
                                                                         "type": "button",
-                                                                        "className": "flex items-center gap-1.5 px-3 py-2 text-sm bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                                                        "className": "board:flex board:items-center board:gap-1.5 board:px-3 board:py-2 board:text-sm board:bg-white board:dark:bg-gray-800 board:text-gray-700 board:dark:text-gray-300 board:border board:border-gray-300 board:dark:border-gray-600 board:rounded-lg board:hover:bg-gray-50 board:dark:hover:bg-gray-700 board:transition-colors"
                                                                     },
                                                                     "children": [
                                                                         {

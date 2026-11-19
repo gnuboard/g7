@@ -37,3 +37,5 @@ effects:
   - tab_nav_hides_items_with_falsy_if
   # 누른 탭은 사용자가 직접 스크롤할 때까지 활성으로 남는다(7.1.0 실측)
   - tab_nav_clicked_tab_stays_active_until_user_scroll
+  # 항목의 errorDot 이 참이면 탭 이름 옆에 빨간 점(모바일 선택 목록은 이름 뒤 표식)을 붙인다 — 그 구획에 오류가 난 칸이 있음을 알린다(#490 U22)
+  - tab_nav_error_dot_marks_tab

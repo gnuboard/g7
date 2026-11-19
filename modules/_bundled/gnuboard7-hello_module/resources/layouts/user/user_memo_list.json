@@ -46,20 +46,20 @@
     "slots": {
         "content": [
             {
+                "comment": "클래스는 모두 이 모듈 CSS(resources/css/main.css)의 hellomodule-* 다. 템플릿 CSS·Tailwind 에 기대지 않으므로 어느 사용자 템플릿에서나 같은 짜임으로 그려진다.",
                 "id": "user_memo_wrapper",
                 "type": "basic",
                 "name": "Div",
                 "props": {
-                    "className": "max-w-3xl mx-auto p-6"
+                    "className": "hellomodule-page"
                 },
                 "children": [
                     {
-                        "comment": "사용자 화면은 어느 사용자 템플릿에서나 있는 유틸리티 클래스로 쓴다(관리자 템플릿의 의미 클래스는 사용자 템플릿에 정의가 없다).",
                         "id": "user_memo_title",
                         "type": "basic",
                         "name": "H1",
                         "props": {
-                            "className": "text-2xl font-bold text-gray-900 dark:text-white mb-6"
+                            "className": "hellomodule-page__title"
                         },
                         "text": "$t:gnuboard7-hello_module.user.memos.index.title"
                     },
@@ -70,49 +70,33 @@
                         "name": "Span",
                         "if": "{{memos !== undefined && ((memos?.data?.data ?? []).length === 0)}}",
                         "props": {
-                            "className": "block py-8 text-center text-sm text-gray-500 dark:text-gray-400"
+                            "className": "hellomodule-empty"
                         },
                         "text": "$t:gnuboard7-hello_module.user.memos.index.empty"
                     },
                     {
-                        "comment": "반복은 카드에 둔다 — 묶음(space-y-3)에 두면 메모마다 묶음이 새로 생겨 카드 사이 간격이 사라진다.",
+                        "comment": "반복은 카드에 둔다 — 묶음(hellomodule-list)에 두면 메모마다 묶음이 새로 생겨 카드 사이 간격이 사라진다.",
                         "id": "user_memo_items",
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "space-y-3"
+                            "className": "hellomodule-list"
                         },
                         "children": [
                             {
+                                "comment": "메모 한 건은 이 모듈이 제공하는 MemoCard 로 그린다. 템플릿이 이 컴포넌트를 대체하면(Hello 사용자 템플릿) 레이아웃을 고치지 않아도 그 판본이 그려진다.",
                                 "id": "user_memo_item_{{idx}}",
-                                "type": "basic",
-                                "name": "Div",
+                                "type": "composite",
+                                "name": "gnuboard7-hello_module.MemoCard",
                                 "iteration": {
                                     "source": "{{memos?.data?.data ?? []}}",
                                     "item_var": "memo",
                                     "index_var": "idx"
                                 },
                                 "props": {
-                                    "className": "p-4 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700"
-                                },
-                                "children": [
-                                    {
-                                        "type": "basic",
-                                        "name": "H2",
-                                        "props": {
-                                            "className": "text-lg font-semibold text-gray-900 dark:text-white"
-                                        },
-                                        "text": "{{memo.title ?? ''}}"
-                                    },
-                                    {
-                                        "type": "basic",
-                                        "name": "Span",
-                                        "props": {
-                                            "className": "block mt-2 text-sm text-gray-600 dark:text-gray-300"
-                                        },
-                                        "text": "{{memo.content ?? ''}}"
-                                    }
-                                ]
+                                    "title": "{{memo.title ?? ''}}",
+                                    "body": "{{memo.content ?? ''}}"
+                                }
                             }
                         ]
                     }

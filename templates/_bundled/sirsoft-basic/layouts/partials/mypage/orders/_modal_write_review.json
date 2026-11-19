@@ -41,6 +41,9 @@
                                     "if": "{{$parent._local.reviewTarget?.thumbnail_url}}",
                                     "props": {
                                         "src": "{{$parent._local.reviewTarget?.thumbnail_url ?? ''}}",
+                                        "thumbPreset": "sm",
+                                        "loading": "lazy",
+                                        "decoding": "async",
                                         "alt": "{{$parent._local.reviewTarget?.product_name ?? ''}}",
                                         "className": "w-full h-full object-cover"
                                     }
@@ -356,24 +359,71 @@
                             "text": "$t:mypage.order_detail.review_modal.image_label|count={{reviewSettings?.data?.review_settings?.max_images ?? 5}}"
                         },
                         {
-                            "type": "composite",
-                            "name": "FileUploader",
-                            "actions": [
+                            "comment": "첨부 업로더 확장점(선택형) — 업로더는 파일을 고르기만 하고, 리뷰 등록 요청에 실려 함께 올라간다. 대체 업로더도 onFilesChange 에\n             { target: { files } } 모양을 넘겨야 한다. 정책 값은 아래 기본 업로더와 같다.",
+                            "id": "review_images_uploader_slot",
+                            "type": "extension_point",
+                            "name": "attachment_uploader",
+                            "props": {
+                                "className": "contents",
+                                "uploader": {
+                                    "version": 1,
+                                    "mode": "select",
+                                    "endpoints": null,
+                                    "fields": {},
+                                    "policy": {
+                                        "accept": ".jpg,.jpeg,.png,.gif,.webp",
+                                        "maxSize": "{{reviewSettings?.data?.review_settings?.max_image_size_mb ?? 10}}",
+                                        "maxFiles": "{{reviewSettings?.data?.review_settings?.max_images ?? 5}}",
+                                        "maxConcurrentUploads": 1,
+                                        "imageCompression": null
+                                    },
+                                    "collection": "default",
+                                    "attachmentable": {
+                                        "type": null,
+                                        "id": null
+                                    },
+                                    "triggerEvent": null,
+                                    "initialFiles": [],
+                                    "disabled": false,
+                                    "autoUpload": false,
+                                    "context": {
+                                        "owner": "sirsoft-ecommerce",
+                                        "purpose": "review_images"
+                                    }
+                                }
+                            },
+                            "default": [
                                 {
-                                    "comment": "고른 파일을 담아만 둔다 — 실제 업로드는 리뷰 등록 요청에 실려 함께 나간다",
-                                    "type": "change",
+                                    "type": "composite",
+                                    "name": "FileUploader",
+                                    "actions": [
+                                        {
+                                            "comment": "고른 파일을 담아만 둔다 — 실제 업로드는 리뷰 등록 요청에 실려 함께 나간다",
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "_local",
+                                                "reviewImages": "{{$event.target.files ?? []}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "autoUpload": false,
+                                        "accept": ".jpg,.jpeg,.png,.gif,.webp",
+                                        "maxFiles": "{{reviewSettings?.data?.review_settings?.max_images ?? 5}}",
+                                        "maxSize": "{{reviewSettings?.data?.review_settings?.max_image_size_mb ?? 10}}"
+                                    }
+                                }
+                            ],
+                            "callbacks": {
+                                "onFilesChange": {
+                                    "comment": "고른 파일을 담아만 둔다(기본 업로더의 change 와 같다)",
                                     "handler": "setState",
                                     "params": {
                                         "target": "_local",
                                         "reviewImages": "{{$event.target.files ?? []}}"
                                     }
                                 }
-                            ],
-                            "props": {
-                                "autoUpload": false,
-                                "accept": ".jpg,.jpeg,.png,.gif,.webp",
-                                "maxFiles": "{{reviewSettings?.data?.review_settings?.max_images ?? 5}}",
-                                "maxSize": "{{reviewSettings?.data?.review_settings?.max_image_size_mb ?? 10}}"
                             }
                         }
                     ]

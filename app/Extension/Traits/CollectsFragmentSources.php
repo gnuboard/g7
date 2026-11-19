@@ -2,6 +2,7 @@
 
 namespace App\Extension\Traits;
 
+use App\Extension\ExtensionManager;
 use App\Extension\Helpers\LayoutFragmentSourceHelper;
 use App\Extension\Layout\BackupLayoutReader;
 use App\Extension\Layout\FragmentReadCache;
@@ -59,12 +60,16 @@ trait CollectsFragmentSources
     protected function collectFragmentSources(string $extensionsPath, array $jsonFiles): array
     {
         // 호출처가 `.json` 목록을 넘기지 않으면(템플릿 오버라이드) 디렉토리에서 직접 스캔한다.
+        // 나열은 차단 함수 가드를 가진 공용 나열기로 한다 — `glob` 은 하드닝 호스팅이 흔히 막는 이름이고, 이 경로는
+        // 웹 요청(관리자 화면의 확장 설치, 업데이트) 안에서 돈다. 막힌 호스팅에서 `glob()` 은 `Error`(치명)라 `?: []` 가
+        // 받지 못한다. 나열할 수 없으면 빈 목록이다.
+        $directory = rtrim($extensionsPath, '/\\');
         if ($jsonFiles === [] && File::isDirectory($extensionsPath)) {
-            $jsonFiles = File::glob(rtrim($extensionsPath, '/\\').DIRECTORY_SEPARATOR.'*.json') ?: [];
+            $jsonFiles = ExtensionManager::listDirectoryFiles($directory, '.json');
         }
 
         $markupFiles = File::isDirectory($extensionsPath)
-            ? File::glob(rtrim($extensionsPath, '/\\').DIRECTORY_SEPARATOR.'*.g7.html') ?: []
+            ? ExtensionManager::listDirectoryFiles($directory, '.g7.html')
             : [];
 
         // 짝 판별·우선순위는 규약 SSoT 가 수행한다 (사본 금지 — ResolvesLayoutInstallSource 참조).

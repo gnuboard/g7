@@ -124,8 +124,12 @@
 | with_country_settings | query | boolean | 아니오 | 기본 `false` | 국가별 설정을 **전체 컬럼**으로 포함할지. 기본값에서도 `country_settings` 는 내려가지만 목록 표시용 필드만 담깁니다(구간 설정·도서산간 설정·계산 API 설정 제외). 편집 폼처럼 전체 값이 필요한 호출자만 켜세요 |
 | sort_by | query | string | 아니오 | `id`, `name`, `is_active`, `sort_order`, `created_at`, `updated_at` | 정렬 기준 필드명 |
 | sort_order | query | string | 아니오 | `asc`, `desc` | 정렬 방향 (asc 오름차순 / desc 내림차순) |
-| per_page | query | integer | 아니오 | min 10, max 100 | 페이지당 항목 수 |
+| per_page | query | integer 또는 `all` | 아니오 | min 10, max 100, 또는 `all` | 페이지당 항목 수. `all` 이면 쪽 나눔 없이 조건에 맞는 정책 전부(`pagination` 없음) — 상품 등록·수정 화면의 배송정책 선택지가 쓴다 |
 | page | query | integer | 아니오 | min 1 | 조회할 페이지 번호 (1부터 시작) |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-ecommerce.shipping_policy.list_validation_rules`, `sirsoft-ecommerce.shipping_policy.list_validation_messages`).
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-ecommerce.shipping_policy.list_validation_rules`, `sirsoft-ecommerce.shipping_policy.list_validation_messages`).
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`sirsoft-ecommerce.shipping_policy.list_validation_rules`, `sirsoft-ecommerce.shipping_policy.list_validation_messages`).
 
@@ -154,6 +158,9 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | id | integer | `444` | 기본 키 (내부 식별자) |
 | name | object | `{"ko":"국내 무료배송","en":"Domestic Free Shipping"}` | 대상의 이름/명칭 (다국어 필드는 로케일별 값 객체) |
 | name_localized | string | `국내 무료배송` | `name` 의 현재 로케일 해석 값 (다국어 필드를 표시용 문자열로 해석) |
+| country_settings | array | `[{"id":73,"country_code":"KR","shipping_method":"parcel",…` | 국가별 배송 설정 목록. 목록 응답은 경량 표현(`id`, `country_code`, `shipping_method`, `shipping_method_label`, `currency_code`, `charge_policy`, `charge_policy_label`, `base_fee`, `free_threshold`, `extra_fee_enabled`, `is_active` 등)이고, `with_country_settings=1` 로 부르면 전체 표현이다 |
+| fee_summary | string | `KR: 무료배송` | 활성 국가별 배송비 요약. `{국가코드}: {요약}` 을 ` \| ` 로 이은 문자열 (예: `KR: 무료배송`, `KR: 배송비: 3,000원`). 활성 국가 설정이 없으면 빈 문자열 |
+| countries_display | string | `🇰🇷` | 활성 국가를 국기로 나타낸 문자열. 앞의 3개국만 보이고 나머지는 ` +N` 으로 붙인다 (국기가 없는 국가는 국가 코드 그대로) |
 | is_active | boolean | `true` | active 여부 |
 | is_default | boolean | `true` | default 여부 |
 | sort_order | integer | `1` | 표시 정렬 순서 값 (작을수록 우선) |
@@ -263,7 +270,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.shipping-policies.read`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -368,7 +375,7 @@ HTTP/1.1 201
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.shipping-policies.create`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 생성 처리 중 예외 발생 (`exceptions.operation_failed`) |
 
 <!-- @generated:end -->
@@ -586,7 +593,7 @@ HTTP/1.1 200
 | 400 | Bad Request | 일괄 삭제 처리 중 예외 발생 (`exceptions.operation_failed`) |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.shipping-policies.delete`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
@@ -659,7 +666,7 @@ HTTP/1.1 200
 | 400 | Bad Request | 일괄 변경 처리 중 예외 발생 (`exceptions.operation_failed`) |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.shipping-policies.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 서버 내부 오류 — 도메인 규칙 위반이 아닌 예외(인프라 장애·코드 결함)는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
@@ -785,7 +792,7 @@ HTTP/1.1 200
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.shipping-policies.update`)이 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -802,7 +809,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| id | path | string | 예 | — | 대상 리소스의 식별자 |
+| id | path | integer | 예 | — | 대상 리소스의 식별자 |
 
 **요청 예시**
 
@@ -857,7 +864,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| id | path | string | 예 | — | 대상 리소스의 식별자 |
+| id | path | integer | 예 | — | 대상 리소스의 식별자 |
 
 **요청 예시**
 
@@ -943,7 +950,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| id | path | string | 예 | — | 대상 리소스의 식별자 |
+| id | path | integer | 예 | — | 대상 리소스의 식별자 |
 | name | body | array | 예 | — | 대상의 이름/명칭 |
 | is_active | body | boolean | 예 | — | 활성 여부 (true 활성 / false 비활성) |
 | is_default | body | boolean | 아니오 | — | 기본값 지정 여부 |
@@ -1033,7 +1040,7 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 | 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.shipping-policies.update`)이 없는 경우 |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 수정 처리 중 예외 발생 (`exceptions.operation_failed`) |
 
 <!-- @generated:end -->
@@ -1051,7 +1058,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| id | path | string | 예 | — | 대상 리소스의 식별자 |
+| id | path | integer | 예 | — | 대상 리소스의 식별자 |
 
 **요청 예시**
 
@@ -1138,7 +1145,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| id | path | string | 예 | — | 대상 리소스의 식별자 |
+| id | path | integer | 예 | — | 대상 리소스의 식별자 |
 
 **요청 예시**
 

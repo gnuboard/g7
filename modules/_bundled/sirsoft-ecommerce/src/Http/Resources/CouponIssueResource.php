@@ -6,6 +6,7 @@ use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Enums\CouponIssueRecordStatus;
 use Modules\Sirsoft\Ecommerce\Http\Resources\Traits\HasMultiCurrencyPrices;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 /**
  * 쿠폰 발급 내역 API 리소스
@@ -56,8 +57,11 @@ class CouponIssueResource extends BaseApiResource
             'is_usable' => $this->isUsable(),
             'is_cancellable' => $this->status?->value === 'available' && ! $this->isExpired(),
 
-            // 관계
-            'user_name' => $this->whenLoaded('user', fn () => $this->user->name),
+            // 회원 이름은 표시 이름이다(관리자 화면은 이커머스 관리자 영역). 실명은 회원 조회 권한이 있는 관리자에게만
+            // `user_real_name` 으로 더해진다. 관계를 읽어 두지 않은 응답에는 종전처럼 키가 없다.
+            ...($this->resource->relationLoaded('user')
+                ? MemberDisplayName::staffFields($this->resource->user, $request, 'user_name')
+                : []),
         ];
     }
 }

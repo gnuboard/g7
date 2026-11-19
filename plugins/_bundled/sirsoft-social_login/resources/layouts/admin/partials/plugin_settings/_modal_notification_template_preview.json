@@ -1,0 +1,94 @@
+{
+    "comment": "소셜 로그인 설정 — 알림 템플릿 미리보기 창. 편집 창이 만들어 둔 결과를 보여 주기만 하고\n  입력이 없다 — 그래서 이 조각에는 액션이 하나도 없다.",
+    "meta": {
+        "is_partial": true,
+        "description": "알림 템플릿 치환 결과 미리보기"
+    },
+    "id": "modal_sl_notification_definition_preview",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-social_login.admin.notifications.preview_modal.title",
+        "size": "lg"
+    },
+    "children": [
+        {
+            "id": "sl_preview_content",
+            "type": "basic",
+            "name": "Div",
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "sl-form-label"
+                            },
+                            "text": "$t:sirsoft-social_login.admin.notifications.preview_modal.rendered_subject"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "sl-text-primary sl:text-sm sl:bg-gray-50 sl:dark:bg-gray-900 sl:rounded-md sl:p-3 sl:border sl:border-gray-200 sl:dark:border-gray-700"
+                            },
+                            "text": "{{_global.sl_notification_template_form_modal?.preview?.subject ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "sl-form-label"
+                            },
+                            "text": "$t:sirsoft-social_login.admin.notifications.preview_modal.rendered_body"
+                        },
+                        {
+                            "type": "composite",
+                            "name": "HtmlContent",
+                            "props": {
+                                "content": "{{_global.sl_notification_template_form_modal?.preview?.body ?? ''}}",
+                                "isHtml": true,
+                                "className": "sl:text-sm sl:max-w-none sl:bg-white sl:dark:bg-gray-900 sl:rounded-md sl:p-4 sl:border sl:border-gray-200 sl:dark:border-gray-700 sl:max-h-[400px] sl:overflow-y-auto"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "sl:flex sl:justify-end sl:border-t sl:border-gray-200 sl:dark:border-gray-700"
+                    },
+                    "children": [
+                        {
+                            "id": "sl_btn_close_preview",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "closeModal",
+                                    "target": "modal_sl_notification_definition_preview"
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "sl-text-body sl:px-4 sl:py-2 sl:rounded-md sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:hover:bg-gray-50 sl:dark:hover:bg-gray-700 sl:transition-colors"
+                            },
+                            "text": "$t:sirsoft-social_login.admin.notifications.preview_modal.btn_close"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

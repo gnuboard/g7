@@ -16,7 +16,7 @@
       <p class="text-gray-700 dark:text-gray-300">$t:admin.settings.general.static_cache_republish_confirm_body</p>
       <p class="mt-2 text-label-subtle">$t:admin.settings.general.static_cache_republish_confirm_warning</p>
     </div>
-    <div class="modal-footer-buttons">
+    <footer>
       <button type="button" class="btn btn-secondary" disabled="{{_global.isRepublishingStaticCache}}">
         <on type="click">
           <close-modal/>
@@ -47,6 +47,6 @@
         <icon data-if="{{_global.isRepublishingStaticCache}}" name="spinner" class="spinner-sm"/>
         <span>{{_global.isRepublishingStaticCache ? '$t:admin.settings.general.static_cache_republishing' : '$t:admin.settings.general.static_cache_republish'}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

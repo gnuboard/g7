@@ -21,6 +21,10 @@
 import type { Page } from '@playwright/test';
 import { test, expect, issueToken, authenticatePage } from '../../fixtures/auth';
 import { selectRouteTreeLayout } from '../../fixtures/route-tree';
+import { waitForEditorScrollSettled } from '../../fixtures/layout-editor';
+
+// 편집기 첫 적재(편집 대상 템플릿 자산 IIFE·CSS 로드)가 30초를 넘기는 일이 잦아(#869 λ 실측) 시험 제한을 늘린다.
+test.describe.configure({ timeout: 90_000 });
 
 /** 편집기 admin_user_list 진입 + 모바일 보기 전환 + 분기 핸들 렌더까지 대기. */
 async function openAdminUserListMobile(page: Page): Promise<void> {
@@ -30,7 +34,7 @@ async function openAdminUserListMobile(page: Page): Promise<void> {
   // 경로 줄 표기(소스 확장자)와 셀렉터는 fixtures/route-tree 가 단일 소유한다.
   await selectRouteTreeLayout(page, 'admin_user_list');
   // 라우트 캔버스 준비 신호 = 드래그 핸들 렌더.
-  await page.waitForSelector('[data-dnd-handle-path]', { timeout: 30_000 });
+  await page.waitForSelector('[data-dnd-handle-path]', { timeout: 60_000 });
   // 모바일 보기 전환 — 분기(responsive.portable) children 렌더 활성.
   // 디바이스 토글 버튼은 로케일에 따라 "📲 모바일" / "📱 Mobile" 등. 데스크톱/태블릿/
   // 모바일/사용자지정 4버튼 중 모바일을 매칭한다(로케일 무관 — 이모지 + 라벨 둘 다 허용).
@@ -50,6 +54,26 @@ async function openAdminUserListMobile(page: Page): Promise<void> {
     undefined,
     { timeout: 15_000 },
   );
+  await waitForEditorScrollSettled(page);
+}
+
+/**
+ * 핸들을 화면 가운데로 즉시 스크롤하고 그 중심 좌표를 잰다.
+ *
+ * 홈 레이아웃이 길어져 대상 핸들이 첫 화면 밖(아래)에 놓이는 일이 생겼고(#869 λ 실측 C1), 화면 밖 좌표의
+ * trusted mouse down 은 아무것도 누르지 않아 드래그가 시작되지 않았다. 선택 뒤 문서가 움직이는 경우도 있어
+ * 드래그 직전에 다시 잰다.
+ */
+async function handleCenterInView(page: Page, path: string): Promise<{ x: number; y: number }> {
+  await page.evaluate((p) => {
+    document.querySelector(`[data-dnd-handle-path="${p}"]`)?.scrollIntoView({ block: 'center', inline: 'center', behavior: 'instant' as ScrollBehavior });
+  }, path);
+  await waitForEditorScrollSettled(page);
+  return page.evaluate((p) => {
+    const el = document.querySelector(`[data-dnd-handle-path="${p}"]`) as HTMLElement;
+    const r = el.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }, path);
 }
 
 /** trusted mouse 드래그 활성화 — down → 8px 임계 초과 이동. pointerup 은 호출자가 수행. */
@@ -68,6 +92,8 @@ async function selectHandle(page: Page, handlePath: string): Promise<void> {
       ?.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
   }, handlePath);
   await page.waitForTimeout(60);
+  // 선택 뒤 문서가 움직이면 호출자가 잰 핸들 좌표가 어긋난다 — 멈출 때까지 기다린다(λ 실측 C2).
+  await waitForEditorScrollSettled(page);
 }
 
 async function endDrag(page: Page): Promise<void> {
@@ -105,7 +131,10 @@ test.describe('@layout-editor responsive 분기 드래그/슬롯', () => {
       });
   });
 
-  /** @effects branch_node_has_drag_handle */
+  /**
+   * @scenario responsive_flow=branch_drag
+   * @effects branch_node_has_drag_handle
+   */
   test('모바일 보기에서 responsive 분기 자식이 드래그 핸들을 가진다', async ({ page }) => {
     const token = issueToken('core.templates.layouts.edit');
     await authenticatePage(page, token);
@@ -123,7 +152,10 @@ test.describe('@layout-editor responsive 분기 드래그/슬롯', () => {
     ).toBeGreaterThan(0);
   });
 
-  /** @effects branch_drop_slots_render */
+  /**
+   * @scenario responsive_flow=branch_drag
+   * @effects branch_drop_slots_render
+   */
   test('분기 안 노드를 드래그하면 같은 분기 안에 드롭 슬롯이 생성된다 (결함① 회귀 가드)', async ({
     page,
   }) => {
@@ -139,24 +171,27 @@ test.describe('@layout-editor responsive 분기 드래그/슬롯', () => {
       // 분기 직속 자식 = `…responsive.{key}.children.N` (그 뒤 .children 없음).
       const branchChildren = handles.filter((p) => /\.responsive\.[^.]+\.children\.\d+$/.test(p));
       const containerOf = (p: string) => p.replace(/\.children\.\d+$/, '');
+      // 화면 본문(#user_list_content) 안 분기만 고른다. 공통 레이아웃(_admin_base) 헤더 단추에도 portable 분기가
+      // 생겨 첫 묶음이 그쪽으로 잡혔는데, 공통 레이아웃 노드는 화면 편집에서 잠겨 끌어 놓을 칸이 없다(#869 λ C2).
+      const inRouteBody = (p: string): boolean => {
+        const owner = document.querySelector(`[data-editor-path="${p.replace(/\.responsive\.[^.]+\.children\.\d+$/, '')}"]`);
+        return !!owner?.closest('#user_list_content');
+      };
       const groups: Record<string, string[]> = {};
-      for (const p of branchChildren) (groups[containerOf(p)] ||= []).push(p);
+      for (const p of branchChildren.filter(inRouteBody)) (groups[containerOf(p)] ||= []).push(p);
       for (const [container, kids] of Object.entries(groups)) {
         if (kids.length >= 2) return { dragPath: kids[0], branchContainer: container };
       }
       // 형제 2개인 분기 컨테이너가 없으면 첫 분기 자식이라도 반환(슬롯 ≥ 1 검증용).
-      return branchChildren.length > 0
-        ? { dragPath: branchChildren[0], branchContainer: containerOf(branchChildren[0]) }
+      const bodyChildren = branchChildren.filter(inRouteBody);
+      return bodyChildren.length > 0
+        ? { dragPath: bodyChildren[0], branchContainer: containerOf(bodyChildren[0]) }
         : null;
     });
     expect(probe, '분기 안 자식 핸들을 찾아야 함').not.toBeNull();
 
     await selectHandle(page, probe!.dragPath);
-    const center = await page.evaluate((p) => {
-      const el = document.querySelector(`[data-dnd-handle-path="${p}"]`) as HTMLElement;
-      const r = el.getBoundingClientRect();
-      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-    }, probe!.dragPath);
+    const center = await handleCenterInView(page, probe!.dragPath);
     await startDrag(page, center);
     await page.waitForSelector('[data-dnd-slot-id]', { timeout: 5_000 });
 

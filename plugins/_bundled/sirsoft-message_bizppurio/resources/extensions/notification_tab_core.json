@@ -13,7 +13,7 @@
                     "name": "Div",
                     "if": "{{['sms','alimtalk'].includes(query.channel ?? '') && (((availableChannels?.data?.channels ?? []).find(c => c.id === (query.channel))?.readiness?.ready === false) || ((availableChannels?.data?.channels ?? []).find(c => c.id === (query.channel))?.is_test_mode === true))}}",
                     "props": {
-                        "className": "mt-4 mb-3 space-y-2"
+                        "className": "bizppurio:mt-4 bizppurio:mb-3 bizppurio:space-y-2"
                     },
                     "children": [
                         {
@@ -22,30 +22,30 @@
                             "name": "Div",
                             "if": "{{(availableChannels?.data?.channels ?? []).find(c => c.id === (query.channel))?.readiness?.ready === false}}",
                             "props": {
-                                "className": "flex-between gap-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700"
+                                "className": "bizppurio-flex-between bizppurio:gap-3 bizppurio:p-3 bizppurio:rounded-lg bizppurio:bg-red-50 bizppurio:dark:bg-red-900/30 bizppurio:border bizppurio:border-red-200 bizppurio:dark:border-red-700"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex items-center gap-2"
+                                        "className": "bizppurio:flex bizppurio:items-center bizppurio:gap-2"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Icon",
                                             "props": {
-                                                "name": "fas fa-circle-exclamation",
+                                                "name": "circle-exclamation",
                                                 "size": "sm",
-                                                "className": "text-red-600 dark:text-red-400"
+                                                "className": "bizppurio:text-red-600 bizppurio:dark:text-red-400"
                                             }
                                         },
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-sm text-red-800 dark:text-red-200"
+                                                "className": "bizppurio:text-sm bizppurio:text-red-800 bizppurio:dark:text-red-200"
                                             },
                                             "text": "$t:sirsoft-message_bizppurio.banner.not_ready"
                                         }
@@ -62,7 +62,7 @@
                                     ],
                                     "props": {
                                         "href": "/admin/plugins/sirsoft-message_bizppurio/settings",
-                                        "className": "button text-xs font-medium px-3 py-1.5 rounded-md bg-red-600 text-white hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700 whitespace-nowrap"
+                                        "className": "bizppurio-button bizppurio:text-xs bizppurio:font-medium bizppurio:px-3 bizppurio:py-1.5 bizppurio:rounded-md bizppurio:bg-red-600 bizppurio:text-white bizppurio:hover:bg-red-700 bizppurio:dark:bg-red-600 bizppurio:dark:hover:bg-red-700 bizppurio:whitespace-nowrap"
                                     },
                                     "text": "$t:sirsoft-message_bizppurio.banner.setup_action",
                                     "permissions": [
@@ -77,23 +77,23 @@
                             "name": "Div",
                             "if": "{{(availableChannels?.data?.channels ?? []).find(c => c.id === (query.channel))?.is_test_mode === true}}",
                             "props": {
-                                "className": "flex items-center gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700"
+                                "className": "bizppurio:flex bizppurio:items-center bizppurio:gap-2 bizppurio:p-3 bizppurio:rounded-lg bizppurio:bg-amber-50 bizppurio:dark:bg-amber-900/30 bizppurio:border bizppurio:border-amber-200 bizppurio:dark:border-amber-700"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Icon",
                                     "props": {
-                                        "name": "fas fa-flask",
+                                        "name": "flask",
                                         "size": "sm",
-                                        "className": "text-amber-600 dark:text-amber-400"
+                                        "className": "bizppurio:text-amber-600 bizppurio:dark:text-amber-400"
                                     }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-sm text-amber-800 dark:text-amber-200"
+                                        "className": "bizppurio:text-sm bizppurio:text-amber-800 bizppurio:dark:text-amber-200"
                                     },
                                     "text": "$t:sirsoft-message_bizppurio.banner.test_mode"
                                 }
@@ -108,23 +108,23 @@
                     "name": "Div",
                     "if": "{{(query.channel) === 'alimtalk'}}",
                     "props": {
-                        "className": "flex items-center gap-2 mt-3 mb-1 p-3 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800"
+                        "className": "bizppurio:flex bizppurio:items-center bizppurio:gap-2 bizppurio:mt-3 bizppurio:mb-1 bizppurio:p-3 bizppurio:rounded-lg bizppurio:bg-blue-50 bizppurio:dark:bg-blue-950 bizppurio:border bizppurio:border-blue-200 bizppurio:dark:border-blue-800"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Icon",
                             "props": {
-                                "name": "fas fa-circle-info",
+                                "name": "circle-info",
                                 "size": "sm",
-                                "className": "text-blue-500 dark:text-blue-400 flex-shrink-0"
+                                "className": "bizppurio:text-blue-500 bizppurio:dark:text-blue-400 bizppurio:flex-shrink-0"
                             }
                         },
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-sm text-blue-800 dark:text-blue-200"
+                                "className": "bizppurio:text-sm bizppurio:text-blue-800 bizppurio:dark:text-blue-200"
                             },
                             "text": "$t:sirsoft-message_bizppurio.template.tab_guide"
                         }

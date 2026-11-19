@@ -10,6 +10,9 @@ use Modules\Sirsoft\Ecommerce\Repositories\Contracts\EcommerceUserProfileReposit
  */
 class EcommerceUserProfileRepository implements EcommerceUserProfileRepositoryInterface
 {
+    /**
+     * @param  EcommerceUserProfile  $model  회원 쇼핑 프로필 모델
+     */
     public function __construct(
         protected EcommerceUserProfile $model
     ) {}
@@ -58,5 +61,16 @@ class EcommerceUserProfileRepository implements EcommerceUserProfileRepositoryIn
             ['user_id' => $userId],
             ['preferred_shipping_country' => $countryCode],
         );
+    }
+
+    /**
+     * 사용자의 프로필 행을 지웁니다 (탈퇴 회원 파기, 회원 삭제).
+     *
+     * @param  int  $userId  사용자 ID
+     * @return int 지운 행 수 (행이 없으면 0)
+     */
+    public function deleteByUserId(int $userId): int
+    {
+        return (int) $this->model->newQuery()->where('user_id', $userId)->delete();
     }
 }

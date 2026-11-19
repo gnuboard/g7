@@ -263,8 +263,8 @@ describe('lifecycle UI — 행 하단은 상태 요약만 (버튼 0)', () => {
 
     /** @effects row_footer_shows_status_summary_only */
     it('SMS 상태 3종은 문구가 아니라 배지다 — 사용=초록/미사용=회색(승인 배지와 같은 모양), 본문 미설정=외곽선 칩 (제품 결정 2026-08-23)', () => {
-        const APPROVED_SET = 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'; // green-700 은 green-100 위 4.4996 — 대비 4.5 미달이라 800
-        const GRAY_SET = 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300';
+        const APPROVED_SET = 'bizppurio:bg-green-100 bizppurio:dark:bg-green-900 bizppurio:text-green-800 bizppurio:dark:text-green-200'; // green-700 은 green-100 위 4.4996 — 대비 4.5 미달이라 800
+        const GRAY_SET = 'bizppurio:bg-gray-100 bizppurio:dark:bg-gray-700 bizppurio:text-gray-600 bizppurio:dark:text-gray-300';
         for (const [id, field] of [['bizppurio_row_sms_fallback_badge', 'fallback_sms_enabled'], ['bizppurio_row_sms_only_badge', 'sms_only']] as const) {
             const badge = findById(row, id) as AnyNode;
             expect(badge, id).toBeTruthy();
@@ -272,7 +272,7 @@ describe('lifecycle UI — 행 하단은 상태 요약만 (버튼 0)', () => {
             const on = String(evalExpr(cls, mapScope({ id: 1, has_content: true, status: 'draft', [field]: true })));
             const off = String(evalExpr(cls, mapScope({ id: 1, has_content: true, status: 'draft', [field]: false })));
             expect(on).toContain('rounded');
-            expect(on).toContain('px-2 py-0.5');
+            expect(on).toContain('bizppurio:px-2 bizppurio:py-0.5');
             expect(on).toContain(APPROVED_SET);
             expect(off).toContain(GRAY_SET);
             expect(evalExpr(String(badge.text), mapScope({ id: 1, [field]: true }))).toBe('sirsoft-message_bizppurio.template.row.on');
@@ -283,7 +283,7 @@ describe('lifecycle UI — 행 하단은 상태 요약만 (버튼 0)', () => {
         }
         const missing = findById(row, 'bizppurio_row_sms_body_missing') as AnyNode;
         expect(missing).toBeTruthy();
-        expect(String((missing.props as { className: string }).className)).toContain('border border-gray-300');
+        expect(String((missing.props as { className: string }).className)).toContain('bizppurio:border bizppurio:border-gray-300');
         expect(missing.text).toBe('$t:sirsoft-message_bizppurio.template.row.sms_body_missing');
         // 평문 "라벨: 값" 조립은 남지 않는다
         expect(JSON.stringify(row)).not.toContain("+ ': ' +");

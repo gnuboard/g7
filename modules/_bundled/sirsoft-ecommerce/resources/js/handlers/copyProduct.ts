@@ -5,6 +5,7 @@
  * 등록 페이지의 copy_source data_source가 옵션에 따라 데이터를 사전 입력합니다.
  */
 
+import { sitePath } from '../apiUrl';
 import type { ActionContext } from '../types';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
@@ -117,6 +118,6 @@ export async function copyProductHandler(
     if (context.navigate) {
         context.navigate(targetUrl);
     } else {
-        window.location.href = targetUrl;
+        window.location.href = sitePath(targetUrl);
     }
 }

@@ -14,6 +14,7 @@ return [
     'refund' => [
         'missing_tid' => '거래번호(tno)가 없어 환불을 진행할 수 없습니다.',
         'default_reason' => '구매자 환불 요청',
+        'pg_failed' => '결제대행사와 통신하는 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.',
         'in_progress' => 'NHN KCP 환불이 이미 처리 중입니다.',
         'vbank_requires_bank_transfer' => '입금이 끝난 가상계좌 결제는 NHN KCP 로 자동 환불할 수 없습니다. 환불 수단을 계좌 환불로 바꿔 고객 계좌로 직접 송금해 주세요.',
     ],
@@ -30,6 +31,9 @@ return [
         'mobile_payment_unavailable' => '현재 모바일 결제를 이용할 수 없습니다. 다른 결제수단을 선택하거나 쇼핑몰에 문의해 주세요.',
         'cli_binary_missing' => 'KCP CLI 바이너리 누락: :path',
         'cli_binary_not_executable' => 'KCP CLI 바이너리 실행 권한 부족 — 운영자 조치 필요 (sudo chmod 755 :path)',
+        'escrow_delivery_rejected' => 'NHN KCP 가 에스크로 배송 등록을 거절했습니다.',
+        'cancel_rejected' => 'NHN KCP 가 결제 취소를 거절했습니다.',
+        'escrow_delivery_failed' => '에스크로 배송 등록 중 오류가 발생해 등록을 마치지 못했습니다. 잠시 후 다시 시도하고, 계속 실패하면 서버 로그를 확인해 주세요.',
     ],
     // 설정 화면 「시스템 점검」 카드의 항목 줄(항목 이름·결과·조치 안내)과 결제서버 IP 출처 — 서버가 만들어 보내는 문구
     'health' => [
@@ -87,5 +91,26 @@ return [
     'kcp_frame' => [
         // PC 결제창 프레임 요청 항목명(#158) — 검증 실패는 빈 400 이라 화면에 나가지 않지만 항목명은 둔다.
         'sdk' => '결제창 SDK 주소',
+    ],
+    // 입금 전에 취소된 주문의 가상계좌 발급 취소 사유(KCP 로 보내는 취소 사유) — 이커머스 문구와 같은 값
+    'vbank_close_reason' => '입금 전 주문 취소',
+    // 결제 화면·결제대행사 연동 API 의 오류 응답 문구
+    'responses' => [
+        'amount_mismatch' => '결제 금액이 주문 금액과 일치하지 않습니다.',
+        'claim_amount_mismatch' => '결제 금액이 청구 결제 금액과 일치하지 않습니다.',
+        'claim_approval_forbidden' => '이 청구 결제의 NHN KCP 승인키를 요청할 수 없습니다.',
+        'order_approval_forbidden' => '이 주문의 NHN KCP 승인키를 요청할 수 없습니다.',
+        'approval_key_failed' => 'NHN KCP 결제를 준비하지 못했습니다. :reason',
+        'claim_deposit_not_supported' => '클레임 추가결제는 입금 대기 방식(가상계좌)을 지원하지 않습니다.',
+        'claim_payment_not_found' => '청구 결제를 찾을 수 없습니다.',
+        'claim_payment_not_payable' => '결제할 수 없는 청구 결제입니다.',
+        'currency_not_chargeable' => '결제 통화로 청구액을 계산할 수 없습니다.',
+        'guest_verification_failed' => '비회원 주문 확인에 실패했습니다.',
+        'krw_only' => 'NHN KCP 는 원화 결제만 지원합니다.',
+        'order_not_found' => '주문을 찾을 수 없습니다.',
+        'order_not_retryable' => '다시 결제할 수 없는 주문입니다.',
+        'ownership_verification_failed' => '주문 소유자 확인에 실패했습니다.',
+        'too_many_requests' => '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.',
+        'vbank_session_failed' => '가상계좌 결제를 준비하지 못했습니다. 잠시 후 다시 시도해 주세요.',
     ],
 ];

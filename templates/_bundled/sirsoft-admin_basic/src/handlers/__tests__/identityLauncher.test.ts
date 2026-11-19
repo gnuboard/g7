@@ -161,6 +161,9 @@ describe('sirsoftAdminBasicIdentityLauncher — challenge 시작 요청', () => 
       purpose: 'sensitive_action',
       provider_id: 'g7:core.mail',
       target: { email: 'admin@example.com' },
+      scope: 'admin',
+      // 외부 이동 수단이 확인 뒤 돌려보낼 지금 화면(jsdom 주소의 경로)
+      return_path: window.location.pathname,
     });
   });
 

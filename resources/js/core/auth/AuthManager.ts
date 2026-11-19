@@ -2,6 +2,7 @@ import { getApiClient } from '../api/ApiClient';
 import { createLogger } from '../utils/Logger';
 import { sanitizeNavPath } from '../support/navPolicy';
 import { getAppConfig, resolveUsableLocale } from '../support/localeTag';
+import { stripBasePrefix, withBasePrefix } from '../support/assetUrl';
 
 const logger = createLogger('AuthManager');
 
@@ -46,6 +47,13 @@ export interface AuthConfig {
   passwordChangeEndpoint: string;
   /** 로그인 비밀번호 변경 단계 연기 엔드포인트 */
   passwordChangePostponeEndpoint: string;
+  /**
+   * 로그인 인계 코드 교환 엔드포인트 — 외부 인증(소셜 로그인 등)이 발급한 일회용 코드를 바꿔 로그인한다.
+   * 없으면 그 인증 타입은 인계를 지원하지 않는다(관리자는 아직 미지원).
+   *
+   * @since engine-v1.92.0
+   */
+  handoffEndpoint?: string;
   /**
    * 로그인 전용 화면 경로(로그인·가입·비밀번호 찾기·재설정 등) — 로그인 이동 시 복귀 경로로 싣지 않는다.
    * `loginPath` 는 이 목록과 무관하게 항상 로그인 전용 화면으로 취급한다.
@@ -130,10 +138,18 @@ export type TwoFactorSession = Exclude<LoginResult, { status: 'two_factor_requir
 
 /**
  * 인증된 사용자 정보
+ *
+ * 화면에 보일 이름은 `display_name` 을 먼저 쓴다(`user.display_name ?? user.name ?? ''`).
+ * `name` 은 실명 원본이고 이름 항목을 쓰지 않는 사이트에서는 null 이다.
  */
 export interface AuthUser {
   uuid: string;
-  name: string;
+  /** 실명 원본. 이름 항목을 쓰지 않는 사이트에서는 null */
+  name: string | null;
+  /** 닉네임 원본. 닉네임 항목을 쓰지 않거나 비어 있으면 null */
+  nickname?: string | null;
+  /** 표시 이름 — 서버가 그 화면의 영역 설정과 회원이 고른 종류로 계산한 값(옛 응답에는 없다) */
+  display_name?: string;
   email: string;
   [key: string]: any;
 }
@@ -148,9 +164,105 @@ export interface AuthState {
 }
 
 /**
+ * 마지막 인증 확인의 결론
+ *
+ * - `authenticated`: 서버가 사용자를 돌려줬다(또는 일시 오류여도 이미 인증된 세션을 유지했다)
+ * - `unauthenticated`: 토큰이 없거나 서버가 인증 실패(401·419 등)로 답했다
+ * - `unavailable`: 서버 일시 오류(5xx)·네트워크 오류가 짧은 재시도 뒤에도 이어져 인증 여부를 알 수 없다
+ *
+ * @since engine-v1.95.0
+ */
+export type AuthCheckStatus = 'authenticated' | 'unauthenticated' | 'unavailable';
+
+/**
  * 이벤트 핸들러 타입
  */
 type EventHandler = (...args: any[]) => void;
+
+/**
+ * 인증 확인의 일시 오류 재시도 간격(ms)
+ *
+ * 개발 서버의 라우트 캐시 재생성처럼 서버가 잠깐 5xx 를 내는 순간을 넘기는 정도로만 짧게 둔다 — 부팅 때
+ * `preloadAuth` 와 라우터 확인이 차례로 한 번씩 부르므로, 서버가 계속 죽어 있으면 이 합의 두 배만큼 늦게 오류 화면이 뜬다.
+ *
+ * @since engine-v1.95.0
+ */
+const TRANSIENT_RETRY_DELAYS_MS = [250, 750, 1500] as const;
+
+/**
+ * 인증 확인 응답이 「인증 실패」가 아니라 서버·네트워크의 일시 오류인지 판정합니다.
+ *
+ * 5xx, 429(요청 제한)와 응답이 없는 HTTP 오류(axios 의 네트워크 끊김·시간 초과)만 일시 오류다. 요청 취소(`ERR_CANCELED`)는 호출자가
+ * 그만둔 것이라 다시 묻지 않는다. 429 밖의 4xx(401·403·419 등)는 서버가 판정한 결과라 일시 오류가 아니다. HTTP 오류가 아닌 예외
+ * (인터셉터 안의 프로그램 오류 등)도 일시 오류가 아니다 — 종전처럼 미인증으로 끝내 오류를 덮지 않는다.
+ *
+ * @param error 요청 오류
+ * @returns 일시 오류면 true
+ * @since engine-v1.95.0
+ */
+function isTransientAuthCheckError(error: any): boolean {
+  if (error?.code === 'ERR_CANCELED' || error?.name === 'CanceledError') {
+    return false;
+  }
+  const status = error?.response?.status;
+  if (typeof status === 'number') {
+    // 429(요청 제한)는 서버가 「잠시 뒤 다시」 라고 답한 것이라 인증 판정이 아니다 — 5xx 처럼 다시 묻는다.
+    // 종전에는 4xx 로 보고 로그인 화면으로 보냈다(#869 λ 4부 16 관찰 4, 출시본에도 있음)
+    return status >= 500 || status === 429;
+  }
+  return error?.isAxiosError === true;
+}
+
+/**
+ * 429 의 Retry-After 를 따를 최대 대기(ms) — 부팅 인증 확인이 화면을 오래 막지 않게 이보다 길게 기다리지 않는다 (engine-v1.95.0)
+ */
+const RETRY_AFTER_MAX_MS = 5000;
+
+/**
+ * 다음 재시도까지 기다릴 시간을 정합니다.
+ *
+ * 기본은 {@link TRANSIENT_RETRY_DELAYS_MS} 이고, 429 가 `Retry-After`(초 또는 HTTP 날짜)를 주면 그 값을 따르되
+ * {@link RETRY_AFTER_MAX_MS} 를 넘기지 않는다. 기본보다 짧게 기다리지는 않는다.
+ *
+ * @param error 요청 오류
+ * @param attempt 지금까지 다시 물은 횟수
+ * @returns 대기 시간(ms)
+ * @since engine-v1.95.0
+ */
+function transientRetryDelay(error: any, attempt: number): number {
+  const base: number = TRANSIENT_RETRY_DELAYS_MS[attempt];
+  if (error?.response?.status !== 429) {
+    return base;
+  }
+  const headers = error?.response?.headers;
+  const raw = typeof headers?.get === 'function' ? headers.get('retry-after') : (headers?.['retry-after'] ?? headers?.['Retry-After']);
+  if (raw === undefined || raw === null || String(raw).trim() === '') {
+    return base;
+  }
+  const text = String(raw).trim();
+  let requestedMs: number | null = null;
+  if (/^\d+$/.test(text)) {
+    requestedMs = Number(text) * 1000;
+  } else {
+    const at = Date.parse(text);
+    if (!Number.isNaN(at)) {
+      requestedMs = at - Date.now();
+    }
+  }
+  if (requestedMs === null) {
+    return base;
+  }
+
+  return Math.max(base, Math.min(requestedMs, RETRY_AFTER_MAX_MS));
+}
+
+/**
+ * 재시도 대기
+ *
+ * @param ms 대기 시간
+ * @returns 대기가 끝나면 풀리는 Promise
+ */
+const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
  * 로그인·2단계 인증·비밀번호 변경 단계 응답의 data 페이로드
@@ -211,6 +323,7 @@ const defaultConfigs: Record<AuthType, AuthConfig> = {
     twoFactorResendEndpoint: '/auth/admin/login/two-factor/resend',
     passwordChangeEndpoint: '/auth/admin/login/password-change',
     passwordChangePostponeEndpoint: '/auth/admin/login/password-change/postpone',
+    handoffEndpoint: '/auth/admin/login/handoff',
     guestOnlyPaths: ['/admin/login', '/admin/forgot-password', '/admin/reset-password'],
   },
   user: {
@@ -227,6 +340,7 @@ const defaultConfigs: Record<AuthType, AuthConfig> = {
     twoFactorResendEndpoint: '/auth/login/two-factor/resend',
     passwordChangeEndpoint: '/auth/login/password-change',
     passwordChangePostponeEndpoint: '/auth/login/password-change/postpone',
+    handoffEndpoint: '/auth/login/handoff',
     guestOnlyPaths: ['/login', '/register', '/forgot-password', '/reset-password'],
   },
 };
@@ -243,6 +357,19 @@ export class AuthManager {
   private isRefreshing: boolean = false;
   private refreshPromise: Promise<boolean> | null = null;
   private eventHandlers: Map<string, EventHandler[]> = new Map();
+  /** 인증 타입별 마지막 확인 결론 (@since engine-v1.95.0) */
+  private lastCheckStatus: Map<AuthType, AuthCheckStatus> = new Map();
+  /** 인증 타입별 마지막 「확인 불가」 시각(ms) (@since engine-v1.95.0) */
+  private lastUnavailableAt: Map<AuthType, number> = new Map();
+
+  /**
+   * 「확인 불가」 결론을 다시 쓰는 유효 시간(ms)
+   *
+   * 부팅 순서에서 preloadAuth 가 끝난 뒤 라우터 인증 가드까지는 확장 번들, 템플릿 설정 적재 등으로 보통 1초 안팎이 걸린다.
+   * 그 사이 서버는 방금 재시도 창(2.5초) 내내 답하지 못했으므로 다시 물어도 같은 장애일 가능성이 크다. 재시도 창의 두 배를
+   * 넘으면 새 확인으로 본다 — 사용자가 한참 뒤 다른 화면으로 옮길 때 낡은 결론을 쓰지 않게 한다 (설계 확정 2026-11-08).
+   */
+  static readonly UNAVAILABLE_REUSE_MS = 5000;
 
   /** 로케일 스토리지 키 (TemplateApp과 동일) */
   private static readonly LOCALE_STORAGE_KEY = 'g7_locale';
@@ -356,8 +483,13 @@ export class AuthManager {
   /**
    * 백엔드 API로 인증 상태 확인
    *
+   * 서버 일시 오류(5xx)·네트워크 오류는 「로그인 안 됨」이 아니다 — 짧게 몇 번 다시 묻고, 그래도 안 되면 이미 인증된
+   * 같은 타입 세션은 그대로 두고 true, 아니면 상태를 건드리지 않고 false 를 돌려준다(결론은 `getLastCheckStatus` 가
+   * `unavailable`). 토큰은 어느 경우에도 지우지 않는다. 401 은 토큰 갱신 뒤 다시 묻고, 그 밖의 4xx 는 종전처럼 미인증이다.
+   *
    * @param type - 인증 타입 (admin 또는 user)
    * @returns 인증 여부
+   * @since engine-v1.95.0 일시 오류 재시도·세션 유지·`getLastCheckStatus`
    */
   async checkAuth(type: AuthType): Promise<boolean> {
     const apiClient = getApiClient();
@@ -366,6 +498,7 @@ export class AuthManager {
     // 토큰이 없으면 미인증
     if (!token) {
       this.clearState();
+      this.lastCheckStatus.set(type, 'unauthenticated');
       return false;
     }
 
@@ -375,35 +508,131 @@ export class AuthManager {
       return false;
     }
 
-    try {
-      // 사용자 정보 조회 API 호출
-      const response = await apiClient.get<{ success: boolean; data: AuthUser }>(config.userEndpoint);
-
-      if (response.success && response.data) {
-        this.state = {
-          isAuthenticated: true,
-          user: response.data,
-          type: type,
-        };
-        this.emit('authStateChange', this.state);
-        return true;
+    // 다시 묻기 시작했으면(첫 시도가 일시 오류) 끝날 때 한 번 알린다 — 기다리는 동안의 확인 중 표시가 이 두 이벤트를 쓴다 (설계 확정 2026-11-08)
+    let retried = false;
+    // 모든 확인의 시작과 끝을 한 번씩 알린다 — 첫 요청이 늦어도 확인 중 표시를 띄울 수 있게 (설계 확정 2026-11-08, 브라우저 실측)
+    this.emitIsolated('authCheckStart', { type });
+    const finish = (status: AuthCheckStatus, result: boolean): boolean => {
+      this.lastCheckStatus.set(type, status);
+      if (status === 'unavailable') {
+        this.lastUnavailableAt.set(type, Date.now());
+      } else {
+        this.lastUnavailableAt.delete(type);
       }
+      if (retried) {
+        this.emitIsolated('authCheckRetryEnd', { type, status });
+      }
+      this.emitIsolated('authCheckEnd', { type, status });
+      return result;
+    };
 
-      this.clearState();
-      return false;
-    } catch (error: any) {
-      // 401 에러인 경우 토큰 갱신 시도
-      if (error.response?.status === 401) {
-        const refreshed = await this.refreshToken();
-        if (refreshed) {
-          // 갱신 성공 후 다시 인증 확인
-          return this.checkAuth(type);
+    for (let attempt = 0; ; attempt++) {
+      try {
+        // 사용자 정보 조회 API 호출
+        const response = await apiClient.get<{ success: boolean; data: AuthUser }>(config.userEndpoint);
+
+        if (response.success && response.data) {
+          this.state = {
+            isAuthenticated: true,
+            user: response.data,
+            type: type,
+          };
+          this.lastCheckStatus.set(type, 'authenticated');
+          // 구독자 예외를 격리한다 — 이 try 안에서 새면 사용자 조회 실패로 잡혀 다시 묻거나 세션을 비운다 (engine-v1.95.0)
+          this.emitIsolated('authStateChange', this.state);
+          return finish('authenticated', true);
         }
-      }
 
-      this.clearState();
+        this.clearState();
+        return finish('unauthenticated', false);
+      } catch (error: any) {
+        // 401 에러인 경우 토큰 갱신 시도
+        if (error.response?.status === 401) {
+          const refreshed = await this.refreshToken();
+          if (refreshed) {
+            // 갱신 성공 후 다시 인증 확인 — 결론은 안쪽 확인이 정한다
+            const result = await this.checkAuth(type);
+            const nestedStatus = this.lastCheckStatus.get(type) ?? 'unauthenticated';
+            if (retried) {
+              this.emitIsolated('authCheckRetryEnd', { type, status: nestedStatus });
+            }
+            this.emitIsolated('authCheckEnd', { type, status: nestedStatus });
+            return result;
+          }
+        }
+
+        if (!isTransientAuthCheckError(error)) {
+          this.clearState();
+          return finish('unauthenticated', false);
+        }
+
+        if (attempt < TRANSIENT_RETRY_DELAYS_MS.length) {
+          const delay = transientRetryDelay(error, attempt);
+          logger.warn(`인증 확인 일시 오류 — ${delay}ms 뒤 다시 묻습니다 (${attempt + 1}/${TRANSIENT_RETRY_DELAYS_MS.length})`, error?.response?.status ?? error?.code);
+          if (!retried) {
+            retried = true;
+            this.emitIsolated('authCheckRetry', { type, attempt: attempt + 1 });
+          }
+          await wait(delay);
+          continue;
+        }
+
+        // 서버가 계속 답하지 못한다 — 인증 실패로 단정하지 않는다
+        if (this.state.isAuthenticated && this.state.type === type) {
+          logger.warn('인증 확인이 일시 오류로 끝났습니다 — 현재 세션을 유지합니다');
+          return finish('authenticated', true);
+        }
+        logger.warn('인증 확인이 일시 오류로 끝났습니다 — 인증 여부를 알 수 없습니다');
+        return finish('unavailable', false);
+      }
+    }
+  }
+
+  /**
+   * 방금 「확인 불가」로 끝난 확인이 있는지 돌려줍니다.
+   *
+   * 부팅 때 `preloadAuth` 가 재시도(합 2.5초) 끝에 확인 불가로 끝나면 라우터 인증 가드가 곧바로 다시 물어 재시도를 한 번 더
+   * 했다 — 같은 장애에 백지가 두 배(약 5초)로 길어졌다. 라우터는 이 값이 참이면 다시 묻지 않고 확인 불가로 처리한다(설계 확정 2026-11-08).
+   * 유효 시간은 `UNAVAILABLE_REUSE_MS` 다.
+   *
+   * @param type 인증 타입
+   * @returns 유효 시간 안의 확인 불가 결론이 있으면 true
+   * @since engine-v1.95.0
+   */
+  isRecentlyUnavailable(type: AuthType): boolean {
+    if (this.lastCheckStatus.get(type) !== 'unavailable') {
       return false;
     }
+    const at = this.lastUnavailableAt.get(type);
+    return at !== undefined && Date.now() - at <= AuthManager.UNAVAILABLE_REUSE_MS;
+  }
+
+  /**
+   * 구독자 예외를 격리해 이벤트를 냅니다 — 인증 확인 흐름 안에서 구독자 오류가 확인 결과를 바꾸지 않게 한다.
+   *
+   * @param event 이벤트 이름
+   * @param payload 이벤트 값
+   */
+  private emitIsolated(event: string, payload: unknown): void {
+    try {
+      this.emit(event, payload);
+    } catch (listenerError) {
+      logger.error(`${event} 구독자 오류 (인증 확인)`, listenerError);
+    }
+  }
+
+  /**
+   * 마지막 인증 확인의 결론을 돌려줍니다.
+   *
+   * `checkAuth` 가 false 를 돌려줬을 때 그것이 인증 실패인지(로그인으로 보낸다) 서버 일시 오류인지(로그인으로 보내지
+   * 않는다) 가르는 데 쓴다. 아직 확인하지 않은 타입은 null.
+   *
+   * @param type 인증 타입
+   * @returns 마지막 결론, 없으면 null
+   * @since engine-v1.95.0
+   */
+  getLastCheckStatus(type: AuthType): AuthCheckStatus | null {
+    return this.lastCheckStatus.get(type) ?? null;
   }
 
   /**
@@ -469,6 +698,61 @@ export class AuthManager {
     } catch (error: any) {
       this.clearState();
 
+      throw this.enhanceAuthError(error, type, 'Login failed');
+    }
+  }
+
+  /**
+   * 로그인 인계 코드를 교환해 로그인합니다.
+   *
+   * 외부 인증(소셜 로그인 등)이 본인 확인을 마친 회원에 대해 발급한 일회용 코드를 서버에 보내면, 서버가 잠금·회원 상태·
+   * 2단계 인증·비밀번호 변경·휴면 해제를 비밀번호 로그인과 똑같이 처리하고 같은 세 형태의 응답을 돌려준다 —
+   * 결과도 {@link login} 과 같은 `LoginResult` 다.
+   *
+   * 실패해도 상태를 지우지 않는다 — 인계는 로그인 전 화면에서만 부르므로 지울 세션이 없고, 혹시 열린 세션이 있어도
+   * 코드 하나가 틀렸다고 그 세션을 닫을 이유가 없다(`login()` 은 자격 증명 실패 시 지운다).
+   *
+   * @param type - 인증 타입
+   * @param code - 인계 코드
+   * @param options - 추가 옵션 (headers 등 — globalHeaders 의 장바구니 키 등)
+   * @returns 인증 완료 / 2단계 인증 요구 / 비밀번호 변경 단계 요구
+   * @throws Error 인계를 지원하지 않는 인증 타입이거나 코드가 무효(422)·상태 거절(401)·잠금(423)일 때
+   * @since engine-v1.92.0
+   */
+  async loginWithHandoff(
+    type: AuthType,
+    code: string,
+    options?: { headers?: Record<string, string> }
+  ): Promise<LoginResult> {
+    const apiClient = getApiClient();
+    const config = this.config.get(type);
+
+    if (!config) {
+      throw new Error(`Unknown auth type: ${type}`);
+    }
+
+    if (!config.handoffEndpoint) {
+      throw new Error(`Login handoff is not supported for auth type: ${type}`);
+    }
+
+    try {
+      const requestConfig = options?.headers ? { headers: options.headers } : undefined;
+
+      const response = await apiClient.post<{
+        success: boolean;
+        data: LoginResponseData;
+      }>(config.handoffEndpoint, { code }, requestConfig);
+
+      const result = response.success && response.data
+        ? this.resolveLoginPayload(type, response.data, true)
+        : null;
+
+      if (result) {
+        return result;
+      }
+
+      throw new Error('Login failed');
+    } catch (error: any) {
       throw this.enhanceAuthError(error, type, 'Login failed');
     }
   }
@@ -839,11 +1123,14 @@ export class AuthManager {
   async logout(): Promise<void> {
     const apiClient = getApiClient();
     const config = this.state.type ? this.config.get(this.state.type) : null;
+    // 서버가 정한 로그아웃 뒤 이동 경로(외부 인증의 IdP 로그아웃 등) — 같은 출처 경로만 따른다 (engine-v1.93.0)
+    let serverRedirect: string | null = null;
 
     try {
       // 백엔드 로그아웃 API 호출
       if (config) {
-        await apiClient.post(config.logoutEndpoint);
+        const response: any = await apiClient.post(config.logoutEndpoint);
+        serverRedirect = sanitizeNavPath(response?.data?.redirect_url);
       }
     } catch (error) {
       logger.warn('Logout API call failed:', error);
@@ -863,9 +1150,16 @@ export class AuthManager {
         previousType: previousState.type,
       });
 
-      // 로그인 페이지로 리다이렉트 (queryString 포함)
-      if (config && previousState.type) {
+      // 서버가 이동 경로를 주면 그 경로로(같은 출처 경로만 — 외부 IdP 로그아웃은 서버의 같은 출처 라우트가 302 한다),
+      // 아니면 로그인 페이지로 리다이렉트 (queryString 포함)
+      if (serverRedirect) {
+        // 서버(확장 필터 `core.auth.logout_redirect_url`)가 주는 값은 앱 기준 경로일 수 있다 — 하위 폴더 배치에서
+        // 사이트 밖으로 나가지 않게 접두사를 붙인다(이미 붙은 값은 그대로 — 멱등).
+        window.location.href = withBasePrefix(serverRedirect);
+      } else if (config && previousState.type) {
+        // base-path:allow 복귀 주소는 브라우저가 그대로 열 값이라 접두사를 품은 원본을 쓴다
         const returnUrl = window.location.pathname + window.location.search;
+        // base-path:allow getLoginRedirectUrl() 자신이 withBasePrefix() 로 접두사를 붙여 돌려준다.
         window.location.href = this.getLoginRedirectUrl(previousState.type, returnUrl);
       }
     }
@@ -948,9 +1242,15 @@ export class AuthManager {
    * @returns 로그인 페이지 URL (redirect 파라미터 포함)
    */
   getLoginRedirectUrl(type: AuthType, returnUrl: string, reason?: string): string {
+    // 이 값의 소비처는 전부 `window.location.href` — 즉 **브라우저가 그대로 여는
+    // 주소**다. 접두사를 붙이지 않으면 하위 폴더 배치에서 로그인 페이지가 사이트
+    // 밖(`https://host/login`)을 가리켜 세션 만료가 곧 이탈이 된다.
+    //
+    // `returnUrl` 은 호출부가 `location.pathname` 에서 만들어 이미 접두사를 갖고 있고,
+    // `withBasePrefix()` 는 멱등이라 어느 형태로 들어와도 이중 접두가 되지 않는다.
     const config = this.config.get(type);
     if (!config) {
-      return '/login';
+      return withBasePrefix('/login');
     }
 
     // 로그인 전용 화면(로그인·가입·비밀번호 찾기·재설정)은 복귀 경로로 싣지 않는다 — 세션이 끊긴 채
@@ -965,7 +1265,8 @@ export class AuthManager {
     if (reason) {
       params.push(`reason=${encodeURIComponent(reason)}`);
     }
-    return params.length > 0 ? `${config.loginPath}?${params.join('&')}` : config.loginPath;
+    const loginPath = withBasePrefix(config.loginPath);
+    return params.length > 0 ? `${loginPath}?${params.join('&')}` : loginPath;
   }
 
   /**
@@ -987,7 +1288,7 @@ export class AuthManager {
     }
 
     // 로그인 화면이 이미 복귀 경로를 갖고 있으면(`/login?redirect=/mypage`) 그 경로를 이어 싣는다.
-    if (this.normalizePath(path) === this.normalizePath(config.loginPath) && queryIndex !== -1) {
+    if (this.normalizePath(stripBasePrefix(path)) === this.normalizePath(config.loginPath) && queryIndex !== -1) {
       const search = returnUrl.slice(queryIndex).split('#')[0];
       const inner = new URLSearchParams(search.startsWith('?') ? search.slice(1) : '').get('redirect');
       if (inner) {
@@ -1004,12 +1305,16 @@ export class AuthManager {
   /**
    * 로그인 전용 화면 경로인지 판정합니다(로그인 경로 + 설정의 guestOnlyPaths, 끝 슬래시 무시).
    *
+   * 판정할 경로는 브라우저 주소(`location.pathname`)에서 오므로 하위 폴더 배치면 마운트 접두사를 품고 있고, 비교 대상
+   * (loginPath·guestOnlyPaths)은 앱 기준 경로다. 접두사를 벗겨 대조한다 — 벗기지 않으면 `/g7/login` 이 로그인 화면으로
+   * 인식되지 않아 로그인을 마친 뒤 다시 로그인 폼에 떨어진다.
+   *
    * @param config - 인증 설정
    * @param path - 판정할 경로(쿼리 제외)
    * @returns 로그인 전용 화면이면 true
    */
   private isGuestOnlyPath(config: AuthConfig, path: string): boolean {
-    const target = this.normalizePath(path);
+    const target = this.normalizePath(stripBasePrefix(path));
     const candidates = [config.loginPath, ...(config.guestOnlyPaths ?? [])];
     return candidates.some((candidate) => this.normalizePath(candidate) === target);
   }

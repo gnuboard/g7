@@ -1,5 +1,5 @@
 {
-    "comment": "활동 로그 표. 쪽 넘김을 서버가 하므로 표는 현재 쪽만 들고 있고, 쪽을 옮기는 것도\n  **주소를 갈아 끼워 다시 받는 방식**이다 — 돌아온 목록이 곧 화면이다.\n  변경 내역이 있는 줄만 펼칠 수 있고(`has_changes`), 펼친 자리에는 한 건짜리 수정과 여러 건을\n  한 번에 고친 일괄 수정이 서로 다른 모양으로 실린다. 일괄 쪽은 대상 ID 별로 묶여 온다.",
+    "comment": "활동 로그 표. 쪽 넘김을 서버가 하므로 표는 현재 쪽만 들고 있고, 쪽을 옮기는 것도\n  **주소를 갈아 끼워 다시 받는 방식**이다 — 돌아온 목록이 곧 화면이다.\n  변경 내역이나 삭제 직전 기록이 있는 줄만 펼칠 수 있고(`has_details`), 펼친 자리에는 한 건짜리 수정과 여러 건을\n  한 번에 고친 일괄 수정이 서로 다른 모양으로 실린다. 일괄 쪽은 대상 ID 별로 묶여 온다. 삭제 직전 기록(영구 삭제·\n  선언 정리)은 대상·사유·남긴 버전 수와 지우기 전 본문(접어 둠)을 보인다(#888).",
     "meta": {
         "is_partial": true,
         "description": "Activity Log List DataGrid"
@@ -59,7 +59,7 @@
     ],
     "props": {
         "rowLabelField": "localized_description",
-        "data": "{{activityLogs?.data?.data}}",
+        "data": "{{raw:activityLogs?.data?.data}}",
         "pagination": true,
         "serverSidePagination": true,
         "pageHref": "/admin/activity-logs?page={page}",
@@ -75,7 +75,7 @@
         "selectedIds": "{{_global.selectedIds_admin_activity_logs || []}}",
         "selectedCountText": "",
         "expandable": true,
-        "expandConditionField": "has_changes",
+        "expandConditionField": "has_details",
         "emptyMessage": "{{activityLogs === undefined ? '' : $t('common.no_data')}}",
         "actionsColumnHeader": "$t:common.actions",
         "rowActions": [
@@ -208,7 +208,7 @@
                                                 "props": {
                                                     "className": "w-1/3 text-center text-red-600 dark:text-red-400 break-all"
                                                 },
-                                                "text": "{{change.old_label ?? (typeof change.old === 'object' && change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}"
+                                                "text": "{{raw:change.old_label ?? (typeof change.old === 'object' && change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}"
                                             },
                                             {
                                                 "type": "basic",
@@ -216,7 +216,7 @@
                                                 "props": {
                                                     "className": "w-1/3 text-center text-green-700 dark:text-green-400 break-all"
                                                 },
-                                                "text": "{{change.new_label ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}"
+                                                "text": "{{raw:change.new_label ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}"
                                             }
                                         ]
                                     }
@@ -313,7 +313,7 @@
                                                         "props": {
                                                             "className": "w-1/3 text-center text-red-600 dark:text-red-400 break-all"
                                                         },
-                                                        "text": "{{change.old_label ?? (typeof change.old === 'object' && change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}"
+                                                        "text": "{{raw:change.old_label ?? (typeof change.old === 'object' && change.old !== null ? JSON.stringify(change.old) : change.old) ?? '-'}}"
                                                     },
                                                     {
                                                         "type": "basic",
@@ -321,13 +321,127 @@
                                                         "props": {
                                                             "className": "w-1/3 text-center text-green-700 dark:text-green-400 break-all"
                                                         },
-                                                        "text": "{{change.new_label ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}"
+                                                        "text": "{{raw:change.new_label ?? (typeof change.new === 'object' && change.new !== null ? JSON.stringify(change.new) : change.new) ?? '-'}}"
                                                     }
                                                 ]
                                             }
                                         ]
                                     }
                                 ]
+                            }
+                        ]
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{!!row.snapshot}}",
+                        "props": {
+                            "className": "stack-tight"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "form-label"
+                                },
+                                "text": "$t:admin.activity_log.detail.snapshot_title"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "props": {
+                                    "className": "flex flex-wrap items-center gap-4 text-sm"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-gray-700 dark:text-gray-300"
+                                        },
+                                        "text": "$t:defer:admin.activity_log.detail.snapshot_target|target={{row.snapshot?.target ?? ''}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{!!row.snapshot?.reason_label}}",
+                                        "props": {
+                                            "className": "text-gray-600 dark:text-gray-400"
+                                        },
+                                        "text": "$t:defer:admin.activity_log.detail.snapshot_reason|reason={{row.snapshot?.reason_label ?? ''}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "props": {
+                                            "className": "text-gray-600 dark:text-gray-400"
+                                        },
+                                        "text": "$t:defer:admin.activity_log.detail.snapshot_versions|count={{row.snapshot?.version_count ?? 0}}"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{row.snapshot?.versions_truncated === true}}",
+                                        "props": {
+                                            "className": "badge badge-yellow"
+                                        },
+                                        "text": "$t:admin.activity_log.detail.snapshot_versions_truncated"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Button",
+                                "actions": [
+                                    {
+                                        "comment": "지우기 전 본문을 펼치거나 접는다 — 줄마다 따로 기억한다.",
+                                        "type": "click",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "local",
+                                            "openSnapshots": "{{Object.assign({}, _local.openSnapshots ?? {}, {[row.id]: !(_local.openSnapshots ?? {})[row.id]})}}"
+                                        }
+                                    }
+                                ],
+                                "props": {
+                                    "type": "button",
+                                    "className": "text-label hover:text-gray-900 dark:hover:text-gray-200 inline-flex items-center gap-1",
+                                    "aria-expanded": "{{(_local.openSnapshots ?? {})[row.id] === true}}"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Icon",
+                                        "props": {
+                                            "name": "{{(_local.openSnapshots ?? {})[row.id] === true ? 'fa-solid fa-chevron-up' : 'fa-solid fa-chevron-down'}}",
+                                            "className": "text-xs"
+                                        }
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "{{(_local.openSnapshots ?? {})[row.id] === true ? $t('admin.activity_log.detail.snapshot_hide') : $t('admin.activity_log.detail.snapshot_show')}}"
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Div",
+                                "if": "{{(_local.openSnapshots ?? {})[row.id] === true}}",
+                                "props": {
+                                    "className": "p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg font-mono text-xs whitespace-pre-wrap break-all max-h-80 overflow-y-auto text-gray-700 dark:text-gray-300"
+                                },
+                                "text": "{{raw:row.snapshot?.content_preview ?? ''}}"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "P",
+                                "if": "{{(_local.openSnapshots ?? {})[row.id] === true && row.snapshot?.content_truncated === true}}",
+                                "props": {
+                                    "className": "text-xs text-amber-700 dark:text-amber-400"
+                                },
+                                "text": "$t:admin.activity_log.detail.snapshot_content_truncated"
                             }
                         ]
                     }
@@ -512,6 +626,18 @@
                                                     "className": "font-medium text-gray-900 dark:text-gray-100 truncate block"
                                                 },
                                                 "text": "{{row.user.name}}"
+                                            },
+                                            {
+                                                "comment": "실명 보조 줄. 서버는 회원 조회 권한이 있는 관리자에게, 실명이 표시 이름과 다를 때만 real_name 을 싣는다.",
+                                                "id": "activity_log_actor_real_name_{{$rowNumber}}",
+                                                "type": "basic",
+                                                "name": "Span",
+                                                "if": "{{!!row.user?.real_name}}",
+                                                "props": {
+                                                    "title": "$t:admin.common.real_name.label",
+                                                    "className": "text-tertiary truncate block"
+                                                },
+                                                "text": "{{row.user.real_name}}"
                                             },
                                             {
                                                 "type": "basic",

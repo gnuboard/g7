@@ -20,6 +20,11 @@ class ComposerInstallInfoTest extends TestCase
 
     private string $basePath;
 
+    /**
+     * 임시 기준 경로 아래 vendor/composer 디렉토리를 만들어 설치 정보 판정 대상을 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -30,6 +35,11 @@ class ComposerInstallInfoTest extends TestCase
         File::ensureDirectoryExists($this->vendorPath.'/composer');
     }
 
+    /**
+     * 임시 기준 경로를 통째로 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         if (File::isDirectory($this->basePath)) {
@@ -43,6 +53,8 @@ class ComposerInstallInfoTest extends TestCase
      * `dev: true` + 이름 목록 → 개발용 설치.
      *
      * @effects core_detects_dev_vendor_from_installed_json
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function dev_true_와_이름_목록이_있으면_개발용_설치로_판정한다(): void
@@ -65,6 +77,8 @@ class ComposerInstallInfoTest extends TestCase
      * `--no-dev` 설치 → 개발용 아님.
      *
      * @effects core_reports_no_dev_packages_for_no_dev_vendor
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function dev_false_이고_이름_목록이_비면_운영용_설치로_판정한다(): void
@@ -86,6 +100,10 @@ class ComposerInstallInfoTest extends TestCase
     /**
      * `dev` 는 false 인데 이름 목록이 남아 있으면 개발용으로 본다 — 두 신호는 OR 다.
      * Composer 버전에 따라 한쪽만 채워질 수 있고, 등재된 provider 가 있다는 사실이 중요하다.
+     *
+     * @effects core_detects_dev_vendor_from_installed_json
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function dev_false_라도_이름_목록이_비어있지_않으면_개발용으로_판정한다(): void
@@ -103,6 +121,8 @@ class ComposerInstallInfoTest extends TestCase
      * installed.json 이 없으면 판정 불가(null) — "개발용 아님"(false)과 구분한다.
      *
      * @effects core_returns_unknown_when_installed_json_missing
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function installed_json_이_없으면_판정_불가다(): void
@@ -116,6 +136,10 @@ class ComposerInstallInfoTest extends TestCase
 
     /**
      * JSON 파싱 실패도 판정 불가다.
+     *
+     * @effects core_returns_unknown_for_broken_or_composer1_installed_json
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function json_이_깨졌으면_판정_불가다(): void
@@ -127,6 +151,10 @@ class ComposerInstallInfoTest extends TestCase
 
     /**
      * Composer 1 형식(최상위가 패키지 배열)은 dev 정보가 없어 판정 불가다.
+     *
+     * @effects core_returns_unknown_for_broken_or_composer1_installed_json
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function composer1_형식은_판정_불가다(): void
@@ -140,6 +168,10 @@ class ComposerInstallInfoTest extends TestCase
 
     /**
      * 이름 목록의 비문자열·공백 항목은 걸러낸다 (건수를 그대로 화면에 표시하므로).
+     *
+     * @effects core_detects_dev_vendor_from_installed_json
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 이름_목록의_비문자열과_공백_항목을_걸러낸다(): void
@@ -155,6 +187,10 @@ class ComposerInstallInfoTest extends TestCase
 
     /**
      * 경로 끝의 구분자 유무와 무관하게 같은 결과를 낸다.
+     *
+     * @effects core_detects_dev_vendor_from_installed_json
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function 경로_끝_구분자_유무와_무관하게_동작한다(): void
@@ -173,6 +209,7 @@ class ComposerInstallInfoTest extends TestCase
      * installed.json 픽스처를 씁니다.
      *
      * @param  array<string, mixed>  $payload  JSON 으로 직렬화할 내용
+     * @return void 반환값 없음
      */
     private function writeInstalledJson(array $payload): void
     {

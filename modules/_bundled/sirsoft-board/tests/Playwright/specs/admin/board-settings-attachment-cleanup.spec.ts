@@ -1,8 +1,9 @@
 /**
  * E2E: 게시판 환경설정 > 기본 설정 — "삭제 첨부 영구 정리" (공개 #115)
  *
- * @scenario board-settings-attachment-cleanup
- * @effects board_settings_purge_toggle_default_off, board_settings_purge_keys_declared
+ * @scenario attachment-cleanup
+ * 케이스(마커 아님 — 평문): board-settings-attachment-cleanup
+ * 효과 요약(마커 아님 — 평문): 토글 기본 꺼짐, 저장 카테고리 키 선언과 저장 후 보존 — 효과 이름은 시험마다 마킹
  *
  * 배경: 삭제한 첨부의 파일을 보존기간 경과 후 완전히 파기하는 운영자 스위치다. 저장 payload
  * 빌더가 이 카테고리를 싣지 않아 "저장 200 인데 값이 사라지던" 결함이 있었고, 그 증상은
@@ -67,6 +68,9 @@ async function save(
 }
 
 test.describe('게시판 환경설정 — 삭제 첨부 영구 정리 (#115)', () => {
+  /**
+   * @effects board_settings_purge_toggle_default_off
+   */
   test('토글·보존기간 필드가 번역문과 함께 마운트되고 기본 꺼짐이다', async ({
     page,
     settingsToken,
@@ -87,10 +91,17 @@ test.describe('게시판 환경설정 — 삭제 첨부 영구 정리 (#115)', (
     expect(await toggle.isChecked()).toBe(false);
   });
 
+  /**
+   * @effects board_settings_purge_keys_declared, board_settings_purge_retention_persists_after_save
+   */
   test('저장 요청 본문에 attachment_settings 카테고리가 실린다', async ({
     page,
     settingsToken,
   }) => {
+    // 진입 1회 + 새로고침 2회(각 화면 하이드레이션 약 8초) + 저장 2회를 한 시험에서 돈다.
+    // 기본 30초로는 원복 저장의 응답 직전에 시험 시간이 끝난다(실측: 원복 PUT 요청 29.6초).
+    test.setTimeout(90_000);
+
     await authenticatePage(page, settingsToken);
     await page.goto(SETTINGS_URL);
     await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });

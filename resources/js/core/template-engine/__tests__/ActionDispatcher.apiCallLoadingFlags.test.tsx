@@ -109,21 +109,31 @@ let pending: Pending[] = [];
 const okResponse = (data: any) => ({ ok: true, status: 200, statusText: 'OK', json: async () => ({ data }) });
 const errorResponse = (status: number) => ({ ok: false, status, statusText: 'ERR', json: async () => ({ message: 'boom' }) });
 
+/**
+ * 대상 주소의 가장 오래된 보류 요청을 꺼낸다 — 요청이 아직 나가지 않았으면 나갈 때까지 기다린다.
+ *
+ * 종전에는 클릭 40ms, 응답 80ms 의 고정 실제 시간 뒤 화면과 저장소를 읽었다. 여러 시험 파일을 함께 돌리는 부하에서는 응답 처리와 다시
+ * 그리기(`TemplateApp.setGlobalState` → 동적 import → startTransition)가 그보다 늦어 아직 앞 렌더인 화면을 읽고 깨졌다. 응답 뒤 단언은
+ * {@link eventually} 로 조건을 기다린다.
+ *
+ * @param urlPart 대상 주소 조각
+ * @return 꺼낸 보류 요청
+ */
+async function takePending(urlPart: string): Promise<Pending> {
+    await waitFor(() => expect(pending.some((p) => p.url.includes(urlPart)), `${urlPart} 요청이 나가야 한다`).toBe(true), WAIT);
+    const i = pending.findIndex((p) => p.url.includes(urlPart));
+    const [p] = pending.splice(i, 1);
+
+    return p;
+}
+
 /** 대상 주소의 가장 오래된 보류 요청에 응답한다 */
 async function respond(urlPart: string, response: any): Promise<void> {
-    const i = pending.findIndex((p) => p.url.includes(urlPart));
-    if (i < 0) throw new Error(`no pending request for ${urlPart}`);
-    const [p] = pending.splice(i, 1);
-    p.resolve(response);
-    await settle(80);
+    (await takePending(urlPart)).resolve(response);
 }
 
 async function fail(urlPart: string, error: any): Promise<void> {
-    const i = pending.findIndex((p) => p.url.includes(urlPart));
-    if (i < 0) throw new Error(`no pending request for ${urlPart}`);
-    const [p] = pending.splice(i, 1);
-    p.reject(error);
-    await settle(80);
+    (await takePending(urlPart)).reject(error);
 }
 
 interface Mounted {
@@ -185,6 +195,17 @@ async function renderPage(app: any, layoutName: string, children: Node[]): Promi
 const text = (id: string): string => (document.querySelector(`[data-testid="${id}"]`)?.textContent ?? '');
 const flags = (): Record<string, any> => JSON.parse(text('la') || '{}');
 const settle = (ms = 40): Promise<void> => new Promise((r) => setTimeout(r, ms));
+const WAIT = { interval: 5, timeout: 4_000 };
+/**
+ * 조건이 설 때까지 기다린 뒤 60ms 더 두고 다시 확인한다 — 끝난 플래그가 늦은 쓰기로 되살아나는 결함을 조건이 처음 선 순간에 넘기지 않는다.
+ *
+ * @param check 단언 묶음
+ */
+async function eventually(check: () => void): Promise<void> {
+    await waitFor(check, WAIT);
+    await settle(60);
+    check();
+}
 const buttonOf = (label: string): HTMLButtonElement =>
     Array.from(document.querySelectorAll('button')).find((x) => (x.textContent ?? '') === label) as HTMLButtonElement;
 async function click(label: string): Promise<void> {
@@ -219,13 +240,27 @@ describe('[case:state-setstate-55] apiCall 로딩 플래그 — 끝나면 저장
     /**
      * @scenario case=repeat_success_with_onsuccess_setstate
      * @effects flags_cleared_in_store_a, flags_cleared_in_store_b, local_size_stable
+     *
+     * 이 사례만 제한을 15초로 둔다 — 실제 렌더 10회, 고정 대기 없음. 기본 5초는 이 사례의 일의 양에 맞지 않는다(실측: 단독 516~665ms,
+     * 128파일 묶음 셋 동시 부하 1.0~2.4초, 그 부하에 tsc 두 설정을 더하면 6회 중 1회 5.2초). 결함을 덮는 늘리기가 아니다 — 플래그가
+     * 쌓이는 결함이면 단추가 잠긴 채로 남아 회마다의 조건 대기(4초)에서 실패한다.
      */
     it('성공 응답(onSuccess setState 2단)을 10회 반복해도 플래그 0 · `_local` 길이가 그대로다', async () => {
         m = await mount();
         const sizes: number[] = [];
+        // 회마다 고정 대기(클릭 40ms + 응답 80ms)를 두면 10회에 1.2초가 깔리고, 여러 시험 파일을 함께 돌리는 부하에서는 5초 제한을
+        // 넘겼다. 요청이 나간 것과 응답 처리가 끝난 것(B 의 진행 중 플래그가 사라지고 단추 잠금이 풀림)을 조건으로 기다린다
         for (let i = 0; i < 10; i++) {
-            await click('save');
-            await respond('/api/save', okResponse({ n: 1, at: 'x' }));
+            fireEvent.click(buttonOf('save'));
+            await waitFor(() => expect(pending.some((p) => p.url.includes('/api/save'))).toBe(true), { interval: 5, timeout: 4_000 });
+            const at = pending.findIndex((p) => p.url.includes('/api/save'));
+            const [p] = pending.splice(at, 1);
+            p.resolve(okResponse({ n: 1, at: 'x' }));
+            await waitFor(() => {
+                expect(liveB(m!.app).savedAt).toBe('x');
+                expect(engineFlagKeys(liveB(m!.app).loadingActions)).toEqual([]);
+                expect(buttonOf('save').disabled).toBe(false);
+            }, { interval: 5, timeout: 4_000 });
             sizes.push(JSON.stringify(liveB(m.app)).length);
         }
 
@@ -233,7 +268,7 @@ describe('[case:state-setstate-55] apiCall 로딩 플래그 — 끝나면 저장
         expect(engineFlagKeys(liveB(m.app).loadingActions)).toEqual([]);
         expect(new Set(sizes).size, `_local 길이 ${sizes.join(',')}`).toBe(1);
         expect((window as any).G7Core.state.getLocal().loadingActions ?? {}).toEqual({});
-    });
+    }, 15_000);
 
     /**
      * @scenario case=in_flight_spinner_and_lock
@@ -243,14 +278,18 @@ describe('[case:state-setstate-55] apiCall 로딩 플래그 — 끝나면 저장
         m = await mount();
         await click('save');
 
-        expect(Object.keys(flags())).toHaveLength(1);
-        expect(text('busy')).toBe('busy');
-        expect(buttonOf('save').disabled).toBe(true);
+        await waitFor(() => {
+            expect(Object.keys(flags())).toHaveLength(1);
+            expect(text('busy')).toBe('busy');
+            expect(buttonOf('save').disabled).toBe(true);
+        }, WAIT);
 
         await respond('/api/save', okResponse({ n: 1 }));
 
-        expect(text('busy')).toBe('idle');
-        expect(buttonOf('save').disabled).toBe(false);
+        await eventually(() => {
+            expect(text('busy')).toBe('idle');
+            expect(buttonOf('save').disabled).toBe(false);
+        });
     });
 
     /**
@@ -260,18 +299,23 @@ describe('[case:state-setstate-55] apiCall 로딩 플래그 — 끝나면 저장
     it('두 요청이 겹치면 먼저 끝난 쪽 플래그만 빠지고 다른 쪽은 남는다 — 나중 요청의 onSuccess 가 끝난 플래그를 되살리지 않는다', async () => {
         m = await mount();
         await click('save');
+        await waitFor(() => expect(Object.keys(flags())).toHaveLength(1), WAIT);
         const [first] = Object.keys(flags());
         await click('other');
-        expect(Object.keys(flags())).toHaveLength(2);
+        await waitFor(() => expect(Object.keys(flags())).toHaveLength(2), WAIT);
 
         await respond('/api/save', okResponse({ n: 1 }));
-        expect(Object.keys(flags()), '먼저 끝난 요청 플래그만 빠진다').toHaveLength(1);
-        expect(Object.keys(flags())).not.toContain(first);
-        expect(text('busy')).toBe('busy');
+        await eventually(() => {
+            expect(Object.keys(flags()), '먼저 끝난 요청 플래그만 빠진다').toHaveLength(1);
+            expect(Object.keys(flags())).not.toContain(first);
+            expect(text('busy')).toBe('busy');
+        });
 
         await respond('/api/other', okResponse({ n: 2 }));
-        expect(flags()).toEqual({});
-        expect(engineFlagKeys(liveB(m.app).loadingActions)).toEqual([]);
+        await eventually(() => {
+            expect(flags()).toEqual({});
+            expect(engineFlagKeys(liveB(m!.app).loadingActions)).toEqual([]);
+        });
     });
 
     /**
@@ -281,16 +325,22 @@ describe('[case:state-setstate-55] apiCall 로딩 플래그 — 끝나면 저장
     it('요청 중에 누른 다른 setState 가 진행 중 플래그를 저장소 B 로 옮겨 적어도, 끝나면 B·화면 모두에서 빠진다', async () => {
         m = await mount();
         await click('save');
+        await waitFor(() => expect(Object.keys(flags())).toHaveLength(1), WAIT);
         await click('pick');
         // 렌더 문맥 사본의 A 전용 키 보충으로 B 에 진행 중 플래그가 옮겨진다(정상 — 진행 중이다)
-        expect(engineFlagKeys(liveB(m.app).loadingActions)).toHaveLength(1);
+        await waitFor(() => {
+            expect(liveB(m!.app).picked).toBe('yes');
+            expect(engineFlagKeys(liveB(m!.app).loadingActions)).toHaveLength(1);
+        }, WAIT);
 
         await respond('/api/save', okResponse({ n: 1 }));
 
-        expect(engineFlagKeys(liveB(m.app).loadingActions)).toEqual([]);
-        expect(flags()).toEqual({});
-        expect(text('busy')).toBe('idle');
-        expect(liveB(m.app).picked).toBe('yes');
+        await eventually(() => {
+            expect(engineFlagKeys(liveB(m!.app).loadingActions)).toEqual([]);
+            expect(flags()).toEqual({});
+            expect(text('busy')).toBe('idle');
+            expect(liveB(m!.app).picked).toBe('yes');
+        });
     });
 
     /**
@@ -300,18 +350,22 @@ describe('[case:state-setstate-55] apiCall 로딩 플래그 — 끝나면 저장
     it('겹친 요청 중에 누른 동작이 자기 요청 뒤(await 뒤) 클릭 시점 사본으로 쓴 뒤에도 끝난 플래그가 남지 않는다', async () => {
         m = await mount();
         await click('save');
+        await waitFor(() => expect(Object.keys(flags())).toHaveLength(1), WAIT);
         await click('late');
-        expect(Object.keys(flags())).toHaveLength(2);
+        await waitFor(() => expect(Object.keys(flags())).toHaveLength(2), WAIT);
 
         await respond('/api/save', okResponse({ n: 1 }));
-        // late 의 setState 는 save 진행 중 사본(save 플래그 포함)으로 쓴다 — save 가 끝난 뒤
+        // save 의 끝 처리가 화면까지 끝난 뒤에 late 를 끝낸다 — late 의 setState 는 save 진행 중 사본(save 플래그 포함)으로 쓴다
+        await waitFor(() => expect(Object.keys(flags())).toHaveLength(1), WAIT);
         await respond('/api/late', okResponse({}));
 
-        expect(liveB(m.app).after).toBe('done');
-        expect(engineFlagKeys(liveB(m.app).loadingActions), '늦은 사본 쓰기가 B 에 되살린 끝난 플래그').toEqual([]);
-        expect(engineFlagKeys((window as any).G7Core.state.getLocal().loadingActions)).toEqual([]);
-        expect(flags()).toEqual({});
-        expect(buttonOf('save').disabled).toBe(false);
+        await eventually(() => {
+            expect(liveB(m!.app).after).toBe('done');
+            expect(engineFlagKeys(liveB(m!.app).loadingActions), '늦은 사본 쓰기가 B 에 되살린 끝난 플래그').toEqual([]);
+            expect(engineFlagKeys((window as any).G7Core.state.getLocal().loadingActions)).toEqual([]);
+            expect(flags()).toEqual({});
+            expect(buttonOf('save').disabled).toBe(false);
+        });
     });
 
     /**
@@ -321,15 +375,18 @@ describe('[case:state-setstate-55] apiCall 로딩 플래그 — 끝나면 저장
     it('요청 중 setLocal 이 플래그를 실은 getLocal 대체 스냅샷을 남겨도, 끝나면 getLocal() 에 플래그가 되살아나지 않는다', async () => {
         m = await mount();
         await click('plain');
+        await waitFor(() => expect(Object.keys(flags())).toHaveLength(1), WAIT);
         await click('note');
-        expect(engineFlagKeys((window as any).G7Core.state.getLocal().loadingActions)).toHaveLength(1);
+        await waitFor(() => expect(engineFlagKeys((window as any).G7Core.state.getLocal().loadingActions)).toHaveLength(1), WAIT);
 
         await respond('/api/plain', okResponse({}));
 
-        expect(engineFlagKeys((window as any).G7Core.state.getLocal().loadingActions)).toEqual([]);
-        expect(engineFlagKeys(liveB(m.app).loadingActions)).toEqual([]);
-        expect((window as any).G7Core.state.getLocal().note).toBe('x');
-        expect(flags()).toEqual({});
+        await eventually(() => {
+            expect(engineFlagKeys((window as any).G7Core.state.getLocal().loadingActions)).toEqual([]);
+            expect(engineFlagKeys(liveB(m!.app).loadingActions)).toEqual([]);
+            expect((window as any).G7Core.state.getLocal().note).toBe('x');
+            expect(flags()).toEqual({});
+        });
     });
 
     /**
@@ -338,19 +395,22 @@ describe('[case:state-setstate-55] apiCall 로딩 플래그 — 끝나면 저장
      */
     it('실패 응답(500)·네트워크 실패·중단 뒤에도 플래그 0 이다', async () => {
         m = await mount();
+        const released = () => eventually(() => {
+            expect(flags()).toEqual({});
+            expect(engineFlagKeys(liveB(m!.app).loadingActions)).toEqual([]);
+            expect(buttonOf('save').disabled).toBe(false);
+        });
         await click('save');
         await respond('/api/save', errorResponse(500));
-        expect(flags()).toEqual({});
-        expect(buttonOf('save').disabled).toBe(false);
+        await released();
 
         await click('save');
         await fail('/api/save', new TypeError('Failed to fetch'));
-        expect(flags()).toEqual({});
+        await released();
 
         await click('save');
         await fail('/api/save', new DOMException('aborted', 'AbortError'));
-        expect(flags()).toEqual({});
-        expect(engineFlagKeys(liveB(m.app).loadingActions)).toEqual([]);
+        await released();
     });
 
     /**
@@ -360,13 +420,14 @@ describe('[case:state-setstate-55] apiCall 로딩 플래그 — 끝나면 저장
     it('주입된 loadingActions 로 잠그는 복합 컴포넌트(LoginForm 꼴)가 실패 응답 뒤 다시 풀린다', async () => {
         m = await mount();
         fireEvent.click(document.querySelector('[data-testid="composite"]') as HTMLElement);
-        await settle();
-        expect(text('composite')).toBe('composite-busy');
+        await waitFor(() => expect(text('composite')).toBe('composite-busy'), WAIT);
 
         await respond('/api/login', errorResponse(422));
 
-        expect(text('composite')).toBe('composite-idle');
-        expect((document.querySelector('[data-testid="composite"]') as HTMLButtonElement).disabled).toBe(false);
+        await eventually(() => {
+            expect(text('composite')).toBe('composite-idle');
+            expect((document.querySelector('[data-testid="composite"]') as HTMLButtonElement).disabled).toBe(false);
+        });
     });
 
     /**
@@ -377,11 +438,13 @@ describe('[case:state-setstate-55] apiCall 로딩 플래그 — 끝나면 저장
         m = await mount({ form: { title: '' }, loadingActions: { upload: true } });
         // 'save' 는 upload 로 이미 잠겨 있다 — 잠금 식이 없는 단추로 낸다
         await click('other');
-        expect(Object.keys(flags())).toHaveLength(2);
+        await waitFor(() => expect(Object.keys(flags())).toHaveLength(2), WAIT);
         await respond('/api/other', okResponse({ n: 1 }));
 
-        expect(flags()).toEqual({ upload: true });
-        expect(liveB(m.app).loadingActions).toEqual({ upload: true });
+        await eventually(() => {
+            expect(flags()).toEqual({ upload: true });
+            expect(liveB(m!.app).loadingActions).toEqual({ upload: true });
+        });
     });
 
     /**
@@ -391,15 +454,19 @@ describe('[case:state-setstate-55] apiCall 로딩 플래그 — 끝나면 저장
     it('요청 중 다른 화면으로 옮긴 뒤 응답이 와도 새 화면 `_local` 에 플래그가 남지 않는다', async () => {
         m = await mount();
         await click('save');
+        await waitFor(() => expect(Object.keys(flags())).toHaveLength(1), WAIT);
         await click('pick');
+        await waitFor(() => expect(liveB(m!.app).picked).toBe('yes'), WAIT);
         // 화면 이동 — handleRouteChange 처럼 `_local` 을 비우고 다른 레이아웃을 그린다
         m.app.setGlobalState({ _local: {} }, { render: false });
         await renderPage(m.app, 'test/apicall-loading-flags-next', [show('la', 'JSON.stringify(_local.loadingActions ?? {})')]);
 
         await respond('/api/save', okResponse({ n: 1 }));
 
-        expect(flags()).toEqual({});
-        expect(engineFlagKeys(liveB(m.app).loadingActions)).toEqual([]);
+        await eventually(() => {
+            expect(flags()).toEqual({});
+            expect(engineFlagKeys(liveB(m!.app).loadingActions)).toEqual([]);
+        });
     });
 
     /**
@@ -432,18 +499,21 @@ describe('[case:state-setstate-55] apiCall 로딩 플래그 — 끝나면 저장
         // G7Core.dispatch 의 액션 문맥 없는 폴백(G7CoreGlobals)·TemplateApp 웹소켓 onReceive 와 같은 문맥 — setState 는 전역 상태 writer, state 는 그 순간 사본
         const fallback = () => ({ setState: (u: any) => app.setGlobalState(u), state: app.getGlobalState(), data: { ...app.getGlobalState() }, _isDispatchFallbackContext: true } as any);
         const p1 = dispatcher.dispatchAction({ handler: 'apiCall', target: '/api/g1', params: { method: 'GET' } } as any, fallback());
-        await settle();
+        await waitFor(() => expect(engineFlagKeys(app.getGlobalState().loadingActions)).toHaveLength(1), WAIT);
+        // 둘째 요청의 폴백 문맥 사본에는 첫 요청의 진행 중 플래그가 있다
         const p2 = dispatcher.dispatchAction({ handler: 'apiCall', target: '/api/g2', params: { method: 'GET' } } as any, fallback());
-        await settle();
-        expect(engineFlagKeys(m.app.getGlobalState().loadingActions)).toHaveLength(2);
+        await waitFor(() => expect(engineFlagKeys(app.getGlobalState().loadingActions)).toHaveLength(2), WAIT);
 
         await respond('/api/g1', okResponse({}));
-        const left = engineFlagKeys(m.app.getGlobalState().loadingActions);
-        expect(left, '겹친 다른 요청 플래그가 남아야 한다').toHaveLength(1);
-        expect(left[0]).toContain('g2');
+        await p1;
+        await eventually(() => {
+            const left = engineFlagKeys(app.getGlobalState().loadingActions);
+            expect(left, '겹친 다른 요청 플래그가 남아야 한다').toHaveLength(1);
+            expect(left[0]).toContain('g2');
+        });
 
         await respond('/api/g2', okResponse({}));
         await Promise.all([p1, p2]);
-        expect(engineFlagKeys(m.app.getGlobalState().loadingActions)).toEqual([]);
+        await eventually(() => expect(engineFlagKeys(app.getGlobalState().loadingActions)).toEqual([]));
     });
 });

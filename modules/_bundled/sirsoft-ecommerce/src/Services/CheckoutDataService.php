@@ -3,7 +3,10 @@
 namespace Modules\Sirsoft\Ecommerce\Services;
 
 use App\Extension\HookManager;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Modules\Sirsoft\Ecommerce\DTO\OrderCalculationResult;
+use Modules\Sirsoft\Ecommerce\Fields\OrderContactFields;
 use Modules\Sirsoft\Ecommerce\Http\Middleware\ResolveShippingCountry;
 use Modules\Sirsoft\Ecommerce\Http\Resources\CheckoutItemResource;
 use Modules\Sirsoft\Ecommerce\Models\TempOrder;
@@ -125,6 +128,11 @@ class CheckoutDataService
             $response['has_stock_issue'] = collect($unavailableItems)->contains('reason', 'stock');
             $response['has_status_issue'] = collect($unavailableItems)->contains('reason', 'status');
         }
+
+        // 주문서 항목 설정: 주문자 이메일, 상세 주소, 배송 메모의 사용과 필수, 구획별 추가 항목 계약.
+        // 조회와 다시 계산 응답이 같은 값을 싣는다(화면이 주문서 데이터를 응답으로 통째로 바꾼다).
+        $actor = $userId !== null ? Auth::user() : null;
+        $response['order_fields'] = app(OrderContactFields::class)->formPayload($actor instanceof User ? $actor : null);
 
         // 필터 훅: 체크아웃 응답 데이터 변환 (외부 확장이 본인인증 hint 등 추가 가능)
         $response = HookManager::applyFilters(

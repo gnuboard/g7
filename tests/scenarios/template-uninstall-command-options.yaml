@@ -7,10 +7,14 @@ description: |
   deleteData 는 제거 동작을 바꾸지 않고 훅 인자로만 전달된다(Manager 계약).
 
 axes:
-  case: [force_with_delete_data, confirm_without_delete_data]
+  case: [force_with_delete_data, confirm_without_delete_data, last_active, other_active_or_inactive, last_active_force, other_active]
 
 effects:
   - template_uninstall_force_skips_confirm_and_forwards_delete_data
+  - cli_deactivate_refuses_last_active_template_without_force  # template:deactivate 는 마지막 활성 템플릿을 --force 로만 끈다(설계 확정 2026-11-08)
+  - cli_uninstall_refuses_last_active_template   # 유형의 마지막 활성 템플릿은 --force 로도 지우지 않는다(관리자 화면과 같은 판정)
 
 test_files:
   - tests/Feature/Console/Commands/Template/UninstallTemplateCommandOptionsTest.php
+  - tests/Feature/Console/Commands/Template/UninstallTemplateLastActiveGuardTest.php
+  - tests/Feature/Console/Commands/Template/DeactivateTemplateLastActiveGuardTest.php

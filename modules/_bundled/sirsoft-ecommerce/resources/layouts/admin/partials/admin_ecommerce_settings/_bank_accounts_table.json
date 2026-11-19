@@ -8,14 +8,14 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "border border-gray-200 dark:border-gray-700 rounded-lg"
+        "className": "ecommerce:border ecommerce:border-gray-200 ecommerce:dark:border-gray-700 ecommerce:rounded-lg"
     },
     "children": [
         {
             "type": "basic",
             "name": "Table",
             "props": {
-                "className": "table"
+                "className": "ecommerce:table ecommerce-table"
             },
             "children": [
                 {
@@ -30,7 +30,7 @@
                                     "type": "basic",
                                     "name": "Th",
                                     "props": {
-                                        "className": "w-16 text-center"
+                                        "className": "ecommerce:w-16 ecommerce:text-center"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.is_default"
                                 },
@@ -38,7 +38,7 @@
                                     "type": "basic",
                                     "name": "Th",
                                     "props": {
-                                        "className": "w-40"
+                                        "className": "ecommerce:w-40"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.bank"
                                 },
@@ -51,7 +51,7 @@
                                     "type": "basic",
                                     "name": "Th",
                                     "props": {
-                                        "className": "w-32"
+                                        "className": "ecommerce:w-32"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_holder"
                                 },
@@ -59,7 +59,7 @@
                                     "type": "basic",
                                     "name": "Th",
                                     "props": {
-                                        "className": "w-20 text-center"
+                                        "className": "ecommerce:w-20 ecommerce:text-center"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.is_active"
                                 },
@@ -67,7 +67,7 @@
                                     "type": "basic",
                                     "name": "Th",
                                     "props": {
-                                        "className": "w-16 text-center"
+                                        "className": "ecommerce:w-16 ecommerce:text-center"
                                     }
                                 }
                             ]
@@ -89,7 +89,7 @@
                                     "name": "Td",
                                     "props": {
                                         "colSpan": 6,
-                                        "className": "text-center py-8 text-tertiary"
+                                        "className": "ecommerce:text-center ecommerce:py-8 ecommerce-text-tertiary"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.empty"
                                 }
@@ -108,7 +108,7 @@
                                     "type": "basic",
                                     "name": "Td",
                                     "props": {
-                                        "className": "text-center"
+                                        "className": "ecommerce:text-center"
                                     },
                                     "children": [
                                         {
@@ -128,7 +128,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "btn-icon disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "className": "ecommerce-btn-icon ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                                                 "disabled": "{{_computed.isReadOnly}}",
                                                 "aria-label": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.is_default",
                                                 "aria-pressed": "{{account.is_default ? 'true' : 'false'}}"
@@ -139,7 +139,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "{{account.is_default ? 'circle-dot' : 'circle'}}",
-                                                        "className": "{{account.is_default ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}}"
+                                                        "className": "{{account.is_default ? 'ecommerce:text-blue-600 ecommerce:dark:text-blue-400' : 'ecommerce:text-gray-500 ecommerce:dark:text-gray-400'}}"
                                                     }
                                                 }
                                             ]
@@ -157,7 +157,7 @@
                                                 "name": "{{'order_settings.bank_accounts.' + account._idx + '.bank_code'}}",
                                                 "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: account._idx + 1})}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.bank')}}",
                                                 "value": "{{account.bank_code}}",
-                                                "className": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code'] ? 'w-full input-error' : 'w-full'}}",
+                                                "className": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code'] ? 'ecommerce:w-full ecommerce:border-red-500' : 'ecommerce:w-full'}}",
                                                 "options": "{{(_local.form?.order_settings?.banks ?? []).map(b => ({ value: b.code, label: typeof b.name === 'object' ? $localized(b.name) : b.name }))}}",
                                                 "disabled": "{{_computed.isReadOnly}}"
                                             }
@@ -167,7 +167,7 @@
                                             "name": "Span",
                                             "if": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code']}}",
                                             "props": {
-                                                "className": "form-error"
+                                                "className": "ecommerce-form-error"
                                             },
                                             "text": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.bank_code']?.[0] ?? ''}}"
                                         }
@@ -186,7 +186,7 @@
                                                 "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: account._idx + 1})}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number')}}",
                                                 "value": "{{account.account_number ?? ''}}",
                                                 "placeholder": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_number_placeholder",
-                                                "className": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number'] ? 'input input-error' : 'input'}}",
+                                                "className": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number'] ? 'ecommerce-input ecommerce-input-error' : 'ecommerce-input'}}",
                                                 "disabled": "{{_computed.isReadOnly}}"
                                             }
                                         },
@@ -195,7 +195,7 @@
                                             "name": "Span",
                                             "if": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number']}}",
                                             "props": {
-                                                "className": "form-error"
+                                                "className": "ecommerce-form-error"
                                             },
                                             "text": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_number']?.[0] ?? ''}}"
                                         }
@@ -214,7 +214,7 @@
                                                 "aria-label": "$t:common.row_cell|row={{$t('common.row_n', {n: account._idx + 1})}}|column={{$t('sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_holder')}}",
                                                 "value": "{{account.account_holder ?? ''}}",
                                                 "placeholder": "$t:sirsoft-ecommerce.admin.settings.order_settings.bank_accounts.account_holder_placeholder",
-                                                "className": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder'] ? 'input input-error' : 'input'}}",
+                                                "className": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder'] ? 'ecommerce-input ecommerce-input-error' : 'ecommerce-input'}}",
                                                 "disabled": "{{_computed.isReadOnly}}"
                                             }
                                         },
@@ -223,7 +223,7 @@
                                             "name": "Span",
                                             "if": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder']}}",
                                             "props": {
-                                                "className": "form-error"
+                                                "className": "ecommerce-form-error"
                                             },
                                             "text": "{{_local.errors?.['order_settings.bank_accounts.' + account._idx + '.account_holder']?.[0] ?? ''}}"
                                         }
@@ -233,7 +233,7 @@
                                     "type": "basic",
                                     "name": "Td",
                                     "props": {
-                                        "className": "text-center"
+                                        "className": "ecommerce:text-center"
                                     },
                                     "children": [
                                         {
@@ -252,7 +252,7 @@
                                     "type": "basic",
                                     "name": "Td",
                                     "props": {
-                                        "className": "text-center"
+                                        "className": "ecommerce:text-center"
                                     },
                                     "children": [
                                         {
@@ -273,7 +273,7 @@
                                             ],
                                             "props": {
                                                 "type": "button",
-                                                "className": "btn-icon text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed",
+                                                "className": "ecommerce-btn-icon ecommerce:text-red-500 ecommerce:hover:text-red-700 ecommerce:dark:text-red-400 ecommerce:dark:hover:text-red-300 ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                                                 "disabled": "{{_computed.isReadOnly}}",
                                                 "aria-label": "$t:common.delete"
                                             },
@@ -283,7 +283,7 @@
                                                     "name": "Icon",
                                                     "props": {
                                                         "name": "trash",
-                                                        "className": "text-sm"
+                                                        "className": "ecommerce:text-sm"
                                                     }
                                                 }
                                             ]

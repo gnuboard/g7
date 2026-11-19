@@ -3,7 +3,16 @@ import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
 import { Span } from '../basic/Span';
 import type { EditorAttrs } from '../../types';
+import { sitePath } from '../../support/apiUrl';
 import { handleLinkClick, mergeQueryIntoHref, useLocationSearch } from '../../support/navigationLink';
+import { BREAKPOINTS, useViewportWidth } from '../layout/viewportWidth';
+
+/** 맨 앞·맨 끝 쪽 단추 공통 모양 */
+const EDGE_BUTTON_BASE = 'px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800';
+/** 640px 이상 — 보인다 */
+const EDGE_BUTTON_CLASS_WIDE = `inline-block ${EDGE_BUTTON_BASE}`;
+/** 640px 미만 — 숨긴다(번호 목록이 첫 쪽과 마지막 쪽을 늘 품고 있어 갈 수 있는 쪽이 줄지 않는다) */
+const EDGE_BUTTON_CLASS_NARROW = `hidden ${EDGE_BUTTON_BASE}`;
 
 // G7Core.t() 번역 함수 참조
 const t = (key: string, params?: Record<string, string | number>) =>
@@ -105,6 +114,9 @@ export const Pagination: React.FC<PaginationProps> = ({
   // 쿼리만 바꾸는 같은 화면 이동 뒤에도 링크 href 가 새 쿼리를 합치도록 주소를 구독한다(props 가 같아 엔진이 다시 그리지 않는다)
   useLocationSearch(pageHrefMergeQuery && !!pageHref);
 
+  // 엔진 폭 구독 — 창 크기·편집기 미리보기 폭이 바뀌면 다시 그린다(폭을 모르면 엔진 기본 폭 1024)
+  const viewportWidth = useViewportWidth();
+
   // 총 건수를 정확히 세지 못한 목록은 마지막 페이지를 계산할 수 없다.
   // 계산 불가한 값은 마지막 페이지 번호 하나뿐이므로 그 점프만 감춘다. 1 부터 현재
   // 페이지까지는 확실히 존재하고, 다음 페이지 존재 여부는 서버가 `hasMorePages` 로 알린다.
@@ -118,6 +130,10 @@ export const Pagination: React.FC<PaginationProps> = ({
   const canGoNext = isBounded
     ? currentPage < resolvedTotalPages
     : (hasMorePages ?? false);
+
+  // 맨 앞·맨 끝 쪽 단추는 좁은 화면(640px 미만)에서 숨긴다 — 엔진 폭으로 골라 편집기 미리보기 폭도 따른다
+  // (예전에는 Tailwind 반응형 접두로 나눴는데, 접두는 창 폭으로 판정된다)
+  const edgeButtonClass = viewportWidth >= BREAKPOINTS.sm ? EDGE_BUTTON_CLASS_WIDE : EDGE_BUTTON_CLASS_NARROW;
 
   const displayFirst = (showFirst ?? showFirstLast) && isBounded;
   const displayLast = (showLast ?? showFirstLast) && isBounded;
@@ -209,6 +225,14 @@ export const Pagination: React.FC<PaginationProps> = ({
     }
   };
 
+  /**
+   * 그리는 href 에 사이트 마운트 접두사를 붙인다 — 하위 폴더 설치(`/g7`)에서 가운데 클릭·「새 탭에서 열기」·링크 복사가
+   * 이 값을 그대로 열므로 접두사가 없으면 사이트 밖으로 간다(#609). 보통 클릭은 onPageChange 라 href 를 쓰지 않는다.
+   * `sitePath()` 는 멱등이고 쿼리만인 주소(`?page=2`)·바깥 주소는 그대로 돌려준다.
+   */
+  const sitePathOrUndefined = (href: string | undefined): string | undefined =>
+    href === undefined ? undefined : sitePath(href);
+
   /** 페이지 번호의 주소 — pageHref 가 없으면 undefined(단추로 그린다) */
   const hrefFor = (page: number): string | undefined => {
     if (!pageHref) return undefined;
@@ -270,7 +294,7 @@ export const Pagination: React.FC<PaginationProps> = ({
     return (
       <a
         key={opts.key}
-        href={hrefFor(opts.page)}
+        href={sitePathOrUndefined(hrefFor(opts.page))}
         className={linkClass(opts.className)}
         aria-label={opts.ariaLabel}
         aria-current={opts.ariaCurrent}
@@ -297,7 +321,7 @@ export const Pagination: React.FC<PaginationProps> = ({
           page: 1,
           onActivate: () => handlePageClick(1),
           disabled: currentPage === 1,
-          className: 'hidden sm:inline-block px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800',
+          className: edgeButtonClass,
           ariaLabel: t('common.first_page'),
           children: <>&#171;</>,
         })
@@ -363,7 +387,7 @@ export const Pagination: React.FC<PaginationProps> = ({
           page: resolvedTotalPages,
           onActivate: () => handlePageClick(resolvedTotalPages),
           disabled: currentPage === resolvedTotalPages,
-          className: 'hidden sm:inline-block px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800',
+          className: edgeButtonClass,
           ariaLabel: t('common.last_page'),
           children: <>&#187;</>,
         })

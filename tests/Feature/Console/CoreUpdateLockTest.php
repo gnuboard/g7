@@ -175,7 +175,7 @@ class CoreUpdateLockTest extends TestCase
         $output = $buffer->fetch();
 
         $this->assertSame(['success' => 0, 'failed' => 1, 'skipped' => 4, 'has_updates' => true], $result, $output);
-        $this->assertSame(1, substr_count($output, __('extensions.commands.bundled_update.lock_unavailable_aborted', ['count' => 4])), '중단 안내가 한 번만 나와야 한다: '.$output);
+        $this->assertSame(1, substr_count($output, trans_count('extensions.commands.bundled_update.lock_unavailable_aborted', ['count' => 4])), '중단 안내가 한 번만 나와야 한다: '.$output);
         foreach (['acme-i161-b', 'acme-i161-c', 'acme-i161-t', 'acme-i161-l'] as $later) {
             $this->assertStringNotContainsString($later, $output, "중단 뒤 다음 항목({$later})을 시도했다");
         }

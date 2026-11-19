@@ -7,13 +7,13 @@
  * (기존 게시판 첨부 호출은 그대로 동작해야 한다).
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { downloadAttachmentHandler } from '../downloadAttachment';
 
 describe('downloadAttachmentHandler — POST 본문 경로', () => {
   let apiGetSpy: ReturnType<typeof vi.fn>;
   let apiPostSpy: ReturnType<typeof vi.fn>;
-  let clickSpy: ReturnType<typeof vi.fn>;
+  let clickSpy: Mock<() => void>;
 
   beforeEach(() => {
     apiGetSpy = vi.fn().mockResolvedValue(new Blob(['file-content']));
@@ -25,7 +25,7 @@ describe('downloadAttachmentHandler — POST 본문 경로', () => {
     };
     (URL as any).createObjectURL = vi.fn().mockReturnValue('blob:mock-object-url');
     (URL as any).revokeObjectURL = vi.fn();
-    clickSpy = vi.fn();
+    clickSpy = vi.fn<() => void>();
     vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(clickSpy);
   });
 

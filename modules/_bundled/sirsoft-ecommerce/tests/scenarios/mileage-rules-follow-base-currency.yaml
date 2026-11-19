@@ -1,0 +1,50 @@
+feature: 마일리지 통화 규칙 첫 행 = 쇼핑몰 기본 통화 (기본 통화 변경·어긋난 저장 상태 복구)
+
+description: |
+  마일리지 탭 저장은 「통화별 사용 단위」 첫 행이 기본 통화여야 통과한다(first_must_be_default). 그런데
+  기본 통화를 바꾸는 언어/통화 저장은 규칙을 건드리지 않았고, 화면은 첫 행의 통화 코드와 삭제를 잠가
+  두어, 기본 통화를 바꾼 상점은 마일리지 탭을 다시는 저장할 수 없었다(공유 개발 서버 실측: 기본 통화
+  JPY + 규칙 [KRW] → 저장마다 422).
+
+  결정 사항(2026-11-14):
+    - 기본 통화가 바뀌면 저장 경로가 그 통화 행을 첫 행에 세운다. 있던 행은 옮기고, 없으면 「통화 추가」와
+      같은 기본값 행을 만든다. 다른 행은 순서대로 보존하고 중복을 만들지 않는다.
+    - 이미 어긋난 저장 상태는 화면이 안내와 복구 단추로 운영자가 맞추게 한다. 어긋난 채 그대로 보낸 마일리지
+      저장은 계속 422 다(서버가 몰래 고쳐 저장하지 않는다). 언어/통화 탭을 한 번 저장해도 맞춰진다.
+    - 규칙이 비어 있으면 맞추지 않는다 — 행을 만들면 꺼져 있던 기본 통화 마일리지 사용이 몰래 켜진다.
+
+axes:
+  trigger:
+    - default_currency_changed   # 언어/통화 탭에서 기본 통화를 다른 통화로 저장
+    - language_currency_resaved  # 기본 통화는 그대로 두고 언어/통화 탭을 다시 저장
+    - mileage_tab_saved          # 마일리지 탭 저장(HTTP·서비스 직접)
+    - mileage_tab_opened         # 마일리지 탭 진입(안내 표시 판정)
+    - align_clicked              # 안내의 복구 단추 클릭
+  base_rule:
+    - absent             # 기본 통화 행이 없다
+    - present_not_first  # 기본 통화 행이 있으나 첫 행이 아니다
+    - first              # 이미 첫 행이다
+    - no_rules           # 규칙이 하나도 없다
+
+exclusions:
+  - { trigger: default_currency_changed, base_rule: first, reason: "기본 통화를 바꾸면 첫 행은 옛 기본 통화라 새 기본 통화 행이 첫 행일 수 없다 — 이미 첫 행인 경우는 language_currency_resaved×first 가 잰다" }
+  - { trigger: align_clicked, base_rule: [first, no_rules], reason: "맞거나 규칙이 없으면 안내가 없어 복구 단추가 그려지지 않는다 — mileage_tab_opened×first·no_rules 가 잰다" }
+
+effects:
+  # 서버 저장 경로
+  - base_currency_rule_becomes_first_row          # 저장 뒤 첫 행이 기본 통화
+  - other_rules_preserved_without_duplicates      # 다른 행 값·순서 보존, 같은 통화 행 중복 없음
+  - mileage_tab_saves_after_default_currency_change # 기본 통화를 바꾼 뒤 마일리지 탭 저장 200
+  - misaligned_stored_state_recovers_on_save      # 수정 전 버전이 남긴 어긋난 상태가 저장으로 복구
+  - empty_rules_stay_empty                        # 빈 규칙은 비어 있는 채로 남는다
+  # 화면 안내·복구
+  - misalignment_notice_names_both_currencies     # 어긋나면 첫 행 통화와 기본 통화를 밝힌 안내
+  - misalignment_notice_hidden_when_aligned       # 맞거나 규칙이 없으면 안내 없음
+  - align_button_prepends_default_rule            # 기본 통화 행이 없으면 기본값 행을 첫 행에 만든다
+  - align_button_moves_existing_rule              # 있던 행은 옮길 뿐 새로 만들지 않는다
+  - align_button_marks_changes                    # 복구 뒤 「변경 있음」이 켜지고 안내가 사라진다
+  - align_button_locked_without_update_permission # 수정 권한이 없으면 단추가 잠긴다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/Admin/EcommerceSettingsMileageBaseCurrencyAlignTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/admin_ecommerce_settings_mileage_currency_mismatch.test.tsx

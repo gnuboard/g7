@@ -5,6 +5,7 @@ namespace Tests\Feature\Api\Auth;
 use App\Enums\AttachmentSourceType;
 use App\Enums\PermissionType;
 use App\Enums\UserStatus;
+use App\Helpers\TimezoneHelper;
 use App\Models\Attachment;
 use App\Models\Permission;
 use App\Models\Role;
@@ -25,8 +26,6 @@ use Tests\TestCase;
  * 이미 삭제된 뒤라 "로그인은 되는데 탈퇴는 실패한" 반파괴 상태가 남았다.
  *
  * @scenario entry_point=self_withdraw_api, email_state=reused_same_day, failure_injection=last_write_fails, field_length=exceeds_limit
- *
- * @effects withdraw_is_atomic_all_or_nothing, consents_and_tokens_restored_on_failure, avatar_file_kept_on_failure, same_day_rewithdraw_with_same_email_succeeds, long_values_truncated_within_column_limits, withdraw_is_idempotent, failed_withdraw_leaves_no_activity_log
  */
 class WithdrawAtomicityTest extends TestCase
 {
@@ -34,6 +33,10 @@ class WithdrawAtomicityTest extends TestCase
 
     /**
      * W1: 같은 날 같은 이메일로 재가입한 회원이 다시 탈퇴해도 실패하지 않는다.
+     *
+     * @effects same_day_rewithdraw_with_same_email_succeeds
+     *
+     * @return void 반환값 없음
      */
     public function test_same_day_rewithdraw_with_same_email_succeeds(): void
     {
@@ -65,6 +68,10 @@ class WithdrawAtomicityTest extends TestCase
 
     /**
      * W2: 마지막 단계가 실패하면 동의 이력·토큰 삭제도 함께 되돌아간다.
+     *
+     * @effects withdraw_is_atomic_all_or_nothing, consents_and_tokens_restored_on_failure
+     *
+     * @return void 반환값 없음
      */
     public function test_failed_withdraw_rolls_back_consents_and_tokens(): void
     {
@@ -99,6 +106,10 @@ class WithdrawAtomicityTest extends TestCase
 
     /**
      * W3: 탈퇴가 실패하면 아바타 파일도 남아 있어야 한다.
+     *
+     * @effects avatar_file_kept_on_failure
+     *
+     * @return void 반환값 없음
      */
     public function test_failed_withdraw_keeps_avatar_file(): void
     {
@@ -129,6 +140,10 @@ class WithdrawAtomicityTest extends TestCase
 
     /**
      * W4: 이미 탈퇴한 계정에 다시 호출해도 접미사가 겹쳐 붙지 않는다 (멱등).
+     *
+     * @effects withdraw_is_idempotent
+     *
+     * @return void 반환값 없음
      */
     public function test_withdraw_is_idempotent(): void
     {
@@ -151,6 +166,10 @@ class WithdrawAtomicityTest extends TestCase
 
     /**
      * W5: 컬럼 길이 상한에 걸리는 값도 절단 후 정상 저장된다.
+     *
+     * @effects long_values_truncated_within_column_limits
+     *
+     * @return void 반환값 없음
      */
     public function test_long_values_are_truncated_within_column_limits(): void
     {
@@ -179,7 +198,7 @@ class WithdrawAtomicityTest extends TestCase
         $this->assertStringContainsString('_deleted_', $user->email);
         $this->assertStringEndsWith('_'.$user->id, $user->email);
         $this->assertStringContainsString('_탈퇴_', $user->name);
-        $this->assertStringEndsWith('_탈퇴', $user->nickname);
+        $this->assertStringEndsWith('_탈퇴_'.$user->id, $user->nickname);
     }
 
     /**
@@ -188,7 +207,9 @@ class WithdrawAtomicityTest extends TestCase
      * 관리자 계정의 탈퇴 차단은 500 이 아니라 422 로 나가야 한다 — 종전에는 예외가
      * 그대로 올라가 서버 오류로 표시됐다.
      *
-     * @effects blocked_withdraw_returns_422_not_500
+     * @effects blocked_withdraw_returns_422_not_500, failed_withdraw_leaves_no_activity_log
+     *
+     * @return void 반환값 없음
      */
     public function test_failed_withdraw_does_not_log_activity(): void
     {
@@ -225,7 +246,8 @@ class WithdrawAtomicityTest extends TestCase
      */
     private function bindFailingWithdraw(User $user): User
     {
-        $suffix = '_deleted_'.now()->format('Ymd').'_'.$user->id;
+        // 탈퇴 접미사 날짜는 사이트 시간대 기준이다(User::withdraw) — UTC 날짜로 만들면 한국 시간 자정 뒤(UTC 15시~)에 어긋나 미끼가 빗나간다
+        $suffix = '_deleted_'.now()->setTimezone(TimezoneHelper::getSiteTimezone())->format('Ymd').'_'.$user->id;
 
         // 미끼 유저가 같은 접미사 이메일을 선점 → withdraw() 저장이 unique 위반으로 실패
         User::factory()->create(['email' => $user->email.$suffix]);
@@ -233,6 +255,11 @@ class WithdrawAtomicityTest extends TestCase
         return $user;
     }
 
+    /**
+     * 테스트 중 고정한 현재 시각을 풀어 다음 테스트가 실제 시각으로 돌게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Carbon::setTestNow();

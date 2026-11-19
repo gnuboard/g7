@@ -8,7 +8,7 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Auth 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
@@ -61,6 +61,8 @@ HTTP/1.1 200
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
 
 <!-- @generated:end -->
+
+> 7.2.0: 응답 `data.redirect_url`(string|null) — 외부 인증 확장(`core.auth.logout_redirect_url`)이 정한 로그아웃 뒤 이동 경로. 같은 출처 경로만 실리고 없으면 `null`. 엔진은 값이 있으면 그 경로로, 없으면 로그인 화면으로 간다.
 
 **설명**
 
@@ -157,6 +159,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 현재 관리자 토큰을 새 Sanctum 토큰으로 교체한다. `AuthService::refreshToken()` 이 기존 토큰을 폐기하고 새 토큰을 발급하며, `data` 에는 새 `token` 과 `user`(UserResource) 가 담긴다. 만료 임박 토큰을 재발급하는 용도로, 세션 만료로 재인증이 필요한 경우(토큰 무효)에는 `401 auth.unauthenticated` 를 반환한다.
@@ -201,7 +205,7 @@ _단건 응답: `data` 객체의 필드._
 | status_label | string | `활성` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
 | status_variant | string | `success` | 상태 표시 색상/스타일 변형 키 (상태 Enum variant() 산물 — UI 배지용) |
 | is_admin | boolean | `true` | 관리자 역할 보유 여부 (User::isAdmin() — 역할 관계 기반 파생) |
-| homepage | null | `null` | 홈페이지 URL |
+| homepage | string | `https://example.com` | 홈페이지 URL |
 | mobile | null | `null` | 휴대폰 번호 |
 | phone | null | `null` | 전화번호 |
 | zipcode | null | `null` | 우편번호 |
@@ -211,6 +215,8 @@ _단건 응답: `data` 객체의 필드._
 | bio | null | `null` | 자기소개 |
 | last_login_at | string | `2026-08-04 19:00:10` | last login 일시 |
 | email_verified_at | string | `2026-07-30 23:37:44` | email verified 일시 |
+| has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | timezone | string | `Asia/Seoul` | 사용자 시간대 (예: Asia/Seoul, UTC) |
 | roles | array | `[{"id":1,"identifier":"admin","name":"관리자"}]` | 사용자에게 부여된 역할 목록 (원소 id/identifier/name — roles 관계 파생, name 은 현지화 라벨) |
 | permissions | array | `[{"id":2,"identifier":"sirsoft-ecommerce.user-products.re…` | 연결된 권한 목록 (id/identifier/name — 역할 경유 권한 관계 파생) |
@@ -219,6 +225,11 @@ _단건 응답: `data` 객체의 필드._
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_create":true,"can_update":true,"can…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
 | is_super | boolean | `true` | 본인의 최고관리자 여부 (User::isSuperAdmin() — 로그인 사용자 본인 응답에만 싣고 회원 목록 응답에는 없음) |
+| can_edit_layouts | boolean | `true` | 본인이 레이아웃 편집기에 들어갈 수 있는지 (`User::hasPermission('core.templates.layouts.edit', admin)` — 편집기 API 가드와 같은 판정, 사용 중지한 역할의 권한은 제외. 로그인 사용자 본인 응답에만 싣는다) |
+| pending_required_fields | array | `[]` | 비어 있는 필수 회원 항목의 키(7.2.0). 비어 있지 않으면 사용자 화면이 추가 정보 입력 화면으로 보내고, 그 회원의 쓰기 요청은 `403` `required_fields_pending` 으로 거부됩니다 |
+| display_name | string\|null | `최고관리자` | 관리자 화면에 보이는 본인 이름(관리자 화면 영역의 표시 이름) |
+| display_name_kind | string\|null | `nickname` | 회원이 고른 표시 이름 종류. 고르지 않았으면 null (회원 기본 종류로 보인다) |
+| can_choose_display_name | boolean | `true` | 표시 이름 종류를 직접 고를 수 있는지 (권한 `core.profile.display_name.choose` 가 있고 운영자가 허용한 종류가 둘 이상) |
 
 **응답 예시**
 
@@ -249,11 +260,15 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 관리자 레이아웃 전역 부트스트랩 엔드포인트. `_admin_base.g7.html` 의 `data_source`(`current_user`)가 모든 관리자 페이지 진입 시 자동 호출해, 헤더/권한 게이트/is_admin 분기의 기준 사용자 정보를 채운다. 응답에는 `roles.permissions` 가 eager load 되어 `permissions` 배열이 함께 내려온다.
 
 **본인 최고관리자 여부**: 회원 목록 등 다른 `UserResource` 응답과 달리 이 응답만 `is_super` 를 싣는다(`UserResource::toAdminAuthArray`). 관리자 목록 화면의 최고관리자 전용 제어(모듈·플러그인·템플릿 「숨김 항목 포함」)가 `current_user.data.is_super` 로 읽는다 — 이 값이 없으면 제어가 누구에게도 나타나지 않는다(#703).
+
+**레이아웃 편집 권한(`can_edit_layouts`)**: 운영 화면의 편집 진입 단추가 이 값이 참인 사람에게만 보인다(#869). 같은 판정을 `GET /api/auth/user` 도 싣는다. `permissions` 목록은 사용 중지한 역할의 권한까지 담으므로 편집기 진입 판정에 쓰지 않는다.
 
 **인증 계약**: `auth:sanctum` 필요 — Bearer 토큰이 없거나 만료되면 `401` 을 반환한다(프론트 `data_source` 의 `auth_required: true` 에 대응). 이 계약이 프론트 소비의 SSoT 이므로 미들웨어 체인 변경 시 반드시 프론트 `auth_required`/`auth_mode` 와 함께 검토한다(이슈 #64).
 
@@ -344,8 +359,13 @@ HTTP/1.1 200
 | 423 | Locked | 로그인 실패 누적으로 계정이 잠긴 경우 (`auth.account_locked` — `error.locked_until`, `error.retry_after_seconds` 포함) |
 | 429 | Too Many Requests | `throttle:auth-login` 초과 (`auth.too_many_attempts`) |
 | 503 | Service Unavailable | 2단계 인증이 켜져 있고 인증번호를 보내지 못한 경우 (`auth.two_factor_delivery_failed`), 또는 비밀번호 변경 단계가 필요한데 그 단계 식별자를 저장하지 못한 경우 (`auth.password_change_unavailable` — #736) |
+| 403 | Forbidden | (관리자 아님 `auth.admin_required` 와 별개) 비밀번호 로그인이 막힌 계정(7.2.0 — 외부 인증 확장의 `core.auth.password_auth_decision`): `errors.code = auth.password_auth_disabled`, `errors.method_label`(로케일별 수단 이름)·`errors.redirect_url`(그 수단으로 갈 같은 출처 경로) — 같은 값이 `data` 에도 실린다. 식별자만으로 막히면 비밀번호를 확인하기 전에 거절되어 실패 횟수에 들지 않는다 |
+| 409 | Conflict | 외부 자격 증명 검증자가 다음 화면(동의·연결 확인)을 요구(7.2.0): `errors.code = auth.external_step_required`, `errors.redirect_url` |
+| 422 | Unprocessable Entity | 외부 인증 확장이 2단계 인증을 요구했는데 회원에게 쓸 수 있는 수단이 없음(`auth.two_factor_means_required`, 7.2.0) |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -357,6 +377,67 @@ HTTP/1.1 200
 
 **비밀번호를 바꿔야 하는 관리자 (#736)**: 사용자 로그인과 같은 변경 단계 응답(`password_change_required: true` — 필드 정의는 `POST /api/auth/login` 의 같은 절)을 돌려주고, 식별자는 관리자 경로에 묶여 `POST /api/auth/admin/login/password-change` 로만 완료된다. **비관리자가 관리자 로그인으로 오면 변경 단계를 열지 않는다** — 종전대로 토큰 발급 → 회수 + `403` 이라, 비관리자의 비밀번호가 관리자 경로로 바뀌지 않는다. 식별자를 저장하지 못하면 `503 auth.password_change_unavailable` 이다.
 
+
+### POST /api/auth/admin/login/discover
+<!-- @generated:start:api.auth.admin.login.discover -->
+- **라우트명**: `api.auth.admin.login.discover`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\AuthController@discover`
+- **인증/권한**: 공개 (인증 불필요)
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| identifier | body | string | 예 | 최대 255자 | 관리자 로그인 칸에 적은 이메일 또는 사내 아이디 |
+
+**응답 필드** (`data` 내부)
+
+_`POST /api/auth/login/discover` 와 같다(`method`·`label`·`redirect_url`). 확장 필터에는 `guard = admin` 이 넘어간다._
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 422 | Unprocessable Entity | `identifier` 없음·형식 위반 |
+| 429 | Too Many Requests | `throttle:auth-login` 초과 |
+
+<!-- @generated:end -->
+
+**설명**
+
+관리자 로그인 화면의 수단 판정(7.2.0). 사용자 판정과 같은 규칙이고 확장은 `guard` 로 둘을 가른다.
+
+### POST /api/auth/admin/login/handoff
+<!-- @generated:start:api.auth.admin.login.handoff -->
+- **라우트명**: `api.auth.admin.login.handoff`
+- **컨트롤러**: `App\Http\Controllers\Api\Admin\AuthController@loginHandoff`
+- **인증/권한**: 공개 (인증 불필요 — 주체는 인계 코드가 식별)
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| code | body | string | 예 | 최대 128자 | 외부 인증 확장이 `LoginHandoffService::issue($user, $context, 'admin')` 로 발급해 `/admin/login?login_handoff=` 로 넘긴 일회용 코드 |
+
+**응답 필드** (`data` 내부)
+
+_`POST /api/auth/admin/login` 과 **같은 세 형태**다 — 인증 완료(`user`·`token`·`token_type`), 2단계 인증(`two_factor_required`·`challenge_id`·`provider_id`·`expires_at`), 비밀번호 변경(`password_change_required`·…)._
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 422 | Unprocessable Entity | 교환할 수 없는 코드(`auth.login_handoff_invalid`, `errors.code`) — 없음 / 만료 / 이미 사용 / 사용자 경로로 발급 / 묶음 쿠키 불일치 / 회원 삭제. 사유를 구분하지 않는다 |
+| 403 | Forbidden | 관리자가 아닌 회원(`auth.admin_required`) — 휴면 상태는 그대로 둔다 |
+| 401 | Unauthorized | 회원 상태가 로그인을 허용하지 않음 |
+| 423 | Locked | 계정이 잠겨 있음 |
+| 429 | Too Many Requests | `throttle:auth-login` 초과 |
+
+<!-- @generated:end -->
+
+**설명**
+
+관리자 로그인 인계 교환 창구다(7.2.0). 사용자 인계(`POST /api/auth/login/handoff`)와 같은 규칙에 관리자 비밀번호 로그인과 같은 응답 빌더·예외 매핑을 쓴다. 관리자 로그인 화면이 진입 때 엔진 액션 `loginHandoff`(target `admin`)로 부른다.
 
 ### POST /api/auth/admin/login/password-change
 <!-- @generated:start:api.auth.admin.login.password-change -->
@@ -685,7 +766,7 @@ HTTP/1.1 200
 
 관리자 로그인의 인증번호 재발송. 규칙은 `POST /api/auth/login/two-factor/resend` 와 동일하다 — 기존 challenge 를 취소하고 새로 발행하므로 앞서 받은 인증번호는 통하지 않는다.
 
-이 단계는 토큰을 발급하지 않으므로 회수할 것이 없다. 다만 완료할 수 없는 상대에게 새 인증번호를 계속 보내지는 않으므로, challenge 가 식별한 사용자가 관리자가 아니면 `403 auth.admin_required` 로 거부한다. 발급 자체를 막는 것이 아니라 **재발송만** 막는 것이며, 비밀번호 확인 단계(`POST /api/auth/admin/login`)는 종전대로 관리자 판정 없이 challenge 를 돌려준다.
+이 단계는 토큰을 발급하지 않으므로 회수할 것이 없다. 다만 완료할 수 없는 상대에게 새 인증번호를 보내지 않으므로, challenge 가 식별한 사용자가 관리자가 아니면 `403 auth.admin_required` 로 거부한다. 판정은 기존 challenge 를 취소하고 새 인증번호를 보내기 **전에** 한다(7.2.0) — 거부되면 메일이 다시 가지 않고 원 challenge 도 그대로 남는다. 비밀번호 확인 단계(`POST /api/auth/admin/login`)도 7.2.0 부터 관리자가 아닌 회원에게 challenge 를 만들지 않으므로, 이 403 은 사용자 로그인 등 다른 경로에서 받은 challenge 를 들고 온 경우에만 난다.
 
 
 ### POST /api/auth/forgot-password
@@ -744,6 +825,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 비밀번호 재설정 메일 발송을 요청한다(공개). `email` 로 계정을 찾아 재설정 링크 메일을 보내고 `message: auth.password_reset_email_sent` 를 반환한다. `redirect_prefix` 는 재설정 링크가 향할 화면을 구분하는 값으로 관리자 흐름(`admin_forgot_password.g7.html`)에서는 `admin` 을 전달해 링크가 관리자 재설정 화면을 가리키게 한다(미지정 시 사용자 화면). 단, 관리자가 아닌 계정에는 `admin` 을 전달해도 사용자 재설정 화면 링크를 보낸다.
@@ -789,6 +872,7 @@ _단건 응답: `data` 객체의 필드 (`AuthService::login()` 이 반환한 �
 | user | object | `{"uuid":"a234c2b1-…","name":"홍길동","is_admin":false, …}` | 로그인한 사용자 정보 (`UserResource` — 필드 전수는 `GET /api/auth/user` 응답 필드 표의 기본(코어) 필드와 동일) |
 | token | string | `{MASKED}`|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 (이후 `Authorization: Bearer` 헤더로 사용, 발급 시 1회만 노출) |
 | token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
+| pending_required_fields | array | `[]` | 비어 있는 필수 회원 항목의 키. 비어 있지 않으면 화면이 로그인 직후 추가 정보 입력 화면으로 보냅니다. 로그인을 마친 응답(2단계 인증 확인, 로그인 인계, 비밀번호 변경 단계 완료와 연기 포함)에 실립니다 |
 
 **응답 예시**
 
@@ -834,8 +918,13 @@ HTTP/1.1 200
 | 423 | Locked | 로그인 실패 누적으로 계정이 잠긴 경우 (`auth.account_locked` — `error.locked_until`, `error.retry_after_seconds` 포함) |
 | 429 | Too Many Requests | `throttle:auth-login` 초과 (`auth.too_many_attempts` — `Retry-After` 헤더 동반) |
 | 503 | Service Unavailable | 2단계 인증이 켜져 있고 인증번호를 보내지 못한 경우 (`auth.two_factor_delivery_failed`), 또는 비밀번호 변경 단계가 필요한데 그 단계 식별자를 저장하지 못한 경우 (`auth.password_change_unavailable` — #736) |
+| 403 | Forbidden | 비밀번호 로그인이 막힌 계정(7.2.0 — 외부 인증 확장의 `core.auth.password_auth_decision`): `errors.code = auth.password_auth_disabled`, `errors.method_label`(로케일별 수단 이름)·`errors.redirect_url`(그 수단으로 갈 같은 출처 경로) — 같은 값이 `data` 에도 실린다. 식별자만으로 막히면 비밀번호를 확인하기 전에 거절되어 실패 횟수에 들지 않는다 |
+| 409 | Conflict | 외부 자격 증명 검증자가 다음 화면(동의·연결 확인)을 요구(7.2.0): `errors.code = auth.external_step_required`, `errors.redirect_url` |
+| 422 | Unprocessable Entity | 외부 인증 확장이 2단계 인증을 요구했는데 회원에게 쓸 수 있는 수단이 없음(`auth.two_factor_means_required`, 7.2.0) |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -873,6 +962,152 @@ HTTP/1.1 200
 **인증번호를 보내지 못한 경우**: 자격 증명은 올바르지만 코드를 전달할 수단이 없으므로 로그인을 완료할 수 없다. 이때는 `401`(자격 증명 오류)이 아니라 `503 auth.two_factor_delivery_failed` 를 반환한다 — `401` 로 뭉뚱그리면 사용자는 비밀번호를 의심하며 같은 실패를 반복하고, 운영자는 메일 설정이 깨진 사실을 알 방법이 없다. 발송에 실패해도 2단계 인증을 건너뛰고 로그인시키지는 않는다.
 
 **쓸 수 있는 수단이 하나도 없는 경우**: 갈림길은 그것이 **운영자의 결정인지** 다. 인증 앱 플러그인 설정에서 메일 폴백을 명시적으로 껐다면 `401 auth.two_factor_enrollment_required` 로 로그인을 차단한다 — 그냥 통과시키면 운영자가 끈 결과가 "2단계 인증이 아예 없는 로그인" 이 되어 정반대가 되기 때문이다. 구제는 관리자의 등록 해제(`DELETE /api/plugins/sirsoft-totp/admin/credentials/{user}`) 또는 `totp:reset` artisan 이다. 반면 운영자의 결정이 아닌 이유(메일 설정이 깨진 경우 등)로 수단이 없을 때는 차단하지 않고 경고 로그만 남긴다 — 차단하면 아무도 로그인하지 못해 설정을 되돌릴 수단까지 사라진다.
+
+
+### POST /api/auth/login/discover
+<!-- @generated:start:api.auth.login.discover -->
+- **라우트명**: `api.auth.login.discover`
+- **컨트롤러**: `App\Http\Controllers\Api\Auth\AuthController@discover`
+- **인증/권한**: 공개 (인증 불필요)
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| identifier | body | string | 예 | 최대 255자 | 로그인 칸에 적은 이메일 또는 사내 아이디 |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.auth.login_discover_validation_rules`).
+
+**요청 예시**
+
+```http
+POST /api/auth/login/discover HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Content-Type: application/json
+
+{
+    "identifier": "hong@corp.example"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| method | string | `password` | `password`(지금 화면 그대로) 또는 `external`(다른 수단으로 안내) |
+| label | object\|null | `null` | `external` 일 때 수단 이름(로케일별, 예 `{"ko":"회사 계정"}`) |
+| redirect_url | string\|null | `null` | `external` 일 때 갈 같은 출처 경로 |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "로그인 방법을 확인했습니다.",
+    "data": {
+        "method": "password",
+        "label": null,
+        "redirect_url": null
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 422 | Unprocessable Entity | `identifier` 없음·형식 위반 |
+| 429 | Too Many Requests | `throttle:auth-login` 초과 |
+
+<!-- @generated:end -->
+
+**설명**
+
+로그인 화면이 이메일 칸을 벗어날 때 그 식별자의 로그인 수단을 묻는다(7.2.0). 판정은 필터 `core.auth.login_discovery` 를 구독한 외부 인증 확장이 하고, 없으면 항상 `password` 다. 회원 유무와 상관없이 같은 모양으로 답해(확장은 도메인 같은 식별자 모양으로만 판정) 계정 열거에 쓰이지 않는다. 같은 출처가 아닌 주소는 `password` 로 낮춘다. 관리자 로그인 화면은 `POST /api/auth/admin/login/discover`.
+
+로그인과 같은 요청 제한(`throttle:auth-login`)이 걸리지만 서버 세션은 열지 않는다(`start.api.session` 없음, 응답에 세션 쿠키가 없다). 이 요청은 로그인 제출과 거의 동시에 나갈 수 있어, 세션 쿠키를 내리면 로그인 전 세션을 실은 이 응답이 로그인 응답보다 늦게 도착했을 때 로그인이 심은 세션 쿠키를 덮고 개발자 화면이 비회원으로 보인다([서버 세션과 토큰의 짝](../authentication.md#서버-세션과-토큰의-짝-720)).
+
+### POST /api/auth/login/handoff
+<!-- @generated:start:api.auth.login.handoff -->
+- **라우트명**: `api.auth.login.handoff`
+- **컨트롤러**: `App\Http\Controllers\Api\Auth\AuthController@loginHandoff`
+- **인증/권한**: 공개 (인증 불필요 — 주체는 인계 코드가 식별)
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| code | body | string | 예 | 최대 128자 | 외부 인증 확장이 `LoginHandoffService::issue()` 로 발급해 `/login?login_handoff=` 로 넘긴 일회용 코드 |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.auth.login_handoff_validation_rules`).
+
+**요청 예시**
+
+```http
+POST /api/auth/login/handoff HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Content-Type: application/json
+
+{
+    "code": "hR0c7m2qL9w4s1XzYv8Bn3Kd6Tf5Ga0PjEuQiNoWl2"
+}
+```
+
+**응답 필드** (`data` 내부)
+
+_단건 응답: `POST /api/auth/login` 과 **같은 세 형태**다 — 인증 완료(`user`·`token`·`token_type`·`dormancy_restored?`), 2단계 인증(`two_factor_required`·`challenge_id`·`provider_id`·`expires_at`), 비밀번호 변경(`password_change_required`·`challenge_id`·`reason`·`can_postpone`·`postpone_days`·`expired_at`·`expires_at`). 필드 설명은 `POST /api/auth/login` 을 본다._
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| user | object | `{ "uuid": "…" }` | 인증 완료 형태에만 — 사용자 리소스 |
+| token | string | `12\|a1b2…` | 인증 완료 형태에만 — Bearer 토큰 |
+| token_type | string | `Bearer` | 인증 완료 형태에만 |
+| pending_required_fields | array | `[]` | 로그인이 끝난 형태에만. 비어 있는 필수 회원 항목의 키. 비어 있지 않으면 화면이 추가 정보 입력 화면으로 보냅니다 (`POST /api/auth/login` 과 같다) |
+| dormancy_restored | boolean | `true` | 이 로그인으로 휴면이 풀렸을 때만 실린다 |
+| two_factor_required | boolean | `true` | 2단계 인증 형태에만 |
+| password_change_required | boolean | `true` | 비밀번호 변경 형태에만 |
+| challenge_id | string | `9f1c2f2e-…` | 단계 형태의 식별자 — 이어서 `POST /api/auth/login/two-factor` 또는 `…/password-change` 로 보낸다 |
+
+**응답 예시**
+
+```http
+HTTP/1.1 200
+```
+
+```json
+{
+    "success": true,
+    "message": "로그인되었습니다.",
+    "data": {
+        "user": { "uuid": "0d6f…", "name": "홍길동" },
+        "token": "12|a1b2c3…",
+        "token_type": "Bearer"
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 422 | Unprocessable Entity | 코드 없음·형식 위반, 또는 교환할 수 없는 코드(`auth.login_handoff_invalid`, `errors.code`) — 없음 / 120초 만료 / 이미 사용 / 관리자 경로로 발급 / 발급한 브라우저의 묶음 쿠키(`g7_login_bind`)가 없거나 다름 / 회원 삭제. **사유를 구분하지 않는다** |
+| 401 | Unauthorized | 회원 상태가 로그인을 허용하지 않음(차단·탈퇴·비활성) — `errors.email` 에 상태 문구 |
+| 423 | Locked | 계정이 잠겨 있음. 응답 형태는 `POST /api/auth/login` 의 423 과 같다 |
+| 428 | Precondition Required | 2단계 인증 수단을 등록해야 함(`POST /api/auth/login` 과 같다) |
+| 429 | Too Many Requests | `throttle:auth-login` 초과 |
+| 503 | Service Unavailable | 2단계 인증 코드를 보내지 못함(`auth.two_factor_delivery_failed`) |
+
+<!-- @generated:end -->
+
+**설명**
+
+외부 인증(소셜 로그인 등)으로 본인 확인을 마친 회원을 로그인 화면이 로그인시키는 교환 창구다(7.2.0). 확장은 토큰을 직접 만들지 않고 코드만 발급하며, 이 엔드포인트가 코드를 꺼내는 순간 지운 뒤(한 번만 통한다) `AuthService::loginVerifiedUser()` 로 계정 잠금·회원 상태·2단계 인증(인증 앱 포함)·비밀번호 변경·휴면 해제를 비밀번호 로그인과 똑같이 처리한다. 응답이 `POST /api/auth/login` 과 같아 로그인 화면은 같은 분기를 쓴다(엔진 액션 `loginHandoff`). 로그인과 같은 요청 제한·세션 시작(`start.api.session`)이 걸린다. 코드는 발급한 브라우저에 묶여 있어 요청에 묶음 쿠키 `g7_login_bind` 가 함께 와야 한다(브라우저가 자동으로 싣는다 — 쿠키 Path `/api/auth`). 관리자 인계는 `POST /api/auth/admin/login/handoff`.
 
 
 ### POST /api/auth/login/password-change
@@ -915,6 +1150,7 @@ _단건 응답: `data` 객체의 필드 (비밀번호 변경 완료 — 토큰 �
 | user | object | `{"uuid":"a234c2b1-…","name":"홍길동", …}` | 로그인한 사용자 정보 (`UserResource`) |
 | token | string | `{MASKED}`|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 |
 | token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
+| pending_required_fields | array | `[]` | 로그인이 끝난 형태에만. 비어 있는 필수 회원 항목의 키. 비어 있지 않으면 화면이 추가 정보 입력 화면으로 보냅니다 (`POST /api/auth/login` 과 같다) |
 | dormancy_restored | boolean | `true` | 휴면 회원의 휴면이 이 로그인으로 풀렸을 때만 실린다 |
 
 **응답 예시**
@@ -995,6 +1231,7 @@ _단건 응답: `data` 객체의 필드 (비밀번호 변경 연기 — 토큰 �
 | user | object | `{"uuid":"a234c2b1-…","name":"홍길동", …}` | 로그인한 사용자 정보 (`UserResource`) |
 | token | string | `{MASKED}`|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 |
 | token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
+| pending_required_fields | array | `[]` | 로그인이 끝난 형태에만. 비어 있는 필수 회원 항목의 키. 비어 있지 않으면 화면이 추가 정보 입력 화면으로 보냅니다 (`POST /api/auth/login` 과 같다) |
 | dormancy_restored | boolean | `true` | 휴면 회원의 휴면이 이 로그인으로 풀렸을 때만 실린다 |
 | postponed_until | string(ISO8601) | `2026-10-16T05:15:00+00:00` | 연기가 끝나는 시각 (그 뒤 로그인하면 다시 변경 단계가 나온다) |
 
@@ -1075,6 +1312,7 @@ _단건 응답: `data` 객체의 필드 (`AuthService::completeTwoFactor()` 가 
 | user | object | `{"uuid":"a234c2b1-…","name":"홍길동","is_admin":false, …}` | 로그인한 사용자 정보 (`UserResource` — 필드 전수는 `GET /api/auth/user` 응답 필드 표의 기본(코어) 필드와 동일) |
 | token | string | `{MASKED}`|WgPUplvLGTv8YIj4507uIR6dEOHTXyNUed…` | 발급된 Sanctum 접근 토큰 평문 (이후 `Authorization: Bearer` 헤더로 사용, 발급 시 1회만 노출) |
 | token_type | string | `Bearer` | 토큰 타입 (항상 `Bearer`) |
+| pending_required_fields | array | `[]` | 비어 있는 필수 회원 항목의 키. 비어 있지 않으면 화면이 추가 정보 입력 화면으로 보냅니다 (`POST /api/auth/login` 과 같다) |
 
 > 위 문서의 실측이 `422` 로 관측된 것은 유효한 challenge 없이 프로브가 호출됐기 때문이다. 정상 흐름(비밀번호 단계가 돌려준 `challenge_id` + 올바른 코드)에서는 `200` 과 위 페이로드가 반환된다.
 
@@ -1124,6 +1362,8 @@ HTTP/1.1 200
 | 503 | Service Unavailable | 비밀번호 변경 단계가 필요한데 그 단계 식별자를 저장하지 못한 경우 (`auth.password_change_unavailable` — 토큰도 발급하지 않는다, #736) |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -1259,9 +1499,148 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+> 7.2.0: 응답 `data.redirect_url`(string|null) — 외부 인증 확장(`core.auth.logout_redirect_url`)이 정한 로그아웃 뒤 이동 경로. 같은 출처 경로만 실리고 없으면 `null`. 엔진은 값이 있으면 그 경로로, 없으면 로그인 화면으로 간다.
+
 **설명**
 
 현재 사용자 토큰을 폐기해 로그아웃한다(`message: auth.logout_success`). 현재 요청에 사용된 토큰만 폐기하며, 모든 기기에서 로그아웃하려면 `/api/user/auth/logout-all-devices` 를 사용한다.
+
+
+### GET /api/auth/register/fields
+<!-- @generated:start:api.auth.register.fields -->
+- **라우트명**: `api.auth.register.fields`
+- **컨트롤러**: `App\Http\Controllers\Api\Auth\AuthController@registerFields`
+- **인증/권한**: 없음 (공개)
+
+**요청 파라미터**
+
+| 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
+| --- | --- | --- | --- | --- | --- |
+| verification_token | query | string | 아니오 | 최대 255자 | 본인인증을 거쳐 온 가입에서 인증 값으로 채울 칸을 받을 때. 인증 값을 주는 수단의 유효한 토큰이면 연결된 항목의 `default` 가 인증 값으로 채워지고, 「인증 값으로 채우고 잠금」을 켠 항목은 `readonly: true`, `locked_reason: identity` 로 옵니다 |
+| pending_token | query | string | 아니오 | 최대 255자 | 외부 계정 가입 창이 대기 중인 가입의 초기값과 잠금을 받을 때 |
+| pending_source | query | string | 아니오 | 최대 64자 | 대기 토큰을 발급한 확장의 식별자 |
+| preview_name | query | string | 아니오 | 최대 255자 | 표시 이름 종류 미리보기에 쓸 입력 중인 이름 (저장하지 않는다) |
+| preview_nickname | query | string | 아니오 | 최대 50자 | 미리보기에 쓸 입력 중인 닉네임 |
+| preview_email | query | string | 아니오 | 최대 255자 | 미리보기에 쓸 입력 중인 이메일 (아이디 가림 종류) |
+
+> 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.auth.register_fields_validation_rules`).
+
+**요청 예시**
+
+```http
+GET /api/auth/register/fields HTTP/1.1
+Host: api.example.com
+Accept: application/json
+Accept-Language: ko
+```
+
+**응답 필드** (`data` 내부)
+
+| 필드 | 타입 | 실측 예시값 | 용도/설명 |
+| --- | --- | --- | --- |
+| fields[] | array | — | 가입 화면이 그릴 항목. 표시 순서대로 옵니다 |
+| fields[].key | string | `name` | 항목 키 |
+| fields[].name | string | `name` | 폼 경로. 가입 요청에서 이 항목이 쓰는 키이자 검증 오류 키입니다. 운영자 추가 항목은 `custom_fields.{key}` |
+| fields[].type | string | `text` | 유형 키 |
+| fields[].renderer | string | `builtin` | 그리기 갈래(builtin, address, file, extension) |
+| fields[].owner | string | `core` | 항목을 선언한 쪽. 운영자 추가 항목은 `custom` |
+| fields[].owner_type | string | `core` | 출처(core, module, plugin, custom) |
+| fields[].source_label | string\|null | `null` | 항목을 선언한 확장의 이름(설치 기록의 다국어 이름에서 요청 언어로 고른다). 화면이 확장별 묶음 제목으로 쓴다. 코어 항목과 운영자 추가 항목은 null |
+| fields[].label | string | `이름` | 요청 로케일로 풀린 항목 이름 |
+| fields[].placeholder | string\|null | `이름을 입력하세요` | 예시 글 |
+| fields[].help | string\|null | `null` | 안내 문구 |
+| fields[].required | boolean | `true` | 가입에서 필수인지 |
+| fields[].readonly | boolean | `false` | 읽기 전용인지 |
+| fields[].locked_reason | string\|null | `null` | 잠긴 사유 |
+| fields[].deferred | boolean | `false` | 가입 화면에서 받지 않는 유형(파일, 이미지)이면 true. 화면은 안내 줄만 그리고 값은 가입 뒤에 받습니다 |
+| fields[].options[] | array | `[{"value":"ko","label":"한국어"}]` | 선택지(요청 로케일의 글자) |
+| fields[].constraints | object | `{"max_length":255}` | 화면이 쓰는 제한 값(길이, 범위, 표시 방식 등) |
+| fields[].default | mixed | `null` | 값이 없을 때 화면이 골라 보일 값. 언어 항목은 요청 로케일 |
+| fields[].ui | object | `{"group":"basic"}` | 묶음 등 표시 힌트 |
+| fields[].parts | object\|null | `null` | 여러 칸으로 받는 유형(주소)의 부분별 폼 경로 |
+| fields[].display_value | string\|null | `null` | 보기용 문자열(가입에서는 항상 null) |
+| fields[].files | array\|null | `null` | 파일, 이미지 항목에 올라가 있는 파일(가입에서는 빈 배열). 그 밖의 유형은 null |
+| fields[].file_rules | object\|null | `null` | 파일, 이미지 항목의 업로드 제한(`extensions`, `max_count`, `max_size_mb`). 그 밖의 유형은 null |
+| fields_version | string | `55e0c42db93a` | 항목 정의 버전. 가입 요청에 실어 보냅니다 |
+| verified_claims | object\|null | `{"status":"applied","filled":["name","mobile"],"locked":["name"]}` | 본인인증 채움 결과. `verification_token` 없이 부르거나 가입 전 본인인증 정책이 꺼져 있으면 null(정책이 꺼진 사이트는 가입 요청의 본인인증 결과를 쓰지 않는다). `status` 는 `applied`(채움), `no_claims`(이 수단은 인증 값을 주지 않음), `expired`(만료됐거나 이미 쓴 토큰), `invalid`(알 수 없는 토큰). `applied` 가 아니면 `filled`, `locked` 는 빈 배열이고 항목은 잠기지 않습니다. 화면은 `expired`, `invalid` 를 칸에 속하지 않는 오류로 안내합니다 |
+| display_name.can_choose | boolean | `true` | 종류 선택 칸을 보일지 (권한이 있고 고를 종류가 둘 이상) |
+| display_name.value | string\|null | `nickname` | 회원이 고른 종류. 고르지 않았거나 고른 종류가 허용에서 빠졌으면 null (가입 화면은 항상 null) |
+| display_name.value_unavailable | boolean | `false` | 전에 고른 종류가 허용에서 빠졌는지. true 면 화면이 「종류를 다시 골라 주세요」를 보인다 |
+| display_name.unavailable_kind | object\|null | `{"value":"field:alias","label":"활동명"}` | 허용에서 빠진, 전에 고른 종류와 그 이름 |
+| display_name.default_kind | string | `name` | 고르지 않았을 때 적용되는 회원 기본 종류 |
+| display_name.default_kind_label | string | `이름` | 회원 기본 종류의 이름 |
+| display_name.effective_kind | string | `nickname` | 지금 이 회원에게 적용되는 종류 |
+| display_name.current | string\|null | `길동이` | 지금 다른 회원에게 보이는 이름 (가입 화면은 null) |
+| display_name.options[] | array | — | 고를 수 있는 종류. 고를 수 없으면 빈 배열 |
+| display_name.options[].value | string | `masked_name` | 종류 키. 요청의 `display_name_kind` 로 보낸다 |
+| display_name.options[].label | string | `가린 이름` | 종류 이름 |
+| display_name.options[].preview | string\|null | `홍*동` | 그 종류를 고르면 보일 글자. 가림 규칙이 서버와 같게 서버가 계산한다 |
+| display_name.options[].requires_nickname | boolean | `false` | 닉네임이 필요한 종류인지. 고르면 닉네임이 필수가 된다 |
+| display_name.options[].is_default | boolean | `false` | 회원 기본 종류인지 |
+| display_name.preview_is_sample | boolean | `false` | 미리보기를 표본 회원(홍길동, 길동이)으로 계산했는지 |
+| display_name.nickname_requirement | string | `chosen` | 표시 이름 설정이 닉네임에 거는 요구 (`all` 전원 필수, `chosen` 닉네임 종류로 보이는 회원만 필수, `none`) |
+
+**응답 예시**
+
+```json
+{
+    "success": true,
+    "message": "성공적으로 처리되었습니다.",
+    "data": {
+        "fields": [
+            {
+                "key": "name",
+                "name": "name",
+                "type": "text",
+                "renderer": "builtin",
+                "owner": "core",
+                "owner_type": "core",
+                "source_label": null,
+                "label": "이름",
+                "placeholder": "이름을 입력하세요",
+                "help": null,
+                "required": true,
+                "readonly": false,
+                "locked_reason": null,
+                "deferred": false,
+                "options": [],
+                "constraints": { "max_length": 255 },
+                "default": null,
+                "ui": { "group": "basic" },
+                "parts": null,
+                "display_value": null,
+                "files": null,
+                "file_rules": null
+            }
+        ],
+        "fields_version": "55e0c42db93a",
+        "display_name": {
+            "can_choose": false,
+            "value": null,
+            "value_unavailable": false,
+            "unavailable_kind": null,
+            "default_kind": "name",
+            "default_kind_label": "이름",
+            "effective_kind": "name",
+            "current": null,
+            "options": [],
+            "preview_is_sample": true,
+            "nickname_requirement": "none"
+        },
+        "verified_claims": null
+    }
+}
+```
+
+**에러 응답**
+
+| 상태코드 | 의미 | 발생 조건 |
+| --- | --- | --- |
+| 422 | Unprocessable Entity | 조회 인자가 검증 규칙을 위반한 경우 |
+
+<!-- @generated:end -->
+
+**설명** 가입 화면이 그릴 회원 항목입니다. 운영자가 환경설정 > 회원 > 가입 항목에서 정한 사용 여부, 필수 여부, 가입 화면 표시, 순서가 반영됩니다. 사용을 끈 항목, 가입 화면 표시를 끈 항목, 본인 수정 범위가 아닌 항목은 오지 않습니다. 이메일, 비밀번호, 약관 동의는 항목이 아니라 고정 칸이라 이 응답에 없습니다. 화면은 받은 `fields_version` 을 가입 요청에 실어 보내고, 그 사이 운영자가 항목을 바꿨으면 가입 요청이 409 `fields_changed` 로 알립니다. `display_name` 은 표시 이름 종류 선택 칸의 묶음입니다. `can_choose` 가 true 일 때만 칸을 그리고, 고른 값은 가입 요청의 `display_name_kind` 로 보냅니다. `options[].preview` 는 조회 인자 `preview_name`, `preview_nickname`, `preview_email` 로 입력 중인 값을 주면 그 값으로, 주지 않으면 표본 회원으로 계산합니다.
 
 
 ### POST /api/auth/register
@@ -1274,22 +1653,29 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| name | body | string | 예 | max 255 | 대상의 이름/명칭 |
-| nickname | body | string | 아니오 | max 50 | 닉네임 |
-| email | body | string | 예 | max 255 | 이메일 주소 |
-| password | body | string | 예 | 보안 설정의 작성 규칙 | 비밀번호 — 길이·특수문자와 운영자가 켠 조합·추측 방지 규칙(아이디 포함·반복·연속)을 따른다(#736) |
-| mobile | body | string | 아니오 | max 20 | 휴대폰번호 (선택) |
-| phone | body | string | 아니오 | max 20 | 전화번호 (선택) |
-| language | body | string | 아니오 | `ko`, `en` | 언어 코드 |
-| agree_terms | body | string | 아니오 | — | 이용약관 동의 (코어 필수 동의 — accepted 규칙, 미동의 시 가입 거부) |
-| agree_privacy | body | string | 아니오 | — | 개인정보 처리방침 동의 (코어 필수 동의 — accepted 규칙, 미동의 시 가입 거부) |
-| agree_email_subscription | body | boolean | 아니오 | — | 광고성 이메일 수신 동의 (marketing 플러그인 주입, 선택 항목) |
-| agree_marketing_consent | body | boolean | 아니오 | — | 마케팅 정보 수신 전체 동의 (marketing 플러그인 주입, 선택 항목) |
-| agree_third_party_consent | body | boolean | 아니오 | — | 제3자 정보 제공 동의 (marketing 플러그인 주입, 선택 항목) |
-| agree_info_disclosure | body | boolean | 아니오 | — | 개인정보 이용 안내 동의 (marketing 플러그인 주입, 선택 항목) |
-| preferred_currency | body | string | 아니오 | — | 선호 결제 통화 (ecommerce 모듈 주입, 가입 시 계정 기본 통화로 저장) |
-| preferred_shipping_country | body | string | 아니오 | — | 선호 배송 국가 코드 (ecommerce 모듈 주입, 가입 시 계정 기본 배송 국가로 저장) |
+| name | body | string | 항목 설정에 따름 (기본값 예) | max 255 | 이름. 회원 항목이라 운영자가 환경설정 > 회원에서 사용과 필수를 정한다. 기본 설정은 사용, 필수다. 사용을 끄면 보내도 저장하지 않는다 |
+| nickname | body | string | 항목 설정에 따름 (기본값 아니오) | max 50 | 닉네임. 닉네임 정책(중복 금지, 금지어)에 걸리면 422. 표시 이름 설정이 닉네임을 요구하면 필수가 된다 |
+| display_name_kind | body | string | 아니오 | 운영자가 허용한 종류 | 표시 이름 종류 선택. 고를 권한이 없거나 허용하지 않은 종류면 422. 닉네임이 필요한 종류를 고르면 닉네임이 필수가 된다 |
+| email | body | string | 예 | max 255 | 이메일 주소. 항목이 아닌 고정 칸이라 늘 필수다 |
+| password | body | string | 예 | 보안 설정의 작성 규칙 | 비밀번호 — 길이·특수문자와 운영자가 켠 조합·추측 방지 규칙(아이디 포함·반복·연속)을 따른다(#736). 고정 칸이라 늘 필수다 |
+| password_confirmation | body | string | 예 | `password` 와 같은 값 | 비밀번호 확인 |
+| mobile | body | string | 항목 설정에 따름 (기본값 아니오) | max 20 | 휴대폰번호 |
+| phone | body | string | 항목 설정에 따름 (기본값 아니오) | max 20 | 전화번호 |
+| language | body | string | 항목 설정에 따름 (기본값 아니오) | `ko`, `en`, `ja` | 언어 코드. 받지 않으면 `ko` 로 저장한다 |
+| custom_fields.{키} | body | 항목 유형에 따름 | 항목 설정에 따름 | 항목 설정에 따름 | 운영자가 추가한 회원 항목의 값. 가입 화면 표시를 켠 항목만 받는다. 폼 경로와 오류 키는 `GET /api/auth/register/fields` 의 `fields[].name` 이다 |
+| fields_version | body | string | 아니오 | max 64 | 화면이 `GET /api/auth/register/fields` 에서 받은 항목 정의 버전. 지금 버전과 다르면 409 `fields_changed`. 보내지 않으면 버전을 대조하지 않고, 회원 항목을 모르는 옛 화면(7.1.x 템플릿)의 가입으로 본다(아래 「옛 화면의 가입」). 저장하지 않고 확장 훅에도 넘기지 않는다 |
+| verification_token | body | string | 가입 전 본인인증 정책을 켠 사이트에서 예 | max 255 | 본인인증을 마치고 받은 토큰. 「인증 값으로 채우고 잠금」을 켠 항목은 보낸 값과 상관없이 인증 값으로 저장한다 |
+| agree_terms | body | boolean | 예 | 동의 값(`true`, `1`, `"on"`, `"yes"`) | 이용약관 동의 (고정 규칙 `accepted`, 미동의면 422) |
+| agree_privacy | body | boolean | 예 | 동의 값(`true`, `1`, `"on"`, `"yes"`) | 개인정보 처리방침 동의 (고정 규칙 `accepted`, 미동의면 422) |
+| marketing_consent | body | boolean | 아니오 | — | 마케팅 정보 수신 전체 동의 (sirsoft-marketing 이 선언한 회원 항목. 옛 키 `agree_marketing_consent` 도 받는다) |
+| email_subscription | body | boolean | 아니오 | — | 광고성 이메일 수신 동의 (sirsoft-marketing 의 채널 항목. 옛 키 `agree_email_subscription` 도 받는다. 운영자가 채널을 더하면 그 키도 같은 방식으로 받는다) |
+| third_party_consent | body | boolean | 아니오 | — | 제3자 정보 제공 동의 (sirsoft-marketing. 옛 키 `agree_third_party_consent`) |
+| info_disclosure | body | boolean | 아니오 | — | 개인정보 이용 안내 동의 (sirsoft-marketing. 옛 키 `agree_info_disclosure`) |
+| ecommerce_preferred_currency | body | string | 아니오 | 고를 수 있는 통화 | 결제 통화 (sirsoft-ecommerce 가 선언한 회원 항목. 옛 키 `preferred_currency` 도 받는다) |
+| ecommerce_preferred_shipping_country | body | string | 아니오 | 배송 가능 국가 | 배송국가 (sirsoft-ecommerce. 옛 키 `preferred_shipping_country` 도 받는다) |
 
+> 받는 키와 필수 여부는 운영자의 회원 항목 설정에서 옵니다. 이 표는 기본 설정과 번들 확장을 기준으로 적은 것이고, 지금 사이트가 받는 항목은 `GET /api/auth/register/fields` 가 알려 줍니다.
+>
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.auth.register_validation_rules`).
 
 **요청 예시**
@@ -1305,17 +1691,22 @@ Content-Type: application/json
     "nickname": "예시 이름",
     "email": "user@example.com",
     "password": "Password123!",
+    "password_confirmation": "Password123!",
     "mobile": "010-1234-5678",
     "phone": "010-1234-5678",
     "language": "ko",
-    "agree_terms": "예시값",
-    "agree_privacy": "예시값",
-    "agree_email_subscription": true,
-    "agree_marketing_consent": true,
-    "agree_third_party_consent": true,
-    "agree_info_disclosure": true,
-    "preferred_currency": "예시값",
-    "preferred_shipping_country": "KR"
+    "custom_fields": {
+        "job": "직장인"
+    },
+    "fields_version": "55e0c42db93a",
+    "agree_terms": true,
+    "agree_privacy": true,
+    "marketing_consent": true,
+    "email_subscription": true,
+    "third_party_consent": true,
+    "info_disclosure": true,
+    "ecommerce_preferred_currency": "KRW",
+    "ecommerce_preferred_shipping_country": "KR"
 }
 ```
 
@@ -1369,15 +1760,42 @@ HTTP/1.1 201
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`auth.register_failed` — `error.errors` 에 필드별 메시지) |
+| 409 | Conflict | 요청의 `fields_version` 이 지금 항목 정의 버전과 다른 경우(화면을 연 뒤 운영자가 회원 항목을 바꿨다). 검증보다 먼저 판정하므로 422 대신 이 응답이 온다. 최상위 `error_code` 가 `fields_changed` 이고 `data.fields_version` 에 지금 버전이 실린다. `fields_version` 을 보내지 않은 요청에는 나오지 않는다 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`auth.register_failed` — `error.errors` 에 필드별 메시지). 오류 키는 항목의 폼 경로다(운영자 추가 항목은 `custom_fields.{키}`) |
 | 428 | Precondition Required | 가입 전 본인인증 정책이 매칭되었으나 유효한 `verification_token` 이 없는 경우 (`core.auth.before_register` 훅) |
+| 403 | Forbidden | 사이트가 일반 회원가입을 받지 않음(7.2.0 — 환경설정 「일반 회원가입 받기」 꺼짐 또는 `core.auth.self_registration_open` 필터): `auth.registration_disabled` |
 | 429 | Too Many Requests | 같은 IP 의 분당 가입 요청 한도를 넘은 경우 (`auth.too_many_attempts` — `Retry-After` 헤더에 남은 초). 한도는 보안 환경설정 `register_rate_limit_per_minute`(기본 10) |
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
-회원가입(공개). 성공 시 `201 auth.register_success` 와 `data.token`/`data.user` 를 반환해 가입 직후 로그인 상태로 이어진다. `agree_*` 동의 파라미터(약관/개인정보/이메일수신/마케팅/제3자제공/정보공개)는 가입 시점의 동의 이력으로 기록된다 — 그중 `agree_email_subscription`/`agree_marketing_consent`/`agree_third_party_consent`/`agree_info_disclosure` 및 `preferred_currency`/`preferred_shipping_country` 는 marketing·ecommerce 확장이 훅(`core.auth.register_validation_rules`)으로 주입하는 파라미터로, 해당 확장 비활성 시 무시된다. 검증 실패 시 `422 auth.register_failed`. 요청 수는 같은 IP 기준 분당 한도로 제한한다(7.1.6, 보안 환경설정 `register_rate_limit_per_minute`). 이미 쓰는 이메일 안내 문구는 가입 흐름을 위해 그대로 둔다.
+회원가입(공개). 성공 시 `201 auth.register_success` 와 `data.token`/`data.user` 를 반환해 가입 직후 로그인 상태로 이어진다. 검증 실패 시 `422 auth.register_failed`. 요청 수는 같은 IP 기준 분당 한도로 제한한다(7.1.6, 보안 환경설정 `register_rate_limit_per_minute`). 이미 쓰는 이메일 안내 문구는 가입 흐름을 위해 그대로 둔다.
+
+받는 칸은 두 갈래다. 이메일, 비밀번호, 이용약관 동의, 개인정보 처리방침 동의는 고정 규칙이라 사이트 설정과 무관하게 필수다. 이름, 닉네임, 휴대폰, 전화번호, 언어와 운영자 추가 항목, 확장이 선언한 항목은 회원 항목이라 운영자가 환경설정 > 회원에서 정한 사용 여부, 필수 여부, 가입 화면 표시를 따른다. 이름은 기본 설정이 필수일 뿐 고정 필수가 아니다. 운영자가 이름의 필수를 풀거나 사용을 끄면 이름 없이 가입되고, 사용을 끈 사이트에서는 보낸 이름도 저장하지 않는다. 사용을 끈 항목과 가입 화면 표시를 끈 항목의 값은 요청에 실려 와도 버린다.
+
+운영자 추가 항목은 `custom_fields.{키}` 로, 확장이 선언한 항목(sirsoft-marketing 의 동의 항목, sirsoft-ecommerce 의 결제 통화와 배송국가)은 항목 키 그대로 최상위에 보낸다. 확장 항목의 옛 요청 키(`agree_marketing_consent`, `preferred_currency` 등)는 정식 키가 비어 있을 때만 정식 키로 옮겨 받는다. 해당 확장이 꺼져 있으면 그 키는 무시된다. 약관과 동의 항목의 값은 가입 시점의 동의 이력으로 기록된다.
+
+**옛 화면의 가입**: `fields_version` 을 싣지 않은 가입은 회원 항목 조각이 없는 옛 화면(7.1.x 템플릿)에서 왔다고 본다. 그 화면에 입력칸이 없던 항목, 곧 운영자 추가 항목과 확장이 선언한 항목, 그리고 7.1.x 가입 화면에 없던 기본 항목(국가, 시간대, 홈페이지, 주소, 서명, 자기소개)은 필수 규칙을 값을 보냈을 때만 건다(보낸 값의 형식 규칙과 빈 값 거부는 그대로다). 7.1.x 가입 화면에 있던 이름, 닉네임, 휴대폰, 전화번호, 언어의 규칙은 그대로다. 그렇게 필수 항목을 건너뛴 가입도 201 로 끝나고, 추가 정보 입력 대기 표시를 남기지 않으므로 쓰기 요청이 403 `required_fields_pending` 으로 막히지 않는다. 빈 항목은 템플릿을 7.2.0 으로 올린 뒤 운영자가 채운다. 서버 로그에 「옛 화면 호환」 기록이 남는다.
+
+화면은 `GET /api/auth/register/fields` 가 준 `fields_version` 을 함께 보낸다. 그 사이 운영자가 항목을 바꿨으면 검증 오류보다 먼저 아래 409 가 온다(「없는 칸이 필수」 같은 엉뚱한 오류를 막는다). 화면은 항목을 다시 불러 그린다.
+
+```json
+{
+    "success": false,
+    "message": "가입 항목이 바뀌었습니다. 화면을 새로 불러왔습니다.",
+    "data": {
+        "fields_version": "8a94cf438e2c"
+    },
+    "error_code": "fields_changed"
+}
+```
+
+본인인증을 마치고 온 가입은 `verification_token` 을 함께 보낸다. 가입 전 본인인증 정책을 켠 사이트에서는 이 토큰이 필수이고, 켜지 않은 사이트에서도 받는다. 토큰이 유효하면 「인증 값으로 채우고 잠금」을 켠 항목은 보낸 값과 달라도 오류 없이 인증 값으로 저장된다. 잠금을 켜지 않은 채움 항목은 화면이 `default` 로 받은 값을 폼 값으로 넣어 보내야 저장된다.
+
+`display_name_kind` 는 표시 이름 종류를 고를 권한이 있는 가입에서만 받는다. 닉네임이 필요한 종류를 고르면 닉네임이 필수가 된다.
 
 
 ### POST /api/auth/reset-password
@@ -1393,6 +1811,7 @@ HTTP/1.1 201
 | token | body | string | 예 | — | 인증/검증 토큰 |
 | email | body | email | 예 | — | 이메일 주소 |
 | password | body | string | 예 | 보안 설정의 작성 규칙 | 새 비밀번호 — 작성 규칙(길이·특수문자·조합·추측 방지)을 따르고, 재사용 금지가 켜져 있으면 최근 N개를 거부한다. 재사용 판정은 **토큰이 유효할 때만** 한다(추측 오라클 차단 — #736). 성공하면 모든 기기가 로그아웃된다 |
+| redirect_prefix | body | string | 아니오 | `admin` | 재설정 화면 구분값 — `admin` 전달 시 관리자 재설정 화면으로 보고 비밀번호 인증 정책을 관리자 경로로 판정한다(거절 응답의 `redirect_url` 이 관리자 로그인), 미지정 시 사용자 화면 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.auth.reset_password_validation_rules`).
 
@@ -1438,6 +1857,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 비밀번호 재설정을 실제 반영한다(공개). 재설정 메일의 `token` 과 `email`, 새 `password` 를 받아 비밀번호를 갱신하고 `message: auth.password_reset_success`. 토큰 만료/불일치 등 검증 실패 시 `422 auth.password_reset_failed`. 반영 전 토큰 유효성만 먼저 확인하려면 `/api/auth/validate-reset-token` 을 사용한다. 가입되지 않은 이메일과 토큰이 틀린 이메일은 같은 필드(`token`)·같은 문구로 답해 계정 존재를 알려 주지 않는다(7.1.6). 요청 수는 같은 IP 기준 분당 한도로 제한하며(`/api/auth/validate-reset-token` 과 한 카운터, 비밀번호 찾기와는 별도) 넘으면 429 다.
@@ -1482,7 +1903,7 @@ _단건 응답: `data` 객체의 필드._
 | status_label | string | `활성` | 상태의 사람이 읽는 라벨 (상태 Enum label() 산물) |
 | status_variant | string | `success` | 상태 표시 색상/스타일 변형 키 (상태 Enum variant() 산물 — UI 배지용) |
 | is_admin | boolean | `true` | 관리자 역할 보유 여부 (User::isAdmin() — 역할 관계 기반 파생) |
-| homepage | null | `null` | 홈페이지 URL |
+| homepage | string | `https://example.com` | 홈페이지 URL |
 | mobile | null | `null` | 휴대폰 번호 |
 | phone | null | `null` | 전화번호 |
 | zipcode | null | `null` | 우편번호 |
@@ -1492,6 +1913,8 @@ _단건 응답: `data` 객체의 필드._
 | bio | null | `null` | 자기소개 |
 | last_login_at | string | `2026-08-04 19:00:10` | last login 일시 |
 | email_verified_at | string | `2026-07-30 23:37:44` | email verified 일시 |
+| has_password | boolean | `true` | 비밀번호가 있는지 — false 면 외부 인증(소셜 로그인 등)으로만 가입해 비밀번호 로그인을 할 수 없는 회원 (비밀번호 값 자체는 내보내지 않음) |
+| email_deliverable | boolean | `true` | 이메일로 메일(인증번호 등)을 받을 수 있는지 — false 면 대체 이메일(`…@social.invalid`) 회원이라 본인 재확인 화면이 메일 대신 다른 수단을 보인다 (주소 자체는 이 값에 싣지 않음) |
 | timezone | string | `Asia/Seoul` | 사용자 시간대 (예: Asia/Seoul, UTC) |
 | modules_count | array | `[]` | 접근 가능 모듈 수 (modules_count 속성이 로드된 경우에만 포함 — whenLoaded 성격의 조건부 필드) |
 | plugins_count | array | `[]` | 접근 가능 플러그인 수 (plugins_count 속성이 로드된 경우에만 포함) |
@@ -1508,6 +1931,11 @@ _단건 응답: `data` 객체의 필드._
 | updated_at | string | `2026-08-04 19:00:10` | 최종 수정 일시 |
 | is_owner | boolean | `true` | 현재 인증 사용자가 이 리소스의 소유자인지 여부 (BaseApiResource 표준 메타) |
 | abilities | object | `{"can_read":true,"can_create":true,"can_update":true,"can…` | 현재 사용자가 이 리소스에 수행 가능한 작업 불리언 맵 (can_update, can_delete 등 — 권한 맵 기반) |
+| can_edit_layouts | boolean | `false` | 본인이 레이아웃 편집기에 들어갈 수 있는지 (`User::hasPermission('core.templates.layouts.edit', admin)` — 편집기 API 가드와 같은 판정. 사용자 사이트의 편집 진입 단추가 읽는다, #869) |
+| pending_required_fields | array | `[]` | 비어 있는 필수 회원 항목의 키(7.2.0). 비어 있지 않으면 사용자 화면이 추가 정보 입력 화면으로 보내고, 그 회원의 쓰기 요청은 `403` `required_fields_pending` 으로 거부됩니다 |
+| display_name | string\|null | `길동이` | 다른 회원에게 보이는 이름(사이트 기본 영역). `name`, `nickname` 은 원본 그대로이고 이 값이 더해진다 |
+| display_name_kind | string\|null | `nickname` | 회원이 고른 표시 이름 종류. 고르지 않았으면 null (회원 기본 종류로 보인다) |
+| can_choose_display_name | boolean | `true` | 표시 이름 종류를 직접 고를 수 있는지 (권한 `core.profile.display_name.choose` 가 있고 운영자가 허용한 종류가 둘 이상) |
 | notify_post_complete | boolean | `false` | 게시판 새 글 작성 완료 알림 수신 설정 (marketing 플러그인 주입) |
 | notify_post_reply | boolean | `false` | 내 게시글에 답글 달림 알림 수신 설정 (marketing 플러그인 주입) |
 | notify_comment | boolean | `false` | 내 게시글에 댓글 달림 알림 수신 설정 (marketing 플러그인 주입) |
@@ -1568,11 +1996,13 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 프론트(사용자) 레이아웃 전역 부트스트랩 엔드포인트. `_user_base.g7.html` 의 `current_user` data_source 가 모든 페이지 진입 시 호출한다. 관리자 `user` 와 달리 응답을 `UserResource::toAuthArray()` 로 만들어 `core.user.filter_resource_data` 필터를 적용하므로, marketing 플러그인·ecommerce 모듈이 훅으로 병합한 필드(`notify_*`, `marketing_consent*`, `channels`, `ecommerce_*` 등)가 함께 내려온다. 이 필드들은 확장 소유이므로 상세 설명은 각 확장 문서를 따른다. 로그인 시 이 응답이 계정 영속 통화를 덮어쓰는 계약(D-LOGIN-CUR)의 출처다.
 
-**인증 계약**: 이 경로(`api.auth.user`)는 `auth:sanctum` 으로 인증이 필수다. 인증 여부와 무관하게 게스트 컨텍스트가 필요한 화면은 `optional.sanctum` 이 걸린 `/api/user/auth/user`(`api.user.auth.user`)를 사용해야 한다 — 프론트 `data_source` 의 `auth_mode: "optional"` 이 이 경로에 대응한다. 두 경로의 미들웨어 차이가 곧 `auth_required`/`auth_mode` 계약이므로 변경 시 프론트와 함께 검토한다(이슈 #64).
+**인증 계약**: 이 경로(`api.auth.user`)는 `auth:sanctum` 으로 인증이 필수다. `/api/user/auth/user`(`api.user.auth.user`)도 로그인을 요구한다(7.2.0, 그 그룹은 `optional.sanctum` 이지만 본인 토큰 경로는 `auth:sanctum`) — 비로그인 문맥이 필요한 화면은 사용자 조회를 부르지 않고 `auth_mode: "optional"` 데이터소스로 401 을 견딘다. 두 경로의 미들웨어 차이가 곧 `auth_required`/`auth_mode` 계약이므로 변경 시 프론트와 함께 검토한다(이슈 #64).
 
 **계정 상태**: 이 경로는 `check.user_status:core.profile.read` 를 건다 — 활성이 아닌 회원(비활성·차단·탈퇴·가입대기·휴면)이 이미 가진 토큰으로 부르면 그 회원 역할에 `core.profile.read`(내 정보 조회) 권한이 있을 때만 200, 없으면 403 과 상태 사유다. 라우트 `auth_required` 판정이 이 응답을 보므로, 403 이면 마이페이지 대신 로그인 화면으로 간다. 같은 판정이 `GET /api/me` 에도 걸리고(`me.md` 「계정 상태와 조회」), `POST /api/auth/logout` 등 쓰기는 권한과 무관하게 상태로 403 이다.
 
@@ -1589,6 +2019,7 @@ HTTP/1.1 200
 | --- | --- | --- | --- | --- | --- |
 | token | body | string | 예 | — | 인증/검증 토큰 |
 | email | body | email | 예 | — | 이메일 주소 |
+| redirect_prefix | body | string | 아니오 | `admin` | 재설정 화면 구분값 — `admin` 전달 시 관리자 재설정 화면으로 보고 비밀번호 인증 정책을 관리자 경로로 판정한다(거절 응답의 `redirect_url` 이 관리자 로그인), 미지정 시 사용자 화면 |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.auth.validate_reset_token_messages`).
 
@@ -1639,16 +2070,20 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 비밀번호 재설정 토큰의 유효성만 사전 확인한다(공개, 비밀번호 미변경). 재설정 화면(`admin_reset_password.g7.html`/`auth/reset_password.g7.html`) 진입 시 토큰/이메일이 유효한지 먼저 검사해, 만료·위조 링크면 즉시 오류 화면을 보이고 유효하면 새 비밀번호 입력 폼을 노출하는 용도다. 실제 반영은 `/api/auth/reset-password` 가 담당한다. 가입되지 않은 이메일도 토큰이 틀린 것과 같은 응답을 받는다(7.1.6). 요청 수는 `/api/auth/reset-password` 와 한 카운터로 같은 IP 기준 분당 한도를 받는다.
+
+유효한 링크인데 그 회원이 비밀번호 인증을 쓸 수 없으면(외부 인증 확장의 회사 계정 로그인 강제 등) `422` 와 `errors.code = auth.password_auth_disabled`, 다른 로그인 수단 이름 `errors.method_label`·시작 주소 `errors.redirect_url` 을 준다(7.2.0). 관리자 재설정 화면은 `redirect_prefix=admin` 을 실어 그 주소가 관리자 로그인으로 오게 한다 — `/api/auth/reset-password` 도 같다.
 
 
 ### POST /api/user/auth/logout
 <!-- @generated:start:api.user.auth.logout -->
 - **라우트명**: `api.user.auth.logout`
 - **컨트롤러**: `App\Http\Controllers\Api\Auth\AuthController@logout`
-- **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근) + `permission:core.auth.logout`
+- **인증/권한**: `auth:sanctum`
 
 **요청 파라미터**
 
@@ -1660,7 +2095,7 @@ _요청 파라미터 없음._
 POST /api/user/auth/logout HTTP/1.1
 Host: api.example.com
 Accept: application/json
-Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생략 가능)
+Authorization: Bearer {YOUR_TOKEN}
 ```
 
 **응답 필드** (`data` 내부)
@@ -1686,20 +2121,23 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.auth.logout`)이 없는 경우 |
 
 <!-- @generated:end -->
 
+> 7.2.0: 응답 `data.redirect_url`(string|null) — 외부 인증 확장(`core.auth.logout_redirect_url`)이 정한 로그아웃 뒤 이동 경로. 같은 출처 경로만 실리고 없으면 `null`. 엔진은 값이 있으면 그 경로로, 없으면 로그인 화면으로 간다.
+
 **설명**
 
-`/user` prefix 그룹의 사용자 로그아웃. 공용 경로 `/api/auth/logout` 과 동일하게 현재 토큰을 폐기하되, `permission:core.auth.logout` 권한 게이트를 추가로 통과해야 한다. 세션 시작(`start.api.session`)이 걸린 공용 경로와 달리 권한 기반 접근 제어가 필요한 흐름에서 사용한다.
+`/user` prefix 그룹의 사용자 로그아웃. 공용 경로 `/api/auth/logout` 과 동일하게 현재 토큰을 폐기한다. 로그인한 본인의 행위라 로그인(`auth:sanctum`)만 요구한다.
+
+> 7.2.0: 이 그룹의 본인 토큰 경로(`logout`·`logout-all-devices`·`user`·`refresh`)는 역할 권한(`core.auth.logout`·`core.auth.user`·`core.auth.refresh`)을 요구하지 않는다. 그 권한은 코어가 선언한 적이 없어 어떤 회원도 가질 수 없었고, 경로가 모든 회원에게 403 이었다(사용자 화면 토큰 갱신이 늘 실패). 비로그인 요청은 401 이다.
 
 
 ### POST /api/user/auth/logout-all-devices
 <!-- @generated:start:api.user.auth.logout-all-devices -->
 - **라우트명**: `api.user.auth.logout-all-devices`
 - **컨트롤러**: `App\Http\Controllers\Api\Auth\AuthController@logoutFromAllDevices`
-- **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근) + `permission:core.auth.logout`
+- **인증/권한**: `auth:sanctum`
 
 **요청 파라미터**
 
@@ -1711,7 +2149,7 @@ _요청 파라미터 없음._
 POST /api/user/auth/logout-all-devices HTTP/1.1
 Host: api.example.com
 Accept: application/json
-Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생략 가능)
+Authorization: Bearer {YOUR_TOKEN}
 ```
 
 **응답 필드** (`data` 내부)
@@ -1737,9 +2175,9 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.auth.logout`)이 없는 경우 |
 
 <!-- @generated:end -->
+
 
 **설명**
 
@@ -1750,7 +2188,7 @@ HTTP/1.1 200
 <!-- @generated:start:api.user.auth.refresh -->
 - **라우트명**: `api.user.auth.refresh`
 - **컨트롤러**: `App\Http\Controllers\Api\Auth\AuthController@refresh`
-- **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근) + `permission:core.auth.refresh`
+- **인증/권한**: `auth:sanctum`
 
 **요청 파라미터**
 
@@ -1762,7 +2200,7 @@ _요청 파라미터 없음._
 POST /api/user/auth/refresh HTTP/1.1
 Host: api.example.com
 Accept: application/json
-Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생략 가능)
+Authorization: Bearer {YOUR_TOKEN}
 ```
 
 **응답 필드** (`data` 내부)
@@ -1814,21 +2252,22 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.auth.refresh`)이 없는 경우 |
 | 423 | Locked | 계정이 잠긴 경우. 응답 형태는 로그인 엔드포인트의 423 과 동일하다 (`auth.account_locked` / `auth.account_locked_permanently` — `errors.locked_until`, `errors.retry_after_seconds`, `errors.permanent`). 잠긴 계정은 기존 세션으로도 토큰을 연장할 수 없으며, 차단 시 기존 토큰도 폐기되지 않는다 |
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
-`/user` prefix 그룹의 토큰 갱신. 공용 `refresh` 와 동작은 같으나 `permission:core.auth.refresh` 권한 게이트를 추가로 통과해야 한다. 이 그룹(`routes/api.php:271`)은 `optional.sanctum` + `RefreshTokenExpiration` 미들웨어 아래 있어 토큰 만료 정책 갱신과 함께 동작한다.
+`/user` prefix 그룹의 토큰 갱신(엔진 `AuthManager` 의 사용자 갱신 주소). 로그인한 본인의 행위라 로그인(`auth:sanctum`)만 요구한다(7.2.0 — 그 전에는 선언된 적 없는 `core.auth.refresh` 권한을 요구해 모든 회원이 403 이었다). 이 그룹은 `RefreshTokenExpiration` 미들웨어 아래 있어 토큰 만료 정책 갱신과 함께 동작한다.
 
 
 ### GET /api/user/auth/user
 <!-- @generated:start:api.user.auth.user -->
 - **라우트명**: `api.user.auth.user`
 - **컨트롤러**: `App\Http\Controllers\Api\Auth\AuthController@user`
-- **인증/권한**: `optional.sanctum` (선택적 인증: 회원/비회원 모두 접근) + `permission:core.auth.user`
+- **인증/권한**: `auth:sanctum`
 
 **요청 파라미터**
 
@@ -1840,7 +2279,7 @@ _요청 파라미터 없음._
 GET /api/user/auth/user HTTP/1.1
 Host: api.example.com
 Accept: application/json
-Authorization: Bearer {YOUR_TOKEN}   (optional.sanctum: 비회원은 헤더 생략 가능)
+Authorization: Bearer {YOUR_TOKEN}
 ```
 
 **응답 필드** (`data` 내부)
@@ -1862,7 +2301,7 @@ _단건 응답: `data` 객체의 필드. 컨트롤러 메서드가 공용 `GET /
 | abilities | object | `{"can_read":true,"can_update":true, …}` | 이 리소스에 수행 가능한 작업 불리언 맵 |
 | (확장 병합 필드) | — | `notify_*`, `marketing_consent*`, `ecommerce_*` 등 | marketing 플러그인·ecommerce 모듈이 `core.user.filter_resource_data` 필터로 병합 — 전수는 `GET /api/auth/user` 응답 필드 표 참조 |
 
-> 필드 전수(코어 + 확장 병합)는 `GET /api/auth/user` 의 응답 필드 표와 동일하므로 그 표를 SSoT 로 참조합니다. 게스트(비인증) 요청은 `optional.sanctum` 을 통과하지만 `request()->user()` 가 없으므로 이 경로는 인증 사용자 컨텍스트에서만 사용자 객체를 반환합니다.
+> 필드 전수(코어 + 확장 병합)는 `GET /api/auth/user` 의 응답 필드 표와 동일하므로 그 표를 SSoT 로 참조합니다. 비로그인 요청은 `auth:sanctum` 에서 401 입니다(7.2.0 — 그 전에는 선언된 적 없는 `core.auth.user` 권한 판정으로 모든 요청이 막혔습니다).
 
 **응답 예시**
 
@@ -1915,13 +2354,14 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 403 | Forbidden | 요구 권한(`core.auth.user`)이 없는 경우 |
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
-`/user` prefix 그룹(`routes/api.php:271`)의 현재 사용자 정보. 이 그룹은 `optional.sanctum` 미들웨어 아래 있어 **비인증(게스트) 요청도 통과**하며, 게스트 컨텍스트가 필요한 프론트 화면의 `data_source`(`auth_mode: "optional"`)가 이 경로를 소비한다. 응답 필드는 인증된 경우 공용 `/api/auth/user` 와 동일 형태(`toAuthArray` 병합 포함)이며, 이 경로에는 추가로 `permission:core.auth.user` 권한 게이트가 걸린다. 실측이 `403` 으로 제외된 것은 샘플 사용자에 해당 권한이 없었기 때문으로, 응답 shape 은 공용 `user` 경로를 참조한다.
+`/user` prefix 그룹의 현재 사용자 정보. 그룹은 `optional.sanctum` 이지만 이 경로는 로그인(`auth:sanctum`)을 요구한다 — 비로그인 요청은 401 이다. 응답 필드는 공용 `/api/auth/user` 와 동일 형태(`toAuthArray` 병합 포함)다. 7.2.0 전에는 선언된 적 없는 `core.auth.user` 권한을 요구해 모든 요청이 403 이었다(실측이 403 으로 빠졌던 이유).
 
 > **인증 계약 요약(이슈 #64)**: `api.auth.user`(`auth:sanctum`, 필수) ↔ `api.user.auth.user`(`optional.sanctum`, 선택). 프론트 `data_source` 의 `auth_required: true` 는 전자에, `auth_mode: "optional"` 은 후자에 대응한다. 어느 한쪽 미들웨어를 바꾸면 프론트 소비 계약이 침묵 속에서 깨지므로 반드시 양쪽 문서를 함께 갱신한다.
 

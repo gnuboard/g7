@@ -503,7 +503,6 @@ const labelRow: React.CSSProperties = { display: 'flex', alignItems: 'center', g
 const inlineSourceLabel: React.CSSProperties = { fontSize: 11, color: '#94a3b8' };
 const textInput: React.CSSProperties = { padding: '5px 8px', fontSize: 12, border: '1px solid #cbd5e1', borderRadius: 6, width: '100%', minWidth: 0, boxSizing: 'border-box' };
 const lockedValue: React.CSSProperties = { padding: '5px 8px', fontSize: 12, border: '1px solid #e2e8f0', borderRadius: 6, background: '#f1f5f9', color: '#64748b' };
-const sourceBadge: React.CSSProperties = { fontSize: 11, color: '#64748b' };
 const lockBadge: React.CSSProperties = { fontSize: 11, color: '#7c3aed' };
 const advToggle: React.CSSProperties = { alignSelf: 'flex-start', padding: '2px 0', fontSize: 12, fontWeight: 600, color: '#475569', background: 'transparent', border: 'none', cursor: 'pointer' };
 const advBody: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 8, paddingLeft: 14, marginTop: 4, minWidth: 0 };

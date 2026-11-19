@@ -1,4 +1,4 @@
-// e2e:allow 결제창 수단을 서버가 저장한 결제수단으로 정하도록 바로잡은 것이다. PG 결제창은 외부 테스트 서버라 spec 으로 재현하지 않고, NHN KCP 테스트 상점에서 신용카드와 가상계좌 결제창을 실제로 열어 확인했다(단위 테스트가 결정 함수를 잠근다). 복합과세 분할(#820)은 Vitest 금액 단언으로 잠근다 — 복합과세 협의 사이트코드가 없어 KCP 매출 구분은 실측 불가.
+// e2e:allow 결제창 수단을 서버가 저장한 결제수단으로 정하도록 바로잡은 것이다. PG 결제창은 외부 테스트 서버라 spec 으로 재현하지 않고, NHN KCP 테스트 상점에서 신용카드와 가상계좌 결제창을 실제로 열어 확인했다(단위 테스트가 결정 함수를 잠근다). 복합과세 분할(#820)은 Vitest 금액 단언으로 잠근다 — 복합과세 협의 사이트코드가 없어 KCP 매출 구분은 실측 불가. / #855 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측(이력 20261114_0354 매트릭스 T2, T4-c, T8-e~g)과 Vitest 로 고정한다.
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import {
@@ -7,6 +7,7 @@ import {
     rememberPendingClose,
     reportPaymentWindowClosed,
 } from '../paymentCloseReport';
+import { sitePath } from '../apiUrl';
 import { guestOwnershipHeaders } from '../guestOrderToken';
 import { translateNhnkcp as t } from '../translate';
 import {
@@ -60,6 +61,33 @@ function claimCancelReturnUrl(pgPaymentData: PgPaymentData): string | null {
 }
 
 /**
+ * 결제창을 열기 전의 실패를 알립니다.
+ *
+ * 주문 결제는 주문서의 결제 오류 모달(`nhnkcp_payment_error_modal`)에 문구를 띄우고 주문서의 진행 표시를 내린다.
+ * 클레임 추가결제는 신청서 화면에서 열려 그 모달이 없다 — 모달을 열면 안내 없이 「결제 진행 중…」에 멈췄다. 그래서 문구를 담아
+ * 던지고, 이커머스 신청서 핸들러가 `G7Core.dispatch` 결과로 받아 진행 표시를 내리고 문구를 보여 준다(#855). 상태 코드 없는
+ * 오류라 템플릿의 상태 코드별 오류 처리(403 토스트 등)는 타지 않는다.
+ *
+ * @param G7Core 코어 전역
+ * @param pgPaymentData 결제 데이터 (클레임 추가결제 판별용)
+ * @param message 사용자에게 보일 문구
+ * @param paymentMethod 결제수단 (주문서 상태에 남길 값, 없으면 생략)
+ * @throws Error 클레임 추가결제면 문구를 담아 던진다
+ */
+function reportPaymentError(G7Core: any, pgPaymentData: PgPaymentData, message: string, paymentMethod?: string): void {
+    if (claimCancelReturnUrl(pgPaymentData)) {
+        throw new Error(message);
+    }
+
+    G7Core?.state?.setLocal?.({
+        paymentErrorMessage: message,
+        isSubmittingOrder: false,
+        ...(paymentMethod !== undefined ? { paymentMethod } : {}),
+    });
+    G7Core?.modal?.open?.('nhnkcp_payment_error_modal');
+}
+
+/**
  * 사용자가 결제창을 닫은 뒤를 마무리합니다.
  *
  * 주문 결제는 서버에 닫힘을 보고하고 체크아웃의 진행 표시를 내린다. 클레임 추가결제는 주문 전용
@@ -83,7 +111,9 @@ export async function finishCancelledPayment(
 
     if (claimReturnUrl) {
         G7Core?.state?.setLocal?.({ isSubmittingOrder: false, paymentMethod });
-        window.location.href = claimReturnUrl;
+        // 서버가 주는 신청서 상세 주소는 앱 내 경로(`/mypage/...`)라 사이트 마운트 접두사를 붙여 이동한다
+        // (절대 URL·이미 접두사가 붙은 값은 그대로 — 멱등).
+        window.location.href = sitePath(claimReturnUrl);
 
         return;
     }
@@ -412,31 +442,23 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
 
     if (typeof paymentMethod !== 'string' || paymentMethod === '') {
         console.error('[sirsoft-pay_nhnkcp] payment method is required (paymentMethod or pgPaymentData.payment_method)');
-        G7Core?.state?.setLocal?.({
-            paymentErrorMessage: t('payment.error.method_missing', '결제수단 정보가 없어 결제를 진행할 수 없습니다. 주문서를 다시 열어 주세요.'),
-            isSubmittingOrder: false,
-        });
-        G7Core?.modal?.open?.('nhnkcp_payment_error_modal');
+        reportPaymentError(
+            G7Core,
+            pgPaymentData,
+            t('payment.error.method_missing', '결제수단 정보가 없어 결제를 진행할 수 없습니다. 주문서를 다시 열어 주세요.'),
+        );
         return;
     }
     let closeReportContext: PaymentCloseReportContext | null = null;
 
     try {
         if (!isSupportedKcpCurrency(pgPaymentData.currency)) {
-            const message = unsupportedCurrencyMessage(pgPaymentData.currency);
-            G7Core?.state?.setLocal?.({ paymentErrorMessage: message, isSubmittingOrder: false, paymentMethod });
-            G7Core?.modal?.open?.('nhnkcp_payment_error_modal');
+            reportPaymentError(G7Core, pgPaymentData, unsupportedCurrencyMessage(pgPaymentData.currency), paymentMethod);
             return;
         }
 
         if (isNhnKcpApplePayMethod(paymentMethod) && !isIosMobileDevice()) {
-            const message = applePayUnsupportedMessage();
-            G7Core?.state?.setLocal?.({
-                paymentErrorMessage: message,
-                isSubmittingOrder: false,
-                paymentMethod,
-            });
-            G7Core?.modal?.open?.('nhnkcp_payment_error_modal');
+            reportPaymentError(G7Core, pgPaymentData, applePayUnsupportedMessage(), paymentMethod);
             return;
         }
 
@@ -445,6 +467,13 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
 
         if (!configJson.data) {
             console.error('[sirsoft-pay_nhnkcp] Failed to fetch client config', configJson);
+
+            // 주문 결제는 종전대로 콘솔에만 남긴다. 클레임 추가결제는 빈 문구로 던져 신청서가 진행 표시를 내리고
+            // 「결제를 시작하지 못했습니다.」로 대신 안내하게 한다 — 그냥 돌아가면 성공으로 읽혀 「결제 진행 중…」에 멈춘다(#855, 토스·나이스와 같은 처리).
+            if (claimCancelReturnUrl(pgPaymentData)) {
+                throw new Error('');
+            }
+
             return;
         }
 
@@ -502,8 +531,7 @@ export async function requestPaymentHandler(action: any, _context?: any): Promis
             ?? firstFieldError
             ?? (error instanceof Error ? error.message : 'Unknown error');
 
-        G7Core?.state?.setLocal?.({ paymentErrorMessage: errorMessage, isSubmittingOrder: false, paymentMethod });
-        G7Core?.modal?.open?.('nhnkcp_payment_error_modal');
+        reportPaymentError(G7Core, pgPaymentData, errorMessage, paymentMethod);
     }
 }
 

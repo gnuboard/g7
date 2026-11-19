@@ -2,7 +2,6 @@
  * @file ComponentDisabledContract.test.tsx
  * @description 사용자 템플릿 컴포넌트의 disabled·권한 계약 — 관리자 템플릿과 대칭 (7.1.0 abilities 게이트)
  */
-import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -35,7 +34,7 @@ const items: NotificationItem[] = [
 ];
 
 describe('사용자 템플릿 컴포넌트 계약', () => {
-  // @scenario component=HtmlEditor,disabled=true
+  // @scenario component=HtmlEditor,state=disabled
   // @effects html_editor_disabled_blocks_editing
   it('HtmlEditor 는 disabled 를 readOnly 와 같이 다룬다', () => {
     const { container } = render(<HtmlEditor content="본문" disabled />);

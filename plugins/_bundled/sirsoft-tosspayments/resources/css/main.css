@@ -1,68 +1,122 @@
+/* g7-extension-css:start — convert-layout-classes.mjs 가 생성·갱신하는 블록. 손으로 고치지 않는다. */
+@import "tailwindcss/theme.css" layer(theme) prefix(paytosspayments);
+@import "tailwindcss/utilities.css" layer(utilities) prefix(paytosspayments) source(none);
+@import "./g7-extension.generated.css";
+@source "../layouts";
+@source "../extensions";
+@source "../js";
+@source not "../js/**/__tests__";
+@source "../../src";
+@theme {
+  --font-sans: 'Pretendard Variable', 'Pretendard', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-200: #bfdbfe;
+  --color-primary-300: #93c5fd;
+  --color-primary-400: #60a5fa;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+  --color-primary-800: #1e40af;
+  --color-primary-900: #1e3a8a;
+  --color-primary-950: #172554;
+  --color-success-50: #f0fdf4;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+  --color-warning-50: #fefce8;
+  --color-warning-500: #eab308;
+  --color-warning-600: #ca8a04;
+  --color-danger-50: #fef2f2;
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+}
+@custom-variant dark (&:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])));
+/* g7-extension-css:end */
+
 /**
  * sirsoft-tosspayments 화면 스타일 — 토스페이먼츠 결제 환경설정의 상태 유틸리티와 주문 상세 가상계좌 입금 안내의 색
  *
  * 관리자 템플릿은 자기 layouts/ 만 훑어 CSS 를 만들므로, 이 플러그인 레이아웃에만 있는 호버·다크 모드 짝은 규칙이
  * 생성되지 않는다. 그런 짝을 이 플러그인이 접두 클래스로 직접 제공한다(다른 확장·템플릿 클래스를 정의하거나 덮지 않는다).
- * 다크 모드: 관리자 템플릿은 `<html class="dark">` 로 전환하므로 `.dark` 조상 선택자로 짝을 둔다.
+ * 다크 모드: 템플릿 종류와 무관한 중립 표식(`<html data-g7-color-scheme="dark">`)으로 짝을 둔다.
+ * 「다크 안의 라이트」(관리자 다크 화면 속 라이트 미리보기)는 제외하는 규격이고, 특이도는 템플릿의 `.dark .x` 와 같다.
+ * 칸: 호버 짝은 접두 유틸리티와 같은 일반 칸(층 없음), 가상계좌 입금 안내의 의미 색은 템플릿이 덮을 수 있는
+ * 가장 낮은 칸 `@layer g7-extension` 에 둔다.
+ * 일부 색은 16진수로 적는다 — 이전 판 빌드가 내던 값과 화면 계산값을 같게 유지하려는 것이다(같은 팔레트 색, 이름은 줄 끝 주석)
  */
 
 /* 경고 상자 안의 링크 — 호버 글자색 */
 @media (hover: hover) {
     .pay-tosspayments-link-warning:hover {
-        color: oklch(41.4% 0.112 45.904); /* amber-900 */
+        color: #7b3306; /* amber-900 */
     }
 
-    .dark .pay-tosspayments-link-warning:hover {
-        color: oklch(96.2% 0.059 95.617); /* amber-100 */
+    .pay-tosspayments-link-warning:hover:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        color: #fef3c6; /* amber-100 */
     }
 }
 
 /*
  * 주문 상세 결제 정보 카드의 가상계좌 입금 안내 — 회원·비회원 주문 상세와 신청서 상세(사용자 템플릿)에 붙는다.
- * 사용자 템플릿도 `<html class="dark">` 로 다크 모드를 켜므로 같은 `.dark` 조상 선택자로 짝을 둔다.
+ * 관리자·사용자 템플릿 모두 같은 중립 표식으로 다크 짝을 둔다.
  */
 
-/* 위쪽 구분선 */
-.pay-tosspayments-divider {
-    border-color: oklch(92.8% 0.006 264.531); /* gray-200 */
+@layer g7-extension {
+    /* 위쪽 구분선 */
+    .pay-tosspayments-divider {
+        border-color: #e5e7eb; /* gray-200 */
+    }
+
+    .pay-tosspayments-divider:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        border-color: #364153; /* gray-700 */
+    }
+
+    /* 안내 제목 */
+    .pay-tosspayments-text-strong {
+        color: #1e2939; /* gray-800 */
+    }
+
+    .pay-tosspayments-text-strong:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        color: #e5e7eb; /* gray-200 */
+    }
+
+    /* 항목 이름 */
+    .pay-tosspayments-text-muted {
+        color: #6a7282; /* gray-500 */
+    }
+
+    .pay-tosspayments-text-muted:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        color: #99a1af; /* gray-400 */
+    }
+
+    /* 항목 값 */
+    .pay-tosspayments-text-value {
+        color: #101828; /* gray-900 */
+    }
+
+    .pay-tosspayments-text-value:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        color: #fff; /* white */
+    }
+
+    /* 경고 — 입금 기한 안내 */
+    .pay-tosspayments-tone-warning {
+        color: oklch(55.5% 0.163 48.998); /* amber-700 */
+    }
+
+    .pay-tosspayments-tone-warning:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        color: oklch(82.8% 0.189 84.429); /* amber-400 */
+    }
 }
 
-.dark .pay-tosspayments-divider {
-    border-color: oklch(37.3% 0.034 259.733); /* gray-700 */
-}
-
-/* 안내 제목 */
-.pay-tosspayments-text-strong {
-    color: oklch(27.8% 0.033 256.848); /* gray-800 */
-}
-
-.dark .pay-tosspayments-text-strong {
-    color: oklch(92.8% 0.006 264.531); /* gray-200 */
-}
-
-/* 항목 이름 */
-.pay-tosspayments-text-muted {
-    color: oklch(55.1% 0.027 264.364); /* gray-500 */
-}
-
-.dark .pay-tosspayments-text-muted {
-    color: oklch(70.7% 0.022 261.325); /* gray-400 */
-}
-
-/* 항목 값 */
-.pay-tosspayments-text-value {
-    color: oklch(21% 0.034 264.665); /* gray-900 */
-}
-
-.dark .pay-tosspayments-text-value {
-    color: #fff; /* white */
-}
-
-/* 경고 — 입금 기한 안내 */
-.pay-tosspayments-tone-warning {
-    color: oklch(55.5% 0.163 48.998); /* amber-700 */
-}
-
-.dark .pay-tosspayments-tone-warning {
-    color: oklch(82.8% 0.189 84.429); /* amber-400 */
+/*
+ * 층 밖 의미 규칙 — 관리자 템플릿이 층 없이 둔 배치 규칙의 이 플러그인 사본.
+ *
+ * 생성 파일(g7-extension.generated.css)은 의미 클래스를 모두 가장 낮은 칸에 담지만, 템플릿에서 이 규칙은 층 밖이라
+ * 같은 요소의 유틸리티를 이겼다. 이 플러그인 유틸리티는 층 없이 실리므로 같은 우선순위를 지키려고
+ * 이 규칙만 층 밖(유틸리티 뒤)에 한 번 더 둔다. 값은 템플릿 정의와 같다.
+ */
+.pay-tosspayments-flex-between {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }

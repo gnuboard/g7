@@ -20,6 +20,7 @@ interface IdentityPolicyRepositoryInterface
      * key 로 조회합니다.
      *
      * @param  string  $key  정책 키 (예: core.auth.signup_before_submit)
+     * @return IdentityPolicy|null 정책 또는 null
      */
     public function findByKey(string $key): ?IdentityPolicy;
 
@@ -30,6 +31,7 @@ interface IdentityPolicyRepositoryInterface
      *
      * @param  string  $key  정책 키
      * @param  string  $sourceType  'core' | 'module' | 'plugin' | 'admin'
+     * @return bool 존재하면 true
      */
     public function existsByKeyAndSourceType(string $key, string $sourceType): bool;
 
@@ -37,6 +39,7 @@ interface IdentityPolicyRepositoryInterface
      * id 로 조회합니다.
      *
      * @param  int  $id  정책 PK
+     * @return IdentityPolicy|null 정책 또는 null
      */
     public function findById(int $id): ?IdentityPolicy;
 
@@ -116,6 +119,7 @@ interface IdentityPolicyRepositoryInterface
      *
      * @param  string  $sourceType  'core' | 'module' | 'plugin' | 'admin'
      * @param  string  $sourceIdentifier  확장 식별자
+     * @return int 정책 개수
      */
     public function countBySource(string $sourceType, string $sourceIdentifier): int;
 
@@ -147,6 +151,16 @@ interface IdentityPolicyRepositoryInterface
      * @return array<string, Collection<int, IdentityPolicy>> route name → 매칭 정책 컬렉션
      */
     public function getRouteScopeIndex(): array;
+
+    /**
+     * hook scope 활성 정책의 훅 이름 인덱스를 캐시 기반으로 반환합니다.
+     *
+     * route 인덱스와 같은 캐시 태그·무효화(IdentityPolicy saved/deleted, 확장 활성화·비활성화)를 쓴다. 훅이 발화할 때마다
+     * 정책 표를 조회하지 않고 「이 훅에 켜진 정책이 있는지」를 알 때 쓴다. 비활성 확장이 선언한 정책은 빠진다.
+     *
+     * @return array<string, Collection<int, IdentityPolicy>> hook name → 매칭 정책 컬렉션
+     */
+    public function getHookScopeIndex(): array;
 
     /**
      * scope='hook' 활성 정책의 target 목록(중복 제거)을 반환합니다.

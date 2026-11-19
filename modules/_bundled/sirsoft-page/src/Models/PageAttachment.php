@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Page\Models;
 
 use App\Helpers\InlineMediaPolicy;
 use App\Models\User;
+use App\Support\AssetUrl;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -156,15 +157,19 @@ class PageAttachment extends Model
      * 게시판·이커머스 표준과 동일하게 공개 hash 라우트로 단일화한다.
      * 미발행 콘텐츠 다운로드 차단은 공개 라우트 내부의 권한 게이트가 담당한다.
      *
-     * @return string 다운로드 URL
+     * 상대 URL 생성(`absolute: false`)은 요청의 base URL(마운트 접두사)을 벗기므로 접두사를
+     * 다시 붙인다 — 소비 지점이 `<img src>`·링크라 라우터를 거치지 않아, 붙이지 않으면 하위
+     * 폴더 설치에서 사이트 밖을 가리킨다. 게시판·이커머스 형제와 같은 규칙이다.
+     *
+     * @return string 다운로드 URL (마운트 접두사를 실은 루트 상대 경로)
      */
     public function downloadUrl(): string
     {
-        return route(
+        return AssetUrl::sitePath(route(
             'api.modules.sirsoft-page.pages.attachment.download',
             ['hash' => $this->hash],
             absolute: false
-        );
+        ));
     }
 
     /**
@@ -174,6 +179,10 @@ class PageAttachment extends Model
      * 첨부를 권한자 화면(관리자 상세 등)에 표시할 때는 한시 서명 URL 을 발급한다.
      * 서명 URL 은 게이트를 통과한 응답 직렬화 시점에만 발급되고(PageResource),
      * 서빙 엔드포인트가 유효 서명을 무인증 허용한다 — 무서명 게이트는 종전과 동일.
+     *
+     * 두 분기 모두 마운트 접두사를 붙인다(사유는 `downloadUrl()` 과 같다). 서명 분기도 같다 —
+     * 상대 서명 URL 은 base 를 벗긴 경로에 서명되고 검증(`hasValidSignature(absolute: false)`)도
+     * base 를 뺀 `Request::path()` 로 다시 조립하므로, 서명된 값 밖에 붙인 접두사는 서명을 깨지 않는다.
      *
      * @param  bool  $signed  한시 서명 URL 발급 여부 (미발행 첨부의 <img> 렌더용)
      * @return string|null 미리보기 URL (이미지가 아니면 null)
@@ -185,19 +194,19 @@ class PageAttachment extends Model
         }
 
         if ($signed) {
-            return URL::temporarySignedRoute(
+            return AssetUrl::sitePath(URL::temporarySignedRoute(
                 'api.modules.sirsoft-page.pages.attachment.preview',
                 now()->addMinutes(self::SIGNED_PREVIEW_TTL_MINUTES),
                 ['hash' => $this->hash],
                 absolute: false
-            );
+            ));
         }
 
-        return route(
+        return AssetUrl::sitePath(route(
             'api.modules.sirsoft-page.pages.attachment.preview',
             ['hash' => $this->hash],
             absolute: false
-        );
+        ));
     }
 
     /**

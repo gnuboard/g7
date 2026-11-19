@@ -73,7 +73,8 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.abilities` + `data
 | id | string(uuid) | `fe113064-3aaa-41c7-bf31-2e8527b0c480` | 알림 식별자. **uuid 문자열** — 삭제·일괄 삭제가 이 값을 받습니다 |
 | member | object\|null | `{...}` | 수신 회원. 회원이 이미 지워졌으면 `null` (다형 관계라 외래키가 없습니다) |
 | member.uuid | string(uuid) | `a2be5d84-…` | 회원 uuid |
-| member.name | string | `알림함회원E2E` | 회원 이름. 탈퇴 회원이면 익명 표기로 치환 |
+| member.name | string\|null | `알림함회원E2E` | 회원의 표시 이름(관리자 화면 영역). 탈퇴 회원이면 익명 표기로 치환 |
+| member.real_name | string | `홍길동` | 회원의 실명. 요청한 관리자에게 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 실립니다(아니면 키 없음) |
 | member.email | string\|null | `e2e-inbox-member@example.test` | 회원 이메일. 노출 게이트를 통과한 관리자 응답에만 실립니다 |
 | member.is_withdrawn | boolean | `false` | 탈퇴 여부 |
 | type | string | `new_order_admin` | 알림 종류 키 (`data.type`, 알림 정의의 type). 없으면 알림 클래스명 |

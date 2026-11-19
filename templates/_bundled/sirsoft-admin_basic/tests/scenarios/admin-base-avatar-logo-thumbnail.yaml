@@ -1,0 +1,22 @@
+feature: 관리자 헤더 사용자 사진·로고 — 실제 응답 필드와 썸네일 규격 (#869)
+
+description: |
+  관리자 헤더 사진이 응답에 없는 필드(avatar_url)를 읽어 늘 대신 그림이 나오던 결함을 고치고(avatar),
+  사진은 xs, 사이드바·모바일 로고는 md 썸네일 규격으로 요청한다. 로고와 헤더 사진은 첫 화면 자리라 지연 로딩하지 않는다.
+  이름이 없을 때 사진의 대체 문구는 다국어 키(admin.default_user_name)다.
+
+axes:
+  target:
+    - header_avatar
+    - logo
+
+effects:
+  - avatar_reads_response_field
+  - avatar_eager_and_translated_alt
+  - logo_thumbnail_eager
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-base-avatar-logo-thumbnail.test.ts
+
+notes: |
+  e2e_browser=partial — 사진이 있는 관리자 계정으로 헤더 사진 표시와 size=xs 요청은 3단계 브라우저 실측(결함군 행)에서 잰다.

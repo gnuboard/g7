@@ -13,9 +13,9 @@
 ## 계층 지도
 
 <!-- @intent START -->
-Controller와 Command는 같은 실행 서비스를 사용합니다. 서비스의 이력 접근은 RateRunRepositoryInterface를 경유하며, 이커머스 설정 변경은 EcommerceSettingsService의 선택 제공자 가드를 통과합니다. 화면은 상태/이력 API와 코어 플러그인 설정/알림 API를 조합합니다.
+Controller와 Command는 같은 실행 서비스를 사용합니다. 서비스의 이력 접근은 RateRunRepositoryInterface를 경유합니다. 이커머스 통화 설정은 이커머스 공개 환율 계약 `Modules\Sirsoft\Ecommerce\Contracts\Currency\ExchangeRateGateway` 로만 읽고 씁니다. `getCurrencySettings()` 가 기본통화·선택 제공자·통화 목록을 읽기 전용 객체로 돌려주고, `applyExchangeRates($rates, 'koreaexim')` 는 선택 제공자가 이 플러그인일 때만 저장합니다(다르면 빈 결과). 이커머스 설정 서비스·Model·Repository 는 이커머스 내부라 쓰지 않습니다. 화면은 상태/이력 API와 코어 플러그인 설정/알림 API를 조합합니다.
 
-환율 저장은 이커머스 서비스의 인스턴스·config 미러·통화 설정 및 변환 캐시 무효화를 재사용합니다. 환율은 SEO 메타 설정 키가 아니므로 SEO 설정 저장 훅을 발행하지 않습니다. 신규 플러그인 1.0.0은 최초 마이그레이션만 필요하며, 모듈 1.3.0 변경에는 기존 스키마나 데이터 변환이 없어 업그레이드 스텝을 추가하지 않습니다. 플러그인 커맨드는 확장이 등록하고, 코어 관리자 개발 대시보드의 커맨드 목록 대상은 아닙니다.
+환율 저장은 이커머스가 계약 뒤에서 인스턴스·config 미러·통화 설정 및 변환 캐시 무효화를 처리합니다. 저장이 실패하면 계약이 공개 예외 `ExchangeRateSaveException` 을 던지고, 실행 서비스는 이를 잡아 실행 이력을 `save_failed`(환율 저장 실패)로 남기고 실패 알림 대상으로 삼습니다 — 관리자 「지금 갱신」이 500 으로 끝나지 않고, 이 실행은 재적용 원본(`raw_response`)이 되지 않습니다. 환율은 SEO 메타 설정 키가 아니므로 SEO 설정 저장 훅을 발행하지 않습니다. 신규 플러그인 1.0.0은 최초 마이그레이션만 필요하며, 이커머스 1.3.0·1.4.0 변경에는 기존 스키마나 데이터 변환이 없어 업그레이드 스텝을 추가하지 않습니다. 플러그인 커맨드는 확장이 등록하고, 코어 관리자 개발 대시보드의 커맨드 목록 대상은 아닙니다.
 <!-- @intent END -->
 
 ## 디렉토리
@@ -35,12 +35,15 @@ Controller와 Command는 같은 실행 서비스를 사용합니다. 서비스�
 | `src/Enums/` | 상태·타입·분류 | 문자열 리터럴 대신 Enum 을 SSoT 로 둔다 |
 | `src/routes/` | 라우트 | 모든 라우트에 `name()` 필수 |
 | `database/migrations/` | 마이그레이션 | 한국어 comment + `down()` 필수, 기설치본은 업그레이드 스텝으로 백필 |
+| `upgrades/` | 업그레이드 스텝 | DB·설정 구조 변경 시 작성 (모듈/플러그인 전용) |
 | `resources/layouts/` | 레이아웃 소스 `.g7.html` (짝 `.json` 은 굽기 산출. 컴포넌트 종류는 `data-type`, 컴파일은 템플릿과 무관) | `php artisan plugin:update sirsoft-koreaexim --force` (빌드 불필요) |
 | `resources/js/` | 프론트 엔트리·핸들러 | `php artisan plugin:build` → `php artisan plugin:update sirsoft-koreaexim --force` |
 | `editor-spec.json` | 레이아웃 편집기 스펙 | `php artisan plugin:update sirsoft-koreaexim --force` |
+| `dist/` | 커밋되는 빌드 산출물 | `--production` 으로 재빌드 (sourceMappingURL 잔존 금지) |
 | `config/` | 확장 config | 설정 기본값은 settings 스키마와 어긋나지 않게 |
 | `tests/` | 테스트 | 변경 범위만 필터 실행 |
 | `CHANGELOG.md` | 변경 이력 | 버전 상향 시 항목 추가 (미기재 시 버전 상향 불가) |
+| `components.json` | 편집기 컴포넌트 선언 (레이아웃 작성자가 읽는 props 계약) | `php artisan plugin:update sirsoft-koreaexim --force` |
 | `assets/icon.svg` | 확장 아이콘 (관리자 목록·설치 마법사 카드) | 정사각·100KB 이하·스크립트 없는 SVG — 교체 후 `php artisan plugin:update sirsoft-koreaexim --force` |
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |

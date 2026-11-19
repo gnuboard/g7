@@ -1,3 +1,6 @@
+// @scenario element=source_type_filter
+// (매니페스트 소속 표기 — 회차 16 W6: 선언된 파일은 마킹을 최소 1개 가진다)
+
 // e2e:allow 관리자 설정 전용 partial(출처필터 제거·목적박스 유지)은 레이아웃 렌더 테스트로 검증, develop 출시 동작 머지 복구라 신규 E2E 불요
 /**
  * 본인인증 정책 데이터소스/네비게이션의 source_identifier 형식 회귀 테스트.
@@ -47,6 +50,7 @@ function findNodes(node: any, predicate: (n: any) => boolean, results: any[] = [
 }
 
 describe('게시판 본인인증 정책 — source_identifier 형식 회귀', () => {
+    /** @effects policy_list_renders_board_module_policies */
     it('데이터소스 source_identifier 는 모듈 식별자만 사용 (module: 접두사 금지)', () => {
         const ds = (settingsLayout.data_sources ?? []).find(
             (d: any) => d.id === 'boardIdentityPolicies'
@@ -57,6 +61,7 @@ describe('게시판 본인인증 정책 — source_identifier 형식 회귀', ()
         }
     });
 
+    /** @effects policy_list_renders_board_module_policies */
     it('partial 내 모든 source_identifier 등장은 모듈 식별자 형식만 허용', () => {
         const all = [
             ...findValuesByKey(settingsLayout, 'source_identifier'),
@@ -76,6 +81,8 @@ describe('게시판 본인인증 정책 — 출처 필터 정리', () => {
         (d: any) => d.id === 'boardIdentityPolicies'
     );
 
+    // @scenario element=source_type_filter
+    // @effects source_type_filter_removed_from_dom
     it('데이터소스에 source_type 파라미터가 없다 (게시판 전용 고정 → 출처 필터 무의미)', () => {
         expect(ds).toBeTruthy();
         // source_identifier 게시판 고정은 유지, source_type 필터 파라미터는 제거
@@ -83,12 +90,16 @@ describe('게시판 본인인증 정책 — 출처 필터 정리', () => {
         expect(ds.params?.source_identifier).toBe(MODULE_IDENTIFIER);
     });
 
+    // @scenario element=scope_filter
+    // @effects scope_filter_remains_functional, search_filter_remains_functional
     it('데이터소스의 scope/search/purpose 필터는 유지된다 (회귀 방지)', () => {
         expect(ds.params).toHaveProperty('scope');
         expect(ds.params).toHaveProperty('search');
         expect(ds.params).toHaveProperty('purpose');
     });
 
+    // @scenario element=source_type_filter
+    // @effects source_type_filter_removed_from_dom
     it('filter_card 에 출처(source_type) Select 가 없다', () => {
         const sourceTypeSelects = findNodes(
             identityPoliciesPartial,
@@ -97,6 +108,8 @@ describe('게시판 본인인증 정책 — 출처 필터 정리', () => {
         expect(sourceTypeSelects).toHaveLength(0);
     });
 
+    // @scenario element=search_filter
+    // @effects scope_filter_remains_functional, search_filter_remains_functional
     it('scope 필터 Select 와 search Input 은 유지된다 (회귀 방지)', () => {
         const scopeSelects = findNodes(
             identityPoliciesPartial,
@@ -110,6 +123,8 @@ describe('게시판 본인인증 정책 — 출처 필터 정리', () => {
         expect(searchInputs.length).toBeGreaterThan(0);
     });
 
+    // @scenario element=purpose_badge_card
+    // @effects purpose_badge_card_kept_with_module_filter
     it('인증 목적 배지 카드(identity_purposes_card)는 유지되며 모듈 식별자로 필터한다', () => {
         // 인증 목적 배지 카드는 유지한다. 모듈이 등록한 목적이 있으면 배지 표시, 없으면 빈 안내.
         // 출처 필터 정리는 source_type Select 제거에 한정하고 카드 제거는 하지 않는다.
@@ -128,6 +143,8 @@ describe('게시판 본인인증 정책 — 출처 필터 정리', () => {
         expect(emptyNotices.some((t) => t.includes('purposes_empty'))).toBe(true);
     });
 
+    // @scenario element=source_type_filter
+    // @effects source_type_filter_removed_from_dom
     it('레이아웃 어디에도 query.source_type 잔여 참조가 없다', () => {
         const serialized = JSON.stringify({ settingsLayout, identityPoliciesPartial });
         expect(serialized).not.toContain('query.source_type');

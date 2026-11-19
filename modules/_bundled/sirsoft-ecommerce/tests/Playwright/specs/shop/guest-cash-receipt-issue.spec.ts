@@ -23,8 +23,9 @@
  *   - 무통장입금 결제수단 활성 + 입금 계좌 1건 이상
  *   위 전제가 갖춰진 환경에서 test.describe.skip → test.describe 로 바꿔 실행한다.
  *
- * @scenario guest_cash_receipt_issue
- * @effects cash_receipt_issued, order_detail_reflects_receipt, payment_currency_amount_consistent
+ * @scenario guest-cash-receipt-issue
+ * 효과 요약(마커 아님 — 평문): 발급 성공과 카드 즉시 갱신, 비회원 응답의 영수증 키와 결제 통화 금액 일치,
+ *   입금확인 기본 입금액의 서버 검증 통과. 효과 마킹은 각 테스트 주석에 있다.
  */
 import { test, expect } from '@playwright/test';
 
@@ -45,7 +46,7 @@ async function lookupGuestOrder(page: import('@playwright/test').Page): Promise<
 }
 
 test.describe.skip('비회원 현금영수증', () => {
-  // @scenario guest_cash_receipt_issue=issue_then_render
+  // @scenario case=issue_then_render
   // @effects cash_receipt_issued, order_detail_reflects_receipt
   test('발급에 성공하면 주문상세 카드가 즉시 발급완료로 바뀌고 영수증 링크가 노출된다', async ({ page }) => {
     await lookupGuestOrder(page);
@@ -75,8 +76,8 @@ test.describe.skip('비회원 현금영수증', () => {
     await expect(receiptLink).toHaveAttribute('href', /receipts?\//);
   });
 
-  // @scenario guest_cash_receipt_issue=amount_matches_charge
-  // @effects payment_currency_amount_consistent
+  // @scenario case=amount_matches_charge
+  // @effects guest_order_detail_includes_cash_receipt_keys, payment_currency_amount_consistent
   test('발급 금액이 구매자가 실제로 청구받은 결제 통화 금액과 일치한다', async ({ page }) => {
     // 주문상세 응답의 결제 통화 실청구액과 발급 응답의 금액이 같아야 한다.
     // base 통화 금액을 쓰면 두 값이 갈라진다(결함 3).
@@ -103,8 +104,8 @@ test.describe.skip('비회원 현금영수증', () => {
 });
 
 test.describe.skip('관리자 무통장 입금확인 — 결제 통화 정합', () => {
-  // @scenario guest_cash_receipt_issue=deposit_confirm_prefill
-  // @effects payment_currency_amount_consistent
+  // @scenario case=deposit_confirm_prefill
+  // @effects deposit_confirm_prefill_passes_server_validation
   test('입금확인 모달의 기본 입금액이 서버 검증 금액과 같아 첫 시도에 저장된다', async ({ page }) => {
     await page.goto(`/admin/ecommerce/orders/${ORDER_NUMBER}`);
 

@@ -6,6 +6,10 @@ use App\Extension\HookManager;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Modules\Sirsoft\Ecommerce\Contracts\Currency\Data\CurrencySettings;
+use Modules\Sirsoft\Ecommerce\Contracts\Currency\Data\ExchangeRateApplyResult;
+use Modules\Sirsoft\Ecommerce\Contracts\Currency\ExchangeRateGateway;
+use Modules\Sirsoft\Ecommerce\Exceptions\ExchangeRateSaveException;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Plugins\Sirsoft\Koreaexim\Enums\RunStatus;
 use Plugins\Sirsoft\Koreaexim\Enums\RunTrigger;
@@ -41,7 +45,7 @@ class UpdateExchangeRatesCommandTest extends PluginTestCase
             KoreaeximRateRunItem::where('run_id', '>', $originalMaxId)->delete();
             KoreaeximRateRun::where('id', '>', $originalMaxId)->delete();
             $this->travelTo(Carbon::create(2027, 1, 1, $time === 'before_11' ? 10 : 13, 0, 0, 'Asia/Seoul')->addDays($index));
-            $this->configure(['auto_manage' => $auto === 'on', 'auth_key' => $key === 'set' ? 'fixture-key' : '', 'run_days' => $day === 'run_day' ? [1, 2, 3, 4, 5, 6, 7] : [], 'retry_max' => 3, 'update_time' => '11:30', 'lookback_days' => 0]);
+            $this->configure(['auto_manage' => $auto === 'on', 'auth_key' => $key === 'set' ? 'fixture-key' : '', 'run_days' => $day === 'run_day' ? [1, 2, 3, 4, 5, 6, 7] : [], 'retry_max' => 3, 'lookback_days' => 0]);
             $currency = $original;
             if ($base === 'unsupported') {
                 $currency['currencies'][] = ['code' => 'VND', 'name' => ['ko' => '동'], 'symbol' => 'VND', 'base_unit' => 1, 'exchange_rate' => 20, 'decimal_places' => 0, 'rounding_unit' => 1, 'rounding_method' => 'round'];
@@ -194,7 +198,9 @@ class UpdateExchangeRatesCommandTest extends PluginTestCase
     public function test_before_eleven_no_data_is_retried(): void
     {
         $this->travelTo(now('Asia/Seoul')->setTime(9, 30));
-        $this->configure(['lookback_days' => 0, 'update_time' => '09:30']);
+        $this->configure(['lookback_days' => 0]);
+        // 운영자가 스케줄 관리에서 정기 갱신을 09:30 으로 바꾼 상태 — 재시도는 그 시각 이후에만 돈다
+        $this->useUpdateSchedule('30 9 * * *');
         Http::fake(['*' => Http::response([])]);
         $run = $this->runUpdate();
         $this->assertStringContainsString('11시 이전', $run->message);
@@ -293,6 +299,59 @@ class UpdateExchangeRatesCommandTest extends PluginTestCase
         $this->travel(1)->hours();
         $this->assertNull($this->runUpdate(RunTrigger::Retry));
         Http::assertSentCount(1);
+    }
+
+    /**
+     * 쇼핑몰 통화 설정 저장이 실패해도 수동 실행이 예외로 끝나지 않고 「환율 저장 실패」 이력으로 남는다 — 관리자 「지금 갱신」이 500 이던 결함(#916).
+     * 그 실행은 재적용 원본이 되지 않는다(응답 원본을 싣지 않음).
+     *
+     * @effects manual_run_save_failure_recorded
+     *
+     * @return void 반환값 없음
+     */
+    public function test_save_failure_is_recorded_instead_of_throwing(): void
+    {
+        Http::fake(['*' => Http::response($this->quotes())]);
+        $real = app(ExchangeRateGateway::class);
+        $this->app->instance(ExchangeRateGateway::class, new class($real) implements ExchangeRateGateway
+        {
+            /**
+             * 실제 계약을 감쌉니다.
+             *
+             * @param  ExchangeRateGateway  $real  실제 계약 구현
+             */
+            public function __construct(private ExchangeRateGateway $real) {}
+
+            /**
+             * 실제 통화 설정을 돌려줍니다.
+             *
+             * @return CurrencySettings 통화 설정
+             */
+            public function getCurrencySettings(): CurrencySettings
+            {
+                return $this->real->getCurrencySettings();
+            }
+
+            /**
+             * 저장 실패를 흉내 냅니다.
+             *
+             * @param  array<string, mixed>  $rates  환율
+             * @param  string  $source  제공자
+             * @return ExchangeRateApplyResult 결과
+             */
+            public function applyExchangeRates(array $rates, string $source): ExchangeRateApplyResult
+            {
+                throw new ExchangeRateSaveException;
+            }
+        });
+
+        $run = app(ExchangeRateUpdateService::class)->execute(RunTrigger::Manual);
+
+        $this->assertNotNull($run);
+        $this->assertSame(RunStatus::SaveFailed, $run->status);
+        $this->assertSame(__('sirsoft-ecommerce::exceptions.exchange_rate_save_failed'), $run->message);
+        $this->assertNull($run->raw_response);
+        $this->assertNotSame($run->id, app(RateRunRepositoryInterface::class)->latestSuccessful()?->id);
     }
 
     /**

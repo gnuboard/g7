@@ -9,7 +9,6 @@
  * > 호스트 `G7Core.getXxx()`.
  */
 
-import React from 'react';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render } from '@testing-library/react';
 import { SlotContainer } from '../SlotContainer';
@@ -59,7 +58,7 @@ describe('SlotContainer — 렌더 환경 (#141)', () => {
   });
 
   /**
-   * @scenario slot_registration=with_render_env, edit_mode=true
+   * @scenario registration_env=present, container_env=absent
    * @effects preview_slot_and_footer_use_render_env
    */
   it('등록 항목 getRenderEnv 의 레지스트리·엔진·dispatcher·isEditMode 와 componentPath 를 넘긴다', () => {
@@ -84,7 +83,7 @@ describe('SlotContainer — 렌더 환경 (#141)', () => {
   });
 
   /**
-   * @scenario slot_registration=without_render_env, container_context=present
+   * @scenario registration_env=absent, container_env=present
    * @effects preview_slot_and_footer_use_render_env
    */
   it('등록 항목에 환경이 없으면 SlotContainer 자신의 renderEnvRef 를 쓴다', () => {
@@ -105,7 +104,7 @@ describe('SlotContainer — 렌더 환경 (#141)', () => {
   });
 
   /**
-   * @scenario slot_registration=without_render_env, container_context=absent
+   * @scenario registration_env=absent, container_env=absent
    * @effects preview_render_env_falls_back_to_host_outside_preview
    */
   it('환경이 전혀 없으면 호스트 G7Core 값으로 그린다 (편집기 밖 무변화)', () => {

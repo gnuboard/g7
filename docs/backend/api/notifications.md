@@ -8,7 +8,7 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Notifications 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
@@ -149,6 +149,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 인증된 관리자 본인의 사이트내 알림 목록을 최신순(`created_at desc`)으로 페이지네이션해 반환합니다. `read` 파라미터로 미읽음(`unread`)·읽음(`read`)·전체(`all`, 기본)를 필터링하고, `per_page` 미지정 시 15건 단위로 반환합니다. 조회 대상은 항상 요청 사용자 본인의 알림으로 한정되며, 다른 사용자의 알림은 조회되지 않습니다. `_admin_base.g7.html` 헤더의 알림 벨이 이 엔드포인트를 auto_fetch 로 소비하며 WebSocket 알림 수신 시 갱신됩니다. 항목 필드는 `id`, `type`, `type_label`, `subject`, `body`, `url`, `read_at`, `created_at` 로 구성됩니다.
@@ -208,6 +210,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 인증된 관리자 본인의 모든 사이트내 알림(읽음·미읽음 무관)을 삭제합니다. 삭제 대상은 요청 사용자 본인의 알림으로만 한정되며, 응답 `data.deleted_count` 에 삭제된 건수를 반환합니다. 되돌릴 수 없는 작업이므로 UI 에서 확인 절차를 거친 뒤 호출합니다.
@@ -265,6 +269,8 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -335,6 +341,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 `ids` 배열로 지정한 알림들을 일괄 읽음 처리합니다. 처리 대상은 요청 사용자 본인의 미읽음 알림 중 지정된 ID 에 해당하는 것으로 한정되며, 이미 읽음 상태이거나 본인 소유가 아닌 ID 는 무시됩니다. 응답 `data.marked_count` 에 실제 읽음 처리된 건수를 반환합니다. `ids` 는 최소 1개, 최대 100개까지 전달할 수 있습니다.
@@ -393,6 +401,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 인증된 관리자 본인의 미읽음 알림 개수를 집계해 `data.unread_count` 로 반환합니다. `_admin_base.g7.html` 헤더 알림 벨의 미읽음 배지에 사용되며, WebSocket 으로 새 알림이 수신되면 이 값을 재조회해 갱신합니다.
@@ -447,6 +457,7 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
 
 **설명**
 
@@ -532,6 +543,8 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -670,6 +683,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 인증된 사용자 본인의 사이트내 알림 목록을 최신순(`created_at desc`)으로 페이지네이션해 반환합니다. `read` 파라미터로 미읽음(`unread`)·읽음(`read`)·전체(`all`, 기본)를 필터링하고, `per_page` 미지정 시 20건 단위로 반환합니다. 조회 대상은 항상 요청 사용자 본인의 알림으로 한정됩니다. `_user_base.g7.html` 이 이 엔드포인트를 소비하며 WebSocket 알림 수신 시 갱신됩니다. 관리자 스코프(`/api/admin/notifications`)와 동일한 서비스·리소스를 사용하되 권한(`core.user-notifications.*`)과 기본 페이지 크기(20건)가 다릅니다.
@@ -730,6 +745,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 인증된 사용자 본인의 모든 사이트내 알림(읽음·미읽음 무관)을 삭제합니다. 삭제 대상은 요청 사용자 본인의 알림으로만 한정되며, 응답 `data.deleted_count` 에 삭제된 건수를 반환합니다. 되돌릴 수 없는 작업입니다.
@@ -787,6 +804,8 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 
@@ -857,6 +876,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 `ids` 배열로 지정한 알림들을 일괄 읽음 처리합니다. 처리 대상은 요청 사용자 본인의 미읽음 알림 중 지정된 ID 에 해당하는 것으로 한정되며, 이미 읽음 상태이거나 본인 소유가 아닌 ID 는 무시됩니다. 응답 `data.marked_count` 에 실제 읽음 처리된 건수를 반환합니다. `ids` 는 최소 1개, 최대 100개까지 전달할 수 있습니다.
@@ -915,6 +936,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명**
 
 인증된 사용자 본인의 미읽음 알림 개수를 집계해 `data.unread_count` 로 반환합니다. `_user_base.g7.html` 의 알림 미읽음 배지에 사용되며, WebSocket 으로 새 알림이 수신되면 이 값을 재조회해 갱신합니다.
@@ -969,6 +992,7 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
 
 **설명**
 
@@ -1054,6 +1078,8 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명**
 

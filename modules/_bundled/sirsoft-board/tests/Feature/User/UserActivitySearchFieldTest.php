@@ -23,7 +23,7 @@ use PHPUnit\Framework\Attributes\Group;
  * - GET /api/modules/sirsoft-board/me/board-activities
  * - GET /api/modules/sirsoft-board/me/my-comments
  *
- * @scenario surface=mypage_my_posts,search_field=title
+ * @scenario tab=posts,search_field=title
  *
  * @effects mypage_my_posts_search_field_title_only, mypage_my_comments_search_field_post_title
  */
@@ -82,7 +82,7 @@ class UserActivitySearchFieldTest extends BoardTestCase
     /**
      * search_field=title → 본문에만 있는 키워드는 잡지 않는다.
      *
-     * @scenario surface=mypage_my_posts,search_field=title
+     * @scenario tab=posts,search_field=title
      *
      * @effects mypage_my_posts_search_field_title_only
      *
@@ -99,7 +99,7 @@ class UserActivitySearchFieldTest extends BoardTestCase
     /**
      * search_field=content → 제목에만 있는 키워드는 잡지 않는다.
      *
-     * @scenario surface=mypage_my_posts,search_field=content
+     * @scenario tab=posts,search_field=content
      *
      * @effects mypage_my_posts_search_field_content_only
      *
@@ -118,7 +118,7 @@ class UserActivitySearchFieldTest extends BoardTestCase
      *
      * 내 글 검색은 FULLTEXT 가 아니라 LIKE 경로라 트랜잭션 안에서도 행이 보인다.
      *
-     * @scenario surface=mypage_my_posts,search_field=title_content
+     * @scenario tab=posts,search_field=title_content
      *
      * @effects mypage_my_posts_search_field_title_content
      *
@@ -142,7 +142,7 @@ class UserActivitySearchFieldTest extends BoardTestCase
     /**
      * 적용된 search_field 를 data.query 로 에코하고, 모르는 값은 기본값으로 떨어진다.
      *
-     * @scenario surface=mypage_my_posts
+     * @scenario tab=posts
      *
      * @effects mypage_my_posts_echoes_applied_search_field
      *
@@ -171,7 +171,7 @@ class UserActivitySearchFieldTest extends BoardTestCase
     /**
      * search_field=content(기본) → 댓글 내용으로 매칭한다.
      *
-     * @scenario surface=mypage_my_comments,search_field=content
+     * @scenario tab=comments,search_field=content
      *
      * @effects mypage_my_comments_search_field_content
      *
@@ -194,7 +194,7 @@ class UserActivitySearchFieldTest extends BoardTestCase
     /**
      * search_field=post_title → 원글 제목으로 매칭한다 (댓글 내용은 보지 않는다).
      *
-     * @scenario surface=mypage_my_comments,search_field=post_title
+     * @scenario tab=comments,search_field=post_title
      *
      * @effects mypage_my_comments_search_field_post_title
      *
@@ -226,7 +226,7 @@ class UserActivitySearchFieldTest extends BoardTestCase
     /**
      * use_comment=false 게시판의 댓글은 "내 댓글" 목록에서 빠진다.
      *
-     * @scenario surface=mypage_my_comments,board_setting=use_comment_off
+     * @scenario tab=comments,board_setting=use_comment_off
      *
      * @effects mypage_my_comments_excludes_comment_disabled_board
      *
@@ -254,7 +254,7 @@ class UserActivitySearchFieldTest extends BoardTestCase
     /**
      * use_comment=false 게시판은 "댓글 단 글"(activity_type=commented) 집계에서도 빠진다.
      *
-     * @scenario surface=mypage_activities,board_setting=use_comment_off
+     * @scenario tab=activities,board_setting=use_comment_off
      *
      * @effects mypage_activities_commented_excludes_comment_disabled_board
      *

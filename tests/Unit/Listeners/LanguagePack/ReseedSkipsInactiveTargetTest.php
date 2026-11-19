@@ -31,8 +31,11 @@ class ReseedSkipsInactiveTargetTest extends TestCase
      */
     protected function tearDown(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**
@@ -40,9 +43,10 @@ class ReseedSkipsInactiveTargetTest extends TestCase
      *
      * @param  array<int, string>  $activeModules  활성 모듈 식별자
      * @param  array<int, string>  $activePlugins  활성 플러그인 식별자
+     * @param  bool  $filesPresent  활성 디렉터리에 확장 파일이 있다고 볼지 (false 면 실제 디렉터리로 판정 — 시험 식별자는 없다)
      * @return RunSeedersOnLanguagePackLifecycle 리스너
      */
-    private function listener(array $activeModules, array $activePlugins): RunSeedersOnLanguagePackLifecycle
+    private function listener(array $activeModules, array $activePlugins, bool $filesPresent = true): RunSeedersOnLanguagePackLifecycle
     {
         $modules = Mockery::mock(ModuleRepositoryInterface::class);
         $modules->shouldReceive('getActiveModuleIdentifiers')->andReturn($activeModules);
@@ -51,7 +55,24 @@ class ReseedSkipsInactiveTargetTest extends TestCase
         $this->app->instance(ModuleRepositoryInterface::class, $modules);
         $this->app->instance(PluginRepositoryInterface::class, $plugins);
 
-        return $this->app->make(RunSeedersOnLanguagePackLifecycle::class);
+        if (! $filesPresent) {
+            return $this->app->make(RunSeedersOnLanguagePackLifecycle::class);
+        }
+
+        return new class($this->app, $modules, $plugins) extends RunSeedersOnLanguagePackLifecycle
+        {
+            /**
+             * 시험 식별자는 활성 디렉터리가 없으므로 파일이 있다고 봅니다.
+             *
+             * @param  string  $type  modules 또는 plugins
+             * @param  string  $identifier  확장 식별자
+             * @return bool 항상 true
+             */
+            protected function hasActiveFiles(string $type, string $identifier): bool
+            {
+                return true;
+            }
+        };
     }
 
     /**
@@ -92,6 +113,31 @@ class ReseedSkipsInactiveTargetTest extends TestCase
         $listener->handleDeactivated($this->pack(LanguagePackScope::Plugin, 'acme-pay'));
 
         $this->assertSame([], LifecycleWarnings::current()->since($mark), '비활성 확장 시더 재실행은 거짓 경고를 내면 안 된다');
+    }
+
+    /**
+     * DB 에는 활성으로 남았지만 활성 디렉터리에 파일이 없는 확장(파일만 지워진 사이트)은 시더를 부르지 않고 경고도 남기지 않는다.
+     * 종전에는 시더 명령이 「모듈을 찾을 수 없습니다」로 실패해 언어팩 설치·업데이트·켜기가 「일부 항목 실패」와 종료 코드 1 로
+     * 끝났다 — 그 확장은 코드가 없어 돌지 않으므로 다시 시딩할 행도 없다. 시더가 도는 경로(핵심 언어팩의 전체 재시딩과 확장
+     * 범위 언어팩)는 같은 메서드를 지난다.
+     *
+     * @scenario target=active_without_files
+     *
+     * @effects active_target_without_files_skipped_without_warning
+     *
+     * @return void 반환값 없음
+     */
+    public function test_active_target_without_files_is_skipped_without_warning(): void
+    {
+        Artisan::shouldReceive('call')->with('module:seed', Mockery::any())->never();
+        Artisan::shouldReceive('call')->with('plugin:seed', Mockery::any())->never();
+        $listener = $this->listener(activeModules: ['acme-ghost-module'], activePlugins: ['acme-ghost-plugin'], filesPresent: false);
+        $mark = LifecycleWarnings::current()->mark();
+
+        $listener->handleActivated($this->pack(LanguagePackScope::Module, 'acme-ghost-module'));
+        $listener->handleActivated($this->pack(LanguagePackScope::Plugin, 'acme-ghost-plugin'));
+
+        $this->assertSame([], LifecycleWarnings::current()->since($mark), '파일 없는 확장의 시더 재실행은 경고를 내면 안 된다');
     }
 
     /**

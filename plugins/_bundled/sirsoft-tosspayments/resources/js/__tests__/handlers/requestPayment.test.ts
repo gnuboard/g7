@@ -1,10 +1,10 @@
-// e2e:allow 정식 출시 시 제거된 번들 플러그인의 복원 — 신규 프론트 동작 없음 (결제창 진입은 PG 샌드박스 의존). 면세 금액 상한(#820)은 Vitest 단언 — 마일리지 초과 사용 면세 혼합 결제는 실계약 상점에서만 재현
+// e2e:allow 정식 출시 시 제거된 번들 플러그인의 복원 — 신규 프론트 동작 없음 (결제창 진입은 PG 샌드박스 의존). 면세 금액 상한(#820)은 Vitest 단언 — 마일리지 초과 사용 면세 혼합 결제는 실계약 상점에서만 재현 / #855 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측(이력 20261114_0354 매트릭스 T2, T4-c, T8-e~g)과 Vitest 로 고정한다.
 /**
  * requestPayment 핸들러 테스트
  *
  * 토스페이먼츠 결제창 호출 핸들러의 에러 처리 및 모달 열기 동작을 검증합니다.
  *
- * @effects sdk_method_mapped_from_enabled_methods, virtual_account_payload_built,
+ * 효과 요약(마커 아님 — 평문): sdk_method_mapped_from_enabled_methods, virtual_account_payload_built,
  *          escrow_products_attached, escrow_flag_off_true_or_key_absent,
  *          non_krw_domestic_method_blocked,
  *          escrow_products_attached_to_virtual_account_sdk_payload,
@@ -98,6 +98,59 @@ describe('requestPaymentHandler', () => {
 
         // 모달 열기
         expect(mockG7Core.modal.open).toHaveBeenCalledWith('tosspayments_payment_error_modal');
+
+        consoleSpy.mockRestore();
+    });
+
+    /**
+     * 클레임 추가결제는 신청서 화면에서 열린다 — 그 화면에는 주문서 전용 오류 모달이 없어, 모달을 열면 안내 없이
+     * 「결제 진행 중…」에 멈췄다. 문구를 담아 던져 이커머스 신청서 핸들러가 dispatch 결과로 받게 한다 (#855).
+     */
+    // @scenario payment_method=toss_card
+    // @effects claim_payment_entry_failure_is_handed_to_the_claim_screen
+    it('클레임 추가결제의 SDK 에러는 모달을 열지 않고 문구를 담아 던진다', async () => {
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        (window as any).TossPayments = vi.fn().mockReturnValue({
+            payment: vi.fn().mockReturnValue({ requestPayment: vi.fn().mockRejectedValue(new Error('Payment failed')) }),
+        });
+        (window as any).TossPayments.ANONYMOUS = 'ANONYMOUS';
+
+        await expect(requestPaymentHandler({
+            params: {
+                pgPaymentData: {
+                    order_number: 'CP20260915-1145087969',
+                    order_name: '교환 추가결제 (EX-1)',
+                    amount: 6000,
+                    claim_cancel_return_url: '/mypage/claims/EX-1?claim_payment=cancelled&claim_number=EX-1',
+                },
+            },
+        })).rejects.toThrow('Payment failed');
+
+        expect(mockG7Core.modal.open).not.toHaveBeenCalled();
+        expect(mockG7Core.state.setLocal).not.toHaveBeenCalledWith(expect.objectContaining({ paymentErrorMessage: expect.anything() }));
+
+        consoleSpy.mockRestore();
+    });
+
+    // @scenario payment_method=toss_card
+    // @effects claim_payment_entry_failure_is_handed_to_the_claim_screen
+    it('클레임 추가결제에서 설정을 받지 못하면 빈 문구로 던진다 (신청서가 대체 문구를 쓴다)', async () => {
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        mockG7Core.api.get.mockResolvedValueOnce({ data: null });
+
+        const outcome = await requestPaymentHandler({
+            params: {
+                pgPaymentData: {
+                    order_number: 'CP20260915-1145087969',
+                    order_name: '교환 추가결제 (EX-1)',
+                    amount: 6000,
+                    claim_cancel_return_url: '/mypage/claims/EX-1?claim_payment=cancelled&claim_number=EX-1',
+                },
+            },
+        }).then(() => 'resolved', (e: Error) => `rejected:${e.message}`);
+
+        expect(outcome).toBe('rejected:');
+        expect(mockG7Core.modal.open).not.toHaveBeenCalled();
 
         consoleSpy.mockRestore();
     });

@@ -108,6 +108,10 @@ exclusions:
 effects:
   # 11차 develop 병합 유입(7.0.11) — 공개 서빙 캐시 키는 서버 현재 버전으로만 조립한다(클라이언트 ?v 는 HTTP 캐시 우회용).
   - serving_cache_key_uses_server_current_version
+  # issue609 유입(develop-7.2.0 병합 2026-10-31) — 같은 테스트 파일(LayoutServingStaleClientVersionKeyTest)의 메서드가 단 효과.
+  # 소유 매니페스트는 layout-editor-element-placement.yaml 이고, 게이트 필터 `LayoutServing` 에 걸려 함께 돌므로 여기에도 등재한다.
+  - serving_cache_key_uses_server_current_version_not_client_query_version
+  - save_followup_reload_returns_fresh_editor_response_with_new_lock_version
   # #747 유입 — 서빙 응답의 빈 객체·빈 배열 보존(LayoutServingEmptyObjectTest, 소유 매니페스트 layout-serving-empty-object.yaml).
   # 게이트 필터 `LayoutServing` 에 걸려 도는 테스트라 그 effect 도 등재한다. 코어 수정(#759 리베이스로 합류)으로 두 effect 모두 통과한다.
   - empty_object_served_as_object
@@ -234,7 +238,7 @@ effects:
   # 앞의 둘은 자기 본문을 가진 레이아웃과 확장 조각이고, 이 단락은 `_admin_base` 에 26건을 넣었다 —
   # 관리자 전 화면이 상속하는 자리라, 베이스 주석이 제거를 지나치면 한 파일이 아니라 **모든 관리자
   # 화면 응답**에 실린다. 순서상으로는 상속원을 같은 공개 진입점으로 불러 오므로 성립하지만,
-  # "성립할 것이다" 와 "성립한다" 는 다른 말이라 표본을 둔다(66차가 확장 조각에서 데인 형태).
+  # "성립할 것이다" 와 "성립한다" 는 다른 말이라 표본을 둔다(확장 조각에서 실제로 데인 형태).
   # 제거 지점 셋을 모두 끈 상태에서 red 를 실측했다(데이터소스·컴포넌트·모달 주석이 응답에 실려 옴).
   # 어느 축이 덮는지도 양방향으로 갈라 쟀다 — 병합 시점 둘만 꺼도 green, `getLayout` 것만 꺼도
   # green 이므로 **두 축이 각각 독립으로** 덮는다(상속원이 자식과 같은 공개 진입점으로 불려 온다).
@@ -249,7 +253,7 @@ effects:
   # **서빙 경로의 모양이 확장 조각과 결정적으로 다르다** — 조각은 설치 시점에
   # `ValidatesLayoutFiles::resolveAllPartials` 가 부모 레이아웃 안으로 **펼쳐 넣는다**(디스크의 짝
   # `.json` 에만 `{"partial": "…"}` 참조가 남고, DB 에 실리는 것은 펼쳐진 본문이다).
-  # 즉 조각의 주석은 병합 배열 안에 이미 들어간 채 재귀 제거를 함께 맞는다. 66차가 데인 형태는
+  # 즉 조각의 주석은 병합 배열 안에 이미 들어간 채 재귀 제거를 함께 맞는다. 확장 조각에서 데인 형태는
   # 그 반대였다 — 확장 조각은 제거가 **끝난 뒤** 얹혀 지나갔다. 순서가 뒤집혀 있으므로 같은 함정이
   # 성립하지 않고, 위의 `injected_comments_never_reach_the_public_serving_response` 표본이 그대로 덮는다.
   # (예외는 자기 자신을 참조하는 조각뿐이다 — 그것만 참조로 남아 런타임에 풀리는데, 이 단락 범위에
@@ -258,9 +262,9 @@ effects:
   # 앞의 셋은 모두 브라우저에 JSON 을 내보내는 소비자였고, 관리자 화면은 SEO 대상이 아니라 이 경로를
   # 한 번도 타지 않았다. 이 단락이 처음으로 공개 사용자 화면에 주석을 넣는데 그 범위 안
   # `shop/{index,category,show}` 셋이 `<seo>` 를 선언하고 있어, 「관리자에서 초록이니 여기도 초록」으로
-  # 넘기지 않고 표본을 둔다(66차·67차와 같은 규율 — 소비자마다 따로 센다).
+  # 넘기지 않고 표본을 둔다(앞 단락들과 같은 규율 — 소비자마다 따로 센다).
   # 축이 둘인 이유: ⓐ 만 두면 이 경로의 안전이 «제거가 먼저 도는가» 라는 **순서**에 매달리는데,
-  # 66차가 데인 것이 정확히 그 순서였다(확장 조각은 제거 뒤에 얹혔다). ⓑ 는 순서와 무관하게 성립한다.
+  # 확장 조각에서 데인 것이 정확히 그 순서였다(확장 조각은 제거 뒤에 얹혔다). ⓑ 는 순서와 무관하게 성립한다.
   # 실측: 제거 지점 **셋을 모두 끈** 변이에서 ⓐ 만 red 였고 ⓑ 는 그대로 green — 이 경로는 순서가
   # 아니라 구조로 안전하다(봇 HTML 은 컴포넌트 매핑 산출이라 `comment` 키가 실릴 자리가 없다).
   - injected_comments_never_reach_the_seo_bot_render_input
@@ -268,7 +272,7 @@ effects:
   # S21.7 — 같은 명제의 **두 번째 출처(source_type)**. 이 단락은 확장 주입 조각을 다시 밟지만 이번 것은
   # 템플릿이 소유한 조각(`sirsoft-basic/extensions/`)이고, 앞의 표본(S21.3)은 출처가 모듈인 경우만 잰다.
   # 조각을 얹는 경로에는 출처로 갈리는 자리가 실재한다 — `LayoutExtensionService:453` 의 적용 대상 판정과
-  # :663·:748 의 `is_override` 분기가 `source_type === Template` 을 따로 본다. 67차가 데인 형태가
+  # :663·:748 의 `is_override` 분기가 `source_type === Template` 을 따로 본다. S21.3 에서 데인 형태가
   # 「한 소비자에서 초록이 나면 나머지가 보이지 않는다」였고, 여기서는 그 축이 소비자가 아니라 **출처**다.
   # 실측: 제거 지점(`getLayout` 의 applyExtensions 직후)을 끈 변이에서 red — 조각의 문서·노드·액션
   # 주석 셋이 그대로 응답에 실려 나왔다. 원복 후 green. 부재 단언 앞에 조각의 존재를 먼저 확정한다.
@@ -405,6 +409,8 @@ effects:
   # --- S4 fragment 봉투 (target-layout XOR extension-point)
   - fragment_target_conflict_or_missing_is_rejected
   - fragment_inject_props_and_components_are_exclusive
+  # 템플릿 오버라이드 조각이 대상 확장의 버전 제약을 적는다(맞지 않는 판에서는 서빙이 원본으로 되돌린다)
+  - fragment_envelope_accepts_version_constraint
   # --- S5 임베딩 (서브트리 hoist · 노드 키 hoist · 옵션 데이터 래퍼)
   - subtree_is_hoisted_to_its_props_or_node_key
   # Select 옵션은 `<options>` 래퍼가 데이터/노드를 결정적으로 가른다 (D42 G13). 종전 휴리스틱
@@ -474,6 +480,9 @@ effects:
   - bundled_extension_screens_call_no_template_handler
   - portable_mixed_with_split_presets_is_warned
   - consistent_breakpoints_are_not_warned
+  # 한 노드의 열린 커스텀 구간이 다른 열린 구간·프리셋과 같은 폭에 함께 맞으면 엔진이 하나만 골라 나머지 값을 버린다.
+  - open_responsive_range_overlap_is_warned
+  - disjoint_or_closed_responsive_ranges_are_not_warned
   - standalone_layout_firing_toast_without_host_is_warned
   - standalone_layout_with_toast_host_is_not_warned
   - extends_layout_delegates_host_to_base
@@ -853,7 +862,7 @@ effects:
   # 35차 — 파일 단위 면제가 그 파일의 **미래 위반까지** 덮던 두 자리를 표본 구간 단위로 내렸다.
   - oracle_independence_guard_judges_itself_without_file_exemption
   - assertion_strength_guard_judges_itself_without_file_exemption
-  # 35차 — 34차가 통합한 규약 목록의 폐쇄가 단방향이라 코어→목록 방향 여집합이 살아 있었다.
+  # 앞서 통합한 규약 목록의 폐쇄가 단방향이라 코어→목록 방향 여집합이 살아 있었다.
   - core_selection_surface_is_fully_classified_in_the_convention
 
   # ── 38차 ❌① — 테스트가 선언한 @effects 14건이 이 목록에 없었다 ──
@@ -861,11 +870,11 @@ effects:
   # 기전: `test-scenario-coverage` 룰이 **매니페스트 → 테스트** 한 방향만 본다. 그래서 매니페스트가
   # 선언한 effect 를 아무 테스트도 덮지 않으면 red 지만, 그 **반대**(테스트가 선언한 effect 가
   # 매니페스트에 없음)는 구조적으로 검출되지 않았다. `GateMembershipGuardTest` 도 *파일* 등재만
-  # 잠근다. 30차가 게이트 소속을 양방향으로 잠근 것과 같은 처치가 이 축에는 없던 자리다.
+  # 잠근다. 게이트 소속을 양방향으로 잠근 것과 같은 처치가 이 축에는 없던 자리다.
   #
-  # 그 결과 **회차 산출물이 등재 없이 종료**됐다 — 아래 `fragment_helper_read_cache_…` 는 37차
-  # ⓕ 가 "캐시 무관측" 을 고치며 신설한 축인데, 그 회차가 끝날 때 매니페스트에 오르지 않았다.
-  # 38차에 양방향 폐쇄를 `GateMembershipGuardTest::test_declared_effects_cover_every_marked_effect`
+  # 그 결과 **회차 산출물이 등재 없이 종료**됐다 — 아래 `fragment_helper_read_cache_…` 는
+  # "캐시 무관측" 을 고치며 신설한 축인데, 그 작업이 끝날 때 매니페스트에 오르지 않았다.
+  # 이후 양방향 폐쇄를 `GateMembershipGuardTest::test_declared_effects_cover_every_marked_effect`
   # 로 신설했으므로, 앞으로 이 결손은 생기는 즉시 red 다.
   - template_override_unreadable_source_skips_only_that_file
   - include_failure_kinds_are_mutually_distinguishable
@@ -1099,6 +1108,17 @@ effects:
   # #757 추가 11 — `NavigateFallbackPathMarkupTest` 가 게이트에서 돌므로 그 효과를 여기에도 둔다. 조합 축(path_kind × fallback_path)은
   # `navigate-fallback-path.yaml` 이 소유한다.
   - markup_fallback_path_compiles_to_params
+  # 609 docblock 정리 (g4 서빙 묶음) — `LayoutServingTest` 의 공개 서빙 기본 계약 메서드가 쓰는 효과.
+  - public_layout_serving_returns_the_stored_layout_json   # 활성 템플릿 레이아웃이 저장된 구조 그대로 200 JSON 으로 서빙된다
+  - public_layout_serving_returns_404_for_missing_or_inactive_sources   # 없는 템플릿, 없는 레이아웃, 비활성 템플릿 요청은 404 다
+  - public_layout_serving_merges_the_inherited_base_layout   # 자식 레이아웃 서빙이 부모(extends)를 병합하고 extends, slots 를 걷어낸다
+  - public_layout_serving_emits_unescaped_utf8   # 한글이 \uXXXX 이스케이프 없이 raw UTF-8 로 직렬화된다
+  # 같은 `LayoutServingTest` 의 압축 응답 메서드가 쓰는 효과. 조합 축(encoding)과 압축 계약 전량은
+  # `docroot-single-folder.yaml` 이 소유하고, 이 파일이 게이트에서 돌므로 여기에도 둔다.
+  - gzip_compresses_compressible_responses_for_accepting_clients   # gzip 을 받는 클라이언트에게 레이아웃 응답이 압축되어 나간다
+  - gzip_marks_encoded_representation_with_distinct_etag   # 압축본의 ETag 에 표현 접미사가 붙고 재검증이 304 로 끝난다
+  - gzip_leaves_responses_uncompressed_without_gzip_acceptance   # gzip 을 받지 않는 클라이언트에게는 압축하지 않는다
+  - gzip_skips_responses_below_the_size_threshold   # 1KB 미만 응답은 압축하지 않는다
 
 # S18.5 축 B — 설치/업데이트/삭제 × 소스 매트릭스.
 #
@@ -1283,7 +1303,7 @@ test_files:
   # 제거를 지나치면 한 파일의 문제가 아니라 **모든 관리자 화면 응답**의 문제가 된다.
   # 표본은 `LayoutServingTest::test_strips_developer_comments_inherited_from_base_layout`(위 파일에 신설).
   # 세 곳의 제거 지점을 모두 끈 상태에서 red 를 실측했다(데이터소스·컴포넌트·모달 주석이 응답에 실려 옴).
-  # 부재 단언 앞에 상속 성립(베이스 산출물이 자식 응답에 있음)을 확정한다 — 66차의 같은 함정.
+  # 부재 단언 앞에 상속 성립(베이스 산출물이 자식 응답에 있음)을 확정한다 — 확장 조각에서 데인 것과 같은 함정.
   # S21.6 — 같은 명제의 **네 번째 소비자**: 봇 서버사이드 렌더(SEO). 관리자 화면은 SEO 대상이 아니라
   # 앞 단락들이 이 경로를 밟은 적이 없고, 이 단락이 처음 공개 사용자 화면(`shop/`)에 주석을 넣는다.
   # 파일 이름을 `LayoutServing…` 으로 둔 것은 이것이 SEO 설정이 아니라 **레이아웃 서빙 계약**을 재는

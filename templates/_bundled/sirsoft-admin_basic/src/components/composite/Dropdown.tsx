@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
 import type { EditorAttrs } from '../../types';
+import { activateOnKey, FOCUS_VISIBLE_RING } from '../../support/keyboardActivation';
 
 export interface DropdownItem {
   label: string;
@@ -62,6 +63,8 @@ export const Dropdown: React.FC<DropdownProps> = ({
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  // 여는 단추 — 고르거나 Esc 로 닫은 뒤 포커스를 돌려받는다(메뉴가 사라져 body 로 빠지지 않게, #869 키보드 접근)
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const [adjustedPosition, setAdjustedPosition] = useState(position);
 
   // 외부 클릭 감지
@@ -119,6 +122,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
           event.preventDefault();
           setIsOpen(false);
           setFocusedIndex(-1);
+          triggerRef.current?.focus();
           break;
       }
     };
@@ -185,6 +189,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
     onItemClick?.(item.value, item);
     setIsOpen(false);
     setFocusedIndex(-1);
+    triggerRef.current?.focus();
   };
 
   const positionClasses = {
@@ -203,6 +208,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
     >
       {/* Trigger Button */}
       <Button
+        ref={triggerRef}
         onClick={() => setIsOpen(!isOpen)}
         className={variant === 'text' ? 'dropdown-trigger-text' : 'dropdown-trigger'}
         aria-haspopup="true"
@@ -242,8 +248,11 @@ export const Dropdown: React.FC<DropdownProps> = ({
                 key={item.value}
                 className={`${
                   item.disabled ? 'dropdown-item-disabled' : 'dropdown-item'
-                } ${focusedIndex === index ? 'dropdown-item-focused' : ''}`}
+                } ${focusedIndex === index ? 'dropdown-item-focused' : ''} ${FOCUS_VISIBLE_RING}`}
                 onClick={() => handleItemClick(item)}
+                // Tab 으로 잡은 항목을 Enter·Space 로 고른다 — 문서의 Enter 처리와 겹치지 않게 처리한 키는 번지지 않는다(#869)
+                onKeyDown={item.disabled ? undefined : activateOnKey(() => handleItemClick(item))}
+                onFocus={() => !item.disabled && setFocusedIndex(index)}
                 onMouseEnter={() => !item.disabled && setFocusedIndex(index)}
                 role="menuitem"
                 aria-disabled={item.disabled}

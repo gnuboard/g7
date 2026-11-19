@@ -28,6 +28,7 @@ class UninstallPluginCommand extends Command
     protected $signature = 'plugin:uninstall
         {identifier : 제거할 플러그인 식별자}
         {--force : 확인 없이 삭제}
+        {--y|yes : 확인 질문만 생략 (--force 의 다른 효과 없이)}
         {--delete-data : 플러그인 데이터(테이블, 환경설정) 함께 삭제}';
 
     /**
@@ -86,6 +87,16 @@ class UninstallPluginCommand extends Command
                     $this->warn('⚠️  '.__('plugins.commands.uninstall.delete_data_warning'));
                 }
                 $this->newLine();
+
+                // 확인에 답할 수 없는 실행(cron, CI, 원격 명령, --no-interaction)은 종전에 기본값 「아니오」로 취소 문구만 내고
+                // 종료 코드 0 으로 끝나 자동화가 성공으로 읽었다. 그런 실행은 사유와 --force 안내를 남기고 실패로 끝낸다.
+                // 대화형에서 운영자가 직접 「아니오」를 답한 취소는 의도이므로 종전대로 0 이다.
+                if (! $this->canAnswerConfirmation()) {
+                    return $this->refuseUnanswerableConfirmation(
+                        '❌ '.__('plugins.commands.uninstall.confirm_unavailable', ['plugin' => $identifier]),
+                        __('plugins.commands.uninstall.confirm_unavailable_hint', ['plugin' => $identifier]),
+                    );
+                }
 
                 if (! $this->unifiedConfirm(__('plugins.commands.uninstall.confirm_question'), false)) {
                     $this->info(__('plugins.commands.uninstall.aborted'));

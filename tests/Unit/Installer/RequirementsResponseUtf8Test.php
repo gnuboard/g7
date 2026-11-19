@@ -6,6 +6,7 @@ use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\CleansTemporaryBasePath;
 
 /**
  * 설치 2단계(설치 환경 확인) 응답 인코딩 회귀 테스트.
@@ -24,12 +25,24 @@ use PHPUnit\Framework\TestCase;
  */
 #[RunClassInSeparateProcess]
 #[PreserveGlobalState(false)]
+/**
+ * 소유 매니페스트(마커 아님 — 평문): installer-process-output-utf8. 조합 표식은 각 테스트 메서드가 단다.
+ */
 class RequirementsResponseUtf8Test extends TestCase
 {
+    use CleansTemporaryBasePath;
+
     private static string $sharedBase = '';
 
     private static string $skipReason = '';
 
+    /**
+     * 시스템 temp 아래 임시 BASE_PATH 를 정하고 로그와 캐시 디렉토리를 만든 뒤, 요청을 처리하지 않는 라이브러리 모드로 인스톨러 설정과 함수와 요구사항 검사 파일을 불러온다.
+     *
+     * BASE_PATH 가 이미 temp 밖으로 정의돼 있으면 건너뛸 사유만 기록한다.
+     *
+     * @return void 반환값 없음
+     */
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
@@ -69,6 +82,11 @@ class RequirementsResponseUtf8Test extends TestCase
         require_once dirname(__DIR__, 3).'/public/install/api/check-configuration.php';
     }
 
+    /**
+     * 클래스 준비 단계가 기록한 건너뛸 사유가 있으면 테스트를 건너뛴다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -78,6 +96,12 @@ class RequirementsResponseUtf8Test extends TestCase
         }
     }
 
+    /**
+     * UTF-8 문자열을 한국어 Windows 콘솔이 내는 CP949 바이트열로 바꿔 결함 재현 표본을 만든다.
+     *
+     * @param  string  $utf8  변환할 UTF-8 원문
+     * @return string CP949 로 인코딩된 바이트열
+     */
     private static function cp949(string $utf8): string
     {
         return (string) mb_convert_encoding($utf8, 'CP949', 'UTF-8');
@@ -85,6 +109,12 @@ class RequirementsResponseUtf8Test extends TestCase
 
     /**
      * 2단계 응답이 한글 계정명 환경에서도 본문을 실어 보내고 계정명을 복원해야 한다.
+     *
+     * @scenario output_encoding=cp949_korean, sink=requirements_response, value_position=nested_array_value, locale=ko
+     *
+     * @effects response_body_never_empty, requirements_response_parses_after_cp949_account_name, korean_account_name_restored_exactly, non_string_scalars_preserve_type_and_value
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function requirements_response_survives_korean_account_name(): void
@@ -140,6 +170,12 @@ class RequirementsResponseUtf8Test extends TestCase
     /**
      * 회귀 가드 (머신 무관): 출처가 posix / whoami / 환경변수 어느 쪽이든
      * 응답에 실릴 값은 항상 유효 UTF-8 이어야 한다.
+     *
+     * @scenario output_encoding=utf8, sink=requirements_response, value_position=scalar, locale=ko
+     *
+     * @effects web_server_user_always_valid_utf8
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function web_server_identity_is_always_encodable(): void

@@ -384,6 +384,8 @@ describe('Router', () => {
         isAuthenticated: vi.fn().mockReturnValue(false),
         getAuthType: vi.fn().mockReturnValue(null),
         checkAuth: vi.fn().mockResolvedValue(false),
+        getLastCheckStatus: vi.fn().mockReturnValue('unauthenticated'),
+        isRecentlyUnavailable: vi.fn().mockReturnValue(false),
         getLoginRedirectUrl: vi.fn((_type: string, path: string) => `/admin/login?redirect=${encodeURIComponent(path)}`),
       };
       (AuthManager.getInstance as any).mockReturnValue(authManager);
@@ -531,6 +533,7 @@ describe('Router', () => {
         isAuthenticated: vi.fn().mockReturnValue(false),
         getAuthType: vi.fn().mockReturnValue(null),
         checkAuth: vi.fn().mockResolvedValue(true),
+        isRecentlyUnavailable: vi.fn().mockReturnValue(false),
         getLoginRedirectUrl: vi.fn(),
       };
       (AuthManager.getInstance as any).mockReturnValue(mockAuthManager);
@@ -583,6 +586,8 @@ describe('Router', () => {
         isAuthenticated: vi.fn().mockReturnValue(false),
         getAuthType: vi.fn().mockReturnValue(null),
         checkAuth: vi.fn(),
+        getLastCheckStatus: vi.fn().mockReturnValue('unauthenticated'),
+        isRecentlyUnavailable: vi.fn().mockReturnValue(false),
         getLoginRedirectUrl: vi.fn(),
       };
 
@@ -712,6 +717,101 @@ describe('Router', () => {
 
       // auth_type이 'admin'으로 명시되어 있으므로 'admin'으로 호출
       expect(mockAuthManager.checkAuth).toHaveBeenCalledWith('admin');
+    });
+
+    // 인증 확인이 서버 일시 오류로 끝났다(라우트 캐시 재생성 중 500) — 유효한 토큰을 가진 사람을 로그인 화면으로 보내지 않는다
+    // @scenario auth=auth_check_unavailable
+    // @effects auth_unavailable_does_not_redirect_to_login
+    it('인증 확인이 「확인 불가」면 로그인으로 보내지 않고 authUnavailable 을 알린다', async () => {
+      Object.defineProperty(window, 'location', {
+        value: { pathname: '/admin/dashboard', search: '?tab=a', href: '' },
+        writable: true,
+        configurable: true,
+      });
+
+      mockAuthManager.checkAuth.mockResolvedValue(false);
+      mockAuthManager.getLastCheckStatus.mockReturnValue('unavailable');
+      mockAuthManager.getLoginRedirectUrl.mockReturnValue('/admin/login?redirect=%2Fadmin%2Fdashboard');
+
+      const routeChangeHandler = vi.fn();
+      const unavailableHandler = vi.fn();
+      router.on('routeChange', routeChangeHandler);
+      router.on('authUnavailable', unavailableHandler);
+
+      await router.navigateToCurrentPath();
+
+      expect(mockAuthManager.getLastCheckStatus).toHaveBeenCalledWith('admin');
+      expect(window.location.href).toBe('');
+      expect(unavailableHandler).toHaveBeenCalledWith({ path: '/admin/dashboard', authType: 'admin' });
+      expect(routeChangeHandler).not.toHaveBeenCalled();
+    });
+
+    // 부팅 preloadAuth 가 방금 「확인 불가」로 끝났으면 다시 묻지 않는다 — 같은 장애에 재시도를 한 번 더 하면 백지가 두 배로 길어진다(설계 확정 2026-11-08)
+    // @scenario auth=auth_check_unavailable
+    // @effects auth_unavailable_does_not_redirect_to_login
+    it('최근 「확인 불가」 결론이 있으면 다시 묻지 않고 곧바로 authUnavailable 을 알린다', async () => {
+      Object.defineProperty(window, 'location', {
+        value: { pathname: '/admin/dashboard', search: '', href: '' },
+        writable: true,
+        configurable: true,
+      });
+
+      mockAuthManager.isRecentlyUnavailable.mockReturnValue(true);
+      mockAuthManager.getLastCheckStatus.mockReturnValue('unavailable');
+
+      const unavailableHandler = vi.fn();
+      router.on('authUnavailable', unavailableHandler);
+
+      await router.navigateToCurrentPath();
+
+      expect(mockAuthManager.isRecentlyUnavailable).toHaveBeenCalledWith('admin');
+      expect(mockAuthManager.checkAuth).not.toHaveBeenCalled();
+      expect(unavailableHandler).toHaveBeenCalledWith({ path: '/admin/dashboard', authType: 'admin' });
+      expect(window.location.href).toBe('');
+    });
+
+    // 재시도하는 사이 뒤로 가기로 다른 주소가 그려졌으면 그 위에 오류 화면을 덮지 않는다(popstate 는 navigate 대기열 밖)
+    // @scenario auth=auth_check_unavailable
+    // @effects auth_unavailable_does_not_redirect_to_login
+    it('인증 확인 중 주소가 바뀌었으면 authUnavailable 을 내지 않는다', async () => {
+      Object.defineProperty(window, 'location', {
+        value: { pathname: '/admin/dashboard', search: '', href: '' },
+        writable: true,
+        configurable: true,
+      });
+
+      mockAuthManager.checkAuth.mockImplementation(async () => {
+        (window.location as any).pathname = '/admin/login';
+        return false;
+      });
+      mockAuthManager.getLastCheckStatus.mockReturnValue('unavailable');
+
+      const unavailableHandler = vi.fn();
+      router.on('authUnavailable', unavailableHandler);
+
+      await router.navigateToCurrentPath();
+
+      expect(unavailableHandler).not.toHaveBeenCalled();
+      expect(window.location.href).toBe('');
+    });
+
+    // 받는 쪽이 없으면(라우터만 쓰는 환경) 종전처럼 로그인으로 보낸다 — 빈 화면으로 멈추지 않게
+    // @scenario auth=auth_check_unavailable
+    // @effects auth_unavailable_does_not_redirect_to_login
+    it('authUnavailable 구독자가 없으면 종전처럼 로그인으로 보낸다', async () => {
+      Object.defineProperty(window, 'location', {
+        value: { pathname: '/admin/dashboard', search: '', href: '' },
+        writable: true,
+        configurable: true,
+      });
+
+      mockAuthManager.checkAuth.mockResolvedValue(false);
+      mockAuthManager.getLastCheckStatus.mockReturnValue('unavailable');
+      mockAuthManager.getLoginRedirectUrl.mockReturnValue('/admin/login?redirect=%2Fadmin%2Fdashboard');
+
+      await router.navigateToCurrentPath();
+
+      expect(window.location.href).toBe('/admin/login?redirect=%2Fadmin%2Fdashboard');
     });
   });
 

@@ -146,120 +146,14 @@ for (const file of files) {
 }
 
 /*
- * 모듈·플러그인 **확장 조각**의 클래스도 함께 담는다.
- *
- * 이 스크립트는 `../layouts` 만 훑고 `main.css` 의 `@source` 도 이 템플릿 안만 앵커하는데,
- * 관리자 화면에 실제로 그려지는 마크업은 그것만이 아니다 — 모듈·플러그인이
- * `resources/extensions/**` 에서 탭·카드·슬롯을 주입한다. 그 조각들이 쓰는 클래스는 어느
- * 스캔 대상에도 없어, 「이 템플릿이 마침 딴 데서도 쓰는 것」일 때만 우연히 살아났다.
- * 아니면 규칙이 통째로 없는데 **빌드는 성공하고 경고도 없다**(2026-09-21 실측 — 같은 원인으로
- * 사용자 템플릿 쪽 확장 카드들의 배치가 무너져 있었다).
- *
- * 대상 판별은 `target_layout` 으로 한다. 슬롯 확장(`extension_point`)은 주입 위치가 조각에
- * 적혀 있지 않아 어느 화면에도 들어갈 수 있으므로 함께 담는다 — safelist 는 과하게 담아도
- * CSS 가 조금 커질 뿐이지만, 빠지면 화면이 조용히 무너진다.
+ * 모듈·플러그인 화면(확장 조각·레이아웃·PHP 리스너가 끼워 넣는 노드)의 클래스는 담지 않는다.
+ * 확장은 자기 CSS(manifest `assets.css`)로 자기 화면 모양을 싣는다 — 이 템플릿 CSS 는 이 템플릿 화면만 감당한다
+ * (2026-10-22 결정, issue816). 종전에는 확장 조각·PHP 리스너의 className 을 여기서 모아 safelist 에 넣었다.
  */
-function collectExtensionClasses(into) {
-  const roots = [path.join(__dirname, '../../../../modules/_bundled'), path.join(__dirname, '../../../../plugins/_bundled')];
-  const jsonFiles = [];
-  for (const root of roots) {
-    if (!fs.existsSync(root)) continue;
-    for (const entry of fs.readdirSync(root)) {
-      const extDir = path.join(root, entry, 'resources/extensions');
-      if (!fs.existsSync(extDir)) continue;
-      for (const f of fs.readdirSync(extDir)) if (f.endsWith('.json')) jsonFiles.push(path.join(extDir, f));
-    }
-  }
 
-  let added = 0;
-  for (const file of jsonFiles) {
-    let doc;
-    try {
-      doc = JSON.parse(fs.readFileSync(file, 'utf-8'));
-    } catch {
-      continue;
-    }
-    const target = doc.target_layout || doc.targetLayout || '';
-    // 사용자 템플릿 전용 조각은 담지 않는다 — 그쪽은 자기 safelist.txt 가 감당한다.
-    if (target && !/^admin[_/]/.test(target) && !target.startsWith('_admin')) continue;
-
-    (function walk(node) {
-      if (!node || typeof node !== 'object') return;
-      if (Array.isArray(node)) return node.forEach(walk);
-      for (const [key, value] of Object.entries(node)) {
-        if ((key === 'className' || key === 'class') && typeof value === 'string') {
-          // 조건식(`{{a ? 'x' : 'y'}}`)이면 그 안의 문자열 리터럴이 실제로 렌더되는 클래스다.
-          // 식 자체를 토큰으로 쪼개면 변수명까지 섞이므로 리터럴만 꺼낸다.
-          const source = value.includes('{{')
-            ? [...value.matchAll(/'([^']*)'/g)].map((m) => m[1]).join(' ')
-            : value;
-          for (const tok of source.split(/\s+/)) {
-            // 임의값(`grid-cols-[100px_1fr]`)은 평문 `@source` 에서 추출되지 않아 여기서만 살아난다.
-            if (tok && !into.has(tok)) {
-              into.add(tok);
-              added++;
-            }
-          }
-        }
-        walk(value);
-      }
-    })(doc);
-  }
-  return { files: jsonFiles.length, added };
-}
-
-const extStats = collectExtensionClasses(classes);
-console.log(`확장 조각 ${extStats.files}개에서 클래스 ${extStats.added}개 추가`);
-
-/*
- * 모듈·플러그인 **PHP 리스너가 만드는 레이아웃 조각**의 클래스도 담는다.
- *
- * 결제 플러그인의 「테스트 결제 경고」처럼 레이아웃 훅 리스너(`src/**\/*.php`)가 화면 JSON 에 노드를 직접 끼워 넣는
- * 경우, 그 `className` 은 레이아웃 파일 어디에도 없어 위 두 경로가 모두 놓친다. 그 클래스가 이 템플릿 다른 곳에서
- * 우연히 쓰이지 않으면 규칙이 생기지 않는다 — 실측: 「실결제로 설정」 단추의 다크 hover 바탕(주황 900·40%) 규칙이 빠져
- * 다크 hover 때 라이트 hover 바탕(주황 100)이 그대로 걸려 밝은 주황 글자가 사라졌다(대비 1.0).
- * (이 파일도 Tailwind 가 훑는 폴더 안이라 주석에 class 이름을 그대로 적으면 그 class 가 생겨 누락이 가려진다 — 적지 않는다.)
- * PHP 배열 리터럴 `'className' => '…'`(`*ClassName` 포함)의 따옴표 안 값을 그대로 담는다.
- */
-function collectPhpLayoutClasses(into) {
-  const roots = [path.join(__dirname, '../../../../modules/_bundled'), path.join(__dirname, '../../../../plugins/_bundled')];
-  const phpFiles = [];
-  const walkPhp = (dir) => {
-    if (!fs.existsSync(dir)) return;
-    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-      const p = path.join(dir, e.name);
-      if (e.isDirectory()) walkPhp(p);
-      else if (e.name.endsWith('.php')) phpFiles.push(p);
-    }
-  };
-  for (const root of roots) {
-    if (!fs.existsSync(root)) continue;
-    for (const entry of fs.readdirSync(root)) walkPhp(path.join(root, entry, 'src'));
-  }
-  let added = 0;
-  let files = 0;
-  for (const file of phpFiles) {
-    const src = fs.readFileSync(file, 'utf-8');
-    let hit = false;
-    for (const m of src.matchAll(/'(?:className|[a-zA-Z]+ClassName)'\s*=>\s*'([^'\\]*)'/g)) {
-      hit = true;
-      for (const tok of m[1].split(/\s+/)) {
-        if (tok && !into.has(tok)) {
-          into.add(tok);
-          added++;
-        }
-      }
-    }
-    if (hit) files++;
-  }
-  return { files, added };
-}
-
-const phpStats = collectPhpLayoutClasses(classes);
-console.log(`PHP 레이아웃 조각 ${phpStats.files}개에서 클래스 ${phpStats.added}개 추가`);
-
-// main.css에 @source inline() 자동 삽입
-const mainCssPath = path.join(__dirname, '../src/styles/main.css');
+// semantic.css 에 @source inline() 자동 삽입 — 레이아웃 스캔 앵커(`@source "../../layouts/**/*.json"`)가 이 파일에 있다.
+// main.css 는 `@import` 만 앞에 두는 파일이라 거기에 끼우면 뒤의 `@import` 가 전부 무시된다(#434 분리 때 실측).
+const mainCssPath = path.join(__dirname, '../src/styles/semantic.css');
 let mainCss = fs.readFileSync(mainCssPath, 'utf-8');
 
 // 기존 safelist 마커 제거
@@ -301,4 +195,4 @@ if (layoutSourcePattern.test(mainCss)) {
 
 fs.writeFileSync(mainCssPath, mainCss);
 
-console.log(`✓ Injected ${classes.size} classes into main.css`);
+console.log(`✓ Injected ${classes.size} classes into semantic.css`);

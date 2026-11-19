@@ -18,7 +18,7 @@ class ResponseHelperTest extends TestCase
      *
      * @scenario case=error_with_throwable_in_debug_mode_includes_debug_info
      *
-     * @effects error_with_throwable_in_debug_mode_includes_debug_info
+     * @effects throwable_debug_info_exposed_in_debug, error_with_throwable_in_debug_mode_includes_debug_info
      *
      * @return void 반환값 없음
      */
@@ -47,7 +47,7 @@ class ResponseHelperTest extends TestCase
      *
      * @scenario case=error_with_throwable_in_production_hides_debug_info
      *
-     * @effects error_with_throwable_in_production_hides_debug_info
+     * @effects throwable_detail_hidden_in_production, error_with_throwable_in_production_hides_debug_info
      *
      * @return void 반환값 없음
      */
@@ -71,7 +71,7 @@ class ResponseHelperTest extends TestCase
      *
      * @scenario case=error_with_string_500_in_production_hides_errors
      *
-     * @effects error_with_string_500_in_production_hides_errors
+     * @effects server_error_string_hidden_in_production, error_with_string_500_in_production_hides_errors
      *
      * @return void 반환값 없음
      */
@@ -92,7 +92,7 @@ class ResponseHelperTest extends TestCase
      *
      * @scenario case=error_with_string_500_in_debug_mode_shows_errors
      *
-     * @effects error_with_string_500_in_debug_mode_shows_errors
+     * @effects server_error_string_shown_in_debug, error_with_string_500_in_debug_mode_shows_errors
      *
      * @return void 반환값 없음
      */
@@ -114,7 +114,7 @@ class ResponseHelperTest extends TestCase
      *
      * @scenario case=error_with_array_422_always_shows_errors
      *
-     * @effects error_with_array_422_always_shows_errors
+     * @effects validation_errors_always_shown, error_with_array_422_always_shows_errors
      *
      * @return void 반환값 없음
      */
@@ -137,7 +137,7 @@ class ResponseHelperTest extends TestCase
      *
      * @scenario case=error_with_string_400_in_production_shows_errors
      *
-     * @effects error_with_string_400_in_production_shows_errors
+     * @effects client_error_string_shown_in_production, error_with_string_400_in_production_shows_errors
      *
      * @return void 반환값 없음
      */
@@ -157,7 +157,7 @@ class ResponseHelperTest extends TestCase
      *
      * @scenario case=server_error_with_throwable_in_debug_mode
      *
-     * @effects server_error_with_throwable_in_debug_mode
+     * @effects server_error_throwable_debug_exposed, server_error_with_throwable_in_debug_mode
      *
      * @return void 반환값 없음
      */
@@ -181,7 +181,7 @@ class ResponseHelperTest extends TestCase
      *
      * @scenario case=server_error_with_throwable_in_production
      *
-     * @effects server_error_with_throwable_in_production
+     * @effects server_error_throwable_hidden_in_production, server_error_with_throwable_in_production
      *
      * @return void 반환값 없음
      */
@@ -205,7 +205,7 @@ class ResponseHelperTest extends TestCase
      *
      * @scenario case=module_error_with_throwable_delegates_to_error
      *
-     * @effects module_error_with_throwable_delegates_to_error
+     * @effects module_error_delegates_to_error, module_error_with_throwable_delegates_to_error
      *
      * @return void 반환값 없음
      */
@@ -233,7 +233,7 @@ class ResponseHelperTest extends TestCase
      *
      * @scenario case=server_error_with_string_in_debug_mode_keeps_legacy_behavior
      *
-     * @effects server_error_with_string_in_debug_mode_keeps_legacy_behavior
+     * @effects server_error_string_kept_in_error_key, server_error_with_string_in_debug_mode_keeps_legacy_behavior
      *
      * @return void 반환값 없음
      */
@@ -254,7 +254,7 @@ class ResponseHelperTest extends TestCase
      *
      * @scenario case=error_with_throwable_and_message_params_no_duplicate
      *
-     * @effects error_with_throwable_and_message_params_no_duplicate
+     * @effects exception_message_not_duplicated, error_with_throwable_and_message_params_no_duplicate
      *
      * @return void 반환값 없음
      */
@@ -268,6 +268,7 @@ class ResponseHelperTest extends TestCase
         }
 
         $exception = new \RuntimeException('DB connection failed');
+        // `:error` 자리를 가진 문구여야 중복 여부를 잴 수 있다 — 회원 생성 실패 문구는 내부 오류를 숨기도록 바뀌어 자리가 없다
         $response = ResponseHelper::error(
             'common.probe_failed_with_error',
             500,
@@ -292,7 +293,7 @@ class ResponseHelperTest extends TestCase
      *
      * @scenario case=error_with_null_errors_has_no_extra_keys
      *
-     * @effects error_with_null_errors_has_no_extra_keys
+     * @effects null_errors_adds_no_extra_keys, error_with_null_errors_has_no_extra_keys
      *
      * @return void 반환값 없음
      */
@@ -311,7 +312,7 @@ class ResponseHelperTest extends TestCase
      *
      * @scenario case=debug_trace_is_limited_to_10_frames
      *
-     * @effects debug_trace_is_limited_to_10_frames
+     * @effects debug_trace_limited_to_10_frames, debug_trace_is_limited_to_10_frames
      *
      * @return void 반환값 없음
      */
@@ -353,7 +354,7 @@ class ResponseHelperTest extends TestCase
      *
      * @scenario case=trans_uses_current_app_locale_not_hardcoded_whitelist
      *
-     * @effects trans_uses_current_app_locale_not_hardcoded_whitelist
+     * @effects message_uses_current_app_locale, trans_uses_current_app_locale_not_hardcoded_whitelist
      *
      * @return void 반환값 없음
      */
@@ -375,7 +376,7 @@ class ResponseHelperTest extends TestCase
      *
      * @scenario case=trans_respects_non_builtin_locale_when_app_locale_set
      *
-     * @effects trans_respects_non_builtin_locale_when_app_locale_set
+     * @effects non_builtin_locale_respected, trans_respects_non_builtin_locale_when_app_locale_set
      *
      * @return void 반환값 없음
      */
@@ -400,7 +401,7 @@ class ResponseHelperTest extends TestCase
      *
      * @scenario case=default_success_message_key_is_translated
      *
-     * @effects default_success_message_key_is_translated
+     * @effects default_success_message_translated, default_success_message_key_is_translated
      *
      * @return void 반환값 없음
      */
@@ -434,7 +435,7 @@ class ResponseHelperTest extends TestCase
      *
      * @scenario case=no_caller_passes_unresolvable_messages_success_key
      *
-     * @effects no_caller_passes_unresolvable_messages_success_key
+     * @effects no_caller_passes_unresolvable_success_key, no_caller_passes_unresolvable_messages_success_key
      *
      * @return void 반환값 없음
      */

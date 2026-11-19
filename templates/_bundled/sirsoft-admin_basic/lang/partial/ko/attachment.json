@@ -15,6 +15,8 @@
   "primary_image": "대표 이미지",
   "set_as_primary": "대표 이미지로 설정",
   "empty_file": "[{{name}}] 빈 파일(0바이트)은 올릴 수 없습니다.",
+  "compression_failed": "[{{name}}] 이미지를 압축하지 못했습니다.",
+  "upload_failed_save_stopped": "첨부 파일을 올리지 못해 저장하지 않았습니다. 실패한 파일을 다시 올리거나 뺀 뒤 저장해 주세요.",
   "file_too_large": "[{{name}}] 파일 크기({{size}})가 최대 허용 크기({{max}}MB)를 초과합니다.",
   "type_not_allowed": "[{{name}}] 허용되지 않는 파일 형식입니다. (허용: {{accept}})",
   "upload_response_invalid": "업로드 응답을 해석하지 못했습니다."

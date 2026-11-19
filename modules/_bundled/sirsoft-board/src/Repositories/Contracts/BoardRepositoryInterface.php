@@ -317,4 +317,13 @@ interface BoardRepositoryInterface
      * @return int 갱신된 게시판 수
      */
     public function stripReactionCodes(array $codes): int;
+
+    /**
+     * 작성자 표시 이름을 직접 정한 게시판을 조회합니다.
+     *
+     * 표시 이름 설정이 비어 있는(회원 설정을 따르는) 게시판은 싣지 않는다.
+     *
+     * @return Collection<int, Board> 게시판 목록 (id, slug, name, display_name_setting 만 조회)
+     */
+    public function getBoardsWithDisplayNameSetting(): Collection;
 }

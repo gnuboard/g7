@@ -1254,19 +1254,6 @@
     "create_success": "Type has been created",
     "usage_guide": "The slug is an identifier that distinguishes the board display type. You must add and configure a dedicated layout for the slug in the template for it to take effect."
   },
-  "users": {
-    "form": {
-      "sections": {
-        "notification_settings": "Board Notification Settings"
-      },
-      "notifications": {
-        "post_complete": "Post Complete Notification",
-        "post_reply": "Post Reply Notification",
-        "comment": "Comment Notification",
-        "reply_comment": "Reply Comment Notification"
-      }
-    }
-  },
   "ecommerce_settings": {
     "inquiry": {
       "description": "You can designate the board to use as the product inquiry board.",

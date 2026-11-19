@@ -8,7 +8,7 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Notification Definitions 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
@@ -65,12 +65,11 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | policy_key | string\|null | `admin.withdraw_confirm` | 본인인증 정책별 문구(`identity.policy.*`)가 붙은 정책 키. 100자를 넘어 type 이 해시(`identity.policy.~…`)로 줄어도 원래 키를 싣는다 — 화면의 「이미 문구가 있는 정책」 판정용. 그 밖의 정의는 null |
 | name | object | `{"ko":"새 댓글 알림","en":"New Comment Notification"}` | 다국어 이름 ({"ko": "회원가입 환영", "en": "Welcome"}) |
 | description | object | `{"ko":"게시글에 새 댓글이 작성되면 게시글 작성자에게 발송","en":"Sent to post a…` | 다국어 설명 |
-| variables | array | `[{"key":"name","description":"수신자 이름"},{"key":"app_name",…` | 사용 가능 변수 메타데이터 ([{key, description}]) — `description` 은 요청 언어로 싣는다(언어 파일 `notification.variables.*`·`{확장}::messages.notification_variables.*`, 키가 없으면 선언 문자열) |
+| variables | array | `[{"key":"name","description":"수신자 이름"},{"key":"app_name",…` | 사용 가능 변수 메타데이터 ([{key, description}]) — `description` 은 요청 언어로 싣는다(언어 파일 `notification.variables.*`·`{확장}::messages.notification_variables.*`, 키가 없으면 선언 문자열). 본인인증 알림이 아니면 선언한 변수 뒤에 회원 공통 변수(`member.display_name`, `member.<키>`, `member.custom.<키>`)가 `group: "member"` 와 함께 덧붙는다(7.2.0) |
 | channels | array | `["mail","database"]` | 활성 채널 (["mail", "database"]) |
 | hooks | array | `["sirsoft-board.comment.after_create"]` | 트리거 훅 목록 (["core.auth.after_register"]). 본인인증 정의는 훅으로 발송하지 않으므로 빈 배열 |
 | is_active | boolean | `true` | active 여부 |
 | is_default | boolean | `true` | default 여부 |
-| templates | array | `[{"id":1,"definition_id":1,"channel":"mail","subject":{"k…` | 채널별 알림 템플릿 목록 (templates 관계 로드 시 NotificationTemplateResource 배열, 미로드 시 null) |
 | has_customized_templates | boolean | `false` | 기본값에서 수정된 템플릿이 하나라도 있는지. `template_channel` 로 좁혀도 **모든 채널**을 기준으로 판정하므로, 지금 보고 있지 않은 채널만 수정된 경우에도 true 다 (되돌리기 버튼 노출 조건) |
 | created_at | string | `2026-07-30 18:45:11` | 생성 일시 |
 | updated_at | string | `2026-07-30 18:45:11` | 최종 수정 일시 |
@@ -231,7 +230,7 @@ _단건 응답: `data` 객체의 필드._
 | extension_identifier | string | `sirsoft-board` | 확장 식별자: core, sirsoft-board 등 |
 | name | object | `{"ko":"새 댓글 알림","en":"New Comment Notification"}` | 다국어 이름 ({"ko": "회원가입 환영", "en": "Welcome"}) |
 | description | object | `{"ko":"게시글에 새 댓글이 작성되면 게시글 작성자에게 발송","en":"Sent to post a…` | 다국어 설명 |
-| variables | array | `[{"key":"name","description":"수신자 이름"},{"key":"app_name",…` | 사용 가능 변수 메타데이터 ([{key, description}]) — `description` 은 요청 언어로 싣는다(언어 파일 `notification.variables.*`·`{확장}::messages.notification_variables.*`, 키가 없으면 선언 문자열) |
+| variables | array | `[{"key":"name","description":"수신자 이름"},{"key":"app_name",…` | 사용 가능 변수 메타데이터 ([{key, description}]) — `description` 은 요청 언어로 싣는다(언어 파일 `notification.variables.*`·`{확장}::messages.notification_variables.*`, 키가 없으면 선언 문자열). 본인인증 알림이 아니면 선언한 변수 뒤에 회원 공통 변수(`member.display_name`, `member.<키>`, `member.custom.<키>`)가 `group: "member"` 와 함께 덧붙는다(7.2.0) |
 | channels | array | `["mail","database"]` | 활성 채널 (["mail", "database"]) |
 | hooks | array | `["sirsoft-board.comment.after_create"]` | 트리거 훅 목록 (["core.auth.after_register"]) |
 | is_active | boolean | `true` | active 여부 |
@@ -393,6 +392,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 단일 알림 정의의 상세 정보를 조회하며, 응답에 소속 템플릿(`templates`)을 함께 로드합니다. 인증(`auth:sanctum`)과 `core.settings.read` 권한이 필요합니다. `definition` 경로 파라미터로 대상을 지정하며, 정의 편집 화면 진입 시 채널별 템플릿을 포함한 전체 구성을 불러올 때 사용합니다.
 
 
@@ -446,7 +447,7 @@ _단건 응답: `data` 객체의 필드. 수정된 알림 정의를 `templates` 
 | extension_identifier | string | `` | 이 정의를 소유한 확장의 식별자 (코어는 빈 문자열) |
 | name | object | `{"ko":"API 문서 샘플 알림","en":"API Doc Sample Notification"}` | 다국어 이름 (로케일별 값 객체) |
 | description | object | `{"ko":"문서 실측용 알림 정의","en":"Sample notification"}` | 다국어 설명 (로케일별 값 객체) |
-| variables | array | `[]` | 사용 가능 변수 메타데이터 ([{key, description}]) — `description` 은 요청 언어로 싣는다(언어 파일 `notification.variables.*`·`{확장}::messages.notification_variables.*`, 키가 없으면 선언 문자열) |
+| variables | array | `[]` | 사용 가능 변수 메타데이터 ([{key, description}]) — `description` 은 요청 언어로 싣는다(언어 파일 `notification.variables.*`·`{확장}::messages.notification_variables.*`, 키가 없으면 선언 문자열). 본인인증 알림이 아니면 선언한 변수 뒤에 회원 공통 변수(`member.display_name`, `member.<키>`, `member.custom.<키>`)가 `group: "member"` 와 함께 덧붙는다(7.2.0) |
 | channels | array | `["database","mail"]` | 수정 후의 활성 채널 (["mail", "database"]) |
 | hooks | array | `[]` | 수정 후의 트리거 훅 목록 (["core.auth.after_register"]) |
 | is_active | boolean | `true` | active 여부 |
@@ -536,7 +537,13 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 알림 정의의 활성 채널(`channels`), 트리거 훅(`hooks`), 활성 상태(`is_active`)를 수정합니다. 인증(`auth:sanctum`)과 `core.settings.update` 권한이 필요합니다. Service 계층에서 수정 후 템플릿을 다시 로드해 반환하며, 확장이 `core.notification_definition.update_validation_rules` 훅으로 추가 파라미터를 검증에 넣을 수 있습니다. 발송 채널 구성이나 훅 연결을 변경할 때 사용합니다.
+
+**템플릿이 없는 수단(7.2.0)** 저장한 `channels` 가운데 그 정의에 템플릿 행이 없는 수단이 있으면, 같은 트랜잭션에서 빈 템플릿을 만든다 — 제목 `null`, 본문 `[]`, 받는 사람 `[]`, `is_active=false`, `is_user_created=true`. 발송은 템플릿 행이 있는 채널로만 나가므로, 확장이 그 수단의 템플릿을 선언하지 않았어도 운영자가 수단을 켜면 바로 편집할 곳이 생긴다. 이미 템플릿이 있는 수단은 건드리지 않고, 수단을 다시 빼도 만든 행은 지우지 않는다(다시 켜면 써 둔 내용이 그대로다). 응답의 `templates` 에 새 행이 함께 실린다.
+
+**수정 보존** `channels` 는 운영자 수정 추적 대상이다(`user_overrides` 에 `channels`). 확장을 업데이트해도 운영자가 바꾼 발송 수단 목록이 선언값으로 덮이지 않는다. 순서만 바꾼 저장은 수정으로 치지 않는다.
 
 
 ### DELETE /api/admin/notification-definitions/{definition}
@@ -610,7 +617,7 @@ _단건 응답: `data` 객체의 필드._
 | extension_identifier | string | `sirsoft-board` | 이 리소스를 소유한 확장의 식별자 |
 | name | object | `{"ko":"새 댓글 알림","en":"New Comment Notification"}` | 대상의 이름/명칭 (다국어 필드는 로케일별 값 객체) |
 | description | object | `{"ko":"게시글에 새 댓글이 작성되면 게시글 작성자에게 발송","en":"Sent to post a…` | 설명 (다국어 필드는 로케일별 값 객체) |
-| variables | array | `[{"key":"name","description":"수신자 이름"},{"key":"app_name",…` | 사용 가능 변수 메타데이터 ([{key, description}]) — `description` 은 요청 언어로 싣는다(언어 파일 `notification.variables.*`·`{확장}::messages.notification_variables.*`, 키가 없으면 선언 문자열) |
+| variables | array | `[{"key":"name","description":"수신자 이름"},{"key":"app_name",…` | 사용 가능 변수 메타데이터 ([{key, description}]) — `description` 은 요청 언어로 싣는다(언어 파일 `notification.variables.*`·`{확장}::messages.notification_variables.*`, 키가 없으면 선언 문자열). 본인인증 알림이 아니면 선언한 변수 뒤에 회원 공통 변수(`member.display_name`, `member.<키>`, `member.custom.<키>`)가 `group: "member"` 와 함께 덧붙는다(7.2.0) |
 | channels | array | `["mail","database"]` | 활성 채널 (["mail", "database"]) |
 | hooks | array | `["sirsoft-board.comment.after_create"]` | 트리거 훅 목록 (["core.auth.after_register"]) |
 | is_active | boolean | `true` | active 여부 |
@@ -772,6 +779,8 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 알림 정의에 속한 모든 채널 템플릿을 기본값(default) 데이터로 일괄 복원하고, 정의 자체를 default 상태로 표시합니다. 인증(`auth:sanctum`)과 `core.settings.update` 권한이 필요합니다. 각 템플릿의 제목·본문을 기본값으로 덮어쓰는 파괴적 작업이므로 사용자 편집분이 사라집니다. 관리자가 커스터마이징한 알림 문구를 초기 상태로 되돌릴 때 사용합니다.
 
 
@@ -809,7 +818,7 @@ _단건 응답: `data` 객체의 필드._
 | extension_identifier | string | `sirsoft-board` | 이 리소스를 소유한 확장의 식별자 |
 | name | object | `{"ko":"새 댓글 알림","en":"New Comment Notification"}` | 대상의 이름/명칭 (다국어 필드는 로케일별 값 객체) |
 | description | object | `{"ko":"게시글에 새 댓글이 작성되면 게시글 작성자에게 발송","en":"Sent to post a…` | 설명 (다국어 필드는 로케일별 값 객체) |
-| variables | array | `[{"key":"name","description":"수신자 이름"},{"key":"app_name",…` | 사용 가능 변수 메타데이터 ([{key, description}]) — `description` 은 요청 언어로 싣는다(언어 파일 `notification.variables.*`·`{확장}::messages.notification_variables.*`, 키가 없으면 선언 문자열) |
+| variables | array | `[{"key":"name","description":"수신자 이름"},{"key":"app_name",…` | 사용 가능 변수 메타데이터 ([{key, description}]) — `description` 은 요청 언어로 싣는다(언어 파일 `notification.variables.*`·`{확장}::messages.notification_variables.*`, 키가 없으면 선언 문자열). 본인인증 알림이 아니면 선언한 변수 뒤에 회원 공통 변수(`member.display_name`, `member.<키>`, `member.custom.<키>`)가 `group: "member"` 와 함께 덧붙는다(7.2.0) |
 | channels | array | `["mail","database"]` | 활성 채널 (["mail", "database"]) |
 | hooks | array | `["sirsoft-board.comment.after_create"]` | 트리거 훅 목록 (["core.auth.after_register"]) |
 | is_active | boolean | `false` | active 여부 |
@@ -905,6 +914,8 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 알림 정의의 활성 상태(`is_active`)를 현재 값의 반대로 토글합니다. 인증(`auth:sanctum`)과 `core.settings.update` 권한이 필요합니다. 비활성 정의는 해당 알림 발송이 중단되므로, 관리자가 목록에서 특정 알림을 켜거나 끄는 스위치 조작에 사용합니다.
 

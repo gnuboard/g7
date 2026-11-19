@@ -87,7 +87,11 @@ const CASES: Case[] = [
   { screen: '본인인증 로그 표', file: 'partials/admin_identity_logs/_partial_datagrid.json', find: { id: 'identity_log_datagrid' }, source: 'identityLogs', kind: 'grid', emptyKey: 'common.no_data', empty: list([]), rows: list([{ id: 1 }, { id: 2 }]) },
   { screen: '회원 알림 표', file: 'partials/admin_member_notification_list/_partial_datagrid.json', find: { id: 'member_notification_datagrid' }, source: 'memberNotifications', kind: 'grid', emptyKey: 'admin.member_notification.empty_message', empty: list([]), rows: list([{ id: 1 }, { id: 2 }]) },
   { screen: '알림 발송 로그 표', file: 'partials/admin_notification_log_list/_partial_datagrid.json', find: { id: 'notification_log_datagrid' }, source: 'notificationLogs', kind: 'grid', emptyKey: 'common.no_data', empty: list([]), rows: list([{ id: 1 }, { id: 2 }]) },
-  { screen: '스케줄 목록 표', file: 'partials/admin_schedule_list/_tab_schedules.json', find: { id: 'schedules_data_grid' }, source: 'schedules', kind: 'grid', emptyKey: 'common.no_data', empty: list([]), rows: list([{ id: 1 }, { id: 2 }]) },
+  // 스케줄 목록 표는 7.2.0 에서 _partial_schedule_datagrid 로 옮겨지고 큐 관리 표 3개가 생겼다(develop-7.2.0 병합 2026-10-21).
+  { screen: '스케줄 목록 표', file: 'partials/admin_schedule_list/_partial_schedule_datagrid.json', find: { id: 'schedules_data_grid' }, source: 'schedules', kind: 'grid', emptyKey: 'admin.schedules.empty', empty: list([]), rows: list([{ id: 1 }, { id: 2 }]) },
+  { screen: '큐 대기 작업 표', file: 'partials/admin_schedule_list/_queue_pending_grid.json', find: { id: 'queue_pending_grid' }, source: 'queue_pending', kind: 'grid', emptyKey: 'admin.schedules.queue.empty.pending', empty: list([]), rows: list([{ id: 1 }, { id: 2 }]) },
+  { screen: '큐 실패 작업 표', file: 'partials/admin_schedule_list/_queue_failed_grid.json', find: { id: 'queue_failed_grid' }, source: 'queue_failed', kind: 'grid', emptyKey: 'admin.schedules.queue.empty.failed', empty: list([]), rows: list([{ uuid: 'a' }, { uuid: 'b' }]) },
+  { screen: '큐 처리 기록 표', file: 'partials/admin_schedule_list/_queue_logs_grid.json', find: { id: 'queue_logs_grid' }, source: 'queue_logs', kind: 'grid', emptyKey: 'admin.schedules.queue.empty.logs', empty: list([]), rows: list([{ id: 1 }, { id: 2 }]) },
 
   // ── 빈 안내(EmptyState·문단) ──
   { screen: '봇 분석 · 봇별 집계 빈 안내', file: 'admin_analytics_bots.json', find: { name: 'EmptyState', ifIncludes: 'analytics_bots' }, source: 'analytics_bots', kind: 'node', empty: list([]), rows: list([{ id: 1 }]) },
@@ -112,7 +116,8 @@ const CASES: Case[] = [
   { screen: '본인인증 정책 · 코어 목적 없음', file: 'partials/admin_settings/_tab_identity_policies.json', find: { name: 'Span', ifIncludes: 'identityPurposes' }, source: 'identityPurposes', kind: 'node', empty: { data: [] }, rows: { data: [{ id: 'a', source_type: 'core' }] } },
   { screen: '본인인증 정책 · 정책 없음', file: 'partials/admin_settings/_tab_identity_policies.json', find: { name: 'Div', ifIncludes: 'policies?.data?.data' }, source: 'policies', kind: 'node', empty: list([]), rows: list([{ key: 'a' }]) },
   { screen: '본인인증 제공자 · 목적 없음', file: 'partials/admin_settings/_tab_identity_providers.json', find: { name: 'Div', ifIncludes: 'identityPurposes' }, source: 'identityPurposes', kind: 'node', empty: { data: [] }, rows: { data: [{ id: 'a' }] } },
-  { screen: '본인인증 제공자 · 제공자 없음', file: 'partials/admin_settings/_tab_identity_providers.json', find: { name: 'Div', ifIncludes: 'identityProviders' }, source: 'identityProviders', kind: 'node', empty: { data: [] }, rows: { data: [{ id: 'a' }] } },
+  // 제공자 빈 안내는 조회 권한(로그인 관리자 정보 current_user 로 만든 계산값)을 안 뒤에만 판정한다 — 권한을 받은 상태로 그린다
+  { screen: '본인인증 제공자 · 제공자 없음', file: 'partials/admin_settings/_tab_identity_providers.json', find: { name: 'Div', ifIncludes: 'identityProviders' }, source: 'identityProviders', kind: 'node', empty: { data: [] }, rows: { data: [{ id: 'a' }] }, initialData: { current_user: { data: { permissions: ['core.admin.identity.providers.read'] } } } },
   { screen: '알림 정의 · 없음', file: 'partials/admin_settings/_tab_notification_definitions.json', find: { id: 'notif_empty' }, source: 'notificationDefinitions', kind: 'node', empty: list([]), rows: list([{ id: 1 }]) },
 
   // ── 카드 그리드·알림 센터 ──
@@ -481,6 +486,10 @@ describe('관리자 목록 — 전수', () => {
     { file: '_admin_base.json', match: 'admin_sidebar_empty', reason: '응답 성공(success === true)으로 이미 받은 뒤만 가른다' },
     { file: 'admin_user_detail.json', match: 'search_history_site_empty', reason: '회원 응답의 search_history 가 온 뒤에만 참(`!!user?.data?.search_history &&`) — 받는 중에는 거짓' },
     { file: 'admin_user_form.json', match: 'search_history_site_empty', reason: '회원 응답의 search_history 가 온 뒤에만 참(`!!user?.data?.search_history &&`) — 받는 중에는 거짓' },
+    { file: 'partials/admin_settings/_tab_security_extension_trust.json', match: 'extension_trust_builtin_empty', reason: '응답 data 가 온 뒤에만 참(`!!extensionTrustKeys?.data &&`) — 받는 중에는 거짓, 받기 실패는 load_failed 안내가 맡는다 (#916)' },
+    { file: 'partials/admin_settings/_tab_security_extension_trust.json', match: 'extension_trust_vendor_empty', reason: '응답 data 가 온 뒤에만 참(`!!extensionTrustKeys?.data &&`) — 받는 중에는 거짓, 받기 실패는 load_failed 안내가 맡는다 (#916)' },
+
+    { file: 'partials/admin_settings/_tab_member_display_name.json', match: 'member_display_name_default_kind_unused', reason: '표시 이름 데이터 data 가 온 뒤에만 참(`!!memberDisplayNameOptions?.data &&`) — 받는 중에는 거짓, 목록이 아니라 회원 기본 종류를 쓰는 영역이 없다는 안내' },
   ];
 
   /**

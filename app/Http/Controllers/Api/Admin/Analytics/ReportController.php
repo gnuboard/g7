@@ -221,6 +221,8 @@ class ReportController extends AdminBaseController
      */
     private function exportSeriesCsv(array $series, string $from, string $to): StreamedResponse
     {
+        // file-serving:allow 파일이 아니라 이 자리에서 집계해 만든 CSV 내보내기를 돌려준다 — 저장된 파일을
+        // 내주는 통로가 아니라 서빙 계약(nosniff·ETag·304)의 대상이 아니다(매 요청 새로 만들고 no-store).
         $rows = function () use ($series): iterable {
             foreach ($series['points'] as $point) {
                 yield [
@@ -335,6 +337,8 @@ class ReportController extends AdminBaseController
      */
     public function bots(ReportRequest $request): JsonResponse|StreamedResponse
     {
+        // file-serving:allow 내려받기 갈래는 show() → exportCsv() 가 만든 CSV 내보내기를 그대로 돌려준다 —
+        // 저장된 파일을 내주는 통로가 아니다.
         $response = $this->show($request, StatsDimension::BotName->value);
 
         // CSV 는 집계 표를 받으러 오는 길이라 원장 목록을 끼워 넣지 않는다.
@@ -374,6 +378,8 @@ class ReportController extends AdminBaseController
      */
     private function exportCsv(string $report, string $from, string $to, array $options): StreamedResponse
     {
+        // file-serving:allow 파일이 아니라 이 자리에서 집계해 만든 CSV 내보내기를 돌려준다 — 저장된 파일을
+        // 내주는 통로가 아니라 서빙 계약(nosniff·ETag·304)의 대상이 아니다(매 요청 새로 만들고 no-store).
         // 차원마다 화면에서 보이던 부가 열이 있다. 그 열이 CSV 에서 빠지면 운영자는
         // 내려받은 파일이 틀린 것인지 화면이 틀린 것인지 판단할 근거가 없다.
         // 별칭(`goals` → `goal`)을 먼저 풀어야 별칭 주소로 받은 파일에서만 열이 빠지지 않는다.

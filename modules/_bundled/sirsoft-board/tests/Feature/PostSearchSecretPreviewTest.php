@@ -22,15 +22,6 @@ use PHPUnit\Framework\Attributes\Test;
  * 상세 본문(content) 권한자 노출은 기존 정책(PostBlindedAccessControlTest)이 보장 — 본 테스트 범위 밖.
  *
  * @scenario board-search-secret-content-preview
- *
- * @effects published_preview_visible_in_list,
- *          secret_preview_empty_for_guest,
- *          secret_preview_empty_for_other_member,
- *          secret_preview_empty_for_author,
- *          secret_preview_empty_for_manager,
- *          secret_preview_empty_via_search_filter,
- *          blinded_preview_empty_in_list,
- *          secret_title_visible_in_list
  */
 class PostSearchSecretPreviewTest extends BoardTestCase
 {
@@ -69,6 +60,8 @@ class PostSearchSecretPreviewTest extends BoardTestCase
 
     /**
      * 테스트 사전 준비를 수행합니다.
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -97,6 +90,8 @@ class PostSearchSecretPreviewTest extends BoardTestCase
     /**
      * 게시판 관리자(manager) 역할을 생성하고 managerUser 에 부여합니다.
      * (목록 조회용 posts.read 포함)
+     *
+     * @return void 반환값 없음
      */
     private function setupManagerRole(): void
     {
@@ -171,6 +166,8 @@ class PostSearchSecretPreviewTest extends BoardTestCase
      * @scenario viewer=guest
      *
      * @effects published_preview_visible_in_list
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function published_post_preview_is_visible_in_list(): void
@@ -195,6 +192,8 @@ class PostSearchSecretPreviewTest extends BoardTestCase
      * @scenario viewer=guest
      *
      * @effects secret_preview_empty_for_guest
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function secret_post_preview_is_empty_for_guest(): void
@@ -218,6 +217,8 @@ class PostSearchSecretPreviewTest extends BoardTestCase
      * @scenario viewer=other_member
      *
      * @effects secret_preview_empty_for_other_member
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function secret_post_preview_is_empty_for_other_member(): void
@@ -242,6 +243,8 @@ class PostSearchSecretPreviewTest extends BoardTestCase
      * @scenario viewer=author
      *
      * @effects secret_preview_empty_for_author
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function secret_post_preview_is_empty_for_author_in_list(): void
@@ -265,6 +268,8 @@ class PostSearchSecretPreviewTest extends BoardTestCase
      * @scenario viewer=manager
      *
      * @effects secret_preview_empty_for_manager
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function secret_post_preview_is_empty_for_manager_in_list(): void
@@ -285,9 +290,13 @@ class PostSearchSecretPreviewTest extends BoardTestCase
     /**
      * 검색 필터(search=) 경유 시에도 비밀글 미리보기가 차단된다.
      *
-     * @scenario viewer=guest, channel=search
+     * 검색 경유 변종(축 아님, 매니페스트 axes 주석의 channel 변종)이다.
+     *
+     * @scenario viewer=guest
      *
      * @effects secret_preview_empty_via_search_filter
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function secret_post_preview_is_empty_via_search_filter(): void
@@ -295,10 +304,12 @@ class PostSearchSecretPreviewTest extends BoardTestCase
         // 작성자명 검색(LIKE 기반)으로 비밀글을 검색 결과에 포함시킨다.
         // (FULLTEXT 인덱스는 트랜잭션 격리 테스트에서 신규 행 매칭이 불안정하므로
         //  검색 매칭 자체가 아니라 "검색 경유 응답의 마스킹"을 안정적으로 검증)
+        // 회원 글의 작성자 검색은 화면에 보이는 이름(회원 이름)을 찾는다 — 글에 저장된 작성자 이름 컬럼은 비회원 글에만 쓰인다.
         $authorKeyword = 'secretwriter37';
+        $this->postAuthor->forceFill(['name' => $authorKeyword])->save();
         $postId = $this->createTestPost([
             'user_id' => $this->postAuthor->id,
-            'author_name' => $authorKeyword,
+            'author_name' => null,
             'title' => '검색 경유 비밀 글',
             'content' => '비밀글 본문 미리보기 새면 안 됨',
             'is_secret' => true,
@@ -320,6 +331,8 @@ class PostSearchSecretPreviewTest extends BoardTestCase
      * @scenario viewer=guest
      *
      * @effects blinded_preview_empty_in_list
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function blinded_post_preview_is_empty_in_list(): void
@@ -343,6 +356,8 @@ class PostSearchSecretPreviewTest extends BoardTestCase
      * @scenario viewer=guest
      *
      * @effects secret_title_visible_in_list
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function secret_post_title_is_visible_in_list(): void

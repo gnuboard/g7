@@ -407,6 +407,35 @@ core.extensions.custom_assets.manage
 (`core.templates.layouts.edit`) 과 분리한 이유는 여기서 올린 스크립트가 레이아웃 한 장이 아니라
 **사이트 전 화면에서 실행**되기 때문이다 — 레이아웃을 고칠 수 있다는 것이 곧 그 권한이 될 수 없다.
 
+회원이 사용자 화면에서 쓰는 권한은 타입이 `user` 다. 예:
+
+```text
+core.profile.read
+core.profile.update
+core.profile.display_name.choose
+```
+
+`core.profile.display_name.choose` 는 회원이 가입 화면과 내 정보 수정에서 표시 이름 종류를 직접 고르는 권한이다. 기본 `user` 역할에 부여된다.
+가입 화면은 로그인 전이므로 가입하면 받는 `user` 역할이 이 권한을 가졌는지로 판정한다. 권한이 있어도 운영자가 허용한 종류가 하나뿐이면 고를 것이 없어 선택 칸이 나타나지 않는다.
+판정과 요청 계약은 [표시 이름](display-name.md#회원의-종류-선택)을 본다.
+
+### 확장이 선언한 회원 항목과 확장 권한
+
+확장이 회원 항목을 선언하면 그 칸은 코어의 관리자 회원 폼에 함께 나타나고, 저장도 코어의 회원 저장 API(`PUT /api/admin/users/{user}`)
+한 번으로 끝난다. 이 API 의 권한은 코어의 회원 수정 권한(`core.users.update`)이라, 확장이 자기 값에 따로 권한을 두었다면
+그 권한이 없는 관리자도 폼을 열고 저장할 수 있다. 그래서 확장은 자기 항목을 두 겹으로 지킨다.
+
+| 겹 | 방법 | 결과 |
+| --- | --- | --- |
+| 화면 | 필터 `core.field.filter_definitions` 에서, 표면이 관리자 수정(`admin_update`)이고 요청자(`$context['actor']`)에게 확장 권한이 없으면 항목 사본의 `ui.readonly` 를 true, `ui.locked_reason` 을 `permission` 으로 채운다 | 폼 항목 응답(`GET /api/admin/users/{user}/form-fields`)에서 그 항목이 `readonly: true`, `locked_reason: "permission"` 으로 나가고, 화면은 칸을 읽기 전용으로 그린다. 값은 그대로 보인다 |
+| 저장 | 항목의 저장 핸들러가 주는 검증 규칙에서, 보낸 값이 저장된 값과 다를 때만 요청자의 확장 권한을 확인한다 | 권한 없이 값을 바꿔 보내면 그 항목의 폼 경로를 키로 422. 값이 같으면 통과하므로 다른 칸만 고친 저장은 막히지 않는다 |
+
+- 화면 잠금만으로는 부족하다. 요청을 직접 보내면 읽기 전용 표시를 지나칠 수 있으므로 저장 쪽 검증이 반드시 있어야 한다.
+- 항목을 목록에서 빼지 않고 읽기 전용으로 내보낸다. 빼면 권한 없는 관리자에게 값이 없는 것처럼 보이고, 폼이 그 키를 보내지 않아 생기는 차이를 확장이 따로 다뤄야 한다.
+- 잠금은 요청 한 번에만 걸린다. 필터가 받는 항목은 사본이라 `ui` 를 고쳐도 항목 설정에 저장되지 않는다.
+- 사유 `permission` 은 외부가 관리하는 칸의 사유(`sso`, `identity`, `locked`)와 구분된다. 화면은 사유로 안내 문구를 고른다.
+- 선례: sirsoft-ecommerce 의 결제 통화(`ecommerce_preferred_currency`, 권한 `sirsoft-ecommerce.user-currency.manage`)와 배송국가(`ecommerce_preferred_shipping_country`, 권한 `sirsoft-ecommerce.user-shipping-country.manage`). 필터 구독은 `UserPreferenceFieldDefinitionListener`, 저장 검증은 `UserPreferenceFieldHandler`.
+
 ### 모듈 권한
 
 ```text

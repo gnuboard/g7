@@ -8,7 +8,7 @@
  * 좌표계**인지 — 그래야 결과를 눌러 그 줄로 갈 수 있다. 이 일치는 서버가 DB 의 JSON 이 아니라
  * 역변환한 마크업을 훑을 때만 성립하므로, 구현이 되돌아가면 여기서 드러난다.
  *
- * @scenario surface=code_editor,entry=direct
+ * 소속 시나리오(마커 아님 — 평문): code-editor-search
  * @effects code_editor_searches_names_and_contents
  *
  * 실행: `code-editor-*.spec.ts` 는 `--workers=1` 로 돌린다 — 사유는
@@ -31,7 +31,7 @@ test.describe('@sirsoft-admin_basic 코드 편집기 — 검색', () => {
   /**
    * 파일명 검색은 **서버를 부르지 않는다** — 트리가 이름을 모두 들고 있기 때문이다.
    *
-   * @scenario promise=name_search_is_instant, surface=browser
+   * @scenario scope=name
    *
    * @effects code_editor_filters_names_without_a_round_trip
    */
@@ -52,7 +52,7 @@ test.describe('@sirsoft-admin_basic 코드 편집기 — 검색', () => {
   /**
    * 2자 미만은 서버를 부르지 않는다 — 템플릿 전체를 역변환해 훑는 비싼 일이기 때문이다.
    *
-   * @scenario promise=content_search_minimum_length, surface=browser
+   * @scenario scope=content
    *
    * @effects code_editor_skips_content_search_below_two_characters
    */
@@ -73,7 +73,7 @@ test.describe('@sirsoft-admin_basic 코드 편집기 — 검색', () => {
   });
 
   /**
-   * @scenario promise=content_search_summary, surface=browser
+   * @scenario scope=content
    *
    * @effects code_editor_searches_contents_with_editor_line_numbers
    */
@@ -103,7 +103,7 @@ test.describe('@sirsoft-admin_basic 코드 편집기 — 검색', () => {
    * 서버가 DB 의 JSON 을 훑도록 되돌아가면 줄 번호가 조용히 어긋나고, 결과를 눌렀을 때
    * 엉뚱한 줄로 간다. 응답에도 콘솔에도 신호가 없어 브라우저에서만 드러나는 종류다.
    *
-   * @scenario promise=search_result_jumps_to_the_right_line, surface=browser
+   * @scenario scope=content
    *
    * @effects code_editor_search_result_click_reveals_the_matching_line
    */

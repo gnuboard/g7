@@ -1,0 +1,40 @@
+feature: 이커머스 화면 주소 래퍼 — 알림·주문 이동·클레임·결제 뒤 복귀·검색·사이트맵 (#792)
+
+description: |
+  사람이 여는 주소는 EcommerceScreenUrl(상점 접두는 부를 때마다 ShopPathResolver)로 만들어 코어 ScreenUrl 의
+  「사용자 화면 URL」·주소 필터를 따른다. 관리자 링크는 관리자 범위(사이트 주소). ClaimUrl 은 내부만 래퍼를 쓰고
+  상수는 G7 기본 경로로 남는다. 클레임 결제 콜백 복귀는 사용자 화면 베이스로 절대화한다(콜백 자체는 SiteUrl).
+  사이트맵·SEO 사이트맵 색인의 상품 주소는 화면·검색과 같은 상품 코드다(W12).
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Seo/EcommerceSitemapIndexTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/EcommerceScreenUrlTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Seo/EcommerceSitemapContributorTest.php
+
+axes:
+  case:
+    - wrapper
+    - claim
+    - order_response
+    - sitemap
+    - notification_site_url
+
+effects:
+  - shop_keys_use_shop_prefix
+  - mypage_keys_absolute_user_screen
+  - claim_urls_filtered
+  - claim_constants_default
+  - order_redirect_url_wrapped
+  - pg_provider_kept
+  - sitemap_contributor_identity
+  - sitemap_default_route_path
+  - sitemap_no_route_omits_segment
+  - sitemap_entry_structure
+  - sitemap_product_url_uses_product_code
+  - sitemap_truncates_at_limit
+  - sitemap_toggles_respected
+  - sitemap_lazy_stream
+  - sitemap_index_product_url_uses_product_code
+  - sitemap_index_follows_visibility
+  - member_notification_site_url_user_screen
+  - admin_notification_site_url_site

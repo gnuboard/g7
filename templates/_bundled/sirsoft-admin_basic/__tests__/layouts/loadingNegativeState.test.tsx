@@ -55,12 +55,12 @@ describe('sirsoft-admin_basic — 받는 중 노출 전수', () => {
    *  1-2. 조건이 여러 데이터에 기대면, 하나가 먼저 와 나머지 마디가 참이 된 순간에도 보이면 안 된다 — 받는 데이터 하나만
    *     기대는 마디가 받는 중에 참이면(`X?.data?.y !== true`) 그 데이터는 `X !== undefined &&` 로 기다려야 한다.
    *  1-1. 회원/비회원 분기(`!_global.currentUser…`)는 조상과 무관하게 받는 중 가드(`_global.currentUser !== undefined &&`)가 있어야 한다.
-   *  2. 보이는 글자가 받는 데이터를 `?? 0` 으로 메운 숫자를 그리는데, 자신·조상에 그 소스를 기다리는
+   *  2. 보이는 글자가 받는 데이터를 `?? 0` 으로 메운 숫자(또는 `(… ?? []).length` 개수)를 그리는데, 자신·조상에 그 소스를 기다리는
    *     `blur_until_loaded` 가 없다 — 받기 전 「0」이 먼저 보인다.
    */
   /** 받는 중에 보여도 되는 노드 — `파일#노드` → 사유 */
   const EXPOSE_ALLOW = new Map<string, string>([
-    ['layouts/admin_role_form.json#menus_readonly_hint', '_local.form 은 blocking 소스(role)가 그리기 전에 채운다 — 받는 중으로 잡힌 clone_source 는 복제 진입에서만 받는다'],
+    ['layouts/admin_role_form.json#menus_readonly_hint','_local.form 은 blocking 소스(role)가 그리기 전에 채운다 — 받는 중으로 잡힌 clone_source 는 복제 진입에서만 받는다'],
     ['layouts/admin_user_form.json#password_admin_assigned_notice', '관리자가 비밀번호 칸에 입력한 뒤에만 보인다 — 입력하는 시점에는 로그인 관리자 정보(current_user)가 이미 와 있다'],
     ['layouts/admin_user_form.json#field_current_password', '관리자가 비밀번호 칸에 입력한 뒤에만 보인다 — 입력하는 시점에는 로그인 관리자 정보(current_user)가 이미 와 있다'],
   ]);
@@ -378,7 +378,8 @@ describe('sirsoft-admin_basic — 받는 중 노출 전수', () => {
         if (!offenders.some((o) => o.startsWith(`[노출] ${label} `) && o.endsWith(node.if))) offenders.push(`[회원분기] ${label} ${node.if}`);
       }
       const chain = node.blur_until_loaded ? [...blurChain, node] : blurChain;
-      if (typeof node.text === 'string' && /\?\?\s*0\b/.test(expandComputed(node.text, scope))) {
+      // `?? 0` 뿐 아니라 받는 데이터를 `?? []` 로 메운 목록의 개수(`(… ?? []).length`)도 받기 전 「0건」 을 그린다
+      if (typeof node.text === 'string' && /\?\?\s*0\b|\?\?\s*\[\]\s*\)\s*\.length\b/.test(expandComputed(node.text, scope))) {
         const refs = loadingRefs(expandComputed(node.text, scope), scope);
         if (refs.length) {
           checked += 1;
@@ -499,5 +500,25 @@ describe('sirsoft-admin_basic — 상세 창이 목록 행으로 먼저 그려�
     expect(checked).toBeGreaterThan(0);
     expect(before).toEqual([]);
     expect(after).toEqual([]);
+  });
+
+  /**
+   * 역할 폼 권한 개수 배지 — 복제 진입에서 `clone_source` 를 받는 동안만 흐리고, 등록·수정·복제 도착 뒤에는 흐리지 않는다.
+   * 데이터소스 이름 흐림(`sources="clone_source"`)은 복제가 아닐 때 소스가 꺼져(if 거짓) 값이 영영 undefined 라 흐림이 안 풀리므로
+   * 표현식 흐림으로 복제일 때만 건다(엔진 `DynamicRenderer` 문자열 흐림 = `evaluateExpression` 의 참거짓).
+   *
+   * @scenario load_state=loading
+   * @effects loading_blurs_zero_counts
+   */
+  it('역할 폼 권한 개수 배지는 복제 진입의 받는 중에만 흐린다', () => {
+    const role = JSON.parse(fs.readFileSync(path.join(PKG_ROOT, 'layouts/admin_role_form.json'), 'utf8'));
+    const badge = findAll(role, (n) => n.id === 'permissions_selected_count')[0];
+    expect(typeof badge?.blur_until_loaded).toBe('string');
+    const expr = String(badge.blur_until_loaded).replace(/^\{\{|\}\}$/g, '');
+    const blurred = (ctx: Record<string, unknown>) => Boolean(dataBindingEngine.evaluateExpression(expr, { _global: {}, _local: {}, ...ctx } as any, { skipCache: true }));
+    expect(blurred({ query: {}, route: {} }), '등록').toBe(false);
+    expect(blurred({ query: {}, route: { id: '7' }, role: { data: {} } }), '수정').toBe(false);
+    expect(blurred({ query: { clone_from: '3' }, route: {} }), '복제 받는 중').toBe(true);
+    expect(blurred({ query: { clone_from: '3' }, route: {}, clone_source: { data: {} } }), '복제 도착').toBe(false);
   });
 });

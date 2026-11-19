@@ -5,14 +5,14 @@
 ## 레이아웃 목록
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 191개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 223개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
-| `(root)` | 41개 |
+| `(root)` | 42개 |
 | `auth` | 1개 |
-| `errors` | 6개 |
-| `partials` | 143개 |
+| `errors` | 7개 |
+| `partials` | 173개 |
 
 | 레이아웃 | 그룹 | 종류 | extends |
 |---|---|---|---|
@@ -34,6 +34,7 @@
 | `admin_analytics_visitors` | `(root)` | 화면 | `_admin_base` |
 | `admin_dashboard` | `(root)` | 화면 | `_admin_base` |
 | `admin_forgot_password` | `(root)` | 화면 | - |
+| `admin_home` | `(root)` | 화면 | `_admin_base` |
 | `admin_identity_logs` | `(root)` | 화면 | `_admin_base` |
 | `admin_language_pack_list` | `(root)` | 화면 | `_admin_base` |
 | `admin_language_packs` | `(root)` | 화면 | `admin_language_pack_list` |
@@ -62,12 +63,15 @@
 | `404` | `errors` | 화면 | `_admin_base` |
 | `500` | `errors` | 화면 | `_admin_base` |
 | `503` | `errors` | 화면 | `_admin_base` |
+| `default` | `errors` | 화면 | `_admin_base` |
 | `maintenance` | `errors` | 화면 | `_admin_base` |
 | `_identity_challenge_modal` | `partials` | partial | - |
 | `_modal_changelog` | `partials` | partial | - |
 | `_modal_license` | `partials` | partial | - |
 | `_modal_lifecycle_warnings` | `partials` | partial | - |
 | `_modal_notification_delete_all_confirm` | `partials` | partial | - |
+| `_package_integrity_notice` | `partials` | partial | - |
+| `_layout_sync_preview` | `partials` | partial | - |
 | `_partial_datagrid` | `partials` | partial | - |
 | `_partial_filter` | `partials` | partial | - |
 | `_modal_purge_all` | `partials` | partial | - |
@@ -108,7 +112,6 @@
 | `_panel_view` | `partials` | partial | - |
 | `_drawer_manifest_preview` | `partials` | partial | - |
 | `_modal_deactivate_integrations` | `partials` | partial | - |
-| `_modal_deactivate_warning` | `partials` | partial | - |
 | `_modal_detail` | `partials` | partial | - |
 | `_modal_extension_license` | `partials` | partial | - |
 | `_modal_force_activate` | `partials` | partial | - |
@@ -135,20 +138,37 @@
 | `_modal_uninstall` | `partials` | partial | - |
 | `_modal_update` | `partials` | partial | - |
 | `_modal_delete` | `partials` | partial | - |
+| `_modal_bulk_status` | `partials` | partial | - |
 | `_modal_delete` | `partials` | partial | - |
 | `_modal_duplicate` | `partials` | partial | - |
 | `_modal_form` | `partials` | partial | - |
 | `_modal_history` | `partials` | partial | - |
+| `_modal_queue_confirm` | `partials` | partial | - |
+| `_modal_queue_job_detail` | `partials` | partial | - |
 | `_modal_run` | `partials` | partial | - |
+| `_modal_security` | `partials` | partial | - |
+| `_partial_filter_section` | `partials` | partial | - |
+| `_partial_schedule_datagrid` | `partials` | partial | - |
+| `_queue_failed_grid` | `partials` | partial | - |
+| `_queue_logs_grid` | `partials` | partial | - |
+| `_queue_pending_grid` | `partials` | partial | - |
+| `_status_card` | `partials` | partial | - |
+| `_tab_queue` | `partials` | partial | - |
 | `_tab_schedules` | `partials` | partial | - |
 | `_modal_cache_delete` | `partials` | partial | - |
 | `_modal_core_changelog` | `partials` | partial | - |
 | `_modal_core_update_guide` | `partials` | partial | - |
 | `_modal_core_update_result` | `partials` | partial | - |
+| `_modal_cron_token_rotate` | `partials` | partial | - |
 | `_modal_embed_provider_form` | `partials` | partial | - |
+| `_modal_extension_trust_key_add` | `partials` | partial | - |
+| `_modal_extension_trust_key_delete` | `partials` | partial | - |
 | `_modal_identity_policy_delete` | `partials` | partial | - |
 | `_modal_identity_policy_form` | `partials` | partial | - |
 | `_modal_ip_restriction_rule_form` | `partials` | partial | - |
+| `_modal_member_field_delete` | `partials` | partial | - |
+| `_modal_member_field_form` | `partials` | partial | - |
+| `_modal_member_field_required` | `partials` | partial | - |
 | `_modal_notification_channel_off_confirm` | `partials` | partial | - |
 | `_modal_notification_definition_reset` | `partials` | partial | - |
 | `_modal_notification_identity_definition_add` | `partials` | partial | - |
@@ -160,6 +180,8 @@
 | `_modal_privacy_run` | `partials` | partial | - |
 | `_modal_privacy_targets` | `partials` | partial | - |
 | `_modal_static_cache_republish` | `partials` | partial | - |
+| `_modal_thumbnail_pregenerate` | `partials` | partial | - |
+| `_modal_thumbnail_purge_all` | `partials` | partial | - |
 | `_modal_unsaved_tab_switch` | `partials` | partial | - |
 | `_tab_advanced` | `partials` | partial | - |
 | `_tab_content` | `partials` | partial | - |
@@ -173,14 +195,22 @@
 | `_tab_info` | `partials` | partial | - |
 | `_tab_language_packs` | `partials` | partial | - |
 | `_tab_mail` | `partials` | partial | - |
+| `_tab_member` | `partials` | partial | - |
+| `_tab_member_display_name` | `partials` | partial | - |
+| `_tab_member_fields` | `partials` | partial | - |
+| `_tab_member_fields_cards` | `partials` | partial | - |
+| `_tab_member_nickname` | `partials` | partial | - |
 | `_tab_notification_definitions` | `partials` | partial | - |
 | `_tab_privacy` | `partials` | partial | - |
 | `_tab_security` | `partials` | partial | - |
 | `_tab_security_activity_log` | `partials` | partial | - |
 | `_tab_security_csp` | `partials` | partial | - |
+| `_tab_security_extension_trust` | `partials` | partial | - |
 | `_tab_security_ip_restriction` | `partials` | partial | - |
 | `_tab_security_password_policy` | `partials` | partial | - |
 | `_tab_seo` | `partials` | partial | - |
+| `_tab_system` | `partials` | partial | - |
+| `_tab_update` | `partials` | partial | - |
 | `_tab_upload` | `partials` | partial | - |
 | `_modal_extension_preview_layout` | `partials` | partial | - |
 | `_modal_extension_version_history` | `partials` | partial | - |
@@ -203,6 +233,8 @@
 | `_tab_user` | `partials` | partial | - |
 | `_modal_bulk_roles` | `partials` | partial | - |
 | `_partial_filter_section` | `partials` | partial | - |
+| `_member_fields` | `partials` | partial | - |
+| `_member_fields_view` | `partials` | partial | - |
 | `_content_section` | `partials` | partial | - |
 | `_header_section` | `partials` | partial | - |
 | `_info_card` | `partials` | partial | - |
@@ -268,10 +300,11 @@ auto·접힘으로 되돌립니다 — 한 곳이라도 빠지면 직전에 고�
 
 **전체 화면 본인인증의 [다시 보내기] 는 정책·수단을 싣는다**(관리자 화면, 코어 7.1.6~): `auth/identity_challenge` 는 상태 조회(`GET /api/identity/challenges/{id}`) 성공 시 응답의 `provider_id`·`policy_key` 를 `_local.provider_id`·`_local.policy_key` 에 담고, 재전송 요청 본문 2곳(코드 입력형·링크형)에 함께 싣습니다. 코어 7.1.6 은 정책이 지정한 수단으로 받은 인증만 인정하고 정책 키가 있으면 그 수단으로만 발급하므로(다른 수단이면 422), 이 두 값을 빼면 다시 보낸 인증이 기본 수단(메일)으로 발급되어 정책을 통과하지 못합니다. 잠금: `__tests__/layouts/identity-challenge-target-and-policy.test.ts`.
 
-**에러 화면**(`errors/*.json`): `extends` 없는 독립 레이아웃. `Div`(중앙 정렬) 안에
-`Icon`+`H1`(코드)+`P`(메시지)+`Button`(홈 이동). 독립 레이아웃이므로 `Toast`/`Modal` 같은
-전역 호스트 컴포넌트가 필요하면 직접 마운트해야 합니다(§코어 AGENTS.md "독립 레이아웃의 글로벌
-호스트 컴포넌트").
+**에러 화면**(`errors/*.json`): `_admin_base` 를 extends 하고 content 슬롯만 채운다(사이드바·머리글은 베이스가 그린다).
+`Div`(중앙 정렬) 안에 `Icon`+`H1`(코드)+`H2`(제목)+`P`(메시지)+`A`(홈 이동). `errors/default` 는 코드별 레이아웃이 없는
+코드(400·422·429·502·504 등)를 맡는 공통 오류 화면으로 `template.json` 의 `error_config.layouts.default` 에 등록돼 있다 —
+코드를 박지 않고 엔진이 넘기는 `{{errorCode}}` 를 보이며 새로고침(`refresh`) 단추를 홈 단추 앞에 둔다. 이 등록이 없으면 엔진 내장
+오류 화면이 사이드바와 머리글까지 덮는다.
 
 ### `_admin_base.g7.html` 에 대한 정정
 
@@ -281,6 +314,37 @@ auto·접힘으로 되돌립니다 — 한 곳이라도 빠지면 직전에 고�
 `admin_reset_password`)에서만 호출됩니다. 사이드바 접힘 상태 복원(`initSidebar`)은 레이아웃이
 아니라 템플릿 부트스트랩(`src/index.ts`)에서 직접 호출됩니다. `_admin_base` 를 고칠 때 이
 문서의 낡은 구조를 그대로 믿지 말고 실제 JSON 을 확인하세요.
+
+### 외부 인증과 관리자 화면 (코어 7.2.0)
+
+코어 7.2.0 이 연 외부 인증 확장점을 관리자 화면이 받는 자리입니다. 확장이 없으면 모두 지금 화면 그대로입니다.
+
+- `admin_login` — 로그인 성공 분기를 이름 붙은 액션 `applyAdminLoginResult` 하나로 모았습니다. 폼 제출(`login`)과
+  `<init>` 의 로그인 인계 교환(`?login_handoff={코드}` → `loginHandoff`, 관리자 경로)이 같은 분기를 씁니다 — 두 곳에 복제하지
+  않습니다. 인계 교환은 상태 초기화 **뒤**에 하고, 코드는 한 번만 통하므로 주소에서 지웁니다.
+- 같은 화면의 나머지 분기: 이메일 칸을 벗어날 때 `POST /api/auth/admin/login/discover` 로 수단을 묻고 외부 수단이면 비밀번호 칸 대신
+  「… 계정으로 계속」(`_global.adminLoginDiscovery`·`adminLoginDiscoveryFor` — 폼 저장소 `_local` 과 분리해, 판정 요청 중 친 비밀번호가 응답 처리에 지워지지 않게 한다) / 403 `auth.password_auth_disabled` 는 오류 아래 그 수단으로 가는 버튼(`_local.loginAlternate*`) /
+  409 `auth.external_step_required` 는 그 주소로 이동 / 칸 종류는 `_global.appConfig.auth.login_identifier.admin` / 자동 이동은
+  `_global.appConfig.auth.auto_redirect.admin`(쿼리 `local`·`login_handoff`·`sso_error`·`sso_pending`·`sso_link` 가 있으면 멈춤 — 오류로 돌아온
+  화면이 다시 떠나면 무한 왕복이 된다), 켜진 사이트면 하단에 `?local=1` 링크(비상 계정 진입로).
+- 판정이 외부 수단이면 「… 계정으로 계속」 위에 「… 계정으로 로그인하는 이메일입니다」 안내(`login_discovery_notice`)를, `?local=1` 로 들어오면 폼 위에 비상 계정 로그인 화면 안내(`login_local_notice`)를 보입니다.
+- 오류 안내 데이터는 `error.errors.*`(`code`, `redirect_url`, `method_label`)로 읽습니다 — `error.data` 는 audit 규칙이 막습니다.
+- 확장점 `admin_login_extensions` — 로그인 폼 아래 빈 슬롯. 다른 관리자 로그인 수단(회사 계정 버튼 등)을 확장이 붙입니다.
+- `admin_user_form` — 등록 화면 「비밀번호 없이 만들기」(`create_without_password`, 켜면 비밀번호 두 칸을 숨기고 이미 적은 값도 비운다).
+  수정 화면은 응답 `locked_fields` 에 든 칸을 `disabled` 로 두고 안내를 붙입니다(서버도 다른 값이면 422 `user.field_locked`).
+  회원 상세의 `password_status.can_set` 이 false 면(비밀번호 인증 정책이 막는 회원 — 회사 계정 로그인 강제 등) 비밀번호 칸·규칙·본인 확인 자리 대신
+  `password_status.set_blocked_message` 안내(`password_unsettable_notice`)를 보입니다. 저장 403 은 서버 문구를, 없을 때만 「권한이 없습니다」 를 보입니다(7.2.0).
+- `admin_user_detail` — 상단 「모든 기기에서 로그아웃」 + 확인 모달 → `POST /api/admin/users/{uuid}/sessions/revoke`.
+- 보안 탭 첫 카드 「회원가입」 — 「일반 회원가입 받기」(`security.registration_enabled`).
+- 재확인 관문(회원 수정 화면의 본인 비밀번호 첫 설정, 앱 키 재생성 모달)은 수단을 고정하지 않습니다 — 응답이 `render_hint=external_redirect`
+  면 그 주소로 갔다가 `?verification_token=` 을 들고 돌아옵니다(`admin_user_form` 의 `<init>` 이 폼 값으로 옮긴다).
+  428 을 받은 본인인증 launcher 도 challenge 요청에 지금 화면 경로(`return_path`)를 실어, 외부 수단을 거친 뒤 같은 관리자 화면으로 돌아옵니다.
+- `admin_forgot_password`·`admin_reset_password` — 비밀번호 인증이 막힌 계정은 오류 아래 그 수단으로 가는 버튼(`forgotAlternate*`·`resetAlternate*`).
+  재설정 화면의 막힘 안내는 일반 오류 상자와 나뉜 상자(`reset_blocked_notice`, 문구 `resetBlockedMessage`)입니다 — 링크 검증(blocking)의
+  오류 처리기는 화면 `<init>` 보다 먼저 돌아서, `<init>` 이 비우는 일반 오류 키(`resetError`)에 담으면 화면에 닿기 전에 지워집니다.
+  두 화면 모두 요청에 `redirect_prefix=admin` 을 실어 다른 수단 주소가 관리자 로그인(`guard=admin`)으로 옵니다.
+- 회원 목록 열은 확장이 오버레이 `inject_props` `_append` 로 늘립니다 — 대상은 표 `users_data_grid` 의 `columns` 와 열 선택기
+  **`column_selector`**(`id="admin_user_list_columns"` 는 저장 키 prop 이라 대상이 아니다)의 `columns`·`defaultColumns`.
 
 ### `admin_login.json` 의 2단계 인증(인증번호) 단계
 
@@ -342,6 +406,16 @@ min/max 는 `_meta.limits.security_*` 바인딩입니다. 만료 대상 두 행(
 법정 안내 상자(접속기록 1·2년, 권한·역할 변경 기록은 이 값과 관계없이 3년)입니다. 저장은 보안 탭 공용 저장 버튼이 함께 보냅니다.
 반응형 프리셋은 쓰지 않습니다.
 
+### 보안 탭 앱 키 재생성 확인 창
+
+`partials/admin_settings/_modal_password_confirm` 은 최고관리자 비밀번호로 확인한 뒤 앱 키를 다시 만듭니다. 비밀번호가 없는
+관리자(외부 인증으로만 가입, `current_user.data.has_password === false`)에게는 비밀번호 칸 대신 이메일 인증번호 칸
+(`app_key_reauth_section`, 코어 본인인증 `sensitive_action`)이 보이고, 창 제목도 「비밀번호 확인」 대신 「본인 확인」
+(`admin.settings.modals.identity_confirm_title`)입니다. 관리자 화면에는 `_global.currentUser` 가 없으므로 판정은 관리자 기반 레이아웃의
+데이터소스 `current_user` 를 읽습니다. 수단은 서버가 고르며(7.2.0), 메일을 받을 수 없는 관리자(`current_user.data.email_deliverable === false`)에게는
+「이메일로 받은 인증번호」 안내 대신 일반 안내(`reauth_notice_other`)와 「본인 확인 시작」(`reauth_start`)이 보입니다. 자기 정보 수정의
+비밀번호 첫 설정(`admin_user_form` `password_reauth_verification`)도 같은 규칙입니다.
+
 ### 드라이버 탭 「공개 자산 스토리지」 카드의 보호 규칙 경고 두 가지 (코어 7.1.6)
 
 `partials/admin_settings/_tab_drivers` 의 카드 끝에 경고 두 줄이 따로 있습니다. 둘 다 설정 메타 `_meta.public_disk_hardening` 을 읽습니다.
@@ -369,7 +443,7 @@ min/max 는 `_meta.limits.security_*` 바인딩입니다. 만료 대상 두 행(
 <!-- @generated:layout-map START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 경로 | 레이아웃 | 이름 |
 |---|---|---|
-| `*/admin` | `-` | - |
+| `*/admin` | `admin_home` | - |
 | `*/admin/login` | `admin_login` | - |
 | `*/admin/forgot-password` | `admin_forgot_password` | - |
 | `*/admin/reset-password` | `admin_reset_password` | - |
@@ -410,15 +484,18 @@ min/max 는 `_meta.limits.security_*` 바인딩입니다. 만료 대상 두 행(
 | `*/admin/roles` | `admin_role_list` | - |
 | `*/admin/roles/create` | `admin_role_form` | - |
 | `*/admin/roles/:id/edit` | `admin_role_form` | - |
+| `*/admin/schedules/queue` | `admin_schedule_list` | - |
 | `*/admin/schedules` | `admin_schedule_list` | - |
 | `*/admin/identity/logs` | `admin_identity_logs` | - |
 | `*/admin/identity/challenge` | `auth/identity_challenge` | - |
 <!-- @generated:layout-map END -->
 
 <!-- @intent START -->
-`레이아웃` 열이 `-` 인 두 행(`*/admin`, `*/admin/settings/language-packs`)은 레이아웃이
-없다는 뜻이 아니라 **다른 라우트로 리다이렉트되는 진입점**입니다 — 예를 들어 `/admin` 은
-로그인 여부에 따라 `/admin/login` 또는 `/admin/dashboard` 로 넘어가는 게이트 라우트입니다.
+`레이아웃` 열이 `-` 인 행(`*/admin/settings/language-packs` 등)은 레이아웃이 없다는 뜻이 아니라
+**다른 라우트로 리다이렉트되는 진입점**입니다. `*/admin` 은 리다이렉트가 아니라 첫 화면 레이아웃
+`admin_home` 을 그립니다 — 로그인하지 않았으면 `/admin/login` 으로 가고, 로그인했으면 대시보드 권한이
+있을 때 `/admin/dashboard`, 없을 때 사이드바 메뉴의 첫 화면으로 넘깁니다(확장이 준 역할만 가진 관리자가
+대시보드 403 화면에 갇히지 않게). 로그인 화면은 복귀 주소가 없으면 이 첫 화면으로 보냅니다.
 새 화면을 추가할 때 이 표에 라우트를 등록하는 것만으로 끝나지 않습니다 — 사이드바 메뉴에서
 그 화면으로 이동하는 진입점도 함께 추가해야 실제로 도달 가능해집니다(라우트만 있고 메뉴
 항목이 없으면 URL을 직접 입력해야만 닿는 화면이 됩니다).
@@ -465,6 +542,8 @@ min/max 는 `_meta.limits.security_*` 바인딩입니다. 만료 대상 두 행(
 `_tab_notification_definitions` 은 분류 칩(전체 · 일반 알림 · 본인인증)을 `?category=` 쿼리로 들고, 목록 데이터 소스
 `notificationDefinitions` 에 그대로 넘깁니다(`extension_type="core"` — 코어 선언과 운영자가 추가한 정책별 문구가 함께
 옵니다). 본인인증 카드(`category === 'identity'`)는 일반 알림과 세 가지가 다릅니다.
+
+**템플릿이 없는 수단(7.2.0)** 수단 하위 탭에서 그 수단 template 이 없는 정의는 「이 채널에 대한 템플릿이 없습니다」 옆에 꺼진 「템플릿 만들기」 스위치가 선다. 켜면 그 수단을 정의 `channels` 에 더해 바로 `PUT` 하고 코어가 빈 template(꺼짐, `is_user_created`)을 만든다(코어 `docs/backend/notification-system.md` 「운영자가 켠 발송 수단의 빈 템플릿」). 다시 받은 목록에는 template 스위치와 [편집], 「빈 템플릿이 만들어졌습니다…」 안내(`admin.settings.notification_definitions.user_template_inactive`)가 선다. template 켜기가 422 로 거절되면 `notif_definitions_list` 를 `remount` 해 눌린 스위치를 되돌린다.
 
 | 축 | 본인인증 카드 | 이유 |
 |---|---|---|
@@ -531,7 +610,7 @@ GDPR 배너)을 코어 대시보드 위젯 형태로만 받고, 이 템플릿이
 > **요약**(현행 디스크 실측 — 총 149개):
 > 1. 베이스: `_admin_base.g7.html` (사이드바 + 헤더 + 콘텐츠 슬롯)
 > 2. 코어 페이지 26개(layouts 직속, `_admin_base` 제외): 대시보드, 사용자, 역할, 설정, 확장 관리, 언어팩, 로그, 2단계 인증 등
-> 3. `auth/` 1개 · `errors/` 6개
+> 3. `auth/` 1개 · `errors/` 7개(코드 6종 + 공통 `default`)
 > 4. Partial 115개: 탭, 모달, 패널, 필터, 드로어 등
 
 ### 페이지 맵 (트리 구조)
@@ -539,6 +618,7 @@ GDPR 배너)을 코어 대시보드 위젯 형태로만 받고, 이 템플릿이
 ```text
 _admin_base.g7.html (베이스 레이아웃)
 │
+├── admin_home.g7.html (첫 화면 `/admin` — 본문 없이 볼 수 있는 화면으로 넘김: 대시보드 권한이 있으면 대시보드, 없으면 사이드바 메뉴의 첫 화면, 열 화면이 없으면 안내)
 ├── admin_dashboard.g7.html (대시보드)
 ├── admin_login.g7.html (로그인 — _admin_base 미상속)
 │
@@ -576,9 +656,12 @@ _admin_base.g7.html (베이스 레이아웃)
 │   ├── admin_user_list.g7.html (목록)
 │   ├── admin_user_form.g7.html (생성/수정)
 │   ├── admin_user_detail.g7.html (상세)
-│   └── partials/admin_user_list/
-│       ├── _partial_filter_section.g7.html (필터 카드 — 기본/상세 슬롯·검색편집·빠른 기간·확장 필터 자리)
-│       └── _modal_bulk_roles.g7.html (선택 회원 역할 일괄 추가·제거 창)
+│   ├── partials/admin_user_list/
+│   │   ├── _partial_filter_section.g7.html (필터 카드 — 기본/상세 슬롯·검색편집·빠른 기간·확장 필터 자리)
+│   │   └── _modal_bulk_roles.g7.html (선택 회원 역할 일괄 추가·제거 창)
+│   └── partials/member/
+│       ├── _member_fields.g7.html (회원 항목 입력 반복 조각 — 회원 추가와 수정 화면이 구획마다 `data-each="memberFieldGroup in …"` 안에서 부름, #490)
+│       └── _member_fields_view.g7.html (회원 항목 보기 조각 — 회원 상세가 같은 방식으로 부르고 `display_value` 를 보임, 값이 없으면 「-」, #490)
 │
 ├── 역할 관리
 │   ├── admin_role_list.g7.html (목록)
@@ -598,7 +681,7 @@ _admin_base.g7.html (베이스 레이아웃)
 │           └── _modal_delete.g7.html
 │
 ├── 환경 설정
-│   └── admin_settings.g7.html (탭 네비게이션)
+│   └── admin_settings.g7.html (탭 네비게이션 · 설정 조회 외 권한이 필요한 목록·링크는 계산값 canReadLanguagePacks·canReadIdentityProviders·canReadIdentityPolicies·canReadSchedules 로 가리고, 그 데이터소스의 403 은 조용히 넘김)
 │       └── partials/admin_settings/
 │           ├── _tab_general.g7.html (일반)
 │           ├── _tab_mail.g7.html (메일 발송 SMTP 설정)
@@ -609,16 +692,24 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _modal_password_expiry_run.g7.html (보안 — 비밀번호 만료 지금 실행 확인 창)
 │           ├── _tab_security_activity_log.g7.html (보안 > 활동 로그(접속기록) 보관 카드)
 │           ├── _tab_security_csp.g7.html (보안 > 콘텐츠 보안 정책(CSP) 카드 — 모드·추가 호스트·자동 포함 호스트·정책 미리보기)
+│           ├── _tab_security_extension_trust.g7.html (보안 > 확장 신뢰 키 카드 — 내장 키 읽기 전용, 제작자 키 목록·추가·삭제, 「미서명 패키지 차단」 스위치는 탭 저장)
+│           ├── _modal_extension_trust_key_add.g7.html (보안 — 제작자 키 추가 창, 공개키·서명자 이름·신뢰 vendor 와 비밀번호 재확인)
+│           ├── _modal_extension_trust_key_delete.g7.html (보안 — 제작자 키 삭제 확인 창, 비밀번호 재확인)
 │           ├── _tab_privacy.g7.html (개인정보 — 보유기간 파기·휴면 계정, 조치 대상은 대상마다 한 행: 건수 · 대상 보기 · 지금 실행 · 결과 줄)
 │           ├── _modal_privacy_targets.g7.html (개인정보 — 조치 대상 명단 창, 무한 스크롤 · 0건이면 빈 명단 안내)
 │           ├── _modal_privacy_run.g7.html (개인정보 — 직권 실행 확인 창, 건수 재조회 · 휴면 전환·탈퇴의 대기기간 생략)
-│           ├── _tab_upload.g7.html (업로드)
+│           ├── _tab_upload.g7.html (업로드 — 썸네일 규격 표의 확장 행은 등록 이름 `label`(로케일 맵, `$localized`)을 위에, 식별자를 아래 작게. 본문·비우기 규격 select 도 같은 이름, 없으면 식별자. 썸네일 카드 끝 「고급 — 서버 보호 값」 숫자 칸 여섯(`upload.thumbnail_{generate_per_minute, lock_wait_seconds, max_source_pixels, pregenerate_batch, pregenerate_time_budget, purge_time_budget}`)은 비우면 `_meta.thumbnail_server_defaults` 를 placeholder 로 보이고, `.env` 가 정한 칸은 다른 탭과 같이 `_computed.envLocked` 로 배지·잠금)
+│           ├── _modal_thumbnail_pregenerate.g7.html (업로드 — 기존 이미지 썸네일 만들기 창, 걸음 액션 thumbnailPregenerateStep 이 다음 커서가 없을 때까지 이어 부르고 멈춤·다시 시작·닫으면 멈춤)
+│           ├── _modal_thumbnail_purge_all.g7.html (업로드 — 썸네일 두 저장 위치 모두 비우기 확인 창, 위치별 디스크·파일 수·용량, 공개 위치는 CDN 무효화까지)
 │           ├── _tab_drivers.g7.html (드라이버)
 │           ├── _tab_seo.g7.html (SEO)
 │           ├── _tab_content.g7.html (본문 콘텐츠 — 허용 기능(그림 설명·동영상/오디오 업로드 허용·외부 영상 삽입)·추가 태그·외부 영상 서비스(프리셋 3종 유튜브·비메오·틱톡 — 공식 퍼가기 플레이어 주소가 있는 서비스만·확장 제공 `_meta.embed_extension_providers`·직접 추가)·미디어 주소 유효 시간, 코어 7.1.5)
-│           ├── _modal_embed_provider_form.g7.html (본문 콘텐츠 — 외부 영상 서비스 추가·수정 창. 폼의 `content.embed_custom_providers` 만 고치고 저장은 하단 「저장」, 예시 주소 확인은 `POST /api/admin/settings/content/embed-preview`)
+│           ├── _modal_embed_provider_form.g7.html (본문 콘텐츠 — 외부 영상 서비스 추가·수정 창. 폼의 `content.embed_custom_providers` 만 고치고 저장은 하단 「저장」, 예시 주소 확인은 `POST /api/admin/settings/content/embed-preview`. 「예시 주소 확인」 단추는 응답을 기다리는 동안(`_global.embed_provider_form_modal.previewing`) 잠기고 회전 표시를 보이며 성공과 실패 양쪽에서 풀린다. 2열 그리드는 `<responsive on="768-">` 로 넓은 화면에서만 2열이 되고, 경고 띠는 빈 칸 안내가 없을 때 아래 그리드와 간격을 둔다. 같은 화면의 `_tab_content`(프리셋, 확장 제공 서비스 그리드)와 `_tab_privacy`(최근 검색어 범위 행, 조치 대상 행)도 반응형 접두 클래스 대신 `<responsive on="…">` 로 화면 폭별 class 를 바꾼다)
 │           ├── _tab_advanced.g7.html (고급)
 │           ├── _tab_info.g7.html (시스템 정보 — PHP 확장 카드: 필수·선택(코어 SSoT)과 「확장이 요구하는 모듈」(`php_extensions.requested_by`))
+│           ├── _tab_system.g7.html (시스템 — 긴 작업의 실행 방식(별도 프로세스 또는 요청 안)과 웹 크론 예약 작업 호출 주소)
+│           ├── _modal_cron_token_rotate.g7.html (시스템 — 웹 크론 호출 주소 재발급 확인 창, 성공하면 부모 화면의 주소칸을 새 주소로 바꿈)
+│           ├── _tab_update.g7.html (업데이트 — 명령줄 없이 화면에서 코어 업데이트, 대기 → 진행 중 → 완료 또는 실패의 4상태, 코어 업데이트 권한이 있을 때만 보임)
 │           ├── _modal_ip_restriction_rule_form.g7.html (IP 접근 제한 규칙 추가·수정)
 │           ├── _modal_cache_delete.g7.html
 │           ├── _modal_core_changelog.g7.html
@@ -632,9 +723,17 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _tab_identity.g7.html (2단계 인증 — 하위 탭 허브)
 │           ├── _tab_identity_basic.g7.html (기본 정책)
 │           ├── _tab_identity_messages.g7.html (인증 메시지 — 알림 설정으로 옮겨졌다는 안내와 이동 링크)
-│           ├── _tab_identity_policies.g7.html (인증 정책)
-│           ├── _tab_identity_providers.g7.html (인증 수단)
-│           ├── _tab_language_packs.g7.html (언어팩)
+│           ├── _tab_identity_policies.g7.html (인증 정책 — 정책 조회 권한이 없으면 목록 대신 권한 안내)
+│           ├── _tab_identity_providers.g7.html (인증 수단 — 프로바이더 설정 조회 권한이 없으면 목록 대신 권한 안내)
+│           ├── _tab_language_packs.g7.html (언어팩 — 언어팩 조회 권한이 없으면 탭 항목 숨김, 직접 진입은 권한 안내)
+│           ├── _tab_member.g7.html (회원 — 가입 항목, 표시 이름, 닉네임 정책 세 구획을 담는 껍데기. 하위 탭 막대는 부모 화면 고정 머리에 있고 `member_section_*` 구획으로 스크롤, #490)
+│           ├── _tab_member_fields.g7.html (회원 > 가입 항목 표 — 스위치와 순서는 즉시 저장, 설정 폼과 「변경 있음」은 건드리지 않음)
+│           ├── _tab_member_fields_cards.g7.html (회원 > 가입 항목의 768px 미만 카드 판 — 표와 같은 배선에 「위로」「아래로」 순서 단추)
+│           ├── _tab_member_display_name.g7.html (회원 > 표시 이름 — 고를 수 있는 종류, 회원 기본 종류(아래에 이 값을 쓰는 영역, computed `memberDefaultKindUsage`), 자리별 방식(따름, 고정, 회원 선택). 하단 「저장」으로 보냄)
+│           ├── _tab_member_nickname.g7.html (회원 > 닉네임 정책 — 중복 금지, 금지어, 변경 주기. 하단 「저장」으로 보내고 중복 금지를 켤 때 겹치는 닉네임을 먼저 확인)
+│           ├── _modal_member_field_form.g7.html (회원 항목 추가, 수정, 보기 겸용 창 — 추가는 유형 고르기 다음 내용 적기의 두 단계)
+│           ├── _modal_member_field_delete.g7.html (회원 항목 삭제 확인 — 값이 있는 회원 수를 보이고 확인 체크 뒤에 삭제, 표시 이름 종류로 쓰이면 서버가 409 로 막음)
+│           ├── _modal_member_field_required.g7.html (회원 항목을 필수로 바꿀 때 비어 있는 기존 회원에게 언제 입력을 요구할지 고르는 창)
 │           ├── _modal_notification_identity_definition_add.g7.html (알림 설정 > 본인인증 — 정책별 문구 추가)
 │           ├── _modal_notification_identity_definition_delete.g7.html (알림 설정 > 본인인증 — 정책별 문구 삭제)
 │           ├── _modal_notification_channel_off_confirm.g7.html (알림 설정 [저장] — 메일 채널 끄기 확인)
@@ -650,7 +749,6 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _modal_manual_install.g7.html
 │           ├── _modal_uninstall.g7.html
 │           ├── _modal_update.g7.html
-│           ├── _modal_deactivate_warning.g7.html
 │           ├── _modal_deactivate_integrations.g7.html (끄려는 모듈을 다른 활성 확장이 연동으로 쓸 때의 안내 창 — 막지 않고 알리고 진행)
 │           ├── _modal_force_activate.g7.html
 │           ├── _modal_force_deactivate.g7.html
@@ -681,6 +779,7 @@ _admin_base.g7.html (베이스 레이아웃)
 │   │       ├── _modal_refresh_layouts.g7.html
 │   │       ├── _modal_reactivate_language_packs.g7.html
 │   │       └── _drawer_manifest_preview.g7.html
+│   ├── ../settings/template_settings.g7.html (이 템플릿 설정 화면 — `layouts/` 밖. 코어가 켜진 관리자 템플릿마다 `sirsoft-admin_basic.template_settings` 로 교차 등록, 화면은 설정 묶음 부품 `sirsoft-admin_basic.TemplateSettingsScreen`)
 │   └── admin_template_layout_edit.g7.html (레이아웃 편집기)
 │       └── partials/admin_template_layout_edit/
 │           ├── _modal_version_history.g7.html
@@ -689,15 +788,26 @@ _admin_base.g7.html (베이스 레이아웃)
 │           ├── _modal_file_delete_confirm.g7.html
 │           └── _modal_file_form.g7.html
 │
-├── 스케줄 관리
-│   └── admin_schedule_list.g7.html
+├── 스케줄 관리 (스케줄·큐 경로 탭 — `/admin/schedules`, `/admin/schedules/queue?view=pending|failed|logs`)
+│   └── admin_schedule_list.g7.html (탭별 데이터소스 조건 · 명명 액션 searchSchedules/resetSchedules · 큐 검색 · 큐 작업 조회 권한이 없으면 큐 탭 숨김·직접 진입 권한 안내·큐 요청 생략 — 판정은 베이스가 current_user 로 올린 `_global.adminQueueJobsReadable`)
 │       └── partials/admin_schedule_list/
-│           ├── _tab_schedules.g7.html
+│           ├── _status_card.g7.html (스케줄러 하트비트·큐 요약 — 좁은 화면은 한 줄 요약 + 자세히)
+│           ├── _tab_schedules.g7.html (스케줄 탭 — 필터·표 partial 을 담는 틀)
+│           ├── _partial_filter_section.g7.html (쿠폰 목록형 필터 — 검색대상·기본/상세 슬롯·검색편집·빠른 기간)
+│           ├── _partial_schedule_datagrid.g7.html (스케줄 표 — 정렬·쪽 크기·일괄 활성/비활성/삭제)
 │           ├── _modal_form.g7.html
 │           ├── _modal_delete.g7.html
 │           ├── _modal_duplicate.g7.html
-│           ├── _modal_history.g7.html
-│           └── _modal_run.g7.html
+│           ├── _modal_history.g7.html (실행 이력 창 — 회차별 상태·출력. 큐로 보낸 「즉시 실행」의 거절은 `status === 'rejected'` 표시와 서버가 실어 준 `status_label`·`reject_reason_label` 로 보인다)
+│           ├── _modal_run.g7.html
+│           ├── _modal_bulk_status.g7.html (일괄 활성·비활성 확인)
+│           ├── _modal_security.g7.html (보안 정책 — 읽기 전용, 서버 관리자 덮어쓰기 파일 상태 포함)
+│           ├── _tab_queue.g7.html (큐 탭 — 대기/실패/처리 기록 하위 탭·비 database 드라이버 안내·현황을 받지 못하면 카드 대신 실패 안내)
+│           ├── _queue_pending_grid.g7.html (세 하위 탭 표 공통: 목록을 받지 못하면 「0건·없습니다」 대신 권한 없음·불러오지 못함 안내)
+│           ├── _queue_failed_grid.g7.html (단건·일괄 재시도·삭제)
+│           ├── _queue_logs_grid.g7.html
+│           ├── _modal_queue_job_detail.g7.html
+│           └── _modal_queue_confirm.g7.html (재시도·삭제 확인 — 건별 결과)
 │
 ├── 언어팩 관리
 │   ├── admin_language_pack_list.g7.html (허브 — 아래 3화면이 이것을 extends)
@@ -739,6 +849,9 @@ _admin_base.g7.html (베이스 레이아웃)
 │   ├── partials/_modal_license.g7.html
 │   ├── partials/_modal_lifecycle_warnings.g7.html (확장 설치·활성화·업데이트·레이아웃 갱신이 일부 항목 실패·안내를 남긴 결과 창. 단계 이름은 번역이 있으면 그 이름, 지금 언어에 없으면 대체 언어 이름, 어느 언어에도 없으면 원문 키. `cause: declaration` 항목(확장 manifest 선언 형식 오류)은 「확장 개발자가 고칠 선언」 안내를 붙이고, 실패가 모두 그런 항목이면 제목·요약도 「확장 선언에 틀린 값이 있습니다」·버린 선언 건수(`declaration_title`·`declaration_summary`)로 바꾸고 「다시 실행」 대신 개발자에게 알리라는 문구 — 모듈·플러그인·템플릿·언어팩 목록·대시보드·환경설정이 연다)
 │   ├── partials/_identity_challenge_modal.g7.html (2단계 인증 재확인 모달)
+│   ├── partials/_package_integrity_notice.g7.html (패키지 서명 확인 결과·미서명 경고 패널 — 모듈·플러그인·템플릿 설치·업데이트 창과 언어팩 설치·업데이트 창이 공유, 닫히면 결과 전역값을 지움)
+│   ├── partials/_modal_lifecycle_warnings.g7.html (확장 설치·활성화·업데이트 부분 실패 경고 결과 창 — 대시보드·모듈·플러그인·언어팩·환경설정 공유)
+│   ├── partials/_shared/_layout_sync_preview.g7.html (화면별 처리 미리보기 — 모듈·플러그인·템플릿 목록의 레이아웃 갱신·업데이트 창 공용. 처리 방식(수정 유지·모두 교체)과 화면별 결정을 고르고, 판정은 서버 미리보기 API 결과를 그대로 그린다)
 │   └── partials/_modal_notification_delete_all_confirm.g7.html
 │
 ├── 에러 페이지
@@ -748,7 +861,8 @@ _admin_base.g7.html (베이스 레이아웃)
 │       ├── 404.g7.html (페이지 없음)
 │       ├── 500.g7.html (서버 오류)
 │       ├── 503.g7.html (서비스 불가)
-│       └── maintenance.g7.html (점검 중)
+│       ├── maintenance.g7.html (점검 중)
+│       └── default.g7.html (공통 오류 화면 — 코드별 레이아웃이 없는 코드, `{{errorCode}}` 표시)
 │
 └── 테스트
     └── template_partial_test.g7.html
@@ -903,6 +1017,11 @@ slots.content:
 - `apiCall` — 설정 저장
 - `openModal` — 확인 다이얼로그
 
+**일반 탭 「레이아웃 편집 단추」 카드** (코어 7.2.0): `general.layout_edit_button_enabled` 토글 하나. 끄면 운영 화면 오른쪽 아래의
+레이아웃 편집 단추(코어 엔진이 그린다)가 숨는다. 저장 성공 갈래의 `set-state target="global" settings="{{result.data.frontend_settings}}"`
+가 `_global.settings` 를 바꾸고 엔진이 그 값을 읽으므로 새로고침 없이 바로 반영된다 — 이 저장 갈래에서 `_global.settings` 갱신을 빼면 단추가
+새로고침 전까지 남는다.
+
 **상태 배지 색**: 정적 파일 상태(일반 탭)·사이트맵 진행(SEO 탭) 배지처럼 값에 따라 색을 바꾸는 배지는 `<class-map key="{{…}}">` 안에
 `<variant when="값">클래스</variant>` 로 적는다. 굽기 결과는 노드 최상위 `classMap` 이고 엔진은 그 자리만 읽는다 — 컴포넌트 속성으로
 `classMap` 을 넘기면 색이 적용되지 않고 DOM 에 `classmap="[object Object]"` 로 샌다(#703 에서 두 배지를 이렇게 바로잡음).
@@ -1001,17 +1120,19 @@ modals:
 
 **구성**:
 ```text
-(extends 없음 — 독립 레이아웃)
-components:
-  └── Div (전체 화면 중앙 정렬)
+extends: _admin_base (content 슬롯만 채운다 — 사이드바·머리글은 베이스가 그린다)
+slots.content:
+  └── Div (본문 중앙 정렬)
       ├── Icon (에러 아이콘)
-      ├── H1 (에러 코드)
+      ├── H1 (에러 코드 — 코드 레이아웃은 숫자를 박고, default 는 {{errorCode}})
+      ├── H2 (제목)
       ├── P (에러 메시지)
-      └── Button (홈으로 이동)
+      └── A (홈으로 이동 — default 는 새로고침 Button 을 앞에 둔다)
 ```
 
 **핸들러 패턴**:
 - `navigate` — 대시보드/홈으로 이동
+- `refresh` — 새로고침 (`errors/default`)
 
 ---
 
@@ -1037,6 +1158,11 @@ _admin_base.g7.html
 
 **슬롯**:
 - `content` — 각 페이지의 메인 콘텐츠가 삽입되는 위치
+
+**머리 알림과 알림 조회 권한**: 로그인 관리자(`current_user`)를 받으면 알림 조회 권한(`core.notifications.read`) 보유 여부를
+전역 `adminNotificationsReadable` 에 올리고, 거짓이면 알림 목록·안 읽은 수 데이터소스와 종 아이콘(데스크톱·모바일)을 두지 않습니다.
+판정은 로그인 관리자 응답이 와야 서므로, 새로 연 탭·새로고침·주소 직접 진입·로그인 직후의 첫 화면에서는 두 요청이 한 번 나갑니다.
+그때 권한이 없어 나는 403 은 두 데이터소스가 조용히 넘기고(`errorHandling` 403 `suppress`), 401·500 같은 다른 오류는 종전 처리 그대로입니다.
 
 ---
 

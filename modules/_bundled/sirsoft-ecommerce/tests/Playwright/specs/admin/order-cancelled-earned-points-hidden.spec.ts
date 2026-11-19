@@ -2,11 +2,8 @@
  * 주문상세/목록 표시 결함 (U19②③) — 무할인 항목 소계 표시 + 취소 주문 적립예정 숨김.
  *
  * @scenario order-detail-display-orphans
- * @effects member_sees_subtotal_on_no_discount_item,
- *          no_regression_on_discount_item_subtotal,
- *          earned_points_hidden_on_cancelled_order,
- *          earned_points_hidden_on_partially_cancelled_order,
- *          earned_points_shown_on_normal_order
+ * 효과 요약(마커 아님 — 평문): 무할인 항목 소계 노출, 정상 주문 적립예정 노출, 전체취소와 부분취소와
+ *   목록 취소 행의 적립예정 숨김. 효과 마킹은 각 테스트 주석에 있다.
  *
  * e2e:allow U19②③ 는 순수 표시(읽기 전용) 정정으로 신규 인터랙션 axis 가 없다.
  *           ② 무할인 항목 소계: OrderOptionResource 가 비교용 숫자 보조 필드
@@ -48,6 +45,8 @@ const ORDER_DETAIL_URL = (orderNumber: string) => `/admin/ecommerce/orders/${ord
 const ORDER_LIST_URL = '/admin/ecommerce/orders';
 
 test.describe.skip('주문상세/목록 표시 결함 U19②③ (placeholder — data-testid 보강 후 활성화)', () => {
+  // @scenario case=no_discount_item_subtotal
+  // @effects admin_detail_shows_subtotal_on_no_discount_item
   test('② 무할인 항목 — 주문상세 항목 소계가 노출된다', async ({ page, ordersReadToken }) => {
     await authenticatePage(page, ordersReadToken);
     await page.goto(ORDER_DETAIL_URL('ORD-NO-DISCOUNT'));
@@ -56,6 +55,8 @@ test.describe.skip('주문상세/목록 표시 결함 U19②③ (placeholder —
     await expect(row).toBeVisible();
   });
 
+  // @scenario case=normal_order_earned_points
+  // @effects earned_points_shown_on_normal_order
   test('③ 정상 주문 — 결제정보에 적립예정이 노출된다', async ({ page, ordersReadToken }) => {
     await authenticatePage(page, ordersReadToken);
     await page.goto(ORDER_DETAIL_URL('ORD-NORMAL-EARNED'));
@@ -63,6 +64,8 @@ test.describe.skip('주문상세/목록 표시 결함 U19②③ (placeholder —
     await expect(page.getByTestId('order-payment-earned-points')).toBeVisible();
   });
 
+  // @scenario case=cancelled_order_earned_points
+  // @effects earned_points_hidden_on_cancelled_order
   test('③ 전체취소 주문 — 결제정보에 적립예정이 미노출된다', async ({ page, ordersReadToken }) => {
     await authenticatePage(page, ordersReadToken);
     await page.goto(ORDER_DETAIL_URL('ORD-CANCELLED-EARNED'));
@@ -70,6 +73,8 @@ test.describe.skip('주문상세/목록 표시 결함 U19②③ (placeholder —
     await expect(page.getByTestId('order-payment-earned-points')).toHaveCount(0);
   });
 
+  // @scenario case=partially_cancelled_order_earned_points
+  // @effects earned_points_hidden_on_partially_cancelled_order
   test('③ 부분취소 주문 — 결제정보에 적립예정이 미노출된다', async ({ page, ordersReadToken }) => {
     await authenticatePage(page, ordersReadToken);
     await page.goto(ORDER_DETAIL_URL('ORD-PARTIAL-CANCELLED-EARNED'));
@@ -77,6 +82,8 @@ test.describe.skip('주문상세/목록 표시 결함 U19②③ (placeholder —
     await expect(page.getByTestId('order-payment-earned-points')).toHaveCount(0);
   });
 
+  // @scenario case=list_cancelled_row_earned_points
+  // @effects earned_points_hidden_on_cancelled_order_list_row
   test('③ 주문목록 DataGrid — 취소 주문 행에 적립예정이 미노출된다', async ({ page, ordersReadToken }) => {
     await authenticatePage(page, ordersReadToken);
     await page.goto(ORDER_LIST_URL);

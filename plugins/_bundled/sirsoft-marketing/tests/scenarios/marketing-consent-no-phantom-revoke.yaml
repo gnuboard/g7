@@ -11,7 +11,7 @@ description: |
 axis_notes:
   case: |
     profile_update 는 본인 정보 수정(PUT /api/me), admin_update 는 관리자 회원 수정, admin_create 는 관리자 회원 추가,
-    register 는 가입 완료 훅(core.auth.after_register 의 registration_data) 경로다. 네 경로 모두 같은 서비스를 탄다.
+    register 는 가입 요청(POST /api/auth/register, 옛 키 agree_ 접두) 경로다. 네 경로 모두 회원 항목 저장소 어댑터를 거쳐 같은 서비스를 탄다.
     service_direct 는 서비스를 직접 불러 사용중지한 채널의 남은 동의가 연쇄 철회되는지 본다(화면은 사용중지 채널을 보내지 않음).
 
 axes:

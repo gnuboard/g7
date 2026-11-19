@@ -26,6 +26,16 @@
  *
  * 계획서 §"루프 방지 전용 테스트" 는 이 spec 이 **역방향 폴백을 일부러 넣은 브랜치에서
  * 무한 루프로 터지는지** 확인해야 가드로 인정된다고 명시한다.
+ *
+ * ## 시나리오 매니페스트 귀속
+ *
+ * `tests/scenarios/docroot-single-folder.yaml` 의 `asset_url_mode`(서버가 내주는 형태) ×
+ * `e2e_asset_url_recovery`(그 형태를 만난 브라우저의 행동) 축을 소유한다. 종전에는 이
+ * spec 이 **어느 매니페스트에도 등록돼 있지 않아**, 파일이 통째로 사라져도 게이트가
+ * 초록이었다.
+ *
+ * @scenario asset_url_mode=extension, e2e_asset_url_recovery=browser_self_heal
+ * @effects browser_recovers_from_static_extension_404_without_reload, extensionless_form_actually_serves_the_asset
  */
 import { test, expect } from '@playwright/test';
 
@@ -68,6 +78,8 @@ test.describe('자산 URL 이중 모드 자가 복구', () => {
         });
     });
 
+    // @scenario asset_url_mode=extension, e2e_asset_url_recovery=browser_self_heal
+    // @effects browser_recovers_from_static_extension_404_without_reload
     test('정적 최적화 서버에서 설정 변경 없이 화면이 뜬다 (자가 복구)', async ({ page }) => {
         const blocked: string[] = [];
         await installStaticOptimizationServer(page, blocked);
@@ -96,6 +108,8 @@ test.describe('자산 URL 이중 모드 자가 복구', () => {
         await expect(app.getByText(/화면을 불러오지 못했습니다|Failed to load/i)).toHaveCount(0);
     });
 
+    // @scenario asset_url_mode=extensionless, e2e_asset_url_recovery=browser_self_heal
+    // @effects browser_recovers_from_static_extension_404_without_reload
     test('L1 — 전환 이후 확장자 형태를 다시 요청하지 않는다', async ({ page }) => {
         const blocked: string[] = [];
         await installStaticOptimizationServer(page, blocked);
@@ -122,6 +136,8 @@ test.describe('자산 URL 이중 모드 자가 복구', () => {
         ).toEqual([]);
     });
 
+    // @scenario asset_url_mode=extensionless, e2e_asset_url_recovery=browser_self_heal
+    // @effects asset_recovery_attempts_are_capped_and_end_in_fallback_ui
     test('L2·L4 — 양쪽 형태가 모두 실패하면 3시도에서 멈추고 폴백 UI 로 끝난다', async ({ page }) => {
         // PHP 다운 모사 — 확장자 유무와 무관하게 모든 /api/ 를 404
         const attempts: string[] = [];
@@ -154,6 +170,8 @@ test.describe('자산 URL 이중 모드 자가 복구', () => {
         await expect(page.locator('#app')).not.toBeEmpty();
     });
 
+    // @scenario asset_url_mode=extension, e2e_asset_url_recovery=browser_self_heal
+    // @effects browser_recovers_from_static_extension_404_without_reload
     test('L3 — 어떤 경로에서도 스크립트가 페이지를 새로고침하지 않는다', async ({ page }) => {
         let navigations = 0;
         page.on('framenavigated', (frame) => {
@@ -178,6 +196,8 @@ test.describe('자산 URL 이중 모드 자가 복구', () => {
         ).toBe(0);
     });
 
+    // @scenario asset_url_mode=extensionless, e2e_asset_url_recovery=browser_self_heal
+    // @effects asset_recovery_initializes_template_app_exactly_once
     test('L8 — 전환 성공 시 초기화가 정확히 1회만 일어난다', async ({ page }) => {
         const blocked: string[] = [];
         await installStaticOptimizationServer(page, blocked);
@@ -216,6 +236,8 @@ test.describe('자산 URL 이중 모드 자가 복구', () => {
         expect(duplicateScripts, '동일 컴포넌트 번들 스크립트가 중복 삽입됐다').toBe(0);
     });
 
+    // @scenario asset_url_mode=extensionless, e2e_asset_url_recovery=browser_self_heal
+    // @effects extensionless_form_actually_serves_the_asset
     test('확장자 없는 형태로 실제 자산이 서빙된다', async ({ page }) => {
         // 서버 계약 확인 — ?file= 형태가 200 을 주는지
         const response = await page.request.get('/api/system/asset-probe');

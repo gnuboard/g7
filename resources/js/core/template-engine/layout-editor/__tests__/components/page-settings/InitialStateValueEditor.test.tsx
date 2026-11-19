@@ -10,7 +10,6 @@
  *  ⑤ 점/인덱스 경로 testid
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { InitialStateValueEditor } from '../../../components/page-settings/InitialStateValueEditor';
@@ -26,6 +25,10 @@ function setup(value: unknown) {
 }
 
 describe('InitialStateValueEditor', () => {
+  /**
+   * @scenario subject=initial_state_value_editor
+   * @effects init_value_string_text_widget_and_kind
+   */
   it('문자 값 — text 위젯 + 종류 표시', () => {
     const onChange = setup('hello');
     const input = screen.getByTestId('g7le-initstate-value-keyword');
@@ -35,29 +38,49 @@ describe('InitialStateValueEditor', () => {
     expect((screen.getByTestId('g7le-initstate-type-keyword') as HTMLSelectElement).value).toBe('string');
   });
 
+  /**
+   * @scenario subject=initial_state_value_editor
+   * @effects init_value_number_parse_float
+   */
   it('숫자 값 — parseFloat', () => {
     const onChange = setup(1);
     fireEvent.change(screen.getByTestId('g7le-initstate-value-keyword'), { target: { value: '42' } });
     expect(onChange).toHaveBeenCalledWith(42);
   });
 
+  /**
+   * @scenario subject=initial_state_value_editor
+   * @effects init_value_boolean_toggle
+   */
   it('불리언 — toggle', () => {
     const onChange = setup(false);
     fireEvent.click(screen.getByTestId('g7le-initstate-value-keyword'));
     expect(onChange).toHaveBeenCalledWith(true);
   });
 
+  /**
+   * @scenario subject=initial_state_value_editor
+   * @effects init_value_null_fixed_display
+   */
   it('null — 고정 표시(편집 불가)', () => {
     setup(null);
     expect(screen.getByTestId('g7le-initstate-value-keyword').textContent).toBe('null');
   });
 
+  /**
+   * @scenario subject=initial_state_value_editor
+   * @effects init_value_kind_switch_resets_default
+   */
   it('종류 전환 시 기본값으로 리셋', () => {
     const onChange = setup('hello');
     fireEvent.change(screen.getByTestId('g7le-initstate-type-keyword'), { target: { value: 'number' } });
     expect(onChange).toHaveBeenCalledWith(0);
   });
 
+  /**
+   * @scenario subject=initial_state_value_editor
+   * @effects init_value_object_adds_nested_key
+   */
   it('묶음 — 하위 키 재귀 추가(중첩 patch)', () => {
     const onChange = vi.fn();
     render(<InitialStateValueEditor value={{ status: 'active' }} onChange={onChange} t={t} path="filter" scope="local" />);
@@ -71,6 +94,10 @@ describe('InitialStateValueEditor', () => {
 
   // 하위 키 추가행도 1뎁스 addRow 와 동일하게 [이름][종류 select][추가].
   // 종전엔 종류 select 가 없어 하위 값을 항상 문자(`''`)로만 추가했다(묶음/숫자를 한 번에 못 만듦).
+  /**
+   * @scenario subject=initial_state_value_editor
+   * @effects init_value_object_add_row_kind_select
+   */
   it('묶음 — 하위 키 추가행에 종류 select(묶음 선택 → {} 로 추가)', () => {
     const onChange = vi.fn();
     render(<InitialStateValueEditor value={{}} onChange={onChange} t={t} path="filter" scope="local" />);
@@ -85,6 +112,10 @@ describe('InitialStateValueEditor', () => {
     expect(onChange).toHaveBeenCalledWith({ nested: {} });
   });
 
+  /**
+   * @scenario subject=initial_state_value_editor
+   * @effects init_value_list_add_remove_items
+   */
   it('목록 — 요소 재귀 추가/삭제(items.N)', () => {
     const onChange = vi.fn();
     render(<InitialStateValueEditor value={['a']} onChange={onChange} t={t} path="items" scope="local" />);
@@ -97,6 +128,10 @@ describe('InitialStateValueEditor', () => {
     expect(onChange).toHaveBeenCalledWith([]);
   });
 
+  /**
+   * @scenario subject=initial_state_value_editor
+   * @effects init_value_real_sample_roundtrip
+   */
   it('실데이터 표본(manualAddress 다중 키) 로드→직렬화', () => {
     const onChange = vi.fn();
     render(

@@ -8,7 +8,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { TemplateApp } from '../TemplateApp';
 import type { TemplateAppConfig } from '../TemplateApp';
-import { AuthManager } from '../auth/AuthManager';
 
 const mockApiClient = {
   post: vi.fn().mockResolvedValue({}),
@@ -179,6 +178,36 @@ describe('TemplateApp.loadLayoutScripts', () => {
 
     expect(convertToCurrentMode).toHaveBeenCalledWith('/api/plugins/assets/x/dist/a.js');
     expect(created[0].src).toContain('#converted');
+  });
+
+  /**
+   * 하위 폴더 설치(`/g7`)에서 레이아웃이 적은 루트 상대 `src` 는 접두사를 붙인 뒤 모드를 보정한다.
+   *
+   * 확장자 방식에서는 모드 보정이 주소를 그대로 돌려주므로, 접두사를 붙이지 않으면 편집기 본체 같은
+   * 동봉 자산의 첫 요청이 사이트 밖(`/api/…`)으로 나가 404 가 되고 실패 안내가 남았다.
+   *
+   * @scenario asset_class=vendored, outcome=loaded
+   * @effects layout_script_url_carries_the_site_base_prefix
+   */
+  it('하위 폴더 설치에서는 마운트 접두사를 붙여 로드한다 (이미 붙은 값·외부 호스트는 그대로)', async () => {
+    app = build(['t1.daumcdn.net']);
+    (window as any).G7Config.basePath = '/g7';
+    vi.mocked(convertToCurrentMode).mockClear();
+    stub(alwaysLoad);
+
+    await load(app, [
+      { id: 's-p1', src: '/api/plugins/assets/sirsoft-ckeditor5/dist/vendor/ckeditor5/43.3.1/ckeditor5.umd.js' },
+      { id: 's-p2', src: '/g7/api/plugins/assets/x/dist/b.js' },
+      { id: 's-p3', src: '//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js' },
+    ]);
+
+    expect(convertToCurrentMode).toHaveBeenCalledWith('/g7/api/plugins/assets/sirsoft-ckeditor5/dist/vendor/ckeditor5/43.3.1/ckeditor5.umd.js');
+    expect(convertToCurrentMode).toHaveBeenCalledWith('/g7/api/plugins/assets/x/dist/b.js');
+    expect(convertToCurrentMode).not.toHaveBeenCalledWith(expect.stringMatching(/^\/api\//));
+    expect(convertToCurrentMode).not.toHaveBeenCalledWith(expect.stringMatching(/^\/g7\/g7\//));
+    const srcs = created.map((el) => String(el.getAttribute('src')));
+    expect(srcs).toContain('//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js#converted');
+    expect(srcs.every((s) => !s.startsWith('/g7//'))).toBe(true);
   });
 
   /**

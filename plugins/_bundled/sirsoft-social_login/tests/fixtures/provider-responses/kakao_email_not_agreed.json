@@ -1,0 +1,9 @@
+{
+    "id": 4123456790,
+    "kakao_account": {
+        "email_needs_agreement": true,
+        "profile": {
+            "nickname": "카카오닉"
+        }
+    }
+}

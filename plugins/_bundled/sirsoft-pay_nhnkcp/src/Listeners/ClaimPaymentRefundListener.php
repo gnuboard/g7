@@ -7,8 +7,8 @@ namespace Plugins\Sirsoft\PayNhnkcp\Listeners;
 use App\Contracts\Extension\HookListenerInterface;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\ClaimPaymentLookup;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
-use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
 use Plugins\Sirsoft\PayNhnkcp\Services\NhnKcpApiService;
 
 /**
@@ -24,6 +24,13 @@ use Plugins\Sirsoft\PayNhnkcp\Services\NhnKcpApiService;
 class ClaimPaymentRefundListener implements HookListenerInterface
 {
     private const PG_PROVIDER_ID = 'nhnkcp';
+
+    /**
+     * @param  ClaimPaymentLookup  $claimPayments  이커머스 클레임 결제 계약 (결제 통화 합계)
+     */
+    public function __construct(
+        private readonly ClaimPaymentLookup $claimPayments,
+    ) {}
 
     /**
      * 구독할 훅 매핑을 반환합니다.
@@ -45,6 +52,7 @@ class ClaimPaymentRefundListener implements HookListenerInterface
      * 기본 핸들러 (미사용 — 개별 메서드에서 처리)
      *
      * @param  mixed  ...$args  훅 인수
+     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 
@@ -140,6 +148,7 @@ class ClaimPaymentRefundListener implements HookListenerInterface
      *
      * @param  NhnKcpApiService  $apiService  API 서비스
      * @param  ClaimPayment  $payment  결제 건
+     * @return void 반환값 없음
      */
     private function restoreCredentials(NhnKcpApiService $apiService, ClaimPayment $payment): void
     {
@@ -163,7 +172,7 @@ class ClaimPaymentRefundListener implements HookListenerInterface
      */
     private function paidLocalTotal(ClaimPayment $payment): float
     {
-        return app(ClaimPaymentService::class)->resolvePaymentCurrencyTotal($payment);
+        return $this->claimPayments->claimPaymentTotals($payment)->paymentCurrencyTotal;
     }
 
     /**
@@ -174,7 +183,7 @@ class ClaimPaymentRefundListener implements HookListenerInterface
      */
     private function refundedLocalTotal(ClaimPayment $payment): float
     {
-        return app(ClaimPaymentService::class)->resolveRefundedPaymentCurrencyTotal($payment);
+        return $this->claimPayments->claimPaymentTotals($payment)->refundedPaymentCurrencyTotal;
     }
 
     /**

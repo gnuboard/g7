@@ -1,0 +1,21 @@
+feature: 본인인증 hook 범위 정책 색인의 무효화와 장애 폴백 (#869)
+
+description: |
+  hook 범위 본인인증 리스너는 캐시된 색인(IdentityPolicyRepository::getHookScopeIndex)에 켜진 정책이 없는 훅을
+  정책 표 조회 없이 지나간다. 이미지 첨부처럼 한 화면에 수십 번 발화하는 훅이 발화마다 표를 조회하지 않게 하려는 것이다.
+  색인이 낡으면 켜진 정책을 건너뛰어 열린 채 통과하므로, 색인은 정책 저장과 확장 상태가 바뀌는 모든 전이(설치, 제거,
+  활성화, 비활성화, 업데이트 뒤 상태 복원과 롤백)에서 비워져야 한다. 업데이트 중(updating) 확장의 정책은 색인에서
+  빠지므로 상태 복원이 비우지 않으면 캐시 수명 동안 그 확장의 정책이 걸리지 않는다. 태그를 지원하지 않는 캐시는
+  route 색인 키와 hook 색인 키를 따로 지운다. 색인 조회가 실패하면 리스너는 정책 표로 판정한다.
+
+  축 surface 는 진입점 하나(hook_index)다 — 무효화 사건은 effects 로 대조한다.
+
+axes:
+  surface: [hook_index]
+
+effects:
+  - hook_index_invalidated_on_policy_and_extension_changes
+  - hook_index_failure_falls_back_to_table_lookup
+
+test_files:
+  - tests/Feature/Identity/IdentityHookScopeIndexInvalidationTest.php

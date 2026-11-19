@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Auth\DTO\PasswordChangeRequirement;
 use App\Contracts\Repositories\UserRepositoryInterface;
+use App\DisplayName\DisplayNameAreaRegistry;
+use App\DisplayName\DisplayNameResolver;
 use App\Enums\PasswordChangeReason;
 use App\Enums\PasswordExpiryAction;
 use App\Enums\PasswordExpiryPolicy;
@@ -15,6 +17,7 @@ use App\Models\User;
 use App\Privacy\DTO\PrivacyRetentionTarget;
 use App\Privacy\PrivacyRetentionManager;
 use App\Rules\PasswordPolicy;
+use App\Services\Auth\PasswordAuthPolicyService;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
@@ -205,6 +208,11 @@ class PasswordExpiryService
      */
     public function policyAppliesTo(User $user): bool
     {
+        // 비밀번호가 없는 회원(외부 인증 전용)은 만료될 비밀번호가 없다 — 안내 메일·토큰 회수·변경 관문 모두 비대상.
+        if (! $user->hasPassword()) {
+            return false;
+        }
+
         $own = $user->password_expiry_policy instanceof PasswordExpiryPolicy
             ? $user->password_expiry_policy
             : (PasswordExpiryPolicy::tryFrom((string) $user->password_expiry_policy) ?? PasswordExpiryPolicy::Inherit);
@@ -252,6 +260,9 @@ class PasswordExpiryService
         $model = $query->getModel();
         $policyColumn = $model->qualifyColumn('password_expiry_policy');
         $scope = $this->scope();
+
+        // `policyAppliesTo()` 첫 판정(비밀번호 없는 회원 제외)의 SQL 짝.
+        $query->whereNotNull($model->qualifyColumn('password'));
 
         return $query->where(function (Builder $q) use ($policyColumn, $scope) {
             $q->where($policyColumn, PasswordExpiryPolicy::Apply->value)
@@ -348,6 +359,25 @@ class PasswordExpiryService
      */
     public function loginRequirement(User $user): ?PasswordChangeRequirement
     {
+        // 비밀번호가 없는 회원은 바꿀 비밀번호가 없다 — 관리자 지정·만료 둘 다 요구하지 않는다(요구하면 변경하는
+        // 순간 의도 없이 비밀번호 회원이 된다).
+        if (! $user->hasPassword()) {
+            return null;
+        }
+
+        // 비밀번호 인증이 막힌 회원(회사 계정 로그인 강제 등)은 비밀번호를 쓰지 않으므로 바꾸라고 요구하지 않는다 — 요구하면
+        // 외부 인증으로 들어온 그 회원이 쓰지도 못할 비밀번호 변경 단계에 갇힌다(7.2.0).
+        $decision = app(PasswordAuthPolicyService::class)->decide([
+            'identifier' => (string) $user->email,
+            'user' => $user,
+            'guard' => 'user',
+            'purpose' => 'login_password_change',
+        ]);
+
+        if (! $decision->allowed) {
+            return null;
+        }
+
         if ((bool) $user->password_change_required) {
             return new PasswordChangeRequirement(PasswordChangeReason::AdminAssigned);
         }
@@ -498,17 +528,20 @@ class PasswordExpiryService
     {
         $startedAt = $this->startedAt();
         $query = $this->stageQuery($stage, $startedAt)
-            ->select(['id', 'uuid', 'name', 'email', 'is_super', 'password_changed_at'])
+            // 명단의 회원 칸은 관리자 영역의 표시 이름이다 — 계산에 필요한 컬럼을 함께 읽는다.
+            ->select([...User::DISPLAY_COLUMNS, 'is_super', 'password_changed_at'])
             ->withExists(['roles as has_admin_role' => fn ($roles) => $roles->whereHas(
                 'permissions',
                 fn ($permissions) => $permissions->where('permissions.type', PermissionType::Admin->value)
             )]);
 
-        return $this->orderByExpiry($query, $startedAt)
-            ->paginate($perPage, ['*'], 'page', $page)
+        $targets = $this->orderByExpiry($query, $startedAt)->paginate($perPage, ['*'], 'page', $page);
+        $names = app(DisplayNameResolver::class)->resolveMany($targets->getCollection(), DisplayNameAreaRegistry::AREA_ADMIN);
+
+        return $targets
             ->through(fn (User $user) => new PrivacyRetentionTarget(
                 id: $user->id,
-                title: (string) $user->name,
+                title: (string) ($names[$user->id] ?? ''),
                 subtitle: $user->email,
                 context: ($user->has_admin_role || $user->is_super)
                     ? __('user.password_expiry_target.admin')

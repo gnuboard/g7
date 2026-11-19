@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Exceptions\ExtensionOperationLockException;
 use App\Exceptions\LanguagePackOperationException;
 use App\Exceptions\LanguagePackSlotConflictException;
+use App\Exceptions\PackageIntegrityException;
 use App\Extension\Helpers\ChangelogParser;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use App\Http\Requests\LanguagePack\BulkActivateRequest;
@@ -14,6 +15,7 @@ use App\Http\Requests\LanguagePack\InstallFromFileRequest;
 use App\Http\Requests\LanguagePack\InstallFromGithubRequest;
 use App\Http\Requests\LanguagePack\InstallFromUrlRequest;
 use App\Http\Requests\LanguagePack\ManifestPreviewRequest;
+use App\Http\Requests\LanguagePack\PerformLanguagePackUpdateRequest;
 use App\Http\Requests\LanguagePack\UninstallLanguagePackRequest;
 use App\Http\Resources\LanguagePackCollection;
 use App\Http\Resources\LanguagePackResource;
@@ -81,6 +83,9 @@ class LanguagePackController extends AdminBaseController
 
             return $this->success('language_packs.fetch_success', $payload);
         } catch (\Throwable $e) {
+            // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
+            report($e);
+
             return $this->error('language_packs.fetch_failed', 500, $e);
         }
     }
@@ -121,7 +126,8 @@ class LanguagePackController extends AdminBaseController
             $pack = $this->service->installFromFile(
                 $request->file('file'),
                 (bool) ($validated['auto_activate'] ?? false),
-                $this->getCurrentUser()?->id
+                $this->getCurrentUser()?->id,
+                $request->packageIntegrityOptions()
             );
 
             return $this->success(
@@ -129,6 +135,9 @@ class LanguagePackController extends AdminBaseController
                 (new LanguagePackResource($pack))->toArray($request),
                 201
             );
+        } catch (PackageIntegrityException $e) {
+            // 미서명 확인 필요(409)·서명 불일치·미신뢰 키(422) — 7.2.0
+            return $this->packageIntegrityError($e);
         } catch (ExtensionOperationLockException $e) {
             // 같은 언어팩에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
             return $this->operationLockError($e);
@@ -138,6 +147,9 @@ class LanguagePackController extends AdminBaseController
             // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
             return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
+            // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
+            report($e);
+
             return $this->error('language_packs.install_failed', 500, $e);
         }
     }
@@ -155,7 +167,9 @@ class LanguagePackController extends AdminBaseController
             $pack = $this->service->installFromGithub(
                 $validated['github_url'],
                 (bool) ($validated['auto_activate'] ?? false),
-                $this->getCurrentUser()?->id
+                $this->getCurrentUser()?->id,
+                false,
+                $request->packageIntegrityOptions()
             );
 
             return $this->success(
@@ -163,6 +177,9 @@ class LanguagePackController extends AdminBaseController
                 (new LanguagePackResource($pack))->toArray($request),
                 201
             );
+        } catch (PackageIntegrityException $e) {
+            // 미서명 확인 필요(409)·서명 불일치·미신뢰 키(422) — 7.2.0
+            return $this->packageIntegrityError($e);
         } catch (ExtensionOperationLockException $e) {
             // 같은 언어팩에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
             return $this->operationLockError($e);
@@ -172,6 +189,9 @@ class LanguagePackController extends AdminBaseController
             // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
             return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
+            // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
+            report($e);
+
             return $this->error('language_packs.install_failed', 500, $e);
         }
     }
@@ -206,6 +226,9 @@ class LanguagePackController extends AdminBaseController
             // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
             return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
+            // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
+            report($e);
+
             return $this->error('language_packs.install_failed', 500, $e);
         }
     }
@@ -224,7 +247,10 @@ class LanguagePackController extends AdminBaseController
                 $validated['url'],
                 $validated['checksum'] ?? null,
                 (bool) ($validated['auto_activate'] ?? false),
-                $this->getCurrentUser()?->id
+                $this->getCurrentUser()?->id,
+                false,
+                $validated['signature_url'] ?? null,
+                $request->packageIntegrityOptions()
             );
 
             return $this->success(
@@ -232,6 +258,9 @@ class LanguagePackController extends AdminBaseController
                 (new LanguagePackResource($pack))->toArray($request),
                 201
             );
+        } catch (PackageIntegrityException $e) {
+            // 미서명 확인 필요(409)·서명 불일치·미신뢰 키(422) — 7.2.0
+            return $this->packageIntegrityError($e);
         } catch (ExtensionOperationLockException $e) {
             // 같은 언어팩에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
             return $this->operationLockError($e);
@@ -241,6 +270,9 @@ class LanguagePackController extends AdminBaseController
             // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
             return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
+            // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
+            report($e);
+
             return $this->error('language_packs.install_failed', 500, $e);
         }
     }
@@ -282,6 +314,9 @@ class LanguagePackController extends AdminBaseController
             // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
             return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
+            // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
+            report($e);
+
             return $this->error('language_packs.activate_failed', 500, $e);
         }
     }
@@ -329,6 +364,9 @@ class LanguagePackController extends AdminBaseController
             // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
             return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
+            // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
+            report($e);
+
             return $this->error('language_packs.deactivate_failed', 500, $e);
         }
     }
@@ -359,6 +397,9 @@ class LanguagePackController extends AdminBaseController
             // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
             return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
+            // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
+            report($e);
+
             return $this->error('language_packs.uninstall_failed', 500, $e);
         }
     }
@@ -375,6 +416,9 @@ class LanguagePackController extends AdminBaseController
 
             return $this->success('language_packs.check_updates_success', $result);
         } catch (\Throwable $e) {
+            // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
+            report($e);
+
             return $this->error('language_packs.check_updates_failed', 500, $e);
         }
     }
@@ -382,12 +426,11 @@ class LanguagePackController extends AdminBaseController
     /**
      * 언어팩을 신버전으로 업데이트합니다 (GitHub 재다운로드 + 적용).
      *
-     * @param  Request  $request  HTTP 요청
+     * @param  PerformLanguagePackUpdateRequest  $request  업데이트 요청 (미서명 계속 여부)
      * @param  int  $id  언어팩 ID
      * @return JsonResponse 업데이트된 언어팩
      */
-    // audit:allow controller-base-request-injection reason: 입력 검증 없음. Request 는 Resource::toArray($request) 전달용
-    public function performUpdate(Request $request, int $id): JsonResponse
+    public function performUpdate(PerformLanguagePackUpdateRequest $request, int $id): JsonResponse
     {
         $pack = $this->service->find($id);
         if (! $pack) {
@@ -395,12 +438,15 @@ class LanguagePackController extends AdminBaseController
         }
 
         try {
-            $updated = $this->service->performUpdate($pack);
+            $updated = $this->service->performUpdate($pack, false, $request->packageIntegrityOptions());
 
             return $this->success(
                 'language_packs.update_success',
                 (new LanguagePackResource($updated))->toArray($request)
             );
+        } catch (PackageIntegrityException $e) {
+            // 미서명 확인 필요(409)·서명 불일치·미신뢰 키(422) — 7.2.0
+            return $this->packageIntegrityError($e);
         } catch (ExtensionOperationLockException $e) {
             // 같은 언어팩에 다른 작업이 진행 중(409, operation_in_progress)이거나 잠금 저장소 오류(503, operation_lock_unavailable) — #161
             return $this->operationLockError($e);
@@ -408,6 +454,9 @@ class LanguagePackController extends AdminBaseController
             // 이미 최신·보호 팩·매니페스트 없음·다운그레이드 같은 안내성 실패 — 서버 오류(500)가 아니라 422 와 그 사유 문구로 답한다(#882)
             return $this->error($e->errorKey, 422, null, $e->params);
         } catch (\Throwable $e) {
+            // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
+            report($e);
+
             return $this->error('language_packs.update_failed', 500, $e);
         }
     }
@@ -426,6 +475,9 @@ class LanguagePackController extends AdminBaseController
         } catch (\Throwable $e) {
             // 예외 원문을 응답에 싣지 않는다 — 디버그 노출은 ResponseHelper 가
             // app.debug 에서만 Throwable 을 펼치는 기존 메커니즘에 위임한다.
+            // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
+            report($e);
+
             return $this->error('language_packs.refresh_cache_failed', 500, $e);
         }
     }
@@ -477,6 +529,9 @@ class LanguagePackController extends AdminBaseController
                 'has_changelog' => $entries !== [] || $rawContent !== '',
             ]);
         } catch (\Throwable $e) {
+            // 예상하지 못한 실패 — 운영 모드 응답에는 사유를 싣지 않으므로 원인을 로그에 남긴다
+            report($e);
+
             return $this->error('language_packs.fetch_failed', 500, $e);
         }
     }

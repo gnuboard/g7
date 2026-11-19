@@ -20,10 +20,12 @@
       <h3 class="card-title">$t:admin.settings.privacy.consent_provider.title</h3>
       <div class="card-description">$t:admin.settings.privacy.consent_provider.desc</div>
       <div class="row-stack">
-        <div data-ref="consent_provider_field" class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div data-ref="consent_provider_field" class="flex flex-col gap-2">
+          <responsive on="768-" class="flex gap-2 flex-row items-center justify-between"/>
           <span class="text-heading">$t:admin.settings.privacy.consent_provider.label</span>
           <!-- 고른 제공자가 사라진 missing 상태에서는 저장된 id 를 선택지 끝에 덧붙여 선택 상자가 빈 글자로 보이지 않게 한다(경고 문구가 사유를 알린다). -->
-          <div class="w-full md:w-96">
+          <div class="w-full">
+            <responsive on="768-" class="w-96"/>
             <select name="privacy.consent_provider" disabled="{{_computed.isReadOnly}}" class="w-full" aria-label="$t:admin.settings.privacy.consent_provider.label" error="{{_local.errors?.['privacy.consent_provider']?.[0] ?? ''}}" options="{{[{ value: '', label: _local.form?._meta?.consent_selection?.state === 'auto' &amp;&amp; _local.form?._meta?.consent_selection?.provider_label ? '$t:admin.settings.privacy.consent_provider.auto_current|provider=' + _local.form._meta.consent_selection.provider_label : '$t:admin.settings.privacy.consent_provider.auto' }].concat((_local.form?._meta?.consent_providers ?? []).map(p =&gt; ({ value: p.id, label: p.label }))).concat(_local.form?._meta?.consent_selection?.state === 'missing' &amp;&amp; _local.form?.privacy?.consent_provider ? [{ value: _local.form.privacy.consent_provider, label: _local.form.privacy.consent_provider }] : [])}}"/>
           </div>
         </div>
@@ -71,11 +73,29 @@
           </div>
           <toggle data-type="composite" name="privacy.withdrawn_retention_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
         </div>
+        <!-- 스케줄로 도는 작업 안내 — 고정 시각 대신 그 작업의 다음 실행 일시(조회 권한이 있을 때)와 스케줄 관리 링크를 보인다. 끈 스케줄이면 그 사실을 알린다. -->
+        <div data-ref="withdrawn_schedule_notice" class="alert-info">
+          <div class="flex gap-3">
+            <icon name="circle-info" class="text-xl flex-shrink-0 mt-0.5"/>
+            <div class="min-w-0 space-y-1">
+              <p class="text-label-subtle">$t:admin.settings.privacy.withdrawn.schedule_notice</p>
+              <p data-ref="withdrawn_schedule_notice_next_run" data-if="{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'privacy-process-retention')?.is_active !== false &amp;&amp; !!(coreSchedules?.data?.data ?? []).find(r => r.name === 'privacy-process-retention')?.next_run_at}}" class="text-label-subtle flex-center flex-wrap gap-1">
+                <span>$t:admin.settings.schedule_link.next_run</span>
+                <span class="font-medium">{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'privacy-process-retention')?.next_run_at | datetime}}</span>
+              </p>
+              <p data-ref="withdrawn_schedule_notice_inactive" data-if="{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'privacy-process-retention')?.is_active === false}}" class="text-label-subtle">$t:admin.settings.schedule_link.inactive</p>
+              <div class="flex-center flex-wrap gap-3">
+                <a data-ref="withdrawn_schedule_notice_link" data-if="{{current_user !== undefined &amp;&amp; (_computed.canReadSchedules !== false)}}" href="/admin/schedules?extension_type=core&amp;search_field=identifier&amp;search_keyword=privacy-process-retention" class="text-link">$t:admin.settings.schedule_link.change</a>
+              </div>
+            </div>
+          </div>
+        </div>
         <!-- row-stack 이 직속 자식에 주는 py-2 가 테두리 안쪽에 들어가지 않도록 테두리 없는 래퍼로 감싼다(audit row-stack-boxed-child). 조건은 래퍼가 갖는다 -->
         <div data-ref="withdrawn_target_list_row" data-if="{{privacyPreview?.data?.retention?.['user-withdrawn'] || privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.can_run}}">
           <div data-ref="withdrawn_target_list" class="rounded-lg border border-gray-200 dark:border-gray-700">
             <div data-ref="withdrawn_target_row" class="px-4 py-3">
-              <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div class="flex flex-col gap-2">
+                <responsive on="640-" class="flex gap-2 flex-row items-center justify-between"/>
                 <div class="flex-wrap-center gap-2 min-w-0">
                   <span class="text-heading">$t:admin.settings.privacy.targets.rows.withdrawn</span>
                   <span data-if="{{privacyPreview?.data?.retention?.['user-withdrawn']?.count !== null &amp;&amp; privacyPreview?.data?.retention?.['user-withdrawn']?.count !== undefined}}" class="badge badge-yellow">$t:admin.settings.privacy.target_count|count={{privacyPreview?.data?.retention?.['user-withdrawn']?.count ?? 0}}</span>
@@ -120,6 +140,8 @@
                 <span data-if="{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.is_active}}" class="text-blue-600 dark:text-blue-400">$t:admin.settings.privacy.manual_run.status_active|status={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.status_label ?? ''}}|at={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.queued_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}</span>
                 <span data-if="{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.status === 'completed'}}">$t:admin.settings.privacy.manual_run.last_completed|at={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|count={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.processed_count ?? 0}}</span>
                 <span data-if="{{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.status === 'failed'}}" class="text-error-soft">$t:admin.settings.privacy.manual_run.last_failed|at={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|error={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.error ?? ''}}</span>
+                <!-- 요청자 실명 보조 줄. 서버는 회원 조회 권한이 있는 관리자에게, 실명이 표시 이름과 다를 때만 requester_real_name 을 싣는다. -->
+                <span data-ref="withdrawn_manual_run_real_name" data-if="{{!!privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.requester_real_name}}" class="block text-tertiary">$t:admin.common.real_name.with_label|name={{privacyManualRuns?.data?.targets?.['retention:user-withdrawn']?.run?.requester_real_name}}</span>
               </div>
             </div>
           </div>
@@ -151,7 +173,8 @@
         <div data-ref="dormant_target_list_row" data-if="{{privacyPreview?.data?.dormant || privacyManualRuns?.data?.targets?.['dormant:convert']?.can_run || privacyManualRuns?.data?.targets?.['retention:search-history']?.can_run}}">
           <div data-ref="dormant_target_list" class="rounded-lg border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700">
             <div data-each="stage in {{['pre_notice', 'convert', 'withdraw_notice', 'withdraw']}}" data-ref="dormant_target_row_{{stage}}" class="px-4 py-3">
-              <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div class="flex flex-col gap-2">
+                <responsive on="640-" class="flex gap-2 flex-row items-center justify-between"/>
                 <div class="flex-wrap-center gap-2 min-w-0">
                   <span class="text-heading">{{$t('admin.settings.privacy.targets.rows.' + stage)}}</span>
                   <span data-if="{{privacyPreview?.data?.dormant}}" class="badge {{stage === 'withdraw_notice' || stage === 'withdraw' ? 'badge-red' : 'badge-yellow'}}">$t:admin.settings.privacy.target_count|count={{privacyPreview?.data?.dormant?.[stage] ?? 0}}</span>
@@ -196,6 +219,7 @@
                 <span data-if="{{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.is_active}}" class="text-blue-600 dark:text-blue-400">$t:admin.settings.privacy.manual_run.status_active|status={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.status_label ?? ''}}|at={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.queued_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}</span>
                 <span data-if="{{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.status === 'completed'}}">$t:admin.settings.privacy.manual_run.last_completed|at={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|count={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.processed_count ?? 0}}</span>
                 <span data-if="{{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.status === 'failed'}}" class="text-error-soft">$t:admin.settings.privacy.manual_run.last_failed|at={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|error={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.error ?? ''}}</span>
+                <span data-ref="dormant_manual_run_real_name_{{stage}}" data-if="{{!!privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.requester_real_name}}" class="block text-tertiary">$t:admin.common.real_name.with_label|name={{privacyManualRuns?.data?.targets?.['dormant:' + stage]?.run?.requester_real_name}}</span>
               </div>
             </div>
           </div>
@@ -261,7 +285,8 @@
           <p class="text-hint mt-1">$t:admin.settings.privacy.search_history.scopes_desc</p>
           <p data-ref="search_history_scopes_empty" data-if="{{!!_local.form?._meta &amp;&amp; (_local.form?.privacy?.search_history_scopes ?? []).length === 0}}" class="text-hint mt-2">$t:admin.settings.privacy.search_history.empty</p>
           <div data-ref="search_history_scope_list" data-if="{{(_local.form?.privacy?.search_history_scopes ?? []).length &gt; 0}}" class="mt-2 rounded-lg border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700">
-            <div data-each="row, idx in _local.form?.privacy?.search_history_scopes ?? []" data-ref="search_history_scope_row_{{idx}}" class="px-4 py-3 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div data-each="row, idx in _local.form?.privacy?.search_history_scopes ?? []" data-ref="search_history_scope_row_{{idx}}" class="px-4 py-3 flex flex-col gap-3">
+              <responsive on="768-" class="px-4 py-3 flex flex-row gap-3 items-start justify-between"/>
               <div class="min-w-0">
                 <span class="text-heading wrap-anywhere">{{(_local.form?._meta?.search_scopes ?? []).find((s) =&gt; s.scope === row.scope)?.label ?? row.scope}}</span>
                 <p class="text-hint wrap-anywhere">$t:admin.settings.privacy.search_history.scope_meta|owner={{(_local.form?._meta?.search_scopes ?? []).find((s) =&gt; s.scope === row.scope)?.owner_label ?? ''}}|scope={{row.scope}}</p>
@@ -298,7 +323,8 @@
         <div data-ref="search_history_target_list_row" data-if="{{privacyPreview?.data?.retention?.['search-history'] || privacyManualRuns?.data?.targets?.['retention:search-history']?.can_run}}">
           <div data-ref="search_history_target_list" class="rounded-lg border border-gray-200 dark:border-gray-700">
             <div data-ref="search_history_target_row" class="px-4 py-3">
-              <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div class="flex flex-col gap-2">
+                <responsive on="640-" class="flex flex-row gap-2 items-center justify-between"/>
                 <div class="flex-wrap-center gap-2 min-w-0">
                   <span class="text-heading">$t:admin.settings.privacy.targets.rows.search_history</span>
                   <span data-if="{{privacyPreview?.data?.retention?.['search-history']?.count !== null &amp;&amp; privacyPreview?.data?.retention?.['search-history']?.count !== undefined}}" class="badge badge-yellow">$t:admin.settings.privacy.search_history.target_count|count={{privacyPreview?.data?.retention?.['search-history']?.count ?? 0}}</span>
@@ -342,6 +368,7 @@
                 <span data-if="{{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.is_active}}" class="text-blue-600 dark:text-blue-400">$t:admin.settings.privacy.manual_run.status_active|status={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.status_label ?? ''}}|at={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.queued_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}</span>
                 <span data-if="{{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.status === 'completed'}}">$t:admin.settings.privacy.manual_run.last_completed|at={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|count={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.processed_count ?? 0}}</span>
                 <span data-if="{{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.status === 'failed'}}" class="text-error-soft">$t:admin.settings.privacy.manual_run.last_failed|at={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.requester_name ?? $t('admin.settings.privacy.manual_run.unknown_requester')}}|error={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.error ?? ''}}</span>
+                <span data-ref="search_history_manual_run_real_name" data-if="{{!!privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.requester_real_name}}" class="block text-tertiary">$t:admin.common.real_name.with_label|name={{privacyManualRuns?.data?.targets?.['retention:search-history']?.run?.requester_real_name}}</span>
               </div>
             </div>
           </div>

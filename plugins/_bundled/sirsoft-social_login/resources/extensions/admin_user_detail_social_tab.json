@@ -1,0 +1,566 @@
+{
+    "comment": "관리자 회원 «상세» 화면에 「소셜 로그인」 탭을 얹는다. 형제 확장(TOTP·마케팅·게시판·이커머스)과 같은 짜임으로 주입이 두 군데로 갈린다 — 탭 버튼은\n  `inject_props` 로 탭 목록 끝에 덧붙이고, 본문은 `extension_tab_content` 에 붙인다. 둘을 잇는 것은 `id`(ext_social_login) 하나뿐이다.\n  연결 목록은 회원 연결 열람 권한(`accounts.view`) 라우트에서, 강제 해제 단추는 응답의 `abilities.can_unlink`(해제 권한)로만 보인다 — 화면 조건에\n  관리자 권한 목록을 쓰지 않는다(관리자 셸 전역에 그 목록이 없다). 권한 집행의 정본은 라우트 미들웨어다. 제공자 사용자 ID 는 앞 6자만 보인다.",
+    "target_layout": "admin_user_detail",
+    "priority": 340,
+    "data_sources": [
+        {
+            "id": "socialUserAccounts",
+            "label_key": "$t:sirsoft-social_login.editor.data_source.user_accounts",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-social_login/admin/users/{{route?.id}}/accounts",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "if": "{{route?.id?.length === 36}}",
+            "errorHandling": {
+                "403": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "socialAccountsForbidden": true
+                    }
+                },
+                "404": {
+                    "handler": "suppress"
+                }
+            },
+            "comment": "회원의 소셜 연결 — 회원 상세에 들어올 때 받고, 강제 해제 뒤 다시 받는다. 권한이 없으면 403 → 안내만.\n       주소의 회원 식별자가 uuid 길이(36자, 라우트 제약과 같은 길이)일 때만 받는다 — `/admin/users/1` 같은 주소는 화면의 회원 조회가\n       404 화면으로 바꾸므로 이 목록을 부를 까닭이 없다. 없는 회원(404)도 화면이 이미 404 화면이라 조용히 넘긴다(시스템 기본 처리는\n       응답 문구를 오류 토스트로 띄워 404 화면 위에 겹친다)."
+        }
+    ],
+    "injections": [
+        {
+            "target_id": "user_detail_tabs",
+            "position": "inject_props",
+            "props": {
+                "tabs": {
+                    "_append": [
+                        {
+                            "id": "ext_social_login",
+                            "label": "$t:sirsoft-social_login.admin.users.tab_label",
+                            "iconName": "right-to-bracket",
+                            "if": "{{!!route?.id}}"
+                        }
+                    ]
+                }
+            }
+        },
+        {
+            "target_id": "extension_tab_content",
+            "position": "append_child",
+            "components": [
+                {
+                    "id": "ext_social_login_content",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!!route?.id}}",
+                    "props": {
+                        "id": "ext_social_login",
+                        "className": "sl:scroll-mt-32"
+                    },
+                    "children": [
+                        {
+                            "id": "admin_user_social_card",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "sl-admin-card"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "sl:flex sl:items-center sl:justify-between sl:mb-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "sl:flex sl:items-center sl:gap-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "right-to-bracket",
+                                                        "className": "sl:text-xl sl:leading-none sl:text-gray-600 sl:dark:text-gray-400"
+                                                    }
+                                                },
+                                                {
+                                                    "id": "admin_user_social_title",
+                                                    "type": "basic",
+                                                    "name": "H3",
+                                                    "props": {
+                                                        "className": "sl:text-lg sl:font-semibold sl:text-gray-900 sl:dark:text-white"
+                                                    },
+                                                    "text": "$t:sirsoft-social_login.admin.users.tab_title"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "ExtensionBadge",
+                                            "props": {
+                                                "type": "plugin",
+                                                "identifier": "sirsoft-social_login",
+                                                "installedPlugins": "{{_global.installedPlugins}}"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "admin_user_social_forbidden",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{_local.socialAccountsForbidden === true}}",
+                                    "props": {
+                                        "className": "sl-text-hint"
+                                    },
+                                    "text": "$t:sirsoft-social_login.admin.users.forbidden"
+                                },
+                                {
+                                    "id": "admin_user_social_passwordless",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{socialUserAccounts?.data?.has_password === false}}",
+                                    "props": {
+                                        "className": "sl:text-sm sl:text-amber-700 sl:dark:text-amber-300 sl:mb-3"
+                                    },
+                                    "text": "$t:sirsoft-social_login.admin.users.passwordless_notice"
+                                },
+                                {
+                                    "id": "admin_user_social_empty",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{!!socialUserAccounts?.data && (socialUserAccounts?.data?.accounts ?? []).length === 0}}",
+                                    "props": {
+                                        "className": "sl-text-hint"
+                                    },
+                                    "text": "$t:sirsoft-social_login.admin.users.empty"
+                                },
+                                {
+                                    "comment": "데스크톱·태블릿은 표, 휴대폰 폭(mobile)은 아래 세로 카드 — 표를 가로로 밀어야 [강제 해제]가 보이던 것을 없앤다",
+                                    "id": "admin_user_social_table_wrap",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(socialUserAccounts?.data?.accounts ?? []).length > 0}}",
+                                    "responsive": {
+                                        "mobile": {
+                                            "if": "{{false}}"
+                                        }
+                                    },
+                                    "props": {
+                                        "className": "sl:overflow-x-auto"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "admin_user_social_table",
+                                            "type": "basic",
+                                            "name": "Table",
+                                            "props": {
+                                                "className": "sl:w-full sl:text-sm"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Thead",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Tr",
+                                                            "props": {
+                                                                "className": "sl:text-left sl:text-xs sl:text-gray-500 sl:dark:text-gray-400 sl:border-b sl:border-gray-200 sl:dark:border-gray-700"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Th",
+                                                                    "props": {
+                                                                        "className": "sl:py-2 sl:pr-3"
+                                                                    },
+                                                                    "text": "$t:sirsoft-social_login.admin.users.col.provider"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Th",
+                                                                    "props": {
+                                                                        "className": "sl:py-2 sl:pr-3"
+                                                                    },
+                                                                    "text": "$t:sirsoft-social_login.admin.users.col.provider_user_id"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Th",
+                                                                    "props": {
+                                                                        "className": "sl:py-2 sl:pr-3"
+                                                                    },
+                                                                    "text": "$t:sirsoft-social_login.admin.users.col.email"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Th",
+                                                                    "props": {
+                                                                        "className": "sl:py-2 sl:pr-3"
+                                                                    },
+                                                                    "text": "$t:sirsoft-social_login.admin.users.col.linked_at"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Th",
+                                                                    "props": {
+                                                                        "className": "sl:py-2 sl:pr-3"
+                                                                    },
+                                                                    "text": "$t:sirsoft-social_login.admin.users.col.last_login_at"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Th",
+                                                                    "props": {
+                                                                        "className": "sl:py-2 sl:pr-3"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Tbody",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Tr",
+                                                            "iteration": {
+                                                                "source": "socialUserAccounts?.data?.accounts ?? []",
+                                                                "item_var": "account"
+                                                            },
+                                                            "dataKey": "{{account.provider_key}}",
+                                                            "props": {
+                                                                "className": "sl:border-b sl:border-gray-100 sl:dark:border-gray-700"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Td",
+                                                                    "props": {
+                                                                        "className": "sl:py-2 sl:pr-3 sl:whitespace-nowrap"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Div",
+                                                                            "props": {
+                                                                                "className": "sl:flex sl:items-center sl:gap-2"
+                                                                            },
+                                                                            "children": [
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "sirsoft-social_login.ProviderMark",
+                                                                                    "props": {
+                                                                                        "brand": "{{account.brand}}",
+                                                                                        "label": "{{account.label}}"
+                                                                                    }
+                                                                                },
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Span",
+                                                                                    "props": {
+                                                                                        "className": "sl:text-gray-900 sl:dark:text-white"
+                                                                                    },
+                                                                                    "text": "{{account.label}}"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Td",
+                                                                    "props": {
+                                                                        "className": "sl:py-2 sl:pr-3 sl:whitespace-nowrap sl:font-mono sl:text-xs sl:text-gray-700 sl:dark:text-gray-300"
+                                                                    },
+                                                                    "text": "{{account.provider_user_id_prefix + '…'}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Td",
+                                                                    "props": {
+                                                                        "className": "sl:py-2 sl:pr-3 sl:text-gray-700 sl:dark:text-gray-300 sl:break-all sl-break-all"
+                                                                    },
+                                                                    "text": "{{account.email ?? '-'}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Td",
+                                                                    "props": {
+                                                                        "className": "sl:py-2 sl:pr-3 sl:whitespace-nowrap sl:text-gray-700 sl:dark:text-gray-300"
+                                                                    },
+                                                                    "text": "{{account.linked_at ?? '-'}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Td",
+                                                                    "props": {
+                                                                        "className": "sl:py-2 sl:pr-3 sl:whitespace-nowrap sl:text-gray-700 sl:dark:text-gray-300"
+                                                                    },
+                                                                    "text": "{{account.last_login_at ?? '-'}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Td",
+                                                                    "props": {
+                                                                        "className": "sl:py-2 sl:pr-3 sl:whitespace-nowrap sl:text-right"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "id": "admin_user_social_unlink_{{account.provider_key}}",
+                                                                            "type": "basic",
+                                                                            "name": "Button",
+                                                                            "if": "{{socialUserAccounts?.data?.abilities?.can_unlink === true}}",
+                                                                            "actions": [
+                                                                                {
+                                                                                    "comment": "강제 해제 — 마지막 로그인 수단 가드 없이 끊는다(관리자 판단). 회원에게 사이트 알림이 가고 활동 로그에 남는다",
+                                                                                    "type": "click",
+                                                                                    "handler": "apiCall",
+                                                                                    "target": "/api/plugins/sirsoft-social_login/admin/users/{{route?.id}}/accounts/{{account.provider_key}}",
+                                                                                    "auth_required": true,
+                                                                                    "params": {
+                                                                                        "method": "DELETE"
+                                                                                    },
+                                                                                    "confirm": "$t:sirsoft-social_login.admin.users.unlink_confirm",
+                                                                                    "onSuccess": [
+                                                                                        {
+                                                                                            "handler": "toast",
+                                                                                            "params": {
+                                                                                                "type": "success",
+                                                                                                "message": "{{response.message}}"
+                                                                                            }
+                                                                                        },
+                                                                                        {
+                                                                                            "handler": "refetchDataSource",
+                                                                                            "params": {
+                                                                                                "dataSourceId": "socialUserAccounts"
+                                                                                            }
+                                                                                        }
+                                                                                    ],
+                                                                                    "onError": {
+                                                                                        "handler": "toast",
+                                                                                        "params": {
+                                                                                            "type": "error",
+                                                                                            "message": "{{error.message ?? '$t:sirsoft-social_login.admin.users.unlink_failed'}}"
+                                                                                        }
+                                                                                    }
+                                                                                }
+                                                                            ],
+                                                                            "props": {
+                                                                                "type": "button",
+                                                                                "className": "sl-btn sl-btn-danger sl:text-xs"
+                                                                            },
+                                                                            "children": [
+                                                                                {
+                                                                                    "type": "basic",
+                                                                                    "name": "Span",
+                                                                                    "text": "$t:sirsoft-social_login.admin.users.unlink"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "admin_user_social_cards",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{false}}",
+                                    "responsive": {
+                                        "mobile": {
+                                            "if": "{{(socialUserAccounts?.data?.accounts ?? []).length > 0}}"
+                                        }
+                                    },
+                                    "props": {
+                                        "className": "sl:space-y-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "iteration": {
+                                                "source": "socialUserAccounts?.data?.accounts ?? []",
+                                                "item_var": "account"
+                                            },
+                                            "dataKey": "{{account.provider_key}}",
+                                            "props": {
+                                                "className": "sl:rounded-lg sl:border sl:border-gray-200 sl:dark:border-gray-700 sl:p-3 sl:space-y-2"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "sl:flex sl:items-center sl:justify-between sl:gap-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Div",
+                                                            "props": {
+                                                                "className": "sl:flex sl:items-center sl:gap-2"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "sirsoft-social_login.ProviderMark",
+                                                                    "props": {
+                                                                        "brand": "{{account.brand}}",
+                                                                        "label": "{{account.label}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "props": {
+                                                                        "className": "sl:text-sm sl:font-medium sl:text-gray-900 sl:dark:text-white"
+                                                                    },
+                                                                    "text": "{{account.label}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "id": "admin_user_social_card_unlink_{{account.provider_key}}",
+                                                            "type": "basic",
+                                                            "name": "Button",
+                                                            "if": "{{socialUserAccounts?.data?.abilities?.can_unlink === true}}",
+                                                            "actions": [
+                                                                {
+                                                                    "comment": "표의 강제 해제와 같은 요청 — 둘 중 하나만 화면에 그려진다",
+                                                                    "type": "click",
+                                                                    "handler": "apiCall",
+                                                                    "target": "/api/plugins/sirsoft-social_login/admin/users/{{route?.id}}/accounts/{{account.provider_key}}",
+                                                                    "auth_required": true,
+                                                                    "params": {
+                                                                        "method": "DELETE"
+                                                                    },
+                                                                    "confirm": "$t:sirsoft-social_login.admin.users.unlink_confirm",
+                                                                    "onSuccess": [
+                                                                        {
+                                                                            "handler": "toast",
+                                                                            "params": {
+                                                                                "type": "success",
+                                                                                "message": "{{response.message}}"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "handler": "refetchDataSource",
+                                                                            "params": {
+                                                                                "dataSourceId": "socialUserAccounts"
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "onError": {
+                                                                        "handler": "toast",
+                                                                        "params": {
+                                                                            "type": "error",
+                                                                            "message": "{{error.message ?? '$t:sirsoft-social_login.admin.users.unlink_failed'}}"
+                                                                        }
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "props": {
+                                                                "type": "button",
+                                                                "className": "sl-btn sl-btn-danger sl:text-xs"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "text": "$t:sirsoft-social_login.admin.users.unlink"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:sirsoft-social_login.admin.users.col.provider_user_id"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "sl:font-mono sl:text-xs sl:text-gray-700 sl:dark:text-gray-300"
+                                                    },
+                                                    "text": "{{account.provider_user_id_prefix + '…'}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:sirsoft-social_login.admin.users.col.email"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:break-all sl-break-all"
+                                                    },
+                                                    "text": "{{account.email ?? '-'}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:sirsoft-social_login.admin.users.col.linked_at"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "sl:text-sm sl:text-gray-700 sl:dark:text-gray-300"
+                                                    },
+                                                    "text": "{{account.linked_at ?? '-'}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "sl:text-xs sl:text-gray-500 sl:dark:text-gray-400"
+                                                    },
+                                                    "text": "$t:sirsoft-social_login.admin.users.col.last_login_at"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "sl:text-sm sl:text-gray-700 sl:dark:text-gray-300"
+                                                    },
+                                                    "text": "{{account.last_login_at ?? '-'}}"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

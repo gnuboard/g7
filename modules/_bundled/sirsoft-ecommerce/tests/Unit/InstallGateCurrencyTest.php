@@ -12,7 +12,7 @@ use Tests\PureTestCase;
  *
  * "유저별 통화 = 커머스 책임"이 구조적으로 보장되는지 확인한다:
  * - 통화 관련 리스너는 모듈 자산(미설치 시 미등록 → 가입 통화 부여/응답 주입 안 일어남).
- * - 관리자 통화 필드는 모듈 layout_extension 주입(미설치 시 코어 회원폼에 부재).
+ * - 관리자 통화 필드는 모듈의 회원 항목 선언(미설치 시 코어 회원폼에 부재).
  * - 마이페이지/관리자 UI 는 ecommerce_preferred_currency 키 게이트(미설치 시 키 부재).
  */
 class InstallGateCurrencyTest extends PureTestCase
@@ -37,25 +37,27 @@ class InstallGateCurrencyTest extends PureTestCase
     }
 
     /**
-     * 관리자 회원 폼의 통화 필드가 코어 폼 하드코딩이 아니라 모듈 확장 JSON 이 admin_user_form 의 extension_form_content 슬롯에 주입하는 방식인지 확인한다.
+     * 관리자 회원 폼의 통화 필드가 코어 폼 하드코딩이나 주입 조각이 아니라 모듈의 회원 항목 선언인지 확인한다.
+     *
+     * 선언의 출처가 모듈이므로 모듈이 꺼지면 항목 등록소가 걸러 내 회원 폼에서 칸이 사라진다.
      *
      * @scenario asset=admin_form_extension
      *
-     * @effects admin_currency_field_injected_via_extension_slot
+     * @effects admin_currency_field_declared_as_module_member_field
      *
      * @return void 반환값 없음
      */
-    public function test_admin_currency_field_is_layout_extension(): void
+    public function test_admin_currency_field_is_module_member_field(): void
     {
-        // 관리자 통화 필드는 코어 폼 하드코딩이 아니라 모듈 layout_extension JSON 으로 주입
-        $extPath = dirname(__DIR__, 2).'/resources/extensions/admin-user-currency-field.json';
-        $this->assertFileExists($extPath);
+        $fields = array_column((new Module)->getFields(), null, 'key');
 
-        $ext = json_decode(file_get_contents($extPath), true);
-        $this->assertSame('admin_user_form', $ext['target_layout']);
-        // 코어 확장 슬롯(extension_form_content)으로 주입 — 코어 폼 본체 미변경. 같은 파일이 탭 목록
-        // (user_form_tabs)에도 props 를 얹으므로 순서가 아니라 슬롯 주입이 있는지로 본다.
-        $this->assertContains('extension_form_content', array_column($ext['injections'], 'target_id'));
+        $this->assertArrayHasKey('ecommerce_preferred_currency', $fields);
+        $this->assertSame('core.user', $fields['ecommerce_preferred_currency']['field_set']);
+        $this->assertSame('handler', $fields['ecommerce_preferred_currency']['storage']);
+        $this->assertContains('admin_update', $fields['ecommerce_preferred_currency']['ui']['surfaces']);
+
+        // 종전의 주입 조각은 없다 — 남아 있으면 같은 칸이 회원 폼에 두 번 선다
+        $this->assertFileDoesNotExist(dirname(__DIR__, 2).'/resources/extensions/admin-user-currency-field.json');
     }
 
     /**

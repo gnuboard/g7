@@ -14,7 +14,7 @@ use Tests\TestCase;
  * 값이 `<h3>…</h3><p>…</p>` 같은 블록 HTML 이면 치환 결과가 `<p><h3>` 처럼 문단 안에 블록이 든 잘못된 HTML 이 되어
  * 메일 프로그램마다 다르게(문단이 끊기거나 여백이 겹치게) 그려졌다(7.1.0 실측 M1-O8).
  *
- * @effects block_placeholder_paragraph_unwrapped
+ * 효과 요약(마커 아님 — 평문): block_placeholder_paragraph_unwrapped
  */
 class NotificationTemplateBlockPlaceholderTest extends TestCase
 {

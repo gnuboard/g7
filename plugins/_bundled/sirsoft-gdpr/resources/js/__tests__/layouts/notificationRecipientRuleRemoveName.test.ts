@@ -41,13 +41,18 @@ function findAll(node: any, pred: (n: Node) => boolean, acc: Node[] = []): Node[
 }
 
 const modal: Node = JSON.parse(readFileSync(MODAL, 'utf8'));
-const removeButtons = findAll(modal, (n) => n.name === 'Button' && JSON.stringify(n.children ?? []).includes('fa-xmark'));
+// 삭제 버튼 = 클릭하면 자기 자리(rcptIdx)를 걸러 내는 버튼(아이콘 이름이 아니라 동작으로 찾는다)
+const removeButtons = findAll(modal, (n) => n.name === 'Button' && JSON.stringify(n.actions ?? []).includes('i !== rcptIdx'));
 
 describe('알림 템플릿 편집 창 — 수신자 규칙 삭제 버튼 이름', () => {
+    // @scenario case=remove_name_c01
+    // @effects recipient_rule_remove_button_named
     it('수신자 규칙 삭제 버튼을 찾았다', () => {
         expect(removeButtons.length).toBeGreaterThan(0);
     });
 
+    // @scenario case=remove_name_c02
+    // @effects recipient_rule_remove_button_named
     it('삭제 버튼마다 「수신자 규칙 N 삭제」 aria-label 이 있다(아이콘 이름 xmark 로 읽히지 않게)', () => {
         for (const b of removeButtons) {
             expect(b.props?.['aria-label']).toBe('$t:admin.settings.notification_definitions.recipients.remove_rule|index={{rcptIdx + 1}}');

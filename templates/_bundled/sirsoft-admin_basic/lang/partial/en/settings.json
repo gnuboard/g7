@@ -1,0 +1,45 @@
+{
+  "sections": {
+    "branding": {
+      "label": "Branding",
+      "hint": "Icon, colors and logo of admin screens. Empty fields use the site settings (or the defaults)."
+    }
+  },
+  "favicon": {
+    "label": "Favicon",
+    "hint": "Icon shown on the browser tab of admin screens while this template is active."
+  },
+  "logo": {
+    "label": "Admin logo",
+    "hint": "Logo used in the admin sidebar. Leave empty to use the site logo."
+  },
+  "accent": {
+    "label": "Accent color",
+    "hint": "Color of buttons, links and notice boxes.",
+    "blue": "Blue (default)",
+    "indigo": "Indigo",
+    "violet": "Violet",
+    "green": "Green",
+    "teal": "Teal",
+    "orange": "Orange",
+    "rose": "Rose",
+    "slate": "Slate"
+  },
+  "color_scheme": {
+    "label": "Default color mode",
+    "hint": "Mode shown to first-time visitors. Visitors who already picked a mode (including this browser) keep their choice.",
+    "system": "Follow system",
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "screen": {
+    "fields": {
+      "row_title": "Item {{number}}",
+      "move_up": "Move up",
+      "move_down": "Move down",
+      "remove_item": "Remove",
+      "add_item": "Add ({{current}}/{{max}})",
+      "max_items_reached": "Up to {{max}} items."
+    }
+  }
+}

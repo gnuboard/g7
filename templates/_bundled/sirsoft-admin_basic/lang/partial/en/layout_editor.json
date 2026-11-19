@@ -142,6 +142,10 @@
       "label": "Toggle",
       "default_label": "Toggle"
     },
+    "member_field_input": {
+      "label": "Member field input",
+      "default_label": "Field"
+    },
     "form_field": {
       "label": "Form field",
       "default_label": "Field"

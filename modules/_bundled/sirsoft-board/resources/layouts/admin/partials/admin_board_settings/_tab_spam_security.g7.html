@@ -3,51 +3,51 @@
   <div data-ref="tab_content_spam_security" data-if="{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'spam_security'}}">
     <div>
       <!-- ========== 섹션: 쿨다운 ========== -->
-      <section-layout data-type="layout" data-ref="section_cooldown" class="admin-card">
-        <h3 class="card-title">$t:sirsoft-board.admin.settings.sections.spam_security</h3>
-        <div class="row-stack">
+      <section-layout data-type="layout" data-ref="section_cooldown" class="board-admin-card">
+        <h3 class="board-card-title">$t:sirsoft-board.admin.settings.sections.spam_security</h3>
+        <div class="board-row-stack">
           <div data-ref="field_post_cooldown_seconds">
-            <label class="form-label">
+            <label class="board-form-label">
               <span>$t:sirsoft-board.admin.settings.fields.post_cooldown_seconds</span>
             </label>
-            <input type="number" name="spam_security.post_cooldown_seconds" min="{{_local?.form?._meta?.limits?.post_cooldown_seconds_min ?? 0}}" max="{{_local?.form?._meta?.limits?.post_cooldown_seconds_max ?? 3600}}" class="{{(_local.errors?.['spam_security.post_cooldown_seconds']) ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
-            <span data-if="{{_local.errors?.['spam_security.post_cooldown_seconds']}}" class="text-xs text-red-600 dark:text-red-400 block">{{(Array.isArray(_local.errors?.['spam_security.post_cooldown_seconds']) ? _local.errors['spam_security.post_cooldown_seconds'][0] : _local.errors?.['spam_security.post_cooldown_seconds']) ?? ''}}</span>
-            <span class="text-tertiary block">$t:sirsoft-board.admin.settings.fields.post_cooldown_seconds_hint</span>
+            <input type="number" name="spam_security.post_cooldown_seconds" min="{{_local?.form?._meta?.limits?.post_cooldown_seconds_min ?? 0}}" max="{{_local?.form?._meta?.limits?.post_cooldown_seconds_max ?? 3600}}" class="{{(_local.errors?.['spam_security.post_cooldown_seconds']) ? 'board-input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
+            <span data-if="{{_local.errors?.['spam_security.post_cooldown_seconds']}}" class="board:text-xs board:text-red-600 board:dark:text-red-400 board:block">{{(Array.isArray(_local.errors?.['spam_security.post_cooldown_seconds']) ? _local.errors['spam_security.post_cooldown_seconds'][0] : _local.errors?.['spam_security.post_cooldown_seconds']) ?? ''}}</span>
+            <span class="board-text-tertiary board:block">$t:sirsoft-board.admin.settings.fields.post_cooldown_seconds_hint</span>
           </div>
           <div data-ref="field_comment_cooldown_seconds">
-            <label class="form-label">
+            <label class="board-form-label">
               <span>$t:sirsoft-board.admin.settings.fields.comment_cooldown_seconds</span>
             </label>
-            <input type="number" name="spam_security.comment_cooldown_seconds" min="{{_local?.form?._meta?.limits?.comment_cooldown_seconds_min ?? 0}}" max="{{_local?.form?._meta?.limits?.comment_cooldown_seconds_max ?? 3600}}" class="{{(_local.errors?.['spam_security.comment_cooldown_seconds']) ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
-            <span data-if="{{_local.errors?.['spam_security.comment_cooldown_seconds']}}" class="text-xs text-red-600 dark:text-red-400 block">{{(Array.isArray(_local.errors?.['spam_security.comment_cooldown_seconds']) ? _local.errors['spam_security.comment_cooldown_seconds'][0] : _local.errors?.['spam_security.comment_cooldown_seconds']) ?? ''}}</span>
-            <span class="text-tertiary block">$t:sirsoft-board.admin.settings.fields.comment_cooldown_seconds_hint</span>
+            <input type="number" name="spam_security.comment_cooldown_seconds" min="{{_local?.form?._meta?.limits?.comment_cooldown_seconds_min ?? 0}}" max="{{_local?.form?._meta?.limits?.comment_cooldown_seconds_max ?? 3600}}" class="{{(_local.errors?.['spam_security.comment_cooldown_seconds']) ? 'board-input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
+            <span data-if="{{_local.errors?.['spam_security.comment_cooldown_seconds']}}" class="board:text-xs board:text-red-600 board:dark:text-red-400 board:block">{{(Array.isArray(_local.errors?.['spam_security.comment_cooldown_seconds']) ? _local.errors['spam_security.comment_cooldown_seconds'][0] : _local.errors?.['spam_security.comment_cooldown_seconds']) ?? ''}}</span>
+            <span class="board-text-tertiary board:block">$t:sirsoft-board.admin.settings.fields.comment_cooldown_seconds_hint</span>
           </div>
           <div data-ref="field_view_count_cache_ttl" class="">
             <div>
-              <label class="form-label">
+              <label class="board-form-label">
                 <span>$t:sirsoft-board.admin.settings.fields.view_count_cache_ttl</span>
               </label>
-              <input type="number" name="spam_security.view_count_cache_ttl" min="{{_local?.form?._meta?.limits?.view_count_cache_ttl_min ?? 60}}" max="{{_local?.form?._meta?.limits?.view_count_cache_ttl_max ?? 604800}}" class="{{(_local.errors?.['spam_security.view_count_cache_ttl']) ? 'input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
-              <span data-if="{{_local.errors?.['spam_security.view_count_cache_ttl']}}" class="text-xs text-red-600 dark:text-red-400 block">{{(Array.isArray(_local.errors?.['spam_security.view_count_cache_ttl']) ? _local.errors['spam_security.view_count_cache_ttl'][0] : _local.errors?.['spam_security.view_count_cache_ttl']) ?? ''}}</span>
-              <span class="text-tertiary block">$t:sirsoft-board.admin.settings.fields.view_count_cache_ttl_hint</span>
+              <input type="number" name="spam_security.view_count_cache_ttl" min="{{_local?.form?._meta?.limits?.view_count_cache_ttl_min ?? 60}}" max="{{_local?.form?._meta?.limits?.view_count_cache_ttl_max ?? 604800}}" class="{{(_local.errors?.['spam_security.view_count_cache_ttl']) ? 'board-input-error' : ''}}" disabled="{{_computed.isReadOnly}}"/>
+              <span data-if="{{_local.errors?.['spam_security.view_count_cache_ttl']}}" class="board:text-xs board:text-red-600 board:dark:text-red-400 board:block">{{(Array.isArray(_local.errors?.['spam_security.view_count_cache_ttl']) ? _local.errors['spam_security.view_count_cache_ttl'][0] : _local.errors?.['spam_security.view_count_cache_ttl']) ?? ''}}</span>
+              <span class="board-text-tertiary board:block">$t:sirsoft-board.admin.settings.fields.view_count_cache_ttl_hint</span>
             </div>
           </div>
         </div>
-        <div data-ref="spam_security_identifier_info" class="alert-info">
-          <div class="flex-center gap-2">
-            <icon name="circle-info" class="text-blue-600 dark:text-blue-400 flex-shrink-0" size="sm"/>
-            <span class="text-xs board-tone-info">$t:sirsoft-board.admin.settings.fields.spam_security_identifier_info</span>
+        <div data-ref="spam_security_identifier_info" class="board-alert-info">
+          <div class="board-flex-center board:gap-2">
+            <icon name="circle-info" class="board:text-blue-600 board:dark:text-blue-400 board:flex-shrink-0" size="sm"/>
+            <span class="board:text-xs board-tone-info">$t:sirsoft-board.admin.settings.fields.spam_security_identifier_info</span>
           </div>
         </div>
       </section-layout>
       <!-- ========== 섹션: 캐시 초기화 ========== -->
-      <section-layout data-type="layout" data-ref="section_cache" class="admin-card">
-        <div class="flex-between">
-          <div class="section-header">
+      <section-layout data-type="layout" data-ref="section_cache" class="board-admin-card">
+        <div class="board-flex-between">
+          <div class="board-section-header">
             <h3>$t:sirsoft-board.admin.settings.fields.clear_cache</h3>
             <p>$t:sirsoft-board.admin.settings.fields.clear_cache_description</p>
           </div>
-          <button data-ref="clear_cache_button" type="button" disabled="{{_computed.isReadOnly || _local.isClearingCache}}" class="flex-center gap-1.5 px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          <button data-ref="clear_cache_button" type="button" disabled="{{_computed.isReadOnly || _local.isClearingCache}}" class="board-flex-center board:gap-1.5 board:px-4 board:py-2 board:bg-red-600 board:dark:bg-red-700 board:text-white board:rounded-lg board:hover:bg-red-700 board:dark:hover:bg-red-600 board:font-medium board:transition-colors board:disabled:opacity-50 board:disabled:cursor-not-allowed">
             <on type="click">
               <!-- 차단 낱말 추가. 빈 값이나 이미 있는 낱말은 담지 않으며, 담은 뒤 입력칸을 비워 연속 입력을 이어 갈 수 있게 한다 -->
               <sequence>
@@ -64,7 +64,7 @@
                 </api-call>
               </sequence>
             </on>
-            <icon data-if="{{_local.isClearingCache}}" name="spinner" class="animate-spin" size="sm"/>
+            <icon data-if="{{_local.isClearingCache}}" name="spinner" class="board:animate-spin" size="sm"/>
             <icon data-if="{{!_local.isClearingCache}}" name="trash-can" size="sm"/>
             <span>$t:sirsoft-board.admin.settings.fields.clear_cache</span>
           </button>

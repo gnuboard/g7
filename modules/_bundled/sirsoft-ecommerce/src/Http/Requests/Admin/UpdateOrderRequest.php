@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Requests\Admin;
 
+use App\Extension\HookManager;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -29,7 +30,7 @@ class UpdateOrderRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        $rules = [
             // 클레임 코스 상태는 교환·반품 서비스 전담 — 주문 단건 수정에서 직접 지정 불가.
             'order_status' => ['nullable', 'string', Rule::in(OrderStatusEnum::adminAssignableValues())],
             'admin_memo' => ['nullable', 'string', 'max:2000'],
@@ -53,6 +54,11 @@ class UpdateOrderRequest extends FormRequest
             'apply_mileage_deduction' => ['sometimes', 'boolean'],
             'record_paid_amount' => ['sometimes', 'boolean'],
         ];
+
+        // 확장이 이 요청의 검증 규칙을 더하거나 바꿀 수 있는 자리
+        $filtered = HookManager::applyFilters('sirsoft-ecommerce.order.update_validation_rules', $rules, $this);
+
+        return is_array($filtered) ? $filtered : $rules;
     }
 
     /**

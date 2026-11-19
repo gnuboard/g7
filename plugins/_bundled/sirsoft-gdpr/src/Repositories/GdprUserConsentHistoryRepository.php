@@ -2,6 +2,7 @@
 
 namespace Plugins\Sirsoft\Gdpr\Repositories;
 
+use App\Models\User;
 use App\Repositories\Concerns\PaginatesWithDeferredJoin;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -91,7 +92,8 @@ class GdprUserConsentHistoryRepository implements GdprUserConsentHistoryReposito
             columns: self::LIST_COLUMNS,
             sort: [['column' => 'created_at', 'direction' => 'desc']],
             perPage: max(1, min(100, $perPage)),
-            relations: ['user'],
+            // 회원 칸은 관리자 영역 표시 이름이다 — 계산에 필요한 회원 컬럼(닉네임, 상태, 회원이 고른 종류)을 함께 읽는다.
+            relations: ['user:'.User::displayColumns()],
         );
     }
 

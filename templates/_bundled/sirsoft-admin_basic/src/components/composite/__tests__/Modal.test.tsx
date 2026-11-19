@@ -375,7 +375,7 @@ describe('Modal', () => {
       expect(body).not.toBeNull();
       expect(body!.textContent).not.toContain('확인');
 
-      const footerRow = document.querySelector('.modal-footer-row');
+      const footerRow = document.querySelector('.modal-footer-bar');
       expect(footerRow).not.toBeNull();
       expect(footerRow!.textContent).toContain('확인');
 
@@ -386,10 +386,79 @@ describe('Modal', () => {
     // @effects modal_footer_rendered_outside_scroll_area
     it('footer 가 없거나 빈 배열이면 하단 영역 자체가 렌더링되지 않음', () => {
       const { rerender } = render(<Modal {...mockProps} />);
-      expect(document.querySelector('.modal-footer-row')).toBeNull();
+      expect(document.querySelector('.modal-footer-bar')).toBeNull();
 
       rerender(<Modal {...mockProps} footer={[]} />);
-      expect(document.querySelector('.modal-footer-row')).toBeNull();
+      expect(document.querySelector('.modal-footer-bar')).toBeNull();
+    });
+
+    /**
+     * footer 는 본문과 같은 데이터 컨텍스트로 그린다(#869 P1).
+     *
+     * 엔진은 Modal 에 `__dataContext` 를 넣지 않는다. 종전에는 footer 를 빈 객체로 그려
+     * `{{_global.isDeleting}}`·`{{_local.form.x}}` 같은 렌더 바인딩이 늘 비어 있었고, 그래서 지우는 중
+     * 비활성·진행 표시나 방금 친 값을 읽는 단추를 둔 창은 버튼을 본문 맨 아래 줄로 옮겨 그렸다.
+     * 엔진이 본문 자식을 그릴 때처럼 Modal 노드의 확장 컨텍스트(`parentDataContext`)와 컴포넌트
+     * 컨텍스트를 그대로 넘긴다.
+     */
+    // @scenario area=footer
+    // @effects modal_footer_reads_modal_node_context
+    it('footer 는 Modal 노드의 데이터 컨텍스트와 컴포넌트 컨텍스트로 그린다', () => {
+      const original = (window as any).G7Core;
+      const seen: any[] = [];
+      (window as any).G7Core = {
+        getDynamicRenderer: () => (props: any) => {
+          seen.push(props);
+          return <button>{props.componentDef.text}</button>;
+        },
+        getComponentRegistry: () => ({}),
+        getDataBindingEngine: () => ({}),
+        getTranslationEngine: () => ({}),
+        getActionDispatcher: () => ({}),
+      };
+
+      const nodeContext = { _global: { isDeleting: true }, _local: { form: { name: '방금 친 값' } } };
+      const componentContext = { state: {}, setState: vi.fn(), parentDataContext: nodeContext };
+
+      render(
+        <Modal
+          {...mockProps}
+          footer={[{ type: 'basic', name: 'Button', text: '삭제' }]}
+          __componentContext={componentContext as any}
+        />
+      );
+
+      expect(seen.length).toBeGreaterThan(0);
+      expect(seen[0].dataContext, 'footer 가 빈 컨텍스트로 그려졌습니다').toBe(nodeContext);
+      expect(seen[0].parentComponentContext, 'footer 가 Modal 의 상태 범위를 받지 못했습니다').toBe(componentContext);
+
+      (window as any).G7Core = original;
+    });
+
+    /**
+     * 고정 하단 단추가 조건으로 모두 빠지면 바닥 줄(테두리·여백)도 보이지 않는다(#869 C1).
+     * 단추는 각자 `if` 로 그려지지 않을 수 있어 Modal 이 미리 알 수 없다 — 비어 있으면 숨기는 상태 변형(`empty:hidden`)을 단다.
+     */
+    // @scenario area=footer
+    // @effects modal_footer_hidden_when_all_buttons_filtered
+    it('고정 하단 단추가 모두 그려지지 않으면 바닥 줄이 비고 숨김 규칙을 갖는다', () => {
+      const original = (window as any).G7Core;
+      (window as any).G7Core = {
+        getDynamicRenderer: () => () => null,
+        getComponentRegistry: () => ({}),
+        getDataBindingEngine: () => ({}),
+        getTranslationEngine: () => ({}),
+        getActionDispatcher: () => ({}),
+      };
+
+      render(<Modal {...mockProps} footer={[{ type: 'basic', name: 'Button', text: '숨은 단추', if: '{{false}}' }]} />);
+
+      const bar = document.querySelector('.modal-footer-bar') as HTMLElement;
+      expect(bar).not.toBeNull();
+      expect(bar.matches(':empty')).toBe(true);
+      expect(bar.className.split(/\s+/), '빈 바닥 줄을 숨기는 규칙이 없습니다').toContain('empty:hidden');
+
+      (window as any).G7Core = original;
     });
 
     // @scenario area=footer

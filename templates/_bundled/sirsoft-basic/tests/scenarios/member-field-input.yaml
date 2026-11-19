@@ -1,0 +1,31 @@
+feature: 회원 항목 입력칸(MemberFieldInput)은 항목 계약의 유형대로 입력칸을 고르고 유형별 값 모양으로 내보낸다
+
+description: |
+  가입 화면, 내 정보 수정, 추가 정보 입력이 함께 쓰는 항목 1개짜리 입력 컴포넌트다. 어떤 입력칸을 그릴지는 서버가 준
+  항목 계약의 type 과 constraints 가 정한다. 내보내는 값 모양은 서버 검증 규칙과 같아야 한다.
+
+# axis 의미:
+#   case — 유형별 그리기와 값 모양(앞의 열 가지), 오류와 잠금 상태, 날짜 제한 값 해석,
+#          제한 값 widget 이 정하는 선택 목록(국가, 시간대), 잠긴 항목(readonly)의 모양과 선택류 잠금
+axes:
+  case: [text, phone_email_url_number_date, number, textarea, boolean, choice_select, choice_radio, choice_other, multi_choice, date_range, error_disabled_readonly, date_bounds, widget_country, widget_timezone, readonly_lock]
+
+effects:
+  - text_input_emits_string_with_name
+  - html_input_type_follows_field_type
+  - number_shows_unit_and_step
+  - textarea_uses_rows
+  - boolean_emits_true_false_and_switch_role
+  - choice_select_emits_value_and_shows_default_without_emitting
+  - choice_radio_emits_value
+  - choice_other_emits_value_and_text
+  - multi_choice_emits_array
+  - date_range_emits_start_end
+  - error_marks_invalid_and_describedby
+  - relative_date_bounds_resolve_to_today
+  - country_widget_lists_codes_with_translated_names
+  - timezone_widget_is_searchable_and_reads_global_list
+  - readonly_locks_select_types_and_greys_input
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/components/composite/__tests__/MemberFieldInput.test.tsx

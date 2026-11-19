@@ -14,14 +14,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "admin-card"
+                "className": "board-admin-card"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "H2",
                     "props": {
-                        "className": "card-title"
+                        "className": "board-card-title"
                     },
                     "text": "$t:sirsoft-board.admin.settings.privacy_retention.title"
                 },
@@ -29,7 +29,7 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "card-description"
+                        "className": "board-card-description"
                     },
                     "text": "$t:sirsoft-board.admin.settings.privacy_retention.description"
                 },
@@ -38,21 +38,21 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-between gap-4 mt-4"
+                        "className": "board-flex-between board:gap-4 board:mt-4"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "min-w-0"
+                                "className": "board:min-w-0"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "board-form-label"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.privacy_retention.enabled"
                                 },
@@ -60,7 +60,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-tertiary"
+                                        "className": "board-text-tertiary"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.privacy_retention.enabled_hint"
                                 }
@@ -71,7 +71,7 @@
                             "name": "Toggle",
                             "props": {
                                 "name": "privacy_retention.enabled",
-                                "className": "flex-shrink-0",
+                                "className": "board:flex-shrink-0",
                                 "disabled": "{{_computed.isReadOnly}}"
                             }
                         }
@@ -84,14 +84,14 @@
                     "name": "Div",
                     "if": "{{(boardPrivacyRetentionPreview?.data?.ip !== null && boardPrivacyRetentionPreview?.data?.ip !== undefined) || privacyManualRuns?.data?.targets?.['retention:sirsoft-board.ip']?.can_run}}",
                     "props": {
-                        "className": "mt-4 space-y-2"
+                        "className": "board:mt-4 board:space-y-2"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "rounded-lg border border-gray-200 dark:border-gray-700 divide-y divide-gray-100 dark:divide-gray-700"
+                                "className": "board:rounded-lg board:border board:border-gray-200 board:dark:border-gray-700 board:divide-y board:divide-gray-100 board:dark:divide-gray-700"
                             },
                             "children": [
                                 {
@@ -99,28 +99,35 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "px-4 py-3"
+                                        "className": "board:px-4 board:py-3"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
+                                            "responsive": {
+                                                "640-": {
+                                                    "props": {
+                                                        "className": "board:flex board:gap-2 board:flex-row board:items-center board:justify-between"
+                                                    }
+                                                }
+                                            },
                                             "props": {
-                                                "className": "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                                                "className": "board:flex board:flex-col board:gap-2"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-wrap-center gap-2 min-w-0"
+                                                        "className": "board-flex-wrap-center board:gap-2 board:min-w-0"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-heading"
+                                                                "className": "board-text-heading"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.settings.privacy_retention.targets.row_ip"
                                                         },
@@ -129,7 +136,7 @@
                                                             "name": "Span",
                                                             "if": "{{boardPrivacyRetentionPreview?.data?.ip !== null && boardPrivacyRetentionPreview?.data?.ip !== undefined}}",
                                                             "props": {
-                                                                "className": "badge badge-yellow"
+                                                                "className": "board-badge board-badge-yellow"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.settings.privacy_retention.targets.count|count={{boardPrivacyRetentionPreview?.data?.ip ?? 0}}"
                                                         }
@@ -139,7 +146,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-wrap-center gap-2"
+                                                        "className": "board-flex-wrap-center board:gap-2"
                                                     },
                                                     "children": [
                                                         {
@@ -182,7 +189,7 @@
                                                             ],
                                                             "props": {
                                                                 "type": "button",
-                                                                "className": "btn btn-sm btn-ghost"
+                                                                "className": "board-btn board-btn-sm board-btn-ghost"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.settings.privacy_retention.targets.view"
                                                         },
@@ -245,7 +252,7 @@
                                                             ],
                                                             "props": {
                                                                 "type": "button",
-                                                                "className": "btn btn-sm btn-outline",
+                                                                "className": "board-btn board-btn-sm board-btn-outline",
                                                                 "disabled": "{{_local.hasChanges || privacyManualRuns?.data?.targets?.['retention:sirsoft-board.ip']?.run?.is_active}}"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.settings.privacy_retention.manual_run.run"
@@ -260,7 +267,7 @@
                                             "name": "Div",
                                             "if": "{{privacyManualRuns?.data?.targets?.['retention:sirsoft-board.ip']?.run}}",
                                             "props": {
-                                                "className": "text-hint mt-1"
+                                                "className": "board-text-hint board:mt-1"
                                             },
                                             "children": [
                                                 {
@@ -268,7 +275,7 @@
                                                     "name": "Span",
                                                     "if": "{{privacyManualRuns?.data?.targets?.['retention:sirsoft-board.ip']?.run?.is_active}}",
                                                     "props": {
-                                                        "className": "text-blue-600 dark:text-blue-400"
+                                                        "className": "board:text-blue-600 board:dark:text-blue-400"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.settings.privacy_retention.manual_run.status_active|status={{privacyManualRuns?.data?.targets?.['retention:sirsoft-board.ip']?.run?.status_label ?? ''}}|at={{privacyManualRuns?.data?.targets?.['retention:sirsoft-board.ip']?.run?.queued_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:sirsoft-board.ip']?.run?.requester_name ?? $t('sirsoft-board.admin.settings.privacy_retention.manual_run.unknown_requester')}}"
                                                 },
@@ -283,7 +290,7 @@
                                                     "name": "Span",
                                                     "if": "{{privacyManualRuns?.data?.targets?.['retention:sirsoft-board.ip']?.run?.status === 'failed'}}",
                                                     "props": {
-                                                        "className": "text-error-soft"
+                                                        "className": "board-text-error-soft"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.settings.privacy_retention.manual_run.last_failed|at={{privacyManualRuns?.data?.targets?.['retention:sirsoft-board.ip']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:sirsoft-board.ip']?.run?.requester_name ?? $t('sirsoft-board.admin.settings.privacy_retention.manual_run.unknown_requester')}}|error={{privacyManualRuns?.data?.targets?.['retention:sirsoft-board.ip']?.run?.error ?? ''}}"
                                                 }
@@ -296,28 +303,35 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "px-4 py-3"
+                                        "className": "board:px-4 board:py-3"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
+                                            "responsive": {
+                                                "640-": {
+                                                    "props": {
+                                                        "className": "board:flex board:gap-2 board:flex-row board:items-center board:justify-between"
+                                                    }
+                                                }
+                                            },
                                             "props": {
-                                                "className": "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                                                "className": "board:flex board:flex-col board:gap-2"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-wrap-center gap-2 min-w-0"
+                                                        "className": "board-flex-wrap-center board:gap-2 board:min-w-0"
                                                     },
                                                     "children": [
                                                         {
                                                             "type": "basic",
                                                             "name": "Span",
                                                             "props": {
-                                                                "className": "text-heading"
+                                                                "className": "board-text-heading"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.settings.privacy_retention.targets.row_guest"
                                                         },
@@ -326,7 +340,7 @@
                                                             "name": "Span",
                                                             "if": "{{boardPrivacyRetentionPreview?.data?.guest !== null && boardPrivacyRetentionPreview?.data?.guest !== undefined}}",
                                                             "props": {
-                                                                "className": "badge badge-yellow"
+                                                                "className": "board-badge board-badge-yellow"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.settings.privacy_retention.targets.count|count={{boardPrivacyRetentionPreview?.data?.guest ?? 0}}"
                                                         }
@@ -336,7 +350,7 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "props": {
-                                                        "className": "flex-wrap-center gap-2"
+                                                        "className": "board-flex-wrap-center board:gap-2"
                                                     },
                                                     "children": [
                                                         {
@@ -379,7 +393,7 @@
                                                             ],
                                                             "props": {
                                                                 "type": "button",
-                                                                "className": "btn btn-sm btn-ghost"
+                                                                "className": "board-btn board-btn-sm board-btn-ghost"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.settings.privacy_retention.targets.view"
                                                         },
@@ -442,7 +456,7 @@
                                                             ],
                                                             "props": {
                                                                 "type": "button",
-                                                                "className": "btn btn-sm btn-outline",
+                                                                "className": "board-btn board-btn-sm board-btn-outline",
                                                                 "disabled": "{{_local.hasChanges || privacyManualRuns?.data?.targets?.['retention:sirsoft-board.guest']?.run?.is_active}}"
                                                             },
                                                             "text": "$t:sirsoft-board.admin.settings.privacy_retention.manual_run.run"
@@ -457,7 +471,7 @@
                                             "name": "Div",
                                             "if": "{{privacyManualRuns?.data?.targets?.['retention:sirsoft-board.guest']?.run}}",
                                             "props": {
-                                                "className": "text-hint mt-1"
+                                                "className": "board-text-hint board:mt-1"
                                             },
                                             "children": [
                                                 {
@@ -465,7 +479,7 @@
                                                     "name": "Span",
                                                     "if": "{{privacyManualRuns?.data?.targets?.['retention:sirsoft-board.guest']?.run?.is_active}}",
                                                     "props": {
-                                                        "className": "text-blue-600 dark:text-blue-400"
+                                                        "className": "board:text-blue-600 board:dark:text-blue-400"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.settings.privacy_retention.manual_run.status_active|status={{privacyManualRuns?.data?.targets?.['retention:sirsoft-board.guest']?.run?.status_label ?? ''}}|at={{privacyManualRuns?.data?.targets?.['retention:sirsoft-board.guest']?.run?.queued_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:sirsoft-board.guest']?.run?.requester_name ?? $t('sirsoft-board.admin.settings.privacy_retention.manual_run.unknown_requester')}}"
                                                 },
@@ -480,7 +494,7 @@
                                                     "name": "Span",
                                                     "if": "{{privacyManualRuns?.data?.targets?.['retention:sirsoft-board.guest']?.run?.status === 'failed'}}",
                                                     "props": {
-                                                        "className": "text-error-soft"
+                                                        "className": "board-text-error-soft"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.settings.privacy_retention.manual_run.last_failed|at={{privacyManualRuns?.data?.targets?.['retention:sirsoft-board.guest']?.run?.finished_at ?? ''}}|by={{privacyManualRuns?.data?.targets?.['retention:sirsoft-board.guest']?.run?.requester_name ?? $t('sirsoft-board.admin.settings.privacy_retention.manual_run.unknown_requester')}}|error={{privacyManualRuns?.data?.targets?.['retention:sirsoft-board.guest']?.run?.error ?? ''}}"
                                                 }
@@ -496,7 +510,7 @@
                             "name": "P",
                             "if": "{{_local.hasChanges && privacyManualRuns?.data?.targets?.['retention:sirsoft-board.ip']?.can_run}}",
                             "props": {
-                                "className": "text-hint"
+                                "className": "board-text-hint"
                             },
                             "text": "$t:sirsoft-board.admin.settings.privacy_retention.manual_run.save_first_hint"
                         }
@@ -508,7 +522,7 @@
                     "name": "Div",
                     "if": "{{!!_local.form?.privacy_retention?.enabled}}",
                     "props": {
-                        "className": "mt-4 space-y-6"
+                        "className": "board:mt-4 board:space-y-6"
                     },
                     "children": [
                         {
@@ -520,14 +534,14 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-center"
+                                        "className": "board-flex-center"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "board-form-label"
                                             },
                                             "text": "$t:sirsoft-board.admin.settings.privacy_retention.ip_retention_days"
                                         }
@@ -537,7 +551,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-tertiary"
+                                        "className": "board-text-tertiary"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.privacy_retention.ip_retention_days_hint"
                                 },
@@ -549,7 +563,7 @@
                                         "name": "privacy_retention.ip_retention_days",
                                         "min": "{{_local?.form?._meta?.limits?.privacy_ip_retention_days_min ?? 1}}",
                                         "max": "{{_local?.form?._meta?.limits?.privacy_ip_retention_days_max ?? 3650}}",
-                                        "className": "input w-40 {{_local.errors?.['privacy_retention.ip_retention_days'] ? 'input-error' : ''}}",
+                                        "className": "board-input board:w-40 {{_local.errors?.['privacy_retention.ip_retention_days'] ? 'board-input-error' : ''}}",
                                         "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
@@ -558,7 +572,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.['privacy_retention.ip_retention_days']}}",
                                     "props": {
-                                        "className": "form-error"
+                                        "className": "board-form-error"
                                     },
                                     "text": "{{_local.errors?.['privacy_retention.ip_retention_days']?.[0] ?? ''}}"
                                 }
@@ -573,14 +587,14 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-center"
+                                        "className": "board-flex-center"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "board-form-label"
                                             },
                                             "text": "$t:sirsoft-board.admin.settings.privacy_retention.guest_retention_days"
                                         }
@@ -590,7 +604,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-tertiary"
+                                        "className": "board-text-tertiary"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.privacy_retention.guest_retention_days_hint"
                                 },
@@ -602,7 +616,7 @@
                                         "name": "privacy_retention.guest_retention_days",
                                         "min": "{{_local?.form?._meta?.limits?.privacy_guest_retention_days_min ?? 0}}",
                                         "max": "{{_local?.form?._meta?.limits?.privacy_guest_retention_days_max ?? 3650}}",
-                                        "className": "input w-40 {{_local.errors?.['privacy_retention.guest_retention_days'] ? 'input-error' : ''}}",
+                                        "className": "board-input board:w-40 {{_local.errors?.['privacy_retention.guest_retention_days'] ? 'board-input-error' : ''}}",
                                         "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
@@ -611,7 +625,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.['privacy_retention.guest_retention_days']}}",
                                     "props": {
-                                        "className": "form-error"
+                                        "className": "board-form-error"
                                     },
                                     "text": "{{_local.errors?.['privacy_retention.guest_retention_days']?.[0] ?? ''}}"
                                 }
@@ -622,14 +636,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "space-y-2"
+                                "className": "board:space-y-2"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "board-form-label"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.privacy_retention.guest_mode"
                                 },
@@ -657,7 +671,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-tertiary"
+                                        "className": "board-text-tertiary"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.privacy_retention.guest_mode_hint"
                                 },
@@ -667,7 +681,7 @@
                                     "name": "P",
                                     "if": "{{_local.form?.privacy_retention?.guest_mode === 'delete'}}",
                                     "props": {
-                                        "className": "text-error-soft"
+                                        "className": "board-text-error-soft"
                                     },
                                     "text": "$t:sirsoft-board.admin.settings.privacy_retention.delete_warning"
                                 }
@@ -677,7 +691,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-hint"
+                                "className": "board-text-hint"
                             },
                             "text": "$t:sirsoft-board.admin.settings.privacy_retention.preview_hint"
                         }
@@ -688,7 +702,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-hint mt-4"
+                        "className": "board-text-hint board:mt-4"
                     },
                     "text": "$t:sirsoft-board.admin.settings.privacy_retention.withdrawn_notice"
                 }

@@ -30,6 +30,8 @@
 <!-- @intent START -->
 plugin_settings 하나에 상태·설정·알림·최근 이력과 전체 이력 탭을 담습니다. tab/status/trigger/date/page를 URL에서 읽고 필터 변경은 페이지를 1로 되돌립니다. 행 펼침 시 단건 API로 통화 상세를 가져옵니다.
 
+**템플릿이 없는 수단(7.2.0)** 실패 알림 카드에서 template 이 없는 발송 수단을 켜고 [발송 수단 저장]하면 코어가 빈 template(꺼짐)을 만든다(코어 `docs/backend/notification-system.md` 「운영자가 켠 발송 수단의 빈 템플릿」). 그 수단 줄에는 「빈 템플릿이 만들어졌습니다…」 안내가 서고, template 켜기가 422 로 거절되면 카드(`koreaexim_notifications_card`)를 remount 해 스위치를 되돌린다.
+
 알림 템플릿 편집 창(`_modal_notification_template_edit`)은 코어·게시판·이커머스 모달의 사본입니다. 분기 규칙뿐 아니라
 외형도 네 벌을 함께 맞춥니다 — 수신자 카드 목록은 `stack-tight` 로 카드 사이 간격을 두며, 한 벌만 빠지면 그 화면에서만
 카드 테두리가 맞붙습니다.
@@ -48,6 +50,10 @@ plugin_settings 하나에 상태·설정·알림·최근 이력과 전체 이력
 서버 쪽 `IndexRateRunRequest::attributes()` 는 검증 오류 문구의 필드 이름을 `lang/{locale}/validation.php` 의 `attributes` 에서 읽어(시작일·종료일 등) 파라미터 원문(`date to`·`date from`)이 문구에 드러나지 않게 합니다. 이력 조회 파라미터를 추가하면 이 목록과 언어 파일에 함께 넣습니다.
 
 알림 템플릿 편집 창(`resources/layouts/admin/partials/plugin_settings/_modal_notification_template_edit.g7.html`)의 회원 검색은 코어 `GET /api/admin/users/search` 를 부르는데, 코어가 빈(공백뿐 포함) `keyword` 를 422 로 거절하므로 검색칸을 비울 때는 `if="{{String($args[0] ?? '').trim() !== ''}}"` 로 요청하지 않습니다. 회원 검색은 `exclude_withdrawn=1` 을 실어 탈퇴 회원을 결과에서 뺍니다(7.1.1) — 탈퇴 회원은 연락처가 익명화되고 바깥 채널 발송이 막혀 수신자로 골라도 받지 못합니다.
+
+화면 폭에 따라 달라지는 배치는 Tailwind 반응형 접두(`sm:`·`md:`·`lg:`)를 쓰지 않고 엔진 `responsive` 로 씁니다(예: `<responsive on="desktop" class="…"/>`, `on="640-"`). 갈래의 `class` 는 기본 `class` 를 통째로 바꾸므로 그 폭에서 필요한 토큰을 모두 적습니다.
+
+폭 미디어를 품은 의미 클래스 사본(`koreaexim-grid-3col-responsive`·`koreaexim-grid-2col-responsive`·`koreaexim-page-title`·`koreaexim-admin-page-content-responsive` 등)도 쓰지 않습니다. 같은 값을 접두 유틸과 `responsive` 구간으로 적습니다 — 예를 들어 넓은 화면에서 3열이 되는 입력 줄은 `class="koreaexim:grid koreaexim:grid-cols-1 koreaexim:gap-4 koreaexim:items-start"` 에 `<responsive on="1024-" class="koreaexim:grid koreaexim:grid-cols-3 koreaexim:gap-4 koreaexim:items-start"/>` 를 둡니다. 알림 상자 다음 칸 여백처럼 그 클래스에 기대던 형제 규칙은 그 자리에 여백 유틸(`koreaexim:mb-4` 등)을 직접 줍니다.
 <!-- @intent END -->
 
 ## 액션 핸들러
@@ -85,11 +91,12 @@ _프론트 엔트리포인트가 없습니다._
 <!-- @generated:assets START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 경로 | 구분 |
 |---|---|
+| `dist/css/plugin.css` | 빌드 산출물 (커밋 대상) |
 | `editor-spec.json` | 레이아웃 편집기 스펙 (manifest) |
 
 로딩 설정: `{"strategy":"global","priority":100,"dependencies":[]}`
 <!-- @generated:assets END -->
 
 <!-- @intent START -->
-기존 관리자 템플릿의 컴포넌트와 CSS 유틸리티를 사용하므로 런타임 에셋 번들이 없습니다. 레이아웃 변경 후 플러그인 업데이트로 반영하며, 관리 배지는 입력줄 아래에서 한 줄을 유지합니다.
+화면 스크립트는 없고 화면 스타일 CSS 하나(`resources/css/main.css` → `dist/css/plugin.css`, 앞글자 `koreaexim`)만 빌드합니다. 레이아웃은 관리자 템플릿 컴포넌트를 쓰되 클래스는 `koreaexim:` 접두 유틸리티와 `koreaexim-*` 의미 클래스만 써서, 템플릿 CSS 에 그 규칙이 있는지와 무관하게 보입니다. 새 클래스를 쓰면 `php artisan plugin:build sirsoft-koreaexim --production` 으로 CSS 를 다시 만들고, 레이아웃만 고쳤다면 플러그인 업데이트로 반영합니다. 관리 배지는 입력줄 아래에서 한 줄을 유지합니다.
 <!-- @intent END -->

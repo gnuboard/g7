@@ -54,7 +54,7 @@ class ReportUrlEndpointTest extends PluginTestCase
     /**
      * 사이트 도메인(app.url) 기준의 절대 리포트 수신 주소를 내려주는지 확인한다.
      *
-     * @scenario auth=admin,app_url=set
+     * @scenario field_kind=readonly
      *
      * @effects report_url_endpoint_returns_absolute_url_from_app_url
      *
@@ -79,7 +79,7 @@ class ReportUrlEndpointTest extends PluginTestCase
     /**
      * 설정 화면이 알림톡 템플릿 쓰기 버튼을 잠그는 근거 — messaging.manage 가 없으면 can_manage_messaging=false.
      *
-     * @scenario auth=admin,app_url=set
+     * @scenario field_kind=readonly
      *
      * @effects report_url_reports_messaging_manage_ability
      *
@@ -99,7 +99,7 @@ class ReportUrlEndpointTest extends PluginTestCase
     /**
      * 비로그인 요청은 401 로 거절하는지 확인한다.
      *
-     * @scenario auth=guest
+     * @scenario field_kind=readonly
      *
      * @effects report_url_endpoint_requires_authentication
      *

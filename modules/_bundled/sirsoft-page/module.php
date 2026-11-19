@@ -10,6 +10,7 @@ use Modules\Sirsoft\Page\Listeners\Ckeditor5ReferenceSourcesListener;
 use Modules\Sirsoft\Page\Listeners\PageActivityLogListener;
 use Modules\Sirsoft\Page\Listeners\SearchPagesListener;
 use Modules\Sirsoft\Page\Listeners\SeoPageCacheListener;
+use Modules\Sirsoft\Page\Listeners\ThumbnailServingListener;
 
 class Module extends AbstractModule
 {
@@ -134,6 +135,8 @@ class Module extends AbstractModule
             ActivityLogDescriptionResolver::class,
             SeoPageCacheListener::class,
             Ckeditor5ReferenceSourcesListener::class,
+            // 첨부 미리보기를 코어 이미지 썸네일의 서빙 경로·원본 제공자로 등록 (#869)
+            ThumbnailServingListener::class,
         ];
     }
 
@@ -142,18 +145,22 @@ class Module extends AbstractModule
      *
      * 페이지 작성 폼에서 올린 뒤 저장되지 않은 임시 첨부를 매일 정리합니다.
      * `temp_key` 가 남아 있으면 끝내 연결되지 않은 폼 세션 부산물이라 오탐 여지가 없어
-     * 별도 운영자 토글 없이 상시 동작합니다 (보존기간은 커맨드 옵션).
+     * 실행 조건 없이 상시 동작합니다 (보존기간은 커맨드 옵션). 운영자는 관리자 > 스케줄 관리에서
+     * 주기·활성을 바꿀 수 있고, 시각은 사이트 시간대 기준이다.
      *
-     * @return array<int, array<string, mixed>> 스케줄 정의 목록
+     * @return array<int, array<string, mixed>> 스케줄 선언 목록 (형식: AbstractModule::getSchedules() 참고)
      */
     public function getSchedules(): array
     {
         return [
             [
+                'name' => 'prune-temp-attachments',
+                'type' => 'artisan',
+                'label' => ['ko' => '임시 페이지 첨부 삭제', 'en' => 'Prune temporary page attachments'],
+                'description' => ['ko' => '페이지에 연결되지 않은 임시 첨부를 지웁니다.', 'en' => 'Deletes temporary attachments not linked to any page.'],
                 'command' => 'sirsoft-page:prune-temp-attachments',
-                'schedule' => 'daily',
-                'description' => '미연결 임시 페이지 첨부 자동 삭제',
-                'enabled_config' => null,
+                'frequency' => 'daily',
+                'expression' => '0 0 * * *',
             ],
         ];
     }

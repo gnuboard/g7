@@ -24,11 +24,6 @@ function getDataSource(layout: any, dataSourceId: string) {
   return (layout.data_sources ?? []).find((s: any) => s.id === dataSourceId) ?? null;
 }
 
-function getDataSourceErrorHandling(layout: any, dataSourceId: string) {
-  const ds = getDataSource(layout, dataSourceId);
-  return ds?.errorHandling ?? null;
-}
-
 describe('게시판 401 errorHandling — sequence + redirect 방식 (이슈 #228 B-5)', () => {
   describe('show.json — auth_mode 및 데이터소스 401', () => {
     // redirect: /board/{{route.slug}}/posts/{{route.id}}
@@ -37,6 +32,7 @@ describe('게시판 401 errorHandling — sequence + redirect 방식 (이슈 #22
 
     /**
      * @scenario entry_point=board_show_401
+     * @effects guest_entry_not_blocked_by_layout_auth
      */
     it('auth_mode가 optional이어야 한다 (auth_required 사용 금지)', () => {
       expect(ds?.auth_mode).toBe('optional');
@@ -45,6 +41,7 @@ describe('게시판 401 errorHandling — sequence + redirect 방식 (이슈 #22
 
     /**
      * @scenario entry_point=board_show_401
+     * @effects unauthorized_toasts_before_login_redirect
      */
     it('데이터소스 errorHandling에 401이 정의되어야 한다', () => {
       expect(dsErrorHandling?.['401']).toBeDefined();
@@ -52,6 +49,7 @@ describe('게시판 401 errorHandling — sequence + redirect 방식 (이슈 #22
 
     /**
      * @scenario entry_point=board_show_401
+     * @effects unauthorized_toasts_before_login_redirect
      */
     it('401 핸들러가 sequence 타입이어야 한다', () => {
       expect(dsErrorHandling?.['401']?.handler).toBe('sequence');
@@ -59,6 +57,7 @@ describe('게시판 401 errorHandling — sequence + redirect 방식 (이슈 #22
 
     /**
      * @scenario entry_point=board_show_401
+     * @effects unauthorized_toasts_before_login_redirect
      */
     it('sequence actions 가 둘 이상이어야 한다', () => {
       expect(actionsOf(dsErrorHandling?.['401']).length).toBeGreaterThanOrEqual(2);
@@ -66,6 +65,7 @@ describe('게시판 401 errorHandling — sequence + redirect 방식 (이슈 #22
 
     /**
      * @scenario entry_point=board_show_401
+     * @effects unauthorized_toasts_before_login_redirect
      */
     it('첫 번째 action이 toast 핸들러이어야 한다', () => {
       const toastAction = actionsOf(dsErrorHandling?.['401'])[0];
@@ -85,6 +85,7 @@ describe('게시판 401 errorHandling — sequence + redirect 방식 (이슈 #22
 
     /**
      * @scenario entry_point=board_show_401
+     * @effects login_redirect_dispatched_by_registered_key
      */
     it('두 번째 action에 name 필드 단언이 없어야 한다 (custom+name 거짓 통과 방지)', () => {
       const redirectAction = actionsOf(dsErrorHandling?.['401'])[1];
@@ -134,6 +135,7 @@ describe('게시판 401 errorHandling — sequence + redirect 방식 (이슈 #22
 
     /**
      * @scenario entry_point=board_list_401
+     * @effects guest_entry_not_blocked_by_layout_auth
      */
     it('auth_mode가 optional이어야 한다 (auth_required 사용 금지)', () => {
       expect(ds?.auth_mode).toBe('optional');
@@ -142,6 +144,7 @@ describe('게시판 401 errorHandling — sequence + redirect 방식 (이슈 #22
 
     /**
      * @scenario entry_point=board_list_401
+     * @effects unauthorized_toasts_before_login_redirect
      */
     it('데이터소스 errorHandling에 401이 정의되어야 한다', () => {
       expect(dsErrorHandling?.['401']).toBeDefined();
@@ -149,6 +152,7 @@ describe('게시판 401 errorHandling — sequence + redirect 방식 (이슈 #22
 
     /**
      * @scenario entry_point=board_list_401
+     * @effects unauthorized_toasts_before_login_redirect
      */
     it('401 핸들러가 sequence 타입이어야 한다', () => {
       expect(dsErrorHandling?.['401']?.handler).toBe('sequence');
@@ -156,6 +160,7 @@ describe('게시판 401 errorHandling — sequence + redirect 방식 (이슈 #22
 
     /**
      * @scenario entry_point=board_list_401
+     * @effects unauthorized_toasts_before_login_redirect
      */
     it('sequence actions 가 둘 이상이어야 한다', () => {
       expect(actionsOf(dsErrorHandling?.['401']).length).toBeGreaterThanOrEqual(2);
@@ -163,6 +168,7 @@ describe('게시판 401 errorHandling — sequence + redirect 방식 (이슈 #22
 
     /**
      * @scenario entry_point=board_list_401
+     * @effects unauthorized_toasts_before_login_redirect
      */
     it('첫 번째 action이 toast 핸들러이어야 한다', () => {
       const toastAction = actionsOf(dsErrorHandling?.['401'])[0];
@@ -180,6 +186,7 @@ describe('게시판 401 errorHandling — sequence + redirect 방식 (이슈 #22
 
     /**
      * @scenario entry_point=board_list_401
+     * @effects login_redirect_dispatched_by_registered_key
      */
     it('두 번째 action에 name 필드 단언이 없어야 한다 (custom+name 거짓 통과 방지)', () => {
       const redirectAction = actionsOf(dsErrorHandling?.['401'])[1];

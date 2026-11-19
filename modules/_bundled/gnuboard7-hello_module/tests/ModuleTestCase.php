@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Route;
 use Modules\Gnuboard7\HelloModule\Providers\HelloModuleServiceProvider;
+use Tests\Concerns\RebuildsRouteNameLookups;
 use Tests\TestCase;
 
 /**
@@ -23,6 +24,7 @@ abstract class ModuleTestCase extends TestCase
     use DatabaseTransactions {
         beginDatabaseTransaction as protected beginTransactionAfterSchema;
     }
+    use RebuildsRouteNameLookups;
 
     /**
      * 마이그레이션 완료 플래그 (프로세스당 한 번만 실행)
@@ -224,6 +226,9 @@ abstract class ModuleTestCase extends TestCase
                 ->middleware('api')
                 ->group($apiRoutesFile);
         }
+
+        // 라우트 캐시가 있는 머신에서 fluent `->name()` 등록분의 이름 조회를 살린다 (공유 trait).
+        $this->rebuildRouteNameLookups();
     }
 
     /**
@@ -253,7 +258,13 @@ abstract class ModuleTestCase extends TestCase
             foreach ($listenerClass::getSubscribedHooks() as $hookName => $config) {
                 $method = is_array($config) ? ($config['method'] ?? 'handle') : 'handle';
                 $priority = is_array($config) ? ($config['priority'] ?? 10) : 10;
-                $hookManager->addAction($hookName, [new $listenerClass, $method], $priority);
+
+                // 필터 구독은 필터로 건다 — 액션으로 걸면 applyFilters 가 그 리스너를 보지 못한다
+                if (is_array($config) && ($config['type'] ?? 'action') === 'filter') {
+                    $hookManager->addFilter($hookName, [new $listenerClass, $method], $priority);
+                } else {
+                    $hookManager->addAction($hookName, [new $listenerClass, $method], $priority);
+                }
             }
         }
     }

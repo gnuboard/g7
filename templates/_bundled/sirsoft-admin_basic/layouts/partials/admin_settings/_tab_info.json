@@ -10,12 +10,13 @@
     "if": "{{(_global.activeSettingsTab || query.tab) === 'info'}}",
     "children": [
         {
+            "comment": "아래 정보 격자와의 간격은 직접 준다(격자가 의미 클래스였을 때는 `.alert-*:has(+ …)` 형제 규칙이 줬다).",
             "id": "opcache_warning",
             "type": "basic",
             "name": "Div",
             "if": "{{systemInfo?.data?.opcache?.enabled === false}}",
             "props": {
-                "className": "alert-warning"
+                "className": "alert-warning mb-4"
             },
             "children": [
                 {
@@ -48,8 +49,15 @@
         {
             "type": "basic",
             "name": "Div",
+            "responsive": {
+                "768-": {
+                    "props": {
+                        "className": "grid grid-cols-2 gap-4"
+                    }
+                }
+            },
             "props": {
-                "className": "grid-2col-responsive"
+                "className": "grid grid-cols-1 gap-4"
             },
             "children": [
                 {
@@ -490,6 +498,25 @@
                                         {
                                             "type": "basic",
                                             "name": "Span",
+                                            "if": "{{systemInfo?.data?.memory_usage?.percentage != null}}",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "{{systemInfo?.data?.memory_usage?.used ?? '-'}} / {{systemInfo?.data?.memory_usage?.total ?? '-'}} ({{systemInfo?.data?.memory_usage?.percentage}}%)"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{systemInfo?.data != null && systemInfo?.data?.memory_usage?.percentage == null}}",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "$t:admin.settings.info.not_measurable"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{systemInfo?.data == null}}",
                                             "blur_until_loaded": {
                                                 "enabled": true,
                                                 "data_sources": "systemInfo"
@@ -497,7 +524,7 @@
                                             "props": {
                                                 "className": "text-heading"
                                             },
-                                            "text": "{{systemInfo?.data?.memory_usage?.used ?? '-'}} / {{systemInfo?.data?.memory_usage?.total ?? '-'}} ({{systemInfo?.data?.memory_usage?.percentage ?? 0}}%)"
+                                            "text": "-"
                                         }
                                     ]
                                 },
@@ -519,6 +546,25 @@
                                         {
                                             "type": "basic",
                                             "name": "Span",
+                                            "if": "{{systemInfo?.data?.disk_usage?.percentage != null}}",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "{{systemInfo?.data?.disk_usage?.used ?? '-'}} / {{systemInfo?.data?.disk_usage?.total ?? '-'}} ({{systemInfo?.data?.disk_usage?.percentage}}%)"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{systemInfo?.data != null && systemInfo?.data?.disk_usage?.percentage == null}}",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "$t:admin.settings.info.not_measurable"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{systemInfo?.data == null}}",
                                             "blur_until_loaded": {
                                                 "enabled": true,
                                                 "data_sources": "systemInfo"
@@ -526,7 +572,7 @@
                                             "props": {
                                                 "className": "text-heading"
                                             },
-                                            "text": "{{systemInfo?.data?.disk_usage?.used ?? '-'}} / {{systemInfo?.data?.disk_usage?.total ?? '-'}} ({{systemInfo?.data?.disk_usage?.percentage ?? 0}}%)"
+                                            "text": "-"
                                         }
                                     ]
                                 },
@@ -634,6 +680,185 @@
                             ]
                         }
                     ]
+                },
+                {
+                    "comment": "확장 카드(#888) — 확장이 필터 훅 `core.settings.filter_system_info_sections` 로 더한 섹션을 응답 순서대로 「시스템 정보」 카드 옆에 그린다.\n           서버가 형식을 검증해 넘기므로(배지·항목·접는 목록·알림) 화면은 그 모양만 따른다. 값은 모두 글자로 그린다(HTML 해석 없음).\n           섹션이 없으면 아무것도 그리지 않는다.",
+                    "id": "card_extra_section_{{sectionIdx}}",
+                    "type": "basic",
+                    "name": "Div",
+                    "iteration": {
+                        "source": "{{systemInfo?.data?.extra_sections ?? []}}",
+                        "item_var": "section",
+                        "index_var": "sectionIdx"
+                    },
+                    "props": {
+                        "className": "admin-card"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-between gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "H3",
+                                    "props": {
+                                        "className": "card-title min-w-0 break-words"
+                                    },
+                                    "text": "{{section.title}}"
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "StatusBadge",
+                                    "if": "{{section.badge}}",
+                                    "props": {
+                                        "status": "{{section.badge?.tone === 'neutral' ? 'default' : (section.badge?.tone ?? 'default')}}",
+                                        "label": "{{section.badge?.text ?? ''}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{section.notice}}",
+                            "props": {
+                                "className": "{{section.notice?.tone === 'danger' ? 'alert-danger' : (section.notice?.tone === 'warning' ? 'alert-warning' : (section.notice?.tone === 'success' ? 'alert-success' : 'alert-info'))}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-body break-words"
+                                    },
+                                    "text": "{{section.notice?.text ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(section.rows ?? []).length > 0}}",
+                            "props": {
+                                "className": "row-stack"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "{{section.rows ?? []}}",
+                                        "item_var": "row"
+                                    },
+                                    "props": {
+                                        "className": "flex-between gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-label flex-shrink-0"
+                                            },
+                                            "text": "{{row.label}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "{{row.mono ? 'text-heading font-mono break-all text-right min-w-0' : 'text-heading break-words text-right min-w-0'}}"
+                                            },
+                                            "text": "{{row.value}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{section.list}}",
+                            "props": {
+                                "className": "mt-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{!section.list?.collapsible}}",
+                                    "props": {
+                                        "className": "text-body font-medium mb-2"
+                                    },
+                                    "text": "{{section.list?.title ?? ''}}"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "if": "{{section.list?.collapsible}}",
+                                    "actions": [
+                                        {
+                                            "comment": "접는 목록 열고 닫기 — 열린 섹션 id 목록에 넣거나 뺀다(섹션마다 따로 열린다).",
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "infoExtraOpenIds": "{{(_local.infoExtraOpenIds ?? []).includes(section.id) ? (_local.infoExtraOpenIds ?? []).filter(i => i !== section.id) : [...(_local.infoExtraOpenIds ?? []), section.id]}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "w-full flex-between gap-2 text-body font-medium mb-2",
+                                        "aria-expanded": "{{(_local.infoExtraOpenIds ?? []).includes(section.id)}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "min-w-0 break-words text-left"
+                                            },
+                                            "text": "{{section.list?.title ?? ''}} ({{(section.list?.items ?? []).length}})"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "{{(_local.infoExtraOpenIds ?? []).includes(section.id) ? 'chevron-up' : 'chevron-down'}}",
+                                                "size": "sm"
+                                            }
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Ul",
+                                    "if": "{{!section.list?.collapsible || (_local.infoExtraOpenIds ?? []).includes(section.id)}}",
+                                    "props": {
+                                        "className": "list-disc pl-5 space-y-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Li",
+                                            "iteration": {
+                                                "source": "{{section.list?.items ?? []}}",
+                                                "item_var": "item"
+                                            },
+                                            "props": {
+                                                "className": "text-body break-words"
+                                            },
+                                            "text": "{{item}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
                 }
             ]
         },
@@ -675,8 +900,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "grid grid-cols-2 gap-4"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "grid-2col-responsive"
+                                        "className": "grid grid-cols-1 gap-4"
                                     },
                                     "children": [
                                         {
@@ -734,8 +966,15 @@
                                 {
                                     "type": "basic",
                                     "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "grid grid-cols-2 gap-4"
+                                            }
+                                        }
+                                    },
                                     "props": {
-                                        "className": "grid-2col-responsive"
+                                        "className": "grid grid-cols-1 gap-4"
                                     },
                                     "children": [
                                         {
@@ -855,8 +1094,15 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "desktop": {
+                                    "props": {
+                                        "className": "grid grid-cols-2 gap-6"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "grid grid-cols-1 lg:grid-cols-2 gap-6"
+                                "className": "grid grid-cols-1 gap-6"
                             },
                             "children": [
                                 {

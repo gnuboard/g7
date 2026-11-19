@@ -211,16 +211,20 @@ class Plugin extends AbstractPlugin
     {
         $this->deactivate();
 
-        // 메뉴 잔재 삭제 — 비활성화는 메뉴 행을 지우지 않으므로 제거가 직접 지운다.
-        app(ExtensionMenuSyncHelper::class)->cleanupStaleMenus(
-            ExtensionOwnerType::Plugin,
-            $this->getIdentifier(),
-            currentSlugs: [],
-        );
-
-        $this->cleanupChannelContributions();
-
+        // 메뉴·채널 템플릿은 「데이터도 함께 삭제」를 고른 제거에서만 지운다(코어 7.2.0 — uninstallData()).
         return true;
+    }
+
+    /**
+     * 「데이터도 함께 삭제」를 고른 제거에서만 — 이 플러그인이 코어 알림 정의에 더한 채널 템플릿을 지웁니다.
+     *
+     * 메뉴는 코어가 지운다. 운영자가 고친 채널 템플릿은 코어 헬퍼가 지우기 직전 활동 로그에 남긴다.
+     *
+     * @return void 반환값 없음
+     */
+    public function uninstallData(): void
+    {
+        $this->cleanupChannelContributions();
     }
 
     /**
@@ -255,8 +259,40 @@ class Plugin extends AbstractPlugin
 
             $definition = NotificationDefinition::find($definitionId);
             if ($definition) {
-                $definition->channels = $keep;
-                $definition->save();
+                $this->saveWithoutUserOverrideTracking(function () use ($definition, $keep) {
+                    $definition->channels = $keep;
+                    $definition->save();
+                });
+            }
+        }
+    }
+
+    /**
+     * 운영자 수정 기록(user_overrides) 없이 저장 작업을 실행합니다.
+     *
+     * 제거가 지우는 sms·alimtalk 채널은 운영자가 고친 값이 아니다. 코어 알림 정의는 `channels` 를 운영자 수정 추적
+     * 대상으로 삼으므로, 그냥 저장하면 「운영자가 채널을 고쳤다」로 기록되고 재설치 때 activate() 의 재시딩이 그 칸을
+     * 운영자 값으로 보존해 채널이 다시 붙지 않는다. 코어 시더 문맥 플래그(`user_overrides.seeding`)를 켠 채 저장하고,
+     * 끝나면 원래 상태로 돌린다.
+     *
+     * @param  \Closure  $callback  저장 작업
+     * @return void 반환값 없음
+     */
+    private function saveWithoutUserOverrideTracking(\Closure $callback): void
+    {
+        $app = app();
+        $previouslyBound = $app->bound('user_overrides.seeding');
+        $previousValue = $previouslyBound ? $app->make('user_overrides.seeding') : null;
+
+        $app->instance('user_overrides.seeding', true);
+
+        try {
+            $callback();
+        } finally {
+            if ($previouslyBound) {
+                $app->instance('user_overrides.seeding', $previousValue);
+            } else {
+                $app->forgetInstance('user_overrides.seeding');
             }
         }
     }
@@ -548,16 +584,20 @@ class Plugin extends AbstractPlugin
      * 검수중(requested) 알림톡 템플릿의 카카오 검수 상태를 30분 주기로 동기화한다.
      * 커맨드는 requested 행이 없으면 카카오 API 를 호출하지 않으며, 화면의 수동
      * [새로고침]이 동등 기능을 제공하므로 cron 미가동 환경에서도 승인 확인이 가능하다.
+     * 운영자는 관리자 > 스케줄 관리에서 주기·활성을 바꿀 수 있다.
      *
-     * @return array<int, array<string, string>> 스케줄 정의 목록
+     * @return array<int, array<string, mixed>> 스케줄 선언 목록 (형식: AbstractPlugin::getSchedules() 참고)
      */
     public function getSchedules(): array
     {
         return [
             [
+                'name' => 'sync-template-status',
+                'type' => 'artisan',
+                'label' => ['ko' => '알림톡 템플릿 검수 상태 동기화', 'en' => 'Sync AlimTalk template review status'],
+                'description' => ['ko' => '검수 중인 비즈뿌리오 알림톡 템플릿의 카카오 검수 상태를 가져옵니다.', 'en' => 'Fetches the Kakao review status of Bizppurio AlimTalk templates under review.'],
                 'command' => 'bizppurio:sync-template-status',
-                'schedule' => 'everyThirtyMinutes',
-                'description' => '비즈뿌리오 알림톡 템플릿 검수 상태 동기화',
+                'expression' => '*/30 * * * *',
             ],
         ];
     }

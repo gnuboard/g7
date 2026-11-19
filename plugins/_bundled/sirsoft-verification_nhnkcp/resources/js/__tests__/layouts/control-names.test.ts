@@ -46,7 +46,7 @@ const isNode = (x) =>
     !!x && typeof x === 'object' && !Array.isArray(x) && typeof x.name === 'string' && Boolean(x.type || x.props || x.children);
 const classOf = (n) => String(n?.props?.className ?? '');
 const isCtrl = (n) => isNode(n) && CTRL.has(n.name) && n.props?.type !== 'hidden' && !/\bsr-only\b/.test(classOf(n));
-const isLabelEl = (n) => isNode(n) && (n.name === 'Label' || /\b(form-label|filter-label|text-heading)\b/.test(classOf(n)));
+const isLabelEl = (n) => isNode(n) && (n.name === 'Label' || /\b(form-label|filter-field-label|filter-label|text-heading)\b/.test(classOf(n)));
 const kidsOf = (n) => (Array.isArray(n?.children) ? n.children.filter(isNode) : []);
 const deep = (n, pred) => isNode(n) && (pred(n) || kidsOf(n).some((c) => deep(c, pred)));
 const hasText = (n) =>

@@ -1,0 +1,23 @@
+feature: maintenance_mode_page
+
+description: |
+  점검 모드 화면 미들웨어(`MaintenanceModePage`). 점검이 아니면 그대로 통과하고, 점검 중 웹·관리자 요청은 DB·API·외부 자원에
+  의존하지 않는 정적 점검 화면(503, 스타일은 코어 정적 파일 하나 — 엄격한 스타일 정책 #163), API 요청은 JSON 503 을 받는다.
+  유효한 우회 쿠키는 통과하고 틀린 쿠키는 막힌다. 화면 문구는 요청 언어를 따른다.
+
+coverage_strategy: full
+
+axes:
+  case: [not_down, web_page, admin_page, api_json, api_path_json, secret_cookie, invalid_cookie, locale_ko, locale_en, no_external_deps]
+
+effects:
+  - passes_when_not_in_maintenance
+  - maintenance_page_served_to_web_and_admin
+  - api_requests_get_json_503
+  - valid_bypass_cookie_passes
+  - invalid_bypass_cookie_blocked
+  - maintenance_text_localized
+  - static_page_without_external_dependencies
+
+test_files:
+  - tests/Feature/Middleware/MaintenanceModePageTest.php

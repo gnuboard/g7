@@ -7,7 +7,6 @@
  *  - 변경 없음 → PUT 미발생(onCommit)
  */
 
-import React from 'react';
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { InlineParamChipEditor } from '../../components/InlineParamChipEditor';
@@ -40,6 +39,10 @@ function stub(rowValues: Record<string, string>) {
 const node: EditorNode = { name: 'Span', text: '$t:custom.home.5|p0={{user.name}}' };
 
 describe('InlineParamChipEditor', () => {
+  /**
+   * @scenario subject=inline_param_chip_editor
+   * @effects inline_chip_fetch_renders_chip_and_text
+   */
   it('현재 로케일 키 값 fetch → 칩(드래그 뱃지) + 평문 렌더', async () => {
     stub({ ko: '{p0} 님 환영', en: '' });
     render(
@@ -54,6 +57,10 @@ describe('InlineParamChipEditor', () => {
     expect(chip).toHaveStyle({ cursor: 'grab' });
   });
 
+  /**
+   * @scenario subject=inline_param_chip_editor
+   * @effects inline_chip_save_buffers_current_locale_only
+   */
   it('평문 변경 후 저장 → 단일 로케일 버퍼 기록(즉시 PUT 아님, 다른 로케일 미기록)', async () => {
     const { calls } = stub({ ko: '{p0} 님 환영', en: 'Welcome {p0}' });
     const onCommit = vi.fn();
@@ -73,6 +80,10 @@ describe('InlineParamChipEditor', () => {
     await waitFor(() => expect(onCommit).toHaveBeenCalled());
   });
 
+  /**
+   * @scenario subject=inline_param_chip_editor
+   * @effects inline_chip_outside_pointerdown_commits
+   */
   it('외부 클릭 시 닫힘(commit) — 편집 중 다른 엘리먼트 클릭', async () => {
     stub({ ko: '{p0} 님 환영', en: '' });
     const onCommit = vi.fn();
@@ -89,6 +100,10 @@ describe('InlineParamChipEditor', () => {
     await waitFor(() => expect(onCommit).toHaveBeenCalled());
   });
 
+  /**
+   * @scenario subject=inline_param_chip_editor
+   * @effects inline_chip_unchanged_save_no_put
+   */
   it('변경 없음 → PUT 미발생 + onCommit', async () => {
     const { calls } = stub({ ko: '{p0} 님 환영', en: '' });
     const onCommit = vi.fn();
@@ -109,6 +124,10 @@ describe('InlineParamChipEditor', () => {
     { expression: '{{user.name}}', source: 'data_source', sourceId: 'user', path: 'name', shape: 'scalar', preview: '샘플', labelKey: undefined, groupLabelKey: undefined } as any,
   ];
 
+  /**
+   * @scenario subject=inline_param_chip_editor
+   * @effects inline_chip_insert_button_hidden_without_handler
+   */
   it('onInsertBinding 미전달 → +데이터 버튼 숨김', async () => {
     stub({ ko: '{p0} 님 환영', en: '' });
     render(
@@ -118,6 +137,10 @@ describe('InlineParamChipEditor', () => {
     expect(screen.queryByTestId('g7le-chip-insert-inline')).toBeNull();
   });
 
+  /**
+   * @scenario subject=inline_param_chip_editor
+   * @effects inline_chip_insert_button_opens_picker
+   */
   it('onInsertBinding 전달 → +데이터 버튼 노출 + 클릭 시 피커 열림', async () => {
     stub({ ko: '{p0} 님 환영', en: '' });
     render(
@@ -133,6 +156,10 @@ describe('InlineParamChipEditor', () => {
     await waitFor(() => expect(screen.getByTestId('g7le-inline-binding-picker-inline-insert')).toBeTruthy());
   });
 
+  /**
+   * @scenario subject=inline_param_chip_editor
+   * @effects inline_chip_candidate_pick_inserts_at_cursor
+   */
   it('후보 선택 → onInsertBinding(커서 charIndex, 후보) 호출 + 반환 키 값으로 칩 문장 갱신', async () => {
     stub({ ko: '{p0} 님 환영', en: '' });
     // 끝(charIndex=키값 길이)에 새 칩 삽입 → 키 값 `{p0} 님 환영{p1}` 반환 시뮬레이션.
@@ -158,6 +185,10 @@ describe('InlineParamChipEditor', () => {
     await waitFor(() => expect(screen.queryByTestId('g7le-inline-param-chip-insert-picker')).toBeNull());
   });
 
+  /**
+   * @scenario subject=inline_param_chip_editor
+   * @effects inline_chip_precommits_local_edit_before_insert
+   */
   it('S9-N2 회귀: 미커밋 로컬 변경(칩 드래그/평문) 후 +데이터 → 삽입 전 선커밋(이동 소실 방지)', async () => {
     // 결함 — 칩 드래그 이동은 위젯 로컬 state(onChange)에만 있고 commit 시점에 버퍼 기록되는데,
     // '+데이터' 삽입(insertBindingIntoParamKey)은 pending/서버 값 기준으로 키 값을 재구성한다.
@@ -193,6 +224,10 @@ describe('InlineParamChipEditor', () => {
   // 문장) + chipParamLabels 로 칩을 첫 진입부터 렌더하고, 내용 변경 시 onKeyify 로 키화한다.
   const unkeyedNode: EditorNode = { name: 'Span', text: '$t:policy.published_at: {{termsContent?.data?.published_at | date}}' };
 
+  /**
+   * @scenario subject=inline_param_chip_editor
+   * @effects inline_chip_unkeyed_renders_initial_chip_no_fetch
+   */
   it('미키화 노드: customKey=null + initialChipValue → fetch 없이 즉시 칩 렌더(데이터 칩)', async () => {
     const { calls } = stub({});
     render(
@@ -210,9 +245,13 @@ describe('InlineParamChipEditor', () => {
     expect(screen.getByTestId('g7le-chip-inline-p0').textContent).toContain('published_at');
   });
 
+  /**
+   * @scenario subject=inline_param_chip_editor
+   * @effects inline_chip_unkeyed_changed_save_calls_onkeyify
+   */
   it('미키화 노드: 평문 변경 후 저장 → onKeyify(편집된 키 값) 호출 (내용 변경 시 키 생성)', async () => {
     stub({});
-    const onKeyify = vi.fn(async () => 'custom.home.9');
+    const onKeyify = vi.fn(async (_editedKeyValue: string) => 'custom.home.9');
     const onCommit = vi.fn();
     render(
       <InlineParamChipEditor box={box} node={unkeyedNode} customKey={null}
@@ -231,9 +270,13 @@ describe('InlineParamChipEditor', () => {
     await waitFor(() => expect(onCommit).toHaveBeenCalled());
   });
 
+  /**
+   * @scenario subject=inline_param_chip_editor
+   * @effects inline_chip_unkeyed_unchanged_save_skips_keyify
+   */
   it('미키화 노드: 변경 없이 저장 → onKeyify 미호출 (내용 변경 시에만 키 생성)', async () => {
     stub({});
-    const onKeyify = vi.fn(async () => 'custom.home.9');
+    const onKeyify = vi.fn(async (_editedKeyValue: string) => 'custom.home.9');
     const onCommit = vi.fn();
     render(
       <InlineParamChipEditor box={box} node={unkeyedNode} customKey={null}

@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Services;
 use App\Extension\HookManager;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Modules\Sirsoft\Ecommerce\Repositories\Contracts\ProductWishlistRepositoryInterface;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 use Modules\Sirsoft\Ecommerce\Traits\ReappliesPermissionScope;
 
 /**
@@ -143,7 +144,8 @@ class ProductWishlistService
                 'id' => (int) $row->id,
                 'user_id' => $row->user_id !== null ? (int) $row->user_id : null,
                 'user_uuid' => $row->user?->uuid,
-                'user_name' => $row->user?->name,
+                // 활동 로그에 남는 이름은 삭제 시점의 이커머스 관리자 영역 표시 이름이다(기록물 — 이미 남은 기록은 바꾸지 않는다)
+                'user_name' => MemberDisplayName::name($row->user),
                 'product_id' => $row->product_id !== null ? (int) $row->product_id : null,
                 'product_name' => $row->product?->getLocalizedName(),
             ])

@@ -188,6 +188,9 @@ return [
     // Board validation (backward compatibility)
     'board' => [
         'not_found' => 'Board not found.',
+        'display_name_setting' => [
+            'kind_unavailable' => 'This display name type is not available now. Please choose again.',
+        ],
         'name' => [
             'required' => 'Board name is required.',
             'string' => 'Board name must be a string.',
@@ -488,6 +491,17 @@ return [
         ],
         'board' => [
             'name' => 'Board Name',
+            'display_name_setting' => 'Author display name',
+            'display_name_mode' => 'Author display name mode',
+            'display_name_kind' => 'Author display name type',
+            'guest_author_fields' => 'Guest author fields',
+            'guest_author_field' => 'Guest author field setting',
+            'guest_author_field_post' => 'Guest author field post setting',
+            'guest_author_field_post_enabled' => 'Guest author field use on posts',
+            'guest_author_field_post_required' => 'Guest author field required on posts',
+            'guest_author_field_comment' => 'Guest author field comment setting',
+            'guest_author_field_comment_enabled' => 'Guest author field use on comments',
+            'guest_author_field_comment_required' => 'Guest author field required on comments',
             'description' => 'Board Description',
             'add_to_menu' => 'Show in admin menu',
             'blocked_keywords' => 'Blocked Keywords',

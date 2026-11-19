@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Rules\ConnectionHost;
+use App\Support\FileServing\FileDelegation;
 use App\Support\OutboundUrlValidator;
 use Aws\S3\Exception\S3Exception;
 use Aws\S3\S3Client;
@@ -63,6 +64,14 @@ class DriverConnectionTester
         if ($settings['websocket_enabled'] ?? false) {
             $results['websocket'] = $this->testWebsocket($settings);
             if (! $results['websocket']['success']) {
+                $allPassed = false;
+            }
+        }
+
+        // 웹서버 파일 위임 (#878) — 요청에 방식이 실렸을 때만 판정한다(다른 카드의 시험 버튼은 이 키를 보내지 않는다)
+        if (($settings['file_delegation'] ?? null) !== null && $settings['file_delegation'] !== '') {
+            $results['file_delegation'] = $this->testFileDelegation($settings);
+            if (! $results['file_delegation']['success']) {
                 $allPassed = false;
             }
         }
@@ -577,6 +586,76 @@ class DriverConnectionTester
     }
 
     /**
+     * 웹서버 파일 위임 구성을 정적으로 판정합니다 (1단계 — #878).
+     *
+     * PHP 안에서는 웹서버가 위임 헤더를 실제로 소비하는지 확정할 수 없다. 여기서는 확정 가능한 실패만 실패로 내고
+     * (Apache 인데 mod_xsendfile 이 없다 · 고른 방식과 웹서버 종류가 어긋난다), 나머지는 「저장한 뒤 실제 전송 확인
+     * (2단계 프로브)」을 안내하는 성공으로 낸다. 서버로 요청을 되돌려 보내는(self-request) 판정은 아웃바운드 정책·공유
+     * 호스팅 제약 때문에 쓰지 않는다.
+     *
+     * 결과의 `details` 는 화면이 웹서버 설정 안내를 채우는 데 쓴다 — `server`(apache|nginx|unknown)·`module`
+     * (true|false|null — Apache 모듈 목록을 읽을 수 있을 때만 불리언)·`base_path`·`accel_prefix`·`accel_mapping`.
+     *
+     * @param  array  $config  시험 입력 (`file_delegation`, `file_delegation_accel_prefix`)
+     * @param  string|null  $serverSoftware  웹서버 식별 문자열 (null 이면 현재 요청의 SERVER_SOFTWARE)
+     * @param  array<int, string>|null  $apacheModules  Apache 모듈 목록 (null 이면 apache_get_modules() 가 있을 때 그 값)
+     * @return array{success: bool, message: string, details: array<string, mixed>} 시험 결과
+     */
+    public function testFileDelegation(array $config, ?string $serverSoftware = null, ?array $apacheModules = null): array
+    {
+        $mode = strtolower(trim((string) ($config['file_delegation'] ?? FileDelegation::MODE_NONE)));
+        $mode = in_array($mode, FileDelegation::modes(), true) ? $mode : FileDelegation::MODE_NONE;
+
+        $prefix = FileDelegation::normalizeAccelPrefix((string) ($config['file_delegation_accel_prefix'] ?? ''));
+        $prefix = $prefix === '' ? FileDelegation::accelPrefix() : $prefix;
+        $basePath = FileDelegation::basePath();
+
+        $serverSoftware ??= (string) request()->server('SERVER_SOFTWARE', '');
+        $server = match (true) {
+            stripos($serverSoftware, 'nginx') !== false => 'nginx',
+            stripos($serverSoftware, 'apache') !== false => 'apache',
+            default => 'unknown',
+        };
+
+        if ($apacheModules === null && function_exists('apache_get_modules')) {
+            $apacheModules = apache_get_modules();
+        }
+
+        // 모듈 목록이 있으면 Apache 모듈로 도는 PHP 다 — SERVER_SOFTWARE 가 비어 있어도 Apache 로 본다
+        if ($apacheModules !== null && $server === 'unknown') {
+            $server = 'apache';
+        }
+
+        $module = $apacheModules === null ? null : in_array('mod_xsendfile', $apacheModules, true);
+
+        $details = [
+            'mode' => $mode,
+            'server' => $server,
+            'module' => $module,
+            'base_path' => $basePath,
+            'accel_prefix' => $prefix,
+            'accel_mapping' => FileDelegation::accelMapping($prefix),
+        ];
+
+        [$success, $messageKey] = match (true) {
+            $mode === FileDelegation::MODE_NONE => [true, 'none'],
+            $mode === FileDelegation::MODE_X_SENDFILE && $server === 'nginx' => [false, 'server_mismatch_nginx'],
+            $mode === FileDelegation::MODE_X_ACCEL_REDIRECT && $server === 'apache' => [false, 'server_mismatch_apache'],
+            $mode === FileDelegation::MODE_X_SENDFILE && $module === false => [false, 'apache_missing'],
+            $mode === FileDelegation::MODE_X_SENDFILE && $module === true => [true, 'apache_ready'],
+            $mode === FileDelegation::MODE_X_SENDFILE && $server === 'apache' => [true, 'apache_unknown'],
+            $mode === FileDelegation::MODE_X_ACCEL_REDIRECT && $server === 'nginx' => [true, 'nginx_hint'],
+            default => [true, 'server_unknown'],
+        };
+
+        return [
+            'success' => $success,
+            'message' => __('settings.driver_test.file_delegation.'.$messageKey),
+            'details' => $details,
+        ];
+    }
+
+    /**
      * 연결 대상이 허용되지 않아 테스트를 시작하지 않았다는 결과를 만듭니다.
      *
      * 형식이 틀린 호스트(경로·쿼리·계정 정보)와 링크로컬·메타데이터 주소를 구분해 알린다.
@@ -614,6 +693,7 @@ class DriverConnectionTester
             'redis' => $this->testRedis($config),
             'memcached' => $this->testMemcached($config),
             'websocket' => $this->testWebsocket($config),
+            'file_delegation' => $this->testFileDelegation($config),
             default => [
                 'success' => false,
                 'message' => __('settings.unknown_driver'),

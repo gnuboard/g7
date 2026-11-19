@@ -1,0 +1,30 @@
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#835 항목 결과 축은 집계 함수(itemOutcome) 단위 시험이 전부 다루고, 실제 새 프로세스를 띄우는 시험은 spawn 축 두 값 × 항목 여럿으로 충분하다(항목 하나는 분리하지 않는 판정 시험)
+feature: bundled_update_item_process_isolation
+
+description: |
+  코어 업데이트 뒤 번들 일괄 업데이트 자식(core:execute-bundled-updates)이 확장 19개를 한 프로세스에서 차례로 갱신하면,
+  확장마다 config·라우트 캐시 재굽기가 부팅하는 일회용 앱이 회수되지 않고 쌓여 512 MB 에서 마지막 템플릿 도중 죽었다.
+  부모는 결과 줄 없이 끝난 자식을 「성공 0, 실패 1」로 셌고, 실패한 확장 이름도 처리되지 못한 언어팩도 보이지 않았다.
+  항목이 둘 이상이면 자식은 순서·집계만 맡고 항목마다 새 프로세스(--item-process)를 띄운다. 항목 프로세스가 죽으면 그
+  항목만 실패로 세고 이름·종료 코드를 남긴다. 실패 항목은 끝에 다시 실행할 명령과 함께 출력한다. 새 프로세스를 띄울 수
+  없는 서버는 같은 프로세스에서 돌되 캐시 재굽기를 끝에 한 번으로 모은다. 결과 줄의 success·failed 는 이전 판 부모가
+  읽는 모양 그대로다.
+
+coverage_strategy: full
+
+axes:
+  spawn: [available, unavailable]
+  items: [one, many]
+  item_result: [failed, aborted, mixed]
+
+effects:
+  - bundled_items_run_each_in_fresh_process
+  - bundled_failed_items_are_named_with_retry_command
+  - bundled_result_payload_keeps_previous_parent_contract
+  - bundled_aborted_item_counts_as_that_item_only
+  - bundled_in_process_fallback_defers_cache_rebuilds
+  - bundled_single_item_runs_in_process_without_recursion
+  - bundled_parent_reports_aborted_child_with_exit_code
+
+test_files:
+  - tests/Feature/Console/BundledUpdateItemProcessIsolationTest.php

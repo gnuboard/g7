@@ -109,8 +109,8 @@ export function setAtPath(root: Record<string, unknown>, path: string, value: un
   for (let i = 0; i < segs.length - 1; i++) {
     const seg = segs[i];
     const nextSeg = segs[i + 1];
-    const cur = (cursor as Record<string, unknown>)[seg];
-    const cloned = cur && typeof cur === 'object' ? shallowClone(cur) : (/^\d+$/.test(nextSeg) ? [] : {});
+    const cur: unknown = (cursor as Record<string, unknown>)[seg];
+    const cloned: Record<string, unknown> | unknown[] = cur && typeof cur === 'object' ? shallowClone(cur) : (/^\d+$/.test(nextSeg) ? [] : {});
     (cursor as Record<string, unknown>)[seg] = cloned;
     cursor = cloned;
   }

@@ -467,10 +467,38 @@ interface LayoutRepositoryInterface
     public function getOverridesByTemplateId(int $templateId): Collection;
 
     /**
+     * 템플릿 설정 화면 행을 조회합니다 (#434) — 활성 관리자 템플릿마다 하나씩 교차 등록된 `{소유}.template_settings`.
+     *
+     * 오버라이드 행도 `source_type=template`·`source_identifier` 가 차 있으므로 이름까지 맞는 행만 고른다.
+     *
+     * @param  string  $ownerIdentifier  설정 화면을 가진 템플릿 식별자
+     * @param  int|null  $hostTemplateId  등록된 관리자 템플릿 ID (null 이면 전체)
+     * @return Collection 레이아웃 컬렉션
+     */
+    public function getTemplateSettingsLayouts(string $ownerIdentifier, ?int $hostTemplateId = null): Collection;
+
+    /**
      * 특정 소스 식별자의 레이아웃을 모두 삭제합니다.
      *
      * @param  string  $sourceIdentifier  소스 식별자 (모듈/템플릿 식별자)
      * @return int 삭제된 레코드 수
      */
     public function deleteBySourceIdentifier(string $sourceIdentifier): int;
+
+    /**
+     * 출처의 레이아웃 행을 지운 행까지 모두 조회합니다 (영구 삭제 직전 기록용).
+     *
+     * @param  string  $identifier  출처 식별자
+     * @param  LayoutSourceType  $sourceType  출처 타입
+     * @return Collection<int, TemplateLayout> 행 목록
+     */
+    public function getWithTrashedBySource(string $identifier, LayoutSourceType $sourceType): Collection;
+
+    /**
+     * 템플릿의 레이아웃 행을 지운 행까지 모두 조회합니다 (영구 삭제 직전 기록용).
+     *
+     * @param  int  $templateId  템플릿 ID
+     * @return Collection<int, TemplateLayout> 행 목록
+     */
+    public function getWithTrashedByTemplateId(int $templateId): Collection;
 }

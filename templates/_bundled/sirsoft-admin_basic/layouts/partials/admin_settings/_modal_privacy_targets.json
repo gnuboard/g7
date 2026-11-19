@@ -11,7 +11,24 @@
     "props": {
         "title": "{{_global.privacyTargets?.title ?? ''}}",
         "width": "800px",
-        "className": "max-w-[calc(100vw-2rem)]"
+        "className": "max-w-[calc(100vw-2rem)]",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-secondary"
+                },
+                "text": "$t:admin.settings.privacy.targets.close"
+            }
+        ]
     },
     "children": [
         {
@@ -287,31 +304,6 @@
                             "text": "$t:admin.settings.privacy.targets.empty"
                         }
                     ]
-                }
-            ]
-        },
-        {
-            "id": "privacy_targets_footer",
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "flex justify-end mt-6"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-secondary"
-                    },
-                    "text": "$t:admin.settings.privacy.targets.close"
                 }
             ]
         }

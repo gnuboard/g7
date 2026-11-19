@@ -29,6 +29,14 @@ interface ShippingPolicyRepositoryInterface
     public function getListWithFilters(array $filters, int $perPage = 20): LengthAwarePaginator;
 
     /**
+     * 필터링된 배송정책 목록 전체 조회 (쪽 나눔 없음 — 상품 등록·수정 화면 선택지용)
+     *
+     * @param  array  $filters  필터 조건 (getListWithFilters 와 같은 필터·정렬·관계)
+     * @return Collection 배송정책 목록
+     */
+    public function getAllWithFilters(array $filters): Collection;
+
+    /**
      * 배송정책 생성
      *
      * @param  array  $data  배송정책 데이터

@@ -13,14 +13,13 @@
  *
  * @since engine-v1.50.0
  *
- * @effects select_candidate_writes_binding_expression_to_props_propkey,
+ * 효과 요약(마커 아님 — 평문, 시험별 표식으로 옮김): select_candidate_writes_binding_expression_to_props_propkey,
  *   clear_removes_binding_back_to_unconnected,
  *   complex_binding_degrades_to_code_edit_readonly_notice,
  *   single_path_binding_prefilled_in_picker_via_parse,
  *   shape_filter_returns_only_matching_scalar_array_object_candidates
  */
 
-import React from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { DataBindingSection } from '../../components/property-controls/DataBindingSection';
@@ -84,6 +83,7 @@ describe('DataBindingSection — 렌더', () => {
 });
 
 describe('DataBindingSection — 연결 round-trip', () => {
+  // @scenario source_kind=data_source
   /**
    * @effects select_candidate_writes_binding_expression_to_props_propkey
    */
@@ -118,6 +118,26 @@ describe('DataBindingSection — 연결 round-trip', () => {
     expect(screen.getByTestId('g7le-binding-expr-data').textContent).toBe('{{products.data.data}}');
     fireEvent.click(screen.getByTestId('g7le-binding-clear-data'));
     expect(onPatchNode).toHaveBeenCalledWith(expect.objectContaining({ props: {} }));
+  });
+
+  /**
+   * @effects single_path_binding_prefilled_in_picker_via_parse
+   */
+  it('G7 안전 형태 단일 경로 바인딩(?. + ??)은 파싱돼 연결로 보이고, 피커에서 후보를 다시 고를 수 있다', () => {
+    const node: EditorNode = { name: 'CardGrid', props: { data: '{{products?.data?.data ?? []}}' } };
+    const dataProps: DataPropSpec[] = [{ propKey: 'data', shape: 'array' }];
+    const onPatchNode = vi.fn();
+    render(
+      <DataBindingSection node={node} dataProps={dataProps} candidates={candidates} t={t} onPatchNode={onPatchNode} />,
+    );
+    expect(screen.queryByTestId('g7le-binding-complex-data')).toBeNull();
+    expect(screen.getByTestId('g7le-binding-expr-data').textContent).toBe('{{products?.data?.data ?? []}}');
+    fireEvent.click(screen.getByTestId('g7le-binding-search-toggle-data'));
+    expect(screen.getByTestId('g7le-binding-picker-data')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('g7le-binding-candidate-{{products.data.data}}'));
+    expect(onPatchNode).toHaveBeenCalledWith(
+      expect.objectContaining({ props: { data: '{{products?.data?.data ?? []}}' } }),
+    );
   });
 });
 

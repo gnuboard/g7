@@ -1,0 +1,22 @@
+feature: member_admin_form_field_schema
+
+description: |
+  관리자 회원 폼(추가, 수정)과 회원 상세가 받는 항목 계약(GET /api/admin/users/form-fields, GET /api/admin/users/{user}/form-fields).
+  사용 중인 항목 전부와 범위, 추가 화면의 파일 항목 안내, 수정 화면의 현재 값과 잠금, 회원의 항목 상태, 권한이 계약이다.
+
+coverage_strategy: full
+
+axes:
+  mode: [create, update, forbidden]
+
+effects:
+  - admin_form_schema_lists_all_scopes
+  - admin_form_schema_defers_files_on_create
+  - admin_form_schema_carries_values_and_locks
+  - admin_form_schema_reports_member_status
+  - admin_form_schema_requires_user_read_permission
+  - admin_create_form_schema_requires_user_create_permission
+  - admin_update_form_schema_follows_user_read_scope
+
+test_files:
+  - tests/Feature/Api/Admin/UserFormFieldsApiTest.php

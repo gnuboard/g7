@@ -22,18 +22,27 @@
  * `_global.settingsAbilities` 를 싣고 계산한다. ⓑ `_local` 변경은 곧바로 다시 그려지지만 `_global` 변경은
  * 다음 렌더에 반영되므로, 전역을 보는 단언 앞에는 `rerender()` 를 둔다.
  *
- * @scenario master_toggle=on, master_toggle=off, surface=admin_shell, admin_list=excludes_client, admin_list=contains_client, rule=disabled, rule=blocks_client, rule=none, rule=allows_client, ip_source=forwarded_untrusted
- *
- * @effects settings_card_warns_when_proxy_untrusted, settings_card_mounts_with_current_ip, settings_card_dims_lists_while_toggle_off, settings_card_adds_current_ip_once, settings_card_renders_rules_with_row_toggle_and_delete, settings_card_always_shows_callback_warning_and_rescue_hint, rule_modal_opens_with_copied_rules_and_row_index, settings_card_desktop_and_mobile_rows_share_wiring, rule_modal_requires_pattern_then_ips, rule_modal_commits_once_to_parent_form, rule_modal_edit_replaces_only_that_row, applied_rule_survives_save
+ * 조합과 효과 표식은 그것을 재는 시험마다 단다.
  */
 
 import React from 'react';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { createLayoutTest } from '@core/template-engine/__tests__/utils/layoutTestUtils';
 import { actionsOf, callbacksOf } from '@core/template-engine/__tests__/utils/layoutShapeUtils';
 import { ComponentRegistry } from '@core/template-engine/ComponentRegistry';
 import { DataBindingEngine } from '@core/template-engine/DataBindingEngine';
+import { makeHarnessModal } from './harnessModal';
+
+// 엔진(코어)은 저장소 루트의 react 를, 진짜 Modal 은 이 템플릿 node_modules 의 react 를 읽어 사본이 둘이 된다 — 이 파일에서만
+// 템플릿 쪽 react 를 루트 사본으로 바꿔 낀다(productFormRouteSwitchInputResidue.test.tsx 와 같은 방식)
+vi.mock('react', async () => {
+  const p = await import('path');
+  const u = await import('url');
+  const dir = p.dirname(u.fileURLToPath(import.meta.url));
+
+  return import(/* @vite-ignore */ u.pathToFileURL(p.resolve(dir, '../../../../../node_modules/react/index.js')).href);
+});
 import adminSettings from '../../layouts/admin_settings.json';
 import cardPartial from '../../layouts/partials/admin_settings/_tab_security_ip_restriction.json';
 import modalPartial from '../../layouts/partials/admin_settings/_modal_ip_restriction_rule_form.json';
@@ -143,6 +152,8 @@ function setupRegistry(): ComponentRegistry {
     Th: { component: TestTh, metadata: { name: 'Th', type: 'basic' } },
     Td: { component: TestTd, metadata: { name: 'Td', type: 'basic' } },
     Fragment: { component: TestFragment, metadata: { name: 'Fragment', type: 'layout' } },
+    // 진짜 Modal — 취소·적용 단추가 고정 하단(props.footer)에 있다(#869 P1)
+    Modal: { component: makeHarnessModal({ forceOpen: true }), metadata: { name: 'Modal', type: 'composite' } },
   };
 
   return registry;
@@ -524,7 +535,7 @@ describe('환경설정 보안 — IP 접근 제한 규칙 편집 창', () => {
   });
 
   /**
-   * 창 본문을 렌더한다(테두리는 G7Core 전역이 그리므로 뗀다. 취소·적용 단추는 본문 안에 있다).
+   * 창을 진짜 Modal 로 렌더한다 — 취소·적용 단추는 Modal 고정 하단(props.footer)에 있다(#869 P1).
    *
    * @param modalState `_global.ip_restriction_rule_form_modal`
    * @returns 레이아웃 테스트 유틸
@@ -537,7 +548,7 @@ describe('환경설정 보안 — IP 접근 제한 규칙 편집 창', () => {
       {
         version: '1.0.0',
         layout_name: 'test_ip_restriction_rule_form_modal',
-        components: [...modal.children],
+        components: [modal],
       } as any,
       {
         componentRegistry: setupRegistry(),
@@ -714,24 +725,26 @@ describe('환경설정 보안 — IP 접근 제한 규칙 편집 창', () => {
     });
   });
 
-  describe('[case:state-advanced-modal-footer-stale-context] 입력을 읽는 단추는 본문에 둔다', () => {
+  describe('[case:state-advanced-modal-footer-stale-context] 입력을 읽는 단추도 고정 하단에 둔다', () => {
     /**
-     * 취소·적용은 모달 고정 하단(`props.footer`)이 아니라 본문에 있어야 한다.
+     * 취소·적용은 Modal 고정 하단(`props.footer`)에 있다(#869 P1 — 640px 이하에서 세로로 쌓인다).
      *
-     * 고정 하단은 모달 컴포넌트가 자기 렌더러로 그리며 그 데이터 컨텍스트에는 **창을 연 시점의**
-     * 전역 상태가 실린다. 그 자리에서 방금 친 패턴·IP 를 읽으면 늘 빈 값이라 「적용」이 영원히
-     * 「패턴을 입력하세요」로 되돌아간다(브라우저 실측으로 확인하고 본문으로 옮겼다).
+     * 종전에는 고정 하단이 창을 연 시점의 전역 상태로 그려진다고 보고(#636 브라우저 실측) 본문 맨 아래 줄에
+     * 두었다. 지금 Modal 은 고정 하단을 본문 자식과 같은 데이터 컨텍스트·상태 범위로 그린다 — 아래 「적용」
+     * 시험들이 진짜 Modal 로 창을 그려 고정 하단의 적용 단추가 방금 친 패턴·IP 를 읽는지 잰다.
      *
      * @scenario master_toggle=on, surface=admin_shell, rule=blocks_client
      *
      * @effects rule_modal_requires_pattern_then_ips
      */
-    it('취소·적용 단추는 본문에 있다 (고정 하단은 방금 친 값을 읽지 못한다)', () => {
+    it('취소·적용 단추는 고정 하단에 있고 본문에는 없다', async () => {
       const modal = partialRoot(modalPartial as Json);
 
-      expect(modal.props.footer, '단추가 고정 하단으로 돌아갔습니다').toBeUndefined();
-      expect(findById(modal.children, 'ip_rule_apply_button'), '적용 단추가 본문에 없습니다').not.toBeNull();
-      expect(findById(modal.children, 'ip_rule_form_footer')).not.toBeNull();
+      expect(findById(modal.props.footer, 'ip_rule_apply_button'), '적용 단추가 고정 하단에 없습니다').not.toBeNull();
+      expect(findById(modal.children, 'ip_rule_apply_button')).toBeNull();
+
+      await renderModal(createState({ pattern: '/api/__probe*', ips: ['203.0.113.9'] }));
+      expect(applyButton()?.closest('.modal-footer-bar'), '적용 단추가 고정 하단에 그려지지 않았습니다').not.toBeNull();
     });
   });
 

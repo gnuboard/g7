@@ -64,5 +64,11 @@
   },
   "layout_editor": {
     "$partial": "partial/en/layout_editor.json"
+  },
+  "settings": {
+    "$partial": "partial/en/settings.json"
+  },
+  "member": {
+    "$partial": "partial/en/member.json"
   }
 }

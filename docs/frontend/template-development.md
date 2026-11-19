@@ -464,6 +464,8 @@ templates/{템플릿-식별자}/custom/custom.css
 
 모듈·플러그인도 같은 규약을 씁니다. 상세: [module-assets.md](../extension/module-assets.md) "사용자 추가 에셋".
 
+> 이 `custom/` 은 템플릿 화면에 CSS·JS 를 덧붙이는 자리입니다. 템플릿 엔진 없이 화면 자체를 직접 만드는 자리(프로젝트 최상위의 `routes/custom.php`·`resources/views/custom/`·`public/custom/`·`custom/` 개발자 Composer 등, 7.2.0+)와는 다릅니다 — [개발자 화면 가이드](../custom-development.md).
+
 ## 템플릿 고유 CSS 와 기본 컴포넌트 클래스
 
 레이아웃에서 기본 컴포넌트의 `className` 을 줬는데 모양이 바뀌지 않는 원인은 대개 둘 중 하나다 — 컴포넌트가 고정으로 다는 배치 클래스가 남아 있거나, 템플릿 고유 클래스가 Tailwind 유틸리티에 진다. 두 경우 모두 아래 규칙으로 판단한다.
@@ -630,7 +632,7 @@ export const Card: React.FC<CardProps> = ({ title, onClick }) => (
 
 `src/index.ts` 의 `initTemplate()` 함수에서 다음을 등록해야 합니다:
 
-1. 커스텀 핸들러 등록 — `actionDispatcher.registerHandler(name, handler)` (모든 템플릿 공통)
+1. 커스텀 핸들러 등록 — `actionDispatcher.registerHandler(name, handler, { category: 'custom', source: '<템플릿 식별자>' })` (모든 템플릿 공통). 이름 규칙과 덮어쓰기 경고는 [핸들러 이름 규칙과 소유권](../extension/module-assets.md#핸들러-이름-규칙과-소유권)
 2. **IDV 모달 launcher 등록** — `window.G7Core.identity.setLauncher(launcher)` (engine-v1.46.0+ 신규)
 
 본인인증 정책이 활성화되면 코어 `IdentityGuardInterceptor` 가 428 응답을 가로채 launcher 를 호출합니다. launcher 미등록 시 코어 `defaultLauncher` 가 토스트 + `/identity/challenge` 풀페이지 navigate 로 폴백합니다.
@@ -647,7 +649,8 @@ export function initTemplate(): void {
     const actionDispatcher = (window as any).G7Core?.getActionDispatcher?.();
     if (actionDispatcher) {
       Object.entries(handlerMap).forEach(([name, handler]) => {
-        actionDispatcher.registerHandler(name, handler);
+        // 등록자를 템플릿 식별자로 밝힌다 (engine-v1.94.0 소유권 경고)
+        actionDispatcher.registerHandler(name, handler, { category: 'custom', source: 'my-template' });
       });
       // IDV launcher 는 핸들러 등록 직후 — G7Core.identity 준비됨
       registerMyTemplateIdentityLauncher();
@@ -731,4 +734,5 @@ cross-build 레이어 우선순위 충돌로 프리뷰 다크 규칙이 적용�
 - [본인인증 모달 UI 표준 (engine-v1.46.0+)](./identity-verification-ui.md)
 - [본인인증 인터셉터 API 레퍼런스](./identity-guard-interceptor.md)
 - [외부 템플릿 IDV launcher 등록](../extension/template-idv-bootstrap.md)
+- [개발자 화면 가이드](../custom-development.md) - 템플릿 엔진 대신 Blade·HTML·외부 프레임워크로 화면을 만드는 custom 예약 자리
 - [프론트엔드 가이드 인덱스](./README.md)

@@ -1,0 +1,42 @@
+feature: 관리자 화면의 실명 보조 줄 (#490 P17)
+
+description: |
+  관리자 응답의 이름 키(user.name, recipient.name, creator.name, created_by_name, requester_name 등)는 관리자 영역 표시 이름이다.
+  서버는 회원 조회 권한이 있는 관리자에게, 실명이 비어 있지 않고 표시 이름과 다를 때만 real_name(이름 키가 name 이 아니면
+  같은 꼬리말의 키)을 싣고 아니면 키 자체를 싣지 않는다. 화면은 그 키가 있을 때만 이름 아래에 흐린 작은 글자로 보조 줄을 그린다.
+  표 칸 안의 줄은 값을 그대로 그리고(번역 인자가 행 값을 받지 못한다) title 로 「실명」임을 알린다. 문장 안의 이름(실행자,
+  저장한 사람, 요청자)은 「실명: 홍길동」 줄을 따로 둔다. 확장 조각의 버전 이력에는 저장한 사람 줄을 함께 더했다.
+
+# axis 의미:
+#   case — 보조 줄이 놓이는 화면(이름 칸) 하나, 그리고 문구 키
+axes:
+  case:
+    - activity_log
+    - notification_log_recipient
+    - notification_log_sender
+    - member_notification
+    - schedule_history
+    - menu_view
+    - menu_form
+    - layout_version
+    - layout_extension_version
+    - privacy_withdrawn
+    - privacy_dormant
+    - privacy_search_history
+    - password_expiry
+    - visitors
+    - realtime
+    - visitor_detail
+    - lang_keys
+
+effects:
+  - real_name_line_shows_only_when_server_sends_key
+  - extension_version_history_shows_saved_by
+  - real_name_lang_keys_exist_in_ko_and_en
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-real-name-secondary-line.test.ts
+
+notes: |
+  e2e_browser=pending — 조건식과 값 경로는 레이아웃 식을 엔진에 넣어 잰다. 화면에서 두 줄이 겹치거나 넘치지 않는지는
+  #490 통합 실측에서 본다(회원 조회 권한이 있는 관리자와 없는 관리자, 표시 이름이 닉네임인 회원).

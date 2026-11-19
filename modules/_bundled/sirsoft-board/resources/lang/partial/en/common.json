@@ -21,5 +21,6 @@
   "pagination_info": "Showing {{from}}-{{to}} of {{total}}",
   "error_occurred": "An error has occurred",
   "optional": "Optional",
-  "list_load_failed": "Could not load the list. Please try again in a moment."
+  "list_load_failed": "Could not load the list. Please try again in a moment.",
+  "real_name_label": "Real name: {{name}}"
 }

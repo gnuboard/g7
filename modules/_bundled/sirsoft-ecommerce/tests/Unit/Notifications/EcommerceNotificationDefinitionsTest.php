@@ -39,6 +39,8 @@ class EcommerceNotificationDefinitionsTest extends ModuleTestCase
         'inquiry_replied',
         'order_custom_email',
         'identity.purpose.checkout_verification',
+        'export_completed',
+        'export_failed',
     ];
 
     /**
@@ -52,6 +54,19 @@ class EcommerceNotificationDefinitionsTest extends ModuleTestCase
     private const MAIL_ONLY_TYPES = [
         'order_custom_email',
         'identity.purpose.checkout_verification',
+    ];
+
+    /**
+     * 사이트 내 알림으로만 보내는 정의 — mail + database 두 채널 규칙의 명시적 예외 (#787).
+     *
+     * - export_completed·export_failed: 운영자가 목록 화면에서 방금 요청한 내보내기의 결과다. 관리 화면 알림으로 충분하고,
+     *   개인정보가 담길 수 있는 파일의 안내를 메일로 내보내지 않는다(파일은 관리 화면의 일회용 주소로만 받는다).
+     *
+     * @var array<int, string>
+     */
+    private const DATABASE_ONLY_TYPES = [
+        'export_completed',
+        'export_failed',
     ];
 
     /**
@@ -106,6 +121,11 @@ class EcommerceNotificationDefinitionsTest extends ModuleTestCase
 
                 continue;
             }
+            if (in_array($def['type'], self::DATABASE_ONLY_TYPES, true)) {
+                $this->assertSame(['database'], $def['channels'], "{$def['type']}: 사이트 내 알림 전용 정의가 다른 채널을 선언했다");
+
+                continue;
+            }
             $this->assertContains('mail', $def['channels'], "{$def['type']}: mail 채널 누락");
             $this->assertContains('database', $def['channels'], "{$def['type']}: database 채널 누락");
         }
@@ -124,6 +144,11 @@ class EcommerceNotificationDefinitionsTest extends ModuleTestCase
     {
         foreach ($this->getModuleDefinitions() as $def) {
             $channels = array_column($def['templates'], 'channel');
+            if (in_array($def['type'], self::DATABASE_ONLY_TYPES, true)) {
+                $this->assertSame(['database'], $channels, "{$def['type']}: 사이트 내 알림 전용 정의가 다른 채널 템플릿을 가졌다");
+
+                continue;
+            }
             $this->assertContains('mail', $channels, "{$def['type']}: mail 템플릿 누락");
             if (in_array($def['type'], self::MAIL_ONLY_TYPES, true)) {
                 continue;

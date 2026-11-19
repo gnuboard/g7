@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 use App\Contracts\Pagination\BoundedTotalAware;
 use App\Helpers\PermissionHelper;
 use App\Http\Resources\Traits\ExposesMemberContact;
+use App\Http\Resources\Traits\ExposesMemberDisplayName;
 use App\Http\Resources\Traits\HasRowNumber;
 use App\Support\Query\BoundedPage;
 use App\Support\Query\KeysetPaginator;
@@ -23,6 +24,7 @@ use Illuminate\Pagination\CursorPaginator;
 abstract class BaseApiCollection extends ResourceCollection
 {
     use ExposesMemberContact;
+    use ExposesMemberDisplayName;
     use HasRowNumber;
 
     /**

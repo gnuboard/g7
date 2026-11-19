@@ -4,7 +4,7 @@
  * 로그인 2단계 인증은 **사이트 설정과 메일 발송**에 의존한다. 브라우저만으로는 재현할 수 없으므로
  * 이 fixture 가 세 가지를 가역적으로 준비한다.
  *
- *   ① 보안 환경설정 `security.two_factor_auth` 를 켜고, 끝나면 원래 값으로 되돌린다.
+ *   ① 보안 환경설정 `security.two_factor_auth` 를 켜고, 끝나면 원래 값으로 되돌린다 — 설정 파일은 시작 전 바이트 그대로.
  *   ② 메일을 받아서 버리는 로컬 SMTP 싱크를 띄우고 메일 설정을 그쪽으로 돌린다. 끝나면
  *      원래 값으로 되돌린다. (실제 메일을 보내면 테스트가 외부 상태를 바꾼다)
  *      `log` 메일러를 쓰지 않는 이유는 `smtp-sink.ts` 머리말 참조.
@@ -181,12 +181,39 @@ type TwoFactorFixtureState = {
   security: Record<string, unknown>;
   /** 메일 설정 파일 백업 경로 (없으면 파일 자체가 없던 설치) */
   mailBackupPath: string | null;
+  /** 보안 설정 파일 백업 경로 (없으면 파일 자체가 없던 설치) */
+  securityBackupPath: string | null;
   sink: SmtpSink;
 };
 
 /** 메일 설정 파일 경로 */
 function mailSettingsPath(): string {
   return resolve(coreRoot(), 'storage/app/settings/mail.json');
+}
+
+/** 보안 설정 파일 경로 */
+function securitySettingsPath(): string {
+  return resolve(coreRoot(), 'storage/app/settings/security.json');
+}
+
+/**
+ * 보안 설정 파일을 시작 전 바이트 그대로 떠 둔다.
+ *
+ * API 로 되쓰기만 하면 저장 경로가 원래 파일에 없던 기본값 키(예: `registration_enabled`)를 채워 넣어
+ * 값은 같아도 파일이 달라진다 — 실측 뒤 설정 해시 대조가 어긋났다(F1 마감 관찰).
+ *
+ * @returns 백업 파일 경로 (설정 파일이 없으면 null)
+ */
+function backupSecuritySettings(): string | null {
+  const path = securitySettingsPath();
+  if (! existsSync(path)) {
+    return null;
+  }
+
+  const backupPath = `${path}.bak-playwright-2fa`;
+  copyFileSync(path, backupPath);
+
+  return backupPath;
 }
 
 /**
@@ -311,13 +338,14 @@ export async function enableTwoFactorFixture(
   // 메일 경로를 먼저 돌린다 — 2단계 인증을 켠 뒤에 코드가 발행되면 실제 메일이 나간다.
   const sink = await startSmtpSink();
   const mailBackupPath = redirectMailToSink(sink.port);
+  const securityBackupPath = backupSecuritySettings();
 
   const security = await patchSettingsTab(request, token, 'security', {
     two_factor_auth: true,
     ...extraSecurity,
   });
 
-  return { security, mailBackupPath, sink };
+  return { security, mailBackupPath, securityBackupPath, sink };
 }
 
 /**
@@ -342,6 +370,12 @@ export async function restoreTwoFactorFixture(
     await writeSettingsTab(request, token, 'security', state.security);
   } catch (error) {
     firstError = error;
+  }
+
+  // API 저장은 설정 캐시를 새로 고치고, 파일은 시작 전 바이트로 다시 덮는다(저장 경로가 채운 기본값 키 제거 — 값은 같다).
+  if (state.securityBackupPath && existsSync(state.securityBackupPath)) {
+    copyFileSync(state.securityBackupPath, securitySettingsPath());
+    rmSync(state.securityBackupPath, { force: true });
   }
 
   if (state.mailBackupPath && existsSync(state.mailBackupPath)) {

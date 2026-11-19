@@ -80,7 +80,7 @@ _단건 응답: `data` 객체의 필드._
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 404 | Not Found | 주문 없음 / 회원 주문 / 전화번호 불일치 / 비밀번호 오류 / 잠금 — 정보 노출 방지를 위해 모두 동일한 "주문을 찾을 수 없습니다" 로 처리 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -187,6 +187,7 @@ _단건 응답: `data` 객체의 필드 (`GuestOrderResource` — 취소 후 갱
 | recipient_detail_address | string\|null | `101호` | 배송지 상세 주소 |
 | delivery_memo | string\|null | `부재 시 경비실에 맡겨주세요` | 배송 메모 |
 | delivery_memo_label | string\|null | `부재 시 경비실` | 배송 메모 프리셋 라벨 |
+| extra_fields[] | array | `[]` | 주문서 추가 항목의 값. 값이 있는 것만 `{ key, label, section, display_value }` 로 싣는다(`section` 은 `orderer` 또는 `shipping`) |
 | options | array | — | 주문 옵션(품목) 목록 (`OrderOptionResource`, 관계 로드 시에만 포함) |
 | shipping_address | object\|null | — | 배송지 상세 (`OrderAddressResource`) |
 | payment | object\|null | — | 결제 정보 (`OrderPaymentResource`, 관계 로드 시에만 포함) |
@@ -265,6 +266,7 @@ _단건 응답: `data` 객체의 필드 (`GuestOrderResource` — 취소 후 갱
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-orders.cancel`)이 없는 경우 |
 | 404 | Not Found | `X-Guest-Order-Token` 누락·만료·주문번호 불일치 (토큰이 지목한 주문 외에는 접근 불가) |
 | 422 | Unprocessable Entity | 요청 파라미터 검증 위반 (`error.errors` 에 필드별 메시지), 또는 취소 도메인 규칙 위반 (`주문 취소 처리에 실패했습니다.`) |
 | 500 | Internal Server Error | 서버 내부 오류 (`작업 처리 중 오류가 발생했습니다.`) |
@@ -441,7 +443,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -566,8 +568,9 @@ _단건 응답: `data` 객체의 필드 (`AdjustmentResult::toPreviewArray()` �
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-orders.cancel`)이 없는 경우 |
 | 404 | Not Found | `X-Guest-Order-Token` 누락·만료·주문번호 불일치 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 환불 예상금액 계산 실패 (`환불 예상금액 계산에 실패했습니다.`) |
 
 <!-- @generated:end -->
@@ -590,7 +593,7 @@ _단건 응답: `data` 객체의 필드 (`AdjustmentResult::toPreviewArray()` �
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
 | orderNumber | path | string | 예 | — | 대상 order number의 식별자 |
-| optionId | path | string | 예 | — | 대상 option의 식별자 |
+| optionId | path | integer | 예 | — | 대상 option의 식별자 |
 
 **요청 예시**
 
@@ -645,6 +648,7 @@ _단건 응답: `data` 객체의 필드 (`GuestOrderResource` — 구매확정 �
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
+| 403 | Forbidden | 요구 권한(`sirsoft-ecommerce.user-orders.confirm`)이 없는 경우 |
 | 404 | Not Found | `X-Guest-Order-Token` 누락·만료·주문번호 불일치, 또는 `optionId` 가 해당 주문에 속하지 않는 경우 |
 | 500 | Internal Server Error | 구매확정 처리 실패 (`작업 처리 중 오류가 발생했습니다.`) |
 
@@ -668,8 +672,8 @@ _단건 응답: `data` 객체의 필드 (`GuestOrderResource` — 구매확정 �
 | recipient_phone | body | string | 예 | max 20 | 수령인 연락처 |
 | recipient_tel | body | string | 아니오 | max 20 | 수령인 일반전화 (선택 연락처) |
 | country_code | body | string | 아니오 | — | 국가 코드 (ISO 3166-1 alpha-2) |
-| zipcode | body | string | 아니오 | max 10 | 우편번호 |
-| address | body | string | 아니오 | max 255 | 기본 주소 |
+| zipcode | body | string | 예 | max 10 | 우편번호 |
+| address | body | string | 예 | max 255 | 기본 주소 |
 | address_detail | body | string | 아니오 | max 255 | 상세 주소 |
 | address_line_1 | body | string | 아니오 | max 255 | 주소 1행 (기본 주소) |
 | address_line_2 | body | string | 아니오 | max 255 | 주소 2행 (상세 주소) |

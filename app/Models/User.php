@@ -9,8 +9,9 @@ use App\Enums\PasswordExpiryPolicy;
 use App\Enums\PermissionType;
 use App\Enums\ScopeType;
 use App\Enums\UserStatus;
+use App\Extension\Storage\CoreStorageDriver;
 use App\Helpers\TimezoneHelper;
-use App\Support\SiteUrl;
+use App\Support\NicknameNormalizer;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Builder;
@@ -32,6 +33,16 @@ class User extends Authenticatable implements HasLocalePreference
      * 닉네임 컬럼 최대 길이 (마이그레이션에서 명시한 값)
      */
     public const NICKNAME_MAX_LENGTH = 50;
+
+    /**
+     * 표시 이름을 계산하는 데 필요한 컬럼 (7.2.0).
+     *
+     * 회원 관계를 컬럼 제한으로 읽을 때(`with('user:id,name')` 꼴)는 이 목록을 쓴다. 이름만 읽으면 닉네임 사이트에서
+     * 표시 이름을 계산할 수 없고, 상태가 없으면 탈퇴 회원을 가려내지 못한다. {@see self::displayColumns()}
+     *
+     * @var array<int, string>
+     */
+    public const DISPLAY_COLUMNS = ['id', 'uuid', 'name', 'nickname', 'email', 'status', 'display_name_kind'];
 
     /** @var array<string, array> 활동 로그 추적 필드 */
     public static array $activityLogFields = [
@@ -145,6 +156,12 @@ class User extends Authenticatable implements HasLocalePreference
         'password_expired_processed_at',
         'password_change_postponed_until',
         'search_history_auto_save',
+        // 회원 항목·표시 이름·닉네임 정책(7.2.0) — 요청 검증이 받지 않는 칸이라 서비스 계층만 채운다
+        'display_name_kind',
+        'nickname_normalized',
+        'nickname_unique_key',
+        'nickname_changed_at',
+        'required_fields_deferred_at',
     ];
 
     /**
@@ -180,6 +197,8 @@ class User extends Authenticatable implements HasLocalePreference
             'locked_until' => 'datetime',
             'locked_permanently' => 'boolean',
             'last_failed_login_at' => 'datetime',
+            'nickname_changed_at' => 'datetime',
+            'required_fields_deferred_at' => 'datetime',
             'password_changed_at' => 'datetime',
             'password_change_required' => 'boolean',
             'password_expiry_policy' => PasswordExpiryPolicy::class,
@@ -517,6 +536,26 @@ class User extends Authenticatable implements HasLocalePreference
     }
 
     /**
+     * 비밀번호가 설정된 회원인지 확인합니다.
+     *
+     * 소셜 로그인처럼 외부 인증으로만 가입한 회원은 비밀번호가 NULL 이다. 접근자·`hashed` 캐스트를 거치지 않도록
+     * 저장 속성을 직접 읽는다. 열 일부만 조회해 비밀번호 속성이 아예 없으면 알 수 없으므로 「있음」으로 본다 —
+     * 비밀번호 없는 회원 분기는 모르는 상태에서 열리면 안 된다.
+     *
+     * @return bool 비밀번호가 있으면 true
+     */
+    public function hasPassword(): bool
+    {
+        $attributes = $this->getAttributes();
+
+        if (! array_key_exists('password', $attributes)) {
+            return true;
+        }
+
+        return $attributes['password'] !== null && $attributes['password'] !== '';
+    }
+
+    /**
      * 슈퍼 관리자인지 확인합니다.
      *
      * 슈퍼 관리자는 삭제할 수 없으며, 다른 관리자의 권한을 관리할 수 있습니다.
@@ -641,8 +680,19 @@ class User extends Authenticatable implements HasLocalePreference
 
         // 레거시 방식: avatar 필드 (하위 호환)
         if (! empty($this->avatar)) {
-            // 보안: 요청 Host 가 아니라 사이트 주소 기준
-            return SiteUrl::absolute('/storage/attachments/avatars/'.$this->avatar);
+            // `public/storage` 링크가 없는 호스팅(B-3)에서는 정적 `/storage/...` 가 404 이므로
+            // 읽기 전용 서빙 라우트 URL 로 전환한다 — public 디스크 URL 생성과 같은 판정(SSoT).
+            //
+            // 두 분기를 손으로 조립하지 않고 **스토리지 드라이버에게 묻는다.** 손조립은
+            // `disks.public.url` 설정(운영자가 public 디스크를 CDN 으로 돌리는 경우)과
+            // `core.storage.filter_url` 훅(확장이 서명 URL·도메인으로 갈아끼우는 자리)을
+            // 둘 다 우회해, 그 사이트에서 **레거시 아바타만** 다른 곳을 가리킨다.
+            // 링크 가용 판정과 대체 서빙 URL 형태도 그 드라이버(`ResolvesPublicUrl`)가 이미
+            // 같은 SSoT 로 처리하므로, 여기서 분기를 복제할 이유가 없다.
+            //
+            // 보안: 요청 Host 가 아니라 설정 주소 기준이다 — 직접 URL 은 public 디스크 주소
+            // (`{APP_URL}/storage` 파생 또는 운영자 지정), 대체 서빙 라우트는 `APP_URL` 오리진을 싣는다.
+            return (new CoreStorageDriver('public'))->url('attachments/avatars', $this->avatar);
         }
 
         return null;
@@ -675,6 +725,20 @@ class User extends Authenticatable implements HasLocalePreference
     {
         $query->whereNotNull('withdrawn_at')
             ->where('status', UserStatus::Withdrawn);
+    }
+
+    /**
+     * 표시 이름 계산에 필요한 컬럼을 eager load 제약 문자열로 반환합니다 (7.2.0).
+     *
+     * 예: `->with('user:'.User::displayColumns())`, `->with(['creator:'.User::displayColumns('avatar')])`.
+     * 관계 이름 뒤에 `:id,name` 을 직접 적지 않는다.
+     *
+     * @param  string  ...$extra  함께 읽을 컬럼
+     * @return string 쉼표로 이은 컬럼 목록
+     */
+    public static function displayColumns(string ...$extra): string
+    {
+        return implode(',', array_values(array_unique([...self::DISPLAY_COLUMNS, ...$extra])));
     }
 
     /**
@@ -730,11 +794,14 @@ class User extends Authenticatable implements HasLocalePreference
         // 닉네임에 suffix 추가 (있는 경우만, 날짜 없이)
         if ($this->nickname) {
             // nickname 은 마이그레이션에서 길이를 명시(50)한 컬럼이다.
-            // 이 접미사는 유일성 토큰(id)이 없다 — 현재 nickname/name 에 unique 인덱스가
-            // 없어 무해하지만, 향후 unique 인덱스를 추가하면 email 과 동일한 충돌
-            // (같은 값 재가입 후 재탈퇴 실패)이 재발하므로 그때 id 부착으로 전환할 것.
-            $this->nickname = $this->appendWithdrawnSuffix($this->nickname, '_탈퇴', self::NICKNAME_MAX_LENGTH);
+            // 접미사에 회원 ID 를 넣어 구조적으로 유일하게 만든다(7.2.0) — 닉네임 중복 금지가 켜진 사이트에서 같은 닉네임으로
+            // 재가입한 회원이 다시 탈퇴해도 서로 겹치지 않는다. 탈퇴 회원의 표시 이름은 「탈퇴한 회원」 문구라 접미사는 화면에 나가지 않는다.
+            $this->nickname = $this->appendWithdrawnSuffix($this->nickname, '_탈퇴_'.$this->id, self::NICKNAME_MAX_LENGTH);
         }
+
+        // 탈퇴한 회원의 닉네임은 중복 검사에서 빠진다 — 같은 닉네임을 다른 회원이 다시 쓸 수 있다.
+        $this->nickname_normalized = NicknameNormalizer::normalize($this->nickname);
+        $this->nickname_unique_key = null;
 
         // 상태 변경
         $this->status = UserStatus::Withdrawn->value;

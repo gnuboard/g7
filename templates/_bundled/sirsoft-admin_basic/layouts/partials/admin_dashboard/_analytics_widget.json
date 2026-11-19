@@ -12,8 +12,15 @@
         "enabled": true,
         "data_sources": "dashboard_analytics"
     },
+    "responsive": {
+        "768-": {
+            "props": {
+                "className": "bg-slate-100 dark:bg-slate-800 rounded-2xl p-6 mb-6"
+            }
+        }
+    },
     "props": {
-        "className": "bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6 mb-6"
+        "className": "bg-slate-100 dark:bg-slate-800 rounded-xl p-4 mb-6"
     },
     "children": [
         {
@@ -122,8 +129,15 @@
             "type": "basic",
             "name": "Div",
             "if": "{{!!dashboard_analytics?.data?.kpi}}",
+            "responsive": {
+                "desktop": {
+                    "props": {
+                        "className": "grid grid-cols-3 gap-4 items-center"
+                    }
+                }
+            },
             "props": {
-                "className": "grid grid-cols-1 lg:grid-cols-3 gap-4 items-center"
+                "className": "grid grid-cols-1 gap-4 items-center"
             },
             "children": [
                 {

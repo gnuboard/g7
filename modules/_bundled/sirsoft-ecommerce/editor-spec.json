@@ -456,7 +456,8 @@
         "data": {
           "abilities": {
             "can_create": true,
-            "can_update": true
+            "can_update": true,
+            "can_export": true
           },
           "data": [
             {
@@ -1265,7 +1266,8 @@
             "has_more_pages": false
           },
           "abilities": {
-            "can_update": true
+            "can_update": true,
+            "can_export": true
           }
         }
       },
@@ -1441,10 +1443,6 @@
               "subtotal_deposit_used_amount_formatted": "0원",
               "subtotal_earned_points_amount": 530,
               "subtotal_earned_points_amount_formatted": "530원",
-              "subtotal_tax_amount": 4818,
-              "subtotal_tax_amount_formatted": "4,818원",
-              "subtotal_vat_amount": 4818,
-              "subtotal_vat_amount_formatted": "4,818원",
               "shipping_policy_name": "기본 배송 정책",
               "shipping_type_label": "택배",
               "shipping_amount": 3000,
@@ -1544,10 +1542,6 @@
               "subtotal_deposit_used_amount_formatted": "0원",
               "subtotal_earned_points_amount": 180,
               "subtotal_earned_points_amount_formatted": "180원",
-              "subtotal_tax_amount": 1500,
-              "subtotal_tax_amount_formatted": "1,500원",
-              "subtotal_vat_amount": 1500,
-              "subtotal_vat_amount_formatted": "1,500원",
               "shipping_policy_name": "무료 배송 정책",
               "shipping_type_label": "택배",
               "shipping_amount": 0,
@@ -2349,13 +2343,34 @@
         }
       },
       "coupon_abilities": {
-        "data": { "data": [], "abilities": { "can_create": true, "can_update": true, "can_delete": true } }
+        "data": {
+          "data": [],
+          "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
+          }
+        }
       },
       "policy_abilities": {
-        "data": { "data": [], "abilities": { "can_create": true, "can_update": true, "can_delete": true } }
+        "data": {
+          "data": [],
+          "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
+          }
+        }
       },
       "product_abilities": {
-        "data": { "data": [], "abilities": { "can_create": true, "can_update": true, "can_delete": true } }
+        "data": {
+          "data": [],
+          "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true
+          }
+        }
       },
       "extra_fee_templates": {
         "data": {
@@ -4199,26 +4214,69 @@
       "claimRequestContext": {
         "data": {
           "order_id": 1,
-          "abilities": { "can_update_status": true, "can_execute_refund": true },
+          "abilities": {
+            "can_update_status": true,
+            "can_execute_refund": true
+          },
           "gates": {
-            "exchange": ["shipping", "delivered", "confirmed"],
-            "return": ["shipping", "delivered", "confirmed"],
-            "refund": ["pending_order", "pending_payment", "payment_complete", "shipping_hold", "preparing", "shipping_ready"]
+            "exchange": [
+              "shipping",
+              "delivered",
+              "confirmed"
+            ],
+            "return": [
+              "shipping",
+              "delivered",
+              "confirmed"
+            ],
+            "refund": [
+              "pending_order",
+              "pending_payment",
+              "payment_complete",
+              "shipping_hold",
+              "preparing",
+              "shipping_ready"
+            ]
           },
           "reasons": {
             "exchange": [
-              { "value": "size_mismatch", "label": "사이즈가 맞지 않음", "fault_type": "customer" },
-              { "value": "defective_product", "label": "상품 불량", "fault_type": "seller" }
+              {
+                "value": "size_mismatch",
+                "label": "사이즈가 맞지 않음",
+                "fault_type": "customer"
+              },
+              {
+                "value": "defective_product",
+                "label": "상품 불량",
+                "fault_type": "seller"
+              }
             ],
             "return": [
-              { "value": "changed_mind", "label": "단순 변심", "fault_type": "customer" },
-              { "value": "defective_product", "label": "상품 불량", "fault_type": "seller" }
+              {
+                "value": "changed_mind",
+                "label": "단순 변심",
+                "fault_type": "customer"
+              },
+              {
+                "value": "defective_product",
+                "label": "상품 불량",
+                "fault_type": "seller"
+              }
             ]
           },
           "charge_methods": [
-            { "value": "deduct_from_refund", "label": "환불금에서 차감" },
-            { "value": "pay_on_approval", "label": "고객 결제 요청" },
-            { "value": "free", "label": "무료" }
+            {
+              "value": "deduct_from_refund",
+              "label": "환불금에서 차감"
+            },
+            {
+              "value": "pay_on_approval",
+              "label": "고객 결제 요청"
+            },
+            {
+              "value": "free",
+              "label": "무료"
+            }
           ]
         }
       },
@@ -4283,6 +4341,77 @@
             ]
           }
         ]
+      },
+      "ecommerceSchedules": {
+        "data": {
+          "data": [
+            {
+              "id": 101,
+              "name": "order-auto-confirm",
+              "label_localized": "주문 자동 구매확정",
+              "description_localized": null,
+              "type": "artisan",
+              "frequency": "daily",
+              "frequency_label": "매일",
+              "expression": "0 3 * * *",
+              "is_active": true,
+              "next_run_at": "2026-10-17T03:00:00+09:00",
+              "last_result": "success",
+              "unmet_conditions": [],
+              "owner": {
+                "type": "module",
+                "identifier": "sirsoft-ecommerce",
+                "name": "이커머스"
+              },
+              "is_owned": true,
+              "abilities": {
+                "can_create": true,
+                "can_update": true,
+                "can_delete": false,
+                "can_run": true
+              }
+            },
+            {
+              "id": 102,
+              "name": "stats-aggregate",
+              "label_localized": "쇼핑몰 통계 집계",
+              "description_localized": null,
+              "type": "artisan",
+              "frequency": "hourly",
+              "frequency_label": "매시간",
+              "expression": "0 * * * *",
+              "is_active": false,
+              "next_run_at": null,
+              "last_result": "never",
+              "unmet_conditions": [],
+              "owner": {
+                "type": "module",
+                "identifier": "sirsoft-ecommerce",
+                "name": "이커머스"
+              },
+              "is_owned": true,
+              "abilities": {
+                "can_create": true,
+                "can_update": true,
+                "can_delete": false,
+                "can_run": true
+              }
+            }
+          ],
+          "abilities": {
+            "can_create": true,
+            "can_update": true,
+            "can_delete": true,
+            "can_run": true
+          },
+          "pagination": {
+            "total": 2,
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 100,
+            "has_more_pages": false
+          }
+        }
       },
       "ecommerceIdentityPolicies": {
         "data": {
@@ -4433,7 +4562,9 @@
       },
       "cartItems": {
         "data": {
-          "abilities": { "can_order": true },
+          "abilities": {
+            "can_order": true
+          },
           "calculation": {
             "items": [
               "샘플"
@@ -4962,7 +5093,8 @@
             }
           ],
           "abilities": {
-            "can_manage": true
+            "can_manage": true,
+            "can_export": true
           },
           "currencies": [
             "KRW"
@@ -5494,6 +5626,764 @@
               "exchange_fee": 6000
             }
           ]
+        }
+      },
+      "exports": {
+        "data": {
+          "data": [
+            {
+              "id": 1,
+              "uuid": "00000000-0000-4000-8000-000000000001",
+              "type": "orders",
+              "type_label": "주문내역",
+              "format": "csv",
+              "status": "completed",
+              "status_label": "완료",
+              "requester": {
+                "name": "운영자",
+                "email": "admin@example.com",
+                "uuid": "00000000-0000-4000-8000-0000000000a1"
+              },
+              "file_name": "orders_20261014_093000.csv",
+              "file_size": 524288,
+              "file_size_label": "512 KB",
+              "total_rows": 1200,
+              "processed_rows": 1200,
+              "progress_percent": 100,
+              "download_count": 2,
+              "contains_personal_data": true,
+              "reason": "월말 정산 자료",
+              "warnings": [],
+              "error_code": null,
+              "error_message": null,
+              "summary": {
+                "scope": "현재 검색 조건",
+                "period": "2026-09-01 ~ 2026-09-30",
+                "row_unit": "주문 1건당 1행",
+                "locale_mode": "한 언어로",
+                "include_totals": true,
+                "field_count": 18,
+                "selected_count": 0
+              },
+              "requested_at": "2026-10-14 09:30:00",
+              "cutoff_at": "2026-10-14 09:30:00",
+              "started_at": "2026-10-14 09:30:05",
+              "completed_at": "2026-10-14 09:31:10",
+              "expires_at": "2026-10-21 09:31:10",
+              "is_owner": true,
+              "abilities": {
+                "can_view_downloads": true,
+                "can_download": true,
+                "can_delete": true,
+                "can_retry": false
+              }
+            },
+            {
+              "id": 2,
+              "uuid": "00000000-0000-4000-8000-000000000002",
+              "type": "products",
+              "type_label": "상품내역",
+              "format": "csv",
+              "status": "processing",
+              "status_label": "진행중",
+              "requester": {
+                "name": "운영자",
+                "email": "admin@example.com",
+                "uuid": "00000000-0000-4000-8000-0000000000a1"
+              },
+              "file_name": null,
+              "file_size": null,
+              "file_size_label": null,
+              "total_rows": 1200,
+              "processed_rows": 480,
+              "progress_percent": 40,
+              "download_count": 0,
+              "contains_personal_data": false,
+              "reason": null,
+              "warnings": [],
+              "error_code": null,
+              "error_message": null,
+              "summary": {
+                "scope": "현재 검색 조건",
+                "period": "2026-09-01 ~ 2026-09-30",
+                "row_unit": "주문 1건당 1행",
+                "locale_mode": "한 언어로",
+                "include_totals": true,
+                "field_count": 18,
+                "selected_count": 0
+              },
+              "requested_at": "2026-10-14 09:30:00",
+              "cutoff_at": "2026-10-14 09:30:00",
+              "started_at": "2026-10-14 09:30:05",
+              "completed_at": null,
+              "expires_at": null,
+              "is_owner": true,
+              "abilities": {
+                "can_view_downloads": true,
+                "can_download": false,
+                "can_delete": false,
+                "can_retry": false
+              }
+            },
+            {
+              "id": 3,
+              "uuid": "00000000-0000-4000-8000-000000000003",
+              "type": "orders",
+              "type_label": "주문내역",
+              "format": "csv",
+              "status": "failed",
+              "status_label": "실패",
+              "requester": {
+                "name": "운영자",
+                "email": "admin@example.com",
+                "uuid": "00000000-0000-4000-8000-0000000000a1"
+              },
+              "file_name": null,
+              "file_size": null,
+              "file_size_label": null,
+              "total_rows": 1200,
+              "processed_rows": 480,
+              "progress_percent": 0,
+              "download_count": 0,
+              "contains_personal_data": false,
+              "reason": null,
+              "warnings": [],
+              "error_code": "timeout",
+              "error_message": "처리 시간이 한도를 넘어 중단했습니다.",
+              "summary": {
+                "scope": "현재 검색 조건",
+                "period": "2026-09-01 ~ 2026-09-30",
+                "row_unit": "주문 1건당 1행",
+                "locale_mode": "한 언어로",
+                "include_totals": true,
+                "field_count": 18,
+                "selected_count": 0
+              },
+              "requested_at": "2026-10-14 09:30:00",
+              "cutoff_at": "2026-10-14 09:30:00",
+              "started_at": "2026-10-14 09:30:05",
+              "completed_at": null,
+              "expires_at": null,
+              "is_owner": true,
+              "abilities": {
+                "can_view_downloads": true,
+                "can_download": false,
+                "can_delete": true,
+                "can_retry": true
+              }
+            }
+          ],
+          "abilities": {
+            "can_delete": true,
+            "can_create": true
+          },
+          "has_active": true,
+          "warnings": [
+            {
+              "code": "queue_sync",
+              "message": "큐 연결이 sync 라 내보내기가 요청 안에서 바로 처리됩니다."
+            }
+          ],
+          "pagination": {
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 20,
+            "total": 3,
+            "has_more_pages": false
+          }
+        }
+      },
+      "ecommerceExportCatalog": {
+        "data": {
+          "type": "orders",
+          "label": "주문내역",
+          "formats": [
+            {
+              "key": "csv",
+              "label": "CSV (엑셀 호환)",
+              "extension": "csv"
+            }
+          ],
+          "row_units": [
+            {
+              "key": "order",
+              "label": "주문 1건당 1행"
+            },
+            {
+              "key": "order_option",
+              "label": "주문상품 1건당 1행"
+            }
+          ],
+          "default_row_unit": "order",
+          "screen_columns": [
+            {
+              "key": "ordered_at",
+              "label": "주문일시"
+            },
+            {
+              "key": "order_number",
+              "label": "주문번호"
+            },
+            {
+              "key": "orderer",
+              "label": "주문자"
+            }
+          ],
+          "screen_column_fields": {
+            "order": {
+              "ordered_at": [
+                "order.ordered_at"
+              ],
+              "order_number": [
+                "order.order_number"
+              ],
+              "orderer": [
+                "order_address.orderer_name",
+                "order.member_type"
+              ]
+            }
+          },
+          "fields": {
+            "order": [
+              {
+                "key": "order.ordered_at",
+                "label": "주문일시",
+                "group": "ordered_at",
+                "type": "datetime",
+                "personal": false,
+                "summable": false,
+                "parent_level": false
+              },
+              {
+                "key": "order.order_number",
+                "label": "주문번호",
+                "group": "order_number",
+                "type": "string",
+                "personal": false,
+                "summable": false,
+                "parent_level": false
+              },
+              {
+                "key": "order_address.orderer_name",
+                "label": "주문자명",
+                "group": "orderer",
+                "type": "string",
+                "personal": true,
+                "summable": false,
+                "parent_level": false
+              },
+              {
+                "key": "order.member_type",
+                "label": "회원 구분",
+                "group": "orderer",
+                "type": "string",
+                "personal": false,
+                "summable": false,
+                "parent_level": false
+              }
+            ]
+          },
+          "date_types": [
+            {
+              "key": "ordered_at",
+              "label": "주문일"
+            }
+          ],
+          "period_required": true,
+          "max_period_days": 366,
+          "max_selected_ids": 1000,
+          "locales": [
+            {
+              "code": "ko",
+              "label": "한국어"
+            },
+            {
+              "code": "en",
+              "label": "English"
+            }
+          ],
+          "default_locale": "ko",
+          "can_personal_data": true,
+          "warnings": [
+            "queue_sync"
+          ]
+        }
+      },
+      "exportDownloads": {
+        "data": {
+          "data": [
+            {
+              "id": 2,
+              "sequence": 2,
+              "user": {
+                "name": "운영자",
+                "uuid": "00000000-0000-4000-8000-0000000000a1"
+              },
+              "ip_address": "203.0.113.10",
+              "downloaded_at": "2026-10-14 10:02:11"
+            },
+            {
+              "id": 1,
+              "sequence": 1,
+              "user": {
+                "name": "운영자",
+                "uuid": "00000000-0000-4000-8000-0000000000a1"
+              },
+              "ip_address": "203.0.113.10",
+              "downloaded_at": "2026-10-14 09:40:03"
+            }
+          ],
+          "pagination": {
+            "current_page": 1,
+            "last_page": 1,
+            "per_page": 10,
+            "total": 2,
+            "has_more_pages": false
+          }
+        }
+      },
+      "ecommerceExportEstimateSource": {
+        "data": {
+          "count": 128
+        }
+      },
+      "checkoutFieldDefs": {
+        "data": {
+          "set": {
+            "key": "sirsoft-ecommerce.order_contact",
+            "label": "주문서 항목",
+            "owner_type": "module",
+            "owner": "sirsoft-ecommerce",
+            "allows_custom": true,
+            "surfaces": [
+              "checkout"
+            ]
+          },
+          "fields": [
+            {
+              "field_set": "sirsoft-ecommerce.order_contact",
+              "source_type": "module",
+              "source_identifier": "sirsoft-ecommerce",
+              "source_label": "이커머스",
+              "is_custom": false,
+              "type_owner": "core",
+              "type_owner_type": "core",
+              "available": true,
+              "storage": "column",
+              "description": [],
+              "placeholder": [],
+              "options": [],
+              "constraints": {
+                "max_length": 50
+              },
+              "enabled": true,
+              "required": true,
+              "show_on_signup": true,
+              "edit_scope": "self",
+              "require_existing_members": false,
+              "public_profile": false,
+              "admin_list_column": false,
+              "admin_searchable": false,
+              "display_name_usable": false,
+              "idv_claim": null,
+              "idv_lock": false,
+              "locks": {
+                "enabled": "주문과 배송에 꼭 필요한 항목이라 사용과 필수를 바꿀 수 없습니다.",
+                "required": "주문과 배송에 꼭 필요한 항목이라 사용과 필수를 바꿀 수 없습니다."
+              },
+              "lock_reasons": {
+                "enabled": "declared",
+                "required": "declared"
+              },
+              "user_overrides": [],
+              "id": 46,
+              "key": "orderer_name",
+              "attribute": "orderer_name",
+              "type": "text",
+              "type_label": "한 줄 글",
+              "name": {
+                "ko": "주문자 이름",
+                "en": "Orderer Name",
+                "ja": "注文者名"
+              },
+              "label": "주문자 이름",
+              "ui": {
+                "group": "orderer"
+              },
+              "sort_order": 10,
+              "supports": {
+                "signup": true,
+                "unique": false,
+                "search": true,
+                "list_column": true,
+                "display_name": true,
+                "options": false
+              }
+            },
+            {
+              "field_set": "sirsoft-ecommerce.order_contact",
+              "source_type": "module",
+              "source_identifier": "sirsoft-ecommerce",
+              "source_label": "이커머스",
+              "is_custom": false,
+              "type_owner": "core",
+              "type_owner_type": "core",
+              "available": true,
+              "storage": "column",
+              "description": [],
+              "placeholder": [],
+              "options": [],
+              "constraints": {},
+              "enabled": true,
+              "required": true,
+              "show_on_signup": true,
+              "edit_scope": "self",
+              "require_existing_members": false,
+              "public_profile": false,
+              "admin_list_column": false,
+              "admin_searchable": false,
+              "display_name_usable": false,
+              "idv_claim": null,
+              "idv_lock": false,
+              "locks": {
+                "enabled": "주문과 배송에 꼭 필요한 항목이라 사용과 필수를 바꿀 수 없습니다.",
+                "required": "주문과 배송에 꼭 필요한 항목이라 사용과 필수를 바꿀 수 없습니다."
+              },
+              "lock_reasons": {
+                "enabled": "declared",
+                "required": "declared"
+              },
+              "user_overrides": [],
+              "id": 47,
+              "key": "orderer_phone",
+              "attribute": "orderer_phone",
+              "type": "phone",
+              "type_label": "전화번호",
+              "name": {
+                "ko": "주문자 연락처",
+                "en": "Orderer Phone",
+                "ja": "注文者連絡先"
+              },
+              "label": "주문자 연락처",
+              "ui": {
+                "group": "orderer"
+              },
+              "sort_order": 20,
+              "supports": {
+                "signup": true,
+                "unique": false,
+                "search": true,
+                "list_column": true,
+                "display_name": false,
+                "options": false
+              }
+            },
+            {
+              "field_set": "sirsoft-ecommerce.order_contact",
+              "source_type": "module",
+              "source_identifier": "sirsoft-ecommerce",
+              "source_label": "이커머스",
+              "is_custom": false,
+              "type_owner": "core",
+              "type_owner_type": "core",
+              "available": true,
+              "storage": "column",
+              "description": {
+                "ko": "비회원 주문은 늘 필수입니다.",
+                "en": "Always required for guest orders.",
+                "ja": "非会員の注文では常に必須です。"
+              },
+              "placeholder": [],
+              "options": [],
+              "constraints": {},
+              "enabled": true,
+              "required": false,
+              "show_on_signup": true,
+              "edit_scope": "self",
+              "require_existing_members": false,
+              "public_profile": false,
+              "admin_list_column": false,
+              "admin_searchable": false,
+              "display_name_usable": false,
+              "idv_claim": null,
+              "idv_lock": false,
+              "locks": {},
+              "lock_reasons": {},
+              "user_overrides": [],
+              "id": 48,
+              "key": "orderer_email",
+              "attribute": "orderer_email",
+              "type": "email",
+              "type_label": "이메일",
+              "name": {
+                "ko": "주문자 이메일",
+                "en": "Orderer Email",
+                "ja": "注文者メール"
+              },
+              "label": "주문자 이메일",
+              "ui": {
+                "group": "orderer"
+              },
+              "sort_order": 30,
+              "supports": {
+                "signup": true,
+                "unique": false,
+                "search": true,
+                "list_column": true,
+                "display_name": false,
+                "options": false
+              }
+            },
+            {
+              "field_set": "sirsoft-ecommerce.order_contact",
+              "source_type": "module",
+              "source_identifier": "sirsoft-ecommerce",
+              "source_label": "이커머스",
+              "is_custom": false,
+              "type_owner": "core",
+              "type_owner_type": "core",
+              "available": true,
+              "storage": "column",
+              "description": [],
+              "placeholder": [],
+              "options": [],
+              "constraints": {
+                "max_length": 50
+              },
+              "enabled": true,
+              "required": true,
+              "show_on_signup": true,
+              "edit_scope": "self",
+              "require_existing_members": false,
+              "public_profile": false,
+              "admin_list_column": false,
+              "admin_searchable": false,
+              "display_name_usable": false,
+              "idv_claim": null,
+              "idv_lock": false,
+              "locks": {
+                "enabled": "주문과 배송에 꼭 필요한 항목이라 사용과 필수를 바꿀 수 없습니다.",
+                "required": "주문과 배송에 꼭 필요한 항목이라 사용과 필수를 바꿀 수 없습니다."
+              },
+              "lock_reasons": {
+                "enabled": "declared",
+                "required": "declared"
+              },
+              "user_overrides": [],
+              "id": 49,
+              "key": "recipient_name",
+              "attribute": "recipient_name",
+              "type": "text",
+              "type_label": "한 줄 글",
+              "name": {
+                "ko": "수령인 이름",
+                "en": "Recipient Name",
+                "ja": "受取人名"
+              },
+              "label": "수령인 이름",
+              "ui": {
+                "group": "shipping"
+              },
+              "sort_order": 40,
+              "supports": {
+                "signup": true,
+                "unique": false,
+                "search": true,
+                "list_column": true,
+                "display_name": true,
+                "options": false
+              }
+            },
+            {
+              "field_set": "sirsoft-ecommerce.order_contact",
+              "source_type": "module",
+              "source_identifier": "sirsoft-ecommerce",
+              "source_label": "이커머스",
+              "is_custom": false,
+              "type_owner": "core",
+              "type_owner_type": "core",
+              "available": true,
+              "storage": "column",
+              "description": [],
+              "placeholder": [],
+              "options": [],
+              "constraints": {},
+              "enabled": true,
+              "required": true,
+              "show_on_signup": true,
+              "edit_scope": "self",
+              "require_existing_members": false,
+              "public_profile": false,
+              "admin_list_column": false,
+              "admin_searchable": false,
+              "display_name_usable": false,
+              "idv_claim": null,
+              "idv_lock": false,
+              "locks": {
+                "enabled": "주문과 배송에 꼭 필요한 항목이라 사용과 필수를 바꿀 수 없습니다.",
+                "required": "주문과 배송에 꼭 필요한 항목이라 사용과 필수를 바꿀 수 없습니다."
+              },
+              "lock_reasons": {
+                "enabled": "declared",
+                "required": "declared"
+              },
+              "user_overrides": [],
+              "id": 51,
+              "key": "address",
+              "attribute": "address",
+              "type": "address",
+              "type_label": "주소",
+              "name": {
+                "ko": "배송 주소",
+                "en": "Shipping Address",
+                "ja": "配送先住所"
+              },
+              "label": "배송 주소",
+              "ui": {
+                "group": "shipping"
+              },
+              "sort_order": 60,
+              "supports": {
+                "signup": true,
+                "unique": false,
+                "search": true,
+                "list_column": false,
+                "display_name": false,
+                "options": false
+              }
+            },
+            {
+              "field_set": "sirsoft-ecommerce.order_contact",
+              "source_type": "module",
+              "source_identifier": "sirsoft-ecommerce",
+              "source_label": "이커머스",
+              "is_custom": false,
+              "type_owner": "core",
+              "type_owner_type": "core",
+              "available": true,
+              "storage": "column",
+              "description": [],
+              "placeholder": [],
+              "options": [],
+              "constraints": {
+                "max_length": 500
+              },
+              "enabled": true,
+              "required": false,
+              "show_on_signup": true,
+              "edit_scope": "self",
+              "require_existing_members": false,
+              "public_profile": false,
+              "admin_list_column": false,
+              "admin_searchable": false,
+              "display_name_usable": false,
+              "idv_claim": null,
+              "idv_lock": false,
+              "locks": {},
+              "lock_reasons": {},
+              "user_overrides": [],
+              "id": 53,
+              "key": "shipping_memo",
+              "attribute": "shipping_memo",
+              "type": "textarea",
+              "type_label": "여러 줄 글",
+              "name": {
+                "ko": "배송 메모",
+                "en": "Delivery Memo",
+                "ja": "配送メモ"
+              },
+              "label": "배송 메모",
+              "ui": {
+                "group": "shipping"
+              },
+              "sort_order": 80,
+              "supports": {
+                "signup": true,
+                "unique": false,
+                "search": true,
+                "list_column": false,
+                "display_name": false,
+                "options": false
+              }
+            }
+          ],
+          "fields_version": "b9dd2042a584",
+          "types": [
+            {
+              "key": "text",
+              "label": "한 줄 글",
+              "category": "text",
+              "renderer": "builtin",
+              "owner_type": "core",
+              "owner": "core",
+              "available": true,
+              "supports": {
+                "signup": true,
+                "unique": true,
+                "search": true,
+                "list_column": true,
+                "display_name": true,
+                "options": false
+              }
+            },
+            {
+              "key": "textarea",
+              "label": "여러 줄 글",
+              "category": "text",
+              "renderer": "builtin",
+              "owner_type": "core",
+              "owner": "core",
+              "available": true,
+              "supports": {
+                "signup": true,
+                "unique": false,
+                "search": true,
+                "list_column": false,
+                "display_name": false,
+                "options": false
+              }
+            },
+            {
+              "key": "choice",
+              "label": "하나 선택",
+              "category": "choice",
+              "renderer": "builtin",
+              "owner_type": "core",
+              "owner": "core",
+              "available": true,
+              "supports": {
+                "signup": true,
+                "unique": false,
+                "search": true,
+                "list_column": true,
+                "display_name": false,
+                "options": true
+              }
+            },
+            {
+              "key": "address",
+              "label": "주소",
+              "category": "address",
+              "renderer": "address",
+              "owner_type": "core",
+              "owner": "core",
+              "available": true,
+              "supports": {
+                "signup": true,
+                "unique": false,
+                "search": true,
+                "list_column": false,
+                "display_name": false,
+                "options": false
+              }
+            }
+          ],
+          "abilities": {
+            "can_update": true
+          },
+          "notices": {
+            "signup_layout_modified": false
+          }
         }
       }
     },
@@ -9444,6 +10334,18 @@
                 "activeEcommerceSettingsTab": "privacy_retention"
               }
             }
+          },
+          {
+            "id": "tab_schedules",
+            "label": "$t:editor.state.tab.schedules",
+            "initialState": {
+              "query": {
+                "tab": "schedules"
+              },
+              "global": {
+                "activeEcommerceSettingsTab": "schedules"
+              }
+            }
           }
         ]
       },
@@ -9806,10 +10708,6 @@
                         "subtotal_deposit_used_amount_formatted": "0원",
                         "subtotal_earned_points_amount": 530,
                         "subtotal_earned_points_amount_formatted": "530원",
-                        "subtotal_tax_amount": 4818,
-                        "subtotal_tax_amount_formatted": "4,818원",
-                        "subtotal_vat_amount": 4818,
-                        "subtotal_vat_amount_formatted": "4,818원",
                         "shipping_policy_name": "기본 배송 정책",
                         "shipping_type_label": "택배",
                         "shipping_amount": 3000,
@@ -9909,10 +10807,6 @@
                         "subtotal_deposit_used_amount_formatted": "0원",
                         "subtotal_earned_points_amount": 180,
                         "subtotal_earned_points_amount_formatted": "180원",
-                        "subtotal_tax_amount": 1500,
-                        "subtotal_tax_amount_formatted": "1,500원",
-                        "subtotal_vat_amount": 1500,
-                        "subtotal_vat_amount_formatted": "1,500원",
                         "shipping_policy_name": "무료 배송 정책",
                         "shipping_type_label": "택배",
                         "shipping_amount": 0,
@@ -10642,7 +11536,9 @@
                 },
                 "bulkSalesStatus": "coming_soon",
                 "bulkDisplayStatus": "visible",
-                "bulkUpdateErrors": ["프리미엄 무선 이어버드 프로: 재고는 0개보다 적게 바꿀 수 없습니다."],
+                "bulkUpdateErrors": [
+                  "프리미엄 무선 이어버드 프로: 재고는 0개보다 적게 바꿀 수 없습니다."
+                ],
                 "manualPaidPreview": {
                   "summary": {
                     "mileage_deduction": {
@@ -11181,7 +12077,8 @@
                   "preview": {
                     "subject": "[샘플 사이트] 새 소식 알림",
                     "body": "<p>홍길동님, 새 소식을 알려 드립니다.</p>"
-                  }
+                  },
+                  "warnings": []
                 }
               }
             }
@@ -11326,7 +12223,11 @@
                 "reviewForModal": {
                   "content": "샘플 설명 문구입니다.",
                   "createdAt": "2026-09-19 11:30:00",
-                  "images": [{"download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"}],
+                  "images": [
+                    {
+                      "download_url": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20120%2090'%3E%3Crect%20width='120'%20height='90'%20fill='%23e5e7eb'/%3E%3Ccircle%20cx='84'%20cy='30'%20r='9'%20fill='%23cbd5e1'/%3E%3Cpath%20d='M18%2072l26-30%2018%2020%2012-12%2028%2022z'%20fill='%23cbd5e1'/%3E%3C/svg%3E"
+                    }
+                  ],
                   "optionValues": [],
                   "rating": 0,
                   "userName": "홍길동"
@@ -11687,11 +12588,17 @@
                   "claimExchangeStatus": "sample",
                   "claimRefundStatus": "sample",
                   "claimReturnStatus": "sample",
-                  "countries": ["샘플 값"],
+                  "countries": [
+                    "샘플 값"
+                  ],
                   "dateQuick": "샘플 값",
                   "dateType": "sample",
-                  "deliveryMethods": ["샘플 값"],
-                  "devices": ["샘플 값"],
+                  "deliveryMethods": [
+                    "샘플 값"
+                  ],
+                  "devices": [
+                    "샘플 값"
+                  ],
                   "displayStatus": "sample",
                   "endDate": "2026-09-19 11:30:00",
                   "maxPrice": 10000,
@@ -11701,7 +12608,9 @@
                   "noBrandRegistered": "샘플 값",
                   "noCategoryRegistered": "샘플 값",
                   "orderStatus": "sample",
-                  "paymentMethods": ["샘플 값"],
+                  "paymentMethods": [
+                    "샘플 값"
+                  ],
                   "priceType": "sample",
                   "salesStatus": "sample",
                   "searchField": "샘플 값",
@@ -12508,7 +13417,9 @@
             "label": "$t:editor.state.screen_filled",
             "initialState": {
               "global": {
-                "bulkSelectedItems": ["샘플 값"]
+                "bulkSelectedItems": [
+                  "샘플 값"
+                ]
               }
             },
             "default": true
@@ -12860,6 +13771,428 @@
                   }
                 },
                 "claimCompletePreviewLoading": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "공용 내보내기 창 — 목록의 [내보내기] 버튼이 담는 전역 값(유형·검색 조건·선택·건수)과 카탈로그·예상 건수로 채운다. 표본이 없으면 제목의 유형 이름과 범위 건수가 빈 채로 열린다.",
+        "scope": {
+          "kind": "modal",
+          "match": "ecommerce_export_request_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "ecommerceExportContext": {
+                  "type": "orders",
+                  "label": "주문내역",
+                  "filters": {
+                    "order_status": [
+                      "payment_complete"
+                    ],
+                    "start_date": "2026-10-01",
+                    "end_date": "2026-10-15"
+                  },
+                  "selected_ids": [
+                    101,
+                    102
+                  ],
+                  "total": 1200,
+                  "screen_columns": null
+                },
+                "ecommerceExportForm": {
+                  "format": "csv",
+                  "column_mode": "current",
+                  "screen_columns": [
+                    "ordered_at",
+                    "order_number",
+                    "orderer"
+                  ],
+                  "fields": [],
+                  "row_unit": "order",
+                  "scope": "filter",
+                  "period": {
+                    "mode": "current",
+                    "date_type": null,
+                    "start_date": "",
+                    "end_date": ""
+                  },
+                  "locale_mode": "locale",
+                  "locale": "ko",
+                  "include_totals": false,
+                  "reason": ""
+                },
+                "ecommerceExportCatalog": {
+                  "type": "orders",
+                  "label": "주문내역",
+                  "formats": [
+                    {
+                      "key": "csv",
+                      "label": "CSV (엑셀 호환)",
+                      "extension": "csv"
+                    }
+                  ],
+                  "row_units": [
+                    {
+                      "key": "order",
+                      "label": "주문 1건당 1행"
+                    },
+                    {
+                      "key": "order_option",
+                      "label": "주문상품 1건당 1행"
+                    }
+                  ],
+                  "default_row_unit": "order",
+                  "screen_columns": [
+                    {
+                      "key": "ordered_at",
+                      "label": "주문일시"
+                    },
+                    {
+                      "key": "order_number",
+                      "label": "주문번호"
+                    },
+                    {
+                      "key": "orderer",
+                      "label": "주문자"
+                    }
+                  ],
+                  "screen_column_fields": {
+                    "order": {
+                      "ordered_at": [
+                        "order.ordered_at"
+                      ],
+                      "order_number": [
+                        "order.order_number"
+                      ],
+                      "orderer": [
+                        "order_address.orderer_name",
+                        "order.member_type"
+                      ]
+                    }
+                  },
+                  "fields": {
+                    "order": [
+                      {
+                        "key": "order.ordered_at",
+                        "label": "주문일시",
+                        "group": "ordered_at",
+                        "type": "datetime",
+                        "personal": false,
+                        "summable": false,
+                        "parent_level": false
+                      },
+                      {
+                        "key": "order.order_number",
+                        "label": "주문번호",
+                        "group": "order_number",
+                        "type": "string",
+                        "personal": false,
+                        "summable": false,
+                        "parent_level": false
+                      },
+                      {
+                        "key": "order_address.orderer_name",
+                        "label": "주문자명",
+                        "group": "orderer",
+                        "type": "string",
+                        "personal": true,
+                        "summable": false,
+                        "parent_level": false
+                      },
+                      {
+                        "key": "order.member_type",
+                        "label": "회원 구분",
+                        "group": "orderer",
+                        "type": "string",
+                        "personal": false,
+                        "summable": false,
+                        "parent_level": false
+                      }
+                    ]
+                  },
+                  "date_types": [
+                    {
+                      "key": "ordered_at",
+                      "label": "주문일"
+                    }
+                  ],
+                  "period_required": true,
+                  "max_period_days": 366,
+                  "max_selected_ids": 1000,
+                  "locales": [
+                    {
+                      "code": "ko",
+                      "label": "한국어"
+                    },
+                    {
+                      "code": "en",
+                      "label": "English"
+                    }
+                  ],
+                  "default_locale": "ko",
+                  "can_personal_data": true,
+                  "warnings": [
+                    "queue_sync"
+                  ]
+                },
+                "ecommerceExportEstimate": 1200,
+                "ecommerceExportIdempotencyKey": "00000000-0000-4000-8000-0000000000e1"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "내보내기 선택 삭제 확인 창 — 표에서 체크한 작업 id 묶음으로 건수를 채운다.",
+        "scope": {
+          "kind": "modal",
+          "match": "export_bulk_delete_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "ecommerceExportBulkSelectedItems": [
+                  1,
+                  2
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "내보내기 삭제 확인 창 — 행 메뉴가 담는 대상 작업으로 파일명을 채운다.",
+        "scope": {
+          "kind": "modal",
+          "match": "export_delete_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "ecommerceExportTarget": {
+                  "id": 1,
+                  "uuid": "00000000-0000-4000-8000-000000000001",
+                  "type": "orders",
+                  "type_label": "주문내역",
+                  "format": "csv",
+                  "status": "completed",
+                  "status_label": "완료",
+                  "requester": {
+                    "name": "운영자",
+                    "email": "admin@example.com",
+                    "uuid": "00000000-0000-4000-8000-0000000000a1"
+                  },
+                  "file_name": "orders_20261014_093000.csv",
+                  "file_size": 524288,
+                  "file_size_label": "512 KB",
+                  "total_rows": 1200,
+                  "processed_rows": 1200,
+                  "progress_percent": 100,
+                  "download_count": 2,
+                  "contains_personal_data": true,
+                  "reason": "월말 정산 자료",
+                  "warnings": [],
+                  "error_code": null,
+                  "error_message": null,
+                  "summary": {
+                    "scope": "현재 검색 조건",
+                    "period": "2026-09-01 ~ 2026-09-30",
+                    "row_unit": "주문 1건당 1행",
+                    "locale_mode": "한 언어로",
+                    "include_totals": true,
+                    "field_count": 18,
+                    "selected_count": 0
+                  },
+                  "requested_at": "2026-10-14 09:30:00",
+                  "cutoff_at": "2026-10-14 09:30:00",
+                  "started_at": "2026-10-14 09:30:05",
+                  "completed_at": "2026-10-14 09:31:10",
+                  "expires_at": "2026-10-21 09:31:10",
+                  "is_owner": true,
+                  "abilities": {
+                    "can_view_downloads": true,
+                    "can_download": true,
+                    "can_delete": true,
+                    "can_retry": false
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "내보내기 다시 요청 창 — 실패 행을 대상으로 유형·요청 시각·실패 사유를 채운다.",
+        "scope": {
+          "kind": "modal",
+          "match": "export_retry_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "ecommerceExportTarget": {
+                  "id": 1,
+                  "uuid": "00000000-0000-4000-8000-000000000001",
+                  "type": "orders",
+                  "type_label": "주문내역",
+                  "format": "csv",
+                  "status": "failed",
+                  "status_label": "실패",
+                  "requester": {
+                    "name": "운영자",
+                    "email": "admin@example.com",
+                    "uuid": "00000000-0000-4000-8000-0000000000a1"
+                  },
+                  "file_name": "orders_20261014_093000.csv",
+                  "file_size": 524288,
+                  "file_size_label": "512 KB",
+                  "total_rows": 1200,
+                  "processed_rows": 1200,
+                  "progress_percent": 100,
+                  "download_count": 2,
+                  "contains_personal_data": true,
+                  "reason": "월말 정산 자료",
+                  "warnings": [],
+                  "error_code": "timeout",
+                  "error_message": "처리 시간이 한도를 넘어 중단했습니다.",
+                  "summary": {
+                    "scope": "현재 검색 조건",
+                    "period": "2026-09-01 ~ 2026-09-30",
+                    "row_unit": "주문 1건당 1행",
+                    "locale_mode": "한 언어로",
+                    "include_totals": true,
+                    "field_count": 18,
+                    "selected_count": 0
+                  },
+                  "requested_at": "2026-10-14 09:30:00",
+                  "cutoff_at": "2026-10-14 09:30:00",
+                  "started_at": "2026-10-14 09:30:05",
+                  "completed_at": "2026-10-14 09:31:10",
+                  "expires_at": "2026-10-21 09:31:10",
+                  "is_owner": true,
+                  "abilities": {
+                    "can_view_downloads": true,
+                    "can_download": true,
+                    "can_delete": true,
+                    "can_retry": false
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      {
+        "comment": "내보내기 다운로드 이력 창 — 대상 작업 요약과 이력 표본으로 채운다.",
+        "scope": {
+          "kind": "modal",
+          "match": "export_downloads_modal"
+        },
+        "items": [
+          {
+            "id": "modal_filled",
+            "label": "$t:editor.state.modal_filled",
+            "default": true,
+            "initialState": {
+              "global": {
+                "ecommerceExportTarget": {
+                  "id": 1,
+                  "uuid": "00000000-0000-4000-8000-000000000001",
+                  "type": "orders",
+                  "type_label": "주문내역",
+                  "format": "csv",
+                  "status": "completed",
+                  "status_label": "완료",
+                  "requester": {
+                    "name": "운영자",
+                    "email": "admin@example.com",
+                    "uuid": "00000000-0000-4000-8000-0000000000a1"
+                  },
+                  "file_name": "orders_20261014_093000.csv",
+                  "file_size": 524288,
+                  "file_size_label": "512 KB",
+                  "total_rows": 1200,
+                  "processed_rows": 1200,
+                  "progress_percent": 100,
+                  "download_count": 2,
+                  "contains_personal_data": true,
+                  "reason": "월말 정산 자료",
+                  "warnings": [],
+                  "error_code": null,
+                  "error_message": null,
+                  "summary": {
+                    "scope": "현재 검색 조건",
+                    "period": "2026-09-01 ~ 2026-09-30",
+                    "row_unit": "주문 1건당 1행",
+                    "locale_mode": "한 언어로",
+                    "include_totals": true,
+                    "field_count": 18,
+                    "selected_count": 0
+                  },
+                  "requested_at": "2026-10-14 09:30:00",
+                  "cutoff_at": "2026-10-14 09:30:00",
+                  "started_at": "2026-10-14 09:30:05",
+                  "completed_at": "2026-10-14 09:31:10",
+                  "expires_at": "2026-10-21 09:31:10",
+                  "is_owner": true,
+                  "abilities": {
+                    "can_view_downloads": true,
+                    "can_download": true,
+                    "can_delete": true,
+                    "can_retry": false
+                  }
+                },
+                "ecommerceExportDownloadsPage": 1,
+                "ecommerceExportDownloadHistory": {
+                  "data": [
+                    {
+                      "id": 2,
+                      "sequence": 2,
+                      "user": {
+                        "name": "운영자",
+                        "uuid": "00000000-0000-4000-8000-0000000000a1"
+                      },
+                      "ip_address": "203.0.113.10",
+                      "downloaded_at": "2026-10-14 10:02:11"
+                    },
+                    {
+                      "id": 1,
+                      "sequence": 1,
+                      "user": {
+                        "name": "운영자",
+                        "uuid": "00000000-0000-4000-8000-0000000000a1"
+                      },
+                      "ip_address": "203.0.113.10",
+                      "downloaded_at": "2026-10-14 09:40:03"
+                    }
+                  ],
+                  "pagination": {
+                    "current_page": 1,
+                    "last_page": 1,
+                    "per_page": 10,
+                    "total": 2,
+                    "has_more_pages": false
+                  }
+                }
               }
             }
           }

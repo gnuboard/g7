@@ -11,8 +11,9 @@ description: |
 
 # axis 의미:
 #   요청한 관리자가 보유한 이커머스 세부 권한. none 은 관리자 역할만 있고 업무 권한이 없는 경우다.
+#   plugins_read 는 「플러그인 보기」(core.plugins.read)만 있는 경우 — 플러그인 설정 화면을 읽기 전용으로 연다.
 axes:
-  permission: [none, orders_read, orders_update, settings_read]
+  permission: [none, orders_read, orders_update, settings_read, plugins_read]
 
 effects:
   - admin_routes_declare_ecommerce_permission_middleware          # 라우트 선언에 세부 권한 미들웨어 부착
@@ -22,6 +23,7 @@ effects:
   - orders_read_admin_reaches_read_routes                         # 주문 읽기 권한 → 조회 경로 200
   - orders_update_admin_reaches_escrow_register                   # 주문 수정 권한 → 배송등록 200
   - settings_read_admin_reaches_settings_routes                   # 설정 읽기 권한 → 설정성 경로 200
+  - plugin_view_admin_reaches_settings_screen_info                 # 플러그인 보기 권한 → 입금통보 주소 200(화면 안내), 시스템 점검은 403(화면이 사유 안내)
 
 test_files:
   - plugins/_bundled/sirsoft-pay_nhnkcp/tests/Feature/Controllers/AdminRoutePermissionTest.php

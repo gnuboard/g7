@@ -27,20 +27,8 @@ use Plugins\Sirsoft\Tosspayments\Tests\PluginTestCase;
  *
  * @scenario path=card_confirm, check=callback_amount
  *
- * @effects tampered_callback_amount_is_rejected_before_confirm,
- *          confirm_is_requested_with_the_order_charge,
- *          approved_amount_mismatch_cancels_and_does_not_mark_paid,
- *          missing_approved_amount_cancels_and_does_not_mark_paid,
- *          module_amount_rejection_after_confirm_cancels_the_approval,
- *          not_payable_order_is_not_confirmed,
- *          already_recorded_payment_key_skips_confirm,
- *          vbank_issue_amount_mismatch_cancels_and_writes_no_row,
- *          vbank_issue_stores_the_verified_amount,
- *          deposit_webhook_completes_with_the_issuance_verified_amount,
- *          deposit_webhook_rejects_a_stored_amount_that_differs_from_the_charge,
- *          legacy_deposit_is_verified_by_payment_lookup,
- *          legacy_deposit_is_rejected_when_lookup_is_not_done,
- *          legacy_deposit_lookup_failure_asks_for_a_retry
+ * 효과 요약(마커 아님 — 평문): 결제완료, 가상계좌 발급, 입금 반영 각 경로의 금액 대조와 거절, 승인 취소.
+ *   각 효과는 그 효과를 재는 메서드 docblock 에 마킹한다.
  */
 class PaymentAmountVerificationTest extends PluginTestCase
 {

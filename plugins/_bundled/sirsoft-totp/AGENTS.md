@@ -141,6 +141,8 @@ EXPIRED / MAX_ATTEMPTS)를 통과시킨 뒤 `attempts` 를 먼저 올리고
 `HookManager::doAction('sirsoft-totp.credential.admin_reset', $user, ['actor_id', 'ip_address'])`
 발행. 관리자 본인이 단말과 백업 코드를 모두 잃어 관리자 화면에 들어갈 수 없을 때는
 `php artisan totp:reset {email}` 이 같은 `reset()` 을 서버 셸에서 호출한다.
+**제거와 데이터(코어 7.2.0)**: `uninstall()` 은 데이터 보존 제거에서도 불린다 — 메뉴는 지우지 않는다. 메뉴·권한·역할·알림 정의·본인확인 정책·스케줄은 「데이터도 함께 삭제」를 고른 제거에서 코어가 지운다(운영자가 만든 자식 메뉴는 최상위로 올리고, 운영자가 고친 항목은 지우기 직전 활동 로그에 남긴다). 플러그인이 코어 행에 더한 데이터는 `uninstallData()` 에서 지운다.
+
 <!-- @intent END -->
 
 ## 4. 확장점
@@ -149,8 +151,8 @@ EXPIRED / MAX_ATTEMPTS)를 통과시킨 뒤 `attempts` 를 먼저 올리고
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 4개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 9개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 8개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 구독 훅 | 10개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 9개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 1개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -183,6 +185,7 @@ EXPIRED / MAX_ATTEMPTS)를 통과시킨 뒤 `attempts` 를 먼저 올리고
 - [ ] 스키마 변경 시 마이그레이션(한국어 comment + `down()`) + 기설치본 백필용 업그레이드 스텝
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=plugin:sirsoft-totp` 재실행 + `docs/api/**` 갱신
+- [ ] 로그인한 회원이 부르는 쓰기 라우트(POST, PUT, PATCH, DELETE)를 더할 때 코어 필터 `core.required_fields.filter_exempt_routes` 에 보탤지 판단한다. 코어는 추가 정보를 아직 입력하지 않은 회원의 쓰기 요청을 403 `required_fields_pending` 으로 막는다. 그런 회원도 반드시 할 수 있어야 하는 요청(인증 앱 등록과 해제처럼 로그인 2단계 인증 수단을 다루는 요청)이면 `src/Listeners/ExemptRequiredFieldsRoutesListener.php` 의 `ROUTES` 에 라우트 이름을 더하고, 사용자 콘텐츠를 만드는 요청이면 더하지 않는다
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] `requestChallenge()` 의 로그 상태를 바꿨다면 코어 `AuthService::startTwoFactorChallenge()` 의 `Failed` 판정과 함께 확인 — `Requested` 로 두면 로그인이 차단됩니다
 - [ ] `canChallengeUser()` 의 판정을 바꿨다면 **부작용이 없는지**(조회만 하는지) 확인 — 코어 로그인 판정 경로에서 호출되므로 challenge 나 로그를 만들면 안 됩니다
@@ -192,7 +195,8 @@ EXPIRED / MAX_ATTEMPTS)를 통과시킨 뒤 `attempts` 를 먼저 올리고
 - [ ] 평문 시크릿·백업 코드를 내려주는 응답을 추가·변경했다면 "1회 노출" 계약이 깨지지 않는지 확인 — 조회 경로로는 절대 내려가지 않습니다
 - [ ] 프론트 핸들러를 추가했다면 `resources/js/handlers/index.ts` 의 `handlerMap` 에 넣는다 — 부팅 등록과 로케일 전환 뒤 재등록(`window.__SirsoftTotp.initPlugin()`)이 모두 이 맵을 읽는다. `initPlugin()` 에는 QR 관측자 같은 1회성 부팅 작업을 넣지 않는다
 - [ ] `resources/js/` 를 고쳤다면 `php artisan plugin:build --production` 후 `dist/js/plugin.iife.js` 를 함께 커밋 (`sourceMappingURL` 잔존 금지)
-- [ ] 레이아웃의 뜻이 있는 글자색(경고 등)은 템플릿 의미 클래스(`text-warning-soft` 등)가 아니라 `resources/css/main.css` 의 `totp-tone-*`(다크 모드 짝 포함)를 쓴다. 이 파일을 고쳤다면 `php artisan plugin:build --production` 후 `dist/css/plugin.css` 를 함께 커밋
+- [ ] 레이아웃의 뜻이 있는 글자색(경고 등)은 템플릿 의미 클래스(`text-warning-soft` 등)가 아니라 `resources/css/main.css` 의 `totp-tone-*`(`@layer g7-extension` 안, 다크 모드 짝 포함)를 쓴다. 이 파일을 고쳤다면 `php artisan plugin:build --production` 후 `dist/css/plugin.css` 를 함께 커밋
+- [ ] 화면 클래스는 템플릿 CSS 에 기대지 않는다 — 배치·색 유틸리티는 `totp:` 접두 Tailwind(`totp:flex totp:dark:text-gray-400`), 템플릿 의미 클래스는 `totp-*` 사본(정의는 생성 파일 `resources/css/g7-extension.generated.css`, 손으로 고치지 않는다)을 쓴다. 다크 모드는 `.dark` 대신 중립 표식(`[data-g7-color-scheme="dark"]`)이다. 새 클래스를 쓰면 `plugin:build` 로 CSS 를 다시 만든다 — 앞글자 없는 클래스는 정적 검사가 막는다. 규약 전체는 [확장 CSS 자기 공급 규약](../../../docs/extension/module-assets.md#확장-css-자기-공급-규약)
 
 ## 6. 금지 패턴
 
@@ -223,10 +227,10 @@ EXPIRED / MAX_ATTEMPTS)를 통과시킨 뒤 `attempts` 를 먼저 올리고
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 16개 | `plugins/_bundled/sirsoft-totp/tests` |
+| PHPUnit | 18개 | `plugins/_bundled/sirsoft-totp/tests` |
 | Vitest | 19개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 19개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 21개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 

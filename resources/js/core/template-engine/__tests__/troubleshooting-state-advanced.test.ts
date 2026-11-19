@@ -7,7 +7,7 @@
  * @see 트러블슈팅 가이드 troubleshooting-state-advanced.md
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi, type Mock } from 'vitest';
 import { ActionDispatcher } from '../ActionDispatcher';
 import { DataBindingEngine } from '../DataBindingEngine';
 import { Logger } from '../../utils/Logger';
@@ -516,7 +516,7 @@ describe('트러블슈팅 회귀 테스트 - computed 관련', () => {
 });
 
 describe('트러블슈팅 회귀 테스트 - 모달 상태 스코프', () => {
-  let mockSetState: ReturnType<typeof vi.fn>;
+  let mockSetState: Mock;
   let capturedState: Record<string, any>;
 
   beforeEach(() => {
@@ -640,7 +640,7 @@ describe('트러블슈팅 회귀 테스트 - 모달 상태 스코프', () => {
     // @effects parent_set_state_triggers_rerender
     it('부모의 setState를 호출하여 리렌더링을 트리거해야 함', () => {
       let renderCount = 0;
-      const parentSetState = vi.fn(() => {
+      const parentSetState = vi.fn<(updates: Record<string, any>) => void>(() => {
         renderCount++;
       });
 
@@ -1309,7 +1309,7 @@ describe('트러블슈팅 회귀 테스트 - 모달 컨텍스트 전파', () => 
 /**
  * 오류 콜백 컨텍스트의 이름은 `error` 이고 `$error` 는 없다.
  *
- * 70차가 코퍼스에서 닫은 27건(짝·픽스처 포함 61건)이 정확히 이 착각이었다 —
+ * 코퍼스에서 닫은 27건(짝·픽스처 포함 61건)이 정확히 이 착각이었다 —
  * `{{$error.message}}` 로 적힌 자리는 값이 비어 **내용 없는 토스트**가 떴고, 예외도 빨간 줄도
  * 나지 않아 화면만 봐서는 성공과 구분되지 않았다.
  *

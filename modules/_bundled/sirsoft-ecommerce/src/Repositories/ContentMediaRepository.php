@@ -135,6 +135,40 @@ class ContentMediaRepository implements ContentMediaRepositoryInterface
     }
 
     /**
+     * {@inheritDoc}
+     */
+    public function countLinkedByMimeTypes(array $mimeTypes): int
+    {
+        return $this->linkedByMimeTypes($mimeTypes)->count();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function chunkLinkedByMimeTypes(array $mimeTypes, int $afterId, int $limit): Collection
+    {
+        return $this->linkedByMimeTypes($mimeTypes)
+            ->where('id', '>', $afterId)
+            ->orderBy('id')
+            ->limit(max(1, $limit))
+            ->get(['id', 'attachmentable_type', 'attachmentable_id', 'collection', 'disk', 'path', 'mime_type', 'meta']);
+    }
+
+    /**
+     * 소유자에 이어진 그 MIME 의 본문 미디어 질의 — 저장 전 임시 행은 뺀다(소프트 삭제 행은 모델 범위가 뺀다).
+     *
+     * @param  list<string>  $mimeTypes  MIME 목록
+     * @return Builder<ContentMedia> 질의
+     */
+    private function linkedByMimeTypes(array $mimeTypes): Builder
+    {
+        return ContentMedia::query()
+            ->whereIn('mime_type', $mimeTypes)
+            ->whereNotNull('attachmentable_id')
+            ->whereNull('temp_key');
+    }
+
+    /**
      * 그 소유 종류·임시 키로 올린, 아직 잇지 않은 임시 행 질의.
      *
      * @param  ContentMediaOwnerType  $ownerType  소유 종류

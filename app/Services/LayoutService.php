@@ -759,6 +759,9 @@ class LayoutService
                 // 슬롯 래퍼 자체는 base 출처(레이아웃이 정의한 컴포넌트). slot children 은 route 출처
                 if ($sourceMeta !== null) {
                     $resultComponent['__source'] = $sourceMeta;
+                    // 슬롯 이름 — 편집기 저장 마스킹이 슬롯이 둘 이상인 화면의 편집분을 슬롯별로 되돌리는 열쇠.
+                    // 편집 모드에만 단다(공개 렌더 트리에는 없음). 저장 시 래퍼째 버려져 레이아웃에 남지 않는다.
+                    $resultComponent['__slot'] = $component['slot'];
                     $resultComponent['children'] = $this->markSourceMeta(
                         $resultComponent['children'],
                         ['kind' => 'route', 'layout' => $sourceMeta['layout'] ?? '']
@@ -1436,6 +1439,12 @@ class LayoutService
         if ($sourceType === LayoutSourceType::Module) {
             return ['kind' => 'module', 'identifier' => $extensionId];
         }
+        // 템플릿 설정 화면(`{템플릿}.template_settings`, #434) — 템플릿이 관리자 템플릿에 교차 등록한 행이다.
+        // 플러그인으로 잘못 분류하면 편집기가 없는 `plugin:{id}` 샘플을 찾는다. 엔진은 template 종류를 편집 중인
+        // 템플릿 스펙으로 폴백하므로, 그 관리자 템플릿 editor-spec 의 샘플이 쓰인다.
+        if ($row?->isTemplateSettingsLayout()) {
+            return ['kind' => 'template', 'identifier' => $extensionId];
+        }
 
         // 행/소스타입 부재 — 이름 패턴 폴백 (모듈 패턴이면 module, 아니면 plugin)
         $kind = $this->isModuleLayoutName($layoutName) ? 'module' : 'plugin';
@@ -2096,11 +2105,24 @@ class LayoutService
     }
 
     /**
-     * defines(재사용 컴포넌트 정의)를 필터링합니다.
+     * defines(재사용 정의)를 필터링합니다.
      *
-     * @param  array  $defines  defines 배열
+     * `defines` 는 **키가 의미를 갖는 맵**이다 — 레이아웃은 `{{_defines.settingsTabs}}` 처럼
+     * 키로 참조하고(`ParameterDescriber` 의 API 문서도 「정의 맵」으로 선언한다), 병합도
+     * `mergeDefines()` 가 `array_merge` 로 문자열 키를 보존한 채 넘겨준다. 종전에는 이 필터가
+     * `$filtered[] = $define` 로 재색인해 그 키를 버렸다 — `{"settingsTabs": […]}` 가
+     * `[[…]]` 로 나가면 `_defines.settingsTabs` 는 undefined 가 되고, 표현식은 `?? []` 폴백을
+     * 타 **오류도 경고도 없이 화면 요소만 사라진다**(환경설정 탭 13개·회원 폼 국가 48개·
+     * 마이페이지 국가/언어·이커머스 통화 국기). 편집기도 같은 `serve` 응답을 캔버스로 읽으므로
+     * 그 상태에서 저장하면 망가진 형태가 원본에 기록된다.
+     *
+     * 리스트 형태(문서가 기술하는 「define 객체 목록」)도 계속 성립해야 한다 — 권한으로 중간
+     * 항목이 빠진 뒤 원래 정수 키를 그대로 두면 구멍 난 배열이 되어 JSON 이 객체로 직렬화된다.
+     * 그래서 키는 보존하되 **입력이 리스트였을 때만** 마지막에 재색인한다.
+     *
+     * @param  array  $defines  defines 맵(키 = 정의 이름) 또는 define 객체 목록
      * @param  User|null  $user  현재 사용자
-     * @return array 필터링된 defines 배열
+     * @return array 필터링된 defines — 입력이 맵이면 키 보존, 리스트면 재색인
      */
     private function filterDefines(array $defines, ?User $user): array
     {

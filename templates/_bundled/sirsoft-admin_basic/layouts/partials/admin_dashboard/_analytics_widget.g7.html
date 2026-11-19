@@ -4,7 +4,8 @@
   응답이 실패하면 카드가 사라지는 대신 제자리에서 알리고 다시 받는다 — 카드가 말없이 빠지면 어느 숫자가 비었는지
   알 수 없다. 수집이 꺼져 있으면 숫자가 멈춘 이유를 배지로 알린다. -->
 <partial description="대시보드 — 방문자 통계 카드 (KPI 4 · 7일 추이 · 지금 접속자)">
-  <div data-ref="dashboard_analytics_widget" data-if="{{!!dashboard_analytics?.data?.kpi || (dashboard_analytics?.widget_error === true &amp;&amp; _computed.canReadAnalytics === true)}}" class="bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6 mb-6">
+  <div data-ref="dashboard_analytics_widget" data-if="{{!!dashboard_analytics?.data?.kpi || (dashboard_analytics?.widget_error === true &amp;&amp; _computed.canReadAnalytics === true)}}" class="bg-slate-100 dark:bg-slate-800 rounded-xl p-4 mb-6">
+    <responsive on="768-" class="bg-slate-100 dark:bg-slate-800 rounded-2xl p-6 mb-6"/>
     <blur-until-loaded sources="dashboard_analytics"/>
     <div data-ref="dashboard_analytics_header" class="flex-start justify-between mb-4">
       <div class="flex-center gap-2">
@@ -28,7 +29,8 @@
         $t:admin.analytics.alerts.load_failed_retry
       </button>
     </div>
-    <div data-ref="dashboard_analytics_body" data-if="{{!!dashboard_analytics?.data?.kpi}}" class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center">
+    <div data-ref="dashboard_analytics_body" data-if="{{!!dashboard_analytics?.data?.kpi}}" class="grid grid-cols-1 gap-4 items-center">
+      <responsive on="desktop" class="grid grid-cols-3 gap-4 items-center"/>
       <div data-ref="dashboard_analytics_kpis" class="grid grid-cols-2 gap-3">
         <div class="bg-white dark:bg-slate-700 rounded-lg p-3">
           <p class="text-label-subtle">$t:admin.analytics.dashboard_widget.today</p>

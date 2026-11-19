@@ -1,3 +1,4 @@
+// e2e:allow 화면이 바뀌지 않는 클래스 표기 정리 — 폭 미디어를 품은 의미 클래스를 접두 유틸과 엔진 responsive 로 펼쳤고, 구조는 이 시험이, 폭별 결과는 레이아웃 동등성 대조가 확인한다
 /**
  * sirsoft-page 모듈 레이아웃 JSON 구조 검증 테스트
  */
@@ -17,7 +18,8 @@ function findById(node: any, id: string): any | null {
     if (!node) return null;
     if (node.id === id) return node;
 
-    for (const child of node.children ?? []) {
+    // 확장점의 기본 노드(default)도 본다 — 첨부 업로더는 attachment_uploader 확장점의 default 안에 있다
+    for (const child of [...(node.children ?? []), ...(node.type === 'extension_point' ? node.default ?? [] : [])]) {
         const found = findById(child, id);
         if (found) return found;
     }
@@ -48,7 +50,7 @@ function findComponentsByName(node: any, name: string): any[] {
 
     if (node.name === name) results.push(node);
 
-    for (const child of node.children ?? []) {
+    for (const child of [...(node.children ?? []), ...(node.type === 'extension_point' ? node.default ?? [] : [])]) {
         results.push(...findComponentsByName(child, name));
     }
 
@@ -423,7 +425,7 @@ describe('admin_page_list.json', () => {
         // 관행(이커머스 shipping_policy/order/product 목록): 검색바 내부 필드 셀렉트 = pill,
         // 목록 툴바의 필터/정렬/개수 셀렉트 = 테두리(bg-white border). 위치에 따라 외형이 다름.
         const searchField = findById(adminPageList, 'search_field_select');
-        expect(searchField.props.className).toContain('select-composite');
+        expect(searchField.props.className).toContain('page:h-9');
 
         for (const id of ['published_filter_select', 'sort_select', 'per_page_select']) {
             const sel = findById(adminPageList, id);
@@ -441,9 +443,9 @@ describe('admin_page_list.json', () => {
         // 표준(이커머스 주문/상품 목록): 검색·필터 적용 버튼 = btn btn-primary(파랑).
         const dBtn = findById(adminPageList, 'search_button');
         const mBtn = findByIdDeep(adminPageList, 'mobile_search_button');
-        expect(dBtn.props.className).toContain('btn btn-primary');
+        expect(dBtn.props.className).toContain('page-btn page-btn-primary');
         expect(dBtn.props.className).not.toContain('bg-gray-800');
-        expect(mBtn.props.className).toContain('btn btn-primary');
+        expect(mBtn.props.className).toContain('page-btn page-btn-primary');
         expect(mBtn.props.className).toContain('w-full');
         expect(mBtn.props.className).not.toContain('bg-gray-800');
     });
@@ -452,7 +454,7 @@ describe('admin_page_list.json', () => {
     // @effects admin_page_list_buttons_use_semantic_classes
     it('[C2] 등록 버튼이 btn btn-primary 를 사용하고 bg-blue-600 하드코딩을 쓰지 않음', () => {
         const addBtn = findById(adminPageList, 'add_page_button');
-        expect(addBtn.props.className).toContain('btn btn-primary');
+        expect(addBtn.props.className).toContain('page-btn page-btn-primary');
         expect(addBtn.props.className).not.toContain('bg-blue-600');
     });
 
@@ -466,9 +468,9 @@ describe('admin_page_list.json', () => {
         // 취소 버튼 하드코딩 패턴(bg-white...border) 제거 확인
         expect(modalsStr).not.toContain('bg-white dark:bg-gray-800 text-gray-700');
         // 시맨틱 btn 계열 사용 확인 (취소=secondary, 삭제=danger, 그 외 확인=primary)
-        expect(modalsStr).toContain('btn btn-secondary');
-        expect(modalsStr).toContain('btn btn-primary');
-        expect(modalsStr).toContain('btn btn-danger');
+        expect(modalsStr).toContain('page-btn page-btn-secondary');
+        expect(modalsStr).toContain('page-btn page-btn-primary');
+        expect(modalsStr).toContain('page-btn page-btn-danger');
     });
 
     // @scenario case=list_styles
@@ -711,9 +713,9 @@ describe('admin_page_form.json', () => {
     it('slug_published_grid 가 grid-2col-responsive 자산을 단독 사용함 (호출처 gap-* 토큰 제거)', () => {
         const grid = findById(adminPageForm, 'slug_published_grid');
         expect(grid).not.toBeNull();
-        expect(grid.props.className).toBe('grid-2col-responsive');
-        // 자산이 반응형을 포함하므로 호출처 responsive override 없어야 함
-        expect(grid.responsive).toBeUndefined();
+        // 좁은 폭 1열, 768px 이상 2열 — 폭 미디어를 품은 의미 클래스 대신 접두 유틸 + 엔진 responsive 로 쓴다(호출처 gap-* 덧붙임 없음)
+        expect(grid.props.className).toBe('page:grid page:grid-cols-1 page:gap-4');
+        expect(grid.responsive).toEqual({ '768-': { props: { className: 'page:grid page:grid-cols-2 page:gap-4' } } });
     });
 
     // @scenario case=form_field_layout
@@ -723,8 +725,8 @@ describe('admin_page_form.json', () => {
         const publishedField = findById(adminPageForm, 'published_field');
         const slugLabel = asArray(slugField?.children).find((c: any) => c.name === 'Label');
         const publishedLabel = asArray(publishedField?.children).find((c: any) => c.name === 'Label');
-        expect(slugLabel?.props?.className).toBe('form-label');
-        expect(publishedLabel?.props?.className).toBe('form-label');
+        expect(slugLabel?.props?.className).toBe('page-form-label');
+        expect(publishedLabel?.props?.className).toBe('page-form-label');
     });
 
     // @scenario case=form_field_layout
@@ -743,19 +745,19 @@ describe('admin_page_form.json', () => {
         const directSpans = asArray(slugField?.children).filter((c: any) => c.name === 'Span');
         // URL 미리보기 안내 + 영문 소문자 안내 — 둘 다 form-hint block 자산 사용
         const formHintSpans = directSpans.filter(
-            (s: any) => s.props?.className === 'form-hint block',
+            (s: any) => s.props?.className === 'page-form-hint page:block',
         );
         expect(formHintSpans.length).toBeGreaterThanOrEqual(2);
         // text-tertiary / text-hint 톤 분기 회귀 차단 (현재는 form-hint 로 통일)
         const oldToneSpans = directSpans.filter(
             (s: any) =>
-                s.props?.className === 'text-tertiary block' ||
-                s.props?.className === 'text-hint block',
+                s.props?.className === 'page-text-tertiary page:block' ||
+                s.props?.className === 'page-text-hint page:block',
         );
         expect(oldToneSpans.length).toBe(0);
         // 직속 자식 중에 className 이 'row-stack' 인 Div wrapper 가 더 이상 없어야 함
         const nestedRowStack = asArray(slugField?.children).find(
-            (c: any) => c.name === 'Div' && c.props?.className === 'row-stack',
+            (c: any) => c.name === 'Div' && c.props?.className === 'page-row-stack',
         );
         expect(nestedRowStack).toBeUndefined();
     });
@@ -781,8 +783,8 @@ describe('admin_page_form.json', () => {
         // 다중 입력 row 리스트 컨테이너는 row-stack 가 의도된 사용 (행 사이 divide-y)
         const basic = findById(adminPageForm, 'basic_info_fields');
         const seo = findById(adminPageForm, 'seo_fields');
-        expect(basic.props.className).toBe('row-stack');
-        expect(seo.props.className).toBe('row-stack');
+        expect(basic.props.className).toBe('page-row-stack');
+        expect(seo.props.className).toBe('page-row-stack');
     });
 
     // @scenario case=form_field_layout
@@ -796,8 +798,8 @@ describe('admin_page_form.json', () => {
 
         const titleLabel = asArray(titleField?.children).find((c: any) => c.name === 'Label');
         const contentLabel = asArray(contentField?.children).find((c: any) => c.name === 'Label');
-        expect(titleLabel?.props?.className).toBe('form-label');
-        expect(contentLabel?.props?.className).toBe('form-label');
+        expect(titleLabel?.props?.className).toBe('page-form-label');
+        expect(contentLabel?.props?.className).toBe('page-form-label');
     });
 
     // @scenario case=form_field_layout
@@ -813,7 +815,7 @@ describe('admin_page_form.json', () => {
             const directLabel = asArray(field?.children).find((c: any) => c.name === 'Label');
             expect(directLabel, id).toBeDefined();
             // 보조 라벨 톤 자산화 — form-label-muted (text-secondary block text-sm font-medium 원자 토큰 흡수)
-            expect(directLabel.props.className, id).toBe('form-label-muted');
+            expect(directLabel.props.className, id).toBe('page-form-label-muted');
             // 빈 className Div wrapper 미존재 확인
             const emptyDivWrapper = asArray(field?.children).find(
                 (c: any) => c.name === 'Div' && !c.props,
@@ -966,7 +968,7 @@ describe('admin_page_form.json', () => {
         const saveBtn = findById(adminPageForm, 'footer_save_button');
         expect(saveBtn).not.toBeNull();
         const cls = saveBtn.props.className ?? '';
-        expect(cls).toContain('btn btn-primary');
+        expect(cls).toContain('page-btn page-btn-primary');
         // saving 조건부 색 변경(bg-blue-400/bg-blue-600) 제거
         expect(cls).not.toContain('bg-blue-400');
         expect(cls).not.toContain('bg-blue-600');
@@ -1290,7 +1292,10 @@ describe('admin_page_detail.json', () => {
         // 메타 4항목(작성자/발행일시/생성일/수정일)을 PC 2열·모바일 1열로.
         const infoGrid = findById(adminPageDetail, 'info_grid');
         expect(infoGrid).not.toBeNull();
-        expect(infoGrid.props.className).toContain('grid-2col-responsive');
+        // 폭 미디어를 품은 의미 클래스 대신 접두 유틸 + 엔진 responsive(768px 이상 2열)로 쓴다
+        expect(infoGrid.props.className.split(/\s+/)).toEqual(expect.arrayContaining(['page:grid', 'page:grid-cols-1']));
+        expect(String(infoGrid.responsive?.['768-']?.props?.className ?? '').split(/\s+/)).toContain('page:grid-cols-2');
+        expect(infoGrid.props.className).not.toContain('grid-2col-responsive');
         // 세로 나열 원인이던 panel-header-row 단독 사용 금지
         expect(infoGrid.props.className).not.toBe('panel-header-row');
     });
@@ -1358,9 +1363,9 @@ describe('admin_page_detail.json', () => {
         expect(editBtn).not.toBeNull();
         expect(deleteBtn).not.toBeNull();
         // 데스크톱 className 이 btn 시맨틱, 하드코딩 색 제거
-        expect(editBtn.props.className).toContain('btn btn-primary');
+        expect(editBtn.props.className).toContain('page-btn page-btn-primary');
         expect(editBtn.props.className).not.toContain('bg-blue-600');
-        expect(deleteBtn.props.className).toContain('btn btn-danger');
+        expect(deleteBtn.props.className).toContain('page-btn page-btn-danger');
         expect(deleteBtn.props.className).not.toContain('bg-red-600');
         // 모바일 responsive 오버라이드에도 하드코딩 색이 남지 않아야 함
         expect(JSON.stringify(editBtn.responsive ?? {})).not.toContain('bg-blue-600');

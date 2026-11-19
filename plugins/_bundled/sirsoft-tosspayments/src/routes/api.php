@@ -34,7 +34,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
                 'url' => SiteUrl::absolute('/plugins/sirsoft-tosspayments/webhook/deposit'),
             ],
         ]);
-    })->middleware('permission:admin,sirsoft-ecommerce.settings.read')
+    })->middleware('permission:admin,sirsoft-ecommerce.settings.read|core.plugins.read,false') // 설정 화면 안내 — 화면 권한(플러그인 보기)으로도 읽는다(OR)
         // 이름에 `.webhook.` 마디를 두지 않는다 — 코어 IP 제한 검사가 그 이름을 외부 인바운드 콜백으로 분류한다(관리자 조회라 콜백이 아니다)
         ->name('webhook-url');
 });

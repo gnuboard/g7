@@ -6,7 +6,9 @@ import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
 import { Input } from '../basic/Input';
 import type { EditorAttrs } from '../../types';
+import { sitePath } from '../../support/apiUrl';
 import { handleLinkClick, resolveLinkHref } from '../../support/navigationLink';
+import { keyboardActivationProps, FOCUS_VISIBLE_RING, escapeToClose } from '../../support/keyboardActivation';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다
 const tOr = (key: string, fallback: string, params?: Record<string, string | number>): string => {
@@ -140,6 +142,8 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
 }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
+  // 종 단추 — 판 안에서 Esc 로 닫으면 여기로 포커스를 돌린다
+  const bellRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -315,9 +319,13 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   }, [showNotifications, dropdownAlign, notifications.length]);
 
   return (
-    <Div ref={notificationRef} className={`relative ${className}`} id={id} {...editorAttrs}>
+    // 판 안 어디에서든 Esc 로 닫고(닫을 때의 읽음 처리는 종전과 같다) 종 단추로 돌아간다 — 종전에는 바깥 클릭으로만 닫혔다(#869)
+    <Div ref={notificationRef} className={`relative ${className}`} id={id} {...editorAttrs} onKeyDown={escapeToClose(showNotifications, handleClose, bellRef)}>
       <Button
+        ref={bellRef}
         onClick={handleToggle}
+        aria-haspopup="dialog"
+        aria-expanded={showNotifications}
         className="relative p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors cursor-pointer"
         aria-label={titleText}
       >
@@ -448,7 +456,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                     >
                       {link ? (
                         <a
-                          href={link.href}
+                          href={sitePath(link.href)}
                           className="flex items-start gap-3 flex-1 min-w-0"
                           onClick={(event) => {
                             // 줄(바깥 Div)의 클릭 처리가 다시 부르지 않게 여기서 멈춘다 — 수정키 클릭은 브라우저에 맡긴다
@@ -459,7 +467,11 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                           {body}
                         </a>
                       ) : (
-                        body
+                        // 링크가 없는 알림은 본문 칸이 키보드 단추다 — 링크 알림의 <a> 와 같은 자리라 삭제 단추와 겹치지 않는다(#869 키보드 접근).
+                        // 마우스 클릭은 줄(바깥 Div)이 받으므로 여기는 키보드만 더한다
+                        <Div className={`flex items-start gap-3 flex-1 min-w-0 rounded ${FOCUS_VISIBLE_RING}`} {...keyboardActivationProps(activate)}>
+                          {body}
+                        </Div>
                       )}
                       <Div className="flex flex-col items-center gap-2 flex-shrink-0">
                         {isUnread && (

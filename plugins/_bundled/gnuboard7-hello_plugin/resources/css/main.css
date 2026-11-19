@@ -1,0 +1,297 @@
+/*
+ * Hello 플러그인 화면 스타일 — 순수 CSS 학습 예시
+ *
+ * 확장 화면의 모양은 확장이 자기 CSS 로 싣는다. 그누보드7 은 Tailwind 를 전제하지 않으므로 이 파일은 손으로 쓴
+ * CSS 다. Vite 는 이 파일을 plugin.json `assets.css.output`(dist/css/plugin.css)으로 옮길 뿐 바꾸지 않는다
+ * (압축도 하지 않는다 — 학습용이라 읽히는 산출물을 둔다).
+ *
+ * 클래스 이름은 plugin.json 의 `assets.css.namespace`("helloplugin") 뒤에 `-` 를 붙여 시작한다. 템플릿이나 다른
+ * 확장의 클래스, 요소 전체(`h1`, `*` 등)는 건드리지 않는다 — 남의 화면이 조용히 바뀌기 때문이다.
+ *
+ * ── 우선순위 두 칸 (Hello 모듈 샘플과 같은 규약) ────────────────────────────────────────────────────
+ *
+ *   ① 기본값 칸 — `@layer g7-extension { … }` 안. 색·테두리·배경·글자 같은 「의미」.
+ *      템플릿의 층 있는 규칙(Tailwind 의 base·utilities 등)은 이 칸에 진다. 템플릿이 이 칸을 이기려면 같은 클래스를
+ *      층 없이 정의하거나 template.json `extension_css_overrides` 덮기 파일을 쓴다.
+ *   ② 일반 칸 — 층 밖. 여백·정렬·간격·위치 같은 「배치」.
+ *
+ * ── 다크 모드 ────────────────────────────────────────────────────────────────────────────────────
+ *
+ * 템플릿의 다크 방식(`.dark` 클래스 등)에 기대지 않고 코어가 다는 중립 표식 `data-g7-color-scheme` 만 본다.
+ * 「다크 안의 라이트」(다크 관리자 화면 속 라이트 미리보기)는 뺀다. 강도는 `.dark .x` 와 같다.
+ *
+ *   .x:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"]))
+ *
+ * 색값은 관리자 템플릿(Tailwind 4 기본 팔레트, oklch)과 같은 값을 그대로 적었다 — 템플릿을 바꿔도 같은 모양이다.
+ */
+
+/* ① 기본값 칸 — 의미(색·테두리·배경·글자) */
+@layer g7-extension {
+    /* 설정 화면 바탕 */
+    .helloplugin-page,
+    .helloplugin-settings {
+        background-color: oklch(98.5% 0.002 247.839); /* gray-50 */
+    }
+
+    .helloplugin-page:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])),
+    .helloplugin-settings:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        background-color: oklch(21% 0.034 264.665); /* gray-900 */
+    }
+
+    /* 읽기 전용 안내 상자(경고) */
+    .helloplugin-alert {
+        border: 1px solid oklch(94.5% 0.129 101.54); /* yellow-200 */
+        border-radius: 0.375rem;
+        background-color: oklch(98.7% 0.026 102.212); /* yellow-50 */
+        color: oklch(42.1% 0.095 57.708); /* yellow-800 */
+        font-size: 0.875rem;
+        line-height: calc(1.25 / 0.875);
+    }
+
+    .helloplugin-alert:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        border-color: oklch(47.6% 0.114 61.907); /* yellow-800 */
+        background-color: color-mix(in oklab, oklch(42.1% 0.095 57.708) 20%, transparent); /* yellow-900/20 */
+        color: oklch(97.3% 0.071 103.193); /* yellow-100 */
+    }
+
+    /* 안내 상자 아이콘 — 줄 높이는 템플릿 아이콘 글꼴의 1 을 그대로 쓴다(여기서 정하지 않는다) */
+    .helloplugin-alert__icon {
+        font-size: 1.25rem;
+        color: oklch(66.6% 0.179 58.318); /* amber-600 */
+    }
+
+    .helloplugin-alert__icon:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        color: oklch(82.8% 0.189 84.429); /* amber-400 */
+    }
+
+    .helloplugin-alert__text {
+        font-size: 0.75rem;
+        line-height: calc(1 / 0.75);
+        color: oklch(55.4% 0.135 66.442); /* yellow-700 */
+    }
+
+    .helloplugin-alert__text:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        color: oklch(90.5% 0.182 98.111); /* yellow-300 */
+    }
+
+    /* 설정 칸을 담는 카드 */
+    .helloplugin-card {
+        border: 1px solid oklch(92.8% 0.006 264.531); /* gray-200 */
+        border-radius: 0.5rem;
+        background-color: #fff;
+        box-shadow: 0 0 #0000, 0 0 #0000, 0 0 #0000, 0 0 #0000, 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    }
+
+    .helloplugin-card:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        border-color: oklch(37.3% 0.034 259.733); /* gray-700 */
+        background-color: oklch(27.8% 0.033 256.848); /* gray-800 */
+    }
+
+    /* 체크박스 — 모서리·체크 색 */
+    .helloplugin-checkbox {
+        border-radius: 0.25rem;
+        color: oklch(54.6% 0.245 262.881); /* blue-600 */
+    }
+
+    /* 칸 이름 */
+    .helloplugin-label {
+        font-size: 0.875rem;
+        line-height: calc(1.25 / 0.875);
+        font-weight: 500;
+        color: oklch(21% 0.034 264.665); /* gray-900 */
+        cursor: pointer;
+    }
+
+    .helloplugin-label:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        color: #fff;
+    }
+
+    /* 칸 설명 */
+    .helloplugin-hint {
+        font-size: 0.75rem;
+        line-height: calc(1 / 0.75);
+        color: oklch(44.6% 0.03 256.802); /* gray-600 */
+    }
+
+    .helloplugin-hint:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        color: oklch(87.2% 0.01 258.338); /* gray-300 */
+    }
+
+    /* 아래 고정 단추 줄 */
+    .helloplugin-footer {
+        border: 1px solid oklch(92.8% 0.006 264.531); /* gray-200 */
+        border-radius: 0.5rem;
+        background-color: oklch(98.5% 0.002 247.839); /* gray-50 */
+    }
+
+    .helloplugin-footer:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        border-color: oklch(37.3% 0.034 259.733); /* gray-700 */
+        background-color: oklch(27.8% 0.033 256.848); /* gray-800 */
+    }
+
+    /* 단추 — 공통 글자·모서리·전환 */
+    .helloplugin-button {
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        line-height: calc(1.25 / 0.875);
+        font-weight: 500;
+        cursor: pointer;
+        transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        transition-duration: 0.2s;
+    }
+
+    .helloplugin-button:disabled,
+    .helloplugin-button[aria-disabled="true"] {
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+
+    /* 보조 단추(취소) */
+    .helloplugin-button--secondary {
+        border: 1px solid oklch(87.2% 0.01 258.338); /* gray-300 */
+        background-color: #fff;
+        color: oklch(37.3% 0.034 259.733); /* gray-700 */
+    }
+
+    .helloplugin-button--secondary:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        border-color: oklch(44.6% 0.03 256.802); /* gray-600 */
+        background-color: oklch(27.8% 0.033 256.848); /* gray-800 */
+        color: oklch(87.2% 0.01 258.338); /* gray-300 */
+    }
+
+    /* 주 단추(저장) */
+    .helloplugin-button--primary {
+        background-color: oklch(21% 0.034 264.665); /* gray-900 */
+        color: #fff;
+    }
+
+    .helloplugin-button--primary:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+        background-color: #fff;
+        color: oklch(21% 0.034 264.665); /* gray-900 */
+    }
+
+    @media (hover: hover) {
+        .helloplugin-button--secondary:hover {
+            background-color: oklch(98.5% 0.002 247.839); /* gray-50 */
+        }
+
+        .helloplugin-button--secondary:hover:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+            background-color: oklch(37.3% 0.034 259.733); /* gray-700 */
+        }
+
+        .helloplugin-button--primary:hover {
+            background-color: oklch(27.8% 0.033 256.848); /* gray-800 */
+        }
+
+        .helloplugin-button--primary:hover:is([data-g7-color-scheme="dark"] *, [data-g7-color-scheme="dark"]):not(:where([data-g7-color-scheme="dark"] [data-g7-color-scheme="light"] *, [data-g7-color-scheme="dark"] [data-g7-color-scheme="light"])) {
+            background-color: oklch(96.7% 0.003 264.542); /* gray-100 */
+        }
+    }
+}
+
+/* ② 일반 칸 — 배치(여백·정렬·간격·위치) */
+
+/* 설정 화면 — 좁은 화면부터 넓은 화면까지 바깥 여백을 키운다. 폭 구간은 레이아웃의 엔진 responsive 가 고르고
+   (640~1023px `helloplugin-settings--md`, 1024px 이상 `helloplugin-settings--lg`), 이 CSS 는 화면 폭을 보지 않는다.
+   `.helloplugin-page` 는 폭 미디어로 여백을 바꾸던 옛 클래스다. */
+.helloplugin-page,
+.helloplugin-settings {
+    min-height: 100vh;
+    padding: 1rem;
+}
+
+.helloplugin-settings--md {
+    padding: 1.5rem;
+}
+
+.helloplugin-settings--lg {
+    padding: 2rem;
+}
+
+@media (min-width: 40rem) {
+    /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
+    .helloplugin-page {
+        padding: 1.5rem;
+    }
+}
+
+@media (min-width: 64rem) {
+    /* audit:allow css-no-width-media-semantic-class 폐지 예정 — 사이트에서 직접 고친 레이아웃의 호환을 위해 남긴다. 다음 출시 이후 제거 */
+    .helloplugin-page {
+        padding: 2rem;
+    }
+}
+
+.helloplugin-alert {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding: 0.75rem;
+}
+
+.helloplugin-alert__icon {
+    flex-shrink: 0;
+}
+
+.helloplugin-card {
+    margin-top: 1.5rem;
+}
+
+.helloplugin-card__body {
+    padding: 1.5rem;
+}
+
+/* 칸 사이 간격 — 마지막 칸 뒤에는 두지 않는다(강도 0 이라 칸 자신의 여백 지정을 이기지 않는다) */
+:where(.helloplugin-card__body > :not(:last-child)) {
+    margin-bottom: 1.5rem;
+}
+
+/* 체크박스 + 이름·설명 한 줄 */
+.helloplugin-field {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.helloplugin-checkbox {
+    margin-top: 0.25rem;
+    width: 1rem;
+    height: 1rem;
+}
+
+.helloplugin-label {
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.helloplugin-hint {
+    margin-top: 0.25rem;
+}
+
+.helloplugin-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding: 0.75rem 1rem;
+}
+
+.helloplugin-button {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+}
+
+/* 저장 단추 — 줄 전체 흐름(flex)에 두고 글자와 저장 중 표시 사이를 조금 좁힌다. 같은 강도라 위 .helloplugin-button 뒤에 둔다 */
+.helloplugin-footer__save {
+    display: flex;
+    gap: 0.375rem;
+}

@@ -8,7 +8,7 @@
  * - 스팸/보안 탭: 쿨다운, 조회수, 캐시 초기화
  * - 일괄 적용 모달: 확인/취소, API 호출, 로딩 상태
  *
- * @effects aborted_notice_box_shown_and_modal_stays_open,
+ * 효과 요약(마커 아님, 평문): aborted_notice_box_shown_and_modal_stays_open,
  *   successful_bulk_apply_closes_modal_with_success_toast
  */
 
@@ -45,7 +45,7 @@ function findById(node: any, id: string): any | null {
     if (node.id === id) return node;
 
     if (node.children && Array.isArray(node.children)) {
-        for (const child of node.children) {
+        for (const child of [...node.children, ...(node.props?.footer ?? [])]) {
             const found = findById(child, id);
             if (found) return found;
         }
@@ -73,6 +73,7 @@ function findFirst(node: any, predicate: (n: any) => boolean): any | null {
     if (predicate(node)) return node;
     const kids = [
         ...asArray(node?.children),
+        ...asArray(node?.props?.footer), // 고정 하단 (#869 P1 — 바닥 단추가 Modal 고정 하단으로 옮김)
         ...asArray(node.responsive?.portable?.children),
     ];
     for (const child of kids) {
@@ -94,7 +95,7 @@ function findByName(node: any, name: string): any[] {
     }
 
     if (node.children && Array.isArray(node.children)) {
-        for (const child of node.children) {
+        for (const child of [...node.children, ...(node.props?.footer ?? [])]) {
             results.push(...findByName(child, name));
         }
     }
@@ -147,7 +148,7 @@ function findActions(node: any, handlerName: string): any[] {
     }
 
     if (node.children && Array.isArray(node.children)) {
-        for (const child of node.children) {
+        for (const child of [...node.children, ...(node.props?.footer ?? [])]) {
             results.push(...findActions(child, handlerName));
         }
     }
@@ -177,7 +178,7 @@ function findFormFields(node: any): string[] {
     }
 
     if (node.children && Array.isArray(node.children)) {
-        for (const child of node.children) {
+        for (const child of [...node.children, ...(node.props?.footer ?? [])]) {
             names.push(...findFormFields(child));
         }
     }
@@ -198,6 +199,8 @@ function findFormFields(node: any): string[] {
 // =============================================
 // 1. 메인 레이아웃 (admin_board_settings.json)
 // =============================================
+// 조합 요약(마커 아님, 평문): layout_file=modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_settings.g7.html
+// (#408 시맨틱 자산 매핑 매니페스트 3종의 대상 레이아웃 렌더링 테스트 — 자산 치환의 구조 회귀를 잰다)
 describe('admin_board_settings.json - 메인 레이아웃', () => {
     /**
      * @scenario save_path=bulk
@@ -353,6 +356,7 @@ describe('admin_board_settings.json - 메인 레이아웃', () => {
         expect(innerActions[3].params.selector).toBe('#tab_content');
     });
 
+    // @scenario layout_file=modules/_bundled/sirsoft-board/resources/layouts/admin/admin_board_settings.g7.html
     /**
      * @scenario save_path=bulk
      *
@@ -1706,7 +1710,7 @@ describe('_bulk_apply_modal.json - 일괄 적용 확인 모달', () => {
     /**
      * @scenario save_path=bulk
      *
-     * @effects settings_layout_bulk_apply_contract
+     * @effects settings_layout_bulk_apply_contract, successful_bulk_apply_closes_modal_with_success_toast, aborted_notice_box_shown_and_modal_stays_open
      */
     it('확인 버튼이 올바른 API 호출 sequence를 가진다', () => {
         const confirmBtn = findById(bulkApplyModal, 'bulk_apply_confirm_button');
@@ -1850,7 +1854,7 @@ describe('_bulk_apply_modal.json - 일괄 적용 확인 모달', () => {
     /**
      * @scenario save_path=bulk
      *
-     * @effects settings_layout_bulk_apply_contract
+     * @effects settings_layout_bulk_apply_contract, aborted_notice_box_shown_and_modal_stays_open
      */
     it('일괄 적용 중단(전체 롤백) 안내 박스가 조건부로 표시된다 (오류=red 톤)', () => {
         // bulkApplyAborted가 true일 때만 노출되는 오류(danger) 안내 박스
@@ -2211,6 +2215,8 @@ describe('기본 설정 탭 (general) - 날짜 표시 방식', () => {
 // =============================================
 // N. SEO 탭 (_tab_seo.json)
 // =============================================
+// 조합 요약(마커 아님, 평문): layout_file=modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_settings/_tab_seo.g7.html
+// 효과 요약(마커 아님, 평문): board_seo_tab_meta_settings_header_uses_section_header_asset, board_seo_tab_replaces_card_accordion_with_admin_card_for_three_page_types, board_seo_tab_form_field_names_preserve_seo_meta_boards_board_post_title_description
 describe('_tab_seo.json - SEO 설정 탭', () => {
     /**
      * @scenario save_path=bulk
@@ -2235,21 +2241,23 @@ describe('_tab_seo.json - SEO 설정 탭', () => {
         expect(tabSeo.if).toContain("'general'");
     });
 
+    // @scenario layout_file=modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_settings/_tab_seo.g7.html
     /**
      * @scenario save_path=bulk
      *
-     * @effects settings_layout_seo_tab_contract
+     * @effects settings_layout_seo_tab_contract, board_seo_tab_meta_settings_header_uses_section_header_asset
      */
     it('메타 설정 섹션 헤더가 존재한다 (section-header)', () => {
         const header = findById(tabSeo, 'meta_settings_header');
         expect(header).not.toBeNull();
-        expect(header.props.className).toBe('section-header');
+        expect(header.props.className).toBe('board-section-header');
     });
 
+    // @scenario layout_file=modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_settings/_tab_seo.g7.html
     /**
      * @scenario save_path=bulk
      *
-     * @effects settings_layout_seo_tab_contract
+     * @effects settings_layout_seo_tab_contract, board_seo_tab_replaces_card_accordion_with_admin_card_for_three_page_types
      */
     it('페이지별 admin-card 3개가 정의되어 있다 (boards/board/post)', () => {
         const cards = [
@@ -2260,15 +2268,16 @@ describe('_tab_seo.json - SEO 설정 탭', () => {
         for (const id of cards) {
             const node = findById(tabSeo, id);
             expect(node, `${id} 카드가 없다`).not.toBeNull();
-            expect(node.props.className).toBe('admin-card');
+            expect(node.props.className).toBe('board-admin-card');
             expect(node.name).toBe('SectionLayout');
         }
     });
 
+    // @scenario layout_file=modules/_bundled/sirsoft-board/resources/layouts/admin/partials/admin_board_settings/_tab_seo.g7.html
     /**
      * @scenario save_path=bulk
      *
-     * @effects settings_layout_seo_tab_contract
+     * @effects settings_layout_seo_tab_contract, board_seo_tab_form_field_names_preserve_seo_meta_boards_board_post_title_description
      */
     it('메타 제목/설명 입력 필드 6개가 올바른 name을 가진다', () => {
         const fields = findFormFields(tabSeo);

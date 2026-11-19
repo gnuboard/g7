@@ -71,7 +71,7 @@ class UserShippingCountryInfoListener implements HookListenerInterface
         $data['ecommerce_preferred_shipping_country_name'] = $country !== null
             ? $this->resolver->countryName($country)
             : null;
-        // 관리자 회원 상세의 배송국가 칸을 잠그는 키 — 저장 검증(`UserPreferenceCoreSaveListener`)과 같은 권한이다.
+        // 관리자 회원 상세의 배송국가 칸을 잠그는 키 — 저장 검증(`UserPreferenceFieldHandler::extraRules()`)과 같은 권한이다.
         $data['ecommerce_shipping_country_can_manage'] = PermissionHelper::check('sirsoft-ecommerce.user-shipping-country.manage');
 
         return $data;

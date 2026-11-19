@@ -7,7 +7,9 @@ use App\Enums\UserStatus;
 use App\Http\Resources\BaseApiResource;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Auth;
+use Modules\Sirsoft\Board\DisplayName\BoardDisplayNames;
 use Modules\Sirsoft\Board\Enums\PostStatus;
 use Modules\Sirsoft\Board\Enums\TriggerType;
 use Modules\Sirsoft\Board\Models\Post;
@@ -28,6 +30,24 @@ class CommentResource extends BaseApiResource
 {
     use ChecksBoardPermission;
     use FormatsBoardDate;
+
+    /**
+     * 댓글 목록을 리소스 컬렉션으로 만듭니다.
+     *
+     * 작성자 표시 이름이 회원 추가 항목 값을 쓰는 설정이면 그 값을 댓글마다 읽지 않게 여기서 한 번에 읽어 둔다.
+     *
+     * @param  mixed  $resource  댓글 목록
+     * @return AnonymousResourceCollection 리소스 컬렉션
+     */
+    public static function collection($resource)
+    {
+        if (is_iterable($resource)) {
+            $displayNames = app(BoardDisplayNames::class);
+            $displayNames->preload($resource, $displayNames->areaFor());
+        }
+
+        return parent::collection($resource);
+    }
 
     /**
      * 리소스를 배열로 변환합니다.
@@ -77,6 +97,14 @@ class CommentResource extends BaseApiResource
             // IP 주소 (admin.manage 권한 보유자만)
             'ip_address' => ($slug && $this->checkBoardPermission($slug, 'admin.manage'))
                 ? $this->ip_address
+                : null,
+
+            // 비회원 작성자가 낸 항목 값(이메일 등) — 관리자 글 상세가 미리 읽어 둔 경우에만, admin.manage 권한 보유자만(IP 주소와 같은 기준)
+            'guest_field_values' => (array_key_exists('guest_field_values_preloaded', $this->resource->getAttributes())
+                && $slug && $this->checkBoardPermission($slug, 'admin.manage'))
+                ? (is_array($this->resource->getAttributes()['guest_field_values_preloaded'])
+                    ? $this->resource->getAttributes()['guest_field_values_preloaded']
+                    : [])
                 : null,
 
             // 처리 이력(블라인드/복원 등) — admin.manage 권한 보유자만, 민감 필드 제외
@@ -154,15 +182,20 @@ class CommentResource extends BaseApiResource
             $isWithdrawn = $userStatus === UserStatus::Withdrawn;
             $canExposeEmail = $this->canExposeMemberEmail($request, $this->user_id);
 
-            return [
+            // 이름 키에는 이 화면(사용자 화면은 게시판별 설정, 관리자 화면은 관리자 영역)의 표시 이름만 싣는다.
+            // 실명은 관리자 화면 요청이고 회원 조회 권한이 있을 때만 `real_name` 으로 더한다(표시 이름과 같으면 싣지 않는다).
+            $displayNames = app(BoardDisplayNames::class);
+            $displayName = $displayNames->authorOf($this->resource, $displayNames->areaFor($request));
+
+            return $displayNames->withRealName([
                 'uuid' => $this->user?->uuid,
-                'name' => $isWithdrawn ? __('user.withdrawn_user') : $this->user->name,
+                'name' => $displayName,
                 'email' => ($isWithdrawn || ! $canExposeEmail) ? null : $this->user->email,
                 'avatar' => $isWithdrawn ? null : $this->user->getAvatarUrl(),
                 'status' => $this->user->status,
                 'status_label' => $userStatus?->label() ?? $this->user->status,
                 'is_guest' => false,
-            ];
+            ], $this->user, $displayName, $request);
         }
 
         // 회원 번호가 남았는데 계정이 없으면(하드 삭제) 비회원이 아니다 — 비회원 배지 없이 이름(없으면

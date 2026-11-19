@@ -94,6 +94,8 @@ export { default as PageLoading } from './PageLoading';
 export type { PageLoadingProps } from './PageLoading';
 export { Toggle } from './Toggle';
 export type { ToggleProps } from './Toggle';
+export { MemberFieldInput } from './MemberFieldInput';
+export type { MemberFieldInputProps, MemberFieldContract, MemberFieldOption } from './MemberFieldInput';
 export { TagInput } from './TagInput';
 export type { TagInputProps, TagOption } from './TagInput';
 export { MultilingualInput } from './MultilingualInput';

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\AttachmentSourceType;
 use App\Helpers\InlineMediaPolicy;
+use App\Support\AssetUrl;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -143,7 +144,11 @@ class Attachment extends Model
      */
     public static function urlForHash(string $hash): string
     {
-        return '/api/attachment/'.$hash;
+        // 마운트 접두사를 붙인다 — 사이트가 문서 루트 하위 폴더(`https://host/g7/`)에
+        // 설치된 배치에서 루트 상대 경로는 **사이트 밖**을 가리킨다. 형제 자산 통로
+        // (템플릿·모듈·플러그인·공개 스토리지)는 전부 `AssetUrl` 을 거쳐 이 접두사를
+        // 얻는데, 첨부·아바타만 리터럴 조립이라 그 배치에서 전부 404 였다.
+        return AssetUrl::basePrefix().'/api/attachment/'.$hash;
     }
 
     /**

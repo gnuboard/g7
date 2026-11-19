@@ -10,14 +10,14 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
 
 /**
- * 설정 배송 탭 — 배송유형 코드 맞바꾸기 저장 거절 (S10 13차)
+ * 설정 배송 탭 — 배송유형 코드 맞바꾸기 저장 거절
  *
  * 배송사(`EcommerceSettingsCarrierCodeSwapTest`)·클레임 사유와 같은 결함군이다.
  * `ecommerce_shipping_types.code` 는 UNIQUE 이고 `syncShippingTypes()` 는 설정 파일 쓰기 **뒤**
  * 행 단위로 update 하므로, 두 기존 배송유형의 코드를 한 저장에서 맞바꾸면 페이로드 유일성은
  * 통과하고 shipping 설정 파일은 기록된 채 DB 에서 죽어 500 + 반쪽 상태가 남는다.
  *
- * 11·12차가 사유 3종 → 배송사로 이 가드를 넓혔는데 배송유형만 남아 있었다.
+ * 앞서 사유 3종 → 배송사로 이 가드를 넓혔는데 배송유형만 남아 있었다.
  */
 class EcommerceSettingsShippingTypeCodeSwapTest extends ModuleTestCase
 {
@@ -97,7 +97,7 @@ class EcommerceSettingsShippingTypeCodeSwapTest extends ModuleTestCase
      * 같은 저장에서 지워지는 배송유형의 코드를 물려받는 것은 허용한다 — 삭제가 update 보다 먼저다.
      *
      * 맞바꾸기 거절(422)의 **음성 대조군**이다. 거절 effect 를 함께 마킹하면 그 effect 의 셀이
-     * 200 단언만으로 채워져 422 가드가 회귀해도 초록이 유지된다 — 대조군 전용 effect 로 가른다(19차).
+     * 200 단언만으로 채워져 422 가드가 회귀해도 초록이 유지된다 — 대조군 전용 effect 로 가른다.
      *
      * @scenario resource=shipping_type, error_class=none
      *
@@ -170,7 +170,7 @@ class EcommerceSettingsShippingTypeCodeSwapTest extends ModuleTestCase
      *
      * 사용 중 개명 거절(400)의 **음성 대조군**이다. 거절 effect 를 함께 마킹하면 그 effect 의
      * 셀이 200 단언만으로 채워져 400 가드가 회귀해도 초록이 유지된다 — 대조군 전용 effect 로
-     * 가른다(19차).
+     * 가른다.
      *
      * @scenario resource=shipping_type, error_class=none
      *

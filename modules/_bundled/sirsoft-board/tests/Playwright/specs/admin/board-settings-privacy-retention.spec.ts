@@ -11,9 +11,9 @@
  * 실행하지 않으므로 어떤 글도 처리되지 않는다. 이미 보유기간 기능을 켜 둔 사이트는 건드리지 않고
  * 건너뛴다. 설정을 바꾸는 spec 이라 직렬로 돈다(#42 — 확장 config 는 로컬 병렬).
  *
- * @scenario axis=guest, toggle=on, guest_mode=delete
+ * 조합 요약(마커 아님, 평문): axis=guest, toggle=on, guest_mode=delete
  *
- * @effects board_settings_retention_section_binds_saved_keys, board_settings_delete_warning_is_mode_conditional, board_retention_preview_api_counts_while_off
+ * 효과 요약(마커 아님, 평문): board_settings_retention_section_binds_saved_keys, board_settings_delete_warning_is_mode_conditional, board_retention_preview_api_counts_while_off
  */
 import { execSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
@@ -220,7 +220,7 @@ test('저장하면 본문에 privacy_retention 이 실리고 뱃지가 미리보
   await page.reload();
   await page.waitForLoadState('domcontentloaded', { timeout: 30_000 });
   // 두 축의 건수는 토글 아래 줄에 있다 — 기간 칸 묶음(켰을 때만 보임) 안에 두지 않는다(#636 §1-E).
-  const badges = page.locator('#privacy_retention_targets .badge');
+  const badges = page.locator('#privacy_retention_targets .board-badge');
   await expect(badges).toHaveCount(2, { timeout: 20_000 });
   await expect(badges.nth(0)).toContainText(String(preview.body.data.ip));
   await expect(badges.nth(1)).toContainText(String(preview.body.data.guest));
@@ -241,7 +241,7 @@ test('기능이 꺼져 있어도 두 축의 건수가 보이고 「IP 대상 보
 
     await page.reload();
     await page.waitForLoadState('networkidle', { timeout: 30_000 });
-    const badges = page.locator('#privacy_retention_targets .badge');
+    const badges = page.locator('#privacy_retention_targets .board-badge');
     await expect(badges.nth(0)).toContainText(String(preview.body.data.ip), { timeout: 20_000 });
 
     await page.locator('#view_ip_targets').click();
@@ -250,7 +250,8 @@ test('기능이 꺼져 있어도 두 축의 건수가 보이고 「IP 대상 보
     // 행 링크는 관리자 상세다 — 대상의 휴지통 글은 사용자 화면에서 403 이라 열 수 없다
     await expect(rows.first().locator('a').first()).toHaveAttribute('href', /^\/admin\/board\/[^/]+\/post\/\d+$/);
 
-    await page.locator('#privacy_targets_footer button').click();
+    // 닫기 단추는 Modal 고정 하단(.modal-footer-bar)에 있다(#869 P1)
+    await page.getByRole('dialog').locator('.modal-footer-bar button').click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
   } finally {
     artisanSeed('playwright:seed-board-retention --teardown');

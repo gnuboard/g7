@@ -1,0 +1,38 @@
+feature: 히어로섹션 위치별 표시 폭 (본문 폭 · 화면 전체)
+
+description: |
+  운영자가 위치(사이트 홈·쇼핑몰 메인)마다 배너를 본문 폭에 맞출지 화면 전체 폭으로 펼칠지 고른다. 기본은 본문 폭이라
+  업데이트 뒤에도 사이트 화면이 그대로다. 템플릿은 히어로 자리를 본문 상자 밖(전폭)에 두고 본문 상자 클래스를 확장점 속성
+  (`contentClass` 기본 · `contentClassTablet` 태블릿 · `contentClassDesktop` 데스크톱)으로 넘긴다. 본문 폭이면 슬라이더를 그 상자 안에, 화면 전체면 끝까지
+  그리되 제목·넘김 단추는 그 상자에 맞추고 높이는 640px 에서 멈춘다. 관리자 목록에서 고르면 저장 전에 미리보기가 바뀌고,
+  미리보기는 위치 설정 응답의 구좌 틀(`content`)로 같은 상자를 그린다. 표시 폭을 빼고 저장하면 지금 값을 유지한다.
+
+axes:
+  surface:
+    - position_settings_width
+    - preview_frame_content_box
+    - slider_content_box_wrap
+    - slider_full_text_box
+    - extension_passes_content_class
+    - admin_width_setting
+    - site_width_home_hero
+    - site_width_shop_hero
+    - slot_width_hint_from_position_settings
+    - slot_banner_hint_from_banners
+    - slot_hint_follows_registered_positions
+
+effects:
+  - site_slider_matches_width_setting
+  - preview_follows_width_before_save
+  - width_saved_and_restored
+  - extension_content_class_passed_to_slider   # 조각은 확장점이 넘긴 본문 상자 클래스(contentClass · 태블릿 contentClassTablet · 데스크톱 contentClassDesktop)를 슬라이더에 넘긴다
+
+test_files:
+  - plugins/_bundled/sirsoft-hero_section/tests/Feature/Admin/PositionSettingControllerTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Unit/Services/PreviewFrameResolverTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Unit/Listeners/SlotWidthHintListenerTest.php
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroSlider.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroPreviewFrame.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/hero_extensions.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/hero_section_banner_list.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/display-width.spec.ts

@@ -3,6 +3,8 @@
 namespace Plugins\Sirsoft\Gdpr\Services;
 
 use App\Contracts\Notifications\ChannelReadinessCheckerInterface;
+use App\DisplayName\DisplayNameAreaRegistry;
+use App\DisplayName\DisplayNameResolver;
 use App\Enums\UserStatus;
 use App\Extension\HookManager;
 use App\Models\User;
@@ -97,6 +99,7 @@ class GdprAnnualNoticeService
      * 이번 주기 통지 대상 명단의 한 페이지를 반환합니다 (데이터를 바꾸지 않음).
      *
      * 회원 ID 순 — 발송 루프(`candidates()` 의 ID 순)와 같은 방향이라 먼저 보이는 회원부터 나간다.
+     * 회원 칸은 코어 개인정보 대상 명단과 같이 관리자 영역(`core:admin`) 표시 이름이고 실명 보조는 싣지 않는다.
      *
      * @param  int  $page  페이지 번호 (1부터)
      * @param  int  $perPage  페이지 크기
@@ -104,10 +107,13 @@ class GdprAnnualNoticeService
      */
     public function dueTargets(int $page, int $perPage): LengthAwarePaginator
     {
-        return $this->notices->duePage($this->configuredChannels(), $page, $perPage)
+        $targets = $this->notices->duePage($this->configuredChannels(), $page, $perPage);
+        $names = app(DisplayNameResolver::class)->resolveMany($targets->items(), DisplayNameAreaRegistry::AREA_ADMIN);
+
+        return $targets
             ->through(fn (User $user) => new PrivacyRetentionTarget(
                 id: $user->id,
-                title: (string) $user->name,
+                title: (string) ($names[$user->id] ?? ''),
                 subtitle: $user->email,
                 date: $user->created_at,
                 url: '/admin/users/'.$user->uuid,
@@ -244,7 +250,8 @@ class GdprAnnualNoticeService
             'notifiable' => $user,
             'context' => ['trigger_user_id' => $user->id, 'trigger_user' => $user, 'channels' => $pending],
             'data' => [
-                'recipient_name' => $user->name,
+                // 받는 사람이 이 회원 본인이다. 코어 자리표시 `{recipient_name}` 을 실으면 코어가 받는 사람과 채널마다 표시 이름으로 푼다.
+                'recipient_name' => '{recipient_name}',
                 'app_name' => config('app.name'),
                 'introduction' => e($snapshot['introduction']),
                 'collection_summary' => __('sirsoft-gdpr::messages.annual_notice.collection_summary', [], $locale),

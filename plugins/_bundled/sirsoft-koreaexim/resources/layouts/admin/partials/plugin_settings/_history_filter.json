@@ -7,14 +7,21 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "admin-card mb-4"
+        "className": "koreaexim-admin-card koreaexim:mb-4"
     },
     "children": [
         {
             "type": "basic",
             "name": "Div",
+            "responsive": {
+                "768-": {
+                    "props": {
+                        "className": "koreaexim:grid koreaexim:grid-cols-2 koreaexim:gap-4"
+                    }
+                }
+            },
             "props": {
-                "className": "grid-2col-responsive"
+                "className": "koreaexim:grid koreaexim:grid-cols-1 koreaexim:gap-4"
             },
             "children": [
                 {
@@ -25,7 +32,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "koreaexim-form-label"
                             },
                             "text": "$t:sirsoft-koreaexim.date_from"
                         },
@@ -65,7 +72,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "koreaexim-form-label"
                             },
                             "text": "$t:sirsoft-koreaexim.date_to"
                         },
@@ -105,7 +112,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "koreaexim-form-label"
                             },
                             "text": "$t:sirsoft-koreaexim.result"
                         },
@@ -181,6 +188,10 @@
                                         "label": "$t:sirsoft-koreaexim.RunStatus.unsupported_base"
                                     },
                                     {
+                                        "value": "save_failed",
+                                        "label": "$t:sirsoft-koreaexim.RunStatus.save_failed"
+                                    },
+                                    {
                                         "value": "dry_run",
                                         "label": "$t:sirsoft-koreaexim.RunStatus.dry_run"
                                     }
@@ -197,7 +208,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "koreaexim-form-label"
                             },
                             "text": "$t:sirsoft-koreaexim.trigger"
                         },
@@ -262,7 +273,7 @@
             "if": "{{!!query.date_from && !!query.date_to && query.date_to < query.date_from}}",
             "props": {
                 "role": "alert",
-                "className": "form-error mt-2"
+                "className": "koreaexim-form-error koreaexim:mt-2"
             },
             "text": "$t:sirsoft-koreaexim.date_range_invalid"
         }

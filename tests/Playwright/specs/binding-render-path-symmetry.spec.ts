@@ -9,12 +9,13 @@
  * 단위 테스트가 소스 레벨을 잠그지만 실제 사용자가 보는 것은 빌드된 번들이므로
  * 브라우저에서 배포 번들의 공개 API 를 그대로 호출해 결과를 잠근다.
  *
- * 파일 헤더의 시나리오 목록은 아래 test 들이 실제로 다는 `@scenario` 의 합집합이어야 한다.
+ * 케이스 목록은 매니페스트 `tests/scenarios/binding-render-path-symmetry.yaml` 의 `case` 축이고,
+ * 각 test 가 자기 케이스를 `case=` 로 단다.
  * 반복 렌더의 항목별 조건 평가(`iteration_item_condition`)는 별개 축이라
  * `iteration-condition-render.spec.ts` 가 담당한다.
  *
- * @scenario binding_quoted_bracket_symmetry, binding_pipe_type_preservation, binding_brace_in_pipe, binding_empty_expression
- * @effects same_expression_same_value_across_paths
+ * @scenario binding-render-path-symmetry
+ * 효과 요약(마커 아님 — 평문): same_expression_same_value_across_paths, pipe_result_keeps_original_type, brace_inside_pipe_expression_not_leaked_raw, empty_binding_does_not_expose_context.
  */
 import { test, expect } from '../fixtures/auth';
 
@@ -29,7 +30,7 @@ test.describe('렌더 경로 간 바인딩 해석 대칭', () => {
     );
   });
 
-  // @scenario binding_quoted_bracket_symmetry
+  // @scenario case=binding_quoted_bracket_symmetry
   // @effects same_expression_same_value_across_paths
   test('따옴표 키 인덱싱이 반복 렌더와 조건 판정에서 같은 값을 본다', async ({ page }) => {
     const result = await page.evaluate(() => {
@@ -59,8 +60,8 @@ test.describe('렌더 경로 간 바인딩 해석 대칭', () => {
     expect(result.viaCondition).toBe(true);
   });
 
-  // @scenario binding_pipe_type_preservation
-  // @effects same_expression_same_value_across_paths
+  // @scenario case=binding_pipe_type_preservation
+  // @effects pipe_result_keeps_original_type
   test('파이프 결과가 원본 타입으로 전달된다 (문자열 서식 강제 없음)', async ({ page }) => {
     const result = await page.evaluate(() => {
       const g7 = (window as any).G7Core;
@@ -90,8 +91,8 @@ test.describe('렌더 경로 간 바인딩 해석 대칭', () => {
     expect(result[2].value).toBe(3);
   });
 
-  // @scenario binding_brace_in_pipe
-  // @effects same_expression_same_value_across_paths
+  // @scenario case=binding_brace_in_pipe
+  // @effects brace_inside_pipe_expression_not_leaked_raw
   test('파이프 식 안의 중괄호가 원본 문자열로 새지 않는다', async ({ page }) => {
     const value = await page.evaluate(() => {
       const g7 = (window as any).G7Core;
@@ -110,7 +111,7 @@ test.describe('렌더 경로 간 바인딩 해석 대칭', () => {
     expect(String(value)).not.toContain('{{');
   });
 
-  // @scenario binding_literal_symmetry
+  // @scenario case=binding_literal_symmetry
   // @effects same_expression_same_value_across_paths
   test('리터럴이 반복 렌더와 조건 판정에서 같은 값을 본다', async ({ page }) => {
     const result = await page.evaluate(() => {
@@ -143,8 +144,8 @@ test.describe('렌더 경로 간 바인딩 해석 대칭', () => {
     expect(result.repeatFalse).toBe(result.condFalse);
   });
 
-  // @scenario binding_empty_expression
-  // @effects same_expression_same_value_across_paths
+  // @scenario case=binding_empty_expression
+  // @effects empty_binding_does_not_expose_context
   test('빈 바인딩이 컨텍스트 객체 전체를 노출하지 않는다', async ({ page }) => {
     const value = await page.evaluate(() => {
       const g7 = (window as any).G7Core;

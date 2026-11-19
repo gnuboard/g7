@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands\Plugin;
 
+use App\Console\Commands\Concerns\HandlesPackageIntegrity;
+use App\Console\Commands\Concerns\PreviewsExtensionUpdate;
 use App\Console\Commands\Concerns\SelectsLayoutInstallSource;
 use App\Console\Commands\Traits\HasProgressBar;
 use App\Console\Commands\Traits\HasUnifiedConfirm;
@@ -11,8 +13,10 @@ use App\Console\Commands\Traits\RendersLayoutSyncResult;
 use App\Console\Commands\Traits\ReportsIntegrationNotices;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
 use App\Console\Commands\Traits\ReportsStuckUpdateRecovery;
+use App\Console\Commands\Traits\ReportsUpdateCheckErrors;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Exceptions\ExtensionUpdateFailedException;
+use App\Extension\Integrity\PackageIntegrityOptions;
 use App\Extension\PluginManager;
 use App\Extension\Support\LifecycleWarnings;
 use App\Extension\Vendor\VendorMode;
@@ -21,14 +25,17 @@ use Illuminate\Support\Facades\Log;
 
 class UpdatePluginCommand extends Command
 {
+    use HandlesPackageIntegrity;
     use HasProgressBar;
     use HasUnifiedConfirm;
     use LocalizesDescription;
+    use PreviewsExtensionUpdate;
     use RebuildsSearchIndex;
     use RendersLayoutSyncResult;
     use ReportsIntegrationNotices;
     use ReportsLifecycleWarnings;
     use ReportsStuckUpdateRecovery;
+    use ReportsUpdateCheckErrors;
     use SelectsLayoutInstallSource;
 
     /**
@@ -37,11 +44,17 @@ class UpdatePluginCommand extends Command
     protected $signature = 'plugin:update
         {identifier : 업데이트할 플러그인 식별자}
         {--force : 버전 비교 없이 강제 업데이트}
+        {--y|yes : 확인 질문만 생략 (--force 의 다른 효과 없이)}
         {--vendor-mode=auto : Vendor 설치 모드 (auto|composer|bundled)}
         {--layout-strategy=overwrite : 레이아웃 전략 (overwrite|keep)}
         {--source=auto : 업데이트 소스 (auto|bundled|github) — bundled 는 _bundled 만 사용(GitHub 우회)}
         {--zip= : 외부 ZIP 파일 경로 (지정 시 GitHub/번들 우회 + 버전은 plugin.json 기준)}
+        {--allow-unsigned : 서명되지 않은 패키지(또는 이 서버에서 서명을 검증할 수 없는 패키지)를 확인 없이 계속 — 답할 수 없는 실행(cron·CI)은 이 옵션이 없으면 실패. --force·--yes 는 이 확인을 대신하지 않음. 환경설정 「미서명 패키지 차단」이 켜져 있으면 무시}
+        {--signature= : --zip 의 서명 파일(.sig.json) 경로 — 생략하면 ZIP 옆 <zip>.sig.json 을 자동으로 씀}
         {--layout-source= : 레이아웃 설치 소스 (auto|json) — 생략하면 설정(LAYOUT_INSTALL_SOURCE)을 따름. json 은 짝 .json 이 있으면 .g7.html 대신 원본 JSON 으로 등록(진단·복구용)}
+        {--dry-run : 업데이트하지 않고 레이아웃 판정과 지워질 선언 항목만 출력 (DB·파일 무변경)}
+        {--json : --dry-run 결과를 JSON 으로 출력}
+        {--decisions= : 화면별 결정 JSON 파일 — {"layout:템플릿:화면": "take-theirs|keep-ours"}}
         {--rebuild-search-index : 완료 후 색인이 누락된 검색 인덱스를 재생성 (인덱스가 잠기거나 재색인됩니다 — 운영 중에는 유지보수 시간에 수행하세요)}';
 
     /**
@@ -105,6 +118,23 @@ class UpdatePluginCommand extends Command
 
         $sourceOverride = $sourceOption === 'auto' ? null : $sourceOption;
 
+        // 미리보기 — 업데이트하지 않고 관리자 [업데이트] 창과 같은 판정을 낸다.
+        if ($this->option('dry-run')) {
+            return $this->runUpdatePreview('plugin', $identifier, $sourceOverride, $layoutStrategy);
+        }
+
+        // 패키지 무결성 선택(--allow-unsigned·--signature) — 서명 파일이 없으면 시작하지 않는다(7.2.0)
+        $integrityOptions = $this->packageIntegrityOptionsFromInput();
+        if ($integrityOptions === null) {
+            return Command::FAILURE;
+        }
+
+        $layoutDecisions = $this->layoutRefreshDecisions();
+
+        if ($layoutDecisions === null) {
+            return Command::FAILURE;
+        }
+
         try {
             $this->pluginManager->loadPlugins();
 
@@ -126,7 +156,17 @@ class UpdatePluginCommand extends Command
             if ($zipPath === null) {
                 $checkResult = $this->pluginManager->checkPluginUpdate($identifier, $sourceOverride);
 
+                // GitHub 를 명시했는데 조회에 실패했으면 「업데이트 없음」으로 끝내지 않는다(소스 자동이면 번들 판정 + 경고)
+                if ($this->reportUpdateCheckError($checkResult, $sourceOverride, $identifier)) {
+                    return Command::FAILURE;
+                }
+
                 if (! $checkResult['update_available'] && ! $force) {
+                    // 이 서버의 업데이트가 끝나지 않은 채 남았으면 「업데이트 없음」으로 끝내지 않는다 — DB 판은 이미 새 판이다(#888)
+                    if ($this->refuseUnfinishedUpdate('plugin', $identifier)) {
+                        return Command::FAILURE;
+                    }
+
                     $this->info('✅ '.__('plugins.commands.update.no_update', ['plugin' => $identifier]));
 
                     return Command::SUCCESS;
@@ -156,11 +196,23 @@ class UpdatePluginCommand extends Command
 
             $this->newLine();
 
-            // 확인 프롬프트 (--force 시 건너뜀)
-            if (! $force && ! $this->unifiedConfirm(__('plugins.commands.update.confirm_question'), false)) {
-                $this->info(__('plugins.commands.update.aborted'));
+            // 확인 프롬프트 (--force 시 건너뜀).
+            // 확인에 답할 수 없는 실행(cron, CI, 원격 명령, --no-interaction)은 종전에 기본값 「아니오」로 취소 문구만 내고
+            // 종료 코드 0 으로 끝나 자동화가 성공으로 읽었다. 그런 실행은 사유와 --force 안내를 남기고 실패로 끝낸다.
+            // 대화형에서 운영자가 직접 「아니오」를 답한 취소는 의도이므로 종전대로 0 이다.
+            if (! $force) {
+                if (! $this->canAnswerConfirmation()) {
+                    return $this->refuseUnanswerableConfirmation(
+                        '❌ '.__('plugins.commands.update.confirm_unavailable', ['plugin' => $identifier]),
+                        __('plugins.commands.update.confirm_unavailable_hint', ['plugin' => $identifier]),
+                    );
+                }
 
-                return $this->confirmAbortExitCode();
+                if (! $this->unifiedConfirm(__('plugins.commands.update.confirm_question'), false)) {
+                    $this->info(__('plugins.commands.update.aborted'));
+
+                    return $this->confirmAbortExitCode();
+                }
             }
 
             // 업데이트 실행
@@ -179,7 +231,8 @@ class UpdatePluginCommand extends Command
             };
 
             try {
-                $updateResult = $this->pluginManager->updatePlugin(
+                // 패키지 서명 검증 — 미서명이면 대화형은 묻고, 답할 수 없는 실행은 --allow-unsigned 없이는 실패(7.2.0)
+                $updateResult = $this->withLayoutDecisions($layoutDecisions, fn () => $this->runWithIntegrityConsent(fn (PackageIntegrityOptions $integrity) => $this->pluginManager->updatePlugin(
                     $identifier,
                     $force,
                     $onProgress,
@@ -188,7 +241,8 @@ class UpdatePluginCommand extends Command
                     $onUpgradeStep,
                     $sourceOverride,
                     $zipPath,
-                );
+                    $integrity,
+                ), $integrityOptions));
                 $this->finishProgress();
                 $this->reportStuckUpdateRecovery(suggestActivate: true);
             } catch (\Exception $e) {
@@ -216,6 +270,7 @@ class UpdatePluginCommand extends Command
                 $this->renderLayoutIncludeWarnings($updateResult['layout_warnings'] ?? []);
                 $this->renderDependencyWarnings($updateResult);
                 $this->renderIntegrationNotices($updateResult['integration_notices'] ?? []);
+                $this->renderPackageIntegrity($updateResult['integrity'] ?? null);
 
                 Log::info('플러그인 업데이트 완료', [
                     'plugin' => $identifier,

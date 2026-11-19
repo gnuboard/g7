@@ -4,7 +4,6 @@ namespace App\Extension\Helpers;
 
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
-use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -70,44 +69,136 @@ class GithubHelper
     /**
      * 최신 릴리스 정보를 조회합니다.
      *
+     * `assets` 는 릴리스에 올린 파일 목록이다(서명 자산 짝 찾기 — `findSignedAssetPair()`).
+     * `status` 는 응답을 받았을 때의 HTTP 상태 코드다(연결 실패면 null). 404 는 「릴리스가 아직 없음」이고, 그 밖의 실패
+     * 상태(403 요청 한도 초과·5xx 등)는 조회 실패다 — 호출자가 둘을 가를 수 있게 싣는다(7.2.0 부터).
+     *
      * @param  string  $owner  저장소 소유자
      * @param  string  $repo  저장소 이름
      * @param  string  $token  GitHub Personal Access Token
-     * @return array{version: string|null, zipball_url: string|null, error: string|null}
+     * @return array{version: string|null, tag: string|null, zipball_url: string|null, assets: array<int, array{name: string, size: int, url: string|null, browser_download_url: string|null}>, error: string|null, status: int|null} 릴리스 정보 (조회 실패면 version null, API 연결 실패면 error 문장, 응답을 받았으면 HTTP 상태)
      */
     public static function fetchLatestRelease(string $owner, string $repo, string $token = ''): array
     {
-        $apiUrl = "https://api.github.com/repos/{$owner}/{$repo}/releases/latest";
-
-        try {
-            $response = static::request($token, 10)->get($apiUrl);
-        } catch (ConnectionException $e) {
-            Log::warning('GitHub API 연결 실패', ['url' => $apiUrl, 'error' => $e->getMessage()]);
-
-            return ['version' => null, 'zipball_url' => null, 'error' => __('common.errors.github_api_failed')];
-        }
-
-        if (! $response->successful()) {
-            return ['version' => null, 'zipball_url' => null, 'error' => null];
-        }
-
-        $data = $response->json();
-
-        if (! is_array($data) || ! isset($data['tag_name'])) {
-            return ['version' => null, 'zipball_url' => null, 'error' => null];
-        }
-
-        return [
-            'version' => ltrim($data['tag_name'], 'v'),
-            'zipball_url' => $data['zipball_url'] ?? null,
-            'error' => null,
-        ];
+        return static::fetchRelease("https://api.github.com/repos/{$owner}/{$repo}/releases/latest", $token);
     }
 
     /**
-     * GitHub에서 ZIP을 다운로드합니다.
+     * 태그로 릴리스 정보를 조회합니다 (`v` 접두 유/무 모두 시도).
      *
-     * 우선순위: 릴리스 zipball → main 브랜치 → master 브랜치
+     * 태그는 있는데 릴리스가 없으면(태그만 푸시) version 이 null 이다 — 그 경우 호출부는 태그 zipball 로 내려받고
+     * 미서명으로 다룬다.
+     *
+     * @param  string  $owner  저장소 소유자
+     * @param  string  $repo  저장소 이름
+     * @param  string  $version  버전 (v 접두 유/무 무관)
+     * @param  string  $token  GitHub Personal Access Token
+     * @return array{version: string|null, tag: string|null, zipball_url: string|null, assets: array<int, array{name: string, size: int, url: string|null, browser_download_url: string|null}>, error: string|null, status: int|null} 릴리스 정보 (릴리스가 없으면 version null, API 연결 실패면 error 문장, 응답을 받았으면 HTTP 상태)
+     */
+    public static function fetchReleaseByTag(string $owner, string $repo, string $version, string $token = ''): array
+    {
+        $plain = ltrim($version, 'vV');
+        $last = ['version' => null, 'tag' => null, 'zipball_url' => null, 'assets' => [], 'error' => null, 'status' => null];
+
+        foreach (["v{$plain}", $plain] as $tag) {
+            $result = static::fetchRelease("https://api.github.com/repos/{$owner}/{$repo}/releases/tags/".rawurlencode($tag), $token);
+            if ($result['version'] !== null) {
+                return $result;
+            }
+            $last = $result;
+        }
+
+        return $last;
+    }
+
+    /**
+     * 릴리스 자산 목록에서 서명된 ZIP 과 서명 파일 짝을 찾습니다.
+     *
+     * `{base}.zip` 과 `{base}.zip.sig.json` 이 함께 있어야 짝이다. `$preferredBase`(예 `sirsoft-board-1.3.0`)가 있으면 그
+     * 이름을 먼저 찾고, 없으면(GitHub 주소로 처음 설치 — 식별자를 모름) 짝이 맞는 첫 ZIP 을 쓴다.
+     *
+     * @param  array<int, array<string, mixed>>  $assets  릴리스 자산 목록
+     * @param  string|null  $preferredBase  우선 찾을 자산 이름 (`.zip` 앞부분)
+     * @return array{zip: array<string, mixed>, signature: array<string, mixed>}|null 짝 (없으면 null)
+     */
+    public static function findSignedAssetPair(array $assets, ?string $preferredBase = null): ?array
+    {
+        $byName = [];
+        foreach ($assets as $asset) {
+            if (is_array($asset) && is_string($asset['name'] ?? null)) {
+                $byName[$asset['name']] = $asset;
+            }
+        }
+
+        if ($preferredBase !== null && $preferredBase !== '') {
+            $zipName = $preferredBase.'.zip';
+            if (isset($byName[$zipName], $byName[$zipName.'.sig.json'])) {
+                return ['zip' => $byName[$zipName], 'signature' => $byName[$zipName.'.sig.json']];
+            }
+        }
+
+        foreach ($byName as $name => $asset) {
+            if (str_ends_with(strtolower($name), '.zip') && isset($byName[$name.'.sig.json'])) {
+                return ['zip' => $asset, 'signature' => $byName[$name.'.sig.json']];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 릴리스 자산 하나를 파일로 내려받습니다.
+     *
+     * 비공개 저장소 자산은 브라우저 주소로 받을 수 없어 API 주소(`url`)에 `Accept: application/octet-stream` 과 토큰을
+     * 실어 받는다. API 주소가 없으면 브라우저 주소를 쓴다.
+     *
+     * @param  array<string, mixed>  $asset  자산 (fetchLatestRelease 의 assets 항목)
+     * @param  string  $savePath  저장할 경로
+     * @param  string  $token  GitHub Personal Access Token
+     * @return void 반환값 없음
+     *
+     * @throws \RuntimeException 다운로드 실패 시
+     */
+    public static function downloadAsset(array $asset, string $savePath, string $token = ''): void
+    {
+        $url = is_string($asset['url'] ?? null) && $asset['url'] !== ''
+            ? $asset['url']
+            : (string) ($asset['browser_download_url'] ?? '');
+
+        if ($url === '') {
+            throw new \RuntimeException(__('common.errors.github_archive_download_failed', ['url' => (string) ($asset['name'] ?? '')]));
+        }
+
+        try {
+            $response = static::request($token, 120)
+                ->withHeaders(['Accept' => 'application/octet-stream'])
+                ->sink($savePath)
+                ->get($url);
+        } catch (ConnectionException $e) {
+            if (File::exists($savePath)) {
+                File::delete($savePath);
+            }
+
+            Log::warning('GitHub 릴리스 자산 다운로드 연결 실패', ['url' => $url, 'error' => $e->getMessage()]);
+
+            throw new \RuntimeException(__('common.errors.github_archive_download_failed', ['url' => $url]));
+        }
+
+        if (! $response->successful()) {
+            if (File::exists($savePath)) {
+                File::delete($savePath);
+            }
+
+            throw new \RuntimeException(__('common.errors.github_archive_download_failed', ['url' => $url]));
+        }
+    }
+
+    /**
+     * GitHub에서 최신 릴리스 ZIP(zipball)을 다운로드합니다.
+     *
+     * 태그 릴리스만 받는다 — 릴리스가 없으면 `main`·`master` 브랜치를 받지 않고 `github_release_not_found` 로 실패한다
+     * (7.2.0 전에는 브랜치 머리를 그대로 받아 검토되지 않은 코드가 설치됐다). 서명 자산을 쓰는 경로는
+     * `PackageAcquirer::fromGithubRelease()` 다.
      *
      * @param  string  $owner  저장소 소유자
      * @param  string  $repo  저장소 이름
@@ -115,47 +206,80 @@ class GithubHelper
      * @param  string  $token  GitHub Personal Access Token
      * @return string 다운로드된 ZIP 파일 경로
      *
-     * @throws \RuntimeException 다운로드 실패 시
+     * @throws \RuntimeException 릴리스가 없거나 다운로드 실패 시
      */
     public static function downloadZip(string $owner, string $repo, string $tempPath, string $token = ''): string
     {
         $zipPath = $tempPath.'/'.uniqid('github_').'.zip';
 
-        // 1단계: 릴리스에서 다운로드 시도
         $release = static::fetchLatestRelease($owner, $repo, $token);
-        if ($release['zipball_url']) {
-            try {
-                static::downloadArchive($release['zipball_url'], $zipPath, $token);
+        if ($release['error'] !== null) {
+            throw new \RuntimeException($release['error']);
+        }
 
-                return $zipPath;
-            } catch (\RuntimeException $e) {
-                Log::info('GitHub 릴리스 ZIP 다운로드 실패, 브랜치 폴백', [
-                    'owner' => $owner,
-                    'repo' => $repo,
-                    'error' => $e->getMessage(),
-                ]);
+        if (! $release['zipball_url']) {
+            throw new \RuntimeException(__('common.errors.github_release_not_found', ['repository' => $owner.'/'.$repo]));
+        }
+
+        try {
+            static::downloadArchive($release['zipball_url'], $zipPath, $token);
+        } catch (\RuntimeException $e) {
+            throw new \RuntimeException(__('common.errors.github_download_failed'), 0, $e);
+        }
+
+        return $zipPath;
+    }
+
+    /**
+     * 릴리스 API 응답을 공통 모양으로 바꿉니다.
+     *
+     * @param  string  $apiUrl  릴리스 API 주소
+     * @param  string  $token  GitHub Personal Access Token
+     * @return array{version: string|null, tag: string|null, zipball_url: string|null, assets: array<int, array{name: string, size: int, url: string|null, browser_download_url: string|null}>, error: string|null, status: int|null} 릴리스 정보 (릴리스가 없으면 version null, API 연결 실패면 error 문장, 응답을 받았으면 HTTP 상태)
+     */
+    protected static function fetchRelease(string $apiUrl, string $token = ''): array
+    {
+        $empty = ['version' => null, 'tag' => null, 'zipball_url' => null, 'assets' => [], 'error' => null, 'status' => null];
+
+        try {
+            $response = static::request($token, 10)->get($apiUrl);
+        } catch (ConnectionException $e) {
+            Log::warning('GitHub API 연결 실패', ['url' => $apiUrl, 'error' => $e->getMessage()]);
+
+            return ['error' => __('common.errors.github_api_failed')] + $empty;
+        }
+
+        if (! $response->successful()) {
+            return ['status' => $response->status()] + $empty;
+        }
+
+        $data = $response->json();
+
+        if (! is_array($data) || ! isset($data['tag_name'])) {
+            return ['status' => $response->status()] + $empty;
+        }
+
+        $assets = [];
+        foreach ((array) ($data['assets'] ?? []) as $asset) {
+            if (! is_array($asset) || ! is_string($asset['name'] ?? null)) {
+                continue;
             }
+            $assets[] = [
+                'name' => $asset['name'],
+                'size' => (int) ($asset['size'] ?? 0),
+                'url' => is_string($asset['url'] ?? null) ? $asset['url'] : null,
+                'browser_download_url' => is_string($asset['browser_download_url'] ?? null) ? $asset['browser_download_url'] : null,
+            ];
         }
 
-        // 2단계: main 브랜치 시도
-        $mainUrl = "https://github.com/{$owner}/{$repo}/archive/refs/heads/main.zip";
-        try {
-            static::downloadArchive($mainUrl, $zipPath);
-
-            return $zipPath;
-        } catch (\RuntimeException $e) {
-            // main 실패 → master 폴백
-        }
-
-        // 3단계: master 브랜치 시도
-        $masterUrl = "https://github.com/{$owner}/{$repo}/archive/refs/heads/master.zip";
-        try {
-            static::downloadArchive($masterUrl, $zipPath);
-
-            return $zipPath;
-        } catch (\RuntimeException $e) {
-            throw new \RuntimeException(__('common.errors.github_download_failed'));
-        }
+        return [
+            'version' => ltrim((string) $data['tag_name'], 'v'),
+            'tag' => (string) $data['tag_name'],
+            'zipball_url' => $data['zipball_url'] ?? null,
+            'assets' => $assets,
+            'error' => null,
+            'status' => $response->status(),
+        ];
     }
 
     /**
@@ -166,6 +290,7 @@ class GithubHelper
      * @param  string  $url  다운로드 URL
      * @param  string  $savePath  저장할 파일 경로
      * @param  string  $token  GitHub Personal Access Token
+     * @return void 반환값 없음
      *
      * @throws \RuntimeException 다운로드 실패 시
      */
@@ -333,6 +458,7 @@ class GithubHelper
      *
      * @param  string  $token  GitHub Personal Access Token (빈 문자열이면 인증 없음)
      * @param  int  $timeout  읽기 타임아웃(초)
+     * @return PendingRequest 헤더·토큰·타임아웃을 갖춘 요청
      */
     protected static function request(string $token = '', int $timeout = 10): PendingRequest
     {

@@ -1,77 +1,77 @@
 <!-- 게시판 폼 「글」 탭 — 글·댓글에 걸리는 한도를 모아 둔다(제목·본문·댓글 길이의 최소와 최대, 답글·댓글 깊이, 첨부 개수·크기·확장자, 금지어, 「새 글」 표시가 유지되는 시간). 이 게시판에 글을 쓰는 쪽이 지켜야 할 규칙을 한자리에 모은 탭이다 -->
 <partial description="Board Form - Post Tab Content">
-  <div data-ref="section_post_card" class="admin-card">
-    <h3 data-ref="section_post" class="card-title">$t:sirsoft-board.admin.form.tabs.post</h3>
-    <div data-ref="section_post_fields" class="row-stack">
-      <div data-ref="post_title_length_group" class="grid-2col">
+  <div data-ref="section_post_card" class="board-admin-card">
+    <h3 data-ref="section_post" class="board-card-title">$t:sirsoft-board.admin.form.tabs.post</h3>
+    <div data-ref="section_post_fields" class="board-row-stack">
+      <div data-ref="post_title_length_group" class="board-grid-2col">
         <div data-ref="min_title_length_field" class="">
-          <label data-ref="min_title_length_label" class="form-label">
+          <label data-ref="min_title_length_label" class="board-form-label">
             <span>$t:sirsoft-board.admin.form.fields.min_title_length.label</span>
           </label>
           <input data-ref="min_title_length_input" type="number" name="min_title_length" min="{{_local?.form?._meta?.limits?.min_title_length_min ?? 0}}" max="{{_local?.form?._meta?.limits?.min_title_length_max ?? 200}}" disabled="{{_computed.isReadOnly}}" class=""/>
-          <p data-ref="min_title_length_hint" class="form-hint">$t:sirsoft-board.admin.form.fields.min_title_length.hint|min={{board_config?.data?.limits?.min_title_length_min ?? 0}}|max={{board_config?.data?.limits?.min_title_length_max ?? 200}}</p>
-          <span data-if="{{_local.errors?.min_title_length}}" class="form-error-xs mt-1">{{_local.errors?.min_title_length?.[0] ?? ''}}</span>
+          <p data-ref="min_title_length_hint" class="board-form-hint">$t:sirsoft-board.admin.form.fields.min_title_length.hint|min={{board_config?.data?.limits?.min_title_length_min ?? 0}}|max={{board_config?.data?.limits?.min_title_length_max ?? 200}}</p>
+          <span data-if="{{_local.errors?.min_title_length}}" class="board-form-error-xs board:mt-1">{{_local.errors?.min_title_length?.[0] ?? ''}}</span>
         </div>
         <div data-ref="max_title_length_field" class="">
-          <label data-ref="max_title_length_label" class="form-label">
+          <label data-ref="max_title_length_label" class="board-form-label">
             <span>$t:sirsoft-board.admin.form.fields.max_title_length.label</span>
           </label>
           <input data-ref="max_title_length_input" type="number" name="max_title_length" min="{{_local?.form?._meta?.limits?.max_title_length_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_title_length_max ?? 1000}}" disabled="{{_computed.isReadOnly}}" class=""/>
-          <p data-ref="max_title_length_hint" class="form-hint">$t:sirsoft-board.admin.form.fields.max_title_length.hint|min={{board_config?.data?.limits?.max_title_length_min ?? 1}}|max={{board_config?.data?.limits?.max_title_length_max ?? 200}}</p>
-          <span data-if="{{_local.errors?.max_title_length}}" class="form-error-xs mt-1">{{_local.errors?.max_title_length?.[0] ?? ''}}</span>
+          <p data-ref="max_title_length_hint" class="board-form-hint">$t:sirsoft-board.admin.form.fields.max_title_length.hint|min={{board_config?.data?.limits?.max_title_length_min ?? 1}}|max={{board_config?.data?.limits?.max_title_length_max ?? 200}}</p>
+          <span data-if="{{_local.errors?.max_title_length}}" class="board-form-error-xs board:mt-1">{{_local.errors?.max_title_length?.[0] ?? ''}}</span>
         </div>
       </div>
-      <div data-ref="post_content_length_group" class="grid-2col">
+      <div data-ref="post_content_length_group" class="board-grid-2col">
         <div data-ref="min_content_length_field" class="">
-          <label data-ref="min_content_length_label" class="form-label">
+          <label data-ref="min_content_length_label" class="board-form-label">
             <span>$t:sirsoft-board.admin.form.fields.min_content_length.label</span>
           </label>
           <input data-ref="min_content_length_input" type="number" name="min_content_length" min="{{_local?.form?._meta?.limits?.min_content_length_min ?? 0}}" max="{{_local?.form?._meta?.limits?.min_content_length_max ?? 10000}}" disabled="{{_computed.isReadOnly}}" class=""/>
-          <p data-ref="min_content_length_hint" class="form-hint">$t:sirsoft-board.admin.form.fields.min_content_length.hint|min={{board_config?.data?.limits?.min_content_length_min ?? 0}}|max={{board_config?.data?.limits?.min_content_length_max ?? 10000}}</p>
-          <span data-if="{{_local.errors?.min_content_length}}" class="form-error-xs mt-1">{{_local.errors?.min_content_length?.[0] ?? ''}}</span>
+          <p data-ref="min_content_length_hint" class="board-form-hint">$t:sirsoft-board.admin.form.fields.min_content_length.hint|min={{board_config?.data?.limits?.min_content_length_min ?? 0}}|max={{board_config?.data?.limits?.min_content_length_max ?? 10000}}</p>
+          <span data-if="{{_local.errors?.min_content_length}}" class="board-form-error-xs board:mt-1">{{_local.errors?.min_content_length?.[0] ?? ''}}</span>
         </div>
         <div data-ref="max_content_length_field" class="">
-          <label data-ref="max_content_length_label" class="form-label">
+          <label data-ref="max_content_length_label" class="board-form-label">
             <span>$t:sirsoft-board.admin.form.fields.max_content_length.label</span>
           </label>
           <input data-ref="max_content_length_input" type="number" name="max_content_length" min="{{_local?.form?._meta?.limits?.max_content_length_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_content_length_max ?? 100000}}" disabled="{{_computed.isReadOnly}}" class=""/>
-          <p data-ref="max_content_length_hint" class="form-hint">$t:sirsoft-board.admin.form.fields.max_content_length.hint|min={{board_config?.data?.limits?.max_content_length_min ?? 1}}|max={{board_config?.data?.limits?.max_content_length_max ?? 50000}}</p>
-          <span data-if="{{_local.errors?.max_content_length}}" class="form-error-xs mt-1">{{_local.errors?.max_content_length?.[0] ?? ''}}</span>
+          <p data-ref="max_content_length_hint" class="board-form-hint">$t:sirsoft-board.admin.form.fields.max_content_length.hint|min={{board_config?.data?.limits?.max_content_length_min ?? 1}}|max={{board_config?.data?.limits?.max_content_length_max ?? 50000}}</p>
+          <span data-if="{{_local.errors?.max_content_length}}" class="board-form-error-xs board:mt-1">{{_local.errors?.max_content_length?.[0] ?? ''}}</span>
         </div>
       </div>
       <div data-ref="blocked_keywords_field" class="">
-        <label data-ref="blocked_keywords_label" class="form-label">
+        <label data-ref="blocked_keywords_label" class="board-form-label">
           <span>$t:sirsoft-board.admin.form.fields.blocked_keywords.label</span>
         </label>
         <tag-input data-type="composite" data-ref="blocked_keywords_input" name="blocked_keywords" placeholder="$t:sirsoft-board.admin.form.fields.blocked_keywords.placeholder" :creatable="true" disabled="{{_computed.isReadOnly}}"/>
-        <p data-ref="blocked_keywords_description" class="form-hint">$t:sirsoft-board.admin.form.fields.blocked_keywords.description</p>
-        <span data-if="{{_local.errors?.blocked_keywords}}" class="form-error-xs mt-1">{{_local.errors?.blocked_keywords?.[0] ?? ''}}</span>
+        <p data-ref="blocked_keywords_description" class="board-form-hint">$t:sirsoft-board.admin.form.fields.blocked_keywords.description</p>
+        <span data-if="{{_local.errors?.blocked_keywords}}" class="board-form-error-xs board:mt-1">{{_local.errors?.blocked_keywords?.[0] ?? ''}}</span>
       </div>
       <div data-ref="new_display_hours_field" class="">
-        <label data-ref="new_display_hours_label" class="form-label">
+        <label data-ref="new_display_hours_label" class="board-form-label">
           <span>$t:sirsoft-board.admin.form.fields.new_display_hours.label</span>
         </label>
         <input data-ref="new_display_hours_input" type="number" name="new_display_hours" min="{{_local?.form?._meta?.limits?.new_display_hours_min ?? 0}}" max="{{_local?.form?._meta?.limits?.new_display_hours_max ?? 720}}" disabled="{{_computed.isReadOnly}}" class=""/>
-        <p data-ref="new_display_hours_hint" class="form-hint">$t:sirsoft-board.admin.form.fields.new_display_hours.hint</p>
-        <span data-if="{{_local.errors?.new_display_hours}}" class="form-error-xs mt-1">{{_local.errors?.new_display_hours?.[0] ?? ''}}</span>
+        <p data-ref="new_display_hours_hint" class="board-form-hint">$t:sirsoft-board.admin.form.fields.new_display_hours.hint</p>
+        <span data-if="{{_local.errors?.new_display_hours}}" class="board-form-error-xs board:mt-1">{{_local.errors?.new_display_hours?.[0] ?? ''}}</span>
       </div>
-      <div data-ref="use_reply_toggle" class="flex-start justify-between">
-        <div class="flex-1">
-          <label class="text-heading">$t:sirsoft-board.admin.form.fields.use_reply</label>
-          <p class="form-hint">$t:sirsoft-board.admin.form.descriptions.use_reply</p>
+      <div data-ref="use_reply_toggle" class="board-flex-start board:justify-between">
+        <div class="board:flex-1">
+          <label class="board-text-heading">$t:sirsoft-board.admin.form.fields.use_reply</label>
+          <p class="board-form-hint">$t:sirsoft-board.admin.form.descriptions.use_reply</p>
         </div>
-        <toggle data-type="composite" name="use_reply" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0 ml-4"/>
+        <toggle data-type="composite" name="use_reply" disabled="{{_computed.isReadOnly}}" class="board:flex-shrink-0 board:ml-4"/>
       </div>
       <div data-ref="max_reply_depth_field" data-if="{{_local.form.use_reply}}" class="">
-        <label data-ref="max_reply_depth_label" class="form-label">
+        <label data-ref="max_reply_depth_label" class="board-form-label">
           <span>$t:sirsoft-board.admin.form.fields.max_reply_depth.label</span>
         </label>
         <input data-ref="max_reply_depth_input" type="number" name="max_reply_depth" min="{{_local?.form?._meta?.limits?.max_reply_depth_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_reply_depth_max ?? 10}}" disabled="{{_computed.isReadOnly}}" class=""/>
-        <p data-ref="max_reply_depth_hint" class="form-hint">$t:sirsoft-board.admin.form.fields.max_reply_depth.hint|min={{board_config?.data?.limits?.max_reply_depth_min ?? 1}}|max={{board_config?.data?.limits?.max_reply_depth_max ?? 10}}</p>
-        <span data-if="{{_local.errors?.max_reply_depth}}" class="form-error-xs mt-1">{{_local.errors?.max_reply_depth?.[0] ?? ''}}</span>
+        <p data-ref="max_reply_depth_hint" class="board-form-hint">$t:sirsoft-board.admin.form.fields.max_reply_depth.hint|min={{board_config?.data?.limits?.max_reply_depth_min ?? 1}}|max={{board_config?.data?.limits?.max_reply_depth_max ?? 10}}</p>
+        <span data-if="{{_local.errors?.max_reply_depth}}" class="board-form-error-xs board:mt-1">{{_local.errors?.max_reply_depth?.[0] ?? ''}}</span>
       </div>
       <div data-ref="reply_delete_policy_field" data-if="{{_local.form.use_reply}}" class="">
-        <label data-ref="reply_delete_policy_label" class="form-label">
+        <label data-ref="reply_delete_policy_label" class="board-form-label">
           <span>$t:sirsoft-board.admin.form.fields.reply_delete_policy.label</span>
         </label>
         <select data-ref="reply_delete_policy_select" name="reply_delete_policy" disabled="{{_computed.isReadOnly}}" class="">
@@ -80,11 +80,11 @@
             <option value="block">$t:sirsoft-board.admin.form.fields.reply_delete_policy.options.block</option>
           </options>
         </select>
-        <p data-ref="reply_delete_policy_hint" class="form-hint">$t:sirsoft-board.admin.form.fields.reply_delete_policy.hint</p>
-        <span data-if="{{_local.errors?.reply_delete_policy}}" class="form-error-xs mt-1">{{_local.errors?.reply_delete_policy?.[0] ?? ''}}</span>
+        <p data-ref="reply_delete_policy_hint" class="board-form-hint">$t:sirsoft-board.admin.form.fields.reply_delete_policy.hint</p>
+        <span data-if="{{_local.errors?.reply_delete_policy}}" class="board-form-error-xs board:mt-1">{{_local.errors?.reply_delete_policy?.[0] ?? ''}}</span>
       </div>
       <div data-ref="secret_reply_visibility_field" data-if="{{_local.form.use_reply &amp;&amp; _local.form.secret_mode !== 'disabled'}}" class="">
-        <label data-ref="secret_reply_visibility_label" class="form-label">
+        <label data-ref="secret_reply_visibility_label" class="board-form-label">
           <span>$t:sirsoft-board.admin.form.fields.secret_reply_visibility.label</span>
         </label>
         <select data-ref="secret_reply_visibility_select" name="secret_reply_visibility" disabled="{{_computed.isReadOnly}}" class="">
@@ -94,88 +94,276 @@
             <item value="per_post" label="$t:sirsoft-board.admin.form.fields.secret_reply_visibility.options.per_post" description="$t:sirsoft-board.admin.form.fields.secret_reply_visibility.descriptions.per_post"/>
           </prop>
         </select>
-        <p data-ref="secret_reply_visibility_description_thread_path" data-if="{{(_local.form.secret_reply_visibility ?? 'thread_path') === 'thread_path'}}" class="form-hint">$t:sirsoft-board.admin.form.fields.secret_reply_visibility.descriptions.thread_path</p>
-        <p data-ref="secret_reply_visibility_description_descendants_only" data-if="{{_local.form.secret_reply_visibility === 'descendants_only'}}" class="form-hint">$t:sirsoft-board.admin.form.fields.secret_reply_visibility.descriptions.descendants_only</p>
-        <p data-ref="secret_reply_visibility_description_per_post" data-if="{{_local.form.secret_reply_visibility === 'per_post'}}" class="form-hint">$t:sirsoft-board.admin.form.fields.secret_reply_visibility.descriptions.per_post</p>
-        <span data-if="{{_local.errors?.secret_reply_visibility}}" class="form-error-xs mt-1">{{_local.errors?.secret_reply_visibility?.[0] ?? ''}}</span>
+        <p data-ref="secret_reply_visibility_description_thread_path" data-if="{{(_local.form.secret_reply_visibility ?? 'thread_path') === 'thread_path'}}" class="board-form-hint">$t:sirsoft-board.admin.form.fields.secret_reply_visibility.descriptions.thread_path</p>
+        <p data-ref="secret_reply_visibility_description_descendants_only" data-if="{{_local.form.secret_reply_visibility === 'descendants_only'}}" class="board-form-hint">$t:sirsoft-board.admin.form.fields.secret_reply_visibility.descriptions.descendants_only</p>
+        <p data-ref="secret_reply_visibility_description_per_post" data-if="{{_local.form.secret_reply_visibility === 'per_post'}}" class="board-form-hint">$t:sirsoft-board.admin.form.fields.secret_reply_visibility.descriptions.per_post</p>
+        <span data-if="{{_local.errors?.secret_reply_visibility}}" class="board-form-error-xs board:mt-1">{{_local.errors?.secret_reply_visibility?.[0] ?? ''}}</span>
       </div>
-      <div data-ref="use_comment_toggle" class="flex-start justify-between">
-        <div class="flex-1">
-          <label class="text-heading">$t:sirsoft-board.admin.form.fields.use_comment</label>
-          <p class="form-hint">$t:sirsoft-board.admin.form.descriptions.use_comment</p>
+      <div data-ref="use_comment_toggle" class="board-flex-start board:justify-between">
+        <div class="board:flex-1">
+          <label class="board-text-heading">$t:sirsoft-board.admin.form.fields.use_comment</label>
+          <p class="board-form-hint">$t:sirsoft-board.admin.form.descriptions.use_comment</p>
         </div>
-        <toggle data-type="composite" name="use_comment" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0 ml-4"/>
+        <toggle data-type="composite" name="use_comment" disabled="{{_computed.isReadOnly}}" class="board:flex-shrink-0 board:ml-4"/>
       </div>
-      <div data-ref="post_comment_length_group" data-if="{{_local.form.use_comment}}" class="grid-2col">
+      <div data-ref="post_comment_length_group" data-if="{{_local.form.use_comment}}" class="board-grid-2col">
         <div data-ref="min_comment_length_field" class="">
-          <label data-ref="min_comment_length_label" class="form-label">
+          <label data-ref="min_comment_length_label" class="board-form-label">
             <span>$t:sirsoft-board.admin.form.fields.min_comment_length.label</span>
           </label>
           <input data-ref="min_comment_length_input" type="number" name="min_comment_length" min="{{_local?.form?._meta?.limits?.min_comment_length_min ?? 0}}" max="{{_local?.form?._meta?.limits?.min_comment_length_max ?? 1000}}" disabled="{{_computed.isReadOnly}}" class=""/>
-          <p data-ref="min_comment_length_hint" class="form-hint">$t:sirsoft-board.admin.form.fields.min_comment_length.hint|min={{board_config?.data?.limits?.min_comment_length_min ?? 0}}|max={{board_config?.data?.limits?.min_comment_length_max ?? 1000}}</p>
-          <span data-if="{{_local.errors?.min_comment_length}}" class="form-error-xs mt-1">{{_local.errors?.min_comment_length?.[0] ?? ''}}</span>
+          <p data-ref="min_comment_length_hint" class="board-form-hint">$t:sirsoft-board.admin.form.fields.min_comment_length.hint|min={{board_config?.data?.limits?.min_comment_length_min ?? 0}}|max={{board_config?.data?.limits?.min_comment_length_max ?? 1000}}</p>
+          <span data-if="{{_local.errors?.min_comment_length}}" class="board-form-error-xs board:mt-1">{{_local.errors?.min_comment_length?.[0] ?? ''}}</span>
         </div>
         <div data-ref="max_comment_length_field" class="">
-          <label data-ref="max_comment_length_label" class="form-label">
+          <label data-ref="max_comment_length_label" class="board-form-label">
             <span>$t:sirsoft-board.admin.form.fields.max_comment_length.label</span>
           </label>
           <input data-ref="max_comment_length_input" type="number" name="max_comment_length" min="{{_local?.form?._meta?.limits?.max_comment_length_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_comment_length_max ?? 10000}}" disabled="{{_computed.isReadOnly}}" class=""/>
-          <p data-ref="max_comment_length_hint" class="form-hint">$t:sirsoft-board.admin.form.fields.max_comment_length.hint|min={{board_config?.data?.limits?.max_comment_length_min ?? 1}}|max={{board_config?.data?.limits?.max_comment_length_max ?? 1000}}</p>
-          <span data-if="{{_local.errors?.max_comment_length}}" class="form-error-xs mt-1">{{_local.errors?.max_comment_length?.[0] ?? ''}}</span>
+          <p data-ref="max_comment_length_hint" class="board-form-hint">$t:sirsoft-board.admin.form.fields.max_comment_length.hint|min={{board_config?.data?.limits?.max_comment_length_min ?? 1}}|max={{board_config?.data?.limits?.max_comment_length_max ?? 1000}}</p>
+          <span data-if="{{_local.errors?.max_comment_length}}" class="board-form-error-xs board:mt-1">{{_local.errors?.max_comment_length?.[0] ?? ''}}</span>
         </div>
       </div>
       <div data-ref="max_comment_depth_field" data-if="{{_local.form.use_comment}}" class="">
-        <label data-ref="max_comment_depth_label" class="form-label">
+        <label data-ref="max_comment_depth_label" class="board-form-label">
           <span>$t:sirsoft-board.admin.form.fields.max_comment_depth.label</span>
         </label>
         <input data-ref="max_comment_depth_input" type="number" name="max_comment_depth" min="{{_local?.form?._meta?.limits?.max_comment_depth_min ?? 0}}" max="{{_local?.form?._meta?.limits?.max_comment_depth_max ?? 10}}" disabled="{{_computed.isReadOnly}}" class=""/>
-        <p data-ref="max_comment_depth_hint" class="form-hint">$t:sirsoft-board.admin.form.fields.max_comment_depth.hint|min={{board_config?.data?.limits?.max_comment_depth_min ?? 0}}|max={{board_config?.data?.limits?.max_comment_depth_max ?? 10}}</p>
-        <span data-if="{{_local.errors?.max_comment_depth}}" class="form-error-xs mt-1">{{_local.errors?.max_comment_depth?.[0] ?? ''}}</span>
+        <p data-ref="max_comment_depth_hint" class="board-form-hint">$t:sirsoft-board.admin.form.fields.max_comment_depth.hint|min={{board_config?.data?.limits?.max_comment_depth_min ?? 0}}|max={{board_config?.data?.limits?.max_comment_depth_max ?? 10}}</p>
+        <span data-if="{{_local.errors?.max_comment_depth}}" class="board-form-error-xs board:mt-1">{{_local.errors?.max_comment_depth?.[0] ?? ''}}</span>
       </div>
       <div data-ref="comment_order_field" data-if="{{_local.form.use_comment}}" class="">
-        <label data-ref="comment_order_label" class="form-label">
+        <label data-ref="comment_order_label" class="board-form-label">
           <span>$t:sirsoft-board.admin.form.fields.comment_order.label</span>
         </label>
-        <select data-ref="comment_order_select" name="comment_order" disabled="{{_computed.isReadOnly}}" class="w-full">
+        <select data-ref="comment_order_select" name="comment_order" disabled="{{_computed.isReadOnly}}" class="board:w-full">
           <options>
             <option value="ASC">$t:sirsoft-board.admin.form.fields.comment_order.options.asc</option>
             <option value="DESC">$t:sirsoft-board.admin.form.fields.comment_order.options.desc</option>
           </options>
         </select>
       </div>
-      <div data-ref="use_file_upload_toggle" class="flex-start justify-between">
-        <div class="flex-1">
-          <label class="text-heading">$t:sirsoft-board.admin.form.fields.use_file_upload.label</label>
-          <p class="form-hint">$t:sirsoft-board.admin.form.fields.use_file_upload.description</p>
+      <div data-ref="use_file_upload_toggle" class="board-flex-start board:justify-between">
+        <div class="board:flex-1">
+          <label class="board-text-heading">$t:sirsoft-board.admin.form.fields.use_file_upload.label</label>
+          <p class="board-form-hint">$t:sirsoft-board.admin.form.fields.use_file_upload.description</p>
         </div>
-        <toggle data-type="composite" name="use_file_upload" disabled="{{_computed.isReadOnly}}" class="flex-shrink-0 ml-4"/>
+        <toggle data-type="composite" name="use_file_upload" disabled="{{_computed.isReadOnly}}" class="board:flex-shrink-0 board:ml-4"/>
       </div>
-      <div data-ref="file_settings_group" data-if="{{_local.form.use_file_upload}}" class="grid-2col">
+      <div data-ref="file_settings_group" data-if="{{_local.form.use_file_upload}}" class="board-grid-2col">
         <div data-ref="max_file_count_field" class="">
-          <label data-ref="max_file_count_label" class="form-label">
+          <label data-ref="max_file_count_label" class="board-form-label">
             <span>$t:sirsoft-board.admin.form.fields.max_file_count.label</span>
           </label>
           <input data-ref="max_file_count_input" type="number" name="max_file_count" min="{{_local?.form?._meta?.limits?.max_file_count_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_file_count_max ?? 20}}" disabled="{{_computed.isReadOnly}}" class=""/>
-          <p data-ref="max_file_count_hint" class="form-hint">$t:sirsoft-board.admin.form.fields.max_file_count.hint|count={{board_config?.data?.limits?.max_file_count_max ?? 20}}|min={{board_config?.data?.limits?.max_file_count_min ?? 1}}|max={{board_config?.data?.limits?.max_file_count_max ?? 20}}</p>
-          <span data-if="{{_local.errors?.max_file_count}}" class="form-error-xs mt-1">{{_local.errors?.max_file_count?.[0] ?? ''}}</span>
+          <p data-ref="max_file_count_hint" class="board-form-hint">$t:sirsoft-board.admin.form.fields.max_file_count.hint|count={{board_config?.data?.limits?.max_file_count_max ?? 20}}|min={{board_config?.data?.limits?.max_file_count_min ?? 1}}|max={{board_config?.data?.limits?.max_file_count_max ?? 20}}</p>
+          <span data-if="{{_local.errors?.max_file_count}}" class="board-form-error-xs board:mt-1">{{_local.errors?.max_file_count?.[0] ?? ''}}</span>
         </div>
         <div data-ref="max_file_size_field" class="">
-          <label data-ref="max_file_size_label" class="form-label">
+          <label data-ref="max_file_size_label" class="board-form-label">
             <span>$t:sirsoft-board.admin.form.fields.max_file_size.label</span>
           </label>
           <input data-ref="max_file_size_input" type="number" name="max_file_size" min="{{_local?.form?._meta?.limits?.max_file_size_min ?? 1}}" max="{{_local?.form?._meta?.limits?.max_file_size_max ?? 200}}" placeholder="$t:sirsoft-board.admin.form.fields.max_file_size.placeholder" disabled="{{_computed.isReadOnly}}" class=""/>
-          <p data-ref="max_file_size_hint" class="form-hint">$t:sirsoft-board.admin.form.fields.max_file_size.hint|maxMB={{board_config?.data?.limits?.max_file_size_max ?? 200}}</p>
-          <span data-if="{{_local.errors?.max_file_size}}" class="form-error-xs mt-1">{{_local.errors?.max_file_size?.[0] ?? ''}}</span>
+          <p data-ref="max_file_size_hint" class="board-form-hint">$t:sirsoft-board.admin.form.fields.max_file_size.hint|maxMB={{board_config?.data?.limits?.max_file_size_max ?? 200}}</p>
+          <span data-if="{{_local.errors?.max_file_size}}" class="board-form-error-xs board:mt-1">{{_local.errors?.max_file_size?.[0] ?? ''}}</span>
         </div>
       </div>
       <div data-ref="allowed_extensions_field" data-if="{{_local.form.use_file_upload}}" class="">
-        <label data-ref="allowed_extensions_label" class="form-label">
+        <label data-ref="allowed_extensions_label" class="board-form-label">
           <span>$t:sirsoft-board.admin.form.fields.allowed_extensions.label</span>
         </label>
         <tag-input data-type="composite" data-ref="allowed_extensions_input" name="allowed_extensions" placeholder="$t:sirsoft-board.admin.form.fields.allowed_extensions.placeholder" :creatable="true" disabled="{{_computed.isReadOnly}}"/>
-        <p data-ref="allowed_extensions_description" class="form-hint">$t:sirsoft-board.admin.form.fields.allowed_extensions.description</p>
+        <p data-ref="allowed_extensions_description" class="board-form-hint">$t:sirsoft-board.admin.form.fields.allowed_extensions.description</p>
         <!-- 확장자 없이 첨부를 켜고 저장하면 422 가 이 칸을 가리킨다 — 형제 칸(최대 파일 용량·개수)처럼 칸 아래에도 문구를 둔다 -->
-        <span data-if="{{_local.errors?.allowed_extensions}}" class="form-error-xs mt-1">{{_local.errors?.allowed_extensions?.[0] ?? ''}}</span>
+        <span data-if="{{_local.errors?.allowed_extensions}}" class="board-form-error-xs board:mt-1">{{_local.errors?.allowed_extensions?.[0] ?? ''}}</span>
+      </div>
+      <!-- 작성자 표시 이름 — 이 게시판의 글과 댓글에서 회원 작성자를 어떤 이름으로 보일지 정한다(#490).
+           방식은 셋이다: 사이트 기본값 따름(inherit), 특정 종류 고정(fixed), 회원이 고른 값(member).
+           값은 `form.display_name_setting = { mode, kind }` 한 객체로 저장 본문에 실린다. 「고정」이 아니면 kind 를 null 로 되돌린다
+           (서버는 fixed 일 때만 kind 를 읽고, 남은 kind 가 다음에 「고정」으로 돌아올 때 엉뚱한 기본값이 되지 않게 한다) -->
+      <div data-ref="display_name_field" class="">
+        <label data-ref="display_name_label" class="board-form-label">
+          <span>$t:sirsoft-board.admin.form.display_name.label</span>
+        </label>
+        <div data-ref="display_name_controls" class="board-grid-2col">
+          <div>
+            <select data-ref="board_display_name_mode" aria-label="$t:sirsoft-board.admin.form.display_name.mode_label" value="{{_local.form?.display_name_setting?.mode ?? 'inherit'}}" disabled="{{_computed.isReadOnly}}" class="board:w-full">
+              <prop name="options">
+                <item value="inherit" label="$t:sirsoft-board.admin.form.display_name.modes.inherit"/>
+                <item value="fixed" label="$t:sirsoft-board.admin.form.display_name.modes.fixed"/>
+                <item value="member" label="$t:sirsoft-board.admin.form.display_name.modes.member"/>
+              </prop>
+              <on type="change">
+                <!-- 방식을 바꾼다. 「고정」으로 가면 앞서 고른 종류가 있으면 그것을, 없으면 지금 물려받는 종류를 먼저 채워 둔다(종류 없이 저장하면 422). 그 밖의 방식은 종류를 비운다 -->
+                <set-state target="local" form.display_name_setting="{{({mode: $event.target.value, kind: $event.target.value === 'fixed' ? (_local.form?.display_name_setting?.kind ?? _local.form?.display_name_options?.inherited?.kind ?? null) : null})}}" :hasChanges="true"/>
+              </on>
+            </select>
+            <span data-ref="display_name_mode_error" data-if="{{_local.errors?.['display_name_setting.mode']}}" class="board-form-error-xs board:mt-1">{{_local.errors?.['display_name_setting.mode']?.[0] ?? ''}}</span>
+          </div>
+          <div data-ref="display_name_kind_field" data-if="{{_local.form?.display_name_setting?.mode === 'fixed'}}">
+            <select data-ref="board_display_name_kind" aria-label="$t:sirsoft-board.admin.form.display_name.kind_label" placeholder="$t:sirsoft-board.admin.form.display_name.kind_placeholder" value="{{_local.form?.display_name_setting?.kind ?? ''}}" options="{{(_local.form?.display_name_options?.kinds ?? []).map(k => ({ value: k.value, label: k.label }))}}" disabled="{{_computed.isReadOnly}}" class="board:w-full">
+              <on type="change">
+                <!-- 고정할 종류를 고른다(이름, 닉네임, 가린 이름 등 서버가 준 목록) -->
+                <set-state target="local" form.display_name_setting="{{({mode: 'fixed', kind: $event.target.value || null})}}" :hasChanges="true"/>
+              </on>
+            </select>
+            <span data-ref="display_name_kind_error" data-if="{{_local.errors?.['display_name_setting.kind']}}" class="board-form-error-xs board:mt-1">{{_local.errors?.['display_name_setting.kind']?.[0] ?? ''}}</span>
+          </div>
+        </div>
+        <p data-ref="display_name_description" class="board-form-hint">$t:sirsoft-board.admin.form.display_name.description</p>
+        <!-- 「따름」이면 지금 이 게시판에 실제로 적용되는 값을 알려 준다(회원 설정의 게시판 영역 값 또는 사이트 기본값) -->
+        <p data-ref="display_name_inherited_hint" data-if="{{(_local.form?.display_name_setting?.mode ?? 'inherit') === 'inherit' &amp;&amp; !!_local.form?.display_name_options?.inherited}}" class="board-form-hint">$t:sirsoft-board.admin.form.display_name.inherited_hint|value={{_local.form?.display_name_options?.inherited?.mode === 'member' ? $t('sirsoft-board.admin.form.display_name.modes.member') : (_local.form?.display_name_options?.inherited?.kind_label ?? '-')}}</p>
+        <p data-ref="display_name_member_hint" data-if="{{_local.form?.display_name_setting?.mode === 'member'}}" class="board-form-hint">$t:sirsoft-board.admin.form.display_name.member_hint</p>
+        <!-- 닉네임이 있어야 그릴 수 있는 종류를 고정하면 회원 항목의 닉네임이 사용, 필수로 잠긴다. 저장 전에 알린다 -->
+        <div data-ref="display_name_nickname_notice" data-if="{{_local.form?.display_name_setting?.mode === 'fixed' &amp;&amp; (_local.form?.display_name_options?.kinds ?? []).some(k => k.value === _local.form?.display_name_setting?.kind &amp;&amp; k.requires_nickname === true)}}" class="board-alert-warning board:mt-2">
+          <icon name="lock" class="board:text-amber-600 board:dark:text-amber-400 board:flex-shrink-0"/>
+          <span class="board:text-xs board-tone-warning">$t:sirsoft-board.admin.form.display_name.requires_nickname_notice</span>
+        </div>
+      </div>
+      <!-- 비회원 작성자 항목 — 비회원이 글과 댓글을 쓸 때 받는 항목의 사용, 필수를 게시판별로 정한다(#490).
+           행은 서버가 준 `form.guest_author_field_rows`(고정 항목 이름과 비밀번호 + 항목 엔진의 항목)이고,
+           스위치가 바꾸는 값은 `form.guest_author_fields[항목 키].{post|comment}.{enabled|required}`(불리언)이다.
+           행마다 `_v` 에 지금 값(폼 값 우선, 없으면 서버가 준 행 값)을 얹어 네 칸이 같은 값을 읽는다. 「사용」이 꺼지면 「필수」도 꺼진 것으로 본다.
+           운영자 항목은 표 위 「항목 추가」(창 `_guest_author_field_add_modal`)로 만들고, 그 행(`row.is_custom`)만 지울 수 있다.
+           항목은 집합 전체(모든 게시판)에 생기고 지워지므로, 만들 때는 꺼진 채로 두고 지울 때는 모든 게시판에서 사라진다고 묻는다.
+           다른 확장이 기여한 항목은 그 확장이, 모듈이 선언한 항목은 모듈이 맡아 지울 수 없다.
+           넓은 화면은 표, 좁은 화면은 항목별 카드로 같은 값을 그린다 -->
+      <div data-ref="guest_author_fields_field" class="">
+        <label data-ref="guest_author_fields_label" class="board-form-label">
+          <span>$t:sirsoft-board.admin.form.guest_author_fields.label</span>
+        </label>
+        <p data-ref="guest_author_fields_description" class="board-form-hint">$t:sirsoft-board.admin.form.guest_author_fields.description</p>
+        <on listen="sirsoft-board:guest-author-field-added">
+          <!-- 추가 창이 새 항목을 만들면 이 표에 행을 더한다(꺼진 채, 다른 게시판과 같은 기본). 창은 이 화면의 상태를 직접 고치지 않는다 -->
+          <set-state target="local" form.guest_author_field_rows="{{[...(_local.form?.guest_author_field_rows ?? []), {id: _eventData.field?.id, is_custom: true, key: _eventData.field?.key, label: _eventData.field?.label ?? $localized(_eventData.field?.name) ?? _eventData.field?.key, type: _eventData.field?.type, fixed: false, available: true, source_type: 'custom', source_label: null, post: {enabled: false, required: false, enabled_locked: false, required_locked: false, lock_reason: null}, comment: {enabled: false, required: false, enabled_locked: false, required_locked: false, lock_reason: null}}]}}" form.guest_author_fields="{{Object.assign({}, _local.form?.guest_author_fields ?? {}, Object.fromEntries([[_eventData.field?.key, {post: {enabled: false, required: false}, comment: {enabled: false, required: false}}]]))}}"/>
+        </on>
+        <div data-ref="guest_author_fields_toolbar" data-if="{{!_computed.isReadOnly}}" class="board:flex board:justify-end board:mt-2">
+          <button data-ref="guest_author_field_add_button" type="button" class="board-btn board-btn-secondary board-flex-center board:gap-2">
+            <on type="click">
+              <!-- 창 상태를 통째로 새로 만들고 연다 -->
+              <sequence>
+                <set-state target="global" guestAuthorFieldAdd="{{({key: '', type: 'text', name: {}, options_text: '', isSaving: false, errors: null})}}"/>
+                <open-modal target="guest_author_field_add_modal"/>
+              </sequence>
+            </on>
+            <icon name="plus" size="sm"/>
+            <span>$t:sirsoft-board.admin.form.guest_author_fields.add.button</span>
+          </button>
+        </div>
+        <div data-ref="guest_author_fields_list" class="board:overflow-x-clip board:mt-2">
+          <responsive on="portable" class="board:mt-2">
+            <div data-ref="board_guest_author_fields_cards">
+              <div data-ref="guest_field_card_{{row.key}}" data-each="row in (_local.form?.guest_author_field_rows ?? []).map(r => ({...r, _v: {post: {enabled: (_local.form?.guest_author_fields?.[r.key]?.post?.enabled ?? r.post?.enabled) === true, required: (_local.form?.guest_author_fields?.[r.key]?.post?.enabled ?? r.post?.enabled) === true &amp;&amp; (_local.form?.guest_author_fields?.[r.key]?.post?.required ?? r.post?.required) === true}, comment: {enabled: (_local.form?.guest_author_fields?.[r.key]?.comment?.enabled ?? r.comment?.enabled) === true, required: (_local.form?.guest_author_fields?.[r.key]?.comment?.enabled ?? r.comment?.enabled) === true &amp;&amp; (_local.form?.guest_author_fields?.[r.key]?.comment?.required ?? r.comment?.required) === true}}}))" class="board-excel-card board:mb-3">
+                <div class="board-excel-card-header">
+                  <div class="board:min-w-0">
+                    <div class="board-excel-card-title board:min-w-0 board:wrap-anywhere">{{row.label}}</div>
+                    <p data-if="{{row.fixed === true}}" class="board-form-hint">$t:sirsoft-board.admin.form.guest_author_fields.fixed_hint</p>
+                    <p data-if="{{row.fixed !== true &amp;&amp; row.available !== false &amp;&amp; !!(row.post?.lock_reason ?? row.comment?.lock_reason)}}" class="board-form-hint">{{row.post?.lock_reason ?? row.comment?.lock_reason ?? ''}}</p>
+                  </div>
+                  <span class="board:inline-flex board:items-center board:px-2 board:py-0.5 board:rounded board:text-xs board:font-medium board:bg-gray-100 board:text-gray-800 board:dark:bg-gray-700 board:dark:text-gray-200 board:shrink-0">{{row.source_label ? row.source_label : (row.source_type === 'custom' ? $t('sirsoft-board.admin.form.guest_author_fields.source.custom') : $t('sirsoft-board.admin.form.guest_author_fields.source.board'))}}</span>
+                  <button data-ref="guest_field_card_delete_{{row.key}}" data-if="{{row.is_custom === true &amp;&amp; !_computed.isReadOnly}}" type="button" aria-label="$t:sirsoft-board.admin.form.guest_author_fields.delete|label={{row.label}}" class="board:p-1 board:shrink-0 board:text-gray-500 board:dark:text-gray-400 board:hover:text-red-600 board:dark:hover:text-red-400">
+                    <on type="click">
+                      <!-- 확인을 받고 지운다. 항목은 모든 게시판에서 사라지고 받은 값도 지워진다. 성공하면 이 표에서 행과 값을 뺀다(게시판 저장과 따로 즉시 반영) -->
+                      <sequence confirm="$t:sirsoft-board.admin.form.guest_author_fields.delete_confirm|label={{row.label}}">
+                        <api-call :auth_required="true" target="{{'/api/admin/field-sets/sirsoft-board.guest_author/fields/' + row.id}}" method="DELETE">
+                          <success>
+                            <set-state target="local" form.guest_author_field_rows="{{(_local.form?.guest_author_field_rows ?? []).filter(r => r.key !== row.key)}}" form.guest_author_fields="{{Object.fromEntries(Object.entries(_local.form?.guest_author_fields ?? {}).filter(([k]) => k !== row.key))}}"/>
+                            <toast type="success" message="$t:sirsoft-board.admin.form.guest_author_fields.delete_success"/>
+                          </success>
+                          <fail>
+                            <toast type="error" message="{{error.message}}"/>
+                          </fail>
+                        </api-call>
+                      </sequence>
+                    </on>
+                    <icon name="trash" size="sm"/>
+                  </button>
+                </div>
+                <div class="board-excel-card-body">
+                  <div data-if="{{row.available === false}}" class="board-excel-card-row">
+                    <span class="board-badge board-badge-yellow">$t:sirsoft-board.admin.form.guest_author_fields.unavailable</span>
+                    <span class="board-excel-card-value board-text-tertiary">{{row.post?.lock_reason ?? row.comment?.lock_reason ?? $t('sirsoft-board.admin.form.guest_author_fields.unavailable_hint')}}</span>
+                  </div>
+                  <div data-each="cell in (row.available === false ? [] : [{s: 'post', p: 'enabled', label: $t('sirsoft-board.admin.form.guest_author_fields.columns.post_enabled')}, {s: 'post', p: 'required', label: $t('sirsoft-board.admin.form.guest_author_fields.columns.post_required')}, {s: 'comment', p: 'enabled', label: $t('sirsoft-board.admin.form.guest_author_fields.columns.comment_enabled')}, {s: 'comment', p: 'required', label: $t('sirsoft-board.admin.form.guest_author_fields.columns.comment_required')}])" class="board-excel-card-row">
+                    <span class="board-excel-card-label">{{cell.label}}</span>
+                    <div class="board-excel-card-value">
+                      <toggle data-type="composite" data-ref="guest_field_{{row.key}}_{{cell.s}}_{{cell.p}}_m" checked="{{row._v[cell.s][cell.p]}}" ariaLabel="$t:common.row_cell|row={{row.label}}|column={{cell.label}}" size="sm" disabled="{{_computed.isReadOnly || row.fixed === true || row[cell.s]?.[cell.p + '_locked'] === true || (cell.p === 'required' &amp;&amp; !row._v[cell.s].enabled)}}">
+                        <on type="change">
+                          <!-- 넓은 화면 표의 스위치와 같은 규칙으로 같은 값을 바꾼다 -->
+                          <set-state target="local" form.guest_author_fields="{{Object.assign({}, _local.form?.guest_author_fields ?? {}, Object.fromEntries([[row.key, Object.assign({}, row._v, Object.fromEntries([[cell.s, cell.p === 'enabled' ? {enabled: !row._v[cell.s].enabled, required: false} : {enabled: row._v[cell.s].enabled, required: !row._v[cell.s].required}]]))]]))}}" :hasChanges="true"/>
+                        </on>
+                      </toggle>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </responsive>
+          <table data-ref="board_guest_author_fields_table" class="board:w-full">
+            <thead>
+              <tr>
+                <th class="board-text-tertiary board:text-left board:font-medium board:px-4 board:py-2">$t:sirsoft-board.admin.form.guest_author_fields.columns.field</th>
+                <th class="board-text-tertiary board:text-left board:font-medium board:px-4 board:py-2 board:w-32">$t:sirsoft-board.admin.form.guest_author_fields.columns.source</th>
+                <th class="board-text-tertiary board:text-center board:font-medium board:px-4 board:py-2 board:w-20">$t:sirsoft-board.admin.form.guest_author_fields.columns.post_enabled</th>
+                <th class="board-text-tertiary board:text-center board:font-medium board:px-4 board:py-2 board:w-20">$t:sirsoft-board.admin.form.guest_author_fields.columns.post_required</th>
+                <th class="board-text-tertiary board:text-center board:font-medium board:px-4 board:py-2 board:w-20">$t:sirsoft-board.admin.form.guest_author_fields.columns.comment_enabled</th>
+                <th class="board-text-tertiary board:text-center board:font-medium board:px-4 board:py-2 board:w-20">$t:sirsoft-board.admin.form.guest_author_fields.columns.comment_required</th>
+                <th class="board-text-tertiary board:text-center board:font-medium board:px-4 board:py-2 board:w-16">$t:sirsoft-board.admin.form.guest_author_fields.columns.actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr data-ref="guest_field_row_{{row.key}}" data-each="row in (_local.form?.guest_author_field_rows ?? []).map(r => ({...r, _v: {post: {enabled: (_local.form?.guest_author_fields?.[r.key]?.post?.enabled ?? r.post?.enabled) === true, required: (_local.form?.guest_author_fields?.[r.key]?.post?.enabled ?? r.post?.enabled) === true &amp;&amp; (_local.form?.guest_author_fields?.[r.key]?.post?.required ?? r.post?.required) === true}, comment: {enabled: (_local.form?.guest_author_fields?.[r.key]?.comment?.enabled ?? r.comment?.enabled) === true, required: (_local.form?.guest_author_fields?.[r.key]?.comment?.enabled ?? r.comment?.enabled) === true &amp;&amp; (_local.form?.guest_author_fields?.[r.key]?.comment?.required ?? r.comment?.required) === true}}}))" class="board:border-t board:border-gray-200 board:dark:border-gray-700">
+                <td class="board:px-4 board:py-2">
+                  <div class="board-flex-center board:gap-2 board:min-w-0">
+                    <icon data-if="{{row.fixed === true}}" name="lock" class="board:text-xs board:text-gray-500 board:dark:text-gray-400 board:flex-shrink-0"/>
+                    <span class="board-text-heading board:min-w-0 board:wrap-anywhere">{{row.label}}</span>
+                  </div>
+                  <p data-if="{{row.fixed === true}}" class="board-form-hint">$t:sirsoft-board.admin.form.guest_author_fields.fixed_hint</p>
+                  <p data-ref="guest_field_lock_reason_{{row.key}}" data-if="{{row.fixed !== true &amp;&amp; row.available !== false &amp;&amp; !!(row.post?.lock_reason ?? row.comment?.lock_reason)}}" class="board-form-hint">{{row.post?.lock_reason ?? row.comment?.lock_reason ?? ''}}</p>
+                </td>
+                <td class="board:px-4 board:py-2">
+                  <span data-ref="guest_field_source_{{row.key}}" class="board:inline-flex board:items-center board:px-2 board:py-0.5 board:rounded board:text-xs board:font-medium board:bg-gray-100 board:text-gray-800 board:dark:bg-gray-700 board:dark:text-gray-200">{{row.source_label ? row.source_label : (row.source_type === 'custom' ? $t('sirsoft-board.admin.form.guest_author_fields.source.custom') : $t('sirsoft-board.admin.form.guest_author_fields.source.board'))}}</span>
+                </td>
+                <!-- 유형을 제공한 확장이 꺼진 항목은 스위치 대신 「사용 불가」 한 칸으로 남긴다(행을 지우지 않는다 — 확장을 다시 켜면 설정이 그대로 돌아온다) -->
+                <td data-ref="guest_field_unavailable_{{row.key}}" data-if="{{row.available === false}}" :colSpan="4" class="board:px-4 board:py-2">
+                  <div class="board-flex-center board:gap-2">
+                    <span class="board-badge board-badge-yellow">$t:sirsoft-board.admin.form.guest_author_fields.unavailable</span>
+                    <span class="board-text-tertiary">{{row.post?.lock_reason ?? row.comment?.lock_reason ?? $t('sirsoft-board.admin.form.guest_author_fields.unavailable_hint')}}</span>
+                  </div>
+                </td>
+                <td data-each="cell in (row.available === false ? [] : [{s: 'post', p: 'enabled', label: $t('sirsoft-board.admin.form.guest_author_fields.columns.post_enabled')}, {s: 'post', p: 'required', label: $t('sirsoft-board.admin.form.guest_author_fields.columns.post_required')}, {s: 'comment', p: 'enabled', label: $t('sirsoft-board.admin.form.guest_author_fields.columns.comment_enabled')}, {s: 'comment', p: 'required', label: $t('sirsoft-board.admin.form.guest_author_fields.columns.comment_required')}])" class="board:px-4 board:py-2 board:text-center">
+                  <toggle data-type="composite" data-ref="guest_field_{{row.key}}_{{cell.s}}_{{cell.p}}" checked="{{row._v[cell.s][cell.p]}}" ariaLabel="$t:common.row_cell|row={{row.label}}|column={{cell.label}}" size="sm" disabled="{{_computed.isReadOnly || row.fixed === true || row[cell.s]?.[cell.p + '_locked'] === true || (cell.p === 'required' &amp;&amp; !row._v[cell.s].enabled)}}">
+                    <on type="change">
+                      <!-- 한 칸을 뒤집는다. 「사용」을 끄면 같은 표면의 「필수」도 끈다(쓰지 않는 항목이 필수일 수 없다). 값은 항목 키 아래 네 칸을 통째로 불리언으로 다시 쓴다 — 서버가 문자열 값을 받지 않는다 -->
+                      <set-state target="local" form.guest_author_fields="{{Object.assign({}, _local.form?.guest_author_fields ?? {}, Object.fromEntries([[row.key, Object.assign({}, row._v, Object.fromEntries([[cell.s, cell.p === 'enabled' ? {enabled: !row._v[cell.s].enabled, required: false} : {enabled: row._v[cell.s].enabled, required: !row._v[cell.s].required}]]))]]))}}" :hasChanges="true"/>
+                    </on>
+                  </toggle>
+                </td>
+                <!-- 운영자가 만든 항목만 지울 수 있다 -->
+                <td class="board:px-4 board:py-2 board:text-center">
+                  <button data-ref="guest_field_delete_{{row.key}}" data-if="{{row.is_custom === true &amp;&amp; !_computed.isReadOnly}}" type="button" aria-label="$t:sirsoft-board.admin.form.guest_author_fields.delete|label={{row.label}}" class="board:p-1 board:text-gray-500 board:dark:text-gray-400 board:hover:text-red-600 board:dark:hover:text-red-400">
+                    <on type="click">
+                      <!-- 확인을 받고 지운다. 항목은 모든 게시판에서 사라지고 받은 값도 지워진다. 성공하면 이 표에서 행과 값을 뺀다(게시판 저장과 따로 즉시 반영) -->
+                      <sequence confirm="$t:sirsoft-board.admin.form.guest_author_fields.delete_confirm|label={{row.label}}">
+                        <api-call :auth_required="true" target="{{'/api/admin/field-sets/sirsoft-board.guest_author/fields/' + row.id}}" method="DELETE">
+                          <success>
+                            <set-state target="local" form.guest_author_field_rows="{{(_local.form?.guest_author_field_rows ?? []).filter(r => r.key !== row.key)}}" form.guest_author_fields="{{Object.fromEntries(Object.entries(_local.form?.guest_author_fields ?? {}).filter(([k]) => k !== row.key))}}"/>
+                            <toast type="success" message="$t:sirsoft-board.admin.form.guest_author_fields.delete_success"/>
+                          </success>
+                          <fail>
+                            <toast type="error" message="{{error.message}}"/>
+                          </fail>
+                        </api-call>
+                      </sequence>
+                    </on>
+                    <icon name="trash" size="sm"/>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <span data-ref="guest_author_fields_error" data-if="{{_local.errors?.guest_author_fields}}" class="board-form-error-xs board:mt-1">{{_local.errors?.guest_author_fields?.[0] ?? ''}}</span>
       </div>
       <!-- 본문 미디어 정책 — 「파일 첨부 사용」과 따로 판정하므로 첨부가 꺼져 있어도 보인다 (#883, D26) -->
       <include src="_content_media_policy.g7.html"/>

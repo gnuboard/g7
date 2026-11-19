@@ -142,6 +142,16 @@ test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/RefundExecutionServiceTest.php
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/user-claim-return.spec.ts
   - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/user-claim-cancel-refund.spec.ts
+  # 아래는 취소, 환불 파이프라인의 서버와 관리자 화면 시험이다. 각 시험이 이 매니페스트의 축 어휘
+  # (claim_type, charge_method, refund_branch)로 조합을 적으므로 그 축의 출처가 여기다 — 취소, 환불의
+  # 자동 전이 분기(refund_branch=auto)와 승인 대기 분기(request)가 이 화면의 분기와 같은 술어를 탄다.
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/OrderCancellationServiceTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimCancellationRecordTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/PaymentMethodRefundPathTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Console/CancelPendingPaymentOrdersTest.php
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/OrderCancellationControllerTest.php
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminOrderCancelModalConditionalUi.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimActivityLogTest.php
 
 notes: |
   **철회 모달의 진입점은 S13 소유다.** 이 세션은 확인 절차(`templates/_bundled/sirsoft-basic/layouts/partials/mypage/claims/_modal_withdraw.g7.html`)와 실행

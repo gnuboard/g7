@@ -11,8 +11,15 @@
             "comment": "필터 영역",
             "type": "basic",
             "name": "Div",
+            "responsive": {
+                "640-": {
+                    "props": {
+                        "className": "flex flex-row gap-3 mb-4"
+                    }
+                }
+            },
             "props": {
-                "className": "flex flex-col sm:flex-row gap-3 mb-4"
+                "className": "flex flex-col gap-3 mb-4"
             },
             "children": [
                 {

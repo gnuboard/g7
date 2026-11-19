@@ -39,6 +39,8 @@ vi.mock('../template-engine', async () => {
     initTemplateEngine: vi.fn().mockResolvedValue(undefined),
     renderTemplate: renderTemplateMock,
     destroyTemplate: vi.fn(),
+    // TemplateApp 이 오류 화면·언어 전환 경로에서 부른다 — 대역에 없으면 import 단계에서 시험 전체가 깨진다
+    releaseTemplateRoot: vi.fn(),
     updateTemplateData: updateTemplateDataMock,
     DataSourceManager: actual.DataSourceManager,
     getActionDispatcher: vi.fn().mockReturnValue(sharedActionDispatcher),
@@ -47,7 +49,8 @@ vi.mock('../template-engine', async () => {
       reactRoot: null,
       currentLayoutJson: null,
       currentDataContext: { _global: {} },
-      bindingEngine: { invalidateCacheByKeys: vi.fn(), clearCache: vi.fn(), startRenderCycle: vi.fn() },
+      // startCacheEpoch: 화면 전환이 바인딩 캐시 새 세대를 연다 (engine-v1.95.0, BINDING_CACHE_EPOCH)
+      bindingEngine: { invalidateCacheByKeys: vi.fn(), clearCache: vi.fn(), startCacheEpoch: vi.fn(() => 1), startRenderCycle: vi.fn() },
     }),
   };
 });
@@ -180,6 +183,29 @@ describe('[case:state-global-locale-switch-reentry] TemplateApp 언어 전환 �
     const ctx = lastRenderContext();
     expect(ctx._local?.form?.title).toEqual({ ko: '저장 전 제목' });
     expect(ctx._localInit).toBeUndefined();
+  });
+
+  /**
+   * 하위 폴더 배치(`/g7`)에서는 브라우저 주소가 마운트 접두사를 품는다. 인계 경로는 접두사를 벗기고 정규화한
+   * 라우트 경로여야 라우터 재진입(접두사 없는 route.path)과 맞는다 — 어느 한쪽만 하면 인계를 잃는다(3차 병합 M2).
+   *
+   * @scenario case=unsaved_title_kept
+   * @effects unsaved_local_kept, init_local_not_applied
+   */
+  it('하위 폴더의 끝 슬래시 주소에서 언어를 바꿔도 접두사 없는 경로 재진입이 전환 직전 _local 을 이어받는다', async () => {
+    (window as any).G7Config = { basePath: '/g7' };
+    try {
+      window.history.replaceState(null, '', '/g7' + ROUTE.path + '/?tab=basic');
+
+      await app.changeLocale('en');
+
+      const ctx = lastRenderContext();
+      expect(ctx._local?.form?.title).toEqual({ ko: '저장 전 제목' });
+      expect(ctx._local?.hasChanges).toBe(true);
+      expect(ctx._localInit).toBeUndefined();
+    } finally {
+      delete (window as any).G7Config;
+    }
   });
 
   /**

@@ -1,0 +1,18 @@
+feature: 확장 교체가 남긴 옛 클래스 파일 정리 대기 목록의 안전성
+
+description: |
+  정리 대기 목록은 확실하지 않으면 지우지 않는다(실을 때 내용 지문이 없으면 남김). 목록 쓰기는 잠금 안에서 원자 교체로 하고,
+  잠금을 얻지 못하면 상대 기록을 덮지 않고 넘긴다(남는 파일만 생긴다). 업데이트가 실패해 백업으로 되돌리면 대기 목록도 백업
+  시점으로 되돌리고, 백업을 지우면 그 사본도 지운다. 새 판이 대소문자만 바꿔 출하한 경로는 옛 파일을 싣지 않는다.
+
+axes:
+  case: [unknown_hash, concurrent_write, backup_restore, case_only_rename]
+
+effects:
+  - ledger_never_deletes_unverified_file
+  - ledger_writes_are_locked_and_atomic
+  - backup_restore_restores_ledger_entry
+  - case_only_rename_not_carried
+
+test_files:
+  - tests/Feature/Extension/CarriedClassFileLedgerSafetyTest.php

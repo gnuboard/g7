@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 4축 전개(요청 4 × 맥락 7 × 캐시 3 × 확장 상태 3 = 252 조합)는 docblock @scenario 1:1 매핑이 비현실적이라 조합 축만 면제한다. 각 W 항목의 회귀 가드는 effects 37건 전수 @effects 마킹과 test_files 로 지킨다 — effects·test_files 축은 면제하지 않는다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#860 4축 전개(요청 4 × 맥락 7 × 캐시 3 × 확장 상태 3 = 252 조합)는 docblock @scenario 1:1 매핑이 비현실적이라 조합 축만 면제한다. 각 W 항목의 회귀 가드는 effects 37건 전수 @effects 마킹과 test_files 로 지킨다 — effects·test_files 축은 면제하지 않는다.
 
 feature: boot_repeated_work
 

@@ -1,5 +1,3 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 축은 표면(가림 함수·상품 후기 목록·전체 후기 목록)마다 의미가 달라 전수 곱이 아니라 표면별 경로를 잠근다.
-
 feature: 공개 후기 작성자 이름 가림 + 전체 후기 공개 목록(리뷰 모아보기)
 
 description: |
@@ -13,9 +11,15 @@ axes:
   surface: [masker, product_review_list, review_feed]
   masking: [middle, none]
   author: [member, imported, short_name]
-  name_length: [boundary]
-  visibility: [hidden_product_or_review]
-  filter: [photo_only_and_rating, sort, invalid, extension_rule]
+
+# 축은 「이름 가림」 한 관심사만 전개한다. 전체 후기 목록의 노출 조건·필터·정렬·검증은 가림과 직교하는
+# 목록 질의 동작이라 아래 sub_flows(review_feed_listing)의 효과로 잰다.
+exclusions:
+  - { surface: masker, author: [member, imported], reason: "가림 함수는 이름 문자열만 받는다 — 작성자 종류가 없고 글자 수 경계(짧은 이름 포함)를 short_name 으로 잰다" }
+  - { surface: masker, masking: none, reason: "가림 끔은 함수를 부르지 않는 호출부(공개 리소스)의 분기다 — 함수는 늘 가린다" }
+  - { surface: product_review_list, masking: none, author: [imported, short_name], reason: "가림을 끄면 작성자 종류·이름 길이와 무관하게 저장된 이름 그대로다 — member 한 경로로 잰다" }
+  - { surface: review_feed, author: [imported, short_name], reason: "전체 후기 목록은 상품 후기 목록과 같은 공개 리소스로 이름을 가린다 — 작성자 종류·길이 분기는 product_review_list 가 잰다" }
+  - { surface: review_feed, masking: none, reason: "위와 같다 — 가림 끔 분기는 같은 공개 리소스라 product_review_list 가 잰다" }
 
 effects:
   - name_masked_by_length_rule
@@ -24,14 +28,10 @@ effects:
   - public_review_omits_member_uuid
   - feed_lists_reviews_across_products
   - feed_row_carries_product_summary
-  - feed_excludes_hidden_product_reviews
-  - feed_excludes_deleted_product_reviews
-  - feed_excludes_hidden_reviews
-  - feed_filters_photo_only
-  - feed_filters_rating
-  - feed_sorts_by_four_orders
-  - feed_rejects_invalid_params
-  - feed_validation_rules_are_filterable
+
+sub_flows:
+  - id: review_feed_listing
+    effects: [feed_excludes_hidden_product_reviews, feed_excludes_deleted_product_reviews, feed_excludes_hidden_reviews, feed_filters_photo_only, feed_filters_rating, feed_sorts_by_four_orders, feed_rejects_invalid_params, feed_validation_rules_are_filterable]
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Unit/Support/AuthorNameMaskerTest.php

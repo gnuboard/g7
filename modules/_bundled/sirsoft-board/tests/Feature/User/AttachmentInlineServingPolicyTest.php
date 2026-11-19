@@ -130,7 +130,9 @@ class AttachmentInlineServingPolicyTest extends BoardTestCase
         $response = app(AttachmentService::class)->preview($this->board->slug, $id);
 
         $this->assertNotNull($response);
-        $this->assertSame('inline', $response->headers->get('Content-Disposition'));
+        // 파일 이름 선언은 스토리지 어댑터가 만든다 — 서비스가 원문 `Content-Disposition: inline` 을 넘기지 않으므로
+        // 값은 `inline; filename=…` 이다. 여기서 재는 것은 래스터가 인라인으로 남는다는 것이다.
+        $this->assertStringStartsWith('inline', (string) $response->headers->get('Content-Disposition'));
         $this->assertSame('nosniff', $response->headers->get('X-Content-Type-Options'));
     }
 
@@ -147,9 +149,13 @@ class AttachmentInlineServingPolicyTest extends BoardTestCase
     private function createAttachment(int $postId, string $hash, string $name, string $mime, string $content): int
     {
         $path = $this->board->slug.'/kve/'.$hash.'.bin';
-        $this->boardStorage()->put('attachments', $path, $content);
+        $storage = $this->boardStorage();
+        $storage->put('attachments', $path, $content);
 
+        // 서빙은 행의 disk 를 따른다 — 업로드(`upload()`)가 기록하는 것과 같은 값을 싣는다.
+        // 생략하면 컬럼 기본값(local)이 들어가 파일을 쓴 디스크와 어긋난다.
         return DB::table('board_attachments')->insertGetId([
+            'disk' => $storage->getDisk(),
             'board_id' => $this->board->id,
             'post_id' => $postId,
             'original_filename' => $name,

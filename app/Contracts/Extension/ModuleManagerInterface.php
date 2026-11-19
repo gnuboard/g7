@@ -3,6 +3,7 @@
 namespace App\Contracts\Extension;
 
 use App\Enums\DeactivationReason;
+use App\Enums\LayoutSyncMode;
 
 interface ModuleManagerInterface
 {
@@ -118,13 +119,13 @@ interface ModuleManagerInterface
      * 모듈의 레이아웃을 파일에서 다시 읽어 DB에 갱신합니다.
      *
      * @param  string  $moduleName  모듈명
-     * @param  bool  $preserveModified  true(keep) 시 운영자가 고친 화면은 조각 단위로 병합(고친 부분 유지)
+     * @param  bool|LayoutSyncMode  $preserveModified  동기화 모드 — 기본 keep(운영자가 고친 화면은 조각 단위로 병합해 고친 부분 유지). bool 은 호환용(true = keep)
      * @param  string|null  $backupPath  업데이트 백업 디렉토리 — 원본 본문이 없는 행의 비교 기준
      * @return array{success: bool, layouts_refreshed: int, layout_sync?: array<string, mixed>} 갱신 결과 (layout_sync = 운영자 관련 행 보고)
      *
      * @throws \Exception 모듈을 찾을 수 없거나 레이아웃 갱신 실패 시
      */
-    public function refreshModuleLayouts(string $moduleName, bool $preserveModified = false, ?string $backupPath = null): array;
+    public function refreshModuleLayouts(string $moduleName, bool|LayoutSyncMode $preserveModified = LayoutSyncMode::Keep, ?string $backupPath = null): array;
 
     /**
      * 모듈 삭제 시 삭제될 데이터 정보를 반환합니다.

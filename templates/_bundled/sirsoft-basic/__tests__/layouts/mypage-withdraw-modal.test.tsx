@@ -64,7 +64,7 @@ function findConfirmButton(node: any): any | undefined {
     return node;
   }
   if (Array.isArray(node.children)) {
-    for (const child of node.children) {
+    for (const child of [...node.children, ...(node.props?.footer ?? [])]) {
       const found = findConfirmButton(child);
       if (found) return found;
     }

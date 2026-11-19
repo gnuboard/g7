@@ -8,7 +8,7 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "row-stack"
+        "className": "board-row-stack"
     },
     "children": [
         {
@@ -16,21 +16,21 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex-start justify-between"
+                "className": "board-flex-start board:justify-between"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-1"
+                        "className": "board:flex-1"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "text-heading"
+                                "className": "board-text-heading"
                             },
                             "text": "$t:core.content_media.policy.title"
                         },
@@ -38,7 +38,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "form-hint"
+                                "className": "board-form-hint"
                             },
                             "text": "$t:core.content_media.policy.description"
                         }
@@ -51,21 +51,21 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "flex-start justify-between"
+                "className": "board-flex-start board:justify-between"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "flex-1"
+                        "className": "board:flex-1"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "text-heading"
+                                "className": "board-text-heading"
                             },
                             "text": "$t:core.content_media.policy.use_custom"
                         },
@@ -75,7 +75,7 @@
                             "name": "P",
                             "if": "{{_local.form !== undefined && (!_local.form?.content_media_policy?.use_custom)}}",
                             "props": {
-                                "className": "form-hint"
+                                "className": "board-form-hint"
                             },
                             "text": "$t:core.content_media.policy.follows_attachment"
                         }
@@ -87,7 +87,7 @@
                     "props": {
                         "name": "content_media_policy.use_custom",
                         "disabled": "{{_computed.isReadOnly}}",
-                        "className": "flex-shrink-0 ml-4"
+                        "className": "board:flex-shrink-0 board:ml-4"
                     }
                 }
             ]
@@ -98,7 +98,7 @@
             "name": "Div",
             "if": "{{_local.form?.content_media_policy?.use_custom}}",
             "props": {
-                "className": "row-stack"
+                "className": "board-row-stack"
             },
             "children": [
                 {
@@ -106,21 +106,21 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "row-stack"
+                        "className": "board-row-stack"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-start justify-between"
+                                "className": "board-flex-start board:justify-between"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "text-heading"
+                                        "className": "board-text-heading"
                                     },
                                     "text": "$t:core.content_media.policy.kind_image"
                                 },
@@ -131,7 +131,7 @@
                                         "name": "content_media_policy.image.enabled",
                                         "value": "{{_local.form?.content_media_policy?.image?.enabled ?? _local.form?.content_media_policy_fallback?.image?.enabled ?? true}}",
                                         "disabled": "{{_computed.isReadOnly}}",
-                                        "className": "flex-shrink-0 ml-4"
+                                        "className": "board:flex-shrink-0 board:ml-4"
                                     }
                                 }
                             ]
@@ -140,7 +140,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "grid-2col"
+                                "className": "board-grid-2col"
                             },
                             "children": [
                                 {
@@ -151,7 +151,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "board-form-label"
                                             },
                                             "text": "$t:core.content_media.policy.max_size_mb"
                                         },
@@ -174,7 +174,7 @@
                                             "name": "Span",
                                             "if": "{{_local.errors?.['content_media_policy.image.max_size_mb']}}",
                                             "props": {
-                                                "className": "form-error-xs mt-1"
+                                                "className": "board-form-error-xs board:mt-1"
                                             },
                                             "text": "{{_local.errors?.['content_media_policy.image.max_size_mb']?.[0] ?? ''}}"
                                         }
@@ -188,7 +188,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "board-form-label"
                                             },
                                             "text": "$t:core.content_media.policy.extensions"
                                         },
@@ -240,21 +240,21 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "row-stack"
+                        "className": "board-row-stack"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-start justify-between"
+                                "className": "board-flex-start board:justify-between"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "text-heading"
+                                        "className": "board-text-heading"
                                     },
                                     "text": "$t:core.content_media.policy.kind_video"
                                 },
@@ -265,7 +265,7 @@
                                         "name": "content_media_policy.video.enabled",
                                         "value": "{{_local.form?.content_media_policy?.video?.enabled ?? false}}",
                                         "disabled": "{{_computed.isReadOnly}}",
-                                        "className": "flex-shrink-0 ml-4"
+                                        "className": "board:flex-shrink-0 board:ml-4"
                                     }
                                 }
                             ]
@@ -275,7 +275,7 @@
                             "name": "Div",
                             "if": "{{_local.form?.content_media_policy?.video?.enabled}}",
                             "props": {
-                                "className": "grid-2col"
+                                "className": "board-grid-2col"
                             },
                             "children": [
                                 {
@@ -286,7 +286,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "board-form-label"
                                             },
                                             "text": "$t:core.content_media.policy.max_size_mb"
                                         },
@@ -309,7 +309,7 @@
                                             "name": "Span",
                                             "if": "{{_local.errors?.['content_media_policy.video.max_size_mb']}}",
                                             "props": {
-                                                "className": "form-error-xs mt-1"
+                                                "className": "board-form-error-xs board:mt-1"
                                             },
                                             "text": "{{_local.errors?.['content_media_policy.video.max_size_mb']?.[0] ?? ''}}"
                                         }
@@ -323,7 +323,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "board-form-label"
                                             },
                                             "text": "$t:core.content_media.policy.extensions"
                                         },
@@ -363,21 +363,21 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "row-stack"
+                        "className": "board-row-stack"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-start justify-between"
+                                "className": "board-flex-start board:justify-between"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "text-heading"
+                                        "className": "board-text-heading"
                                     },
                                     "text": "$t:core.content_media.policy.kind_audio"
                                 },
@@ -388,7 +388,7 @@
                                         "name": "content_media_policy.audio.enabled",
                                         "value": "{{_local.form?.content_media_policy?.audio?.enabled ?? false}}",
                                         "disabled": "{{_computed.isReadOnly}}",
-                                        "className": "flex-shrink-0 ml-4"
+                                        "className": "board:flex-shrink-0 board:ml-4"
                                     }
                                 }
                             ]
@@ -398,7 +398,7 @@
                             "name": "Div",
                             "if": "{{_local.form?.content_media_policy?.audio?.enabled}}",
                             "props": {
-                                "className": "grid-2col"
+                                "className": "board-grid-2col"
                             },
                             "children": [
                                 {
@@ -409,7 +409,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "board-form-label"
                                             },
                                             "text": "$t:core.content_media.policy.max_size_mb"
                                         },
@@ -432,7 +432,7 @@
                                             "name": "Span",
                                             "if": "{{_local.errors?.['content_media_policy.audio.max_size_mb']}}",
                                             "props": {
-                                                "className": "form-error-xs mt-1"
+                                                "className": "board-form-error-xs board:mt-1"
                                             },
                                             "text": "{{_local.errors?.['content_media_policy.audio.max_size_mb']?.[0] ?? ''}}"
                                         }
@@ -446,7 +446,7 @@
                                             "type": "basic",
                                             "name": "Label",
                                             "props": {
-                                                "className": "form-label"
+                                                "className": "board-form-label"
                                             },
                                             "text": "$t:core.content_media.policy.extensions"
                                         },
@@ -498,7 +498,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "form-label"
+                                "className": "board-form-label"
                             },
                             "text": "$t:core.content_media.policy.max_per_document"
                         },
@@ -521,7 +521,7 @@
                             "name": "Span",
                             "if": "{{_local.errors?.['content_media_policy.max_per_document']}}",
                             "props": {
-                                "className": "form-error-xs mt-1"
+                                "className": "board-form-error-xs board:mt-1"
                             },
                             "text": "{{_local.errors?.['content_media_policy.max_per_document']?.[0] ?? ''}}"
                         }
@@ -532,7 +532,7 @@
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "form-hint"
+                        "className": "board-form-hint"
                     },
                     "text": "$t:core.content_media.policy.core_disabled_hint"
                 }

@@ -231,7 +231,6 @@
                 "page": "{{query.page || 1}}",
                 "per_page": "{{query.per_page || 20}}",
                 "search": "{{query.search}}",
-                "search_type": "{{query.search_type}}",
                 "template_channel": "{{query.channel ?? 'mail'}}"
             },
             "initLocal": {
@@ -290,6 +289,38 @@
                 }
             },
             "comment": "알림 정의 편집에서 고를 발송 채널 — 코어가 주는 값이라 게시판 쪽 사정과 무관하게 비어 올 수 있고, 그때는 빈 배열로 떨어진다"
+        },
+        {
+            "id": "boardSchedules",
+            "label_key": "$t:sirsoft-board.editor.data_source.boardSchedules",
+            "type": "api",
+            "endpoint": "/api/admin/schedules",
+            "method": "GET",
+            "if": "{{(query.tab || _global.activeBoardSettingsTab || 'general') === 'schedules'}}",
+            "auto_fetch": true,
+            "auth_required": true,
+            "params": {
+                "extension_type": "module",
+                "extension_identifier": "sirsoft-board",
+                "sort_by": "name",
+                "sort_order": "asc",
+                "per_page": 100
+            },
+            "fallback": {
+                "data": {
+                    "data": []
+                }
+            },
+            "errorHandling": {
+                "403": {
+                    "handler": "setState",
+                    "params": {
+                        "target": "local",
+                        "boardSchedulesLoadError": "forbidden"
+                    }
+                }
+            },
+            "comment": "스케줄 탭 — 이 모듈이 선언한 예약 작업. 코어 목록 API 를 소유 필터로 재사용한다(확장 전용 엔드포인트 없음). 모듈 선언은 몇 건이라 한 쪽(100)에 다 받는다.\n       코어 스케줄 조회 권한이 없으면(403) 표지를 남긴다 — fallback 빈 목록만으로는 「등록된 작업 없음」으로 보인다"
         },
         {
             "id": "boardIdentityPolicies",
@@ -362,8 +393,7 @@
         "editLang": "ko",
         "previewData": null,
         "notificationDefinitionFilter": {
-            "search": "",
-            "searchType": "all"
+            "search": ""
         },
         "expandedNotificationDefinitionIds": [],
         "expandedNotifications": {},
@@ -433,8 +463,20 @@
                 "name": "Div",
                 "dataKey": "form",
                 "trackChanges": true,
+                "responsive": {
+                    "640-1023": {
+                        "props": {
+                            "className": "board:p-6 board:min-h-screen board:bg-gray-50 board:dark:bg-gray-900"
+                        }
+                    },
+                    "1024-": {
+                        "props": {
+                            "className": "board:p-8 board:min-h-screen board:bg-gray-50 board:dark:bg-gray-900"
+                        }
+                    }
+                },
                 "props": {
-                    "className": "admin-page-content-responsive"
+                    "className": "board:p-4 board:min-h-screen board:bg-gray-50 board:dark:bg-gray-900"
                 },
                 "children": [
                     {
@@ -458,7 +500,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "sticky-section-header"
+                            "className": "board-sticky-section-header"
                         },
                         "children": [
                             {
@@ -472,7 +514,7 @@
                                         "name": "Div",
                                         "if": "{{_computed.isReadOnly}}",
                                         "props": {
-                                            "className": "alert-warning"
+                                            "className": "board-alert-warning"
                                         },
                                         "children": [
                                             {
@@ -481,14 +523,14 @@
                                                 "props": {
                                                     "name": "lock",
                                                     "size": "lg",
-                                                    "className": "text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                                    "className": "board:text-amber-600 board:dark:text-amber-400 board:flex-shrink-0"
                                                 }
                                             },
                                             {
                                                 "type": "basic",
                                                 "name": "Span",
                                                 "props": {
-                                                    "className": "text-xs board-tone-warning"
+                                                    "className": "board:text-xs board-tone-warning"
                                                 },
                                                 "text": "$t:sirsoft-board.admin.settings.read_only_message"
                                             }
@@ -611,6 +653,11 @@
                                                     "href": "/admin/boards/settings?tab=privacy_retention",
                                                     "id": "privacy_retention",
                                                     "label": "$t:sirsoft-board.admin.settings.tabs.privacy_retention"
+                                                },
+                                                {
+                                                    "href": "/admin/boards/settings?tab=schedules",
+                                                    "id": "schedules",
+                                                    "label": "$t:sirsoft-board.admin.settings.tabs.schedules"
                                                 }
                                             ]
                                         }
@@ -622,8 +669,20 @@
                                 "type": "composite",
                                 "name": "TabNavigationScroll",
                                 "if": "{{(_global.activeBoardSettingsTab || query.tab || 'general') === 'basic_defaults'}}",
+                                "responsive": {
+                                    "640-1023": {
+                                        "props": {
+                                            "className": "board:bg-white board:dark:bg-gray-800 board:flex board:gap-1 board:px-8"
+                                        }
+                                    },
+                                    "1024-": {
+                                        "props": {
+                                            "className": "board:bg-white board:dark:bg-gray-800 board:flex board:gap-1 board:px-10"
+                                        }
+                                    }
+                                },
                                 "props": {
-                                    "className": "sub-tab-nav",
+                                    "className": "board:bg-white board:dark:bg-gray-800 board:flex board:gap-1 board:px-6",
                                     "sectionIdPrefix": "",
                                     "enableScrollSpy": true,
                                     "scrollContainerId": "right_content_area",
@@ -680,7 +739,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "tab-content"
+                            "className": "board-tab-content"
                         },
                         "children": [
                             {
@@ -689,14 +748,14 @@
                                 "name": "Div",
                                 "if": "{{_local.errors}}",
                                 "props": {
-                                    "className": "alert-danger items-start mb-6"
+                                    "className": "board-alert-danger board:items-start board:mb-6"
                                 },
                                 "children": [
                                     {
                                         "type": "basic",
                                         "name": "Div",
                                         "props": {
-                                            "className": "flex items-start gap-3"
+                                            "className": "board:flex board:items-start board:gap-3"
                                         },
                                         "children": [
                                             {
@@ -704,7 +763,7 @@
                                                 "name": "Icon",
                                                 "props": {
                                                     "name": "triangle-exclamation",
-                                                    "className": "text-xl leading-5 text-red-600 dark:text-red-400 flex-shrink-0"
+                                                    "className": "board:text-xl board:leading-5 board:text-red-600 board:dark:text-red-400 board:flex-shrink-0"
                                                 }
                                             },
                                             {
@@ -715,7 +774,7 @@
                                                         "type": "basic",
                                                         "name": "H3",
                                                         "props": {
-                                                            "className": "text-error-strong"
+                                                            "className": "board-text-error-strong"
                                                         },
                                                         "text": "$t:sirsoft-board.admin.settings.validation_error"
                                                     },
@@ -724,7 +783,7 @@
                                                         "name": "P",
                                                         "if": "{{typeof _local.errors === 'string'}}",
                                                         "props": {
-                                                            "className": "text-error-soft mt-2"
+                                                            "className": "board-text-error-soft board:mt-2"
                                                         },
                                                         "text": "{{_local.errors}}"
                                                     },
@@ -737,14 +796,14 @@
                                                             "item_var": "message"
                                                         },
                                                         "props": {
-                                                            "className": "mt-2 list-disc list-inside space-y-1"
+                                                            "className": "board:mt-2 board:list-disc board:list-inside board:space-y-1"
                                                         },
                                                         "children": [
                                                             {
                                                                 "type": "basic",
                                                                 "name": "Li",
                                                                 "props": {
-                                                                    "className": "text-error-soft"
+                                                                    "className": "board-text-error-soft"
                                                                 },
                                                                 "text": "{{message}}"
                                                             }
@@ -808,12 +867,15 @@
                                 "partial": "partials/admin_board_settings/_tab_privacy_retention.json"
                             },
                             {
+                                "partial": "partials/admin_board_settings/_tab_schedules.json"
+                            },
+                            {
                                 "id": "footer_buttons",
                                 "type": "basic",
                                 "name": "Div",
                                 "if": "{{!_computed.isReadOnly}}",
                                 "props": {
-                                    "className": "sticky-footer-buttons"
+                                    "className": "board-sticky-footer-buttons"
                                 },
                                 "children": [
                                     {
@@ -821,7 +883,7 @@
                                         "name": "Div",
                                         "if": "{{_local.hasChanges}}",
                                         "props": {
-                                            "className": "flex-center gap-1.5 text-sm text-amber-700 dark:text-amber-400 mr-auto"
+                                            "className": "board-flex-center board:gap-1.5 board:text-sm board:text-amber-700 board:dark:text-amber-400 board:mr-auto"
                                         },
                                         "children": [
                                             {
@@ -854,7 +916,7 @@
                                         ],
                                         "props": {
                                             "href": "/admin",
-                                            "className": "button btn btn-secondary text-sm"
+                                            "className": "board-button board-btn board-btn-secondary board:text-sm"
                                         },
                                         "children": [
                                             {
@@ -962,7 +1024,7 @@
                                         "props": {
                                             "type": "button",
                                             "disabled": "{{_computed.isReadOnly || !settings?.data || !_local.hasChanges || _local.isSaving}}",
-                                            "className": "btn btn-primary flex-center gap-1.5 text-sm"
+                                            "className": "board-btn board-btn-primary board-flex-center board:gap-1.5 board:text-sm"
                                         },
                                         "children": [
                                             {

@@ -5,19 +5,25 @@
         "ko": "게시판",
         "en": "Board"
     },
-    "version": "1.2.5",
+    "version": "1.3.0",
     "license": "MIT",
     "description": {
         "ko": "게시판 관리를 위한 모듈",
         "en": "Module for board management"
     },
-    "g7_version": ">=7.1.5",
+    "g7_version": ">=7.2.0",
     "dependencies": {
         "modules": {},
         "plugins": {}
     },
     "integrations": {
         "modules": ["sirsoft-ecommerce"]
+    },
+    "public_api": {
+        "version": 1,
+        "namespaces": [
+            "Modules\\Sirsoft\\Board\\Contracts"
+        ]
     },
     "github_url": "https://github.com/gnuboard/g7-module-sirsoft-board",
     "github_changelog_url": "https://github.com/gnuboard/g7-module-sirsoft-board/blob/main/CHANGELOG.md",
@@ -28,7 +34,8 @@
         },
         "css": {
             "entry": "resources/css/main.css",
-            "output": "dist/css/module.css"
+            "output": "dist/css/module.css",
+            "namespace": "board"
         },
         "handlers": true
     },

@@ -1,0 +1,33 @@
+feature: 히어로 편집 운영 개선
+description: |
+  저장 세대 충돌은 409로 막고 기존 데이터·이미지는 유지한다. 표시 설정은 생성·수정·공개 응답에 동일하게 전파한다.
+  사이트 시계 메타, 업로드 지연/실패 잠금, 실제 기기 미리보기·언어 대체, 초점/배경의 사용자 표시를 확인한다.
+axes:
+  case:
+    - revision_conflict
+    - presentation_roundtrip
+    - text_layout_migration_roundtrip
+    - pagination_migration_roundtrip
+    - max_height_migration_roundtrip
+    - target_settings_migration_roundtrip
+    - bulk_revision_conflict
+    - site_clock_metadata
+    - migration_roundtrip
+    - media_migration_roundtrip
+    - youtube_removal_migration
+    - editor_upload_gate
+    - editor_preview_roundtrip
+    - editor_conflict_preserves_input
+    - preview_language
+    - preview_language_names
+    - preview_viewport
+    - preview_expand
+    - locked_mutation_snapshot
+test_files:
+  - plugins/_bundled/sirsoft-hero_section/tests/Feature/Admin/BannerEditorImprovementTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Feature/Installation/BannerEditorMigrationTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/editor-improvements.spec.ts
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroEditorSupport.test.tsx
+effects:
+  - editor_state_protected
+  - languages_named_like_tabs

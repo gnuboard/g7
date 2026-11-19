@@ -1,0 +1,34 @@
+feature: 다른 화면으로 옮길 때 blocking 데이터소스 onSuccess 결과가 살아남는다 (engine-v1.95.0)
+
+description: |
+  엔진은 blocking 데이터소스를 받는 자리에서 곧바로 onSuccess 를 돌렸다. 그 시점은 아직 앞 화면 상태 위라, 다른 화면으로 옮기는
+  SPA 전환에서는 그 `_local` 쓰기가 레이아웃 전환 초기화에 지워지고 그 안의 다시 받기 결과가 렌더 문맥 재구성에 버려졌다(받는 동안
+  쓴 반영 대기 값이 우연히 남으면 앞 화면 키까지 새 화면으로 샜다). 첫 진입은 비울 앞 화면이 없어 결과가 남는다 — 그래서 같은
+  주소를 바로 열면 되고 SPA 로 들어오면 빈 화면이었다(클레임 신청 「신청할 수 있는 상품이 없습니다」, 신청 상세 원 주문 카드).
+  다른 화면으로 옮기는 전환에서는 blocking onSuccess 를 새 화면 `_local` 을 세운 뒤(레이아웃 initLocal 다음, init_actions 앞)로
+  미루고, 그 안의 다시 받기 값과 오류 기록을 첫 렌더 문맥에 싣는다. 같은 화면(쿼리만 다름)과 첫 진입은 종전 그대로다.
+
+# axis 의미:
+#   case — 하네스 화면 꼴과 진입 방식(바로 열기 / SPA)
+axes:
+  case:
+    - apply_like_direct_entry
+    - apply_like_spa_entry
+    - show_like_direct_entry
+    - show_like_spa_entry
+    - onsuccess_screen_to_onsuccess_screen
+    - deferred_onsuccess_superseded
+
+effects:
+  - blocking_onsuccess_local_survives_spa               # SPA 진입에서도 onSuccess 의 `_local` 쓰기가 첫 렌더에 있다
+  - blocking_onsuccess_refetch_data_survives_spa        # onSuccess 안 다시 받기 값이 첫 렌더 문맥에 있다(init_actions 유무 무관)
+  - direct_entry_unchanged                              # 바로 열기 결과는 종전과 같다
+  - previous_screen_local_not_carried                   # 앞 화면 `_local`·앞 화면 onSuccess 값이 새 화면으로 넘어오지 않는다
+  - layout_initlocal_and_init_actions_order_kept        # onSuccess 값이 레이아웃 initLocal 기본값을 이기고 init_actions·데이터소스 initLocal 도 선다
+  - deferred_onsuccess_yields_to_next_navigation        # 미룬 onSuccess 가 끝나지 않아도 다음 이동이 들어오면 물러난다(받기 안에서 돌던 종전과 같음)
+
+test_files:
+  - resources/js/core/template-engine/__tests__/TemplateApp.blockingOnSuccessScreenChange.test.tsx
+
+validation:
+  browser_check: 총괄 번들 재빌드 뒤 — 마이페이지 → 주문 상세 → 반품 신청 단추, 마이페이지 → 신청 주소 SPA 이동(?order_id 없음), 신청 내역 → 신청 상세의 원 주문 카드

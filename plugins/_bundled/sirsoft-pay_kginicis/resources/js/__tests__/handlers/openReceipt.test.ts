@@ -50,6 +50,7 @@ describe('openReceipt 핸들러', () => {
     // @effects cbt_confirmation_document_escapes_fields
     it('CBT 결제확인서는 응답 항목으로 인쇄용 문서를 그리고 값은 이스케이프한다', () => {
         let html = '';
+        // 인쇄 단추는 인라인 onclick 대신 리스너로 묶는다(strict CSP, 7.1.4) — 쓴 문서에서 단추를 찾아 click 을 단다
         let printClick: (() => void) | undefined;
         const printButton = { addEventListener: vi.fn((type: string, fn: () => void) => { if (type === 'click') printClick = fn; }) };
         const popup = {
@@ -58,7 +59,7 @@ describe('openReceipt 핸들러', () => {
                 open: vi.fn(),
                 write: (s: string) => { html += s; },
                 close: vi.fn(),
-                querySelector: vi.fn((selector: string) => (selector === '[data-print]' ? printButton : null)),
+                querySelector: vi.fn((selector: string) => (selector === '[data-print]' && html.includes('data-print') ? printButton : null)),
             },
         };
         vi.spyOn(window, 'open').mockReturnValue(popup as unknown as Window);

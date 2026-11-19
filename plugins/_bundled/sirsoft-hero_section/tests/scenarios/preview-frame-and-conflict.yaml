@@ -1,0 +1,66 @@
+feature: 편집 미리보기 구좌 정합 · 동시 수정 충돌 복구 · 긴 문구와 글자 대비 (#810 후속)
+
+description: |
+  (1) 편집 미리보기는 기기 viewport(PC 1366·모바일 390)를 그대로 두고, 그 안에 활성 사용자 템플릿에서 히어로 확장점까지의
+  본문 상자 사슬(클래스·반응형 덮어쓰기)과 템플릿 CSS 를 실어 실제 사이트(사이트 홈·쇼핑몰 메인)와 같은 구좌 폭에서 그린다.
+  틀은 위치 설정 응답 editor.preview_frame 으로 오며, 확장점이 없거나 템플릿이 없으면 종전처럼 기기 폭 전체로 그린다.
+  관리자 레이아웃 편집기 저장은 확장 캐시 버전을 올려 틀 캐시(1시간)를 바로 갈고, 읽지 못한 레이아웃은 건너뛰며 error 수준 로그를 남긴다(출하 기본 수준에서도 기록).
+  (2) 저장이 409 로 막히면 입력을 그대로 둔 채 최신본을 불러와 항목별로 「다른 운영자가 바꿈 / 내가 바꿈 / 둘 다 바꿈」을
+  비교한다. 다른 운영자의 변경은 기본으로 지키고, 둘 다 바꾼 항목은 직접 골라야 적용된다. 다른 운영자가 이미지를 바꿨으면 내
+  옛 이미지 id 는 고를 수 없어 다시 보내지 않는다. 최신본 조회가 실패하면 입력을 둔 채 다시 시도하고, 적용 뒤 또 충돌해도 입력이 남는다.
+  (3) 최대 길이 문구(제목 100·설명 300·버튼 30)는 줄이거나 지우지 않고 구좌 안에서 줄바꿈하며, 높이를 넘으면 문구 영역 안에서
+  스크롤한다. 스크롤 영역은 넘김 단추 자리 밑으로 지나가지 않는다. 넘칠 때만 그 영역은 탭으로 들어오는 이름 붙은 영역(보이는 장만)이 되고,
+  휴대폰 세로 쓸기는 문구 스크롤·가로 쓸기는 장 넘김이다. 전체 링크 배너도 문구 영역은 링크 밖(빈 링크가 슬라이드를 덮는 형제)이라
+  링크 안에 포커스 요소가 겹치지 않고, 문구를 누르면 링크로 간다(link=whole_slide). 편집 미리보기는 지금 기기에서 넘치면(배너 2장 이상일 때의
+  넘김 단추 자리 포함) 줄이기를 권하는 안내만 띄운다.
+  (4) 사진 평균색과 문구 배경으로 어림한 글자 대비가 낮으면 추정값과 권장 조치를 안내한다. 글자색을 자동으로 바꾸거나 저장을
+  막지 않으며, 사진 부분 밝기를 반영하지 못하는 어림값임을 문구에 밝힌다.
+
+# 위치(home_hero·shop_hero)·문자(ko·ja·nospace)·안내 경우(estimate·low·ok·with_controls)·링크 방식(whole_slide)은 축 곱이 아니라
+# surface 별 변종이라 마커에는 surface 만 적고 변종은 마커 옆 주석(`// 변종: script=ja`)으로 적는다 — 마커에 덧붙이면
+# 선언되지 않은 축이 된다.
+axes:
+  surface:
+    - preview_frame_chain_from_active_user_template
+    - preview_frame_missing_slot_falls_back
+    - preview_frame_responsive_rule_matches_core
+    - preview_frame_slot_inside_device_viewport
+    - preview_frame_refreshes_after_layout_edit
+    - preview_frame_layout_error_logged
+    - preview_frame_styles_ready
+    - conflict_others_change_kept_by_default
+    - conflict_both_changed_requires_choice
+    - conflict_stale_image_not_resent
+    - conflict_reapply_and_conflict_again
+    - conflict_media_compared
+    - conflict_load_latest_and_retry
+    - long_text_fits_slot
+    - long_text_overflow_hint
+    - long_text_scroll_keyboard_and_touch
+    - contrast_estimate_hint
+
+effects:
+  - preview_matches_site_slot
+  - preview_hidden_until_styles_ready
+  - others_changes_not_overwritten
+  - stale_image_id_never_resent
+  - my_temp_images_preserved
+  - my_media_change_not_dropped
+  - long_text_not_lost
+  - preview_without_frame_uses_device_width   # 구좌 틀이 없거나 그 위치에 확장점이 없으면 기기 폭 전체에 그린다
+  - preview_contrast_hint_estimates_without_changing_colors   # 사진 평균색 + 문구 배경으로 어림한 대비가 낮으면 추정값·권장 조치만 알리고 글자색은 바꾸지 않는다(#878 손댄 파일 매핑 부채 정리)
+  - preview_overflow_hint_reports_text_scroll   # 지금 기기에서 문구 영역에 스크롤이 생기면(넘김 단추 자리 포함) 줄이기를 권한다
+  - blank_defaults_not_reported_as_conflict   # 비어 있는 다국어 칸·표시 기본값은 같은 값으로 보아 충돌 항목으로 내지 않고 최신 revision 으로 적용한다
+
+test_files:
+  - plugins/_bundled/sirsoft-hero_section/tests/Unit/Services/PreviewFrameResolverTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Feature/Admin/PositionSettingControllerTest.php
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroPreviewFrame.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroSlider.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroConflictResolver.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/components/HeroPreviewHints.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/hero_section_banner_form.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/resources/js/__tests__/layouts/hero_section_banner_list.test.tsx
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/preview-frame.spec.ts
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/conflict-recovery.spec.ts
+  - plugins/_bundled/sirsoft-hero_section/tests/Playwright/specs/long-text.spec.ts

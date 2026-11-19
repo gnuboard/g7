@@ -1,0 +1,66 @@
+feature: SSO 플러그인의 회원 표시 이름 (#490)
+
+description: |
+  SSO 플러그인이 회원 이름을 응답, 기록, 알림에 실을 때 회원 이름 컬럼을 직접 읽지 않고 코어 표시 이름 계산기를 거친다.
+
+  - 관리자 「회원 연결」 목록과 연결 추가 응답의 회원 이름(`user.name`)은 관리자 영역(`core:admin`) 표시 이름이다. 실명은 보는
+    관리자에게 회원 조회 권한(`core.users.read`)이 있고 실명이 표시 이름과 다를 때만 `user.real_name` 으로 싣는다. 화면은 그 키가
+    있을 때만 이름 아래에 작은 글씨 보조 줄(접근 가능한 이름 「실명 ○○」)을 그린다.
+  - 목록 검색은 관리자 화면의 회원 검색 규칙대로 이름 또는 닉네임을 찾고, 종전처럼 이메일도 찾는다.
+  - 새로 남기는 활동 로그의 회원 이름(`user_name`)은 그 시점의 관리자 영역 표시 이름이다. 이미 남은 기록은 바꾸지 않는다.
+  - 알림 본문의 사건 회원 이름(`user_name`)은 알림 영역(`core:notification`) 표시 이름이다. 회원 본인에게 가는 알림의 받는 사람
+    이름(`name`)은 자리표시(`{recipient_name}`)로 싣고 코어가 받는 사람과 채널마다 푼다.
+
+  설정을 바꾸지 않은 사이트의 응답은 수정 전과 같다.
+
+  축은 하나(`case`)다. 자리, 영역, 권한을 축으로 나누면 곱이 미커버로 남으므로 잠그는 사실 하나를 한 사례로 편다.
+
+axes:
+  case:
+    # 응답
+    - list_nickname_admin_area_with_member_read
+    - list_nickname_admin_area_without_member_read
+    - default_site_unchanged
+    - search_matches_name_nickname_email
+    # 기록과 알림
+    - activity_log_member_name
+    - notification_member_names
+    # 화면
+    - accounts_sub_line_markup
+    - accounts_sub_line_rendering
+    - emergency_users_admin_area_name
+
+effects:
+  - account_user_name_follows_admin_area
+  - account_user_real_name_added_for_member_readers
+  - account_user_real_name_hidden_without_member_read
+  - account_user_name_unchanged_on_default_site
+  - account_user_real_name_omitted_when_same
+  - link_response_row_uses_same_rule
+  - account_search_matches_name
+  - account_search_matches_nickname
+  - account_search_keeps_email
+  - account_search_escapes_wildcards
+  - activity_log_user_name_is_admin_area_name
+  - notification_user_name_follows_notification_area
+  - notification_member_recipient_name_is_placeholder
+  - accounts_sub_line_in_user_cell
+  - accounts_sub_line_label_uses_expression_translation
+  - emergency_user_name_follows_admin_area
+  - emergency_user_real_name_only_for_member_readers
+  - emergency_users_sub_line_markup
+  - real_name_sub_key_present_in_ko_en
+  - accounts_real_name_sub_line_drawn_only_when_key_present
+
+test_files:
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Admin/MemberDisplayNameTest.php
+  - plugins/_bundled/sirsoft-sso/resources/js/__tests__/layouts/accounts-real-name-sub.test.tsx
+
+notes:
+  - |
+    활동 로그의 회원 이름을 남기는 자리는 연결과 해제, 자동 생성, 퇴사 처리, 역할 동기화(리스너), 사전 등록, 비상 로그인,
+    속성과 이메일 동기화, 퇴사 뒤 탈퇴다. 모두 같은 도우미(`Support\MemberName::forRecord`)를 거치며, 이 매니페스트는 리스너 경로
+    (연결)와 서비스 경로(사전 등록)를 대표로 잠근다.
+  - |
+    정책 화면의 비상 계정 목록(`emergency_users[].name`)도 관리자 영역 표시 이름과 실명 보조 줄을 쓴다.
+    후보 검색은 코어 회원 목록 API 를 그대로 쓰므로 같은 규칙의 이름과 실명이 이미 온다.

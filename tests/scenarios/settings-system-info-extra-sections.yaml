@@ -1,0 +1,29 @@
+feature: settings_system_info_extra_sections
+
+description: |
+  확장이 필터 훅 `core.settings.filter_system_info_sections` 로 시스템 정보 응답(`GET /api/admin/settings/system-info`)의
+  `extra_sections` 에 카드를 더한다(#888). `SettingsService::getSystemInfo()` 는 코어 정보의 1시간 캐시 밖에서 매 요청
+  `SystemInfoSectionService::collect()` 를 부른다. 섹션은 `{id, title, badge?, rows, list?, notice?}` 형식으로 검증·정규화되고,
+  형식이 틀린 섹션·id 가 겹치는 뒤 섹션은 버리고 경고 로그를 남긴다. 리스너가 던지면 `report()` 로 남기고 그 리스너 섹션만
+  빠지며 응답은 200 이다.
+
+coverage_strategy: full
+
+# 축 의미:
+#   case — 등록된 리스너 상태(확장 카드)와 응답 페이로드 직렬화 계약.
+axes:
+  case: [no_listeners, valid_sections, malformed_sections, throwing_listener, cached_core_info, payload_json_serializable, payload_valid_utf8]
+
+effects:
+  - extra_sections_empty_without_listeners
+  - extra_sections_listed_in_order_normalized
+  - malformed_sections_dropped_with_warning
+  - throwing_listener_isolated_response_ok
+  - extra_sections_recomputed_outside_cache
+  - system_info_payload_json_serializable
+  - system_info_strings_valid_utf8
+
+test_files:
+  - tests/Feature/Services/SettingsServiceSystemInfoTest.php
+  # 정보 탭이 extra_sections 를 그리는 화면 — 축·효과는 템플릿 매니페스트(admin-settings-info-extra-sections)가 소유한다
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-settings-info-extra-sections.test.tsx

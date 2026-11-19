@@ -4,9 +4,9 @@
  * 플러그인 활성화 시 자동으로 로드되어 핸들러를 등록합니다.
  */
 
-// 본문 보정·다국어 탭·편집기 다크 모드·높이·미리보기 스타일 — 빌드가 dist/css/plugin.css 로 뽑아낸다
+// 본문 보정·다국어 탭·아이콘·편집기 다크 모드·높이·미리보기 스타일 — 빌드가 dist/css/plugin.css 로 뽑아낸다
 import '../css/main.css';
-import { initEditorHandler } from './handlers/initEditor';
+import { applyLibraryStyles, initEditorHandler } from './handlers/initEditor';
 import { destroyEditorHandler } from './handlers/destroyEditor';
 import { ckeditorCssUrl } from './handlers/ckeditorAssets';
 
@@ -19,14 +19,17 @@ const CKEDITOR5_CSS_ID = 'ckeditor5-content-styles';
  * html-content.g7.html extension_point의 onMount에서 호출됩니다.
  *
  * HtmlContent 컴포넌트에 ck-content 클래스가 적용되어 동봉 CSS가 직접 동작합니다.
- * 다크모드(원본 미지원)와 col 너비 같은 보정 규칙은 여기서 `<style>` 로 싣지 않고 플러그인 CSS 파일
- * (`resources/css/main.css` → `dist/css/plugin.css`)에 둔다 — 엄격한 스타일 정책에서 `<style>` 요소가 막힌다.
+ * 다크모드(원본 미지원)와 col 너비 같은 보정 규칙은 여기서 `<style>` 로 싣지 않는다 — 엄격한 스타일 정책에서
+ * `<style>` 요소가 막힌다. 라이브러리 클래스(`.ck-content`)를 꾸미는 규칙이라 플러그인 CSS 파일(자기 이름공간만)에도
+ * 둘 수 없어, `applyLibraryStyles()` 가 코어 `G7Core.style.setRules`(생성형 스타일시트)로 싣는다.
  *
  * 이 CSS 는 **작성 화면이 아니라 방문자가 보는 본문**에 걸린다. 실패하면 이미 작성된
  * 글의 표·정렬·목록 서식이 통째로 깨지므로, 종전의 무음 처리(`onerror` 없음)를
  * 재시도 + 실패 표면화로 바꾼다.
  */
 function injectContentCssHandler(): void {
+    applyLibraryStyles();
+
     if (!document.getElementById(CKEDITOR5_CSS_ID)) {
         const asset = (window as any)?.G7Core?.asset;
 

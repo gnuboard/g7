@@ -1,0 +1,19 @@
+feature: 레이아웃 편집기 버전 기록 패널(LayoutHistoryPanel) 계약
+
+description: |
+  버전 목록과 복원 버튼을 region 안에 그린다. 복원 버튼은 버전을 고르기 전에는 막혀 있고, 고른 버전 ID 로 onRestore 를 부른다.
+  빈 목록과 숫자 layoutId 에도 깨지지 않고, 패널과 복원 버튼에 접근 가능한 이름이 있다.
+
+# axis 의미:
+#   component — 이 매니페스트가 다루는 컴포넌트 하나(단위 시험이 그 컴포넌트를 직접 그린다).
+axes:
+  component: [layout_history_panel]
+
+effects:
+  - layout_history_panel_renders_list_and_restore_button  # 버전 목록, 복원 버튼, region 을 그리고 빈 목록과 숫자 ID 에도 깨지지 않는다
+  - layout_history_panel_restore_enabled_after_selection  # 복원 버튼은 버전을 고른 뒤에만 켜지고 선택이 바뀐다
+  - layout_history_panel_restore_passes_selected_version  # 복원은 고른 버전 ID 로 onRestore 를 부르고 고르지 않으면 부르지 않는다
+  - layout_history_panel_accessible_names                 # 패널과 복원 버튼에 aria-label 이 있다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/LayoutHistoryPanel.test.tsx

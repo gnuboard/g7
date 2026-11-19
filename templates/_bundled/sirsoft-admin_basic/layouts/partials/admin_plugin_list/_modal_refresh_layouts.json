@@ -1,5 +1,5 @@
 {
-    "comment": "플러그인이 들고 온 화면 정의를 **다시 심는** 창. 경고를 앞세우는 이유는 지금 깔려 있는 것을\n  덮어쓰기 때문이다 — 그 화면을 편집기로 손봐 뒀다면 그 손질이 사라진다.\n  플러그인 판본은 그대로이고 화면 정의만 다시 읽으므로, 설치나 갱신과는 다른 조작이다.",
+    "comment": "플러그인이 들고 온 레이아웃을 다시 읽는 창(활성 플러그인만). 창을 열면 화면별 처리를 미리 보고(DB 는 바뀌지 않는다) 기본\n  「수정 유지」로 적용한다 — 편집기로 고친 화면은 고친 부분을 지킨다. 덮어쓰기는 창에서 「모두 교체」를 고를 때만이다(#888).",
     "meta": {
         "is_partial": true,
         "description": "플러그인 레이아웃 갱신 확인 모달",
@@ -10,7 +10,155 @@
     "name": "Modal",
     "props": {
         "title": "$t:admin.plugins.modals.refresh_layouts_title",
-        "size": "sm"
+        "size": "md",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "type": "click",
+                        "handler": "closeModal"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-secondary",
+                    "disabled": "{{_global.isPluginRefreshingLayouts}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:common.cancel"
+                    }
+                ]
+            },
+            {
+                "id": "plugin_refresh_layouts_apply",
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "끝나면 고른 플러그인을 비운다 — 이 값이 목록과 다른 창들이 함께 쓰는 자리라, 닫은 뒤에도 남겨 두면 다음에 연 창이 엉뚱한 플러그인을 가리킨다.",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "isPluginRefreshingLayouts": true
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/admin/plugins/refresh-layouts",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "POST",
+                                    "body": {
+                                        "plugin_name": "{{_global.selectedPlugin.identifier}}",
+                                        "layout_source": "{{_global.pluginLayoutSource ?? 'auto'}}",
+                                        "layout_strategy": "{{_global.layoutSyncStrategy ?? 'keep'}}",
+                                        "decisions": "{{_global.layoutDecisions ?? {} }}"
+                                    }
+                                },
+                                "onSuccess": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isPluginRefreshingLayouts": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "$t:admin.plugins.refresh_layouts_success"
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "plugins"
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal"
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "selectedPlugin": null,
+                                            "pluginLayoutSource": "auto",
+                                            "pluginLayoutSourceOpen": false,
+                                            "layoutSyncStrategy": "keep",
+                                            "layoutDecisions": {},
+                                            "layoutPreview": null,
+                                            "layoutPreviewState": "idle"
+                                        }
+                                    },
+                                    {
+                                        "comment": "일부 항목이 실패했으면(응답 data.warnings, 코어 7.1.3) 노란 경고 결과 창을 연다 — 다른 창을 닫은 뒤라 맨 끝에 둔다.",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "lifecycleWarnings": "{{response?.data?.warnings ?? []}}",
+                                            "lifecycleWarningsOpen": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "openModal",
+                                        "target": "lifecycle_warnings_modal",
+                                        "if": "{{(response?.data?.warnings?.length ?? 0) > 0}}"
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isPluginRefreshingLayouts": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message}}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "flex-center gap-2 px-4 py-2 bg-amber-700 dark:bg-amber-700 text-white rounded-lg hover:bg-amber-800 dark:hover:bg-amber-800 disabled:opacity-50 disabled:cursor-not-allowed",
+                    "disabled": "{{_global.isPluginRefreshingLayouts || _global.layoutPreviewState !== 'ready'}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.isPluginRefreshingLayouts}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "spinner-sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.isPluginRefreshingLayouts ? '$t:admin.plugins.refreshing_layouts' : '$t:admin.plugins.actions.refresh_layouts'}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -20,31 +168,6 @@
                 "className": "py-2"
             },
             "children": [
-                {
-                    "type": "basic",
-                    "name": "Div",
-                    "props": {
-                        "className": "alert-warning"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "props": {
-                                "name": "exclamation-triangle",
-                                "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "P",
-                            "props": {
-                                "className": "text-warning-soft"
-                            },
-                            "text": "$t:admin.plugins.modals.refresh_layouts_warning"
-                        }
-                    ]
-                },
                 {
                     "type": "basic",
                     "name": "P",
@@ -59,7 +182,10 @@
                     "props": {
                         "className": "mt-2 text-label-subtle"
                     },
-                    "text": "$t:admin.plugins.modals.refresh_layouts_description"
+                    "text": "$t:admin.layout_sync_preview.refresh_description"
+                },
+                {
+                    "partial": "partials/_shared/_layout_sync_preview.json"
                 }
             ]
         },
@@ -247,154 +373,6 @@
                                     ]
                                 }
                             ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "type": "click",
-                            "handler": "closeModal"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-secondary",
-                        "disabled": "{{_global.isPluginRefreshingLayouts}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:common.cancel"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "끝나면 고른 플러그인을 비운다 — 이 값이 목록과 다른 창들이 함께 쓰는 자리라, 닫은 뒤에도 남겨 두면 다음에 연 창이 엉뚱한 플러그인을 가리킨다.",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "isPluginRefreshingLayouts": true
-                                    }
-                                },
-                                {
-                                    "handler": "apiCall",
-                                    "target": "/api/admin/plugins/refresh-layouts",
-                                    "auth_required": true,
-                                    "params": {
-                                        "method": "POST",
-                                        "body": {
-                                            "plugin_name": "{{_global.selectedPlugin.identifier}}",
-                                            "layout_source": "{{_global.pluginLayoutSource ?? 'auto'}}"
-                                        }
-                                    },
-                                    "onSuccess": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isPluginRefreshingLayouts": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "success",
-                                                "message": "$t:admin.plugins.refresh_layouts_success"
-                                            }
-                                        },
-                                        {
-                                            "handler": "refetchDataSource",
-                                            "params": {
-                                                "dataSourceId": "plugins"
-                                            }
-                                        },
-                                        {
-                                            "handler": "closeModal"
-                                        },
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "selectedPlugin": null,
-                                                "pluginLayoutSource": "auto",
-                                                "pluginLayoutSourceOpen": false
-                                            }
-                                        },
-                                        {
-                                            "comment": "일부 항목이 실패했으면(응답 data.warnings, 코어 7.1.3) 노란 경고 결과 창을 연다 — 다른 창을 닫은 뒤라 맨 끝에 둔다.",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "lifecycleWarnings": "{{response?.data?.warnings ?? []}}",
-                                                "lifecycleWarningsOpen": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "openModal",
-                                            "target": "lifecycle_warnings_modal",
-                                            "if": "{{(response?.data?.warnings?.length ?? 0) > 0}}"
-                                        }
-                                    ],
-                                    "onError": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isPluginRefreshingLayouts": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "error",
-                                                "message": "{{error.message}}"
-                                            }
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "flex-center gap-2 px-4 py-2 bg-amber-700 dark:bg-amber-700 text-white rounded-lg hover:bg-amber-800 dark:hover:bg-amber-800 disabled:opacity-50 disabled:cursor-not-allowed",
-                        "disabled": "{{_global.isPluginRefreshingLayouts}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{_global.isPluginRefreshingLayouts}}",
-                            "props": {
-                                "name": "spinner",
-                                "className": "spinner-sm"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "{{_global.isPluginRefreshingLayouts ? '$t:admin.plugins.refreshing_layouts' : '$t:admin.plugins.actions.refresh_layouts'}}"
                         }
                     ]
                 }

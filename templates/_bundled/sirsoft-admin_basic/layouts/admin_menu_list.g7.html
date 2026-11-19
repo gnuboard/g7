@@ -65,7 +65,9 @@
     <wait-for>roles</wait-for>
   </transition-overlay>
   <slot name="content">
-    <div data-ref="menu_list_content" class="admin-page-content-responsive">
+    <div data-ref="menu_list_content" class="p-4 min-h-screen bg-gray-50 dark:bg-gray-900">
+      <responsive on="640-1023" class="p-6 min-h-screen bg-gray-50 dark:bg-gray-900"/>
+      <responsive on="1024-" class="p-8 min-h-screen bg-gray-50 dark:bg-gray-900"/>
       <page-header data-type="composite" data-ref="page_header" title="$t:admin.menus.title" description="$t:admin.menus.description">
         <icon-button type="button" data-type="composite" data-ref="refresh_button" iconName="refresh" variant="outline" size="md">
           <on type="click">
@@ -107,7 +109,8 @@
           <span>$t:admin.menus.add_menu</span>
         </button>
       </page-header>
-      <div data-ref="main_grid" :data-blur-until-loaded="true" class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div data-ref="main_grid" :data-blur-until-loaded="true" class="mt-6 grid grid-cols-1 gap-6">
+        <responsive on="desktop" class="mt-6 grid grid-cols-2 gap-6"/>
         <include src="partials/admin_menu_list/_panel_menu_list.g7.html"/>
         <include src="partials/admin_menu_list/_panel_detail.g7.html"/>
         <include src="partials/admin_menu_list/_panel_bulk_roles.g7.html"/>

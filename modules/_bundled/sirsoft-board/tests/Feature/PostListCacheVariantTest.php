@@ -255,7 +255,7 @@ class PostListCacheVariantTest extends BoardTestCase
     {
         $service = app(BoardService::class);
         $this->assertVariantContract(
-            'recent_posts_v2_10_'.app()->getLocale(),
+            'recent_posts_v3_10_'.app()->getLocale(),
             fn () => array_values(array_intersect(array_column($service->getCachedRecentPosts(10), 'id'), $this->ids))
         );
     }
@@ -273,7 +273,7 @@ class PostListCacheVariantTest extends BoardTestCase
     {
         $service = app(BoardService::class);
         $this->assertVariantContract(
-            'popular_posts_v2_week_10_'.app()->getLocale(),
+            'popular_posts_v3_week_10_'.app()->getLocale(),
             fn () => array_values(array_intersect(array_column($service->getCachedPopularPosts('week', 10), 'id'), $this->ids))
         );
     }

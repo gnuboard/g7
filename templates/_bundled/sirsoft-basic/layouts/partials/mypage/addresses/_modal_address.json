@@ -526,8 +526,15 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "640-": {
+                                    "props": {
+                                        "className": "grid grid-cols-2 gap-2"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "grid grid-cols-1 sm:grid-cols-2 gap-2"
+                                "className": "grid grid-cols-1 gap-2"
                             },
                             "children": [
                                 {
@@ -706,7 +713,13 @@
                     "type": "basic",
                     "name": "Div",
                     "responsive": {
-                        "portable": {
+                        "-640": {
+                            "comment": "이 줄은 저장 단추가 폼 제출이라 고정 하단으로 옮기지 않는다. 640px 이하에서는 세로로 쌓고 폭을 채운다(Modal 고정 하단과 같은 경계, #869)",
+                            "props": {
+                                "className": "flex flex-col gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"
+                            }
+                        },
+                        "641-1023": {
                             "props": {
                                 "className": "flex gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700"
                             }
@@ -820,6 +833,12 @@
                                             ],
                                             "onError": [
                                                 {
+                                                    "comment": "추가 정보가 비어 있어 거부된 요청(403, error_code 가 required_fields_pending)이면 일반 오류 알림 대신 「추가 정보 필요」 안내 창을 연다",
+                                                    "handler": "openModal",
+                                                    "target": "required_info_pending_modal",
+                                                    "if": "{{error.error_code === 'required_fields_pending'}}"
+                                                },
+                                                {
                                                     "handler": "setState",
                                                     "params": {
                                                         "target": "local",
@@ -835,7 +854,7 @@
                                                 },
                                                 {
                                                     "handler": "toast",
-                                                    "if": "{{error.status !== 409}}",
+                                                    "if": "{{error.status !== 409 && error.error_code !== 'required_fields_pending'}}",
                                                     "params": {
                                                         "type": "error",
                                                         "message": "{{error.message}}"

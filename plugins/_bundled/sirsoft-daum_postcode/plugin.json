@@ -5,13 +5,13 @@
         "ko": "Daum 우편번호",
         "en": "Daum Postcode"
     },
-    "version": "1.2.1",
+    "version": "1.2.2",
     "license": "MIT",
     "description": {
         "ko": "Daum 우편번호 서비스를 통한 주소 검색 기능을 제공하는 플러그인입니다. API 키 없이 무료로 사용할 수 있습니다.",
         "en": "Plugin that provides address search functionality through Daum Postcode service. Free to use without API key."
     },
-    "g7_version": ">=7.1.1",
+    "g7_version": ">=7.2.0",
     "dependencies": {
         "modules": {},
         "plugins": {}
@@ -23,13 +23,14 @@
         "t1.daumcdn.net"
     ],
     "assets": {
+        "css": {
+            "entry": "resources/css/main.css",
+            "output": "dist/css/plugin.css",
+            "namespace": "daumpostcode"
+        },
         "js": {
             "entry": "resources/js/index.ts",
             "output": "dist/js/plugin.iife.js"
-        },
-        "css": {
-            "entry": "resources/css/main.css",
-            "output": "dist/css/plugin.css"
         },
         "handlers": true
     },

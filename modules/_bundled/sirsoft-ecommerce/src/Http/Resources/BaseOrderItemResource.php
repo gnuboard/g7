@@ -35,7 +35,8 @@ abstract class BaseOrderItemResource extends BaseApiResource
             'id' => $product->id,
             'name' => $product->getLocalizedName(),
             'product_code' => $product->product_code,
-            'thumbnail_url' => $thumbnailImage?->download_url,
+            // 썸네일 기준 API 주소 — 직접 URL(CDN)은 thumbPreset 이 걸리지 않는다
+            'thumbnail_url' => $thumbnailImage?->preview_url,
             'sales_status' => $product->sales_status?->value,
             'display_status' => $product->display_status?->value,
         ];

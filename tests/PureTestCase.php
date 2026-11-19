@@ -26,17 +26,19 @@ abstract class PureTestCase extends BaseTestCase
      */
     protected function tearDown(): void
     {
-        if (class_exists(Mockery::class)) {
-            $container = Mockery::getContainer();
-            if ($container !== null) {
-                $this->addToAssertionCount($container->mockery_getExpectationCount());
+        try {
+            if (class_exists(Mockery::class)) {
+                $container = Mockery::getContainer();
+                if ($container !== null) {
+                    $this->addToAssertionCount($container->mockery_getExpectationCount());
+                }
+                Mockery::close();
             }
-            Mockery::close();
+        } finally {
+            Carbon::setTestNow();
+            CarbonImmutable::setTestNow();
+
+            parent::tearDown();
         }
-
-        Carbon::setTestNow();
-        CarbonImmutable::setTestNow();
-
-        parent::tearDown();
     }
 }

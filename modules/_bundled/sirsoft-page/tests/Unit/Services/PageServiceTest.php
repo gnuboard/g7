@@ -10,6 +10,7 @@ use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Modules\Sirsoft\Page\Models\Page;
 use Modules\Sirsoft\Page\Models\PageVersion;
 use Modules\Sirsoft\Page\Services\PageService;
@@ -27,6 +28,11 @@ class PageServiceTest extends ModuleTestCase
 
     private User $adminUser;
 
+    /**
+     * 테스트마다 관리자 사용자로 인증하고 PageService 를 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -45,6 +51,12 @@ class PageServiceTest extends ModuleTestCase
 
     /**
      * 페이지를 생성할 수 있는지 확인
+     *
+     * @scenario case=create
+     *
+     * @effects page_create_returns_model_with_version_one
+     *
+     * @return void 반환값 없음
      */
     public function test_create_page_returns_page_model(): void
     {
@@ -64,6 +76,12 @@ class PageServiceTest extends ModuleTestCase
 
     /**
      * 페이지 생성 시 버전 1 스냅샷이 자동 생성되는지 확인
+     *
+     * @scenario case=create
+     *
+     * @effects page_create_stores_version_one_snapshot
+     *
+     * @return void 반환값 없음
      */
     public function test_create_page_creates_version_one(): void
     {
@@ -81,6 +99,12 @@ class PageServiceTest extends ModuleTestCase
 
     /**
      * 발행 상태로 생성 시 published_at이 설정되는지 확인
+     *
+     * @scenario case=create
+     *
+     * @effects page_create_published_sets_published_at
+     *
+     * @return void 반환값 없음
      */
     public function test_create_published_page_sets_published_at(): void
     {
@@ -100,6 +124,12 @@ class PageServiceTest extends ModuleTestCase
 
     /**
      * 페이지를 수정할 수 있는지 확인
+     *
+     * @scenario case=update
+     *
+     * @effects page_update_applies_title
+     *
+     * @return void 반환값 없음
      */
     public function test_update_page_changes_title(): void
     {
@@ -114,6 +144,12 @@ class PageServiceTest extends ModuleTestCase
 
     /**
      * 수정 시 버전 번호가 증가하는지 확인
+     *
+     * @scenario case=update
+     *
+     * @effects page_update_increments_current_version
+     *
+     * @return void 반환값 없음
      */
     public function test_update_page_increments_version(): void
     {
@@ -129,6 +165,12 @@ class PageServiceTest extends ModuleTestCase
 
     /**
      * 수정 시 새 버전 스냅샷이 생성되는지 확인
+     *
+     * @scenario case=update
+     *
+     * @effects page_update_stores_new_version_snapshot
+     *
+     * @return void 반환값 없음
      */
     public function test_update_page_creates_new_version_snapshot(): void
     {
@@ -146,6 +188,12 @@ class PageServiceTest extends ModuleTestCase
 
     /**
      * 페이지를 물리 삭제할 수 있는지 확인
+     *
+     * @scenario case=delete
+     *
+     * @effects page_delete_hard_deletes_row
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_page_hard_deletes(): void
     {
@@ -157,10 +205,53 @@ class PageServiceTest extends ModuleTestCase
         $this->assertDatabaseMissing('pages', ['id' => $page->id]);
     }
 
+    /**
+     * 페이지 삭제가 버전 이력을 DB CASCADE 없이 명시적으로 지우는지 확인 (#888)
+     *
+     * 외래키 검사를 끈 상태에서 삭제해도 `page_versions` 에 고아 행이 남지 않아야 한다 —
+     * 남는다면 삭제가 외래키 연쇄에 기대고 있다는 뜻이다.
+     *
+     * @scenario case=delete
+     *
+     * @effects page_delete_removes_versions_explicitly
+     *
+     * @return void 반환값 없음
+     */
+    public function test_delete_page_removes_versions_without_fk_cascade(): void
+    {
+        $page = $this->service->createPage([
+            'slug' => 'test-svc-delete-versions',
+            'title' => ['ko' => '버전 삭제', 'en' => 'Version delete'],
+            'content' => ['ko' => '본문', 'en' => 'Body'],
+            'content_mode' => 'html',
+        ]);
+        $page = $this->service->updatePage($page, [
+            'title' => ['ko' => '버전 삭제 2', 'en' => 'Version delete 2'],
+            'content' => ['ko' => '본문 2', 'en' => 'Body 2'],
+        ]);
+        $this->assertSame(2, PageVersion::where('page_id', $page->id)->count());
+
+        Schema::disableForeignKeyConstraints();
+        try {
+            $this->service->deletePage($page);
+        } finally {
+            Schema::enableForeignKeyConstraints();
+        }
+
+        $this->assertDatabaseMissing('pages', ['id' => $page->id]);
+        $this->assertSame(0, PageVersion::where('page_id', $page->id)->count(), '삭제된 페이지의 버전 이력이 남았습니다');
+    }
+
     // ─── changePublishStatus ───────────────────────────
 
     /**
      * 발행 상태를 변경할 수 있는지 확인
+     *
+     * @scenario case=publish
+     *
+     * @effects page_publish_sets_published_at
+     *
+     * @return void 반환값 없음
      */
     public function test_change_publish_status_to_published(): void
     {
@@ -174,6 +265,12 @@ class PageServiceTest extends ModuleTestCase
 
     /**
      * 미발행 상태로 변경할 수 있는지 확인
+     *
+     * @scenario case=publish
+     *
+     * @effects page_unpublish_clears_published_flag
+     *
+     * @return void 반환값 없음
      */
     public function test_change_publish_status_to_unpublished(): void
     {
@@ -192,6 +289,12 @@ class PageServiceTest extends ModuleTestCase
 
     /**
      * 여러 페이지를 일괄 발행할 수 있는지 확인
+     *
+     * @scenario case=bulk_publish
+     *
+     * @effects bulk_publish_updates_every_page
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_change_publish_status(): void
     {
@@ -222,6 +325,12 @@ class PageServiceTest extends ModuleTestCase
      *
      * 일괄변경 경로가 after_publish 훅을 발화하지 않으면 활동로그가 기록되지 않는다.
      * 단일 발행(changePublishStatus)과 동일하게 페이지별(per-item) 발화를 보장한다.
+     *
+     * @scenario case=bulk_publish
+     *
+     * @effects bulk_publish_fires_after_publish_hook_per_page
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_change_publish_status_fires_after_publish_hook_per_page(): void
     {
@@ -255,6 +364,12 @@ class PageServiceTest extends ModuleTestCase
 
     /**
      * 일괄 미발행 시 after_publish 훅이 published=false 로 발화되는지 확인 (회귀)
+     *
+     * @scenario case=bulk_publish
+     *
+     * @effects bulk_unpublish_fires_hook_with_false_per_page
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_change_publish_status_fires_unpublish_hook_per_page(): void
     {
@@ -280,6 +395,12 @@ class PageServiceTest extends ModuleTestCase
      * 일괄 처리 도중 한 건이라도 실패하면 전체 롤백되는지 확인 (회귀)
      *
      * all-or-nothing: 존재하지 않는 id 가 섞이면 정상 페이지도 발행되지 않아야 한다.
+     *
+     * @scenario case=bulk_publish
+     *
+     * @effects bulk_publish_rolls_back_all_on_failure
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_change_publish_status_rolls_back_on_failure(): void
     {
@@ -312,6 +433,12 @@ class PageServiceTest extends ModuleTestCase
 
     /**
      * 특정 버전으로 복원할 수 있는지 확인
+     *
+     * @scenario case=restore_version
+     *
+     * @effects restore_version_reverts_content_and_bumps_version
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_version_reverts_content(): void
     {
@@ -339,6 +466,12 @@ class PageServiceTest extends ModuleTestCase
 
     /**
      * 슬러그 존재 여부를 확인할 수 있는지 검증
+     *
+     * @scenario case=slug_exists
+     *
+     * @effects slug_exists_true_for_existing
+     *
+     * @return void 반환값 없음
      */
     public function test_slug_exists_returns_true_for_existing_slug(): void
     {
@@ -349,6 +482,12 @@ class PageServiceTest extends ModuleTestCase
 
     /**
      * 존재하지 않는 슬러그는 false를 반환하는지 확인
+     *
+     * @scenario case=slug_exists
+     *
+     * @effects slug_exists_false_for_missing
+     *
+     * @return void 반환값 없음
      */
     public function test_slug_exists_returns_false_for_nonexistent(): void
     {
@@ -357,6 +496,12 @@ class PageServiceTest extends ModuleTestCase
 
     /**
      * excludeId로 자기 자신을 제외할 수 있는지 확인
+     *
+     * @scenario case=slug_exists
+     *
+     * @effects slug_exists_excludes_own_id
+     *
+     * @return void 반환값 없음
      */
     public function test_slug_exists_excludes_own_id(): void
     {
@@ -369,6 +514,12 @@ class PageServiceTest extends ModuleTestCase
 
     /**
      * 발행된 페이지를 슬러그로 조회할 수 있는지 확인
+     *
+     * @scenario case=published_lookup
+     *
+     * @effects published_lookup_returns_published_page
+     *
+     * @return void 반환값 없음
      */
     public function test_get_published_page_by_slug(): void
     {
@@ -386,6 +537,12 @@ class PageServiceTest extends ModuleTestCase
 
     /**
      * 미발행 페이지는 슬러그로 조회할 수 없는지 확인
+     *
+     * @scenario case=published_lookup
+     *
+     * @effects published_lookup_hides_draft
+     *
+     * @return void 반환값 없음
      */
     public function test_get_published_page_by_slug_returns_null_for_draft(): void
     {
@@ -403,6 +560,12 @@ class PageServiceTest extends ModuleTestCase
 
     /**
      * allowUnpublished=true 이면 미발행 페이지도 반환하는지 확인 (미리보기)
+     *
+     * @scenario case=published_lookup
+     *
+     * @effects published_lookup_returns_draft_when_preview_allowed
+     *
+     * @return void 반환값 없음
      */
     public function test_get_published_page_by_slug_returns_draft_when_preview_allowed(): void
     {
@@ -422,6 +585,12 @@ class PageServiceTest extends ModuleTestCase
 
     /**
      * allowUnpublished=true 여도 존재하지 않는 슬러그는 null 을 반환하는지 확인
+     *
+     * @scenario case=published_lookup
+     *
+     * @effects published_lookup_returns_null_for_missing_slug
+     *
+     * @return void 반환값 없음
      */
     public function test_get_published_page_by_slug_returns_null_for_missing_even_when_preview_allowed(): void
     {
@@ -434,6 +603,12 @@ class PageServiceTest extends ModuleTestCase
 
     /**
      * getPage()에서 scope=self일 때 타인의 페이지 조회 시 AccessDeniedHttpException을 던지는지 확인
+     *
+     * @scenario case=scope_gate
+     *
+     * @effects scope_self_denies_get_other_page
+     *
+     * @return void 반환값 없음
      */
     public function test_get_page_throws_exception_for_scope_denied(): void
     {
@@ -455,6 +630,12 @@ class PageServiceTest extends ModuleTestCase
 
     /**
      * getPage()에서 scope=self일 때 자기 페이지는 정상 조회되는지 확인
+     *
+     * @scenario case=scope_gate
+     *
+     * @effects scope_self_allows_get_own_page
+     *
+     * @return void 반환값 없음
      */
     public function test_get_page_allows_own_page_with_scope_self(): void
     {
@@ -474,6 +655,12 @@ class PageServiceTest extends ModuleTestCase
 
     /**
      * updatePage()에서 scope=self일 때 타인의 페이지 수정 시 AccessDeniedHttpException을 던지는지 확인
+     *
+     * @scenario case=scope_gate
+     *
+     * @effects scope_self_denies_update_other_page
+     *
+     * @return void 반환값 없음
      */
     public function test_update_page_throws_exception_for_scope_denied(): void
     {
@@ -495,6 +682,12 @@ class PageServiceTest extends ModuleTestCase
 
     /**
      * deletePage()에서 scope=self일 때 타인의 페이지 삭제 시 AccessDeniedHttpException을 던지는지 확인
+     *
+     * @scenario case=scope_gate
+     *
+     * @effects scope_self_denies_delete_other_page
+     *
+     * @return void 반환값 없음
      */
     public function test_delete_page_throws_exception_for_scope_denied(): void
     {
@@ -514,6 +707,12 @@ class PageServiceTest extends ModuleTestCase
 
     /**
      * changePublishStatus()에서 scope=self일 때 타인의 페이지 발행 변경 시 AccessDeniedHttpException을 던지는지 확인
+     *
+     * @scenario case=scope_gate
+     *
+     * @effects scope_self_denies_publish_other_page
+     *
+     * @return void 반환값 없음
      */
     public function test_change_publish_status_throws_exception_for_scope_denied(): void
     {
@@ -534,6 +733,12 @@ class PageServiceTest extends ModuleTestCase
 
     /**
      * restoreVersion()에서 scope=self일 때 타인의 페이지 버전 복원 시 AccessDeniedHttpException을 던지는지 확인
+     *
+     * @scenario case=scope_gate
+     *
+     * @effects scope_self_denies_restore_other_page
+     *
+     * @return void 반환값 없음
      */
     public function test_restore_version_throws_exception_for_scope_denied(): void
     {
@@ -567,6 +772,12 @@ class PageServiceTest extends ModuleTestCase
      * `PATCH admin/pages/bulk-publish` 에는 `{page}` 파라미터가 없어 PermissionMiddleware 의
      * 스코프 검사가 통째로 스킵된다. 위 단건 경로 5곳은 전부 검사하는데 일괄만 비어 있으면
      * 그 경로가 우회로가 된다.
+     *
+     * @scenario case=scope_gate
+     *
+     * @effects scope_self_denies_bulk_publish_with_other_page
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_change_publish_status_throws_exception_for_scope_denied(): void
     {
@@ -602,6 +813,12 @@ class PageServiceTest extends ModuleTestCase
 
     /**
      * (과차단 회귀) 자기 소유 페이지만 넘기면 일괄 발행이 정상 동작한다
+     *
+     * @scenario case=scope_gate
+     *
+     * @effects scope_self_allows_bulk_publish_own_pages
+     *
+     * @return void 반환값 없음
      */
     public function test_bulk_change_publish_status_allows_own_pages(): void
     {
@@ -626,6 +843,9 @@ class PageServiceTest extends ModuleTestCase
 
     /**
      * 테스트용 페이지를 생성합니다.
+     *
+     * @param  string  $slug  생성할 페이지 슬러그
+     * @return Page 생성된 페이지
      */
     private function createTestPage(string $slug): Page
     {

@@ -3,6 +3,7 @@
 namespace Tests\Unit\Installer;
 
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 설치 화면 스크립트가 하위 폴더 설치에서도 맞는 API 주소를 쓰는지 정적으로 검증한다.
@@ -14,6 +15,8 @@ use PHPUnit\Framework\TestCase;
  */
 class InstallerJsApiPathTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
     /**
      * installer.js 원문.
      *
@@ -21,7 +24,7 @@ class InstallerJsApiPathTest extends TestCase
      */
     private function source(): string
     {
-        return (string) file_get_contents(dirname(__DIR__, 3).'/public/install/assets/js/installer.js');
+        return $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/assets/js/installer.js');
     }
 
     /**
@@ -51,13 +54,16 @@ class InstallerJsApiPathTest extends TestCase
     /**
      * checkAndStartInstallation 이 지역에서 선언하지 않은 apiUrl 을 참조하지 않는다.
      *
+     * 주석을 걷어낸 원문으로 센다 — 같은 결함을 먼저 고친 자리에 「이 스코프에는 apiUrl 이 없다」는
+     * 이유 주석이 있고, 주석 속 낱말은 식별자 참조가 아니다.
+     *
      * @effects installer_js_running_branch_has_no_undefined_identifier
      *
      * @return void 반환값 없음
      */
     public function test_running_branch_does_not_reference_undeclared_api_url(): void
     {
-        $source = $this->source();
+        $source = $this->sourceWithoutComments(dirname(__DIR__, 3).'/public/install/assets/js/installer.js');
         $start = strpos($source, 'async function checkAndStartInstallation()');
         $this->assertNotFalse($start);
         $end = strpos($source, "\n    }\n", $start);

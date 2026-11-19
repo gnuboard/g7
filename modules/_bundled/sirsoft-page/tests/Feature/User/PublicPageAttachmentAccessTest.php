@@ -29,24 +29,43 @@ class PublicPageAttachmentAccessTest extends FeatureTestCase
 {
     private const BASE = '/api/modules/sirsoft-page/pages/attachment';
 
+    /**
+     * 이 테스트가 만든 attach-access- 슬러그 페이지를 강제 삭제하고 서비스 모킹을 닫는다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         Page::where('slug', 'like', 'attach-access-%')->forceDelete();
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**
      * Service 를 모킹해 게이트 통과 시 200 을 반환하도록 만든다.
      *
      * @param  PageAttachment  $attachment  getByHash 가 반환할 첨부
+     * @return void 반환값 없음
      */
     private function mockServicePassThrough(PageAttachment $attachment): void
     {
         $svc = Mockery::mock(PageAttachmentService::class);
         $svc->shouldReceive('getByHash')->andReturn($attachment);
-        $svc->shouldReceive('preview')->andReturn(new StreamedResponse(fn () => null, 200));
-        $svc->shouldReceive('download')->andReturn(new StreamedResponse(fn () => null, 200));
+        $svc->shouldReceive('preview')->andReturn(new StreamedResponse(fn () => null, 200, ['Content-Type' => 'image/png']));
+        // 미리보기는 컨트롤러가 검증자 소스를 코어 헬퍼에 넘긴다 — 전체 mock 이라
+        // 이 기대가 없으면 게이트 통과 케이스가 500 이 되어 게이트 판정을 잴 수 없다.
+        $svc->shouldReceive('previewValidators')->andReturn(['etag_source' => 'fixture', 'last_modified' => null]);
+        // 다운로드는 컨트롤러가 서빙 정보(`getDownloadInfo()`)를 코어 헬퍼에 넘긴다 —
+        // 스트림만 돌려주는 `download()` 는 더 이상 컨트롤러가 부르지 않는다.
+        $svc->shouldReceive('getDownloadInfo')->andReturn([
+            'response' => new StreamedResponse(fn () => null, 200, ['Content-Type' => 'application/pdf']),
+            'etag_source' => 'fixture',
+            'mime_type' => 'application/pdf',
+            'last_modified' => null,
+        ]);
         $this->app->instance(PageAttachmentService::class, $svc);
     }
 
@@ -76,6 +95,8 @@ class PublicPageAttachmentAccessTest extends FeatureTestCase
      * @scenario resource=page_attachment, parent_state=restricted
      *
      * @effects unpublished_page_attachment_preview_blocked_for_guest
+     *
+     * @return void 반환값 없음
      */
     public function test_unpublished_preview_blocked_for_anonymous(): void
     {
@@ -92,6 +113,8 @@ class PublicPageAttachmentAccessTest extends FeatureTestCase
      * @scenario resource=page_attachment, parent_state=restricted
      *
      * @effects unpublished_page_attachment_preview_blocked_without_permission
+     *
+     * @return void 반환값 없음
      */
     public function test_unpublished_preview_blocked_for_user_without_permission(): void
     {
@@ -111,6 +134,8 @@ class PublicPageAttachmentAccessTest extends FeatureTestCase
      * @scenario resource=page_attachment, parent_state=restricted
      *
      * @effects unpublished_page_attachment_preview_allowed_with_pages_read
+     *
+     * @return void 반환값 없음
      */
     public function test_unpublished_preview_allowed_for_admin_with_pages_read(): void
     {
@@ -130,6 +155,8 @@ class PublicPageAttachmentAccessTest extends FeatureTestCase
      * @scenario resource=page_attachment, parent_state=public
      *
      * @effects published_page_attachment_preview_still_public
+     *
+     * @return void 반환값 없음
      */
     public function test_published_preview_allowed_for_anonymous(): void
     {
@@ -148,6 +175,8 @@ class PublicPageAttachmentAccessTest extends FeatureTestCase
      * @scenario resource=page_attachment, parent_state=restricted
      *
      * @effects unpublished_page_attachment_download_blocked_for_guest
+     *
+     * @return void 반환값 없음
      */
     public function test_unpublished_download_blocked_for_anonymous(): void
     {
@@ -168,6 +197,8 @@ class PublicPageAttachmentAccessTest extends FeatureTestCase
      * @scenario resource=page_attachment, parent_state=restricted
      *
      * @effects unpublished_page_attachment_download_allowed_with_pages_read
+     *
+     * @return void 반환값 없음
      */
     public function test_unpublished_download_allowed_for_admin_with_pages_read(): void
     {
@@ -187,6 +218,8 @@ class PublicPageAttachmentAccessTest extends FeatureTestCase
      * @scenario resource=page_attachment, parent_state=public
      *
      * @effects published_page_attachment_download_still_public
+     *
+     * @return void 반환값 없음
      */
     public function test_published_download_allowed_for_anonymous(): void
     {
@@ -210,6 +243,8 @@ class PublicPageAttachmentAccessTest extends FeatureTestCase
      * @scenario resource=page_attachment, parent_state=restricted
      *
      * @effects unpublished_page_attachment_preview_allowed_with_valid_signature
+     *
+     * @return void 반환값 없음
      */
     public function test_unpublished_preview_allowed_with_valid_signature_without_auth(): void
     {
@@ -232,6 +267,8 @@ class PublicPageAttachmentAccessTest extends FeatureTestCase
      * @scenario resource=page_attachment, parent_state=restricted
      *
      * @effects unpublished_page_attachment_preview_blocked_with_tampered_signature
+     *
+     * @return void 반환값 없음
      */
     public function test_unpublished_preview_blocked_with_tampered_signature(): void
     {
@@ -260,6 +297,8 @@ class PublicPageAttachmentAccessTest extends FeatureTestCase
      * @scenario resource=page_attachment, parent_state=restricted
      *
      * @effects unpublished_page_attachment_preview_blocked_with_expired_signature
+     *
+     * @return void 반환값 없음
      */
     public function test_unpublished_preview_blocked_with_expired_signature(): void
     {
@@ -283,6 +322,8 @@ class PublicPageAttachmentAccessTest extends FeatureTestCase
      * @scenario resource=page_attachment, parent_state=restricted
      *
      * @effects admin_response_serializes_signed_preview_url_for_unpublished_page
+     *
+     * @return void 반환값 없음
      */
     public function test_admin_detail_serializes_signed_preview_url_for_unpublished_page(): void
     {
@@ -309,6 +350,8 @@ class PublicPageAttachmentAccessTest extends FeatureTestCase
      * @scenario resource=page_attachment, parent_state=public
      *
      * @effects published_page_serializes_plain_preview_url
+     *
+     * @return void 반환값 없음
      */
     public function test_published_page_serializes_plain_preview_url(): void
     {

@@ -15,14 +15,18 @@ use App\Http\Requests\Identity\PurposesIndexRequest;
 use App\Http\Requests\Identity\RequestChallengeRequest;
 use App\Http\Requests\Identity\ResolvePolicyRequest;
 use App\Http\Requests\Identity\ShowChallengeRequest;
+use App\Http\Requests\Identity\VerifiedClaimsRequest;
 use App\Http\Requests\Identity\VerifyChallengeRequest;
 use App\Http\Resources\Identity\ChallengeResource;
 use App\Http\Resources\Identity\ProviderResource;
 use App\Models\IdentityVerificationLog;
 use App\Models\User;
+use App\Services\IdentityClaimsService;
 use App\Services\IdentityPolicyService;
 use App\Services\IdentityVerificationService;
 use App\Support\LocalizedValue;
+use App\Support\SameOriginPath;
+use App\Support\ScreenUrl;
 use App\Support\SiteUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -39,11 +43,13 @@ class IdentityVerificationController extends PublicBaseController
      * @param  IdentityVerificationService  $service  본인인증 유스케이스 Service
      * @param  IdentityVerificationManager  $manager  프로바이더 레지스트리 (Service 역할 겸함)
      * @param  IdentityPolicyService  $policyService  정책 해석 Service (프런트 프리페치용)
+     * @param  IdentityClaimsService  $claimsService  본인인증 값 Service (채움값 조회)
      */
     public function __construct(
         protected IdentityVerificationService $service,
         protected IdentityVerificationManager $manager,
         protected IdentityPolicyService $policyService,
+        protected IdentityClaimsService $claimsService,
     ) {
         parent::__construct();
     }
@@ -118,6 +124,10 @@ class IdentityVerificationController extends PublicBaseController
                 'origin_type' => IdentityOriginType::Api->value,
                 'origin_identifier' => '/api/identity/challenges',
                 'origin_policy_key' => $originPolicy?->key,
+                // 외부 화면을 거치는 수단이 확인 뒤 돌려보낼 경로 — 같은 출처 경로만(그 밖은 null)
+                'return_path' => SameOriginPath::normalize($validated['return_path'] ?? null),
+                // 인증을 시작한 화면의 범위 — 메일 확인 링크·사이트 링크가 그 화면 쪽 주소를 따른다
+                'screen_scope' => ($validated['scope'] ?? null) === ScreenUrl::SCOPE_ADMIN ? ScreenUrl::SCOPE_ADMIN : ScreenUrl::SCOPE_USER,
             ],
             providerId: $providerId,
         );
@@ -228,6 +238,39 @@ class IdentityVerificationController extends PublicBaseController
     }
 
     /**
+     * 본인인증 토큰이 가리키는 인증 값과 그 값으로 채울 회원 항목을 조회합니다. POST /api/identity/claims
+     *
+     * 가입 화면이 본인인증을 마친 뒤 이름, 휴대폰 같은 칸을 인증 값으로 채울 때 부른다. 인증 값을 주지 않는 수단(메일 인증번호 등)이면
+     * `status: no_claims` 와 빈 값이 온다(200). 만료됐거나 알 수 없는 토큰은 422 이고 `errors.status` 로 `expired`, `invalid` 를 알린다.
+     * 가입 목적(`signup`)인데 가입 전 본인인증 정책이 꺼진 사이트면 토큰을 보지 않고 `status: disabled` 와 빈 값이 온다(200) —
+     * 정책이 꺼진 사이트는 가입 요청의 본인인증 결과를 인정하지도 쓰지도 않는다.
+     *
+     * @param  VerifiedClaimsRequest  $request  검증된 요청 (verification_token, purpose)
+     * @return JsonResponse 토큰 상태, 인증 값, 항목 키별 채움값, 잠글 항목 키
+     */
+    public function claims(VerifiedClaimsRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+        $user = $request->user();
+
+        $result = $this->claimsService->describeForToken(
+            (string) $validated['verification_token'],
+            (string) ($validated['purpose'] ?? 'signup'),
+            $user instanceof User ? $user : null,
+        );
+
+        if (in_array($result['status'], [IdentityClaimsService::STATUS_INVALID, IdentityClaimsService::STATUS_EXPIRED], true)) {
+            return $this->error('identity.errors.invalid_verification_token', 422, ['status' => $result['status']]);
+        }
+
+        return $this->success('common.success', [
+            ...$result,
+            'claims' => (object) $result['claims'],
+            'fields' => (object) $result['fields'],
+        ]);
+    }
+
+    /**
      * Challenge 를 취소합니다. POST /api/identity/challenges/{challenge}/cancel
      *
      * 라우트는 `permission:user,core.identity.cancel` 미들웨어 + Route::model('challenge') 바인딩으로 보호됩니다.
@@ -297,7 +340,7 @@ class IdentityVerificationController extends PublicBaseController
      *
      * @param  IdentityCallbackRequest  $request  검증된 요청
      * @param  string  $providerId  콜백을 보낸 provider 식별자
-     * @return JsonResponse|RedirectResponse
+     * @return JsonResponse|RedirectResponse 실패·return 없음은 JSON, return 이 있으면 그 화면으로 리다이렉트
      *
      * @since engine-v1.46.0
      */
@@ -354,17 +397,18 @@ class IdentityVerificationController extends PublicBaseController
     }
 
     /**
-     * `return` 쿼리 URL 이 사이트 주소와 같은 출처인지 검증 — open redirect 차단.
+     * `return` 쿼리 URL 이 사이트 주소 또는 「사용자 화면 URL」과 같은 출처인지 검증 — open redirect 차단.
      *
      * 보안: 브라우저와 PHP 가 다르게 해석하는 입력(`/\evil.com`·제어 문자·`https://evil.com\@site/`)과
-     * scheme·port·userinfo 가 다른 절대 URL 을 모두 거부한다. 판정은 `SiteUrl::isSameOrigin()` 이 소유한다.
+     * scheme·port·userinfo 가 다른 절대 URL 을 모두 거부한다. 판정은 `SiteUrl::isSameOrigin()` 과
+     * `ScreenUrl::isUserScreenOrigin()` 이 소유한다 — 외부 화면(다른 주소의 Next.js 등)으로 돌아가는 복귀를 허용한다(#792).
      *
      * @param  string  $url  검사할 복귀 URL
-     * @return bool 같은 출처면 true
+     * @return bool 허용 출처면 true
      */
     private function isSafeReturnUrl(string $url): bool
     {
-        return SiteUrl::isSameOrigin($url);
+        return SiteUrl::isSameOrigin($url) || ScreenUrl::isUserScreenOrigin($url);
     }
 
     /**
@@ -378,7 +422,15 @@ class IdentityVerificationController extends PublicBaseController
      */
     private function absoluteReturnUrl(string $url): string
     {
-        return str_starts_with($url, '/') ? SiteUrl::forPath($url) : $url;
+        if (! str_starts_with($url, '/')) {
+            return $url;
+        }
+
+        // 관리자 화면 경로(`/admin`, `/admin/…`)는 사이트 주소로 — 관리자 화면은 「사용자 화면 URL」 쪽에 없다.
+        // 그 밖의 상대 경로는 사용자 화면 베이스(「사용자 화면 URL」, 비면 사이트 주소)로 절대화한다(#792).
+        $scope = preg_match('#^/admin(?:[/?\#]|$)#', $url) === 1 ? ScreenUrl::SCOPE_ADMIN : ScreenUrl::SCOPE_USER;
+
+        return ScreenUrl::toAbsolute($url, $scope);
     }
 
     /**

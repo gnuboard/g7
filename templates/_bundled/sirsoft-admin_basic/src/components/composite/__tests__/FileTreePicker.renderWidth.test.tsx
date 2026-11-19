@@ -6,7 +6,6 @@
  * 창 1440·모바일 미리보기 390 에서 인라인 트리가 그려졌다. 훅이 없는 환경에서만 창 폭으로 폴백한다.
  */
 
-import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { FileTreePicker } from '../FileTreePicker';

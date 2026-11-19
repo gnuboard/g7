@@ -80,6 +80,8 @@ effects:
   - update_keeps_awaiting_host_reason
   - update_of_an_active_pack_reapplies_entity_seed_once
   - lang_pack_update_check_offers_higher_of_github_and_bundled
+  # 실패한 업데이트가 직전 활성 상태를 되돌리는 축 (테스트가 이미 잰다)
+  - failed_update_restores_previous_active_status
 
 # E2E axis 없음: 판정은 전부 서버측(FormRequest / Service)이다. 관리자 화면에서
 # auto_activate 를 보내는 곳은 번들 재설치 모달 하나뿐이고, 게이트를 네 경로 전부에

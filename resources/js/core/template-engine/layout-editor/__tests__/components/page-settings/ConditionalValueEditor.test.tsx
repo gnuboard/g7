@@ -12,7 +12,6 @@
  *  ⑥ [</> 원본 식 보기] 토글 → 직렬화 식 표시
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 
@@ -59,6 +58,10 @@ function renderExpr(expr: string, candidates?: BindingCandidate[]) {
 }
 
 describe('ConditionalValueEditor', () => {
+  /**
+   * @scenario subject=conditional_value_editor
+   * @effects cond_value_tree_renders_condition_and_branches
+   */
   it('① conditional 트리 — 조건 빌더 + 참/거짓 분기 리프', () => {
     renderExpr("{{route.id ? '$t:edit' : '$t:create'}}");
     expect(screen.getByTestId('g7le-value-tree-conditional')).toBeInTheDocument();
@@ -75,6 +78,10 @@ describe('ConditionalValueEditor', () => {
     expect(screen.getByTestId('g7le-value-tree-then-leaf-add-fallback')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=conditional_value_editor
+   * @effects cond_value_left_blur_commits_serialized_expr
+   */
   it('② 조건 left 편집 → blur 커밋 시 직렬화 새 식 onChange', () => {
     const { onChange } = renderExpr("{{route.id ? '$t:edit' : '$t:create'}}");
     fireEvent.change(screen.getByTestId('g7le-value-tree-cond-left'), {
@@ -91,6 +98,10 @@ describe('ConditionalValueEditor', () => {
   // B5 회귀 — 조건 left/right 는 **로컬 버퍼링 + blur 커밋**. 타이핑 중에는
   // 상위 onChange 를 호출하지 않는다(매 글자 직렬화→재파싱→리마운트로 불완전 경로 `route.` 가 잠기고
   // 커서가 끊기던 결함). 입력칸은 타이핑 값을 그대로 보여주되 onChange 는 blur 까지 미발화.
+  /**
+   * @scenario subject=conditional_value_editor
+   * @effects cond_value_left_typing_defers_on_change
+   */
   it('② 조건 left 타이핑 중에는 onChange 미발화(blur 전까지 — B5 잠금 회귀 가드)', () => {
     const { onChange } = renderExpr("{{route.id ? '$t:edit' : '$t:create'}}");
     const left = screen.getByTestId('g7le-value-tree-cond-left');
@@ -107,6 +118,10 @@ describe('ConditionalValueEditor', () => {
     expect(onChange).toHaveBeenCalledTimes(1);
   });
 
+  /**
+   * @scenario subject=conditional_value_editor
+   * @effects cond_value_left_enter_commits
+   */
   it('② 조건 left Enter 키 → 커밋(blur 와 동일)', () => {
     const { onChange } = renderExpr("{{route.id ? '$t:edit' : '$t:create'}}");
     const left = screen.getByTestId('g7le-value-tree-cond-left');
@@ -115,6 +130,10 @@ describe('ConditionalValueEditor', () => {
     expect(onChange).toHaveBeenCalledTimes(1);
   });
 
+  /**
+   * @scenario subject=conditional_value_editor
+   * @effects cond_value_compare_condition_shows_op_right
+   */
   it('② 비교 조건(===) → left/op/right 입력칸 + value 표시', () => {
     renderExpr("{{type === 'comment' ? '$t:a' : '$t:b'}}");
     expect(screen.getByTestId('g7le-value-tree-cond-left')).toHaveValue('type');
@@ -122,6 +141,10 @@ describe('ConditionalValueEditor', () => {
     expect(screen.getByTestId('g7le-value-tree-cond-right')).toHaveValue("'comment'");
   });
 
+  /**
+   * @scenario subject=conditional_value_editor
+   * @effects cond_value_branch_leaf_edit_updates_branch
+   */
   it('③ 분기 리프 편집(SegmentedValueEditor 조각) → onChange(분기 값 변경)', () => {
     const { onChange } = renderExpr("{{route.id ? '$t:edit' : '$t:create'}}");
     // then 분기 SegmentedValueEditor 의 1조각 I18nTextField(mock) 편집.
@@ -138,6 +161,10 @@ describe('ConditionalValueEditor', () => {
     }
   });
 
+  /**
+   * @scenario subject=conditional_value_editor
+   * @effects cond_value_fallback_node_renders_both_branches
+   */
   it('④ fallback 노드 — 기본값/비었을 때 분기(각 분기 = SegmentedValueEditor 조각)', () => {
     renderExpr("{{product.data?.name ?? '$t:shop.untitled'}}");
     expect(screen.getByTestId('g7le-value-tree-fallback')).toBeInTheDocument();
@@ -145,6 +172,10 @@ describe('ConditionalValueEditor', () => {
     expect(screen.getByTestId('g7le-value-tree-fallbackb-leaf-field-0-mock')).toHaveValue('$t:shop.untitled');
   });
 
+  /**
+   * @scenario subject=conditional_value_editor
+   * @effects cond_value_concat_node_renders_parts
+   */
   it('④ concat 노드 — 순서대로 조각(각 조각 = SegmentedValueEditor)', () => {
     renderExpr("{{'[' + coupon.name + ']'}}");
     expect(screen.getByTestId('g7le-value-tree-concat')).toBeInTheDocument();
@@ -156,6 +187,10 @@ describe('ConditionalValueEditor', () => {
   // 이어붙이기 조각은 "손잡이로 순서를 바꾸세요" 안내가 있는데 실제
   // 손잡이(드래그 핸들)·재배치가 없어 순서를 못 바꿨다. 각 조각에 드래그 핸들 + 삭제, 조각 추가 버튼이
   // 있어야 한다(SegmentedValueEditor 와 동일 CRUD).
+  /**
+   * @scenario subject=conditional_value_editor
+   * @effects cond_value_concat_part_handle_remove_add
+   */
   it('④ [회귀] concat 조각 — 드래그 손잡이 + 삭제 + 추가 버튼 제공', () => {
     renderExpr("{{'/api/' + route.id}}");
     // 각 조각에 드래그 손잡이.
@@ -168,6 +203,10 @@ describe('ConditionalValueEditor', () => {
     expect(screen.getByTestId('g7le-value-tree-part-add-data')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=conditional_value_editor
+   * @effects cond_value_concat_reorder_emits_expr
+   */
   it('④ [회귀] concat 조각 순서 변경 → 재배치된 식 onChange', () => {
     const { onChange } = renderExpr("{{'/api/' + route.id}}");
     // 0↔1 순서 변경 — 조각0 핸들 dragStart → 조각1 카드 하단 절반 dragOver(clientY 양수) → drop.
@@ -185,6 +224,10 @@ describe('ConditionalValueEditor', () => {
     }
   });
 
+  /**
+   * @scenario subject=conditional_value_editor
+   * @effects cond_value_concat_remove_part_emits_expr
+   */
   it('④ [회귀] concat 조각 삭제 → 그 조각 제거된 식 onChange', () => {
     const { onChange } = renderExpr("{{'/api/' + route.id}}");
     fireEvent.click(screen.getByTestId('g7le-value-tree-part-remove-1'));
@@ -194,6 +237,10 @@ describe('ConditionalValueEditor', () => {
     expect(last).toEqual({ kind: 'leaf', text: '/api/' });
   });
 
+  /**
+   * @scenario subject=conditional_value_editor
+   * @effects cond_value_complex_condition_readonly_code
+   */
   it('⑤ 복잡 조건 → readonly 코드(입력칸 부재)', () => {
     // 논리 연산 조건은 raw — 조건 빌더 대신 코드 표시.
     const node: ValueNode = {
@@ -207,6 +254,10 @@ describe('ConditionalValueEditor', () => {
     expect(screen.queryByTestId('g7le-value-tree-cond-left')).toBeNull();
   });
 
+  /**
+   * @scenario subject=conditional_value_editor
+   * @effects cond_value_raw_node_readonly_code
+   */
   it('⑤ raw 노드 → readonly 코드', () => {
     const node: ValueNode = { kind: 'raw', source: 'items.reduce((a,b)=>a+b,0)' };
     render(<ConditionalValueEditor node={node} onChange={vi.fn()} t={t} />);
@@ -214,6 +265,10 @@ describe('ConditionalValueEditor', () => {
     expect(screen.getByText('items.reduce((a,b)=>a+b,0)')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=conditional_value_editor
+   * @effects cond_value_source_toggle_shows_serialized
+   */
   it('⑥ [원본 식 보기] 토글 → 직렬화 식 표시', () => {
     renderExpr("{{route.id ? '$t:edit' : '$t:create'}}");
     expect(screen.queryByTestId('g7le-value-tree-source-code')).toBeNull();
@@ -224,6 +279,10 @@ describe('ConditionalValueEditor', () => {
   });
 
   // "원본 식 보기는 조각 편집기당 하나"(2026-06-13) — 세그먼트 조각으로 쓰이면 토글 미표시.
+  /**
+   * @scenario subject=conditional_value_editor
+   * @effects cond_value_source_toggle_hidden_when_disabled
+   */
   it('⑥ showSourceToggle=false → [원본 식 보기] 토글 미렌더(세그먼트 조각)', () => {
     const parsed = parseExpressionValue("{{route.id ? '$t:edit' : '$t:create'}}");
     render(<ConditionalValueEditor node={parsed.node} onChange={vi.fn()} t={t} showSourceToggle={false} />);
@@ -234,6 +293,10 @@ describe('ConditionalValueEditor', () => {
   // 조건 기준값/비교값은 직접 입력 + 데이터 검색 둘 다. candidates 가 있으면
   // 입력칸 옆에 🔍 데이터 검색 피커(InlineBindingScalarPicker)가 붙고, 후보 선택 시 `{{}}` 래핑 없는
   // 순수 경로가 조건 식에 들어간다(조건은 보간 래핑 없는 경로/리터럴).
+  /**
+   * @scenario subject=conditional_value_editor
+   * @effects cond_value_candidates_show_data_search_toggle
+   */
   it('⑦ 조건 기준값/비교값에 candidates 전달 → 🔍 데이터 검색 토글 노출', () => {
     renderExpr("{{type === 'comment' ? '$t:a' : '$t:b'}}", CANDS);
     // 기준값(left) 옆 데이터 검색 토글.
@@ -246,6 +309,10 @@ describe('ConditionalValueEditor', () => {
     ).toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=conditional_value_editor
+   * @effects cond_value_candidate_pick_sets_plain_left_path
+   */
   it('⑦ 기준값 데이터 후보 선택 → 순수 경로로 조건 left 갱신(`{{}}` 래핑 없음)', () => {
     const { onChange } = renderExpr("{{type === 'comment' ? '$t:a' : '$t:b'}}", CANDS);
     // 기준값 데이터 검색 토글 → 펼침 → 후보 선택.
@@ -260,6 +327,10 @@ describe('ConditionalValueEditor', () => {
     expect(next.condition.left).not.toContain('??');
   });
 
+  /**
+   * @scenario subject=conditional_value_editor
+   * @effects cond_value_truthy_condition_no_right_search
+   */
   it('⑦ truthy/falsy 조건은 비교값 없음 → 비교값 데이터 검색 토글도 없음', () => {
     renderExpr("{{route.id ? '$t:a' : '$t:b'}}", CANDS);
     // 기준값 데이터 검색은 있고.

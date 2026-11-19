@@ -78,8 +78,11 @@ class GuestClaimApiTest extends ModuleTestCase
     protected function tearDown(): void
     {
         $this->clearTestCurrencySettings();
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**

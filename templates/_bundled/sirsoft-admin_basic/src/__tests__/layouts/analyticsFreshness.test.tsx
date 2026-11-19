@@ -78,7 +78,9 @@ describe('기간 줄 「마지막 집계」 — D14 문구 4분기', () => {
   it('시각은 서버 문자열을 잘라 쓰고(형식 파이프 의존 없음) 모바일에서는 한 줄을 통째로 쓴다', () => {
     const span = nodeById(periodBar, 'period_freshness');
     expect(span?.props?.className).toContain('w-full');
-    expect(span?.props?.className).toContain('sm:w-auto');
+    // 640 이상 폭 분기는 엔진 responsive 구간 값이다(Tailwind 반응형 접두 없음)
+    expect(span?.props?.className).not.toContain('sm:');
+    expect(span?.responsive?.['640-']?.props?.className).toContain('w-auto');
     expect(stringify(span)).toContain("slice(11, 16)");
     expect(stringify(span)).toContain('month={{Number(');
   });

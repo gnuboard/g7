@@ -4,7 +4,6 @@
  * 검증: 카탈로그 그리드 렌더 / 검색 필터 / 선택 → onChange / 카탈로그 없으면 자유입력 폴백.
  */
 
-import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { IconPickerWidget } from '../IconPickerWidget';
@@ -23,6 +22,8 @@ function renderWidget(control: any, value: unknown = '', onChange = vi.fn()) {
 }
 
 describe('템플릿 IconPickerWidget', () => {
+  // @scenario component=icon_picker_widget
+  // @effects icon_picker_widget_catalog_search_and_select
   it('카탈로그가 있으면 검색 + 그리드 렌더(자유입력 아님)', () => {
     renderWidget({ icons: catalog, iconColumns: 8 });
     expect(screen.getByTestId('g7le-widget-icon-picker-search')).toBeTruthy();
@@ -34,6 +35,8 @@ describe('템플릿 IconPickerWidget', () => {
     expect(screen.getByTestId('g7le-icon-cell-none')).toBeTruthy();
   });
 
+  // @scenario component=icon_picker_widget
+  // @effects icon_picker_widget_catalog_search_and_select
   it('검색어로 카탈로그를 필터한다(value/keywords)', () => {
     renderWidget({ icons: catalog });
     const search = screen.getByTestId('g7le-widget-icon-picker-search');
@@ -43,24 +46,32 @@ describe('템플릿 IconPickerWidget', () => {
     expect(screen.queryByTestId('g7le-icon-cell-house')).toBeNull();
   });
 
+  // @scenario component=icon_picker_widget
+  // @effects icon_picker_widget_catalog_search_and_select
   it('아이콘 셀 클릭 → onChange(value)', () => {
     const onChange = renderWidget({ icons: catalog });
     fireEvent.click(screen.getByTestId('g7le-icon-cell-heart'));
     expect(onChange).toHaveBeenCalledWith('heart');
   });
 
+  // @scenario component=icon_picker_widget
+  // @effects icon_picker_widget_catalog_search_and_select
   it('"없음" 클릭 → onChange(undefined) (prop 삭제)', () => {
     const onChange = renderWidget({ icons: catalog }, 'star');
     fireEvent.click(screen.getByTestId('g7le-icon-cell-none'));
     expect(onChange).toHaveBeenCalledWith(undefined);
   });
 
+  // @scenario component=icon_picker_widget
+  // @effects icon_picker_widget_falls_back_to_free_input
   it('카탈로그 미공급 → 자유입력 폴백', () => {
     renderWidget({ icons: [] });
     expect(screen.getByTestId('g7le-widget-icon-picker-free')).toBeTruthy();
     expect(screen.queryByTestId('g7le-widget-icon-picker-grid')).toBeNull();
   });
 
+  // @scenario component=icon_picker_widget
+  // @effects icon_picker_widget_catalog_search_and_select
   it('FA 프리뷰: 셀에 fas fa-{value} 글리프 렌더', () => {
     renderWidget({ icons: [{ value: 'heart' }] });
     const cell = screen.getByTestId('g7le-icon-cell-heart');

@@ -1,0 +1,14 @@
+{
+  "kakao": {
+    "label": "カカオ"
+  },
+  "naver": {
+    "label": "NAVER"
+  },
+  "google": {
+    "label": "Google"
+  },
+  "facebook": {
+    "label": "Facebook"
+  }
+}

@@ -26,6 +26,11 @@ class PackageManifestCacheHelperTest extends TestCase
 
     private string $servicesPath;
 
+    /**
+     * 패키지와 서비스 매니페스트 캐시 경로를 테스트 전용 위치로 정하고 환경 변수로 그 경로를 가리키게 한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -43,6 +48,11 @@ class PackageManifestCacheHelperTest extends TestCase
         $this->setEnv('APP_SERVICES_CACHE', $relServices);
     }
 
+    /**
+     * 바꿔 둔 캐시 경로 환경 변수를 원래대로 되돌리고 테스트 전용 캐시 디렉토리를 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         foreach ($this->originalEnv as $key => $value) {
@@ -69,6 +79,8 @@ class PackageManifestCacheHelperTest extends TestCase
      * env 로 재지정한 경로의 두 파일을 지운다 (하드코딩된 bootstrap/cache 가 아니라).
      *
      * @effects PackageManifestCacheHelper_clear_unlinks_packages_and_services_at_configured_paths
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function clear_는_설정된_경로의_packages_와_services_를_지운다(): void
@@ -88,6 +100,10 @@ class PackageManifestCacheHelperTest extends TestCase
 
     /**
      * 파일이 없어도 예외를 던지지 않는다 (부팅 직전에 불리므로 실패가 부팅을 막으면 안 된다).
+     *
+     * @effects PackageManifestCacheHelper_clear_unlinks_packages_and_services_at_configured_paths
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function clear_는_파일이_없으면_아무_일도_하지_않는다(): void
@@ -110,6 +126,8 @@ class PackageManifestCacheHelperTest extends TestCase
      * 디렉토리의 쓰기 권한이 삭제를 막는다.
      *
      * @effects PackageManifestCacheHelper_clear_returns_paths_it_could_not_remove
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function clear_는_지우지_못한_파일의_경로를_돌려준다(): void
@@ -168,6 +186,8 @@ class PackageManifestCacheHelperTest extends TestCase
      * rebuild() 는 삭제 후 package:discover 로 다시 만든다.
      *
      * @effects clearAllCaches_rebuilds_package_manifest_via_helper
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function rebuild_는_지운_뒤_package_discover_를_한_번_호출한다(): void
@@ -188,6 +208,7 @@ class PackageManifestCacheHelperTest extends TestCase
      *
      * @param  string  $key  환경변수 이름
      * @param  string|null  $value  세울 값. null 이면 제거
+     * @return void 반환값 없음
      */
     private function setEnv(string $key, ?string $value): void
     {

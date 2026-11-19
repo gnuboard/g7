@@ -400,8 +400,14 @@ class CacheKeyIndexLockTest extends TestCase
         $driver->remember('b', fn () => 'B', 60);
         $driver->flush();
 
+        // 키 목록은 키 해시로 64조각에 나뉘고 잠금도 조각마다 따로 건다(#798 — 키가 많은 확장의 put 비용 축소).
+        // 비우기는 빈 조각을 잠그지 않으므로 잠금 수는 그대로 4(a 기록·a 조각 태그 비우기·b 기록·b 조각 전체 비우기)다.
         $this->assertCount(4, self::$lockNames);
-        $this->assertSame(['g7:_idx:g7:core:lock'], array_values(array_unique(self::$lockNames)));
+        foreach (self::$lockNames as $name) {
+            $this->assertMatchesRegularExpression('/^g7:_idx:g7:core:\d{1,2}:lock$/', $name);
+        }
+        $this->assertSame(self::$lockNames[0], self::$lockNames[1], 'a 의 태그 비우기는 a 가 든 조각을 잠근다');
+        $this->assertSame(self::$lockNames[2], self::$lockNames[3], '전체 비우기는 b 가 든 조각을 잠근다');
         $this->assertFalse($driver->has('a'));
         $this->assertFalse($driver->has('b'));
     }

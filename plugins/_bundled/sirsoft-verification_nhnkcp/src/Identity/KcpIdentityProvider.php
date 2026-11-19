@@ -4,13 +4,16 @@ namespace Plugins\Sirsoft\VerificationNhnkcp\Identity;
 
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\IdentityVerificationInterface;
+use App\Contracts\Extension\ProvidesVerifiedClaimsInterface;
 use App\Contracts\Repositories\IdentityVerificationLogRepositoryInterface;
 use App\Extension\IdentityVerification\DTO\VerificationChallenge;
 use App\Extension\IdentityVerification\DTO\VerificationResult;
+use App\Extension\IdentityVerification\DTO\VerifiedClaims;
 use App\Models\IdentityVerificationLog;
 use App\Models\User;
 use App\Support\SiteUrl;
 use Carbon\Carbon;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -35,9 +38,12 @@ use Plugins\Sirsoft\VerificationNhnkcp\Support\KcpIdentityHasher;
  * 비로그인 사용자의 PII 는 verify 시점에 Cache 에 stash 되고, after_register 훅의 listener 가
  * 가입 후 record 로 흡수한다.
  *
+ * 코어의 선택 계약({@see ProvidesVerifiedClaimsInterface})도 구현한다. 확인을 마친 요청 행의 이름, 휴대폰, 생년월일, 성별을
+ * 코어가 쓰는 한 가지 모양으로 돌려주어, 운영자가 「본인인증 연결」을 건 회원 항목이 인증 값으로 채워지고 잠기게 한다.
+ *
  * @since 1.0.0
  */
-class KcpIdentityProvider implements IdentityVerificationInterface
+class KcpIdentityProvider implements IdentityVerificationInterface, ProvidesVerifiedClaimsInterface
 {
     /** Provider 식별자 (코어 표준 — 플러그인은 벤더 slug 사용) */
     public const PROVIDER_ID = 'nhnkcp';
@@ -445,7 +451,8 @@ class KcpIdentityProvider implements IdentityVerificationInterface
             );
         }
 
-        // [중복 가입 조기 차단] 가입 목적의 비로그인 challenge 는 이 시점에 동일인 여부를 판정한다.
+        // [동일인 충돌 차단] 가입 목적의 비로그인 challenge 와 로그인 회원의 본인인증은 이 시점에 다른 회원과의
+        // 동일인 충돌을 판정한다(로그인 회원은 본인 기록을 빼고 본다).
         // 실제 가입 차단은 AssertNoDuplicateKcpIdentity listener 가 담당하며(권위 게이트),
         // 판정 로직은 KcpDuplicateIdentityChecker 한 곳을 공유해 두 지점이 어긋나지 않는다.
         if ($this->shouldBlockDuplicate($log)) {
@@ -578,6 +585,198 @@ class KcpIdentityProvider implements IdentityVerificationInterface
         }
 
         return true;
+    }
+
+    /**
+     * 이 수단이 줄 수 있는 인증 값의 키 목록을 반환합니다.
+     *
+     * 운영 모드에서는 이름, 휴대폰, 생년월일, 성별을 모두 준다. 테스트 모드의 KCP 서버는 생년월일과 성별을 빈 값으로 돌려주므로
+     * 그 둘은 뺀다. 목록에 없는 키에 연결된 회원 항목은 잠기지 않아, 테스트 모드에서 회원이 직접 넣은 생년월일이 인증 값처럼
+     * 잠기는 일이 없다.
+     *
+     * @return array<int, string> 인증 값 키 목록
+     */
+    public function supportedClaims(): array
+    {
+        return $this->isTestMode()
+            ? [VerifiedClaims::CLAIM_NAME, VerifiedClaims::CLAIM_MOBILE]
+            : VerifiedClaims::CLAIMS;
+    }
+
+    /**
+     * 확인을 마친 요청 행의 인증 값을 반환합니다.
+     *
+     * | 상황 | 값의 원천 |
+     * | --- | --- |
+     * | 회원이 있는 요청 행 (로그인 회원의 본인인증, 가입을 마친 뒤) | 그 회원의 기록(`nhnkcp_identity_records`). 기록이 이 요청 행의 것(`latest_log_id`)일 때만 |
+     * | 가입 전 요청 행 (회원이 아직 없음) | 인증 직후 넣어 둔 임시 저장 값(`nhnkcp:pending_record:{요청 ID}`). 요청 만료까지만 남는다 |
+     *
+     * 회원 기록은 회원당 한 줄이고 다시 인증하면 덮어쓴다. 그래서 기록이 다른 요청 행의 것이면 이 요청 행의 값을 더는 알 수 없는
+     * 것으로 보고 null 을 돌려준다(다른 인증의 값을 이 요청의 값인 것처럼 주지 않는다).
+     *
+     * @param  IdentityVerificationLog  $log  확인을 마친 본인인증 요청 행
+     * @param  User|null  $user  값을 받을 회원 (가입 전이면 null)
+     * @return VerifiedClaims|null 인증 값 (이 수단의 요청 행이 아니거나 값을 더는 알 수 없으면 null)
+     */
+    public function verifiedClaims(IdentityVerificationLog $log, ?User $user): ?VerifiedClaims
+    {
+        if ((string) $log->provider_id !== self::PROVIDER_ID || ! $log->isVerified()) {
+            return null;
+        }
+
+        try {
+            $values = $this->claimValuesFromRecord($log, $user) ?? $this->claimValuesFromPendingCache($log);
+        } catch (DecryptException $e) {
+            // 암호화 키가 바뀌어 저장 값을 풀 수 없는 경우다. 값 없이 요청 ID 만 남긴다.
+            Log::warning('KCP 본인확인: 인증 값 복호화 실패', ['challenge_id' => (string) $log->id]);
+
+            return null;
+        }
+
+        if ($values === null) {
+            return null;
+        }
+
+        $claims = new VerifiedClaims(
+            name: self::normalizeClaimText($values['name']),
+            mobile: self::normalizeClaimMobile($values['phone']),
+            birthDate: self::normalizeClaimBirthDate($values['birthday']),
+            gender: self::normalizeClaimGender($values['gender']),
+        );
+
+        return $claims->isEmpty() ? null : $claims;
+    }
+
+    /**
+     * 회원 기록에서 이 요청 행의 인증 값을 꺼냅니다.
+     *
+     * 회원은 요청 행의 `user_id` 로 찾고, 없으면 넘겨받은 회원으로 찾는다. 요청 행이 다른 회원의 것이면 주지 않는다.
+     *
+     * @param  IdentityVerificationLog  $log  확인을 마친 본인인증 요청 행
+     * @param  User|null  $user  값을 받을 회원
+     * @return array{name: mixed, phone: mixed, birthday: mixed, gender: mixed}|null 원본 값 (기록이 없거나 다른 요청 행의 기록이면 null)
+     *
+     * @throws DecryptException 저장 값을 복호화할 수 없을 때
+     */
+    protected function claimValuesFromRecord(IdentityVerificationLog $log, ?User $user): ?array
+    {
+        $logUserId = $log->user_id !== null ? (int) $log->user_id : null;
+        $givenUserId = $user !== null && $user->exists ? (int) $user->getKey() : null;
+
+        if ($logUserId !== null && $givenUserId !== null && $logUserId !== $givenUserId) {
+            return null;
+        }
+
+        $userId = $logUserId ?? $givenUserId;
+        if ($userId === null) {
+            return null;
+        }
+
+        $record = $this->recordRepository->findByUserId($userId);
+        if ($record === null || (string) $record->latest_log_id !== (string) $log->id) {
+            return null;
+        }
+
+        return [
+            'name' => $record->name,
+            'phone' => $record->phone,
+            'birthday' => $record->birthday,
+            'gender' => $record->gender,
+        ];
+    }
+
+    /**
+     * 가입 전 요청 행의 인증 값을 임시 저장 값에서 꺼냅니다.
+     *
+     * 임시 저장 키는 요청 ID 로 만들어지므로 다른 요청의 값이 섞이지 않는다. 회원이 있는 요청 행은 임시 저장을 쓰지 않는다.
+     *
+     * @param  IdentityVerificationLog  $log  확인을 마친 본인인증 요청 행
+     * @return array{name: mixed, phone: mixed, birthday: mixed, gender: mixed}|null 원본 값 (임시 저장 값이 없으면 null)
+     *
+     * @throws DecryptException 저장 값을 복호화할 수 없을 때
+     */
+    protected function claimValuesFromPendingCache(IdentityVerificationLog $log): ?array
+    {
+        if ($log->user_id !== null) {
+            return null;
+        }
+
+        $payload = $this->cache->get(self::PENDING_RECORD_CACHE_PREFIX.$log->id);
+        if (! is_array($payload) || $payload === []) {
+            return null;
+        }
+
+        $decrypt = static fn (mixed $value): ?string => is_string($value) && $value !== ''
+            ? Crypt::decryptString($value)
+            : null;
+
+        return [
+            'name' => $decrypt($payload['name_encrypted'] ?? null),
+            'phone' => $decrypt($payload['phone_encrypted'] ?? null),
+            'birthday' => $decrypt($payload['birthday_encrypted'] ?? null),
+            'gender' => $payload['gender'] ?? null,
+        ];
+    }
+
+    /**
+     * 이름 값을 다듬습니다.
+     *
+     * @param  mixed  $value  원본 값
+     * @return string|null 앞뒤 공백을 뗀 값 (비었으면 null)
+     */
+    private static function normalizeClaimText(mixed $value): ?string
+    {
+        $text = is_scalar($value) ? trim((string) $value) : '';
+
+        return $text !== '' ? $text : null;
+    }
+
+    /**
+     * 휴대폰 번호에서 숫자만 남깁니다.
+     *
+     * @param  mixed  $value  원본 값
+     * @return string|null 숫자만 남긴 번호 (숫자가 없으면 null)
+     */
+    private static function normalizeClaimMobile(mixed $value): ?string
+    {
+        $digits = is_scalar($value) ? (string) preg_replace('/\D+/', '', (string) $value) : '';
+
+        return $digits !== '' ? $digits : null;
+    }
+
+    /**
+     * 생년월일(`YYYYMMDD`)을 `YYYY-MM-DD` 로 바꿉니다.
+     *
+     * @param  mixed  $value  원본 값
+     * @return string|null `YYYY-MM-DD` (여덟 자리 숫자가 아니거나 없는 날짜면 null. 테스트 모드의 빈 값도 null)
+     */
+    private static function normalizeClaimBirthDate(mixed $value): ?string
+    {
+        $digits = is_scalar($value) ? (string) preg_replace('/\D+/', '', (string) $value) : '';
+        if (strlen($digits) !== 8) {
+            return null;
+        }
+
+        [$year, $month, $day] = [(int) substr($digits, 0, 4), (int) substr($digits, 4, 2), (int) substr($digits, 6, 2)];
+
+        return checkdate($month, $day, $year) ? sprintf('%04d-%02d-%02d', $year, $month, $day) : null;
+    }
+
+    /**
+     * 기록의 성별 값(`M`, `F`)을 코어 값(`male`, `female`)으로 바꿉니다.
+     *
+     * 기록에는 KCP 응답 `sex_code`(`01` 남, `02` 여)를 `M`, `F` 로 옮긴 값이 들어 있다. 테스트 모드의 빈 값은 null 이다.
+     *
+     * @param  mixed  $value  원본 값
+     * @return string|null `male` 또는 `female` (알 수 없으면 null)
+     */
+    private static function normalizeClaimGender(mixed $value): ?string
+    {
+        return match (is_scalar($value) ? strtoupper(substr(trim((string) $value), 0, 1)) : '') {
+            'M' => VerifiedClaims::GENDER_MALE,
+            'F' => VerifiedClaims::GENDER_FEMALE,
+            default => null,
+        };
     }
 
     /**
@@ -809,19 +1008,26 @@ class KcpIdentityProvider implements IdentityVerificationInterface
     }
 
     /**
-     * 이 challenge 가 중복 가입 차단 대상인지 판정한다.
+     * 이 challenge 가 동일인 충돌 판정 대상인지 판정한다.
      *
-     * 가입(signup) 목적 + 비로그인 challenge 에만 적용한다 — 로그인 사용자의 재인증이나
-     * 비밀번호 재설정은 동일인이 존재하는 것이 정상이다.
+     * - 가입(signup) 목적 + 비로그인 challenge — 같은 사람이 다른 계정으로 또 가입하는 것을 막는다.
+     * - 로그인 회원의 본인인증(대상 회원이 있는 challenge) — **다른 회원**에 이미 묶인 DI/CI 를 자기 계정에 붙이지
+     *   못하게 막는다. 판정은 본인을 뺀 다른 회원과의 충돌만 보므로(`findConflictColumn(..., exceptUserId: 본인)`)
+     *   같은 회원의 재인증은 그대로 통과한다. 가입만 막으면 다른 정보로 가입한 뒤 마이페이지 본인인증으로 남의
+     *   본인인증 결과를 붙여 「본인인증 회원」이 될 수 있었다(#40 R11).
+     * - 그 밖(비로그인 비밀번호 재설정 등)은 동일인이 존재하는 것이 정상이라 대상이 아니다.
      *
      * @param  IdentityVerificationLog  $log  대상 로그
      * @return bool 차단 판정 수행 여부
      */
     protected function shouldBlockDuplicate(IdentityVerificationLog $log): bool
     {
-        return (bool) ($this->config['duplicate_block_enabled'] ?? true)
-            && $log->purpose === 'signup'
-            && $log->user_id === null;
+        if (! (bool) ($this->config['duplicate_block_enabled'] ?? true)) {
+            return false;
+        }
+
+        return $log->user_id !== null
+            || ($log->purpose === 'signup' && $log->user_id === null);
     }
 
     /**

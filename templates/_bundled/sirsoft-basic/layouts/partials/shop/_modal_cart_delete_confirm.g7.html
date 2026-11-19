@@ -11,8 +11,7 @@
       <p class="text-gray-700 dark:text-gray-300">{{$parent._local.deleteModal.targetIds?.length > 1 ? '$t:shop.cart.delete_modal.message_multiple' : '$t:shop.cart.delete_modal.message_single'}}</p>
       <p data-if="{{$parent._local.deleteModal.targetIds?.length > 1}}" class="text-sm text-gray-500 dark:text-gray-400 mt-2">$t:shop.cart.delete_modal.count|count={{$parent._local.deleteModal.targetIds?.length}}</p>
     </div>
-    <!-- 모달 푸터 -->
-    <div class="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700">
+    <footer>
       <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer" disabled="{{_global.isDeleting}}">
         <on type="click">
           <close-modal/>
@@ -39,8 +38,10 @@
                 <close-modal/>
               </success>
               <fail>
+                <!-- 추가 정보가 비어 있어 거부된 요청(403, error_code 가 required_fields_pending)이면 일반 오류 알림 대신 「추가 정보 필요」 안내 창을 연다 -->
+                <open-modal if="{{error.error_code === 'required_fields_pending'}}" target="required_info_pending_modal"/>
                 <set-state target="global" :isDeleting="false"/>
-                <toast type="error" message="{{error.message}}"/>
+                <toast if="{{error.error_code !== 'required_fields_pending'}}" type="error" message="{{error.message}}"/>
               </fail>
               <body ids="{{$parent._local.deleteModal.targetIds}}"/>
               <field name="headers">
@@ -52,6 +53,6 @@
         <icon data-if="{{_global.isDeleting}}" name="spinner" :spin="true" size="sm"/>
         <span>{{_global.isDeleting ? '$t:common.deleting' : '$t:common.delete'}}</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

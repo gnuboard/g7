@@ -4,6 +4,8 @@ namespace Plugins\Sirsoft\Totp\Listeners;
 
 use App\ActivityLog\Traits\ResolvesActivityLogType;
 use App\Contracts\Extension\HookListenerInterface;
+use App\DisplayName\DisplayNameAreaRegistry;
+use App\DisplayName\DisplayNameResolver;
 use App\Models\User;
 
 /**
@@ -59,7 +61,8 @@ class TotpAdminResetActivityLogListener implements HookListenerInterface
             'loggable' => $user,
             'description_key' => 'sirsoft-totp::activity_log.description.credential_admin_reset',
             'description_params' => [
-                'user_name' => (string) ($user->name ?? ''),
+                // 활동 로그는 관리자 화면의 기록물이다. 그 시점의 관리자 영역 표시 이름을 남기고, 이미 남은 기록은 바꾸지 않는다.
+                'user_name' => (string) (app(DisplayNameResolver::class)->resolve($user, DisplayNameAreaRegistry::AREA_ADMIN) ?? ''),
                 'user_id' => (int) $user->id,
             ],
             'properties' => [

@@ -33,6 +33,11 @@ class ClaimNotificationLinkPolicyTest extends ModuleTestCase
 
     protected ClaimNotificationDataListener $listener;
 
+    /**
+     * 통화 설정과 클레임 사유를 준비하고 알림 데이터 리스너를 얻는다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -41,6 +46,11 @@ class ClaimNotificationLinkPolicyTest extends ModuleTestCase
         $this->listener = app(ClaimNotificationDataListener::class);
     }
 
+    /**
+     * 시험이 넣은 통화 설정을 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->clearTestCurrencySettings();
@@ -48,10 +58,22 @@ class ClaimNotificationLinkPolicyTest extends ModuleTestCase
     }
 
     /**
+     * 클레임 알림 링크와 사이트 링크는 알림 유형이 아니라 수신자가 쓸 수 있는 화면을 따른다.
+     *
+     * 클레임 권한이 있는 운영자는 관리자 화면과 사이트 주소로, 회원과 비회원은 관리자 주소 없이
+     * 사용자 화면 URL 로 간다.
+     *
      * @effects claim_links_follow_the_recipient_not_the_notification_type
+     *
+     * @return void 반환값 없음
      */
     public function test_claim_links_follow_the_recipient_not_the_notification_type(): void
     {
+        // 사이트 주소와 사용자 화면 URL 을 갈라 둬야 사이트 링크({site_url})가 누구 쪽 주소인지 드러난다
+        config([
+            'app.url' => 'https://site.example.test',
+            'g7_settings.core.general.user_screen_url' => 'https://front.example.test',
+        ]);
         $claim = $this->requestedReturn();
         $staff = $this->createAdminUser([self::CLAIM_READ_PERMISSION]);
         $customer = $this->createUser();
@@ -71,6 +93,11 @@ class ClaimNotificationLinkPolicyTest extends ModuleTestCase
                 $staffData['claim_url'],
                 "{$type}: 클레임 화면을 열 수 있는 운영자는 자기가 일할 수 있는 화면으로 가야 합니다."
             );
+            $this->assertSame(
+                'https://site.example.test',
+                $staffData['site_url'],
+                "{$type}: 운영자에게 가는 알림의 사이트 링크는 관리자 화면 기준(사이트 주소)이어야 합니다."
+            );
 
             foreach (['회원' => $customer, '비회원' => $guest] as $label => $recipient) {
                 $recipientData = $this->listener->personalizeClaimData($data, $recipient, $type, $context);
@@ -78,6 +105,11 @@ class ClaimNotificationLinkPolicyTest extends ModuleTestCase
                     '/admin/',
                     $recipientData['claim_url'],
                     "{$type}: {$label} 수신자에게 관리자 주소를 보내면 예외도 404 도 없이 빈 화면이 열립니다."
+                );
+                $this->assertSame(
+                    'https://front.example.test',
+                    $recipientData['site_url'],
+                    "{$type}: {$label} 수신자의 사이트 링크는 「사용자 화면 URL」이어야 합니다."
                 );
             }
         }
@@ -90,6 +122,8 @@ class ClaimNotificationLinkPolicyTest extends ModuleTestCase
      * 마이페이지로 밀려났다.
      *
      * @effects empty_claim_number_still_keeps_staff_on_the_admin_side
+     *
+     * @return void 반환값 없음
      */
     public function test_empty_claim_number_still_keeps_staff_on_the_admin_side(): void
     {
@@ -108,6 +142,8 @@ class ClaimNotificationLinkPolicyTest extends ModuleTestCase
      * 클레임 권한이 없는 운영자(예: 게시판 관리자)는 승격 대상이 아니다.
      *
      * @effects staff_without_claim_permission_is_not_promoted
+     *
+     * @return void 반환값 없음
      */
     public function test_staff_without_the_claim_permission_is_not_promoted(): void
     {
@@ -124,6 +160,8 @@ class ClaimNotificationLinkPolicyTest extends ModuleTestCase
      * 판정이 수신자 수만큼 권한을 재조회하지 않아야 한다(수신자가 많은 알림의 N+1).
      *
      * @effects capability_memoizes_per_request
+     *
+     * @return void 반환값 없음
      */
     public function test_capability_memoizes_the_permission_lookup(): void
     {

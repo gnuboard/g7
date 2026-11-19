@@ -1,0 +1,25 @@
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#798 surface, action, ability, response 축은 버튼 → 확인 창 → 요청 → 토스트
+# 한 흐름의 단계를 이름 붙인 것이라 곱으로 나눌 실체가 아니다. locale 은 lang 키 검사에만 의미가 있다.
+# 회귀 가드는 effects 이며 전부 test_files 에 @effects 로 귀속.
+
+feature: 회원 상세 「모든 기기에서 로그아웃」 (sirsoft-admin_basic 1.2.0, 7.2.0 A4t, K16)
+
+description: |
+  상단 작업 버튼 → 확인 모달 → POST /api/admin/users/{uuid}/sessions/revoke → 성공 토스트(admin.users.detail.revoke_sessions.*).
+  회원 수정 권한(abilities.can_update)이 없으면 버튼이 잠기며 서버 라우트(core.users.update)와 같은 권한이다.
+
+axes:
+  surface: [detail_header, confirm_modal]
+  action: [click, confirm]
+  ability: [can_update, cannot_update]
+  response: [ok, error]
+  locale: [ko, en]
+
+effects:
+  - revoke_button_opens_confirm_modal
+  - revoke_button_requires_update_ability
+  - confirm_posts_revoke_and_toasts_success
+  - revoke_sessions_lang_keys_present
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-user-detail-revoke-sessions.test.ts

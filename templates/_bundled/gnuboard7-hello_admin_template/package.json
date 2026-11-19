@@ -1,6 +1,6 @@
 {
   "name": "@gnuboard7/hello-admin-template",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Gnuboard7 Hello Admin Template - Minimal skeleton for learning",
   "type": "module",
   "main": "dist/components.js",
@@ -11,7 +11,7 @@
   ],
   "scripts": {
     "vendor:font-awesome": "node scripts/vendor-inline-css.mjs node_modules/@fortawesome/fontawesome-free/css/all.min.css dist/vendor/font-awesome/6.4.0/webfonts dist/vendor/font-awesome/6.4.0/css/all.inlined.css",
-    "build": "vite build",
+    "build": "vite build && vite build --config vite.settings.config.ts",
     "dev": "vite build --watch",
     "test": "vitest",
     "test:run": "vitest run",

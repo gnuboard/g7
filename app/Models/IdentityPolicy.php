@@ -109,6 +109,11 @@ class IdentityPolicy extends Model
     public const ROUTE_SCOPE_CACHE_TAG = 'identity_policy';
 
     /**
+     * Hook scope 인덱스 캐시 키 — Repository::getHookScopeIndex 가 사용. route 인덱스와 같은 태그로 함께 비운다.
+     */
+    public const HOOK_SCOPE_CACHE_KEY = 'identity_policies.hook_scope_index';
+
+    /**
      * hook scope 정책 target 목록 캐시 키 — Repository::listHookTargets 가 같은 태그로 등록한다.
      * 동적 hook 구독 동기화가 부팅마다 읽으므로 캐시하고, 정책이 바뀌면 route scope 인덱스와 함께 지운다(#860).
      */
@@ -126,7 +131,7 @@ class IdentityPolicy extends Model
     }
 
     /**
-     * 정책 파생 캐시(route scope 인덱스·hook target 목록)를 비웁니다.
+     * 정책 파생 캐시(route scope 인덱스·hook scope 인덱스·hook target 목록)를 비웁니다.
      *
      * 태그를 지원하는 저장소는 태그 한 번으로, 아니면 키별로 지운다. 이벤트 없는 대량 쓰기 경로도 이 메서드를 부른다.
      *
@@ -141,6 +146,7 @@ class IdentityPolicy extends Model
             return;
         }
         $cache->forget(self::ROUTE_SCOPE_CACHE_KEY);
+        $cache->forget(self::HOOK_SCOPE_CACHE_KEY);
         $cache->forget(self::HOOK_TARGETS_CACHE_KEY);
     }
 }

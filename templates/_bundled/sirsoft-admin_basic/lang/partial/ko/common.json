@@ -1,4 +1,6 @@
 {
+  "zoom_image": "이미지 크게 보기",
+  "zoom_image_named": "{{name}} 크게 보기",
   "range_start": "{{label}} 시작일",
   "range_end": "{{label}} 종료일",
   "all": "전체",
@@ -103,6 +105,7 @@
   "refresh": "새로고침",
   "activate": "활성화",
   "skip": "건너뛰기",
+  "copy": "복사",
   "tag_input": {
     "remove": "{{label}} 지우기",
     "results": "결과 {{count}}개",
@@ -119,7 +122,10 @@
     "guidance_input": "{{label}} 칸입니다. 입력해 목록을 좁히고 아래 화살표로 목록을 엽니다",
     "guidance_input_multi": "왼쪽 화살표로 고른 항목으로 옮겨 갑니다",
     "guidance_value": "왼쪽·오른쪽 화살표로 고른 항목 사이를 옮기고 Backspace 로 지웁니다",
-    "default_label": "선택"
+    "default_label": "선택",
+    "placeholder": "검색 또는 입력...",
+    "no_options": "검색 결과가 없습니다",
+    "create_label": "{{value}} 추가"
   },
   "select_all": "전체 선택",
   "select_row": "행 선택",

@@ -14,6 +14,7 @@ return [
     'refund' => [
         'missing_tid' => 'Cannot process refund: transaction number (tno) is missing.',
         'default_reason' => 'Buyer refund request',
+        'pg_failed' => 'An error occurred while communicating with the payment gateway. Please try again later.',
         'in_progress' => 'NHN KCP refund is already in progress.',
         'vbank_requires_bank_transfer' => 'A settled virtual account payment cannot be refunded automatically through NHN KCP. Change the refund method to bank transfer and send the money to the customer account directly.',
     ],
@@ -30,6 +31,9 @@ return [
         'mobile_payment_unavailable' => 'Mobile payment is currently unavailable. Please choose another payment method or contact the store.',
         'cli_binary_missing' => 'KCP CLI binary missing: :path',
         'cli_binary_not_executable' => 'KCP CLI binary is not executable. Operator action required (sudo chmod 755 :path)',
+        'escrow_delivery_rejected' => 'NHN KCP rejected the escrow delivery registration.',
+        'cancel_rejected' => 'NHN KCP rejected the payment cancellation.',
+        'escrow_delivery_failed' => 'An error occurred and the escrow delivery registration could not be completed. Please try again later, and check the server log if it keeps failing.',
     ],
     // Rows of the settings "System check" card (item name, result, remediation) and the payment-server IP source — text built by the server
     'health' => [
@@ -87,5 +91,26 @@ return [
     'kcp_frame' => [
         // Field label for the PC payment frame request (#158) — validation failures return an empty 400.
         'sdk' => 'payment window SDK URL',
+    ],
+    // Cancel reason sent to KCP when closing the virtual account of an order cancelled before deposit
+    'vbank_close_reason' => 'Order cancelled before deposit',
+    // Error messages of the payment screen and PG integration APIs
+    'responses' => [
+        'amount_mismatch' => 'Payment amount does not match the order amount.',
+        'claim_amount_mismatch' => 'Payment amount does not match the claim payment amount.',
+        'claim_approval_forbidden' => 'You cannot request a NHN KCP approval key for this claim payment.',
+        'order_approval_forbidden' => 'You cannot request a NHN KCP approval key for this order.',
+        'approval_key_failed' => 'Failed to prepare the NHN KCP payment. :reason',
+        'claim_deposit_not_supported' => 'Claim additional payments do not support deposit-pending methods (virtual account).',
+        'claim_payment_not_found' => 'Claim payment not found.',
+        'claim_payment_not_payable' => 'This claim payment cannot be paid.',
+        'currency_not_chargeable' => 'The charge cannot be calculated in the payment currency.',
+        'guest_verification_failed' => 'Guest order verification failed.',
+        'krw_only' => 'NHN KCP supports KRW payments only.',
+        'order_not_found' => 'Order not found.',
+        'order_not_retryable' => 'This order cannot be paid again with NHN KCP.',
+        'ownership_verification_failed' => 'Order ownership verification failed.',
+        'too_many_requests' => 'Too many requests. Please try again later.',
+        'vbank_session_failed' => 'Failed to prepare the virtual account payment. Please try again later.',
     ],
 ];

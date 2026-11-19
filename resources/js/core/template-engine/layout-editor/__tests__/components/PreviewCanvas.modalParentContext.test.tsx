@@ -11,8 +11,8 @@
  * 넘기는지 보지 못하므로, 여기서는 실제 PreviewCanvas 를 창 편집 모드로 그리고 DynamicRenderer 가
  * 받은 prop 을 붙잡아 확인한다.
  *
- * @scenario scope_kind=modal, patch_branch=local
- * @effects modal_edit_preview_parent_carries_host_computed, modal_edit_preview_host_node_gets_no_parent
+ * 대표 조합(마커 아님 — 평문, 시험별 표식에 있음): scope_kind=modal, patch_branch=local
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): modal_edit_preview_parent_carries_host_computed, modal_edit_preview_host_node_gets_no_parent
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -118,23 +118,20 @@ describe('PreviewCanvas — 창 편집 모드 창 노드의 $parent', () => {
         } as any;
 
         return render(
-            React.createElement(
-                TranslationProvider,
-                {
-                    translationEngine: engine,
-                    translationContext: { templateId: 'sirsoft-admin_basic', locale: 'ko' },
-                },
-                React.createElement(
-                    LayoutEditorProvider,
-                    { templateIdentifier: 'sirsoft-basic', initialLocale: 'ko' },
-                    React.createElement(
+            React.createElement(TranslationProvider, {
+                translationEngine: engine,
+                translationContext: { templateId: 'sirsoft-admin_basic', locale: 'ko' },
+                children: React.createElement(LayoutEditorProvider, {
+                    templateIdentifier: 'sirsoft-basic',
+                    initialLocale: 'ko',
+                    children: React.createElement(
                         EditorModalProvider,
                         null,
                         React.createElement(EnterModalEdit),
-                        React.createElement(LayoutDocumentProvider, { value: docValue }, React.createElement(PreviewCanvas)),
+                        React.createElement(LayoutDocumentProvider, { value: docValue, children: React.createElement(PreviewCanvas) }),
                     ),
-                ),
-            ),
+                }),
+            }),
         );
     };
 

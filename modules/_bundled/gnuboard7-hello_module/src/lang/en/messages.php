@@ -20,4 +20,9 @@ return [
             'done' => 'Hello module seeders finished',
         ],
     ],
+
+    // Extension thumbnail preset display name (Settings > Upload "Thumbnail presets" table)
+    'thumbnail' => [
+        'sample_preset_label' => 'Hello module sample',
+    ],
 ];

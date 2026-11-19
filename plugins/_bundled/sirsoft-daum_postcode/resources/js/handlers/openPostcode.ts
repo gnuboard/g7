@@ -108,17 +108,17 @@ interface G7AddressEvent {
  * (`style-src 'self'; style-src-attr 'none'`)에서 둘 다 막힌다. 고정 규칙은 CSS 파일에, 실행 중에 정해지는 값은
  * `el.style.x = …`·`el.style.setProperty()` 로 싣는다(이 둘은 막히지 않는다).
  */
-const INLINE_CLASS = 'g7-postcode-inline';
+const INLINE_CLASS = 'daumpostcode-inline';
 
 /**
  * 레이어가 화면 가장자리에 남기는 여백 합(px) — 좌우 16px 씩.
- * `resources/css/main.css` 의 `#daum-postcode-layer` 규칙에 같은 값이 적혀 있어야 한다(테스트가 묶는다).
+ * `resources/css/main.css` 의 `.daumpostcode-layer` 규칙에 같은 값이 적혀 있어야 한다(테스트가 묶는다).
  */
 export const LAYER_VIEWPORT_GUTTER_X = 32;
 
 /**
  * 레이어가 화면 위아래에 남기는 여백 합(px) — 닫기 단추·주소창 몫.
- * `resources/css/main.css` 의 `#daum-postcode-layer` 규칙에 같은 값이 적혀 있어야 한다(테스트가 묶는다).
+ * `resources/css/main.css` 의 `.daumpostcode-layer` 규칙에 같은 값이 적혀 있어야 한다(테스트가 묶는다).
  */
 export const LAYER_VIEWPORT_GUTTER_Y = 96;
 
@@ -653,7 +653,7 @@ function createFullscreenDialog(trigger: HTMLElement | null): {
  * 플러그인 설정에서 전달받은 width, height를 쓰되 화면보다 크면 화면에 맞춥니다.
  *
  * 크기 규칙(`min(설정값, 화면 크기 - 여백)`, 높이는 `vh` 뒤에 `dvh` 를 한 번 더)은 `resources/css/main.css` 의
- * `#daum-postcode-layer` 에 있고, 여기서는 설정값만 CSS 변수(`--dp-width`·`--dp-height`)로 넘긴다. 종전에는
+ * `.daumpostcode-layer` 에 있고, 여기서는 설정값만 CSS 변수(`--dp-width`·`--dp-height`)로 넘긴다. 종전에는
  * `width: 500px` 고정이라 폭 360px 휴대폰에서 검색 창 좌우가 잘렸다.
  *
  * 닫기: 닫기 단추 · 바깥 클릭 · ESC · 주소 선택. 어느 경로로 닫혀도 누른 버튼으로 초점을 돌린다 — 종전에는 초점이
@@ -687,6 +687,7 @@ function createEmbedLayer(width: number, height: number, trigger: HTMLElement | 
     // 레이어 컨테이너 — 모양·크기 규칙은 CSS 파일에 있고, 설정값만 CSS 변수로 싣는다(style 속성 문자열 금지)
     const layer = document.createElement('div');
     layer.id = 'daum-postcode-layer';
+    layer.className = 'daumpostcode-layer';
     layer.style.setProperty('--dp-width', `${width}px`);
     layer.style.setProperty('--dp-height', `${height}px`);
 

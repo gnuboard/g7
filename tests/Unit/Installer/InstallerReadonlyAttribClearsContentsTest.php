@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Installer;
 
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -11,7 +13,12 @@ use PHPUnit\Framework\TestCase;
  * `storage` 인 항목만 푼다. 2026-09-23 Windows 실측: 폴더 자체의 R 은 풀렸지만 `storage\app` 과
  * `storage\app\logs\a.log` 는 읽기 전용으로 남았다. 안내대로 실행한 운영자는 같은 오류를 다시 본다.
  * 안쪽까지 풀려면 `attrib -R "<storage>\*" /S /D` 가 함께 있어야 한다.
+ *
+ * `BASE_PATH` 를 이 프로세스에 정의하므로 클래스 단위로 격리한다 — 격리가 없으면 먼저 돈 다른
+ * 인스톨러 테스트가 박은 값과 충돌해 그쪽이 안전가드로 통째로 skip 된다.
  */
+#[RunClassInSeparateProcess]
+#[PreserveGlobalState(false)]
 class InstallerReadonlyAttribClearsContentsTest extends TestCase
 {
     /**

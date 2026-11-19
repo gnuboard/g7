@@ -4,8 +4,10 @@ namespace Plugins\Sirsoft\Koreaexim\Tests;
 
 use App\Contracts\Extension\CacheInterface;
 use App\Contracts\Extension\ExtensionMiddlewareRegistryInterface;
+use App\Enums\ExtensionOwnerType;
 use App\Extension\ExtensionMiddlewareRegistry;
 use App\Extension\PluginManager;
+use App\Models\Schedule;
 use App\Services\PluginSettingsService;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
@@ -14,6 +16,7 @@ use Illuminate\Support\Facades\Storage;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use Plugins\Sirsoft\Koreaexim\Plugin;
 use Plugins\Sirsoft\Koreaexim\Providers\KoreaeximServiceProvider;
+use Plugins\Sirsoft\Koreaexim\Services\UpdateScheduleResolver;
 
 /** 의존 모듈의 격리를 재사용하고 기존 테스트 DB를 트랜잭션으로 보호합니다. */
 abstract class PluginTestCase extends ModuleTestCase
@@ -78,6 +81,27 @@ abstract class PluginTestCase extends ModuleTestCase
     protected function configure(array $values): void
     {
         app(PluginSettingsService::class)->save('sirsoft-koreaexim', $values);
+    }
+
+    /**
+     * 정기 갱신 스케줄 행을 만듭니다 (관리자 > 스케줄 관리에서 시각을 바꾼 상태 재현).
+     *
+     * 테스트는 플러그인을 매니저로 설치하지 않으므로 선언 동기화가 돌지 않는다 — 행이 없으면
+     * 해석기가 선언 기본값(한국시간 11:30)을 쓴다.
+     *
+     * @param  string  $expression  cron 식 (한국시간 기준)
+     * @param  bool  $active  활성 여부
+     * @return Schedule 만든 스케줄 행
+     */
+    protected function useUpdateSchedule(string $expression, bool $active = true): Schedule
+    {
+        return Schedule::factory()->ownedBy(ExtensionOwnerType::Plugin, 'sirsoft-koreaexim')->create([
+            'name' => UpdateScheduleResolver::SCHEDULE_NAME,
+            'command' => 'sirsoft-koreaexim:update --scheduled',
+            'expression' => $expression,
+            'timezone' => UpdateScheduleResolver::TIMEZONE,
+            'is_active' => $active,
+        ]);
     }
 
     /**

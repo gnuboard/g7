@@ -229,4 +229,29 @@ interface LayoutExtensionRepositoryInterface
      * @return Collection<int, LayoutExtension> 원본 본문이 없는 행 목록
      */
     public function getWithoutOriginalContentBySource(LayoutSourceType $sourceType, string $identifier): Collection;
+
+    /**
+     * 출처의 조각 행을 지운 행까지 모두 조회합니다 (영구 삭제 직전 기록용).
+     *
+     * @param  LayoutSourceType  $sourceType  출처 타입
+     * @param  string  $identifier  출처 식별자
+     * @return Collection<int, LayoutExtension> 행 목록
+     */
+    public function getWithTrashedBySource(LayoutSourceType $sourceType, string $identifier): Collection;
+
+    /**
+     * 템플릿의 조각 행을 지운 행까지 모두 조회합니다 (영구 삭제 직전 기록용).
+     *
+     * @param  int  $templateId  템플릿 ID
+     * @return Collection<int, LayoutExtension> 행 목록
+     */
+    public function getWithTrashedByTemplateId(int $templateId): Collection;
+
+    /**
+     * 조각 행 하나를 버전 이력과 함께 영구 삭제합니다.
+     *
+     * @param  LayoutExtension  $extension  행
+     * @return void 반환값 없음
+     */
+    public function forceDeleteRow(LayoutExtension $extension): void;
 }

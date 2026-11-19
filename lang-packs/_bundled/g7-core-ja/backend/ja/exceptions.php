@@ -7,6 +7,8 @@ return [
     'cannot_modify_protected_role' => 'システムまたは拡張機能が所有するロールを変更する権限がありません。',
     'cannot_delete_self' => '自分のアカウントは管理者画面から削除できません。退会はマイページで行ってください。',
     'role_active_state_locked' => '最高管理者ロールは使用可否を変更できません。無効にするとすべての運営者の管理権限が回収されます。',
+    'login_method_required' => '外部認証ログインにはログイン手段名(login_method、例 social:kakao)が必要です。',
+    'external_step_redirect_not_same_origin' => '外部資格情報検証者の次ステップの経路は、このサイト内の経路(/で始まる)である必要があります。',
     'circular_reference' => 'レイアウト循環参照を検出しました: :trace',
     'max_depth_exceeded' => 'レイアウトネストの深さが最大許容深度(:max)を超過しました。',
     'template_file_copy_failed' => 'テンプレートファイルのコピーに失敗しました: :source → :destination',
@@ -70,11 +72,18 @@ return [
         'vendor_dir_not_found' => 'vendor/ディレクトリが存在しません。最初にcomposer installを実行してください: :path',
         'composer_binary_not_found' => 'Composerバイナリが見つかりません。COMPOSER_BINARY環境変数を設定するか、composerをPATHに追加してください。',
     ],
+    'file_serving' => [
+        'meta_key_missing' => 'ファイル配信メタに必須キーがありません: :key',
+    ],
     'seo' => [
         'sitemap_write_failed' => 'Sitemapファイルの記録に失敗しました: :path',
         'sitemap_gzip_failed' => 'Sitemap子ファイルの圧縮に失敗しました: :file',
         'sitemap_temp_file_unreadable' => 'Sitemap一時ファイルを読み込めません: :file',
         'sitemap_stat_group_column_unsupported' => 'サポートされていないグループ基準列です: :column',
+    ],
+    'execution' => [
+        'spawn_unavailable' => 'このサーバーでは外部プロセスを実行できません (:reason)。実行モードを確認してください。',
+        'spawn_failed' => 'コマンド実行プロセスを開始できませんでした: :command',
     ],
     'layout_markup' => [
         'error_at' => ':file (:line行 :column列): :detail [:code]',
@@ -192,6 +201,7 @@ return [
         'unregistered_handler' => '登録されていないハンドラーです: :handler — コア·テンプレート·拡張のどこにもありません。',
         'nesting_violation' => ':parent は子として :child を受け取るように宣言されていません。',
         'responsive_breakpoint_mix' => 'portable プリセットと mobile/tablet プリセットを一緒に使用しました — 範囲が重なっており予測が困難です。',
+        'responsive_open_range_overlap' => ':name の responsive 区間 :keys が同じ幅で同時に一致します — エンジンはそのうち一つだけを選び(カスタム区間がプリセットより、狭い区間が広い区間より優先され、上限のない区間同士では先に書いたもの)、そのキーの値だけを既定値の上に上書きするため、他のキーの値はその幅では使われません。重ならない閉じた区間に分け、上限のない区間は最上位の一つだけにしてください(例: 768-1023, 1024-)。',
         'standalone_missing_global_host' => '独立レイアウトが :handler を発火していますが、そのグローバル状態(:state)を受け取る場所がありません — 画面に表示されません。extends でベースレイアウトを継承するか、その状態を受け取るコンポーネントを配置してください。',
         'switch_value_not_consumed' => '<switch value="…"> はエンジンが読み込みません — 分岐対象は <switch on="…"> で記述する必要があり、params.value に渡されます。',
         'set_state_underscore_global_target' => 'setState の target="_global" はグローバルではなくローカル状態に書き込みます — グローバル状態には target="global" と記述してください。',
@@ -204,6 +214,10 @@ return [
         'mixed_debounce_flushed' => ':name の :event に debounce を指定したアクションとすぐ実行するアクションが混在しています — すぐ実行するアクションが動くたびに待機中の debounce アクションも即時実行され、入力のたびに実行されます。待たせるには、このイベントのアクションをすべて debounce に揃えてください。',
         'entry_only_key_ignored' => ':key は画面で直接操作するアクションにのみ適用されます。この位置(イベント受信・失敗処理・初期アクション・内側のアクション)の :handler アクションでは無視されます。',
     ],
+    'schedule_extraction' => [
+        'not_artisan' => 'Artisan の実行文字列ではありません(php/artisan の接頭辞がありません)。',
+        'command_name_missing' => 'コマンド名が見つかりませんでした。',
+    ],
     'storage' => [
         'unsafe_path' => '許可されていない保存パスです。',
         'destructive_on_root' => 'ストレージの最上位パスはこの方法では削除できません。',
@@ -211,4 +225,10 @@ return [
     ],
     'privacy_manual_run_conflict' => '同じ対象に対して処理待機中または処理中の職権実行がすでに存在します。終了後に再度実行してください。',
     'privacy_manual_run_disabled' => 'この機能がオフになっているため、今すぐ実行できません。設定で機能をオンにして保存してから、もう一度実行してください。',
+    'upgrade_step_already_running' => '同じアップグレードステップを別の実行が進行中です(:target :version :step) — 同じ DB を使う別のサーバーのアップデートが終わってから再実行してください。その実行が異常終了した場合は、アップデートを --force で再実行してください(開始から :hours時間が過ぎた実行中の表示は、次の実行が自動で回収します)。',
+    'deferred_cleanup_helper_not_allowed' => '許可リストにない整理メソッドのため実行しませんでした: :helper',
+    'stage_layout_write' => '実行役割と一致しないレイアウトテーブルに書き込もうとしました: :table',
+    'deferred_cleanup_target_not_allowed' => '実行できない整理対象のため実行しませんでした(拡張が宣言していないシーダー、または不明な範囲): :target',
+    'deferred_cleanup_core_resync_failed' => 'コア宣言の再同期の一部の手順が失敗したため、整理を完了しませんでした(行を残します): :message',
+    'deferred_cleanup_seeder_failed' => 'シード整理のシーダーが失敗しました: :seeder (終了コード :code)',
 ];

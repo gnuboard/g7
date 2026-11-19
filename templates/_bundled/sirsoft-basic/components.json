@@ -536,6 +536,28 @@
             "required": false,
             "description": "대체 텍스트"
           },
+          "thumbPreset": {
+            "type": "string",
+            "required": false,
+            "description": "썸네일 규격 이름(xs·sm·md·lg·xl·운영자 규격). 서빙 경로 이미지에 size 를 붙이고 srcSet 이 없으면 1x·2x srcset 을 만든다. 외부·정적·data: 주소는 그대로. DOM 속성으로 나가지 않는다"
+          },
+          "srcSet": {
+            "type": "string",
+            "required": false,
+            "description": "srcset 직접 지정 (thumbPreset 이 만드는 srcset 보다 우선)"
+          },
+          "loading": {
+            "type": "string",
+            "required": false,
+            "default": "lazy",
+            "description": "지연 로딩 (lazy|eager). 첫 화면 이미지(로고·상세 메인·배너)는 eager 로 명시"
+          },
+          "decoding": {
+            "type": "string",
+            "required": false,
+            "default": "async",
+            "description": "디코딩 방식 (async|sync|auto)"
+          },
           "className": {
             "type": "string",
             "required": false,
@@ -798,20 +820,46 @@
         }
       },
       {
-        "name": "SocialLoginButtons",
+        "name": "MemberFieldInput",
         "type": "composite",
-        "description": "소셜 로그인 버튼 그룹",
-        "path": "src/components/composite/SocialLoginButtons.tsx",
+        "description": "회원 항목 1개의 입력칸 (서버 항목 계약의 유형과 제한 값으로 입력칸을 고른다)",
+        "path": "src/components/composite/MemberFieldInput.tsx",
         "props": {
-          "providers": {
+          "field": {
+            "type": "object",
+            "required": true,
+            "description": "서버가 준 항목 계약 (key, name, type, label, required, options, constraints 등)"
+          },
+          "name": {
+            "type": "string",
+            "required": false,
+            "description": "폼 경로 (자동 바인딩의 필드 이름)"
+          },
+          "error": {
+            "type": "string",
+            "required": false,
+            "description": "이 칸의 검증 오류 문구"
+          },
+          "errorId": {
+            "type": "string",
+            "required": false,
+            "description": "오류 문구 노드의 id (aria-describedby)"
+          },
+          "disabled": {
+            "type": "boolean",
+            "required": false,
+            "default": false,
+            "description": "비활성 여부"
+          },
+          "timezones": {
             "type": "array",
             "required": false,
-            "default": [
-              "google",
-              "naver",
-              "kakao"
-            ],
-            "description": "활성화할 소셜 로그인 프로바이더"
+            "description": "시간대 선택지 (생략하면 전역 appConfig.supportedTimezones 를 읽는다. 항목의 constraints.widget 이 timezone 일 때만 쓴다)"
+          },
+          "inputClassName": {
+            "type": "string",
+            "required": false,
+            "description": "입력칸에 붙일 클래스"
           },
           "className": {
             "type": "string",
@@ -1458,6 +1506,12 @@
             "default": true,
             "description": "HTML 렌더링 여부"
           },
+          "imageSizes": {
+            "type": "string",
+            "required": false,
+            "default": "(min-width: 1024px) 768px, 100vw",
+            "description": "본문 이미지 srcset 의 sizes 값 (isHtml=true). 서빙 경로 본문 이미지는 본문 이미지 규격·srcset·지연 로딩으로 표시되고, 링크 밖 이미지는 눌러서 원본 확대 보기"
+          },
           "purifyConfig": {
             "type": "object",
             "required": false,
@@ -1546,6 +1600,7 @@
         "type": "composite",
         "description": "모달 다이얼로그 (ESC 키 닫기, 포커스 트랩, 오버레이 클릭 닫기)",
         "path": "src/components/composite/Modal.tsx",
+        "skipBindingKeys": ["footer"],
         "props": {
           "closeOnBackdropClick": {
             "type": "boolean",
@@ -1622,6 +1677,11 @@
             "type": "ReactNode",
             "required": false,
             "description": "모달 내용"
+          },
+          "footer": {
+            "type": "array",
+            "required": false,
+            "description": "본문 스크롤 밖 고정 하단 영역에 렌더링할 컴포넌트 배열 (확인/취소 버튼). 640px 이하에서는 세로로 쌓는다"
           }
         }
       },

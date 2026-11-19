@@ -1,0 +1,17 @@
+feature: 번들 레이아웃 전수 — 클릭을 받는 비단추 요소는 커서를 갖는다
+
+description: |
+  `<on type="click">` 을 단 div, span, li, tr, td, img, label, input 은 커서 유틸리티나 커서를 정의한 의미 클래스를 갖는다
+  (#869 κ). 화면 전체를 덮는 바깥 눌러 닫기 백드롭(`inset-0`, 또는 그것을 품은 의미 클래스)은 손 모양이 맞지 않아 뺀다.
+  번들 템플릿, 모듈, 플러그인의 `.g7.html` 을 모두 훑고, 의미 클래스는 두 템플릿과 확장의 CSS 에서 모은다.
+
+# axis 의미:
+#   surface — 검사 모집단.
+axes:
+  surface: [bundled_layouts]
+
+effects:
+  - clickable_layout_element_has_cursor   # 클릭을 받는 비단추 요소에 커서가 빠진 레이아웃이 없다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/clickableElementsHaveCursor.test.ts

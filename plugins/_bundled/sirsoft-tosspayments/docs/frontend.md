@@ -20,6 +20,10 @@
 다른 PG 플러그인들과 마찬가지로 이 플러그인이 소유한 화면 레이아웃은 관리자 설정 화면
 하나뿐입니다 — 체크아웃·주문상세의 결제 UI는 이 플러그인 소유가 아니라 §레이아웃 확장
 (다른 확장/템플릿 레이아웃에 주입되는 조각)으로 존재합니다.
+
+화면 폭에 따라 달라지는 배치는 Tailwind 반응형 접두(`sm:`·`md:`·`lg:`)를 쓰지 않고 엔진 `responsive` 로 씁니다(예: `<responsive on="desktop" class="…"/>`, `on="640-"`). 갈래의 `class` 는 기본 `class` 를 통째로 바꾸므로 그 폭에서 필요한 토큰을 모두 적습니다.
+
+폭 미디어를 품은 의미 클래스 사본(`pay-tosspayments-grid-3col-responsive`·`pay-tosspayments-grid-2col-responsive`·`pay-tosspayments-page-title`·`pay-tosspayments-admin-page-content-responsive` 등)도 쓰지 않습니다. 같은 값을 접두 유틸과 `responsive` 구간으로 적습니다 — 예를 들어 넓은 화면에서 3열이 되는 입력 줄은 `class="paytosspayments:grid paytosspayments:grid-cols-1 paytosspayments:gap-4 paytosspayments:items-start"` 에 `<responsive on="1024-" class="paytosspayments:grid paytosspayments:grid-cols-3 paytosspayments:gap-4 paytosspayments:items-start"/>` 를 둡니다. 알림 상자 다음 칸 여백처럼 그 클래스에 기대던 형제 규칙은 그 자리에 여백 유틸(`paytosspayments:mb-4` 등)을 직접 줍니다.
 <!-- @intent END -->
 
 ## 액션 핸들러
@@ -120,4 +124,16 @@
 `_global.guestOrderToken` 키를 세울 때까지 기다린다(`waitForGuestOrderTokenContract()`, 100ms 간격 최대 5초).
 키를 세우지 않는 템플릿이면 상한 뒤 헤더 없이 보낸다. 토큰이 없으면 서버가 403 으로 거부하고 화면 흐름은
 그대로 진행한다 — 결제대기 주문은 이커머스 만료 정리 잡이 정리한다.
+<!-- @intent END -->
+
+## 클레임 추가결제 창을 열기 전 실패
+
+<!-- @intent START -->
+교환·반품·환불 신청서의 추가결제(`pg_payment_data.claim_cancel_return_url` 이 있는 결제)에서 결제창을 열기 **전에** 실패하면
+주문서 전용 오류 모달·토스트를 띄우지 않고 사용자 문구를 담은 `Error` 를 던진다. 신청서 화면에는 그 모달이 없어, 종전에는 안내 없이
+「결제 진행 중…」에 멈췄다. 쇼핑몰 신청서 핸들러가 `G7Core.dispatch` 결과로 받아 진행 표시를 내리고 문구를 보여 준다(계약:
+쇼핑몰 `modules/_bundled/sirsoft-ecommerce/docs/api/claim-payments.md` 「결제 플러그인 연동 계약」, 쇼핑몰 1.4.0 이상). 상태 코드 없는 오류라 템플릿의 상태 코드별 오류 처리는
+타지 않는다. 주문 결제는 종전대로 주문서 오류 안내를 쓴다.
+
+처리 위치: `resources/js/handlers/requestPayment.ts` 의 `reportPaymentError()`. 결제 설정 조회 실패·SDK 미적재처럼 문구가 없는 실패는 빈 문구로 던진다(신청서가 「결제를 시작하지 못했습니다.」로 대신한다).
 <!-- @intent END -->

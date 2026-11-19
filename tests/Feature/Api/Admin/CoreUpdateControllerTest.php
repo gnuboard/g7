@@ -4,6 +4,7 @@ namespace Tests\Feature\Api\Admin;
 
 use App\Enums\ExtensionOwnerType;
 use App\Enums\PermissionType;
+use App\Extension\Custom\CustomUpdatePreflight;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
@@ -132,7 +133,7 @@ class CoreUpdateControllerTest extends TestCase
     public function test_check_for_updates_returns_version_info(): void
     {
         // Arrange: CoreUpdateService를 Mock
-        $this->mock(CoreUpdateService::class, function ($mock) {
+        $this->partialMock(CoreUpdateService::class, function ($mock) {
             $mock->shouldReceive('checkForUpdates')
                 ->once()
                 ->andReturn([
@@ -162,6 +163,45 @@ class CoreUpdateControllerTest extends TestCase
             ->assertJsonPath('data.update_available', true)
             ->assertJsonPath('data.current_version', '1.0.0')
             ->assertJsonPath('data.latest_version', '1.1.0');
+    }
+
+    /**
+     * 직전 업데이트가 custom 사전 검사로 멈춘 기록은 같은 새 버전일 때만 확인 결과에 실립니다 (#792).
+     *
+     * @scenario area=core_update.check
+     *
+     * @effects check_for_updates_includes_custom_preflight
+     *
+     * @return void 반환값 없음
+     */
+    public function test_check_for_updates_includes_custom_preflight_record_for_same_version(): void
+    {
+        $this->partialMock(CoreUpdateService::class, function ($mock) {
+            $mock->shouldReceive('checkForUpdates')->twice()->andReturn([
+                'update_available' => true,
+                'current_version' => '7.1.1',
+                'latest_version' => '7.2.0',
+                'github_url' => 'https://github.com/gnuboard/g7',
+            ]);
+        });
+
+        $conflict = ['package' => 'acme/cli-kit', 'installed' => '2.0.0', 'type' => 'constraint', 'requires' => 'symfony/console', 'constraint' => '^6.4', 'core_package' => 'symfony/console', 'core_version' => 'v7.1.0'];
+        CustomUpdatePreflight::record('7.2.0', ['reserved_files' => [], 'conflicts' => [$conflict]]);
+
+        try {
+            $this->authRequest()->postJson('/api/admin/core-update/check')
+                ->assertOk()
+                ->assertJsonPath('data.custom_preflight.to_version', '7.2.0')
+                ->assertJsonPath('data.custom_preflight.conflicts.0.package', 'acme/cli-kit');
+
+            // 다른 버전을 시도한 기록은 싣지 않는다
+            CustomUpdatePreflight::record('7.1.9', ['reserved_files' => [], 'conflicts' => [$conflict]]);
+            $this->authRequest()->postJson('/api/admin/core-update/check')
+                ->assertOk()
+                ->assertJsonPath('data.custom_preflight', null);
+        } finally {
+            CustomUpdatePreflight::clearRecord();
+        }
     }
 
     /**
@@ -230,7 +270,7 @@ class CoreUpdateControllerTest extends TestCase
      */
     public function test_check_for_updates_allows_settings_read_only(): void
     {
-        $this->mock(CoreUpdateService::class, function ($mock) {
+        $this->partialMock(CoreUpdateService::class, function ($mock) {
             $mock->shouldReceive('checkForUpdates')->once()->andReturn([
                 'update_available' => false,
                 'current_version' => '1.0.0',

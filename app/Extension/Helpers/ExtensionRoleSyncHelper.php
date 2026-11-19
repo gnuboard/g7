@@ -6,6 +6,7 @@ use App\Contracts\Extension\UpgradeStepInterface;
 use App\Contracts\Repositories\PermissionRepositoryInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Enums\ExtensionOwnerType;
+use App\Extension\Helpers\Concerns\RecordsSyncDeletion;
 use App\Models\Permission;
 use App\Models\Role;
 use Illuminate\Database\Eloquent\Model;
@@ -23,6 +24,8 @@ use Illuminate\Support\Facades\Log;
  */
 class ExtensionRoleSyncHelper
 {
+    use RecordsSyncDeletion;
+
     /**
      * @param  RoleRepositoryInterface  $roleRepository  역할 저장소
      * @param  PermissionRepositoryInterface  $permissionRepository  권한 저장소
@@ -213,6 +216,11 @@ class ExtensionRoleSyncHelper
         string $extensionIdentifier,
         array $currentIdentifiers,
     ): int {
+        // 검수 서버(stage)는 공유 DB 의 선언 항목을 지우지 않고 대장에 미룬다 — 운영 서버가 extension:apply-deferred-cleanup 으로 같은 규칙대로 지운다
+        if (DeferredDeclarativeCleanup::shouldDefer()) {
+            return DeferredDeclarativeCleanup::defer($this, __FUNCTION__, func_get_args());
+        }
+
         $existingPermissions = $this->permissionRepository->getByExtension($extensionType, $extensionIdentifier);
 
         $deleted = 0;
@@ -221,18 +229,11 @@ class ExtensionRoleSyncHelper
                 continue;
             }
 
-            // 역할 연결 해제
-            $permission->roles()->detach();
-
-            // 자식 권한도 정리 (orphan 회피)
-            foreach ($permission->children as $child) {
-                $child->roles()->detach();
-                $this->permissionRepository->delete($child);
-                $deleted++;
+            if ($this->permissionRepository->findById((int) $permission->id) === null) {
+                continue;
             }
 
-            $this->permissionRepository->delete($permission);
-            $deleted++;
+            $deleted += $this->deletePermissionSubtree($permission, $extensionType, $extensionIdentifier, $currentIdentifiers);
         }
 
         if ($deleted > 0) {
@@ -265,6 +266,11 @@ class ExtensionRoleSyncHelper
         string $extensionIdentifier,
         array $currentIdentifiers,
     ): int {
+        // 검수 서버(stage)는 공유 DB 의 선언 항목을 지우지 않고 대장에 미룬다 — 운영 서버가 extension:apply-deferred-cleanup 으로 같은 규칙대로 지운다
+        if (DeferredDeclarativeCleanup::shouldDefer()) {
+            return DeferredDeclarativeCleanup::defer($this, __FUNCTION__, func_get_args());
+        }
+
         $existingRoles = $this->roleRepository->getByExtension($extensionType, $extensionIdentifier);
 
         $deleted = 0;
@@ -289,7 +295,18 @@ class ExtensionRoleSyncHelper
                 continue;
             }
 
-            // 조건 통과 → 삭제 (role_permissions, role_menus 는 cascade 또는 모델 이벤트로 정리)
+            // 조건 통과 → 운영자가 고친 역할이면 기록 → 연결(role_permissions·role_menus·menu_permissions)을 명시적으로 뗀 뒤 삭제
+            if ($this->hasOperatorOverrides($role)) {
+                $this->recordSyncDeletion('role', (string) $role->identifier, $extensionType->value, $extensionIdentifier, [
+                    'role' => $role->toArray(),
+                    'permission_ids' => $role->permissions()->pluck('permissions.id')->all(),
+                    'menu_ids' => $role->menus()->pluck('menus.id')->all(),
+                ]);
+            }
+
+            $role->permissions()->detach();
+            $role->menus()->detach();
+            $this->roleRepository->deleteMenuPermissions($role);
             $this->roleRepository->delete($role);
             Log::info('stale 역할 삭제', [
                 'identifier' => $role->identifier,
@@ -448,9 +465,139 @@ class ExtensionRoleSyncHelper
         $toDetach = array_diff($unprotectedCurrent, $unprotectedDefined);
         foreach ($toDetach as $permIdentifier) {
             $permission = $this->permissionRepository->findByIdentifier($permIdentifier);
+            if ($permission && DeferredDeclarativeCleanup::shouldDefer()) {
+                // 검수 서버(stage)는 역할 권한을 회수하지 않고 미룬다 — 운영 서버 옛 화면의 그 역할 사용자가 기능을 잃지 않게
+                DeferredDeclarativeCleanup::deferOwner($permission->extension_type, $permission->extension_identifier);
+
+                continue;
+            }
             if ($permission) {
                 $this->roleRepository->detachPermission($role, $permission->id);
             }
         }
+    }
+
+    /**
+     * 선언에서 빠진 권한 하나를 하위 트리째 명시적으로 지웁니다.
+     *
+     * 순서: 역할 부여(`role_permissions`)·훅 매핑(`permission_hooks`) → 깊은 자식부터 → 본 권한. 새 판이 여전히 선언한 자식이나
+     * 다른 출처 자식은 지우지 않고 부모를 비운다. 역할에 부여된 권한이면 지우기 직전 `permission.sync_deleted` 로 부여 목록을 남긴다.
+     *
+     * @param  Permission  $permission  선언에서 빠진 권한
+     * @param  ExtensionOwnerType  $extensionType  소유 확장 종류
+     * @param  string  $extensionIdentifier  소유 확장 식별자
+     * @param  array<int, string>  $currentIdentifiers  새 판이 선언한 권한 식별자
+     * @return int 지운 권한 수
+     */
+    private function deletePermissionSubtree(Permission $permission, ExtensionOwnerType $extensionType, string $extensionIdentifier, array $currentIdentifiers): int
+    {
+        [$owned, $lifted] = $this->partitionPermissionSubtree($permission, $extensionType, $extensionIdentifier, $currentIdentifiers);
+        $grants = [];
+
+        foreach ($owned as $node) {
+            $roleIds = $node->roles()->pluck('roles.id')->all();
+            if ($roleIds !== []) {
+                $grants[(string) $node->identifier] = $roleIds;
+            }
+        }
+
+        if ($grants !== []) {
+            $this->recordSyncDeletion('permission', (string) $permission->identifier, $extensionType->value, $extensionIdentifier, [
+                'permissions' => array_map(fn (Permission $p) => $p->toArray(), $owned),
+                'role_grants' => $grants,
+            ]);
+        }
+
+        foreach ($lifted as $child) {
+            $this->permissionRepository->update($child, ['parent_id' => null]);
+        }
+
+        foreach (array_reverse($owned) as $node) {
+            $node->roles()->detach();
+            $node->hooks()->delete();
+            $this->permissionRepository->delete($node);
+        }
+
+        return count($owned);
+    }
+
+    /**
+     * 권한 하위 트리를 「같이 지울 것」과 「부모를 비울 것」으로 나눕니다 (부모 → 자식 순).
+     *
+     * @param  Permission  $permission  뿌리 권한
+     * @param  ExtensionOwnerType  $extensionType  소유 확장 종류
+     * @param  string  $extensionIdentifier  소유 확장 식별자
+     * @param  array<int, string>  $currentIdentifiers  새 판이 선언한 권한 식별자
+     * @return array{0: list<Permission>, 1: list<Permission>} [지울 권한(뿌리 포함), 부모를 비울 자식]
+     */
+    private function partitionPermissionSubtree(Permission $permission, ExtensionOwnerType $extensionType, string $extensionIdentifier, array $currentIdentifiers): array
+    {
+        $owned = [$permission];
+        $lifted = [];
+        $queue = [$permission];
+
+        while ($queue !== []) {
+            $node = array_shift($queue);
+
+            foreach ($this->permissionRepository->getChildrenByParent((int) $node->id) as $child) {
+                $childType = $child->extension_type instanceof ExtensionOwnerType ? $child->extension_type : ExtensionOwnerType::tryFrom((string) $child->extension_type);
+                $sameOwner = $childType === $extensionType && (string) $child->extension_identifier === $extensionIdentifier;
+
+                if (! $sameOwner || in_array($child->identifier, $currentIdentifiers, true)) {
+                    $lifted[] = $child;
+
+                    continue;
+                }
+
+                $owned[] = $child;
+                $queue[] = $child;
+            }
+        }
+
+        return [$owned, $lifted];
+    }
+
+    /**
+     * 지워질 stale 권한·역할을 미리 계산합니다 — 쓰기 없음, 실제 정리와 같은 판정식.
+     *
+     * @param  ExtensionOwnerType  $extensionType  소유 확장 종류
+     * @param  string  $extensionIdentifier  소유 확장 식별자
+     * @param  array<int, string>|null  $currentPermissions  새 판이 선언한 권한 식별자 (null 이면 권한은 보지 않음)
+     * @param  array<int, string>|null  $currentRoles  새 판이 선언한 역할 식별자 (null 이면 역할은 보지 않음)
+     * @return list<array{type: string, key: string, has_operator_overrides: bool}> 삭제 예정
+     */
+    public function planCleanup(ExtensionOwnerType $extensionType, string $extensionIdentifier, ?array $currentPermissions, ?array $currentRoles): array
+    {
+        $plan = [];
+        $seen = [];
+
+        if ($currentPermissions !== null) {
+            foreach ($this->permissionRepository->getByExtension($extensionType, $extensionIdentifier) as $permission) {
+                if (in_array($permission->identifier, $currentPermissions, true) || isset($seen[$permission->id])) {
+                    continue;
+                }
+
+                [$owned] = $this->partitionPermissionSubtree($permission, $extensionType, $extensionIdentifier, $currentPermissions);
+                $granted = false;
+                foreach ($owned as $node) {
+                    $seen[$node->id] = true;
+                    $granted = $granted || $node->roles()->exists();
+                }
+
+                $plan[] = ['type' => 'permission', 'key' => (string) $permission->identifier, 'has_operator_overrides' => $granted];
+            }
+        }
+
+        if ($currentRoles !== null) {
+            foreach ($this->roleRepository->getByExtension($extensionType, $extensionIdentifier) as $role) {
+                if (in_array($role->identifier, $currentRoles, true) || $role->users()->exists()) {
+                    continue;
+                }
+
+                $plan[] = ['type' => 'role', 'key' => (string) $role->identifier, 'has_operator_overrides' => $this->hasOperatorOverrides($role)];
+            }
+        }
+
+        return $plan;
     }
 }

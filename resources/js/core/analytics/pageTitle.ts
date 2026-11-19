@@ -46,5 +46,6 @@ export function resolvePageTitle(
 
   if (typeof document !== 'undefined' && document.title) return document.title;
 
+  // base-path:allow 표시용 제목 대체값이다(라우트 대조가 아니다) — 라우트가 없을 때 브라우저 주소를 그대로 보인다.
   return route?.path ?? (typeof window !== 'undefined' ? window.location.pathname : '');
 }

@@ -7,7 +7,6 @@
  * 로 읽는다」를 보인다. 값 위치가 첫 인자가 아닌 부품(FilterGroup `onChange(filterId, value)`)은 역량의
  * `rawValueArgIndex` 로 위치를 알린다.
  */
-import React from 'react';
 import { describe, it, expect, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
 import { ActionRecipeEditor } from '../../../components/property-controls/ActionRecipeEditor';

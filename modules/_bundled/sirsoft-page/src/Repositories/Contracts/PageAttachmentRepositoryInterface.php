@@ -54,7 +54,7 @@ interface PageAttachmentRepositoryInterface
     public function attachToPage(string $tempKey, int $pageId): int;
 
     /**
-     * 페이지의 모든 첨부파일을 삭제합니다 (소프트 삭제).
+     * 페이지의 모든 첨부파일 행을 영구 삭제합니다 (소프트 삭제 없음, 물리 파일은 지우지 않음).
      *
      * @param  int  $pageId  페이지 ID
      * @return int 삭제된 첨부파일 수
@@ -72,7 +72,7 @@ interface PageAttachmentRepositoryInterface
     public function findOrFail(int $id): PageAttachment;
 
     /**
-     * 첨부파일을 삭제합니다 (소프트 삭제).
+     * 첨부파일 행을 영구 삭제합니다 (소프트 삭제 없음, 물리 파일은 지우지 않음).
      *
      * @param  PageAttachment  $attachment  첨부파일 모델
      * @return bool 삭제 성공 여부
@@ -118,6 +118,24 @@ interface PageAttachmentRepositoryInterface
      * @return int 최대 order 값
      */
     public function getMaxOrder(?int $pageId = null, ?string $tempKey = null): int;
+
+    /**
+     * 래스터 이미지 첨부 수를 셉니다 (썸네일 원본 제공자용 — 페이지에 이어진 첨부만).
+     *
+     * @param  list<string>  $mimeTypes  MIME 목록
+     * @return int 개수
+     */
+    public function countByMimeTypes(array $mimeTypes): int;
+
+    /**
+     * 래스터 이미지 첨부를 ID 순으로 나눠 조회합니다 (썸네일 원본 제공자용 — 페이지에 이어진 첨부만).
+     *
+     * @param  list<string>  $mimeTypes  MIME 목록
+     * @param  int  $afterId  이 ID 다음부터 (처음이면 0)
+     * @param  int  $limit  최대 개수
+     * @return Collection<int, PageAttachment> 첨부 목록
+     */
+    public function chunkByMimeTypes(array $mimeTypes, int $afterId, int $limit): Collection;
 
     /**
      * 임시 키로 올린, 아직 페이지에 잇지 않은 본문 미디어 수 (#883)

@@ -1,3 +1,4 @@
+// e2e:allow 엔진 변경(engine-v1.93.0 반복 셀·확장 행 _computed, 빈 confirm, 7.1.3 navigate·링크 API 이식)은 두 템플릿 실화면에서 브라우저로 쟀고, 로그인 흐름은 Playwright 로그인 spec 이 덮는다
 /**
  * NOTE: @since versions (engine-v1.x.x) refer to internal template engine
  * development iterations, not G7 platform release versions.
@@ -33,6 +34,18 @@ import { useResponsive, ResponsiveProvider, ResponsiveContext } from './Responsi
 import { responsiveManager, BREAKPOINT_PRESETS } from './ResponsiveManager';
 import { AuthManager } from '../auth/AuthManager';
 import { getApiClient } from '../api/ApiClient';
+import { basePrefix, stripBasePrefix, withBasePrefix } from '../support/assetUrl';
+import {
+  contentSrcset,
+  contentSrcsetWithin,
+  type ContentSrcsetWithinOptions,
+  getContentPreset,
+  getThumbnailPresets,
+  isThumbnailableUrl,
+  stripThumbnailSize,
+  thumbnailSrcset,
+  withThumbnailSize,
+} from '../support/thumbnailUrl';
 import { CONSENT_CHANGED_EVENT, getConsentRuntime } from '../consent';
 import { getContentMediaRuntime } from '../contentMedia';
 import { getContentPolicyRuntime } from '../contentPolicy';
@@ -46,7 +59,7 @@ import { G7DevToolsCore } from '../devtools/G7DevToolsCore';
 // DiagnosticEngine/ServerConnector/StyleTracker/DevToolsPanel 은 정적 import 하지 않는다 —
 // 디버그 전용 무거운 모듈은 별도 lazy 번들(devtools.min.js)로 분리되어 initDevToolsAPI() 가
 // isEnabled() 참일 때만 런타임 <script> 주입으로 로드한다. @since engine-v1.51.0
-import type { DiagnosticCategory } from '../devtools/types';
+import type { ComputedDependencyType, ComputedRecalcTrigger, DiagnosticCategory } from '../devtools/types';
 import {
   renderItemChildren,
   createChangeEvent,
@@ -57,6 +70,8 @@ import {
   conditionalClass,
   joinClasses,
 } from './helpers';
+// 확장 앞글자 해석은 StyleHelpers 에서 직접 가져온다(helpers 색인을 목록으로 모킹하는 테스트와 무관하게)
+import { splitExtensionClassPrefix } from './helpers/StyleHelpers';
 import type { SlotContextValue } from './SlotContext';
 import {
   useControllableState,
@@ -141,7 +156,8 @@ export interface G7DevToolsInterface {
     result: any;
     resultType: string;
     duration?: number;
-    method: 'resolve' | 'resolveBindings' | 'evaluateExpression';
+    /** 평가 진입점 — 파이프 식은 evaluatePipeExpression 으로 기록된다 */
+    method: 'resolve' | 'resolveBindings' | 'evaluateExpression' | 'evaluatePipeExpression';
     componentId?: string;
     componentName?: string;
     propName?: string;
@@ -181,7 +197,8 @@ export interface G7DevToolsInterface {
   /** 액션 로그 기록 */
   logAction(action: {
     id: string;
-    type: string;
+    /** 핸들러 이름 — actionRef 를 풀지 못한 액션은 비어 있다 */
+    type: string | undefined;
     params?: Record<string, any>;
     resolvedParams?: Record<string, any>;
     context?: Record<string, any>;
@@ -345,7 +362,8 @@ export interface G7DevToolsInterface {
    */
   trackAction?(info: {
     handler: string;
-    type: string;
+    /** 이벤트 타입 — `event` 만 적은 진입점 액션은 비어 있다 */
+    type: string | undefined;
     status: 'pending' | 'success' | 'error' | 'cancelled';
     params?: Record<string, any>;
     debounce?: {
@@ -586,7 +604,7 @@ export interface G7DevToolsInterface {
   trackComputedProperty?(
     name: string,
     expression: string,
-    dependencies: Array<{ type: string; path: string; value?: any }>,
+    dependencies: Array<{ type: ComputedDependencyType; path: string; value?: any }>,
     value: any,
     computationTime: number,
     componentId?: string,
@@ -606,12 +624,12 @@ export interface G7DevToolsInterface {
    */
   trackComputedRecalc?(
     computedName: string,
-    trigger: 'dependency-change' | 'manual' | 'init',
+    trigger: ComputedRecalcTrigger,
     previousValue: any,
     newValue: any,
     computationTime: number,
     triggeredBy?: {
-      type: string;
+      type: ComputedDependencyType;
       path: string;
       oldValue?: any;
       newValue?: any;
@@ -629,7 +647,8 @@ export interface G7DevToolsInterface {
   /** actionRef 해석 이력 기록 */
   trackNamedActionRef?(log: {
     actionRefName: string;
-    resolvedHandler: string;
+    /** 풀린 named action 의 핸들러 이름 — 정의에 handler 가 없으면 비어 있다 */
+    resolvedHandler: string | undefined;
     timestamp: number;
   }): void;
 
@@ -937,18 +956,58 @@ function initComponentEventSystem(G7Core: any): void {
       return results;
     },
     /**
-     * 특정 이벤트의 모든 리스너를 제거합니다.
+     * 이벤트 구독을 해제합니다.
+     *
+     * - `off(eventName, callback)`: 그 콜백만 지운다 — 같은 이벤트의 다른 구독자는 그대로 받는다.
+     * - `off(eventName)`: 그 이벤트의 구독을 **전부** 지운다. 다른 컴포넌트·확장의 구독까지 끊기므로
+     *   구독이 1개 이상이면 `[G7]` 경고를 낸다 (engine-v1.94.0).
+     *
+     * @deprecated 콜백 없는 `off(eventName)` 은 폐지 예정이다. `on()` 이 돌려준 해제 함수나
+     *   `off(eventName, callback)` 을 쓴다. 콜백 있는 형태는 폐지 대상이 아니다.
      * @param eventName 이벤트명
+     * @param callback 지울 콜백 (`on` 에 넘긴 것과 같은 참조)
      */
-    off: (eventName: string) => {
+    off: (eventName: string, callback?: (data?: any) => void | Promise<any>) => {
+      const listeners = componentEventListeners.get(eventName);
+
+      if (callback) {
+        if (listeners?.delete(callback)) {
+          if (listeners.size === 0) {
+            componentEventListeners.delete(eventName);
+          }
+          // DevTools 추적 — 구독 1건 해제
+          devTools.trackEventUnsubscribe(eventName);
+        }
+        return;
+      }
+
+      const removed = listeners?.size ?? 0;
+      if (removed > 0) {
+        console.warn(
+          `[G7] componentEvent.off("${eventName}") 가 콜백 없이 호출되어 구독 ${removed}개를 모두 지웠습니다. ` +
+            '다른 컴포넌트·확장의 구독도 함께 끊깁니다 — 구독할 때 받은 해제 함수나 off(name, callback) 을 쓰세요.'
+        );
+      }
       componentEventListeners.delete(eventName);
       // DevTools 추적
       devTools.trackEventOff(eventName);
     },
     /**
      * 모든 이벤트 리스너를 제거합니다.
+     *
+     * 다른 컴포넌트·확장의 구독까지 끊으므로 구독이 1개 이상이면 `[G7]` 경고를 낸다 (engine-v1.94.0).
      */
     clear: () => {
+      let removed = 0;
+      componentEventListeners.forEach((set) => {
+        removed += set.size;
+      });
+      if (removed > 0) {
+        console.warn(
+          `[G7] componentEvent.clear() 가 모든 이벤트의 구독 ${removed}개를 지웠습니다. ` +
+            '다른 컴포넌트·확장의 구독도 함께 끊깁니다 — 자기 구독은 해제 함수나 off(name, callback) 으로 지우세요.'
+        );
+      }
       componentEventListeners.clear();
       // DevTools 추적
       devTools.trackEventClear();
@@ -1307,11 +1366,15 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
 
     // 전역 상태를 컨텍스트에 자동 병합 (cellChildren에서 _global 접근 가능)
     // itemContext에 이미 해당 키가 있으면 itemContext 값 우선 (명시적 전달 존중)
-    // _local, _computed는 itemContext에서 전달받거나 비어있음
+    // _local 은 itemContext에서 전달받거나 비어있음(셀 렌더 함수가 componentContext.state 를 병합한다)
+    // _computed 는 부모 컴포넌트의 최신 계산값이 기본값이다 (@since engine-v1.93.0) — 종전에는 `{}` 를 먼저 넣어
+    // getEffectiveContext 의 부모 문맥 병합(없는 키만)이 막혀 셀 안 `{{_computed.x}}` 가 늘 undefined 였다
+    const parentComputed = options?.componentContext?.computedRef?.current
+      ?? options?.componentContext?.parentDataContext?._computed;
     const mergedContext = {
       _global: globalStateContent,  // globalState 내용이 곧 _global
       _local: itemContext._local || {},
-      _computed: itemContext._computed || {},
+      _computed: itemContext._computed || parentComputed || {},
       ...itemContext,
     };
 
@@ -1610,7 +1673,9 @@ function initHelperAPIs(G7Core: any, deps: G7CoreDependencies): void {
       _local: mergedLocal,
       // 위 cellChildren 과 같은 이유로 `._global` 을 떼었다 — `state.get()` 이 이미 `_global` 이다.
       _global: globalState,
-      _computed: globalState._computed || {},
+      // expandContext 평가와 같은 최신 계산값 (@since engine-v1.93.0) — 종전 `globalState._computed || {}` 는 늘 빈 객체라
+      // 확장 행 children 이 `{{_computed.x}}` 를 직접 읽으면 undefined 였다(셀 렌더 함수의 부모 문맥 병합도 이 자리에 막혔다)
+      _computed: latestComputed,
       ...resolvedExpandContext,
     };
 
@@ -2999,6 +3064,94 @@ function initDataSourceAPI(G7Core: any): void {
 }
 
 /**
+ * 주소 조립 API 초기화 — 확장(모듈·플러그인·템플릿)이 쓰는 **공식 수단**.
+ *
+ * 확장 프론트엔드는 코어와 **별도 IIFE 번들**이라 `import { withBasePrefix }` 를 할 수
+ * 없다. 그래서 종전에는 접두사를 붙일 방법 자체가 없었고, 번들 확장 15곳이 전부
+ * `fetch('/api/…')` 형태로 남아 하위 폴더 마운트(`https://host/g7/`)에서 사이트 밖을
+ * 불렀다 — 증상은 오류가 아니라 **버튼이 조용히 무반응**인 것이다(결제·본인인증·반응).
+ *
+ * 코어 게이트가 「접두사 헬퍼를 거쳤는가」로 판정하므로, 확장이 그 판정을 통과할 수 있는
+ * 이름을 여기서 준다. 값은 서버가 `G7Config.basePath` 로 내려준 것과 같은 SSoT 다.
+ *
+ * ```ts
+ * const res = await fetch(window.G7Core.url.api('/api/plugins/x/y'));
+ * ```
+ *
+ * @param G7Core - window.G7Core 전역 객체
+ */
+function initUrlAPI(G7Core: any): void {
+  G7Core.url = {
+    /**
+     * 루트 상대 경로에 사이트 마운트 접두사를 붙입니다 (멱등).
+     *
+     * @param path `/` 로 시작하는 경로
+     * @returns 접두사가 붙은 경로
+     */
+    api: (path: string): string => withBasePrefix(path),
+
+    /**
+     * 사이트 마운트 접두사를 벗겨 라우트 기준 경로로 되돌립니다.
+     *
+     * @param path `/` 로 시작하는 경로
+     * @returns 접두사를 벗긴 경로
+     */
+    route: (path: string): string => stripBasePrefix(path),
+
+    /**
+     * 현재 사이트 마운트 접두사를 반환합니다 (루트 설치면 빈 문자열).
+     *
+     * @returns 접두사
+     */
+    base: (): string => basePrefix(),
+  };
+
+  logger.log('전역 객체 window.G7Core.url에 노출됨');
+}
+
+/**
+ * 이미지 썸네일 주소 API 초기화 — 템플릿·확장 컴포넌트가 쓰는 **공식 수단**.
+ *
+ * 확장 번들은 코어와 별도 IIFE 라 `support/thumbnailUrl` 을 import 할 수 없다. 사본을 두면 대상 판정
+ * (같은 출처 + 등록된 서빙 경로)과 쿼리 덧붙임 규칙이 갈려 서명 URL 이 깨지거나 외부 주소에 `size` 가 붙는다.
+ * 그래서 판정은 코어 한 곳에 두고 여기서 이름만 준다.
+ *
+ * ```ts
+ * const src = window.G7Core.thumbnail.url(image.url, 'sm');
+ * const srcSet = window.G7Core.thumbnail.srcset(image.url, 'md');
+ * ```
+ *
+ * @param G7Core - window.G7Core 전역 객체
+ * @since engine-v1.95.0
+ */
+function initThumbnailAPI(G7Core: any): void {
+  G7Core.thumbnail = {
+    /** 썸네일을 붙여도 되는 주소인지 (같은 출처 + 등록된 서빙 경로) */
+    isThumbnailable: (url: unknown): boolean => isThumbnailableUrl(url),
+    /** 주소에 규격을 붙인다 (대상이 아니면 그대로) */
+    url: (url: unknown, preset: unknown): unknown => withThumbnailSize(url, preset),
+    /** 고정 규격의 1x·2x srcset (대상이 아니면 빈 문자열) */
+    srcset: (url: unknown, preset: unknown): string => thumbnailSrcset(url, preset),
+    /** 본문 이미지 srcset — 숫자 요청 대상 규격 전부를 `w` 기술자로 */
+    contentSrcset: (url: unknown): string => contentSrcset(url),
+    /**
+     * 원본 가로를 넘지 않는 본문 srcset — `includeOriginal` 이면 원본보다 작은 후보 + 원본, 아니면 원본 가로 이하 후보
+     * @since engine-v1.95.0
+     */
+    contentSrcsetWithin: (url: unknown, maxWidth: unknown, options?: ContentSrcsetWithinOptions | null): string =>
+      contentSrcsetWithin(url, maxWidth, options),
+    /** 본문 이미지 규격 이름 (`upload.thumbnail_content_preset`) */
+    contentPreset: (): string => getContentPreset(),
+    /** 썸네일 쿼리를 걷어낸 원본 주소 (확대 보기용) */
+    strip: (url: unknown): unknown => stripThumbnailSize(url),
+    /** 서버가 내려 준 공개 규격 목록 */
+    presets: () => getThumbnailPresets(),
+  };
+
+  logger.log('전역 객체 window.G7Core.thumbnail에 노출됨');
+}
+
+/**
  * 로케일 관리 API 초기화
  */
 function initLocaleAPI(G7Core: any, deps: G7CoreDependencies): void {
@@ -3148,10 +3301,14 @@ function initModalAPI(G7Core: any): void {
     },
     /**
      * 모든 모달을 닫습니다.
+     *
+     * closeModal 의 전부 닫기 옵션(`params.all`)으로 보낸다(engine-v1.95.0). 종전에는 없는 핸들러
+     * `closeAllModals` 를 불러 아무 일도 하지 않았다.
      */
     closeAll: () => {
       G7Core.dispatch({
-        handler: 'closeAllModals',
+        handler: 'closeModal',
+        params: { all: true },
       });
     },
     /**
@@ -3191,6 +3348,18 @@ function initStyleAPI(G7Core: any): void {
      * ```
      */
     mergeClasses,
+    /**
+     * 확장 CSS 접두 빌드 앞글자(`ecommerce:`)를 떼어 `{ prefix, rest }` 로 돌려줍니다.
+     * className 을 Tailwind 이름으로 해석하는 템플릿 컴포넌트가 확장이 준 클래스를 읽을 때 씁니다.
+     *
+     * @example
+     * ```typescript
+     * G7Core.style.splitExtensionClassPrefix('ecommerce:w-44') // { prefix: 'ecommerce:', rest: 'w-44' }
+     * G7Core.style.splitExtensionClassPrefix('md:w-44')        // { prefix: '', rest: 'md:w-44' }
+     * ```
+     * @since engine-v1.83.0
+     */
+    splitExtensionClassPrefix,
     /**
      * 조건에 따라 클래스를 적용합니다.
      *
@@ -3579,7 +3748,10 @@ function initCoreAPIs(G7Core: any, deps: G7CoreDependencies): void {
   ) => {
     const templateApp = (window as any).__templateApp;
     if (templateApp?.updateQueryParams) {
-      registerUrlOnlyPathChange(newPath, templateApp);
+      // 별칭 기록은 브라우저 주소(`location.pathname`)와 대조된다 — `TemplateApp.updateQueryParams` 가 주소창에 쓰는
+      // 값과 같게 접두사를 붙여 남긴다(형제 replaceUrl 과 같은 규칙). 앱 기준 경로를 남기면 하위 폴더 배치에서 별칭
+      // 판정이 늘 거짓이 되어 디바운스 칸의 경로 가드가 같은 화면 입력을 버린다.
+      registerUrlOnlyPathChange(withBasePrefix(newPath), templateApp);
       return templateApp.updateQueryParams(newPath, options);
     }
     logger.warn('G7Core.updateQueryParams: TemplateApp이 초기화되지 않았습니다.');
@@ -3775,6 +3947,8 @@ export function initializeG7CoreGlobals(deps: G7CoreDependencies): void {
   initDispatchAPI(G7Core);
   initStateAPI(G7Core);
   initDataSourceAPI(G7Core);
+  initUrlAPI(G7Core);
+  initThumbnailAPI(G7Core);
   initLocaleAPI(G7Core, deps);
   initToastAPI(G7Core);
   initModalAPI(G7Core);
@@ -4345,7 +4519,7 @@ export function initDevToolsInterface(): void {
     trackComputedProperty: (name, expression, dependencies, value, computationTime, componentId, error) => {
       try {
         if (getDevTools().isEnabled()) {
-          getDevTools().trackComputedProperty(name, expression, dependencies as any, value, computationTime, componentId, error);
+          getDevTools().trackComputedProperty(name, expression, dependencies, value, computationTime, componentId, error);
         }
       } catch (e) {
         // DevTools 추적 실패해도 실행은 계속
@@ -4355,7 +4529,7 @@ export function initDevToolsInterface(): void {
     trackComputedRecalc: (computedName, trigger, previousValue, newValue, computationTime, triggeredBy, componentId) => {
       try {
         if (getDevTools().isEnabled()) {
-          getDevTools().trackComputedRecalc(computedName, trigger as any, previousValue, newValue, computationTime, triggeredBy as any, componentId);
+          getDevTools().trackComputedRecalc(computedName, trigger, previousValue, newValue, computationTime, triggeredBy, componentId);
         }
       } catch (e) {
         // DevTools 추적 실패해도 실행은 계속

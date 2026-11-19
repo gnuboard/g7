@@ -5,7 +5,7 @@
         "ko": "Hello 사용자 템플릿",
         "en": "Hello User Template"
     },
-    "version": "0.2.5",
+    "version": "0.3.0",
     "license": "MIT",
     "description": {
         "ko": "학습용 최소 샘플 사용자 템플릿 (Basic 8개 컴포넌트)",
@@ -23,7 +23,7 @@
         "url": "https://gnuboard.com"
     },
     "release_date": "2026-11-01",
-    "g7_version": ">=7.1.1",
+    "g7_version": ">=7.2.0",
     "dependencies": {
         "modules": {
             "gnuboard7-hello_module": ">=0.2.0"
@@ -33,7 +33,9 @@
     "github_url": "https://github.com/gnuboard/g7-template-gnuboard7-hello_user_template",
     "github_changelog_url": "https://github.com/gnuboard/g7-template-gnuboard7-hello_user_template/blob/main/CHANGELOG.md",
     "assets": {
-        "css": [],
+        "css": [
+            "dist/css/components.css"
+        ],
         "js": [
             "dist/js/components.iife.js"
         ],
@@ -54,6 +56,7 @@
         "composite": [],
         "layout": []
     },
+    "expose": ["scroll_restoration", "errorHandling", "error_config"],
     "error_config": {
         "layouts": {
             "401": "errors/401",
@@ -64,6 +67,13 @@
             "maintenance": "errors/maintenance"
         }
     },
+    "extension_css_overrides": [
+        {
+            "target": "gnuboard7-hello_module",
+            "targetVersion": "^0.3",
+            "path": "dist/css/overrides/gnuboard7-hello_module.css"
+        }
+    ],
     "externals": [
         {
             "id": "fontawesome",
@@ -72,6 +82,7 @@
         }
     ],
     "features": {
+        "color_scheme": { "strategy": "none" },
         "dark_mode": false,
         "responsive": false,
         "multi_language": true,

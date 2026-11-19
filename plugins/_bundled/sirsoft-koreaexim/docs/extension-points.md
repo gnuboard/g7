@@ -10,7 +10,7 @@
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
 | `sirsoft-koreaexim.notification.extract_data` | filter | 실패 알림 변수 | 선언 (호출 위치 미확인) |
-| `sirsoft-koreaexim.update.failed` | action | 환율 갱신 실패 | `src/Services/ExchangeRateUpdateService.php:227` |
+| `sirsoft-koreaexim.update.failed` | action | 환율 갱신 실패 | `src/Services/ExchangeRateUpdateService.php:239` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->
@@ -85,13 +85,13 @@ _등록하는 브로드캐스트 채널이 없습니다._
 <!-- @generated:schedules START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 스케줄 | 주기 | 설명 |
 |---|---|---|
-| `sirsoft-koreaexim:update --scheduled` | `30 11 * * *` | 환율 정기 갱신 |
-| `sirsoft-koreaexim:update --scheduled --retry` | `hourly` | 환율 재시도 |
-| `sirsoft-koreaexim:prune-history` | `57 4 * * *` | 환율 이력 정리 |
+| `update-rates` | `30 11 * * *` | 환율 정기 갱신 |
+| `retry-rates` | `0 * * * *` | 환율 갱신 재시도 |
+| `prune-history` | `57 4 * * *` | 환율 이력 정리 |
 <!-- @generated:schedules END -->
 
 <!-- @intent START -->
-KST 갱신 시각을 사이트 스케줄 시간대로 바꿉니다. 요일은 날짜가 밀릴 수 있으므로 cron이 아닌 실행 서비스에서 KST로 판정합니다. 재시도는 매시간 조건을 검사하고 조건 미충족이면 이력을 만들지 않습니다.
+정기 갱신(`update-rates`)은 한국시간(Asia/Seoul) 11:30 고정 선언이고, 운영자는 관리자 > 스케줄 관리에서 시각을 바꿉니다(바꾼 값은 갱신 뒤에도 보존). 상태 화면의 다음 실행 시각과 재시도 시작 시각은 `UpdateScheduleResolver` 가 이 행의 cron 으로 계산하며, 행이 없으면 선언 기본값을 씁니다. 요일은 날짜가 밀릴 수 있으므로 cron이 아닌 실행 서비스에서 KST로 판정합니다(플러그인 설정 `run_days`). 재시도는 매시간 조건을 검사하고, 그날 정기 갱신 시각이 지나기 전이거나 조건 미충족이면 이력을 만들지 않습니다.
 <!-- @intent END -->
 
 ## 알림 정의

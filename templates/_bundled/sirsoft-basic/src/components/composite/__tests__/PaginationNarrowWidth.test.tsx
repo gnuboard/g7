@@ -11,19 +11,33 @@ import { Pagination } from '../Pagination';
  * 번호 목록이 이미 첫 쪽과 마지막 쪽을 품고 있어(축약 시에도 1 과 마지막 쪽을 남긴다) 좁은 화면에서는
  * 숨겨도 갈 수 있는 쪽이 줄지 않는다. 그래도 넘치면 줄을 바꿔 칸 밖으로 나가지 않게 한다.
  *
- * @scenario viewport=narrow
- * @effects pagination_fits_narrow_width
+ * 조합 요약(마커 아님, 평문): viewport=narrow
+ * 효과 요약(마커 아님, 평문): pagination_fits_narrow_width
  */
 describe('Pagination — 좁은 화면에서 칸 밖으로 넘치지 않는다', () => {
   // @scenario viewport=narrow
   // @effects pagination_fits_narrow_width
   it('맨 앞·맨 끝 쪽 버튼은 좁은 화면에서 숨고 sm 이상에서 보인다', () => {
-    render(<Pagination currentPage={1} totalPages={7} showFirstLast onPageChange={vi.fn()} />);
-
-    for (const label of ['첫 페이지', '마지막 페이지']) {
-      const button = screen.getByLabelText(label);
-      expect(button.className).toContain('hidden');
-      expect(button.className).toContain('sm:inline-block');
+    // 폭은 엔진 폭(편집기 미리보기에서는 기기 폭)으로 고른다 — Tailwind 반응형 접두를 쓰지 않는다
+    const saved = (window as any).G7Core;
+    const classesAt = (width: number) => {
+      (window as any).G7Core = { ...(saved ?? {}), useResponsive: () => ({ width }) };
+      const { unmount } = render(<Pagination currentPage={1} totalPages={7} showFirstLast onPageChange={vi.fn()} />);
+      const result = ['첫 페이지', '마지막 페이지'].map((label) => screen.getByLabelText(label).className.split(/\s+/));
+      unmount();
+      return result;
+    };
+    try {
+      for (const tokens of classesAt(390)) {
+        expect(tokens).toContain('hidden');
+        expect(tokens).not.toContain('inline-block');
+      }
+      for (const tokens of classesAt(640)) {
+        expect(tokens).toContain('inline-block');
+        expect(tokens).not.toContain('hidden');
+      }
+    } finally {
+      (window as any).G7Core = saved;
     }
   });
 

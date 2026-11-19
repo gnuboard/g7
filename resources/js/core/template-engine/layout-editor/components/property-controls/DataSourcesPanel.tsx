@@ -52,8 +52,6 @@ import {
   friendlyDataSourceName,
   dataSourceExtensionBadge,
 } from '../../spec/candidatePools';
-import { buildActionContextCandidates } from '../../spec/bindingCandidates';
-import type { BindingCandidate } from '../../spec/bindingCandidates';
 
 /** data_source 한 건(편집기 표시용 — 임의 추가 필드 보존). */
 export type DataSourceEntry = Record<string, unknown> & { id?: unknown };
@@ -476,6 +474,7 @@ function DsErrorActionEditor({
   pools,
   t,
   onPatch,
+  onClear,
 }: {
   code: string;
   action: Record<string, unknown> | Record<string, unknown>[] | undefined;
@@ -483,6 +482,8 @@ function DsErrorActionEditor({
   pools: ActionParamCandidatePools;
   t: DataSourcesPanelProps['t'];
   onPatch: (next: Record<string, unknown> | Record<string, unknown>[]) => void;
+  /** 그 코드 키 제거(「설정 안 함」) */
+  onClear: () => void;
 }): React.ReactElement {
   const [codeOpen, setCodeOpen] = React.useState(false);
   const normalized = React.useMemo(() => normalizeActionRecipes(recipes), [recipes]);
@@ -496,7 +497,9 @@ function DsErrorActionEditor({
   const HANDLER_OPTIONS = ['', 'showErrorPage', 'navigate', 'openModal', 'toast', 'setState', 'sequence', 'parallel'];
 
   const setHandler = (h: string): void => {
-    if (h === '') { onPatch({}); return; }
+    // 「설정 안 함」은 키 제거 — 빈 동작({})을 남기면 런타임이 그 코드를 「처리됨」으로 보아 onError 와
+    // 상위 기본 처리를 가린다(#869).
+    if (h === '') { onClear(); return; }
     const r = normalized.find((x) => x.id === h);
     onPatch(r ? buildAction(r, {}) : { handler: h });
   };
@@ -1165,8 +1168,8 @@ export function DataSourcesPanel({
                 t={t}
                 mode="local"
                 testIdPrefix="g7le-ds-eh"
-                renderActionList={(code, action, onPatch) => (
-                  <DsErrorActionEditor code={code} action={action} recipes={errorRecipes} pools={actionPools} t={t} onPatch={onPatch} />
+                renderActionList={(code, action, onPatch, onClear) => (
+                  <DsErrorActionEditor code={code} action={action} recipes={errorRecipes} pools={actionPools} t={t} onPatch={onPatch} onClear={onClear} />
                 )}
               />
               <button

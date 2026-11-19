@@ -26,11 +26,18 @@
 템플릿이 화면을 담당하는 그누보드7 의 기본 경계를 가장 짧게 보여주는 예시입니다. 실제 게시판·이커머스
 모듈도 방문자 화면을 갖지 않고 같은 방식으로 템플릿에 맡깁니다.
 
+**확장 화면을 템플릿 모양으로 바꾸는 두 방법**도 하나씩 담았습니다. ① 컴포넌트 대체 — Hello 모듈의
+`MemoCard` 를 `src/components/overrides/gnuboard7-hello_module/MemoCard.tsx` 로 갈아끼우고, 그 모양은 이 템플릿
+스타일시트(`src/styles/main.css` → `dist/css/components.css`)가 싣습니다. ② 확장 CSS 덮기 — 확장 CSS 를 고치지 않고
+`template.json` `extension_css_overrides` 에 선언한 덮기 파일(`src/styles/overrides/gnuboard7-hello_module.css`)로
+Hello 모듈 `/memos` 쪽 제목 색을 바꿉니다. 둘 다 대상 모듈 버전 범위(`^0.3`)를 선언하고, 범위를 벗어나면 빠져서
+모듈 원래 모양으로 돌아옵니다. 스타일시트는 모두 Tailwind 없이 손으로 쓴 순수 CSS 입니다.
+
 `manifest.hidden = true` 라 관리자 UI 의 템플릿 목록에 나타나지 않습니다. artisan CLI 로는
 정상 설치·활성화됩니다.
 
 **의도적으로 하지 않는 것**: 실제 사이트 화면 · composite/layout 컴포넌트 · 액션 핸들러 ·
-SEO 설정 · 확장 오버라이드. `sirsoft-basic` 이 컴포넌트 79개와 레이아웃 166개를 갖는 것과
+SEO 설정 · 레이아웃 확장 오버라이드(`extensions/{확장}/`). `sirsoft-basic` 이 컴포넌트 79개와 레이아웃 166개를 갖는 것과
 나란히 보면 무엇이 필수이고 무엇이 그 템플릿의 선택인지 드러납니다.
 <!-- @intent END -->
 
@@ -105,6 +112,8 @@ SEO 설정 · 확장 오버라이드. `sirsoft-basic` 이 컴포넌트 79개와 
 | 제공 컴포넌트 | Basic 8개. 다른 확장이 조각을 끼워 넣을 때 **여기 있는 것만** 쓸 수 있습니다 |
 | 레이아웃 | 8개(베이스 1 + 홈 1 + 오류 6). 모듈이 `layout_extensions` 로 조각을 끼울 자리는 홈뿐입니다 |
 | 확장 오버라이드 | 없음. `extensions/{확장}/` 에 같은 이름의 조각을 두면 그 확장이 제공한 원본을 대체합니다 |
+| 확장 컴포넌트 대체 | 1개 — Hello 모듈 `MemoCard` (`components.json` `overrides`, `targetVersion ^0.3`) |
+| 확장 CSS 덮기 | 1개 — Hello 모듈 (`template.json` `extension_css_overrides`, `targetVersion ^0.3`). 모든 확장 CSS 뒤에 실린다 |
 | 전용 핸들러 | 없음 |
 
 **데이터소스가 이 템플릿의 실질적인 확장점**입니다. 홈 화면이 학습용 모듈의 API 를 호출하듯,
@@ -120,7 +129,9 @@ User 템플릿은 자기가 그리고 싶은 화면에 필요한 API 를 `data_s
 - [ ] `_bundled` 에서만 수정하고 `php artisan template:update gnuboard7-hello_user_template --force` 로 반영
 - [ ] manifest version 상향 시 `package.json` · `package-lock.json` 동기화 + CHANGELOG 기재
 - [ ] `template.json` 의 `assets` 경로는 실제 산출물을 가리켜야 한다 — 없는 경로를 선언하면 검색엔진용(봇) 화면이 404 를 가리키는 `<link>` 를 싣고, 일반 화면에는 흔적이 남지 않는다
-- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만. 이 템플릿 스타일시트는 메모 카드 대체본 모양만 담으므로, 레이아웃에 새 클래스를 쓰면 `src/styles/main.css` 에 정의를 더하고 빌드한다
+- [ ] 스타일시트(`src/styles/**`)를 고쳤다면 `template:build --production` 으로 `dist/css/` 를 다시 굽는다 — `template.json` `assets.css` 와 `extension_css_overrides[].path` 는 그 산출 경로를 가리킨다
+- [ ] Hello 모듈을 대상 범위 밖 버전으로 올릴 때는 `components.json` `overrides[].targetVersion` 과 `template.json` `extension_css_overrides[].targetVersion` 을 함께 검토한다 — 덮기 파일은 모듈의 `hellomodule-*` 클래스 이름에 기대므로, 이름이 바뀐 판을 겨누면 엉뚱한 곳을 칠한다
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] 오류 레이아웃 6종(401·403·404·500·503·maintenance)이 모두 있는지 확인 — 하나라도 없으면 그 상황에서 백지가 된다
@@ -157,9 +168,9 @@ User 템플릿은 자기가 그리고 싶은 화면에 필요한 API 를 `data_s
 | 종류 | 개수 | 위치 |
 |---|---|---|
 | PHPUnit | 0개 | — |
-| Vitest | 11개 | `vitest.config.ts` |
+| Vitest | 13개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 8개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 9개 | `tests/scenarios` |
 
 ```bash
 # Vitest (확장 디렉토리에서) (PowerShell)

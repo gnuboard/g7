@@ -3,6 +3,8 @@
 namespace Tests\Unit\Installer;
 
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 use Tests\Unit\Installer\Concerns\RunsInstallerSubprocess;
 
@@ -15,7 +17,12 @@ use Tests\Unit\Installer\Concerns\RunsInstallerSubprocess;
  *   DB 작업이 하나라도 끝났거나 DB 작업에서 멈췄으면 종전대로 남긴다.
  *
  * 시나리오 SSoT: tests/scenarios/extension-cross-type-order.yaml
+ *
+ * 문구 모집단을 인스톨러 lang 폴더에서 재귀로 모아 `require` 한다 — 파일명이 변수라 BASE_PATH 정의 여부를
+ * 정적으로 판정할 수 없으므로 클래스를 따로 돌린다.
  */
+#[RunClassInSeparateProcess]
+#[PreserveGlobalState(false)]
 class InstallerResetDbNoticeTest extends TestCase
 {
     use RunsInstallerSubprocess;
@@ -137,8 +144,13 @@ class InstallerResetDbNoticeTest extends TestCase
     private function dbNoticeTexts(): array
     {
         $texts = [];
-        foreach (glob(dirname(__DIR__, 3).'/public/install/lang/*.php') ?: [] as $file) {
-            $lang = require $file;
+        // 모집단은 재귀로 만든다 — 로케일 폴더가 하위 폴더로 나뉘어도 문구 하나가 조용히 빠지지 않는다.
+        $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(dirname(__DIR__, 3).'/public/install/lang', \FilesystemIterator::SKIP_DOTS));
+        foreach ($files as $entry) {
+            if ($entry->getExtension() !== 'php') {
+                continue;
+            }
+            $lang = require $entry->getPathname();
             if (is_array($lang) && isset($lang['state_reset_db_notice'])) {
                 $texts[] = (string) $lang['state_reset_db_notice'];
             }

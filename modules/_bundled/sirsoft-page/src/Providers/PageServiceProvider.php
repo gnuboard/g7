@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Page\Providers;
 
+use App\Extension\AbstractModule;
 use App\Extension\BaseModuleServiceProvider;
 use App\Seo\SitemapGenerator;
 use App\Support\ContentMedia\ContentMediaRegistrar;
@@ -35,9 +36,20 @@ class PageServiceProvider extends BaseModuleServiceProvider
      *
      * @var array<int, class-string>
      */
-    protected array $storageServices = [
-        PageAttachmentService::class,
-        PageContentMediaFlow::class,
+    protected array $storageServices = [];
+
+    /**
+     * 비공개 첨부 저장소를 따르는 서비스 (#916)
+     *
+     * 페이지 첨부·본문 미디어는 권한 확인 뒤 서버가 내려주는 원본이라 관리자가 고른 「비공개 첨부 저장소」 디스크
+     * (「기본」이면 `modules`)에 저장한다. 기존 행은 행 disk 로 서빙·삭제한다. 설정 파일·공개 이미지 폴백은
+     * `getStorageDisk()` 를 그대로 따른다.
+     *
+     * @var array<class-string, string>
+     */
+    protected array $storageCategoryServices = [
+        PageAttachmentService::class => AbstractModule::PRIVATE_ATTACHMENT_BINDING,
+        PageContentMediaFlow::class => AbstractModule::PRIVATE_ATTACHMENT_BINDING,
     ];
 
     /**

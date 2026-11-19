@@ -46,7 +46,7 @@ const isNode = (x) =>
     !!x && typeof x === 'object' && !Array.isArray(x) && typeof x.name === 'string' && Boolean(x.type || x.props || x.children);
 const classOf = (n) => String(n?.props?.className ?? '');
 const isCtrl = (n) => isNode(n) && CTRL.has(n.name) && n.props?.type !== 'hidden' && !/\bsr-only\b/.test(classOf(n));
-const isLabelEl = (n) => isNode(n) && (n.name === 'Label' || /\b(form-label|filter-label|text-heading)\b/.test(classOf(n)));
+const isLabelEl = (n) => isNode(n) && (n.name === 'Label' || /\b(form-label|filter-field-label|filter-label|text-heading)\b/.test(classOf(n)));
 const kidsOf = (n) => (Array.isArray(n?.children) ? n.children.filter(isNode) : []);
 const deep = (n, pred) => isNode(n) && (pred(n) || kidsOf(n).some((c) => deep(c, pred)));
 const hasText = (n) =>
@@ -374,12 +374,15 @@ describe('게시판 — 입력칸 접근 가능한 이름 (#757)', () => {
     /**
      * 사용자 화면에 주입되는 조각 — 이름 없는 칸이 0 개다.
      *
+     * 지금은 이 면에 칸을 가진 조각이 없다. 이 면으로 잡히던 유일한 조각(회원 폼의 알림 수신 설정)이
+     * 회원 항목 선언으로 바뀌어 사라졌기 때문이다(템플릿의 회원 항목 공용 조각이 그 칸을 그린다).
+     * 조각이 다시 생기면 같은 규칙으로 잠기도록 판정은 남긴다.
+     *
      * @scenario surface=user_extension
      * @effects controls_have_accessible_name
      */
     it('user_extension: 사용자 화면에 주입되는 조각의 칸이 모두 이름을 갖는다', () => {
         const here = judged.filter((j) => j.surface === 'user_extension');
-        expect(here.length).toBeGreaterThan(0);
         expect(here.filter((j) => !j.named).map((j) => j.label)).toEqual([]);
         // 반복(data-each·<sortable>·셀) 안 칸의 이름 출처에 행 값 {{…}} 이 없으면 행마다 같은 이름으로 읽힌다
         expect(here.filter((j) => j.rowConstant).map((j) => j.label)).toEqual([]);

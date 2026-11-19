@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: |
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#747 |
 #   축(같은 옵션 라인 × 배송정책 × 계기 × 행 데이터)의 전 조합은 108 개다. 배분은 한 메서드
 #   (OrderAdjustmentService::allocateRecalcToRows)가 하고 배송 행 쓰기는 한 서비스(OrderShippingAmountWriter)가
 #   하므로, 계기마다 대표 조합과 어긋남·레거시·병합 경로를 메서드 하나씩 못박는다. effects 축은 면제하지 않는다.

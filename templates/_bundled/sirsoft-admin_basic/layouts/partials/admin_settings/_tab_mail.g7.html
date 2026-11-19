@@ -6,7 +6,8 @@
       <h3 class="card-title">{{_local.form?.mail?.mailer === 'mailgun' ? '$t:admin.settings.mail.mailgun_settings' : (_local.form?.mail?.mailer === 'ses' ? '$t:admin.settings.mail.ses_settings' : '$t:admin.settings.mail.smtp_settings')}}</h3>
       <div class="card-description">{{_local.form?.mail?.mailer === 'mailgun' ? '$t:admin.settings.mail.mailgun_settings_desc' : (_local.form?.mail?.mailer === 'ses' ? '$t:admin.settings.mail.ses_settings_desc' : '$t:admin.settings.mail.smtp_settings_desc')}}</div>
       <div class="row-stack">
-        <div data-ref="field_mailer_row" class="grid-2col-responsive">
+        <div data-ref="field_mailer_row" class="grid grid-cols-1 gap-4">
+          <responsive on="768-" class="grid grid-cols-2 gap-4"/>
           <div data-ref="field_mailer">
             <label class="form-label">
               <span>$t:admin.settings.mail.mailer</span>
@@ -22,7 +23,8 @@
           </div>
         </div>
         <div data-ref="smtp_settings_fields" data-if="{{settings !== undefined &amp;&amp; (!_local.form?.mail?.mailer || _local.form?.mail?.mailer === 'smtp')}}" class="row-stack">
-          <div class="grid-2col-responsive">
+          <div class="grid grid-cols-1 gap-4">
+            <responsive on="768-" class="grid grid-cols-2 gap-4"/>
             <div data-ref="field_encryption">
               <label class="form-label">$t:admin.settings.mail.encryption</label>
               <select name="mail.encryption" class="w-full" disabled="{{_computed.isReadOnly}}" placeholder="$t:admin.settings.mail.select_encryption" error="{{_local.errors?.['mail.encryption']?.[0] ?? ''}}">
@@ -43,7 +45,8 @@
               <span data-if="{{_local.errors?.['mail.host']}}" class="form-error">{{_local.errors?.['mail.host']?.[0] ?? ''}}</span>
             </div>
           </div>
-          <div class="grid-2col-responsive">
+          <div class="grid grid-cols-1 gap-4">
+            <responsive on="768-" class="grid grid-cols-2 gap-4"/>
             <div data-ref="field_port">
               <label class="form-label">
                 <span>$t:admin.settings.mail.port</span>
@@ -70,7 +73,8 @@
           </div>
         </div>
         <div data-ref="mailgun_settings_fields" data-if="{{_local.form?.mail?.mailer === 'mailgun'}}" class="row-stack">
-          <div class="grid-2col-responsive">
+          <div class="grid grid-cols-1 gap-4">
+            <responsive on="768-" class="grid grid-cols-2 gap-4"/>
             <div data-ref="field_mailgun_domain">
               <label class="form-label">
                 <span>$t:admin.settings.mail.mailgun_domain</span>
@@ -99,7 +103,8 @@
           </div>
         </div>
         <div data-ref="ses_settings_fields" data-if="{{_local.form?.mail?.mailer === 'ses'}}" class="row-stack">
-          <div class="grid-2col-responsive">
+          <div class="grid grid-cols-1 gap-4">
+            <responsive on="768-" class="grid grid-cols-2 gap-4"/>
             <div data-ref="field_ses_key">
               <label class="form-label">
                 <span>$t:admin.settings.mail.ses_key</span>
@@ -140,7 +145,8 @@
         </div>
         <div data-ref="common_mail_fields">
           <div>
-            <div class="grid-2col-responsive">
+            <div class="grid grid-cols-1 gap-4">
+              <responsive on="768-" class="grid grid-cols-2 gap-4"/>
               <div data-ref="field_from_address">
                 <label class="form-label">
                   <span>$t:admin.settings.mail.from_address</span>
@@ -167,7 +173,8 @@
     <div data-ref="card_test_mail" class="admin-card">
       <h3 class="card-title">$t:admin.settings.mail.test_mail</h3>
       <div class="card-description">$t:admin.settings.mail.test_mail_desc</div>
-      <div class="flex flex-col gap-2 sm:flex-row">
+      <div class="flex flex-col gap-2">
+        <responsive on="640-" class="flex gap-2 flex-row"/>
         <input type="email" name="mail.test_email" placeholder="$t:admin.settings.mail.test_email_placeholder" disabled="{{_computed.isReadOnly}}" class="input flex-1"/>
         <button type="button" data-ref="test_mail_button" disabled="{{_computed.isReadOnly || _local.isSendingTest}}" class="flex-center justify-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white dark:text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
           <on type="click">

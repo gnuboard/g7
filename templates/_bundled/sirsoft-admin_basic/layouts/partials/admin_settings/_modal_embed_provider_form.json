@@ -1,5 +1,5 @@
 {
-    "comment": "e2e:allow 커밋 전 점검 후속(2026-11-09) — 편집기 정적 라벨(editor_label)과 입력 변경 동작 설명 주석만 더했다. 굽기 JSON 은 meta·comment 외 무변경. 창 동작은 5단계 브라우저 실측분 그대로.\n  외부 영상 서비스 추가·수정 겸용 창 (#883) —본문 콘텐츠 탭의 「서비스 추가」와 각 행의 「수정」이 연다. 어느 쪽인지는\n  전역 `embed_provider_form_modal.row_index` 로 갈린다(null = 추가, 숫자 = 그 행 수정).\n\n  이 창은 서버에 저장하지 않는다 — 서비스 목록은 설정 폼의 한 배열이고, 저장은 화면 하단 「저장」이 본문 콘텐츠 탭 전체를 보낸다.\n  형식 검사(https·{id} 한 번·호스트 * 자리·이 사이트 주소 금지·식별자 중복)는 저장할 때 서버가 하고, 여기서는 빈 칸만 막는다.\n  「예시 주소 확인」은 저장 때와 같은 서버 컴파일 규칙으로 꺼낸 id 와 만들어질 플레이어 주소를 보여 준다(저장하지 않음).\n\n  적용은 IP 접근 제한 규칙 창과 같이 폼에 두 번 쓴다 — 저장이 읽는 자리(`_local.form…`, target global)와 화면이 읽는 자리\n  (`$parent._local…`). 한쪽만 쓰면 표에는 보이는데 저장 본문에 실리지 않는다. 단추는 본문 맨 아래 줄에 둔다(고정 하단은 창을 연\n  시점의 상태를 읽는다).",
+    "comment": "e2e:allow 브라우저 실측(2026-11-11) — 「예시 주소 확인」 단추가 응답 전 잠기고 회전 표시를 보이며 422 와 200 양쪽에서 풀림, 경고 띠와 그리드 간격 16px(빈 칸 안내가 뜨면 12px + 16px), 768px 에서 2열과 767px 에서 1열을 화면에서 쟀다.\n  외부 영상 서비스 추가·수정 겸용 창 (#883) —본문 콘텐츠 탭의 「서비스 추가」와 각 행의 「수정」이 연다. 어느 쪽인지는\n  전역 `embed_provider_form_modal.row_index` 로 갈린다(null = 추가, 숫자 = 그 행 수정).\n\n  이 창은 서버에 저장하지 않는다 — 서비스 목록은 설정 폼의 한 배열이고, 저장은 화면 하단 「저장」이 본문 콘텐츠 탭 전체를 보낸다.\n  형식 검사(https·{id} 한 번·호스트 * 자리·이 사이트 주소 금지·식별자 중복)는 저장할 때 서버가 하고, 여기서는 빈 칸만 막는다.\n  「예시 주소 확인」은 저장 때와 같은 서버 컴파일 규칙으로 꺼낸 id 와 만들어질 플레이어 주소를 보여 준다(저장하지 않음).\n\n  적용은 IP 접근 제한 규칙 창과 같이 폼에 두 번 쓴다 — 저장이 읽는 자리(`_local.form…`, target global)와 화면이 읽는 자리\n  (`$parent._local…`). 한쪽만 쓰면 표에는 보이는데 저장 본문에 실리지 않는다. 단추는 본문 맨 아래 줄에 둔다(고정 하단은 창을 연\n  시점의 상태를 읽는다).",
     "meta": {
         "is_partial": true,
         "description": "환경설정 > 본문 콘텐츠 탭 외부 영상 서비스 추가·수정 모달. _global.embed_provider_form_modal 단일 진실",
@@ -21,11 +21,12 @@
             },
             "children": [
                 {
+                    "comment": "경고 띠 바로 아래가 2열 그리드일 때 띠와 그리드 사이를 띄운다(빈 칸 안내가 뜨면 그 안내가 사이에 끼므로 안내 쪽이 띄운다)",
                     "id": "embed_provider_trust_notice",
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "alert-warning"
+                        "className": "alert-warning {{!!_global.embed_provider_form_modal?.error ? '' : 'mb-4'}}"
                     },
                     "children": [
                         {
@@ -44,7 +45,7 @@
                     "name": "Div",
                     "if": "{{!!_global.embed_provider_form_modal?.error}}",
                     "props": {
-                        "className": "alert-danger"
+                        "className": "alert-danger mb-4"
                     },
                     "children": [
                         {
@@ -60,8 +61,15 @@
                 {
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "grid grid-cols-2 gap-4"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "grid-2col-responsive"
+                        "className": "grid grid-cols-1 gap-4"
                     },
                     "children": [
                         {
@@ -243,8 +251,15 @@
                 {
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "grid grid-cols-2 gap-4"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "grid-2col-responsive"
+                        "className": "grid grid-cols-1 gap-4"
                     },
                     "children": [
                         {
@@ -450,6 +465,7 @@
                                     }
                                 },
                                 {
+                                    "comment": "확인은 서버 왕복이라 응답이 올 때까지 단추를 잠그고 돌린다 — 없으면 연타가 그대로 여러 번의 호출이 되고 늦게 온 응답이 결과를 덮는다. 플래그는 창 상태(전역)에 두어 창을 다시 열면 함께 비워지고, 성공·실패 양쪽에서 끈다.",
                                     "id": "embed_provider_sample_check",
                                     "type": "basic",
                                     "name": "Button",
@@ -457,34 +473,59 @@
                                         {
                                             "comment": "예시 주소 확인 — 저장 때와 같은 서버 컴파일 규칙으로 꺼낸 id·플레이어 주소를 받는다(저장하지 않음)",
                                             "type": "click",
-                                            "handler": "apiCall",
-                                            "target": "/api/admin/settings/content/embed-preview",
-                                            "auth_required": true,
-                                            "params": {
-                                                "method": "POST",
-                                                "body": "{{({ provider: { url_patterns: (_global.embed_provider_form_modal?.form?.url_patterns_text ?? '').split('\\n').map((l) => l.trim()).filter((l) => l !== ''), player_url: (_global.embed_provider_form_modal?.form?.player_url ?? '').trim(), id_rule: _global.embed_provider_form_modal?.form?.id_rule ?? 'alnum_dash' }, sample_url: (_global.embed_provider_form_modal?.sample_url ?? '').trim() })}}"
-                                            },
-                                            "onSuccess": {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "embed_provider_form_modal.preview": "{{response.data}}"
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "global",
+                                                        "embed_provider_form_modal.previewing": true
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "apiCall",
+                                                    "target": "/api/admin/settings/content/embed-preview",
+                                                    "auth_required": true,
+                                                    "params": {
+                                                        "method": "POST",
+                                                        "body": "{{({ provider: { url_patterns: (_global.embed_provider_form_modal?.form?.url_patterns_text ?? '').split('\\n').map((l) => l.trim()).filter((l) => l !== ''), player_url: (_global.embed_provider_form_modal?.form?.player_url ?? '').trim(), id_rule: _global.embed_provider_form_modal?.form?.id_rule ?? 'alnum_dash' }, sample_url: (_global.embed_provider_form_modal?.sample_url ?? '').trim() })}}"
+                                                    },
+                                                    "onSuccess": {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "embed_provider_form_modal.previewing": false,
+                                                            "embed_provider_form_modal.preview": "{{response.data}}"
+                                                        }
+                                                    },
+                                                    "onError": {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "global",
+                                                            "embed_provider_form_modal.previewing": false,
+                                                            "embed_provider_form_modal.preview": "{{({ matched: false, id: null, player_url: null, errors: error.errors ?? {} })}}"
+                                                        }
+                                                    }
                                                 }
-                                            },
-                                            "onError": {
-                                                "handler": "setState",
-                                                "params": {
-                                                    "target": "global",
-                                                    "embed_provider_form_modal.preview": "{{({ matched: false, id: null, player_url: null, errors: error.errors ?? {} })}}"
-                                                }
-                                            }
+                                            ]
                                         }
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "px-3 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                                        "disabled": "{{_global.embed_provider_form_modal?.previewing === true}}",
+                                        "className": "flex-center gap-2 px-3 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                                     },
                                     "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "if": "{{_global.embed_provider_form_modal?.previewing === true}}",
+                                            "props": {
+                                                "name": "spinner",
+                                                "className": "animate-spin",
+                                                "size": "sm"
+                                            }
+                                        },
                                         {
                                             "type": "basic",
                                             "name": "Span",

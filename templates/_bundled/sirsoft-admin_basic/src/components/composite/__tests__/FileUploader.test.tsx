@@ -529,7 +529,9 @@ describe('FileUploader - 좁은 칸 크기(size)의 첨부 목록', () => {
     const grid = container.querySelector('.grid') as HTMLElement;
     const footer = container.querySelector('.border-t') as HTMLElement;
 
-    expect(grid.className).toContain('lg:grid-cols-5');
+    // 렌더 폭(jsdom 창 1024px) → 5열. 접두 클래스 대신 폭으로 고른 클래스 하나다(폭별 값은 ComponentWidthClasses.test.tsx)
+    expect(grid.className).toContain('grid-cols-5');
+    expect(grid.className).not.toMatch(/(sm|md|lg):grid-cols-/);
     expect(footer.className).toContain('justify-between');
   });
 });

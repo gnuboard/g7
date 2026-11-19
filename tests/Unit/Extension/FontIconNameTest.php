@@ -21,7 +21,7 @@ use Tests\TestCase;
  *
  * 소유 시나리오: `font-icon-names`
  *
- * @effects font_icon_names_resolve_to_a_glyph
+ * 효과 요약(마커 아님 — 평문): font_icon_names_resolve_to_a_glyph
  */
 class FontIconNameTest extends TestCase
 {

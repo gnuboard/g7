@@ -1,0 +1,19 @@
+feature: 관리자 템플릿과 번들 확장 레이아웃 전수 — 클릭을 받는 비대화형 노드는 키보드로도 같은 일을 한다
+
+description: |
+  클릭 동작만 달린 div, span, li, tr, td, img 는 Tab 이 닿지 않고 Enter, Space 로 눌리지 않는다(#869, 설계 확정 2026-11-08,
+  키보드 접근 전부 고침). 그 노드에 role, tabindex, 키 이벤트를 주거나, 같은 일을 하는 키보드 수단을 안에 둔다 — 덮개(같은
+  상태를 쓰는 단추가 같은 파일에 있음), 같은 일의 라디오, `aria-expanded` 펼침 단추, 자기 동작 없이 눌림을 올려 보내는
+  `aria-expanded`·`aria-pressed` 대리 단추, 같은 상태를 쓰는 주소 링크. 사용자 템플릿은 sirsoft-basic 의
+  click-only-keyboard 시험이 같은 판정을 잠근다. 결제 실패 이력의 대리 펼치기 단추는 focus-visible 고리를 준다.
+
+# axis 의미:
+#   surface — 검사 모집단(관리자 템플릿 레이아웃, 모듈과 플러그인 레이아웃·확장 조각).
+axes:
+  surface: [admin_and_extension_layouts]
+
+effects:
+  - click_only_regions_have_keyboard_path   # 클릭만 받고 키보드로는 닿지 않는 노드가 없다
+
+test_files:
+  - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/clickOnlyKeyboardAccess.test.ts

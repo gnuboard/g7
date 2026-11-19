@@ -9,6 +9,9 @@
  * 컴포넌트는 로그아웃 요청을 코어 `G7Core.api` 로 보내고 토큰 첨부를 코어에 맡긴다. 그래서 이 테스트는
  * 실제 코어 ApiClient 를 `G7Core.api` 로 세우고, 전송 직전 요청(최종 주소·헤더)을 어댑터에서 가로채
  * 판정한다. XSRF 헤더는 axios 가 동일 출처 요청에만 붙이며(브라우저 어댑터 단계), 여기서는 Bearer 만 잰다.
+ *
+ * 7.2.0: 서버가 로그아웃 응답 `data.redirect_url`(외부 인증의 IdP 로그아웃 등 — 같은 출처 경로)을 주면 그 경로로 간다.
+ * 같은 출처가 아닌 값은 따르지 않는다(코어 `AuthManager.logout()` 과 같은 규칙).
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
@@ -29,7 +32,7 @@ interface SentRequest {
  * @param sent 가로챈 요청을 쌓을 배열
  * @return 코어 ApiClient
  */
-function createCapturingCoreApi(sent: SentRequest[]): ApiClient {
+function createCapturingCoreApi(sent: SentRequest[], body: Record<string, unknown> = { success: true }): ApiClient {
   const client = new ApiClient();
   const instance = client.getInstance();
   instance.defaults.adapter = async (config: any) => {
@@ -41,14 +44,14 @@ function createCapturingCoreApi(sent: SentRequest[]): ApiClient {
       origin: new URL(full, `${window.location.origin}/`).origin,
       headers,
     });
-    return { data: { success: true }, status: 200, statusText: 'OK', headers: {}, config, request: {} };
+    return { data: body, status: 200, statusText: 'OK', headers: {}, config, request: {} };
   };
   return client;
 }
 
 const ORIGIN = 'http://localhost:3000';
 
-const mockUser: User = { name: 'John Doe', email: 'john@example.com', role: 'Administrator' };
+const mockUser: User = { id: 1, name: 'John Doe', email: 'john@example.com', role: 'Administrator' };
 
 describe('UserProfile — 로그아웃 요청·이동 대상 출처', () => {
   const originalLocation = window.location;
@@ -128,5 +131,30 @@ describe('UserProfile — 로그아웃 요청·이동 대상 출처', () => {
     expect(window.location.href).toBe('/admin/login?reason=logout');
     // 로그아웃 뒤 토큰은 코어 공개 API(removeToken)로 지워진다
     expect(localStorage.getItem('auth_token')).toBeNull();
+  });
+
+  // @scenario sink=user_profile_server_redirect, target=same_origin
+  // @effects server_logout_redirect_same_origin_only
+  // @scenario sink=user_profile_server_redirect, target=cross_origin
+  // @effects server_logout_redirect_same_origin_only
+  // @scenario sink=user_profile_server_redirect, target=none
+  // @effects server_logout_redirect_same_origin_only
+  it('서버 로그아웃 응답의 redirect_url 이 같은 출처 경로면 그리로, 아니거나 없으면 종전 경로로 이동한다', async () => {
+    const cases: Array<[unknown, string]> = [
+      ['/plugins/sirsoft-sso/logout/corp', '/plugins/sirsoft-sso/logout/corp'],
+      ['https://evil.example/logout', '/admin/login'],
+      ['//evil.example/logout', '/admin/login'],
+      ['javascript:alert(1)', '/admin/login'],
+      [null, '/admin/login'],
+    ];
+    for (const [redirectUrl, expected] of cases) {
+      requests.length = 0;
+      window.location.href = `${ORIGIN}/admin`;
+      (window as any).G7Core.api = createCapturingCoreApi(requests, { success: true, data: { redirect_url: redirectUrl } });
+      await logout({});
+
+      expect(requests).toHaveLength(1);
+      expect(window.location.href, String(redirectUrl)).toBe(expected);
+    }
   });
 });

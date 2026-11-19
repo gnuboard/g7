@@ -1,0 +1,37 @@
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#857 이 매니페스트의 조합을 재는 시험은 test_files 의 spec 뿐인데, 그 spec 은 test.describe.skip 상태라(활성화 조건은 spec 머리말) 실행되지 않는다. 건너뛴 시험의 마킹은 커버로 세지 않으므로(docs/testing-guide.md 「describe.skip 인 spec 의 그 축 커버리지는 0」) 조합이 미커버로 남는다. 같은 조합을 재는 다른 실행 시험은 없다(#857 후속 대조). spec 의 skip 을 풀면 이 표식을 걷고 pending_effects 를 effects 로 되돌린다.
+
+feature: 비회원 현금영수증 발급 결과 표시와 결제 통화 금액 정합 (E2E)
+
+description: |
+  2026-08-07 검수 2에서 브라우저 실측으로 확인된 세 결함의 종단 회귀 가드다. 셋 다 오류 로그, 콘솔, 네트워크
+  실패 없이 값만 조용히 어긋나는 형태라 단위 테스트만으로는 화면 도달을 증명하지 못한다.
+
+    1. 비회원 주문상세 응답(GuestOrderResource)에 cash_receipt/cash_receipts 가 없어 발급에 성공해도 카드가
+       "발급된 현금영수증이 없습니다" 로 남고 영수증 URL 에 도달할 수 없었다.
+    2. 관리자 입금확인 모달이 base 통화 금액을 입금액으로 채우는데 서버는 결제 통화 실청구액으로 검증해,
+       base 통화와 결제 통화가 다른 주문은 항상 422 였다.
+    3. 현금영수증 발급액이 base 통화 금액이라 구매자가 실제로 낸 금액과 다른 금액으로 증빙이 발행됐다.
+
+  실행에 현금영수증 발급사, PG 테스트 키, 무통장 결제수단, 비회원 주문 환경변수가 필요해 spec 은 기본
+  test.describe.skip 이다.
+
+# 입력을 바꿔 가며 재는 축은 없다. 시험 하나가 시나리오 하나다 — 각 case 는 spec 의 테스트 하나와 짝이다.
+axes:
+  case:
+    - issue_then_render        # 결함 1: 발급 뒤 카드 즉시 갱신과 영수증 링크
+    - amount_matches_charge    # 결함 1, 3: 비회원 응답 키와 발급 금액 = 결제 통화 실청구액
+    - deposit_confirm_prefill  # 결함 2: 입금확인 기본 입금액이 서버 검증을 통과
+
+effects: []
+
+# 아래 효과는 아직 실행되는 시험이 재지 않는다 — test_files 의 spec 이 test.describe.skip 상태라 건너뛴 시험의 @effects 는
+# 커버가 아니다(#857 후속). spec 의 skip 을 풀면 effects 로 되돌린다.
+pending_effects:
+  - cash_receipt_issued                                   # 비회원 주문상세에서 발급 요청이 200 으로 성공한다
+  - order_detail_reflects_receipt                         # 재조회 없이 카드가 발급완료로 바뀌고 영수증 링크가 노출된다
+  - guest_order_detail_includes_cash_receipt_keys         # 비회원 주문상세 응답에 cash_receipt, cash_receipts 키가 있다
+  - payment_currency_amount_consistent                    # 발급 금액이 결제 통화 실청구액(total_due_charge_amount)과 같다
+  - deposit_confirm_prefill_passes_server_validation      # 입금확인 모달의 기본 입금액으로 첫 시도에 저장된다(422 아님)
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/shop/guest-cash-receipt-issue.spec.ts

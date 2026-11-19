@@ -1,0 +1,19 @@
+feature: 인증 앱 강제 해제 활동 로그의 회원 표시 이름 (#490)
+
+description: |
+  관리자가 회원의 인증 앱을 강제로 해제하면 남는 활동 로그의 회원 이름(`user_name`)은 회원 이름 컬럼이 아니라 그 시점의
+  관리자 영역(`core:admin`) 표시 이름이다. 이미 남은 기록은 바꾸지 않는다. 설정을 바꾸지 않은 사이트는 수정 전과 같은 이름이 남는다.
+
+  축은 하나(`case`)다.
+
+axes:
+  case:
+    - activity_log_nickname_admin_area
+    - activity_log_default_site
+
+effects:
+  - activity_log_user_name_is_admin_area_name
+  - activity_log_user_name_unchanged_on_default_site
+
+test_files:
+  - plugins/_bundled/sirsoft-totp/tests/Feature/MemberDisplayNameTest.php

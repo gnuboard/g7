@@ -52,6 +52,11 @@ class TemplateArtisanCommandsTest extends TestCase
     use ProtectsExtensionDirectories;
     use RefreshDatabase;
 
+    /**
+     * 활성 확장 디렉토리를 보호하고 템플릿 디렉토리를 스캔합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -64,6 +69,11 @@ class TemplateArtisanCommandsTest extends TestCase
         $templateManager->loadTemplates();
     }
 
+    /**
+     * 활성 확장 디렉토리 보호를 풉니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         $this->tearDownExtensionProtection();
@@ -80,6 +90,12 @@ class TemplateArtisanCommandsTest extends TestCase
      * template:install 커맨드가 존재하지 않는 템플릿에 대해 실패하는지 테스트
      *
      * 이 테스트는 DDL을 유발하지 않음 (템플릿이 없어서 설치 실행 안 됨)
+     *
+     * @scenario command=install
+     *
+     * @effects template_cli_rejects_missing_target
+     *
+     * @return void 반환값 없음
      */
     public function test_install_command_fails_for_nonexistent_template(): void
     {
@@ -91,6 +107,12 @@ class TemplateArtisanCommandsTest extends TestCase
 
     /**
      * template:activate 커맨드가 미설치 템플릿에 대해 실패하는지 테스트
+     *
+     * @scenario command=activate
+     *
+     * @effects template_cli_rejects_missing_target
+     *
+     * @return void 반환값 없음
      */
     public function test_activate_command_fails_for_uninstalled_template(): void
     {
@@ -102,6 +124,12 @@ class TemplateArtisanCommandsTest extends TestCase
 
     /**
      * template:deactivate 커맨드가 미설치 템플릿에 대해 실패하는지 테스트
+     *
+     * @scenario command=deactivate
+     *
+     * @effects template_cli_rejects_missing_target
+     *
+     * @return void 반환값 없음
      */
     public function test_deactivate_command_fails_for_uninstalled_template(): void
     {
@@ -113,6 +141,12 @@ class TemplateArtisanCommandsTest extends TestCase
 
     /**
      * template:uninstall 커맨드가 미설치 템플릿에 대해 실패하는지 테스트
+     *
+     * @scenario command=uninstall
+     *
+     * @effects template_cli_rejects_missing_target
+     *
+     * @return void 반환값 없음
      */
     public function test_uninstall_command_fails_for_uninstalled_template(): void
     {
@@ -124,6 +158,12 @@ class TemplateArtisanCommandsTest extends TestCase
 
     /**
      * template:cache-clear 커맨드가 존재하지 않는 템플릿에 대해 실패하는지 테스트
+     *
+     * @scenario command=cache_clear
+     *
+     * @effects template_cli_rejects_missing_target
+     *
+     * @return void 반환값 없음
      */
     public function test_cache_clear_command_fails_for_nonexistent_template(): void
     {
@@ -135,6 +175,12 @@ class TemplateArtisanCommandsTest extends TestCase
 
     /**
      * template:list 커맨드가 잘못된 타입에 대해 실패하는지 테스트
+     *
+     * @scenario command=list
+     *
+     * @effects template_cli_rejects_invalid_option
+     *
+     * @return void 반환값 없음
      */
     public function test_list_command_fails_for_invalid_type(): void
     {
@@ -144,6 +190,12 @@ class TemplateArtisanCommandsTest extends TestCase
 
     /**
      * template:list 커맨드가 잘못된 상태에 대해 실패하는지 테스트
+     *
+     * @scenario command=list
+     *
+     * @effects template_cli_rejects_invalid_option
+     *
+     * @return void 반환값 없음
      */
     public function test_list_command_fails_for_invalid_status(): void
     {
@@ -153,6 +205,12 @@ class TemplateArtisanCommandsTest extends TestCase
 
     /**
      * template:check-updates 커맨드가 존재하지 않는 템플릿에 대해 실패하는지 테스트
+     *
+     * @scenario command=check_updates
+     *
+     * @effects template_cli_rejects_missing_target
+     *
+     * @return void 반환값 없음
      */
     public function test_check_updates_fails_for_nonexistent_template(): void
     {
@@ -164,6 +222,12 @@ class TemplateArtisanCommandsTest extends TestCase
 
     /**
      * template:update 커맨드가 미설치 템플릿에 대해 실패하는지 테스트
+     *
+     * @scenario command=update
+     *
+     * @effects template_cli_rejects_missing_target
+     *
+     * @return void 반환값 없음
      */
     public function test_update_fails_for_noninstalled_template(): void
     {
@@ -175,6 +239,12 @@ class TemplateArtisanCommandsTest extends TestCase
 
     /**
      * template:update --force 커맨드가 미설치 템플릿에 대해 실패하는지 테스트
+     *
+     * @scenario command=update
+     *
+     * @effects template_cli_rejects_missing_target
+     *
+     * @return void 반환값 없음
      */
     public function test_update_force_fails_for_noninstalled_template(): void
     {
@@ -186,6 +256,12 @@ class TemplateArtisanCommandsTest extends TestCase
 
     /**
      * template:update 커맨드가 잘못된 레이아웃 전략에 대해 실패하는지 테스트
+     *
+     * @scenario command=update
+     *
+     * @effects template_cli_rejects_invalid_option
+     *
+     * @return void 반환값 없음
      */
     public function test_update_fails_for_invalid_layout_strategy(): void
     {
@@ -202,6 +278,12 @@ class TemplateArtisanCommandsTest extends TestCase
      * 참고: 템플릿 list 커맨드는 파일 시스템에서 템플릿을 스캔하므로
      * 실제 템플릿 파일이 있으면 uninstalled 상태로 표시됩니다.
      * 따라서 --status=installed로 필터링하여 DB에 설치된 템플릿만 조회합니다.
+     *
+     * @scenario command=list
+     *
+     * @effects template_cli_list_reports_empty
+     *
+     * @return void 반환값 없음
      */
     public function test_list_command_shows_message_when_no_templates(): void
     {
@@ -255,6 +337,12 @@ class TemplateArtisanCommandsTest extends TestCase
      * Part 5: 전체 라이프사이클 워크플로우
      *   - install → activate → deactivate → uninstall 순서 실행
      * ─────────────────────────────────────────────────────────────────────
+     *
+     * @scenario command=deactivate
+     *
+     * @effects template_cli_full_lifecycle_workflow
+     *
+     * @return void 반환값 없음
      */
     public function test_z_template_commands_full_workflow(): void
     {
@@ -309,8 +397,14 @@ class TemplateArtisanCommandsTest extends TestCase
         $this->artisan('template:activate', ['identifier' => $identifier])
             ->assertExitCode(1);
 
-        // 템플릿 비활성화 성공
-        $this->artisan('template:deactivate', ['identifier' => $identifier])
+        // 유형의 마지막 활성 템플릿이면 --force 없이 끄지 않는다(설계 확정 2026-11-08) — 다른 활성 관리자 템플릿이 없는 시험 DB
+        if (Template::where('type', 'admin')->where('status', ExtensionStatus::Active->value)->where('identifier', '!=', $identifier)->doesntExist()) {
+            $this->artisan('template:deactivate', ['identifier' => $identifier])->assertExitCode(1);
+            $this->assertDatabaseHas('templates', ['identifier' => $identifier, 'status' => ExtensionStatus::Active->value]);
+        }
+
+        // 템플릿 비활성화 성공 (--force 면 마지막 활성 템플릿도 끈다)
+        $this->artisan('template:deactivate', ['identifier' => $identifier, '--force' => true])
             ->expectsOutput('✅ '.__('templates.commands.deactivate.success', ['template' => $identifier]))
             ->assertExitCode(0);
 
@@ -402,8 +496,8 @@ class TemplateArtisanCommandsTest extends TestCase
             'template:cache-clear(전체) 후 공개 config 캐시가 삭제되어야 합니다.'
         );
 
-        // 비활성화
-        $this->artisan('template:deactivate', ['identifier' => $identifier])
+        // 비활성화 (유형의 마지막 활성 템플릿이라 --force)
+        $this->artisan('template:deactivate', ['identifier' => $identifier, '--force' => true])
             ->assertExitCode(0);
 
         // =====================================================================
@@ -450,8 +544,8 @@ class TemplateArtisanCommandsTest extends TestCase
             'status' => ExtensionStatus::Active->value,
         ]);
 
-        // Deactivate
-        $this->artisan('template:deactivate', ['identifier' => $identifier])
+        // Deactivate (유형의 마지막 활성 템플릿이라 --force)
+        $this->artisan('template:deactivate', ['identifier' => $identifier, '--force' => true])
             ->assertExitCode(0);
 
         $this->assertDatabaseHas('templates', [
@@ -471,6 +565,12 @@ class TemplateArtisanCommandsTest extends TestCase
 
     /**
      * 잘못된 식별자 형식으로 템플릿 설치 시 FAILURE 반환
+     *
+     * @scenario command=install
+     *
+     * @effects template_cli_install_rejects_malformed_identifier
+     *
+     * @return void 반환값 없음
      */
     public function test_install_fails_with_invalid_identifier_format(): void
     {
@@ -480,6 +580,12 @@ class TemplateArtisanCommandsTest extends TestCase
 
     /**
      * 숫자로 시작하는 단어가 포함된 식별자로 템플릿 설치 시 FAILURE 반환
+     *
+     * @scenario command=install
+     *
+     * @effects template_cli_install_rejects_malformed_identifier
+     *
+     * @return void 반환값 없음
      */
     public function test_install_fails_with_digit_starting_identifier(): void
     {
@@ -489,6 +595,12 @@ class TemplateArtisanCommandsTest extends TestCase
 
     /**
      * 특수문자가 포함된 식별자로 템플릿 설치 시 FAILURE 반환
+     *
+     * @scenario command=install
+     *
+     * @effects template_cli_install_rejects_malformed_identifier
+     *
+     * @return void 반환값 없음
      */
     public function test_install_fails_with_special_char_identifier(): void
     {

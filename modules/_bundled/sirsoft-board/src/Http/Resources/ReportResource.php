@@ -6,6 +6,7 @@ use App\Http\Resources\BaseApiResource;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
+use Modules\Sirsoft\Board\Traits\PresentsMemberName;
 
 /**
  * 신고 케이스 API 리소스
@@ -16,6 +17,7 @@ use Modules\Sirsoft\Board\Traits\ChecksBoardPermission;
 class ReportResource extends BaseApiResource
 {
     use ChecksBoardPermission;
+    use PresentsMemberName;
 
     /**
      * 리소스를 배열로 변환합니다.
@@ -93,9 +95,8 @@ class ReportResource extends BaseApiResource
             // 최초 신고자 (첫 번째 로그에서 추출, 목록용)
             'reporter' => $firstLog
                 ? ($firstLog->reporter
-                    ? [
+                    ? $this->boardMemberNameFields($firstLog->reporter, $request) + [
                         'uuid' => $firstLog->reporter->uuid,
-                        'name' => $firstLog->reporter->name,
                         'email' => $this->canExposeMemberEmail(null, $firstLog->reporter->id) ? $firstLog->reporter->email : null,
                         'is_guest' => false,
                     ]
@@ -118,9 +119,8 @@ class ReportResource extends BaseApiResource
 
             // 처리 정보
             'processor' => ($this->processed_by && $this->processor)
-                ? [
+                ? $this->boardMemberNameFields($this->processor, $request) + [
                     'uuid' => $this->processor->uuid,
-                    'name' => $this->processor->name,
                 ]
                 : null,
             'processed_at' => $this->processed_at
@@ -203,9 +203,9 @@ class ReportResource extends BaseApiResource
     private function buildAuthorPayload(array $reportable, array $firstLogSnapshot): array
     {
         if ($this->author_id && $this->author) {
-            return [
+            // 계정이 남은 회원은 지금의 관리자 화면 표시 이름으로 보인다. 신고 당시 이름(스냅샷)은 계정이 없을 때만 쓴다.
+            return $this->boardMemberNameFields($this->author) + [
                 'uuid' => $this->author->uuid,
-                'name' => $this->author->name,
                 'email' => $this->canExposeMemberEmail(null, $this->author->id) ? $this->author->email : null,
                 'is_guest' => false,
             ];

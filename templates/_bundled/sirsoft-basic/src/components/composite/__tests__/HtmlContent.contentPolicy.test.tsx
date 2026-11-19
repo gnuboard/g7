@@ -6,7 +6,6 @@
  *
  * @scenario-manifest templates/_bundled/sirsoft-basic/tests/scenarios/html-content-policy.yaml
  */
-import React from 'react';
 import { render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { HtmlContent } from '../HtmlContent';
@@ -103,7 +102,8 @@ describe('HtmlContent 본문 콘텐츠 규칙', () => {
 
         expect(out).not.toContain('<figcaption');
         expect(out).not.toContain('캡션887');
-        expect(out).toContain('<figure class="image"><img src="/a.png" alt="a"></figure>');
+        // 그림은 캡션 없이 남는다 — 본문 이미지 표시 처리가 링크 밖 이미지에 확대 보기 속성을 덧붙이므로 img 의 나머지 속성은 열어 둔다
+        expect(out).toMatch(/<figure class="image"><img src="\/a\.png" alt="a"[^>]*><\/figure>/);
     });
 
     /**

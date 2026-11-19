@@ -41,7 +41,7 @@ export interface NecessaryAllowlist {
  *
  * 출하 카탈로그 전체를 여기 복사하면 PHP 카탈로그와 두 벌이 되어, 지금 없애려는 드리프트를
  * 그대로 다시 만든다. 그래서 복사하지 않는다: 인라인이 오지 않은 극단 상황에서도 로그인
- * 토큰과 CSRF·동의 쿠키만은 살아 있어야 사이트가 선다.
+ * 토큰과 CSRF·동의 쿠키, 로그인 인계 묶음 쿠키(`g7_login_bind`)만은 살아 있어야 사이트가 선다.
  *
  * 세션 쿠키 이름은 서버 설정(`session.cookie`)이 정하는 런타임 값이라 여기 담을 수 없다.
  * 그 항목이 빠지는 상황에서는 세션 쿠키의 `httpOnly` 기본값이 방어한다.
@@ -49,7 +49,7 @@ export interface NecessaryAllowlist {
 export const LOCKED_FALLBACK: NecessaryAllowlist = {
     localStorage: ['auth_token'],
     sessionStorage: [],
-    cookie: ['XSRF-TOKEN', 'gdpr_session'],
+    cookie: ['XSRF-TOKEN', 'gdpr_session', 'g7_login_bind'],
 };
 
 /**

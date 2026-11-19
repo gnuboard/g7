@@ -26,4 +26,9 @@ return [
             'done' => 'Hello 모듈 시더 실행 완료',
         ],
     ],
+
+    // 확장 썸네일 규격 표시 이름 (환경설정 > 업로드 「썸네일 규격」 표)
+    'thumbnail' => [
+        'sample_preset_label' => 'Hello 모듈 샘플',
+    ],
 ];

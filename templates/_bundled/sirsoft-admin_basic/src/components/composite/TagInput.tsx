@@ -1,14 +1,55 @@
-// e2e:allow #887 화면 읽기 알림의 항목 이름 추출만 고침(만들기 행 label 이 요소라 「[object Object] 선택됨」) — 보이는 화면 변화 없음, 실제 react-select 경로 회귀는 TagInput.a11yCreateAnnounce.test.tsx. 종전: 편집기 선택 결함#6 수정(react-select Fragment 루트에 id/editorAttrs 미도달 → 4개 렌더분기 Div 래핑). 라이브 검증은 Chrome MCP T1~T7(에디터 추가/선택/속성편집/저장200/reload/게스트 사용자화면)로 수행, 단위 회귀는 TagInput.test.tsx editorAttrs/id passthrough describe.
+// e2e:allow 스타일 정책 강제 시 react-select(emotion) 규칙을 생성형 시트로 — 브라우저 회귀는 tests/Playwright/specs/smoke/strict-csp.spec.ts (S) 태그 입력, 단위는 TagInput.styleCsp.test.tsx. 종전: #887 화면 읽기 알림의 항목 이름 추출만 고침(만들기 행 label 이 요소라 「[object Object] 선택됨」) — 보이는 화면 변화 없음, 실제 react-select 경로 회귀는 TagInput.a11yCreateAnnounce.test.tsx. 종전: 편집기 선택 결함#6 수정(react-select Fragment 루트에 id/editorAttrs 미도달 → 4개 렌더분기 Div 래핑). 라이브 검증은 Chrome MCP T1~T7(에디터 추가/선택/속성편집/저장200/reload/게스트 사용자화면)로 수행, 단위 회귀는 TagInput.test.tsx editorAttrs/id passthrough describe.
 import React, { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import { linkAdjacentLabel } from '../../hooks/useAdjacentLabel';
 import Select, { components, MultiValue, SingleValue, ActionMeta, InputActionMeta } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
+import { CacheProvider } from '@emotion/react';
 import { Div } from '../basic/Div';
 import type { EditorAttrs } from '../../types';
+import { getTagInputEmotionCache } from '../../utils/adoptedEmotionCache';
+
+/**
+ * react-select 의 emotion 규칙을 생성형 스타일시트로 싣는 범위.
+ *
+ * emotion 기본 캐시는 `<style data-emotion>` 요소를 만들고, 스타일 정책(기본 `style-src-elem 'self'`, 엄격
+ * `style-src 'self'; style-src-attr 'none'`)이 그 요소를 막아 목록이 문서 흐름에 펼쳐지고 화면 낭독용 안내 문구가
+ * 보였다. 생성형 시트를 지원하지 않는 환경이면 감싸지 않는다(emotion 기본 캐시 — 종전과 같다).
+ */
+const EmotionScope: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const cache = getTagInputEmotionCache();
+  return cache ? <CacheProvider value={cache}>{children}</CacheProvider> : <>{children}</>;
+};
 
 // G7Core.t() 번역 함수 참조 — 화면 읽기 안내문·태그 지우기 버튼 이름을 화면 언어로 낸다
 const t = (key: string, params?: Record<string, string | number>) =>
   (window as any).G7Core?.t?.(key, params) ?? key;
+
+// 번역이 없으면(키가 그대로 돌아오면) 대체 문구를 쓴다
+const tOr = (key: string, fallback: string): string => {
+  const translated = (window as any).G7Core?.t?.(key);
+  return typeof translated === 'string' && translated !== key ? translated : fallback;
+};
+
+// 「새로 만들기」 줄 문장의 값 자리 표식 — 번역 결과를 이 자리에서 쪼개 값만 굵게 그린다
+const CREATE_VALUE_SLOT = '\u0000';
+
+/**
+ * 「새로 만들기」 줄 문장을 값 앞, 뒤 두 조각으로 나눈다.
+ *
+ * 문장 키 `common.tag_input.create_label` 은 값 자리(`{{value}}`)를 받는다 — 언어마다 어순이 달라(영어 「Add foo」,
+ * 한국어 「foo 추가」, 일본어 「fooを追加」) 값 뒤에 접미사를 붙이면 영어가 「foo add」 가 된다. 번역이 없거나 값 자리가
+ * 없으면 영어 「Add {값}」.
+ *
+ * @returns [값 앞 글자, 값 뒤 글자]
+ */
+const createLabelParts = (): [string, string] => {
+  const translated = (window as any).G7Core?.t?.('common.tag_input.create_label', { value: CREATE_VALUE_SLOT });
+  const sentence =
+    typeof translated === 'string' && translated.includes(CREATE_VALUE_SLOT) ? translated : `Add ${CREATE_VALUE_SLOT}`;
+  const [before, after = ''] = sentence.split(CREATE_VALUE_SLOT);
+
+  return [before, after];
+};
 
 /**
  * 안내문에 넣을 항목 이름 — 새 값 만들기 행의 label 은 화면용 요소(createLabelFormatter 의 <span>)라 react-select 가
@@ -139,7 +180,7 @@ export interface TagInputProps {
   noOptionsMessage?: string;
   /** 새 항목 추가 라벨 (문자열 또는 생성 함수) */
   formatCreateLabel?: string | ((inputValue: string) => string);
-  /** 새 항목 추가 접미사 (기본값: "추가") */
+  /** 새 항목 추가 접미사 — 넘기면 값 뒤에 붙인다. 생략하면 화면 언어의 문장 `common.tag_input.create_label`(값 자리 `{{value}}`) */
   createLabelSuffix?: string;
   /** 최대 선택 개수 (멀티 모드에서만 유효) */
   maxItems?: number;
@@ -289,10 +330,10 @@ export const TagInput: React.FC<TagInputProps> = ({
   options = [],
   onChange,
   creatable = false,
-  placeholder = '검색 또는 입력...',
+  placeholder: placeholderProp,
   noOptionsMessage: noOptionsMessageProp,
   formatCreateLabel,
-  createLabelSuffix = '추가',
+  createLabelSuffix: createLabelSuffixProp,
   maxItems,
   disabled: disabledProp = false,
   onBeforeRemove,
@@ -316,7 +357,10 @@ export const TagInput: React.FC<TagInputProps> = ({
   const disabled = disabledProp === true || disabledProp === 'true';
 
   // 레이아웃이 안내 문구를 줬는지는 아래 빈 메뉴 판정이 본다 — 그래서 기본값을 구조 분해에 두지 않는다
-  const noOptionsMessage = noOptionsMessageProp ?? '검색 결과가 없습니다';
+  // 기본 문구는 화면 언어로 — 종전 한국어 고정 문구(「검색 또는 입력...」 등)는 영어, 일본어 화면에서도 한국어로 보였다
+  // 번역이 없거나 엔진 밖(단위 테스트)이면 영어 대체 문구를 쓴다(컴포넌트 기본값은 영어 — data-binding-i18n.md)
+  const placeholder = placeholderProp ?? tOr('common.tag_input.placeholder', 'Search or type...');
+  const noOptionsMessage = noOptionsMessageProp ?? tOr('common.tag_input.no_options', 'No results found');
 
   // valueProp을 내부 배열 형태로 정규화
   const normalizeValue = useCallback((val: typeof valueProp): (string | number)[] => {
@@ -376,13 +420,25 @@ export const TagInput: React.FC<TagInputProps> = ({
       return formatCreateLabel;
     }
 
-    // 기본 동작: createLabelSuffix 사용
+    // 접미사를 넘겼으면 종전처럼 값 뒤에 붙인다
+    if (createLabelSuffixProp !== undefined) {
+      return (inputValue: string) => (
+        <span className="text-[13px]">
+          <strong>{inputValue}</strong> {createLabelSuffixProp}
+        </span>
+      );
+    }
+
+    // 기본 동작: 값 자리를 받는 화면 언어 문장(어순은 언어 파일이 정한다)
+    const [before, after] = createLabelParts();
     return (inputValue: string) => (
       <span className="text-[13px]">
-        <strong>{inputValue}</strong> {createLabelSuffix}
+        {before}
+        <strong>{inputValue}</strong>
+        {after}
       </span>
     );
-  }, [formatCreateLabel, createLabelSuffix]);
+  }, [formatCreateLabel, createLabelSuffixProp]);
 
   // 선택된 값들을 TagOption 배열로 변환
   const selectedOptions = useMemo(() => {
@@ -787,13 +843,15 @@ export const TagInput: React.FC<TagInputProps> = ({
       return (
         <Div ref={rootRef} id={id} {...editorAttrs}>
           {name && <input type="hidden" name={name} value={hiddenValue} />}
-          <CreatableSelect<TagOption, false>
-            {...singleProps}
-            onCreateOption={handleCreate}
-            formatCreateLabel={createLabelFormatter}
-            isValidNewOption={isValidNewOption}
-            createOptionPosition="first"
-          />
+          <EmotionScope>
+            <CreatableSelect<TagOption, false>
+              {...singleProps}
+              onCreateOption={handleCreate}
+              formatCreateLabel={createLabelFormatter}
+              isValidNewOption={isValidNewOption}
+              createOptionPosition="first"
+            />
+          </EmotionScope>
         </Div>
       );
     }
@@ -801,7 +859,9 @@ export const TagInput: React.FC<TagInputProps> = ({
     return (
       <Div ref={rootRef} id={id} {...editorAttrs}>
         {name && <input type="hidden" name={name} value={hiddenValue} />}
-        <Select<TagOption, false> {...singleProps} />
+        <EmotionScope>
+          <Select<TagOption, false> {...singleProps} />
+        </EmotionScope>
       </Div>
     );
   }
@@ -831,13 +891,15 @@ export const TagInput: React.FC<TagInputProps> = ({
     return (
       <Div ref={rootRef} id={id} {...editorAttrs} onPaste={handlePaste}>
         {name && <input type="hidden" name={name} value={hiddenValue} />}
-        <CreatableSelect<TagOption, true>
-          {...multiProps}
-          onCreateOption={handleCreate}
-          formatCreateLabel={createLabelFormatter}
-          isValidNewOption={isValidNewOption}
-          createOptionPosition="first"
-        />
+        <EmotionScope>
+          <CreatableSelect<TagOption, true>
+            {...multiProps}
+            onCreateOption={handleCreate}
+            formatCreateLabel={createLabelFormatter}
+            isValidNewOption={isValidNewOption}
+            createOptionPosition="first"
+          />
+        </EmotionScope>
       </Div>
     );
   }
@@ -845,7 +907,9 @@ export const TagInput: React.FC<TagInputProps> = ({
   return (
     <Div ref={rootRef} id={id} {...editorAttrs}>
       {name && <input type="hidden" name={name} value={hiddenValue} />}
-      <Select<TagOption, true> {...multiProps} />
+      <EmotionScope>
+        <Select<TagOption, true> {...multiProps} />
+      </EmotionScope>
     </Div>
   );
 };

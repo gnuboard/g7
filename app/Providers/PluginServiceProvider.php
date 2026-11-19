@@ -85,7 +85,7 @@ class PluginServiceProvider extends ServiceProvider
         $classes = [];
 
         // Providers 디렉토리 내 모든 PHP 파일 스캔
-        foreach (File::glob($providersPath.'/*.php') as $providerFile) {
+        foreach (ExtensionManager::listDirectoryFiles($providersPath, '.php') as $providerFile) {
             $providerClass = self::resolveProviderClass($pluginName, $providerFile);
 
             if ($providerClass === null) {

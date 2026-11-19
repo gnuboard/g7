@@ -41,8 +41,8 @@ test.describe('관리자 게시글 목록 컨텍스트 왕복 (#75)', () => {
     await page.goto(`${LIST_URL}?page=2`);
     await page.waitForLoadState('networkidle', { timeout: 30_000 });
 
-    // 제목 Span 이 이동 액션을 갖는다 (행 전체가 아니라 제목만 클릭 대상).
-    await page.locator('tbody tr span.cursor-pointer').first().click();
+    // 제목 링크가 이동 대상이다 (행 전체가 아니라 제목만 클릭 대상). 제목은 `<a href=".../post/{id}">` 다.
+    await page.locator('tbody tr a[href*="/post/"]').first().click();
     await page.waitForURL(new RegExp(`/admin/board/${SLUG}/post/\\d+`), { timeout: 30_000 });
 
     expect(queryOf(page.url()).get('page')).toBe('2');
@@ -54,7 +54,7 @@ test.describe('관리자 게시글 목록 컨텍스트 왕복 (#75)', () => {
     await authenticatePage(page, boardManageToken);
     await page.goto(`${LIST_URL}?page=2`);
     await page.waitForLoadState('networkidle', { timeout: 30_000 });
-    await page.locator('tbody tr span.cursor-pointer').first().click();
+    await page.locator('tbody tr a[href*="/post/"]').first().click();
     await page.waitForURL(new RegExp(`/admin/board/${SLUG}/post/\\d+`), { timeout: 30_000 });
     await page.waitForLoadState('networkidle', { timeout: 30_000 });
 

@@ -52,6 +52,7 @@ class CategoryResource extends BaseApiResource
                         'size' => $image->file_size,
                         'size_formatted' => $this->formatFileSize($image->file_size),
                         'download_url' => $image->download_url,
+                        'preview_url' => $image->preview_url,
                         'order' => $image->sort_order,
                         'is_image' => str_starts_with($image->mime_type ?? '', 'image/'),
                         'alt_text' => $image->alt_text,

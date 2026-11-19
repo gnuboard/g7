@@ -29,17 +29,19 @@ use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
  *
  * 부분 입력(3필드 중 일부)은 결제수단과 무관하게 거부한다 — 그 상태로는 환불이 불가능하다.
  *
- * @scenario actor=admin, change_mode=manual
- *
- * @effects cancel_refund_bank_required_for_paid_vbank_422,
- *   cancel_refund_bank_optional_before_deposit,
- *   cancel_refund_bank_partial_input_rejected_422,
- *   cancel_refund_bank_recorded_on_the_claim_row
+ * 효과 요약(마커 아님 — 평문): 입금완료 가상계좌 422, 입금 전 선택, 부분 입력 422,
+ *   신청서 행 기록. 각 효과는 그 효과를 재는 메서드 docblock 에 마킹한다.
  */
 class CancelOrderRefundBankTest extends ModuleTestCase
 {
     protected User $adminUser;
 
+    /**
+     * 주문 조회와 수정 권한을 가진 관리자를 만들고, 남은 설정 파일과 설정 캐시를 비운 뒤
+     * 취소와 환불 채번 시퀀스를 준비한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -60,6 +62,11 @@ class CancelOrderRefundBankTest extends ModuleTestCase
         $this->createCancelSequences();
     }
 
+    /**
+     * 취소와 환불 번호 채번에 쓰는 시퀀스 행을 기본 설정값으로 만든다(이미 있으면 그대로 둔다).
+     *
+     * @return void 반환값 없음
+     */
     private function createCancelSequences(): void
     {
         foreach ([SequenceType::CANCEL, SequenceType::REFUND] as $type) {
@@ -83,8 +90,8 @@ class CancelOrderRefundBankTest extends ModuleTestCase
     /**
      * 결제완료 주문 + 결제행을 만든다.
      *
-     * @param  array<string, mixed>  $paymentOverrides
-     * @return array{order: Order, payment: OrderPayment}
+     * @param  array<string, mixed>  $paymentOverrides  결제행 기본값을 덮어쓸 속성
+     * @return array{order: Order, payment: OrderPayment} 생성된 주문과 결제행
      */
     private function createPaidOrder(array $paymentOverrides = []): array
     {
@@ -205,7 +212,11 @@ class CancelOrderRefundBankTest extends ModuleTestCase
     }
 
     /**
-     * @param  array<string, mixed>  $body
+     * 관리자 권한으로 주문 전체 취소 API 를 호출한다(PG 취소 없이, 사유 고정).
+     *
+     * @param  Order  $order  취소할 주문
+     * @param  array<string, mixed>  $body  기본 요청 본문에 덧붙일 값
+     * @return TestResponse 취소 API 응답
      */
     private function cancel(Order $order, array $body = []): TestResponse
     {
@@ -230,7 +241,7 @@ class CancelOrderRefundBankTest extends ModuleTestCase
      *
      * @effects cancel_refund_bank_skipped_when_nothing_to_refund
      *
-     * @return void
+     * @return void 반환값 없음
      */
     public function test_미입금_주문은_환불계좌_없이_취소된다(): void
     {
@@ -246,7 +257,7 @@ class CancelOrderRefundBankTest extends ModuleTestCase
      *
      * @effects cancel_refund_bank_required_for_dbank_with_money
      *
-     * @return void
+     * @return void 반환값 없음
      */
     public function test_입금이_끝난_무통장_주문은_여전히_환불계좌가_필수다(): void
     {
@@ -257,6 +268,15 @@ class CancelOrderRefundBankTest extends ModuleTestCase
         $this->cancel($order)->assertStatus(422);
     }
 
+    /**
+     * 관리자 주문상세 응답의 결제 항목에 주문 시 입력한 환불계좌 4키가 그대로 실리는지 확인한다.
+     *
+     * @scenario surface=admin_order, payment_method=vbank, payment_status=paid
+     *
+     * @effects payment_resource_exposes_refund_bank_fields
+     *
+     * @return void 반환값 없음
+     */
     public function test_주문상세_응답이_환불계좌를_노출한다(): void
     {
         // 취소 모달은 주문 시 입력된 계좌를 프리필한다. 응답에 키가 없으면 프리필이 불가능하다.
@@ -278,6 +298,15 @@ class CancelOrderRefundBankTest extends ModuleTestCase
 
     // ------------------------------------------------- vbank 입금완료 = 필수
 
+    /**
+     * 입금완료 가상계좌 주문을 계좌 없이 취소하면 환불계좌 3필드 오류로 422 가 나고 주문이 취소되지 않는지 확인한다.
+     *
+     * @scenario surface=admin_cancel_modal, payment_method=vbank, refund_bank_requirement=vbank_paid_required, refund_bank_input=empty
+     *
+     * @effects cancel_refund_bank_required_for_paid_vbank_422
+     *
+     * @return void 반환값 없음
+     */
     public function test_가상계좌_입금완료_취소는_환불계좌가_없으면_거부된다(): void
     {
         ['order' => $order] = $this->createPaidOrder();
@@ -294,6 +323,15 @@ class CancelOrderRefundBankTest extends ModuleTestCase
         $this->assertNotSame(OrderStatusEnum::CANCELLED, $order->order_status, '검증 실패 시 취소되면 안 된다');
     }
 
+    /**
+     * 결제행에 주문 시 입력한 환불계좌가 있으면 취소 요청에 계좌를 빼도 입금완료 가상계좌 취소가 통과하는지 확인한다.
+     *
+     * @scenario surface=admin_cancel_modal, payment_method=vbank, refund_bank_requirement=vbank_paid_required, refund_bank_input=empty
+     *
+     * @effects cancel_refund_bank_omitted_when_untouched
+     *
+     * @return void 반환값 없음
+     */
     public function test_주문시_입력된_환불계좌가_있으면_취소_요청에_다시_넣지_않아도_된다(): void
     {
         ['order' => $order] = $this->createPaidOrder([
@@ -318,6 +356,8 @@ class CancelOrderRefundBankTest extends ModuleTestCase
      * @scenario surface=admin_cancel_modal, payment_method=vbank, refund_bank_requirement=vbank_paid_required
      *
      * @effects cancel_refund_bank_recorded_on_the_claim_row
+     *
+     * @return void 반환값 없음
      */
     public function test_가상계좌_입금완료_취소에_환불계좌를_주면_통과하고_신청서에_저장된다(): void
     {
@@ -339,6 +379,15 @@ class CancelOrderRefundBankTest extends ModuleTestCase
 
     // ------------------------------------------------- vbank 입금전 / dbank = 선택
 
+    /**
+     * 입금 대기 상태의 가상계좌 주문은 환불계좌 없이도 취소되는지 확인한다.
+     *
+     * @scenario surface=admin_cancel_modal, payment_method=vbank, payment_status=waiting_deposit, refund_bank_requirement=vbank_waiting_optional
+     *
+     * @effects cancel_refund_bank_optional_before_deposit
+     *
+     * @return void 반환값 없음
+     */
     public function test_가상계좌_입금전_취소는_환불계좌가_없어도_된다(): void
     {
         ['order' => $order] = $this->createPaidOrder([
@@ -359,6 +408,8 @@ class CancelOrderRefundBankTest extends ModuleTestCase
      * @scenario surface=admin_cancel_modal, payment_method=dbank, refund_bank_requirement=dbank_required
      *
      * @effects cancel_refund_bank_required_for_dbank_with_money
+     *
+     * @return void 반환값 없음
      */
     public function test_무통장_취소는_환불계좌가_필수다(): void
     {
@@ -375,6 +426,8 @@ class CancelOrderRefundBankTest extends ModuleTestCase
      * @scenario surface=admin_cancel_modal, payment_method=dbank, refund_bank_requirement=dbank_required
      *
      * @effects cancel_refund_bank_required_for_dbank_with_money
+     *
+     * @return void 반환값 없음
      */
     public function test_무통장_취소는_환불계좌를_주면_통과한다(): void
     {
@@ -391,6 +444,15 @@ class CancelOrderRefundBankTest extends ModuleTestCase
         ])->assertOk();
     }
 
+    /**
+     * 카드 결제 주문은 환불계좌를 묻지 않으므로 계좌 없이 취소되는지 확인한다.
+     *
+     * @scenario surface=admin_cancel_modal, payment_method=card, refund_bank_requirement=card_hidden
+     *
+     * @effects cancel_refund_bank_optional_before_deposit
+     *
+     * @return void 반환값 없음
+     */
     public function test_카드_취소는_환불계좌가_없어도_된다(): void
     {
         ['order' => $order] = $this->createPaidOrder([
@@ -402,6 +464,15 @@ class CancelOrderRefundBankTest extends ModuleTestCase
 
     // ------------------------------------------------- 부분 입력 거부 (결제수단 무관)
 
+    /**
+     * 무통장 취소에서 계좌번호만 주면 은행과 예금주 누락으로 422 가 나는지 확인한다.
+     *
+     * @scenario surface=admin_cancel_modal, payment_method=dbank, refund_bank_input=partial_account_only
+     *
+     * @effects cancel_refund_bank_partial_input_rejected_422
+     *
+     * @return void 반환값 없음
+     */
     public function test_무통장이라도_환불계좌_부분_입력은_거부된다(): void
     {
         ['order' => $order] = $this->createPaidOrder([
@@ -413,6 +484,15 @@ class CancelOrderRefundBankTest extends ModuleTestCase
             ->assertJsonValidationErrors(['refund_bank.bank_code', 'refund_bank.holder']);
     }
 
+    /**
+     * 가상계좌 취소에서 예금주를 빼고 보내면 예금주 누락으로 422 가 나는지 확인한다.
+     *
+     * @scenario surface=admin_cancel_modal, payment_method=vbank, refund_bank_input=partial_missing_holder
+     *
+     * @effects cancel_refund_bank_partial_input_rejected_422
+     *
+     * @return void 반환값 없음
+     */
     public function test_가상계좌_환불계좌_부분_입력은_거부된다(): void
     {
         ['order' => $order] = $this->createPaidOrder();
@@ -436,6 +516,8 @@ class CancelOrderRefundBankTest extends ModuleTestCase
      * @scenario actor=admin, change_mode=manual
      *
      * @effects order_detail_flags_a_stale_tax_invoice_after_cancellation
+     *
+     * @return void 반환값 없음
      */
     public function test_주문상세가_취소_뒤_남은_세금계산서를_알린다(): void
     {

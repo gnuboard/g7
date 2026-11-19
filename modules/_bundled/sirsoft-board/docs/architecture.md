@@ -41,6 +41,12 @@ Models (SoftDeletes 적용 — Post/Comment/Attachment/Report)
 `download_url`)을 돌려줍니다 — 공개 자산 디스크(CDN 직접 URL)를 켜도 게시판 첨부는 직접 URL 로 바뀌지
 않습니다. 직접 URL 로 내보내면 그 게이트가 통째로 우회되기 때문입니다(7.0.11).
 
+첨부 서빙의 캐시 판정은 통로마다 다릅니다. 내려받기(`getDownloadInfo()`, 회원·관리자 두 통로)는 글 상태와
+무관하게 항상 `private` 입니다 — 다운로드 권한은 요청자마다 갈리고 다운로드 기록 훅
+(`sirsoft-board.attachment.after_download`)도 그 메서드에서만 발화하므로, 공개 캐시로 나가면 앞단 CDN 이
+저장한 사본을 권한 없는 방문자가 받고 기록도 건너뜁니다. 이미지 미리보기(`getFileInfo()`)는 비밀글, 삭제글,
+블라인드 글의 첨부와 서명으로 연 원본만 `private` 이고 정상글 원본은 공개 캐시 대상입니다.
+
 Listeners(`src/Listeners/`)는 이 흐름과 별도 레인입니다 — Service 가 발행한 훅을 받아 카운트
 동기화(`*CountSyncListener`)·활동 로그·SEO 캐시·검색 색인·알림 데이터 추출을 수행하며, Service
 자신은 이 부가효과를 알지 못합니다. 이 분리 덕분에 새 부가효과(예: 신규 카운트 컬럼 동기화)는
@@ -48,6 +54,10 @@ Service 를 건드리지 않고 리스너 추가만으로 끝납니다. 큐로 �
 항목별 기록 루프를 `DB::transaction` 으로 감쌉니다 — 잡이 중간에 끊겨 재시도되면 앞부분이 두 번 기록되던 것을
 막는다(코어 `docs/backend/activity-log.md` 「일괄 핸들러 트랜잭션 패턴」).
 <!-- @intent END -->
+
+## 화면 주소 (7.2.0)
+
+서버가 만드는 게시판 화면 주소(알림 링크·통합 검색 결과·사이트맵)는 `Support/BoardScreenUrl` 이 만든다. 화면 키 `board.index`·`board.list`·`board.post` 로 코어 `ScreenUrl` 을 거치므로 환경설정 「사용자 화면 URL」과 필터 훅 `core.screen_url.filter_path` 를 따른다 — 개발자 화면이나 외부 프론트가 주소를 바꾸면 링크가 따라간다. SEO 캐시 무효화·재생성은 그누보드7 화면이 봇에게 내는 캐시라 필터를 거치지 않은 `BoardScreenUrl::defaultPath()` 를 쓴다(경로 문자열을 리스너에 직접 적지 않는다).
 
 ## 디렉토리
 

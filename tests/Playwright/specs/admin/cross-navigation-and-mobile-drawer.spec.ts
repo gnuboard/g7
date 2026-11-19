@@ -1,8 +1,9 @@
 /**
  * E2E: 관리자 ↔ 유저 화면 상호 이동 링크 + 모바일 사이드바 드로어 상단 잘림 수정 (#450)
  *
- * @scenario admin_sidebar_view_site, admin_board_view_user_page, mobile_drawer_not_clipped
- * @effects new_tab_navigation, drawer_starts_below_header
+ * @scenario admin-user-cross-navigation
+ * 케이스(마커 아님 — 평문): admin_sidebar_view_site, admin_board_view_user_page, mobile_drawer_not_clipped
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): new_tab_navigation, drawer_starts_below_header
  *
  * 검증:
  *  1. 관리자 사이드바 하단 "사이트 보기" 링크가 A[href="/"][target="_blank"] 로 마운트

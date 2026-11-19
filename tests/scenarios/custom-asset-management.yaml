@@ -46,6 +46,7 @@ effects:
   - custom_asset_editor_renames_through_the_api
   - custom_asset_editor_shows_a_file_tree
   - custom_asset_manager_surfaces_permission_denial_as_guidance
+  - custom_asset_manager_lists_files_with_loaded_flag   # 목록 응답의 파일마다 행을 그리고, 화면에 실리는지(loaded)를 행에 표시한다
   - custom_asset_binary_file_offers_replace_not_text_edit
   - custom_asset_permission_reaches_existing_sites_via_core_sync
   - custom_assets_disabled_by_request_parameter
@@ -53,6 +54,10 @@ effects:
   - custom_asset_published_for_all_extension_types
   # 마지막 파일을 지우면 빈 폴더도 함께 정리한다(7.1.0 잔여 관측 R-11)
   - custom_asset_removal_prunes_emptied_folders
+  # 아래는 테스트가 이미 재고 있으나 선언이 빠져 있던 이름이다 (원장 축소).
+  - custom_asset_signature_is_scoped_per_render
+  # 브라우저 편집기에서 Tab 키가 포커스 이동이 아니라 들여쓰기로 들어간다 (Playwright spec 이 잰다)
+  - custom_asset_editor_indents_with_tab_in_browser
 
 test_files:
   - tests/Feature/Api/Admin/AdminExtensionCustomAssetControllerTest.php

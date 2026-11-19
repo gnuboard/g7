@@ -507,6 +507,10 @@
     "no_payment_methods": "現在選択できる決済方法がありません。ショップにお問い合わせください。",
     "mileage_min_product_total": "商品合計 {{amount}} 以上のご購入でマイレージをご利用いただけます。"
   },
+  "checkout_fields": {
+    "orderer_extra": "注文者の追加情報",
+    "shipping_extra": "配送の追加情報"
+  },
   "order_complete": {
     "page_title": "注文完了",
     "title": "注文完了",

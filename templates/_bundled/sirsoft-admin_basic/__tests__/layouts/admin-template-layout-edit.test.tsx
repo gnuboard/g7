@@ -14,7 +14,7 @@
  * - 저장 버튼에 can_update 어빌리티 조건 존재
  * - modals 섹션에 버전 히스토리 모달 partial 등록
   *
- * @effects code_editor_file_select_syncs_route_query, code_editor_extension_select_clears_route_query
+ * 조합과 효과 표식은 그것을 재는 시험마다 단다.
 */
 
 import { describe, it, expect } from 'vitest';
@@ -92,6 +92,13 @@ function findAllComponents(node: any, predicate: (n: any) => boolean): any[] {
 
   if (Array.isArray(node.children)) {
     for (const child of node.children) {
+      results.push(...findAllComponents(child, predicate));
+    }
+  }
+
+  // Modal 고정 하단(props.footer)의 단추도 걷는다(#869 P1)
+  if (Array.isArray(node.props?.footer)) {
+    for (const child of node.props.footer) {
       results.push(...findAllComponents(child, predicate));
     }
   }
@@ -262,9 +269,9 @@ describe('버전 히스토리 모달 구조', () => {
   });
 
   /** @effects non_newest_layout_versions_carry_a_restore_button */
-  it('첫 번째가 아닌 버전(idx !== 0)에 복원 버튼이 있다', () => {
+  it('첫 번째가 아닌 버전(idx !== 0)과 덮기 직전 운영자 판에 복원 버튼이 있다', () => {
     const restoreButton = findComponent(versionHistoryModalJson, (n) =>
-      n.if === '{{idx !== 0}}' &&
+      n.if === '{{idx !== 0 || version.changes_summary?.before_overwrite === true}}' &&
       n.name === 'Button' &&
       asArray(n?.actions).length > 0 &&
       asArray(n?.actions).some((a: any) =>
@@ -567,7 +574,7 @@ describe('확장 버전 히스토리 모달 구조', () => {
   /** @effects extension_version_restore_calls_the_extension_restore_endpoint */
   it('복원 버튼이 확장 버전 restore 엔드포인트를 호출한다', () => {
     const restoreButton = findComponent(extensionVersionHistoryModalJson, (n) =>
-      n.if === '{{idx !== 0}}' &&
+      n.if === '{{idx !== 0 || version.changes_summary?.before_overwrite === true}}' &&
       n.name === 'Button' &&
       asArray(n?.actions).length > 0 &&
       asArray(n?.actions).some((a: any) => JSON.stringify(a).includes('/layout-extensions/'))

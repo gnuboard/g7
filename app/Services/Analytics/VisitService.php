@@ -14,6 +14,7 @@ use App\Analytics\TrackingRequest;
 use App\Analytics\UrlNormalizer;
 use App\Analytics\VisitExclusionPipeline;
 use App\Analytics\VisitorRecognizer;
+use App\Analytics\VisitorStoreLock;
 use App\Contracts\Analytics\DimensionRegistryInterface;
 use App\Contracts\Analytics\GoalRegistryInterface;
 use App\Contracts\Repositories\Analytics\ActionNameRepositoryInterface;
@@ -59,6 +60,11 @@ class VisitService
      *
      * 재시도는 바깥 트랜잭션이 없을 때만 일어난다(프레임워크 규칙) — 바깥 트랜잭션이 있으면
      * 교착이 그 전체를 이미 되돌렸으므로 다시 하면 안 된다.
+     *
+     * 캐시 저장소가 서버 간 공유·원자 잠금을 지원하면 같은 방문자의 적재를 방문자 키 잠금
+     * (`VisitorStoreLock`)으로 한 줄로 세우고 범위 잠금을 쓰지 않으므로 이 교착이 생기지 않는다.
+     * 그 경로에서도 재시도는 남겨 둔다 — 잠금을 쓸 수 없을 때(파일 캐시·대기 초과·캐시 장애)의
+     * 지금 방식과, 이름 사전 같은 다른 행에서 드물게 나는 교착을 넘기는 안전망이다.
      */
     private const STORE_ATTEMPTS = 3;
 
@@ -86,6 +92,7 @@ class VisitService
      * @param  NotificationCooldown  $cooldown  알림 쿨다운
      * @param  GoalRegistryInterface  $goals  전환(목표) 등록부
      * @param  DimensionRegistryInterface  $dimensions  커스텀 차원 등록부
+     * @param  VisitorStoreLock  $storeLock  같은 방문자의 적재를 한 줄로 세우는 잠금
      */
     public function __construct(
         private readonly VisitRepositoryInterface $visits,
@@ -101,6 +108,7 @@ class VisitService
         private readonly NotificationCooldown $cooldown,
         private readonly GoalRegistryInterface $goals,
         private readonly DimensionRegistryInterface $dimensions,
+        private readonly VisitorStoreLock $storeLock,
     ) {}
 
     /**
@@ -182,10 +190,20 @@ class VisitService
             $identity = $this->recognizer->resolve($request, $config, $anonymous);
             $result['new_cookie'] = $identity['new_cookie'];
 
-            // 동시 요청끼리의 교착(1213)·잠금 대기 초과로 롤백되면 처음부터 다시 한다(STORE_ATTEMPTS).
-            $stored = DB::transaction(
-                fn (): array => $this->store($request, $config, $identity, $anonymous, $prepared),
-                self::STORE_ATTEMPTS,
+            // 같은 방문자의 적재는 방문자 키 잠금으로 한 줄로 세워 범위 잠금 없이 적재한다. 잠금을
+            // 쓸 수 없으면(파일 캐시·대기 초과·캐시 장애·바깥 트랜잭션) 범위 잠금으로 적재한다.
+            // 어느 쪽이든 교착(1213)·잠금 대기 초과로 롤백되면 처음부터 다시 한다(STORE_ATTEMPTS).
+            // 잠금은 트랜잭션이 확정된 뒤에 풀린다 — 다음 요청이 이 요청의 방문을 보게 된다.
+            $stored = $this->storeLock->run(
+                $this->storeLockKeys($request, $identity),
+                fn (): array => DB::transaction(
+                    fn (): array => $this->store($request, $config, $identity, $anonymous, $prepared, true),
+                    self::STORE_ATTEMPTS,
+                ),
+                fn (): array => DB::transaction(
+                    fn (): array => $this->store($request, $config, $identity, $anonymous, $prepared, false),
+                    self::STORE_ATTEMPTS,
+                ),
             );
 
             $result['visit_id'] = $stored['visit_id'];
@@ -271,6 +289,29 @@ class VisitService
     }
 
     /**
+     * 이 적재가 쥐어야 할 방문자 키 잠금의 키를 정합니다.
+     *
+     * 자기 방문자 키는 늘 잠급니다. 쿠키를 방금 받은 첫 비콘은 서버 폴백이 임시 키로 만든 방문을
+     * 이어받으므로 그 임시 키도 잠급니다 — 서버 폴백은 임시 키로, 첫 비콘은 새 쿠키 키로 적재하므로
+     * 자기 키만 잠그면 두 요청이 한 줄에 서지 않습니다. 쿠키 없는 탭 두 개의 첫 비콘(서로 다른 새
+     * 키)도 같은 임시 키 잠금에서 만납니다.
+     *
+     * @param  TrackingRequest  $request  수집 요청
+     * @param  array{key: string, key_type: string, new_cookie: string|null, is_returning: bool|null}  $identity  방문자 식별 결과
+     * @return array<int, string> 잠글 방문자 키
+     */
+    private function storeLockKeys(TrackingRequest $request, array $identity): array
+    {
+        $keys = [$identity['key']];
+
+        if ($this->isFirstBeaconWithFreshCookie($request, $identity)) {
+            $keys[] = $this->recognizer->configId($request);
+        }
+
+        return $keys;
+    }
+
+    /**
      * 트랜잭션 안에서 방문과 액션을 적재합니다.
      *
      * @param  TrackingRequest  $request  수집 요청
@@ -278,9 +319,10 @@ class VisitService
      * @param  array{key: string, key_type: string, new_cookie: string|null, is_returning: bool|null}  $identity  방문자 식별 결과
      * @param  bool  $anonymous  익명 모드 여부
      * @param  array{request: TrackingRequest, goal: GoalDefinition|null, visit_dimensions: array<string, string>, action_dimensions: array<string, string>}  $prepared  등록부 판정 결과
+     * @param  bool  $serialized  방문자 키 잠금을 쥐었는지 — 쥐었으면 열린 방문을 잠금 없이 찾고 그 행만 잠근다
      * @return array{visit_id: int|null, action_id: int|null} 적재 결과
      */
-    private function store(TrackingRequest $request, AnalyticsConfig $config, array $identity, bool $anonymous, array $prepared): array
+    private function store(TrackingRequest $request, AnalyticsConfig $config, array $identity, bool $anonymous, array $prepared, bool $serialized): array
     {
         $visit = null;
 
@@ -288,21 +330,23 @@ class VisitService
         // 만들어 둔 방문을 먼저 찾아 이어받는다. 그러지 않으면 한 사람의 첫 로드가 방문
         // 2건(하나는 이탈 100%)이 되어 순방문자와 이탈률이 구조적으로 부푼다.
         if ($this->isFirstBeaconWithFreshCookie($request, $identity)) {
-            $visit = $this->visits->adoptServerVisit(
-                $this->recognizer->configId($request),
-                $identity['key'],
-                AnalyticsClock::now()->subSeconds(self::MERGE_WINDOW_SECONDS),
-            );
+            $provisionalKey = $this->recognizer->configId($request);
+            $since = AnalyticsClock::now()->subSeconds(self::MERGE_WINDOW_SECONDS);
+
+            $visit = $serialized
+                ? $this->visits->adoptServerVisitWithRowLock($provisionalKey, $identity['key'], $since)
+                : $this->visits->adoptServerVisit($provisionalKey, $identity['key'], $since);
 
             if ($visit !== null) {
                 $this->actions->renameVisitorKey($visit->id, $identity['key']);
             }
         }
 
-        $visit ??= $this->visits->findOpenVisitForUpdate(
-            $identity['key'],
-            AnalyticsClock::visitWindowStart($config->visitTimeoutMinutes),
-        );
+        $windowStart = AnalyticsClock::visitWindowStart($config->visitTimeoutMinutes);
+
+        $visit ??= $serialized
+            ? $this->visits->findOpenVisitWithRowLock($identity['key'], $windowStart)
+            : $this->visits->findOpenVisitForUpdate($identity['key'], $windowStart);
 
         // 서버 폴백이 먼저 연 방문에 첫 비콘이 합류할 때는 회원 여부를 비콘 쪽이 정한다
         // (아래 보강). 그 밖에 방문 도중 로그인·로그아웃이 일어났다면 그때부터는 다른

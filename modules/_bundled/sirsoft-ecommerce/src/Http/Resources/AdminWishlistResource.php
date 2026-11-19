@@ -8,6 +8,7 @@ use App\Http\Resources\Traits\ExposesMemberContact;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Enums\ProductDisplayStatus;
 use Modules\Sirsoft\Ecommerce\Enums\ProductSalesStatus;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 /**
  * 관리자 찜 목록 행 리소스
@@ -54,7 +55,8 @@ class AdminWishlistResource extends BaseApiResource
 
         return [
             'uuid' => $member->uuid,
-            'name' => $isWithdrawn ? __('user.withdrawn_user') : $member->name,
+            // 이름은 이커머스 관리자 영역의 표시 이름이다(탈퇴 회원은 탈퇴 문구). 실명은 회원 조회 권한이 있는 관리자에게만 `real_name` 으로 더해진다.
+            ...MemberDisplayName::fields($member, $request),
             'email' => $this->canExposeMemberEmail($request, (int) $member->id) ? $member->email : null,
             'is_withdrawn' => $isWithdrawn,
         ];

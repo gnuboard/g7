@@ -356,3 +356,26 @@ $this->cache->remember($key, $callback, $ttl, $tags);
 | `withDisk()` | `withStore()` | 불변 복제 |
 | `$storageServices` | `$cacheServices` | ServiceProvider 배열 |
 | `registerStorageBindings()` | `registerCacheBindings()` | DI 자동 바인딩 |
+
+## 캐시 범위
+
+검수 서버(실행 역할 `stage`, [runtime-role.md](../backend/runtime-role.md))는 운영 서버와 캐시 저장소를 공유하지만 코드·레이아웃 판이 다를 수
+있다. 그래서 키를 두 범위로 나눈다 (7.2.0).
+
+| 범위 | 뜻 | stage 의 키 |
+| --- | --- | --- |
+| Code | 이 서버의 코드·레이아웃 판·레이아웃 표·환경에 따라 달라지는 값 | `g7:stage:` 아래 (운영 키와 겹치지 않음) |
+| Data | 모든 서버가 같은 값을 봐야 하는 값(활성 목록·설정·잠금·로그인 등) | 공유 |
+
+Code 범위 키: `ext.cache_version`, `layout.{tpl}.{name}.v{n}[.meta]`, `layout_resolver.{템플릿ID}.{name}`(값이 그 서버 역할의
+레이아웃 표 행 ID), `layout:markup:{id}:{lock_version}`·`layout:markup:ext:*`(역변환 마크업), `settings.system_info.{locale}`(그 서버의 판·경로),
+`template.{id}.layout.*`, `template.routes.*`, `template.language.*`,
+`template.config.*`, `template.{id}.components_manifest`, `template.editor_css.*`, `template-lang*`, `seo.config.*`, `seo.page.*`,
+`seo.sitemap.meta`, `extension.middleware_index`, `ext.version_check.*`, `ext.recovery_check.*`, `ext.custom_signature`,
+`custom_routes.patterns.*`. 목록의 단일 출처는 `App\Extension\Cache\CacheScope::CODE_PATTERNS` 다.
+
+- 드라이버는 `CacheDriverFactory::core()`·`CacheDriverFactory::extension('module'|'plugin', $id)` 로만 만든다 — 직접 생성하면 정적 검사가 막는다.
+  범위를 주지 않으면 키 이름으로 판정하고, `CacheDriverFactory::core(CacheScope::Code)` 처럼 고정할 수 있다.
+- **새 키를 추가할 때**: 그 값이 「이 서버의 코드·레이아웃 판·레이아웃 표 행·환경에 따라 달라지는가」 면 `CODE_PATTERNS` 에 넣는다
+  (레이아웃 행 ID·`lock_version` 을 담거나 키에 쓰는 값도 여기다 — 두 역할의 표는 같은 ID 로 다른 본문을 가질 수 있다). 「모든 서버가 같은 값을 봐야 하는가」 면 Data 로 둔다.
+- stage 에서 `template:cache-clear` 등으로 캐시 버전을 올려도 운영 서버의 `ext.cache_version` 은 그대로다.

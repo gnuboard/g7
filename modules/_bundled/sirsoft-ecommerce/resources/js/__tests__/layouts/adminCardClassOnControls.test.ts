@@ -12,6 +12,7 @@
  *
  * 선택 카드(`admin-card-clickable`·`admin-card-selected`)는 카드 모양 자체가 의도이므로 이 검사 밖이다.
  * 소스가 아니라 **구워진 짝 `.json`**(런타임이 실제로 먹는 값)을 검사한다.
+ * 클래스는 이 확장 자체 CSS 의 이름(`ecommerce-` 의미 클래스·`ecommerce:` 유틸리티)으로 읽는다.
  *
  * @vitest-environment node
  */
@@ -91,9 +92,9 @@ describe('관리자 화면 — 단추·작은 요소에 카드 상자 클래스�
             if (!CONTROL_NAMES.has(n.name)) return false;
             const tokens = classTokens(n.props?.className);
 
-            return tokens.includes('admin-card')
-                && !tokens.includes('admin-card-clickable')
-                && !tokens.includes('admin-card-selected');
+            return tokens.includes('ecommerce-admin-card')
+                && !tokens.includes('ecommerce-admin-card-clickable')
+                && !tokens.includes('ecommerce-admin-card-selected');
         }).map((n) => `${relative(LAYOUTS, file).replace(/\\/g, '/')} :: ${n.name}#${n.id ?? ''}`));
 
         expect(misuse).toEqual([]);
@@ -113,8 +114,8 @@ describe('관리자 화면 — 단추·작은 요소에 카드 상자 클래스�
         const [clear] = buttons;
         const tokens = classTokens(clear.props?.className);
 
-        expect(tokens).not.toContain('admin-card');
-        expect(tokens).toEqual(expect.arrayContaining(['btn', 'btn-outline']));
+        expect(tokens).not.toContain('ecommerce-admin-card');
+        expect(tokens).toEqual(expect.arrayContaining(['ecommerce-btn', 'ecommerce-btn-outline']));
         expect(clear.props?.['aria-label']).toBe('$t:sirsoft-ecommerce.common.remove');
         expect(JSON.stringify(clear.children ?? [])).toContain('"name":"xmark"');
         expect(JSON.stringify(clear.actions ?? [])).toContain('form.brand_id');
@@ -134,9 +135,9 @@ describe('관리자 화면 — 단추·작은 요소에 카드 상자 클래스�
             expect(btn).toBeDefined();
 
             const tokens = classTokens(btn.props?.className);
-            expect(tokens).not.toContain('admin-card');
-            expect(tokens).toContain('btn-secondary');
-            const skeleton = classTokens(ko.props?.className).filter((t) => !/^(dark:)?(bg|text)-/.test(t));
+            expect(tokens).not.toContain('ecommerce-admin-card');
+            expect(tokens).toContain('ecommerce-btn-secondary');
+            const skeleton = classTokens(ko.props?.className).filter((t) => !/^(ecommerce:)?(dark:)?(bg|text)-/.test(t));
             expect(tokens).toEqual(expect.arrayContaining(skeleton));
 
             // 한국어 단추처럼 언어 이름·코드 두 줄을 곧바로 품는다(구분선이 생기는 row-stack 감싸개 없음)

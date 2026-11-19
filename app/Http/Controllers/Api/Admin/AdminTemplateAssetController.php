@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Extension\Cache\CacheDriverFactory;
 use App\Extension\Cache\CoreCacheDriver;
 use App\Extension\Helpers\EditorSpecAssembler;
 use App\Http\Controllers\Api\Base\AdminBaseController;
@@ -9,6 +10,7 @@ use App\Services\ExtensionStaticCacheService;
 use App\Services\PermissionService;
 use App\Services\TemplateService;
 use App\Support\AssetUrl;
+use App\Support\CssLayerFlattener;
 use Illuminate\Http\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -31,6 +33,9 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class AdminTemplateAssetController extends AdminBaseController
 {
+    /** 편집기 프리뷰 CSS 를 담는 층 — 관리자 화면 머리(`admin.blade.php`)가 `g7-extension` 앞에 순서를 선언한다 */
+    public const PREVIEW_LAYER = 'g7-preview';
+
     /**
      * 편집기 자산 서빙 컨트롤러를 만든다.
      *
@@ -207,21 +212,23 @@ class AdminTemplateAssetController extends AdminBaseController
 
         if ($cssPath === null) {
             // CSS 부재 — 빈 CSS 폴백(편집기 부팅이 실패하지 않도록 200).
-            return response('', 200)->header('Content-Type', 'text/css; charset=UTF-8');
+            return $this->inlineContentResponse('', 'text/css; charset=UTF-8');
         }
 
         // 코어 소유 키(`template.*`)는 CoreCacheDriver 직접 생성으로 다룬다 — `app(CacheInterface)`
         // 바인딩은 확장 컨텍스트로 누수될 수 있어(메모리 feedback_core_cache_no_container_binding)
         // 코어 캐시 store 를 빗나갈 수 있다.
-        $cache = new CoreCacheDriver;
+        $cache = CacheDriverFactory::core();
         $cacheVersion = ExtensionStaticCacheService::getExtensionCacheVersion();
         // 캐시 키 — 템플릿 + 확장 캐시 버전 + 파일 mtime(빌드 변경 즉시 무효화).
-        $mtime = (int) @filemtime($cssPath);
-        $cacheKey = "template.editor_css.{$identifier}.v{$cacheVersion}.m{$mtime}";
+        // mtime 을 읽지 못하면 키를 만들지 않고 캐시를 **거치지 않는다** (아래 헬퍼 참조).
+        $cacheKey = $this->editorCssCacheKey($identifier, $cacheVersion, $cssPath);
 
-        $cached = $cache->get($cacheKey);
-        if (is_string($cached)) {
-            return response($cached, 200)->header('Content-Type', 'text/css; charset=UTF-8');
+        if ($cacheKey !== null) {
+            $cached = $cache->get($cacheKey);
+            if (is_string($cached)) {
+                return $this->inlineContentResponse($cached, 'text/css; charset=UTF-8');
+            }
         }
 
         $css = (string) file_get_contents($cssPath);
@@ -243,9 +250,39 @@ class AdminTemplateAssetController extends AdminBaseController
         }
 
         // 변환 결과 캐시(실패해도 원본을 그대로 캐시 — 매요청 재가공 방지).
-        $cache->put($cacheKey, $css, 3600);
+        if ($cacheKey !== null) {
+            $cache->put($cacheKey, $css, 3600);
+        }
 
-        return response($css, 200)->header('Content-Type', 'text/css; charset=UTF-8');
+        // 세 응답 모두 코어 헬퍼를 지난다 — 파일 서빙 응답 계약(유형 선언 + `nosniff`)은 그
+        // 한 곳이 붙인다. 종전에는 `response()->header()` 로 직접 만들어 이 통로만 `nosniff`
+        // 가 빠져 있었다.
+        return $this->inlineContentResponse($css, 'text/css; charset=UTF-8');
+    }
+
+    /**
+     * 편집기 CSS 변환 결과의 캐시 키를 만듭니다. mtime 을 읽지 못하면 `null` 입니다.
+     *
+     * 종전에는 `(int) @filemtime()` 이라 조회 실패(`false`)가 `m0` 으로 접혔다. 그러면
+     * 실패한 요청들이 **하나의 키**를 공유해, 어느 시점의 변환 결과든 그 키에 한 번
+     * 들어가면 빌드가 바뀌어도 1시간 동안 그대로 나간다 — mtime 을 키에 넣은 이유
+     * (빌드 변경 즉시 무효화)가 그 자리에서 사라진다. 오류도 로그도 없다. 조회 실패는
+     * 키를 만들지 않아 호출부가 캐시를 읽지도 쓰지도 않게 한다.
+     *
+     * @param  string  $identifier  템플릿 식별자
+     * @param  int  $cacheVersion  확장 캐시 버전
+     * @param  string  $cssPath  CSS 파일 절대 경로
+     * @return string|null 캐시 키, mtime 조회 실패 시 null
+     */
+    protected function editorCssCacheKey(string $identifier, int $cacheVersion, string $cssPath): ?string
+    {
+        $mtime = @filemtime($cssPath);
+
+        if ($mtime === false) {
+            return null;
+        }
+
+        return "template.editor_css.{$identifier}.v{$cacheVersion}.m{$mtime}";
     }
 
     /**
@@ -319,101 +356,27 @@ class AdminTemplateAssetController extends AdminBaseController
     }
 
     /**
-     * CSS 의 `@layer NAME { ... }` 블록 래퍼를 제거해 내부 규칙을 unlayered 로 평탄화한다.
+     * CSS 의 `@layer NAME { ... }` 층 이름을 프리뷰 층 `g7-preview` 하나로 모은다.
      *
      * Tailwind v4 는 규칙을 `@layer theme/base/components/utilities` 로 감싼다. 편집기
      * 프리뷰 CSS 와 어드민 호스트 CSS 가 같은 레이어 이름을 쓰면 cross-build 레이어 우선순위
-     * 충돌로 프리뷰 규칙이 적용되지 않을 수 있다. 편집기 CSS 는 프리뷰 전용 + 마지막 로드라
-     * 권위를 가져야 하므로, 레이어 블록 래퍼만 벗겨 내부 규칙을 unlayered 로 만든다(unlayered >
-     * layered). 규칙 자체와 소스 순서는 보존하므로 파일 내 cascade 는 불변.
+     * 충돌로 프리뷰 규칙이 적용되지 않을 수 있다. 그래서 프리뷰의 층 이름을 관리자 화면에 없는 이름 하나로
+     * 합친다. 규칙 자체와 소스 순서는 보존하므로 파일 내 cascade 는 불변.
      *
-     * 중괄호 균형 스캐너로 `@layer <names> {` 의 짝 `}` 만 찾아 제거한다(정규식은 중첩 중괄호를
-     * 안전히 매칭 못 함). `@layer <names>;`(선언만, 블록 없음)은 그대로 둔다(레이어 순서 선언).
+     * 층 래퍼를 벗겨 층 없는 규칙으로 두면 템플릿 초기화(`*{border:0 solid}`·`h1{font-size:inherit}`)가 확장 CSS 의
+     * 의미 칸(`@layer g7-extension`)까지 이겨 프리뷰의 확장 화면 테두리·제목 크기가 사라진다(issue816 실측:
+     * 메모 카드 테두리 1px→0, 제목 24px→13px). 관리자 화면 머리가 템플릿 CSS 뒤에
+     * `@layer g7-preview, g7-extension;` 으로 순서를 정하므로, 이 층은 어드민 호스트의 층 규칙보다 위·확장 의미
+     * 칸보다 아래에 놓인다. 층 밖에 있던 템플릿 규칙은 층 밖에 그대로 남아, 사용자 화면처럼 확장 의미 칸을 이긴다.
+     * 순서 선언(`@layer a, b;`)은 지운다 — 남기면 관리자 화면에 없는 이름이 확장 의미 칸 뒤에 새 층으로 생긴다.
      *
      * @param  string  $css  치환 완료된 CSS
-     * @return string 레이어 래퍼가 제거된 CSS
+     * @return string 층 이름을 프리뷰 층으로 모은 CSS
      */
     private function flattenCssLayers(string $css): string
     {
-        // 중첩 `@layer` 대비 — 더 이상 블록 오프너가 없을 때까지 반복(최대 8회, 폭주 방지).
-        for ($pass = 0; $pass < 8; $pass++) {
-            if (! preg_match('/@layer\s+[^;{]*\{/', $css)) {
-                break;
-            }
-            $css = $this->flattenCssLayersOnce($css);
-        }
-
-        return $css;
-    }
-
-    /**
-     * `@layer NAME { ... }` 블록 래퍼 1패스 제거(중괄호 균형 스캔). flattenCssLayers 가 반복 호출.
-     *
-     * @param  string  $css  CSS
-     * @return string 1패스 평탄화 결과
-     */
-    private function flattenCssLayersOnce(string $css): string
-    {
-        $out = '';
-        $len = strlen($css);
-        $i = 0;
-        // `@layer` 다음에 이름 목록 + `{` 가 오는 블록 오프너를 찾는다.
-        while ($i < $len) {
-            // `@layer` 리터럴 탐색
-            $at = strpos($css, '@layer', $i);
-            if ($at === false) {
-                $out .= substr($css, $i);
-                break;
-            }
-            // `@layer` 앞부분 그대로 출력
-            $out .= substr($css, $i, $at - $i);
-
-            // `@layer` 뒤 ~ 다음 `{` 또는 `;` 까지 — 이름 목록.
-            $j = $at + 6; // strlen('@layer')
-            $brace = strpos($css, '{', $j);
-            $semi = strpos($css, ';', $j);
-
-            // 블록 없는 선언(`@layer a, b;`)이면 `;` 가 먼저 — 그대로 보존.
-            if ($semi !== false && ($brace === false || $semi < $brace)) {
-                $out .= substr($css, $at, $semi - $at + 1);
-                $i = $semi + 1;
-
-                continue;
-            }
-
-            if ($brace === false) {
-                // 형식 이상 — 남은 전체 출력 후 종료(폴백).
-                $out .= substr($css, $at);
-                break;
-            }
-
-            // `@layer <names> {` 블록 — 오프너(`@layer ... {`)는 버리고 내부를 평탄화.
-            // 짝 `}` 를 중괄호 균형으로 찾는다.
-            $depth = 1;
-            $k = $brace + 1;
-            while ($k < $len && $depth > 0) {
-                $ch = $css[$k];
-                if ($ch === '{') {
-                    $depth++;
-                } elseif ($ch === '}') {
-                    $depth--;
-                    if ($depth === 0) {
-                        break;
-                    }
-                }
-                $k++;
-            }
-            if ($depth !== 0) {
-                // 짝 불일치 — 평탄화 포기, 원문 그대로 출력 후 종료(안전 폴백).
-                $out .= substr($css, $at);
-                break;
-            }
-            // 내부 내용(오프너 `{` 다음 ~ 짝 `}` 직전)만 채택 — 레이어 래퍼 제거.
-            $out .= substr($css, $brace + 1, $k - ($brace + 1));
-            $i = $k + 1; // 짝 `}` 다음부터 계속
-        }
-
-        return $out;
+        // 층 스캔은 확장 CSS 서빙과 같은 구현을 쓴다(주석·문자열·이스케이프를 건너뛴다).
+        return CssLayerFlattener::mergeInto($css, self::PREVIEW_LAYER);
     }
 
     /**

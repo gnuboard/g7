@@ -1,0 +1,10 @@
+feature: sso_login_attempt_retention
+description: |
+  로그인 시도 이력 보존 정리 — 저장소 `pruneBefore` 가 기준 시각 전 행만 지우고 지운 수를 돌려준다. 스케줄(`sirsoft-sso:prune`)과 보존일 설정은 P3 시험(`Provisioning\PruneCommandTest`) 몫.
+axes:
+  created_at: ["before|at|after"]
+effects:
+  - only_older_rows_deleted
+  - deleted_count_returned
+test_files:
+  - plugins/_bundled/sirsoft-sso/tests/Feature/Repositories/LoginAttemptRepositoryTest.php

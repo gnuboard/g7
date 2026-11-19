@@ -80,13 +80,17 @@ class ResourceFieldDescriber
         'recipient' => '수신자 사용자 객체 (uuid/name/email — recipientUser 관계 파생)',
         'sender' => '발신자 사용자 객체 (uuid/name/email — senderUser 관계 파생)',
         'author' => '작성자 사용자 객체 (uuid/name — author 관계 파생)',
-        'actor_name' => '행위를 수행한 주체(사용자/시스템)의 이름',
+        'actor_name' => '행위를 수행한 주체(사용자/시스템)의 이름 (회원이면 그 자리의 표시 이름)',
+        'real_name' => '회원의 실명 (관리자 응답에서 요청자에게 회원 조회 권한이 있고 표시 이름과 다를 때만 실림)',
+        'created_by_real_name' => '저장자의 실명 (관리자 응답에서 요청자에게 회원 조회 권한이 있고 표시 이름과 다를 때만 실림)',
+        'requester_real_name' => '접수자의 실명 (관리자 응답에서 요청자에게 회원 조회 권한이 있고 표시 이름과 다를 때만 실림)',
 
         // 시스템/집계 공통 (DashboardService/UserRepository/SettingsService)
         'total' => '전체 개수 (집계)',
         'total_users' => '전체 사용자 수 (통계 객체는 count/추이 포함)',
         'time' => '상대 시각 표시 (예: "24초 전" — diffForHumans() 산물)',
         'server_time' => '서버 현재 시각 (Y-m-d H:i:s)',
+        'extra_sections' => '확장이 필터 훅 core.settings.filter_system_info_sections 로 더한 정보 카드 목록 ({id, title, badge, rows, list, notice} — 서버 검증, 매 요청 계산)',
         'number' => '목록에서의 순번 (페이지네이션 반영 행 번호 — HasRowNumber 파생)',
 
         // 로케일 (TemplateResource/LocaleController)
@@ -130,6 +134,8 @@ class ResourceFieldDescriber
         'exit_code' => '실행 종료 코드 (0=성공, 그 외=실패)',
         'output' => '실행 표준 출력 내용',
         'error_output' => '실행 표준 에러 출력 내용 (없으면 빈 문자열/null)',
+        'reject_reason' => '거절 사유 코드 (status=rejected 일 때: already_running, run_lock_unavailable, owner_inactive / 그 밖에는 null)',
+        'reject_reason_label' => '거절 사유의 사람이 읽는 문구 (읽는 사람의 언어, 거절 행이 아니면 null)',
         'memory_usage' => '실행 중 최대 메모리 사용량 (바이트)',
 
         // 캐시/파일/집계 (일회성 동작 응답)

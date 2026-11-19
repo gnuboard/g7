@@ -4,6 +4,44 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)를 따르며,
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
+## [1.3.0] - 2026-11-20
+
+### Added
+
+#### 회원 항목과 표시 이름
+
+- 추가 정보 입력 화면의 편집기 상태 라벨 3개(`editor.state.required_info_*`)를 일본어로 추가했습니다. 전에 고른 표시 이름 종류를 더 이상 쓸 수 없을 때의 안내(`member.display_name.reselect`)를 원본 문구에 맞춰 고쳤습니다.
+- 레이아웃 편집기의 「회원 항목 입력칸」 컴포넌트 이름과 기본 문구, 가입 항목과 내 정보 항목 데이터 소스 이름, 가입 화면과 내 정보 화면의 회원 항목 문구(`member.fields.*` — 주소 칸 이름, 파일 추가와 삭제, 업로드 제한 안내, 잠긴 항목 안내, 「추가 정보」 카드 제목)의 일본어 번역을 추가했습니다
+- 가입 화면과 내 정보 수정의 「표시 이름」 선택과 미리보기(`member.display_name.*`), 「추가 정보 입력」 화면과 추가 정보 필요 안내 창(`member.required_info.*`), 게시판 글쓰기의 비회원 작성자 추가 정보 묶음 이름과 「이 게시판에서 보이는 이름」 안내(`board.guest_fields.group_label`, `board.author_display.*`), 주문서의 주문자, 배송 추가 정보 묶음 이름(`shop.checkout_fields.*`)의 일본어 번역을 추가했습니다
+
+#### 템플릿 설정
+
+- 템플릿 설정 메뉴 편집기(링크·하위 메뉴 추가, 끌기 안내, 보이는 대상, 하위로·상위로, 삭제 확인)와 목록 칸 문구를 일본어로 추가했습니다.
+- 템플릿 설정 「헤더 메뉴」 칸과 자동 항목(홈·인기글·쇼핑·게시판 전체) 이름·안내를 일본어로 추가했습니다. 「바로가기 링크」 칸 문구는 이 칸으로 바뀌었습니다.
+- 템플릿 설정 네 묶음(브랜딩·헤더·푸터·홈)의 섹션·칸 이름과 안내의 일본어 번역을 추가했습니다
+- 템플릿 환경설정의 파비콘 칸 문구를 일본어로 추가했습니다.
+- 템플릿 1.4.0 에 맞춰 버전을 올렸습니다.
+
+#### 로그인·외부 인증·비밀번호 없는 회원
+
+- 비밀번호 없는 회원(소셜 로그인으로만 가입)의 마이페이지 문구 일본어 번역을 추가했습니다 — 비밀번호 처음 설정 안내(`mypage.profile.change_password_first_time_notice`), 정보 수정 전 이메일 인증번호 확인(`mypage.profile.reauth_*`).
+- 메일을 받을 수 없는 회원(대체 이메일)의 본인 확인·비밀번호 첫 설정 안내 일본어 번역을 추가했습니다(`mypage.profile.reauth_unavailable`·`mypage.profile.change_password_reauth_unavailable`).
+- 비밀번호 없는 회원의 정보 수정 확인 칸 제목과 안내 일본어 번역을 추가했습니다(`mypage.profile.verify_identity_title`·`mypage.profile.verify_identity_message`).
+- 외부 인증(회사 계정 로그인)과 회원가입 받기 설정 문구의 일본어 번역을 추가했습니다 — 로그인 화면의 이메일 먼저 입력·「{수단}(으)로 계속」·「다른 방법으로 로그인」(`auth.external.*`), 회원가입이 닫혔을 때의 안내(`auth.register.closed_notice`), 회사 계정이 관리하는 항목 안내(`mypage.profile.locked_by_company`), 외부 수단 본인 확인 화면으로 이동하지 못했을 때의 안내(`mypage.profile.reauth_external_failed`).
+- 메일을 받을 수 없는 회원이 회사 계정 등 다른 수단으로 본인 확인을 이어 가는 버튼과 안내의 일본어 번역을 추가하고, 그 회원의 안내 문구를 고쳤습니다(`mypage.profile.reauth_continue`·`mypage.profile.reauth_code_sent_generic`·`mypage.profile.reauth_unavailable`).
+- 로그인 화면의 회사 계정 이메일 판정 안내와 비상 계정 로그인(`?local=1`) 안내 일본어 번역을 추가했습니다(`auth.external.discovered_notice`·`auth.external.discovered_notice_company`·`auth.external.local_notice`).
+- 메일을 받을 수 없지만 회사 계정 다시 로그인 등 다른 방법으로 본인 확인을 할 수 있는 회원의 비밀번호 변경 화면 안내 일본어 번역을 추가했습니다(`mypage.profile.change_password_reauth_other`).
+
+#### 업로드·이미지·공통 화면 요소
+
+- 본문 이미지 확대 보기 버튼 이름과 편집기 썸네일 규격 선택의 일본어 번역을 추가했습니다.
+- 업로더의 이미지 압축 실패 안내와 업로드 실패로 저장을 멈췄다는 안내(`attachment.compression_failed`, `attachment.upload_failed_save_stopped`)의 일본어 번역을 추가했습니다.
+- 공통 오류 화면(전용 오류 화면이 없는 400·422·429·502·504 등)의 제목·안내·새로고침·홈으로 단추 일본어 번역을 추가했습니다(`error.default.*`).
+
+### Removed
+
+- 가입 화면과 내 정보 수정이 회원 항목 계약으로 칸을 그리게 되면서 쓰지 않게 된 문구를 정리했습니다. 가입 화면의 이름, 닉네임, 휴대폰, 전화, 언어 칸 이름과 자리표시자(`auth.name` 등 9건), 내 정보의 결제 통화와 배송국가 제목, 안내, 수정 안내, 적용되지 않는 배송국가 안내(`mypage.currency_settings.*`, `mypage.shipping_country_settings.*` 7건), 게시판 알림 설정 칸 이름과 안내(`mypage.notification_settings.*` 9건), 기본 정보, 연락처, 주소, 서명, 자기소개 칸 이름과 자리표시자(`mypage.profile.*` 27건)입니다
+
 ## [1.2.4] - 2026-11-15
 
 ### Added

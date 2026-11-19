@@ -1,4 +1,4 @@
-<!-- e2e:allow 커밋 전 점검 후속(2026-11-09) — 편집기 정적 라벨(editor_label)과 입력 변경 동작 설명 주석만 더했다. 굽기 JSON 은 meta·comment 외 무변경. 창 동작은 5단계 브라우저 실측분 그대로.
+<!-- e2e:allow 브라우저 실측(2026-11-11) — 「예시 주소 확인」 단추가 응답 전 잠기고 회전 표시를 보이며 422 와 200 양쪽에서 풀림, 경고 띠와 그리드 간격 16px(빈 칸 안내가 뜨면 12px + 16px), 768px 에서 2열과 767px 에서 1열을 화면에서 쟀다.
   외부 영상 서비스 추가·수정 겸용 창 (#883) —본문 콘텐츠 탭의 「서비스 추가」와 각 행의 「수정」이 연다. 어느 쪽인지는
   전역 `embed_provider_form_modal.row_index` 로 갈린다(null = 추가, 숫자 = 그 행 수정).
 
@@ -12,13 +12,15 @@
 <partial description="환경설정 > 본문 콘텐츠 탭 외부 영상 서비스 추가·수정 모달. _global.embed_provider_form_modal 단일 진실" editor_label="$t:admin.modal_label.admin_settings.embed_provider_form_modal">
   <modal data-type="composite" data-ref="embed_provider_form_modal" title="{{(_global.embed_provider_form_modal?.row_index ?? null) === null ? '$t:admin.settings.content.embed.modal.create_title' : '$t:admin.settings.content.embed.modal.edit_title'}}" size="lg">
     <div class="row-stack">
-      <div data-ref="embed_provider_trust_notice" class="alert-warning">
+      <!-- 경고 띠 바로 아래가 2열 그리드일 때 띠와 그리드 사이를 띄운다(빈 칸 안내가 뜨면 그 안내가 사이에 끼므로 안내 쪽이 띄운다) -->
+      <div data-ref="embed_provider_trust_notice" class="alert-warning {{!!_global.embed_provider_form_modal?.error ? '' : 'mb-4'}}">
         <p class="text-sm">$t:admin.settings.content.embed.modal.trust_notice</p>
       </div>
-      <div data-ref="embed_provider_form_error" data-if="{{!!_global.embed_provider_form_modal?.error}}" class="alert-danger">
+      <div data-ref="embed_provider_form_error" data-if="{{!!_global.embed_provider_form_modal?.error}}" class="alert-danger mb-4">
         <p class="text-error-strong">$t:admin.settings.content.embed.modal.required</p>
       </div>
-      <div class="grid-2col-responsive">
+      <div class="grid grid-cols-1 gap-4">
+        <responsive on="768-" class="grid grid-cols-2 gap-4"/>
         <div>
           <label class="form-label">$t:admin.settings.content.embed.modal.name</label>
           <input data-ref="embed_provider_name_input" type="text" value="{{_global.embed_provider_form_modal?.form?.name ?? ''}}" placeholder="$t:admin.settings.content.embed.modal.name_placeholder" :maxLength="40">
@@ -59,7 +61,8 @@
         </input>
         <p class="form-hint">$t:admin.settings.content.embed.modal.player_url_hint</p>
       </div>
-      <div class="grid-2col-responsive">
+      <div class="grid grid-cols-1 gap-4">
+        <responsive on="768-" class="grid grid-cols-2 gap-4"/>
         <div>
           <label class="form-label">$t:admin.settings.content.embed.modal.id_rule</label>
           <select data-ref="embed_provider_id_rule_select" :autoBinding="false" value="{{_global.embed_provider_form_modal?.form?.id_rule ?? 'alnum_dash'}}">
@@ -114,18 +117,23 @@
               <set-state target="global" embed_provider_form_modal.sample_url="{{$event.target.value}}" :embed_provider_form_modal.preview="null"/>
             </on>
           </input>
-          <button data-ref="embed_provider_sample_check" type="button" class="px-3 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700">
+          <!-- 확인은 서버 왕복이라 응답이 올 때까지 단추를 잠그고 돌린다 — 없으면 연타가 그대로 여러 번의 호출이 되고 늦게 온 응답이 결과를 덮는다. 플래그는 창 상태(전역)에 두어 창을 다시 열면 함께 비워지고, 성공·실패 양쪽에서 끈다. -->
+          <button data-ref="embed_provider_sample_check" type="button" disabled="{{_global.embed_provider_form_modal?.previewing === true}}" class="flex-center gap-2 px-3 py-2 text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed">
             <on type="click">
               <!-- 예시 주소 확인 — 저장 때와 같은 서버 컴파일 규칙으로 꺼낸 id·플레이어 주소를 받는다(저장하지 않음) -->
-              <api-call :auth_required="true" target="/api/admin/settings/content/embed-preview" method="POST" body="{{({ provider: { url_patterns: (_global.embed_provider_form_modal?.form?.url_patterns_text ?? '').split('\n').map((l) => l.trim()).filter((l) => l !== ''), player_url: (_global.embed_provider_form_modal?.form?.player_url ?? '').trim(), id_rule: _global.embed_provider_form_modal?.form?.id_rule ?? 'alnum_dash' }, sample_url: (_global.embed_provider_form_modal?.sample_url ?? '').trim() })}}">
-                <success>
-                  <set-state target="global" embed_provider_form_modal.preview="{{response.data}}"/>
-                </success>
-                <fail>
-                  <set-state target="global" embed_provider_form_modal.preview="{{({ matched: false, id: null, player_url: null, errors: error.errors ?? {} })}}"/>
-                </fail>
-              </api-call>
+              <sequence>
+                <set-state target="global" :embed_provider_form_modal.previewing="true"/>
+                <api-call :auth_required="true" target="/api/admin/settings/content/embed-preview" method="POST" body="{{({ provider: { url_patterns: (_global.embed_provider_form_modal?.form?.url_patterns_text ?? '').split('\n').map((l) => l.trim()).filter((l) => l !== ''), player_url: (_global.embed_provider_form_modal?.form?.player_url ?? '').trim(), id_rule: _global.embed_provider_form_modal?.form?.id_rule ?? 'alnum_dash' }, sample_url: (_global.embed_provider_form_modal?.sample_url ?? '').trim() })}}">
+                  <success>
+                    <set-state target="global" :embed_provider_form_modal.previewing="false" embed_provider_form_modal.preview="{{response.data}}"/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :embed_provider_form_modal.previewing="false" embed_provider_form_modal.preview="{{({ matched: false, id: null, player_url: null, errors: error.errors ?? {} })}}"/>
+                  </fail>
+                </api-call>
+              </sequence>
             </on>
+            <icon data-if="{{_global.embed_provider_form_modal?.previewing === true}}" name="spinner" class="animate-spin" size="sm"/>
             <span>$t:admin.settings.content.embed.modal.sample_check</span>
           </button>
         </div>

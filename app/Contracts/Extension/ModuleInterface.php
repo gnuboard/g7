@@ -178,13 +178,20 @@ interface ModuleInterface extends CacheableExtensionInterface
     /**
      * 모듈의 스케줄 작업 목록을 반환합니다.
      *
-     * 스케줄 배열의 각 항목은 다음 구조를 따라야 합니다:
-     * - command: Artisan 커맨드 이름
-     * - schedule: 스케줄 주기 ('daily', 'hourly', 'everyMinute', 'weekly' 또는 cron 표현식)
-     * - description: 작업 설명 (선택)
-     * - enabled_config: 설정 키 (선택, 설정에 따라 활성화 여부 결정)
+     * 7.2.0 부터 코어가 이 선언을 schedules 테이블로 동기화하고 스케줄러는 DB 행을 실행한다.
+     * 각 항목(코어 `config/core.php` 의 `schedules` 카탈로그와 같은 키):
+     * - name: 모듈 안에서 고유한 기계 식별자 (권장)
+     * - type: artisan(기본) | job
+     * - label / description: 다국어 표시 명칭·설명 ({로케일: 문자열})
+     * - command: Artisan 명령(옵션 포함) 또는 job 클래스 FQCN
+     * - expression: cron 식 / frequency: custom(기본) | everyThirtySeconds / timezone (선택)
+     * - without_overlapping(분)·on_one_server·dispatch_mode(sync|queue)·history_mode(all|failures_only)·notify_on_failure·timeout (선택)
+     * - enabled_condition: 실행 조건 목록 [{source, key, operator, value?, default}] (선택)
      *
-     * @return array 스케줄 작업 배열
+     * 옛 형식(command·schedule·description 문자열·enabled_config)도 받는다 — 동기화 때 새 형식으로 바뀐다.
+     * 상세 형식은 AbstractModule::getSchedules() 주석을 따른다.
+     *
+     * @return array<int, array<string, mixed>> 스케줄 선언 목록
      */
     public function getSchedules(): array;
 

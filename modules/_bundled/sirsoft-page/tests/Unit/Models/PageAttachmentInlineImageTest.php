@@ -101,7 +101,9 @@ class PageAttachmentInlineImageTest extends ModuleTestCase
         $response = app(PageAttachmentService::class)->preview($attachment);
 
         $this->assertNotNull($response);
-        $this->assertSame('inline', $response->headers->get('Content-Disposition'));
+        // 파일 이름 선언은 스토리지 어댑터가 만든다 — 서비스가 원문 `Content-Disposition: inline` 을 넘기지 않으므로
+        // 값은 `inline; filename=…` 이다. 여기서 재는 것은 래스터가 인라인으로 남는다는 것이다.
+        $this->assertStringStartsWith('inline', (string) $response->headers->get('Content-Disposition'));
         $this->assertSame('nosniff', $response->headers->get('X-Content-Type-Options'));
     }
 

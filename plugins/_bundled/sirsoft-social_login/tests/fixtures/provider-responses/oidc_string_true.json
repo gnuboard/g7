@@ -1,0 +1,6 @@
+{
+    "sub": "oidc-user-2",
+    "email": "oidc.string@example.test",
+    "email_verified": "true",
+    "preferred_username": "stringbool"
+}

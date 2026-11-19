@@ -20,6 +20,8 @@ use PHPUnit\Framework\TestCase;
  *
  * `getCpuInfo()` 는 protected 이고 `shell_exec` 을 주입할 수 없으므로,
  * 이 테스트는 그 메서드가 의존하는 정규화 계약을 검사한다.
+ *
+ * @scenario output_encoding=cp949_korean, sink=core_system_info
  */
 class SettingsServiceCpuInfoTest extends TestCase
 {
@@ -28,6 +30,15 @@ class SettingsServiceCpuInfoTest extends TestCase
      */
     private const ERROR_SENTENCE = "'powershell'은(는) 내부 또는 외부 명령으로 인식되지 않습니다.";
 
+    /**
+     * CP949 로 인코딩된 한글 셸 오류 문장이 그대로는 JSON 직렬화를 깨뜨리지만, 정규화를 거치면 원문으로 복원되어 직렬화되는지 확인한다.
+     *
+     * @scenario output_encoding=cp949_korean, sink=core_system_info
+     *
+     * @effects core_cpu_info_normalized_before_serialization
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function cp949_shell_error_sentence_becomes_serializable(): void
     {
@@ -51,6 +62,12 @@ class SettingsServiceCpuInfoTest extends TestCase
      *
      * 오류 문장이 CPU 이름으로 보이는 표시 문제는 이번 범위 밖이며,
      * 영문 'error' 판정은 그대로 유지된다 (기능 축소 없음).
+     *
+     * @scenario output_encoding=utf8, sink=core_system_info
+     *
+     * @effects valid_utf8_passes_through_unchanged
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function normalization_preserves_existing_error_detection(): void
@@ -70,6 +87,12 @@ class SettingsServiceCpuInfoTest extends TestCase
 
     /**
      * 정상적인 CPU 이름은 한 글자도 변하지 않아야 한다.
+     *
+     * @scenario output_encoding=utf8, sink=core_system_info
+     *
+     * @effects valid_utf8_passes_through_unchanged
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function normal_cpu_name_is_unchanged(): void
@@ -83,6 +106,12 @@ class SettingsServiceCpuInfoTest extends TestCase
      * getCpuInfo() 가 정규화를 실제로 경유하는지 소스 레벨 회귀 검증.
      *
      * 정규화를 걷어내면 이 클래스의 나머지 계약이 전부 통과해도 500 이 되살아난다.
+     *
+     * @scenario sink=core_system_info
+     *
+     * @effects get_cpu_info_routes_both_branches_through_normalizer
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function get_cpu_info_source_routes_shell_output_through_normalizer(): void

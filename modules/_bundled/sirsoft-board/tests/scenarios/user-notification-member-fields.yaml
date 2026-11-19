@@ -1,0 +1,32 @@
+feature: 게시판 알림 수신 설정 4칸의 회원 항목 편입
+
+description: |
+  게시판 알림 수신 설정 4칸(게시글 완료, 게시글 답변, 댓글, 답변)을 회원 항목 집합(core.user)의 항목으로 선언하고
+  값은 종전 테이블에 핸들러로 잇는다. 가입, 관리자 추가, 관리자 수정, 내 정보 수정이 같은 규칙과 같은 저장 경로를 쓴다.
+  가입 화면 표시는 기본이 꺼짐이고 운영자가 켤 수 있다. 리스너는 검증과 저장 훅을 더는 구독하지 않아 같은 칸을 두 번
+  검증하거나 두 번 저장하지 않는다. 요청에 실리지 않은 칸은 저장된 값이 그대로 남는다. 모듈을 끄면 항목이 빠진다.
+
+axes:
+  case: [declaration, language_pack_names, subscription_contract, admin_create, admin_create_queue_independent, admin_create_no_fields, admin_update, admin_update_partial, validation, self_update, signup, admin_form_schema, module_inactive, purge]
+
+effects:
+  - notification_fields_declared_in_core_user_set
+  - declared_field_names_include_active_language_pack_locale
+  - listener_subscribes_resource_filter_only
+  - notification_values_saved_on_admin_create
+  - notification_values_saved_without_worker
+  - no_settings_row_without_notification_fields
+  - notification_values_saved_on_admin_update
+  - notification_values_saved_on_self_update
+  - notification_values_in_user_response
+  - single_write_per_changed_field
+  - absent_notification_fields_untouched
+  - notification_field_validated_as_boolean_once
+  - notification_values_ignored_on_signup_by_default
+  - notification_values_saved_on_signup_when_enabled
+  - notification_fields_in_admin_form_schema
+  - notification_fields_removed_when_module_inactive
+  - notification_settings_row_purged_with_member_values
+
+test_files:
+  - modules/_bundled/sirsoft-board/tests/Feature/User/UserNotificationFieldSetTest.php

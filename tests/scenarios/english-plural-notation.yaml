@@ -1,0 +1,19 @@
+feature: 영어 문구의 괄호 복수 표기 금지 — 코어 lang/en 과 설치기 public/install/lang/en.php
+
+description: |
+  7.1.5·7.1.6 이 코어 영어 안내에서 「PHP extension(s)」·「package(s)」 같은 괄호 복수 표기를 걷었지만 설치기 영어
+  문구에는 그대로 남아 있었다. 두 문구 묶음 모두 `(s)` 대신 개수와 무관한 문장(「:count packages」,
+  「these PHP extensions」 등)을 쓴다.
+
+test_files:
+  - tests/Unit/Installer/EnglishPluralNotationTest.php
+
+axes:
+  surface:
+    - installer_lang
+    - core_lang
+    - core_update_count_messages
+
+effects:
+  - english_strings_avoid_parenthesized_plural
+  - count_messages_choose_singular_or_plural   # 개수가 1 일 수 있는 코어 업데이트 문구는 단수|복수 두 문장

@@ -8,7 +8,7 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Extensions 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
@@ -74,6 +74,8 @@ HTTP/1.1 200
 | 403 | Forbidden | 세 종류의 활성화 권한이 하나도 없는 경우 |
 
 <!-- @generated:end -->
+
+
 
 **설명** 코어 버전 비호환으로 자동 비활성화된 확장 목록을 타입별(`plugins`/`modules`/`templates`)로 반환합니다. 각 항목에는 식별자, 비호환 요구 버전, 비활성화 시각과 함께 현재 코어 버전이 담깁니다. 사용자가 dismiss한 알림과 hidden(학습용 샘플) 확장은 결과에서 제외됩니다. `core.plugins.activate` 권한이 필요하며, 상단 배너·대시보드 카드의 데이터 소스로 사용됩니다.
 
@@ -268,6 +270,8 @@ HTTP/1.1 200
 | 404 | Not Found | path 파라미터에 해당하는 리소스가 없는 경우 |
 
 <!-- @generated:end -->
+
+
 
 **설명** 특정 확장의 호환성 알림을 현재 사용자 기준으로 dismiss(닫기) 처리합니다. 경로의 `{type}`(module|plugin|template)과 `{identifier}`로 대상을 지정하며, 해당 확장의 자동 비활성화 알림과 재호환 알림을 함께 dismiss합니다. `core.plugins.activate` 권한이 필요합니다. dismiss는 사용자별로 저장되므로, 캐시 만료나 감지 갱신 시 재호환 상태가 바뀌면 다시 노출될 수 있습니다.
 

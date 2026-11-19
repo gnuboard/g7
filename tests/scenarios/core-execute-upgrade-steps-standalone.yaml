@@ -1,4 +1,5 @@
-# audit:allow test-scenario-coverage reason: 본 매니페스트는 `core:execute-upgrade-steps` 단독 실행 안전화 (사전 2단계 + 사후 3단계 자동 수행 + 5개 --skip-* 옵션) 의 시나리오 매트릭스 SSoT. 핵심 회귀 가드는 test_files 의 통과 테스트로 커버.
+# audit:allow test-scenario-coverage reason: issue:#609 본 매니페스트는 `core:execute-upgrade-steps` 단독 실행 안전화 (사전 2단계 + 사후 3단계 자동 수행 + 5개 --skip-* 옵션) 의 시나리오 매트릭스 SSoT. 핵심 회귀 가드는 test_files 의 통과 테스트로 커버.
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 
 feature: core:execute-upgrade-steps 단독 실행 안전화 (사전·사후 단계 자동 수행 + 5개 --skip-* 옵션)
 
@@ -38,6 +39,8 @@ axes:
   force_flag: [present, absent]                                            # bundled prompt 우회 여부
   bundled_updates_count: [zero, modules_only, plugins_only, templates_only, lang_packs_only, mixed]
   from_to_relation: [from_lt_to, from_eq_to_forced]                       # version_compare 분기
+  steps_only: [present, absent]                                            # --steps-only: 스텝만 실행하고 보조 단계를 모두 생략
+  guard: [memory_older_than_target, no_steps_in_range, run_lock_contended] # 단독 실행의 낡은 메모리 가드·실행 잠금 (7.2.0)
 
 exclusions:
   - { invocation_origin: parent_spawn_with_skip_options, skip_migrations: absent, reason: "부모(beta.6+) spawn 시엔 5개 옵션 모두 전달 — 일부 절단 시뮬은 인위적 비현실 분기" }
@@ -87,6 +90,13 @@ effects:
   - ExecuteUpgradeStepsCommand_standalone_invocation_without_env_runs_all_five_steps_intact
   - execute_upgrade_steps_child_reads_update_config_from_disk_when_config_is_cached
   - ExecuteUpgradeStepsCommand_sweeps_empty_staging_directories_left_by_parent
+  # §7 --steps-only (스텝만 실행)
+  - ExecuteUpgradeStepsCommand_steps_only_runs_only_upgrade_steps              # 권한 정상화와 사전, 사후 단계 없이 스텝만 호출한다
+  - ExecuteUpgradeStepsCommand_steps_only_overrides_standalone_default_steps   # spawn 플래그가 없어도 단독 실행의 다섯 단계 자동 수행보다 우선한다
+
+  # §단독 실행 가드·잠금 (7.2.0, #888) — 새 프로세스는 낡은 메모리 가드 대상이 아니고, 코어 업데이트 실행 잠금을 잡는다
+  - standalone_run_is_not_blocked_by_stale_memory_guard
+  - standalone_run_takes_core_update_run_lock
 
 test_files:
   - tests/Feature/Console/Commands/ExecuteUpgradeStepsStandaloneTest.php

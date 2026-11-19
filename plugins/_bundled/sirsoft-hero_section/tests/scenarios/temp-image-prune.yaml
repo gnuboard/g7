@@ -1,0 +1,26 @@
+feature: 고아 임시 이미지 정리 (sirsoft-hero_section:prune-temp-images)
+
+description: |
+  등록 화면에서 업로드만 하고 저장하지 않은 임시 이미지(banner_id 없음 + temp_key 남음)를 매일 지운다.
+  이커머스 `sirsoft-ecommerce:prune-temp-product-images` 와 같은 방식 — `--days=2`·`--limit=500`·`--dry-run`,
+  days < 1 이면 아무것도 지우지 않음, 결과 scanned/deleted/failed. 파일 삭제가 실패하면 행을 남겨 다음 회차에 다시 시도한다.
+
+axes:
+  surface:
+    - removes_old_unlinked_temp_images_and_files
+    - keeps_recent_temp_images
+    - keeps_images_linked_to_banners
+    - dry_run_deletes_nothing
+    - days_below_one_is_noop
+    - respects_limit
+    - file_delete_failure_keeps_row
+    - schedule_registered_daily
+    - uninstall_purges_images_after_guards
+
+effects:
+  - orphan_files_removed
+  - prune_result_logged
+
+test_files:
+  - plugins/_bundled/sirsoft-hero_section/tests/Feature/Console/PruneTempImagesCommandTest.php
+  - plugins/_bundled/sirsoft-hero_section/tests/Unit/PluginUninstallTest.php

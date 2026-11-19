@@ -9,6 +9,7 @@ use App\Services\PluginSettingsService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Plugins\Sirsoft\PayNhnkcp\Exceptions\NhnKcpApiException;
+use Plugins\Sirsoft\PayNhnkcp\Exceptions\NhnKcpRejectedException;
 
 class NhnKcpApiService
 {
@@ -283,7 +284,7 @@ class NhnKcpApiService
                 'res_msg' => $result['res_msg'] ?? '',
                 'tno' => $tno,
             ]);
-            throw new NhnKcpApiException($result['res_msg'] ?? 'KCP cancel failed');
+            throw new NhnKcpRejectedException(($result['res_msg'] ?? '') !== '' ? $result['res_msg'] : __('sirsoft-pay_nhnkcp::messages.errors.cancel_rejected'));
         }
 
         // 훅: 결제 취소 완료 후 (외부 소비자 후처리 확장 지점)
@@ -303,6 +304,9 @@ class NhnKcpApiService
      * @param  string  $deliNumb  운송장번호
      * @param  string  $deliCorp  택배사코드 (KCP 코드: '04'=CJ대한통운, '05'=한진택배 등)
      * @return array 파싱된 KCP 응답
+     *
+     * @throws NhnKcpRejectedException KCP 가 거절 결과(res_cd != 0000)를 돌려줬을 때 — 메시지는 res_msg
+     * @throws NhnKcpApiException CLI 를 실행하지 못했을 때 — 문구에 서버 경로가 담길 수 있어 화면에 싣지 않는다
      */
     public function registerEscrowDelivery(
         string $tno,
@@ -333,7 +337,7 @@ class NhnKcpApiService
                 'res_msg' => $result['res_msg'] ?? '',
                 'tno' => $tno,
             ]);
-            throw new NhnKcpApiException($result['res_msg'] ?? 'KCP escrow delivery registration failed');
+            throw new NhnKcpRejectedException(($result['res_msg'] ?? '') !== '' ? $result['res_msg'] : __('sirsoft-pay_nhnkcp::messages.errors.escrow_delivery_rejected'));
         }
 
         return $result;

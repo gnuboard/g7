@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Requests\Admin;
 
+use App\Extension\HookManager;
 use Illuminate\Foundation\Http\FormRequest;
 
 /**
@@ -29,7 +30,7 @@ class UpdateClaimRequestOnBehalfRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        $rules = [
             'reason_code' => ['nullable', 'string', 'max:50'],
             'reason_detail' => ['nullable', 'string', 'max:1000'],
             'redelivery_address' => ['nullable', 'array'],
@@ -42,6 +43,11 @@ class UpdateClaimRequestOnBehalfRequest extends FormRequest
             'redelivery_address.state' => ['nullable', 'string', 'max:100'],
             'redelivery_address.country_code' => ['nullable', 'string', 'size:2'],
         ];
+
+        // 확장이 이 요청의 검증 규칙을 더하거나 바꿀 수 있는 자리
+        $filtered = HookManager::applyFilters('sirsoft-ecommerce.admin_claim.update_on_behalf_validation_rules', $rules, $this);
+
+        return is_array($filtered) ? $filtered : $rules;
     }
 
     /**

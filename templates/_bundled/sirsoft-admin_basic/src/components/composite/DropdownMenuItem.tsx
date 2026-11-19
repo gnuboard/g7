@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { Div } from '../basic/Div';
 import { Span } from '../basic/Span';
 import { Icon } from '../basic/Icon';
 import { IconName } from '../basic/IconTypes';
+import { sitePath } from '../../support/apiUrl';
 import { handleLinkClick, navigateTo, resolveLinkHref } from '../../support/navigationLink';
+import { activateOnKey, FOCUS_VISIBLE_RING } from '../../support/keyboardActivation';
 
 export interface DropdownMenuItemProps {
   label?: string;
@@ -92,6 +94,13 @@ export const DropdownMenuItem: React.FC<DropdownMenuItemProps> = ({
     );
   }
 
+  // 부모 메뉴(role="menu") 안이면 로빙 포커스 — 항목은 화살표로 옮기는 자리라 Tab 순서에 들지 않는다(WAI-ARIA 메뉴 관례).
+  // 번들에는 메뉴 밖 사용처가 없지만 등록된 부품이라 사이트 레이아웃이 메뉴 밖에 둘 수 있어 문맥으로 가린다(#869 키보드 접근)
+  const [inMenu, setInMenu] = useState(false);
+  const detectMenu = useCallback((el: HTMLElement | null) => {
+    if (el) setInMenu(el.closest('[role="menu"]') !== null);
+  }, []);
+
   // variant에 따른 스타일
   const variantClasses =
     variant === 'danger'
@@ -128,6 +137,7 @@ export const DropdownMenuItem: React.FC<DropdownMenuItemProps> = ({
     if (disabled) {
       return (
         <a
+          ref={detectMenu}
           role="menuitem"
           aria-disabled="true"
           tabIndex={-1}
@@ -145,8 +155,10 @@ export const DropdownMenuItem: React.FC<DropdownMenuItemProps> = ({
 
     return (
       <a
+        ref={detectMenu}
         role="menuitem"
-        href={link.href}
+        tabIndex={inMenu ? -1 : undefined}
+        href={sitePath(link.href)}
         {...(link.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
         className={itemClassName}
         style={style}
@@ -167,8 +179,14 @@ export const DropdownMenuItem: React.FC<DropdownMenuItemProps> = ({
 
   return (
     <Div
+      ref={detectMenu}
       onClick={handleClick}
-      className={itemClassName}
+      // 메뉴 항목 — Enter·Space 로 고른다. 메뉴 안이거나 비활성이면 Tab 에서 빠지고, 메뉴 밖이면 Tab 으로 닿는다(#869 키보드 접근)
+      role="menuitem"
+      tabIndex={disabled || inMenu ? -1 : 0}
+      aria-disabled={disabled || undefined}
+      onKeyDown={activateOnKey(handleClick)}
+      className={`${itemClassName} ${FOCUS_VISIBLE_RING}`}
       style={style}
     >
       {content}

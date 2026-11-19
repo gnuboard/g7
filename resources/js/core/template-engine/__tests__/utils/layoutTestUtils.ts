@@ -1,3 +1,4 @@
+// e2e:allow 단위·레이아웃 시험 파일 — 실화면 측정은 같은 엔진 변경의 브라우저 매트릭스
 /**
  * @file layoutTestUtils.ts
  * @description 레이아웃 파일 렌더링 테스트 유틸리티
@@ -17,7 +18,7 @@ import userEvent from '@testing-library/user-event';
 import React from 'react';
 
 // 엔진 임포트
-import { ComponentRegistry } from '../../ComponentRegistry';
+import { ComponentRegistry, type ComponentLookup, type ComponentMetadata, type ComponentTypeEnum } from '../../ComponentRegistry';
 import { DataBindingEngine } from '../../DataBindingEngine';
 import { TranslationEngine, TranslationContext } from '../../TranslationEngine';
 import { ActionDispatcher, ActionDefinition } from '../../ActionDispatcher';
@@ -32,6 +33,7 @@ import {
   useLocationSearch,
 } from '../../navigationLinks';
 import { evaluateComputedDefinitions } from '../../helpers/ComputedEvaluator';
+import { splitExtensionClassPrefix } from '../../helpers/StyleHelpers';
 // 데이터소스 initLocal·initGlobal·initIsolated 를 실제 앱과 같은 규칙으로 적용하려고 TemplateApp 의 처리 함수를 그대로 쓴다(7.1.3 WP11)
 import { TemplateApp } from '../../../TemplateApp';
 
@@ -58,6 +60,34 @@ export interface LayoutValidationWarning {
 
 
 /**
+ * 시험 고정물의 레이아웃 컴포넌트 — 서버가 내려주는 레이아웃 JSON 과 같은 모양
+ *
+ * 고정물은 JSON 처럼 쓰는 객체라 `type` 이 문자열로 넓어져 있고, `id` 는 실제 레이아웃처럼 선택이며, 실제 레이아웃이
+ * 쓰는 설명 키 `comment` 를 둘 수 있다. 렌더 직전에 toComponentDefinitions 가 엔진의 ComponentDefinition 으로 넘긴다.
+ */
+export interface LayoutFixtureComponent extends Omit<ComponentDefinition, 'type' | 'children'> {
+  /** 컴포넌트 타입 (basic, composite, layout, extension_point) */
+  type: string;
+  /** 자식 컴포넌트 (컴포넌트 정의 또는 텍스트 노드) */
+  children?: (LayoutFixtureComponent | string)[];
+  /** 레이아웃 작성자 설명 — 렌더에 쓰지 않는다 */
+  comment?: string;
+}
+
+/**
+ * 고정물 컴포넌트를 엔진 컴포넌트 정의로 넘긴다.
+ *
+ * 실제 앱이 서버 응답 JSON 을 레이아웃 정의로 받아들이는 자리와 같은 경계다. 값은 그대로이고 타입만 바꾼다 —
+ * `type` 값의 검사는 렌더러가 레지스트리 조회로 한다.
+ *
+ * @param components 고정물 컴포넌트 목록 (없으면 빈 목록)
+ * @returns 엔진 컴포넌트 정의 목록
+ */
+function toComponentDefinitions(components: LayoutFixtureComponent[] | undefined): ComponentDefinition[] {
+  return (components ?? []) as ComponentDefinition[];
+}
+
+/**
  * 레이아웃 JSON 타입 정의
  */
 export interface LayoutJson {
@@ -70,13 +100,13 @@ export interface LayoutJson {
   };
   // 새로운 slots 구조
   slots?: {
-    content?: ComponentDefinition[];
-    [slotName: string]: ComponentDefinition[] | undefined;
+    content?: LayoutFixtureComponent[];
+    [slotName: string]: LayoutFixtureComponent[] | undefined;
   };
   // 레거시 components 구조
-  components?: ComponentDefinition[];
+  components?: LayoutFixtureComponent[];
   // 모달 정의
-  modals?: ComponentDefinition[];
+  modals?: LayoutFixtureComponent[];
   // 재사용 액션 정의 (actionRef 로 참조)
   named_actions?: Record<string, any>;
   // 데이터 소스
@@ -90,12 +120,16 @@ export interface LayoutJson {
   }>;
   // 초기 상태
   initLocal?: Record<string, any>;
+  /** initLocal 의 하위 호환 별칭 — initLocal 이 없을 때만 쓴다 */
+  state?: Record<string, any>;
+  /** 시험 고정물 전용 `_global` 시드 — 실제 앱은 이 키를 읽지 않는다(실제 레이아웃은 initGlobal 을 쓴다) */
+  global_state?: Record<string, any>;
   initGlobal?: Record<string, any>;
   initIsolated?: Record<string, any>;
   // computed 값
   computed?: Record<string, string>;
   // defines (재사용 가능한 컴포넌트 정의)
-  defines?: Record<string, ComponentDefinition>;
+  defines?: Record<string, LayoutFixtureComponent>;
   // 초기 액션
   init_actions?: any[];
   initActions?: any[];
@@ -133,8 +167,8 @@ export interface LayoutTestOptions {
   // 데이터소스 초기 데이터 (API 모킹 대신 직접 데이터 주입)
   initialData?: Record<string, any>;
 
-  // 컴포넌트 레지스트리 (기본: 실제 레지스트리)
-  componentRegistry?: ComponentRegistry;
+  // 컴포넌트 레지스트리 (기본: 실제 레지스트리) — 렌더러가 쓰는 조회 면만 갖추면 된다(모의 레지스트리 포함)
+  componentRegistry?: ComponentLookup;
 
   // 템플릿 ID
   templateId?: string;
@@ -474,12 +508,12 @@ async function processDataSources(
 function extractComponents(layoutJson: LayoutJson, slotName: string = 'content'): ComponentDefinition[] {
   // 1. slots 구조 확인
   if (layoutJson.slots && layoutJson.slots[slotName]) {
-    return layoutJson.slots[slotName] || [];
+    return toComponentDefinitions(layoutJson.slots[slotName]);
   }
 
   // 2. 레거시 components 구조 확인
   if (layoutJson.components && Array.isArray(layoutJson.components)) {
-    return layoutJson.components;
+    return toComponentDefinitions(layoutJson.components);
   }
 
   // 3. 배열이 직접 전달된 경우
@@ -508,6 +542,7 @@ function deepMerge(target: Record<string, any>, source: Record<string, any>): Re
     } else if (
       typeof sourceValue === 'object' &&
       typeof targetValue === 'object' &&
+      targetValue !== null &&
       !Array.isArray(targetValue)
     ) {
       result[key] = deepMerge(targetValue, sourceValue);
@@ -523,8 +558,11 @@ export function createLayoutTest(
   layoutJson: LayoutJson,
   options: LayoutTestOptions = {}
 ): LayoutTestResult {
-  // 레이아웃에서 초기 상태 추출
-  const layoutInitLocal = layoutJson.initLocal || {};
+  // 모달 정의 — 고정물 모양을 엔진 컴포넌트 정의로 한 번만 넘긴다
+  const modalDefinitions = toComponentDefinitions(layoutJson.modals);
+
+  // 레이아웃에서 초기 상태 추출 — `state` 는 initLocal 이 없을 때만 쓰는 하위 호환 별칭이다(TemplateApp 과 같은 규칙)
+  const layoutInitLocal = layoutJson.initLocal || layoutJson.state || {};
   const layoutInitGlobal = layoutJson.initGlobal || {};
   const layoutInitIsolated = layoutJson.initIsolated || {};
 
@@ -551,7 +589,7 @@ export function createLayoutTest(
   let cleanupFetch: (() => void) | null = null;
 
   // 엔진 인스턴스
-  let registry: ComponentRegistry;
+  let registry: ComponentLookup;
   let bindingEngine: DataBindingEngine;
   let translationEngine: TranslationEngine;
   let actionDispatcher: ActionDispatcher;
@@ -674,6 +712,11 @@ export function createLayoutTest(
         open: (id: string) => openModalById(id),
         close: () => closeTopModal(),
         getStack: () => [...(state._global.modalStack ?? [])],
+      },
+      // 확장 접두 클래스 해석 — 실제 앱 G7Core.style 과 같은 함수(engine-v1.94.0). 템플릿 컴포넌트(Select 등)가
+      // 확장 자체 CSS 클래스(`ecommerce:bg-white`)의 앞글자를 떼고 읽는다. 접두 목록은 G7Config.extensionClassPrefixes 다.
+      style: {
+        splitExtensionClassPrefix,
       },
       // 링크 API — 실제 앱 G7Core.navigation 과 같은 함수(engine-v1.83.0). 템플릿 링크 컴포넌트는 코어 훅을 부르므로
       // 엔진 렌더러와 같은 React 로 그려진다(템플릿 시험 폴더의 React 사본과 섞이지 않는다)
@@ -867,7 +910,7 @@ export function createLayoutTest(
     const modalStack: string[] = dataContext._global?.modalStack || [];
     const layoutContextStack: Array<{ dataContext?: Record<string, any> }> = (window as any).__g7LayoutContextStack || [];
     const parentDataContext = layoutContextStack[layoutContextStack.length - 1]?.dataContext;
-    const modals = options.includeModals && layoutJson.modals ? layoutJson.modals : [];
+    const modals = options.includeModals ? modalDefinitions : [];
 
     return React.createElement(
       React.Fragment,
@@ -908,10 +951,7 @@ export function createLayoutTest(
   async function doRender() {
     initialize();
 
-    // 레이아웃 JSON에서 초기 상태 적용 (state → _local, global_state → _global)
-    if (layoutJson.state) {
-      state._local = { ...state._local, ...layoutJson.state };
-    }
+    // `global_state` 는 시험 고정물 전용 시드 키다(앱은 읽지 않는다) — 렌더 직전에 `_global` 위에 얹는다
     if (layoutJson.global_state) {
       state._global = { ...state._global, ...layoutJson.global_state };
     }
@@ -944,7 +984,7 @@ export function createLayoutTest(
     const dataContext = buildDataContext();
     const allComponents = [
       ...extractComponents(layoutJson, options.slotName || 'content'),
-      ...(options.includeModals && layoutJson.modals ? layoutJson.modals : []),
+      ...(options.includeModals ? modalDefinitions : []),
     ];
 
     // 슬롯 시스템 검증
@@ -1132,8 +1172,8 @@ export function createLayoutTest(
       const slotName = options.slotName || 'content';
       const components = extractComponents(layoutJson, slotName);
       let allComponents = [...components];
-      if (options.includeModals && layoutJson.modals) {
-        allComponents = [...allComponents, ...layoutJson.modals];
+      if (options.includeModals) {
+        allComponents = [...allComponents, ...modalDefinitions];
       }
       return validateSlotSystem(allComponents);
     },
@@ -1141,8 +1181,8 @@ export function createLayoutTest(
       const slotName = options.slotName || 'content';
       const components = extractComponents(layoutJson, slotName);
       let allComponents = [...components];
-      if (options.includeModals && layoutJson.modals) {
-        allComponents = [...allComponents, ...layoutJson.modals];
+      if (options.includeModals) {
+        allComponents = [...allComponents, ...modalDefinitions];
       }
       return validateDataBindingTypes(allComponents, buildDataContext(), bindingEngine);
     },
@@ -1211,7 +1251,7 @@ export interface MockComponentRegistry {
    * @param name 컴포넌트 이름
    * @param component React 컴포넌트
    */
-  register: (type: string, name: string, component: React.ComponentType<any>) => void;
+  register: (type: ComponentTypeEnum, name: string, component: React.ComponentType<any>) => void;
 
   /**
    * 컴포넌트 조회 (DynamicRenderer가 사용)
@@ -1226,7 +1266,7 @@ export interface MockComponentRegistry {
   /**
    * 컴포넌트 메타데이터 조회
    */
-  getMetadata: (name: string) => { name: string; type: string; props?: string[] } | null;
+  getMetadata: (name: string) => ComponentMetadata | null;
 
   /**
    * 타입별 컴포넌트 목록 조회
@@ -1240,10 +1280,10 @@ export interface MockComponentRegistry {
 }
 
 export function createMockComponentRegistry(): MockComponentRegistry {
-  const components = new Map<string, { component: React.ComponentType<any>; type: string }>();
+  const components = new Map<string, { component: React.ComponentType<any>; type: ComponentTypeEnum }>();
 
   return {
-    register(type: string, name: string, component: React.ComponentType<any>) {
+    register(type: ComponentTypeEnum, name: string, component: React.ComponentType<any>) {
       components.set(name, { component, type });
     },
 

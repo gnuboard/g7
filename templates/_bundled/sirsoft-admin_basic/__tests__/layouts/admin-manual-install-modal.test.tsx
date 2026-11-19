@@ -200,6 +200,10 @@ function loadModalJson(extensionType: 'module' | 'plugin' | 'template'): any {
 // ==============================
 
 describe('수동 설치 모달 3개 구조 동일성 검증', () => {
+  /**
+   * @scenario extension_type=module, extension_type=plugin, extension_type=template
+   * @effects manual_install_tabs_use_underline_variant
+   */
   it('3개 모달 모두 TabNavigation variant="underline" 사용', () => {
     const types = ['module', 'plugin', 'template'] as const;
 
@@ -211,6 +215,10 @@ describe('수동 설치 모달 3개 구조 동일성 검증', () => {
     }
   });
 
+  /**
+   * @scenario extension_type=module, extension_type=plugin, extension_type=template
+   * @effects manual_install_tabs_are_file_upload_and_github
+   */
   it('3개 모달 모두 동일한 탭 구조 (file_upload, github)', () => {
     const types = ['module', 'plugin', 'template'] as const;
 
@@ -222,6 +230,10 @@ describe('수동 설치 모달 3개 구조 동일성 검증', () => {
     }
   });
 
+  /**
+   * @scenario extension_type=module, extension_type=plugin, extension_type=template
+   * @effects manual_install_error_banner_uses_if_and_alert_danger
+   */
   it('3개 모달 모두 에러 배너(if 조건) 포함', () => {
     const types = ['module', 'plugin', 'template'] as const;
     const errorStateKeys: Record<string, string> = {
@@ -240,6 +252,10 @@ describe('수동 설치 모달 3개 구조 동일성 검증', () => {
     }
   });
 
+  /**
+   * @scenario extension_type=module, extension_type=plugin, extension_type=template
+   * @effects manual_install_uses_if_not_condition
+   */
   it('3개 모달 모두 condition 속성 미사용 (if만 사용)', () => {
     const types = ['module', 'plugin', 'template'] as const;
 
@@ -250,6 +266,10 @@ describe('수동 설치 모달 3개 구조 동일성 검증', () => {
     }
   });
 
+  /**
+   * @scenario extension_type=module, extension_type=plugin, extension_type=template
+   * @effects manual_install_button_has_download_and_spinner_icons
+   */
   it('3개 모달 모두 설치 버튼에 download/spinner 아이콘 포함', () => {
     const types = ['module', 'plugin', 'template'] as const;
 
@@ -261,6 +281,10 @@ describe('수동 설치 모달 3개 구조 동일성 검증', () => {
     }
   });
 
+  /**
+   * @scenario extension_type=module, extension_type=plugin, extension_type=template
+   * @effects manual_install_uses_file_input_component
+   */
   it('3개 모달 모두 FileInput 컴포넌트 사용', () => {
     const types = ['module', 'plugin', 'template'] as const;
 
@@ -271,6 +295,10 @@ describe('수동 설치 모달 3개 구조 동일성 검증', () => {
     }
   });
 
+  /**
+   * @scenario extension_type=module, extension_type=plugin, extension_type=template
+   * @effects file_input_change_stores_event_target_value
+   */
   it('3개 모달 모두 FileInput onChange에서 $event.target.value 패턴 사용', () => {
     const types = ['module', 'plugin', 'template'] as const;
     const uploadFileKeys: Record<string, string> = {
@@ -291,6 +319,10 @@ describe('수동 설치 모달 3개 구조 동일성 검증', () => {
     }
   });
 
+  /**
+   * @scenario extension_type=module, extension_type=plugin, extension_type=template
+   * @effects detail_error_message_bound_to_errors_error
+   */
   it('3개 모달 모두 errors.error 상세 에러 메시지 표시 P 요소 포함', () => {
     const types = ['module', 'plugin', 'template'] as const;
     const errorsStateKeys: Record<string, string> = {
@@ -309,6 +341,10 @@ describe('수동 설치 모달 3개 구조 동일성 검증', () => {
     }
   });
 
+  /**
+   * @scenario extension_type=module, extension_type=plugin, extension_type=template
+   * @effects field_errors_use_form_error_xs
+   */
   it('3개 모달 모두 필드별 에러 표시(.form-error-xs) 포함 (#408)', () => {
     const types = ['module', 'plugin', 'template'] as const;
 
@@ -355,7 +391,8 @@ describe('모듈 수동 설치 모달 렌더링 테스트', () => {
           type: 'basic',
           name: 'Div',
           props: { 'data-testid': 'modal-content' },
-          children: modalJson.children,
+          // 본문과 고정 하단(props.footer)을 함께 그린다 — 설치 단추가 고정 하단으로 옮겨 갔다(#869 P1)
+          children: [...modalJson.children, ...(modalJson.props?.footer ?? [])],
         },
       ],
     };
@@ -369,6 +406,10 @@ describe('모듈 수동 설치 모달 렌더링 테스트', () => {
     testUtils?.cleanup();
   });
 
+  /**
+   * @scenario extension_type=module
+   * @effects file_upload_tab_active_by_default
+   */
   it('초기 렌더링 시 파일 업로드 탭이 활성화됨', async () => {
     testUtils = createLayoutTest(createContentLayout(), { componentRegistry: registry });
     await testUtils.render();
@@ -378,10 +419,14 @@ describe('모듈 수동 설치 모달 렌더링 테스트', () => {
     expect(tabNav).toBeInTheDocument();
     expect(tabNav.getAttribute('data-variant')).toBe('underline');
 
-    // FileInput이 보여야 함 (file_upload 탭이 기본)
-    expect(screen.getByTestId('file-input')).toBeInTheDocument();
+    // FileInput이 보여야 함 (file_upload 탭이 기본) — ZIP 칸과 서명 파일(.sig.json, #916) 칸 두 개
+    expect(screen.getAllByTestId('file-input').map((el) => el.getAttribute('data-accept'))).toEqual(['.zip', '.json']);
   });
 
+  /**
+   * @scenario extension_type=module
+   * @effects error_banner_hidden_without_install_error
+   */
   it('에러 배너는 moduleInstallError가 없으면 렌더링되지 않음', async () => {
     testUtils = createLayoutTest(createContentLayout(), { componentRegistry: registry });
     await testUtils.render();
@@ -390,6 +435,10 @@ describe('모듈 수동 설치 모달 렌더링 테스트', () => {
     expect(screen.queryByTestId('icon-triangle-exclamation')).not.toBeInTheDocument();
   });
 
+  /**
+   * @scenario extension_type=module
+   * @effects error_banner_shown_with_install_error
+   */
   it('moduleInstallError가 있으면 에러 배너가 렌더링됨', async () => {
     testUtils = createLayoutTest(
       createContentLayout({ moduleInstallError: '설치에 실패했습니다.' }),
@@ -401,6 +450,10 @@ describe('모듈 수동 설치 모달 렌더링 테스트', () => {
     expect(screen.getByTestId('icon-triangle-exclamation')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario extension_type=module
+   * @effects file_field_red_border_on_file_error
+   */
   it('moduleInstallErrors?.file이 있으면 파일 필드에 적색 테두리 적용', async () => {
     testUtils = createLayoutTest(
       createContentLayout({
@@ -410,10 +463,16 @@ describe('모듈 수동 설치 모달 렌더링 테스트', () => {
     );
     await testUtils.render();
 
-    const fileInput = screen.getByTestId('file-input');
+    const [fileInput, signatureInput] = screen.getAllByTestId('file-input');
     expect(fileInput.className).toContain('border-red-500');
+    // 서명 파일 칸(#916)은 자기 오류(signature)가 없으면 붉지 않다
+    expect(signatureInput.className).not.toContain('border-red-500');
   });
 
+  /**
+   * @scenario extension_type=module
+   * @effects installing_shows_spinner_hides_download
+   */
   it('설치 중(isModuleManualInstalling=true)일 때 spinner 표시, download 숨김', async () => {
     testUtils = createLayoutTest(
       createContentLayout({
@@ -429,6 +488,10 @@ describe('모듈 수동 설치 모달 렌더링 테스트', () => {
     expect(screen.queryByTestId('icon-download')).not.toBeInTheDocument();
   });
 
+  /**
+   * @scenario extension_type=module
+   * @effects detail_error_message_shown_with_general_message
+   */
   it('moduleInstallErrors?.error가 있으면 상세 에러 메시지가 표시됨', async () => {
     testUtils = createLayoutTest(
       createContentLayout({
@@ -448,6 +511,10 @@ describe('모듈 수동 설치 모달 렌더링 테스트', () => {
     expect(screen.getByText('설치에 실패했습니다.')).toBeInTheDocument();
   });
 
+  /**
+   * @scenario extension_type=module
+   * @effects detail_error_message_hidden_without_errors_error
+   */
   it('moduleInstallErrors?.error가 없으면 상세 에러 메시지 P 요소가 렌더링되지 않음', async () => {
     testUtils = createLayoutTest(
       createContentLayout({
@@ -464,6 +531,10 @@ describe('모듈 수동 설치 모달 렌더링 테스트', () => {
     expect(screen.queryByText('필수 의존성')).not.toBeInTheDocument();
   });
 
+  /**
+   * @scenario extension_type=module
+   * @effects idle_shows_download_hides_spinner
+   */
   it('설치 중이 아닐 때 download 아이콘 표시, spinner 숨김', async () => {
     testUtils = createLayoutTest(
       createContentLayout({ moduleUploadFile: { name: 'test.zip' } }),
@@ -473,5 +544,49 @@ describe('모듈 수동 설치 모달 렌더링 테스트', () => {
 
     expect(screen.getByTestId('icon-download')).toBeInTheDocument();
     expect(screen.queryByTestId('icon-spinner')).not.toBeInTheDocument();
+  });
+
+  /**
+   * @scenario extension_type=module
+   * @effects github_tab_shows_url_input_instead_of_file_input
+   */
+  it('github 탭이면 파일 입력 대신 저장소 주소 입력이 그려진다', async () => {
+    testUtils = createLayoutTest(
+      createContentLayout({ moduleInstallTab: 'github' }),
+      { componentRegistry: registry }
+    );
+    await testUtils.render();
+
+    // 탭 표시와 본문이 같은 값을 따른다
+    expect(screen.getByTestId('tab-navigation').getAttribute('data-active-tab')).toBe('github');
+    expect(screen.getByPlaceholderText('https://github.com/username/module-name')).toBeInTheDocument();
+    // 파일 업로드 본문은 if 로 빠진다
+    expect(screen.queryByTestId('file-input')).not.toBeInTheDocument();
+  });
+
+  /**
+   * @scenario extension_type=module
+   * @effects install_button_locked_until_selected_tab_input_filled
+   */
+  it('설치 버튼은 고른 탭의 입력이 비면 잠기고 채우면 풀린다 (설치 중이면 늘 잠긴다)', async () => {
+    const cases: Array<[Record<string, any>, boolean, string]> = [
+      [{}, true, '파일 탭, 파일 없음'],
+      [{ moduleUploadFile: { name: 'test.zip' } }, false, '파일 탭, 파일 있음'],
+      [{ moduleInstallTab: 'github', moduleUploadFile: { name: 'test.zip' } }, true, 'github 탭, 주소 없음(파일만 있음)'],
+      [{ moduleInstallTab: 'github', moduleGithubUrl: 'https://github.com/a/b' }, false, 'github 탭, 주소 있음'],
+      [{ moduleUploadFile: { name: 'test.zip' }, isModuleManualInstalling: true }, true, '설치 중'],
+    ];
+
+    for (const [overrides, locked, label] of cases) {
+      testUtils = createLayoutTest(createContentLayout(overrides), { componentRegistry: registry });
+      await testUtils.render();
+
+      const icon = screen.queryByTestId('icon-download') ?? screen.getByTestId('icon-spinner');
+      const installButton = icon.closest('button');
+      expect(installButton, `${label}: 설치 버튼`).not.toBeNull();
+      expect(installButton!.getAttribute('data-disabled'), label).toBe(locked ? 'true' : 'false');
+
+      testUtils.cleanup();
+    }
   });
 });

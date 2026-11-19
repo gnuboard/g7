@@ -2,7 +2,7 @@
 
 namespace Plugins\Sirsoft\Tosspayments\Http\Requests;
 
-use App\Support\SiteUrl;
+use App\Support\ScreenUrl;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -76,7 +76,7 @@ class FailCallbackRequest extends FormRequest
         ]);
 
         $settings = plugin_settings(self::PLUGIN_IDENTIFIER);
-        $baseUrl = SiteUrl::absolute(ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL));
+        $baseUrl = ScreenUrl::toAbsolute(ShopRedirectUrl::resolve($settings['redirect_fail_url'] ?? ShopRedirectUrl::DEFAULT_FAIL_URL));
         $separator = str_contains($baseUrl, '?') ? '&' : '?';
 
         throw new HttpResponseException(

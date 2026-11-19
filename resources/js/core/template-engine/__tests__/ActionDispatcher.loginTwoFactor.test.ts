@@ -66,6 +66,7 @@ describe('ActionDispatcher - 2단계 인증', () => {
     // @scenario controller=user, two_factor=on, delivery=sent
     // @effects layout_handler_exposes_challenge_fields
     /** @effects login_handlers_expose_password_change_step */
+    /** @effects dispatcher_login_returns_challenge_in_layout_readable_shape, challenge_response_has_no_token */
     it('challenge 응답을 레이아웃이 읽을 수 있는 형태로 돌려준다', async () => {
       mockLogin.mockResolvedValue({
         status: 'two_factor_required',
@@ -95,6 +96,7 @@ describe('ActionDispatcher - 2단계 인증', () => {
     // @scenario controller=user, two_factor=off
     // @effects layout_handler_keeps_user_contract_on_normal_login
     /** @effects login_handlers_expose_password_change_step */
+    /** @effects dispatcher_login_returns_user_for_non_challenge_response */
     it('정상 로그인은 종전대로 user 를 돌려준다', async () => {
       const user = { id: 1, name: 'Test User' };
       mockLogin.mockResolvedValue({ status: 'authenticated', user });
@@ -171,6 +173,7 @@ describe('ActionDispatcher - 2단계 인증', () => {
     // @scenario controller=user, two_factor=on, code=valid
     // @effects layout_handler_completes_two_factor_with_challenge_and_code
     /** @effects login_handlers_expose_password_change_step */
+    /** @effects dispatcher_two_factor_completes_login_with_challenge_id_and_code */
     it('challenge_id 와 code 로 로그인을 완료한다', async () => {
       const user = { id: 1, name: 'Test User' };
       mockCompleteTwoFactor.mockResolvedValue({ status: 'authenticated', user });
@@ -194,6 +197,7 @@ describe('ActionDispatcher - 2단계 인증', () => {
     // @scenario controller=admin, two_factor=on, code=valid, actor=admin
     // @effects layout_handler_completes_two_factor_with_challenge_and_code
     /** @effects login_handlers_expose_password_change_step */
+    /** @effects dispatcher_two_factor_applies_global_headers_to_admin_verify_request */
     it('globalHeaders 패턴이 관리자 확인 요청에도 적용된다', async () => {
       mockCompleteTwoFactor.mockResolvedValue({ status: 'authenticated', user: { id: 1 } });
       dispatcher.setGlobalHeaders([
@@ -265,6 +269,7 @@ describe('ActionDispatcher - 2단계 인증', () => {
     // @scenario controller=user, two_factor=on, code=invalid
     // @effects layout_handler_skips_request_without_required_input
     /** @effects login_handlers_expose_password_change_step */
+    /** @effects dispatcher_two_factor_skips_request_without_code_or_challenge_id */
     it('code 가 없으면 요청을 보내지 않는다', async () => {
       await expect(
         run({
@@ -281,6 +286,7 @@ describe('ActionDispatcher - 2단계 인증', () => {
     // @scenario controller=user, two_factor=on, code=invalid
     // @effects layout_handler_surfaces_server_message
     /** @effects login_handlers_expose_password_change_step */
+    /** @effects dispatcher_two_factor_rewraps_server_error_message */
     it('서버 오류 메시지를 그대로 실어 재포장한다', async () => {
       const error: any = new Error('인증번호가 올바르지 않거나 유효시간이 지났습니다.');
       error.response = { status: 401, data: { message: '인증번호가 올바르지 않거나 유효시간이 지났습니다.' } };
@@ -302,6 +308,7 @@ describe('ActionDispatcher - 2단계 인증', () => {
     // @scenario controller=user, two_factor=on, resend=active
     // @effects layout_handler_resend_returns_new_challenge
     /** @effects two_factor_resend_replaces_challenge */
+    /** @effects dispatcher_resend_returns_new_challenge */
     it('새 challenge 를 돌려준다', async () => {
       mockResendTwoFactor.mockResolvedValue({
         challengeId: 'new-challenge',
@@ -332,6 +339,7 @@ describe('ActionDispatcher - 2단계 인증', () => {
     // @scenario controller=user, two_factor=on, resend=none
     // @effects layout_handler_skips_request_without_required_input
     /** @effects two_factor_resend_replaces_challenge */
+    /** @effects dispatcher_two_factor_skips_request_without_code_or_challenge_id */
     it('challenge_id 가 없으면 요청을 보내지 않는다', async () => {
       await expect(
         run({

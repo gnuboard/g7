@@ -1,0 +1,17 @@
+feature: 주문 항목 소계 표시 분기 (U19②)
+
+description: |
+  주문 상세 항목(_items.g7.html)의 소계는 할인 여부에 따라 두 분기 중 하나만 그린다. 무할인 항목은 decimal 문자열 비교로
+  분기가 어긋나 소계가 사라지던 회귀가 있었다. 회원 주문 상세와 비회원 주문 상세는 같은 partial 을 쓴다.
+
+# axis 의미:
+#   case — 주문 종류와 할인 여부(회원 무할인 / 회원 할인 / 비회원 무할인)
+axes:
+  case: [member_no_discount, member_discounted, guest_no_discount]
+
+effects:
+  - no_discount_subtotal_renders   # 무할인 항목은 단일 소계 Span 이 그려진다
+  - discount_branch_exclusive      # 할인 항목은 할인 분기만 그려지고 무할인 분기는 없다
+
+test_files:
+  - templates/_bundled/sirsoft-basic/src/__tests__/layouts/order-item-subtotal-display.test.tsx

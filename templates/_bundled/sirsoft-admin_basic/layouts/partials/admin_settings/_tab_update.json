@@ -1,0 +1,1246 @@
+{
+    "comment": "업데이트 탭 — 명령줄 없이 화면에서 코어를 업데이트한다. 코어 업데이트 권한(`can_core_update`)이 있을 때만 탭과 본문이 보인다.\n  상태는 넷이다: 대기(새 버전 확인·함께 할 일 고르기) → 진행 중(단계 목록·진행 막대) → 완료 → 실패(되돌림 결과).\n  진행 상태는 서버 기록(`core_update_status`, 진행 중이면 `_global.coreUpdateStatus`)이 소유하고, 화면을 새로 열어도\n  진행 중이면 자동으로 이어 받는다. 공용 저장 버튼은 이 탭에서 숨는다(저장할 설정이 없다).\n  패키지 무결성(#916): 새 버전 확인 결과에 최신 릴리스의 서명 자산 유무(`signature_available`)를 배지로 보인다(모르면 null 이라 그리지 않는다).\n  착수가 미서명(409)·서명 불일치(422)로 거절되면 착수 핸들러가 거절 내용을 전역에 싣고 공용 안내 조각이 시작 버튼 위에 그린다.\n  정책이 허용하면 시작 버튼이 「미서명으로 계속」이 되어 같은 선택에 `allow_unsigned` 만 더해 다시 착수한다.",
+    "meta": {
+        "is_partial": true,
+        "description": "환경설정 업데이트 탭 콘텐츠 (코어 업데이트 웹 동선 — W6 4상태)"
+    },
+    "id": "tab_content_update",
+    "type": "basic",
+    "name": "Div",
+    "if": "{{(_global.activeSettingsTab || query.tab || 'general') === 'update' && (_global.settingsAbilities?.can_core_update ?? false)}}",
+    "children": [
+        {
+            "id": "card_core_update",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:admin.settings.core_update.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:admin.settings.core_update.desc"
+                },
+                {
+                    "id": "core_update_version_row",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-4 mb-4 flex flex-wrap items-center gap-x-6 gap-y-2"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:admin.settings.core_update.current_version"
+                                },
+                                {
+                                    "id": "core_update_current_version",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-heading"
+                                    },
+                                    "text": "{{_computed.coreUpdateStatus?.current_version ?? systemInfo?.data?.g7_version ?? '-'}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.coreUpdateInfo?.update_available}}",
+                            "props": {
+                                "className": "flex items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:admin.settings.core_update.latest_version"
+                                },
+                                {
+                                    "type": "composite",
+                                    "name": "StatusBadge",
+                                    "props": {
+                                        "status": "success",
+                                        "label": "{{_local.coreUpdateInfo?.latest_version ?? ''}}"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "최신 릴리스의 서명 자산 유무(#916) — 서명이 없으면 착수 때 미서명 확인을 거친다는 것을 미리 알린다",
+                            "id": "core_update_signature",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.coreUpdateInfo?.update_available && (_local.coreUpdateInfo?.signature_available === true || _local.coreUpdateInfo?.signature_available === false)}}",
+                            "props": {
+                                "className": "flex items-center gap-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:admin.package_integrity.core_signature_label"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.coreUpdateInfo?.signature_available === true}}",
+                                    "props": {
+                                        "className": "badge badge-green"
+                                    },
+                                    "text": "$t:admin.package_integrity.core_signature_available"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.coreUpdateInfo?.signature_available === false}}",
+                                    "props": {
+                                        "className": "badge badge-yellow"
+                                    },
+                                    "text": "$t:admin.package_integrity.core_signature_missing"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "core_update_up_to_date",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!!_local.coreUpdateInfo && !_local.coreUpdateInfo?.update_available}}",
+                            "props": {
+                                "className": "text-secondary text-sm"
+                            },
+                            "text": "$t:admin.settings.core_update.up_to_date"
+                        }
+                    ]
+                },
+                {
+                    "id": "core_update_check_error",
+                    "type": "composite",
+                    "name": "Alert",
+                    "if": "{{!_computed.coreUpdateRun && !!_local.coreUpdateCheckError}}",
+                    "props": {
+                        "type": "error",
+                        "message": "{{$t('admin.settings.core_update.check_failed_hint') + ' ' + (_local.coreUpdateCheckError ?? '')}}",
+                        "className": "mb-4"
+                    }
+                },
+                {
+                    "id": "core_update_preflight_blocked",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!_computed.coreUpdateRun && _computed.coreUpdatePreflight?.ok === false}}",
+                    "props": {
+                        "className": "rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-3 space-y-2 mb-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "text-heading text-sm"
+                            },
+                            "text": "$t:admin.settings.core_update.preflight_blocked_title"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Ul",
+                            "props": {
+                                "className": "list-disc list-inside space-y-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Li",
+                                    "iteration": {
+                                        "source": "_computed.coreUpdatePreflight?.errors ?? []",
+                                        "item_var": "preflightError",
+                                        "index_var": "preflightErrorIndex"
+                                    },
+                                    "props": {
+                                        "className": "text-secondary text-xs"
+                                    },
+                                    "text": "{{preflightError}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-secondary text-xs"
+                            },
+                            "text": "$t:admin.settings.core_update.preflight_blocked_hint"
+                        }
+                    ]
+                },
+                {
+                    "id": "core_update_idle_actions",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{core_update_status !== undefined && (!_computed.coreUpdateRun)}}",
+                    "props": {
+                        "className": "flex flex-wrap gap-2 mb-4"
+                    },
+                    "children": [
+                        {
+                            "comment": "새 버전 확인 — 서버가 배포처에 묻는다. 실패 사유는 _local.coreUpdateCheckError 에 남겨 위 오류 알림이 계속 보이게 하고(토스트는 곧 사라진다), 성공하면 그 사유를 지운다.",
+                            "id": "core_update_check_button",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "checkingCoreUpdate": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "/api/admin/core-update/check",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "POST"
+                                            },
+                                            "onSuccess": {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "checkingCoreUpdate": false,
+                                                    "coreUpdateCheckError": null,
+                                                    "coreUpdateInfo": "{{result.data}}"
+                                                }
+                                            },
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "checkingCoreUpdate": false,
+                                                        "coreUpdateCheckError": "{{error.errors?.reason ?? error.message}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.errors?.reason ?? error.message}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-secondary",
+                                "disabled": "{{_local.checkingCoreUpdate === true}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_local.checkingCoreUpdate === true}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "text-sm animate-spin"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.checkingCoreUpdate !== true}}",
+                                    "text": "$t:admin.settings.core_update.check_update"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "진행 표시는 정보 탭의 같은 조회 버튼(`_tab_info.json`)과 같은 `loadingChangelog` 플래그를 쓴다 — 두 버튼은 서로 다른 탭에 있어 동시에 그려지지 않는다.",
+                            "id": "core_update_changelog_button",
+                            "type": "basic",
+                            "name": "Button",
+                            "if": "{{_local.coreUpdateInfo?.update_available}}",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "sequence",
+                                    "actions": [
+                                        {
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "loadingChangelog": true
+                                            }
+                                        },
+                                        {
+                                            "handler": "apiCall",
+                                            "target": "/api/admin/core-update/changelog",
+                                            "auth_required": true,
+                                            "params": {
+                                                "method": "GET"
+                                            },
+                                            "onSuccess": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "loadingChangelog": false,
+                                                        "coreChangelog": "{{result.data.changelog ?? []}}"
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "openModal",
+                                                    "target": "core_changelog_modal"
+                                                }
+                                            ],
+                                            "onError": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "loadingChangelog": false
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "toast",
+                                                    "params": {
+                                                        "type": "error",
+                                                        "message": "{{error.message ?? '$t:admin.settings.info.changelog_load_failed'}}"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-secondary",
+                                "disabled": "{{_local.loadingChangelog}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_local.loadingChangelog}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "spinner-sm"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:admin.settings.core_update.view_changelog"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "core_update_options",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!_computed.coreUpdateRun && (_local.coreUpdateInfo?.update_available === true || (_local.coreUpdateZipFile ?? '') !== '')}}",
+                    "props": {
+                        "className": "space-y-3 mb-4"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "H4",
+                            "props": {
+                                "className": "text-label"
+                            },
+                            "text": "$t:admin.settings.core_update.together_title"
+                        },
+                        {
+                            "id": "core_update_bundled_row",
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "flex items-start gap-2 cursor-pointer"
+                            },
+                            "children": [
+                                {
+                                    "comment": "번들 확장 함께 업데이트 — 값이 없으면 켠 것으로 본다. 저장 설정이 아니라 이번 실행의 인자라 자동 바인딩을 끄고 지역 상태로만 들고 있다가 시작 버튼이 넘긴다.",
+                                    "type": "basic",
+                                    "name": "Checkbox",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "coreUpdateBundled": "{{$event.target.checked}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "autoBinding": false,
+                                        "checked": "{{_local.coreUpdateBundled !== false}}",
+                                        "className": "mt-0.5"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "$t:admin.settings.core_update.together_bundled"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-secondary text-xs"
+                                            },
+                                            "text": "$t:admin.settings.core_update.together_bundled_hint"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "core_update_rebuild_index_row",
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "flex items-start gap-2 cursor-pointer"
+                            },
+                            "children": [
+                                {
+                                    "comment": "검색 색인 재구성 — 값이 없으면 끈 것으로 본다. 오래 걸리는 작업이라 운영자가 고를 때만 실행 인자로 넘긴다(위 항목처럼 지역 상태로만 든다).",
+                                    "type": "basic",
+                                    "name": "Checkbox",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "coreUpdateRebuildIndex": "{{$event.target.checked}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "autoBinding": false,
+                                        "checked": "{{_local.coreUpdateRebuildIndex === true}}",
+                                        "className": "mt-0.5"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "text-heading"
+                                            },
+                                            "text": "$t:admin.settings.core_update.together_rebuild_index"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-secondary text-xs"
+                                            },
+                                            "text": "$t:admin.settings.core_update.together_rebuild_index_hint"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "레이아웃 처리 방식 — 사용자가 고친 레이아웃을 새 판으로 덮을지 남길지 고른다. 기본은 덮어쓰기이고, 고친 레이아웃이 있으면 아래 안내가 그 수를 알린다. 선택은 시작 버튼이 실행 인자로 넘긴다.",
+                            "id": "core_update_layout_strategy",
+                            "type": "composite",
+                            "name": "RadioGroup",
+                            "actions": [
+                                {
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "local",
+                                        "coreUpdateLayoutStrategy": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "name": "core_update_layout_strategy",
+                                "label": "$t:admin.settings.core_update.layout_strategy",
+                                "inline": true,
+                                "value": "{{_local.coreUpdateLayoutStrategy ?? 'overwrite'}}",
+                                "options": [
+                                    {
+                                        "value": "overwrite",
+                                        "label": "$t:admin.settings.core_update.layout_overwrite"
+                                    },
+                                    {
+                                        "value": "keep",
+                                        "label": "$t:admin.settings.core_update.layout_keep"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "id": "core_update_modified_layouts_hint",
+                            "type": "basic",
+                            "name": "P",
+                            "if": "{{_computed.coreUpdateModified?.has_modified === true}}",
+                            "props": {
+                                "className": "text-warning-soft text-xs"
+                            },
+                            "text": "$t:admin.settings.core_update.modified_layouts_hint|count={{_computed.coreUpdateModified?.count ?? 0}}"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "text-secondary text-xs"
+                            },
+                            "text": "$t:admin.settings.core_update.layout_per_extension_hint"
+                        }
+                    ]
+                },
+                {
+                    "id": "core_update_maintenance_warning",
+                    "type": "composite",
+                    "name": "Alert",
+                    "if": "{{!_computed.coreUpdateRun && (_local.coreUpdateInfo?.update_available === true || (_local.coreUpdateZipFile ?? '') !== '')}}",
+                    "props": {
+                        "type": "warning",
+                        "message": "$t:admin.settings.core_update.maintenance_warning",
+                        "className": "mb-4"
+                    }
+                },
+                {
+                    "partial": "partials/_package_integrity_notice.json"
+                },
+                {
+                    "id": "core_update_start_row",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!_computed.coreUpdateRun && (_local.coreUpdateInfo?.update_available === true || (_local.coreUpdateZipFile ?? '') !== '')}}",
+                    "props": {
+                        "className": "flex justify-end"
+                    },
+                    "children": [
+                        {
+                            "comment": "업데이트 시작 — 위에서 고른 함께 할 일과 직접 올린 ZIP(고르지 않았으면 빈 값이고 배포처에서 받는다)을 핸들러에 넘긴다. 진행 여부는 핸들러가 _global.coreUpdateBusy 로 싣고 그동안 버튼이 잠긴다.\n             미서명 거절을 정책이 허용한 뒤의 클릭은 「미서명으로 계속」이다 — 같은 선택에 allow_unsigned 만 더한다(#916).",
+                            "id": "core_update_start_button",
+                            "type": "basic",
+                            "name": "Button",
+                            "actions": [
+                                {
+                                    "type": "click",
+                                    "handler": "startCoreUpdate",
+                                    "params": {
+                                        "update_bundled_extensions": "{{_local.coreUpdateBundled !== false}}",
+                                        "rebuild_search_index": "{{_local.coreUpdateRebuildIndex === true}}",
+                                        "layout_strategy": "{{_local.coreUpdateLayoutStrategy ?? 'overwrite'}}",
+                                        "zip_file": "{{_local.coreUpdateZipFile ?? ''}}",
+                                        "allow_unsigned": "{{_global.packageIntegrity?.can_continue === true}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "button",
+                                "className": "btn btn-primary",
+                                "disabled": "{{_global.coreUpdateBusy === true || _global.appConfig?.runtime_role === 'stage'}}",
+                                "title": "{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Icon",
+                                    "if": "{{_global.coreUpdateBusy === true}}",
+                                    "props": {
+                                        "name": "spinner",
+                                        "className": "text-sm animate-spin"
+                                    }
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "{{_global.coreUpdateBusy === true ? $t('admin.settings.core_update.starting') : (_global.packageIntegrity?.can_continue === true ? $t('admin.package_integrity.continue_unsigned') : $t('admin.settings.core_update.start'))}}"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "core_update_auto_resume",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(_computed.coreUpdateRun?.status === 'running' || _computed.coreUpdateRun?.status === 'rolling_back') && _global.coreUpdateBusy !== true}}",
+                    "lifecycle": {
+                        "onMount": [
+                            {
+                                "handler": "autoResumeCoreUpdate"
+                            }
+                        ]
+                    },
+                    "props": {
+                        "className": "hidden"
+                    }
+                },
+                {
+                    "id": "core_update_progress",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{!!_computed.coreUpdateRun}}",
+                    "props": {
+                        "className": "space-y-4"
+                    },
+                    "children": [
+                        {
+                            "id": "core_update_progress_header",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_computed.coreUpdateRun?.status === 'running'}}",
+                            "props": {
+                                "className": "flex items-center justify-between"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-heading"
+                                    },
+                                    "text": "$t:admin.settings.core_update.progress_title"
+                                },
+                                {
+                                    "id": "core_update_progress_count",
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-secondary text-sm"
+                                    },
+                                    "text": "$t:admin.settings.core_update.progress_count|done={{_computed.coreUpdateRun?.completed_count ?? 0}}|total={{_computed.coreUpdateTotalSteps ?? 0}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "core_update_progress_track",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_computed.coreUpdateRun?.status === 'running'}}",
+                            "props": {
+                                "className": "h-2 w-full rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden"
+                            },
+                            "children": [
+                                {
+                                    "id": "core_update_progress_fill",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "h-2 rounded-full bg-blue-600 dark:bg-blue-500 transition-all",
+                                        "style": {
+                                            "width": "{{Math.round(((_computed.coreUpdateRun?.completed_count ?? 0) / Math.max(_computed.coreUpdateTotalSteps ?? 1, 1)) * 100) + '%'}}"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "id": "core_update_step_list",
+                            "type": "basic",
+                            "name": "Ul",
+                            "if": "{{_computed.coreUpdateRun?.status === 'running'}}",
+                            "props": {
+                                "className": "space-y-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Li",
+                                    "iteration": {
+                                        "source": "_computed.coreUpdateSteps ?? []",
+                                        "item_var": "step",
+                                        "index_var": "stepIndex"
+                                    },
+                                    "props": {
+                                        "className": "flex items-center gap-2 text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "{{(_computed.coreUpdateRun?.completed_steps ?? []).includes(step.key) ? 'circle-check' : (_computed.coreUpdateRun?.current_step === step.key ? 'spinner' : 'circle')}}",
+                                                "className": "{{(_computed.coreUpdateRun?.completed_steps ?? []).includes(step.key) ? 'text-sm text-green-600 dark:text-green-400' : (_computed.coreUpdateRun?.current_step === step.key ? 'text-sm text-blue-600 dark:text-blue-400 animate-spin' : 'text-sm text-gray-300 dark:text-gray-600')}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "props": {
+                                                "className": "{{(_computed.coreUpdateRun?.completed_steps ?? []).includes(step.key) || _computed.coreUpdateRun?.current_step === step.key ? 'text-heading' : 'text-secondary'}}"
+                                            },
+                                            "text": "{{step.label}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "core_update_completed",
+                            "type": "composite",
+                            "name": "Alert",
+                            "if": "{{_computed.coreUpdateRun?.status === 'completed'}}",
+                            "props": {
+                                "type": "success",
+                                "message": "$t:admin.settings.core_update.completed_desc|version={{_computed.coreUpdateRun?.to_version ?? ''}}"
+                            }
+                        },
+                        {
+                            "id": "core_update_failed",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_computed.coreUpdateRun?.status === 'rolled_back' || _computed.coreUpdateRun?.status === 'rollback_failed' || _computed.coreUpdateRun?.status === 'rolling_back'}}",
+                            "props": {
+                                "className": "space-y-3"
+                            },
+                            "children": [
+                                {
+                                    "id": "core_update_failed_alert",
+                                    "type": "composite",
+                                    "name": "Alert",
+                                    "props": {
+                                        "type": "error",
+                                        "message": "$t:admin.settings.core_update.failed_title|step={{_computed.coreUpdateRun?.error?.step_label ?? ''}}|detail={{_computed.coreUpdateRun?.error?.message ?? ''}}"
+                                    }
+                                },
+                                {
+                                    "id": "core_update_rolled_back_alert",
+                                    "type": "composite",
+                                    "name": "Alert",
+                                    "if": "{{_computed.coreUpdateRun?.rollback?.restored === true}}",
+                                    "props": {
+                                        "type": "success",
+                                        "message": "{{_computed.coreUpdateRun?.rollback?.files_were_applied ? $t('admin.settings.core_update.rolled_back') : $t('admin.settings.core_update.rolled_back_not_applied')}}"
+                                    }
+                                },
+                                {
+                                    "id": "core_update_rollback_failed_alert",
+                                    "type": "composite",
+                                    "name": "Alert",
+                                    "if": "{{_computed.coreUpdateRun?.status === 'rollback_failed'}}",
+                                    "props": {
+                                        "type": "error",
+                                        "message": "{{$t('admin.settings.core_update.rollback_failed') + ' ' + $t('admin.settings.core_update.rollback_manual')}}"
+                                    }
+                                },
+                                {
+                                    "id": "core_update_rollback_failed_targets",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{(_computed.coreUpdateRun?.rollback?.failed_targets ?? []).length > 0}}",
+                                    "props": {
+                                        "className": "text-error-soft text-xs"
+                                    },
+                                    "text": "$t:admin.settings.core_update.rollback_failed_targets|targets={{(_computed.coreUpdateRun?.rollback?.failed_targets ?? []).join(', ')}}"
+                                },
+                                {
+                                    "id": "core_update_report_path",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{_computed.coreUpdateRun?.error?.report_path}}",
+                                    "props": {
+                                        "className": "text-secondary text-xs break-all"
+                                    },
+                                    "text": "{{$t('admin.settings.core_update.report_path') + ': ' + (_computed.coreUpdateRun?.error?.report_path ?? '')}}"
+                                },
+                                {
+                                    "id": "core_update_backup_path",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{_computed.coreUpdateRun?.status === 'rollback_failed' && _computed.coreUpdateRun?.rollback?.backup_path}}",
+                                    "props": {
+                                        "className": "text-secondary text-xs break-all"
+                                    },
+                                    "text": "{{$t('admin.settings.core_update.backup_path') + ': ' + (_computed.coreUpdateRun?.rollback?.backup_path ?? '')}}"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "core_update_notices",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(_computed.coreUpdateRun?.notices ?? []).length > 0}}",
+                            "props": {
+                                "className": "rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 p-3 space-y-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-heading text-sm"
+                                    },
+                                    "text": "$t:admin.settings.core_update.notices_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Ul",
+                                    "props": {
+                                        "className": "list-disc list-inside space-y-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Li",
+                                            "iteration": {
+                                                "source": "_computed.coreUpdateRun?.notices ?? []",
+                                                "item_var": "notice",
+                                                "index_var": "noticeIndex"
+                                            },
+                                            "props": {
+                                                "className": "text-secondary text-xs"
+                                            },
+                                            "text": "{{notice}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "core_update_warnings",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{(_computed.coreUpdateRun?.warnings ?? []).length > 0}}",
+                            "props": {
+                                "className": "rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-3 space-y-1"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-heading text-sm"
+                                    },
+                                    "text": "$t:admin.settings.core_update.warnings_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Ul",
+                                    "props": {
+                                        "className": "list-disc list-inside space-y-1"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Li",
+                                            "iteration": {
+                                                "source": "_computed.coreUpdateRun?.warnings ?? []",
+                                                "item_var": "warning",
+                                                "index_var": "warningIndex"
+                                            },
+                                            "props": {
+                                                "className": "text-secondary text-xs"
+                                            },
+                                            "text": "{{warning}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "core_update_run_actions",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex flex-wrap gap-2"
+                            },
+                            "children": [
+                                {
+                                    "comment": "실행 기록 펼치기와 접기 — 기록 자체는 서버 진행 기록이 소유하므로 여기서는 보이기 여부만 지역 상태로 바꾼다.",
+                                    "id": "core_update_log_toggle",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "coreUpdateLogOpen": "{{!(_local.coreUpdateLogOpen ?? false)}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn btn-secondary"
+                                    },
+                                    "text": "{{(_local.coreUpdateLogOpen ?? false) ? $t('admin.settings.core_update.hide_log') : $t('admin.settings.core_update.view_log')}}"
+                                },
+                                {
+                                    "comment": "종전에는 진행 중이면 `if` 로 버튼을 **감췄다**. 사라지는 것은 「눌렸다」는 신호로 읽히지 않는다 — 착수 버튼과 같이 자리를 지킨 채 비활성·스피너로 알린다. 진행 여부는 핸들러가 `publishBusy()` 로 싣는 `_global.coreUpdateBusy` 가 소유한다.",
+                                    "id": "core_update_resume_button",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "if": "{{_computed.coreUpdateRun?.status === 'running' || _computed.coreUpdateRun?.status === 'rolling_back'}}",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "resumeCoreUpdate"
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn btn-primary",
+                                        "disabled": "{{_global.coreUpdateBusy === true || _global.appConfig?.runtime_role === 'stage'}}",
+                                        "title": "{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "if": "{{_global.coreUpdateBusy === true}}",
+                                            "props": {
+                                                "name": "spinner",
+                                                "className": "spinner-sm"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:admin.settings.core_update.resume"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "core_update_guide_button",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "if": "{{_computed.coreUpdateRun?.status === 'rolled_back' || _computed.coreUpdateRun?.status === 'rollback_failed'}}",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "openModal",
+                                            "target": "core_update_guide_modal"
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn btn-secondary"
+                                    },
+                                    "text": "$t:admin.settings.core_update.view_guide"
+                                },
+                                {
+                                    "comment": "형제들과 달리 `dismissCoreUpdate` 는 전역 진행 플래그를 싣지 않는다(기록 정리는 업데이트 진행이 아니다). 그래서 진행 표시는 이 버튼의 지역 플래그로 잡고, 커스텀 핸들러도 `onSuccess`/`onError` 를 지원하므로 되돌리는 자리가 있다.",
+                                    "id": "core_update_dismiss_button",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "if": "{{_computed.coreUpdateRun?.status === 'completed' || _computed.coreUpdateRun?.status === 'rolled_back' || _computed.coreUpdateRun?.status === 'rollback_failed'}}",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "sequence",
+                                            "actions": [
+                                                {
+                                                    "handler": "setState",
+                                                    "params": {
+                                                        "target": "local",
+                                                        "coreUpdateDismissing": true
+                                                    }
+                                                },
+                                                {
+                                                    "handler": "dismissCoreUpdate",
+                                                    "onSuccess": {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "coreUpdateDismissing": false
+                                                        }
+                                                    },
+                                                    "onError": {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "coreUpdateDismissing": false
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn btn-secondary",
+                                        "disabled": "{{_local.coreUpdateDismissing || _global.appConfig?.runtime_role === 'stage'}}",
+                                        "title": "{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "if": "{{_local.coreUpdateDismissing}}",
+                                            "props": {
+                                                "name": "spinner",
+                                                "className": "spinner-sm"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:admin.settings.core_update.dismiss"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "core_update_log",
+                            "type": "basic",
+                            "name": "Pre",
+                            "if": "{{(_local.coreUpdateLogOpen ?? false)}}",
+                            "props": {
+                                "className": "max-h-72 overflow-auto rounded-lg bg-gray-900 dark:bg-gray-950 text-gray-100 dark:text-gray-200 text-xs p-3 whitespace-pre-wrap"
+                            },
+                            "text": "{{(_computed.coreUpdateRun?.logs ?? []).join('\n')}}"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "접기 카드는 이 템플릿의 `.admin-card-accordion` 자산(이커머스 상품 폼 13곳과 같은 모양)을 쓴다. `Accordion` 컴포넌트를 `admin-card` 안에 넣으면 카드 안에 테두리 상자가 한 번 더 그려지고, trigger 를 직접 넘기는 순간 컴포넌트가 꺾쇠를 그리지 않아 접힌다는 신호가 사라진다(실측 2026-09-13).",
+            "id": "card_core_update_advanced",
+            "type": "basic",
+            "name": "Div",
+            "if": "{{core_update_status !== undefined && (!_computed.coreUpdateRun)}}",
+            "props": {
+                "className": "admin-card-accordion"
+            },
+            "children": [
+                {
+                    "comment": "접기 카드 머리 — 운영자가 아직 펼치거나 접지 않았으면(값 없음) 올려 둔 ZIP 이 있을 때 펼친 것으로 본다. 누르면 지금 보이는 상태의 반대를 지역 상태에 적고, 그 뒤로는 운영자 선택을 따른다. 버튼 요소라 키보드(Enter·Space)로도 펼치고 접힌다.",
+                    "id": "core_update_advanced_trigger",
+                    "type": "basic",
+                    "name": "Button",
+                    "actions": [
+                        {
+                            "type": "click",
+                            "handler": "setState",
+                            "params": {
+                                "target": "local",
+                                "coreUpdateAdvancedOpen": "{{!((_local.coreUpdateAdvancedOpen ?? ((_computed.coreUpdateManualSources ?? []).length > 0)) === true)}}"
+                            }
+                        }
+                    ],
+                    "props": {
+                        "type": "button",
+                        "className": "card-header w-full text-left",
+                        "aria-expanded": "{{(_local.coreUpdateAdvancedOpen ?? ((_computed.coreUpdateManualSources ?? []).length > 0)) === true}}",
+                        "aria-controls": "core_update_advanced_content"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "props": {
+                                "className": "card-title"
+                            },
+                            "text": "$t:admin.settings.core_update.advanced_title"
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Icon",
+                            "props": {
+                                "name": "chevron-down",
+                                "className": "admin-card-accordion-icon {{(_local.coreUpdateAdvancedOpen ?? ((_computed.coreUpdateManualSources ?? []).length > 0)) === true ? 'open' : ''}}"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "comment": "올려 둔 ZIP 이 있으면 처음부터 펼친다 — FTP 로 파일을 올리고 온 운영자가 접힌 카드만 보면 자기 파일이 인식됐는지부터 확인할 길이 없다.",
+                    "id": "core_update_advanced_content",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{(_local.coreUpdateAdvancedOpen ?? ((_computed.coreUpdateManualSources ?? []).length > 0)) === true}}",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "id": "core_update_manual_zip",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "space-y-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-label"
+                                    },
+                                    "text": "$t:admin.settings.core_update.manual_zip_label"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-secondary text-xs"
+                                    },
+                                    "text": "$t:admin.settings.core_update.manual_zip_hint"
+                                },
+                                {
+                                    "id": "core_update_manual_zip_empty",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{(_computed.coreUpdateManualSources ?? []).length === 0}}",
+                                    "props": {
+                                        "className": "text-secondary text-xs"
+                                    },
+                                    "text": "$t:admin.settings.core_update.manual_zip_none"
+                                },
+                                {
+                                    "comment": "직접 올린 ZIP 고르기 — 빈 값(자동)이면 배포처에서 받는다. 파일을 고르면 새 버전 확인 없이도 위 함께 할 일과 시작 버튼이 나타나고, 고른 파일 이름은 시작 버튼이 실행 인자로 넘긴다.",
+                                    "id": "core_update_manual_zip_select",
+                                    "type": "basic",
+                                    "name": "Select",
+                                    "if": "{{(_computed.coreUpdateManualSources ?? []).length > 0}}",
+                                    "actions": [
+                                        {
+                                            "type": "change",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "coreUpdateZipFile": "{{$event.target.value}}"
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "aria-label": "$t:admin.settings.core_update.manual_zip_label",
+                                        "value": "{{_local.coreUpdateZipFile ?? ''}}"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Option",
+                                            "props": {
+                                                "value": ""
+                                            },
+                                            "text": "$t:admin.settings.core_update.manual_zip_auto"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Option",
+                                            "iteration": {
+                                                "source": "_computed.coreUpdateManualSources ?? []",
+                                                "item_var": "source"
+                                            },
+                                            "props": {
+                                                "value": "{{source.name}}"
+                                            },
+                                            "text": "{{source.name}}"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "id": "core_update_cli_guide",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "space-y-2"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-label"
+                                    },
+                                    "text": "$t:admin.settings.core_update.cli_guide_title"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-secondary text-xs"
+                                    },
+                                    "text": "$t:admin.settings.info.update_guide_desc"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Pre",
+                                    "props": {
+                                        "className": "rounded-lg bg-gray-900 dark:bg-gray-950 text-gray-100 dark:text-gray-200 text-xs p-3 whitespace-pre-wrap"
+                                    },
+                                    "text": "$t:admin.settings.info.update_guide_cmd"
+                                },
+                                {
+                                    "id": "core_update_cli_guide_button",
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "type": "click",
+                                            "handler": "openModal",
+                                            "target": "core_update_guide_modal"
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn btn-secondary"
+                                    },
+                                    "text": "$t:admin.settings.core_update.view_guide"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

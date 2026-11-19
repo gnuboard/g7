@@ -1,5 +1,8 @@
 <?php
 
+use App\Helpers\ResponseHelper;
+use App\Http\Middleware\SetLocale;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Modules\Sirsoft\Ecommerce\Enums\ClaimTypeEnum;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\AdminCartController;
@@ -17,6 +20,7 @@ use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ContentMediaController as A
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\CouponController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\DashboardController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\EcommerceSettingsController;
+use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ExportController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\ExtraFeeTemplateController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\IdentityPolicyController as AdminIdentityPolicyController;
 use Modules\Sirsoft\Ecommerce\Http\Controllers\Admin\MileageTransactionController;
@@ -506,6 +510,7 @@ Route::prefix('wishlist')->middleware('auth:sanctum')->group(function () {
         ->name('wishlist.index');
 
     Route::delete('/{id}', [WishlistController::class, 'destroy'])
+        ->whereNumber('id')
         ->middleware('throttle:sirsoft-ecommerce.wishlist-write')
         ->name('wishlist.destroy');
 });
@@ -915,13 +920,14 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
             ->name('admin.mileage-transactions.update');
 
         Route::get('{id}/linked', [MileageTransactionController::class, 'linked'])
+            ->whereNumber('id')
             ->middleware('permission:admin,sirsoft-ecommerce.mileage.read')
             ->name('admin.mileage-transactions.linked');
     });
 
     // 회원 결제 통화·배송국가 변경 — 폐기 예고(deprecated, 1.3.0). 번들 관리자 회원 수정 화면은 이제 코어 회원
-    // 저장(PUT /api/admin/users/{user}) 본문에 함께 실어 보내고 UserPreferenceCoreSaveListener 가 코어 훅으로
-    // 검증·저장한다. 이 두 라우트는 그 변경 전 관리자 템플릿과 함께 쓰는 사이트를 위해 한 버전 더 남기며,
+    // 저장(PUT /api/admin/users/{user}) 본문에 함께 실어 보내고 코어가 회원 항목 선언대로
+    // 검증하고 UserPreferenceFieldHandler 로 저장한다. 이 두 라우트는 그 변경 전 관리자 템플릿과 함께 쓰는 사이트를 위해 한 버전 더 남기며,
     // 다음 이커머스 버전에서 제거한다(결정 2026-09-28).
     Route::patch('users/{user}/currency', [AdminUserCurrencyController::class, 'update'])
         ->middleware('permission:admin,sirsoft-ecommerce.user-currency.manage')
@@ -1361,10 +1367,12 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
             ->name('admin.categories.reorder');
 
         Route::put('/{category}', [CategoryController::class, 'update'])
+            ->whereNumber('category')
             ->middleware('permission:admin,sirsoft-ecommerce.categories.update')
             ->name('admin.categories.update');
 
         Route::delete('/{category}', [CategoryController::class, 'destroy'])
+            ->whereNumber('category')
             ->middleware('permission:admin,sirsoft-ecommerce.categories.delete')
             ->name('admin.categories.destroy');
 
@@ -1417,10 +1425,12 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
             ->name('admin.brands.show');
 
         Route::put('/{brand}', [BrandController::class, 'update'])
+            ->whereNumber('brand')
             ->middleware('permission:admin,sirsoft-ecommerce.brands.update')
             ->name('admin.brands.update');
 
         Route::delete('/{brand}', [BrandController::class, 'destroy'])
+            ->whereNumber('brand')
             ->middleware('permission:admin,sirsoft-ecommerce.brands.delete')
             ->name('admin.brands.destroy');
 
@@ -2061,4 +2071,72 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
             ->name('admin.inquiries.destroy');
     });
 
+    // 내보내기 API — 주문·상품·마일리지 목록의 내보내기 요청과 「내보내기 관리」(#787)
+    // 데이터 범위는 그 유형의 조회 권한(주문=orders.read …)이 정하고, exports.* 는 작업(파일)에 대한 권한이다.
+    // 작업 번호(`{export}`)를 찾지 못하면(없거나 이미 지움) 다른 관리 API 와 같은 꼴의 404 를 돌려준다 — 프레임워크 기본 문구는
+    // 영어에 내부 모델 경로가 들어 있어 화면 안내로 쓸 수 없다. 라우트 모델 바인딩은 권한 범위 판정(resource_route_key)이 쓰므로 유지한다.
+    // 바인딩은 요청 언어를 정하는 SetLocale 보다 먼저 돌아 실패하므로, 이 응답도 같은 언어 결정(회원 언어 → Accept-Language → 사이트 기본)을
+    // 거친 뒤 만든다 — 그러지 않으면 언어 설정과 무관하게 사이트 기본 언어 문구가 나간다.
+    Route::prefix('exports')->missing(fn (Request $request) => app(SetLocale::class)->handle(
+        $request,
+        fn () => ResponseHelper::notFound('messages.export.not_found', [], 'sirsoft-ecommerce'),
+    ))->group(function () {
+        Route::get('/catalog', [ExportController::class, 'catalog'])
+            ->middleware('permission:admin,sirsoft-ecommerce.exports.create')
+            ->name('admin.exports.catalog');
+
+        Route::post('/estimate', [ExportController::class, 'estimate'])
+            ->middleware(['permission:admin,sirsoft-ecommerce.exports.create', 'throttle:sirsoft-ecommerce.export-estimate'])
+            ->name('admin.exports.estimate');
+
+        Route::post('/', [ExportController::class, 'store'])
+            ->middleware(['permission:admin,sirsoft-ecommerce.exports.create', 'throttle:sirsoft-ecommerce.export-request'])
+            ->name('admin.exports.store');
+
+        Route::get('/', [ExportController::class, 'index'])
+            ->middleware('permission:admin,sirsoft-ecommerce.exports.read')
+            ->name('admin.exports.index');
+
+        Route::delete('/bulk', [ExportController::class, 'bulkDestroy'])
+            ->middleware('permission:admin,sirsoft-ecommerce.exports.delete')
+            ->name('admin.exports.bulk-destroy');
+
+        Route::get('/{export}', [ExportController::class, 'show'])
+            ->whereNumber('export')
+            ->middleware('permission:admin,sirsoft-ecommerce.exports.read')
+            ->name('admin.exports.show');
+
+        Route::get('/{export}/download', [ExportController::class, 'download'])
+            ->whereNumber('export')
+            ->middleware('permission:admin,sirsoft-ecommerce.exports.download')
+            ->name('admin.exports.download');
+
+        Route::post('/{export}/download-link', [ExportController::class, 'downloadLink'])
+            ->whereNumber('export')
+            ->middleware('permission:admin,sirsoft-ecommerce.exports.download')
+            ->name('admin.exports.download-link');
+
+        Route::get('/{export}/downloads', [ExportController::class, 'downloads'])
+            ->whereNumber('export')
+            ->middleware('permission:admin,sirsoft-ecommerce.exports.read')
+            ->name('admin.exports.downloads');
+
+        Route::post('/{export}/retry', [ExportController::class, 'retry'])
+            ->whereNumber('export')
+            ->middleware(['permission:admin,sirsoft-ecommerce.exports.create', 'throttle:sirsoft-ecommerce.export-request'])
+            ->name('admin.exports.retry');
+
+        Route::delete('/{export}', [ExportController::class, 'destroy'])
+            ->whereNumber('export')
+            ->middleware('permission:admin,sirsoft-ecommerce.exports.delete')
+            ->name('admin.exports.destroy');
+    });
+
 });
+
+// 내보내기 파일 일회용 주소 — 관리 화면이 인증 헤더로 발급받은 64자 토큰(60초·1회용)을 브라우저가 직접 연다.
+// 인증 헤더를 실을 수 없는 브라우저 다운로드라 admin 묶음 밖에 둔다. 권한은 토큰을 쓰는 시점에 다시 본다.
+Route::get('exports/file/{token}', [ExportController::class, 'downloadByToken'])
+    ->where('token', '[A-Za-z0-9]{64}')
+    ->middleware('throttle:sirsoft-ecommerce.export-file')
+    ->name('exports.file');

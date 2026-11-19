@@ -22,6 +22,20 @@ effects:
   - user_review_image_api_requires_authentication            # 비로그인 업로드·삭제는 401
   - user_review_image_delete_soft_deletes_own_image          # 자기 이미지 삭제는 소프트 삭제
   - user_review_image_delete_returns_404_for_foreign_or_missing_image  # 다른 후기 소속·없는 이미지는 404
+  # 세분 효과 — 7.2.0 의 쌍둥이 매니페스트(review-image-upload-delete-api.yaml, axis area)가 같은 시험을 이중 소유하던 것을
+  # 6차 병합 후속에서 이 매니페스트로 합쳤다. 각 시험 메서드는 위 효과와 아래 세분 효과를 함께 마킹한다.
+  - review_image_upload_creates_row_with_201
+  - review_image_upload_requires_image_field
+  - review_image_upload_rejects_non_image_file
+  - review_image_upload_rejects_oversized_file
+  - review_image_upload_forbidden_on_other_member_review
+  - review_image_upload_rejected_over_max_count
+  - review_image_upload_requires_login
+  - review_image_delete_soft_deletes_own_image
+  - review_image_delete_forbidden_on_other_member_review
+  - review_image_delete_not_found_for_image_of_other_review
+  - review_image_delete_not_found_for_missing_image
+  - review_image_delete_requires_login
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/tests/Feature/Http/Controllers/User/ReviewImageControllerTest.php

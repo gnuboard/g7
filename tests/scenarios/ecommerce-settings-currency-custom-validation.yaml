@@ -40,6 +40,21 @@ effects:
   - missing_currencies_skips_custom_validation
   - error_messages_are_localized
   - duplicate_code_error_message_is_localized
+  # 같은 시험의 효과 이름(7.2.0 쪽 쌍둥이 ecommerce-settings-currency-validation.yaml 을 6차 병합 후속에서 합침) — 각 시험 메서드가 위 이름과 함께 마킹한다.
+  - duplicate_currency_code_rejected
+  - duplicate_currency_code_case_insensitive
+  - unique_currency_codes_pass
+  - empty_currency_name_rejected
+  - missing_currency_name_rejected
+  - all_empty_locale_names_rejected
+  - whitespace_only_locale_names_rejected
+  - single_locale_name_passes
+  - partial_locale_names_pass
+  - only_invalid_currencies_flagged
+  - empty_currencies_skip_custom_validation
+  - missing_currencies_skip_custom_validation
+  - name_required_message_localized
+  - duplicate_code_message_localized
 
 test_files:
   - tests/Unit/Requests/Ecommerce/StoreEcommerceSettingsRequestCustomValidationTest.php

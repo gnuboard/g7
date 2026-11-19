@@ -2,9 +2,11 @@
 
 namespace Modules\Sirsoft\Ecommerce\Repositories\Contracts;
 
+use App\Models\User;
 use App\Support\Query\BoundedCount;
 use App\Support\Query\BoundedPage;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Modules\Sirsoft\Ecommerce\Enums\RelatedProductOrder;
 use Modules\Sirsoft\Ecommerce\Models\Product;
@@ -50,6 +52,19 @@ interface ProductRepositoryInterface
      * @return LengthAwarePaginator 페이지네이션된 상품 목록
      */
     public function getListWithFilters(array $filters, int $perPage = 20): LengthAwarePaginator;
+
+    /**
+     * 내보내기 원천 쿼리 — 상품 목록과 같은 조건·같은 권한 범위로 고른 상품 쿼리를 돌려줍니다.
+     *
+     * 목록과 같은 필터 경로를 지나야 화면 건수와 파일 행 수가 어긋나지 않는다. 권한 범위(`sirsoft-ecommerce.products.read` 의 본인·역할 범위)는
+     * **요청자를 인자로** 판정한다 — 파일은 큐 작업에서 만들어 로그인 사용자가 없으므로, 현재 사용자 기준으로 걸면 범위가 빠진다.
+     *
+     * @param  array  $filters  검증된 상품 목록 필터
+     * @param  array<int, int>|null  $ids  「선택한 행」 상품 ID (지정하면 목록 필터 대신 이 ID 만)
+     * @param  User  $requester  권한 범위를 판정할 요청자
+     * @return Builder 상품 쿼리 (관계·정렬 없음)
+     */
+    public function newExportQuery(array $filters, ?array $ids, User $requester): Builder;
 
     /**
      * 여러 상품의 옵션을 상품 ID 로 묶어 한 번에 조회합니다 (비활성 옵션 포함).
@@ -168,6 +183,14 @@ interface ProductRepositoryInterface
      * @return Product|null 상품 모델 또는 null
      */
     public function findByProductCode(string $productCode): ?Product;
+
+    /**
+     * 상품 코드 목록으로 상품을 한 번에 조회하고 상품 코드 키 맵으로 반환합니다(관계 적재 없음).
+     *
+     * @param  array<int, string>  $productCodes  상품 코드 목록
+     * @return Collection<string, Product> 상품 코드 => 상품
+     */
+    public function findByProductCodesKeyed(array $productCodes): Collection;
 
     /**
      * 모든 관계를 포함하여 상품 조회 (폼 상세용)

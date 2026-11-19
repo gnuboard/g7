@@ -17,7 +17,7 @@
         <span class="text-label">$t:admin.analytics.modals.retro.confirm_label</span>
       </label>
     </div>
-    <div class="modal-footer-buttons">
+    <footer>
       <button type="button" class="btn btn-secondary" disabled="{{_global.analyticsRetroRunning}}">
         <on type="click">
           <!-- 건너뛰기 — 소급 없이 닫는다. 새 설정은 이미 저장돼 앞으로 모이는 값에만 적용되고, 체크는 걷어 둔다. -->
@@ -50,6 +50,6 @@
         <icon data-if="{{_global.analyticsRetroRunning}}" name="spinner" :spin="true" class="text-sm"/>
         <span>$t:admin.analytics.modals.retro.apply</span>
       </button>
-    </div>
+    </footer>
   </modal>
 </partial>

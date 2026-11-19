@@ -7,7 +7,6 @@
  *  ② DisabledFieldset — disabled 시 본문 항상 렌더 + data-disabled=true + pointerEvents 차단(D-M)
  */
 
-import React from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { ToggleSwitch, DisabledFieldset, OverlaySourceField } from '../../../components/page-settings/FormPrimitives';
@@ -15,6 +14,10 @@ import { ToggleSwitch, DisabledFieldset, OverlaySourceField } from '../../../com
 afterEach(() => cleanup());
 
 describe('ToggleSwitch (D-L)', () => {
+  /**
+   * @scenario subject=form_primitives
+   * @effects form_toggle_switch_role_and_click_toggles
+   */
   it('role=switch + aria-checked 반영 + 클릭 시 반대값으로 onChange', () => {
     const onChange = vi.fn();
     render(<ToggleSwitch checked={false} onChange={onChange} testid="sw" label="라벨" />);
@@ -25,6 +28,10 @@ describe('ToggleSwitch (D-L)', () => {
     expect(onChange).toHaveBeenCalledWith(true);
   });
 
+  /**
+   * @scenario subject=form_primitives
+   * @effects form_toggle_switch_checked_click_false
+   */
   it('checked=true → aria-checked=true, 클릭 시 false', () => {
     const onChange = vi.fn();
     render(<ToggleSwitch checked onChange={onChange} testid="sw" />);
@@ -33,6 +40,10 @@ describe('ToggleSwitch (D-L)', () => {
     expect(onChange).toHaveBeenCalledWith(false);
   });
 
+  /**
+   * @scenario subject=form_primitives
+   * @effects form_toggle_switch_disabled_ignores_click
+   */
   it('disabled → 버튼 disabled, 클릭 무시', () => {
     const onChange = vi.fn();
     render(<ToggleSwitch checked={false} onChange={onChange} testid="sw" disabled />);
@@ -44,6 +55,10 @@ describe('ToggleSwitch (D-L)', () => {
 });
 
 describe('DisabledFieldset (D-M)', () => {
+  /**
+   * @scenario subject=form_primitives
+   * @effects form_disabled_fieldset_enabled_renders_body
+   */
   it('disabled=false → 본문 렌더 + data-disabled=false + pointerEvents 미차단', () => {
     render(
       <DisabledFieldset disabled={false} testid="fs">
@@ -56,6 +71,10 @@ describe('DisabledFieldset (D-M)', () => {
     expect(fs.style.pointerEvents).not.toBe('none');
   });
 
+  /**
+   * @scenario subject=form_primitives
+   * @effects form_disabled_fieldset_disabled_greys_not_hides
+   */
   it('disabled=true → 본문 숨기지 않고 항상 렌더 + data-disabled=true + 회색/클릭 차단(숨김 금지)', () => {
     render(
       <DisabledFieldset disabled testid="fs">
@@ -73,6 +92,10 @@ describe('DisabledFieldset (D-M)', () => {
 });
 
 describe('OverlaySourceField (#4 — 칸 안에 녹이기)', () => {
+  /**
+   * @scenario subject=form_primitives
+   * @effects form_overlay_source_empty_shows_source_chip
+   */
   it('비었음(filled=false) + 출처 있음 → 출처 칩, 되돌리기 부재', () => {
     render(
       <OverlaySourceField filled={false} sourceLabel="코어" onRevert={vi.fn()} testid="of">
@@ -84,6 +107,10 @@ describe('OverlaySourceField (#4 — 칸 안에 녹이기)', () => {
     expect(screen.queryByTestId('of-revert')).not.toBeInTheDocument();
   });
 
+  /**
+   * @scenario subject=form_primitives
+   * @effects form_overlay_source_filled_shows_revert
+   */
   it('값 있음(filled=true) → 되돌리기 버튼, 출처 칩 부재, 클릭 시 onRevert', () => {
     const onRevert = vi.fn();
     render(
@@ -97,6 +124,10 @@ describe('OverlaySourceField (#4 — 칸 안에 녹이기)', () => {
     expect(onRevert).toHaveBeenCalled();
   });
 
+  /**
+   * @scenario subject=form_primitives
+   * @effects form_overlay_source_no_label_shows_nothing
+   */
   it('출처 정보 없음(sourceLabel 부재) + 비었음 → 칩/버튼 모두 미표시', () => {
     render(
       <OverlaySourceField filled={false} testid="of">

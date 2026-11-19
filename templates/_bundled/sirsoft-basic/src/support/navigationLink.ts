@@ -11,6 +11,7 @@
  */
 
 import { useSyncExternalStore } from 'react';
+import { routePath, sitePath } from './apiUrl';
 import { isSameOriginRequest } from './sameOriginRequest';
 
 const core = (): any => (window as any).G7Core;
@@ -90,14 +91,16 @@ export function useLocationSearch(enabled: boolean): string {
   return impl(enabled);
 }
 
-const readLocationPath = (): string => (typeof window === 'undefined' ? '' : window.location.pathname);
+/** 브라우저 주소의 경로를 라우트 기준으로 읽는다 — 하위 폴더 설치(`/g7/search`)의 마운트 접두사를 벗긴다(`/search`) */
+const readLocationPath = (): string => (typeof window === 'undefined' ? '' : routePath(window.location.pathname));
 
 /**
  * 현재 주소 경로를 구독합니다 — 화면을 옮겨도 다시 마운트되지 않는 머리글·서랍이 경로로 상태를 정할 때 쓴다.
  * 구독 경로는 {@link useLocationSearch} 의 옛 코어 대체와 같다(엔진 주소 교체 알림, 없으면 뒤로/앞으로).
+ * 돌려주는 값은 사이트 마운트 접두사를 벗긴 라우트 기준 경로다 — 받는 쪽은 접두사 없이 적힌 경로(`resultPath` 등)와 그대로 대조한다.
  *
  * @param enabled 구독하면 true
- * @return 현재 경로(`/search`, 구독하지 않으면 '')
+ * @return 현재 라우트 기준 경로(`/search`, 구독하지 않으면 '')
  */
 export function useLocationPath(enabled: boolean): string {
   return useSyncExternalStore(
@@ -178,7 +181,9 @@ export function navigateTo(path: string): void {
     return;
   }
   if (resolveLinkHref(path)?.external === false) {
-    window.location.href = path;
+    // 전체 다시 부르기는 브라우저가 그대로 여는 주소라 사이트 마운트 접두사를 붙인다(이미 붙은 값은 그대로 — 멱등).
+    // 엔진 navigate 는 라우터가 주소창에 쓸 때 붙이므로 위 분기에는 접두사 없는 경로를 넘긴다.
+    window.location.href = sitePath(path);
   }
 }
 

@@ -6,16 +6,16 @@
  * 함께 사라지는 것을 막는다. 이 컴포넌트는 게시글·페이지 본문을 그대로 innerHTML
  * 로 넣으므로, 여기서 새는 것이 곧 저장형 XSS 다.
  *
- * @effects script_tag_blocked, event_handler_attr_blocked, javascript_url_blocked,
+ * 효과 요약(마커 아님, 평문): script_tag_blocked, event_handler_attr_blocked, javascript_url_blocked,
  *          embedded_frame_blocked, safe_markup_preserved, plain_text_mode_escapes_html
  */
-// @scenario content_kind=script_injection, mode=html
-// @scenario content_kind=event_handler, mode=html
-// @scenario content_kind=javascript_url, mode=html
-// @scenario content_kind=safe_markup, mode=html
-// @scenario content_kind=script_injection, mode=text
+// 조합 요약(마커 아님, 평문): content_kind=script_injection, mode=html
+// 조합 요약(마커 아님, 평문): content_kind=event_handler, mode=html
+// 조합 요약(마커 아님, 평문): content_kind=javascript_url, mode=html
+// 조합 요약(마커 아님, 평문): content_kind=embedded_frame, mode=html
+// 조합 요약(마커 아님, 평문): content_kind=safe_markup, mode=html
+// 조합 요약(마커 아님, 평문): content_kind=script_injection, mode=text
 
-import React from 'react';
 import { render } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { HtmlContent } from '../HtmlContent';
@@ -29,6 +29,8 @@ function sanitizedHtmlOf(content: string, props: Record<string, unknown> = {}): 
 
 describe('HtmlContent 정화', () => {
     describe('스크립트 실행 경로 차단', () => {
+        // @scenario content_kind=script_injection, mode=html
+        // @effects script_tag_blocked
         it('script 태그를 제거한다', () => {
             const html = sanitizedHtmlOf('<p>본문</p><script>window.__xss = 1;</script>');
 
@@ -37,6 +39,8 @@ describe('HtmlContent 정화', () => {
             expect(html).toContain('본문');
         });
 
+        // @scenario content_kind=event_handler, mode=html
+        // @effects event_handler_attr_blocked
         it('이미지 onerror 핸들러를 제거한다', () => {
             const html = sanitizedHtmlOf('<img src="x" onerror="window.__xss = 1">');
 
@@ -44,6 +48,8 @@ describe('HtmlContent 정화', () => {
             expect(html).not.toContain('window.__xss');
         });
 
+        // @scenario content_kind=event_handler, mode=html
+        // @effects event_handler_attr_blocked
         it('onclick / onload / onmouseover 핸들러를 제거한다', () => {
             const html = sanitizedHtmlOf(
                 '<div onclick="a()" onmouseover="b()"><span onload="c()">텍스트</span></div>'
@@ -55,6 +61,8 @@ describe('HtmlContent 정화', () => {
             expect(html).toContain('텍스트');
         });
 
+        // @scenario content_kind=javascript_url, mode=html
+        // @effects javascript_url_blocked
         it('javascript: 스킴 링크를 제거한다', () => {
             const html = sanitizedHtmlOf('<a href="javascript:window.__xss=1">클릭</a>');
 
@@ -62,6 +70,8 @@ describe('HtmlContent 정화', () => {
             expect(html).toContain('클릭');
         });
 
+        // @scenario content_kind=script_injection, mode=html
+        // @effects script_tag_blocked
         it('svg 안의 스크립트 벡터를 제거한다', () => {
             const html = sanitizedHtmlOf('<svg><script>window.__xss = 1;</script></svg>');
 
@@ -71,6 +81,8 @@ describe('HtmlContent 정화', () => {
     });
 
     describe('외부 콘텐츠·폼 삽입 차단', () => {
+        // @scenario content_kind=embedded_frame, mode=html
+        // @effects embedded_frame_blocked
         it('iframe / object / embed 를 제거한다', () => {
             const html = sanitizedHtmlOf(
                 '<iframe src="https://evil.example"></iframe>' +
@@ -82,6 +94,8 @@ describe('HtmlContent 정화', () => {
             expect(html.toLowerCase()).not.toContain('<embed');
         });
 
+        // @scenario content_kind=embedded_frame, mode=html
+        // @effects embedded_frame_blocked
         it('form / input 등 피싱 요소를 제거한다', () => {
             const html = sanitizedHtmlOf(
                 '<form action="https://evil.example"><input name="pw" type="password"></form>'
@@ -91,6 +105,8 @@ describe('HtmlContent 정화', () => {
             expect(html.toLowerCase()).not.toContain('<input');
         });
 
+        // @scenario content_kind=embedded_frame, mode=html
+        // @effects embedded_frame_blocked
         it('style / link / meta / base 태그를 제거한다', () => {
             const html = sanitizedHtmlOf(
                 '<style>body{display:none}</style><link rel="stylesheet" href="x">' +
@@ -105,6 +121,8 @@ describe('HtmlContent 정화', () => {
     });
 
     describe('정상 마크업 보존', () => {
+        // @scenario content_kind=safe_markup, mode=html
+        // @effects safe_markup_preserved
         it('본문 서식 태그를 그대로 남긴다', () => {
             const html = sanitizedHtmlOf(
                 '<h2>제목</h2><p><strong>굵게</strong> 그리고 <em>기울임</em></p>' +
@@ -118,6 +136,8 @@ describe('HtmlContent 정화', () => {
             expect(html).toContain('<blockquote>인용</blockquote>');
         });
 
+        // @scenario content_kind=safe_markup, mode=html
+        // @effects safe_markup_preserved
         it('이미지와 표를 보존한다', () => {
             const html = sanitizedHtmlOf(
                 '<img src="/uploads/a.png" alt="사진">' +
@@ -129,6 +149,8 @@ describe('HtmlContent 정화', () => {
             expect(html).toContain('<td>칸</td>');
         });
 
+        // @scenario content_kind=safe_markup, mode=html
+        // @effects safe_markup_preserved
         it('http(s) 링크에 rel="noopener noreferrer" 를 붙인다', () => {
             const html = sanitizedHtmlOf('<a href="https://example.com" target="_blank">링크</a>');
 
@@ -138,6 +160,8 @@ describe('HtmlContent 정화', () => {
     });
 
     describe('평문 모드', () => {
+        // @scenario content_kind=script_injection, mode=text
+        // @effects plain_text_mode_escapes_html
         it('isHtml=false 이면 태그를 해석하지 않고 문자로 출력한다', () => {
             const { container } = render(
                 <HtmlContent content={'<script>window.__xss=1;</script>줄1\n줄2'} isHtml={false} />
@@ -150,6 +174,8 @@ describe('HtmlContent 정화', () => {
     });
 
     describe('purifyConfig 오버라이드', () => {
+        // @scenario content_kind=script_injection, mode=html
+        // @effects script_tag_blocked
         it('사용자 설정이 보안 기본 차단 목록을 덮어쓰지 못한다', () => {
             const html = sanitizedHtmlOf('<p>본문</p><script>window.__xss=1;</script>', {
                 purifyConfig: { FORBID_TAGS: [], FORBID_ATTR: [] },

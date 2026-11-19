@@ -10,7 +10,7 @@ use App\Services\PluginSettingsService;
 use App\Support\SiteUrl;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Modules\Sirsoft\Ecommerce\Services\OrderProcessingService;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge;
 
 /**
  * 테스트 모드 가상계좌 모의입금처리 정보 제공
@@ -30,11 +30,11 @@ class UserVbankMockDepositController extends AuthBaseController
 
     /**
      * @param  PluginSettingsService  $pluginSettingsService  플러그인 설정 서비스(테스트 모드 판정)
-     * @param  OrderProcessingService  $orderService  주문 조회 서비스
+     * @param  PaymentGatewayBridge  $bridge  이커머스 결제 계약 (주문 조회)
      */
     public function __construct(
         private readonly PluginSettingsService $pluginSettingsService,
-        private readonly OrderProcessingService $orderService,
+        private readonly PaymentGatewayBridge $bridge,
     ) {
         parent::__construct();
     }
@@ -57,7 +57,7 @@ class UserVbankMockDepositController extends AuthBaseController
             return $this->unavailable();
         }
 
-        $order = $this->orderService->findByOrderNumber($orderNumber);
+        $order = $this->bridge->findOrderByNumber($orderNumber, 'nhnkcp');
 
         if (! $order) {
             return $this->unavailable();
@@ -70,7 +70,7 @@ class UserVbankMockDepositController extends AuthBaseController
         }
 
         $isAdmin = method_exists($user, 'isAdmin') && $user->isAdmin();
-        $isOwner = (int) $order->user_id === (int) $user->id;
+        $isOwner = (int) $order->userId === (int) $user->id;
 
         if (! $isAdmin && ! $isOwner) {
             return $this->unavailable();
@@ -82,23 +82,21 @@ class UserVbankMockDepositController extends AuthBaseController
             return $this->unavailable();
         }
 
-        $isVbank = $payment->isVirtualAccount();
+        $isVbank = $payment->isVirtualAccount;
 
         // 가상계좌 계좌번호가 발급됐고 아직 입금완료가 아닌 상태
         // (발급 전 결제행 READY 와 발급 뒤 WAITING_DEPOSIT 을 모두 받도록 isPaid 역확인)
-        if (! $isVbank || ! $payment->vbank_number || $payment->isPaid()) {
+        if (! $isVbank || ! $payment->vbankNumber || $payment->isPaid) {
             return $this->unavailable();
         }
 
         // transaction_id(tno)가 없으면 payment_meta에서 fallback
-        $meta = $payment->payment_meta ?? [];
-        $tradeNo = $payment->transaction_id
-            ?? (is_array($meta) ? ($meta['tno'] ?? '') : '');
+        $tradeNo = $payment->transactionId ?? ($payment->paymentMeta['tno'] ?? '');
 
         return ResponseHelper::success('common.success', [
             'available' => true,
             'trade_no' => $tradeNo,
-            'account_no' => $payment->vbank_number,
+            'account_no' => $payment->vbankNumber,
             'notify_url' => SiteUrl::absolute(self::VBANK_NOTIFY_PATH),
             'mock_url' => self::KCP_TEST_MOCK_URL,
             'is_admin_view' => $isAdmin,

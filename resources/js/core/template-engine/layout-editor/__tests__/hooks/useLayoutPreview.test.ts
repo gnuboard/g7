@@ -7,8 +7,8 @@
  *  - layoutName/raw 없으면 no_document (fetch 미호출)
  *  - 실패 시 network_error
  *
- * @effects preview_creates_temp_record_and_opens_window_with_token, preview_no_document_when_no_layout_or_raw,
- *   version_and_preview_fetch_attach_bearer_token
+ * 효과 요약(마커 아님, 평문): 임시 레코드 생성 후 토큰 창 열기, 문서 없음 판정, Bearer 부착, 실패 분류.
+ * 효과 표식은 각 시험 docblock 에 있다.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -33,8 +33,13 @@ const sampleRaw = {
 };
 
 describe('useLayoutPreview', () => {
+  /**
+   * @scenario hook=layout_preview
+   * @effects preview_creates_temp_record_and_opens_window_with_token,
+   *   version_and_preview_fetch_attach_bearer_token
+   */
   it('성공 시 POST preview + Bearer + openWindow dispatch', async () => {
-    const fetchFn = vi.fn(async () => ({
+    const fetchFn = vi.fn(async (_url: string, _init?: RequestInit) => ({
       ok: true,
       status: 200,
       json: async () => ({ success: true, data: { token: 'TKN', preview_url: '/preview/TKN' } }),
@@ -64,6 +69,10 @@ describe('useLayoutPreview', () => {
     );
   });
 
+  /**
+   * @scenario hook=layout_preview
+   * @effects preview_no_document_when_no_layout_or_raw
+   */
   it('layoutName 없으면 no_document (fetch 미호출)', async () => {
     const fetchFn = vi.fn();
     vi.stubGlobal('fetch', fetchFn);
@@ -76,6 +85,10 @@ describe('useLayoutPreview', () => {
     expect(fetchFn).not.toHaveBeenCalled();
   });
 
+  /**
+   * @scenario hook=layout_preview
+   * @effects preview_no_document_when_no_layout_or_raw
+   */
   it('raw 없으면 no_document', async () => {
     const fetchFn = vi.fn();
     vi.stubGlobal('fetch', fetchFn);
@@ -88,6 +101,10 @@ describe('useLayoutPreview', () => {
     expect(fetchFn).not.toHaveBeenCalled();
   });
 
+  /**
+   * @scenario hook=layout_preview
+   * @effects preview_failure_reports_network_error
+   */
   it('실패 시 network_error', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => ({
       ok: false,

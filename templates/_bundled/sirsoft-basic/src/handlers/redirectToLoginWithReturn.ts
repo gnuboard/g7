@@ -1,3 +1,4 @@
+import { routePath } from '../support/apiUrl';
 /**
  * redirectToLoginWithReturn 핸들러
  *
@@ -12,8 +13,20 @@
  * 따라서 레이아웃 표현식으로는 현재 경로를 캡처할 수 없으므로, 핸들러가 window.location 을
  * 직접 읽어 우회한다(identityLauncher.ts 의 window.location.href 선례와 동일 패턴).
  *
- * window.location.pathname 은 항상 '/' 로 시작하는 same-origin path 이므로 외부 URL 주입이
- * 불가능하다(open redirect 안전).
+ * 복귀 주소는 `routePath(window.location.pathname)` 이다. `location.pathname` 자체는 언제나
+ * '/' 로 시작하는 same-origin path 지만, `routePath()` 가 마운트 접두사를 벗긴 결과는 **`//` 로
+ * 시작할 수 있다** — 하위 폴더 사이트에서 `/g7//evil.com` 을 열면 벗긴 값이 `//evil.com`
+ * 이 된다(`stripBasePrefix` 는 접두사 뒤 나머지를 그대로 돌려준다). 그 값이 로그인 뒤
+ * 사이트 밖으로 나가지 않는 이유는 이 핸들러가 아니라 **코어의 이동 게이트**에 있다:
+ * 브라우저가 그대로 여는 주소는 `ActionDispatcher.handleOpenWindow` 가 넘기기 전에
+ * `navPolicy.resolveSameTabNavPath()` 로 판정하고(같은 출처 경로가 아니면 `/`), SPA 이동은
+ * `handleNavigate` 가 `//`·스킴 목적지를 거부한다.
+ *
+ * 「라우트 패턴이 `^\/` 라 매치되지 않아 안전하다」는 종전 서술은 **사실과 반대였다.**
+ * 미등록 라우트는 `routeNotFound` 가 아니라 fallback(`openWindow` → `location.assign`)
+ * 으로 가므로, 매치 실패는 방어가 아니라 바깥으로 나가는 **방아쇠**다. 외부 URL 은
+ * `^\/…$` 앵커에 구조적으로 매치될 수 없어 반드시 그 경로를 탄다.
+ * 회귀 고정: `ActionDispatcher.handleNavigate.fallback.test.ts` 의 same-origin 게이트 블록.
  */
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
@@ -46,7 +59,7 @@ export async function redirectToLoginWithReturnHandler(
 
   // 핸들러는 표현식 화이트리스트 제약 밖 — window.location 직접 접근 가능.
   // pathname + search 로 현재 경로(쿼리스트링 포함)를 보존한다.
-  const returnUrl = window.location.pathname + window.location.search;
+  const returnUrl = routePath(window.location.pathname) + window.location.search;
 
   await G7Core.dispatch({
     handler: 'navigate',

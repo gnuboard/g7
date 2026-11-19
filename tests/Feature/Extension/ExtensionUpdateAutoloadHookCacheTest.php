@@ -7,6 +7,7 @@ use App\Extension\ExtensionManager;
 use App\Extension\HookCacheManager;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
+use App\Extension\ScheduleCommandCacheManager;
 use Mockery;
 use Tests\TestCase;
 
@@ -43,7 +44,11 @@ class ExtensionUpdateAutoloadHookCacheTest extends TestCase
     {
         $calls = [];
 
-        $extensionManager = Mockery::mock(ExtensionManager::class);
+        // 정적 캐시 재생성은 커맨드가 `ExtensionManager::regenerateExtensionStaticCaches()` 에 맡긴다 — 캐시 목록을
+        // 아는 지점을 하나로 두려는 설계다. 그 메서드만 실제 본문으로 통과시켜(passthru) 목록 안의 훅 캐시와
+        // 예약 명령 캐시 생성이 실제로 불리는지까지 본다. 나머지 메서드는 목이라 실 파일을 건드리지 않는다.
+        $extensionManager = Mockery::mock(ExtensionManager::class)->makePartial();
+        $extensionManager->shouldReceive('regenerateExtensionStaticCaches')->once()->passthru();
         $extensionManager->shouldReceive('generateAutoloadFile')
             ->once()
             ->andReturnUsing(function () use (&$calls) {
@@ -78,17 +83,27 @@ class ExtensionUpdateAutoloadHookCacheTest extends TestCase
                 return [];
             });
 
+        $scheduleCacheManager = Mockery::mock(ScheduleCommandCacheManager::class);
+        $scheduleCacheManager->shouldReceive('generate')
+            ->once()
+            ->andReturnUsing(function () use (&$calls) {
+                $calls[] = 'generateScheduleCommands';
+
+                return ['commands' => [], 'unresolved' => []];
+            });
+
         $this->app->instance(ExtensionManager::class, $extensionManager);
         $this->app->instance(ModuleManager::class, $moduleManager);
         $this->app->instance(PluginManager::class, $pluginManager);
         $this->app->instance(HookCacheManager::class, $hookCacheManager);
+        $this->app->instance(ScheduleCommandCacheManager::class, $scheduleCacheManager);
 
         $this->artisan('extension:update-autoload')->assertSuccessful();
 
-        // 훅 캐시 재생성이 목록의 마지막이어야 한다 — 재등록·적재보다 먼저 돌면 그 캐시는
+        // 정적 캐시(훅 캐시, 예약 명령 캐시) 재생성이 목록의 마지막이어야 한다 — 재등록·적재보다 먼저 돌면 그 캐시는
         // 다시 구버전 매핑으로 채워진다(사례 32 의 원인 그 자체).
         $this->assertSame(
-            ['generateAutoloadFile', 'reregisterRuntimeAutoload', 'loadModules', 'loadPlugins', 'generate'],
+            ['generateAutoloadFile', 'reregisterRuntimeAutoload', 'loadModules', 'loadPlugins', 'generate', 'generateScheduleCommands'],
             $calls,
         );
     }

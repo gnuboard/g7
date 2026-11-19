@@ -2,7 +2,9 @@
 
 namespace App\Extension\Helpers;
 
+use App\Extension\Support\CarriedClassFileLedger;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 
 /**
  * 확장 백업/복원 헬퍼
@@ -32,7 +34,11 @@ class ExtensionBackupHelper
             );
         }
 
-        $timestamp = date('Ymd_His');
+        // 형제 축(`CoreBackupHelper`)과 같은 규약을 쓴다 — 같은 초에 시작한 두 실행이
+        // 같은 디렉토리를 백업 대상으로 잡으면 뒤 실행이 앞 실행의 신 버전 디스크를
+        // 「업데이트 이전 스냅샷」 자리에 덮어쓴다. 확장 업데이트에는 코어와 달리
+        // 실행 잠금이 없어 그 충돌이 오히려 더 쉽다.
+        $timestamp = BackupDirectoryName::stamp();
         $backupRoot = storage_path('app/extension_backups');
         $backupTypeDir = storage_path("app/extension_backups/{$type}");
         $backupPath = storage_path("app/extension_backups/{$type}/{$identifier}_{$timestamp}");
@@ -47,11 +53,18 @@ class ExtensionBackupHelper
         foreach ([$backupRoot, $backupTypeDir] as $dir) {
             File::ensureDirectoryExists($dir, 0775);
             FilePermissionHelper::inheritOwnershipFromParent($dir);
-            FilePermissionHelper::syncGroupWritability($dir);
         }
+
+        // 그룹 쓰기는 부모 체인(extension_backups → {type})만 맞춘다 — 옛 확장 백업 전체를 재귀로 훑으면 백업이
+        // 쌓일수록 확장 업데이트 한 건(코어 업데이트의 번들 확장 단계는 한 요청에 한 항목)이 길어진다. 옛 백업의 정상화는
+        // 코어 업데이트 마무리의 소유권 복원이 맡는다.
+        FilePermissionHelper::promoteGroupWritableChain($backupRoot, $backupTypeDir);
 
         // 파일별 복사로 진행 상세 보고
         self::copyDirectoryWithProgress($sourcePath, $backupPath, $sourcePath, $onProgress);
+
+        // 정리 대기 목록의 이 확장 항목을 백업 사본으로 둔다 — 이 백업으로 되돌리면 그 항목도 되돌린다
+        self::withLedger(fn (CarriedClassFileLedger $ledger) => $ledger->snapshotFor($sourcePath, $backupPath));
 
         return $backupPath;
     }
@@ -63,6 +76,7 @@ class ExtensionBackupHelper
      * @param  string  $dest  대상 디렉토리
      * @param  string  $basePath  상대 경로 계산 기준
      * @param  \Closure|null  $onProgress  진행 콜백
+     * @return void 반환값 없음
      */
     private static function copyDirectoryWithProgress(
         string $source,
@@ -102,6 +116,7 @@ class ExtensionBackupHelper
      * @param  string  $identifier  확장 식별자
      * @param  string  $backupPath  백업 경로
      * @param  \Closure|null  $onProgress  진행 콜백 (?string $step, string $message)
+     * @return void 반환값 없음
      *
      * @throws \RuntimeException 백업 디렉토리가 없을 때
      *
@@ -119,17 +134,38 @@ class ExtensionBackupHelper
 
         // 원자적 복원: ExtensionPendingHelper의 안전한 교체 로직 사용
         ExtensionPendingHelper::copyToActive($backupPath, $targetPath, $onProgress);
+
+        // 교체가 대기 목록에서 먼저 뺀 항목(실패한 업데이트가 남긴 파일 포함)을 백업 시점으로 되살린다 — 빼진 채로 두면 복원 폴더에 영구히 남는다
+        self::withLedger(fn (CarriedClassFileLedger $ledger) => $ledger->restoreSnapshot($targetPath, $backupPath));
     }
 
     /**
      * 백업 디렉토리를 삭제합니다.
      *
      * @param  string  $backupPath  백업 경로
+     * @return void 반환값 없음
      */
     public static function deleteBackup(string $backupPath): void
     {
         if (File::isDirectory($backupPath)) {
             File::deleteDirectory($backupPath);
+        }
+
+        self::withLedger(fn (CarriedClassFileLedger $ledger) => $ledger->dropSnapshot($backupPath));
+    }
+
+    /**
+     * 정리 대기 목록 작업을 실행합니다 — 실패해도 백업·복원 자체는 막지 않는다(경고만).
+     *
+     * @param  callable(CarriedClassFileLedger): mixed  $action  목록 작업
+     * @return void 반환값 없음
+     */
+    private static function withLedger(callable $action): void
+    {
+        try {
+            $action(app(CarriedClassFileLedger::class));
+        } catch (\Throwable $e) {
+            Log::warning('확장 백업: 정리 대기 목록 갱신 실패', ['error' => $e->getMessage()]);
         }
     }
 }

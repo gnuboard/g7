@@ -7,24 +7,12 @@
  * @module StyleTracker
  */
 
+/// <reference lib="es2021.weakref" />
+// WeakRef 는 ES2021 표준이라 코어 lib(ES2020)에 없다. DevTools 를 켠 개발 환경에서만 이 추적기가 돌므로
+// 이 파일에서만 WeakRef 타입을 싣는다(#869).
 import { G7DevToolsCore } from './G7DevToolsCore';
-import type { StyleIssue, StyleIssueType } from './types';
-
-/**
- * 스타일 추적에 필요한 computed styles 속성
- */
-const TRACKED_STYLE_PROPERTIES = [
-  'display',
-  'visibility',
-  'opacity',
-  'position',
-  'zIndex',
-  'overflow',
-  'width',
-  'height',
-  'backgroundColor',
-  'color',
-] as const;
+import type { ComponentStyleInfo, StyleIssue } from './types';
+import { breakpointVariantOf } from './TailwindValidator';
 
 /**
  * 컴포넌트 스타일 정보
@@ -33,7 +21,7 @@ interface ComponentStyleData {
   componentId: string;
   componentName: string;
   classes: string[];
-  computedStyles: Record<string, string>;
+  computedStyles: ComponentStyleInfo['computedStyles'];
   element: WeakRef<HTMLElement>;
   timestamp: number;
 }
@@ -51,6 +39,8 @@ export class StyleTracker {
   private mutationObserver: MutationObserver | null = null;
   private scanInterval: ReturnType<typeof setInterval> | null = null;
   private devTools: G7DevToolsCore;
+  /** 레이아웃 JSON → (id → 컴포넌트 정의) — 레이아웃이 바뀌면 새로 만든다 */
+  private definitionIndex: WeakMap<object, Map<string, Record<string, unknown>>> = new WeakMap();
 
   private constructor() {
     this.devTools = G7DevToolsCore.getInstance();
@@ -345,27 +335,75 @@ export class StyleTracker {
       });
     }
 
-    // 6. 반응형 클래스 누락 (모바일 전용 또는 데스크톱 전용)
-    const hasResponsive = classes.some(c =>
-      c.startsWith('sm:') || c.startsWith('md:') || c.startsWith('lg:') || c.startsWith('xl:')
-    );
-    const hasHiddenClass = classes.includes('hidden');
-    const hasMobileOnly = classes.includes('portable:block') || classes.includes('portable:flex');
-    const hasDesktopOnly = classes.includes('desktop:block') || classes.includes('desktop:flex');
-
-    if (hasHiddenClass && !hasResponsive && !hasMobileOnly && !hasDesktopOnly) {
-      // hidden 클래스만 있고 반응형 표시가 없으면
-      this.addIssue({
-        type: 'responsive-issue',
-        componentId,
-        componentName,
-        property: 'className',
-        currentValue: 'hidden',
-        severity: 'info',
-        description: '반응형 표시 클래스 없이 hidden이 설정되어 있습니다',
-        suggestion: '조건에 따라 표시하려면 sm:block, desktop:flex 등을 추가하세요',
-      });
+    // 6. 폭 조건 없는 hidden — 폭 조건은 엔진 responsive 덮어쓰기로만 둔다.
+    // 엔진은 지금 폭의 className 만 DOM 에 남기고 표식을 달지 않으므로, 폭 조건 유무는 노드 정의(responsive 키)로 본다.
+    // 정의를 찾을 수 없으면(레이아웃 정보 없음, 반복 사본 id, 레이아웃 밖 요소) 판정하지 않는다 — 엔진 responsive 로 숨긴 요소를
+    // 「폭 조건 없음」으로 오판하지 않게. Tailwind 폭 접두가 있으면 그 경고는 TailwindValidator 가 낸다.
+    // `portable:` `desktop:` 은 이 프로젝트에 정의된 변형이 아니라 폭 조건으로 치지 않는다.
+    if (classes.includes('hidden') && !classes.some((c) => {
+      const variant = breakpointVariantOf(c);
+      return variant !== null && variant !== 'portable' && variant !== 'desktop';
+    })) {
+      const definition = this.findDefinition(componentId);
+      if (definition && !this.hasResponsiveOverride(definition)) {
+        this.addIssue({
+          type: 'responsive-issue',
+          componentId,
+          componentName,
+          property: 'className',
+          currentValue: 'hidden',
+          severity: 'info',
+          description: '폭 조건 없이 hidden이 설정되어 있습니다',
+          // Tailwind 폭 접두(sm: md: lg: …)는 금지 규정이다 — 폭 판정은 엔진 responsive 하나로 모은다(docs/frontend/responsive-layout.md 2절)
+          suggestion: '폭에 따라 표시하려면 엔진 responsive(<responsive on="desktop" class="…"/> 등)로 그 구간의 className 을 통째로 바꾸세요. Tailwind 폭 접두는 쓰지 않습니다',
+        });
+      }
     }
+  }
+
+  /**
+   * 지금 레이아웃에서 컴포넌트 정의를 id 로 찾습니다.
+   *
+   * @param componentId 컴포넌트 id
+   * @returns 정의 (레이아웃 정보가 없거나 찾지 못하면 null)
+   */
+  private findDefinition(componentId: string): Record<string, unknown> | null {
+    const layoutJson = (this.devTools as { getCurrentLayout?: () => { layoutJson?: unknown } | null }).getCurrentLayout?.()?.layoutJson;
+    if (!layoutJson || typeof layoutJson !== 'object') return null;
+
+    let index = this.definitionIndex.get(layoutJson as object);
+    if (!index) {
+      index = new Map();
+      const seen = new Set<unknown>();
+      const walk = (node: unknown): void => {
+        if (!node || typeof node !== 'object' || seen.has(node)) return;
+        seen.add(node);
+        if (Array.isArray(node)) {
+          node.forEach(walk);
+          return;
+        }
+        const record = node as Record<string, unknown>;
+        if (typeof record.id === 'string' && (typeof record.name === 'string' || typeof record.type === 'string') && !index!.has(record.id)) {
+          index!.set(record.id, record);
+        }
+        Object.values(record).forEach(walk);
+      };
+      walk(layoutJson);
+      this.definitionIndex.set(layoutJson as object, index);
+    }
+
+    return index.get(componentId) ?? null;
+  }
+
+  /**
+   * 정의가 엔진 responsive 덮어쓰기(`responsive` 키, 마크업 `<responsive on>`)를 갖는지.
+   *
+   * @param definition 컴포넌트 정의
+   * @returns 구간 덮어쓰기가 하나라도 있으면 true
+   */
+  private hasResponsiveOverride(definition: Record<string, unknown>): boolean {
+    const responsive = definition.responsive;
+    return !!responsive && typeof responsive === 'object' && Object.keys(responsive as object).length > 0;
   }
 
   /**
@@ -386,17 +424,25 @@ export class StyleTracker {
   /**
    * computed styles 가져오기
    */
-  private getComputedStyles(element: HTMLElement): Record<string, string> {
+  private getComputedStyles(element: HTMLElement): ComponentStyleInfo['computedStyles'] {
     const computed = window.getComputedStyle(element);
-    const result: Record<string, string> = {};
+    // camelCase 속성명을 CSS 속성명(kebab-case)으로 바꿔 읽는다
+    const read = (prop: keyof ComponentStyleInfo['computedStyles']): string =>
+      computed.getPropertyValue(prop.replace(/([A-Z])/g, '-$1').toLowerCase());
 
-    for (const prop of TRACKED_STYLE_PROPERTIES) {
-      result[prop] = computed.getPropertyValue(
-        prop.replace(/([A-Z])/g, '-$1').toLowerCase()
-      );
-    }
-
-    return result;
+    // 추적 속성 목록은 ComponentStyleInfo['computedStyles'] 키와 같다(빠지면 타입 검사가 잡는다)
+    return {
+      display: read('display'),
+      visibility: read('visibility'),
+      opacity: read('opacity'),
+      position: read('position'),
+      zIndex: read('zIndex'),
+      overflow: read('overflow'),
+      width: read('width'),
+      height: read('height'),
+      backgroundColor: read('backgroundColor'),
+      color: read('color'),
+    };
   }
 
   /**

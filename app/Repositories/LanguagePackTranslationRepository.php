@@ -14,6 +14,7 @@ use App\Models\NotificationTemplate;
 use App\Models\Permission;
 use App\Models\Plugin;
 use App\Models\Role;
+use App\Models\Schedule;
 use App\Models\Template;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -21,8 +22,8 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * 언어팩 활성/비활성 시 DB JSON 다국어 컬럼을 일괄 동기화하는 집계 Repository.
  *
- * 8 개 모델 (Permission/Role/Menu/Module/Plugin/Template/NotificationDefinition/
- * NotificationTemplate) 에 대한 영속
+ * 9 개 모델 (Permission/Role/Menu/Module/Plugin/Template/NotificationDefinition/
+ * NotificationTemplate/Schedule) 에 대한 영속
  * 책임을 단일 진입점으로 캡슐화. Listener/Service 는 본 Repository 만 호출.
  *
  * 동작 정책은 인터페이스 PHPDoc 참조.
@@ -67,6 +68,9 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
             }
             if (! empty($seedBundle['manifest'])) {
                 $this->applyManifest($pack, $seedBundle['manifest'], $locale, $audit);
+            }
+            if (! empty($seedBundle['schedules'])) {
+                $this->applySchedules($pack, $seedBundle['schedules'], $locale, $audit);
             }
 
             return $audit;
@@ -131,6 +135,13 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
 
         $models = $modelMaps[$pack->scope] ?? [];
 
+        // 스케줄은 코어 팩이 코어 소유 행에만 넣는다(직접 등록 행은 운영자 문구라 범위 밖) — 같은 범위로 걷는다.
+        if ($pack->scope === LanguagePackScope::Core->value) {
+            $this->scheduleOwnershipQuery($pack)->get()->each(function (Model $row) use ($locale, &$audit) {
+                $this->stripLocaleColumns($row, $locale, ['label', 'description'], $audit);
+            });
+        }
+
         foreach ($models as $modelClass => $columns) {
             if (! class_exists($modelClass)) {
                 continue;
@@ -143,6 +154,18 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
                 LanguagePackScope::Template->value,
             ], true) && $pack->target_identifier) {
                 $query->where('identifier', $pack->target_identifier);
+            }
+
+            // 코어 팩은 넣을 때와 같은 범위(코어 소유 — core|NULL)에서만 걷는다. 종전에는 전 행에서 걷어, 같은 로케일의 확장 팩이
+            // 넣은 확장 메뉴·권한·역할·알림 번역까지 지웠고 코어 팩을 다시 켜도 코어 행만 채워 확장 이름이 원문으로 남았다
+            if ($pack->scope === LanguagePackScope::Core->value) {
+                if ($modelClass === NotificationTemplate::class) {
+                    $definitionQuery = NotificationDefinition::query();
+                    $this->scopeOwnership($definitionQuery, $pack);
+                    $query->whereIn('definition_id', $definitionQuery->select('id'));
+                } else {
+                    $this->scopeOwnership($query, $pack);
+                }
             }
 
             $query->get()->each(function (Model $row) use ($columns, $locale, &$audit) {
@@ -171,6 +194,7 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
             Role::class => ['name', 'description'],
             Menu::class => ['name'],
             NotificationDefinition::class => ['name', 'description'],
+            Schedule::class => ['label', 'description'],
         ];
 
         foreach ($owned as $modelClass => $columns) {
@@ -329,6 +353,66 @@ class LanguagePackTranslationRepository implements LanguagePackTranslationReposi
         }
 
         $this->mergeLocaleColumns($row, $seed, $locale, ['name', 'description'], $audit);
+    }
+
+    /**
+     * 스케줄 label·description JSON 컬럼에 locale 키를 병합합니다 (7.2.0).
+     *
+     * seed 는 `{ name: { label, description } }`. 소유 범위는 스케줄 전용 — 코어 팩은 코어 소유 행
+     * (extension_type=core)만, 모듈·플러그인 팩은 그 확장 소유 행만. 직접 등록 행(extension_type NULL)은
+     * 운영자가 쓴 문구라 어느 팩도 건드리지 않는다(다른 모델의 core 범위 = core|NULL 과 다르다).
+     *
+     * @param  LanguagePack  $pack  적용할 언어팩
+     * @param  array<string, array<string, mixed>>  $seed  스케줄 name → 컬럼별 번역 맵
+     * @param  string  $locale  적용할 로케일
+     * @param  array<int, array<string, mixed>>  $audit  감사 항목 누적 배열
+     * @return void 반환값 없음
+     */
+    protected function applySchedules(LanguagePack $pack, array $seed, string $locale, array &$audit): void
+    {
+        $this->scheduleOwnershipQuery($pack)
+            ->whereIn('name', array_keys($seed))
+            ->get()
+            ->each(function (Model $row) use ($seed, $locale, &$audit) {
+                $entry = $seed[$row->name] ?? null;
+                if (! is_array($entry)) {
+                    return;
+                }
+                $this->mergeLocaleColumns($row, $entry, $locale, ['label', 'description'], $audit);
+            });
+    }
+
+    /**
+     * 언어팩 범위에 맞는 스케줄 소유 쿼리를 만듭니다.
+     *
+     * @param  LanguagePack  $pack  기준 언어팩
+     * @return Builder 스케줄 쿼리 (범위 밖 팩이면 빈 결과)
+     */
+    protected function scheduleOwnershipQuery(LanguagePack $pack): Builder
+    {
+        $query = Schedule::query();
+
+        $type = match ($pack->scope) {
+            LanguagePackScope::Core->value => ExtensionOwnerType::Core,
+            LanguagePackScope::Module->value => ExtensionOwnerType::Module,
+            LanguagePackScope::Plugin->value => ExtensionOwnerType::Plugin,
+            default => null,
+        };
+
+        if ($type === null) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if ($type === ExtensionOwnerType::Core) {
+            return $query->where('extension_type', ExtensionOwnerType::Core->value);
+        }
+
+        if (empty($pack->target_identifier)) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where('extension_type', $type->value)
+            ->where('extension_identifier', $pack->target_identifier);
     }
 
     /**

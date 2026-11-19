@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: 9축 cross product 는 105,840 조합이라 E2E 전수 전개가 불가능하다. 축별 판정은 test_files 의 단위/렌더 테스트(useDevicePreview 클램프·overlayGeometry 44px 임계·EditorToolbar hover/outline·ComponentPalette 태그 배지·admin-template-layout-edit replaceUrl)가 커버하고, 브라우저 통합은 chrome-controls.spec.ts(코어 chrome) + code-editor-route-sync.spec.ts(템플릿 소유 코드편집기)가 나눠 맡는다. effects 15건은 @effects 마킹으로 전건 커버(미커버 0)이며 이 면제는 cross_product 축에만 적용된다.
+# audit:allow test-scenario-coverage reason: issue:#383 9축 cross product 는 105,840 조합이라 E2E 전수 전개가 불가능하다. 축별 판정은 test_files 의 단위/렌더 테스트(useDevicePreview 클램프·overlayGeometry 44px 임계·EditorToolbar hover/outline·ComponentPalette 태그 배지·admin-template-layout-edit replaceUrl)가 커버하고, 브라우저 통합은 chrome-controls.spec.ts(코어 chrome) + code-editor-route-sync.spec.ts(템플릿 소유 코드편집기)가 나눠 맡는다. effects 15건은 @effects 마킹으로 전건 커버(미커버 0)이며 이 면제는 cross_product 축에만 적용된다.
 
 feature: 레이아웃 편집기 chrome 컨트롤 (디바이스 custom width / 툴바 나가기·코드편집·저장 스피너·hover / 오버레이 겹침 회피 / 팔레트 태그)
 phase: 3
@@ -16,6 +16,8 @@ issue: 383
 axes:
   preview_device: [desktop, tablet, mobile, custom]
   custom_width_input: [below_min_320, in_range, above_max_1920]
+  # 코드편집기 진입 경로 (609 docblock 정리 — sub_flows.code_editor_route_sync 의 설명에만 있고 선언이 없던 축을 올린다)
+  code_editor_entry: [from_wysiwyg_with_route, direct_route_query, no_route_query, stale_selection_from_other_template]
 exclusions:
   - { preview_device: desktop, custom_width_input: below_min_320,
       reason: "custom 이 아닌 디바이스는 custom 폭을 무시 — 대표로 in_range 1건만 검증" }
@@ -59,6 +61,42 @@ sub_flows:
       - overlay_affordances_inside_when_box_ge_44
       - overlay_affordances_outside_when_box_lt_44_no_overlap
       - insertion_affordances_cross_layout_when_box_lt_44_no_overlap_no_clip
+  - id: preview_fit_zoom
+    description: |
+      맞춤 줌 — 캔버스가 미리보기 기기 폭보다 좁으면 미리보기를 남는 폭에 맞춰 줄이고(줌 슬라이더 값은
+      배율 상한, 100% 포함) 레이아웃 폭도 줄인 폭으로 잡는다(#869 P3, 창 1280 문서 폭 1608px).
+      미리보기 안 반응형 판정(frame 폭, ResponsiveProvider)은 기기 폭 그대로다.
+      축: editor_preview_fit(canvas_narrower_than_device·canvas_wider_than_device) ×
+          editor_window_width(1024_to_1920) × editor_canvas_resize(observer: shrink·grow_below_threshold·grow_above_threshold) ×
+          editor_overlay_listener_target(preview_stage·hand_built_wrapper)
+    effects:
+      - editor_preview_scale_fits_available_width
+      - editor_document_width_within_shell
+      - editor_preview_stage_uses_scaled_layout_width
+      - editor_overlay_outside_scale_transform
+      - editor_preview_keeps_device_width_for_responsive
+      - editor_canvas_capture_listener_on_common_ancestor
+      - editor_document_no_preview_horizontal_scroll
+      - editor_overlay_selection_box_aligned_when_scaled
+      - editor_toolbar_wraps_lines_without_squish
+      - editor_insertion_affordances_stay_inside_canvas
+      - editor_canvas_height_follows_wrapped_header
+      - editor_actual_size_toggle_shows_one_to_one
+      # 50412256f3 좁은 창 압착 차단(찌그러짐 방지) — 하한 1024·툴바 자연 폭으로 바뀐 뒤에도 유지
+      - shell_keeps_min_width_below_viewport
+      - toolbar_items_keep_natural_width_no_wrap
+      - narrow_window_produces_horizontal_scroll_not_compression
+  - id: prop_slot_footer_edit
+    description: |
+      컴포넌트 배열 prop(`props.footer`) 안 노드 편집(#141) — Modal 하단 단추를 children 과 같은
+      트리 함수로 고르고 고친다. path 표기 `{owner}.props.footer.{index}`.
+      축: footer_operation(select·patch·remove·duplicate·move_within_footer·move_footer_to_children·
+          move_children_to_footer·drop_slot·save_serialize)
+    effects:
+      - editor_footer_path_round_trips
+      - editor_footer_node_selectable
+      - editor_footer_node_patch_remove_move
+      - editor_footer_edit_serialized_on_save
   - id: palette_entry_badge
     description: |
       팔레트 카드의 React 컴포넌트 태그 배지. 축: palette_entry_type(basic·composite·layout)
@@ -66,6 +104,8 @@ sub_flows:
       - palette_card_shows_react_component_tag_badge
 
 effects:
+  - preview_device_toggle_reflects_preset_width
+  - preview_zoom_clamped_0_5_to_1
   - preview_custom_device_uses_clamped_input_width_as_override
   - preview_custom_width_clamped_320_to_1920
   - preview_non_custom_ignores_custom_width
@@ -83,6 +123,18 @@ effects:
   - overlay_affordances_outside_when_box_lt_44_no_overlap
   - insertion_affordances_cross_layout_when_box_lt_44_no_overlap_no_clip
   - palette_card_shows_react_component_tag_badge
+  # 속성 모달 끌기, 크기 입력, 이미지 관리, 초기화, 리사이즈, 미저장 편집분 보존 (브라우저)
+  - modal_draggable
+  - dimension_free_input
+  - image_modal_open
+  - reset_reverts
+  - tree_dirty_dot
+  - resize_px_change
+  - edit_preserved_on_route_switch
+  - unload_warning
+  # 2026-11-09 #869 κ2: 효과 짝 없이 조합만 달던 Footer.responsive.test.tsx 가 실제로 재는 명제
+  - template_component_follows_engine_responsive_width   # 편집 가능 템플릿 컴포넌트(Footer)가 useResponsive 폭으로 그리드 열과 flex 방향을 고른다 — 프리뷰 기기 전환에 반응
+  - template_component_avoids_viewport_media_query_classes   # 그 컴포넌트 마크업에 viewport 미디어쿼리 분기 클래스(md:grid-cols, lg:grid-cols, sm:flex-row)가 없다
 test_files:
   - resources/js/core/template-engine/layout-editor/__tests__/hooks/useDevicePreview.test.ts
   - resources/js/core/template-engine/layout-editor/__tests__/utils/overlayGeometry.affordancePlacement.test.ts
@@ -94,6 +146,18 @@ test_files:
   - tests/Feature/Api/Admin/LayoutControllerTest.php
   - tests/Playwright/specs/layout-editor/chrome-controls.spec.ts
   - templates/_bundled/sirsoft-admin_basic/tests/Playwright/specs/admin/code-editor-route-sync.spec.ts
+  - tests/Playwright/specs/layout-editor/s6-2-followup.spec.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/hooks/useDevicePreview.fitZoom.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/components/PreviewCanvas.fitZoom.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/EditorCanvasOverlay.stageListener.test.tsx
+  - tests/Playwright/specs/layout-editor/preview-fit-zoom-no-hscroll.spec.ts
+  - tests/Playwright/specs/layout-editor/min-width-no-squish.spec.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/components/LayoutEditorChrome.toolbarWrap.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/InsertionAffordances.fold.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/layouts/footer-editor-path.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/components/DevicePreviewToolbar.actualSize.test.tsx
+  - resources/js/core/template-engine/layout-editor/__tests__/utils/layoutTreeUtils.propSlotFooter.test.ts
+  - resources/js/core/template-engine/layout-editor/__tests__/components/EditorCanvasOverlay.pathTypes.test.ts
 notes:
   - Footer.responsive.test.tsx 는 편집 가능 템플릿의 G7 표준 responsive 의무(viewport 미디어쿼리 금지) 회귀 가드 — preview_device 축의 디바이스 전환이 CSS 미디어쿼리가 아닌 useResponsive 로 반영됨을 컴포넌트 레벨에서 검증.
   - overlayGeometry.affordancePlacement.test.ts 가 selected_box_size × affordance_kind cross 의 핵심 판정(resolveAffordancePlacement)을 단위로 커버. affordance_kind=insertion_cross 는 resolveInsertionCrossOffsets(박스 중심 십자 배치) 단위 + 2×2 극단 대각 비겹침을 검증.

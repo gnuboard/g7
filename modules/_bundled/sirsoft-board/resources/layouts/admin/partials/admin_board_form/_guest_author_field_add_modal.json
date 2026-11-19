@@ -1,0 +1,468 @@
+{
+    "comment": "비회원 작성자 항목 추가 창(#490). 게시판 수정 화면의 「비회원 작성자 항목」 표에서 「항목 추가」가 연다.\n  상태는 전역 한 객체(`_global.guestAuthorFieldAdd`)에 모은다. 여는 쪽이 통째로 만들어 넣고, 닫을 때 통째로 비운다.\n  저장은 코어 공용 항목 API(`POST /api/admin/field-sets/sirsoft-board.guest_author/fields`, 권한은 집합의 관리 권한 sirsoft-board.boards.update)로 한다.\n  항목은 집합 전체(모든 게시판)에 생기므로 꺼진 채로 만든다. 이 게시판에서 쓰려면 표의 스위치를 켜고 게시판을 저장한다.\n  코어 환경설정의 「항목 추가」 창은 집합이 회원 항목(core.user)에 묶여 있고 그 화면의 데이터소스를 읽어 여기서 쓸 수 없다. 그래서 이 창은\n  비회원 작성자 항목에 필요한 칸(키, 유형, 이름, 선택지)만 받는다. 유형별 세부 옵션은 받지 않는다.\n  창은 표를 직접 고치지 않는다 — 저장되면 이벤트(`sirsoft-board:guest-author-field-added`)로 알리고, 표가 있는 화면이 자기 상태에 행을 더한다.",
+    "meta": {
+        "is_partial": true,
+        "description": "비회원 작성자 항목 추가 창"
+    },
+    "id": "guest_author_field_add_modal",
+    "type": "composite",
+    "name": "Modal",
+    "props": {
+        "title": "$t:sirsoft-board.admin.form.guest_author_fields.add.title",
+        "width": "560px",
+        "closeOnBackdropClick": false,
+        "footer": [
+            {
+                "id": "gaf_add_footer",
+                "type": "basic",
+                "name": "Div",
+                "props": {
+                    "className": "board:flex board:justify-end board:gap-2"
+                },
+                "children": [
+                    {
+                        "id": "gaf_add_cancel",
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "닫고 창 상태를 비운다",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "closeModal"
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "guestAuthorFieldAdd": null
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "className": "board-btn board-btn-secondary"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:sirsoft-board.common.cancel"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "gaf_add_save",
+                        "type": "basic",
+                        "name": "Button",
+                        "actions": [
+                            {
+                                "comment": "저장 — 꺼진 채로 만든다(모든 게시판에 생기므로). 성공하면 창을 닫고 표가 있는 화면에 새 항목을 알린다. 실패하면 칸 아래 오류",
+                                "type": "click",
+                                "handler": "sequence",
+                                "actions": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "guestAuthorFieldAdd.isSaving": "{{true}}",
+                                            "guestAuthorFieldAdd.errors": "{{null}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "apiCall",
+                                        "target": "/api/admin/field-sets/sirsoft-board.guest_author/fields",
+                                        "auth_required": true,
+                                        "params": {
+                                            "method": "POST",
+                                            "body": {
+                                                "key": "{{(_global.guestAuthorFieldAdd?.key ?? '').trim()}}",
+                                                "type": "{{_global.guestAuthorFieldAdd?.type ?? 'text'}}",
+                                                "name": "{{_global.guestAuthorFieldAdd?.name ?? {} }}",
+                                                "enabled": false,
+                                                "required": false,
+                                                "options": "{{['choice', 'multi_choice'].includes(_global.guestAuthorFieldAdd?.type) ? (_global.guestAuthorFieldAdd?.options_text ?? '').split('\\n').map(l => l.trim()).filter(l => l !== '').map(l => ({value: (l.includes('=') ? l.slice(0, l.indexOf('=')) : l).trim(), label: Object.fromEntries([[(_global.appConfig?.siteLocale ?? $locale ?? 'ko'), (l.includes('=') ? l.slice(l.indexOf('=') + 1) : l).trim()]])})) : undefined}}"
+                                            }
+                                        },
+                                        "onSuccess": [
+                                            {
+                                                "handler": "closeModal"
+                                            },
+                                            {
+                                                "handler": "emitEvent",
+                                                "params": {
+                                                    "event": "sirsoft-board:guest-author-field-added",
+                                                    "data": {
+                                                        "field": "{{response.data?.field}}"
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "guestAuthorFieldAdd": null
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "success",
+                                                    "message": "$t:sirsoft-board.admin.form.guest_author_fields.add.success"
+                                                }
+                                            }
+                                        ],
+                                        "onError": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "guestAuthorFieldAdd.isSaving": "{{false}}",
+                                                    "guestAuthorFieldAdd.errors": "{{error.errors ?? null}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "params": {
+                                                    "type": "error",
+                                                    "message": "{{error.message}}"
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ],
+                        "props": {
+                            "type": "button",
+                            "disabled": "{{_global.guestAuthorFieldAdd?.isSaving === true}}",
+                            "className": "board-btn board-btn-primary board-flex-center board:gap-2"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "if": "{{_global.guestAuthorFieldAdd?.isSaving === true}}",
+                                "props": {
+                                    "name": "spinner",
+                                    "className": "board-spinner-sm"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:sirsoft-board.common.save"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "children": [
+        {
+            "id": "gaf_add_body",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "board-row-stack"
+            },
+            "children": [
+                {
+                    "id": "gaf_add_notice",
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "board-form-hint"
+                    },
+                    "text": "$t:sirsoft-board.admin.form.guest_author_fields.add.notice"
+                },
+                {
+                    "comment": "키 — 요청 키(guest_fields.{키})와 값 테이블의 항목 키가 된다. 만든 뒤에는 바꿀 수 없다",
+                    "id": "gaf_add_key_field",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "board-form-label"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-board.admin.form.guest_author_fields.add.key"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "gaf_add_key_input",
+                            "type": "basic",
+                            "name": "Input",
+                            "actions": [
+                                {
+                                    "comment": "키만 바꾸고 그 칸의 지난 오류를 지운다",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "guestAuthorFieldAdd.key": "{{$event.target.value}}",
+                                        "guestAuthorFieldAdd.errors": "{{Object.fromEntries(Object.entries(_global.guestAuthorFieldAdd?.errors ?? {}).filter(([k]) => k !== 'key'))}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "type": "text",
+                                "aria-label": "$t:sirsoft-board.admin.form.guest_author_fields.add.key",
+                                "value": "{{_global.guestAuthorFieldAdd?.key ?? ''}}",
+                                "maxLength": 50,
+                                "placeholder": "guest_phone",
+                                "className": "board-input board:w-full"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "board-form-hint"
+                            },
+                            "text": "$t:sirsoft-board.admin.form.guest_author_fields.add.key_hint"
+                        },
+                        {
+                            "id": "gaf_add_key_error",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!!_global.guestAuthorFieldAdd?.errors?.key}}",
+                            "props": {
+                                "className": "board-form-error"
+                            },
+                            "text": "{{[].concat(_global.guestAuthorFieldAdd?.errors?.key ?? [])[0] ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "유형 — 비회원은 파일을 올릴 계정이 없어 파일, 이미지는 고를 수 없다(집합의 허용 유형과 같다)",
+                    "id": "gaf_add_type_field",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "board-form-label"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-board.admin.form.guest_author_fields.add.type"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "gaf_add_type_select",
+                            "type": "basic",
+                            "name": "Select",
+                            "actions": [
+                                {
+                                    "comment": "유형을 담는다 — 선택지 칸은 하나 선택, 여러 개 선택일 때만 보인다",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "guestAuthorFieldAdd.type": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "aria-label": "$t:sirsoft-board.admin.form.guest_author_fields.add.type",
+                                "value": "{{_global.guestAuthorFieldAdd?.type ?? 'text'}}",
+                                "className": "board:w-full",
+                                "options": [
+                                    {
+                                        "value": "text",
+                                        "label": "$t:sirsoft-board.admin.form.guest_author_fields.types.text"
+                                    },
+                                    {
+                                        "value": "textarea",
+                                        "label": "$t:sirsoft-board.admin.form.guest_author_fields.types.textarea"
+                                    },
+                                    {
+                                        "value": "number",
+                                        "label": "$t:sirsoft-board.admin.form.guest_author_fields.types.number"
+                                    },
+                                    {
+                                        "value": "boolean",
+                                        "label": "$t:sirsoft-board.admin.form.guest_author_fields.types.boolean"
+                                    },
+                                    {
+                                        "value": "date",
+                                        "label": "$t:sirsoft-board.admin.form.guest_author_fields.types.date"
+                                    },
+                                    {
+                                        "value": "phone",
+                                        "label": "$t:sirsoft-board.admin.form.guest_author_fields.types.phone"
+                                    },
+                                    {
+                                        "value": "email",
+                                        "label": "$t:sirsoft-board.admin.form.guest_author_fields.types.email"
+                                    },
+                                    {
+                                        "value": "url",
+                                        "label": "$t:sirsoft-board.admin.form.guest_author_fields.types.url"
+                                    },
+                                    {
+                                        "value": "choice",
+                                        "label": "$t:sirsoft-board.admin.form.guest_author_fields.types.choice"
+                                    },
+                                    {
+                                        "value": "multi_choice",
+                                        "label": "$t:sirsoft-board.admin.form.guest_author_fields.types.multi_choice"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "id": "gaf_add_type_error",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{!!_global.guestAuthorFieldAdd?.errors?.type}}",
+                            "props": {
+                                "className": "board-form-error"
+                            },
+                            "text": "{{[].concat(_global.guestAuthorFieldAdd?.errors?.type ?? [])[0] ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "이름 — 사이트 기본 언어는 필수(서버 규칙 LocaleRequiredTranslatable)",
+                    "id": "gaf_add_name_field",
+                    "type": "basic",
+                    "name": "Div",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "board-form-label"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-board.admin.form.guest_author_fields.add.name"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "gaf_add_name_input",
+                            "type": "composite",
+                            "name": "MultilingualInput",
+                            "actions": [
+                                {
+                                    "comment": "다국어 이름을 통째로 담고 이름 칸의 지난 오류를 지운다(서버는 name 또는 name.{언어} 키로 오류를 준다)",
+                                    "event": "onChange",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "guestAuthorFieldAdd.name": "{{$args[0]?.target?.value ?? _global.guestAuthorFieldAdd?.name}}",
+                                        "guestAuthorFieldAdd.errors": "{{Object.fromEntries(Object.entries(_global.guestAuthorFieldAdd?.errors ?? {}).filter(([k]) => k !== 'name' && !k.startsWith('name.')))}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "aria-label": "$t:sirsoft-board.admin.form.guest_author_fields.add.name",
+                                "value": "{{_global.guestAuthorFieldAdd?.name ?? {} }}",
+                                "layout": "tabs",
+                                "name": "gaf_add_name",
+                                "maxLength": 100,
+                                "required": true
+                            }
+                        },
+                        {
+                            "id": "gaf_add_name_error",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{Object.keys(_global.guestAuthorFieldAdd?.errors ?? {}).some(k => k === 'name' || k.startsWith('name.'))}}",
+                            "props": {
+                                "className": "board-form-error"
+                            },
+                            "text": "{{Object.entries(_global.guestAuthorFieldAdd?.errors ?? {}).filter(([k]) => k === 'name' || k.startsWith('name.')).map(([, v]) => [].concat(v)[0])[0] ?? ''}}"
+                        }
+                    ]
+                },
+                {
+                    "comment": "선택지 — 하나 선택, 여러 개 선택일 때만. 한 줄에 하나씩 「값=이름」(값은 영문 소문자, 숫자, 밑줄, 하이픈). 이름은 사이트 기본 언어로 저장된다",
+                    "id": "gaf_add_options_field",
+                    "type": "basic",
+                    "name": "Div",
+                    "if": "{{['choice', 'multi_choice'].includes(_global.guestAuthorFieldAdd?.type)}}",
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Label",
+                            "props": {
+                                "className": "board-form-label"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "text": "$t:sirsoft-board.admin.form.guest_author_fields.add.options"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "gaf_add_options_input",
+                            "type": "basic",
+                            "name": "Textarea",
+                            "actions": [
+                                {
+                                    "comment": "입력한 글을 그대로 담는다 — 「값=이름」 줄 나누기는 저장할 때 한다",
+                                    "type": "change",
+                                    "handler": "setState",
+                                    "params": {
+                                        "target": "global",
+                                        "guestAuthorFieldAdd.options_text": "{{$event.target.value}}"
+                                    }
+                                }
+                            ],
+                            "props": {
+                                "aria-label": "$t:sirsoft-board.admin.form.guest_author_fields.add.options",
+                                "value": "{{_global.guestAuthorFieldAdd?.options_text ?? ''}}",
+                                "rows": 4,
+                                "placeholder": "$t:sirsoft-board.admin.form.guest_author_fields.add.options_placeholder",
+                                "className": "board-input board:w-full"
+                            }
+                        },
+                        {
+                            "type": "basic",
+                            "name": "P",
+                            "props": {
+                                "className": "board-form-hint"
+                            },
+                            "text": "$t:sirsoft-board.admin.form.guest_author_fields.add.options_hint"
+                        },
+                        {
+                            "id": "gaf_add_options_error",
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{Object.keys(_global.guestAuthorFieldAdd?.errors ?? {}).some(k => k === 'options' || k.startsWith('options.'))}}",
+                            "props": {
+                                "className": "board-form-error"
+                            },
+                            "text": "{{Object.entries(_global.guestAuthorFieldAdd?.errors ?? {}).filter(([k]) => k === 'options' || k.startsWith('options.')).map(([, v]) => [].concat(v)[0])[0] ?? ''}}"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

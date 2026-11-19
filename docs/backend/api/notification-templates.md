@@ -8,7 +8,7 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Notification Templates 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
@@ -85,6 +85,8 @@ _단건 응답: `data` 객체의 필드._
 
 <!-- @generated:end -->
 
+
+
 **설명** 저장 전 알림 템플릿의 렌더링 결과를 미리 확인합니다. `definition_id` 와 다국어 `subject`/`body`, 선택적 `locale` 을 받아 샘플 변수로 치환된 제목·본문을 반환합니다. 인증(`auth:sanctum`)과 `core.settings.read` 권한이 필요하며, 실제 발송이나 저장은 일어나지 않습니다. 템플릿 편집 화면에서 변수 치환 결과를 실시간으로 확인할 때 사용합니다.
 
 
@@ -102,7 +104,7 @@ _단건 응답: `data` 객체의 필드._
 | subject | body | array | 아니오 | — | 다국어 제목. 컬럼이 nullable 이므로 미전송·`null` 이 허용된다(제목 개념이 없는 채널 대응). 전송하는 경우 로케일별 문자열 배열이어야 하며 각 값은 500자 이하 |
 | body | body | array | 예 | — | 본문 |
 | click_url | body | string | 아니오 | max 500 | 알림 클릭 시 이동할 대상 URL (미설정 시 이동 없음) |
-| recipients | body | array | 아니오 | — | 수신자 규칙 목록. 각 원소는 type(trigger_user: 이벤트 유발 사용자, related_user: 연관 사용자, role: 역할 대상, specific_users: 지정 사용자), value(대상 식별값), relation(연관 사용자 관계명), exclude_trigger_user(유발 사용자 제외 여부)로 구성. `related_user` 의 relation 은 그 알림 정의가 선언한 관계 목록(`relations`) 안이어야 한다 — 목록이 비어 있으면(`[]`) 어떤 관계도 422, 목록이 아직 없으면(`NULL` — 코어 업그레이드 직후 확장이 재동기화되기 전) 목록으로 막지 않는다. `role` 의 value 는 식별자 문자열 또는 문자열 **목록**, `specific_users` 의 value 는 UUID **목록**이어야 한다 — 키가 붙은 묶음(`{"x":"admin"}`)은 422. 검증 안내는 `recipients.0.value` 같은 내부 키 대신 항목 이름(수신자 값·관련 사용자 관계 등)으로 나온다 |
+| recipients | body | array | 아니오 | — | 수신자 규칙 목록. 각 원소는 type(trigger_user: 이벤트 유발 사용자, related_user: 연관 사용자, role: 역할 대상, specific_users: 지정 사용자, site_admin_email: 환경설정 > 일반의 관리자 이메일 — 메일만 받고 값 칸 없음, 비어 있으면 0명 + 경고 로그), value(대상 식별값), relation(연관 사용자 관계명), exclude_trigger_user(유발 사용자 제외 여부)로 구성. `related_user` 의 relation 은 그 알림 정의가 선언한 관계 목록(`relations`) 안이어야 한다 — 목록이 비어 있으면(`[]`) 어떤 관계도 422, 목록이 아직 없으면(`NULL` — 코어 업그레이드 직후 확장이 재동기화되기 전) 목록으로 막지 않는다. `role` 의 value 는 식별자 문자열 또는 문자열 **목록**, `specific_users` 의 value 는 UUID **목록**이어야 한다 — 키가 붙은 묶음(`{"x":"admin"}`)은 422. 검증 안내는 `recipients.0.value` 같은 내부 키 대신 항목 이름(수신자 값·관련 사용자 관계 등)으로 나온다 |
 | is_active | body | boolean | 아니오 | — | 활성 여부 (true 활성 / false 비활성) |
 
 > 이 엔드포인트는 확장이 파라미터를 추가할 수 있습니다 (`core.notification_template.update_validation_rules`).
@@ -143,7 +145,7 @@ _단건 응답: `data` 객체의 필드 (`NotificationTemplateResource`)._
 | subject | object | `{"ko":"[{app_name}] 회원가입을 환영합니다","en":"..."}` | 다국어 제목 (로케일 키 → 문자열, 로케일당 최대 500자) |
 | body | object | `{"ko":"<h1>{name}님, 환영합니다!</h1>...","en":"..."}` | 다국어 본문 (로케일 키 → 문자열, 로케일당 최대 65535자) |
 | click_url | string \| null | `null` | 알림 클릭 시 이동할 대상 URL (미설정 시 `null`) |
-| recipients | array | `[{"type":"role","value":"admin","display_name":"관리자"}]` | 수신자 규칙 목록. `type` 은 `trigger_user`/`related_user`/`role`/`specific_users`. `role` 이면 `display_name`, `specific_users` 면 `display_names` 가 표시용으로 부가됨 |
+| recipients | array | `[{"type":"role","value":"admin","display_name":"관리자"}]` | 수신자 규칙 목록. `type` 은 `trigger_user`/`related_user`/`role`/`specific_users`/`site_admin_email`. `role` 이면 `display_name`, `specific_users` 면 `display_names` 가 표시용으로 부가됨 |
 | is_active | boolean | `true` | 활성 여부 (false 면 해당 채널 발송 중단) |
 | is_default | boolean | `false` | 기본값 상태 여부 (수정 시 항상 `false` 로 전환됨) |
 | user_overrides | array \| null | `["subject","body"]` | 사용자가 직접 수정한 필드명 목록 (`HasUserOverrides`) |
@@ -208,7 +210,13 @@ _단건 응답: `data` 객체의 필드 (`NotificationTemplateResource`)._
 
 **설명** 단일 채널 알림 템플릿의 다국어 제목(`subject`)·본문(`body`)과 클릭 URL, 수신자(`recipients`), 활성 상태를 수정합니다. 인증(`auth:sanctum`)과 `core.settings.update` 권한이 필요합니다. `template` 경로 파라미터로 대상을 지정하며, 확장이 `core.notification_template.update_validation_rules` 훅으로 추가 파라미터를 검증에 넣을 수 있습니다. 관리자가 특정 채널의 알림 문구를 편집해 저장할 때 사용합니다. 다국어 `subject`·`body` 에서 사이트 기본 언어(환경설정 「기본 언어」) 값을 비우면 422 `errors.subject`·`errors.body` 가 칸 이름과 언어 이름을 함께 알린다(「알림 제목의 한국어(ko) 값은 필수입니다.」·「알림 본문의 한국어(ko) 값은 필수입니다.」).
 
+**본문을 확장이 받는 채널(7.2.0)** 채널 메타 `template_editor` 가 `none` 인 채널은 코어 편집 칸이 화면에 없고 그 확장이 본문을 자기 저장소에서 받는다. 이 채널의 템플릿은 `body` 를 생략하거나 빈 배열로 보내도 된다 — 그 확장의 저장 버튼이 받는 사람만 저장하려고 이 API 를 부를 때, 운영자가 만든 빈 템플릿이면 코어 본문이 비어 있다.
+
 **수신자 순서** `recipients` 는 보낸 규칙 순서 그대로 JSON 배열로 저장되고, 조회 응답(알림 정의 상세의 `templates[].recipients`)도 같은 순서의 배열로 나온다. 값 칸이 없는 규칙(`trigger_user`) 뒤에 값이 있는 규칙(`role` 등)을 보내도 순서가 바뀌지 않으며, 예전에 줄 번호 객체(`{"1":…,"0":…}`)로 저장된 행도 응답에서는 줄 번호 순서의 배열로 나온다.
+
+**없는 변수 경고(7.2.0)** 응답의 `data.warnings` 는 제목, 본문, 이동 주소가 쓰는 회원 항목 변수(`{member.<키>}`, `{member.custom.<키>}`) 가운데 지금 없는 것의 목록이다. 회원 항목이 지워졌거나 꺼졌거나 「관리자만 열람」이거나 이름을 잘못 적은 경우다. 저장은 그대로 되고 그 자리는 빈 글자로 발송된다. 항목은 `{"step":"template_variable","target":"member.custom.job","message":"지금 없는 변수입니다: {member.custom.job} …","level":"warning"}` 모양이고(`target` 이 변수 이름) 없으면 빈 배열 `[]` 이다. 이 키는 저장 응답에만 실리고 조회, 활성 전환, 기본값 복원 응답에는 없다.
+
+**지정 수신자의 이름** `recipients[]` 의 `type` 이 `specific_users` 인 규칙의 `display_names[]` 는 관리자 화면 영역의 표시 이름이다(저장된 uuid 순서 그대로, 지워진 회원은 uuid).
 
 
 ### POST /api/admin/notification-templates/{template}/reset
@@ -270,27 +278,25 @@ HTTP/1.1 200
         "definition_id": 1,
         "channel": "mail",
         "subject": {
-            "ko": "[{board_name}] 게시글에 새 댓글이 등록되었습니다",
-            "en": "[{board_name}] New comment on your post"
+            "ko": "[{app_name}] 회원가입을 환영합니다",
+            "en": "[{app_name}] Welcome to Our Service"
         },
         "body": {
-            "ko": "<h1>{name}님, 안녕하세요.</h1><p><strong>{board_name}</strong> 게시판의 게시글에 <strong>{comment_author}</strong>님이 댓글을 남겼습니다.</p><blockquote style=\"border-left: 3px solid #cbd5e0; padding-left: 12px; color: #718096;\">{comment_content}</blockquote><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{post_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">게시글 보기</a></td></tr></table><p>감사합니다,<br><a href=\"{site_url}\">{app_name}</a></p>",
-            "en": "<h1>Hello, {name}.</h1><p><strong>{comment_author}</strong> commented on your post in <strong>{board_name}</strong>.</p><blockquote style=\"border-left: 3px solid #cbd5e0; padding-left: 12px; color: #718096;\">{comment_content}</blockquote><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{post_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">View Post</a></td></tr></table><p>Thank you,<br><a href=\"{site_url}\">{app_name}</a></p>"
+            "ko": "<h1>{name}님, 환영합니다!</h1><p>{app_name}에 가입해 주셔서 감사합니다.</p><p>이제 모든 서비스를 이용하실 수 있습니다. 아래 버튼을 클릭하여 로그인해 주세요.</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">로그인하기</a></td></tr></table><p>감사합니다,<br><a href=\"{site_url}\">{app_name}</a></p>",
+            "en": "<h1>Welcome, {name}!</h1><p>Thank you for joining {app_name}.</p><p>You now have access to all our services. Click the button below to log in.</p><table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin: 24px 0;\"><tr><td align=\"center\"><a href=\"{action_url}\" style=\"display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;\">Log In</a></td></tr></table><p>Thank you,<br><a href=\"{site_url}\">{app_name}</a></p>"
         },
         "click_url": null,
         "recipients": [
             {
-                "type": "related_user",
-                "relation": "post_author",
-                "exclude_trigger_user": true
+                "type": "trigger_user"
             }
         ],
         "is_active": true,
         "is_default": true,
         "user_overrides": null,
         "updated_by": null,
-        "created_at": "2026-07-30 18:45:11",
-        "updated_at": "2026-07-30 18:45:11",
+        "created_at": "2026-07-28 09:33:18",
+        "updated_at": "2026-08-31 17:44:30",
         "abilities": {
             "can_update": true,
             "can_delete": true
@@ -309,6 +315,8 @@ HTTP/1.1 200
 | 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
+
+
 
 **설명** 단일 채널 템플릿을 소속 정의의 기본값 데이터로 복원합니다. 인증(`auth:sanctum`)과 `core.settings.update` 권한이 필요합니다. 소속 정의가 없으면 404, 해당 채널의 기본 데이터가 없으면 404 를 반환합니다. 편집한 문구를 버리고 기본값 하나만 되돌릴 때 사용하며, 정의 전체를 복원하는 정의 reset 과 달리 대상 템플릿에만 적용됩니다.
 
@@ -412,6 +420,12 @@ HTTP/1.1 200
 
 <!-- @generated:end -->
 
+
+
 **설명** 단일 채널 알림 템플릿의 활성 상태(`is_active`)를 현재 값의 반대로 토글합니다. 인증(`auth:sanctum`)과 `core.settings.update` 권한이 필요합니다. 비활성 템플릿은 해당 채널로의 발송이 중단되므로, 정의는 유지한 채 특정 채널만 켜거나 끌 때 사용합니다.
+
+**운영자가 만든 빈 템플릿(7.2.0)** 발송 수단을 켜서 코어가 만든 템플릿(`is_user_created=true`)은 내용을 채우기 전에 켜지 못한다. 꺼진 상태에서 켜려 할 때 받는 사람 규칙이 없으면 422 `errors.recipients`(「받는 사람을 먼저 정해 저장한 뒤에 켤 수 있습니다…」), 코어 편집 칸을 쓰는 채널에서 본문이 모든 언어에서 비어 있으면 422 `errors.body`(「본문을 먼저 써서 저장한 뒤에 켤 수 있습니다…」)다. 본문을 확장이 자기 저장소에서 받는 채널(채널 메타 `template_editor: none`, 예: 알림톡)은 받는 사람만 본다. 확장이 선언한 템플릿과 끄는 요청은 이 검사를 받지 않는다. 응답과 목록의 템플릿에는 `is_user_created`(boolean) 가 실린다.
+
+**되돌리기** 운영자가 만든 템플릿은 선언된 기본값이 없다. `POST /api/admin/notification-templates/{template}/reset` 과 정의의 `reset` 은 이 행을 만들었을 때의 빈 상태(제목 `null`, 본문 `[]`, 받는 사람 `[]`, 꺼짐)로 되돌리고 행은 남긴다. 확장 업데이트의 stale 템플릿 정리는 이 행을 지우지 않으며, 확장이 나중에 그 수단을 선언하면 선언 행(`is_user_created=false`)이 된다.
 
 

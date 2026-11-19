@@ -1,4 +1,5 @@
-# audit:allow test-scenario-coverage[cross_product,effects] reason: S5 현금영수증 프로바이더·환불 정합성 명세 SSoT. 11축 pairwise 13조합을 테스트 docblock @scenario 로 나열하는 것은 거짓 매핑이 된다 — 축(발급 프로바이더 / 환불 스코프 / 결제수단 / 에스크로)이 서로 다른 테스트 클래스에 격리 검증되어 한 메서드가 11축 전부를 재현하지 않는다(S4 toss-payment-methods-vbank-escrow · KG security-callback-defense 선례 동일). effects 27건은 전부 실제 검증 메서드에 @effects 로 매핑되어 있으며(미매핑 0건, 실측 확인), 그것이 이 기능의 실질 커버리지다.
+# audit:allow test-scenario-coverage[cross_product,effects] reason: issue:#609 S5 현금영수증 프로바이더·환불 정합성 명세 SSoT. 11축 pairwise 13조합을 테스트 docblock @scenario 로 나열하는 것은 거짓 매핑이 된다 — 축(발급 프로바이더 / 환불 스코프 / 결제수단 / 에스크로)이 서로 다른 테스트 클래스에 격리 검증되어 한 메서드가 11축 전부를 재현하지 않는다(S4 toss-payment-methods-vbank-escrow · KG security-callback-defense 선례 동일). effects 27건은 전부 실제 검증 메서드에 @effects 로 매핑되어 있으며(미매핑 0건, 실측 확인), 그것이 이 기능의 실질 커버리지다.
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 # 시나리오 매니페스트 — 현금영수증 프로바이더(토스·KG) · 환불 정합성 (S5)
 # 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스", 계획서 §12-5 / §13-3
 
@@ -82,6 +83,7 @@ exclusions:
 # 후속 효과 체인
 effects:
   # 프로바이더 등록 (PG 비종속)
+  - cash_receipt_listener_subscribes_three_filter_hooks
   - provider_registered_without_overwriting_others
   - other_provider_request_passes_through_untouched
   # 발급
@@ -91,9 +93,13 @@ effects:
   - tax_free_amount_sent_with_issue
   - issue_response_mapped_to_receipt_key_and_issue_number
   - issue_failure_returns_result_without_throwing
+  # 구매자 연락처는 이커머스 공개 계약으로 읽는다(훅이 넘긴 주문 Model 의 관계를 읽지 않는다, #916)
+  - buyer_contact_read_through_ecommerce_contract
+  - buyer_contact_falls_back_per_field_from_payment_to_orderer
   # 취소 / 재발급
   - cancel_delegated_as_full_cancel_without_amount
   - cancel_uses_issue_tid_as_receipt_key
+  - cancel_failure_returns_result_without_throwing
   - amount_change_triggers_cancel_then_reissue
   # 환불 리스너의 진입 계약 — 무엇을 받아 언제 자기 일로 삼는가
   # 훅 이름·타입(filter)·메서드·우선순위가 선언대로여야 코어가 이 리스너를 부른다.

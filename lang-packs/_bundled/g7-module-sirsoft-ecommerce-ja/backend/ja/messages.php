@@ -9,8 +9,6 @@ return [
     ],
 
     'copy_suffix' => '（コピー）',
-
-    // 입금 전 취소 주문의 가상계좌를 PG 에서 닫을 때 보내는 취소 사유 (P-D1)
     'vbank_close_reason' => '入金前の注文キャンセル',
     'categories' => [
         'list_retrieved' => 'カテゴリ一覧を閲覧しました。',
@@ -1229,7 +1227,6 @@ return [
         'notifications' => [
             'request_origin_admin' => '販売者がお客様に代わって受け付けました。',
             'withdraw_origin_admin' => 'お客様のご要望により販売者が取り下げました。',
-            // 환불 완료 알림·상세의 수단별 금액 줄 (S7)
             'refund_breakdown_cash' => ':method :amount',
             'refund_breakdown_points' => 'マイレージ :amount',
             'advance_exchange_notice' => '先交換です — 既存の商品は:dateまでにお送りください。',
@@ -1277,7 +1274,6 @@ return [
     'notification_relations' => [
         'author' => 'お問い合わせの投稿者',
     ],
-    // 通知テンプレート編集ウィンドウ「使用可能な変数」の説明 — common は変数キーごとの既定、by_type はその通知でのみ意味が異なる変数。キーがない場合は宣言文字列をそのまま使う。
     'notification_variables' => [
         'common' => [
             'name' => '受信者名',
@@ -1370,9 +1366,24 @@ return [
             'order_custom_email' => [
                 'app_name' => 'サイト名',
             ],
+            'export_completed' => [
+                'name' => '受信者(申請者)名',
+                'type_label' => '作業タイプ (注文内容·商品内容·マイレージ内容)',
+                'exports_url' => 'エクスポート管理 URL',
+                'exports_path' => 'エクスポート管理パス (サイトアドレスなし)',
+                'file_name' => 'ファイル名',
+                'row_count' => '行数',
+                'expires_at' => 'ファイル有効期限',
+            ],
+            'export_failed' => [
+                'name' => '受信者(申請者)名',
+                'type_label' => '作業タイプ (注文内容·商品内容·マイレージ内容)',
+                'exports_url' => 'エクスポート管理 URL',
+                'exports_path' => 'エクスポート管理パス (サイトアドレスなし)',
+                'error_message' => '失敗理由',
+            ],
         ],
     ],
-    // コンソールコマンド出力
     'console' => [
         'mileage' => [
             'disabled' => 'マイレージ機能が無効になっています。',
@@ -1438,6 +1449,11 @@ return [
             'dry_run' => '削除対象 :count件 (保持期間 :days日超過)',
             'done' => 'クレーム一時添付ファイルのクリーンアップが完了しました: 対象 :scanned件 / 削除 :deleted件 / 失敗 :failed件',
         ],
+        'prune_temp_category_images' => [
+            'retention_disabled' => '一時画像の保持期間が1日未満のため、クリーンアップを実行しませんでした。',
+            'dry_run' => '保持期間(:days日)を過ぎた未連結の一時カテゴリ画像: :count件',
+            'done' => '保持期間(:days日)を過ぎた一時カテゴリ画像:scanned件のうち:deleted件を削除しました。(失敗:failed件)',
+        ],
         'prune_temp_product_images' => [
             'retention_disabled' => '一時画像の保持期間が1日未満のため、クリーンアップを実行しませんでした。',
             'dry_run' => '保持期間(:days日)を過ぎた未連結の一時商品画像: :count件',
@@ -1447,8 +1463,10 @@ return [
             'start' => 'マイレージ残高キャッシュの再算出を開始します...',
             'done' => 'マイレージ残高キャッシュの再算出が完了しました。',
         ],
+        'prune_exports' => [
+            'done' => '期限切れ処理 :expired件、タイムアウト失敗処理 :failed件',
+        ],
     ],
-    // シーダーのコンソール出力 (module:install・module:seed)
     'seeders' => [
         'issue162_measure' => [
             'guard' => 'ブラウザ実測シーダーは CLI かつ G7_PLAYWRIGHT_BYPASS=1 のときだけ実行します。',
@@ -1505,11 +1523,13 @@ return [
             ],
         ],
         'shipping_carrier' => [
+            'entity_label' => '配送業者',
             'sync_start' => '配送業者の初期データ同期を開始します。',
             'created' => '配送業者を作成: :name (:code)',
             'sync_done' => '配送業者の同期完了: :created 件作成、:synced 件同期、stale :deleted 件削除、使用中 :preserved 件保持 (全 :total 件)',
         ],
         'shipping_type' => [
+            'entity_label' => '配送タイプ',
             'sync_start' => '配送タイプの初期データ同期を開始します。',
             'sync_done' => '配送タイプの同期完了: 定義 :defined 件 / DB :count 件 / stale 削除 :deleted 件 / 使用中 :preserved 件保持',
         ],
@@ -1660,6 +1680,7 @@ return [
             'created' => 'カテゴリーを作成: :name (depth: :depth)',
         ],
         'claim_reason' => [
+            'entity_label' => 'クレーム理由',
             'sync_start' => 'クレーム理由の初期データ同期を開始します。',
             'created' => 'クレーム理由を作成: :name (:code)',
             'preserved' => '使用中のため保持した理由: :count 件',
@@ -1716,6 +1737,73 @@ return [
             'done' => '配送ポリシーのダミーデータ :count 件が正常に作成されました。',
             'purged' => '既存の配送ポリシー :count 件を削除しました。',
         ],
+        'thumbnail_measure' => [
+            'start' => 'eコマースのサムネイル実測データの作成を開始します。',
+            'done' => 'eコマースのサムネイル実測データの作成が完了しました。',
+            'cleanup_start' => 'eコマースのサムネイル実測データの整理を開始します。',
+            'cleanup_done' => 'eコマースのサムネイル実測データの整理が完了しました。',
+            'previous_removed' => '前回の実行で作成したeコマースの実測データを削除しました: :counts',
+            'order_calculation_dropped' => '注文金額の計算結果から実測用商品のオプションが抜けました。',
+            'data_title' => 'eコマースの実測データ',
+            'data_headers' => [
+                'kind' => '区分',
+                'owner_id' => '所有元 ID',
+                'record' => '画像 ID / 番号',
+                'hash' => 'ハッシュ',
+                'mime' => 'MIME',
+                'size' => 'サイズ',
+                'url' => 'URL',
+            ],
+            'kinds' => [
+                'category_banner' => 'カテゴリーバナー',
+                'product_a_image' => '商品 A の画像',
+                'product_b_image' => '商品 B の画像',
+                'order_confirmed' => '注文(購入確定)',
+                'review_visible_image' => '公開レビューの画像',
+                'review_hidden_image' => '非表示レビューの画像',
+                'order_delivered' => '注文(配送完了)',
+                'return_claim' => '返品申請',
+                'claim_image' => 'クレーム画像',
+            ],
+            'category' => 'カテゴリー: :path (ID :id、バナー画像のハッシュ :hash)',
+            'products' => '商品: :a_path (A、ID :a_id)、:b_path (B、ID :b_id)',
+            'cleanup_title' => 'eコマースの実測データ整理',
+            'cleanup_headers' => [
+                'orders' => '注文',
+                'reviews' => 'レビュー',
+                'review_images' => 'レビュー画像',
+                'claims' => 'クレーム',
+                'claim_images' => 'クレーム画像',
+                'products' => '商品',
+                'product_images' => '商品画像',
+                'categories' => 'カテゴリー',
+                'category_images' => 'カテゴリー画像',
+                'shipping_policies' => '配送ポリシー',
+                'activity_logs' => 'アクティビティログ',
+            ],
+        ],
+    ],
+    'export' => [
+        'download_link_issued' => 'ダウンロードアドレスを発行しました。',
+        'catalog_retrieved' => 'エクスポート設定を読み込みました。',
+        'estimated' => '予想件数を計算しました。',
+        'requested' => 'エクスポートを申請しました。完了したら「エクスポート管理」からダウンロードできます。',
+        'list_retrieved' => 'エクスポート一覧を読み込みました。',
+        'retrieved' => 'エクスポート作業を読み込みました。',
+        'downloads_retrieved' => 'ダウンロード履歴を読み込みました。',
+        'deleted' => 'エクスポートファイルを削除しました。',
+        'bulk_deleted' => ':count件を削除しました。 (スキップ :skipped件)',
+        'not_found' => 'エクスポート作業が見つかりません。',
+    ],
+    'lifecycle' => [
+        'purge_failed' => 'エクスポートされたファイルを削除できなかったため、削除を中止しました。ストレージの権限·状態を確認した後、再度削除してください(個人情報が含まれる可能性があるファイルのため、削除せずに残しています)。',
+    ],
+    'thumbnail_sources' => [
+        'product_image' => '商品画像',
+        'category_image' => 'カテゴリ画像',
+        'review_image' => 'レビュー画像',
+        'claim_image' => '交換/返品/返金の添付画像',
+        'content_media' => '商品説明と共通情報の本文画像',
     ],
     // 最近の検索語の範囲名 (module.json search_scopes.products.label)
     'search_history' => [

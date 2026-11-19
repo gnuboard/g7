@@ -11,6 +11,7 @@ description: |
 
 test_files:
   - tests/Unit/Services/LayoutPermissionFilterTest.php
+  - tests/Feature/Api/Public/LayoutComponentPermissionTest.php   # 서빙 API 응답 단위 — 사용자별 필터, 캐시 공유 시 필터, 서빙 응답의 defines 키 보존
 
 axes:
   case:
@@ -27,3 +28,5 @@ effects:
   - layout_modals_filtered_by_permission
   - layout_defines_filtered_by_permission
   - layout_named_defines_preserved
+  - layout_permissions_attribute_stripped_from_served_json   # 필터를 통과한 노드의 permissions 속성은 서빙 응답에서 지워진다
+  - served_layout_cache_is_filtered_per_user   # 한 사용자 요청으로 캐시된 레이아웃도 다음 사용자 권한으로 다시 걸러 서빙한다

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayKginicis\Concerns;
 
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\Data\OrderRecord;
 use Modules\Sirsoft\Ecommerce\Enums\PaymentStatusEnum;
-use Modules\Sirsoft\Ecommerce\Models\Order;
 
 /**
  * 브라우저 콜백으로 받은 PG 승인을 콜백이 가리키는 주문에 묶어도 되는지 판정한다.
@@ -44,25 +44,25 @@ trait BindsApprovalToOrder
     /**
      * 가상계좌 발급 결과를 이 주문에 기록해도 되는지 판정합니다.
      *
-     * @param  Order  $order  콜백이 가리키는 주문
+     * @param  OrderRecord  $order  콜백이 가리키는 주문(결제 행 포함)
      * @param  int|null  $approvedAmount  PG 가 승인(발급)한 금액 (응답에 없으면 null — 기록 금지로 판정)
      * @param  string  $tid  발급 거래번호
      * @return string 'issue'(기록) · 'replay'(같은 발급의 중복 콜백 — 성공 처리만) · 'reject'(기록 금지)
      */
-    protected function vbankIssueDecision(Order $order, ?int $approvedAmount, string $tid): string
+    protected function vbankIssueDecision(OrderRecord $order, ?int $approvedAmount, string $tid): string
     {
-        $payment = $order->payment()->first();
+        $payment = $order->payment;
         if (! $payment) {
             return 'reject';
         }
 
-        if ($payment->payment_status === PaymentStatusEnum::WAITING_DEPOSIT
+        if ($payment->paymentStatus === PaymentStatusEnum::WAITING_DEPOSIT
             && $tid !== ''
-            && hash_equals((string) $payment->transaction_id, $tid)) {
+            && hash_equals((string) $payment->transactionId, $tid)) {
             return 'replay';
         }
 
-        if (! $order->order_status->isBeforePayment() || $payment->payment_status !== PaymentStatusEnum::READY) {
+        if (! $order->orderStatus->isBeforePayment() || $payment->paymentStatus !== PaymentStatusEnum::READY) {
             return 'reject';
         }
 

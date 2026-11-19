@@ -122,7 +122,7 @@ final class ClaimPaymentRedirect
             $path = ClaimUrl::memberOrderDetail($orderNumber);
         } else {
             // 신청서도 주문도 읽지 못하면 목록으로 — 결제 건이 가리키는 대상이 사라진 때뿐이다.
-            $path = ClaimUrl::MEMBER_LIST;
+            $path = ClaimUrl::memberList();
         }
 
         // 어느 신청서의 결제였는지는 쿼리로도 싣는다. 회원 상세는 주소에 번호를 품지만

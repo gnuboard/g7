@@ -785,7 +785,16 @@ if (! function_exists('installer_reclaim_record_failure')) {
         }
 
         // json-encode:allow — 정수만 담는 내부 집계 파일
-        @file_put_contents($path, (string) json_encode($data), LOCK_EX);
+        $payload = (string) json_encode($data);
+        $written = @file_put_contents($path, $payload, LOCK_EX);
+        if ($written !== strlen($payload)) {
+            // 잘린 집계는 다음 판정에서 파싱 실패로 읽혀 창이 초기화된다 — 잘린 파일을 남기지 않고
+            // 기록만 남긴다(디스크 풀이면 운영자가 원인을 볼 수 있게).
+            @unlink($path);
+            if (function_exists('installerErrorLog')) {
+                installerErrorLog('[installer] reclaim throttle write incomplete: '.$path);
+            }
+        }
     }
 }
 

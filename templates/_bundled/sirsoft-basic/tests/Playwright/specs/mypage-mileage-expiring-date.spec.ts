@@ -7,9 +7,9 @@
  * 잔액 응답은 page.route 로 고정한다 — 실제 회원의 소멸 예정분 유무와 무관하게 카드 문구의 바인딩만 잰다.
  * 서버 값(사이트·보는 사람 시간대 변환)은 PHPUnit(UserMileageBalanceTimezoneTest)이 잠근다.
  *
- * @scenario mypage-mileage-expiring-date
- * @axes value=formatted_present
- * @effects expiring_until_shown_in_browser
+ * 소속 시나리오(마커 아님 — 평문): mypage-mileage-expiring-date
+ * 축 요약(마커 아님 — 평문): value=formatted_present
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): expiring_until_shown_in_browser
  */
 import { test, expect } from '@playwright/test';
 

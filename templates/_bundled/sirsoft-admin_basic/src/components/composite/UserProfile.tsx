@@ -1,3 +1,5 @@
+// e2e:allow 서버가 로그아웃 뒤 이동 경로(redirect_url)를 주는 경우는 외부 인증 확장의 로그아웃 모드가 있어야 생겨 코어 단독 E2E 로 재현할 수 없다 — UserProfile.originPolicy 단위 시험과 계획서 §10 M7(로그아웃 모드) 브라우저 실측이 덮는다. 응답 없음 경로는 A1 M0 실측(T10')
+import { sitePath } from '../../support/apiUrl';
 import React, { useState, useRef, useEffect } from 'react';
 import { Div } from '../basic/Div';
 import { Button } from '../basic/Button';
@@ -8,6 +10,7 @@ import { IconName } from '../basic/IconTypes';
 import type { EditorAttrs } from '../../types';
 import { isSameOriginRequest } from '../../support/sameOriginRequest';
 import { handleLinkClick, resolveLinkHref } from '../../support/navigationLink';
+import { keyboardActivationProps, FOCUS_VISIBLE_RING, escapeToClose } from '../../support/keyboardActivation';
 
 // G7Core.t() 번역 함수 참조 — 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다.
 // 레이아웃이 문구를 넘기지 않으면 기본 문구가 언어와 무관하게 영어였다(7.1.0).
@@ -41,7 +44,10 @@ const logger = ((window as any).G7Core?.createLogger?.('Comp:UserProfile')) ?? {
 export interface User {
   id: number | string;
   uuid?: string;
-  name: string;
+  /** 실명. 이름 항목을 쓰지 않는 사이트에서는 null 이다 */
+  name: string | null;
+  /** 관리자 화면 영역에서 보이는 이름(표시 이름). 이 값을 먼저 쓴다 */
+  display_name?: string | null;
   email: string;
   avatar?: string;
   role?: string;
@@ -122,8 +128,12 @@ export const UserProfile: React.FC<UserProfileProps> = ({
   const profileText = profileTextProp ?? tOr('admin.profile_settings', 'Profile Settings');
   const logoutText = logoutTextProp ?? tOr('admin.logout', 'Logout');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  // 보일 이름: 표시 이름이 먼저이고, 없으면(옛 응답) 실명, 둘 다 없으면 빈 글자
+  const userShownName = user?.display_name ?? user?.name ?? '';
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  // 메뉴를 여는 단추 — 메뉴 안에서 Esc 로 닫으면 여기로 포커스를 돌린다
+  const menuTriggerRef = useRef<HTMLButtonElement>(null);
 
   /**
    * 외부 클릭 감지
@@ -218,24 +228,33 @@ export const UserProfile: React.FC<UserProfileProps> = ({
       }
 
       // API 호출 — 실패(4xx·5xx)는 예외로 떨어진다
-      await api.post(logoutEndpoint);
+      const result = await api.post(logoutEndpoint);
 
-      // 로그아웃 성공 - 토큰 제거 후 로그인 페이지로 리다이렉션
+      // 서버가 정한 로그아웃 뒤 이동 경로(외부 인증의 IdP 로그아웃 등, 7.2.0) — 같은 출처 경로만 따른다.
+      // 외부 IdP 로 나가는 이동은 서버의 같은 출처 라우트가 302 한다(코어 AuthManager.logout() 과 같은 규칙)
+      const serverRedirect = result?.data?.redirect_url;
+      const nextPath = typeof serverRedirect === 'string' && serverRedirect.startsWith('/') && isSameOriginRequest(serverRedirect)
+        ? serverRedirect
+        : safeRedirectPath;
+
+      // 로그아웃 성공 - 토큰 제거 후 이동
       clearAuthToken();
-      window.location.href = safeRedirectPath;
+      window.location.href = sitePath(nextPath);
     } catch (error) {
       logger.error('로그아웃 오류:', error);
       // 실패해도 토큰 제거 및 로그인 페이지로 이동 (토큰 만료 등의 경우)
       clearAuthToken();
-      window.location.href = safeRedirectPath;
+      window.location.href = sitePath(safeRedirectPath);
     } finally {
       setIsLoggingOut(false);
     }
   };
 
   return (
-    <Div ref={profileRef} className={dropdownOnly ? `absolute inset-0 ${className}` : `relative ${className}`} id={id} {...editorAttrs}>
+    // 메뉴 안 어디에서든 Esc 로 닫고 여는 단추로 돌아간다 — 종전에는 바깥 클릭으로만 닫혔다(#869)
+    <Div ref={profileRef} className={dropdownOnly ? `absolute inset-0 ${className}` : `relative ${className}`} id={id} {...editorAttrs} onKeyDown={escapeToClose(showProfileMenu, () => setShowProfileMenu(false), menuTriggerRef)}>
       <Button
+        ref={menuTriggerRef}
         onClick={() => setShowProfileMenu(!showProfileMenu)}
         aria-label={dropdownOnly ? tOr('common.user_menu', 'User menu') : undefined}
         aria-haspopup="menu"
@@ -249,8 +268,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({
             {user.avatar ? (
               <Img
                 src={user.avatar}
-                alt={user.name}
+                alt={userShownName}
                 className="w-8 h-8 rounded-full object-cover"
+                thumbPreset="xs"
               />
             ) : (
               <Div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
@@ -258,7 +278,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
               </Div>
             )}
             <Div className="flex-1 min-w-0 text-left">
-              <Div className="font-semibold text-gray-900 dark:text-white text-sm truncate">{user.name}</Div>
+              <Div className="font-semibold text-gray-900 dark:text-white text-sm truncate">{userShownName}</Div>
               {user.role && (
                 <Div className="text-gray-500 dark:text-gray-300 text-xs">{user.role}</Div>
               )}
@@ -276,21 +296,23 @@ export const UserProfile: React.FC<UserProfileProps> = ({
           {/* 사용자 정보 — 주소가 있으면 링크(가운데 클릭·Ctrl+클릭 새 탭, #757). 보통 클릭은 종전처럼 SPA 이동 */}
           {userDetailLink ? (
             <a
-              href={userDetailLink.href}
+              href={sitePath(userDetailLink.href)}
               className="block px-4 py-3 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               onClick={(event) => handleLinkClick(event, openUserDetail)}
             >
               {/* 이름·이메일은 드롭다운 폭 안에서 한 줄 … (#143) */}
-              <Div className="font-semibold text-gray-900 dark:text-white truncate">{user.name}</Div>
+              <Div className="font-semibold text-gray-900 dark:text-white truncate">{userShownName}</Div>
               <Div className="text-gray-500 dark:text-gray-300 text-sm truncate">{user.email}</Div>
             </a>
           ) : (
             <Div
-              className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              className={`px-4 py-3 border-b border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${FOCUS_VISIBLE_RING}`}
               onClick={openUserDetail}
+              // 주소 링크가 없을 때의 내 정보 칸 — 키보드로도 회원 상세로 간다(#869 키보드 접근)
+              {...keyboardActivationProps(openUserDetail)}
             >
               {/* 이름·이메일은 드롭다운 폭 안에서 한 줄 … (#143) */}
-              <Div className="font-semibold text-gray-900 dark:text-white truncate">{user.name}</Div>
+              <Div className="font-semibold text-gray-900 dark:text-white truncate">{userShownName}</Div>
               <Div className="text-gray-500 dark:text-gray-300 text-sm truncate">{user.email}</Div>
             </Div>
           )}
@@ -300,7 +322,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
             {/* 프로필 설정 — 주소가 있으면 링크(#757). 보통 클릭은 종전처럼 onProfileClick 또는 SPA 이동 */}
             {profileEditLink ? (
               <a
-                href={profileEditLink.href}
+                href={sitePath(profileEditLink.href)}
                 onClick={(event) => handleLinkClick(event, openProfileSettings)}
                 className={buttonLikeClass(PROFILE_ITEM_CLASS)}
               >

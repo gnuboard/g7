@@ -29,6 +29,11 @@ class ImageUploadServiceTest extends PluginTestCase
     /** @var MockInterface&StorageInterface */
     private $storage;
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -39,12 +44,29 @@ class ImageUploadServiceTest extends PluginTestCase
         $this->service = new ImageUploadService($this->repository, $this->storage);
     }
 
+    /**
+     * 테스트가 바꾼 상태를 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
+    /**
+     * 이미지 업로드가 before_upload 액션, filter_upload_file 필터, after_upload 액션을 모두 발화하는지 확인합니다.
+     *
+     * @scenario surface=ckeditor5_image, subscriber=registered
+     *
+     * @effects before_upload_action_fired, filter_upload_file_applied, after_upload_action_fired
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function test_upload_fires_hooks(): void
     {

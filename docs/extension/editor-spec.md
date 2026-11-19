@@ -20,8 +20,8 @@
 이 파일은 자동 생성 산출물이 아니라 **수작업으로 작성**한다. 확장 루트(`module.json`/`plugin.json`/`template.json` 옆)에 둔다.
 
 - 타입 SSoT: `resources/js/core/template-engine/layout-editor/spec/specTypes.ts` 의 `EditorSpec` 인터페이스 — 각 블록의 의도·병합 규칙·플레이스홀더 문법이 JSDoc 으로 명시되어 있다. 본 문서와 타입이 어긋나면 타입이 정본이다.
-- 서빙 엔드포인트: `/api/{templates|modules|plugins}/{id}/editor-spec`
-- 로더: `editorSpecLoader.ts` — 편집 대상 템플릿 + 활성 모듈/플러그인 스펙을 fetch 해 네임스페이스 병합한다.
+- 서빙 엔드포인트: 편집기는 묶음 엔드포인트 `GET /api/templates/{id}/editor-spec-bundle?modules[]=..&plugins[]=..` 한 요청으로 받는다(7.2.0, engine-v1.95.0). 항목마다 개별 엔드포인트 `/api/{templates|modules|plugins}/{id}/editor-spec` 과 같은 판정(활성 확장만, 설치본만)을 하고, 한 확장이 실패해도 그 항목만 비운다. 개별 엔드포인트는 서드파티 호환을 위해 그대로 있다 — [templates.md](../backend/api/templates.md#get-apitemplatesidentifiereditor-spec-bundle)
+- 로더: `editorSpecLoader.ts` — 편집 대상 템플릿 + 활성 모듈/플러그인 스펙을 묶음으로 받아 네임스페이스 병합한다.
 
 ## 확장 컴포넌트의 팔레트 등재
 
@@ -156,6 +156,7 @@ php artisan {module|plugin|template}:update {id} --force
 - `array-items` / `array-group` / `array-cell-tree` / `number-list` — 정적 배열 prop 편집(탭/차트 데이터/카드 컬럼 등). `nodeEditor` 슬롯 또는 propControl 로 결선한다(아래 "데이터 정의 빌트인" 참조).
 - `number` — 숫자를 기대하는 prop(예 `maxVisibleBoards`)을 편집한다. 위젯이 `number` 타입을 직접 내보내므로 `"5"` 같은 문자열이 저장되지 않는다. 빈 입력은 prop 삭제, `0` 은 유효값이라 삭제되지 않으며, 숫자로 해석할 수 없는 입력은 방출하지 않아 저장본을 보존한다(조용한 변조 금지). `min`/`max`/`step` 은 선언만 하고 **클램프하지 않는다** — 사용자가 넣은 값은 그대로 보존한다. 값이 `{{바인딩}}` 문자열일 때의 보호는 위젯이 아니라 아래 「데이터 연결 값 보호」 공용 게이트가 맡는다 — 숫자 입력칸이 그 값을 빈칸으로 표시해 다음 blur 에 소실시키는 것을 그 게이트가 차단한다.
 - `i18n-text` vs `text` — **표시 텍스트**(사용자가 화면에서 읽는 라벨/메시지/플레이스홀더)는 `i18n-text` 를 쓴다. `i18n-text` 는 평문 입력 시 `createCustomKey` 로 다국어 키를 자동 생성해 `$t:custom.*` 로 치환하고(미리보기에 raw 키 미노출), 🌐 펼침으로 ko/en/ja 동시 편집을 제공하며, `{{바인딩}}` 값이면 읽기전용 디그레이드한다(공통 위젯 `I18nTextField`). **비-표시값**(URL/id/수치/색/통화코드/separator 등)만 `text` 를 쓴다. 표시 텍스트에 `text` 를 쓰면 raw `$t:` 노출·다국어 누락 회귀가 발생한다(자동 검증이 배열 라벨 필드의 `text` 사용을 차단).
+- `thumbnail-preset` — 이미지 `thumbPreset` prop 의 썸네일 규격을 고른다. 값은 규격 이름 문자열이고 `apply` 는 `propValue` 다. 목록은 서버 규격(코어 고정·확장 등록·운영자 추가)을 읽으므로 `options` 를 선언하지 않으며, 첫 항목 「원본」을 고르면 prop 이 삭제된다. 표현식이 저장된 prop 은 아래 공통 보호를 따른다.
 
 **데이터 연결 값 보호 — 모든 위젯 공통**:
 prop 자리에 `{{...}}` 표현식이나 설정 참조가 저장돼 있으면, 그 값을 편집하는 컨트롤은 **원문 배지**로 디그레이드된다. 위젯은 그 문자열을 해석하지 못해 빈 컨트롤로 보이고, 그 상태에서 조작하면 표현식이 그대로 덮여 **환경설정과의 연결이 끊기기** 때문이다. 이 판정은 개별 위젯이 아니라 컨트롤 렌더러 한 곳에서 이뤄지므로 **새 위젯을 등록해도 자동 적용**된다 — 위젯 안에 같은 판정을 다시 넣지 않는다(넣으면 해제 경로까지 막혀 「직접 지정으로 바꾸기」가 무반응이 된다).
@@ -163,6 +164,10 @@ prop 자리에 `{{...}}` 표현식이나 설정 참조가 저장돼 있으면, �
 보호 상태에서는 그 컨트롤의 파괴적 조작이 함께 잠긴다. 값을 바꾸려면 「직접 지정으로 바꾸기」를 눌러 명시적으로 열고, 「되돌리기」로 원래 연결값을 복구할 수 있다(해제 직후에는 취소, 값을 넣은 뒤에는 복구로 동작).
 
 예외는 표현식 자체를 다루도록 설계된 위젯뿐이다 — `text`·`i18n-text` 는 표현식을 데이터 칩으로 **분해해 보여 주는 것**이 그 위젯의 기능이고, `image`·`core-id` 는 같은 보호를 위젯 안에서 더 세밀하게(갤러리·업로드·관리 모달 진입까지) 제공한다. 새 위젯을 이 예외에 넣으려면 **원문 표시·해제·복구 셋을 모두** 갖춰야 한다.
+
+**템플릿 설정에 연결된 값 — 해제 경로 없음**:
+
+값이 `_global.templateSettings` 를 읽는 표현식이면(예 `{{_global.templateSettings?.header?.max_boards ?? 5}}`, 푸터 저작권 `{{$localized(_global.templateSettings?.footer?.copyright ?? {}) ?? ''}}`) 그 값의 유일한 주인은 템플릿 환경설정 화면이다. 그래서 원문 배지 대신 「템플릿 설정에 연결된 값입니다 — 관리자 > 템플릿 > 이 템플릿의 「설정」에서 바꿉니다」 안내와, 편집 중인 템플릿의 설정 화면(`/admin/templates/{식별자}/settings`)을 새 창으로 여는 「설정 열기」 링크를 보인다. 「직접 지정으로 바꾸기」는 두지 않는다 — 직접 지정으로 바꾸면 운영자가 설정 화면에서 바꾼 값이 화면에 반영되지 않는 두 주인 상태가 된다. 숫자·이미지 칸(공용 게이트)과 다국어 글자 칸(`i18n-text` 의 분해 트리·[데이터 바꾸기] 대신) 모두 같다. 템플릿이 편집기로 고칠 수 있는 prop 을 설정으로 옮길 때는 바인딩을 `?? 기본값` 꼴로 써서 이 표시를 받는다 — 규칙은 [템플릿 환경설정](template-settings.md) 「템플릿 설정으로 두지 않는 것」.
 
 **`image` 위젯의 값 형태 — apply 경로에 따라 축약된다**:
 
@@ -197,7 +202,7 @@ prop 자리에 `{{...}}` 표현식이나 설정 참조가 저장돼 있으면, �
 
 **역할 식별 (이름 가정 금지)**: 코어는 컴포넌트 **이름**(`name==="Table"`)으로 표/목록/배열을 식별하지 않는다. 어떤 컴포넌트든 capability 의 `nodeEditor.kind`/`canvasOverlay.kind`/`dataProps`/`flexEditor` **역할 선언**으로 편집 동작을 결정한다. 따라서 `div`-그리드로 만든 표도 `nodeEditor:{kind:"table",params:{...역할 매핑}}` 만 선언하면 표 에디터가 붙고, 커스텀 목록 컴포넌트도 `nodeEditor:{kind:"children"}` 으로 목록 에디터가 붙는다. `params` 의 역할 매핑(rowContainer/row/cell 등)은 컴포넌트 이름이 아니라 그 컴포넌트가 어떤 자식 구조를 쓰는지를 적는다.
 
-**데이터 정의 빌트인(옵션/배열/차트 수동 데이터)**: 정적으로 편집 가능한 "데이터 정의" 표면(Select.options, TabNavigation.tabs, BarChart.labels+datasets, DonutChart.data, CardGrid.cardColumns, DynamicFieldList.columns, SocialLoginButtons.providers 등)은 모두 `nodeEditor`(array/array-group/array-cell-tree) 또는 `propControls`(options-list) 로 편집 가능하게 선언한다. 전 draggable 컴포넌트는 데이터 표면을 가지면 편집 슬롯을 보유하거나(누락 0), 보유하지 않으면 비대상 allowlist(flat scalar / 표시 텍스트 / 레이아웃 / 런타임 scalar 바인딩전용)에 등록되어야 한다 — 자동 검증이 둘 다 아닌 draggable 을 차단한다.
+**데이터 정의 빌트인(옵션/배열/차트 수동 데이터)**: 정적으로 편집 가능한 "데이터 정의" 표면(Select.options, TabNavigation.tabs, BarChart.labels+datasets, DonutChart.data, CardGrid.cardColumns, DynamicFieldList.columns 등)은 모두 `nodeEditor`(array/array-group/array-cell-tree) 또는 `propControls`(options-list) 로 편집 가능하게 선언한다. 전 draggable 컴포넌트는 데이터 표면을 가지면 편집 슬롯을 보유하거나(누락 0), 보유하지 않으면 비대상 allowlist(flat scalar / 표시 텍스트 / 레이아웃 / 런타임 scalar 바인딩전용)에 등록되어야 한다 — 자동 검증이 둘 다 아닌 draggable 을 차단한다.
 
 **코어 제공 속성(요소 ID) + opt-out**: 코어는 모든 draggable 컴포넌트의 [속성] 탭 최상단에 "요소 ID" 컨트롤을 일괄 제공한다(값 = 표준 `node.props.id`, 강제 DOM 주입 없음 — 컴포넌트 passthrough 책임). 기존 `elemId`(→id) 같은 템플릿 propControl 은 코어로 이전(중복 선언 금지 — 코어 우선). 인라인 루트가 없는 컴포넌트(서드파티 모달/Portal)는 capability 에 `"coreProps": false` 로 opt-out 한다. `"coreProps": ["id"]` 처럼 부분집합 선언도 가능(미선언 = 코어 기본 전체). 코어 id 컨트롤은 `{{바인딩}}` 값이면 "바인딩됨(코드 편집)" 디그레이드, HTML 안전 문자만 허용(한글·공백 자동 제거). 컴포넌트 측 id passthrough 규약은 `docs/frontend/components-types.md` "요소 id 패스스루" 참조.
 
@@ -283,7 +288,7 @@ prop 자리에 `{{...}}` 표현식이나 설정 참조가 저장돼 있으면, �
 
 ### darkMode — 다크 모드 표현 (소형, manifest 인라인 권장)
 
-템플릿이 다크 모드를 어떻게 표현하는지 선언한다. `strategy`: `ancestor-class`(조상 클래스, Tailwind `.dark`) / `media-query` / `none`(다크 미지원 — 편집기 다크 탭 비노출). `previewIsolation`(`rewriteSelector` → `replaceWith`, `flattenLayers`)은 편집기 프리뷰를 admin 호스트의 `html.dark` 조상과 독립적으로 격리하기 위한 셀렉터 치환 규칙이다. 코어 CSS 서빙 API 가 이 선언대로 편집기용 CSS 의 다크 셀렉터를 프리뷰 전용 마커로 치환해 서빙한다(사용자 페이지 CSS 는 원본 그대로 — 무영향).
+템플릿이 다크 모드를 어떻게 표현하는지 선언한다. `strategy`: `ancestor-class`(조상 클래스, Tailwind `.dark`) / `media-query` / `none`(다크 미지원 — 편집기 다크 탭 비노출). `previewIsolation`(`rewriteSelector` → `replaceWith`, `flattenLayers`)은 편집기 프리뷰를 admin 호스트의 `html.dark` 조상과 독립적으로 격리하기 위한 셀렉터 치환 규칙이다. `flattenLayers: true` 는 CSS 의 층 이름(Tailwind `theme`·`base`·`utilities` 등)을 프리뷰 층 `g7-preview` 하나로 모은다 — 관리자 화면 CSS 의 같은 층 이름과 순서가 섞이지 않고, 확장 CSS 의미 칸(`g7-extension`)보다는 아래에 놓인다. 코어 CSS 서빙 API 가 이 선언대로 편집기용 CSS 의 다크 셀렉터를 프리뷰 전용 마커로 치환해 서빙한다(사용자 페이지 CSS 는 원본 그대로 — 무영향).
 
 **화면 폭 조건은 선언하지 않는다.** 다크와 달리 화면 폭은 편집기가 자동으로 격리한다 — 편집기가 떠 있는 동안
 문서의 스타일시트에서 폭 `@media` 와 `vw` 를 프리뷰 영역 폭 기준으로 나눠 두고, 편집기를 벗어나면 원래대로
@@ -320,6 +325,17 @@ export function registerSirsoftAdminBasicEditorWidgets(): void {
 ```
 
 캔버스 인플레이스 오버레이는 속성 패널의 같은 구조 prop 에디터(예 `ArrayItemsEditor`)와 **동일한 노드 패치 경로(SSoT)**를 써야 양방향 동기가 보장된다(같은 `node.props.tabs` 패치). 편집 모드 전용 마커(`data-editor-item-path` 등)는 런타임에 주입하지 않는다(사용자 페이지 누출 0).
+
+## 편집기 화면 동작 (engine-v1.95.0)
+
+확장·템플릿 개발자가 편집기에서 만나는 화면 동작이다.
+
+| 동작 | 내용 |
+| --- | --- |
+| 「실제 크기」 토글 | 미리보기 줌 도구의 토글. 켜면 미리보기를 1:1 로 보고, 기기 폭이 캔버스보다 넓으면 캔버스 안에서 가로로 스크롤한다. 끄면 줌 설정을 따른다 |
+| Modal 고정 하단(`footer`) 편집 | 확인 창의 고정 하단 단추 줄(Modal `props.footer`, 마크업 `<footer>`)을 본문처럼 고르고, 고치고, 옮기고, 지울 수 있다. 하단 단추를 `children` 끝이 아니라 `footer` 에 두어야 편집기에서도 그 자리로 다뤄진다([modal-usage.md](../frontend/modal-usage.md#footer-버튼-배치)) |
+| 오른쪽 아래 편집 단추 | 관리자 화면과 사용자 사이트에서 레이아웃 편집 권한(`core.templates.layouts.edit` — 로그인 사용자 응답의 `can_edit_layouts`)이 있는 사람에게 화면 오른쪽 아래에 레이아웃 편집 아이콘 단추(글자 없는 원형, 보이는 이름은 `aria-label`)가 보인다. 누르면 보던 화면이 선택된 채 편집기가 열린다. 오른쪽 옆 패널과 하단 고정 요소(하단 바·토스트·맨 위로 단추)는 비켜 선다. 환경설정 > 일반 「레이아웃 편집 단추」(`general.layout_edit_button_enabled`, 기본 켜짐)를 끄면 보이지 않고, 저장하면 새로고침 없이 바로 따라간다. 비로그인·권한 없음·편집기 주소·미리보기 프레임 안·인쇄에서도 보이지 않는다 (7.2.0 — 그전에는 왼쪽 아래 글자 단추) |
+| 편집기 정보 실패 알림 | 편집기 스펙 묶음(`GET /api/templates/{식별자}/editor-spec-bundle`)을 받지 못하면(4xx·5xx·네트워크) 팔레트·스타일 컨트롤이 빈 채로 두지 않고 알림과 「다시 시도」 단추를 보인다. 다시 시도는 묶음을 다시 요청한다 |
 
 ## 편집기 UI 규약 (일관성 잠금)
 

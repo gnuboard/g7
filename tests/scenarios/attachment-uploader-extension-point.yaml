@@ -1,0 +1,30 @@
+# 시나리오 매니페스트 — 첨부 업로더 확장점 attachment_uploader 의 레이아웃 주입 (#916 ③, 공개 #83 후속)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: attachment_uploader_extension_point
+
+description: |
+  번들 레이아웃의 첨부 업로더 21노드를 `<extension-point name="attachment_uploader">` 로 감싸, 업로더 플러그인이
+  확장점 하나로 업로더 UI 를 교체할 수 있게 한다. 코어 `LayoutExtensionService` 는 확장점 주입을 그대로 처리한다.
+
+  - `mode="replace"` 주입은 default 의 기본 업로더를 걷어내고, 주입 컴포넌트가 확장점 props(uploader 계약)와
+    callbacks(onUploadComplete·onRemove 등)를 받는다.
+  - 주입이 없으면 default 의 기본 업로더가 그대로 남는다.
+  - 정렬 가능한 목록의 itemTemplate 안에 있는 확장점도 채워진다.
+  - 번들 레이아웃의 실제 업로더 슬롯이 교체 주입을 받는다.
+
+  두 템플릿 FileUploader 의 주소 해석(reorder 키·기본 주소 제거)은 각 템플릿 매니페스트
+  `attachment-uploader-extension-point.yaml` 이 소유한다.
+
+axes:
+  case: [attachment_uploader_replace, attachment_uploader_without_injection, attachment_uploader_in_sortable_item_template, attachment_uploader_in_responsive_override, attachment_uploader_bundled_layouts]
+
+effects:
+  - attachment_uploader_replace_removes_default                  # replace 주입이면 default 의 기본 업로더가 렌더 트리에서 빠진다
+  - attachment_uploader_injected_receives_contract_and_callbacks # 주입 컴포넌트가 uploader 계약 props 와 콜백을 그대로 받는다
+  - attachment_uploader_default_kept_without_injection           # 주입이 없으면 기본 업로더가 그대로 남는다
+  - extension_point_inside_sortable_item_template_is_filled      # 정렬 목록 itemTemplate 안의 확장점도 주입이 채워진다
+  - extension_point_inside_responsive_override_is_filled         # 반응형 재정의(responsive.*.children) 안의 확장점도 채워진다
+
+test_files:
+  - tests/Unit/Services/LayoutExtensionServiceTest.php

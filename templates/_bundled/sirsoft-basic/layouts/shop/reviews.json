@@ -276,6 +276,7 @@
                                                 "if": "{{!!review.product?.thumbnail_url}}",
                                                 "props": {
                                                     "src": "{{review.product?.thumbnail_url}}",
+                                                    "thumbPreset": "sm",
                                                     "alt": "",
                                                     "className": "w-10 h-10 shrink-0 rounded object-cover border border-gray-200 dark:border-gray-700"
                                                 }

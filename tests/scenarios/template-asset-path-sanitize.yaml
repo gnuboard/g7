@@ -1,0 +1,20 @@
+feature: 템플릿 자산 경로 정제
+
+description: |
+  TemplateService 가 SecuresExtensionAssetPath::sanitizeExtensionAssetPath() 로 자산 경로를 정제하는 계약
+  (이슈 #486 인접 결함). 한 번만 치환하면 ....// 가 ../ 로 되살아나므로, 중첩 패턴도 상위 경로 시퀀스를
+  남기지 않아야 한다. 단순 상위 경로와 선행 구분자는 지우고, 파일명 안의 점 두 개 같은 정상 경로는 그대로 둔다.
+
+coverage_strategy: full
+
+axes:
+  path_shape: [nested_traversal, simple_traversal, leading_separator, normal_asset_path]
+
+effects:
+  - sanitize_does_not_restore_traversal_from_nested_pattern
+  - sanitize_removes_simple_traversal_sequences
+  - sanitize_strips_leading_separator
+  - sanitize_keeps_normal_asset_path_unchanged
+
+test_files:
+  - tests/Unit/Services/TemplateServiceSanitizePathTest.php

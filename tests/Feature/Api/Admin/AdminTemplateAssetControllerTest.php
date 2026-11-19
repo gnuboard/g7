@@ -540,10 +540,11 @@ class AdminTemplateAssetControllerTest extends TestCase
         }
 
         // @layer 평탄화 — 편집기 CSS 는 어드민 호스트 CSS 와의 cross-build 레이어 우선순위
-        // 충돌을 피하려 unlayered 로 평탄화돼야 한다(결함). 원본에 @layer {} 블록이
-        // 있었다면 서빙된 CSS 에는 블록 오프너가 남지 않아야 한다.
+        // 충돌을 피하려 템플릿 층 이름을 프리뷰 층(`g7-preview`) 하나로 모은다.
+        // 원본에 @layer {} 블록이 있었다면 서빙된 CSS 의 층 블록은 모두 프리뷰 층이어야 한다.
         if (preg_match('/@layer\s+[^;{]*\{/', $original)) {
-            $this->assertSame(0, preg_match('/@layer\s+[^;{]*\{/', $css), '서빙 CSS 에 @layer 블록 래퍼가 남으면 cross-build 우선순위 충돌');
+            $this->assertSame(0, preg_match('/@layer\s+(?!g7-preview\{)[^;{]*\{/', $css), '서빙 CSS 에 템플릿 층 이름이 남으면 cross-build 우선순위 충돌');
+            $this->assertStringContainsString('@layer g7-preview{', $css, '층 안 규칙은 프리뷰 층에 담긴다');
         }
     }
 
@@ -611,9 +612,40 @@ class AdminTemplateAssetControllerTest extends TestCase
     }
 
     /**
-     * flattenCssLayers — `@layer NAME { ... }` 블록 래퍼를 제거해 내부 규칙을 unlayered 로
-     * 평탄화한다. cross-build 레이어 우선순위 충돌 방지의 핵심 로직(결함). 중첩 레이어·
-     * 짝 불일치 폴백·@layer 선언만(블록 없음) 보존을 함께 가드.
+     * 프리뷰 CSS 의 층 블록은 프리뷰 층(`g7-preview`)으로 모이고, 층 밖 규칙·`@property` 는 층 밖에 남으며 순서 선언은
+     * 지워진다. 관리자 화면 머리는 템플릿 CSS 뒤에 `@layer g7-preview, g7-extension;` 을 선언해, 프리뷰 템플릿
+     * 초기화(`*{border:0 solid}`)가 확장 의미 칸을 이기지 않게 한다(issue816 실측: 프리뷰 메모 카드 테두리 1px→0,
+     * 제목 24px→13px). 트러블슈팅 `[case:backend-67]` 의 회귀 그물이다.
+     *
+     * @effects editor_css_rewrites_dark_ancestor_and_flattens_layers
+     *
+     * @return void 반환값 없음
+     */
+    public function test_flatten_css_layers_merges_into_preview_layer(): void
+    {
+        $css = '@layer theme, base, utilities;@property --tw-x{syntax:"*";inherits:false}@layer base{*{border:0 solid}}@layer utilities{.p-4{padding:1rem}@layer inner{.q{top:0}}}.own{color:red}';
+        $out = $this->invokePrivate('flattenCssLayers', [$css]);
+
+        $this->assertSame('@property --tw-x{syntax:"*";inherits:false}@layer g7-preview{*{border:0 solid}}@layer g7-preview{.p-4{padding:1rem}.q{top:0}}.own{color:red}', $out);
+
+        // 순서 선언은 인라인 `<style>` 이 아니라 코어 정적 파일(g7-layers-admin.css) 링크다 — 엄격한 스타일 정책에서
+        // `<style>` 이 막히면 선언이 사라져 프리뷰 템플릿 초기화가 다시 확장 의미 칸을 이긴다(#163)
+        $blade = (string) file_get_contents(resource_path('views/admin.blade.php'));
+        $links = strpos($blade, '@foreach($templateStylesheets');
+        $order = strpos($blade, "@include('partials.core-styles', ['sheet' => 'layers-admin'])");
+        $this->assertNotFalse($order, '관리자 화면 머리가 프리뷰 층을 확장 의미 칸 앞에 선언한다');
+        $this->assertGreaterThan($links, $order, '층 순서 선언은 관리자 템플릿 CSS 링크 뒤에 온다');
+        $this->assertStringNotContainsString('<style>@layer', $blade, '층 순서 선언을 인라인 <style> 로 두지 않는다');
+        $this->assertStringContainsString(
+            '@layer g7-preview, g7-extension;',
+            (string) file_get_contents(public_path('assets/core/css/g7-layers-admin.css')),
+            '정적 파일이 프리뷰 층을 확장 의미 칸 앞에 선언한다',
+        );
+    }
+
+    /**
+     * flattenCssLayers — 템플릿의 `@layer NAME { ... }` 층 이름을 프리뷰 층 하나로 모은다. cross-build 레이어
+     * 우선순위 충돌 방지의 핵심 로직(결함). 중첩 레이어·짝 불일치 폴백·순서 선언 제거를 함께 가드.
      *
      * @effects editor_css_rewrites_dark_ancestor_and_flattens_layers
      *
@@ -624,14 +656,14 @@ class AdminTemplateAssetControllerTest extends TestCase
         $css = '@layer base{a{color:red}}@layer utilities{.x{top:0}.y{left:0}}';
         $out = $this->invokePrivate('flattenCssLayers', [$css]);
 
-        $this->assertSame(0, preg_match('/@layer\s+[^;{]*\{/', $out), '@layer 블록 래퍼가 모두 제거되어야 한다');
+        $this->assertSame(0, preg_match('/@layer\s+(?!g7-preview\{)[^;{]*\{/', $out), '템플릿 층 이름은 모두 프리뷰 층으로 바뀐다');
         $this->assertStringContainsString('a{color:red}', $out, '내부 규칙은 보존');
         $this->assertStringContainsString('.x{top:0}', $out);
         $this->assertStringContainsString('.y{left:0}', $out);
     }
 
     /**
-     * 중첩된 `@layer` 블록도 반복 평탄화해 블록 오프너가 남지 않는다.
+     * 중첩된 `@layer` 블록은 안쪽을 벗겨 프리뷰 층 안에 그대로 둔다.
      *
      * @effects editor_css_rewrites_dark_ancestor_and_flattens_layers
      *
@@ -642,14 +674,11 @@ class AdminTemplateAssetControllerTest extends TestCase
         $css = '@layer outer{.a{top:0}@layer inner{.b{left:0}}.c{right:0}}';
         $out = $this->invokePrivate('flattenCssLayers', [$css]);
 
-        $this->assertSame(0, preg_match('/@layer\s+[^;{]*\{/', $out), '중첩 @layer 도 전부 평탄화');
-        $this->assertStringContainsString('.a{top:0}', $out);
-        $this->assertStringContainsString('.b{left:0}', $out);
-        $this->assertStringContainsString('.c{right:0}', $out);
+        $this->assertSame('@layer g7-preview{.a{top:0}.b{left:0}.c{right:0}}', $out, '중첩 층은 벗기고 바깥만 프리뷰 층');
     }
 
     /**
-     * 블록 없는 `@layer a, b;` 순서 선언은 평탄화 대상이 아니므로 그대로 남는다.
+     * 블록 없는 `@layer a, b;` 순서 선언은 지운다 — 관리자 화면에서 그 이름이 확장 의미 칸 뒤에 새 층으로 생기지 않게.
      *
      * @effects editor_css_rewrites_dark_ancestor_and_flattens_layers
      *
@@ -657,13 +686,10 @@ class AdminTemplateAssetControllerTest extends TestCase
      */
     public function test_flatten_css_layers_preserves_bare_layer_declaration(): void
     {
-        // 블록 없는 선언(`@layer a, b;`)은 레이어 순서 선언이므로 그대로 보존.
         $css = '@layer base, utilities;@layer base{.a{top:0}}';
         $out = $this->invokePrivate('flattenCssLayers', [$css]);
 
-        $this->assertStringContainsString('@layer base, utilities;', $out, '블록 없는 @layer 선언은 보존');
-        $this->assertStringContainsString('.a{top:0}', $out);
-        $this->assertSame(0, preg_match('/@layer\s+[^;{]*\{/', $out), '블록 래퍼만 제거');
+        $this->assertSame('@layer g7-preview{.a{top:0}}', $out, '순서 선언은 지우고 층 블록만 프리뷰 층으로');
     }
 
     /**

@@ -1,0 +1,17 @@
+feature: 페이지 첨부 — 첨부 업로더 확장점 기본 경로의 업로드 → 저장 → 재진입 (#916 ③)
+
+description: |
+  레이아웃의 FileUploader 를 `attachment_uploader` 확장점의 default 안으로 옮겼다. 대체 업로더가 없는 기본 경로에서
+  저장 버튼의 `upload:page_attachments` 신호와 결과(`_eventResult`) 모양이 그대로여야 첨부가 페이지에 붙는다.
+  등록 폼에서 첨부를 올려 저장하고 수정 화면에 다시 들어가, 화면 첨부가 서버 값과 같고 업로더 DOM 이 하나뿐인지 잰다.
+  레이아웃 주입 동작은 코어 `tests/scenarios/attachment-uploader-extension-point.yaml` 이 소유한다.
+
+axes:
+  case: [create_save_reenter]
+
+effects:
+  - page_attachment_saved_via_default_uploader_event_result     # 저장 흐름이 기본 업로더 결과로 첨부를 페이지에 붙인다(서버 상세 첨부 1건)
+  - page_attachment_reentry_matches_server_single_uploader       # 재진입한 수정 화면의 업로더는 하나이고 보이는 첨부가 서버 값과 같다
+
+test_files:
+  - modules/_bundled/sirsoft-page/tests/Playwright/specs/admin/page-attachment-uploader-reentry.spec.ts

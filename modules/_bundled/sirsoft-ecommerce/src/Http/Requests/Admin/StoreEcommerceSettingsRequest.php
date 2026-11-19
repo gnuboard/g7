@@ -4,6 +4,8 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Requests\Admin;
 
+use App\DisplayName\DisplayNameArea;
+use App\DisplayName\DisplayNameKindRegistry;
 use App\Rules\LocaleRequiredTranslatable;
 use App\Rules\TranslatableField;
 use App\Services\DriverRegistryService;
@@ -32,6 +34,7 @@ use Modules\Sirsoft\Ecommerce\Rules\ClaimReasonCodeFormat;
 use Modules\Sirsoft\Ecommerce\Services\EcommerceSettingsService;
 use Modules\Sirsoft\Ecommerce\Services\PaymentMethodResolver;
 use Modules\Sirsoft\Ecommerce\Support\AuthorNameMasker;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 use Modules\Sirsoft\Ecommerce\Support\MileageRounding;
 
 /**
@@ -361,6 +364,11 @@ class StoreEcommerceSettingsRequest extends FormRequest
         return [
             '_tab' => ['sometimes', 'string', 'in:'.implode(',', self::SECTIONS)],
 
+            // 기능별 작성자 표시 이름 — 리뷰 설정 탭(후기)과 기본 정보 탭(문의)이 함께 싣는다.
+            // 이커머스 설정 파일이 아니라 코어의 표시 이름 영역 설정에 저장한다(validatedDisplayName).
+            'display_name' => ['sometimes', 'array'],
+            ...$this->displayNameRules(),
+
             'notifications' => ['sometimes', 'array'],
             'notifications.channels' => ['sometimes', 'array'],
             'notifications.channels.*.id' => ['required_with:notifications.channels', 'string', 'max:50'],
@@ -393,7 +401,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'basic_info.privacy_officer_email' => ['nullable', 'email', 'max:255'],
             'basic_info.mail_order_number' => ['nullable', 'string', 'max:100'],
             'basic_info.telecom_number' => ['nullable', 'string', 'max:100'],
-            // 사용자 화면 푸터의 사업자 정보: 호스팅 제공자(법정 표시 항목) · 표시 여부
+            // 사용자 화면 푸터의 사업자 정보: 호스팅 제공자(법정 표시 항목) · 표시 여부(기본 켜짐 — 쇼핑몰이 사용자 템플릿 user_global_footer 자리에 그린다)
             'basic_info.hosting_provider' => ['nullable', 'string', 'max:255'],
             'basic_info.show_business_footer' => ['nullable', 'boolean'],
             // 공개 자산 디스크 — 빈 값은 코어 공개 자산 디스크 설정을 따른다.
@@ -403,6 +411,8 @@ class StoreEcommerceSettingsRequest extends FormRequest
             //  시점의 오타를 성공 응답으로 통과시켜도 된다는 뜻이 아니다 — 운영자에게는
             //  "저장됐는데 CDN 이 안 붙는" 무증상 상태로만 보인다.)
             'basic_info.public_asset_disk' => ['nullable', 'string', 'max:100', $this->publicAssetDiskRule()],
+            // 내보내기 파일 보관 기간(일, #787) — 경계값은 config limits 가 단일 출처
+            'basic_info.export_retention_days' => ['nullable', 'integer', 'min:'.config('sirsoft-ecommerce.limits.export_retention_days_min', 1), 'max:'.config('sirsoft-ecommerce.limits.export_retention_days_max', 30)],
 
             'language_currency' => ['sometimes', 'array'],
             // default_language 제거 (A1-⑤, D-LANG): 사이트 언어는 코어 일반설정으로 일원화. 모듈 orphan 필드.
@@ -1730,7 +1740,7 @@ class StoreEcommerceSettingsRequest extends FormRequest
             // `nullable` 이 아니라 `sometimes` 다. 소비처 `ClaimReasonService::syncReasons()` 가
             // `?? true` 라 저장된 null 이 **true** 로 뒤집히고, 운영자가 내려 둔 사유가 저장
             // 한 번에 구매자 선택지로 되살아난다 — 무너지는 방향이 "끈 것을 켜진 것으로" 라
-            // 형제 `claim.*` 불리언 3축과 같은 강도로 맞춘다(8차 N3 와 동일 판정).
+            // 형제 `claim.*` 불리언 3축과 같은 강도로 맞춘다.
             // 키 부재까지 거절한다 (`required_with`). `sometimes` 는 null 만 막고, 키를 빼면 소비처의
             // `?? true` 가 내려 둔 사유를 켜진 채 되살린다 — 같은 파일의 `complete_defaults` 와 같은 강도.
             "{$key}.*.is_user_selectable" => ["required_with:{$key}", 'boolean'],
@@ -1972,6 +1982,11 @@ class StoreEcommerceSettingsRequest extends FormRequest
         $locale = $this->requiredNameLocale();
 
         return [
+            // 기능별 작성자 표시 이름
+            'display_name.*.mode.required_with' => __('sirsoft-ecommerce::display_name.validation.mode_required'),
+            'display_name.*.mode.in' => __('sirsoft-ecommerce::display_name.validation.mode_invalid'),
+            'display_name.*.kind.required_if' => __('sirsoft-ecommerce::display_name.validation.kind_required'),
+
             // basic_info 섹션
             'basic_info.shop_name.required' => __('sirsoft-ecommerce::validation.custom.basic_info.shop_name.required'),
             'basic_info.shop_name.string' => __('sirsoft-ecommerce::validation.custom.basic_info.shop_name.string'),
@@ -2024,6 +2039,9 @@ class StoreEcommerceSettingsRequest extends FormRequest
             'basic_info.mail_order_number.max' => __('sirsoft-ecommerce::validation.custom.basic_info.mail_order_number.max'),
             'basic_info.telecom_number.string' => __('sirsoft-ecommerce::validation.custom.basic_info.telecom_number.string'),
             'basic_info.telecom_number.max' => __('sirsoft-ecommerce::validation.custom.basic_info.telecom_number.max'),
+            'basic_info.export_retention_days.integer' => __('sirsoft-ecommerce::validation.custom.basic_info.export_retention_days.integer'),
+            'basic_info.export_retention_days.min' => __('sirsoft-ecommerce::validation.custom.basic_info.export_retention_days.min'),
+            'basic_info.export_retention_days.max' => __('sirsoft-ecommerce::validation.custom.basic_info.export_retention_days.max'),
 
             // language_currency 섹션 (default_language 제거 — A1-⑤, D-LANG)
             'language_currency.default_currency.string' => __('sirsoft-ecommerce::validation.custom.language_currency.default_currency.string'),
@@ -2186,5 +2204,51 @@ class StoreEcommerceSettingsRequest extends FormRequest
             fn ($key) => in_array($key, $validCategories),
             ARRAY_FILTER_USE_KEY
         );
+    }
+
+    /**
+     * 검증된 데이터에서 기능별 작성자 표시 이름만 추출합니다.
+     *
+     * 이 값은 설정 구역이 아니라서 {@see self::validatedSettings()} 에 들어가지 않는다(이커머스 설정 파일에 저장하지 않는다).
+     * 화면이 함께 돌려보내는 읽기 전용 목록(`display_name_options`)은 규칙이 없어 검증된 데이터에 들어오지 않는다.
+     *
+     * @return array<string, array{mode: string, kind?: string|null}> 기능 키(`review`, `inquiry`) => `{mode, kind}`. 요청에 없으면 빈 배열
+     */
+    public function validatedDisplayName(): array
+    {
+        $displayName = $this->validated('display_name');
+
+        return is_array($displayName) ? array_filter($displayName, 'is_array') : [];
+    }
+
+    /**
+     * 기능별 작성자 표시 이름의 검증 규칙을 만듭니다.
+     *
+     * 방식은 「상위 영역 따름 / 특정 종류 고정 / 회원이 고른 값」 셋 중 하나다. 고정이면 지금 등록된 종류가 필요하다.
+     * 고정이 아닐 때 종류 칸에 남아 있는 값은 보지 않는다(저장하지 않는다).
+     *
+     * @return array<string, array<int, mixed>> 규칙
+     */
+    private function displayNameRules(): array
+    {
+        $rules = [];
+
+        foreach (array_keys(MemberDisplayName::FEATURE_AREAS) as $feature) {
+            $rules["display_name.{$feature}"] = ['sometimes', 'array'];
+            $rules["display_name.{$feature}.mode"] = ["required_with:display_name.{$feature}", 'string', Rule::in(DisplayNameArea::MODES)];
+            $rules["display_name.{$feature}.kind"] = [
+                'nullable',
+                'string',
+                "required_if:display_name.{$feature}.mode,".DisplayNameArea::MODE_FIXED,
+                function (string $attribute, mixed $value, \Closure $fail) use ($feature): void {
+                    if ($this->input("display_name.{$feature}.mode") === DisplayNameArea::MODE_FIXED
+                        && ! app(DisplayNameKindRegistry::class)->has(is_string($value) ? $value : null)) {
+                        $fail(__('sirsoft-ecommerce::display_name.validation.kind_invalid'));
+                    }
+                },
+            ];
+        }
+
+        return $rules;
     }
 }

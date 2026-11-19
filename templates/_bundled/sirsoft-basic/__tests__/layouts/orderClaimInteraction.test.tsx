@@ -1,10 +1,21 @@
 /** 주문 상품 선택·클레임 부분 갱신 회귀 (#599). @vitest-environment jsdom */
 import fs from 'node:fs';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import { createLayoutTest, createMockComponentRegistryWithBasics } from '@core/template-engine/__tests__/utils/layoutTestUtils';
 import { A } from '../../src/components/basic/A';
+
+// 엔진(코어)은 저장소 루트의 react 를, 이 템플릿의 부품(A 등)은 템플릿 node_modules 의 react 를 읽어 사본이 둘이 된다 — 훅을 쓰는
+// 실제 부품을 엔진 아래에서 그리면 `useSyncExternalStore` 를 null 에서 읽는다. 이 파일에서만 템플릿 쪽 react 를 루트 사본으로 바꿔 낀다
+// (sirsoft-admin_basic productFormRouteSwitchInputResidue.test.tsx 와 같은 방식)
+vi.mock('react', async () => {
+    const p = await import('path');
+    const u = await import('url');
+    const dir = p.dirname(u.fileURLToPath(import.meta.url));
+
+    return import(/* @vite-ignore */ u.pathToFileURL(p.resolve(dir, '../../../../../node_modules/react/index.js')).href);
+});
 
 const root = path.resolve(__dirname, '../../layouts');
 const read = (file: string) => JSON.parse(fs.readFileSync(path.join(root, file), 'utf8'));

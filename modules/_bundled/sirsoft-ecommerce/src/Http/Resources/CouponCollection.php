@@ -2,10 +2,11 @@
 
 namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
+use App\Http\Resources\BaseApiCollection;
 use App\Http\Resources\Traits\HasAbilityCheck;
 use Illuminate\Http\Request;
-use App\Http\Resources\BaseApiCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 /**
  * 쿠폰 컬렉션 리소스
@@ -43,6 +44,9 @@ class CouponCollection extends BaseApiCollection
      */
     public function toArray(Request $request): array
     {
+        // 행마다 등록자의 표시 이름을 계산하기 전에 필요한 값을 한 번에 읽어 둔다.
+        MemberDisplayName::preloadStaffRelations($this->collection, ['creator'], $request);
+
         $result = [
             'data' => $this->collection,
             'abilities' => $this->resolveAbilitiesFromMap($this->abilityMap(), $request->user()),

@@ -24,7 +24,7 @@ class ApiRouteInventoryWebRouteTest extends TestCase
      *
      * @scenario case=plugin_webhook
      *
-     * @effects plugin_webhook_web_route_collected
+     * @effects plugin_webhook_web_routes_collected, plugin_webhook_web_route_collected
      *
      * @return void 반환값 없음
      */
@@ -44,7 +44,7 @@ class ApiRouteInventoryWebRouteTest extends TestCase
      *
      * @scenario case=plugin_payment_callback
      *
-     * @effects plugin_payment_callback_web_route_collected
+     * @effects plugin_payment_callback_web_routes_collected, plugin_payment_callback_web_route_collected
      *
      * @return void 반환값 없음
      */
@@ -64,7 +64,7 @@ class ApiRouteInventoryWebRouteTest extends TestCase
      *
      * @scenario case=web_owner_uri
      *
-     * @effects web_route_keeps_owner_and_uri
+     * @effects web_route_owner_and_uri_preserved, web_route_keeps_owner_and_uri
      *
      * @return void 반환값 없음
      */
@@ -91,7 +91,7 @@ class ApiRouteInventoryWebRouteTest extends TestCase
      *
      * @scenario case=web_domain_group
      *
-     * @effects web_route_classified_into_domain_group
+     * @effects web_route_domain_group_classified, web_route_classified_into_domain_group
      *
      * @return void 반환값 없음
      */
@@ -112,7 +112,7 @@ class ApiRouteInventoryWebRouteTest extends TestCase
      *
      * @scenario case=core_web_excluded
      *
-     * @effects core_web_routes_not_collected
+     * @effects core_web_routes_excluded, core_web_routes_not_collected
      *
      * @return void 반환값 없음
      */
@@ -136,7 +136,7 @@ class ApiRouteInventoryWebRouteTest extends TestCase
      *
      * @scenario case=extension_admin_web_excluded
      *
-     * @effects admin_web_screens_excluded_admin_api_included
+     * @effects extension_admin_screen_web_routes_excluded, admin_web_screens_excluded_admin_api_included
      *
      * @return void 반환값 없음
      */
@@ -151,6 +151,7 @@ class ApiRouteInventoryWebRouteTest extends TestCase
 
         $this->assertNotContains('web.modules.gnuboard7-hello_module.admin.memos.index', $names);
         $this->assertNotContains('web.modules.gnuboard7-hello_module.admin.memos.store', $names);
+        $this->assertContains('api.modules.gnuboard7-hello_module.admin.memos.index', $names);
 
         // 관리자 JSON API(/api/modules/{id}/admin/…)는 문서 대상이다 — 막는 것은 web 화면 라우트뿐이다
         foreach ($routes as $route) {

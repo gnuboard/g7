@@ -54,7 +54,8 @@ Location: https://example.com/shop/checkout?error=PAY_PROCESS_CANCELED&orderId=2
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 302 | Found (검증 실패) | 파라미터 형식이 맞지 않는 경우(예: 배열 주입) — 422 응답이나 직전 페이지(Referer) 이동 대신 사이트 주소의 실패 URL(`redirect_fail_url`)에 `error=invalid_params` 를 붙여 리다이렉트한다 |
+| 302 | Found (검증 실패) | 파라미터 형식이 맞지 않는 경우(예: 배열 주입) — 422 응답이나 직전 페이지(Referer) 이동 대신 사용자 화면 주소의 실패 URL(`redirect_fail_url`)에 `error=invalid_params` 를 붙여 리다이렉트한다 |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -90,8 +91,8 @@ Location: https://example.com/shop/checkout?error=PAY_PROCESS_CANCELED&orderId=2
 | X-Guest-Order-Token | header | string | 비회원 주문이면 예 | `{만료ts}|{HMAC-SHA256}` | 주문 생성 응답(`guest_order_token`)으로 받은 비회원 조회 토큰. 이 주문의 것이고 만료 전이어야 한다. 회원은 싣지 않고 로그인(Bearer)으로 증명한다. |
 | orderId | body | string | 예 | max 40 | 결제창을 닫거나 결제가 거절된 대상 주문의 주문번호. 서버가 이 값으로 주문을 조회해 결제 실패/취소 이력을 기록한다. |
 | amount | body | integer | 예 | min 1 | 결제 금액. 저장된 주문 청구액과 일치하는지 검증한다. |
-| code | body | string | 아니오 | max 60 | 토스 실패 코드. 값이 있으면 결제 거절로, 없으면 결제창 닫힘으로 기록한다. |
 | reason | body | string | 아니오 | max 160 | 사람이 읽을 실패 사유. 취소 이력에 남는다. |
+| code | body | string | 아니오 | max 60 | 토스 실패 코드. 값이 있으면 결제 거절로, 없으면 결제창 닫힘으로 기록한다. |
 
 **요청 예시**
 
@@ -152,6 +153,8 @@ HTTP/1.1 200
 
 `code` 유무로 기록이 갈립니다 — 값이 있으면 결제 거절(`failure_stage=payment_failed`), 없으면 결제창 닫힘(`failure_stage=window_closed`)으로 남아 운영자가 원인을 구분할 수 있습니다.
 
+주문 조회, 비회원 조회 토큰 확인, 청구액 계산, 실패 기록은 모두 이커머스 공개 결제 계약(`PaymentGatewayBridge`)으로 합니다 — 주문은 `findOrderByNumber`, 비회원 토큰은 `verifyGuestOrderToken`, 금액 대조는 `resolveChargeAmount`, 기록은 `PaymentLifecycle::markPaymentWindowClosed` 입니다. 요청과 응답 모양은 계약 전환 전과 같습니다.
+
 이미 결제가 성립한 주문(`payment_status=paid`)과 결제 가능 상태가 아닌 주문은 성공 응답에 `status: ignored` 로 무시합니다 — 결제 성공 콜백(`success` → `confirmPayment`)과 경쟁할 때 주문/옵션 상태가 어긋나는 것을 차단합니다.
 
 보고가 끝내 도달하지 못한 주문(브라우저를 바로 닫는 등)은 이커머스 모듈의 만료 주문 자동 정리가 최종 안전망으로 처리합니다.
@@ -194,7 +197,7 @@ Location: https://example.com/shop/orders/20260711-1418336207/complete
 
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 
 <!-- @generated:end -->
 
@@ -228,6 +231,6 @@ JSON 을 반환하지 않고 브라우저를 **302 리다이렉트**한다. 에�
 주의사항:
 
 - **금액 대조가 위변조 방어의 핵심**이다. query 의 `amount` 는 브라우저가 보낸 값이라 승인 요청 금액으로도, 결제완료 대조 금액으로도 쓰지 않는다 — 승인 요청과 대조의 기준은 주문 청구액이고, 결제 성립 여부는 토스 응답의 `totalAmount` 로 판정한다.
-- 리다이렉트 대상 URL 은 플러그인 설정(`redirect_success_url` / `redirect_fail_url`)으로 바꿀 수 있다 (기본 `/shop/orders/{orderId}/complete`, `/shop/checkout`). 상대 경로 설정값은 요청 Host 가 아니라 사이트 주소(`APP_URL`) 기준 절대 URL 로 바꿔 리다이렉트한다 — 위조 Host 로 들어온 콜백도 다른 도메인으로 보내지 않는다.
+- 리다이렉트 대상 URL 은 플러그인 설정(`redirect_success_url` / `redirect_fail_url`)으로 바꿀 수 있다 (기본 `/shop/orders/{orderId}/complete`, `/shop/checkout`). 상대 경로 설정값은 요청 Host 가 아니라 사용자 화면 주소(환경설정 「사용자 화면 URL」, 비어 있으면 사이트 주소 `APP_URL`) 기준 절대 URL 로 바꿔 리다이렉트한다(7.2.0 — 그 전에는 사이트 주소) — 위조 Host 로 들어온 콜백도 다른 도메인으로 보내지 않는다.
 
 

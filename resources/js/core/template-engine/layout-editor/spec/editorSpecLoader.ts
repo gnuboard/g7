@@ -20,6 +20,10 @@
  *
  *  - 활성 확장 식별자 SSoT 는 `window.G7Config.activeModules` / `activePlugins`
  * 옵션으로 직접 주입 가능(테스트).
+ *  - 스펙은 묶음 엔드포인트(`/api/templates/{id}/editor-spec-bundle`) **한 요청**으로 받는다
+ *    (engine-v1.95.0). 종전에는 확장마다 개별 엔드포인트를 따로 불러 편집기를 열 때 요청이
+ *    확장 수만큼 나갔다(개발 서버 27건, 건당 2~5.7초). 서버가 항목마다 개별 엔드포인트와 같은
+ *    판정을 하고, 한 항목이 실패하면 그 항목만 비운다(부분 실패).
  *
  * @since engine-v1.50.0
  * @since engine-v1.50.0
@@ -38,6 +42,7 @@ import type {
   LoadingComponentSpec,
 } from './specTypes';
 import { createLogger } from '../../../utils/Logger';
+import { withBasePrefix } from '../../../support/assetUrl';
 import {
   collectExtensionPaletteComponents,
   withExtensionComponentPlacement,
@@ -53,6 +58,26 @@ export interface ServeEditorSpecResponse {
   data: {
     identifier: string;
     spec: EditorSpec | null;
+  } | null;
+  error?: string;
+}
+
+/** 묶음 응답의 한 항목 — 개별 엔드포인트 응답 한 건에 해당 */
+export interface EditorSpecBundleItem {
+  kind: EditorSpecSourceKind;
+  identifier: string;
+  /** 그 항목의 판정 — 200 정상, 404 비활성·미존재(개별 엔드포인트의 404), 500 판정 실패 */
+  status: number;
+  spec: EditorSpec | null;
+  error: string | null;
+}
+
+/** 묶음 엔드포인트 응답 (`GET /api/templates/{id}/editor-spec-bundle`) */
+export interface ServeEditorSpecBundleResponse {
+  success: boolean;
+  data: {
+    identifier: string;
+    items: EditorSpecBundleItem[];
   } | null;
   error?: string;
 }
@@ -80,6 +105,12 @@ export interface LoadedEditorSpec {
    * sampleGlobal 미정의 소스는 제외된다.
    */
   sampleGlobalSources: SampleGlobalSource[];
+  /**
+   * 묶음 요청 자체가 실패했는지(4xx·5xx·네트워크·형식 밖 응답, 5xx·네트워크는 한 번 다시 물은 뒤).
+   * 참이면 확장·템플릿 스펙이 하나도 없다 — 편집기가 알림과 다시 시도 단추를 보인다(#869, 설계 확정 2026-11-09).
+   * 한 항목만 실패한 부분 실패는 거짓이다(나머지 스펙은 있다). 선택 필드 — 종전 호출자는 읽지 않아도 된다.
+   */
+  bundleFailed?: boolean;
 }
 
 export interface EditorSpecLoadOptions {
@@ -106,6 +137,10 @@ export interface EditorSpecLoadOptions {
    * 시드 없음(테스트/하위호환). 레시피 항목에 `__source:{kind:'core'}` 부착.
    */
   coreSeed?: EditorSpec;
+  /**
+   * 묶음 요청이 5xx·응답 없음으로 실패했을 때 한 번 다시 묻기 전 대기(ms). 기본 300 — 시험은 0 을 준다.
+   */
+  bundleRetryDelayMs?: number;
 }
 
 /** record 형 블록 키 — 같은 key 충돌 시 뒤 단계가 이긴다 */
@@ -166,36 +201,101 @@ function readActiveIdentifiers(key: 'activeModules' | 'activePlugins'): string[]
   return out;
 }
 
+/** 묶음 요청에 넣을 수 있는 확장 식별자 형식 — 서버 `ServeEditorSpecBundleRequest` 와 같은 규칙 */
+const BUNDLE_IDENTIFIER_PATTERN = /^[A-Za-z0-9_.-]{1,100}$/;
+
+/** 서버가 받는 식별자인지 — 형식에 맞고 `..` 가 없어야 한다 */
+function isBundleIdentifier(id: string): boolean {
+  return BUNDLE_IDENTIFIER_PATTERN.test(id) && !id.includes('..');
+}
+
+/** 묶음 항목 조회 키 — `{kind}:{identifier}` */
+function bundleKey(kind: EditorSpecSourceKind, identifier: string): string {
+  return `${kind}:${identifier}`;
+}
+
 /**
- * 단일 확장/템플릿의 editor-spec 을 fetch. 미존재/실패 시 null.
+ * 템플릿 + 활성 모듈/플러그인 editor-spec 을 묶음 엔드포인트 한 요청으로 받는다.
  *
- * @param kind 소스 종류 — URL prefix 분기 (templates/modules/plugins)
+ * 반환값은 `ordered` 와 같은 순서의 스펙 배열이다. 항목 판정은 개별 엔드포인트와 같다 —
+ * 404(비활성·미존재 확장, 스펙 미작성 아님)는 경고 없이 null, 500(그 확장의 판정 실패)은
+ * 경고 후 null 이고 나머지 항목은 그대로 쓴다. 5xx·응답 없음은 한 번 다시 묻고, 그래도 실패하면
+ * 모든 항목이 null 이다(편집 컨트롤 부재, 무손실 보존만). 형식 밖 식별자는 보내지 않는다.
+ *
+ * @param ordered 병합 순서의 소스 목록 (모듈 → 플러그인 → 템플릿)
+ * @param templateIdentifier 편집 대상 템플릿 식별자
+ * @param apiBaseUrl API base URL
+ * @param fetcher fetch 구현
+ * @param retryDelayMs 5xx·응답 없음 뒤 한 번 다시 묻기 전 대기(ms)
+ * @return ordered 순서의 스펙 배열과 묶음 전체 실패 여부
  */
-async function fetchOneSpec(
-  kind: EditorSpecSourceKind,
-  identifier: string,
+async function fetchSpecBundle(
+  ordered: Array<{ kind: EditorSpecSourceKind; id: string }>,
+  templateIdentifier: string,
   apiBaseUrl: string,
   fetcher: typeof fetch,
-): Promise<EditorSpec | null> {
-  const prefix =
-    kind === 'template' ? 'templates' : kind === 'module' ? 'modules' : 'plugins';
-  const url = `${apiBaseUrl}/${prefix}/${encodeURIComponent(identifier)}/editor-spec`;
-  try {
-    const response = await fetcher(url);
-    if (!response.ok) {
-      // 404 등은 정상 케이스(스펙 미작성 확장) — warn 없이 null
-      if (response.status !== 404) {
-        logger.warn(`fetchOneSpec: HTTP ${response.status}`, url);
+  retryDelayMs: number,
+): Promise<{ specs: Array<EditorSpec | null>; failed: boolean }> {
+  const empty = ordered.map(() => null);
+  const params = new URLSearchParams();
+  for (const o of ordered) {
+    if (o.kind === 'template') continue;
+    // 서버(ServeEditorSpecBundleRequest)는 형식 밖 식별자가 하나라도 있으면 묶음 전체를 422 로 거절한다.
+    // 종전 개별 요청은 그 확장 하나만 실패했으므로, 같은 규칙으로 미리 걸러 나머지 확장과 템플릿 스펙을 지킨다.
+    if (!isBundleIdentifier(o.id)) {
+      logger.warn(`fetchSpecBundle: ${o.kind} 식별자 형식 밖 — 묶음에서 뺍니다`, o.id);
+      continue;
+    }
+    params.append(o.kind === 'module' ? 'modules[]' : 'plugins[]', o.id);
+  }
+  const query = params.toString();
+  const url = `${apiBaseUrl}/templates/${encodeURIComponent(templateIdentifier)}/editor-spec-bundle${query ? `?${query}` : ''}`;
+  let items: EditorSpecBundleItem[] | null = null;
+  // 5xx·응답 없음은 한 번만 다시 묻는다. 종전 개별 요청은 하나가 잠깐 실패해도 그 확장만 빠졌지만,
+  // 묶음은 한 요청이라 일시 실패 한 번에 템플릿 스펙까지 빈다. 4xx(422·429 등)는 다시 물어도 같으므로 묻지 않는다.
+  for (let attempt = 0; attempt < 2 && items === null; attempt++) {
+    if (attempt > 0) await new Promise((r) => setTimeout(r, retryDelayMs));
+    let retryable = false;
+    try {
+      // base-path:allow `url` 은 `apiBaseUrl` 로 조립되고, 그 기본값이 `withBasePrefix('/api')` 다.
+      const response = await fetcher(url);
+      if (!response.ok) {
+        logger.warn(`fetchSpecBundle: HTTP ${response.status}`, url);
+        retryable = response.status >= 500;
+      } else {
+        const payload = (await response.json()) as ServeEditorSpecBundleResponse;
+        if (!payload?.success || !Array.isArray(payload.data?.items)) {
+          logger.warn('fetchSpecBundle: unexpected payload', url);
+        } else {
+          items = payload.data.items;
+        }
+      }
+    } catch (e) {
+      logger.warn('fetchSpecBundle: fetch failed', url, e);
+      retryable = true;
+    }
+    if (items === null && !retryable) break;
+  }
+  // 다시 물어도 실패했다 — 호출자가 알림을 띄우도록 알린다(조용히 빈 편집기를 보이지 않는다, #869)
+  if (items === null) return { specs: empty, failed: true };
+
+  const byKey = new Map<string, EditorSpecBundleItem>();
+  for (const item of items) {
+    if (item && typeof item.identifier === 'string') byKey.set(bundleKey(item.kind, item.identifier), item);
+  }
+  const specs = ordered.map((o) => {
+    const item = byKey.get(bundleKey(o.kind, o.id));
+    if (!item) return null;
+    if (item.status !== 200) {
+      // 404 는 비활성·미존재 확장(개별 엔드포인트의 404 와 같은 판정) — 경고 없이 건너뛴다.
+      if (item.status !== 404) {
+        logger.warn(`fetchSpecBundle: ${o.kind} ${o.id} status ${item.status}`, item.error);
       }
       return null;
     }
-    const payload = (await response.json()) as ServeEditorSpecResponse;
-    if (!payload?.success || !payload.data) return null;
-    return payload.data.spec ?? null;
-  } catch (e) {
-    logger.warn('fetchOneSpec: fetch failed', url, e);
-    return null;
-  }
+    return item.spec ?? null;
+  });
+  return { specs, failed: false };
 }
 
 /** 레시피 블록 여부 — `__source` 부착 대상인지 */
@@ -357,7 +457,11 @@ function mergeInto(dst: EditorSpec, src: EditorSpec, source?: RecipeSource): voi
 export async function loadEditorSpecBundle(
   options: EditorSpecLoadOptions,
 ): Promise<LoadedEditorSpec> {
-  const apiBaseUrl = options.apiBaseUrl ?? '/api';
+  // 기본값은 **접두사를 거친** `/api` 다. 종전 리터럴은 하위 폴더 배치
+  // (`https://host/g7/`)에서 문서 루트로 나가 편집기 스펙이 전부 404 였는데,
+  // 당시 로더는 404 를 「스펙 미작성 확장」으로 보고 `null` 을 돌려주었으므로(당시
+  // `fetchOneSpec`) 오류도 경고도 없이 **팔레트·스타일 컨트롤이 조용히 비어** 있었다.
+  const apiBaseUrl = options.apiBaseUrl ?? withBasePrefix('/api');
   const fetcher = options.fetcher ?? (typeof fetch !== 'undefined' ? fetch : undefined);
   if (!fetcher) {
     logger.warn('loadEditorSpecBundle: fetch unavailable, returning null spec');
@@ -376,8 +480,13 @@ export async function loadEditorSpecBundle(
     { kind: 'template' as const, id: options.templateIdentifier },
   ];
 
-  const fetched = await Promise.all(
-    ordered.map((o) => fetchOneSpec(o.kind, o.id, apiBaseUrl, fetcher)),
+  // 확장 수와 무관하게 요청은 한 번이다(engine-v1.95.0 — 종전 확장마다 개별 요청).
+  const { specs: fetched, failed: bundleFailed } = await fetchSpecBundle(
+    ordered,
+    options.templateIdentifier,
+    apiBaseUrl,
+    fetcher,
+    options.bundleRetryDelayMs ?? 300,
   );
 
   let merged: EditorSpec | null = null;
@@ -426,7 +535,7 @@ export async function loadEditorSpecBundle(
     if (placed !== m.nesting) m.nesting = placed;
   }
 
-  return { spec: merged, sampleGlobalSources };
+  return { spec: merged, sampleGlobalSources, bundleFailed };
 }
 
 /**

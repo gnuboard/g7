@@ -82,7 +82,9 @@ export function useInsertionPoints(params: UseInsertionPointsParams): UseInserti
     const flow = explicitFlow ?? detectContainerLayoutFlow(parentEl).kind;
 
     const parentPath = selectedPath.slice(0, -1);
-    const selfIndex = selectedPath[selectedPath.length - 1] ?? 0;
+    // 노드 path 의 끝 세그먼트는 늘 children 인덱스(number)다 — 분기·prop 슬롯 세그먼트는 끝에 오지 않는다.
+    const selfSeg = selectedPath[selectedPath.length - 1];
+    const selfIndex = typeof selfSeg === 'number' ? selfSeg : 0;
 
     // 시각 자식 분석 가능 케이스 — wrap/grid_2d 에서만 시각 행/열 매핑 사용.
     // 단일 행/열 (flex_*_single/grid_single_*) 은 단순 인덱스로 충분, block 도 동일.

@@ -6,6 +6,7 @@ import { Icon } from '../basic/Icon';
 import { Section } from '../basic/Section';
 import { Span } from '../basic/Span';
 import type { EditorAttrs } from '../../types';
+import { productRailColumnClass, useViewportWidth } from '../layout/viewportWidth';
 
 export interface ProductRailProps {
   /** 줄 제목 (레이아웃이 `$t:` 로 번역해 넘긴다) */
@@ -40,7 +41,8 @@ const LOCKED_BUTTON =
  *
  * 상품 카드를 가로 한 줄로 늘어놓고 손가락 넘김(브라우저 스크롤 + 스냅)과 이전·다음 단추로
  * 넘기는 컨테이너. 상품 배열을 받지 않고 **레이아웃이 넘긴 자식 카드**를 감싼다 — 검색 로봇용
- * HTML 에서도 안의 상품 링크가 각각 그려진다. 한 화면에 보이는 카드 수는 2(모바일)·3·4(데스크톱).
+ * HTML 에서도 안의 상품 링크가 각각 그려진다. 한 화면에 보이는 카드 수는 2(모바일)·3·4(데스크톱)이며,
+ * 엔진 폭(편집기 미리보기에서는 기기 폭)으로 고른다(`productRailColumnClass`).
  *
  * @example
  * // 레이아웃 마크업 사용 예시
@@ -67,6 +69,7 @@ export const ProductRail: React.FC<ProductRailProps> = ({
   const headingId = `${uid}-heading`;
   const trackId = `${uid}-track`;
   const trackRef = useRef<HTMLDivElement | null>(null);
+  const viewportWidth = useViewportWidth();
   const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(false);
 
@@ -145,7 +148,7 @@ export const ProductRail: React.FC<ProductRailProps> = ({
         id={trackId}
         data-product-rail-track=""
         onScroll={measure}
-        className="grid grid-flow-col auto-cols-[calc(50%_-_8px)] sm:auto-cols-[calc(33.333%_-_11px)] lg:auto-cols-[calc(25%_-_12px)] gap-4 overflow-x-auto snap-x snap-mandatory overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>*]:snap-start"
+        className={`grid grid-flow-col ${productRailColumnClass(viewportWidth)} gap-4 overflow-x-auto snap-x snap-mandatory overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>*]:snap-start`}
       >
         {children}
       </Div>

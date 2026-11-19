@@ -31,4 +31,16 @@ class CoreCacheDriver extends AbstractCacheDriver
     {
         return 'g7:core';
     }
+
+    /**
+     * 코어는 put()·putMany() 키를 키 인덱스에 적지 않습니다.
+     *
+     * 코어 드라이버는 flush() 호출처가 없고, put() 키가 IP·URL·코드마다 고유라 적으면 인덱스만 커진다.
+     *
+     * @return bool 기록 여부 (항상 false)
+     */
+    protected function recordsPlainWrites(): bool
+    {
+        return false;
+    }
 }

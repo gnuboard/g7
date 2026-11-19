@@ -26,9 +26,9 @@ use Plugins\Sirsoft\Gdpr\Tests\PluginTestCase;
  *   - 다른 스코프·다른 설정 키를 건드리지 않는다
  *   - 스크롤 위치 키가 잠금 집합에는 들어가지 않는다 (운영자가 지울 수 있어야 한다)
  *
- * @scenario scope=sessionStorage, notation=exact, settings_state=seeded, request=key_absent
+ * 축 요약(마커 아님 — 평문): scope=sessionStorage, notation=exact, settings_state=seeded, request=key_absent
  *
- * @effects upgrade_appends_scroll_positions_key_when_absent, upgrade_leaves_allowlist_untouched_when_scroll_key_present
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): upgrade_appends_scroll_positions_key_when_absent, upgrade_leaves_allowlist_untouched_when_scroll_key_present
  */
 class AppendScrollPositionsToNecessaryAllowlistTest extends PluginTestCase
 {

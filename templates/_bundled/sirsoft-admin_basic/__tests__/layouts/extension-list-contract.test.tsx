@@ -10,9 +10,13 @@
  *    `data.pagination.*` 이라 "총 0개 중 1-0개 표시" 로 고정 표기됐다.
  * 3) check-modified-layouts 호출에 onError 가 없어, 네트워크 실패 시 모달이
  *    "수정된 레이아웃이 없습니다" 라고 단언 → '모두 교체' 진행 시 수정 소실.
+ *    7.2.0(#888)부터 업데이트 창의 레이아웃 판정은 미리보기 API 한 곳이 한다 — 여는 쪽은 그 호출을 더 하지 않고,
+ *    결과를 읽는 곳도 없다(읽지 않는 상태를 쓰는 죽은 호출이었다).
  */
 
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import moduleList from '../../layouts/admin_module_list.json';
 import pluginList from '../../layouts/admin_plugin_list.json';
 import templateList from '../../layouts/admin_template_list.json';
@@ -49,6 +53,10 @@ const CHECK_SOURCES: Array<[string, unknown, string]> = [
 ];
 
 describe('확장 목록 레이아웃 — API 계약', () => {
+  /**
+   * @scenario case=list_check_updates
+   * @effects extension_list_reads_api_contract
+   */
   it.each(LIST_LAYOUTS)('%s: check-updates 는 updated_count 를 읽어야 함', (_name, layout) => {
     const json = JSON.stringify(layout);
     expect(json).toContain('response.data?.updated_count');
@@ -57,6 +65,10 @@ describe('확장 목록 레이아웃 — API 계약', () => {
     expect(json).not.toContain('response.data.update_count');
   });
 
+  /**
+   * @scenario case=list_pagination
+   * @effects extension_list_reads_api_contract
+   */
   it.each(PAGINATION_LAYOUTS)('%s: 페이지네이션은 data.pagination.* 경로여야 함', (_name, layout, ds) => {
     const json = JSON.stringify(layout);
     for (const key of ['total', 'current_page', 'last_page', 'per_page']) {
@@ -65,39 +77,36 @@ describe('확장 목록 레이아웃 — API 계약', () => {
     expect(json).toContain(`${ds}?.data?.pagination?.total`);
   });
 
-  it.each(CHECK_SOURCES)('%s: check-modified-layouts 호출에 onError 가 있어야 함', (_name, layout, kind) => {
-    const found: any[] = [];
-    const walk = (node: any) => {
-      if (Array.isArray(node)) { node.forEach(walk); return; }
-      if (!node || typeof node !== 'object') return;
-      if (node.handler === 'apiCall' && typeof node.target === 'string'
-        && node.target.includes('/check-modified-layouts')) {
-        found.push(node);
-      }
-      Object.values(node).forEach(walk);
-    };
-    walk(layout);
-
-    expect(found.length).toBeGreaterThan(0);
-    for (const call of found) {
-      // 배열이 아니라 **존재**를 본다. 액션이 하나뿐인 콜백은 굽기(`LayoutJsonWriter`)가 객체로
-      // 접고, 엔진은 두 모양을 같게 받는다(`ActionDispatcher`: `Array.isArray(action.onError)
-      // ? action.onError : [action.onError]`). 배열을 요구하면 굽기가 결코 만들지 않는 모양을
-      // 기다리게 되어, 지키려던 명제("실패 갈래가 있고 플래그를 세운다")와 무관하게 red 가 된다.
-      expect(call.onError, 'check-modified-layouts 에 실패 갈래가 없다').toBeDefined();
-      expect(JSON.stringify(call.onError)).toContain(`modified${kind}LayoutsCheckFailed`);
-      // 성공 시에는 플래그를 반드시 해제해야 재조회가 경고에 갇히지 않는다
-      expect(JSON.stringify(call.onSuccess)).toContain(`modified${kind}LayoutsCheckFailed`);
-    }
+  /**
+   * @scenario case=check_modified_on_error
+   * @effects extension_list_reads_api_contract
+   */
+  it.each(CHECK_SOURCES)('%s: 업데이트 창을 열 때 check-modified-layouts 를 부르지 않고 미리보기만 부른다 (#888)', (_name, layout, kind) => {
+    const json = JSON.stringify(layout);
+    // 판정은 미리보기(…/update/preview)가 한다 — 옛 확인 호출과 그 결과 상태는 남아 있지 않다
+    expect(json).not.toContain('/check-modified-layouts');
+    expect(json).not.toContain(`hasModified${kind}Layouts`);
+    expect(json).not.toContain(`modified${kind}LayoutsCheckFailed`);
+    expect(json).toContain('/update/preview');
+    expect(json).toContain('"fetchLayoutPreview"');
   });
 
-  it.each(MODALS)('%s 업데이트 모달: 확인 실패 분기가 있고 "수정 없음" 단언을 가로막아야 함', (_name, modal, kind) => {
+  // 7.2.0(#888)부터 업데이트 창의 레이아웃 판정은 공통 미리보기 조각이 그린다 — 「수정 없음」 단언은 미리보기가
+  // 성공(ready)했을 때만 보이고, 실패(error)하면 오류 + 다시 시도가 보이며 실행 버튼이 잠긴다.
+  /**
+   * @scenario case=update_modal_preview_gate
+   * @effects update_modal_preview_blocks_no_change_claim
+   */
+  it.each(MODALS)('%s 업데이트 모달: 확인 실패 분기가 있고 "수정 없음" 단언을 가로막아야 함', (_name, modal) => {
     const json = JSON.stringify(modal);
-    expect(json).toContain('modified_layouts_check_failed');
-    expect(json).toContain(`_global.modified${kind}LayoutsCheckFailed`);
-    // "수정된 레이아웃이 없습니다" 는 확인이 성공했을 때만 표시되어야 한다
-    expect(json).toContain(
-      `{{!_global.hasModified${kind}Layouts && !_global.modified${kind}LayoutsCheckFailed}}`
-    );
+    expect(json).toContain('"partial":"partials/_shared/_layout_sync_preview.json"');
+    expect(json).toContain("_global.layoutPreviewState !== 'ready'");
+
+    const preview = JSON.stringify(JSON.parse(readFileSync(resolve(__dirname, '../../layouts/partials/_shared/_layout_sync_preview.json'), 'utf-8')));
+    expect(preview).toContain("{{_global.layoutPreviewState === 'error'}}");
+    // 「바뀌는 화면이 없습니다」는 미리보기 결과(ready) 묶음 안에만 있다
+    const ready = preview.indexOf("{{_global.layoutPreviewState === 'ready'}}");
+    expect(ready).toBeGreaterThan(-1);
+    expect(preview.indexOf('$t:admin.layout_sync_preview.empty')).toBeGreaterThan(ready);
   });
 });

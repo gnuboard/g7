@@ -206,6 +206,9 @@
     "img_alt": {
       "label": "대체 텍스트"
     },
+    "img_thumb_preset": {
+      "label": "썸네일 규격"
+    },
     "link_href": {
       "label": "링크 주소"
     },
@@ -735,6 +738,7 @@
     "expandable_content": "펼침 콘텐츠",
     "tab_navigation": "탭 내비게이션",
     "quantity_selector": "수량 선택기",
+    "member_field_input": "회원 항목 입력칸",
     "product_image_viewer": "상품 이미지 뷰어",
     "file_uploader": "파일 업로더",
     "avatar_uploader": "아바타 업로더",
@@ -991,6 +995,9 @@
     "draft_preview": "초안 미리보기",
     "profile_password_entry": "비밀번호 확인",
     "profile_actual_edit": "정보 수정",
+    "required_info_default": "추가 정보 입력 대기",
+    "required_info_validation_failed": "추가 정보 입력 오류",
+    "required_info_saving": "추가 정보 저장 중",
     "profile_validation_failed": "검증 실패",
     "forgot_default": "입력 화면",
     "forgot_success": "메일 발송됨",
@@ -1191,6 +1198,8 @@
     "postStats": "게시글 통계",
     "posts": "게시글 목록",
     "privacyContent": "개인정보처리방침 내용",
+    "registerFields": "가입 항목",
+    "profileFields": "내 정보 항목",
     "product": "상품",
     "productDownloadableCoupons": "다운로드 가능 쿠폰",
     "products": "상품 목록",

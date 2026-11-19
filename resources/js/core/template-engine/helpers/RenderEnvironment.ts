@@ -22,7 +22,7 @@
 
 import type { TranslationContext, TranslationEngine } from '../TranslationEngine';
 import type { DataBindingEngine } from '../DataBindingEngine';
-import type { ComponentRegistry } from '../ComponentRegistry';
+import type { ComponentLookup } from '../ComponentRegistry';
 
 /**
  * 렌더 환경
@@ -43,7 +43,7 @@ export interface RenderEnvironment {
   /** 액션 처리기(미리보기에서는 격리 dispatcher) */
   actionDispatcher?: any;
   /** 컴포넌트 레지스트리(미리보기에서는 편집 대상 템플릿의 격리 레지스트리) */
-  componentRegistry?: ComponentRegistry;
+  componentRegistry?: ComponentLookup;
   /** 편집 모드 — true 면 액션을 바인딩하지 않는다(편집 모드의 클릭은 요소 선택만 의미) */
   isEditMode?: boolean;
 }

@@ -3,7 +3,7 @@
   "routes": [
     {
       "path": "*/admin",
-      "redirect": "/admin/dashboard",
+      "layout": "admin_home",
       "auth_required": true,
       "meta": {
         "title": "$t:admin.base_layout_title"
@@ -348,6 +348,15 @@
       "meta": {
         "title": "$t:admin.roles.form.edit_title",
         "permission": "core.permissions.update"
+      }
+    },
+    {
+      "path": "*/admin/schedules/queue",
+      "layout": "admin_schedule_list",
+      "auth_required": true,
+      "meta": {
+        "title": "$t:admin.schedules.page_title",
+        "permission": "core.queue_jobs.read"
       }
     },
     {

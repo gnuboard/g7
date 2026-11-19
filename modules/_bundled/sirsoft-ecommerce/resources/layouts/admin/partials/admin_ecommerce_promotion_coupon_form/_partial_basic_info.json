@@ -7,14 +7,14 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "admin-card"
+        "className": "ecommerce-admin-card"
     },
     "children": [
         {
             "type": "basic",
             "name": "H2",
             "props": {
-                "className": "card-title"
+                "className": "ecommerce-card-title"
             },
             "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.section.basic_info"
         },
@@ -22,7 +22,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "space-y-5"
+                "className": "ecommerce:space-y-5"
             },
             "children": [
                 {
@@ -197,7 +197,7 @@
                     "name": "Div",
                     "if": "{{_local.form?.issue_method === 'direct'}}",
                     "props": {
-                        "className": "flex items-center gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800"
+                        "className": "ecommerce:flex ecommerce:items-center ecommerce:gap-2 ecommerce:p-3 ecommerce:rounded-lg ecommerce:bg-blue-50 ecommerce:dark:bg-blue-900/20 ecommerce:border ecommerce:border-blue-100 ecommerce:dark:border-blue-800"
                     },
                     "children": [
                         {
@@ -206,14 +206,14 @@
                             "props": {
                                 "name": "info",
                                 "size": "sm",
-                                "className": "text-blue-500 dark:text-blue-400 flex-shrink-0"
+                                "className": "ecommerce:text-blue-500 ecommerce:dark:text-blue-400 ecommerce:flex-shrink-0"
                             }
                         },
                         {
                             "type": "basic",
                             "name": "Span",
                             "props": {
-                                "className": "text-sm text-blue-700 dark:text-blue-300"
+                                "className": "ecommerce:text-sm ecommerce:text-blue-700 ecommerce:dark:text-blue-300"
                             },
                             "text": "$t:sirsoft-ecommerce.admin.promotion_coupon.form.hint.direct_issue_guide"
                         }

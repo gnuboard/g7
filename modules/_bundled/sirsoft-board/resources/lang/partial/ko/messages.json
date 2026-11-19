@@ -54,7 +54,7 @@
     "default_set": "기본 게시판 유형이 설정되었습니다.",
     "not_found": "게시판 유형을 찾을 수 없습니다.",
     "in_use": "사용 중인 게시판 유형은 삭제할 수 없습니다.",
-    "delete_in_use": ":count개 게시판에서 사용 중인 유형은 삭제할 수 없습니다."
+    "delete_in_use": "{count}개 게시판에서 사용 중인 유형은 삭제할 수 없습니다."
   },
   "settings": {
     "fetch_success": "설정을 조회했습니다.",
@@ -62,7 +62,7 @@
     "save_success": "설정이 저장되었습니다.",
     "save_failed": "설정 저장에 실패했습니다.",
     "save_error": "설정 저장 중 오류가 발생했습니다.",
-    "bulk_apply_success": ":count개 게시판에 설정이 일괄 적용되었습니다.",
+    "bulk_apply_success": "{count}개 게시판에 설정이 일괄 적용되었습니다.",
     "bulk_apply_failed": "설정 일괄 적용에 실패했습니다.",
     "clear_cache_success": "설정 캐시가 초기화되었습니다.",
     "clear_cache_error": "설정 캐시 초기화 중 오류가 발생했습니다."

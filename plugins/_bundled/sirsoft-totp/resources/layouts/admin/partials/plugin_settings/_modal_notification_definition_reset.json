@@ -16,7 +16,7 @@
             "type": "basic",
             "name": "P",
             "props": {
-                "className": "text-gray-700 dark:text-gray-300"
+                "className": "totp:text-gray-700 totp:dark:text-gray-300"
             },
             "text": "$t:sirsoft-totp.admin.notifications.reset_modal.confirm_message"
         },
@@ -24,14 +24,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg"
+                "className": "totp:mt-4 totp:p-3 totp:bg-gray-100 totp:dark:bg-gray-700 totp:rounded-lg"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "form-sub-label"
+                        "className": "totp-form-sub-label"
                     },
                     "text": "$t:sirsoft-totp.admin.notifications.reset_modal.target_label"
                 },
@@ -39,7 +39,7 @@
                     "type": "basic",
                     "name": "Span",
                     "props": {
-                        "className": "text-primary font-medium"
+                        "className": "totp-text-primary totp:font-medium"
                     },
                     "text": "{{_global.totpResetTargetName ?? ''}}"
                 }
@@ -49,14 +49,14 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "alert-danger"
+                "className": "totp-alert-danger"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "P",
                     "props": {
-                        "className": "text-error-soft"
+                        "className": "totp-text-error-soft"
                     },
                     "text": "$t:sirsoft-totp.admin.notifications.reset_modal.warning_message"
                 }
@@ -66,7 +66,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "modal-footer-buttons"
+                "className": "totp-modal-footer-buttons"
             },
             "children": [
                 {
@@ -81,7 +81,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "totp:px-4 totp:py-2 totp:bg-white totp:dark:bg-gray-800 totp:text-gray-700 totp:dark:text-gray-300 totp:border totp:border-gray-300 totp:dark:border-gray-600 totp:rounded-lg totp:hover:bg-gray-50 totp:dark:hover:bg-gray-700 totp:disabled:opacity-50 totp:disabled:cursor-not-allowed",
                         "disabled": "{{_global.totpResettingNotification}}"
                     },
                     "text": "$t:common.cancel"
@@ -159,7 +159,7 @@
                     ],
                     "props": {
                         "type": "button",
-                        "className": "flex-center gap-2 px-4 py-2 bg-orange-700 dark:bg-orange-700 text-white dark:text-white rounded-lg hover:bg-orange-800 disabled:opacity-50 disabled:cursor-not-allowed",
+                        "className": "totp-flex-center totp:gap-2 totp:px-4 totp:py-2 totp:bg-orange-700 totp:dark:bg-orange-700 totp:text-white totp:dark:text-white totp:rounded-lg totp:hover:bg-orange-800 totp:disabled:opacity-50 totp:disabled:cursor-not-allowed",
                         "disabled": "{{_global.totpResettingNotification}}"
                     },
                     "children": [
@@ -169,7 +169,7 @@
                             "if": "{{_global.totpResettingNotification}}",
                             "props": {
                                 "name": "spinner",
-                                "className": "spinner-sm"
+                                "className": "totp-spinner-sm"
                             }
                         },
                         {

@@ -7,7 +7,7 @@
     <div data-if="{{!!_global.qnaProductImage || !!_global.qnaProductName}}" class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg mb-4 border border-gray-100 dark:border-gray-600">
       <!-- 상품 썸네일 -->
       <div data-if="{{!!_global.qnaProductImage}}" class="shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-600">
-        <img src="{{_global.qnaProductImage}}" alt="{{_global.qnaProductName ?? ''}}" class="w-full h-full object-cover"/>
+        <img src="{{_global.qnaProductImage}}" thumbPreset="sm" loading="lazy" decoding="async" alt="{{_global.qnaProductName ?? ''}}" class="w-full h-full object-cover"/>
       </div>
       <!-- 이미지 없을 때 아이콘 placeholder -->
       <div data-if="{{!_global.qnaProductImage &amp;&amp; !!_global.qnaProductName}}" class="shrink-0 w-12 h-12 rounded-lg bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
@@ -114,8 +114,10 @@
                     <toast type="success" message="$t:shop.qna.updated"/>
                   </success>
                   <fail>
+                    <!-- 추가 정보가 비어 있어 거부된 요청(403, error_code 가 required_fields_pending)이면 일반 오류 알림 대신 「추가 정보 필요」 안내 창을 연다 -->
+                    <open-modal if="{{error.error_code === 'required_fields_pending'}}" target="required_info_pending_modal"/>
                     <set-state target="global" :qnaSubmitting="false" qnaErrors="{{error.errors ?? null}}"/>
-                    <toast type="error" message="{{error.message ?? $t('shop.qna.update_failed')}}"/>
+                    <toast if="{{error.error_code !== 'required_fields_pending'}}" type="error" message="{{error.message ?? $t('shop.qna.update_failed')}}"/>
                   </fail>
                   <body title="{{_global.qnaForm.title ?? ''}}" category="{{_global.qnaForm.category ?? ''}}" content="{{_global.qnaForm.content ?? ''}}" is_secret="{{_global.qnaForm.is_secret ?? true}}"/>
                 </api-call>
@@ -130,8 +132,10 @@
                     <toast type="success" message="$t:shop.qna.submitted"/>
                   </success>
                   <fail>
+                    <!-- 추가 정보가 비어 있어 거부된 요청(403, error_code 가 required_fields_pending)이면 일반 오류 알림 대신 「추가 정보 필요」 안내 창을 연다 -->
+                    <open-modal if="{{error.error_code === 'required_fields_pending'}}" target="required_info_pending_modal"/>
                     <set-state target="global" :qnaSubmitting="false" qnaErrors="{{error.errors ?? null}}"/>
-                    <toast type="error" message="{{error.message ?? $t('shop.qna.submit_failed')}}"/>
+                    <toast if="{{error.error_code !== 'required_fields_pending'}}" type="error" message="{{error.message ?? $t('shop.qna.submit_failed')}}"/>
                   </fail>
                   <body title="{{_global.qnaForm.title ?? ''}}" category="{{_global.qnaForm.category ?? ''}}" content="{{_global.qnaForm.content ?? ''}}" is_secret="{{_global.qnaForm.is_secret ?? true}}"/>
                 </api-call>

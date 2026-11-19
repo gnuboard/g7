@@ -481,7 +481,9 @@ if (isset($_GET['ajax_action'])) {
         // 코어 첨부파일 디스크(config/attachment.php) + 공개 업로드 디스크
         $attachmentPaths = [
             'storage/app/attachments' => storage_path('app/attachments'),
-            'storage/app/public' => storage_path('app/public')
+            'storage/app/public' => storage_path('app/public'),
+            // 업로드 원본에서 만든 썸네일 파생본 — 원본과 함께 지운다
+            'storage/app/thumbnails' => storage_path('app/thumbnails'),
         ];
         foreach ($attachmentPaths as $displayName => $path) {
             $cleared = devDashboardClearDirectory($path);
@@ -535,7 +537,7 @@ if (isset($_GET['ajax_action'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ config('app.name', '그누보드7') }}</title>
     {{-- 스타일: 자체 빌드 CSS (종전 Tailwind Play CDN 대체 — 외부 도달 실패 시 화면이 무너졌다) --}}
-    <link rel="stylesheet" href="/build/core/dev-dashboard.css">
+    <link rel="stylesheet" href="{{ \App\Support\AssetUrl::sitePath('/build/core/dev-dashboard.css') }}">
     <style>
         .card-hover { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
         .card-hover:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3); }
@@ -632,7 +634,7 @@ if (isset($_GET['ajax_action'])) {
                                         <span>빌드</span>
                                         <span class="text-[10px] opacity-60">(build)</span>
                                     </button>
-                                    <button onclick="runModuleCommand('refresh-layout')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded transition-colors">
+                                    <button onclick="runModuleCommand('refresh-layout', '--layout-strategy=overwrite')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded transition-colors">
                                         <span>레이아웃 갱신</span>
                                         <span class="text-[10px] opacity-60">(refresh-layout)</span>
                                     </button>
@@ -714,7 +716,7 @@ if (isset($_GET['ajax_action'])) {
                                         <span>빌드</span>
                                         <span class="text-[10px] opacity-60">(build)</span>
                                     </button>
-                                    <button onclick="runTemplateCommand('refresh-layout')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded transition-colors">
+                                    <button onclick="runTemplateCommand('refresh-layout', '--layout-strategy=overwrite')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded transition-colors">
                                         <span>레이아웃 갱신</span>
                                         <span class="text-[10px] opacity-60">(refresh-layout)</span>
                                     </button>
@@ -784,7 +786,7 @@ if (isset($_GET['ajax_action'])) {
                                         <span>빌드</span>
                                         <span class="text-[10px] opacity-60">(build)</span>
                                     </button>
-                                    <button onclick="runPluginCommand('refresh-layout')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded transition-colors">
+                                    <button onclick="runPluginCommand('refresh-layout', '--layout-strategy=overwrite')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium rounded transition-colors">
                                         <span>레이아웃 갱신</span>
                                         <span class="text-[10px] opacity-60">(refresh-layout)</span>
                                     </button>
@@ -921,6 +923,30 @@ if (isset($_GET['ajax_action'])) {
                                     <span>오토로드 갱신</span>
                                     <span class="text-[10px] opacity-60">(extension:update-autoload)</span>
                                 </button>
+                                <button onclick="runCommand('extension:list')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>확장 상태 목록</span>
+                                    <span class="text-[10px] opacity-60">(extension:list)</span>
+                                </button>
+                                <button onclick="runCommand('extension:reset-files-from-bundled --dry-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>파일 동기화 판정</span>
+                                    <span class="text-[10px] opacity-60">(extension:reset-files-from-bundled --dry-run)</span>
+                                </button>
+                                <button onclick="runCommand('g7:migrate-plan')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>마이그레이션 계획</span>
+                                    <span class="text-[10px] opacity-60">(g7:migrate-plan)</span>
+                                </button>
+                                <button onclick="runCommand('extension:apply-deferred-cleanup --dry-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>미뤄 둔 정리 판정</span>
+                                    <span class="text-[10px] opacity-60">(extension:apply-deferred-cleanup --dry-run)</span>
+                                </button>
+                                <button onclick="runCommand('stage:apply-to-live --dry-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>운영 서버 마무리 판정</span>
+                                    <span class="text-[10px] opacity-60">(stage:apply-to-live --dry-run)</span>
+                                </button>
+                                <button onclick="runCommand('core:resync-declarations')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-violet-600 hover:bg-violet-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>코어 선언 다시 맞추기</span>
+                                    <span class="text-[10px] opacity-60">(core:resync-declarations)</span>
+                                </button>
                                 <button onclick="runCommand('extension:clear-version-cache')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>버전 캐시 초기화</span>
                                     <span class="text-[10px] opacity-60">(extension:clear-version-cache)</span>
@@ -985,6 +1011,10 @@ if (isset($_GET['ajax_action'])) {
                                     <span>코어 업데이트</span>
                                     <span class="text-[10px] opacity-60">(core:update --force) ⚠️</span>
                                 </button>
+                                <button onclick="runCommand('core:deploy-ledger-seed')" title="deploy/** 서버 설정 조각 원장만 씨앗합니다. 번들 출하 목록은 설치기(--fresh-install)만 씨앗합니다." class="inline-flex items-center gap-1.5 px-3 py-2 bg-fuchsia-600 hover:bg-fuchsia-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>서버 설정 조각 원장 씨앗</span>
+                                    <span class="text-[10px] opacity-60">(core:deploy-ledger-seed)</span>
+                                </button>
                                 <button onclick="runCommand('core:bundled-sources list')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-medium rounded transition-colors">
                                     <span>공식 번들 소스 목록</span>
                                     <span class="text-[10px] opacity-60">(core:bundled-sources list)</span>
@@ -996,6 +1026,14 @@ if (isset($_GET['ajax_action'])) {
                                 <button onclick="runCommand('vendor-bundle:verify-all')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-fuchsia-700 hover:bg-fuchsia-800 text-white text-xs font-medium rounded transition-colors">
                                     <span>전체 Vendor 검증</span>
                                     <span class="text-[10px] opacity-60">(vendor-bundle:verify-all)</span>
+                                </button>
+                                <button onclick="runCommand('custom:check')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-teal-700 hover:bg-teal-800 text-white text-xs font-medium rounded transition-colors">
+                                    <span>custom 예약 자리 점검</span>
+                                    <span class="text-[10px] opacity-60">(custom:check)</span>
+                                </button>
+                                <button onclick="runCommand('custom:vendor-verify')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-teal-800 hover:bg-teal-900 text-white text-xs font-medium rounded transition-colors">
+                                    <span>custom Vendor 검증</span>
+                                    <span class="text-[10px] opacity-60">(custom:vendor-verify)</span>
                                 </button>
                             </div>
                         </div>
@@ -1129,6 +1167,10 @@ if (isset($_GET['ajax_action'])) {
                                     <span>신뢰 프록시 점검</span>
                                     <span class="text-[10px] opacity-60">(trusted-proxy:status)</span>
                                 </button>
+                                <button onclick="runCommand('storage:paths')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>저장 경로 분류</span>
+                                    <span class="text-[10px] opacity-60">(storage:paths)</span>
+                                </button>
                                 <button onclick="runCommand('security:audit-dependencies')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>의존성 취약점 점검</span>
                                     <span class="text-[10px] opacity-60">(security:audit-dependencies)</span>
@@ -1149,6 +1191,10 @@ if (isset($_GET['ajax_action'])) {
                                     <span>스케줄 이력 정리</span>
                                     <span class="text-[10px] opacity-60">(schedules:prune-history)</span>
                                 </button>
+                                <button onclick="runCommand('g7:schedule-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>밀린 예약 작업 실행</span>
+                                    <span class="text-[10px] opacity-60">(g7:schedule-run)</span>
+                                </button>
                                 <button onclick="runCommand('activity-log:prune')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>활동 로그 정리</span>
                                     <span class="text-[10px] opacity-60">(activity-log:prune)</span>
@@ -1161,6 +1207,10 @@ if (isset($_GET['ajax_action'])) {
                                     <span>알림 중복 방지 기록 정리</span>
                                     <span class="text-[10px] opacity-60">(notification-delivery:prune)</span>
                                 </button>
+                                <button onclick="runCommand('queue:prune-records')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>큐 처리 기록·실패 작업 정리</span>
+                                    <span class="text-[10px] opacity-60">(queue:prune-records)</span>
+                                </button>
                                 <button onclick="runCommand('attachments:prune-orphans --dry-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>고아 첨부 정리 (미리보기)</span>
                                     <span class="text-[10px] opacity-60">(attachments:prune-orphans --dry-run)</span>
@@ -1168,6 +1218,22 @@ if (isset($_GET['ajax_action'])) {
                                 <button onclick="runCommand('attachments:prune-orphans')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>고아 첨부 정리 (실삭제)</span>
                                     <span class="text-[10px] opacity-60">(attachments:prune-orphans)</span>
+                                </button>
+                                <button onclick="runCommand('thumbnails:prune --dry-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>썸네일 정리 (미리보기)</span>
+                                    <span class="text-[10px] opacity-60">(thumbnails:prune --dry-run)</span>
+                                </button>
+                                <button onclick="runCommand('thumbnails:prune')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>썸네일 정리 (실삭제)</span>
+                                    <span class="text-[10px] opacity-60">(thumbnails:prune)</span>
+                                </button>
+                                <button onclick="runCommand('thumbnails:pregenerate --dry-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>기존 이미지 썸네일 만들기 (미리보기)</span>
+                                    <span class="text-[10px] opacity-60">(thumbnails:pregenerate --dry-run)</span>
+                                </button>
+                                <button onclick="runCommand('thumbnails:pregenerate')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
+                                    <span>기존 이미지 썸네일 만들기 (실행)</span>
+                                    <span class="text-[10px] opacity-60">(thumbnails:pregenerate)</span>
                                 </button>
                                 <button onclick="runCommand('storage:prune-leftovers --dry-run')" class="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium rounded transition-colors">
                                     <span>스토리지 잔존물 정리 (미리보기)</span>
@@ -1262,7 +1328,7 @@ if (isset($_GET['ajax_action'])) {
             <div class="space-y-4">
                 <h2 class="text-sm font-medium text-slate-500 uppercase tracking-wider text-left">페이지 이동</h2>
 
-                <a href="/admin" class="card-hover block bg-gradient-to-br from-slate-800/50 to-slate-800/30 backdrop-blur-lg rounded-2xl p-5 border border-slate-700/40 shadow-xl relative overflow-hidden group">
+                <a href="{{ \App\Support\AssetUrl::sitePath('/admin') }}" class="card-hover block bg-gradient-to-br from-slate-800/50 to-slate-800/30 backdrop-blur-lg rounded-2xl p-5 border border-slate-700/40 shadow-xl relative overflow-hidden group">
                     <div class="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-cyan-500/0 group-hover:from-blue-500/10 group-hover:to-cyan-500/5 transition-all duration-300"></div>
                     <div class="relative z-10 flex items-center gap-4">
                         <div class="card-icon text-4xl shrink-0">⚙️</div>
@@ -1273,7 +1339,7 @@ if (isset($_GET['ajax_action'])) {
                     </div>
                 </a>
 
-                <a href="/install" class="card-hover block bg-gradient-to-br from-slate-800/50 to-slate-800/30 backdrop-blur-lg rounded-2xl p-5 border border-slate-700/40 shadow-xl relative overflow-hidden group">
+                <a href="{{ \App\Support\AssetUrl::sitePath('/install') }}" class="card-hover block bg-gradient-to-br from-slate-800/50 to-slate-800/30 backdrop-blur-lg rounded-2xl p-5 border border-slate-700/40 shadow-xl relative overflow-hidden group">
                     <div class="absolute inset-0 bg-gradient-to-br from-purple-500/0 to-pink-500/0 group-hover:from-purple-500/10 group-hover:to-pink-500/5 transition-all duration-300"></div>
                     <div class="relative z-10 flex items-center gap-4">
                         <div class="card-icon text-4xl shrink-0">📥</div>
@@ -1612,6 +1678,7 @@ if (isset($_GET['ajax_action'])) {
             if (deleteAttachments) {
                 message += '  • storage/app/attachments/ (첨부파일)\n';
                 message += '  • storage/app/public/ (공개 업로드 파일)\n';
+                message += '  • storage/app/thumbnails/ (이미지 썸네일)\n';
                 message += '  • storage/app/modules|plugins/*/ 업로드 파일 (settings 보존)\n';
             }
             message += '\n계속하시겠습니까?';
@@ -1650,7 +1717,12 @@ if (isset($_GET['ajax_action'])) {
                 // 완료 메시지 및 버튼
                 html += `<div class="mt-3 pt-3 border-t border-slate-700/50">
                     <div class="text-emerald-400 text-[11px] font-medium mb-2">🎉 초기화 완료!</div>
-                    <a href="/install" class="inline-flex items-center gap-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors">
+                    {{-- 마운트 접두사를 실어야 한다 — 날 루트 상대 주소는 하위 폴더 배치에서
+                         사이트 밖으로 나간다(오류 없이 남의 사이트 응답을 받는다). 형제 링크들이
+                         쓰는 `url()` 대신 `AssetUrl::sitePath()` 를 쓴다: `url()` 은 이미 접두사를
+                         품은 값에 접두사를 한 번 더 싣고 프록시 배치에서 요청 호스트를 실어
+                         사이트 밖을 가리킨다. --}}
+                    <a href="{{ \App\Support\AssetUrl::sitePath('/install') }}" class="inline-flex items-center gap-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors">
                         <span>📥</span> 설치 페이지로 이동
                     </a>
                 </div>`;
@@ -2354,7 +2426,8 @@ if (isset($_GET['ajax_action'])) {
         // ==========================================
         // 모듈 커맨드 실행
         // ==========================================
-        async function runModuleCommand(action) {
+        // extra: 식별자 뒤에 붙일 옵션 — 레이아웃 갱신 버튼은 개발 중 파일 판을 바로 보려고 덮어쓰기(overwrite)를 명시한다(기본은 keep).
+        async function runModuleCommand(action, extra = '') {
             const select = document.getElementById('moduleSelect');
             const identifier = select.value;
 
@@ -2363,14 +2436,15 @@ if (isset($_GET['ajax_action'])) {
                 return;
             }
 
-            const command = `module:${action} ${identifier}`;
+            const command = `module:${action} ${identifier}`+(extra ? ' ' + extra : '');
             await runCommand(command);
         }
 
         // ==========================================
         // 템플릿 커맨드 실행
         // ==========================================
-        async function runTemplateCommand(action) {
+        // extra: 식별자 뒤에 붙일 옵션 — 레이아웃 갱신 버튼은 개발 중 파일 판을 바로 보려고 덮어쓰기(overwrite)를 명시한다(기본은 keep).
+        async function runTemplateCommand(action, extra = '') {
             const select = document.getElementById('templateSelect');
             const identifier = select.value;
 
@@ -2379,14 +2453,15 @@ if (isset($_GET['ajax_action'])) {
                 return;
             }
 
-            const command = `template:${action} ${identifier}`;
+            const command = `template:${action} ${identifier}`+(extra ? ' ' + extra : '');
             await runCommand(command);
         }
 
         // ==========================================
         // 플러그인 커맨드 실행
         // ==========================================
-        async function runPluginCommand(action) {
+        // extra: 식별자 뒤에 붙일 옵션 — 레이아웃 갱신 버튼은 개발 중 파일 판을 바로 보려고 덮어쓰기(overwrite)를 명시한다(기본은 keep).
+        async function runPluginCommand(action, extra = '') {
             const select = document.getElementById('pluginSelect');
             const identifier = select.value;
 
@@ -2395,7 +2470,7 @@ if (isset($_GET['ajax_action'])) {
                 return;
             }
 
-            const command = `plugin:${action} ${identifier}`;
+            const command = `plugin:${action} ${identifier}`+(extra ? ' ' + extra : '');
             await runCommand(command);
         }
 

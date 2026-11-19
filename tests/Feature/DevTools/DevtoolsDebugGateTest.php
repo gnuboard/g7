@@ -46,6 +46,11 @@ class DevtoolsDebugGateTest extends TestCase
      */
     private static ?string $dumpBackupDir = null;
 
+    /**
+     * 실제 덤프 디렉토리가 있으면 시험용 위치로 복사해 둔다.
+     *
+     * @return void 반환값 없음
+     */
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
@@ -61,6 +66,11 @@ class DevtoolsDebugGateTest extends TestCase
         self::$dumpBackupDir = $backupDir;
     }
 
+    /**
+     * 복사해 둔 덤프 디렉토리를 원래 자리로 되돌리고 사본을 지운다.
+     *
+     * @return void 반환값 없음
+     */
     public static function tearDownAfterClass(): void
     {
         // PHPUnit 은 테스트 실패·예외와 무관하게 이 훅을 호출한다.
@@ -77,16 +87,30 @@ class DevtoolsDebugGateTest extends TestCase
         parent::tearDownAfterClass();
     }
 
+    /**
+     * Mockery 기대를 검증하고 닫은 뒤 부모 정리를 실행한다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
-        Mockery::close();
-        parent::tearDown();
+        try {
+            Mockery::close();
+        } finally {
+            parent::tearDown();
+        }
     }
 
     /**
      * `debug.mode` 환경설정만 켜져 있어도 게이트를 통과해야 한다.
      *
      * 수정 전: HTTP 500 `Class "App\Models\Setting" not found`
+     *
+     * @scenario case=settings_debug_mode_on
+     *
+     * @effects devtools_gate_passes_on_settings_debug_mode
+     *
+     * @return void 반환값 없음
      */
     public function test_dump_state_passes_gate_via_settings_debug_mode(): void
     {
@@ -101,6 +125,12 @@ class DevtoolsDebugGateTest extends TestCase
 
     /**
      * 양쪽 모두 꺼져 있으면 403 이어야 한다 (500 이 아니라).
+     *
+     * @scenario case=dump_state_debug_off
+     *
+     * @effects devtools_post_endpoints_return_403_when_debug_off, devtools_gate_403_message_is_translated
+     *
+     * @return void 반환값 없음
      */
     public function test_dump_state_returns_403_when_debug_disabled(): void
     {
@@ -123,6 +153,12 @@ class DevtoolsDebugGateTest extends TestCase
 
     /**
      * `browser-logs` 도 동일 게이트를 사용한다.
+     *
+     * @scenario case=browser_logs_debug_off
+     *
+     * @effects devtools_post_endpoints_return_403_when_debug_off
+     *
+     * @return void 반환값 없음
      */
     public function test_browser_logs_returns_403_when_debug_disabled(): void
     {
@@ -136,6 +172,12 @@ class DevtoolsDebugGateTest extends TestCase
 
     /**
      * `.env` 의 `APP_DEBUG=true` 만으로도 통과한다 (환경설정 조회 불필요).
+     *
+     * @scenario case=app_debug_on
+     *
+     * @effects devtools_gate_passes_on_app_debug_without_settings
+     *
+     * @return void 반환값 없음
      */
     public function test_gate_passes_on_app_debug_without_settings_lookup(): void
     {
@@ -153,6 +195,12 @@ class DevtoolsDebugGateTest extends TestCase
      *
      * 수정 전: 미인증 200 + `storage/debug-dump` 전체 삭제 (게이트 전무).
      * 상태 코드만 단언하면 "403 을 돌려주면서 이미 지운" 회귀를 놓치므로 파일 불변까지 본다.
+     *
+     * @scenario case=clear_debug_off
+     *
+     * @effects devtools_clear_rejected_keeps_dump_files, devtools_gate_403_message_is_translated
+     *
+     * @return void 반환값 없음
      */
     public function test_clear_returns_403_and_keeps_dump_files_when_debug_disabled(): void
     {
@@ -189,6 +237,12 @@ class DevtoolsDebugGateTest extends TestCase
      * `DELETE clear` 는 디버그 ON 에서는 종전대로 동작해야 한다 (게이트 이관이 기능을 죽이지 않는다).
      *
      * 실 `storage/debug-dump` 를 비우지만 클래스 teardown 이 백업본으로 복원한다.
+     *
+     * @scenario case=clear_debug_on
+     *
+     * @effects devtools_clear_removes_dumps_when_debug_on
+     *
+     * @return void 반환값 없음
      */
     public function test_clear_succeeds_when_debug_enabled(): void
     {
@@ -209,6 +263,12 @@ class DevtoolsDebugGateTest extends TestCase
      * 수정 전: 게이트 부재 + `routes/web.php` User catch-all shadow 로 **HTML 404**.
      * "404 니까 안전하다" 는 우연이었다 — 제외 패턴이 `_boost` 를 빠뜨린 결과일 뿐,
      * catch-all 이 바뀌면 그대로 열린다. 그래서 403 JSON 을 단언해 게이트 도달을 증명한다.
+     *
+     * @scenario case=get_endpoints_debug_off
+     *
+     * @effects devtools_get_endpoints_return_403_json_when_debug_off, devtools_gate_403_message_is_translated
+     *
+     * @return void 반환값 없음
      */
     public function test_get_endpoints_return_403_json_when_debug_disabled(): void
     {
@@ -230,6 +290,12 @@ class DevtoolsDebugGateTest extends TestCase
 
     /**
      * GET 4종은 디버그 ON 에서 정상 응답한다 (게이트만 걸고 기능은 유지 — 설계 결정).
+     *
+     * @scenario case=get_endpoints_debug_on
+     *
+     * @effects devtools_get_endpoints_respond_when_debug_on
+     *
+     * @return void 반환값 없음
      */
     public function test_get_endpoints_respond_when_debug_enabled(): void
     {
@@ -249,6 +315,12 @@ class DevtoolsDebugGateTest extends TestCase
 
     /**
      * `log` 엔드포인트도 동일 게이트를 사용한다 (POST 3종 중 나머지 하나).
+     *
+     * @scenario case=log_debug_off
+     *
+     * @effects devtools_post_endpoints_return_403_when_debug_off
+     *
+     * @return void 반환값 없음
      */
     public function test_log_returns_403_when_debug_disabled(): void
     {
@@ -284,7 +356,7 @@ class DevtoolsDebugGateTest extends TestCase
      * `ConfigRepositoryInterface` 를 `debug.mode` 고정값으로 대체한다.
      *
      * @param  bool  $enabled  debug.mode 값
-     * @return void
+     * @return void 반환값 없음
      */
     private function mockConfigRepositoryDebugMode(bool $enabled): void
     {
@@ -304,7 +376,7 @@ class DevtoolsDebugGateTest extends TestCase
      *
      * @param  string  $from  원본 디렉토리
      * @param  string  $to  대상 디렉토리
-     * @return void
+     * @return void 반환값 없음
      */
     private static function copyDirectory(string $from, string $to): void
     {
@@ -332,7 +404,7 @@ class DevtoolsDebugGateTest extends TestCase
      * 디렉토리를 재귀 삭제한다.
      *
      * @param  string  $dir  삭제할 디렉토리 절대경로
-     * @return void
+     * @return void 반환값 없음
      */
     private static function removeDirectory(string $dir): void
     {

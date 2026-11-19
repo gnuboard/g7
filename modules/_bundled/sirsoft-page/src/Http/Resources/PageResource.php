@@ -2,6 +2,7 @@
 
 namespace Modules\Sirsoft\Page\Http\Resources;
 
+use App\DisplayName\DisplayNameAreaRegistry;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Page\Services\PageContentMediaService;
@@ -33,13 +34,15 @@ class PageResource extends BaseApiResource
                 : null,
             'seo_meta' => $this->seo_meta,
             'current_version' => $this->current_version,
+            // 작성자와 수정자 이름은 관리자 영역(`core:admin`) 표시 이름이다. 실명은 회원 조회 권한이 있는 관리자에게,
+            // 표시 이름과 다를 때만 `real_name` 으로 더해진다.
             'creator' => $this->whenLoaded('creator', fn () => [
                 'uuid' => $this->creator->uuid,
-                'name' => $this->creator->name,
+                ...$this->memberNameFields($this->creator, $request, DisplayNameAreaRegistry::AREA_ADMIN),
             ]),
             'updater' => $this->whenLoaded('updater', fn () => [
                 'uuid' => $this->updater->uuid,
-                'name' => $this->updater->name,
+                ...$this->memberNameFields($this->updater, $request, DisplayNameAreaRegistry::AREA_ADMIN),
             ]),
             // 미발행 페이지 첨부는 한시 서명 preview URL 로 직렬화한다.
             // 이 리소스는 게이트(pages.read 권한 미들웨어)를 통과한 관리자 응답에만 쓰이므로
@@ -101,7 +104,7 @@ class PageResource extends BaseApiResource
             'current_version' => $this->current_version,
             'creator' => $this->whenLoaded('creator', fn () => [
                 'uuid' => $this->creator->uuid,
-                'name' => $this->creator->name,
+                ...$this->memberNameFields($this->creator, $request, DisplayNameAreaRegistry::AREA_ADMIN),
             ]),
             ...$this->formatTimestamps(),
             ...$this->resourceMeta($request),

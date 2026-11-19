@@ -160,6 +160,17 @@ app(ConsentManager::class)->reportChange('acme-consent', ConsentSubject::guest($
 </api-call>
 ```
 
+### 5. 필수 브라우저 저장 키
+
+동의 전 방문자의 브라우저에서 「필수」 밖의 저장 키를 지우는 제공자는 다음 두 목록을 자기 필수 허용 목록에 합칩니다. 둘 다 저장소 종류(`localStorage`·`sessionStorage`·`cookie`) → 키 목록(끝 `*` 는 앞부분 매칭) 형식입니다.
+
+| 출처 | 읽는 방법 |
+| --- | --- |
+| 활성 템플릿 manifest 의 `necessary_storage` (7.1.3~) | `TemplateManager::getActiveTemplatesNecessaryStorage()` — 형식: [template-basics.md](template-basics.md#필수-브라우저-저장-키-necessary_storage--713) |
+| 코어 엔진이 쓰는 키 (7.1.5~) | `App\Support\CoreNecessaryStorage::keys()` — 지금은 비회원 최근 검색어 `localStorage` `g7_search_history`. 운영자가 지울 수 없으므로 제공자 설정 화면의 목록(카탈로그)에는 넣지 않습니다 |
+
+코어보다 낮은 판에서도 동작해야 하는 제공자는 `class_exists`·`method_exists` 로 두 진입점이 있는지 확인한 뒤 부릅니다(번들 `sirsoft-gdpr` 의 방식).
+
 ## 서버에서 동의 확인하기
 
 ```php
@@ -213,3 +224,4 @@ apply(consent?.getSnapshot());           // 구독을 먼저 걸고 현재 값�
 - [개인정보 API — `GET /api/consent`](../backend/api/privacy.md)
 - [G7Core API — `G7Core.consent`](../frontend/g7core-api.md)
 - [방문자 통계 확장 지점](analytics-extension-points.md)
+- [개발자 화면 가이드 9-3](../custom-development.md#9-3-쿠키-동의) — 엔진 없는 화면·외부 화면의 동의 읽기·저장 API 순서

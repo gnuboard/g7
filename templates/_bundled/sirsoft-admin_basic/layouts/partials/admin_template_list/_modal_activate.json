@@ -10,7 +10,239 @@
     "name": "Modal",
     "props": {
         "title": "$t:admin.templates.modals.activate_title",
-        "size": "sm"
+        "size": "sm",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "취소 — 목록을 다시 받는 대신 **카드 목록을 통째로 다시 마운트**한다. 값이 바뀐 것이\n               아니라 눌린 스위치 모양만 되돌리면 되므로 서버에 다시 묻지 않는다.",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "closeModal"
+                            },
+                            {
+                                "handler": "remount",
+                                "params": {
+                                    "componentId": "template_card_grid"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "btn btn-secondary",
+                    "disabled": "{{_global.isTemplateActivating}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:common.cancel"
+                    }
+                ]
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "활성 실행 — 성공하면 목록을 다시 받고 프론트의 확장 번들도 새로 싣는다\n               (템플릿이 바뀌면 화면을 그리는 컴포넌트가 통째로 갈린다).",
+                        "type": "click",
+                        "handler": "sequence",
+                        "actions": [
+                            {
+                                "handler": "setState",
+                                "params": {
+                                    "target": "global",
+                                    "isTemplateActivating": true
+                                }
+                            },
+                            {
+                                "handler": "apiCall",
+                                "target": "/api/admin/templates/activate",
+                                "auth_required": true,
+                                "params": {
+                                    "method": "POST",
+                                    "body": {
+                                        "template_name": "{{_global.selectedTemplate.identifier}}"
+                                    }
+                                },
+                                "onSuccess": [
+                                    {
+                                        "comment": "창 상태(selectedTemplate)는 창을 닫자마자 비운다 — 아래 목록 다시 받기·확장 다시 싣기는 응답을 기다리므로, 그 뒤에 비우면\n                     그동안 다시 연 다른 템플릿의 활성화 창 상태를 지운다. 그래서 켠 템플릿이 관리자 템플릿인지는\n                     창 상태가 아니라 활성화 응답(`response.data.template.type`)으로 가른다 — 상태를 읽으면 판정 시점에 따라 비워진 값을 본다.",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isTemplateActivating": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "closeModal"
+                                    },
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "selectedTemplate": null
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "success",
+                                            "message": "$t:admin.templates.activate_success"
+                                        }
+                                    },
+                                    {
+                                        "comment": "함께 쓰면 연동되는 확장이 없거나 꺼져 있거나 버전이 낮으면 이름·상태를 알린다(응답 integration_notices, 코어 7.1.4 · #822). 막지 않는 안내라 창을 열지 않는다.",
+                                        "handler": "toast",
+                                        "if": "{{(response?.data?.integration_notices ?? []).length !== 0}}",
+                                        "params": {
+                                            "type": "info",
+                                            "message": "$t:admin.extension_integrations.notice_toast|items={{(response?.data?.integration_notices ?? []).map(n => (n.name || n.identifier) + ' (' + $t('admin.extension_integrations.' + n.state) + ')').join(', ')}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "templates"
+                                        }
+                                    },
+                                    {
+                                        "comment": "호환성 배너도 다시 받는다 — 켠 템플릿이 새로 고치기 전까지 배너에 남지 않게 한다(#145 F8).",
+                                        "handler": "refetchDataSource",
+                                        "params": {
+                                            "dataSourceId": "auto_deactivated_banner"
+                                        }
+                                    },
+                                    {
+                                        "comment": "확장 다시 싣기는 사용자 템플릿을 켰을 때만 — 관리자 템플릿을 켜면 곧 페이지를 새로 고치고(언어팩 창이 뜨면 창이 닫힐 때),\n                     지금 그리는 관리자 화면은 방금 꺼진 관리자 템플릿이라 그 config·routes·문구 파일을 다시 받으면 404 가 난다.",
+                                        "handler": "reloadExtensions",
+                                        "if": "{{response.data?.template?.type !== 'admin'}}"
+                                    },
+                                    {
+                                        "comment": "템플릿과 함께 꺼졌던 언어팩이 있으면 되살릴지 묻는다(서버는 언어팩을 켤 때까지 그 표시를 남기므로 창을 닫으면 다음 활성화 때 다시 묻는다).\n                     관리자 템플릿은 새 화면을 그리려고 페이지를 새로 고치는데, 창을 띄운 경우에는 새로 고침을\n                     창이 닫힐 때로 미룬다(`reactivateLanguagePacksRefreshAfter`) — 곧바로 고치면 창이 사라진다.",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "reactivateLanguagePacksData": "{{(response.data?.pending_language_packs ?? [])}}",
+                                            "reactivateLanguagePacksRefreshAfter": "{{response.data?.template?.type === 'admin'}}"
+                                        }
+                                    },
+                                    {
+                                        "handler": "openModal",
+                                        "target": "template_reactivate_language_packs_modal",
+                                        "if": "{{(response.data?.pending_language_packs ?? []).length > 0 && (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.language_packs.manage')}}"
+                                    },
+                                    {
+                                        "handler": "conditions",
+                                        "conditions": [
+                                            {
+                                                "if": "{{response.data?.template?.type === 'admin' && !((response.data?.pending_language_packs ?? []).length > 0 && (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.language_packs.manage'))}}",
+                                                "then": {
+                                                    "handler": "refresh",
+                                                    "params": {
+                                                        "delayMs": 800
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "comment": "일부 항목이 실패했으면(응답 data.warnings, 코어 7.1.3) 노란 경고 결과 창을 연다 — 다른 창을 닫은 뒤라 맨 끝에 둔다.",
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "lifecycleWarnings": "{{response?.data?.warnings ?? []}}",
+                                            "lifecycleWarningsOpen": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "openModal",
+                                        "target": "lifecycle_warnings_modal",
+                                        "if": "{{(response?.data?.warnings?.length ?? 0) > 0}}"
+                                    }
+                                ],
+                                "onError": [
+                                    {
+                                        "handler": "setState",
+                                        "params": {
+                                            "target": "global",
+                                            "isTemplateActivating": false
+                                        }
+                                    },
+                                    {
+                                        "handler": "toast",
+                                        "params": {
+                                            "type": "error",
+                                            "message": "{{error.message}}"
+                                        }
+                                    }
+                                ],
+                                "errorHandling": {
+                                    "409": {
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "comment": "같은 확장에 다른 작업(설치·업데이트·활성화 등)이 진행 중이라 거절된 409(errors.operation_in_progress, 코어 7.1.5)는\n                       의존 경고·강제 활성 창 응답과 다르다 — 창을 열지 않고 서버 문구를 안내 토스트로 보인다(#161).",
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "global",
+                                                    "isTemplateActivating": false,
+                                                    "activateWarningData": "{{error.errors?.operation_in_progress ? null : error.errors}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "closeModal"
+                                            },
+                                            {
+                                                "handler": "toast",
+                                                "if": "{{error.errors?.operation_in_progress}}",
+                                                "params": {
+                                                    "type": "info",
+                                                    "message": "{{error.message}}"
+                                                }
+                                            },
+                                            {
+                                                "handler": "openModal",
+                                                "target": "template_force_activate_modal",
+                                                "if": "{{!error.errors?.operation_in_progress}}"
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
+                    "disabled": "{{_global.isTemplateActivating}}"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Icon",
+                        "if": "{{_global.isTemplateActivating}}",
+                        "props": {
+                            "name": "spinner",
+                            "className": "spinner-sm"
+                        }
+                    },
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.isTemplateActivating ? '$t:admin.templates.activating' : '$t:admin.templates.actions.activate'}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
@@ -35,242 +267,6 @@
                         "className": "mt-2 text-label-subtle"
                     },
                     "text": "$t:admin.templates.modals.activate_description"
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "modal-footer-buttons"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "취소 — 목록을 다시 받는 대신 **카드 목록을 통째로 다시 마운트**한다. 값이 바뀐 것이\n               아니라 눌린 스위치 모양만 되돌리면 되므로 서버에 다시 묻지 않는다.",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "closeModal"
-                                },
-                                {
-                                    "handler": "remount",
-                                    "params": {
-                                        "componentId": "template_card_grid"
-                                    }
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "btn btn-secondary",
-                        "disabled": "{{_global.isTemplateActivating}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:common.cancel"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "활성 실행 — 성공하면 목록을 다시 받고 프론트의 확장 번들도 새로 싣는다\n               (템플릿이 바뀌면 화면을 그리는 컴포넌트가 통째로 갈린다).",
-                            "type": "click",
-                            "handler": "sequence",
-                            "actions": [
-                                {
-                                    "handler": "setState",
-                                    "params": {
-                                        "target": "global",
-                                        "isTemplateActivating": true
-                                    }
-                                },
-                                {
-                                    "handler": "apiCall",
-                                    "target": "/api/admin/templates/activate",
-                                    "auth_required": true,
-                                    "params": {
-                                        "method": "POST",
-                                        "body": {
-                                            "template_name": "{{_global.selectedTemplate.identifier}}"
-                                        }
-                                    },
-                                    "onSuccess": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isTemplateActivating": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "closeModal"
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "success",
-                                                "message": "$t:admin.templates.activate_success"
-                                            }
-                                        },
-                                        {
-                                            "comment": "함께 쓰면 연동되는 확장이 없거나 꺼져 있거나 버전이 낮으면 이름·상태를 알린다(응답 integration_notices, 코어 7.1.4 · #822). 막지 않는 안내라 창을 열지 않는다.",
-                                            "handler": "toast",
-                                            "if": "{{(response?.data?.integration_notices ?? []).length !== 0}}",
-                                            "params": {
-                                                "type": "info",
-                                                "message": "$t:admin.extension_integrations.notice_toast|items={{(response?.data?.integration_notices ?? []).map(n => (n.name || n.identifier) + ' (' + $t('admin.extension_integrations.' + n.state) + ')').join(', ')}}"
-                                            }
-                                        },
-                                        {
-                                            "handler": "refetchDataSource",
-                                            "params": {
-                                                "dataSourceId": "templates"
-                                            }
-                                        },
-                                        {
-                                            "comment": "호환성 배너도 다시 받는다 — 켠 템플릿이 새로 고치기 전까지 배너에 남지 않게 한다(#145 F8).",
-                                            "handler": "refetchDataSource",
-                                            "params": {
-                                                "dataSourceId": "auto_deactivated_banner"
-                                            }
-                                        },
-                                        {
-                                            "handler": "reloadExtensions"
-                                        },
-                                        {
-                                            "comment": "템플릿과 함께 꺼졌던 언어팩이 있으면 되살릴지 묻는다(서버는 언어팩을 켤 때까지 그 표시를 남기므로 창을 닫으면 다음 활성화 때 다시 묻는다).\n                     관리자 템플릿은 새 화면을 그리려고 페이지를 새로 고치는데, 창을 띄운 경우에는 새로 고침을\n                     창이 닫힐 때로 미룬다(`reactivateLanguagePacksRefreshAfter`) — 곧바로 고치면 창이 사라진다.",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "reactivateLanguagePacksData": "{{(response.data?.pending_language_packs ?? [])}}",
-                                                "reactivateLanguagePacksRefreshAfter": "{{_global.selectedTemplate?.type === 'admin'}}"
-                                            }
-                                        },
-                                        {
-                                            "handler": "openModal",
-                                            "target": "template_reactivate_language_packs_modal",
-                                            "if": "{{(response.data?.pending_language_packs ?? []).length > 0 && (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.language_packs.manage')}}"
-                                        },
-                                        {
-                                            "handler": "conditions",
-                                            "conditions": [
-                                                {
-                                                    "if": "{{_global.selectedTemplate.type === 'admin' && !((response.data?.pending_language_packs ?? []).length > 0 && (current_user?.data?.permissions ?? []).some(p => (p?.identifier ?? p) === 'core.language_packs.manage'))}}",
-                                                    "then": {
-                                                        "handler": "refresh",
-                                                        "params": {
-                                                            "delayMs": 800
-                                                        }
-                                                    }
-                                                }
-                                            ]
-                                        },
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "selectedTemplate": null
-                                            }
-                                        },
-                                        {
-                                            "comment": "일부 항목이 실패했으면(응답 data.warnings, 코어 7.1.3) 노란 경고 결과 창을 연다 — 다른 창을 닫은 뒤라 맨 끝에 둔다.",
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "lifecycleWarnings": "{{response?.data?.warnings ?? []}}",
-                                                "lifecycleWarningsOpen": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "openModal",
-                                            "target": "lifecycle_warnings_modal",
-                                            "if": "{{(response?.data?.warnings?.length ?? 0) > 0}}"
-                                        }
-                                    ],
-                                    "onError": [
-                                        {
-                                            "handler": "setState",
-                                            "params": {
-                                                "target": "global",
-                                                "isTemplateActivating": false
-                                            }
-                                        },
-                                        {
-                                            "handler": "toast",
-                                            "params": {
-                                                "type": "error",
-                                                "message": "{{error.message}}"
-                                            }
-                                        }
-                                    ],
-                                    "errorHandling": {
-                                        "409": {
-                                            "handler": "sequence",
-                                            "actions": [
-                                                {
-                                                    "comment": "같은 확장에 다른 작업(설치·업데이트·활성화 등)이 진행 중이라 거절된 409(errors.operation_in_progress, 코어 7.1.5)는\n                       의존 경고·강제 활성 창 응답과 다르다 — 창을 열지 않고 서버 문구를 안내 토스트로 보인다(#161).",
-                                                    "handler": "setState",
-                                                    "params": {
-                                                        "target": "global",
-                                                        "isTemplateActivating": false,
-                                                        "activateWarningData": "{{error.errors?.operation_in_progress ? null : error.errors}}"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "closeModal"
-                                                },
-                                                {
-                                                    "handler": "toast",
-                                                    "if": "{{error.errors?.operation_in_progress}}",
-                                                    "params": {
-                                                        "type": "info",
-                                                        "message": "{{error.message}}"
-                                                    }
-                                                },
-                                                {
-                                                    "handler": "openModal",
-                                                    "target": "template_force_activate_modal",
-                                                    "if": "{{!error.errors?.operation_in_progress}}"
-                                                }
-                                            ]
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "flex-center gap-2 px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed",
-                        "disabled": "{{_global.isTemplateActivating}}"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Icon",
-                            "if": "{{_global.isTemplateActivating}}",
-                            "props": {
-                                "name": "spinner",
-                                "className": "spinner-sm"
-                            }
-                        },
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "{{_global.isTemplateActivating ? '$t:admin.templates.activating' : '$t:admin.templates.actions.activate'}}"
-                        }
-                    ]
                 }
             ]
         }

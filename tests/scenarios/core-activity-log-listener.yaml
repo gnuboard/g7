@@ -56,6 +56,7 @@ effects:
   - template_lifecycle_is_logged
   - layout_update_and_restore_are_logged
   - extension_settings_save_and_reset_are_logged
+  - extension_trust_key_create_and_delete_are_logged        # 신뢰 키 추가·삭제 훅이 활동 로그를 남긴다 (#916)
   - update_handlers_accept_a_snapshot_argument
   - missing_identifiers_fall_back_to_empty_strings
   - logging_exception_is_absorbed_into_log_error

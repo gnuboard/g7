@@ -34,6 +34,13 @@
     </fail>
   </data-source>
   <permissions/>
+  <slot name="page_top">
+    <!-- 게시판 목록 상단 히어로 자리 — 게시판마다 다른 배너를 붙일 수 있다. 히어로섹션 플러그인이 화면 주소의 게시판(route.slug)을 대상으로 그 게시판 배너 슬라이더를 붙인다. 붙인 플러그인이 없거나 그 대상에 배너가 없으면 아무것도 그리지 않는다.
+      본문 폭·화면 전체 중 어느 폭으로 그릴지는 붙는 확장이 정한다 — 그 기준이 되도록 본문 상자 클래스를 넘긴다(contentClass 기본·contentClassDesktop 데스크톱, _user_base main_content 와 같은 값) -->
+    <extension-point name="board_hero" data-ref="board_hero_slot" contentClass="px-4" contentClassDesktop="max-w-7xl mx-auto px-8">
+      <default/>
+    </extension-point>
+  </slot>
   <slot name="content">
     <!-- 로딩 스켈레톤 + 오류 페이지 (type 불명 시점에도 표시 필요 → _type_renderer 밖에 배치) -->
     <include src="partials/board/index/_loading_error.g7.html"/>

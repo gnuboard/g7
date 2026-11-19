@@ -1,4 +1,6 @@
 {
+  "zoom_image": "이미지 크게 보기",
+  "zoom_image_named": "{{name}} 크게 보기",
   "loading": "로딩 중...",
   "error": "오류가 발생했습니다",
   "error_occurred": "오류가 발생했습니다",
@@ -10,6 +12,8 @@
   "delete": "삭제",
   "deleting": "삭제 중...",
   "change": "변경",
+  "add_language": "언어 추가",
+  "remove_language": "{{language}} 입력 제거",
   "edit": "수정",
   "create": "작성",
   "search": "검색",

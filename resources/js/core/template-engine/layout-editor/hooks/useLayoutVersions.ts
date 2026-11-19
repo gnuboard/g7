@@ -24,6 +24,7 @@
 
 import { useCallback, useState } from 'react';
 import { buildAuthHeaders } from '../utils/authToken';
+import { withBasePrefix } from '../../../support/assetUrl';
 
 /**
  * 버전 기록/복원 대상 — 레이아웃 본체 또는 확장 조각.
@@ -60,6 +61,12 @@ export interface LayoutVersionChangesSummary {
   added_count: number;
   removed_count: number;
   char_diff: number;
+  /** 동기화가 남긴 판의 출처(`extension_update`·`refresh`·`decision_take_theirs`·`upgrade_step`) — 운영자가 저장한 판은 없음 */
+  source?: string | null;
+  /** 덮어쓰기 직전에 남긴 운영자 판인지 — 맨 위 판이어도 되돌릴 수 있다 */
+  before_overwrite?: boolean;
+  /** 병합 때 겹친 곳 수 */
+  conflict_count?: number;
 }
 
 /** 버전 목록 항목 — LayoutVersionResource / LayoutExtensionVersionResource 의 목록 표시 필드. */
@@ -200,7 +207,7 @@ export function useLayoutVersions(
       setError(null);
       try {
         const url = `${buildVersionsBaseUrl(templateIdentifier, target)}?limit=${nextLimit}`;
-        const response = await fetch(url, {
+        const response = await fetch(withBasePrefix(url), {
           credentials: 'same-origin',
           headers: buildAuthHeaders(),
         });
@@ -252,7 +259,7 @@ export function useLayoutVersions(
       setRestoringId(versionId);
       try {
         const url = `${buildVersionsBaseUrl(templateIdentifier, target)}/${versionId}/restore`;
-        const response = await fetch(url, {
+        const response = await fetch(withBasePrefix(url), {
           method: 'POST',
           credentials: 'same-origin',
           headers: buildAuthHeaders({ 'Content-Type': 'application/json' }),
@@ -289,7 +296,7 @@ export function useLayoutVersions(
       if (!target) return { kind: 'not_found' };
       try {
         const url = `${buildVersionsBaseUrl(templateIdentifier, target)}/${version}`;
-        const response = await fetch(url, {
+        const response = await fetch(withBasePrefix(url), {
           credentials: 'same-origin',
           headers: buildAuthHeaders(),
         });

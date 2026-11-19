@@ -14,6 +14,11 @@ axes:
 
 effects:
   - post_seo_emits_og_image_from_attachment_preview  # og:image 가 첨부 미리보기 절대 주소로 실린다
+  # #609 docblock 정리 때 사후 등재 — 모듈 SEO 선언 단위 테스트(BoardModuleSeoTest)의 og 기본값 단언
+  - og_defaults_read_image_from_thumbnail_key        # og:image 를 PostResource 의 thumbnail 키에서 꺼낸다
+  - og_defaults_omit_image_without_thumbnail         # thumbnail 이 없으면 예외 없이 image 키만 뺀다
+  - seo_image_is_absolute_without_mount_prefix       # 표준 배치에서 og:image 와 schema.image 가 절대 주소로 실린다
 
 test_files:
   - modules/_bundled/sirsoft-board/tests/Feature/Seo/PostSeoOgImageRenderingTest.php
+  - modules/_bundled/sirsoft-board/tests/Unit/BoardModuleSeoTest.php

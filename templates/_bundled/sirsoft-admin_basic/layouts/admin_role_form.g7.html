@@ -216,7 +216,7 @@
             </div>
             <div data-ref="description_field">
               <label class="form-label">$t:admin.roles.form.description</label>
-              <multilingual-input data-type="composite" name="description_raw" placeholder="$t:admin.roles.form.description_placeholder" :maxLength="500" :multiline="true" :rows="3" layout="tabs" error="{{_global.formErrors?.description || _global.formErrors?.description_raw}}"/>
+              <multilingual-input data-type="composite" name="description_raw" placeholder="$t:admin.roles.form.description_placeholder" :maxLength="500" inputType="textarea" :rows="3" layout="tabs" error="{{_global.formErrors?.description || _global.formErrors?.description_raw}}"/>
               <span data-if="{{_global.formErrors?.description || _global.formErrors?.description_raw}}" class="text-red-600 dark:text-red-400 text-xs">{{_global.formErrors?.description?.[0] ?? _global.formErrors?.description_raw?.[0] ?? ''}}</span>
             </div>
             <!-- 비밀번호 만료(#736) — 이 역할을 가진 회원에게 사이트 적용 범위와 다르게 만료를 적용하거나 뺀다. 우선순위는
@@ -245,7 +245,7 @@
         <div data-ref="permissions_section" class="admin-card">
           <h3 class="card-title card-title-aside">
             <span>$t:admin.roles.form.permissions_section</span>
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">{{(_local.form.permission_values ?? []).length}}$t:admin.roles.form.permissions_selected_suffix</span>
+            <span data-ref="permissions_selected_count" data-blur-until-loaded="{{!!query?.clone_from &amp;&amp; !route?.id &amp;&amp; clone_source === undefined}}" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">{{(_local.form.permission_values ?? []).length}}$t:admin.roles.form.permissions_selected_suffix</span>
           </h3>
           <div class="card-description">$t:admin.roles.form.permissions_hint</div>
           <tab-navigation data-type="composite" data-ref="permission_tabs" tabs="{{(permissions?.data?.data?.types ?? []).map(type => ({ id: type, label: permissions?.data?.data?.permissions?.[type]?.label ?? type, iconName: permissions?.data?.data?.permissions?.[type]?.icon ?? 'shield' }))}}" activeTabId="{{_global.activePermissionTab || permissions?.data?.data?.default_type || 'admin'}}" variant="underline">

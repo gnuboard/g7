@@ -2,8 +2,11 @@
 
 namespace App\Console\Commands\LanguagePack;
 
+use App\Console\Commands\Concerns\HandlesPackageIntegrity;
+use App\Console\Commands\Traits\HasUnifiedConfirm;
 use App\Console\Commands\Traits\LocalizesDescription;
 use App\Console\Commands\Traits\ReportsLifecycleWarnings;
+use App\Extension\Integrity\PackageIntegrityOptions;
 use App\Services\LanguagePackService;
 use Illuminate\Console\Command;
 use Throwable;
@@ -17,9 +20,14 @@ use Throwable;
  * 옵션:
  *  --force                       버전이 동일해도 강제 재적용 (확장 update --force 와 동일 의미)
  *  --source=auto|bundled|github  업데이트 소스 우선순위. auto(기본): force 시 bundled, 외 GitHub
+ *  --yes                         확인 질문만 생략 — 이 명령은 진행 확인을 묻지 않아 효과가 없다. 다른 `{type}:update` 와
+ *                                같은 형태(`-y`)로 부르는 일괄 갱신 스크립트가 언어팩에서만 「옵션 없음」으로 실패하지 않게 받는다.
+ *                                미서명 패키지 확인은 대신하지 않는다(`--allow-unsigned`)
  */
 class UpdateLanguagePackCommand extends Command
 {
+    use HandlesPackageIntegrity;
+    use HasUnifiedConfirm;
     use LocalizesDescription;
     use ReportsLifecycleWarnings;
 
@@ -29,7 +37,9 @@ class UpdateLanguagePackCommand extends Command
     protected $signature = 'language-pack:update
         {identifier : 언어팩 식별자}
         {--force : 버전 변경이 없어도 강제 재적용 (_bundled 우선)}
-        {--source=auto : 업데이트 소스 (auto|bundled|github)}';
+        {--source=auto : 업데이트 소스 (auto|bundled|github)}
+        {--y|yes : 확인 질문만 생략 — 이 명령은 진행 확인을 묻지 않음. module·plugin·template:update 와 같은 형태로 부르는 스크립트를 위해 받음}
+        {--allow-unsigned : GitHub 에서 받은 새 판이 서명되지 않았어도(또는 이 서버에서 검증할 수 없어도) 확인 없이 계속 — 답할 수 없는 실행은 이 옵션이 없으면 실패. --force·--yes 는 이 확인을 대신하지 않음}';
 
     /**
      * @param  LanguagePackService  $service  언어팩 Service
@@ -68,7 +78,11 @@ class UpdateLanguagePackCommand extends Command
             $fromVersion = $pack->version;
             // source=bundled 는 force 와 동등 (bundled 1순위 강제). source=github 는 force 무시.
             $effectiveForce = $force || $source === 'bundled';
-            $updated = $this->service->performUpdate($pack, $effectiveForce);
+            // 패키지 서명 검증 — 미서명이면 대화형은 묻고, 답할 수 없는 실행은 --allow-unsigned 없이는 실패(7.2.0)
+            $updated = $this->runWithIntegrityConsent(
+                fn (PackageIntegrityOptions $integrity) => $this->service->performUpdate($pack, $effectiveForce, $integrity),
+                new PackageIntegrityOptions((bool) $this->option('allow-unsigned'))
+            );
 
             $this->info(__('language_packs.commands.update.done', [
                 'identifier' => $updated->identifier,

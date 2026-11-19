@@ -1,0 +1,103 @@
+<!-- 기존 이미지 썸네일 만들기 창 (#869) — 환경설정 업로드 탭 「썸네일」 카드의 「기존 이미지 썸네일 만들기」가 연다.
+  여는 버튼이 `_global.thumbnailPregen` 에 소스·규격 선택지(thumbnailStats 응답)와 기본 선택, 0 으로 맞춘 진행 계수를 담는다.
+  「시작」은 부모 화면의 명명 액션 `thumbnailPregenerateStep` 을 부른다 — 그 액션이 POST /api/admin/thumbnails/pregenerate 를
+  `next_cursor` 가 null 이 될 때까지 이어 부르며 처리 건수·생성 건수·전체 건수를 이 상태에 쌓는다(한 번에 서버 설정 건수만 처리).
+  「멈춤」은 지금 요청이 끝난 뒤 다음 요청을 보내지 않게 표시만 남긴다. 「다시 시작」은 처음부터 다시 돈다 — 이미 있는 썸네일은
+  서버가 건너뛰므로 사실상 이어서 진행된다. 창을 어느 갈래로 닫든 맨 끝 표지가 멈춤 표시를 남긴다(닫으면 멈춤).
+  요청이 도는 동안(inflight)에는 시작 단추를(여는 버튼도) 잠가 두 사슬이 겹치지 않게 하고, 시작할 때마다 새 실행 토큰(runId)을 받아
+  지난 실행의 늦은 응답은 걸음 액션이 버린다(부모 화면 thumbnailPregenerateStep 주석). -->
+<partial editor_label="$t:admin.modal_label.admin_settings.settings_thumbnail_pregenerate_modal" description="기존 이미지 썸네일 만들기 모달">
+  <modal data-type="composite" data-ref="settings_thumbnail_pregenerate_modal" title="$t:admin.settings.upload.thumbnail.pregenerate_modal.title" size="lg" :closeOnOverlayClick="false">
+    <div class="space-y-4 py-2">
+      <p class="text-gray-700 dark:text-gray-300">$t:admin.settings.upload.thumbnail.pregenerate_modal.body</p>
+      <div data-ref="thumbnail_pregen_sources" class="space-y-2">
+        <div class="text-sm font-semibold text-gray-800 dark:text-gray-200">$t:admin.settings.upload.thumbnail.pregenerate_modal.sources</div>
+        <p data-if="{{(_global.thumbnailPregen?.sourceOptions ?? []).length === 0}}" class="text-label-subtle">$t:admin.settings.upload.thumbnail.pregenerate_modal.no_sources</p>
+        <div class="flex-center flex-wrap gap-x-4 gap-y-2">
+          <label data-each="src in {{_global.thumbnailPregen?.sourceOptions ?? []}}" class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+            <checkbox checked="{{(_global.thumbnailPregen?.sources ?? []).includes(src.key)}}" disabled="{{_global.thumbnailPregen?.running === true || _global.thumbnailPregen?.inflight === true}}" data-testid="{{'thumbnail-pregen-source-' + src.key}}">
+              <on type="change">
+                <!-- 소스 선택 — 체크 여부는 이 판정에서 한 번만 읽고 선택 목록을 새 배열로 갈아 끼운다. -->
+                <set-state target="global" thumbnailPregen.sources="{{$event.target.checked ? [...(_global.thumbnailPregen?.sources ?? []).filter(k => k !== src.key), src.key] : (_global.thumbnailPregen?.sources ?? []).filter(k => k !== src.key)}}"/>
+              </on>
+            </checkbox>
+            <span>{{$localized(src.label)}}</span>
+          </label>
+        </div>
+      </div>
+      <div data-ref="thumbnail_pregen_presets" class="space-y-2">
+        <div class="text-sm font-semibold text-gray-800 dark:text-gray-200">$t:admin.settings.upload.thumbnail.pregenerate_modal.presets</div>
+        <div class="flex-center flex-wrap gap-x-4 gap-y-2">
+          <label data-each="preset in {{_global.thumbnailPregen?.presetOptions ?? []}}" class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-gray-300">
+            <checkbox checked="{{(_global.thumbnailPregen?.presets ?? []).includes(preset)}}" disabled="{{_global.thumbnailPregen?.running === true || _global.thumbnailPregen?.inflight === true}}" data-testid="{{'thumbnail-pregen-preset-' + preset}}">
+              <on type="change">
+                <!-- 규격 선택 — 소스 선택과 같은 방식으로 새 배열로 갈아 끼운다. -->
+                <set-state target="global" thumbnailPregen.presets="{{$event.target.checked ? [...(_global.thumbnailPregen?.presets ?? []).filter(p => p !== preset), preset] : (_global.thumbnailPregen?.presets ?? []).filter(p => p !== preset)}}"/>
+              </on>
+            </checkbox>
+            <!-- 확장 규격은 확장이 정한 이름(현재 언어)을 위에, 식별자를 아래에 작게 — 규격 표와 같은 표기 -->
+            <span class="flex flex-col">
+              <span data-if="{{!!$localized(_global.thumbnailPregen?.presetLabels?.[preset])}}" class="text-gray-800 dark:text-gray-200" data-testid="{{'thumbnail-pregen-preset-label-' + preset}}">{{$localized(_global.thumbnailPregen?.presetLabels?.[preset])}}</span>
+              <span class="{{$localized(_global.thumbnailPregen?.presetLabels?.[preset]) ? 'font-mono text-xs text-gray-500 dark:text-gray-400' : 'font-mono'}}" data-testid="{{'thumbnail-pregen-preset-ident-' + preset}}">{{preset}}</span>
+            </span>
+          </label>
+        </div>
+      </div>
+      <!-- 진행률 — 전체 건수(total)는 첫 응답부터 안다. 처리 건수가 전체를 넘는 일이 없게 100% 로 자른다. -->
+      <div data-ref="thumbnail_pregen_progress" data-if="{{(_global.thumbnailPregen?.steps ?? 0) > 0 || _global.thumbnailPregen?.inflight === true}}" class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg space-y-2" data-testid="thumbnail-pregen-progress">
+        <div class="h-2 rounded bg-gray-200 dark:bg-gray-600">
+          <div data-ref="thumbnail_pregen_progress_bar" class="h-2 rounded {{_global.thumbnailPregen?.error ? 'bg-red-500 dark:bg-red-400' : 'bg-blue-500 dark:bg-blue-400'}}">
+            <prop name="style">
+              <field name="width" value="{{(_global.thumbnailPregen?.done ? 100 : (_global.thumbnailPregen?.total > 0 ? Math.min(100, Math.round((_global.thumbnailPregen?.processed ?? 0) / _global.thumbnailPregen.total * 100)) : 0)) + '%'}}"/>
+            </prop>
+          </div>
+        </div>
+        <div class="flex-center flex-wrap gap-x-4 gap-y-1 text-sm text-gray-700 dark:text-gray-300">
+          <span class="tabular-nums" data-testid="thumbnail-pregen-counts">$t:admin.settings.upload.thumbnail.pregenerate_modal.counts|processed={{_global.thumbnailPregen?.processed ?? 0}}|total={{_global.thumbnailPregen?.total ?? '-'}}|generated={{_global.thumbnailPregen?.generated ?? 0}}</span>
+          <span data-if="{{_global.thumbnailPregen?.inflight === true || _global.thumbnailPregen?.running === true}}" class="text-info-soft">$t:admin.settings.upload.thumbnail.pregenerate_modal.running</span>
+          <span data-if="{{_global.thumbnailPregen?.paused === true &amp;&amp; _global.thumbnailPregen?.inflight !== true &amp;&amp; _global.thumbnailPregen?.done !== true}}" class="text-warning-soft">$t:admin.settings.upload.thumbnail.pregenerate_modal.paused</span>
+          <span data-if="{{_global.thumbnailPregen?.done === true}}" class="text-label-subtle">$t:admin.settings.upload.thumbnail.pregenerate_modal.done</span>
+        </div>
+        <p data-if="{{!!_global.thumbnailPregen?.error}}" class="text-error-soft">{{_global.thumbnailPregen?.error ?? ''}}</p>
+      </div>
+    </div>
+    <footer>
+      <button type="button" class="btn btn-secondary">
+        <on type="click">
+          <!-- 닫기 — 진행 중이면 멈춤 표시만 남기고 닫는다(도는 요청은 끝까지 가고 다음 요청을 보내지 않는다). 사용량을 다시 센다. -->
+          <sequence>
+            <set-state target="global" :thumbnailPregen.paused="true" :thumbnailPregen.running="false"/>
+            <close-modal/>
+            <refetch-data-source dataSourceId="thumbnailStats"/>
+          </sequence>
+        </on>
+        <span>$t:common.close</span>
+      </button>
+      <button data-if="{{_global.thumbnailPregen?.running === true}}" type="button" class="btn btn-secondary" data-testid="thumbnail-pregen-pause">
+        <on type="click">
+          <!-- 멈춤 — 다음 요청을 보내지 않게 표시만 바꾼다. 지금 도는 요청의 응답은 그대로 쌓인다. -->
+          <set-state target="global" :thumbnailPregen.paused="true" :thumbnailPregen.running="false"/>
+        </on>
+        <icon name="pause" class="text-xs"/>
+        <span>$t:admin.settings.upload.thumbnail.pregenerate_modal.pause</span>
+      </button>
+      <button data-if="{{_global.thumbnailPregen?.running !== true}}" type="button" class="btn btn-primary" disabled="{{_global.thumbnailPregen?.inflight === true || (_global.thumbnailPregen?.sources ?? []).length === 0 || (_global.thumbnailPregen?.presets ?? []).length === 0}}" data-testid="thumbnail-pregen-start">
+        <on type="click">
+          <!-- 시작·다시 시작 — 새 실행 토큰을 받고 계수를 0 으로 되돌려 처음(cursor null)부터 사슬을 건다. 이미 만든 썸네일은 서버가 건너뛴다. -->
+          <sequence>
+            <set-state target="global" thumbnailPregen.runId="{{$uuid()}}" :thumbnailPregen.running="true" :thumbnailPregen.paused="false" :thumbnailPregen.done="false" :thumbnailPregen.cursor="null" :thumbnailPregen.processed="0" :thumbnailPregen.generated="0" :thumbnailPregen.total="null" :thumbnailPregen.steps="0" :thumbnailPregen.error="null"/>
+            <action-ref name="thumbnailPregenerateStep"/>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.thumbnailPregen?.inflight === true}}" name="spinner" class="spinner-sm"/>
+        <span>{{(_global.thumbnailPregen?.steps ?? 0) > 0 ? '$t:admin.settings.upload.thumbnail.pregenerate_modal.restart' : '$t:admin.settings.upload.thumbnail.pregenerate_modal.start'}}</span>
+      </button>
+    </footer>
+    <!-- 창 닫힘 표지 — 창이 열려 있는 동안 붙어 있다가 머리 닫기(X)·Esc 로 닫혀도 함께 내려가며 멈춤 표시를 남긴다(닫으면 멈춤). -->
+    <div class="hidden" aria-hidden="true">
+      <on event="unmount">
+        <set-state target="global" :thumbnailPregen.paused="true" :thumbnailPregen.running="false"/>
+      </on>
+    </div>
+  </modal>
+</partial>

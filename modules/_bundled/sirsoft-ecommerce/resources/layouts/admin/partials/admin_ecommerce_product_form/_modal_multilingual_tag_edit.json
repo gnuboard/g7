@@ -10,14 +10,60 @@
     "name": "Modal",
     "props": {
         "title": "{{_global.multilingualTagEdit?.editingIndex !== null ? '$t:common.edit' : '$t:common.add'}}",
-        "size": "sm"
+        "size": "sm",
+        "footer": [
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "태그 배열은 그대로 두고 창을 닫으며 편집 상태를 비운다",
+                        "type": "click",
+                        "handler": "sirsoft-ecommerce.cancelMultilingualTag"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-white ecommerce:dark:bg-gray-800 ecommerce:text-gray-700 ecommerce:dark:text-gray-300 ecommerce:border ecommerce:border-gray-300 ecommerce:dark:border-gray-600 ecommerce:rounded-lg ecommerce:hover:bg-gray-50 ecommerce:dark:hover:bg-gray-700"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "$t:common.cancel"
+                    }
+                ]
+            },
+            {
+                "type": "basic",
+                "name": "Button",
+                "actions": [
+                    {
+                        "comment": "새 태그면 끝에 붙이고 고치는 중이면 그 자리를 바꿔 상품 폼 _local 에 쓴 뒤 창을 닫는다(언어별 값이 모두 비면 반영하지 않는다)",
+                        "type": "click",
+                        "handler": "sirsoft-ecommerce.saveMultilingualTag"
+                    }
+                ],
+                "props": {
+                    "type": "button",
+                    "className": "ecommerce:px-4 ecommerce:py-2 ecommerce:bg-blue-600 ecommerce:dark:bg-blue-600 ecommerce:text-white ecommerce:rounded-lg ecommerce:hover:bg-blue-700 ecommerce:dark:hover:bg-blue-700"
+                },
+                "children": [
+                    {
+                        "type": "basic",
+                        "name": "Span",
+                        "text": "{{_global.multilingualTagEdit?.editingIndex !== null ? '$t:common.save' : '$t:common.add'}}"
+                    }
+                ]
+            }
+        ]
     },
     "children": [
         {
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "space-y-4 p-4"
+                "className": "ecommerce:space-y-4 ecommerce:p-4"
             },
             "children": [
                 {
@@ -37,14 +83,14 @@
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-center gap-2"
+                                        "className": "ecommerce-flex-center ecommerce:gap-2"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-body font-medium"
+                                                "className": "ecommerce-text-body ecommerce:font-medium"
                                             },
                                             "text": "{{localeItem.label}}"
                                         },
@@ -52,7 +98,7 @@
                                             "type": "basic",
                                             "name": "Span",
                                             "props": {
-                                                "className": "text-hint"
+                                                "className": "ecommerce-text-hint"
                                             },
                                             "text": "({{localeItem.code | uppercase}})"
                                         }
@@ -77,63 +123,10 @@
                                         "aria-label": "{{localeItem.label}}",
                                         "value": "{{_global.multilingualTagEdit?.values[localeItem.code] ?? ''}}",
                                         "placeholder": "$t:common.enter_value",
-                                        "className": "dark:focus:ring-blue-400"
+                                        "className": "ecommerce:dark:focus:ring-blue-400"
                                     }
                                 }
                             ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "type": "basic",
-            "name": "Div",
-            "props": {
-                "className": "flex justify-end gap-2 pt-4 border-t border-gray-200 dark:border-gray-700 px-4 pb-4"
-            },
-            "children": [
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "태그 배열은 그대로 두고 창을 닫으며 편집 상태를 비운다",
-                            "type": "click",
-                            "handler": "sirsoft-ecommerce.cancelMultilingualTag"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "px-4 py-2 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "$t:common.cancel"
-                        }
-                    ]
-                },
-                {
-                    "type": "basic",
-                    "name": "Button",
-                    "actions": [
-                        {
-                            "comment": "새 태그면 끝에 붙이고 고치는 중이면 그 자리를 바꿔 상품 폼 _local 에 쓴 뒤 창을 닫는다(언어별 값이 모두 비면 반영하지 않는다)",
-                            "type": "click",
-                            "handler": "sirsoft-ecommerce.saveMultilingualTag"
-                        }
-                    ],
-                    "props": {
-                        "type": "button",
-                        "className": "px-4 py-2 bg-blue-600 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-700"
-                    },
-                    "children": [
-                        {
-                            "type": "basic",
-                            "name": "Span",
-                            "text": "{{_global.multilingualTagEdit?.editingIndex !== null ? '$t:common.save' : '$t:common.add'}}"
                         }
                     ]
                 }

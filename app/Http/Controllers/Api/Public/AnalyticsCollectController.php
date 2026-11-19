@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\Base\PublicBaseController;
 use App\Http\Requests\Public\Analytics\CollectRequest;
 use App\Services\Analytics\CollectFailureLogger;
 use App\Services\Analytics\VisitService;
+use App\Support\RuntimeRole;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cookie;
 
@@ -47,6 +48,11 @@ class AnalyticsCollectController extends PublicBaseController
     public function store(CollectRequest $request): Response
     {
         $response = response()->noContent();
+
+        // 검수 서버의 방문은 운영 통계에 넣지 않는다 — 응답은 같은 204
+        if (RuntimeRole::isStage()) {
+            return $response;
+        }
 
         try {
             $config = AnalyticsConfig::fromSettings();

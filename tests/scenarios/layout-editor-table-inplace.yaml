@@ -63,6 +63,12 @@ effects:
   - inplace_gutter_add_row_col_shares_tablegridmutations_with_property_panel
   - inplace_shift_select_merge_sets_origin_span_removes_absorbed
   - inplace_merged_cell_unmerge_clears_span
+  # 연산 × span 상황 × 템플릿 매트릭스(TableInplaceOverlay.test.tsx 의 it.each 9묶음, #869)
+  - inplace_gutter_remove_row_col_shares_tablegridmutations
+  - inplace_gutter_move_follows_band_guard_and_mutations
+  - inplace_merge_tool_shares_mergecells_across_spans
+  - inplace_unmerge_disabled_without_span
+  - inplace_template_params_drive_overlay
   # 라이브(E2E)
   - live_inplace_cell_edit_save_persists_to_user_page
 

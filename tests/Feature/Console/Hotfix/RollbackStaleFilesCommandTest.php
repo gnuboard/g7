@@ -44,6 +44,55 @@ class RollbackStaleFilesCommandTest extends TestCase
     }
 
     /**
+     * 백업 선택기의 정렬이 **형제 규율**과 같다 — fail-closed + 전순서.
+     *
+     * 두 축이 각각 조용한 결함이다.
+     *   ① `filemtime()` 실패(`false`)를 0 으로 강등하면 그 백업이 맨 뒤로 밀려 롤백이
+     *      **가장 최신이 아닌** 백업을 고른다. 조회 실패는 「아주 오래됐다」가 아니다.
+     *   ② `filemtime` 은 초 해상도라 같은 초에 만들어진 두 백업의 순서가 열거 순서에
+     *      좌우된다 — 재현되지 않는 복구가 된다.
+     *
+     * 소스 계약으로 잰다. 이 명령은 실제 백업 트리를 읽어 두 상황(조회 실패 · 같은 초)을
+     * 테스트가 만들 수 없고, 그래서 종전에는 **두 축을 되돌려도 이 클래스가 전부 초록**
+     * 이었다 (R24-C M13 실측).
+     *
+     * @scenario hotfix_command_mode=diagnose
+     *
+     * @effects hotfix_command_backup_selector_is_fail_closed_with_total_order
+     *
+     * @return void 반환값 없음
+     */
+    public function test_backup_selector_keeps_the_sibling_ordering_discipline(): void
+    {
+        $source = (string) file_get_contents(
+            base_path('app/Console/Commands/Hotfix/RollbackStaleFilesCommand.php')
+        );
+
+        $this->assertStringContainsString(
+            'PHP_INT_MAX',
+            $source,
+            'filemtime 조회 실패를 보존 방향으로 접지 않는다 — 0 으로 강등하면 롤백이 가장 '
+                .'최신이 아닌 백업을 고른다'
+        );
+
+        $this->assertMatchesRegularExpression(
+            '/strcmp\s*\(/',
+            $source,
+            '마지막 결정자가 없다 — filemtime 은 초 해상도라 같은 초의 두 백업이 열거 순서에 '
+                .'좌우되고, 그러면 롤백 대상이 재현되지 않는다'
+        );
+
+        // 형제 선택기와 **같은 규율**임을 명시적으로 묶는다 — 한쪽만 고쳐지는 것이 이
+        // 결함군의 재발 형태다.
+        $sibling = (string) file_get_contents(base_path('app/Services/StorageLeftoverPruneService.php'));
+        $this->assertStringContainsString(
+            'PHP_INT_MAX',
+            $sibling,
+            '형제 선택기(pruneBackupSet)가 같은 fail-closed 규율을 잃었다'
+        );
+    }
+
+    /**
      * 시나리오 6: 백업 디렉토리 자체가 비어있음 → "백업 없음" 안내 + exit 0.
      *
      * `core_backups/` 가 비어있어야 의미 있는 케이스이므로 `--backup` 으로 비어있는 임시

@@ -17,6 +17,7 @@ use App\Rules\ValidPermissionStructure;
 use App\Rules\ValidSlotStructure;
 use App\Rules\WhitelistedEndpoint;
 use App\Services\LayoutMarkupService;
+use App\Support\LayoutErrorHandlingPrune;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Contracts\Validation\Validator;
@@ -76,7 +77,8 @@ class UpdateLayoutContentRequest extends FormRequest
         // 클라이언트 1차 마스킹(`stripInheritedFromLayoutContent`)이 누락/우회되어도 백엔드가
         // 최종 방어선으로 같은 정책을 적용한다. 정책 상세는 클라이언트 동명 함수 주석 참조.
         if (is_array($content)) {
-            $this->merge(['content' => $this->stripInheritedFromLayoutContent($content)]);
+            // 빈 동작 오류 코드 정리도 클라이언트 저장 직렬화와 같은 정책으로 다시 적용한다 (#869).
+            $this->merge(['content' => LayoutErrorHandlingPrune::prune($this->stripInheritedFromLayoutContent($content))]);
         }
 
         // 라우트 파라미터에서 templateName을 가져와 template_id로 변환

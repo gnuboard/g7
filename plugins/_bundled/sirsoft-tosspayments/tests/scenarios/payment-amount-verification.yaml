@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: path 와 check 는 서로 독립이 아니다 — 승인 전 대조
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#703 path 와 check 는 서로 독립이 아니다 — 승인 전 대조
 #   (callback_amount·order_state)는 성공 리다이렉트에만, 저장 금액·결제 조회(stored_amount·legacy_lookup)는
 #   입금통보에만 존재한다. 성립하지 않는 조합을 docblock @scenario 로 나열하면 거짓 매핑이 된다.
 #   effects 는 전부 실제 검증 메서드에 @effects 로 매핑되어 있으며 그것이 실질 커버리지다.

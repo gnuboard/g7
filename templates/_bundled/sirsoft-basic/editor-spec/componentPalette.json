@@ -39,8 +39,7 @@
         "FileUploader",
         "AvatarUploader",
         "HtmlEditor",
-        "RichTextEditor",
-        "SocialLoginButtons"
+        "RichTextEditor"
       ]
     },
     {
@@ -59,6 +58,7 @@
         "VisitorCounter",
         "UserInfo",
         "QuantitySelector",
+        "MemberFieldInput",
         "ProductImageViewer"
       ]
     }
@@ -531,21 +531,6 @@
         }
       }
     },
-    "SocialLoginButtons": {
-      "label": "$t:layout_editor.palette.social_login_buttons.label",
-      "requiresDefaultNode": true,
-      "defaultNode": {
-        "type": "composite",
-        "name": "SocialLoginButtons",
-        "props": {
-          "providers": [
-            "google",
-            "kakao",
-            "naver"
-          ]
-        }
-      }
-    },
     "ProductCard": {
       "label": "$t:layout_editor.palette.product_card.label",
       "requiresDefaultNode": true,
@@ -664,6 +649,26 @@
           "value": 1,
           "min": 1,
           "max": 99
+        }
+      }
+    },
+    "MemberFieldInput": {
+      "label": "$t:layout_editor.palette.member_field_input.label",
+      "requiresDefaultNode": true,
+      "defaultNode": {
+        "type": "composite",
+        "name": "MemberFieldInput",
+        "props": {
+          "field": {
+            "key": "sample",
+            "name": "sample",
+            "type": "text",
+            "label": "$t:layout_editor.palette.member_field_input.default_label",
+            "required": false,
+            "options": [],
+            "constraints": {}
+          },
+          "name": "sample"
         }
       }
     },

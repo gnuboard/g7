@@ -7,6 +7,7 @@ use PHPUnit\Framework\Attributes\PreserveGlobalState;
 use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 설치 로그 기록 시 UTF-8 정규화(scrub) 회귀 테스트.
@@ -32,12 +33,23 @@ use PHPUnit\Framework\TestCase;
  */
 #[RunClassInSeparateProcess]
 #[PreserveGlobalState(false)]
+/**
+ * 소유 매니페스트: installer-process-output-utf8 (마커 아님 — 평문, 테스트별 조합은 각 메서드에 둔다)
+ */
 class AddLogUtf8ScrubTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
     private static string $sharedBase = '';
 
     private static string $skipReason = '';
 
+    /**
+     * 클래스 시작 때 한 번 임시 기준 경로와 로그 디렉터리를 준비하고 설치기 설정, 상태, 진행 이벤트 소스를 읽어 들인다.
+     * 기준 경로 상수가 시스템 임시 경로 밖으로 이미 정의돼 있으면 실제 설치 로그를 지키려고 건너뛰기 사유만 남긴다.
+     *
+     * @return void 반환값 없음
+     */
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
@@ -75,6 +87,11 @@ class AddLogUtf8ScrubTest extends TestCase
         require_once dirname(__DIR__, 3).'/public/install/includes/progress-emitter.php';
     }
 
+    /**
+     * 건너뛰지 않은 실행이면 클래스가 끝날 때 임시 설치 로그를 지운다.
+     *
+     * @return void 반환값 없음
+     */
     public static function tearDownAfterClass(): void
     {
         if (self::$skipReason === '' && self::$sharedBase !== '') {
@@ -86,6 +103,11 @@ class AddLogUtf8ScrubTest extends TestCase
         parent::tearDownAfterClass();
     }
 
+    /**
+     * 건너뛰기 사유가 있으면 건너뛰고, 각 테스트 전에 설치 로그를 비운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -108,7 +130,7 @@ class AddLogUtf8ScrubTest extends TestCase
      * - 단독 0xFF (UTF-8 에서 절대 유효하지 않은 바이트)
      * - CP949 로 인코딩된 한글이 감지 실패하는 케이스 모사
      *
-     * @return array<string, array{string}>
+     * @return array<string, array{string}> 사례 이름별 [유효하지 않은 UTF-8 바이트가 든 로그 문자열]
      */
     public static function invalidUtf8Provider(): array
     {
@@ -120,6 +142,16 @@ class AddLogUtf8ScrubTest extends TestCase
         ];
     }
 
+    /**
+     * 깨진 바이트가 든 문자열을 로그에 기록해도 다시 읽은 로그 메시지가 언제나 유효한 UTF-8 인지 확인한다.
+     *
+     * @scenario output_encoding=truncated_utf8, sink=installation_log, value_position=scalar
+     *
+     * @effects unrecoverable_bytes_still_yield_encodable_utf8
+     *
+     * @param  string  $rawMessage  유효하지 않은 UTF-8 바이트가 든 로그 문자열
+     * @return void 반환값 없음
+     */
     #[Test]
     #[DataProvider('invalidUtf8Provider')]
     public function addlog_stores_valid_utf8_even_for_invalid_input(string $rawMessage): void
@@ -146,6 +178,16 @@ class AddLogUtf8ScrubTest extends TestCase
         );
     }
 
+    /**
+     * 깨진 바이트가 든 로그를 담은 폴링 응답 구조를 JSON 으로 바꿔도 false 나 빈 본문이 나오지 않는지 확인한다.
+     *
+     * @scenario output_encoding=truncated_utf8, sink=polling_state_response, value_position=nested_array_value
+     *
+     * @effects polling_response_parses_after_invalid_utf8_log, response_body_never_empty
+     *
+     * @param  string  $rawMessage  유효하지 않은 UTF-8 바이트가 든 로그 문자열
+     * @return void 반환값 없음
+     */
     #[Test]
     #[DataProvider('invalidUtf8Provider')]
     public function polling_response_json_encode_never_returns_false(string $rawMessage): void
@@ -178,6 +220,12 @@ class AddLogUtf8ScrubTest extends TestCase
      *
      * 이전 구현은 mb_scrub 단독이라 한글이 물음표/대체문자로 뭉개졌다.
      * 로그는 운영자가 원인을 찾는 유일한 단서이므로 읽을 수 있어야 한다 (gnuboard/g7#62).
+     *
+     * @scenario output_encoding=cp949_korean, sink=installation_log, value_position=scalar, locale=ko
+     *
+     * @effects korean_account_name_restored_exactly
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function addlog_restores_cp949_korean_output(): void
@@ -200,6 +248,15 @@ class AddLogUtf8ScrubTest extends TestCase
         );
     }
 
+    /**
+     * 정상 UTF-8 한글 로그가 정규화를 거친 뒤에도 한 글자도 바뀌지 않는지 확인한다.
+     *
+     * @scenario output_encoding=utf8, sink=installation_log, value_position=scalar
+     *
+     * @effects valid_utf8_passes_through_unchanged
+     *
+     * @return void 반환값 없음
+     */
     #[Test]
     public function addlog_preserves_valid_utf8_korean_unchanged(): void
     {
@@ -227,6 +284,13 @@ class AddLogUtf8ScrubTest extends TestCase
      * SseEmitter::emit 은 내부에서 즉시 flush() 하므로 ob_get_clean() 으로 출력을 캡처할 수 없다
      * (SSE 스트리밍 설계상 의도된 동작). 따라서 emit 이 사용하는 인코딩 계약을 직접 검증한다:
      * JSON_INVALID_UTF8_SUBSTITUTE 를 적용하면 invalid UTF-8 이 섞여도 false 가 아니어야 한다.
+     *
+     * @scenario output_encoding=truncated_utf8, sink=sse_event, value_position=nested_array_value
+     *
+     * @effects sse_data_line_never_empty
+     *
+     * @param  string  $rawMessage  유효하지 않은 UTF-8 바이트가 든 로그 문자열
+     * @return void 반환값 없음
      */
     #[Test]
     #[DataProvider('invalidUtf8Provider')]
@@ -258,13 +322,20 @@ class AddLogUtf8ScrubTest extends TestCase
      * 가드는 인라인 플래그에서 공용 헬퍼 installer_json_encode 로 옮겨졌다.
      * 헬퍼는 값을 정규화하고 substitute 를 적용하며, 실패해도 파싱 가능한 JSON 을 돌려주므로
      * 빈 data 라인이 나갈 수 있는 경로가 없다. 계약은 그대로이고 수단만 단일화됐다.
+     *
+     * @scenario sink=sse_event
+     *
+     * @effects sse_emitter_routes_through_guarded_encoder
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function sse_emitter_source_routes_through_guarded_encoder(): void
     {
-        $source = (string) file_get_contents(
+        // 주석을 지운 뒤 대조한다 — 원문에는 주석 처리된 배선도 글자로 남아, 원문 대조는 「그 배선이 살아 있다」를 증명하지 못한다 (12차 메타 검사 ①).
+        $source = $this->stripComments((string) file_get_contents(
             dirname(__DIR__, 3).'/public/install/includes/progress-emitter.php'
-        );
+        ));
 
         // SseEmitter 클래스 본문 추출
         $classStart = strpos($source, 'class SseEmitter');

@@ -184,7 +184,7 @@ test.describe('배송정책 클레임 확장', () => {
 
   test('산정 방식이 원 정책 재계산이면 고정액 입력이 사라지고 안내가 대신 선다', async ({ page, request, shippingPolicyToken }) => {
     // 형제 케이스와 같은 상한. 기본 30초는 API 왕복 + 페이지 로드 + 30초 가시성 대기를
-    // 담기에 좁아, 배치 실행에서 비결정적 timeout 이 난다(13차 G1 과 같은 결).
+    // 담기에 좁아, 배치 실행에서 비결정적 timeout 이 난다(앞서 고친 것과 같은 결).
     test.setTimeout(120_000);
 
     const policyId = await discoverPolicyId(request, shippingPolicyToken);

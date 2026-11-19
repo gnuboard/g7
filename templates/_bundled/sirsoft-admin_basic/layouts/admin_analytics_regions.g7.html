@@ -99,10 +99,12 @@
     </action>
   </init>
   <slot name="content">
-    <div data-ref="analytics_regions_content" class="admin-page-content-responsive-fluid">
+    <div data-ref="analytics_regions_content" class="p-4 bg-gray-50 dark:bg-gray-900">
+      <responsive on="640-1023" class="p-6 bg-gray-50 dark:bg-gray-900"/>
+      <responsive on="1024-" class="p-8 bg-gray-50 dark:bg-gray-900"/>
       <div data-ref="page_header" class="flex-between mb-4">
         <div>
-          <h1 class="page-title">$t:admin.analytics.regions.title</h1>
+          <h1 class="text-xl font-semibold text-gray-900 dark:text-white"><responsive on="640-" class="text-2xl font-semibold text-gray-900 dark:text-white"/>$t:admin.analytics.regions.title</h1>
           <p class="text-label-subtle mt-1">$t:admin.analytics.regions.description</p>
         </div>
       </div>

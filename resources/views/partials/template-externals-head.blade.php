@@ -10,7 +10,7 @@
      strict CSP(`script-src 'self'`)에서도 동작하도록 실행 코드는 정적 파일
      `public/assets/core/js/g7-shell-head.js` 에 두고, 서버 값은 비실행 JSON 데이터 블록으로만
      넘긴다(#158). 인라인 `<script>`·on* 속성을 다시 넣지 않는다. --}}
-        <script type="application/json" id="g7-shell-head-data">@json(['cacheVersion' => (int) ($extensionCacheVersion ?? 0)])</script>
+        <script type="application/json" id="g7-shell-head-data">@json(['cacheVersion' => (int) ($extensionCacheVersion ?? 0), 'basePath' => \App\Support\AssetUrl::basePrefix()])</script>
         <script src="{{ asset('assets/core/js/g7-shell-head.js') }}?v={{ file_exists(public_path('assets/core/js/g7-shell-head.js')) ? filemtime(public_path('assets/core/js/g7-shell-head.js')) : 0 }}"></script>
 @foreach($resourceHints as $external)
         <link{!! \App\Support\TemplateExternals::renderAttributes(\App\Support\TemplateExternals::linkAttributes($external)) !!}>

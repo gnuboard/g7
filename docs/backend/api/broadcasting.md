@@ -8,7 +8,7 @@
 
 ```text
 1. 이 문서는 실제 API 호출로 실측한 Broadcasting 엔드포인트 레퍼런스입니다
-2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(curl) + 실측 응답 필드 표 + 응답 예시(envelope)
+2. 각 엔드포인트: 메서드/URI/권한 + 요청 파라미터 표 + 요청 예시(raw HTTP) + 실측 응답 필드 표 + 응답 예시(envelope)
 3. 응답 필드의 예시값·응답 예시 JSON 은 실제 호출 응답에서 관측된 값입니다
 4. 갱신: 코드 변경 후 php artisan api:docgen 재실행
 5. 설명(TODO) 칸은 사람이 채웁니다
@@ -59,6 +59,8 @@ _이 엔드포인트는 G7 공통 응답 봉투(`success`/`message`/`data`)를 �
 | 403 | Forbidden | 웹소켓 사용 OFF(`broadcasting.default === 'null'`) 로 채널 인증이 거부된 경우, 또는 요청한 채널의 인증 콜백이 `false` 를 반환한 경우(권한 부족·타 사용자 채널 구독 시도 등) |
 
 <!-- @generated:end -->
+
+
 
 **설명** WebSocket 프라이빗/프레즌스 채널 구독 시 Laravel Broadcast 채널 인증을 수행하는 엔드포인트입니다. `auth:sanctum` 토큰으로 인증하며, 웹소켓 사용이 OFF(`broadcasting.default === 'null'`)이면 채널 인증을 거부해 403을 반환합니다(reverb.key 무력화를 우회한 직접 연결 시도까지 차단). 컨트롤러 없이 라우트 클로저가 토글 가드를 적용한 뒤 `Broadcast::auth`에 위임하며, 실시간 이벤트 구독을 위해 클라이언트 브로드캐스팅 라이브러리가 자동 호출합니다.
 

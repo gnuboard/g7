@@ -1,0 +1,22 @@
+feature: 연간 개인정보 이용내역 안내의 받는 사람 이름 (#490)
+
+description: |
+  연간 안내는 회원 본인에게 간다. 알림 데이터의 받는 사람 이름(`recipient_name`)은 회원 이름 컬럼이 아니라 자리표시
+  (`{recipient_name}`)이고, 코어가 받는 사람과 채널마다 알림 영역 표시 이름으로 푼다. 설정을 바꾸지 않은 사이트는 수정 전과
+  같은 이름이 나간다.
+
+  축은 하나(`case`)다.
+
+axes:
+  case:
+    - extract_recipient_name_placeholder
+    - delivered_nickname_notification_area
+    - delivered_default_site
+
+effects:
+  - annual_notice_recipient_name_is_placeholder
+  - delivered_mail_uses_notification_area_name
+  - delivered_mail_name_unchanged_on_default_site
+
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/tests/Feature/AnnualNoticeRecipientNameTest.php

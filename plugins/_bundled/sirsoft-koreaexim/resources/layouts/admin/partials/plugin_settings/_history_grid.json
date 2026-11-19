@@ -8,7 +8,7 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "admin-card overflow-x-auto"
+        "className": "koreaexim-admin-card koreaexim:overflow-x-auto"
     },
     "children": [
         {
@@ -93,7 +93,7 @@
                                 "type": "basic",
                                 "name": "Span",
                                 "props": {
-                                    "className": "{{['success','partial','dry_run'].includes(row.status) ? 'text-green-700 dark:text-green-300' : ['no_data','skipped'].includes(row.status) ? 'text-gray-600 dark:text-gray-300' : 'text-red-700 dark:text-red-300'}}",
+                                    "className": "{{(row.status === 'success' || row.status === 'partial' || row.status === 'dry_run') ? 'koreaexim:text-green-700 koreaexim:dark:text-green-300' : (row.status === 'no_data' || row.status === 'skipped') ? 'koreaexim:text-gray-600 koreaexim:dark:text-gray-300' : 'koreaexim:text-red-700 koreaexim:dark:text-red-300'}}",
                                     "title": "{{row.message}}"
                                 },
                                 "text": "{{row.status_label}}"
@@ -114,7 +114,7 @@
                         "type": "basic",
                         "name": "Div",
                         "props": {
-                            "className": "p-3"
+                            "className": "koreaexim:p-3"
                         },
                         "children": [
                             {
@@ -130,7 +130,7 @@
                                     "item_var": "item"
                                 },
                                 "props": {
-                                    "className": "flex flex-wrap gap-3 py-2 border-b border-gray-200 dark:border-gray-700"
+                                    "className": "koreaexim:flex koreaexim:flex-wrap koreaexim:gap-3 koreaexim:py-2 koreaexim:border-b koreaexim:border-gray-200 koreaexim:dark:border-gray-700"
                                 },
                                 "children": [
                                     {

@@ -48,7 +48,7 @@ class BackfillIdentityClaimsTest extends PluginTestCase
     /**
      * 같은 해시는 먼저 가입한 회원이 선점하고, 공유 해시는 warning 으로 남기며 records 는 그대로인지 확인합니다.
      *
-     * @scenario upgrade=backfill, stored=shared_and_unique_hashes
+     * 케이스(마커 아님 — 평문): upgrade backfill · stored shared_and_unique_hashes — 이 파일 안의 구분자라 매니페스트 축이 아니다. 매핑은 아래 @effects.
      *
      * @effects backfill_first_registered_user_holds_claim, backfill_warns_shared_identity_hash
      *
@@ -85,7 +85,7 @@ class BackfillIdentityClaimsTest extends PluginTestCase
     /**
      * 다시 실행해도 선점이 바뀌지 않고, 백필 전에 이미 있던 선점도 덮어쓰지 않는지 확인합니다.
      *
-     * @scenario upgrade=backfill, stored=rerun_with_existing_claim
+     * 케이스(마커 아님 — 평문): upgrade backfill · stored rerun_with_existing_claim — 이 파일 안의 구분자라 매니페스트 축이 아니다. 매핑은 아래 @effects.
      *
      * @effects backfill_is_idempotent
      *

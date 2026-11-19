@@ -59,7 +59,7 @@ _목록 응답: `data.data[]` 배열 항목의 필드 + `data.pagination`._
 | name_localized | string | `상품명` | 현재 로케일로 해석된 상품명 |
 | product_code | string | `P0000001` | 상품 코드 |
 | sku | string \| null | `SKU-001` | 재고 관리 코드 |
-| thumbnail_url | string \| null | `/storage/products/thumb.jpg` | 대표 썸네일 이미지 URL — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
+| thumbnail_url | string \| null | `/storage/products/thumb.jpg` | 대표 썸네일 이미지 URL(항상 API 서빙 경로 — 화면이 `?size=` 를 붙인다) — 상품 이미지가 없으면 상세설명의 첫 내부 이미지 URL 로 폴백한다(외부 주소 이미지는 제외 — 1.2.0+) |
 | list_price | number | `30000` | 정가 (기본 통화 기준 반올림) |
 | list_price_formatted | string | `30,000원` | 정가 표시용 포맷 문자열 |
 | selling_price | number | `24000` | 판매가 (기본 통화 기준 반올림) |
@@ -242,7 +242,7 @@ HTTP/1.1 200
 | 상태코드 | 의미 | 발생 조건 |
 | --- | --- | --- |
 | 401 | Unauthenticated | 유효한 Bearer 토큰이 없거나 만료된 경우 |
-| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`error.errors` 에 필드별 메시지) |
+| 422 | Unprocessable Entity | 요청 파라미터가 검증 규칙을 위반한 경우 (`errors` 에 필드별 메시지) |
 | 500 | Internal Server Error | 서버 내부 오류 (`찜 처리에 실패했습니다.`) — 도메인 규칙 위반이 아닌 예외는 4xx 로 뭉개지 않고 500 으로 구분한다 |
 
 <!-- @generated:end -->
@@ -260,7 +260,7 @@ HTTP/1.1 200
 
 | 이름 | 위치 | 타입 | 필수 | 허용값 | 용도 |
 | --- | --- | --- | --- | --- | --- |
-| id | path | string | 예 | — | 대상 리소스의 식별자 |
+| id | path | integer | 예 | — | 대상 리소스의 식별자 |
 
 **요청 예시**
 

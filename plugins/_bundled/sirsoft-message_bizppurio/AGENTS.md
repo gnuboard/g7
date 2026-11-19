@@ -79,6 +79,8 @@
 드라이버는 provider boot 에서 코어 알림 채널 매니저에 등록하며, 코어 7.1.5 이상에서는 플러그인이
 활성일 때만 등록합니다(`isExtensionActive()` 게이트 — 비활성 플러그인의 채널은 코어가 사용 가능 채널에서
 빼므로 발송 경로가 드라이버를 찾지 않음).
+본문의 `#{변수}` 는 알림 data 를 받는 사람 언어로 해석한 값(`GenericNotification::getDataFor($notifiable)`)으로
+바꾼다 — `getData()` 를 그대로 쓰면 언어별 값(`{ko: …, en: …}`)이 배열로 남아 치환되지 않는다(코어 7.2.0).
 
 **결과 수신**: 비즈뿌리오가 `POST /webhook` 으로 결과 통보 →
 `BizppurioWebhookIpWhitelist` 미들웨어가 발신 IP 를 검사 → `WebhookReportService` 가 결과
@@ -121,6 +123,8 @@ trait 의 전체 규칙과 조건부 검증(`validateContentConditionals`)을 �
 알림톡 결과가 함께 보이는 것이 이 연결 덕분입니다. 이 리스너는 **동기**(`'sync' => true`)로 둡니다 —
 드라이버가 같은 프로세스에 남긴 refkey 를 꺼내 쓰므로 큐로 보내면 연결이 항상 실패합니다(코어 7.1.1 부터
 코어 발송 로그도 동기 기록). `SendMessageJob` 은 이미 접수·확정된 refkey 를 다시 보내지 않습니다(재시도 중복 방지).
+**제거와 데이터(코어 7.2.0)**: `uninstall()` 은 데이터 보존 제거에서도 불린다 — 메뉴는 지우지 않는다. 메뉴·권한·역할·알림 정의·본인확인 정책·스케줄은 「데이터도 함께 삭제」를 고른 제거에서 코어가 지운다(운영자가 만든 자식 메뉴는 최상위로 올리고, 운영자가 고친 항목은 지우기 직전 활동 로그에 남긴다). 플러그인이 코어 행에 더한 데이터는 `uninstallData()` 에서 지운다.
+
 <!-- @intent END -->
 
 ## 4. 확장점
@@ -189,7 +193,7 @@ HookManager::addAction(
 - [ ] 스키마 변경 시 마이그레이션(한국어 comment + `down()`) + 기설치본 백필용 업그레이드 스텝
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=plugin:sirsoft-message_bizppurio` 재실행 + `docs/api/**` 갱신
-- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 클래스는 자기 앞글자(`bizppurio:` 접두 유틸리티 · `bizppurio-*`)로만 쓰고, 새 클래스를 쓰면 `php artisan plugin:build sirsoft-message_bizppurio --production` 으로 `dist/css/plugin.css` 를 다시 만든다(템플릿 CSS 에 기대지 않는다)
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
 - [ ] 다국어 값(JSON 다국어 컬럼·설정)을 표시용으로 고를 때는 `App\Support\LocalizedValue::pick($value)` — 요청 언어 → 사이트 기본 언어 → 영어 순(7.1.1, #148). `['ko']`·`config('app.fallback_locale')` 고정 대체는 강제 검사(`tests/Unit/I18n/MultilingualValueFallbackGuardTest.php`)가 막는다
@@ -216,6 +220,7 @@ HookManager::addAction(
 | 크리덴셜(비밀번호·API 키·발신프로필 키)을 프론트에 노출 | `expose: false` + `sensitive: true` 유지 | 발송 권한이 곧 비용이다 |
 | 일시 오류와 영구 실패를 같은 방식으로 재시도 | 결과 코드 4분류를 따른다 | 영구 실패를 재시도하면 비용만 늘고, 일시 오류를 포기하면 발송이 누락된다 |
 | 문자 본문이 없는 언어에 기본 언어 본문도 없이 발송 시도 | 두 단계 폴백 후 그 알림의 문자 발송을 건너뛴다 | 빈 본문 발송은 비용이 나가면서 수신자에게 아무 정보도 주지 않는다 |
+| 템플릿 이미지 업로드(`BizppurioTemplateService::uploadImage()`)에서 파일 이름을 `UploadedFileName::original()` 로 되돌려 카카오에 보내기 | 브라우저가 보낸 이름(`getClientOriginalName()`)을 그대로 넘긴다 | 이 이름은 저장하지 않고 multipart 요청으로 외부 API 에 다시 실린다. HTTP 클라이언트는 `filename` 의 따옴표와 줄바꿈을 이스케이프하지 않으므로, 되돌린 `"`, CR, LF 가 나가는 요청 머리글을 깨뜨린다 |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -223,10 +228,10 @@ HookManager::addAction(
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 46개 | `plugins/_bundled/sirsoft-message_bizppurio/tests` |
+| PHPUnit | 48개 | `plugins/_bundled/sirsoft-message_bizppurio/tests` |
 | Vitest | 24개 | `vitest.config.ts` |
 | Playwright | 3개 | `tests/Playwright` |
-| 시나리오 매니페스트 | 29개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 33개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 
@@ -261,26 +266,22 @@ cd plugins/_bundled/sirsoft-message_bizppurio && npm run test:e2e -- specs/<대�
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->
 
-## 확장 조각의 CSS 클래스 규약
+## 화면 클래스 규약 — 플러그인 자기 CSS
 
-resources/extensions/ 아래 의 조각은 **다른 패키지의 화면 안에서** 그려진다. 그래서 여기 쓰는
-클래스는 그 화면을 소유한 **템플릿의 CSS 에 실재해야** 한다.
+레이아웃·확장 조각·핸들러가 쓰는 클래스는 모두 이 플러그인 CSS(`resources/css/main.css` → `dist/css/plugin.css`)에
+정의된 **자기 앞글자** 이름이다(`plugin.json` 의 `assets.css.namespace` = `bizppurio`). 조각이 관리자·사용자 어느 템플릿
+화면에 들어가든, 템플릿이 Tailwind 를 쓰든 안 쓰든 같은 모양으로 보인다.
 
-두 가지를 지킨다.
+1. **유틸리티는 접두 유틸리티로 쓴다** — `bizppurio:flex`, `bizppurio:dark:bg-gray-800` 처럼. 이 플러그인이 Tailwind 를 자기
+   작성 도구로 빌드한다(접두 빌드, 페이지 초기화 규칙 없음). 템플릿 CSS 에 그 규칙이 있는지와 무관하다.
+2. **템플릿 의미 클래스에 해당하는 이름은 `bizppurio-` 판본을 쓴다** — `bizppurio-section-heading-md`·`bizppurio-form-error` 등.
+   정의는 생성 파일 `resources/css/g7-extension.generated.css` 의 가장 낮은 칸(`@layer g7-extension`)에 있어 템플릿이
+   덮을 수 있다. 템플릿에 없던 의미 클래스를 새로 쓰려면 변환 도구(`node scripts/extension-css/convert-layout-classes.mjs
+   plugins/_bundled/sirsoft-message_bizppurio`)를 다시 돌린다.
+3. **다크 모드는 `bizppurio:dark:` 변형 또는 중립 표식 규격**(`data-g7-color-scheme`)으로 쓴다. `.dark` 선택자는 쓰지 않는다.
+4. **아이콘은 `<icon name="…">` 에 라이브러리 중립 이름**(`circle-info`)을 준다. `fas fa-*` 같은 아이콘 글꼴 클래스를
+   직접 쓰지 않는다.
+5. **새 클래스를 쓰면 다시 빌드한다** — `php artisan plugin:build sirsoft-message_bizppurio --production` 후 `dist/` 를 함께 올린다.
 
-1. **템플릿의 의미 클래스를 쓰지 않는다.** `flex-start` · `text-heading` · `section-heading-md`
-   같은 이름의 규칙은 `templates/_bundled/sirsoft-admin_basic/src/styles/main.css` 의 `@layer components` 에만
-   있다. 사용자 템플릿(`sirsoft-basic`)에는 그 규칙이 없어 `display:flex` 같은 기본 배치까지
-   통째로 사라진다. 평범한 Tailwind 유틸로 쓴다(`flex items-start`).
-   슬롯 확장(`extension-point=`)은 한 조각이 관리자·사용자 양쪽에 들어가므로, 어느 한쪽의
-   어휘를 쓰면 **반드시** 다른 쪽이 깨진다.
-
-2. **새 유틸은 safelist 에 실린다.** 두 템플릿 모두 Tailwind 가 레이아웃을 스캔하지 않는다 —
-   `sirsoft-admin_basic` 은 `templates/_bundled/sirsoft-admin_basic/scripts/extract-safelist.cjs` 가(확장 조각 포함) 자동 생성하고,
-   `sirsoft-basic` 은 `templates/_bundled/sirsoft-basic/src/styles/safelist.txt` 를 손으로 단다. 새 클래스를 쓴 뒤에는
-   `php artisan template:build <템플릿>` 로 CSS 를 다시 만든다.
-
-이 규약을 어겨도 **빌드는 성공하고 경고도 없으며 테스트도 전부 초록이다** — 사람이 브라우저를
-열어야만 드러난다(2026-09-21, 마이페이지 「내 정보 수정」의 확장 카드에서 체크박스가 설명 위로
-떨어져 있었다). 그래서 확장 조각이 쓰는 클래스가 대상 템플릿의 CSS 에 실제로 만들어졌는지를
-정적 검사가 대조한다.
+앞글자 없는 클래스는 정적 검사(`extension-class-self-contained`)가, 이 플러그인 CSS 의 앞글자 위반·`.dark` 는
+`extension-css-namespace` 가 막는다.

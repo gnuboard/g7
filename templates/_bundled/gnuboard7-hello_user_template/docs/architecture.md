@@ -78,3 +78,23 @@ __tests__/layouts/     createLayoutTest() + API 모킹 기반 렌더링 테스�
 | `docs/` | 개발자 문서 | 표면 변경 시 `php artisan ext:docgen` 재실행 |
 | `lang/` | 다국어 | 키 추가 시 ko·en 동시 반영 + 번들 ja 팩 동기화 |
 <!-- @generated:directory-map END -->
+
+## 설정 예제 (템플릿 환경설정, 코어 7.2.0)
+
+이 템플릿은 템플릿 환경설정의 최소 예제(브랜딩 섹션의 파비콘 1칸)를 담고 있습니다.
+
+| 파일 | 역할 |
+| --- | --- |
+| `config/settings/defaults.json` | 섹션(`_meta.categories: ["branding"]`)·기본값(`branding.favicon: []`)·칸 선언(표준 키 `branding.favicon` — attachments, 1개, 파비콘 7형식)·화면 노출(`branding.favicon_url`) |
+| `settings/template_settings.g7.html` | 설정 화면 레이아웃 — `layouts/` 밖에 둔다. 코어가 켜진 관리자 템플릿마다 `{id}.template_settings` 로 교차 등록한다. 받기·저장·되돌리기·주소 바꾸기를 맡고 화면은 부품 하나가 그린다 |
+| `src/settings/*` · `src/styles/settings.css` · `vite.settings.config.ts` | 화면 부품 묶음 — `dist/settings/settings.iife.js`·`settings.css` 로 구워 코어가 관리자 화면에 싣는다. 어느 관리자 템플릿에서나 뜨도록 관리자 템플릿 부품을 쓰지 않고, CSS 는 뿌리 `.hello-settings` 안으로 좁힌다 |
+| `components.settings.json` | 부품 매니페스트 — 레이아웃 검사가 `{id}.TemplateSettingsScreen` 을 알고, 관리자 템플릿이 `overrides` 로 덮어쓸 수 있다. `lang` 은 관리자 화면에 실을 언어 묶음 |
+| `lang/{ko,en}.json` 의 `settings.*` | 섹션·칸 라벨·안내 (`$t:settings.sections.branding.label`·`$t:settings.favicon.label`) |
+
+여기 정한 파비콘은 이 템플릿이 켜져 있을 때 사용자 화면 탭 아이콘으로 쓰이고, 비우면 환경설정 일반 탭의 파비콘(없으면 기본 아이콘)이 쓰입니다. 형식·확장 방법은 코어 문서 `docs/extension/template-settings.md` 를 봅니다.
+
+## 첫 화면에 미리 싣는 템플릿 설정 (expose)
+
+`template.json` 최상위 `expose` 에 `scroll_restoration`·`errorHandling`·`error_config` 를 선언한다. 서버가 그 키의 값만 화면 HTML (`G7Config.templateConfig`)에 함께 실어 엔진이 앱 시작 때 템플릿 설정 API 를 부르지 않는다(코어 engine-v1.96.0 부터). template.json 에 없는 키는 `null` 로 실린다. 엔진이 읽는 키를 새로 template.json 에 더하면 `expose` 에도 더한다 — 빠지면 설치·업데이트 결과에 경고가 나오고 첫 화면에 API 왕복이 1회 남는다. 형식은 코어 문서 「템플릿 기초 — 첫 화면에 미리 싣는 키」.
+
+예시 템플릿이라 `scroll_restoration` 이 없지만 선언해 둔다 — `null` 로 실려 API 를 부르지 않는다.

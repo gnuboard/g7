@@ -39,10 +39,21 @@
 - 받기 실패(null): 동의 여부를 모르므로 띄워 동의를 다시 받습니다.
 - 신원 불일치: 동의 상태의 `is_member` 가 지금 로그인 여부(`_global.currentUser?.uuid`)와 다르면 판정하지 않습니다 — 로그인 직후 앞 게스트의 값을 이어 쓰는 동안, 사용자 정보를 받는 동안 숨깁니다.
 
-관리자 레이아웃의 모양은 관리자 템플릿(`sirsoft-admin_basic`)의 스타일 자산 클래스(`row-stack`·`kv-list-2`·`kv-row` 등)에
-기댑니다. 템플릿의 Tailwind 는 **템플릿 자신의 레이아웃만** 훑어 CSS 를 만들므로, 플러그인 레이아웃에만 쓰인 임의값
-유틸리티(`grid-cols-[…]` 등)는 CSS 가 생기지 않을 수 있습니다 — 「라벨 값」 목록처럼 모양을 맞춰야 하는 자리는 자산
-클래스를 씁니다(정책 버전 스냅샷 창의 메타 목록이 `kv-list-2`).
+설정 화면(`plugin_settings`)이 스스로 받는 소스는 모두 403 을 소스의 `error-handling` 에서 받아 끊습니다 — 기본 오류 알림을 띄우지 않습니다.
+설정(`gdprSettings`)은 `privacy.view` 또는 「플러그인 보기」(`core.plugins.read`)로 열려 보기 권한만 있으면 읽기 전용(`abilities.can_update=false`)으로 보이고, 그래도 403 이면 본문을 권한 오류 화면으로 바꿉니다. 연간 통지 건수·현재 방침 판·알림 발송 수단은 `suppress` 로
+그 칸만 숨기거나 비웁니다. 알림 발송 수단(`core.settings.read`)은 같은 권한의 알림 정의 소스가 남긴 `gdprNotificationDefinitionsError`
+로 「권한 없음」 안내를 그립니다. 새 자동 받기 소스를 더하면 403 처리도 함께 둡니다(`plugin-settings-read-only.test.ts` 가 전수 검사).
+
+화면 모양은 이 플러그인 CSS(`resources/css/main.css` → `dist/css/plugin.css`, 앞글자 `gdpr`)가 싣습니다. 레이아웃은
+접두 유틸리티(`gdpr:flex` 등)와 관리자 템플릿 의미 클래스의 플러그인 판본(`gdpr-row-stack`·`gdpr-kv-row`
+등, 생성 파일 `resources/css/g7-extension.generated.css`)만 씁니다 — 템플릿이 그 규칙을 만들었는지와 무관하게 보입니다.
+「라벨 값」 목록처럼 모양을 맞춰야 하는 자리는 의미 클래스 판본을 씁니다(`gdpr-kv-row` 등). 폭에 따라 칸 수가 바뀌던
+`gdpr-kv-list-2`(정책 버전 스냅샷 창의 메타 목록)는 접두 유틸과 `responsive` 구간(`640-` 에서 4칸)으로 펼쳤습니다. 새 클래스를 쓰면 `php artisan plugin:build sirsoft-gdpr --production` 으로 CSS 를 다시 만듭니다.
+화면 폭에 따라 클래스가 달라지는 자리는 Tailwind 반응형 접두(`gdpr:sm:flex-row` 같은 꼴)를 쓰지 않고, 노드의
+`<responsive on="…">` 구간(`desktop`, `640-` 등)에 그 폭에서 쓸 className 전체를 둡니다(예: 환경설정 입력 줄의 라벨·입력
+칸 나눔은 `desktop` 구간의 `gdpr:col-span-1`·`gdpr:col-span-2`).
+
+폭 미디어를 품은 의미 클래스 사본(`gdpr-grid-3col-responsive`·`gdpr-grid-2col-responsive`·`gdpr-page-title`·`gdpr-admin-page-content-responsive`·`gdpr-filter-label` 등)도 쓰지 않습니다. 이 사본들의 정의는 사이트에서 직접 고친 레이아웃의 호환을 위해 폭 부분까지 폐지 예정으로 남아 있고 다음 출시 이후 제거됩니다 — 새 레이아웃은 쓰지 않습니다. 같은 값을 접두 유틸과 `responsive` 구간으로 적습니다 — 예를 들어 넓은 화면에서 3열이 되는 입력 줄은 `class="gdpr:grid gdpr:grid-cols-1 gdpr:gap-4 gdpr:items-start"` 에 `<responsive on="1024-" class="gdpr:grid gdpr:grid-cols-3 gdpr:gap-4 gdpr:items-start"/>` 를 둡니다. 알림 상자 다음 칸 여백처럼 그 클래스에 기대던 형제 규칙은 그 자리에 여백 유틸(`gdpr:mb-4` 등)을 직접 줍니다.
 <!-- @intent END -->
 
 ## 액션 핸들러

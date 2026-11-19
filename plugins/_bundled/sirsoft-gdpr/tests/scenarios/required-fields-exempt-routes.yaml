@@ -1,0 +1,17 @@
+feature: required_fields_exempt_routes
+description: |
+  코어는 비어 있는 필수 회원 항목이 있는 회원의 쓰기 요청을 403 required_fields_pending 으로 거부한다.
+  이 플러그인의 쿠키 동의 기록, 동의, 철회, 전체 갱신 요청은 회원이 추가 정보를 채우기 전에도 돼야 하므로,
+  필터 core.required_fields.filter_exempt_routes 로 라우트 이름을 보태 통과시킨다.
+coverage_strategy: full
+axes:
+  case: [declaration, without_subscriber, with_subscriber]
+effects:
+  - listener_subscribes_exempt_routes_filter_as_filter
+  - plugin_registers_exempt_routes_listener
+  - exempt_route_names_exist_with_auth_middleware
+  - listener_appends_without_dropping_others
+  - pending_member_blocked_without_subscriber
+  - pending_member_gets_original_response_with_subscriber
+test_files:
+  - plugins/_bundled/sirsoft-gdpr/tests/Feature/RequiredFieldsExemptRoutesTest.php

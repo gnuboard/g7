@@ -1,6 +1,26 @@
 <?php
 
+use App\Jobs\GenerateSitemapJob;
 use App\Notifications\Identity\IdentityNotificationType;
+
+/*
+| 이미지 썸네일 서버 보호 값 — `.env` 의 G7_THUMBNAIL_* 가 있으면 그 값, 없거나 비었거나 숫자가 아니면 기본값.
+| `thumbnail` 배열과 `thumbnail_server_defaults` 가 같은 값을 갖는다(아래 「이미지 썸네일」 절).
+*/
+$thumbnailEnvInt = static function (string $name, int $default): int {
+    $value = env($name);
+
+    return is_numeric($value) && (string) (int) $value === trim((string) $value) ? (int) $value : $default;
+};
+
+$thumbnailServerDefaults = [
+    'generate_per_minute' => $thumbnailEnvInt('G7_THUMBNAIL_GENERATE_PER_MINUTE', 120),
+    'lock_wait_seconds' => $thumbnailEnvInt('G7_THUMBNAIL_LOCK_WAIT_SECONDS', 10),
+    'max_source_pixels' => $thumbnailEnvInt('G7_THUMBNAIL_MAX_SOURCE_PIXELS', 16000000),
+    'pregenerate_batch' => $thumbnailEnvInt('G7_THUMBNAIL_PREGENERATE_BATCH', 20),
+    'pregenerate_time_budget' => $thumbnailEnvInt('G7_THUMBNAIL_PREGENERATE_TIME_BUDGET', 15),
+    'purge_time_budget' => $thumbnailEnvInt('G7_THUMBNAIL_PURGE_TIME_BUDGET', 10),
+];
 
 return [
     /*
@@ -29,6 +49,25 @@ return [
         'upload_image_quality_max' => 100,
         'upload_orphan_retention_days_min' => 1,
         'upload_orphan_retention_days_max' => 3650,
+        // 썸네일 규격 — 가로·세로(px)와 표 전체 행 수(고정 5행·og·확장 규격 포함)
+        'upload_thumbnail_width_min' => 16,
+        'upload_thumbnail_width_max' => 4096,
+        'upload_thumbnail_height_min' => 16,
+        'upload_thumbnail_height_max' => 4096,
+        'upload_thumbnail_presets_max' => 30,
+        // 썸네일 서버 보호 값 (업로드 탭 「고급」, .env G7_THUMBNAIL_*) — 근거는 아래 「이미지 썸네일」 절
+        'upload_thumbnail_generate_per_minute_min' => 1,
+        'upload_thumbnail_generate_per_minute_max' => 10000,
+        'upload_thumbnail_lock_wait_seconds_min' => 1,
+        'upload_thumbnail_lock_wait_seconds_max' => 30,
+        'upload_thumbnail_max_source_pixels_min' => 1000000,
+        'upload_thumbnail_max_source_pixels_max' => 100000000,
+        'upload_thumbnail_pregenerate_batch_min' => 1,
+        'upload_thumbnail_pregenerate_batch_max' => 500,
+        'upload_thumbnail_pregenerate_time_budget_min' => 1,
+        'upload_thumbnail_pregenerate_time_budget_max' => 60,
+        'upload_thumbnail_purge_time_budget_min' => 1,
+        'upload_thumbnail_purge_time_budget_max' => 60,
 
         // SEO
         'seo_og_image_default_width_min' => 0,
@@ -96,6 +135,8 @@ return [
         'drivers_websocket_server_port_max' => 65535,
         'drivers_log_days_min' => 1,
         'drivers_log_days_max' => 365,
+        'drivers_queue_record_retention_days_min' => 1,
+        'drivers_queue_record_retention_days_max' => 90,
 
         // 본인인증
         'identity_challenge_ttl_minutes_min' => 1,
@@ -123,6 +164,10 @@ return [
         'advanced_pagination_result_cap_max' => 1000000,
         'advanced_pagination_max_page_min' => 0,
         'advanced_pagination_max_page_max' => 100000,
+
+        // 예약 작업 — 최소 호출 간격 (0 = 제한 없음, 상한 하루)
+        'system_cron_min_interval_min' => 0,
+        'system_cron_min_interval_max' => 1440,
     ],
 
     /*
@@ -183,6 +228,35 @@ return [
     */
     'static_cache' => [
         'enabled' => env('G7_STATIC_CACHE', true),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 예약 작업 러너 (웹 크론)
+    |--------------------------------------------------------------------------
+    | 서버 크론을 걸 수 없는 호스팅에서 예약 작업을 주소 호출로 돌리는 러너의 경계값입니다.
+    | 운영자 화면에 노출되는 것은 최소 호출 간격 하나뿐이고, 아래 둘은 실행 환경의 성질에
+    | 가까워 설정 화면 대신 여기에 둡니다.
+    |
+    | - max_runtime_seconds:    한 번의 호출이 쓰는 실행 시간 상한. 남은 대상은 다음 호출로
+    |                           넘어갑니다 — 무CLI 환경의 요청 시간 상한에 걸려 응답이
+    |                           통째로 끊기는 것을 막습니다. PHP 의 max_execution_time 이
+    |                           이 값보다 짧으면 러너가 그 8할로 줄여 씁니다(웹 기본 30초 → 24초).
+    | - catch_up_window_minutes: 소급 실행 판정의 상한 구간. 오래 호출되지 않은 사이트의 첫
+    |                           호출이 폭주하지 않도록 자릅니다. 하루로 두면 고정 시각
+    |                           (dailyAt) 작업이 각각 한 번씩만 밀려 실행됩니다.
+    | - min_interval_minutes:   최소 호출 간격의 기본값(운영자 미설정 시). 간격 미만 호출은
+    |                           실행 없이 정상 응답하며, 그 사이 시각은 다음 유효 호출의
+    |                           소급 창이 덮으므로 작업이 유실되지 않습니다.
+    | - stale_alert_days:       대시보드 "예약 작업 미실행" 경고의 발화 기준(일). 실행 모드와
+    |                           무관하게 전 환경에서 같은 기준으로 발화하고, 조치 안내 문구만
+    |                           모드에 따라 갈립니다.
+    */
+    'cron' => [
+        'max_runtime_seconds' => 50,
+        'catch_up_window_minutes' => 1440,
+        'min_interval_minutes' => 5,
+        'stale_alert_days' => 2,
     ],
 
     /*
@@ -279,6 +353,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | 밖으로 나가는 링크의 주소 (G7_PUBLIC_LINK_URL)
+    |--------------------------------------------------------------------------
+    | 메일·알림·문자에 싣는 화면 링크(회원용·관리자용)의 베이스 주소입니다. 비우면(기본) 사이트
+    | 주소(`app.url`)를 씁니다. 같은 DB 를 쓰는 서버를 공개 주소와 다른 주소로 띄울 때(예: 검수용
+    | 사이트) 그 서버가 보내는 메일의 링크가 공개 주소를 가리키게 하려고 정합니다.
+    |
+    | 결제·본인인증·소셜 로그인 제공자에 넘기는 콜백·웹훅 주소와 정식 주소 이동·분석, 결제·본인인증
+    | 뒤 브라우저가 돌아가는 화면 주소는 이 값을 따르지 않고 사이트 주소를 씁니다 — 그 주소는 요청을
+    | 받은 서버가 직접 받아야 합니다.
+    | 읽는 곳: `App\Support\SiteUrl::forOutboundLinks()` · `App\Support\ScreenUrl` 의 링크 변형
+    | (`absoluteForLinks()`·`toAbsoluteForLinks()`·`userLinkBase()`).
+    */
+    'public_link_url' => rtrim(trim((string) env('G7_PUBLIC_LINK_URL', '')), '/') ?: null,
+
+    /*
+    |--------------------------------------------------------------------------
     | 검색 — DBMS 별 부분일치 연산자
     |--------------------------------------------------------------------------
     | 전문검색을 제공하지 않는 DBMS 로 설치된 사이트에서는 부분일치(LIKE)가 정상 검색
@@ -310,12 +400,119 @@ return [
     */
     'storage' => [
         'public_asset_disk' => '',
+        // 비공개 첨부 저장소(#916) — 권한 확인 뒤 서버가 내려주는 원본(첨부·클레임 이미지·본문 미디어·내보내기)의 디스크.
+        // 빈 문자열이면 「기본」(사이트 스토리지 드라이버를 따름). 관리자 환경설정(drivers.private_attachment_disk)에서 주입한다.
+        'private_attachment_disk' => '',
 
         // 공개 자산 디스크로 내보낼 확장자 (소문자, 점 없이). 이 목록 밖의 파일은 공개 디스크에
         // 저장하지 않고 기존 디스크에 두어 서버를 거쳐 내려보낸다. 값은 관리자 환경설정
         // (drivers.public_asset_extensions)에서 주입한다.
         'public_asset_extensions' => ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif'],
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 실행 역할·서버별 스케줄 스위치 (서버 로컬 .env — 공유 설정보다 우선)
+    |--------------------------------------------------------------------------
+    | runtime_role: live(기본) | stage — stage 는 같은 DB·캐시를 쓰는 검수 서버. 스케줄·큐 워커·사이트맵·SEO 캐시·방문 분석을
+    |   돌리지 않고, 관리자 화면의 확장·코어·언어팩 수명주기 변경을 막는다(App\Support\RuntimeRole).
+    | scheduler.enabled: G7_SCHEDULER=on|off (기본 on) — 여러 서버 중 한 대만 스케줄을 돌릴 때 끈다.
+    */
+    'runtime_role' => env('G7_RUNTIME_ROLE', 'live'),
+
+    'scheduler' => [
+        // on|off|true|false|1|0 — 알아볼 수 없는 값은 켜 둔다(스케줄이 조용히 멈추지 않게)
+        'enabled' => filter_var(env('G7_SCHEDULER', 'on'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 점검 모드 (php artisan down)
+    |--------------------------------------------------------------------------
+    | allow_ips: 점검 중에도 들어올 수 있는 클라이언트 IP (쉼표 구분, CIDR 허용 — 예: 203.0.113.10,10.0.0.0/8).
+    | 판정은 신뢰 프록시 설정을 거친 요청 IP 기준이다. 비밀 주소(`down --secret`)·except 경로와 함께 쓴다.
+    | except: 점검 중에도 통과시키는 경로 (쉼표 구분, `*` 와일드카드 — 예: api/health,webhooks/*). `php artisan down` 에는
+    |   경로 예외 옵션이 없어 서버 로컬 설정으로 둔다. 판정은 Laravel 점검 미들웨어의 except 와 같은 비교다.
+    */
+    'maintenance' => [
+        'allow_ips' => array_values(array_filter(array_map('trim', explode(',', (string) env('G7_MAINTENANCE_ALLOW_IPS', ''))))),
+        'except' => array_values(array_filter(array_map('trim', explode(',', (string) env('G7_MAINTENANCE_EXCEPT', ''))))),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 파일 서빙 — 웹서버 위임 (환경설정 > 드라이버 > 웹서버 파일 위임)
+    |--------------------------------------------------------------------------
+    | 로컬 파일 응답(확장 자산·번들, 공개 스토리지, 확장 아이콘, 본문 미디어의 로컬 파일 등)을 PHP 가 읽어
+    | 보내는 대신 웹서버가 직접 보내게 합니다. 기본은 none(위임 안 함)이며 웹서버 설정이 함께 필요합니다.
+    |  - delegation: none | x-sendfile(Apache mod_xsendfile) | x-accel-redirect(nginx)
+    |  - accel_prefix: nginx internal 위치 접두사(`/` 로 시작하고 끝남). 앱이 설치 위치 실경로와 이 접두사로
+    |    X-Accel-Mapping 을 만듭니다.
+    | 관리자 환경설정(drivers.file_delegation · drivers.file_delegation_accel_prefix)에 저장한 값이
+    | SettingsServiceProvider 를 통해 이 값을 덮습니다. `.env` 우선 모드(G7_ENV_PRIORITY=true)에서 `.env` 에
+    | 값이 있으면 `.env` 가 이깁니다(EnvPriority, docs/backend/file-serving-delegation.md).
+    */
+    'file_serving' => [
+        'delegation' => env('G7_FILE_DELEGATION', 'none'),
+        'accel_prefix' => env('G7_FILE_DELEGATION_ACCEL_PREFIX', '/_g7_sendfile/'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 이미지 처리 엔진 (환경설정 > 드라이버 > 이미지 처리)
+    |--------------------------------------------------------------------------
+    | 업로드 축소와 썸네일 생성이 쓰는 엔진입니다(gd·imagick·플러그인). 값은
+    | 관리자 환경설정(drivers.image_driver)에서 SettingsServiceProvider 가 주입합니다.
+    */
+    'image' => [
+        'driver' => 'gd',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 이미지 썸네일
+    |--------------------------------------------------------------------------
+    | 모든 값은 관리자 환경설정(업로드 탭)에서 SettingsServiceProvider 가 주입합니다. 아래 다섯은 서버 보호 값으로,
+    | `.env` 의 G7_THUMBNAIL_* 로도 정하고 업로드 탭 「고급」 칸으로도 정합니다. 우선순위는 다른 `.env` 대응
+    | 설정과 같습니다(EnvPriority, docs/backend/admin-settings-access.md) — `.env` 우선 모드(G7_ENV_PRIORITY=true)에서
+    | `.env` 에 값이 있으면 그 값이 이기고 화면 칸은 잠깁니다. 그렇지 않으면 화면에 저장한 값이 이기고, 칸을 비우면
+    | 여기 값(`.env` 가 있으면 그 값, 없으면 기본값)을 씁니다. 화면 칸의 입력 범위는 위 settings_limits 입니다.
+    | `thumbnail_server_defaults` 는 칸을 비웠을 때 쓸 값이라 주입으로 덮이지 않습니다(화면의 placeholder).
+    |  - generate_per_minute: IP 하나가 1분에 새로 만들게 할 수 있는 썸네일 수(초과분은 원본). 범위 1~10000 —
+    |    0 은 생성을 끄는 뜻이 되는데 그것은 「썸네일 사용」이 맡고, 1분에 1만(초당 약 170)을 넘으면 보호 값의 뜻이 없다
+    |  - lock_wait_seconds: 같은 원본·같은 규격을 다른 요청이 만들고 있을 때 기다리는 시간(초). 넘으면 원본을 낸다
+    |    (`X-G7-Thumbnail: bypass:error`, 캐시하지 않음). 1~30 으로 묶는다 — 생성 잠금은 30초 뒤 저절로 풀리므로 그보다
+    |    오래 기다리지 않는다. 느린 서버에서 큰 원본이 자주 원본으로 나가면 늘리고, 요청이 오래 붙잡히면 줄인다
+    |  - max_source_pixels: 이 픽셀 수를 넘는 원본은 줄이지 않고 원본을 냄(메모리 보호). GD 는 픽셀당 약 4~5바이트를
+    |    써서 1600만 픽셀(4000×4000)에 약 70MB 가 든다. memory_limit 이 작으면 그 절반 안으로 더 줄여 쓴다.
+    |    범위 100만~1억 — 100만(1000×1000)보다 낮으면 보통 사진이 거의 다 원본으로 나가고, 상한 1억은 업로드 축소
+    |    한계(settings_limits upload_image_max_width/height_max 10000)의 10000×10000 이다
+    |  - pregenerate_batch: 「기존 이미지 썸네일 만들기」 한 번 호출이 처리하는 원본 수. 범위 1~500 — 관리 화면은
+    |    시간 예산이 먼저 끊지만 명령(thumbnails:pregenerate)은 예산 없이 이 수만큼 한 번에 읽는다
+    |  - pregenerate_time_budget: 관리 화면 한 번 호출의 시간 예산(초). 넘으면 처리한 자리의 커서를 돌려주고 화면이 이어
+    |    부른다. 기본값은 공유 호스팅 기본 max_execution_time 30초의 절반이다 — 2000×2000 원본 하나에 규격 5개가 약
+    |    1.5초라 20건이면 30초에 닿고, 예산은 원본 하나를 끝낸 뒤에 재므로 큰 원본 하나분의 여유를 남긴다.
+    |    서버 값이 더 짧으면 그 절반을 쓴다. 명령(thumbnails:pregenerate)에는 적용하지 않는다. 범위 1~60 — 웹 서버·
+    |    프록시의 흔한 응답 대기 한도(nginx fastcgi_read_timeout 기본 60초)를 넘기면 응답 전에 요청이 끊긴다
+    |  - purge_time_budget: 관리 화면 「비우기」 한 번 호출의 시간 예산(초). 같은 디스크를 나눠 쓰는 위치·규격 하나·원격
+    |    디스크 통째 비우기는 썸네일 트리를 걸어 지우므로 넘으면 마지막으로 본 자리의 커서를 돌려주고 화면이 이어 부른다.
+    |    기본 10초는 원격(S3) 삭제 한 건 약 30ms 기준 300건 안팎으로, 공유 호스팅 실행 한도 30초의 절반보다 짧다.
+    |    서버 값이 더 짧으면 그 절반을 쓴다. 범위 1~60 — 근거는 위 pregenerate_time_budget 과 같다
+    */
+    'thumbnail' => [
+        'enabled' => true,
+        'presets' => null,
+        'content_preset' => 'lg',
+        'disk_public' => 'thumbnails',
+        'disk_gated' => 'thumbnails',
+        'prune_enabled' => true,
+        // 움직이는 이미지(GIF·WebP·APNG)는 썸네일 대신 원본 (끄면 첫 프레임 썸네일, 확장 필터 core.thumbnail.filter_animated_original)
+        'animated_original' => true,
+        ...$thumbnailServerDefaults,
+    ],
+
+    // 업로드 탭 「고급」 칸을 비웠을 때 쓸 서버 보호 값 (.env 또는 기본값) — 설정 주입이 덮지 않는다
+    'thumbnail_server_defaults' => $thumbnailServerDefaults,
 
     /*
     |--------------------------------------------------------------------------
@@ -407,6 +604,8 @@ return [
                     ['identifier' => 'core.templates.activate', 'type' => 'admin', 'name' => ['ko' => '템플릿 활성화', 'en' => 'Activate Templates'], 'description' => ['ko' => '템플릿을 활성화/비활성화할 수 있습니다.', 'en' => 'Can activate/deactivate templates.'], 'order' => 3],
                     ['identifier' => 'core.templates.uninstall', 'type' => 'admin', 'name' => ['ko' => '템플릿 삭제', 'en' => 'Uninstall Templates'], 'description' => ['ko' => '템플릿을 삭제할 수 있습니다.', 'en' => 'Can uninstall templates.'], 'order' => 4],
                     ['identifier' => 'core.templates.layouts.edit', 'type' => 'admin', 'name' => ['ko' => '레이아웃 편집', 'en' => 'Edit Layouts'], 'description' => ['ko' => '템플릿 레이아웃을 편집할 수 있습니다.', 'en' => 'Can edit template layouts.'], 'order' => 5],
+                    // 템플릿 환경설정 저장 (#434) — 보기는 core.templates.read, 저장만 이 권한
+                    ['identifier' => 'core.templates.settings', 'type' => 'admin', 'name' => ['ko' => '템플릿 설정', 'en' => 'Configure Templates'], 'description' => ['ko' => '템플릿 환경설정을 저장합니다.', 'en' => 'Save template settings.'], 'order' => 6],
                 ],
             ],
             [
@@ -507,6 +706,7 @@ return [
                 'permissions' => [
                     ['identifier' => 'core.profile.read', 'type' => 'user', 'name' => ['ko' => '내 정보 조회', 'en' => 'View My Profile'], 'description' => ['ko' => '본인 정보와 활동 기록을 조회할 수 있습니다. 계정이 비활성·차단 등 정상 상태가 아니어도 본인 정보 조회는 이 권한으로 허용됩니다.', 'en' => 'Can view own profile and activity history. Viewing own profile is allowed by this permission even when the account is not active (inactive, blocked, etc.).'], 'order' => 1],
                     ['identifier' => 'core.profile.update', 'type' => 'user', 'name' => ['ko' => '내 정보 수정', 'en' => 'Edit My Profile'], 'description' => ['ko' => '본인 정보를 수정할 수 있습니다.', 'en' => 'Can edit own profile.'], 'order' => 2],
+                    ['identifier' => 'core.profile.display_name.choose', 'type' => 'user', 'name' => ['ko' => '표시 이름 직접 선택', 'en' => 'Choose Display Name'], 'description' => ['ko' => '가입 화면과 내 정보 수정에서 다른 회원에게 보일 이름의 종류를 직접 고를 수 있습니다. 고를 수 있는 종류는 환경설정의 회원 탭에서 정합니다.', 'en' => 'Can choose which kind of name is shown to other members on the sign-up and profile edit screens. The selectable kinds are set in the Members tab of the settings.'], 'order' => 3],
                 ],
             ],
             [
@@ -606,6 +806,19 @@ return [
                 ],
             ],
             [
+                'identifier' => 'core.queue_jobs',
+                'name' => ['ko' => '큐 작업 관리', 'en' => 'Queue Job Management'],
+                'description' => ['ko' => '큐 대기·실패 작업과 처리 기록 관리 권한 (큐 화면은 스케줄 관리 화면 안에 있어 스케줄 조회 권한도 함께 필요)', 'en' => 'Queue pending/failed job and job record management permissions (the queue screen lives inside Schedule Management, so View Schedules is also required)'],
+                'category' => 'schedules',
+                'order' => 1210,
+                'type' => 'admin',
+                'permissions' => [
+                    ['identifier' => 'core.queue_jobs.read', 'type' => 'admin', 'name' => ['ko' => '큐 작업 조회', 'en' => 'View Queue Jobs'], 'description' => ['ko' => '큐 대기·실패 작업과 처리 기록을 조회할 수 있습니다.', 'en' => 'Can view pending/failed queue jobs and job records.'], 'order' => 1],
+                    ['identifier' => 'core.queue_jobs.retry', 'type' => 'admin', 'name' => ['ko' => '실패 작업 재시도', 'en' => 'Retry Failed Jobs'], 'description' => ['ko' => '실패한 큐 작업을 다시 실행할 수 있습니다.', 'en' => 'Can retry failed queue jobs.'], 'order' => 2],
+                    ['identifier' => 'core.queue_jobs.delete', 'type' => 'admin', 'name' => ['ko' => '실패 작업 삭제', 'en' => 'Delete Failed Jobs'], 'description' => ['ko' => '실패한 큐 작업을 삭제할 수 있습니다.', 'en' => 'Can delete failed queue jobs.'], 'order' => 3],
+                ],
+            ],
+            [
                 'identifier' => 'core.language_packs',
                 'name' => ['ko' => '언어팩 관리', 'en' => 'Language Pack Management'],
                 'description' => ['ko' => '언어팩 설치/제거/활성화 권한', 'en' => 'Language pack install/uninstall/activation permissions'],
@@ -617,6 +830,22 @@ return [
                     ['identifier' => 'core.language_packs.install', 'type' => 'admin', 'name' => ['ko' => '언어팩 설치', 'en' => 'Install Language Packs'], 'description' => ['ko' => 'ZIP/GitHub/URL 로 언어팩을 설치할 수 있습니다.', 'en' => 'Can install language packs from ZIP/GitHub/URL.'], 'order' => 2],
                     ['identifier' => 'core.language_packs.manage', 'type' => 'admin', 'name' => ['ko' => '언어팩 관리', 'en' => 'Manage Language Packs'], 'description' => ['ko' => '언어팩을 활성화/비활성화/제거할 수 있습니다.', 'en' => 'Can activate/deactivate/uninstall language packs.'], 'order' => 3],
                     ['identifier' => 'core.language_packs.update', 'type' => 'admin', 'name' => ['ko' => '언어팩 업데이트', 'en' => 'Update Language Packs'], 'description' => ['ko' => '설치된 언어팩의 업데이트를 확인하고 실행할 수 있습니다.', 'en' => 'Can check and apply updates for installed language packs.'], 'order' => 4],
+                ],
+            ],
+            [
+                // 코어 자신을 갈아 끼우는 권한은 **환경설정 묶음에 두지 않는다** (#609 D4).
+                // 설정을 고치는 것과 코어를 교체하는 것은 실패 시 되돌리는 비용이 다르고,
+                // 같은 묶음에 두면 권한 화면에서 둘이 뭉뚱그려져 별도 권한을 만든 취지를
+                // 잃는다. 이 권한이 없는 관리자에게는 환경설정의 업데이트 영역이
+                // 비활성이 아니라 **보이지 않는다**.
+                'identifier' => 'core.system',
+                'name' => ['ko' => '시스템 관리', 'en' => 'System Management'],
+                'description' => ['ko' => '코어 자체의 유지보수 권한', 'en' => 'Core maintenance permissions'],
+                'category' => 'system',
+                'order' => 14,
+                'type' => 'admin',
+                'permissions' => [
+                    ['identifier' => 'core.system.update', 'type' => 'admin', 'name' => ['ko' => '코어 업데이트', 'en' => 'Core Update'], 'description' => ['ko' => '그누보드7 코어를 새 버전으로 업데이트할 수 있습니다.', 'en' => 'Can update the Gnuboard7 core to a new version.'], 'order' => 1],
                 ],
             ],
             [
@@ -686,7 +915,7 @@ return [
             'attributes' => ['is_active' => true],
             'permissions' => [
                 'core.user-notifications.read', 'core.user-notifications.update', 'core.user-notifications.delete',
-                'core.profile.read', 'core.profile.update',
+                'core.profile.read', 'core.profile.update', 'core.profile.display_name.choose',
                 'core.identity.request', 'core.identity.verify', 'core.identity.cancel',
             ],
             // verify/cancel 은 본인 challenge(user_id 일치) 만 — PermissionMiddleware 의 scope=self 가드가 자동 검증
@@ -827,12 +1056,12 @@ return [
         ],
         [
             'slug' => 'admin-schedules',
-            'name' => ['ko' => '스케쥴 관리', 'en' => 'Schedule Management'],
+            'name' => ['ko' => '스케줄 관리', 'en' => 'Schedule Management'],
             'url' => '/admin/schedules',
             'icon' => 'fas fa-clock',
             'parent_id' => null,
             'order' => 14,
-            'is_active' => false,
+            'is_active' => true,
         ],
         // 방문자 통계 — 화면이 13개라 대시보드 바로 아래에 부모 하나로 묶는다.
         // children 은 ExtensionMenuSyncHelper::syncMenuRecursive 와 CoreAdminMenuSeeder 가
@@ -952,6 +1181,330 @@ return [
                     'order' => 13,
                     'is_active' => true,
                 ],
+            ],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 코어 스케줄 카탈로그 (7.2.0)
+    |--------------------------------------------------------------------------
+    | CoreScheduleSeeder 가 schedules 테이블(extension_type=core, extension_identifier=core)로
+    | 동기화한다. 운영자가 관리 화면에서 바꾼 값은 user_overrides 로 보존되어 재동기화에 덮이지 않고,
+    | 이 목록에서 빠진 코어 행은 cleanupStale 로 지워진다. 실행은 routes/console.php 의
+    | ScheduleRegistrar 가 DB 행을 읽어 등록한다 — 여기 적는 것이 코어 예약의 전부다.
+    |
+    | 항목 키 = 행의 name(기계 식별자). 필드:
+    | - group              카탈로그 전용(DB 미저장). gc = 만료 데이터 정리 예약(등록 전수 회귀 테스트 대상)
+    | - label/description  다국어 표시 명칭·설명 (ja 는 언어팩 seed 가 core.schedules.config 필터로 주입)
+    | - type               artisan(기본) | job
+    | - command            artisan 명령(옵션 포함) 또는 job 클래스 FQCN (config/schedule_security.php 허용목록 대상)
+    | - expression         cron 식. frequency 가 everyThirtySeconds 면 '* * * * *' (등록기가 30초 주기로 등록)
+    | - frequency          custom(기본) | everyThirtySeconds
+    | - without_overlapping 중복 실행 방지 잠금 유지 분 (0=끔)
+    | - on_one_server(기본 true) · dispatch_mode(sync 기본 | queue) · history_mode(all 기본 | failures_only)
+    | - notify_on_failure(기본 true) · timeout(초, null) · timezone(null = 사이트 설정 시간대)
+    | - enabled_condition  [{source, key, operator, value?, default}] AND — ScheduleConditionEvaluator 가 해석
+    |
+    | 시각은 사이트 설정 시간대(app.schedule_timezone) 기준이다. 아래 gc 정리 배치는 모두 멱등이라
+    | 서머타임 전환일의 건너뜀·이중 실행이 데이터를 해치지 않는다.
+    */
+    'schedules' => [
+        // ── 만료 데이터 정리 (gc) ──────────────────────────────────────────
+        'layout-previews-cleanup' => [
+            'group' => 'gc',
+            'label' => ['ko' => '레이아웃 미리보기 정리', 'en' => 'Clean up layout previews'],
+            'description' => ['ko' => '만료된 레이아웃 미리보기를 지웁니다.', 'en' => 'Deletes expired layout previews.'],
+            'command' => 'layout-previews:cleanup',
+            'expression' => '*/30 * * * *',
+        ],
+        'sanctum-prune' => [
+            'group' => 'gc',
+            'label' => ['ko' => '만료 API 토큰 정리', 'en' => 'Prune expired API tokens'],
+            'description' => ['ko' => '만료된 지 24시간이 지난 API 토큰을 지웁니다.', 'en' => 'Deletes API tokens expired for more than 24 hours.'],
+            'command' => 'sanctum:prune-expired --hours=24',
+            'expression' => '0 4 * * *',
+        ],
+        'auth-clear-resets' => [
+            'group' => 'gc',
+            'label' => ['ko' => '비밀번호 재설정 토큰 정리', 'en' => 'Clear password reset tokens'],
+            'description' => ['ko' => '만료된 비밀번호 재설정 토큰을 지웁니다.', 'en' => 'Deletes expired password reset tokens.'],
+            'command' => 'auth:clear-resets',
+            'expression' => '5 4 * * *',
+        ],
+        // 7.2.0: queue:prune-failed 를 대체 — 처리 기록 + 실패 Job 을 보관 기간 설정(drivers.queue_record_retention_days, 기본 7일)으로 정리
+        'queue-prune-records' => [
+            'group' => 'gc',
+            'label' => ['ko' => '큐 처리 기록·실패 Job 정리', 'en' => 'Prune queue records and failed jobs'],
+            'description' => ['ko' => '보관 기간이 지난 큐 처리 기록과 실패 Job 을 지웁니다.', 'en' => 'Deletes queue job records and failed jobs past the retention period.'],
+            'command' => 'queue:prune-records',
+            'expression' => '10 4 * * *',
+        ],
+        'queue-prune-batches' => [
+            'group' => 'gc',
+            'label' => ['ko' => '큐 배치 기록 정리', 'en' => 'Prune queue batches'],
+            'description' => ['ko' => '오래된 큐 배치 기록을 지웁니다.', 'en' => 'Deletes old queue batch records.'],
+            'command' => 'queue:prune-batches',
+            'expression' => '15 4 * * *',
+        ],
+        'notification-cleanup' => [
+            'group' => 'gc',
+            'label' => ['ko' => '알림 정리', 'en' => 'Clean up notifications'],
+            'description' => ['ko' => '보관 기간이 지난 사이트 알림을 지웁니다.', 'en' => 'Deletes site notifications past the retention period.'],
+            'command' => 'notification:cleanup',
+            'expression' => '20 4 * * *',
+        ],
+        'ext-bundles-cleanup' => [
+            'group' => 'gc',
+            'label' => ['ko' => '확장 번들 정리', 'en' => 'Clean up extension bundles'],
+            'description' => ['ko' => '쓰지 않는 확장 프론트엔드 번들 파일을 지웁니다.', 'en' => 'Deletes unused extension frontend bundle files.'],
+            'command' => 'ext-bundles:cleanup',
+            'expression' => '25 4 * * *',
+        ],
+        'ext-static-cleanup' => [
+            'group' => 'gc',
+            'label' => ['ko' => '확장 정적 게시 정리', 'en' => 'Clean up extension static assets'],
+            'description' => ['ko' => '오래된 부트스트랩 리소스 정적 게시 디렉터리를 지웁니다(현재·직전 버전 보존).', 'en' => 'Deletes old published static bootstrap resources (keeps current and previous versions).'],
+            'command' => 'ext-static:cleanup',
+            'expression' => '28 4 * * *',
+        ],
+        'seo-prune-stats' => [
+            'group' => 'gc',
+            'label' => ['ko' => 'SEO 캐시 통계 정리', 'en' => 'Prune SEO cache stats'],
+            'description' => ['ko' => '오래된 SEO 캐시 통계를 지웁니다.', 'en' => 'Deletes old SEO cache statistics.'],
+            'command' => 'seo:prune-stats',
+            'expression' => '30 4 * * *',
+        ],
+        'schedules-prune-history' => [
+            'group' => 'gc',
+            'label' => ['ko' => '스케줄 실행 이력 정리', 'en' => 'Prune schedule history'],
+            'description' => ['ko' => '보관 기간이 지난 스케줄 실행 이력을 지웁니다.', 'en' => 'Deletes schedule run history past the retention period.'],
+            'command' => 'schedules:prune-history',
+            'expression' => '35 4 * * *',
+        ],
+        'identity-prune-logs' => [
+            'group' => 'gc',
+            'label' => ['ko' => '본인인증 로그 정리', 'en' => 'Prune identity verification logs'],
+            'description' => ['ko' => '보관 기간이 지난 본인인증 로그를 파기합니다.', 'en' => 'Destroys identity verification logs past the retention period.'],
+            'command' => 'identity:prune-logs',
+            'expression' => '40 4 * * *',
+        ],
+        'activity-log-prune' => [
+            'group' => 'gc',
+            'label' => ['ko' => '활동 로그 정리', 'en' => 'Prune activity logs'],
+            'description' => ['ko' => '보관 기간이 지난 활동 로그를 지웁니다.', 'en' => 'Deletes activity logs past the retention period.'],
+            'command' => 'activity-log:prune',
+            'expression' => '45 4 * * *',
+        ],
+        'notification-log-prune' => [
+            'group' => 'gc',
+            'label' => ['ko' => '알림 발송 로그 정리', 'en' => 'Prune notification logs'],
+            'description' => ['ko' => '보관 기간이 지난 알림 발송 로그를 지웁니다.', 'en' => 'Deletes notification delivery logs past the retention period.'],
+            'command' => 'notification-log:prune',
+            'expression' => '50 4 * * *',
+        ],
+        // 알림 수신자별 발송 기록(재시도·재예약 중복 방지, #139) — 재시도 창보다 오래된 행 정리
+        'notification-delivery-prune' => [
+            'group' => 'gc',
+            'label' => ['ko' => '알림 수신자별 발송 기록 정리', 'en' => 'Prune notification deliveries'],
+            'description' => ['ko' => '재시도 기간이 지난 수신자별 발송 기록을 지웁니다.', 'en' => 'Deletes per-recipient delivery records older than the retry window.'],
+            'command' => 'notification-delivery:prune',
+            'expression' => '52 4 * * *',
+        ],
+        // 사용자 파일을 파기하므로 기본 꺼짐 — 커맨드가 `--scheduled` 에서 설정을 false 폴백으로 재확인한다.
+        'attachments-prune-orphans' => [
+            'group' => 'gc',
+            'label' => ['ko' => '고아 첨부파일 정리', 'en' => 'Prune orphan attachments'],
+            'description' => ['ko' => '어디에도 연결되지 않은 첨부파일을 파기합니다(설정에서 켠 경우만).', 'en' => 'Destroys attachments not linked anywhere (only when enabled in settings).'],
+            'command' => 'attachments:prune-orphans --scheduled',
+            'expression' => '55 4 * * *',
+        ],
+        // 중단된 업데이트·설치가 남긴 임시 산출물 + 오래된 백업본(최신 1개 보존) 정리
+        'storage-prune-leftovers' => [
+            'group' => 'gc',
+            'label' => ['ko' => '업데이트 잔존물 정리', 'en' => 'Prune update leftovers'],
+            'description' => ['ko' => '중단된 업데이트·설치의 임시 파일과 오래된 백업을 지웁니다(최신 백업 1개 보존).', 'en' => 'Deletes temporary files from interrupted updates and old backups (keeps the latest backup).'],
+            'command' => 'storage:prune-leftovers',
+            'expression' => '0 5 * * *',
+        ],
+        // 개인정보를 파기하므로 기본 꺼짐 — 각 도메인 핸들러가 `--scheduled` 에서 자기 설정을 false 폴백으로 재확인한다.
+        'privacy-process-retention' => [
+            'group' => 'gc',
+            'label' => ['ko' => '개인정보 보유기간 처리', 'en' => 'Process privacy retention'],
+            'description' => ['ko' => '보유기간이 지난 개인정보를 파기합니다(설정에서 켠 도메인만).', 'en' => 'Destroys personal data past its retention period (only domains enabled in settings).'],
+            'command' => 'privacy:process-retention --scheduled',
+            'expression' => '5 5 * * *',
+        ],
+        // 회원 상태를 바꾸고 설정에 따라 탈퇴까지 하므로 기본 꺼짐 — 보유기간 처리 뒤에 둔다
+        // (같은 날 탈퇴된 회원의 잔여 정보 2차 파기가 보존기간부터 새로 시작되어야 한다).
+        'privacy-process-dormant' => [
+            'group' => 'gc',
+            'label' => ['ko' => '휴면 회원 처리', 'en' => 'Process dormant members'],
+            'description' => ['ko' => '장기 미접속 회원을 휴면으로 전환하고 안내합니다(설정에서 켠 경우만).', 'en' => 'Converts long-inactive members to dormant and notifies them (only when enabled in settings).'],
+            'command' => 'privacy:process-dormant --scheduled',
+            'expression' => '10 5 * * *',
+        ],
+        // 비밀번호 만료 사전 안내·만료일 처리(#736) — 기본 꺼짐. 1회 실행당 안내 상한을 넘는 인원은 다음 날로 넘긴다.
+        'auth-process-password-expiry' => [
+            'group' => 'gc',
+            'label' => ['ko' => '비밀번호 만료 처리', 'en' => 'Process password expiry'],
+            'description' => ['ko' => '비밀번호 만료 사전 안내와 만료 처리를 합니다(설정에서 켠 경우만).', 'en' => 'Sends password expiry notices and processes expirations (only when enabled in settings).'],
+            'command' => 'auth:process-password-expiry --scheduled',
+            'expression' => '15 5 * * *',
+        ],
+        // 만료 시각이 지난 본인인증 challenge 상태 전환 (비파괴 — 물리 파기는 identity:prune-logs)
+        'identity-expire-challenges' => [
+            'group' => 'gc',
+            'label' => ['ko' => '본인인증 요청 만료 처리', 'en' => 'Expire identity challenges'],
+            'description' => ['ko' => '만료 시각이 지난 본인인증 요청을 만료 상태로 바꿉니다.', 'en' => 'Marks identity verification challenges past their expiry as expired.'],
+            'command' => 'identity:expire-challenges',
+            'expression' => '0 * * * *',
+        ],
+        // 보존 기간이 지난 방문자 통계 원장 정리 (집계 표는 남으므로 과거 숫자는 그대로 보인다)
+        'analytics-prune' => [
+            'group' => 'gc',
+            'label' => ['ko' => '방문자 통계 원장 정리', 'en' => 'Prune analytics ledgers'],
+            'description' => ['ko' => '보존 기간이 지난 방문·액션 원장을 지웁니다(집계 숫자는 유지).', 'en' => 'Deletes visit and action ledgers past retention (aggregates are kept).'],
+            'command' => 'analytics:prune',
+            'expression' => '10 5 * * *',
+        ],
+        // 규격이 바뀌었거나 원본이 없어진 썸네일 파생본 정리 (7.2.0, #869) — 다시 만들 수 있는 캐시라 기본 켬.
+        // 커맨드가 `--scheduled` 에서 upload.thumbnail_prune_enabled 를 재확인한다. 04:00~05:15 칸이 차 있어 05:20.
+        'thumbnails-prune' => [
+            'group' => 'gc',
+            'label' => ['ko' => '썸네일 정리', 'en' => 'Prune thumbnails'],
+            'description' => ['ko' => '규격이 바뀌었거나 원본이 없어진 이미지 썸네일 파일을 지웁니다(설정에서 끈 경우 건너뜀).', 'en' => 'Deletes image thumbnail files whose preset changed or whose original is gone (skipped when turned off in settings).'],
+            'command' => 'thumbnails:prune --scheduled',
+            'expression' => '20 5 * * *',
+        ],
+
+        // ── 대시보드 ──────────────────────────────────────────────────────
+        // 30초마다 시스템 리소스 브로드캐스트. 모든 서버에서 돌고 실패만 기록한다(이력 폭증 방지).
+        'dashboard-broadcast-resources' => [
+            'group' => 'dashboard',
+            'label' => ['ko' => '대시보드 리소스 브로드캐스트', 'en' => 'Broadcast dashboard resources'],
+            'description' => ['ko' => '관리자 대시보드의 시스템 리소스 정보를 실시간으로 보냅니다.', 'en' => 'Broadcasts system resource information to the admin dashboard in real time.'],
+            'command' => 'dashboard:broadcast-resources',
+            'frequency' => 'everyThirtySeconds',
+            'expression' => '* * * * *',
+            'without_overlapping' => 5,
+            'on_one_server' => false,
+            'history_mode' => 'failures_only',
+        ],
+
+        // ── 방문자 통계 집계·점검 ─────────────────────────────────────────
+        // 매시 :05 — 오늘치를 다시 계산한다(확정하지 않는다). 집계 실패는 커맨드가 자체 알림
+        // (analytics_archive_failed)을 보내므로 스케줄 실패 알림은 끈다(중복 방지).
+        'analytics-archive-hour' => [
+            'group' => 'analytics',
+            'label' => ['ko' => '방문자 통계 시간 집계', 'en' => 'Archive analytics (hourly)'],
+            'description' => ['ko' => '오늘 방문자 통계를 다시 계산합니다.', 'en' => "Recalculates today's visitor statistics."],
+            'command' => 'analytics:archive --period=hour --scheduled',
+            'expression' => '5 * * * *',
+            'without_overlapping' => 55,
+            'notify_on_failure' => false,
+        ],
+        // 매일 00:15 — 어제치를 확정한다.
+        'analytics-archive-day' => [
+            'group' => 'analytics',
+            'label' => ['ko' => '방문자 통계 일 집계', 'en' => 'Archive analytics (daily)'],
+            'description' => ['ko' => '어제 방문자 통계를 확정합니다.', 'en' => "Finalizes yesterday's visitor statistics."],
+            'command' => 'analytics:archive --period=day --scheduled',
+            'expression' => '15 0 * * *',
+            'without_overlapping' => 120,
+            'notify_on_failure' => false,
+        ],
+        // 원장이 경고 한계를 넘었는지 점검 (정리 배치보다 먼저 돌아 「지우기 전」 크기를 본다)
+        'analytics-check-volume' => [
+            'group' => 'analytics',
+            'label' => ['ko' => '방문자 통계 원장 크기 점검', 'en' => 'Check analytics ledger volume'],
+            'description' => ['ko' => '방문·액션 원장이 경고 임계치를 넘었는지 점검합니다.', 'en' => 'Checks whether visit and action ledgers exceed the warning threshold.'],
+            'command' => 'analytics:check-volume',
+            'expression' => '5 5 * * *',
+        ],
+        // 정기 리포트 — 설정이 꺼져 있으면 커맨드가 아무것도 보내지 않는다
+        'analytics-report-weekly' => [
+            'group' => 'analytics',
+            'label' => ['ko' => '방문자 통계 주간 리포트', 'en' => 'Weekly analytics report'],
+            'description' => ['ko' => '주간 방문자 통계 리포트를 보냅니다(설정에서 켠 경우만).', 'en' => 'Sends the weekly analytics report (only when enabled in settings).'],
+            'command' => 'analytics:report --period=weekly',
+            'expression' => '0 8 * * 1',
+        ],
+        'analytics-report-monthly' => [
+            'group' => 'analytics',
+            'label' => ['ko' => '방문자 통계 월간 리포트', 'en' => 'Monthly analytics report'],
+            'description' => ['ko' => '월간 방문자 통계 리포트를 보냅니다(설정에서 켠 경우만).', 'en' => 'Sends the monthly analytics report (only when enabled in settings).'],
+            'command' => 'analytics:report --period=monthly',
+            'expression' => '0 8 1 * *',
+        ],
+        // 클라우드 IP 대역 목록 갱신 — 그 차단을 켠 사이트에서만 실행한다
+        'analytics-update-cloud-ranges' => [
+            'group' => 'analytics',
+            'label' => ['ko' => '클라우드 IP 대역 갱신', 'en' => 'Update cloud IP ranges'],
+            'description' => ['ko' => '클라우드 사업자 IP 대역 목록을 갱신합니다(클라우드 IP 차단을 켠 경우만).', 'en' => 'Updates cloud provider IP range lists (only when cloud IP blocking is enabled).'],
+            'command' => 'analytics:update-cloud-ranges',
+            'expression' => '0 0 * * 0',
+            'without_overlapping' => 60,
+            'enabled_condition' => [
+                ['source' => 'core_setting', 'key' => 'analytics.block_cloud_ip_ranges', 'operator' => 'truthy', 'default' => false],
+            ],
+        ],
+        // 현재 접속자 브로드캐스트 — 브로드캐스트가 설정된 사이트에서만 실행한다.
+        // 설정이 없으면 실시간 화면이 폴링으로 돌므로 실행하지 않아도 기능이 빠지지 않는다.
+        'analytics-broadcast-realtime' => [
+            'group' => 'analytics',
+            'label' => ['ko' => '현재 접속자 브로드캐스트', 'en' => 'Broadcast realtime visitors'],
+            'description' => ['ko' => '현재 접속자 정보를 실시간으로 보냅니다(브로드캐스트를 설정한 경우만).', 'en' => 'Broadcasts current visitor information in real time (only when broadcasting is configured).'],
+            'command' => 'analytics:broadcast-realtime',
+            'frequency' => 'everyThirtySeconds',
+            'expression' => '* * * * *',
+            'without_overlapping' => 5,
+            'on_one_server' => false,
+            'history_mode' => 'failures_only',
+            'enabled_condition' => [
+                ['source' => 'config', 'key' => 'broadcasting.connections.reverb.key', 'operator' => 'not_empty', 'default' => ''],
+            ],
+        ],
+
+        // ── 언어팩·SEO·GeoIP ───────────────────────────────────────────────
+        // 언어팩 업데이트 확인 (주 1회, GitHub 기반 언어팩 latest_version 갱신)
+        'language-pack-check-updates' => [
+            'group' => 'system',
+            'label' => ['ko' => '언어팩 업데이트 확인', 'en' => 'Check language pack updates'],
+            'description' => ['ko' => '설치된 언어팩의 새 버전이 있는지 확인합니다.', 'en' => 'Checks for new versions of installed language packs.'],
+            'command' => 'language-pack:check-updates',
+            'expression' => '0 0 * * 0',
+            'without_overlapping' => 60,
+            'on_one_server' => false,
+        ],
+        // 사이트맵 생성 — 대용량 생성은 오래 걸려 현재 동작(큐 Job)을 유지한다.
+        // 주기·시각은 이 행에서 바꾼다(7.2.0 부터 SEO 설정의 주기 칸 대신 — 업그레이드가 저장값을 옮긴다).
+        'sitemap-generate' => [
+            'group' => 'seo',
+            'label' => ['ko' => '사이트맵 생성', 'en' => 'Generate sitemap'],
+            'description' => ['ko' => '사이트맵 파일을 다시 생성합니다(SEO 설정에서 사이트맵을 켠 경우만).', 'en' => 'Regenerates sitemap files (only when the sitemap is enabled in SEO settings).'],
+            'type' => 'job',
+            'command' => GenerateSitemapJob::class,
+            'expression' => '0 2 * * *',
+            'without_overlapping' => 30,
+            'dispatch_mode' => 'queue',
+            'enabled_condition' => [
+                ['source' => 'core_setting', 'key' => 'seo.sitemap_enabled', 'operator' => 'truthy', 'default' => true],
+            ],
+        ],
+        // GeoIP DB 정기 갱신 — 마스터 토글 + 자동 업데이트 토글 + 라이선스 키가 모두 충족되어야 실행.
+        // MaxMind 는 주 2회(화/금) 갱신하므로 수요일 다운로드로 충분하다. (7.2.0 부터 env GEOIP_SCHEDULE_* 대신 이 행)
+        'geoip-update' => [
+            'group' => 'system',
+            'label' => ['ko' => 'GeoIP 데이터베이스 갱신', 'en' => 'Update GeoIP database'],
+            'description' => ['ko' => 'MaxMind GeoIP 데이터베이스를 내려받아 갱신합니다(GeoIP 와 자동 업데이트를 켜고 라이선스 키를 넣은 경우만).', 'en' => 'Downloads and updates the MaxMind GeoIP database (only when GeoIP and auto-update are enabled with a license key).'],
+            'command' => 'geoip:update',
+            'expression' => '0 3 * * 3',
+            'without_overlapping' => 60,
+            'enabled_condition' => [
+                ['source' => 'core_setting', 'key' => 'geoip.feature_enabled', 'operator' => 'truthy', 'default' => false],
+                ['source' => 'core_setting', 'key' => 'geoip.auto_update_enabled', 'operator' => 'truthy', 'default' => true],
+                ['source' => 'core_setting', 'key' => 'geoip.license_key', 'operator' => 'not_empty', 'default' => ''],
             ],
         ],
     ],
@@ -1488,6 +2041,58 @@ return [
                     'subject' => ['ko' => '방문자 통계 집계 실패', 'en' => 'Analytics archiving failed'],
                     'body' => ['ko' => '{period} 기간의 {run_type}가 실패했습니다. 오류: {error}', 'en' => '{run_type} for {period} failed. Error: {error}'],
                     'click_url' => '/admin/analytics/diagnostics',
+                ],
+            ],
+        ],
+
+        // 예약 작업 실패 (7.2.0) — 스케줄 실행기가 예약 실행(수동 실행 제외)의 실패를 core.schedule.run_failed 로 알린다.
+        // 같은 스케줄은 사이트 기준 하루 1회만 보낸다(ScheduleFailureNotifier 스로틀). 스케줄별로 notify_on_failure 로 끌 수 있다.
+        'schedule_failed' => [
+            'hook_prefix' => 'core.schedule',
+            'audience' => 'staff',
+            'name' => ['ko' => '예약 작업 실패', 'en' => 'Scheduled Task Failed'],
+            'description' => ['ko' => '예약 작업(스케줄)이 실패하면 관리자에게 발송되는 알림 (같은 작업은 하루 1회)', 'en' => 'Notification sent to administrators when a scheduled task fails (once per day per task)'],
+            'channels' => ['mail', 'database'],
+            'hooks' => ['core.schedule.run_failed'],
+            'variables' => [
+                ['key' => 'schedule_label', 'description' => '작업 표시 명칭'],
+                ['key' => 'schedule_name', 'description' => '작업 식별자(name)'],
+                ['key' => 'owner', 'description' => '소유자(코어·확장 이름·직접 등록)'],
+                ['key' => 'error', 'description' => '실패 사유 메시지'],
+                ['key' => 'failed_at', 'description' => '실패 시각'],
+                ['key' => 'schedule_url', 'description' => '스케줄 관리 화면 URL'],
+                ['key' => 'app_name', 'description' => '사이트명'],
+                ['key' => 'site_url', 'description' => '사이트 URL'],
+            ],
+            'templates' => [
+                [
+                    'channel' => 'mail',
+                    'recipients' => [['type' => 'role', 'value' => 'admin']],
+                    'subject' => [
+                        'ko' => '[{app_name}] 예약 작업 「{schedule_label}」이 실패했습니다',
+                        'en' => '[{app_name}] Scheduled task "{schedule_label}" failed',
+                    ],
+                    'body' => [
+                        'ko' => '<h1>예약 작업 실패</h1>'
+                            .'<p>{owner}의 예약 작업 <strong>{schedule_label}</strong>({schedule_name})이 {failed_at}에 실패했습니다.</p>'
+                            .'<p>오류: <strong>{error}</strong></p>'
+                            .'<p>같은 작업의 실패는 하루에 한 번만 알립니다.</p>'
+                            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;"><tr><td align="center"><a href="{schedule_url}" style="display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">스케줄 관리 열기</a></td></tr></table>'
+                            .'<p>감사합니다,<br><a href="{site_url}">{app_name}</a></p>',
+                        'en' => '<h1>Scheduled Task Failed</h1>'
+                            .'<p>The scheduled task <strong>{schedule_label}</strong> ({schedule_name}) of {owner} failed at {failed_at}.</p>'
+                            .'<p>Error: <strong>{error}</strong></p>'
+                            .'<p>Failures of the same task are reported at most once a day.</p>'
+                            .'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;"><tr><td align="center"><a href="{schedule_url}" style="display: inline-block; padding: 12px 32px; background-color: #2d3748; color: #ffffff; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">Open Schedule Management</a></td></tr></table>'
+                            .'<p>Thank you,<br><a href="{site_url}">{app_name}</a></p>',
+                    ],
+                ],
+                [
+                    'channel' => 'database',
+                    'recipients' => [['type' => 'role', 'value' => 'admin']],
+                    'subject' => ['ko' => '예약 작업 실패: {schedule_label}', 'en' => 'Scheduled task failed: {schedule_label}'],
+                    'body' => ['ko' => '{owner}의 예약 작업 「{schedule_label}」이 실패했습니다. 오류: {error}', 'en' => 'The scheduled task "{schedule_label}" of {owner} failed. Error: {error}'],
+                    'click_url' => '{schedule_url}',
                 ],
             ],
         ],
@@ -2054,6 +2659,135 @@ return [
             'description' => 'identity.purposes.sensitive_action.description',
             'default_provider' => 'g7:core.mail',
             'allowed_channels' => ['mail', 'sms'],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 항목 집합 (Field Sets)
+    |--------------------------------------------------------------------------
+    | 입력 항목들이 모이는 자리의 선언. 코어는 회원(`core.user`) 하나를 갖고, 확장은
+    | `getFieldSets()` 로 자기 집합(게시판 비회원 작성자, 주문서 등)을 더한다.
+    | App\Fields\FieldSetRegistry 가 읽는다.
+    */
+    'field_sets' => [
+        [
+            'key' => 'core.user',
+            'label' => 'fields.sets.core_user',
+            'owner_types' => ['user'],
+            'surfaces' => ['signup', 'admin_create', 'admin_update', 'self_update', 'required_info'],
+            'read_permission' => 'core.settings.read',
+            'manage_permission' => 'core.settings.update',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | 코어 회원 항목 (Fields)
+    |--------------------------------------------------------------------------
+    | users 테이블 컬럼을 회원 항목으로 선언한다. FieldDefinitionSyncHelper 가 field_definitions
+    | 테이블로 동기화하고, 운영자가 환경설정 > 회원 탭에서 고친 사용·필수·순서 등은
+    | user_overrides 로 보존된다.
+    |
+    | 기본값은 종전 동작과 같다: 이름은 사용·필수·가입 표시, 닉네임·휴대폰·전화·언어는
+    | 사용·선택·가입 표시, 나머지는 사용·선택·가입 미표시. 이메일·비밀번호·약관 동의는
+    | 항목이 아니라 고정 규칙이다.
+    |
+    | 다국어 값은 ko/en 을 직접 적고, 다른 로케일은 활성 언어팩이 `core.fields.config`
+    | 필터로 더한다.
+    */
+    'fields' => [
+        [
+            'field_set' => 'core.user', 'key' => 'name', 'type' => 'text',
+            'storage' => 'column', 'storage_target' => 'name',
+            'name' => ['ko' => '이름', 'en' => 'Name'],
+            'placeholder' => ['ko' => '이름을 입력하세요', 'en' => 'Enter your name'],
+            'constraints' => ['max_length' => 255],
+            'enabled' => true, 'required' => true, 'show_on_signup' => true,
+            'idv_claim' => 'name',
+            'ui' => ['group' => 'basic'], 'sort_order' => 10,
+        ],
+        [
+            'field_set' => 'core.user', 'key' => 'nickname', 'type' => 'text',
+            'storage' => 'column', 'storage_target' => 'nickname',
+            'name' => ['ko' => '닉네임', 'en' => 'Nickname'],
+            'placeholder' => ['ko' => '닉네임을 입력하세요', 'en' => 'Enter your nickname'],
+            'constraints' => ['max_length' => 50],
+            'enabled' => true, 'required' => false, 'show_on_signup' => true,
+            'ui' => ['group' => 'basic'], 'sort_order' => 20,
+        ],
+        [
+            'field_set' => 'core.user', 'key' => 'mobile', 'type' => 'phone',
+            'storage' => 'column', 'storage_target' => 'mobile',
+            'name' => ['ko' => '휴대폰', 'en' => 'Mobile'],
+            'placeholder' => ['ko' => '휴대폰번호를 입력하세요', 'en' => 'Enter your mobile number'],
+            'enabled' => true, 'required' => false, 'show_on_signup' => true,
+            'idv_claim' => 'mobile',
+            'ui' => ['group' => 'contact'], 'sort_order' => 30,
+        ],
+        [
+            'field_set' => 'core.user', 'key' => 'phone', 'type' => 'phone',
+            'storage' => 'column', 'storage_target' => 'phone',
+            'name' => ['ko' => '전화번호', 'en' => 'Phone'],
+            'placeholder' => ['ko' => '전화번호를 입력하세요', 'en' => 'Enter your phone number'],
+            'enabled' => true, 'required' => false, 'show_on_signup' => true,
+            'ui' => ['group' => 'contact'], 'sort_order' => 40,
+        ],
+        [
+            'field_set' => 'core.user', 'key' => 'language', 'type' => 'choice',
+            'storage' => 'column', 'storage_target' => 'language',
+            'name' => ['ko' => '언어', 'en' => 'Language'],
+            'constraints' => ['display' => 'select', 'options_source' => 'supported_locales'],
+            'enabled' => true, 'required' => false, 'show_on_signup' => true,
+            'ui' => ['group' => 'location'], 'sort_order' => 50,
+        ],
+        [
+            'field_set' => 'core.user', 'key' => 'country', 'type' => 'text',
+            'storage' => 'column', 'storage_target' => 'country',
+            'name' => ['ko' => '국가', 'en' => 'Country'],
+            'constraints' => ['min_length' => 2, 'max_length' => 2, 'regex' => '/^[\pL\pM]{2}$/u', 'widget' => 'country'],
+            'enabled' => true, 'required' => false, 'show_on_signup' => false,
+            'ui' => ['group' => 'location'], 'sort_order' => 60,
+        ],
+        [
+            'field_set' => 'core.user', 'key' => 'timezone', 'type' => 'text',
+            'storage' => 'column', 'storage_target' => 'timezone',
+            'name' => ['ko' => '시간대', 'en' => 'Timezone'],
+            'constraints' => ['max_length' => 64, 'format' => 'timezone', 'widget' => 'timezone'],
+            'enabled' => true, 'required' => false, 'show_on_signup' => false,
+            'ui' => ['group' => 'location'], 'sort_order' => 70,
+        ],
+        [
+            'field_set' => 'core.user', 'key' => 'homepage', 'type' => 'url',
+            'storage' => 'column', 'storage_target' => 'homepage',
+            'name' => ['ko' => '홈페이지', 'en' => 'Homepage'],
+            'constraints' => ['schemes' => '*'],
+            'enabled' => true, 'required' => false, 'show_on_signup' => false,
+            'ui' => ['group' => 'contact'], 'sort_order' => 80,
+        ],
+        [
+            'field_set' => 'core.user', 'key' => 'address', 'type' => 'address',
+            'storage' => 'column', 'storage_target' => 'zipcode,address,address_detail',
+            'name' => ['ko' => '주소', 'en' => 'Address'],
+            'constraints' => ['parts' => ['zipcode' => 'zipcode', 'address' => 'address', 'address_detail' => 'address_detail']],
+            'enabled' => true, 'required' => false, 'show_on_signup' => false,
+            'ui' => ['group' => 'location'], 'sort_order' => 90,
+        ],
+        [
+            'field_set' => 'core.user', 'key' => 'signature', 'type' => 'textarea',
+            'storage' => 'column', 'storage_target' => 'signature',
+            'name' => ['ko' => '서명', 'en' => 'Signature'],
+            'constraints' => ['max_length' => 1000],
+            'enabled' => true, 'required' => false, 'show_on_signup' => false,
+            'ui' => ['group' => 'profile'], 'sort_order' => 100,
+        ],
+        [
+            'field_set' => 'core.user', 'key' => 'bio', 'type' => 'textarea',
+            'storage' => 'column', 'storage_target' => 'bio',
+            'name' => ['ko' => '자기소개', 'en' => 'Bio'],
+            'constraints' => ['max_length' => 5000],
+            'enabled' => true, 'required' => false, 'show_on_signup' => false,
+            'ui' => ['group' => 'profile'], 'sort_order' => 110,
         ],
     ],
 

@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Installer;
 
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+use PHPUnit\Framework\Attributes\RunClassInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -9,6 +11,8 @@ use PHPUnit\Framework\TestCase;
  *
  * .gitkeep, .gitignore 등 Git 추적 파일이 삭제되지 않는지 검증합니다.
  */
+#[RunClassInSeparateProcess]
+#[PreserveGlobalState(false)]
 class DeleteDirectoryTest extends TestCase
 {
     /**
@@ -18,6 +22,8 @@ class DeleteDirectoryTest extends TestCase
 
     /**
      * 테스트 전 인스톨러 함수 로드 및 임시 디렉토리 생성
+     *
+     * @return void 반환값 없음
      */
     protected function setUp(): void
     {
@@ -59,6 +65,8 @@ class DeleteDirectoryTest extends TestCase
 
     /**
      * 테스트 후 임시 디렉토리 정리
+     *
+     * @return void 반환값 없음
      */
     protected function tearDown(): void
     {
@@ -68,6 +76,12 @@ class DeleteDirectoryTest extends TestCase
 
     /**
      * deleteDirectory()가 .gitkeep 파일을 보존하는지 확인합니다.
+     *
+     * @scenario task=composer
+     *
+     * @effects delete_directory_preserves_git_placeholder_files
+     *
+     * @return void 반환값 없음
      */
     public function test_preserves_gitkeep_file(): void
     {
@@ -90,6 +104,12 @@ class DeleteDirectoryTest extends TestCase
 
     /**
      * deleteDirectory()가 .gitignore 파일을 보존하는지 확인합니다.
+     *
+     * @scenario task=composer
+     *
+     * @effects delete_directory_preserves_git_placeholder_files
+     *
+     * @return void 반환값 없음
      */
     public function test_preserves_gitignore_file(): void
     {
@@ -109,6 +129,12 @@ class DeleteDirectoryTest extends TestCase
 
     /**
      * deleteDirectory()가 보호 파일이 없으면 디렉토리를 유지하되 비워두는지 확인합니다.
+     *
+     * @scenario task=composer
+     *
+     * @effects delete_directory_remove_dir_flag_decides_the_root
+     *
+     * @return void 반환값 없음
      */
     public function test_keeps_directory_when_no_preserve_files_and_remove_dir_false(): void
     {
@@ -128,6 +154,12 @@ class DeleteDirectoryTest extends TestCase
 
     /**
      * deleteDirectory()가 removeDir=true이고 보호 파일이 있으면 디렉토리를 유지하는지 확인합니다.
+     *
+     * @scenario task=composer
+     *
+     * @effects delete_directory_preserves_git_placeholder_files, delete_directory_remove_dir_flag_decides_the_root
+     *
+     * @return void 반환값 없음
      */
     public function test_keeps_directory_when_preserve_files_exist_even_with_remove_dir(): void
     {
@@ -147,6 +179,12 @@ class DeleteDirectoryTest extends TestCase
 
     /**
      * deleteDirectory()가 removeDir=true이고 보호 파일이 없으면 디렉토리를 삭제하는지 확인합니다.
+     *
+     * @scenario task=composer
+     *
+     * @effects delete_directory_remove_dir_flag_decides_the_root
+     *
+     * @return void 반환값 없음
      */
     public function test_removes_directory_when_no_preserve_files_and_remove_dir_true(): void
     {
@@ -162,6 +200,12 @@ class DeleteDirectoryTest extends TestCase
 
     /**
      * deleteDirectory()가 중첩 디렉토리를 재귀적으로 처리하는지 확인합니다.
+     *
+     * @scenario task=composer
+     *
+     * @effects delete_directory_preserves_git_placeholder_files
+     *
+     * @return void 반환값 없음
      */
     public function test_handles_nested_directories(): void
     {
@@ -184,6 +228,12 @@ class DeleteDirectoryTest extends TestCase
 
     /**
      * deleteDirectory()가 빈 디렉토리에서도 정상 동작하는지 확인합니다.
+     *
+     * @scenario task=composer
+     *
+     * @effects delete_directory_remove_dir_flag_decides_the_root
+     *
+     * @return void 반환값 없음
      */
     public function test_handles_empty_directory(): void
     {
@@ -197,6 +247,12 @@ class DeleteDirectoryTest extends TestCase
 
     /**
      * deleteDirectory()가 존재하지 않는 경로에서 false를 반환하는지 확인합니다.
+     *
+     * @scenario task=composer
+     *
+     * @effects delete_directory_reports_enumeration_failure
+     *
+     * @return void 반환값 없음
      */
     public function test_returns_false_for_nonexistent_directory(): void
     {
@@ -208,6 +264,7 @@ class DeleteDirectoryTest extends TestCase
      * 임시 디렉토리를 완전히 정리합니다 (테스트용).
      *
      * @param  string  $dir  정리할 디렉토리 경로
+     * @return void 반환값 없음
      */
     private function cleanupTempDir(string $dir): void
     {

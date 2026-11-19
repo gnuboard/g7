@@ -6,8 +6,8 @@ namespace Plugins\Sirsoft\PayKginicis\Listeners;
 
 use App\Contracts\Extension\HookListenerInterface;
 use Illuminate\Support\Facades\Log;
+use Modules\Sirsoft\Ecommerce\Contracts\Payment\ClaimPaymentLookup;
 use Modules\Sirsoft\Ecommerce\Models\ClaimPayment;
-use Modules\Sirsoft\Ecommerce\Services\ClaimPaymentService;
 use Plugins\Sirsoft\PayKginicis\Services\KgInicisApiService;
 
 /**
@@ -30,6 +30,13 @@ class ClaimPaymentRefundListener implements HookListenerInterface
     private const PG_PROVIDER_ID = 'kginicis';
 
     /**
+     * @param  ClaimPaymentLookup  $claimPayments  이커머스 클레임 결제 공개 계약 (청구액·환급 합계 계산)
+     */
+    public function __construct(
+        private readonly ClaimPaymentLookup $claimPayments,
+    ) {}
+
+    /**
      * 구독할 훅 매핑을 반환합니다.
      *
      * @return array 훅 구독 설정
@@ -49,6 +56,7 @@ class ClaimPaymentRefundListener implements HookListenerInterface
      * 기본 핸들러 (미사용 — 개별 메서드에서 처리)
      *
      * @param  mixed  ...$args  훅 인수
+     * @return void 반환값 없음
      */
     public function handle(...$args): void {}
 
@@ -143,6 +151,7 @@ class ClaimPaymentRefundListener implements HookListenerInterface
      * @param  KgInicisApiService  $apiService  API 서비스
      * @param  ClaimPayment  $payment  결제 건
      * @param  string  $tid  거래번호
+     * @return void 반환값 없음
      */
     private function useStoredCredentials(KgInicisApiService $apiService, ClaimPayment $payment, string $tid): void
     {
@@ -182,9 +191,9 @@ class ClaimPaymentRefundListener implements HookListenerInterface
      */
     private function isCbtPayment(ClaimPayment $payment): bool
     {
-        $charge = app(ClaimPaymentService::class)->resolvePaymentCharge($payment);
+        $charge = $this->claimPayments->resolveClaimCharge($payment);
 
-        return $charge !== null && strtoupper((string) $charge['currency']) === 'JPY';
+        return $charge !== null && strtoupper($charge->currency) === 'JPY';
     }
 
     /**
@@ -198,7 +207,7 @@ class ClaimPaymentRefundListener implements HookListenerInterface
      */
     private function paidLocalTotal(ClaimPayment $payment): float
     {
-        return app(ClaimPaymentService::class)->resolvePaymentCurrencyTotal($payment);
+        return $this->claimPayments->claimPaymentTotals($payment)->paymentCurrencyTotal;
     }
 
     /**
@@ -209,7 +218,7 @@ class ClaimPaymentRefundListener implements HookListenerInterface
      */
     private function refundedLocalTotal(ClaimPayment $payment): float
     {
-        return app(ClaimPaymentService::class)->resolveRefundedPaymentCurrencyTotal($payment);
+        return $this->claimPayments->claimPaymentTotals($payment)->refundedPaymentCurrencyTotal;
     }
 
     /**

@@ -5,8 +5,12 @@ namespace Modules\Sirsoft\Board\Listeners;
 use App\Contracts\Extension\HookListenerInterface;
 use App\Contracts\Repositories\RoleRepositoryInterface;
 use App\Contracts\Repositories\UserRepositoryInterface;
+use App\DisplayName\DisplayNameAreaRegistry;
+use App\DisplayName\DisplayNameResolver;
 use App\Extension\ModuleManager;
 use App\Services\NotificationRecipientCapability;
+use App\Support\ScreenUrl;
+use App\Support\SiteUrl;
 use BackedEnum;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -22,6 +26,7 @@ use Modules\Sirsoft\Board\Repositories\Contracts\CommentRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\PostRepositoryInterface;
 use Modules\Sirsoft\Board\Repositories\Contracts\ReportRepositoryInterface;
 use Modules\Sirsoft\Board\Services\UserNotificationSettingService;
+use Modules\Sirsoft\Board\Support\BoardScreenUrl;
 
 /**
  * 게시판 알림 데이터 필터 리스너
@@ -186,10 +191,10 @@ class BoardNotificationDataListener implements HookListenerInterface
                 'app_name' => config('app.name'),
                 'board_name' => $board->localizedName ?? $board->name,
                 'post_title' => $post->title ?? '',
-                'comment_author' => $comment->user?->name ?? $comment->author_name ?? '',
+                'comment_author' => $this->authorNameForNotification($comment),
                 'comment_content' => $commentContent,
                 'post_url' => $this->buildPostUrl($board, $post),
-                'site_url' => config('app.url'),
+                'site_url' => ScreenUrl::userLinkBase(),
             ],
             'context' => [
                 'trigger_user_id' => $comment->user_id,
@@ -246,10 +251,10 @@ class BoardNotificationDataListener implements HookListenerInterface
                 'app_name' => config('app.name'),
                 'board_name' => $board->localizedName ?? $board->name,
                 'post_title' => $post->title ?? '',
-                'comment_author' => $comment->user?->name ?? $comment->author_name ?? '',
+                'comment_author' => $this->authorNameForNotification($comment),
                 'comment_content' => $commentContent,
                 'post_url' => $this->buildPostUrl($board, $post),
-                'site_url' => config('app.url'),
+                'site_url' => ScreenUrl::userLinkBase(),
             ],
             'context' => [
                 'trigger_user_id' => $comment->user_id,
@@ -304,7 +309,7 @@ class BoardNotificationDataListener implements HookListenerInterface
                 'board_name' => $board->localizedName ?? $board->name,
                 'post_title' => $parentPost->title ?? '',
                 'post_url' => $this->buildPostUrl($board, $parentPost),
-                'site_url' => config('app.url'),
+                'site_url' => ScreenUrl::userLinkBase(),
             ],
             'context' => [
                 'trigger_user_id' => $post->user_id,
@@ -361,7 +366,7 @@ class BoardNotificationDataListener implements HookListenerInterface
                     'action_type' => $actionType,
                     'target_type' => $targetTypeLabel,
                     'post_url' => $this->buildPostUrl($board, $target),
-                    'site_url' => config('app.url'),
+                    'site_url' => ScreenUrl::userLinkBase(),
                 ],
                 'context' => [
                     'trigger_user_id' => Auth::id(),
@@ -402,8 +407,8 @@ class BoardNotificationDataListener implements HookListenerInterface
                     'post_title' => $post?->title ?? '',
                     'action_type' => $actionType,
                     'target_type' => $targetTypeLabel,
-                    'post_url' => $post ? $this->buildPostUrl($board, $post) : config('app.url'),
-                    'site_url' => config('app.url'),
+                    'post_url' => $post ? $this->buildPostUrl($board, $post) : ScreenUrl::userLinkBase(),
+                    'site_url' => ScreenUrl::userLinkBase(),
                 ],
                 'context' => [
                     'trigger_user_id' => Auth::id(),
@@ -459,7 +464,7 @@ class BoardNotificationDataListener implements HookListenerInterface
                     'action_type' => $actionType,
                     'target_type' => $targetTypeLabel,
                     'post_url' => $this->buildPostUrl($board, $target),
-                    'site_url' => config('app.url'),
+                    'site_url' => ScreenUrl::userLinkBase(),
                 ],
                 'context' => [
                     'trigger_user_id' => Auth::id(),
@@ -491,8 +496,8 @@ class BoardNotificationDataListener implements HookListenerInterface
                     'post_title' => $post?->title ?? '',
                     'action_type' => $actionType,
                     'target_type' => $targetTypeLabel,
-                    'post_url' => $post ? $this->buildPostUrl($board, $post) : config('app.url'),
-                    'site_url' => config('app.url'),
+                    'post_url' => $post ? $this->buildPostUrl($board, $post) : ScreenUrl::userLinkBase(),
+                    'site_url' => ScreenUrl::userLinkBase(),
                 ],
                 'context' => [
                     'trigger_user_id' => Auth::id(),
@@ -556,9 +561,9 @@ class BoardNotificationDataListener implements HookListenerInterface
                 'app_name' => config('app.name'),
                 'board_name' => $board->localizedName ?? $board->name,
                 'post_title' => $post->title ?? '',
-                'post_author' => $post->author_name ?? $post->user?->name ?? '',
+                'post_author' => $this->authorNameForNotification($post),
                 'post_url' => $this->buildPostUrl($board, $post),
-                'site_url' => config('app.url'),
+                'site_url' => SiteUrl::forOutboundLinks(),
             ],
             'context' => [
                 'trigger_user_id' => $post->user_id,
@@ -626,7 +631,8 @@ class BoardNotificationDataListener implements HookListenerInterface
      */
     private function buildAdminPostUrl(string $slug, int $postId): string
     {
-        return config('app.url')."/admin/board/{$slug}/post/{$postId}";
+        // 관리자 화면 — 화면 주소 헬퍼의 관리자 범위(베이스 = 사이트 주소, #792)
+        return ScreenUrl::absoluteForLinks('board.admin.post', '/admin/board/{slug}/post/{id}', ['slug' => $slug, 'id' => $postId], ScreenUrl::SCOPE_ADMIN);
     }
 
     /**
@@ -686,8 +692,8 @@ class BoardNotificationDataListener implements HookListenerInterface
                 'post_title' => $postTitle,
                 'target_type' => __('sirsoft-board::notification.report_action.target_types.'.$targetType),
                 'reason_type' => __('sirsoft-board::notification.report_received_admin.reason_types.'.$reasonType),
-                'report_url' => config('app.url').'/admin/boards/reports',
-                'site_url' => config('app.url'),
+                'report_url' => ScreenUrl::absoluteForLinks('board.admin.reports', '/admin/boards/reports', [], ScreenUrl::SCOPE_ADMIN),
+                'site_url' => SiteUrl::forOutboundLinks(),
             ],
             'context' => [
                 'trigger_user_id' => $report->reporter_id ?? null,
@@ -736,7 +742,28 @@ class BoardNotificationDataListener implements HookListenerInterface
      */
     private function buildPostUrl(Board $board, Post $post): string
     {
-        return config('app.url')."/board/{$board->slug}/{$post->id}";
+        // 회원이 여는 글보기 — 「사용자 화면 URL」·주소 필터를 따른다(#792)
+        return ScreenUrl::toAbsoluteForLinks(BoardScreenUrl::post($board->slug, $post->id));
+    }
+
+    /**
+     * 알림 본문에 실을 글 또는 댓글 작성자 이름을 반환합니다.
+     *
+     * 수신자가 아닌 다른 회원의 이름이다. 알림 영역(`core:notification`)의 표시 이름으로 싣고,
+     * 비회원이 쓴 글과 댓글은 입력한 이름을 그대로 싣는다.
+     *
+     * @param  Post|Comment  $content  글 또는 댓글
+     * @return string 작성자 이름 (없으면 빈 문자열)
+     */
+    private function authorNameForNotification(Post|Comment $content): string
+    {
+        $user = $content->user_id ? $content->user : null;
+
+        return (string) app(DisplayNameResolver::class)->resolve(
+            $user,
+            DisplayNameAreaRegistry::AREA_NOTIFICATION,
+            ['guest_name' => $content->author_name],
+        );
     }
 
     /**

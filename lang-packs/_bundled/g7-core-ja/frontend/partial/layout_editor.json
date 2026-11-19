@@ -73,6 +73,13 @@
       },
       "empty": "表示するルートがありません"
     },
+    "stage_banner": "検収用の保存 — このエディタで保存した内容は検収サーバーにのみ残り、運用サイトには反映されず、次回のデプロイ時に破棄されます。",
+    "spec_load_error": {
+      "title": "エディタ情報を読み込めませんでした。",
+      "message": "コンポーネント一覧、スタイル設定、状態切り替えが使えません。もう一度お試しください。",
+      "retry": "再試行",
+      "retrying": "再読み込み中…"
+    },
     "fab": {
       "label": "レイアウト編集",
       "tooltip": "この画面をレイアウトエディタで開く"
@@ -131,6 +138,7 @@
     "chars": "({diff} 文字)",
     "saved_by": "保存者: {name}",
     "unknown_author": "不明",
+    "system_author": "システム",
     "compare": "比較",
     "comparing": "比較中…",
     "diff_title": "v{old} → v{new} 変更内容",
@@ -187,7 +195,9 @@
   },
   "zoom": {
     "label": "ズーム",
-    "aria_label": "キャンバスズームスライダー"
+    "aria_label": "キャンバスズームスライダー",
+    "actual_size": "実際のサイズ",
+    "actual_size_hint": "プレビューを縮小せず 1:1 で表示します。キャンバスより広い場合は横スクロールが出ます。"
   },
   "palette": {
     "title": "要素を追加",
@@ -403,7 +413,17 @@
     "bound_value": {
       "notice": "データ連携の値です（自動で入ります）",
       "replace": "直接指定に変更",
-      "restore": "データ連携に戻す"
+      "restore": "データ連携に戻す",
+      "template_settings_notice": "テンプレート設定に連結された値です — 管理 > テンプレート > このテンプレートの「設定」で変更します。",
+      "open_template_settings": "設定を開く"
+    },
+    "thumbnail_preset": {
+      "original": "元画像",
+      "fit_cover": "切り抜き",
+      "fit_contain": "全体を収める",
+      "fit_width": "幅のみ",
+      "option_label": "{name}（{size}・{fit}）",
+      "unknown": "{name}（現在未使用）"
     }
   },
   "recipe": {
@@ -1382,6 +1402,10 @@
     "login_password_change_postpone": {
       "label": "パスワード変更を後回しにする",
       "param_body": "変更リクエスト情報"
+    },
+    "login_handoff": {
+      "label": "ログイン引き継ぎコードでログイン",
+      "param_body": "引き継ぎリクエスト情報"
     },
     "logout": {
       "label": "ログアウト処理",

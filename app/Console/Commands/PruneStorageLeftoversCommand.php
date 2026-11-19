@@ -36,10 +36,23 @@ class PruneStorageLeftoversCommand extends Command
     private const GROUP_LABELS = [
         'staging' => 'common.console.storage_prune_leftovers.groups.staging',
         'temp' => 'common.console.storage_prune_leftovers.groups.temp',
+        'storage_temp' => 'common.console.storage_prune_leftovers.groups.storage_temp',
+        'core_pending' => 'common.console.storage_prune_leftovers.groups.core_pending',
+        'core_pending_staging' => 'common.console.storage_prune_leftovers.groups.core_pending_staging',
+        'core_update_preserved' => 'common.console.storage_prune_leftovers.groups.core_update_preserved',
+        'core_update_reports' => 'common.console.storage_prune_leftovers.groups.core_update_reports',
+        'public_storage_broken' => 'common.console.storage_prune_leftovers.groups.public_storage_broken',
+        'public_storage_broken_docroot' => 'common.console.storage_prune_leftovers.groups.public_storage_broken_docroot',
+        'installer_probes' => 'common.console.storage_prune_leftovers.groups.installer_probes',
+        'installer_state_corrupt' => 'common.console.storage_prune_leftovers.groups.installer_state_corrupt',
         'vendor_bundle_staging' => 'common.console.storage_prune_leftovers.groups.vendor_bundle_staging',
         'extension_backups' => 'common.console.storage_prune_leftovers.groups.extension_backups',
         'core_backups' => 'common.console.storage_prune_leftovers.groups.core_backups',
+        'root_entry_temp' => 'common.console.storage_prune_leftovers.groups.root_entry_temp',
+        'stale_swap_files' => 'common.console.storage_prune_leftovers.groups.stale_swap_files',
+        'env_backups' => 'common.console.storage_prune_leftovers.groups.env_backups',
         'legacy_browser_log' => 'common.console.storage_prune_leftovers.groups.legacy_browser_log',
+        'carried_class_files' => 'common.console.storage_prune_leftovers.groups.carried_class_files',
     ];
 
     /**

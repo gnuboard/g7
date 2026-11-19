@@ -8,7 +8,6 @@
  * → 원시값 콜백 호출 순서로 잠근다.
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { ActionRecipeEditor } from '../../../components/property-controls/ActionRecipeEditor';

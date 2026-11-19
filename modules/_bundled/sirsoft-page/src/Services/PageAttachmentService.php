@@ -9,6 +9,8 @@ use App\Helpers\InlineMediaPolicy;
 use App\Helpers\PermissionHelper;
 use App\Support\Files\StoredFileExtension;
 use App\Support\ImageResizer;
+use App\Support\UploadedFileName;
+use App\Thumbnails\DTO\ThumbnailSource;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\UploadedFile;
@@ -192,6 +194,15 @@ class PageAttachmentService
         // 임시 파일을 제자리에서 줄이므로 아래의 저장·크기 계산이 모두 축소본을 본다.
         app(ImageResizer::class)->resizeInPlace($file->getRealPath(), $file->getMimeType());
 
+        // 축소는 **제자리 덮어쓰기**라 그 경로의 stat 이 이미 캐시돼 있다.
+        //
+        // `ImageResizer::resizeInPlace()` 는 쓰기 **전에** `is_file()` 로 그 경로를 stat 하므로
+        // 캐시가 반드시 채워진다. 아래에서 읽는 `getSize()` 는 그 공유 캐시를 그대로 쓰는데,
+        // 값이 축소 전 크기면 행의 `size` 가 실제 저장 바이트보다 커진다. 그 값은 서빙에서
+        // `Content-Length` 로 **선언**되므로 어긋나는 순간 응답이 잘린다. 형제
+        // `sirsoft-board` 는 같은 사유로 이미 이 처리를 갖는다.
+        clearstatcache(true, $file->getRealPath());
+
         // StorageInterface를 통한 파일 저장
         $this->storage->put('attachments', $path, file_get_contents($file->getRealPath()));
 
@@ -212,7 +223,7 @@ class PageAttachmentService
         $attachment = $this->attachmentRepository->create([
             'page_id' => $pageId,
             'temp_key' => $pageId ? null : $tempKey,
-            'original_filename' => $file->getClientOriginalName(),
+            'original_filename' => UploadedFileName::original($file),
             'stored_filename' => $storedFilename,
             'disk' => $this->storage->getDisk(),
             'path' => $path,
@@ -261,8 +272,25 @@ class PageAttachmentService
             // audit:allow datetime-display-user-timezone reason: 저장 경로(디렉터리 날짜) — 기계값
             $newPath = date('Y/m/d').'/'.$attachment->stored_filename;
 
-            // 파일 이동 — 페이지 저장 트랜잭션 안에서는 복사해 두고 커밋되면 원본을 지운다 (StorageTransaction, #883)
-            StorageTransaction::move($this->storage, 'attachments', $attachment->path, $newPath);
+            // 파일 이동 — 페이지 저장 트랜잭션 안에서는 복사해 두고 커밋되면 원본을 지운다 (StorageTransaction, #883).
+            // 디스크는 행이 정한다.
+            //
+            // 읽기 실패를 조용히 지나가지 않는다. 종전에는 `if ($content)` 라 ①읽기 실패
+            // (null)와 ②0 바이트 파일이 모두 falsy 로 접혀 이동을 건너뛰면서 **DB `path` 는
+            // 아래에서 갱신**됐다 — 행은 최종 경로를 가리키는데 파일은 임시 경로에 남거나
+            // 아예 없어, 첨부가 오류도 로그도 없이 영구 유실된다.
+            $storage = $this->storageForRow($attachment->disk);
+
+            if (! StorageTransaction::move($storage, 'attachments', $attachment->path, $newPath)) {
+                Log::error('임시 페이지 첨부 파일을 읽지 못해 연결을 건너뜁니다 — 행을 그대로 둡니다', [
+                    'attachment_id' => $attachment->id,
+                    'disk' => $attachment->disk,
+                    'path' => $attachment->path,
+                    'page_id' => $pageId,
+                ]);
+
+                continue;
+            }
 
             // DB 업데이트: page_id 설정, temp_key 제거, path 변경, order 재배치 (조회 순서 = 업로드 순서, 기존 첨부 뒤)
             $this->attachmentRepository->update($attachment, [
@@ -275,11 +303,21 @@ class PageAttachmentService
             $linkedCount++;
         }
 
-        // 임시 디렉토리 정리 — 부수 작업이라 실패해도 연결을 되돌리지 않는다. 막 옮긴 대용량 파일을 운영체제가
+        // 임시 디렉토리 정리 — 임시 행이 여러 disk 에 걸칠 수 있어 **행 disk 별로** 돈다.
+        // 같은 메서드의 이동 3연산은 `storageForRow()` 를 쓰는데 이 마지막 정리만 주입
+        // 디스크였다 — 디스크를 옮긴 사이트에서 행 disk 의 `temp/{key}` 가 영구 잔류한다.
+        // 같은 클래스의 서빙·삭제·이동·정리 네 경로 중 이 한 지점만 어긋나 있었고, 형제
+        // 둘(ecommerce·board)은 이미 disk 별 순회를 갖는다.
+        // 부수 작업이라 실패해도 연결을 되돌리지 않는다. 막 옮긴 대용량 파일을 운영체제가
         // 잠시 붙잡고 있으면 디렉토리 순회가 lstat 오류를 던져 저장 전체가 500 이 되고 파일·DB 경로가 어긋났다(#703 게시판 실측).
         // 원본 삭제가 커밋 뒤라 정리도 커밋 뒤에 한다.
-        StorageTransaction::afterCommit(function () use ($tempKey) {
+        $tempDisks = $tempAttachments->pluck('disk')->filter()->unique();
+        StorageTransaction::afterCommit(function () use ($tempDisks, $tempKey) {
             try {
+                foreach ($tempDisks as $tempDisk) {
+                    $this->storageForRow($tempDisk)->deleteDirectory('attachments', 'temp/'.$tempKey);
+                }
+
                 $this->storage->deleteDirectory('attachments', 'temp/'.$tempKey);
             } catch (\Throwable $e) {
                 Log::warning('페이지 임시 첨부 디렉토리 정리 실패 — 연결은 완료, 빈 디렉토리가 남음', [
@@ -304,8 +342,15 @@ class PageAttachmentService
 
         HookManager::doAction('sirsoft-page.attachment.before_delete', $attachment);
 
-        // 물리 파일 삭제 — 트랜잭션 안(페이지 삭제 등)이면 커밋된 뒤에 지워, 롤백되어 행이 되돌아와도 파일이 남게 한다 (#887)
-        StorageTransaction::deleteAfterCommit($this->storage, 'attachments', $attachment->path);
+        // 물리 파일 삭제 — 디스크는 행이 정한다.
+        //
+        // 같은 클래스의 임시 정리 경로(`pruneTempUploads()`)와 형제 모듈의 삭제 경로는 이미
+        // 행 disk 를 따르는데 이 지점만 주입 디스크로 갔다. 디스크를 옮긴 사이트에서는
+        // 삭제가 다른 디스크를 향해 파일이 남고, 행은 지워져 그 파일을 다시
+        // 가리키는 것이 사라진다 — 오류도 로그도 없이 스토리지에만 쌓인다.
+        //
+        // 트랜잭션 안(페이지 삭제 등)이면 커밋된 뒤에 지워, 롤백되어 행이 되돌아와도 파일이 남게 한다 (#887)
+        StorageTransaction::deleteAfterCommit($this->storageForRow($attachment->disk), 'attachments', $attachment->path);
 
         // DB 행 삭제
         $result = $this->attachmentRepository->delete($attachment);
@@ -569,37 +614,128 @@ class PageAttachmentService
     /**
      * 첨부파일 다운로드 스트리밍 응답을 생성합니다.
      *
+     * `Content-Disposition` 을 직접 만들지 않습니다. Flysystem 어댑터는 그 헤더가 이미
+     * 있으면 자기 `makeDisposition()` 을 통째로 건너뛰므로, 원문 파일명이 그대로 헤더에
+     * 실립니다 — 이름에 따옴표가 들어간 업로드(`getClientOriginalName()` 은 basename 만
+     * 하고 따옴표를 지우지 않는다)에서 값이 첫 따옴표에서 끊기고 나머지가 헤더 문법으로
+     * 새어 나갑니다. RFC 5987(`filename*=utf-8''…`) 인코딩도 같은 지점이 만듭니다.
+     * 형제 `sirsoft-board`·코어 첨부 서비스는 모두 스토리지 `download()` 에 위임합니다.
+     *
+     * 디스크도 행이 정합니다 — 같은 클래스의 정리 경로(`pruneTempUploads()` ·
+     * `removeEmptyTempDirectories()`)는 이미 `storageForRow()` 를 쓰는데 서빙만 주입
+     * 디스크로 갔습니다. 디스크를 옮긴 사이트에서는 이 통로만 전량 404 가 됩니다.
+     *
      * @param  PageAttachment  $attachment  첨부파일 모델
      * @return StreamedResponse|null 스트리밍 응답 또는 null (파일 없음)
      */
     public function download(PageAttachment $attachment): ?StreamedResponse
     {
-        if (! $this->storage->exists('attachments', $attachment->path)) {
+        return $this->getDownloadInfo($attachment)['response'] ?? null;
+    }
+
+    /**
+     * 다운로드(첨부 방식) 서빙 정보를 만듭니다 — 스트림 + 미리보기와 **같은 검증자 소스**.
+     *
+     * 종전에는 `download()` 가 스토리지 스트림만 돌려줘 컨트롤러가 그것을 그대로 반환했다 —
+     * 이 통로만 코어 헬퍼(`streamedFileResponse()`)를 지나지 않아 ETag·304·`nosniff`·압축
+     * 제외 선언이 전부 빠졌다. 같은 첨부가 이미지면 재검증되고 문서면 매번 전문을 받아 갔다
+     * (코어 첨부 서비스 `getDownloadInfo()` 가 앞서 고친 것과 같은 비대칭).
+     * 검증자는 `previewValidators()` 한 곳이 만든다 — 통로마다 사본으로 두면 같은 첨부가
+     * 통로에 따라 다른 ETag 를 갖는다.
+     *
+     * @param  PageAttachment  $attachment  첨부파일 모델
+     * @return array{response: StreamedResponse, etag_source: string, mime_type: string, last_modified: int|null}|null 서빙 정보 또는 null (파일 없음)
+     */
+    public function getDownloadInfo(PageAttachment $attachment): ?array
+    {
+        $storage = $this->storageForRow($attachment->disk);
+
+        if (! $storage->exists('attachments', $attachment->path)) {
             return null;
         }
 
-        $encodedFilename = rawurlencode($attachment->original_filename);
-
-        $response = $this->storage->response(
+        $response = $storage->download(
             'attachments',
             $attachment->path,
             $attachment->original_filename,
-            [
-                'Content-Type' => $attachment->mime_type,
-                'Content-Disposition' => "attachment; filename=\"{$attachment->original_filename}\"; filename*=UTF-8''{$encodedFilename}",
-            ]
+            ['Content-Type' => $attachment->mime_type]
         );
 
-        // nosniff — 다운로드 응답도 브라우저가 내용을 추측해 렌더하지 않도록 (KVE-2026-2366)
-        if ($response) {
-            InlineMediaPolicy::harden($response, $attachment->mime_type, $attachment->original_filename);
+        if (! $response) {
+            return null;
         }
 
-        return $response;
+        // nosniff — 다운로드 응답도 브라우저가 내용을 추측해 렌더하지 않도록 (KVE-2026-2366)
+        // thumbnail-exempt: 내려받기 전용 통로(Content-Disposition: attachment)라 이미지도 원본 파일로 낸다. 썸네일은 미리보기 통로가 낸다
+        InlineMediaPolicy::harden($response, $attachment->mime_type, $attachment->original_filename);
+
+        $validators = $this->previewValidators($attachment);
+
+        return [
+            'response' => $response,
+            'etag_source' => $validators['etag_source'],
+            'mime_type' => (string) $attachment->mime_type,
+            'last_modified' => $validators['last_modified'],
+        ];
+    }
+
+    /**
+     * 이미지 미리보기의 캐시 유지 시간 (초) — 1년.
+     *
+     * 이 URL 에는 자산 버전(`?v=`)이 없어 `immutable` 은 붙이지 않는다 — 같은 주소의
+     * 내용이 교체될 수 있는 자산이라, 붙이면 교체한 파일이 만료 전까지 옛것으로 남는다.
+     */
+    public const PREVIEW_CACHE_MAX_AGE = 31536000;
+
+    /**
+     * 미리보기의 조건부 요청 판정에 쓰는 검증자 소스를 행 메타에서 만듭니다.
+     *
+     * 파일 stat 이 아니라 **행 메타**(disk·path·updated_at·size)로 만든다 — 원격 디스크
+     * (S3 등)에서도 결정적이고, 코어 형제(`BaseApiController::streamedFileResponse()`)가
+     * 쓰는 소스 구성과 같다. 컨트롤러가 이 값을 그 헬퍼에 넘겨 `If-None-Match` /
+     * `If-Modified-Since` 를 판정한다.
+     *
+     * @param  PageAttachment  $attachment  첨부파일 모델
+     * @return array{etag_source: string, last_modified: int|null} ETag 소스와 수정 시각(Unix time)
+     */
+    public function previewValidators(PageAttachment $attachment): array
+    {
+        $lastModifiedAt = $attachment->updated_at?->getTimestamp();
+
+        return [
+            'etag_source' => implode('|', [
+                (string) $attachment->disk,
+                (string) $attachment->path,
+                (string) $lastModifiedAt,
+                (string) $attachment->size,
+            ]),
+            'last_modified' => $lastModifiedAt,
+        ];
+    }
+
+    /**
+     * 첨부의 원본 파일이 저장소에 있는지 (원본 응답과 같은 행 disk 로 확인합니다).
+     *
+     * 썸네일 판정 앞에서 부릅니다 — 원격 저장소에서 원본만 지워져 파생본이 남은 경우, 확인 없이 썸네일로 가면
+     * 무파라미터 요청은 404 인데 `?size=` 요청은 남은 파생본으로 200 이 됩니다.
+     *
+     * @param  PageAttachment  $attachment  첨부파일 모델
+     * @return bool 있으면 true
+     */
+    public function originalExists(PageAttachment $attachment): bool
+    {
+        return $this->storageForRow($attachment->disk)->exists('attachments', (string) $attachment->path);
     }
 
     /**
      * 이미지 미리보기 스트리밍 응답을 생성합니다 (Content-Disposition: inline).
+     *
+     * 파일 이름 선언은 스토리지 단일 지점에 맡깁니다 — 종전에는 원문 헤더
+     * `Content-Disposition: inline` 으로 그 선언을 덮어, 같은 파일이 통로에 따라 다른
+     * 이름으로 저장됐습니다. `response()` 의 기본 disposition 이 이미 `inline` 이므로
+     * 헤더를 넘기지 않아도 인라인 표시는 그대로입니다.
+     *
+     * 디스크도 행이 정합니다 (B11-3).
      *
      * @param  PageAttachment  $attachment  첨부파일 모델
      * @return StreamedResponse|null 스트리밍 응답 또는 null
@@ -610,18 +746,40 @@ class PageAttachmentService
             return null;
         }
 
-        if (! $this->storage->exists('attachments', $attachment->path)) {
+        $storage = $this->storageForRow($attachment->disk);
+
+        if (! $storage->exists('attachments', $attachment->path)) {
             return null;
         }
 
-        $response = $this->storage->response(
+        // 검증자(ETag · Last-Modified)와 캐시 정책을 함께 싣는다. 종전에는 `Content-Type`
+        // 하나뿐이라 이 통로만 **재검증 수단이 전무**했다 — 본문에 `<img>` 로 실려 건수가
+        // 유계가 아닌 경로인데 매 요청이 전문 200 이 된다. 같은 계열 형제 넷(코어·게시판·
+        // 템플릿·ecommerce)은 모두 검증자를 싣는다. 앞서 이 파일의 `Content-Disposition`
+        // 과 디스크 두 축은 형제에 맞췄으나 검증자 축만 남았다.
+        // ETag 는 큰따옴표로 감싼다 (RFC 9110 §8.8.3).
+        //
+        // 검증자의 **소스**는 `previewValidators()` 한 곳이 만든다 — 조건부 요청 판정은
+        // 컨트롤러가 코어 단일 지점(`streamedFileResponse()`)에 맡기는데, 그 지점이 같은
+        // 소스로 ETag 를 다시 만들므로 여기서 실은 값과 어긋나면 안 된다.
+        $validators = $this->previewValidators($attachment);
+        $lastModifiedAt = $validators['last_modified'];
+
+        $headers = [
+            'Content-Type' => $attachment->mime_type,
+            'Cache-Control' => 'public, max-age='.self::PREVIEW_CACHE_MAX_AGE.', must-revalidate',
+            'ETag' => '"'.md5($validators['etag_source']).'"',
+        ];
+
+        if ($lastModifiedAt !== null) {
+            $headers['Last-Modified'] = gmdate('D, d M Y H:i:s', $lastModifiedAt).' GMT';
+        }
+
+        $response = $storage->response(
             'attachments',
             $attachment->path,
             $attachment->original_filename,
-            [
-                'Content-Type' => $attachment->mime_type,
-                'Content-Disposition' => 'inline',
-            ]
+            $headers
         );
 
         // 인라인은 래스터 이미지만 — isImage() 가 이미 거르지만 서빙 응답에도 nosniff 를 건다 (KVE-2026-2366)
@@ -630,6 +788,35 @@ class PageAttachmentService
         }
 
         return $response;
+    }
+
+    /**
+     * 첨부 행의 썸네일 원본 정보를 만듭니다 (미리보기 통로·썸네일 원본 제공자 공용).
+     *
+     * 페이지 첨부는 미발행 페이지 게이트가 걸린 원본이라 항상 `gated` 다 — 파생본은 비공개 썸네일
+     * 디스크에 두고 `private` 캐시로 낸다. 같은 원본의 파생본이 발행 상태에 따라 두 디스크로 갈리지
+     * 않게 상태와 무관하게 고정한다. 디스크는 행이 정한다.
+     *
+     * @param  PageAttachment  $attachment  첨부파일 모델
+     * @return ThumbnailSource|null 원본 정보 (래스터 이미지가 아니거나 드라이버가 썸네일을 지원하지 않으면 null)
+     */
+    public function thumbnailSourceFor(PageAttachment $attachment): ?ThumbnailSource
+    {
+        if (! $attachment->isImage()) {
+            return null;
+        }
+
+        $meta = is_array($attachment->meta) ? $attachment->meta : [];
+
+        return ThumbnailSource::fromStorage(
+            $this->storageForRow($attachment->disk),
+            'attachments',
+            (string) $attachment->path,
+            $attachment->mime_type,
+            gated: true,
+            width: isset($meta['width']) ? (int) $meta['width'] : null,
+            height: isset($meta['height']) ? (int) $meta['height'] : null,
+        );
     }
 
     /**

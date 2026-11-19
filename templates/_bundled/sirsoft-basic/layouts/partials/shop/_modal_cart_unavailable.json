@@ -88,6 +88,9 @@
                                                     "if": "{{unavailableItem.thumbnail}}",
                                                     "props": {
                                                         "src": "{{unavailableItem.thumbnail}}",
+                                                        "thumbPreset": "sm",
+                                                        "loading": "lazy",
+                                                        "decoding": "async",
                                                         "alt": "{{unavailableItem.name}}",
                                                         "className": "w-full h-full object-cover"
                                                     }

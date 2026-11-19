@@ -7,8 +7,14 @@
  * @since engine-v1.50.0
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useDevicePreview, CUSTOM_WIDTH_MIN, CUSTOM_WIDTH_MAX } from '../hooks/useDevicePreview';
+import {
+  applyEditorStyle,
+  removeEditorStyle,
+  DEVICE_TOOLBAR_STYLE_CSS,
+  DEVICE_TOOLBAR_STYLE_KEY,
+} from '../utils/editorRuntimeStyles';
 import { useDeviceList } from '../hooks/useDeviceList';
 import { useTranslation } from '../../TranslationContext';
 import { LocaleSwitcher } from './LocaleSwitcher';
@@ -22,11 +28,28 @@ const PRESET_LABEL_KEYS: Record<string, string> = {
 };
 
 export function DevicePreviewToolbar(): React.ReactElement {
-  const { device, zoom, customWidth, setDevice, setZoom, setCustomWidth, colorScheme, setColorScheme } =
-    useDevicePreview();
+  const {
+    device,
+    zoom,
+    scale,
+    customWidth,
+    setDevice,
+    setZoom,
+    setCustomWidth,
+    colorScheme,
+    setColorScheme,
+    actualSize,
+    setActualSize,
+  } = useDevicePreview();
   const { t } = useTranslation();
   // 캔버스 토글/스타일 세부탭 공유 디바이스 목록(프리셋 + 레이아웃 동적 커스텀 키) —
   const deviceKeys = useDeviceList();
+
+  // 묶음 압착 차단 규칙 — 런타임 시트로 붙이고 언마운트 때 뗀다(#163, 종전 JSX <style> 자식은 엄격한 스타일 정책에서 막힌다)
+  useEffect(() => {
+    applyEditorStyle(DEVICE_TOOLBAR_STYLE_KEY, DEVICE_TOOLBAR_STYLE_CSS);
+    return () => removeEditorStyle(DEVICE_TOOLBAR_STYLE_KEY);
+  }, []);
 
   return (
     <div
@@ -35,6 +58,11 @@ export function DevicePreviewToolbar(): React.ReactElement {
       style={{
         display: 'inline-flex',
         alignItems: 'center',
+        // 기기 툴바도 툴바처럼 줄 단위로 감는다(설계 확정 2026-11-08). 기기 줄의 폭을 넘지 않게 두고
+        // (maxWidth), 묶음(기기 단추·색 테마·줌·언어)은 위 DEVICE_TOOLBAR_STYLE_CSS 규칙으로 줄지 않는다.
+        flexWrap: 'wrap',
+        maxWidth: '100%',
+        boxSizing: 'border-box',
         gap: 8,
         padding: '4px 8px',
         background: '#fff',
@@ -163,14 +191,40 @@ export function DevicePreviewToolbar(): React.ReactElement {
           max={1}
           step={0.05}
           value={zoom}
+          disabled={actualSize}
           data-testid="g7le-zoom-slider"
           aria-label={t('layout_editor.zoom.aria_label')}
           onChange={(e) => setZoom(parseFloat(e.currentTarget.value))}
           style={{ width: 100 }}
         />
-        <span style={{ fontSize: 11, color: '#475569', minWidth: 36, textAlign: 'right' }}>
-          {Math.round(zoom * 100)}%
+        {/* 표시값은 실제 적용 배율이다. 슬라이더 값(zoom)은 배율 상한이라, 캔버스가 좁아 미리보기를
+            맞춰 줄였으면(맞춤 줌) 슬라이더가 100% 여도 실제 배율(예 74%)을 보여 준다. */}
+        <span
+          data-testid="g7le-zoom-value"
+          style={{ fontSize: 11, color: '#475569', minWidth: 36, textAlign: 'right' }}
+        >
+          {Math.round(scale * 100)}%
         </span>
+        {/* 실제 크기(1:1) — 맞춤 줌을 끄고 배율 1 로 본다. 캔버스가 좁으면 문서 가로 스크롤이 생긴다. */}
+        <button
+          type="button"
+          data-testid="g7le-zoom-actual-size"
+          aria-pressed={actualSize}
+          title={t('layout_editor.zoom.actual_size_hint')}
+          onClick={() => setActualSize(!actualSize)}
+          style={{
+            padding: '2px 8px',
+            fontSize: 12,
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+            background: actualSize ? '#0f172a' : '#f8fafc',
+            color: actualSize ? '#fff' : '#0f172a',
+            border: '1px solid #cbd5e1',
+            borderRadius: 4,
+          }}
+        >
+          {t('layout_editor.zoom.actual_size')}
+        </button>
       </div>
       {/* 콘텐츠 로케일 전환 — 캔버스 프리뷰의 로케일만 바꾼다(chrome 로케일 불변).
           디바이스/색모드/줌과 동격의 미리보기 축이라 같은 툴바에 둔다. */}

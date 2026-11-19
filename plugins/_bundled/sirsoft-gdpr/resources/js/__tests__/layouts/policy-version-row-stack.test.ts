@@ -45,16 +45,16 @@ describe('GDPR 설정 — 정책 버전 카드', () => {
   it('카드는 field_cookie_policy_version(row-stack) 직속이 아니라 테두리 없는 래퍼 안에 있다', () => {
     const [field] = findAll(settings, (n) => n.id === 'field_cookie_policy_version');
     expect(field, '정책 버전 필드가 없습니다.').toBeDefined();
-    expect(tokens(field.props?.className)).toContain('row-stack');
+    expect(tokens(field.props?.className)).toContain('gdpr-row-stack');
 
     const direct: Json[] = field.children ?? [];
-    expect(direct.some((c) => tokens(c.props?.className).includes('border')), '테두리 상자가 아직 row-stack 직속입니다.').toBe(false);
+    expect(direct.some((c) => tokens(c.props?.className).includes('gdpr:border')), '테두리 상자가 아직 row-stack 직속입니다.').toBe(false);
 
     const wrapper = direct.find((c) => c.id === 'policy_version_card_row');
     expect(wrapper, 'policy_version_card_row 래퍼가 없습니다.').toBeDefined();
-    expect(tokens(wrapper!.props?.className)).not.toContain('border');
+    expect(tokens(wrapper!.props?.className)).not.toContain('gdpr:border');
     const card = (wrapper!.children ?? [])[0];
-    expect(tokens(card?.props?.className)).toEqual(expect.arrayContaining(['border', 'rounded-lg', 'bg-gray-50']));
+    expect(tokens(card?.props?.className)).toEqual(expect.arrayContaining(['gdpr:border', 'gdpr:rounded-lg', 'gdpr:bg-gray-50']));
   });
 });
 
@@ -65,12 +65,12 @@ describe('정책 버전 스냅샷 모달 — 반복 상자 묶음', () => {
    */
   it('반복 상자(쿠키 카테고리·차단 도메인)를 담는 묶음은 row-stack 이 아니라 stack-tight 다', () => {
     const containers = findAll(snapshotModal, (n) =>
-      (n.children ?? []).some((c: Json) => c.iteration && tokens(c.props?.className).includes('border')),
+      (n.children ?? []).some((c: Json) => c.iteration && tokens(c.props?.className).includes('gdpr:border')),
     );
     expect(containers.length, '반복 상자 묶음 두 곳이 있어야 합니다.').toBe(2);
     for (const c of containers) {
-      expect(tokens(c.props?.className)).toContain('stack-tight');
-      expect(tokens(c.props?.className)).not.toContain('row-stack');
+      expect(tokens(c.props?.className)).toContain('gdpr-stack-tight');
+      expect(tokens(c.props?.className)).not.toContain('gdpr-row-stack');
     }
   });
 });

@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 본 매니페스트는 언어팩 관리 API 8개 엔드포인트의 표면 계약을 소유한다. endpoint × outcome 전개는 40셀이지만 각 엔드포인트가 내는 결과 종류가 서로 달라(조회는 부재 404 를, 설치는 검증 422 를, 제거는 보호 거부를 낸다) 빈 셀이 대부분이다. 실재하는 셀만 effects 로 열거하고 회귀 가드는 test_files 의 메서드 전수로 커버한다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#677 본 매니페스트는 언어팩 관리 API 8개 엔드포인트의 표면 계약을 소유한다. endpoint × outcome 전개는 40셀이지만 각 엔드포인트가 내는 결과 종류가 서로 달라(조회는 부재 404 를, 설치는 검증 422 를, 제거는 보호 거부를 낸다) 빈 셀이 대부분이다. 실재하는 셀만 effects 로 열거하고 회귀 가드는 test_files 의 메서드 전수로 커버한다.
 
 feature: 언어팩 관리 API 표면 계약 (Language Pack Admin API Surface)
 

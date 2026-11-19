@@ -22,8 +22,8 @@ use PHPUnit\Framework\TestCase;
  */
 final class AdminListFilterConventionDocTest extends TestCase
 {
-    /** 관리자 템플릿 CSS (컴포넌트 클래스의 정본) */
-    private const ADMIN_CSS = 'templates/_bundled/sirsoft-admin_basic/src/styles/main.css';
+    /** 관리자 템플릿 의미 클래스 CSS (컴포넌트 클래스의 정본 — main.css 가 가져온다, #434) */
+    private const ADMIN_CSS = 'templates/_bundled/sirsoft-admin_basic/src/styles/semantic.css';
 
     /** 사용자 템플릿 CSS — 여기에도 있는 클래스는 템플릿 공용 어휘로 본다 */
     private const USER_CSS = 'templates/_bundled/sirsoft-basic/src/styles/main.css';
@@ -145,7 +145,7 @@ final class AdminListFilterConventionDocTest extends TestCase
             }
 
             $rel = str_replace('\\', '/', substr($file->getPathname(), strlen($root) + 1));
-            preg_match_all('/```[a-z]*\R(.*?)```/s', (string) file_get_contents($file->getPathname()), $m);
+            preg_match_all('/```[a-z]*(?:\r\n|\r|\n)(.*?)```/s', (string) file_get_contents($file->getPathname()), $m);
 
             foreach ($m[1] as $i => $block) {
                 if (str_contains($block, '<extension extension-point=')) {

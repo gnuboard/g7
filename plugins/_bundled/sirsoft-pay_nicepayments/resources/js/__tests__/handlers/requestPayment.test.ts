@@ -1,4 +1,4 @@
-// e2e:allow 가상계좌 결제창은 외부 나이스페이먼츠 테스트 결제창으로 이어져 공용 E2E 로 재현하지 않는다. 대체 검증: Vitest 바이트 절단 단언 2건 + 브라우저 실측(한글 6자 주문자 → 결제창 예금주명 5자 「남궁홍길동」, 주문 입금대기)
+// e2e:allow 가상계좌 결제창은 외부 나이스페이먼츠 테스트 결제창으로 이어져 공용 E2E 로 재현하지 않는다. 대체 검증: Vitest 바이트 절단 단언 2건 + 브라우저 실측(한글 6자 주문자 → 결제창 예금주명 5자 「남궁홍길동」, 주문 입금대기) / #855 클레임 추가결제의 결제창 열기 전 실패를 신청서로 넘김(문구를 담아 throw) — 외부 PG 결제창이라 spec 으로 재현하지 않고 Chrome MCP 실측(이력 20261114_0354 매트릭스 T2, T4-c, T8-e~g)과 Vitest 로 고정한다.
 /**
  * requestPayment 핸들러 테스트
  *
@@ -121,6 +121,51 @@ describe('requestPaymentHandler', () => {
         expect(toastErrorSpy).toHaveBeenCalledWith(
             expect.stringContaining('결제 중 오류가 발생')
         );
+    });
+
+    /**
+     * 클레임 추가결제는 신청서 화면에서 열린다 — 토스트만 띄우면 신청서의 [결제하기]가 「결제 진행 중…」에 멈췄다.
+     * 문구를 담아 던져 이커머스 신청서 핸들러가 dispatch 결과로 받아 진행 표시를 내리고 버튼 아래에 보이게 한다 (#855).
+     */
+    // @scenario concern=payment_entry
+    // @effects claim_payment_entry_failure_is_handed_to_the_claim_screen
+    it('클레임 추가결제의 결제창 열기 전 실패는 토스트 대신 문구를 담아 던진다', async () => {
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        apiGet.mockRejectedValue(new Error('Network error'));
+
+        await expect(requestPaymentHandler({
+            params: {
+                pgPaymentData: {
+                    ...PG_PAYMENT,
+                    order_number: 'CP20260915-0001',
+                    claim_cancel_return_url: '/mypage/claims/EX-1?claim_payment=cancelled&claim_number=EX-1',
+                },
+            },
+        })).rejects.toThrow('결제 중 오류가 발생');
+
+        expect(toastErrorSpy).not.toHaveBeenCalled();
+        expect(setLocalSpy).not.toHaveBeenCalled();
+    });
+
+    // @scenario concern=payment_entry
+    // @effects claim_payment_entry_failure_is_handed_to_the_claim_screen
+    it('클레임 추가결제에서 설정을 받지 못해도 일반 결제 오류 문구를 담아 던진다', async () => {
+        vi.spyOn(console, 'error').mockImplementation(() => {});
+        apiGet.mockResolvedValue({});
+
+        const outcome = await requestPaymentHandler({
+            params: {
+                pgPaymentData: {
+                    ...PG_PAYMENT,
+                    order_number: 'CP20260915-0001',
+                    claim_cancel_return_url: '/mypage/claims/EX-1?claim_payment=cancelled&claim_number=EX-1',
+                },
+            },
+        }).then(() => 'resolved', (e: Error) => `rejected:${e.message}`);
+
+        // try 안의 실패는 catch 가 받아 일반 결제 오류 문구로 다시 던진다 — 주문 결제의 토스트 문구와 같다.
+        expect(outcome).toBe('rejected:결제 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        expect(toastErrorSpy).not.toHaveBeenCalled();
     });
 
     // @scenario concern=payment_entry

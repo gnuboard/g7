@@ -12,6 +12,9 @@ use App\Extension\Layout\DTO\LayoutSyncEntry;
  */
 final class LayoutSyncReport
 {
+    /** 판정 목록 — 판정별 개수 표의 열 순서 */
+    public const VERDICTS = ['created', 'updated', 'unchanged', 'took_theirs', 'kept', 'merged', 'conflict', 'kept_no_base', 'kept_invalid', 'kept_removed', 'kept_deleted_by_operator', 'kept_name_collision', 'deleted'];
+
     /** @var list<LayoutSyncEntry> */
     private array $entries = [];
 
@@ -74,6 +77,48 @@ final class LayoutSyncReport
     public function count(string $verdict): int
     {
         return count(array_filter($this->entries, fn (LayoutSyncEntry $e) => $e->verdict === $verdict));
+    }
+
+    /**
+     * 판정별 개수 (모든 행) — 미리보기·갱신 결과 표.
+     *
+     * @return array<string, int> 판정 => 개수 (나오지 않은 판정은 0)
+     */
+    public function verdictCounts(): array
+    {
+        $counts = array_fill_keys(self::VERDICTS, 0);
+
+        foreach ($this->entries as $entry) {
+            $counts[$entry->verdict] = ($counts[$entry->verdict] ?? 0) + 1;
+        }
+
+        return $counts;
+    }
+
+    /**
+     * 미리보기 응답 — 모든 행의 판정 목록 + 판정별 개수 + 충돌 여부.
+     *
+     * 실제 갱신 결과에도 같은 모양을 싣는다(같은 입력이면 미리보기와 실제의 `entries` 가 같아야 한다).
+     *
+     * @return array{strategy: string, entries: list<array<string, mixed>>, summary: array<string, int>, has_conflicts: bool, conflict_screens: list<string>} 미리보기
+     */
+    public function toPreviewArray(): array
+    {
+        $conflictScreens = [];
+
+        foreach ($this->entries as $entry) {
+            if ($entry->conflicts !== [] || $entry->verdict === 'conflict') {
+                $conflictScreens[] = $entry->template.' · '.$entry->name;
+            }
+        }
+
+        return [
+            'strategy' => $this->strategy->value,
+            'entries' => array_map(fn (LayoutSyncEntry $e) => $e->toArray(), $this->entries),
+            'summary' => $this->verdictCounts(),
+            'has_conflicts' => $conflictScreens !== [],
+            'conflict_screens' => $conflictScreens,
+        ];
     }
 
     /**

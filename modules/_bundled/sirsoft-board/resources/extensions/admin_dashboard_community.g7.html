@@ -1,105 +1,120 @@
 <!-- 관리자 대시보드의 커뮤니티 구획(카드 데이터 API 가 모두 게시판 대시보드 조회 권한을 요구해 그 권한으로 구획 전체를 그린다) — 오늘 배지 · 글/댓글 추이 차트 · 최신 글 · 대기 중 신고 넷을 한 그리드로 얹는다. 카드마다 데이터소스를 따로 두고 progressive 로 읽어, 느린 하나가 나머지를 붙잡지 않는다 e2e:allow 최신 글 메타 줄을 이름·시각 두 칸으로 나눈 표시 배치 변경 — 데이터·동작 무변경이라 화면 확인으로 대신한다(#777). -->
 <extension extension-point="admin_dashboard_community" mode="append" priority="100">
-  <div data-ref="community_section_wrapper" class="mb-4 md:mb-6 lg:mb-8">
+  <div data-ref="community_section_wrapper" class="board:mb-4">
+    <responsive on="tablet" class="board:mb-6"/>
+    <responsive on="desktop" class="board:mb-8"/>
     <permissions>
       <permission>sirsoft-board.dashboard.view</permission>
     </permissions>
-    <div data-ref="community_section_grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-5">
-      <div data-ref="post_graph_today_summary" class="flex items-center flex-wrap gap-2 md:col-span-2 lg:col-span-4">
+    <div data-ref="community_section_grid" class="board:grid board:grid-cols-1 board:gap-3">
+      <responsive on="tablet" class="board:grid board:grid-cols-2 board:gap-4"/>
+      <responsive on="desktop" class="board:grid board:grid-cols-4 board:gap-5"/>
+      <div data-ref="post_graph_today_summary" class="board:flex board:items-center board:flex-wrap board:gap-2">
+        <responsive on="tablet" class="board:flex board:items-center board:flex-wrap board:gap-2 board:col-span-2"/>
+        <responsive on="desktop" class="board:flex board:items-center board:flex-wrap board:gap-2 board:col-span-4"/>
         <blur-until-loaded sources="board_overview"/>
-        <span data-ref="post_graph_today_label" class="text-sm font-semibold text-slate-500 dark:text-slate-400">$t:admin.dashboard.stats.today</span>
-        <a href="/admin/boards" data-ref="today_new_posts_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+        <span data-ref="post_graph_today_label" class="board:text-sm board:font-semibold board:text-slate-500 board:dark:text-slate-400">$t:admin.dashboard.stats.today</span>
+        <a href="/admin/boards" data-ref="today_new_posts_badge" class="board:px-2 board:py-1 board:text-xs board:font-medium board:rounded-full board:bg-slate-200 board:text-slate-700 board:dark:bg-slate-700 board:dark:text-slate-200 board:cursor-pointer board:hover:bg-slate-300 board:dark:hover:bg-slate-600 board:transition-colors">
           <on type="click">
             <navigate/>
           </on>
           $t:sirsoft-board.admin.dashboard.today_badges.new_posts|count={{board_overview?.data?.today_posts ?? 0}}
         </a>
-        <a href="/admin/boards" data-ref="today_new_comments_badge" class="px-2 py-1 text-xs font-medium rounded-full bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200 cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+        <a href="/admin/boards" data-ref="today_new_comments_badge" class="board:px-2 board:py-1 board:text-xs board:font-medium board:rounded-full board:bg-slate-200 board:text-slate-700 board:dark:bg-slate-700 board:dark:text-slate-200 board:cursor-pointer board:hover:bg-slate-300 board:dark:hover:bg-slate-600 board:transition-colors">
           <on type="click">
             <navigate/>
           </on>
           $t:sirsoft-board.admin.dashboard.today_badges.new_comments|count={{board_overview?.data?.today_comments ?? 0}}
         </a>
-        <extension-badge data-type="composite" data-ref="community_section_badge" class="ml-auto" type="module" identifier="sirsoft-board" installedModules="{{_global.installedModules}}"/>
+        <extension-badge data-type="composite" data-ref="community_section_badge" class="board:ml-auto" type="module" identifier="sirsoft-board" installedModules="{{_global.installedModules}}"/>
       </div>
-      <div data-ref="post_graph_card" class="bg-slate-100 dark:bg-slate-800 p-4 md:p-6 rounded-xl md:rounded-2xl md:col-span-2 h-full flex flex-col">
+      <div data-ref="post_graph_card" class="board:bg-slate-100 board:dark:bg-slate-800 board:p-4 board:rounded-xl board:h-full board:flex board:flex-col">
+        <responsive on="768-" class="board:bg-slate-100 board:dark:bg-slate-800 board:p-6 board:rounded-2xl board:col-span-2 board:h-full board:flex board:flex-col"/>
         <blur-until-loaded>
           <item>board_overview</item>
           <item>board_post_graph</item>
         </blur-until-loaded>
-        <div data-ref="post_graph_header" class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between mb-4 md:mb-6">
-          <h3 data-ref="post_graph_title" class="text-lg font-semibold text-slate-900 dark:text-white">$t:sirsoft-board.admin.dashboard.community.post_graph</h3>
-          <div data-ref="post_graph_legend" class="flex items-center gap-4">
-            <div data-ref="posts_legend_item" class="flex items-center gap-2">
-              <span data-ref="posts_legend_dot" class="w-3 h-3 rounded-full bg-violet-500"/>
-              <span data-ref="posts_legend_label" class="text-sm text-slate-600 dark:text-slate-400">$t:sirsoft-board.admin.dashboard.community.posts</span>
+        <div data-ref="post_graph_header" class="board:flex board:flex-col board:gap-2 board:mb-4">
+          <responsive on="768-" class="board:flex board:gap-2 board:flex-row board:items-center board:justify-between board:mb-6"/>
+          <h3 data-ref="post_graph_title" class="board:text-lg board:font-semibold board:text-slate-900 board:dark:text-white">$t:sirsoft-board.admin.dashboard.community.post_graph</h3>
+          <div data-ref="post_graph_legend" class="board:flex board:items-center board:gap-4">
+            <div data-ref="posts_legend_item" class="board:flex board:items-center board:gap-2">
+              <span data-ref="posts_legend_dot" class="board:w-3 board:h-3 board:rounded-full board:bg-violet-500"/>
+              <span data-ref="posts_legend_label" class="board:text-sm board:text-slate-600 board:dark:text-slate-400">$t:sirsoft-board.admin.dashboard.community.posts</span>
             </div>
-            <div data-ref="comments_legend_item" class="flex items-center gap-2">
-              <span data-ref="comments_legend_dot" class="w-3 h-3 rounded-full bg-violet-200"/>
-              <span data-ref="comments_legend_label" class="text-sm text-slate-600 dark:text-slate-400">$t:sirsoft-board.admin.dashboard.community.comments</span>
+            <div data-ref="comments_legend_item" class="board:flex board:items-center board:gap-2">
+              <span data-ref="comments_legend_dot" class="board:w-3 board:h-3 board:rounded-full board:bg-violet-200"/>
+              <span data-ref="comments_legend_label" class="board:text-sm board:text-slate-600 board:dark:text-slate-400">$t:sirsoft-board.admin.dashboard.community.comments</span>
             </div>
           </div>
         </div>
-        <div data-ref="post_graph_stats" class="flex gap-4 md:gap-8 mb-4 md:mb-6">
+        <div data-ref="post_graph_stats" class="board:flex board:gap-4 board:mb-4">
+          <responsive on="768-" class="board:flex board:gap-8 board:mb-6"/>
           <div data-ref="total_posts_stat">
-            <p data-ref="total_posts_label" class="text-sm text-slate-600 dark:text-slate-400 mb-1">$t:sirsoft-board.admin.dashboard.community.total_posts</p>
-            <div data-ref="total_posts_value_wrapper" class="flex items-baseline gap-2">
-              <span data-ref="total_posts_value" class="text-lg md:text-2xl font-bold text-slate-900 dark:text-white">{{board_post_graph?.data?.total_posts ?? 0 | number}}</span>
-              <span data-ref="total_posts_change" class="{{(board_post_graph?.data?.posts_change ?? null) === null ? 'text-xs font-medium text-slate-600 dark:text-slate-400' : ((board_post_graph?.data?.posts_change ?? 0) >= 0 ? 'text-xs font-medium text-emerald-700 dark:text-emerald-300' : 'text-xs font-medium text-rose-700 dark:text-rose-300')}}">{{(board_post_graph?.data?.posts_change ?? null) === null ? '—' : ((board_post_graph?.data?.posts_change >= 0 ? '+' : '') + board_post_graph?.data?.posts_change + '%')}}</span>
+            <p data-ref="total_posts_label" class="board:text-sm board:text-slate-600 board:dark:text-slate-400 board:mb-1">$t:sirsoft-board.admin.dashboard.community.total_posts</p>
+            <div data-ref="total_posts_value_wrapper" class="board:flex board:items-baseline board:gap-2">
+              <span data-ref="total_posts_value" class="board:text-lg board:font-bold board:text-slate-900 board:dark:text-white"><responsive on="768-" class="board:text-2xl board:font-bold board:text-slate-900 board:dark:text-white"/>{{board_post_graph?.data?.total_posts ?? 0 | number}}</span>
+              <span data-ref="total_posts_change" class="{{(board_post_graph?.data?.posts_change ?? null) === null ? 'board:text-xs board:font-medium board:text-slate-600 board:dark:text-slate-400' : ((board_post_graph?.data?.posts_change ?? 0) >= 0 ? 'board:text-xs board:font-medium board:text-emerald-700 board:dark:text-emerald-300' : 'board:text-xs board:font-medium board:text-rose-700 board:dark:text-rose-300')}}">{{(board_post_graph?.data?.posts_change ?? null) === null ? '—' : ((board_post_graph?.data?.posts_change >= 0 ? '+' : '') + board_post_graph?.data?.posts_change + '%')}}</span>
             </div>
           </div>
           <div data-ref="total_comments_stat">
-            <p data-ref="total_comments_label" class="text-sm text-slate-600 dark:text-slate-400 mb-1">$t:sirsoft-board.admin.dashboard.community.total_comments</p>
-            <div data-ref="total_comments_value_wrapper" class="flex items-baseline gap-2">
-              <span data-ref="total_comments_value" class="text-lg md:text-2xl font-bold text-slate-900 dark:text-white">{{board_post_graph?.data?.total_comments ?? 0 | number}}</span>
-              <span data-ref="total_comments_change" class="{{(board_post_graph?.data?.comments_change ?? null) === null ? 'text-xs font-medium text-slate-600 dark:text-slate-400' : ((board_post_graph?.data?.comments_change ?? 0) >= 0 ? 'text-xs font-medium text-emerald-700 dark:text-emerald-300' : 'text-xs font-medium text-rose-700 dark:text-rose-300')}}">{{(board_post_graph?.data?.comments_change ?? null) === null ? '—' : ((board_post_graph?.data?.comments_change >= 0 ? '+' : '') + board_post_graph?.data?.comments_change + '%')}}</span>
+            <p data-ref="total_comments_label" class="board:text-sm board:text-slate-600 board:dark:text-slate-400 board:mb-1">$t:sirsoft-board.admin.dashboard.community.total_comments</p>
+            <div data-ref="total_comments_value_wrapper" class="board:flex board:items-baseline board:gap-2">
+              <span data-ref="total_comments_value" class="board:text-lg board:font-bold board:text-slate-900 board:dark:text-white"><responsive on="768-" class="board:text-2xl board:font-bold board:text-slate-900 board:dark:text-white"/>{{board_post_graph?.data?.total_comments ?? 0 | number}}</span>
+              <span data-ref="total_comments_change" class="{{(board_post_graph?.data?.comments_change ?? null) === null ? 'board:text-xs board:font-medium board:text-slate-600 board:dark:text-slate-400' : ((board_post_graph?.data?.comments_change ?? 0) >= 0 ? 'board:text-xs board:font-medium board:text-emerald-700 board:dark:text-emerald-300' : 'board:text-xs board:font-medium board:text-rose-700 board:dark:text-rose-300')}}">{{(board_post_graph?.data?.comments_change ?? null) === null ? '—' : ((board_post_graph?.data?.comments_change >= 0 ? '+' : '') + board_post_graph?.data?.comments_change + '%')}}</span>
             </div>
           </div>
         </div>
         <bar-chart data-type="composite" data-ref="post_graph_chart" labels="{{(board_post_graph?.data?.days ?? []).map(d => (d.date ?? '').slice(5).replace('-', '/'))}}" datasets="{{[{label: $t('sirsoft-board.admin.dashboard.community.posts'), data: (board_post_graph?.data?.days ?? []).map(d => d.post_count ?? 0), backgroundColor: '#7C3AED'}, {label: $t('sirsoft-board.admin.dashboard.community.comments'), data: (board_post_graph?.data?.days ?? []).map(d => d.comment_count ?? 0), backgroundColor: '#DDD6FE'}]}}" :height="180" :showYGrid="true" :showYAxis="true"/>
-        <p data-ref="post_graph_updated_at_caption" data-if="{{!!board_post_graph?.data?.updated_at_display}}" class="text-xs text-slate-600 dark:text-slate-400 mt-2 text-right">$t:sirsoft-board.admin.dashboard.community.updated_at|time={{board_post_graph?.data?.updated_at_display ?? ''}}</p>
+        <p data-ref="post_graph_updated_at_caption" data-if="{{!!board_post_graph?.data?.updated_at_display}}" class="board:text-xs board:text-slate-600 board:dark:text-slate-400 board:mt-2 board:text-right">$t:sirsoft-board.admin.dashboard.community.updated_at|time={{board_post_graph?.data?.updated_at_display ?? ''}}</p>
       </div>
-      <div data-ref="latest_posts_card" class="bg-slate-100 dark:bg-slate-800 p-4 md:p-6 rounded-xl md:rounded-2xl h-full flex flex-col">
+      <div data-ref="latest_posts_card" class="board:bg-slate-100 board:dark:bg-slate-800 board:p-4 board:rounded-xl board:h-full board:flex board:flex-col">
+        <responsive on="768-" class="board:bg-slate-100 board:dark:bg-slate-800 board:p-6 board:rounded-2xl board:h-full board:flex board:flex-col"/>
         <blur-until-loaded sources="board_recent_posts"/>
-        <div data-ref="latest_posts_header" class="flex-between mb-4">
-          <h3 data-ref="latest_posts_title" class="text-base font-semibold text-slate-900 dark:text-white">$t:sirsoft-board.admin.dashboard.community.latest_posts</h3>
-          <a data-ref="latest_posts_view_all" href="/admin/boards" class="text-sm text-slate-600 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300">$t:sirsoft-board.admin.dashboard.community.go_to_boards</a>
+        <div data-ref="latest_posts_header" class="board-flex-between board:mb-4">
+          <h3 data-ref="latest_posts_title" class="board:text-base board:font-semibold board:text-slate-900 board:dark:text-white">$t:sirsoft-board.admin.dashboard.community.latest_posts</h3>
+          <a data-ref="latest_posts_view_all" href="/admin/boards" class="board:text-sm board:text-slate-600 board:hover:text-slate-700 board:dark:text-slate-400 board:dark:hover:text-slate-300">$t:sirsoft-board.admin.dashboard.community.go_to_boards</a>
         </div>
-        <p data-ref="latest_posts_empty" data-if="{{board_recent_posts !== undefined &amp;&amp; ((board_recent_posts?.data ?? []).length === 0)}}" class="text-sm text-slate-600 dark:text-slate-400 text-center py-6">$t:sirsoft-board.admin.dashboard.community.no_posts</p>
-        <div data-ref="latest_posts_list" data-if="{{(board_recent_posts?.data ?? []).length > 0}}" class="divide-y divide-slate-200 dark:divide-slate-700">
-          <a href="/admin/board/{{post?.board_slug}}/post/{{post?.id}}" data-ref="latest_post_item_{{i}}" data-each="post, i in board_recent_posts?.data" class="py-3 min-h-12 flex flex-col justify-center cursor-pointer">
+        <p data-ref="latest_posts_empty" data-if="{{board_recent_posts !== undefined &amp;&amp; ((board_recent_posts?.data ?? []).length === 0)}}" class="board:text-sm board:text-slate-600 board:dark:text-slate-400 board:text-center board:py-6">$t:sirsoft-board.admin.dashboard.community.no_posts</p>
+        <div data-ref="latest_posts_list" data-if="{{(board_recent_posts?.data ?? []).length > 0}}" class="board:divide-y board:divide-slate-200 board:dark:divide-slate-700">
+          <a href="/admin/board/{{post?.board_slug}}/post/{{post?.id}}" data-ref="latest_post_item_{{i}}" data-each="post, i in board_recent_posts?.data" class="board:py-3 board:min-h-12 board:flex board:flex-col board:justify-center board:cursor-pointer">
             <on type="click">
               <navigate/>
             </on>
-            <p data-ref="latest_post_title_{{i}}" class="text-sm font-medium text-slate-900 dark:text-white truncate">{{post?.title ?? ''}}</p>
-            <div data-ref="latest_post_meta_{{i}}" class="flex items-center min-w-0 text-xs text-slate-600 dark:text-slate-400">
-              <span class="min-w-0 truncate">{{(post?.board_name ?? '') + ' · ' + (post?.author_name ?? '')}}</span>
-              <span class="shrink-0 whitespace-nowrap">{{' · ' + (post?.created_at ?? '')}}</span>
+            <p data-ref="latest_post_title_{{i}}" class="board:text-sm board:font-medium board:text-slate-900 board:dark:text-white board:truncate">{{post?.title ?? ''}}</p>
+            <div data-ref="latest_post_meta_{{i}}" class="board:flex board:items-center board:min-w-0 board:text-xs board:text-slate-600 board:dark:text-slate-400">
+              <span class="board:min-w-0 board:truncate">{{(post?.board_name ?? '') + ' · ' + (post?.author_name ?? '')}}</span>
+              <span class="board:shrink-0 board:whitespace-nowrap">{{' · ' + (post?.created_at ?? '')}}</span>
             </div>
+            <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490) -->
+            <p data-ref="latest_post_real_name_{{i}}" data-testid="author-real-name" data-if="{{!!post?.real_name}}" class="board:text-xs board:text-slate-600 board:dark:text-slate-400 board:truncate" aria-label="{{$t('sirsoft-board.common.real_name_label', { name: post?.real_name })}}">{{$t('sirsoft-board.common.real_name_label', { name: post?.real_name })}}</p>
           </a>
         </div>
       </div>
-      <div data-ref="report_management_card" class="bg-slate-100 dark:bg-slate-800 p-4 md:p-6 rounded-xl md:rounded-2xl h-full flex flex-col">
+      <div data-ref="report_management_card" class="board:bg-slate-100 board:dark:bg-slate-800 board:p-4 board:rounded-xl board:h-full board:flex board:flex-col">
+        <responsive on="768-" class="board:bg-slate-100 board:dark:bg-slate-800 board:p-6 board:rounded-2xl board:h-full board:flex board:flex-col"/>
         <blur-until-loaded sources="board_pending_reports"/>
-        <div data-ref="report_management_header" class="flex-between mb-4">
-          <h3 data-ref="report_management_title_wrapper" class="flex items-center text-base font-semibold text-slate-900 dark:text-white gap-1">
+        <div data-ref="report_management_header" class="board-flex-between board:mb-4">
+          <h3 data-ref="report_management_title_wrapper" class="board:flex board:items-center board:text-base board:font-semibold board:text-slate-900 board:dark:text-white board:gap-1">
             <span data-ref="report_management_title_text">$t:sirsoft-board.admin.dashboard.community.report_management</span>
-            <span data-ref="report_management_count" data-if="{{(board_pending_reports?.data?.total ?? 0) > 0}}" class="text-purple-600 dark:text-purple-400">({{board_pending_reports?.data?.total ?? 0}})</span>
+            <span data-ref="report_management_count" data-if="{{(board_pending_reports?.data?.total ?? 0) > 0}}" class="board:text-purple-600 board:dark:text-purple-400">({{board_pending_reports?.data?.total ?? 0}})</span>
           </h3>
-          <a data-ref="report_management_view_all" href="/admin/boards/reports" class="text-sm text-slate-600 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300">$t:sirsoft-board.admin.dashboard.community.go_to_reports</a>
+          <a data-ref="report_management_view_all" href="/admin/boards/reports" class="board:text-sm board:text-slate-600 board:hover:text-slate-700 board:dark:text-slate-400 board:dark:hover:text-slate-300">$t:sirsoft-board.admin.dashboard.community.go_to_reports</a>
         </div>
-        <p data-ref="report_management_empty" data-if="{{board_pending_reports !== undefined &amp;&amp; ((board_pending_reports?.data?.items ?? []).length === 0)}}" class="text-sm text-slate-600 dark:text-slate-400 text-center py-6">$t:sirsoft-board.admin.dashboard.community.no_reports</p>
-        <div data-ref="report_management_list" data-if="{{(board_pending_reports?.data?.items ?? []).length > 0}}" class="divide-y divide-slate-200 dark:divide-slate-700">
-          <a href="/admin/boards/reports/{{report?.id}}" data-ref="report_item_{{i}}" data-each="report, i in board_pending_reports?.data?.items" class="py-3 min-h-12 flex flex-col justify-center cursor-pointer">
+        <p data-ref="report_management_empty" data-if="{{board_pending_reports !== undefined &amp;&amp; ((board_pending_reports?.data?.items ?? []).length === 0)}}" class="board:text-sm board:text-slate-600 board:dark:text-slate-400 board:text-center board:py-6">$t:sirsoft-board.admin.dashboard.community.no_reports</p>
+        <div data-ref="report_management_list" data-if="{{(board_pending_reports?.data?.items ?? []).length > 0}}" class="board:divide-y board:divide-slate-200 board:dark:divide-slate-700">
+          <a href="/admin/boards/reports/{{report?.id}}" data-ref="report_item_{{i}}" data-each="report, i in board_pending_reports?.data?.items" class="board:py-3 board:min-h-12 board:flex board:flex-col board:justify-center board:cursor-pointer">
             <on type="click">
               <navigate/>
             </on>
-            <div data-ref="report_header_{{i}}" class="flex items-center gap-2">
-              <span data-ref="report_target_type_badge_{{i}}" class="{{report?.target_type === 'comment' ? 'shrink-0 px-2 text-xs font-medium rounded bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : 'shrink-0 px-2 text-xs font-medium rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'}}">{{report?.target_type_label ?? ''}}</span>
-              <p data-ref="report_title_line_{{i}}" class="flex-1 min-w-0 text-sm font-medium text-slate-900 dark:text-white truncate">{{report?.target_title ?? $t('sirsoft-board.admin.dashboard.community.untitled')}}</p>
-              <span data-ref="report_status_badge_{{i}}" data-if="{{!!report?.status_label}}" class="shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{report?.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : report?.status === 'review' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : report?.status === 'rejected' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : report?.status === 'suspended' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : report?.status === 'deleted' ? 'bg-gray-600 text-white dark:bg-gray-600 dark:text-gray-100' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}}">{{report?.status_label ?? ''}}</span>
+            <div data-ref="report_header_{{i}}" class="board:flex board:items-center board:gap-2">
+              <span data-ref="report_target_type_badge_{{i}}" class="{{report?.target_type === 'comment' ? 'board:shrink-0 board:px-2 board:text-xs board:font-medium board:rounded board:bg-purple-100 board:text-purple-800 board:dark:bg-purple-900 board:dark:text-purple-200' : 'board:shrink-0 board:px-2 board:text-xs board:font-medium board:rounded board:bg-blue-100 board:text-blue-800 board:dark:bg-blue-900 board:dark:text-blue-200'}}">{{report?.target_type_label ?? ''}}</span>
+              <p data-ref="report_title_line_{{i}}" class="board:flex-1 board:min-w-0 board:text-sm board:font-medium board:text-slate-900 board:dark:text-white board:truncate">{{report?.target_title ?? $t('sirsoft-board.admin.dashboard.community.untitled')}}</p>
+              <span data-ref="report_status_badge_{{i}}" data-if="{{!!report?.status_label}}" class="board:shrink-0 board:inline-flex board:items-center board:px-2.5 board:py-0.5 board:rounded-full board:text-xs board:font-medium {{report?.status === 'pending' ? 'board:bg-yellow-100 board:text-yellow-800 board:dark:bg-yellow-900 board:dark:text-yellow-200' : report?.status === 'review' ? 'board:bg-blue-100 board:text-blue-800 board:dark:bg-blue-900 board:dark:text-blue-200' : report?.status === 'rejected' ? 'board:bg-purple-100 board:text-purple-800 board:dark:bg-purple-900 board:dark:text-purple-200' : report?.status === 'suspended' ? 'board:bg-red-100 board:text-red-800 board:dark:bg-red-900 board:dark:text-red-200' : report?.status === 'deleted' ? 'board:bg-gray-600 board:text-white board:dark:bg-gray-600 board:dark:text-gray-100' : 'board:bg-gray-100 board:text-gray-800 board:dark:bg-gray-700 board:dark:text-gray-200'}}">{{report?.status_label ?? ''}}</span>
             </div>
-            <p data-ref="report_meta_{{i}}" class="text-xs text-slate-600 dark:text-slate-400">{{(report?.board_name ?? '') + ' · ' + (report?.author_name ?? $t('sirsoft-board.admin.dashboard.community.anonymous')) + ' · ' + (report?.last_reported_at ?? '')}}</p>
+            <p data-ref="report_meta_{{i}}" class="board:text-xs board:text-slate-600 board:dark:text-slate-400">{{(report?.board_name ?? '') + ' · ' + (report?.author_name ?? $t('sirsoft-board.admin.dashboard.community.anonymous')) + ' · ' + (report?.last_reported_at ?? '')}}</p>
+            <!-- 실명 보조 줄 — 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 응답에 실린다(#490) -->
+            <p data-ref="report_real_name_{{i}}" data-testid="author-real-name" data-if="{{!!report?.real_name}}" class="board:text-xs board:text-slate-600 board:dark:text-slate-400 board:truncate" aria-label="{{$t('sirsoft-board.common.real_name_label', { name: report?.real_name })}}">{{$t('sirsoft-board.common.real_name_label', { name: report?.real_name })}}</p>
           </a>
         </div>
       </div>

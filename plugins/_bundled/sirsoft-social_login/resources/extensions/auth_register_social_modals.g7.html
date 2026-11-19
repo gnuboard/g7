@@ -1,0 +1,339 @@
+<!-- 소셜 가입 모달 2개 — 제공자 확인을 마친 계정이 가입 화면(/register?social_pending=…&social_step=…)으로 오면 진입 때 가입 대기를 받아 연다.
+     ① 가입 완료(social_signup_complete): 부족한 항목(이름·이메일)만 묻고, 약관·방침 동의를 받아 가입한 뒤 로그인 인계 주소로 간다. 비밀번호는 묻지 않는다.
+     ② 이미 가입된 이메일(social_existing_account): 같은 이메일의 기존 계정 비밀번호나 그 계정 이메일 인증번호로 확인한 뒤 연결한다.
+     가입 대기가 만료됐으면 가입 완료 모달이 만료 안내와 [다시 로그인]만 보인다. 상태는 _global 에 둔다 — 모달은 페이지 _local 의 낡은 값을 보므로(다시 열 때 빈 값) 모달이 읽고 쓰는 값은 전역이어야 한다. 가입 폼 registerForm 과 이름이 겹치지 않게 social 접두어를 쓴다. -->
+<extension target-layout="auth/register" priority="100">
+  <init>
+    <!-- 가입 대기 받기 — 소셜 가입으로 온 경우에만. 단계에 따라 모달을 연다. -->
+    <set-state if="{{!!query.social_pending}}" target="global" :socialLoginSignup="null" :socialLoginSignupExpired="false" :socialLoginSignupError="null" :socialLoginErrors="null" :socialLoginEmailChallengeId="null" :socialLoginEmailVerified="false" :socialLoginEmailExpiresAt="null" :socialLoginEmailRemaining="0" :socialLoginExistingChallengeId="null" :socialLoginBusy="false"/>
+    <api-call if="{{!!query.social_pending}}" target="/api/plugins/sirsoft-social_login/signup/pending?pending_token={{query.social_pending}}" method="GET" auth_mode="optional">
+      <success>
+        <set-state target="global" socialLoginSignup="{{response.data}}" socialLoginForm.name="{{response.data?.name ?? ''}}" socialLoginForm.nickname="{{response.data?.nickname ?? ''}}" socialLoginForm.email="{{response.data?.email?.value ?? ''}}" :socialLoginForm.agree_terms="false" :socialLoginForm.agree_privacy="false"/>
+        <open-modal if="{{response.data?.step === 'existing'}}" target="social_existing_account"/>
+        <open-modal if="{{response.data?.step !== 'existing'}}" target="social_signup_complete"/>
+      </success>
+      <fail>
+        <set-state target="global" :socialLoginSignupExpired="true"/>
+        <open-modal target="social_signup_complete"/>
+      </fail>
+    </api-call>
+    <!-- 인증번호 남은 시간 — 1초마다 유효 시각까지 남은 초를 다시 센다(소셜 가입으로 온 경우에만) -->
+    <start-interval if="{{!!query.social_pending}}" id="social_signup_code_tick" :intervalMs="1000">
+      <actions>
+        <set-state target="global" socialLoginEmailRemaining="{{_global.socialLoginEmailExpiresAt ? Math.max(0, Math.floor((new Date(_global.socialLoginEmailExpiresAt).getTime() - Date.now()) / 1000)) : 0}}"/>
+      </actions>
+    </start-interval>
+  </init>
+  <modal>
+    <!-- ① 가입 완료 -->
+    <modal data-type="composite" data-ref="social_signup_complete" title="$t:sirsoft-social_login.signup.title|provider={{_global.socialLoginSignup?.provider?.label ?? $t('sirsoft-social_login.signup.provider_generic')}}" size="md" :closeOnBackdropClick="false">
+      <div class="sl:space-y-5">
+        <!-- 만료 — 가입 대기 시간이 지났거나 이미 가입을 마쳤다 -->
+        <div data-if="{{_global.socialLoginSignupExpired === true}}" data-ref="social_signup_expired" class="sl:space-y-4 sl:text-center">
+          <p class="sl:text-sm sl:text-gray-700 sl:dark:text-gray-300">$t:sirsoft-social_login.signup.expired</p>
+          <button type="button" class="sl:w-full sl:px-4 sl:py-2.5 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:font-medium sl:cursor-pointer">
+            <on type="click">
+              <!-- 만료 안내에서 닫고 로그인 화면으로 — 가입 대기 정보가 사라졌으므로 처음부터 다시 시작하게 한다 -->
+              <sequence>
+                <close-modal/>
+                <navigate path="/login"/>
+              </sequence>
+            </on>
+            $t:sirsoft-social_login.signup.retry_login
+          </button>
+        </div>
+        <div data-if="{{_global.socialLoginSignupExpired !== true &amp;&amp; !!_global.socialLoginSignup}}" data-ref="social_signup_form" class="sl:space-y-5">
+          <p class="sl:text-sm sl:text-gray-600 sl:dark:text-gray-400">$t:sirsoft-social_login.signup.intro</p>
+          <!-- 이름·닉네임 — 제공자가 이름을 주지 않았거나 운영자가 늘 묻게 했을 때 -->
+          <div data-if="{{_global.socialLoginSignup?.show_profile_fields === true}}" class="sl:space-y-3">
+            <div>
+              <label for="social_signup_name" class="sl:block sl:text-sm sl:font-medium sl:text-gray-700 sl:dark:text-gray-300 sl:mb-1">$t:sirsoft-social_login.signup.name</label>
+              <input type="text" id="social_signup_name" name="social_name" value="{{_global.socialLoginForm?.name ?? ''}}" maxLength="255" class="sl:w-full sl:px-3 sl:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:bg-white sl:dark:bg-gray-700 sl:text-gray-900 sl:dark:text-white" disabled="{{_global.socialLoginBusy}}">
+                <on event="onChange">
+                  <!-- 입력한 이름을 가입 폼 전역 상태에 담는다 — 가입 요청 본문이 이 값을 읽는다 -->
+                  <set-state target="global" socialLoginForm.name="{{$event.target.value}}"/>
+                </on>
+              </input>
+            </div>
+            <div>
+              <label for="social_signup_nickname" class="sl:block sl:text-sm sl:font-medium sl:text-gray-700 sl:dark:text-gray-300 sl:mb-1">$t:sirsoft-social_login.signup.nickname</label>
+              <input type="text" id="social_signup_nickname" name="social_nickname" value="{{_global.socialLoginForm?.nickname ?? ''}}" maxLength="50" class="sl:w-full sl:px-3 sl:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:bg-white sl:dark:bg-gray-700 sl:text-gray-900 sl:dark:text-white" disabled="{{_global.socialLoginBusy}}">
+                <on event="onChange">
+                  <!-- 입력한 닉네임을 가입 폼 전역 상태에 담는다 -->
+                  <set-state target="global" socialLoginForm.nickname="{{$event.target.value}}"/>
+                </on>
+              </input>
+            </div>
+          </div>
+          <!-- 이메일 — 제공자가 검증한 이메일이면 보여 주기만, 없거나 미검증이면 입력 + 인증번호, 대체 이메일이면 안내 -->
+          <div data-if="{{_global.socialLoginSignup?.email?.mode === 'locked'}}" class="sl:min-w-0 sl:break-all sl:text-sm sl:text-gray-700 sl:dark:text-gray-300">
+            <span class="sl:font-medium">$t:sirsoft-social_login.signup.email</span>
+            <span> {{_global.socialLoginSignup?.email?.value ?? ''}}</span>
+          </div>
+          <p data-if="{{_global.socialLoginSignup?.email?.mode === 'placeholder'}}" data-ref="social_signup_placeholder_notice" class="sl:p-3 sl:rounded-lg sl:bg-yellow-50 sl:dark:bg-yellow-900/20 sl:border sl:border-yellow-200 sl:dark:border-yellow-800 sl:text-sm sl:text-yellow-800 sl:dark:text-yellow-300">$t:sirsoft-social_login.signup.placeholder_notice</p>
+          <div data-if="{{_global.socialLoginSignup?.email?.mode === 'input'}}" data-ref="social_signup_email_section" class="sl:space-y-3">
+            <label for="social_signup_email" class="sl:block sl:text-sm sl:font-medium sl:text-gray-700 sl:dark:text-gray-300">$t:sirsoft-social_login.signup.email</label>
+            <div class="sl:flex sl:gap-2">
+              <input type="email" id="social_signup_email" name="social_email" value="{{_global.socialLoginForm?.email ?? ''}}" maxLength="255" class="sl:flex-1 sl:min-w-0 sl:px-3 sl:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:bg-white sl:dark:bg-gray-700 sl:text-gray-900 sl:dark:text-white" disabled="{{_global.socialLoginBusy || _global.socialLoginEmailVerified}}">
+                <on event="onChange">
+                  <!-- 이메일을 바꾸면 앞서 확인한 인증 상태를 무효로 돌린다 — 다른 주소로 확인 없이 가입하지 못하게 -->
+                  <set-state target="global" socialLoginForm.email="{{$event.target.value}}" :socialLoginEmailVerified="false"/>
+                </on>
+              </input>
+              <button type="button" data-ref="social_signup_request_code" class="sl:shrink-0 sl:px-3 sl:py-3 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed" disabled="{{_global.socialLoginBusy || _global.socialLoginEmailVerified || !_global.socialLoginForm?.email}}">
+                <responsive on="640-" class="sl:shrink-0 sl:px-3 sl:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed"/>
+                <on type="click">
+                  <!-- 인증번호 받기 — 진행 표시를 켜고 입력 이메일로 코어 본인인증 메일을 보낸다(이미 가입된 이메일이면 서버가 거절) -->
+                  <sequence>
+                    <set-state target="global" :socialLoginBusy="true" :socialLoginSignupError="null"/>
+                    <api-call target="/api/plugins/sirsoft-social_login/signup/email/request" method="POST" auth_mode="optional">
+                      <body pending_token="{{query.social_pending}}" email="{{_global.socialLoginForm?.email}}"/>
+                      <success>
+                        <set-state target="global" :socialLoginBusy="false" socialLoginEmailChallengeId="{{response.data?.challenge_id}}" socialLoginEmailExpiresAt="{{response.data?.expires_at}}" socialLoginEmailRemaining="{{response.data?.expires_at ? Math.max(0, Math.floor((new Date(response.data.expires_at).getTime() - Date.now()) / 1000)) : 0}}" socialLoginForm.code=""/>
+                        <toast type="info" message="$t:sirsoft-social_login.signup.code_sent"/>
+                      </success>
+                      <fail>
+                        <set-state target="global" :socialLoginBusy="false" socialLoginSignupError="{{error.message}}"/>
+                      </fail>
+                    </api-call>
+                  </sequence>
+                </on>
+                <span data-if="{{!_global.socialLoginEmailChallengeId}}">$t:sirsoft-social_login.signup.request_code</span>
+                <span data-if="{{!!_global.socialLoginEmailChallengeId}}">$t:sirsoft-social_login.signup.resend_code</span>
+              </button>
+            </div>
+            <div data-if="{{!!_global.socialLoginEmailChallengeId &amp;&amp; !_global.socialLoginEmailVerified}}" class="sl:flex sl:gap-2">
+              <input type="text" name="social_email_code" value="{{_global.socialLoginForm?.code ?? ''}}" inputMode="numeric" autoComplete="one-time-code" maxLength="10" placeholder="$t:sirsoft-social_login.signup.code_placeholder" class="sl:flex-1 sl:min-w-0 sl:px-3 sl:py-2 sl:text-center sl:tracking-widest sl:font-mono sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:bg-white sl:dark:bg-gray-700 sl:text-gray-900 sl:dark:text-white" disabled="{{_global.socialLoginBusy}}">
+                <on event="onChange">
+                  <!-- 입력한 인증번호를 담는다 — [확인] 이 이 값으로 인증을 요청한다 -->
+                  <set-state target="global" socialLoginForm.code="{{$event.target.value}}"/>
+                </on>
+              </input>
+              <button type="button" data-ref="social_signup_verify_code" class="sl:shrink-0 sl:px-3 sl:py-3 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed" disabled="{{_global.socialLoginBusy || !_global.socialLoginForm?.code}}">
+                <responsive on="640-" class="sl:shrink-0 sl:px-3 sl:py-2 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed"/>
+                <on type="click">
+                  <!-- 인증번호 확인 — 맞으면 이 이메일로만 가입할 수 있다 -->
+                  <sequence>
+                    <set-state target="global" :socialLoginBusy="true" :socialLoginSignupError="null"/>
+                    <api-call target="/api/plugins/sirsoft-social_login/signup/email/verify" method="POST" auth_mode="optional">
+                      <body pending_token="{{query.social_pending}}" challenge_id="{{_global.socialLoginEmailChallengeId}}" code="{{_global.socialLoginForm?.code}}"/>
+                      <success>
+                        <set-state target="global" :socialLoginBusy="false" :socialLoginEmailVerified="true"/>
+                      </success>
+                      <fail>
+                        <set-state target="global" :socialLoginBusy="false" socialLoginSignupError="{{error.message}}"/>
+                      </fail>
+                    </api-call>
+                  </sequence>
+                </on>
+                $t:sirsoft-social_login.signup.verify_code
+              </button>
+            </div>
+            <p data-if="{{!!_global.socialLoginEmailChallengeId &amp;&amp; !_global.socialLoginEmailVerified}}" data-ref="social_signup_code_timer" class="sl:text-xs">
+              <span data-if="{{(_global.socialLoginEmailRemaining ?? 0) > 0}}" class="sl:text-gray-600 sl:dark:text-gray-400">$t:sirsoft-social_login.signup.code_remaining|minutes={{Math.floor((_global.socialLoginEmailRemaining ?? 0) / 60)}}|seconds={{String((_global.socialLoginEmailRemaining ?? 0) % 60).padStart(2, '0')}}</span>
+              <span data-if="{{(_global.socialLoginEmailRemaining ?? 0) &lt;= 0 &amp;&amp; !!_global.socialLoginEmailExpiresAt}}" class="sl:text-red-600 sl:dark:text-red-400">$t:sirsoft-social_login.signup.code_expired</span>
+            </p>
+            <p data-if="{{_global.socialLoginEmailVerified === true}}" data-ref="social_signup_email_verified" class="sl:text-sm sl:text-green-700 sl:dark:text-green-400">$t:sirsoft-social_login.signup.email_verified</p>
+          </div>
+          <!-- 약관·방침 동의 — 전문은 가입 화면의 약관·방침 창을 그대로 연다 -->
+          <div class="sl:space-y-2">
+            <div class="sl:flex sl:items-center sl:gap-2">
+              <checkbox name="social_agree_terms" checked="{{!!_global.socialLoginForm?.agree_terms}}" :autoBinding="false" aria-label="$t:auth.agree_terms_label" disabled="{{_global.socialLoginBusy}}">
+                <on type="change">
+                  <!-- 이용약관 동의 여부를 담는다(자동바인딩을 끈 체크박스라 직접 쓴다) -->
+                  <set-state target="global" socialLoginForm.agree_terms="{{$event.target.checked}}"/>
+                </on>
+              </checkbox>
+              <button type="button" class="sl:text-sm sl:text-blue-600 sl:dark:text-blue-400 sl:hover:underline sl:cursor-pointer">
+                <on type="click">
+                  <!-- 약관 본문을 다시 받아 열람 창을 연다 — 운영자가 약관을 바꿨으면 최신 본문을 보여 준다 -->
+                  <sequence>
+                    <refetch-data-source dataSourceId="termsContent"/>
+                    <open-modal target="termsModal"/>
+                  </sequence>
+                </on>
+                $t:auth.terms
+              </button>
+              <span class="sl:text-sm sl:text-gray-700 sl:dark:text-gray-300">$t:auth.agree_required</span>
+            </div>
+            <div class="sl:flex sl:items-center sl:gap-2">
+              <checkbox name="social_agree_privacy" checked="{{!!_global.socialLoginForm?.agree_privacy}}" :autoBinding="false" aria-label="$t:auth.agree_privacy_label" disabled="{{_global.socialLoginBusy}}">
+                <on type="change">
+                  <!-- 개인정보 처리방침 동의 여부를 담는다(자동바인딩을 끈 체크박스라 직접 쓴다) -->
+                  <set-state target="global" socialLoginForm.agree_privacy="{{$event.target.checked}}"/>
+                </on>
+              </checkbox>
+              <button type="button" class="sl:text-sm sl:text-blue-600 sl:dark:text-blue-400 sl:hover:underline sl:cursor-pointer">
+                <on type="click">
+                  <!-- 처리방침 본문을 다시 받아 열람 창을 연다 -->
+                  <sequence>
+                    <refetch-data-source dataSourceId="privacyContent"/>
+                    <open-modal target="privacyModal"/>
+                  </sequence>
+                </on>
+                $t:auth.privacy
+              </button>
+              <span class="sl:text-sm sl:text-gray-700 sl:dark:text-gray-300">$t:auth.agree_required</span>
+            </div>
+          </div>
+          <p data-if="{{!!_global.socialLoginSignupError}}" data-ref="social_signup_error" class="sl:text-sm sl:text-red-600 sl:dark:text-red-400" role="alert">{{_global.socialLoginSignupError ?? ''}}</p>
+          <button type="button" data-ref="social_signup_submit" class="sl:w-full sl:px-4 sl:py-3 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:font-medium sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed" disabled="{{_global.socialLoginBusy || !_global.socialLoginForm?.agree_terms || !_global.socialLoginForm?.agree_privacy || (_global.socialLoginSignup?.email?.mode === 'input' &amp;&amp; !_global.socialLoginEmailVerified)}}">
+            <on type="click">
+              <!-- 가입하고 시작 — 성공하면 로그인 인계 주소(본인인증 대기 회원은 안내 주소)로 간다. 본인인증 가입 정책이 켜졌으면 코어가 428 로 본인인증 창을 띄우고 다시 보낸다. -->
+              <sequence>
+                <set-state target="global" :socialLoginBusy="true" :socialLoginSignupError="null"/>
+                <api-call target="/api/plugins/sirsoft-social_login/signup/complete" method="POST" auth_mode="optional">
+                  <body pending_token="{{query.social_pending}}" name="{{_global.socialLoginForm?.name ?? ''}}" nickname="{{_global.socialLoginForm?.nickname ?? ''}}" email="{{_global.socialLoginSignup?.email?.mode === 'input' ? _global.socialLoginForm?.email : _global.socialLoginSignup?.email?.value}}" agree_terms="{{!!_global.socialLoginForm?.agree_terms}}" agree_privacy="{{!!_global.socialLoginForm?.agree_privacy}}"/>
+                  <field name="identity_target">
+                    <field name="email" value="{{_global.socialLoginSignup?.email?.mode === 'input' ? _global.socialLoginForm?.email : _global.socialLoginSignup?.email?.value}}"/>
+                  </field>
+                  <success>
+                    <set-state target="global" :socialLoginBusy="false"/>
+                    <close-modal/>
+                    <navigate path="{{response.data?.handoff_url ?? response.data?.redirect_url ?? '/login'}}" fallbackPath="/login"/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :socialLoginBusy="false" socialLoginSignupError="{{error.message}}" socialLoginSignupExpired="{{error.errors?.code === 'expired'}}"/>
+                  </fail>
+                </api-call>
+              </sequence>
+            </on>
+            $t:sirsoft-social_login.signup.submit
+          </button>
+        </div>
+      </div>
+    </modal>
+  </modal>
+  <modal>
+    <!-- ② 이미 가입된 이메일 -->
+    <modal data-type="composite" data-ref="social_existing_account" title="$t:sirsoft-social_login.existing.title" size="md" :closeOnBackdropClick="false">
+      <div class="sl:space-y-5">
+        <p class="sl:text-sm sl:text-gray-700 sl:dark:text-gray-300">$t:sirsoft-social_login.existing.message|email={{_global.socialLoginSignup?.existing_account?.email_masked ?? ''}}</p>
+        <p class="sl:text-xs sl:text-gray-500 sl:dark:text-gray-400">$t:sirsoft-social_login.existing.hint</p>
+        <!-- 기존 계정 비밀번호로 확인 — 비밀번호 없는 계정이면 숨긴다 -->
+        <div data-if="{{_global.socialLoginSignup?.existing_account?.has_password !== false}}" data-ref="social_existing_password" class="sl:space-y-2">
+          <label for="social_existing_password_input" class="sl:block sl:text-sm sl:font-medium sl:text-gray-700 sl:dark:text-gray-300">$t:sirsoft-social_login.existing.by_password</label>
+          <div class="sl:flex sl:gap-2">
+            <password-input id="social_existing_password_input" name="social_existing_password" value="{{_global.socialLoginForm?.password ?? ''}}" class="sl:flex-1 sl:min-w-0 sl:px-3 sl:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:bg-white sl:dark:bg-gray-700 sl:text-gray-900 sl:dark:text-white" :showToggle="true" disabled="{{_global.socialLoginBusy}}">
+              <on type="change">
+                <!-- 기존 계정 연결용 비밀번호를 담는다 — 연결 요청 본문이 이 값을 읽고, 요청 뒤에는 지운다 -->
+                <set-state target="global" socialLoginForm.password="{{$event.target.value}}"/>
+              </on>
+            </password-input>
+            <button type="button" data-ref="social_existing_password_submit" class="sl:shrink-0 sl:px-3 sl:py-3 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed" disabled="{{_global.socialLoginBusy || !_global.socialLoginForm?.password}}">
+              <responsive on="640-" class="sl:shrink-0 sl:px-3 sl:py-2 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed"/>
+              <on type="click">
+                <!-- 비밀번호 확인 — 맞으면 연결하고 로그인 인계 주소로 간다 -->
+                <sequence>
+                  <set-state target="global" :socialLoginBusy="true" :socialLoginSignupError="null"/>
+                  <api-call target="/api/plugins/sirsoft-social_login/signup/link-existing/request" method="POST" auth_mode="optional">
+                    <body pending_token="{{query.social_pending}}" method="password" password="{{_global.socialLoginForm?.password}}"/>
+                    <success>
+                      <set-state target="global" :socialLoginBusy="false"/>
+                      <close-modal/>
+                      <navigate path="{{response.data?.handoff_url ?? '/login'}}" fallbackPath="/login"/>
+                    </success>
+                    <fail>
+                      <set-state target="global" :socialLoginBusy="false" socialLoginSignupError="{{error.message}}" socialLoginForm.password=""/>
+                    </fail>
+                  </api-call>
+                </sequence>
+              </on>
+              $t:sirsoft-social_login.existing.confirm
+            </button>
+          </div>
+        </div>
+        <!-- 기존 계정 이메일 인증번호로 확인 -->
+        <div data-ref="social_existing_email" class="sl:space-y-2">
+          <label class="sl:block sl:text-sm sl:font-medium sl:text-gray-700 sl:dark:text-gray-300">$t:sirsoft-social_login.existing.by_email</label>
+          <button type="button" data-ref="social_existing_request_code" class="sl:w-full sl:px-3 sl:py-3 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed" disabled="{{_global.socialLoginBusy}}">
+            <responsive on="640-" class="sl:w-full sl:px-3 sl:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed"/>
+            <on type="click">
+              <!-- 인증번호 받기 — 기존 계정 이메일로 보낸다 -->
+              <sequence>
+                <set-state target="global" :socialLoginBusy="true" :socialLoginSignupError="null"/>
+                <api-call target="/api/plugins/sirsoft-social_login/signup/link-existing/request" method="POST" auth_mode="optional">
+                  <body pending_token="{{query.social_pending}}" method="email"/>
+                  <success>
+                    <set-state target="global" :socialLoginBusy="false" socialLoginExistingChallengeId="{{response.data?.challenge_id}}" socialLoginForm.existing_code=""/>
+                    <toast type="info" message="$t:sirsoft-social_login.signup.code_sent"/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :socialLoginBusy="false" socialLoginSignupError="{{error.message}}"/>
+                  </fail>
+                </api-call>
+              </sequence>
+            </on>
+            <span data-if="{{!_global.socialLoginExistingChallengeId}}">$t:sirsoft-social_login.signup.request_code</span>
+            <span data-if="{{!!_global.socialLoginExistingChallengeId}}">$t:sirsoft-social_login.signup.resend_code</span>
+          </button>
+          <div data-if="{{!!_global.socialLoginExistingChallengeId}}" class="sl:flex sl:gap-2">
+            <input type="text" name="social_existing_code" value="{{_global.socialLoginForm?.existing_code ?? ''}}" inputMode="numeric" autoComplete="one-time-code" maxLength="10" placeholder="$t:sirsoft-social_login.signup.code_placeholder" class="sl:flex-1 sl:min-w-0 sl:px-3 sl:py-2 sl:text-center sl:tracking-widest sl:font-mono sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:bg-white sl:dark:bg-gray-700 sl:text-gray-900 sl:dark:text-white" disabled="{{_global.socialLoginBusy}}">
+              <on event="onChange">
+                <!-- 기존 계정 연결용 인증번호를 담는다 -->
+                <set-state target="global" socialLoginForm.existing_code="{{$event.target.value}}"/>
+              </on>
+            </input>
+            <button type="button" data-ref="social_existing_verify_code" class="sl:shrink-0 sl:px-3 sl:py-3 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed" disabled="{{_global.socialLoginBusy || !_global.socialLoginForm?.existing_code}}">
+              <responsive on="640-" class="sl:shrink-0 sl:px-3 sl:py-2 sl:bg-gray-900 sl:dark:bg-white sl:text-white sl:dark:text-gray-900 sl:rounded-lg sl:text-sm sl:cursor-pointer sl:disabled:opacity-50 sl:disabled:cursor-not-allowed"/>
+              <on type="click">
+                <!-- 인증번호 확인 — 맞으면 연결하고 로그인 인계 주소로 간다 -->
+                <sequence>
+                  <set-state target="global" :socialLoginBusy="true" :socialLoginSignupError="null"/>
+                  <api-call target="/api/plugins/sirsoft-social_login/signup/link-existing/verify" method="POST" auth_mode="optional">
+                    <body pending_token="{{query.social_pending}}" challenge_id="{{_global.socialLoginExistingChallengeId}}" code="{{_global.socialLoginForm?.existing_code}}"/>
+                    <success>
+                      <set-state target="global" :socialLoginBusy="false"/>
+                      <close-modal/>
+                      <navigate path="{{response.data?.handoff_url ?? '/login'}}" fallbackPath="/login"/>
+                    </success>
+                    <fail>
+                      <set-state target="global" :socialLoginBusy="false" socialLoginSignupError="{{error.message}}"/>
+                    </fail>
+                  </api-call>
+                </sequence>
+              </on>
+              $t:sirsoft-social_login.existing.confirm
+            </button>
+          </div>
+        </div>
+        <p data-if="{{!!_global.socialLoginSignupError}}" data-ref="social_existing_error" class="sl:text-sm sl:text-red-600 sl:dark:text-red-400" role="alert">{{_global.socialLoginSignupError ?? ''}}</p>
+        <div class="sl:flex sl:flex-col sl:gap-2 sl:pt-2 sl:border-t sl:border-gray-200 sl:dark:border-gray-700">
+          <responsive on="640-" class="sl:flex sl:flex-row sl:gap-2 sl:pt-2 sl:border-t sl:border-gray-200 sl:dark:border-gray-700"/>
+          <button type="button" data-ref="social_existing_new_account" class="sl:flex-1 sl:px-3 sl:py-3 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer sl:disabled:opacity-50" disabled="{{_global.socialLoginBusy}}">
+            <responsive on="640-" class="sl:flex-1 sl:px-3 sl:py-2 sl:border sl:border-gray-300 sl:dark:border-gray-600 sl:rounded-lg sl:text-sm sl:text-gray-700 sl:dark:text-gray-300 sl:cursor-pointer sl:disabled:opacity-50"/>
+            <on type="click">
+              <!-- 새 계정으로 가입 — 이 이메일은 쓸 수 없으니 다른 이메일을 받는 가입 모달로 바꾼다 -->
+              <sequence>
+                <set-state target="global" :socialLoginBusy="true" :socialLoginSignupError="null"/>
+                <api-call target="/api/plugins/sirsoft-social_login/signup/discard-existing" method="POST" auth_mode="optional">
+                  <body pending_token="{{query.social_pending}}"/>
+                  <success>
+                    <set-state target="global" :socialLoginBusy="false" socialLoginSignup="{{response.data}}" socialLoginForm.email="" :socialLoginEmailChallengeId="null" :socialLoginEmailVerified="false"/>
+                    <close-modal/>
+                    <open-modal target="social_signup_complete"/>
+                  </success>
+                  <fail>
+                    <set-state target="global" :socialLoginBusy="false" socialLoginSignupError="{{error.message}}"/>
+                  </fail>
+                </api-call>
+              </sequence>
+            </on>
+            $t:sirsoft-social_login.existing.new_account
+          </button>
+          <button type="button" class="sl:flex-1 sl:px-3 sl:py-3 sl:text-sm sl:text-gray-600 sl:dark:text-gray-400 sl:hover:underline sl:cursor-pointer">
+            <responsive on="640-" class="sl:flex-1 sl:px-3 sl:py-2 sl:text-sm sl:text-gray-600 sl:dark:text-gray-400 sl:hover:underline sl:cursor-pointer"/>
+            <on type="click">
+              <!-- 연결을 그만두고 로그인 화면으로 — 가입 창과 연결 창을 모두 닫는다 -->
+              <sequence>
+                <close-modal/>
+                <navigate path="/login"/>
+              </sequence>
+            </on>
+            $t:common.cancel
+          </button>
+        </div>
+      </div>
+    </modal>
+  </modal>
+</extension>

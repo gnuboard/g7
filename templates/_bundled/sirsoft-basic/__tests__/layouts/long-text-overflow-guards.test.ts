@@ -184,7 +184,13 @@ describe('U4 마이페이지 프로필', () => {
     expectTokens(findOne(layout, textHas('user.data?.nickname'), '프로필 닉네임'), ['min-w-0', 'wrap-anywhere'], '프로필 닉네임');
     expectTokens(findOne(layout, textHas('user.data?.status_label'), '프로필 상태 배지'), ['shrink-0'], '프로필 상태 배지');
     expectTokens(findOne(layout, textHas('user.data?.email'), '프로필 이메일'), ['break-all'], '프로필 이메일');
-    expectTokens(findOne(layout, textHas('user.data?.address_detail'), '프로필 주소'), ['break-words'], '프로필 주소');
+    // 연락처, 위치(주소 포함), 운영자 추가 항목의 값은 회원 항목 보기 조각이 그린다(#490) — 한 줄 항목은 라벨과 같은 flex 줄이라 줄어들고 아무 데서나 줄을 바꾼다.
+    const fieldsView = loadLayout('partials/member/_member_fields_view.json');
+    const values = findAll(fieldsView, (n) => n.text === "{{field.display_value || '-'}}");
+    expect(values.length).toBe(2);
+    expectTokens(values[0], ['min-w-0', 'wrap-anywhere'], '항목 값(한 줄)');
+    expectTokens(values[1], ['break-words'], '항목 값(여러 줄)');
+    findAll(fieldsView, (n) => n.text === '{{field.label}}').forEach((label, i) => expectTokens(label, ['break-words'], `항목 라벨 ${i + 1}`));
   });
 });
 

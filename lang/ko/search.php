@@ -56,6 +56,12 @@ return [
         'rebuilt_item' => '재생성: :index',
         'rebuild_failed_item' => '재생성 실패: :index — :error',
         'still_stale_item' => '재생성 후에도 색인 누락: :index',
+        // 재생성으로 고쳐지지 않는 손상 — 표 재구축 안내(자동 실행하지 않음)
+        'persistent_stale' => [
+            'title' => '재생성한 뒤에도 색인 누락이 남은 표가 있습니다. 표 안의 숨은 문서 번호(FTS_DOC_ID) 연결이 어긋난 경우로, 인덱스 재생성으로는 고쳐지지 않고 표를 다시 만들어야 합니다. 아래 명령은 자동으로 실행하지 않습니다.',
+            'item' => ':target — :command',
+            'caution' => '표 재구축은 표 전체를 복사하므로 큰 표는 오래 걸리고, 그동안 그 표에 쓰기가 막힙니다. DB 를 백업한 뒤 유지보수 시간에 DB 클라이언트에서 실행하고, 끝나면 `php artisan search:index` 로 다시 점검하세요.',
+        ],
         'degraded_hint' => '「부분」 은 엔진의 토큰 처리 특성일 수 있어 자동 재생성 대상이 아닙니다. 필요하면 개별 확인하세요.',
 
         'report' => [

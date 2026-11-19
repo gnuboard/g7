@@ -529,6 +529,18 @@
                                                     "text": "{{_global.selectedMenu?.creator?.name ?? 'System'}}"
                                                 },
                                                 {
+                                                    "comment": "실명 보조 줄. 서버는 회원 조회 권한이 있는 관리자에게, 실명이 표시 이름과 다를 때만 real_name 을 싣는다.",
+                                                    "id": "menu_view_creator_real_name",
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{!!_global.selectedMenu?.creator?.real_name}}",
+                                                    "props": {
+                                                        "title": "$t:admin.common.real_name.label",
+                                                        "className": "block text-tertiary"
+                                                    },
+                                                    "text": "{{_global.selectedMenu?.creator?.real_name}}"
+                                                },
+                                                {
                                                     "type": "basic",
                                                     "name": "Span",
                                                     "props": {

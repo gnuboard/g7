@@ -5,8 +5,8 @@
  * 읽기 전용으로 고정했다. 검색 버튼도 SDK 가 없으면 무반응이라, 둘이 겹치면
  * 주소를 검색할 수도 직접 입력할 수도 없어 주문을 끝낼 수 없었다.
  *
- * @scenario asset_class=service_sdk, outcome=failed
- * @effects address_fields_editable_when_sdk_missing, failed_asset_shows_retry_notice
+ * 조합 요약(마커 아님 — 평문): asset_class=service_sdk, outcome=failed
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): address_fields_editable_when_sdk_missing, failed_asset_shows_retry_notice
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -63,7 +63,7 @@ describe('우편번호 SDK 미확보 시 주소 입력 가능성', () => {
         );
 
         expect(inputs.every(input => input.readOnly)).toBe(true);
-        expect(inputs.every(input => input.classList.contains('readonly'))).toBe(true);
+        expect(inputs.every(input => input.classList.contains('daumpostcode-readonly'))).toBe(true);
         expect(notifyFailure).not.toHaveBeenCalled();
     });
 
@@ -100,7 +100,7 @@ describe('우편번호 SDK 미확보 시 주소 입력 가능성', () => {
         const inputs = mountFields();
         inputs.forEach(input => {
             input.readOnly = true;
-            input.classList.add('readonly');
+            input.classList.add('daumpostcode-readonly');
         });
 
         await setFieldReadOnlyHandler(
@@ -109,7 +109,7 @@ describe('우편번호 SDK 미확보 시 주소 입력 가능성', () => {
         );
 
         expect(inputs.some(input => input.readOnly)).toBe(false);
-        expect(inputs.some(input => input.classList.contains('readonly'))).toBe(false);
+        expect(inputs.some(input => input.classList.contains('daumpostcode-readonly'))).toBe(false);
         expect(notifyFailure).not.toHaveBeenCalled();
     });
 

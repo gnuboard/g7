@@ -13,6 +13,7 @@ axes:
     - fetch_failure
     - global_state_reference
     - data_source_if
+    - missing_code_layout
 
 effects:
   - init_global_maps_fetched_data
@@ -22,6 +23,8 @@ effects:
   - global_state_copy_receives_init_values
   - false_if_data_source_not_fetched
   - missing_active_list_keeps_guarded_source
+  - missing_code_falls_back_to_default_layout   # 코드 레이아웃이 없으면 error_config.layouts.default 로 그린다(#869 λ 4부 18)
+  - missing_code_falls_back_to_builtin_display  # default 도 없으면(또는 error_config 가 없으면) 엔진 내장 오류 화면으로 그린다
 
 test_files:
   - resources/js/core/template-engine/__tests__/ErrorPageHandler.test.ts

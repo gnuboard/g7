@@ -7,6 +7,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Carbon;
+use Laravel\Sanctum\PersonalAccessToken;
 
 interface UserRepositoryInterface
 {
@@ -36,12 +37,30 @@ interface UserRepositoryInterface
     public function update(User $user, array $data): bool;
 
     /**
+     * 회원 이메일을 인증된 것으로 기록합니다 (`email_verified_at` 은 일괄 대입 대상이 아니라 따로 둔다).
+     *
+     * 이미 기록돼 있으면 처음 시각을 유지합니다.
+     *
+     * @param  User  $user  회원
+     * @return void 반환값 없음
+     */
+    public function markEmailVerified(User $user): void;
+
+    /**
      * 사용자를 삭제합니다.
      *
      * @param  User  $user  삭제할 사용자 모델
      * @return bool 삭제 성공 여부
      */
     public function delete(User $user): bool;
+
+    /**
+     * 회원에게 직접 준 메뉴 권한(`menu_permissions.user_id`)을 지웁니다 — 회원을 지우기 직전에 부른다(DB CASCADE 비의존).
+     *
+     * @param  User  $user  대상 회원
+     * @return int 지운 행 수
+     */
+    public function deleteMenuPermissions(User $user): int;
 
     /**
      * 모든 사용자를 조회합니다.
@@ -117,6 +136,7 @@ interface UserRepositoryInterface
      *
      * 번호만 들고 있는 목록(방문자 통계의 원장 행 등)이 한 쪽에 실린 회원을 한 번에
      * 읽을 때 씁니다 — 행마다 읽으면 한 쪽에 쪽 크기만큼 질의가 납니다.
+     * 읽는 칸은 표시 이름 계산에 필요한 `User::DISPLAY_COLUMNS` 입니다.
      *
      * @param  array<int, int>  $ids  사용자 번호 목록
      * @return Collection<int, User> id => User 매핑
@@ -137,6 +157,15 @@ interface UserRepositoryInterface
      * @return User|null 슈퍼관리자 또는 없으면 null
      */
     public function findSuperAdmin(): ?User;
+
+    /**
+     * 탈퇴하지 않은 최고관리자 전원을 가입 순으로 조회합니다.
+     *
+     * 터미널 비밀번호 재설정이 이메일 없이 대상(최고관리자)을 고를 때 쓴다 — 최고관리자는 여럿일 수 있다.
+     *
+     * @return Collection<int, User> 최고관리자 목록 (없으면 빈 컬렉션)
+     */
+    public function getSuperAdmins(): Collection;
 
     /**
      * 특정 권한 identifier 를 가진 역할에 소속된 모든 사용자를 조회합니다.
@@ -242,13 +271,14 @@ interface UserRepositoryInterface
     public function getIdsByUuids(array $uuids): array;
 
     /**
-     * 사용자 ID 목록에 해당하는 이름을 ID 로 색인해 반환합니다.
+     * 사용자 ID 목록에 해당하는 이름(원본 실명)을 ID 로 색인해 반환합니다.
      *
-     * 목록 화면이 작성자 이름을 행마다 조회하면 N+1 이 되므로, 표시에 필요한
-     * 이름만 한 번에 모아 오기 위한 배치 조회입니다.
+     * 화면에 보일 이름을 만드는 용도가 아닙니다. 응답에 이름을 실을 때는 `findManyByIdsKeyed()` 로 회원을 읽어
+     * `App\DisplayName\DisplayNameResolver::resolveMany()` 로 표시 이름을 계산합니다(7.2.0).
+     * 이름을 받지 않는 사이트의 회원은 빈 문자열입니다.
      *
      * @param  array  $ids  사용자 ID 배열
-     * @return array<int, string> 사용자 ID => 이름
+     * @return array<int, string> 사용자 ID => 이름 (이름이 없으면 빈 문자열)
      */
     public function getNamesByIds(array $ids): array;
 
@@ -268,6 +298,60 @@ interface UserRepositoryInterface
      * @return int 삭제된 토큰 수
      */
     public function deleteTokensByUserIds(array $ids): int;
+
+    /**
+     * 회원의 인증 토큰 하나를 ID 로 찾습니다 (다른 회원의 토큰이면 null).
+     *
+     * @param  User  $user  회원
+     * @param  int|string  $tokenId  토큰 ID
+     * @return PersonalAccessToken|null 토큰
+     *
+     * @since 7.2.0
+     */
+    public function findAccessTokenFor(User $user, int|string $tokenId): ?PersonalAccessToken;
+
+    /**
+     * 인증 토큰의 만료 시각을 바꿉니다.
+     *
+     * @param  PersonalAccessToken  $token  토큰
+     * @param  \DateTimeInterface  $expiresAt  새 만료 시각
+     * @return void 반환값 없음
+     *
+     * @since 7.2.0
+     */
+    public function updateAccessTokenExpiry(PersonalAccessToken $token, \DateTimeInterface $expiresAt): void;
+
+    /**
+     * 인증 토큰에 로그인 수단과 절대 만료를 기록합니다.
+     *
+     * @param  PersonalAccessToken  $token  토큰
+     * @param  string|null  $loginMethod  로그인 수단 이름 (`password`, `social:kakao` 등)
+     * @param  \DateTimeInterface|null  $absoluteExpiresAt  절대 만료 (null 이면 상한 없음)
+     * @return void 반환값 없음
+     *
+     * @since 7.2.0
+     */
+    public function updateAccessTokenSessionMeta(PersonalAccessToken $token, ?string $loginMethod, ?\DateTimeInterface $absoluteExpiresAt): void;
+
+    /**
+     * 회원의 인증 토큰을 전부 지웁니다.
+     *
+     * @param  User  $user  회원
+     * @return int 지운 토큰 수
+     *
+     * @since 7.2.0
+     */
+    public function deleteAllAccessTokens(User $user): int;
+
+    /**
+     * 인증 토큰 하나를 삭제합니다.
+     *
+     * @param  PersonalAccessToken  $token  토큰
+     * @return void 반환값 없음
+     *
+     * @since 7.2.0
+     */
+    public function deleteAccessToken(PersonalAccessToken $token): void;
 
     /**
      * 인증 토큰의 만료 시각을 조건부 UPDATE 로 늦춥니다.
@@ -317,4 +401,96 @@ interface UserRepositoryInterface
      * @since 7.1.0
      */
     public function queryByIds(array $ids): Builder;
+
+    /**
+     * 주어진 컬럼 가운데 하나라도 빈(null 또는 빈 문자열) 회원 수를 반환합니다 (탈퇴 회원 제외).
+     *
+     * 컬럼 저장 항목을 필수로 바꾸기 전에 「비어 있는 기존 회원 N명」을 보여 주는 데 쓴다.
+     *
+     * @param  array<int, string>  $columns  users 컬럼명 목록 (호출자가 허용 목록으로 고른 값)
+     * @return int 회원 수
+     *
+     * @since 7.2.0
+     */
+    public function countMembersWithEmptyColumns(array $columns): int;
+
+    /**
+     * 값 테이블 저장 항목에 값이 없는 회원 수를 반환합니다 (탈퇴 회원 제외).
+     *
+     * @param  int  $definitionId  항목 ID (field_definitions.id)
+     * @return int 회원 수
+     *
+     * @since 7.2.0
+     */
+    public function countMembersWithoutFieldValue(int $definitionId): int;
+
+    /**
+     * 같은 정규화 닉네임을 쓰는 다른 회원이 있는지 반환합니다.
+     *
+     * @param  string  $normalized  정규화 닉네임
+     * @param  int|null  $exceptUserId  비교에서 뺄 회원 ID (자기 자신)
+     * @return bool 있으면 true
+     *
+     * @since 7.2.0
+     */
+    public function nicknameNormalizedTaken(string $normalized, ?int $exceptUserId = null): bool;
+
+    /**
+     * 닉네임이 있는 회원 수를 반환합니다 (닉네임 키 재계산의 전체 수).
+     *
+     * @return int 회원 수
+     *
+     * @since 7.2.0
+     */
+    public function countMembersWithNickname(): int;
+
+    /**
+     * 닉네임이 있는 회원을 ID 순으로 한 묶음 읽습니다 (닉네임 키 재계산용).
+     *
+     * @param  int  $afterId  이 ID 다음부터
+     * @param  int  $limit  묶음 크기
+     * @return Collection<int, User> id, nickname, nickname_normalized, nickname_unique_key 만 담은 회원
+     *
+     * @since 7.2.0
+     */
+    public function nicknameRowsAfter(int $afterId, int $limit): Collection;
+
+    /**
+     * 주어진 정규화 닉네임 가운데 두 회원 이상이 쓰는 값을 반환합니다.
+     *
+     * @param  array<int, string>  $normalizedValues  정규화 닉네임 목록
+     * @return array<int, string> 겹치는 값
+     *
+     * @since 7.2.0
+     */
+    public function duplicatedNicknameNormalized(array $normalizedValues): array;
+
+    /**
+     * 지금 겹치는 닉네임의 종 수와 그 닉네임을 쓰는 회원 수를 반환합니다.
+     *
+     * @return array{nicknames: int, members: int} 겹치는 닉네임 종 수, 회원 수
+     *
+     * @since 7.2.0
+     */
+    public function nicknameDuplicateSummary(): array;
+
+    /**
+     * 회원의 닉네임 비교 컬럼을 고칩니다 (모델 이벤트와 수정 시각을 건드리지 않는다).
+     *
+     * @param  int  $userId  회원 ID
+     * @param  array{nickname_normalized?: string|null, nickname_unique_key?: string|null}  $columns  고칠 컬럼
+     * @return void
+     *
+     * @since 7.2.0
+     */
+    public function updateNicknameKeys(int $userId, array $columns): void;
+
+    /**
+     * 모든 회원의 닉네임 중복 키를 비웁니다 (중복 금지를 끌 때).
+     *
+     * @return int 비운 행 수
+     *
+     * @since 7.2.0
+     */
+    public function clearNicknameUniqueKeys(): int;
 }

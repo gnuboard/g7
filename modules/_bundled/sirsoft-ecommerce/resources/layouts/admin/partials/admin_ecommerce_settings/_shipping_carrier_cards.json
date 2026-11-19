@@ -18,35 +18,35 @@
                 "index_var": "$cIdx"
             },
             "props": {
-                "className": "excel-card mb-3"
+                "className": "ecommerce-excel-card ecommerce:mb-3"
             },
             "children": [
                 {
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "excel-card-header"
+                        "className": "ecommerce-excel-card-header"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-2 min-w-0"
+                                "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:min-w-0"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "min-w-0"
+                                        "className": "ecommerce:min-w-0"
                                     },
                                     "children": [
                                         {
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "excel-card-title font-mono"
+                                                "className": "ecommerce-excel-card-title ecommerce:font-mono"
                                             },
                                             "text": "{{$carrier.code}}"
                                         },
@@ -54,7 +54,7 @@
                                             "type": "basic",
                                             "name": "Div",
                                             "props": {
-                                                "className": "text-tertiary truncate"
+                                                "className": "ecommerce-text-tertiary ecommerce:truncate"
                                             },
                                             "text": "{{typeof $carrier.name === 'object' ? $localized($carrier.name) : ($carrier.name ?? '')}}"
                                         }
@@ -66,7 +66,7 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "flex-center gap-2 shrink-0"
+                                "className": "ecommerce-flex-center ecommerce:gap-2 ecommerce:shrink-0"
                             },
                             "children": [
                                 {
@@ -109,7 +109,7 @@
                                     ],
                                     "props": {
                                         "type": "button",
-                                        "className": "btn-icon ecommerce-tone-error disabled:opacity-50 disabled:cursor-not-allowed",
+                                        "className": "ecommerce-btn-icon ecommerce-tone-error ecommerce:disabled:opacity-50 ecommerce:disabled:cursor-not-allowed",
                                         "disabled": "{{_computed.isReadOnly}}",
                                         "aria-label": "$t:common.delete"
                                     },
@@ -119,7 +119,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "fa-solid fa-trash",
-                                                "className": "text-sm"
+                                                "className": "ecommerce:text-sm"
                                             }
                                         }
                                     ]
@@ -132,21 +132,21 @@
                     "type": "basic",
                     "name": "Div",
                     "props": {
-                        "className": "excel-card-body"
+                        "className": "ecommerce-excel-card-body"
                     },
                     "children": [
                         {
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "form-group"
+                                "className": "ecommerce-form-group"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.columns.code"
                                 },
@@ -170,7 +170,7 @@
                                         "value": "{{$carrier.code ?? ''}}",
                                         "aria-label": "$t:common.row_cell|row={{$carrier.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.shipping.carriers.columns.code')}}",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.code_placeholder",
-                                        "className": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.code'] ? 'input input-error font-mono' : 'input font-mono'}}",
+                                        "className": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.code'] ? 'ecommerce-input ecommerce-input-error ecommerce:font-mono' : 'ecommerce-input ecommerce:font-mono'}}",
                                         "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
@@ -179,7 +179,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.code']}}",
                                     "props": {
-                                        "className": "form-error"
+                                        "className": "ecommerce-form-error"
                                     },
                                     "text": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.code']?.[0] ?? ''}}"
                                 }
@@ -189,14 +189,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "form-group"
+                                "className": "ecommerce-form-group"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.columns.name"
                                 },
@@ -230,14 +230,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "form-group"
+                                "className": "ecommerce-form-group"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.columns.type"
                                 },
@@ -259,7 +259,7 @@
                                     "props": {
                                         "value": "{{$carrier.type ?? 'domestic'}}",
                                         "aria-label": "$t:common.row_cell|row={{$carrier.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.shipping.carriers.columns.type')}}",
-                                        "className": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.type'] ? 'input-error w-full' : 'w-full'}}",
+                                        "className": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.type'] ? 'ecommerce:border-red-500 ecommerce:w-full' : 'ecommerce:w-full'}}",
                                         "disabled": "{{_computed.isReadOnly}}",
                                         "options": [
                                             {
@@ -279,14 +279,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "form-group"
+                                "className": "ecommerce-form-group"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Label",
                                     "props": {
-                                        "className": "form-label"
+                                        "className": "ecommerce-form-label"
                                     },
                                     "text": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.columns.tracking_url"
                                 },
@@ -310,7 +310,7 @@
                                         "value": "{{$carrier.tracking_url ?? ''}}",
                                         "aria-label": "$t:common.row_cell|row={{$carrier.code ?? ''}}|column={{$t('sirsoft-ecommerce.admin.settings.shipping.carriers.columns.tracking_url')}}",
                                         "placeholder": "$t:sirsoft-ecommerce.admin.settings.shipping.carriers.form.tracking_url_placeholder",
-                                        "className": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.tracking_url'] ? 'input input-error' : 'input'}}",
+                                        "className": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.tracking_url'] ? 'ecommerce-input ecommerce-input-error' : 'ecommerce-input'}}",
                                         "disabled": "{{_computed.isReadOnly}}"
                                     }
                                 },
@@ -319,7 +319,7 @@
                                     "name": "Span",
                                     "if": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.tracking_url']}}",
                                     "props": {
-                                        "className": "form-error"
+                                        "className": "ecommerce-form-error"
                                     },
                                     "text": "{{_local.errors?.['shipping.carriers.' + $carrier._idx + '.tracking_url']?.[0] ?? ''}}"
                                 }

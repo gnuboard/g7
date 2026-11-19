@@ -121,6 +121,24 @@ interface RoleRepositoryInterface
     public function delete(Role $role): bool;
 
     /**
+     * 역할의 권한·메뉴·회원 연결을 모두 떼고 역할을 삭제합니다.
+     *
+     * 확장을 데이터까지 삭제할 때 그 확장이 소유한 역할을 지우는 경로다. 다른 확장이 붙인 권한(`roles: ['*']`)이 남아 있어도 지운다.
+     *
+     * @param  Role  $role  삭제할 역할 모델
+     * @return bool 삭제 성공 여부
+     */
+    public function deleteWithRelations(Role $role): bool;
+
+    /**
+     * 역할에 걸린 메뉴 권한(`menu_permissions.role_id`)을 지웁니다 — 역할을 지우기 직전에 부른다(DB CASCADE 비의존).
+     *
+     * @param  Role  $role  대상 역할
+     * @return int 지운 행 수
+     */
+    public function deleteMenuPermissions(Role $role): int;
+
+    /**
      * 확장이 소유한 역할을 식별자로 찾습니다.
      *
      * @param  string  $identifier  역할 식별자
@@ -184,4 +202,15 @@ interface RoleRepositoryInterface
      * @return int 권한 개수
      */
     public function getPermissionCount(Role $role): int;
+
+    /**
+     * 사용 중인 역할이 권한을 가졌는지 반환합니다.
+     *
+     * 로그인하지 않은 화면(가입 등)에서 「이 역할로 가입하면 이 권한을 갖게 되는가」를 판정할 때 쓴다.
+     *
+     * @param  string  $roleIdentifier  역할 식별자 (예: user)
+     * @param  string  $permissionIdentifier  권한 식별자
+     * @return bool 역할이 사용 중이고 그 권한을 가졌으면 true
+     */
+    public function activeRoleHasPermission(string $roleIdentifier, string $permissionIdentifier): bool;
 }

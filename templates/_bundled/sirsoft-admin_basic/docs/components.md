@@ -5,12 +5,12 @@
 ## 제공 컴포넌트
 
 <!-- @generated:components START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-컴포넌트 134개 (루트: `src/components`).
+컴포넌트 135개 (루트: `src/components`).
 
 | 분류 | 개수 |
 |---|---|
 | `basic` | 39개 |
-| `composite` | 88개 |
+| `composite` | 89개 |
 | `layout` | 5개 |
 | `modals` | 1개 |
 | `shared` | 1개 |
@@ -406,6 +406,10 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 - id 가 없는 라벨에는 겹치지 않는 `g7-auto-label-N` 을 단다. Label 부품 자체는 훅을 쓰지 않는다 — 확장 레이아웃 시험이 엔진(저장소 루트 React)과 이 템플릿 부품(템플릿 React)을 함께 그려 훅이 깨지기 때문이다.
 - 그룹 제목처럼 칸 이름이 아닌 라벨을 칸 바로 앞에 둘 때는 칸에 `aria-label` 을 직접 준다.
 
+##### 선택 상자 폭 (Select `options` 모드)
+
+호출처 `className` 의 폭 토큰(`w-*`·`min-w-*`·`max-w-*`·`flex-1`·`grow`, `sm:`~`xl:` 변형 포함)은 **바깥 상자**로 올리고, 버튼은 `w-full` 로 그 상자를 채운다. 확장 자체 CSS 의 앞글자 붙은 토큰(`ecommerce:w-40`)도 앞글자를 떼고 같은 뜻으로 읽는다. 버튼에 `w-full` 이 있으면 앞글자 붙은 변형 없는 고정 폭(`ecommerce:w-40`)은 버튼에서 뺀다 — 확장 CSS 는 템플릿 CSS 층 밖이라 버튼에 남기면 `w-full` 을 이겨 상자 안에서 버튼이 고정 폭으로 굳는다. `min-w-*`·`max-w-*`·변형 붙은 폭·앞글자 없는 폭은 버튼에도 그대로 둔다. 회귀 테스트: `src/components/basic/__tests__/Select.test.tsx` 「확장 접두 빌드 클래스」.
+
 #### 테이블
 
 | 컴포넌트 | 설명 |
@@ -430,7 +434,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 
 | 컴포넌트 | 설명 | 주요 Props |
 |----------|------|-----------|
-| `Img` | 이미지 | src, alt |
+| `Img` | 이미지 | src, alt, thumbPreset, loading(기본 lazy), decoding(기본 async) |
 | `Icon` | FontAwesome 아이콘 | name, iconStyle, size, color, spin, pulse, fixedWidth, ariaLabel |
 | `Svg` | SVG 컨테이너 | - |
 | `I` | HTML i 태그 (FontAwesome 클래스 직접 사용) | style |
@@ -471,6 +475,21 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 > 저장소 전역 정합은 `resources/js/core/template-engine/__tests__/DataGrid.selectedCountParity.test.ts`
 > 가 모집단을 저작본에서 파생해 강제한다.
 >
+> **행 배경을 주는 확장은 선택 색도 직접 고른다 — `rowClassName` 의 `$selected`**
+>
+> `rowClassName` 식은 행마다 풀리며 `row`·`$item` 과 함께 `$selected`(그 행이 선택됐는지)를 읽는다.
+> 이 템플릿의 클래스로 행 배경을 주면 표가 붙이는 선택 강조가 그 뒤에 놓여 덮어쓰지만, 모듈·플러그인의
+> 앞글자 클래스(`board:` 등)는 층 밖이라 선택 강조를 늘 이긴다. 그래서 공지 행처럼 배경을 주는 확장은
+> `($selected ? '<선택 배경>' : '<기본 배경>')` 로 선택 색을 함께 고른다(게시판 관리자 글 목록, #816).
+> 카드 보기는 선택 강조 색이 없어 `$selected` 가 늘 거짓이다.
+>
+> **행 메뉴 잠김 안내는 행마다 고른다 — `rowActions[].disabledReason`**
+>
+> `disabledReason` 은 `disabledField` 로 잠긴 항목 아래(와 `title`)에 보이는 안내다. 고정 문구(`$t:키`)도 되고
+> 행 표현식도 된다 — 엔진은 원문을 넘기고(components.json `skipBindingKeys`) 표가 행마다 `row` 로 푼다(`href` 와 같다).
+> 같은 「삭제」라도 막힌 까닭(권한 없음·코어/확장 소유)이 행마다 다르면 고정 문구 하나로 묶지 말고, 리소스가 사유 값을
+> 싣게 해 식으로 고른다(스케줄 목록: `{{row.delete_blocked_reason === 'owned' ? $t('…') : $t('auth.permission_denied')}}`).
+>
 > **`ExtensionCardGrid` 스위치 재동기 — `resyncKey`**
 >
 > 카드 스위치는 누르는 즉시 바뀐 모양(대기 값)을 보여 주고, 서버 값(`toggle.checked`)이 바뀌면 그 값을 따른다.
@@ -486,6 +505,8 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 > 회귀 테스트: `src/components/composite/__tests__/ExtensionCardGrid.test.tsx`,
 > `__tests__/layouts/admin-extension-list-action-gates.test.tsx`.
 >
+> 항목의 `fallbackIcon` 은 `Icon` 의 `name` 과 같이 별칭 문자열(`'cube'`, `'puzzle-piece'`)이나 `IconName` 을 받는다(#869 에서 타입을 레이아웃이 실제로 넘기는 값에 맞춤).
+>
 > **`CardGrid` 카드 메뉴의 액션 이름 onClick**
 >
 > 카드 셀의 `ActionMenu` 가 `actions` 배열을 두고 항목을 `"onClick": "<액션 id>"` 로 가리키면, 격자가 그 항목을 함수로
@@ -493,7 +514,16 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 > 안의 `{{row.…}}` 는 그 카드의 행으로 풀린다. 행 컨텍스트에는 `_global` 이 없으므로 전역 값이 필요한 액션은 이벤트
 > 방식(`"event": "onItemClick"` + `switch`)을 쓴다. 종전에는 코어에 없는 멤버를 찾아 조용히 건너뛰었다(7.1.0 에서 수정).
 > 회귀 테스트: `src/components/composite/__tests__/CardGrid.actionDispatch.test.tsx`.
-| `HtmlContent` | HTML 안전 렌더링 (DOMPurify XSS 방지). 코어 7.1.5+ 는 「본문 콘텐츠」 규칙(`G7Core.contentPolicy.sanitize`)으로 정화하고 외부 영상(`oembed`)을 플레이어로 바꾼다 — `purifyConfig.FORBID_TAGS` 는 규칙이 풀지 않는다 | content, isHtml, purifyConfig, text |
+>
+> **`CardGrid` 마지막 페이지를 모르는 서버 목록 — `serverHasMorePages`**
+>
+> 서버가 총 건수를 상한까지만 세면 `serverTotalPages` 가 `null` 로 온다. 격자는 이 값을 1 로 채우지 않고 그대로 페이저에 넘기며
+> (마지막 페이지 번호를 그리지 않는다), 「다음」 은 `serverHasMorePages` 로 연다. 마지막 페이지를 알면 그 값이 먼저다. 페이저는
+> `alwaysShowPagination`, 2페이지 이상, 다음 페이지 있음, 현재 2페이지 이상 중 하나면 보인다 — `DataGrid` 와 같은 규칙이다.
+> 회귀 테스트: `src/components/composite/__tests__/CardGrid.unboundedPagination.test.tsx`.
+| `HtmlContent` | HTML 안전 렌더링 (DOMPurify XSS 방지). 코어 7.1.5+ 는 「본문 콘텐츠」 규칙(`G7Core.contentPolicy.sanitize`)으로 정화하고 외부 영상(`oembed`)을 플레이어로 바꾼다 — `purifyConfig.FORBID_TAGS` 는 규칙이 풀지 않는다 | content, isHtml, purifyConfig, text, imageSizes |
+
+- **본문 이미지 srcset**: `HtmlContent` 는 서빙 경로 이미지의 `src` 를 본문 규격으로 바꾸고, img `width`(정수)를 알 때만 그 가로 **이하**의 숫자 규격 후보로 `srcset` 을 덮어쓴다. 후보 거르기는 코어 `G7Core.thumbnail.contentSrcsetWithin(src, width)` 한 곳이 하며(`src/support/contentImages.ts` → `src/support/thumbnail.ts` 어댑터), 봇 화면 `HtmlSanitizer` 와 같은 규칙이다. 그 함수가 없는 코어에서는 `srcset` 을 붙이지 않는다(원본보다 큰 후보를 싣지 않는다). 회귀 테스트: `src/components/composite/__tests__/ThumbnailComponents.test.tsx`.
 
 #### 폼/입력
 
@@ -547,6 +577,16 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 크기를 호출처 className 으로 덮어쓰지 않는다 — 화면마다 값이 갈려 같은 부품이 서로 다르게 보인다.
 받지 않는 속성을 적으면 **조용히 무시**된다(감사 룰 `component-unknown-prop` 이 잡는다).
 
+##### FileUploader 정렬 주소(`apiEndpoints.reorder`, 7.2.0)
+
+`apiEndpoints` 에 `reorder` 키가 **있으면** 그 값을 쓴다. `null`·빈 문자열이면 끌어 옮겨도 정렬 요청을 보내지 않는다(순서는
+`onReorder` 로만 알린다). 키가 없을 때만 코어 첨부 정렬 주소(`/api/admin/attachments/reorder`)로 떨어진다 — 정렬 API 가 없는
+화면(카테고리 이미지·반응 아이콘·배너·팝업)은 `reorder` 를 `null` 로 명시한다. 판정은 `utils.ts` 의 `resolveApiEndpoints`.
+회귀 테스트: `src/components/composite/__tests__/FileUploaderReorderNull.test.tsx`.
+
+레이아웃의 업로더는 확장점 `attachment_uploader` 의 default 안에 두고 계약 `uploader` 를 함께 넘긴다 — 업로더 플러그인이
+`mode="replace"` 로 바꾼다(코어 문서 `docs/extension/attachment-uploader.md`).
+
 ##### FileUploader 키보드 초점
 
 - **키보드 초점 자리**: 항목의 「삭제」로 항목이 사라지면 초점은 다음 항목(없으면 이전 항목, 둘 다 없으면 「추가」 타일, 목록이 비면 드롭존)의 같은 단추로 간다. 빈 드롭존이나 「추가」 타일로 파일을 고른 뒤 그 요소가 사라지면 「추가」 타일(한도가 차서 없으면 새로 추가된 첫 항목)로 간다. 삭제 확인 창을 거친 삭제도 같다. 초점이 업로더 밖으로 나간 뒤에는 끌어오지 않는다. 자리 판정은 항목 루트의 `data-uploader-item` 과 단추의 `data-uploader-action`(`pick`·`add`·`primary`·`drag`·`download`·`retry`·`remove`)으로 하므로 이 표식을 지우지 않는다. 회귀 테스트: `src/components/composite/__tests__/FileUploaderFocusRecovery.test.tsx`.
@@ -585,6 +625,8 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `Toast` | 토스트 알림 | toasts, position, onRemove |
 | `Alert` | 알림 메시지 | type, message, dismissible, onDismiss |
 
+- `Modal` 의 `footer` 단추는 레이아웃 편집기에서 본문 children 과 같게 고르고 고칠 수 있다. 엔진이 `__componentContext.componentPath` 로 Modal 노드 경로를 주면 footer 단추마다 `{경로}.props.footer.{i}` 를 넘기고, 편집기는 이 표기를 `props.footer` 배열 항목으로 읽는다. 경로가 없는 일반 화면에서는 넘기지 않는다. `titlePrefix`·`titleSuffix` 는 편집기 경로 문법에 없어 넘기지 않는다. 회귀 테스트: `src/components/composite/__tests__/Modal.renderEnvironment.test.tsx`.
+- `Modal` 의 `titlePrefix`·`titleSuffix`·`footer` 는 `components.json` 의 `skipBindingKeys` 로 선언한다 — 엔진이 Modal 노드에서 그 안의 `{{…}}` 를 미리 풀지 않고 원문 정의를 넘겨, Modal 이 그리는 렌더러가 본문 children 과 같은 데이터 문맥(`__componentContext.parentDataContext`, 상태 범위 `__componentContext`)과 같은 격리 범위에서 평가한다. 종전에는 Modal 노드 렌더러가 미리 풀어 Modal 자신의 `isolatedState` 처럼 본문만 보는 값이 고정 하단에서 비었다(#869). 회귀 테스트: `__tests__/layouts/modalFooterContextParity.test.tsx`
 - `Modal` 의 Esc 는 **창 안에 펼친 팝업이 있으면 팝업만 닫는다.** 펼친 팝업은 `aria-haspopup` 과 `aria-expanded="true"` 를 함께 단 요소로 판정하므로, 창 안에서 쓰는 드롭다운·메뉴·검색 목록은 이 두 속성을 트리거에 달고 자기 Esc 처리로 닫아야 한다. 자기 onKeyDown 으로 곧바로 닫는 팝업도 키를 누른 순간(캡처 단계)의 펼침 여부로 판정한다. `aria-haspopup` 없는 펼침(아코디언)과 창 밖 팝업은 창 닫기를 막지 않는다. 회귀 테스트: `src/components/composite/__tests__/Modal.popupEscape.test.tsx`.
 
 #### 관리자 UI
@@ -606,6 +648,8 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 - **아이콘 단추와 영역의 접근 이름**: 글자 없는 단추와 이름 붙은 영역은 이름을 공용 문구 키로 단다 — `ThemeToggle` 단추 `common.theme_select`(펼침 여부는 `aria-expanded`), `NotificationCenter` 항목 삭제 단추 `common.delete_notification`, `Alert` 닫기 단추 `common.close_alert`, `Breadcrumb` 영역 `common.breadcrumb`, `TagSelect` 태그 지우기 단추 `common.tag_input.remove`(`{{label}}` = 태그 이름). 번역이 없거나 엔진 밖(단위 테스트)이면 대체 문구를 쓴다. 이 이름을 영문 문자열로 되돌려 박지 않는다(한국어, 일본어 화면에서 영어로 읽힌다). 회귀 테스트: `src/components/composite/__tests__/AccessibleNameI18n.test.tsx`.
 - **꾸밈 아이콘과 아이콘만 있는 단추**: `Icon` 은 `ariaLabel` 을 받으면 `role="img"` 와 그 이름으로 읽히고, 받지 않으면 꾸밈이라 `aria-hidden="true"` 로 숨는다(글리프 이름을 이름으로 만들지 않는다). 그래서 아이콘만 담은 단추와 링크는 단추 자신에 이름(`aria-label`, 필요하면 `title`)을 공용 문구 키로 단다. 레이아웃 예: 새로고침 `common.refresh`, 삭제 `common.delete`, 편집 `common.edit`, 더보기 `common.more_actions`, 선택 지우기 `common.clear_selection`, 펼치기와 접기 `common.expand`/`common.collapse`(펼침 여부는 `aria-expanded`), 쪽 넘김 `common.first_page`/`common.prev_page`/`common.next_page`/`common.last_page`, 값 보기 `common.show_value`/`common.hide_value`. `IconButton` 은 `label` 이 없으면 `ariaLabel`, 다음으로 아이콘별 기본 이름(새로고침, 추가, 닫기, 삭제, 편집, 검색, 내려받기, 더보기) 순으로 이름과 `title` 을 단다. 컴포넌트 안 아이콘 단추: `MultilingualInput` 언어 삭제 `common.multilingual.remove_language`(`{{language}}`), `MultilingualTagInput` 태그 지우기 `common.tag_input.remove`, `SortableMenuItem` 펼침 단추 `common.expand`/`common.collapse`, `UserProfile` 덮개 단추 모드 `common.user_menu`. `Alert` 유형 아이콘은 꾸밈이다. 회귀 테스트: `src/components/basic/__tests__/Icon.a11y.test.tsx`, `src/components/composite/__tests__/IconButton.a11y.test.tsx`, `src/components/composite/__tests__/IconOnlyControlNames.test.tsx`(번들 레이아웃 정적 대조 포함).
 - **화면 문구 기본값**: 레이아웃이 문구 prop 을 넘기지 않으면 기본값은 공용 문구 키를 따르고, 번역이 없거나 엔진 밖이면 종전 영문을 쓴다. `LoginForm`(`auth.login.*`), `NotificationCenter`(`admin.notifications` 계열), `UserProfile`(`admin.profile_settings`, `admin.logout`, 처리 중 `common.logging_out`), `SearchableDropdown`(`common.search_placeholder`, `common.no_results`, `common.type_to_search`, `common.select_placeholder`, `common.selected_count`), `LanguageSelector`(`admin.language`), `EmptyState` 그림 대체 글 `common.empty_illustration`, `AdminSidebar` 로고 대체 글 `common.logo`, `TagSelect` 빈 안내 `common.no_items_selected`, `ThemeToggle` 메뉴(`admin.theme.auto`/`light`/`dark`), `FileInput`(`common.file_input.*`), `Select` 검색칸(`common.search_placeholder`, `common.search`, `common.no_results`), `ActionMenu` 트리거 글자 `common.actions`(대체 문구 `Actions`, 빈 문자열은 아이콘만), 아이콘 단추 접근 이름 `ThemeToggle` `common.theme_select`(대체 `Theme`), `UserProfile` 덮개 단추 `common.user_menu`(대체 `User menu`). 기본값을 영문 문자열로 되돌려 박지 않는다. 회귀 테스트: `src/components/composite/__tests__/DefaultTextI18n.test.tsx`.
+- **`LoginForm` 의 `onSubmit` 인자**: 클라이언트 검증을 통과하면 폼 제출 이벤트(`FormEvent<HTMLFormElement>`)를 그대로 넘긴다. `{ email, password }` 객체가 아니다. ActionDispatcher 가 만든 핸들러가 이벤트에서 FormData 를 꺼낸다(#869 에서 prop 타입을 실제 값에 맞춤). 회귀 테스트: `src/components/composite/__tests__/LoginForm.test.tsx`.
+- **전역 `Window` 를 넓히지 않는다**: 컴포넌트가 `window.G7Core` 의 일부(예: `AuthManager`)를 쓸 때 `declare global { interface Window { G7Core?: ... } }` 로 선언하지 않는다. 코어의 `Window.G7Core` 선언과 합쳐져 코어 쪽 속성(`TemplateEngine` 등)이 타입에서 가려진다. 파일 안에 쓰는 부분만 지역 타입으로 적는다(`ColumnSelector`, `FilterVisibilitySelector`, #869).
 
 #### 레이아웃 편집
 
@@ -637,6 +681,7 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `CategoryTree` | 계층형 카테고리 트리 (체크박스 선택) | data, expandedIds, selectedIds, searchKeyword, showProductCount, ... |
 | `MenuAccessTree` | 역할이 접근할 관리자 메뉴 체크 트리 (하위 선택 시 상위 자동, 상위 해제 시 하위 해제) | data, value, onChange, disabled, lockedAll, installedModules, installedPlugins |
 | `SortableMenuList` | 드래그앤드롭 계층형 메뉴 목록 (선택 모드·행별 역할 배지) | items, selectedId, onSelect, onOrderChange, onToggleStatus, selectionMode, selectedIds, onSelectionChange, roleOptions, ... |
+| 템플릿 설정 화면 부품 | `src/settings/` — 설정 화면 묶음(`dist/settings/*`)으로 따로 빌드해 `sirsoft-admin_basic.TemplateSettingsScreen` 으로 등록한다. 본 부품 묶음·`components.json` 에는 없고 매니페스트는 `components.settings.json` 이다. 다른 관리자 템플릿에서도 뜨므로 의미 클래스를 `templates/_bundled/sirsoft-admin_basic/src/styles/semantic.css` 로 가져가고 문구는 `utils/translate` 로 찾는다 | data, value, errors, activeSection, readOnly, dirty, saving, resetting, status, uploadTriggerEvent + 이벤트 |
 | `SortableMenuItem` | 개별 드래그 가능 메뉴 아이템 | item, isSelected, isExpanded, level, onClick, ... |
 | `IconButton` | 아이콘 버튼 (글자 없으면 ariaLabel → 아이콘별 기본 이름을 aria-label·title 로) | iconName, label, ariaLabel, onClick, variant, size, ... |
 | `Accordion` | 아코디언 (접기/펼치기) | defaultOpen, isOpen, onToggle, style, disabled |
@@ -662,6 +707,26 @@ HTML 태그를 래핑하는 최소 단위 컴포넌트입니다. 모든 Basic �
 | `RichSelect` | 커스텀 항목 렌더링 셀렉트 | options, value, onChange, placeholder, disabled, maxHeight, selectedChildren |
 | `DropdownButton` | 포탈 기반 드롭다운 버튼 | label, icon, iconPosition, position |
 | `DropdownMenuItem` | DropdownButton 내부 메뉴 아이템 | label, icon, variant, disabled, divider |
+
+**Grid 반응형 열 수**: `Grid` 의 `responsive`(`{ sm, md, lg, xl, 2xl }` 구간별 열 수)는 Tailwind 반응형 접두 클래스(`md:grid-cols-3`)를 내지 않습니다. 엔진 폭(`G7Core.useResponsive().width`, 레이아웃 편집기 미리보기에서는 기기 폭)으로 열 수를 골라 접두 없는 `grid-cols-N` 하나만 냅니다. 경계는 Tailwind 와 같고(sm 640px, md 768px, lg 1024px, xl 1280px, 2xl 1536px 이상), 폭 이상인 가장 넓은 구간 값을 씁니다. 값이 없는 구간은 아래 구간 값을 이어받고, 맞는 구간이 없으면 `cols` 를 씁니다. 예: `cols: 1, responsive: { md: 3 }` 은 767px 까지 1열, 768px 부터 3열입니다.
+
+**CardGrid 구간별 카드 수**: `CardGrid` 의 `responsiveColumns`(`{ sm, md, lg, xl }`)도 같은 방식으로 카드 수를 골라 접두 없는 `grid-cols-N` 하나만 냅니다. 768px 미만은 `sm`(없으면 1), 768px 이상은 `md`(없으면 `gridColumns` 와 2 중 작은 값), 1024px 이상은 `lg`(없으면 `gridColumns`), 1280px 이상은 `xl`(준 경우만)을 씁니다. 예: `gridColumns: 3` 만 주면 767px 까지 1열, 768px 부터 2열, 1024px 부터 3열입니다.
+
+**부품 안의 폭 분기**: 이 템플릿 부품은 폭에 따라 모양을 바꿀 때 Tailwind 반응형 접두(`md:inline` 등)나 폭 미디어를 품은 의미 클래스에 기대지 않고, 렌더 폭(`useRenderWidth()` — `G7Core.useResponsive()` 의 폭 우선, 훅이 없으면 창 폭과 resize)으로 경계를 판정해 접두 없는 클래스를 고릅니다. 경계 판정은 `src/components/layout/widthBreakpoints.ts`(`isWidthAtLeast`·`isWidthAtMost`·`classAtWidth`), 열 수 판정은 `src/components/layout/gridColumns.ts` 를 함께 씁니다. 고르는 클래스는 CSS 스캔에 걸리도록 소스에 전체 이름으로 적습니다. 새 부품도 같은 방식으로 씁니다.
+
+부품은 폭 미디어를 품은 클래스를 아예 붙이지 않습니다. 옛 클래스를 붙인 채 렌더 폭 클래스만 더하면, 편집기 미리보기 기기 폭과 실제 창 폭이 다를 때 그 클래스의 폭 미디어가 미리보기 판정을 덮어씁니다. 그래서 폭과 무관한 바탕만 가진 클래스를 씁니다 — 페이지 머리말 제목 `page-heading`, 액션 묶음 `page-action-group`, 하단 줄 `admin-footer-bar`, 창 바닥 단추 줄 `modal-footer-bar`. 옛 이름(`page-title`·`page-actions`·`admin-footer-row`·`modal-footer-row`)의 정의는 사이트 호환을 위해 폐지 예정으로 남아 있고 다음 출시 이후 빠집니다. 회귀 테스트: `src/components/composite/__tests__/ComponentWidthClasses.test.tsx`(폭 미디어 클래스 미사용).
+
+| 부품 | 폭 분기 |
+|---|---|
+| `PageHeader` | 640px 이상 제목 `text-2xl`, 640px 이하 액션 묶음 `w-full justify-start` |
+| `AdminFooter` | 768px 이상 줄 `flex-row`와 구분점 표시 |
+| `AdminHeader` | 768px 이상 사용자 이름·역할 표시 |
+| `Modal` | 640px 이하 바닥 단추 줄 `flex-col gap-2`, 단추(`.btn`) 폭 채움 |
+| `MultilingualInput` | `showCodeOnMobile` 일 때 768px 미만 언어 코드, 이상 언어 이름 |
+| `ColumnSelector` | `labelClassName` 이 없으면 640px 이상 단추 글 표시 |
+| `PermissionTree` | 768px 이상 `desktopColumns` 열(미만 1열) |
+| `FileUploader` | 기본 크기 썸네일 640px 미만 2열, 640px 3열, 768px 4열, 1024px 5열(`xs` 는 늘 2열) |
+| `CodeWorkspace` | 640px 이상 줄바꿈 단추 글 표시, 단축키 도움말 2열 |
 
 ---
 
@@ -950,6 +1015,7 @@ interface SlotContainerProps {
 ## 접근 가능한 이름 규약 (7.1.0)
 
 - **Icon** — `ariaLabel` 을 준 아이콘만 이미지(`role="img"`)로 읽히고, 나머지는 꾸밈으로 `aria-hidden` 입니다. 글리프 이름(「ellipsis」·「trash can」)이 단추 이름에 섞이지 않습니다. 아이콘만 있는 단추는 단추 쪽에 `aria-label="$t:…"` 를 답니다(`IconButton` 은 `ariaLabel` 또는 아이콘별 기본 이름).
-- **곁 라벨 잇기** — `Input`·`Textarea`·`Select`·`Toggle`·`TagInput` 은 스스로 이름(aria-label·aria-labelledby·`<label for>`·`label`/`ariaLabel` prop)이 없으면, 가까운 조상 3단계 안에서 앞에 놓인 `label`·`.form-label`·`.filter-label`·`.text-heading` 을 `aria-labelledby` 로 잇습니다(스위치는 뒤따르는 제목·앞 형제 상자의 첫 글자도 봅니다). 라벨과 입력 사이에 다른 입력이 끼면 그 라벨은 앞 칸의 것으로 보고 잇지 않습니다(`src/hooks/useAdjacentLabel.ts`). 같은 행에 입력이 여럿이면 레이아웃에서 이름을 직접 주는 편이 정확합니다.
+- **곁 라벨 잇기** — `Input`·`Textarea`·`Select`·`Toggle`·`TagInput` 은 스스로 이름(aria-label·aria-labelledby·`<label for>`·`label`/`ariaLabel` prop)이 없으면, 가까운 조상 3단계 안에서 앞에 놓인 `label`·`.form-label`·`.filter-field-label`·`.text-heading` 을(폐지 예정인 `.filter-label` 도 사이트에서 직접 고친 레이아웃 호환을 위해 받습니다) `aria-labelledby` 로 잇습니다(스위치는 뒤따르는 제목·앞 형제 상자의 첫 글자도 봅니다). 라벨과 입력 사이에 다른 입력이 끼면 그 라벨은 앞 칸의 것으로 보고 잇지 않습니다(`src/hooks/useAdjacentLabel.ts`). 같은 행에 입력이 여럿이면 레이아웃에서 이름을 직접 주는 편이 정확합니다.
 - **TagInput 라이브 영역 안내** — 고르기·지우기·초점 안내문(`common.tag_input.*`)의 항목 이름은 문자열 label 을, 문자열이 아니면 그 옵션의 value 를 읽습니다. 새 값 만들기(`creatable`) 행은 화면용 요소 label 대신 친 값을 읽어 「[object Object] 선택됨」이 나오지 않습니다(1.1.5). 회귀 테스트: `src/components/composite/__tests__/TagInput.a11yCreateAnnounce.test.tsx`.
+- **TagInput 과 스타일 정책** — react-select 는 `unstyled` 여도 배치 규칙(목록 `position:absolute`, 라이브 영역 1px `clip`, 칸 `display:flex`)을 emotion 으로 런타임에 넣습니다. emotion 기본 캐시는 `<style>` 요소를 만들어 스타일 정책(`style-src-elem 'self'` / `style-src 'self'; style-src-attr 'none'`)에 막히므로, `TagInput` 은 react-select 를 `CacheProvider` 로 감싸 `src/utils/adoptedEmotionCache.ts` 의 캐시(규칙을 생성형 스타일시트 `document.adoptedStyleSheets` 에 `insertRule`)를 줍니다(1.2.0). 생성형 시트가 없는 구형 브라우저는 emotion 기본 캐시입니다. emotion 을 쓰는 라이브러리를 새로 들이면 같은 캐시(`createAdoptedEmotionCache`)를 줍니다. 회귀 테스트: `src/components/composite/__tests__/TagInput.styleCsp.test.tsx`(happy-dom).
 - **창 Esc** — 창 안에 펼친 팝업(`aria-haspopup` + `aria-expanded="true"`)이 있으면 첫 Esc 는 팝업 몫입니다. 팝업을 여는 부품은 트리거에 두 속성을 정확히 답니다.

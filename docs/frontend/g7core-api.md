@@ -23,7 +23,7 @@
 
 | 문서 | 내용 |
 |------|------|
-| **g7core-api.md** (현재) | 개요, 상태 관리, 토스트 알림, 모달 관리, 네비게이션, 스타일 헬퍼, 플러그인/모듈 설정, 확장 자산, 방문자 동의, 전역 상태 계약 |
+| **g7core-api.md** (현재) | 개요, 상태 관리, 토스트 알림, 모달 관리, 네비게이션, 스타일 헬퍼, 주소 조립, 플러그인/모듈 설정, 확장 자산, 방문자 동의, 전역 상태 계약 |
 | [g7core-api-advanced.md](g7core-api-advanced.md) | 다국어, 액션 실행, 컴포넌트 이벤트, 이벤트 생성 헬퍼, 렌더링 헬퍼, 인증/API, WebSocket, 반응형, React Hooks, 타입 정의 |
 
 ---
@@ -36,12 +36,14 @@
 4. [모달 관리 (G7Core.modal)](#모달-관리-g7coremodal)
 5. [네비게이션 (G7Core.navigation)](#네비게이션-g7corenavigation)
 6. [스타일 헬퍼 (G7Core.style)](#스타일-헬퍼-g7corestyle)
-7. [플러그인 설정 (G7Core.plugin)](#플러그인-설정-g7coreplugin)
-8. [모듈 설정 (G7Core.module)](#모듈-설정-g7coremodule)
-9. [확장 자산 (G7Core.asset, G7Core.assets)](#확장-자산-g7coreasset-g7coreassets)
-10. [방문자 동의 (G7Core.consent)](#방문자-동의-g7coreconsent)
-11. [전역 상태 계약 (G7Core.stateContracts)](#전역-상태-계약-g7corestatecontracts)
+7. [주소 조립 (G7Core.url)](#주소-조립-g7coreurl)
+   - [이미지 썸네일 주소 (G7Core.thumbnail)](#이미지-썸네일-주소-g7corethumbnail)
+8. [플러그인 설정 (G7Core.plugin)](#플러그인-설정-g7coreplugin)
+9. [모듈 설정 (G7Core.module)](#모듈-설정-g7coremodule)
+10. [확장 자산 (G7Core.asset, G7Core.assets)](#확장-자산-g7coreasset-g7coreassets)
+11. [방문자 동의 (G7Core.consent)](#방문자-동의-g7coreconsent)
 12. [최근 검색어 (G7Core.searchHistory)](#최근-검색어-g7coresearchhistory)
+13. [전역 상태 계약 (G7Core.stateContracts)](#전역-상태-계약-g7corestatecontracts)
 
 ---
 
@@ -59,6 +61,8 @@
 | 네비게이션 | `G7Core.navigation` | 페이지 전환 상태 | 현재 문서 |
 | 스타일 | `G7Core.style` | Tailwind 클래스 병합, 런타임 CSS 규칙(`setRules`·`remove`·`has`, engine-v1.91.0) | 현재 문서 |
 | 본문 서식 지연 | `G7Core.inlineStyle` | 본문 HTML 의 `style` 속성을 화면에 붙인 뒤 입히는 장치 — 엄격한 스타일 정책 대응 (engine-v1.91.0) | [확장 자산 — 인라인 스타일](../extension/module-assets.md) |
+| 주소 | `G7Core.url` | 마운트 접두사 붙이기/벗기기 (확장 공용) | 현재 문서 |
+| 썸네일 주소 | `G7Core.thumbnail` | 이미지 서빙 주소에 썸네일 규격·srcset 붙이기 (확장 공용) | 현재 문서 |
 | 플러그인 | `G7Core.plugin` | 플러그인 설정 조회 | 현재 문서 |
 | 모듈 | `G7Core.module` | 모듈 설정 조회 | 현재 문서 |
 | 다국어 | `G7Core.locale`, `G7Core.t` | 로케일 관리, 번역 | [고급 API](g7core-api-advanced.md) |
@@ -535,13 +539,13 @@ G7Core.dispatch({
 |--------|------|----------|
 | `open(modalId)` | 모달 열기 | modalId: string |
 | `close(modalId?)` | 맨 위 모달 닫기 | modalId?: string — 전달되지만 `closeModal` 핸들러가 읽지 않는다(아래 「알려진 제약」) |
-| `closeAll()` | **동작하지 않음** — 쓰지 않는다 | - |
+| `closeAll()` | 열린 모달 모두 닫기(engine-v1.95.0+, `closeModal` 의 `params.all`) | - |
 | `isOpen(modalId)` | 모달 열림 확인 | modalId: string |
 | `getStack()` | 모달 스택 반환 | - |
 
 #### 알려진 제약 (engine-v1.75.2 기준)
 
-- `closeAll()` 은 엔진에 없는 `closeAllModals` 액션을 보낸다. 창은 하나도 닫히지 않고, 반환값은 `{ success: false }`, 콘솔에는 `Unknown action handler: closeAllModals` 오류가 남는다. 여러 창을 닫으려면 열린 창 수만큼 `closeModal` 을 `sequence` 로 보낸다 — engine-v1.75.2 부터 같은 sequence 안의 `closeModal` 은 매번 최신 스택을 읽는다.
+- `closeAll()` 은 engine-v1.93 까지 엔진에 없는 `closeAllModals` 액션을 보내 아무 창도 닫지 못했다(`Unknown action handler` 오류). engine-v1.95.0 부터 `closeModal` 의 `params.all: true` 로 보내 열린 창을 모두 닫는다. 레이아웃 액션에서는 `<close-modal :all="true"/>` 를 쓴다.
 - `close(modalId)` 의 `modalId` 는 무시된다. 인자와 상관없이 스택 맨 위 창이 닫힌다.
 - 액션 실행 밖(타이머, 외부 SDK 콜백처럼 `__g7ActionContext` 가 없는 곳)에서 `close()` 를 부르면 문맥에 전역 사본이 없어 빈 스택에서 계산한다. 그 결과 **열린 창 전체가 닫힌다**. 같은 자리에서 `open(id)` 를 부르면 스택이 `[id]` 로 바뀌어 아래 창이 사라진다. 종전부터의 동작이며 engine-v1.75.2 도 이 경로는 바꾸지 않았다(`ActionDispatcher.modalStack.test.ts` 가 고정). 부모 창 위에 띄워야 하면 `G7Core.dispatch(action, { componentContext })` 로 문맥을 넘긴다.
 
@@ -702,6 +706,7 @@ Tailwind CSS 클래스를 런타임에서 병합하는 헬퍼 API입니다.
 | `setRules(key, css, opts?)` | 런타임 CSS 규칙 묶음을 문서에 붙인다(같은 `key` 는 교체). `<style>` 요소를 만들지 않아 엄격한 스타일 정책에서도 적용된다 (engine-v1.91.0) | `{ key, mode, remove() }` |
 | `remove(key)` | 규칙 묶음 제거 (engine-v1.91.0) | `void` |
 | `has(key)` | 규칙 묶음이 붙어 있는지 (engine-v1.91.0) | `boolean` |
+| `splitExtensionClassPrefix(token)` | 확장 CSS 접두 빌드 앞글자(`ecommerce:`)를 떼어 나눈다 (engine-v1.94.0) | `{ prefix, rest }` |
 
 런타임 규칙 3종은 화면이 뜬 뒤에 정해지는 CSS 규칙(대상 id 가 실행 중에 정해지는 덮개 등)에만 씁니다. 고정된 규칙은 확장의 CSS
 자산(`assets.css`)에, 요소 하나의 값은 `el.style.x = …`·CSS 변수에 둡니다. 규칙은 생성형 스타일시트
@@ -713,6 +718,20 @@ Tailwind CSS 클래스를 런타임에서 병합하는 헬퍼 API입니다.
 const handle = G7Core.style.setRules('my-plugin-overlay', '#my-target::after{content:"";position:absolute;inset:0}');
 handle.remove();
 ```
+
+### splitExtensionClassPrefix
+
+클래스 토큰 하나에서 확장 앞글자(접두 빌드의 `{letters}:`)를 떼어 `{ prefix, rest }` 로 돌려줍니다. className 을 Tailwind 이름으로 읽는 템플릿 컴포넌트가 확장이 넘긴 클래스(`ecommerce:md:hidden`)를 앞글자 없는 클래스와 같은 뜻으로 다룰 때 씁니다. `mergeClasses` 도 이 함수로 앞글자를 떼고 충돌을 판정합니다.
+
+```typescript
+G7Core.style.splitExtensionClassPrefix('ecommerce:md:hidden') // { prefix: 'ecommerce:', rest: 'md:hidden' }
+G7Core.style.splitExtensionClassPrefix('md:w-44')             // { prefix: '', rest: 'md:w-44' }
+G7Core.style.splitExtensionClassPrefix('w-44')                // { prefix: '', rest: 'w-44' }
+```
+
+- 앞글자 목록은 서버가 활성 모듈·플러그인의 `assets.css.namespace` 에서 영문 소문자만 남긴 값으로 계산해 화면에 싣습니다(`window.G7Config.extensionClassPrefixes`). 목록에 없는 머리(`md:`·`dark:` 같은 변형, 비활성 확장의 앞글자)는 앞글자로 보지 않습니다.
+- 앞글자가 없거나 목록에 맞지 않으면 `{ prefix: '', rest: token }` — 토큰을 그대로 `rest` 에 둡니다.
+- 앞글자 규약: [module-assets.md 「확장 CSS 자기 공급 규약」](../extension/module-assets.md#확장-css-자기-공급-규약)
 
 ### mergeClasses
 
@@ -811,6 +830,134 @@ export const Button: React.FC<Props> = ({ className = '', ...props }) => {
 
   return <button className={mergedClassName} {...props} />;
 };
+```
+
+---
+
+## 주소 조립 (G7Core.url)
+
+> engine-v1.61.2+
+
+사이트가 문서 루트가 아니라 **하위 폴더**에 설치될 수 있다(`https://host/g7/`). 서버가 렌더한 주소에는 그 마운트 접두사(`/g7`)가 이미 붙어 있지만, **브라우저 안에서 만드는 주소**는 루트 상대(`/api/…`)라 접두사가 없다. 같은 화면에서 두 규칙이 공존하면 확장의 요청·이동이 사이트 밖으로 나가고, 증상은 오류가 아니라 **버튼이 조용히 무반응**인 것이다.
+
+확장 프론트엔드는 코어와 **별도 IIFE 번들**이라 코어 함수를 `import` 할 수 없다. `G7Core.url` 이 그 공식 수단이다.
+
+### API 목록
+
+| API | 시그니처 | 설명 |
+|-----|----------|------|
+| `G7Core.url.api(path)` | `(string) => string` | 루트 상대 경로에 마운트 접두사를 붙인다 (멱등) |
+| `G7Core.url.route(path)` | `(string) => string` | 마운트 접두사를 벗겨 라우트 기준 경로로 되돌린다 |
+| `G7Core.url.base()` | `() => string` | 현재 마운트 접두사 (루트 설치면 빈 문자열) |
+
+접두사 값의 SSoT 는 서버가 내려주는 `G7Config.basePath` 다.
+
+### 확장에서의 사용
+
+확장 번들은 코어 초기화 **전**에 실행될 수 있으므로(부트스트랩 순서 역전), 확장마다 같은 SSoT 를 읽는 폴백을 가진 얇은 헬퍼를 둔다. 번들 확장은 이 헬퍼를 `apiUrl.ts` 라는 이름으로 **바이트 동일한 사본**으로 갖는다 (동일성은 계약 테스트가 잰다). 내보내는 이름은 셋이며, 연산이 아니라 **부르는 자리**로 구분한다.
+
+| 헬퍼 | 코어 대응 | 부르는 자리 |
+|------|-----------|-------------|
+| `apiUrl(path)` | `withBasePrefix()` · `G7Core.url.api` | **서버를 부르는** 주소 — `fetch` / `XMLHttpRequest` / `EventSource` 에 넘기는 값 |
+| `sitePath(path)` | `withBasePrefix()` · `G7Core.url.api` | **브라우저가 그대로 여는** 주소 — `location.href` 대입 · `location.assign/replace` · `window.open` · `history.pushState`/`replaceState` 의 세 번째 인자 · 외부 인증기관에 넘기는 복귀 주소 |
+| `routePath(path)` | `stripBasePrefix()` · `G7Core.url.route` | **받아 온 주소를 라우트와 대조할** 때 — `location.pathname` 을 패턴·경로 목록과 비교하기 직전 |
+
+```typescript
+import { apiUrl, routePath, sitePath } from '../apiUrl';
+
+// 서버를 부르는 주소 — 접두사를 붙인다
+const res = await fetch(apiUrl('/api/plugins/vendor-plugin/settings'));
+
+// 화면을 이동하는 주소 — 라우터를 거치지 않으므로 붙일 주체가 호출부밖에 없다
+window.location.href = sitePath('/admin/orders');
+window.open(sitePath(`/admin/orders/${orderNumber}/shipping-label`), '_blank');
+
+// 브라우저가 준 주소를 라우트와 대조 — 여기서는 접두사를 벗긴다
+if (/^\/shop\/orders\/([^/]+)\/complete$/.test(routePath(window.location.pathname))) {
+  mountReceipt();
+}
+```
+
+`apiUrl()` 과 `sitePath()` 는 연산이 같고 부르는 자리가 다르다. `routePath()` 는 그 둘의 **역방향**이다 — 내보내는 주소에는 붙이고, 받아 온 주소는 벗겨서 대조한다. 라우트 패턴은 언제나 접두사 없이 적히므로 벗기지 않으면 하위 폴더 사이트에서 그 대조가 **항상 불일치**가 되고, 그 기능은 오류도 로그도 없이 조용히 사라진다.
+
+붙이는 쪽(요청·이동)과 벗기는 쪽(대조)은 다른 방향이므로, 한쪽만 재는 회귀 테스트는 다른 쪽이 통째로 빠져도 통과한다. 양방향을 함께 잰다.
+
+### 접두사를 붙이지 않는 경우
+
+| 대상 | 이유 |
+|------|------|
+| 절대 URL (`https://…`) · 프로토콜 상대 (`//host/…`) | 사이트 경로가 아니다 — 붙이면 주소가 깨진다 |
+| 이미 접두사가 붙은 경로 | 세 함수 모두 멱등이라 이중 접두(`/g7/g7/…`)나 이중 제거가 생기지 않는다. 「이미 붙어 있다」의 판정은 접두사 뒤가 끝·`/`·`?`·`#` 인 경우다 — `/g7?ref=x`(쿼리가 붙은 하위 폴더 홈) 도 보유이고, `/g7x/foo` 는 경계 없이 이어진 다른 경로라 붙인다. 앞뒤 공백은 판정 전에 걷어낸다 |
+| 외부 시스템(PG 등)이 내려준 주소 | 사이트 경로가 아니다 |
+| `navigate` 핸들러의 `path` | 라우터가 붙인다 — 확장이 직접 붙일 필요가 없다 |
+| 화면 링크(`<a href>`) · 이미지(`<img src>`) · 폼 제출(`<form action>`) | 템플릿 `A` · `Img` · `Form` 컴포넌트가 붙인다 (`sitePath()` 멱등 — 절대 URL · `//` · `data:` · 상대 경로는 그대로). 셋 다 브라우저가 라우터 없이 직접 여는 주소라 붙일 주체가 컴포넌트뿐이다. 날 `<a>`/`<img>`/`<form>` 을 직접 쓰지 않는 것이 그 계층이 성립하는 조건이고, 레이아웃 JSON 의 루트 상대 `href`/`src`/`action` 은 그 세 컴포넌트 위에만 둔다 |
+
+판정할 수 없는 형태(변수·표현식)는 그 줄 바로 위에 `// base-path:allow <사유>` 로 의도를 남긴다.
+
+서버가 만드는 **절대** 주소(알림·메일 링크 · 결제·본인인증의 복귀·통보 주소 · 사이트맵 · 봇 화면)는 브라우저 축이 아니라 서버 축이다 — 사이트 주소 기준의 `App\Support\SiteUrl`(회원이 여는 사용자 화면 주소는 `ScreenUrl`)이 그 단일 지점이고, `url()` 이나 `config('app.url').'/…'` 로 조립하지 않는다. 하위 폴더 설치에서 이미 접두사가 붙은 경로를 넘겨도 `SiteUrl` 은 접두사를 다시 붙이지 않으며, `AssetUrl::siteAbsolute()` 는 그 위임(호환)이다 (상세: [routing.md "절대 URL 은 사이트 주소로 만든다"](../backend/routing.md#절대-url-은-사이트-주소로-만든다) · ["마운트 접두사"](../backend/routing.md#마운트-접두사--라우트는-언제나-접두사-없이-등록된다)).
+
+`routePath()`/`stripBasePrefix()` 의 결과가 `/` 하나로 시작한다는 보장은 없다 — `/g7//evil.com` 을 벗기면 `//evil.com` 이다(접두사 뒤 나머지를 그대로 돌려준다). 그 값을 `navigate` 에 넘기면 사이트 밖 목적지로 판정돼 이동하지 않지만(engine-v1.94.0), `location.href` 대입처럼 라우터를 거치지 않는 통로에 넘기면 그 방어가 없다. 벗긴 값은 대조에만 쓰고 이동 주소로 재사용하지 않는다.
+
+경계 판정의 기대표(입력 24종 × 붙이기/벗기기 + 접두사 정규화 변종)는 `tests/Fixtures/AssetUrl/base-prefix-boundary.json` 하나이며 서버 `AssetUrlTest` 와 프론트 `assetUrl.test.ts` 가 같은 파일을 읽는다. 규칙을 바꾸면 양쪽 구현과 그 표를 함께 바꾼다.
+
+---
+
+## 이미지 썸네일 주소 (G7Core.thumbnail)
+
+> engine-v1.95.0+
+
+업로드 이미지 서빙 주소에 `?size={규격}` 을 붙이면 서버가 환경설정의 규격으로 줄인 썸네일을 내준다. 붙여도 되는 주소는 **같은 출처 + 등록된 서빙 경로**(환경설정이 내려 주는 `upload.thumbnail_url_patterns`)뿐이고, 외부·CDN 직접 주소·`/storage/...`·`data:`·`blob:` 는 그대로 둔다. 확장 번들은 코어 모듈을 import 할 수 없으므로 판정과 덧붙임 규칙은 이 API 하나로 쓴다 — 규칙 사본을 두면 서명 주소가 깨지거나 외부 주소에 `size` 가 붙는다.
+
+레이아웃에서는 `<img thumbPreset="sm">`(Img 컴포넌트) 또는 파이프 `{{url | thumb('sm')}}`·`{{url | thumbSrcset('md')}}` 를 쓴다([내장 파이프](data-binding.md#내장-파이프-함수)).
+
+### API 목록
+
+| 메서드 | 반환 | 설명 |
+|--------|------|------|
+| `isThumbnailable(url)` | `boolean` | 같은 출처 + 등록된 서빙 경로인지 (기능이 꺼져 있으면 항상 false) |
+| `url(url, preset)` | `string` | 규격을 붙인 주소. 기존 쿼리는 원문 그대로 두고 `size`·`w` 만 바꾼다(`#` 앞). 대상이 아니면 입력 그대로 |
+| `srcset(url, preset)` | `string` | 1x·2x srcset. 2x 는 같은 맞춤·같은 비율 중 가로 1.5배 이상인 가장 작은 규격(없으면 1x 만). 대상이 아니면 빈 문자열 |
+| `contentSrcset(url)` | `string` | 본문 이미지용 — 숫자 요청 대상 규격 전부를 `w` 기술자로 |
+| `contentSrcsetWithin(url, maxWidth, options?)` | `string` | `contentSrcset` 후보 중 원본 가로(`maxWidth`)를 넘지 않는 것만. 기본은 원본 가로 **이하** 후보, `{ includeOriginal: true }` 면 원본보다 **작은** 후보 + 원본(`{url} {maxWidth}w`). 가로는 내림한 정수로 보고, 가로를 모르거나(1 이상의 유한수가 아님) 남는 후보가 없으면 빈 문자열 |
+| `contentPreset()` | `string` | 환경설정 「본문 이미지 규격」(기본 `lg`) |
+| `strip(url)` | `string` | `size`·`w` 를 걷어낸 원본 주소 (확대 보기용) |
+| `presets()` | `array` | 사용 중인 공개 규격 목록 `{name, width, height, fit, numeric, format}` |
+
+### 확장에서의 사용
+
+```ts
+const thumbnail = (window as any).G7Core?.thumbnail;
+const src = thumbnail ? thumbnail.url(image.download_url, 'sm') : image.download_url;
+const srcSet = thumbnail ? thumbnail.srcset(image.download_url, 'sm') || undefined : undefined;
+```
+
+API 가 없는 코어(구버전)에서는 원 주소를 그대로 쓰면 된다 — 원본이 나가는 것은 종전 동작과 같다.
+
+### 원본 가로를 아는 이미지의 srcset
+
+서버는 원본보다 큰 규격을 키우지 않고 원본을 보낸다. 원본이 750px 인데 후보에 `1280w` 가 있으면 브라우저는 1280px 짜리로 알고 골라 그만큼 작게 그린다. 원본 가로를 아는 자리는 `contentSrcset` 대신 `contentSrcsetWithin` 으로 후보를 원본 가로 안으로 줄인다.
+
+| 자리 | 호출 | 원본 750px, 숫자 규격 md 640·lg 1280·xl 1920 일 때 |
+|------|------|------|
+| 본문 HTML 이미지(`<img width>`) | `contentSrcsetWithin(src, width)` | `…?size=md 640w` (원본 가로 이하. 봇 화면 `HtmlSanitizer` 와 같은 규칙) |
+| 원본을 함께 싣는 이미지(배너·팝업) | `contentSrcsetWithin(src, width, { includeOriginal: true })` | `…?size=md 640w, {src} 750w` (원본과 같은 가로의 후보는 원본과 기술자가 겹쳐 뺀다) |
+
+```ts
+const thumbnail = (window as any).G7Core?.thumbnail;
+const srcSet = typeof thumbnail?.contentSrcsetWithin === 'function'
+  ? thumbnail.contentSrcsetWithin(image.url, image.width, { includeOriginal: true }) || undefined
+  : undefined;
+```
+
+**원본 직접 주소가 따로 오는 이미지(공개 자산 디스크, #878)** — 응답이 썸네일 기준 주소(`url`·`preview_url`, 같은 출처 서빙 경로)와 원본 직접 주소(`direct_url`, CDN·`/storage`)를 함께 주면, 후보는 서빙 경로로 만들고 **마지막 원본 후보와 `src` 만** 직접 주소로 바꾼다. 직접 주소는 등록된 서빙 경로가 아니라 `contentSrcsetWithin` 에 넘기면 빈 문자열이다.
+
+```ts
+const tail = `${image.url.replace(/ /g, '%20')} ${Math.floor(image.width)}w`;
+const base = thumbnail.contentSrcsetWithin(image.url, image.width, { includeOriginal: true }) || '';
+const srcSet = image.direct_url && base.endsWith(tail)
+  ? `${base.slice(0, -tail.length)}${image.direct_url.replace(/ /g, '%20')} ${Math.floor(image.width)}w`
+  : base || undefined;
+const src = image.direct_url || image.url; // 캔버스로 픽셀을 읽는 자리는 같은 출처인 image.url 을 쓴다
 ```
 
 ---

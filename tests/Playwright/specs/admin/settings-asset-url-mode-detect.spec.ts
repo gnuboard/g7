@@ -1,8 +1,16 @@
 /**
  * E2E: 환경설정 > 일반 — 자산 URL 방식 "자동 감지" 버튼 (#486)
  *
- * @scenario admin_settings_asset_url_mode_detect
- * @effects detect_button_styled, detect_result_inline
+ * @scenario docroot-single-folder
+ * 케이스(마커 아님 — 평문): admin_settings_asset_url_mode_detect
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): detect_button_styled, detect_result_inline
+ *
+ * 시나리오 매니페스트 귀속: `tests/scenarios/docroot-single-folder.yaml`
+ * 의 `e2e_asset_url_recovery=admin_mode_detect`. 예전에는 이 spec 이 어느 매니페스트에도
+ * 등록돼 있지 않아, 위 두 마킹이 아무 매니페스트와도 대조되지 않는 고아 상태였다.
+ *
+ * 축 조합 요약(마커 아님 — 평문, 시험별 표식에 있음): asset_url_mode=extensionless, e2e_asset_url_recovery=admin_mode_detect
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): admin_settings_detect_reports_mode_inline
  *
  * 배경: 자동 감지 버튼이 다른 버튼(모달 취소·푸터 저장)과 달리 btn 베이스 클래스가 빠져
  * 평문처럼 보였고, 감지 결과가 토스트로 떠 사라져 버렸다. 버튼을 다른 버튼과 동일한 박스
@@ -64,6 +72,8 @@ test('#486 - 자동 감지 버튼이 관리자 다른 버튼과 동일한 btn �
 
 // @scenario tab=general, permitted=yes
 // @effects detect_result_inline
+// @scenario asset_url_mode=extensionless, e2e_asset_url_recovery=admin_mode_detect
+// @effects admin_settings_detect_reports_mode_inline
 test('#486 - 감지 결과가 토스트가 아니라 필드 하단 인라인 안내로 뜬다', async ({ page }) => {
   const token = issueToken('core.settings.read', 'core.settings.update');
   await authenticatePage(page, token);

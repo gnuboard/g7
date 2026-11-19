@@ -2,11 +2,14 @@
 
 namespace Modules\Sirsoft\Ecommerce\Tests\Unit\Services;
 
+use App\Contracts\Extension\StorageInterface;
 use App\Extension\Storage\ModuleStorageDriver;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Config;
 use Modules\Sirsoft\Ecommerce\Models\Order;
 use Modules\Sirsoft\Ecommerce\Services\ClaimAttachmentService;
+use Modules\Sirsoft\Ecommerce\Services\ContentMedia\EcommerceContentMediaService;
+use Modules\Sirsoft\Ecommerce\Services\ExportService;
 use Modules\Sirsoft\Ecommerce\Support\AssetStorage;
 use Modules\Sirsoft\Ecommerce\Tests\ModuleTestCase;
 use PHPUnit\Framework\Attributes\Test;
@@ -23,6 +26,11 @@ use PHPUnit\Framework\Attributes\Test;
  */
 class ClaimAttachmentServiceDiskTest extends ModuleTestCase
 {
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -35,6 +43,11 @@ class ClaimAttachmentServiceDiskTest extends ModuleTestCase
         AssetStorage::flush();
     }
 
+    /**
+     * 테스트 뒤 정리합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         AssetStorage::flush();
@@ -44,6 +57,12 @@ class ClaimAttachmentServiceDiskTest extends ModuleTestCase
 
     /**
      * 공개 자산 디스크가 켜져 있어도 클레임 첨부는 그 디스크로 가지 않는다.
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=public_asset_disk_set
+     *
+     * @effects claim_attachment_never_lands_on_public_asset_disk
      */
     #[Test]
     public function upload_never_lands_on_the_public_asset_disk(): void
@@ -75,6 +94,12 @@ class ClaimAttachmentServiceDiskTest extends ModuleTestCase
 
     /**
      * 공개 자산 디스크 미설정 시에도 같은 기본 디스크를 쓴다 (대조군 — 위 단언이 공허하지 않음을 고정).
+     *
+     * @return void 반환값 없음
+     *
+     * @scenario case=public_asset_disk_unset
+     *
+     * @effects claim_attachment_uses_base_disk_without_public_asset_disk
      */
     #[Test]
     public function upload_uses_the_base_disk_when_public_asset_disk_is_unset(): void
@@ -92,5 +117,49 @@ class ClaimAttachmentServiceDiskTest extends ModuleTestCase
         $this->assertSame('modules', $image->disk);
 
         $this->assertTrue($service->delete($image));
+    }
+
+    /**
+     * 클레임 첨부·내보내기·본문 미디어 서비스는 비공개 첨부 저장소 선택을 따르고 공개 자산 디스크는 따르지 않는다(#916).
+     *
+     * @scenario case=private_attachment_selection
+     *
+     * @effects ecommerce_private_services_follow_private_attachment_selection
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function services_follow_private_attachment_selection(): void
+    {
+        Config::set('filesystems.disks.ecom_private_alt', ['driver' => 'local', 'root' => storage_path('framework/testing/ecom_private_alt')]);
+        Config::set('core.storage.private_attachment_disk', '');
+        $classes = [ClaimAttachmentService::class, ExportService::class, EcommerceContentMediaService::class];
+        foreach ($classes as $class) {
+            $this->assertSame('modules', $this->injectedDisk(app($class)), $class.' 「기본」');
+        }
+
+        Config::set('core.storage.private_attachment_disk', 'ecom_private_alt');
+        foreach ($classes as $class) {
+            $this->assertSame('ecom_private_alt', $this->injectedDisk(app($class)), $class.' 선택');
+        }
+    }
+
+    /**
+     * 서비스에 주입된 스토리지의 디스크를 읽습니다(클래스 계층의 StorageInterface 속성).
+     *
+     * @param  object  $service  서비스
+     * @return string 디스크 이름
+     */
+    private function injectedDisk(object $service): string
+    {
+        for ($class = new \ReflectionClass($service); $class !== false; $class = $class->getParentClass()) {
+            foreach ($class->getProperties() as $property) {
+                $value = $property->getValue($service);
+                if ($value instanceof StorageInterface) {
+                    return $value->getDisk();
+                }
+            }
+        }
+        $this->fail('주입된 스토리지를 찾지 못했습니다: '.$service::class);
     }
 }

@@ -7,13 +7,14 @@ use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Contracts\Repositories\TemplateRepositoryInterface;
 use App\Exceptions\StaticCachePublishException;
-use App\Extension\Cache\CoreCacheDriver;
+use App\Extension\Cache\CacheDriverFactory;
 use App\Extension\Helpers\FilePermissionHelper;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Helpers\ResponseHelper;
 use App\Models\Template;
 use App\Rules\AllowedTemplateFileType;
 use App\Support\CustomAssets;
+use App\Support\ExecutionEnvironment;
 use App\Support\LocaleTag;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
@@ -489,7 +490,7 @@ class ExtensionStaticCacheService
      */
     private static function markerCache(): CacheInterface
     {
-        return new CoreCacheDriver(self::extensionCacheStore());
+        return CacheDriverFactory::core(null, self::extensionCacheStore());
     }
 
     /**
@@ -650,8 +651,13 @@ class ExtensionStaticCacheService
             ] + $this->statusReport();
         }
 
-        @set_time_limit(300);
-        @ignore_user_abort(true);
+        // 호스팅이 막아 둔 함수는 함수 표에서 빠진다 — 있을 때만 시간 제한을 늘리고 연결 끊김에도 이어 간다.
+        if (ExecutionEnvironment::hasFunction('set_time_limit')) {
+            @set_time_limit(300);
+        }
+        if (ExecutionEnvironment::hasFunction('ignore_user_abort')) {
+            @ignore_user_abort(true);
+        }
 
         $this->incrementExtensionCacheVersion();
 

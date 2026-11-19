@@ -9,13 +9,12 @@
 |---|---|---|---|
 | `auth_key` | `string` | - | 인증키 |
 | `auto_manage` | `boolean` | `false` | 환율 자동 관리 사용 |
-| `update_time` | `string` | `11:30` | 갱신 시각 (한국시간) |
 | `run_days` | `array` | `[1,2,3,4,5]` | 실행 요일 |
 | `retry_max` | `integer` | `3` | 최대 재시도 |
 | `rate_type` | `enum` | `deal_bas_r` | 환율 종류 |
 | `rate_decimal_places` | `integer` | `6` | 환율 소수 자릿수 |
 | `lookback_days` | `integer` | `7` | 직전 영업일 탐색 일수 |
-| `history_retention_days` | `integer` | `365` | 이력 보존 일수 |
+| `history_retention_days` | `integer` | `365` | 이력 보관 기간 (일) |
 | `notify_on_failure` | `boolean` | `true` | 실패 알림 |
 
 기본값 파일: `config/settings/defaults.json` · 설정 화면 레이아웃: `resources/layouts/admin/plugin_settings.g7.html`
@@ -68,7 +67,7 @@ GET status/runs/runs/{run}과 POST runs 네 경로를 제공합니다. POST의 d
 
 | 확장 | 유형 | 버전 제약 | 번들 |
 |---|---|---|---|
-| `sirsoft-ecommerce` | 모듈 | `>=1.3.0` | ✅ |
+| `sirsoft-ecommerce` | 모듈 | `>=1.4.0` | ✅ |
 
 **이 확장에 의존하는 확장** (이 확장을 비활성화하면 함께 영향을 받습니다)
 
@@ -76,5 +75,5 @@ GET status/runs/runs/{run}과 POST runs 네 경로를 제공합니다. POST의 d
 <!-- @generated:dependencies END -->
 
 <!-- @intent START -->
-이커머스 1.3.0의 제공자 선택·환율 적용 계약을 사용합니다. 먼저 모듈을 업데이트한 뒤 플러그인을 활성화해야 하며, 플러그인 제거가 기존 이커머스 통화값을 삭제하지 않습니다.
+이커머스 1.3.0의 제공자 선택과 1.4.0의 공개 환율 계약(`Contracts\Currency\ExchangeRateGateway`)을 사용하므로 이커머스 1.4.0 이상이 필요합니다. 먼저 모듈을 업데이트한 뒤 플러그인을 활성화해야 하며, 플러그인 제거가 기존 이커머스 통화값을 삭제하지 않습니다.
 <!-- @intent END -->

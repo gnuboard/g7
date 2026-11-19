@@ -1,8 +1,8 @@
 /**
  * E2E: 호스트 DOM 으로 새면 안 되는 props (engine-v1.55.1)
  *
- * @scenario leak_path=extension_point_host, prop_shape=object
- * @effects extension_point_host_clean, icon_not_autobound, address_search_still_works
+ * 조합 요약(마커 아님 — 평문): leak_path=extension_point_host 와 form_auto_binding, screen 은 시험별 표식에 있음
+ * 효과 요약(마커 아님 — 평문, 시험별 표식에 있음): extension_point_host_clean, icon_not_autobound, address_search_still_works, html_content_host_clean, html_editor_host_clean, extension_point_host_class_expression_evaluated
  *
  * 배경: 브라우저 실측에서 관리자 두 화면에 객체 값이 DOM 속성으로 문자열화되어 남아 있었다.
  *   - 쇼핑몰 설정 기본정보: `<div id="address_search_slot" targetfields="[object Object]">`
@@ -33,7 +33,7 @@ async function collectObjectLeaks(page: import('@playwright/test').Page): Promis
   });
 }
 
-// @scenario screen=ecommerce_settings, leak_axis=extension_point
+// @scenario screen=ecommerce_settings, leak_path=extension_point_host
 // @effects extension_point_host_clean
 test('@smoke engine-v1.55.1 - 확장 삽입 영역 호스트에 객체 props 가 남지 않는다', async ({ page }) => {
   const token = issueToken('core.settings.read', 'core.settings.update');
@@ -52,7 +52,7 @@ test('@smoke engine-v1.55.1 - 확장 삽입 영역 호스트에 객체 props 가
   expect(await collectObjectLeaks(page)).toEqual([]);
 });
 
-// @scenario screen=ecommerce_settings, leak_axis=extension_point
+// @scenario screen=ecommerce_settings, leak_path=extension_point_host
 // @effects address_search_still_works
 test('engine-v1.55.1 - 호스트 정리 후에도 주소 검색은 그대로 열린다', async ({ page }) => {
   const token = issueToken('core.settings.read', 'core.settings.update');
@@ -70,8 +70,8 @@ test('engine-v1.55.1 - 호스트 정리 후에도 주소 검색은 그대로 열
   await expect(page.locator('#daum-postcode-layer')).toBeAttached({ timeout: 20_000 });
 });
 
-// @scenario screen=board_post_detail, leak_axis=extension_point
-// @effects html_content_host_clean
+// @scenario screen=board_post_detail, leak_path=extension_point_host
+// @effects html_content_host_clean, extension_point_host_class_expression_evaluated
 test('@smoke engine-v1.55.1 - 본문 표시 영역 호스트에 원시값 페이로드가 남지 않는다', async ({ page }) => {
   const token = issueToken('sirsoft-board.archive.admin.posts.read');
   await authenticatePage(page, token);
@@ -89,10 +89,15 @@ test('@smoke engine-v1.55.1 - 본문 표시 영역 호스트에 원시값 페이
   // 그리고 본문은 그대로 그려져야 한다(페이로드 소비 경로 보존).
   await expect(host).not.toBeEmpty();
 
+  // 호스트 className 의 `{{…}}` 는 평가된 값으로 붙는다 — 식 원문·조각(`===`·`'html'`)이 클래스가 되면 안 된다 (engine-v1.94.0).
+  const hostClass = (await host.getAttribute('class')) ?? '';
+  expect(hostClass).not.toMatch(/\{\{|\}\}|===/);
+  expect(hostClass).toContain('board:max-w-none');
+
   expect(await collectObjectLeaks(page)).toEqual([]);
 });
 
-// @scenario screen=board_post_form, leak_axis=extension_point
+// @scenario screen=board_post_form, leak_path=extension_point_host
 // @effects html_editor_host_clean
 test('engine-v1.55.1 - 글 편집기 영역을 정리해도 편집기는 그대로 뜨고 입력이 반영된다', async ({ page }) => {
   const token = issueToken('sirsoft-board.archive.admin.posts.read', 'sirsoft-board.archive.admin.posts.write');
@@ -118,7 +123,7 @@ test('engine-v1.55.1 - 글 편집기 영역을 정리해도 편집기는 그대�
   expect(await collectObjectLeaks(page)).toEqual([]);
 });
 
-// @scenario screen=ecommerce_product_form, leak_axis=form_autobinding
+// @scenario screen=ecommerce_product_form, leak_path=form_auto_binding
 // @effects icon_not_autobound
 test('@smoke engine-v1.55.1 - 아이콘 이름이 폼 필드와 겹쳐도 값이 주입되지 않는다', async ({ page }) => {
   const token = issueToken(

@@ -1,0 +1,43 @@
+<!-- 예약 작업 상태 일괄 변경 확인 창 — 표 위 「일괄 적용」(넓은 화면)과 「일괄 작업 선택」(좁은 화면)이 연다.
+  고른 줄(`_global.selectedScheduleIds`)과 바꿀 방향(`_global.bulkStatusAction` = active|inactive)은 목록이 전역에 담아 두고
+  이 창은 그 둘만 읽는다. 방향에 따라 문장이 갈려 문단이 둘이다(쿠폰 목록 발급상태 일괄변경 창과 같은 구성).
+  예전에는 일괄 적용 버튼이 확인 없이 곧바로 PATCH 했다 — 기준 목록(쿠폰·회원·배송정책)은 모두 한 번 더 묻는다.
+  성공하면 고른 줄과 방향을 함께 비운다 — 남겨 두면 목록의 선택 표시와 서버 상태가 갈린다. -->
+<partial description="스케줄 상태 일괄 변경 확인 모달" editor_label="$t:admin.modal_label.admin_schedule_list.schedule_bulk_status_modal">
+  <modal data-type="composite" data-ref="schedule_bulk_status_modal" title="$t:admin.schedules.modals.bulk_status_title" size="sm">
+    <p data-if="{{_global.bulkStatusAction === 'active'}}" class="text-secondary">$t:admin.schedules.modals.bulk_status_confirm_active|count={{(_global.selectedScheduleIds ?? []).length}}</p>
+    <p data-if="{{_global.bulkStatusAction !== 'active'}}" class="text-secondary">$t:admin.schedules.modals.bulk_status_confirm_inactive|count={{(_global.selectedScheduleIds ?? []).length}}</p>
+    <footer>
+      <button type="button" class="btn btn-secondary" disabled="{{_global.isBulkStatusChanging}}">
+        <on type="click">
+          <close-modal target="schedule_bulk_status_modal"/>
+        </on>
+        $t:common.cancel
+      </button>
+      <button data-ref="schedule_bulk_status_submit" type="button" class="btn btn-primary flex-center gap-2" disabled="{{_global.isBulkStatusChanging || !(_global.selectedScheduleIds ?? []).length || !_global.bulkStatusAction}}">
+        <on type="click">
+          <!-- 상태 일괄 변경. 연타는 300ms 로 모아 요청 1회(버튼 disabled 는 첫 클릭의 상태 변경이 그려진 뒤에야 걸린다).
+               진행 깃발은 성공·실패 양쪽에서 풀어야 버튼이 잠긴 채 남지 않는다. -->
+          <sequence :debounce="300">
+            <set-state target="global" :isBulkStatusChanging="true"/>
+            <api-call :auth_required="true" target="/api/admin/schedules/bulk-status" method="PATCH">
+              <success>
+                <set-state target="global" :isBulkStatusChanging="false" :selectedScheduleIds="[]" bulkStatusAction=""/>
+                <refetch-data-source dataSourceId="schedules"/>
+                <toast type="success" message="{{response.message ?? '$t:admin.schedules.messages.bulk_status_updated'}}"/>
+                <close-modal target="schedule_bulk_status_modal"/>
+              </success>
+              <fail>
+                <set-state target="global" :isBulkStatusChanging="false"/>
+                <toast type="error" message="{{error.message ?? '$t:admin.schedules.errors.bulk_status_failed'}}"/>
+              </fail>
+              <body ids="{{_global.selectedScheduleIds}}" is_active="{{_global.bulkStatusAction === 'active'}}"/>
+            </api-call>
+          </sequence>
+        </on>
+        <icon data-if="{{_global.isBulkStatusChanging}}" name="spinner" class="spinner-sm"/>
+        <span>{{_global.isBulkStatusChanging ? '$t:common.processing' : '$t:common.confirm'}}</span>
+      </button>
+    </footer>
+  </modal>
+</partial>

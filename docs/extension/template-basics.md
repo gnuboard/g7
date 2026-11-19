@@ -13,6 +13,7 @@
 3. 필수: template.json, routes.json, components.json
 4. 코어/템플릿 분리: 코어는 엔진, 템플릿은 컴포넌트
 5. 버전 히스토리: Admin만 지원, User는 미지원
+6. template.json `expose`: 엔진이 앱 시작 때 읽는 키를 화면 HTML 에 미리 실어 config API 왕복을 없앤다(선택)
 ```
 
 ---
@@ -42,6 +43,8 @@ G7의 템플릿 시스템은 JSON 기반 레이아웃 정의를 통해 동적으
 - 컴포넌트 재사용성 극대화
 - 다국어 및 권한 기반 렌더링
 
+> 템플릿 엔진을 쓰지 않고 Blade·Twig·HTML+jQuery·외부 프레임워크(Next.js 등)로 화면을 직접 만들려면 템플릿이 아니라 custom 예약 자리를 쓴다 — `routes/custom.php` 에 등록한 주소만 개발자 화면이 그리고 나머지는 템플릿이 그대로 그린다(7.2.0+). [개발자 화면 가이드](../custom-development.md)
+
 ---
 
 ## 확장 컴포넌트 오버라이드
@@ -53,6 +56,8 @@ G7의 템플릿 시스템은 JSON 기반 레이아웃 정의를 통해 동적으
 이 대체 권한은 템플릿에만 있다. 반대 방향(확장이 템플릿 컴포넌트를 대체)은 열려 있지 않다.
 
 규약 전문: **[extension-components.md](extension-components.md)**
+
+확장 화면의 **스타일**은 확장이 자기 CSS 로 싣는다. 템플릿이 그 모양을 바꾸려면 같은 관례(대상·허용 버전 선언, 맞지 않으면 원본으로 폴백)의 확장 CSS 덮기 파일을 둔다 — 아래 [확장 CSS 덮기 파일](#확장-css-덮기-파일-extension_css_overrides).
 
 ## 템플릿 타입
 
@@ -238,7 +243,8 @@ public function restoreVersion(int $layoutId, int $version): TemplateLayout
   "features": {
     "responsive": true,
     "darkMode": true,
-    "rtl": false
+    "rtl": false,
+    "color_scheme": { "strategy": "ancestor-class", "selector": ".dark" }
   },
   "assets": {
     "css": ["dist/bundle.css"],
@@ -330,6 +336,8 @@ CHANGELOG 에 적습니다.
 
 활성 템플릿의 선언만 반영됩니다 — 템플릿을 바꾸면 이전 템플릿이 선언한 키는 목록에서 빠집니다.
 
+코어 엔진이 쓰는 필수 키는 템플릿 선언과 별도로 `App\Support\CoreNecessaryStorage::keys()` 가 같은 형식(저장소 종류 → 키 목록)으로 돌려줍니다(7.1.5~, 지금은 비회원 최근 검색어 `localStorage` 의 `g7_search_history` 하나). 동의 플러그인은 이 목록도 필수 저장 허용 목록에 합칩니다(번들 `sirsoft-gdpr` 1.1.4~). 템플릿이 같은 키를 다시 선언할 필요는 없고, 운영자가 지울 수 없는 코어 선언이라 동의 플러그인 설정의 목록에는 나오지 않습니다.
+
 ### 외부 리소스 (externals)
 
 `externals`는 admin/user 템플릿에 공통 적용되는 선택 필드입니다. 최초 HTML 문서에 정적으로 필요한 스타일, 웹폰트, 스크립트, 리소스 힌트를 선언합니다. `external_styles`는 사용하지 않습니다.
@@ -381,9 +389,57 @@ CHANGELOG 에 적습니다.
 
 세 경로 모두 **같은 출처 정책**을 받습니다 — same-origin 경로이거나 확장이 manifest(`trusted_script_hosts`)로 선언한 신뢰 호스트여야 합니다. 상세: [module-assets.md](module-assets.md#trusted_script_hosts--외부-스크립트-신뢰-호스트) · [frontend/security.md](../frontend/security.md#외부-스크립트-신뢰-출처-허용목록)
 
+### 다크 모드 방식 (`features.color_scheme`)
+
+확장 화면은 확장이 자기 CSS 로 그리는데, 확장은 템플릿이 다크 모드를 어떻게 켜는지 모릅니다. 그래서 템플릿이 자기 다크 방식을 선언하면 코어가 그 방식에 맞춰 `<html data-g7-color-scheme="dark">`(또는 `"light"`)라는 **중립 표식**을 달고, 확장 CSS 는 이 표식만 봅니다(7.2.0+).
+
+| 선언 | 뜻 | 표식이 dark 가 되는 때 |
+| --- | --- | --- |
+| `{ "strategy": "ancestor-class", "selector": ".dark" }` | 템플릿이 루트 요소의 클래스로 다크를 켠다 | `<html>` 또는 `<body>` 가 `selector` 에 맞을 때. 클래스가 바뀌면 바로 따라간다 |
+| `{ "strategy": "media-query" }` | 시스템 설정을 따른다 | `prefers-color-scheme: dark` 일 때. 시스템 설정이 바뀌면 따라간다 |
+| `{ "strategy": "none" }` | 다크 모드가 없다 | 없음 — 늘 `light` |
+
+```json
+"features": {
+    "color_scheme": { "strategy": "ancestor-class", "selector": ".dark" }
+}
+```
+
+- 선언하지 않으면 `none` 으로 봅니다. 다크 모드가 있는 템플릿이 선언을 빠뜨리면 확장 화면만 늘 라이트로 그려집니다.
+- `strategy` 가 세 값 밖이거나 `ancestor-class` 에 `selector` 가 없으면 **템플릿 검증 오류**입니다 — 필수 필드가 빠진 것과 같이 그 템플릿을 불러오지 않고 오류 로그를 남깁니다.
+- 번들 템플릿: `sirsoft-basic`·`sirsoft-admin_basic` 은 `ancestor-class` + `.dark`, 학습용 `gnuboard7-hello_user_template`·`gnuboard7-hello_admin_template` 은 `none`.
+- 템플릿 자기 CSS 는 이 선언과 무관하게 종전 방식(예: Tailwind `dark:`)을 그대로 씁니다. 표식은 확장 CSS 를 위한 것입니다 — [dark-mode.md](../frontend/dark-mode.md#확장은-중립-표식을-쓴다).
+- `features.dark_mode`(불리언)는 표식을 만들지 않습니다. 다크 방식은 `color_scheme` 으로만 선언합니다.
+- 레이아웃 편집기 프리뷰의 다크 치환(`editor-spec.json` 의 `darkMode`)은 별개 선언이며 그대로 둡니다.
+
+### 확장 CSS 덮기 파일 (`extension_css_overrides`)
+
+템플릿은 확장(모듈·플러그인) 화면의 스타일을 확장 CSS 를 고치지 않고 자기 모양으로 바꿀 수 있습니다. 확장별 CSS 파일을 만들어 대상과 허용 버전을 선언합니다(7.2.0+).
+
+```json
+"extension_css_overrides": [
+    {
+        "target": "gnuboard7-hello_module",
+        "targetVersion": "^0.3",
+        "path": "dist/css/overrides/gnuboard7-hello_module.css"
+    }
+]
+```
+
+| 필드 | 필수 | 뜻 |
+| --- | --- | --- |
+| `target` | 필수 | 덮을 확장 식별자 |
+| `targetVersion` | 선택 | 대상 확장의 허용 버전 제약(Semver). 미선언이면 무제한 |
+| `path` | 필수 | 템플릿 빌드 산출물 경로 — `dist/` 아래, `..` 금지. 원본은 `src/styles/overrides/<확장식별자>.css` 에 두는 것이 관례 |
+
+- 대상이 활성이고 버전이 맞을 때만 화면에 실립니다. 버전이 맞지 않으면 빠지고(정보 로그) 화면은 확장 원래 모양이며, 대상이 꺼져 있거나 설치되지 않았으면 조용히 빠집니다.
+- 모든 확장 CSS 뒤, 운영자 추가 자산(`custom/`) 앞에 실립니다. 검색엔진용 화면도 같은 순서입니다.
+- 배열이 아니거나, 항목에 `target`·`dist/` 아래 `path` 가 없거나, `targetVersion` 을 해석할 수 없거나, 같은 `target` 을 두 번 선언하면 **템플릿 검증 오류**입니다(위 `features.color_scheme` 과 같은 처리).
+- 덮기 파일에는 대상 확장의 클래스만 씁니다. 판정·로드 순서·서빙 가공의 전문: [module-assets.md 「템플릿 확장 CSS 덮기」](module-assets.md#템플릿-확장-css-덮기)
+
 ### 뒤로가기·새로고침 스크롤 기본값 (scroll_restoration) — engine-v1.85.0+
 
-뒤로/앞으로 가기·새로고침으로 화면에 돌아왔을 때의 스크롤 동작을 템플릿 전체에 거는 **선택 필드**입니다. 사용자·관리자 템플릿 모두 씁니다. 엔진은 앱 시작 때 `/api/templates/{identifier}/config.json`(이 파일을 그대로 내보낸다)으로 읽어 엔진 기본값 위에 깝니다.
+뒤로/앞으로 가기·새로고침으로 화면에 돌아왔을 때의 스크롤 동작을 템플릿 전체에 거는 **선택 필드**입니다. 사용자·관리자 템플릿 모두 씁니다. 엔진은 앱 시작 때 `/api/templates/{identifier}/config.json`(이 파일을 그대로 내보낸다)으로 읽어 엔진 기본값 위에 깝니다. `expose` 에 선언하면 API 대신 화면 HTML 에 실린 값을 씁니다([첫 화면에 미리 싣는 키](#첫-화면에-미리-싣는-키-expose--engine-v1960)).
 
 ```json
 "scroll_restoration": {
@@ -408,6 +464,20 @@ CHANGELOG 에 적습니다.
 
 운영자가 사이트에 맞게 고치는 값은 `template.json` 이 아니라 베이스 레이아웃에 둡니다 — `template.json` 은 업데이트 때 덮이고 쓰기 화면이 없습니다.
 
+### 첫 화면에 미리 싣는 키 (expose) — engine-v1.96.0+
+
+엔진은 앱을 시작할 때 template.json 의 몇 가지 값(`scroll_restoration`·`errorHandling`·`error_config`)을 읽습니다. 종전에는 이 값을 받으려고 첫 화면 전에 `/api/templates/{identifier}/config.json` 을 한 번 불렀습니다. 서버 왕복 한 번이 첫 화면을 그만큼 늦춥니다. 최상위 `expose` 에 키 이름을 적으면 서버가 그 키의 값만 화면 HTML(`G7Config.templateConfig`)에 함께 실어 보내고, 엔진은 API 를 부르지 않습니다.
+
+```json
+"expose": ["scroll_restoration", "errorHandling", "error_config"]
+```
+
+- **형식**: 최상위 키 이름의 배열입니다(선택 필드). 문자열이 아닌 항목, `a.b` 처럼 최상위 키 이름 모양이 아닌 항목, 예약 이름(`expose`·`cache_version`)은 무시합니다. 선언했는데 template.json 에 없는 키는 `null`(값 없음)로 실립니다.
+- **엔진의 판단**: 엔진은 키 단위로 봅니다. 앱 시작이 읽는 `scroll_restoration`·`errorHandling` 이 모두 실려 있으면(값이 `null` 이어도) API 를 부르지 않습니다. 하나라도 빠지면 API 를 한 번 불러 그 값을 씁니다 — 선언을 빠뜨려도 값을 잃지 않습니다. 오류 화면은 `error_config` 가 실려 있을 때만 API 를 건너뜁니다.
+- **하위 호환**: `expose` 가 없는 템플릿은 아무것도 싣지 않고, 엔진이 종전처럼 API 를 부릅니다. 이 필드를 모르는 이전 코어는 무시합니다. 레이아웃 편집기와 확장 상태 갱신은 최신 값을 확인하려고 계속 API 를 씁니다.
+- **공개 값**: 실린 값은 누구나 페이지 소스에서 볼 수 있습니다. config API 도 로그인 없이 template.json 을 그대로 돌려주므로 새로 드러나는 값은 아니지만, HTML 에는 선언한 키만 싣습니다. 비밀 값(키·토큰·내부 주소)은 template.json 에 두지 않습니다.
+- **설치·업데이트 경고**: `expose` 를 선언한 템플릿에서, `expose` 가 배열이 아니거나 위 세 키가 template.json 에 있는데 `expose` 에 없으면 설치·업데이트 결과에 경고가 나옵니다(설치는 그대로 됩니다). `expose` 를 아예 쓰지 않는 템플릿은 경고하지 않습니다.
+
 ---
 
 ## 에러 페이지 설정 (error_config)
@@ -426,6 +496,29 @@ CHANGELOG 에 적습니다.
       "404": "404",
       "403": "403",
       "500": "500"
+    }
+  }
+}
+```
+
+### 코드 레이아웃이 없을 때의 대체 (engine-v1.95.0)
+
+`showErrorPage` 나 화면 처리가 부른 오류 코드에 맞는 레이아웃이 `layouts` 에 없으면 엔진은 다음 순서로 대신 그리고 경고 로그를 남긴다.
+
+1. 그 코드의 레이아웃 (`layouts["400"]` 등)
+2. 공통 오류 레이아웃 `layouts.default` (선택 키) — 코드별 레이아웃을 다 두지 않는 템플릿이 쓴다. 레이아웃은 `{{errorCode}}` 로 코드를 받는다
+3. 엔진 내장 오류 화면 — 템플릿 레이아웃 없이 「페이지 로딩 실패 (코드)」 와 새로고침 단추를 그린다(`error_config` 자체가 없을 때도 같다)
+
+다른 코드의 레이아웃(예: 500)으로 대신하지 않는다 — 오류 레이아웃은 코드와 문구를 박아 두는 경우가 많아(「500 서버 오류」) 다른 코드를 잘못 알린다. 종전에는 아무것도 그리지 않고 끝나 화면이 오류 전 모습으로 남았다.
+
+```json
+{
+  "error_config": {
+    "layouts": {
+      "404": "errors/404",
+      "403": "errors/403",
+      "500": "errors/500",
+      "default": "errors/default"
     }
   }
 }
@@ -828,3 +921,4 @@ SEO 페이지 생성기가 컴포넌트를 HTML로 변환할 때 사용하는 �
 - [template-caching.md](./template-caching.md) - 템플릿 캐싱 전략
 - [template-commands.md](./template-commands.md) - 템플릿 Artisan 커맨드
 - [extension-update-system.md](./extension-update-system.md) - 확장 업데이트 시스템
+- [custom-development.md](../custom-development.md) - 템플릿 엔진 대신 개발자가 직접 만든 화면(custom 예약 자리)

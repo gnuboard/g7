@@ -27,6 +27,7 @@ class PrivacyManualRunResource extends BaseApiResource
     {
         /** @var PrivacyManualRun $run */
         $run = $this->resource;
+        $requester = $this->memberNameFields($run->requester, $request);
 
         return [
             'id' => $run->id,
@@ -40,7 +41,9 @@ class PrivacyManualRunResource extends BaseApiResource
             'mode' => $run->mode,
             // 코어가 붙인 사유는 번역 키로 저장돼 있다 — 보는 관리자의 언어로 푼다.
             'error' => PrivacyManualRunService::displayError($run->error),
-            'requester_name' => $run->requester?->name,
+            // 접수자는 관리자 영역의 표시 이름. 실명은 회원 조회 권한이 있는 관리자에게만 requester_real_name 으로 더해진다.
+            'requester_name' => $requester['name'],
+            ...(isset($requester['real_name']) ? ['requester_real_name' => $requester['real_name']] : []),
             'queued_at' => $this->formatDateTimeStringForUser($run->queued_at),
             'started_at' => $this->formatDateTimeStringForUser($run->started_at),
             'finished_at' => $this->formatDateTimeStringForUser($run->finished_at),

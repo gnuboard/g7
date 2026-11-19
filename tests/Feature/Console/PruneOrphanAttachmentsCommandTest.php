@@ -6,8 +6,10 @@ use App\Enums\AttachmentSourceType;
 use App\Extension\Storage\CoreStorageDriver;
 use App\Models\Attachment;
 use App\Services\AttachmentService;
+use App\Support\ExtensionStoragePath;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\File;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -21,6 +23,11 @@ class PruneOrphanAttachmentsCommandTest extends TestCase
 {
     use RefreshDatabase;
 
+    /**
+     * 테스트 환경을 준비합니다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -28,6 +35,20 @@ class PruneOrphanAttachmentsCommandTest extends TestCase
         // 개발 환경 설정 파일에 실제 사이트 로고가 남아 있으면 그 ID 가 보호 목록에 실려
         // 같은 ID 로 생성된 픽스처까지 보호된다. 보호 목록은 각 테스트가 명시적으로 정한다.
         Config::set('g7_settings.core.general.site_logo', []);
+        Config::set('g7_settings.core.general.site_favicon', []);
+        Config::set('g7_settings.core.seo.og_image_default', []);
+    }
+
+    /**
+     * 테스트가 만든 템플릿 설정 파일을 지웁니다(테스트 저장 루트는 운영과 격리돼 있다).
+     *
+     * @return void 반환값 없음
+     */
+    protected function tearDown(): void
+    {
+        File::deleteDirectory(ExtensionStoragePath::template('qa434-prune'));
+
+        parent::tearDown();
     }
 
     /**
@@ -66,7 +87,11 @@ class PruneOrphanAttachmentsCommandTest extends TestCase
     }
 
     /**
+     * 자동 정리 토글이 꺼져 있으면(기본) 예약 실행은 아무것도 지우지 않는다.
+     *
      * @effects core_orphan_prune_gate_off_by_default
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function scheduled_run_deletes_nothing_when_the_toggle_is_off(): void
@@ -79,7 +104,11 @@ class PruneOrphanAttachmentsCommandTest extends TestCase
     }
 
     /**
+     * 자동 정리 토글을 켜면 예약 실행이 보존기간이 지난 고아를 지운다.
+     *
      * @effects core_orphan_prune_gate_on
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function scheduled_run_prunes_when_the_toggle_is_on(): void
@@ -100,6 +129,8 @@ class PruneOrphanAttachmentsCommandTest extends TestCase
      * @scenario age=past_retention, owner_state=has_owner, protected=not_protected, source_owner=core
      *
      * @effects core_orphan_prune_skips_owned
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function attachment_with_an_owner_is_never_pruned(): void
@@ -120,6 +151,8 @@ class PruneOrphanAttachmentsCommandTest extends TestCase
      * @scenario age=past_retention, owner_state=no_owner, protected=not_protected, source_owner=extension
      *
      * @effects core_orphan_prune_skips_extension_owned
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function attachment_owned_by_an_extension_is_never_pruned(): void
@@ -140,6 +173,8 @@ class PruneOrphanAttachmentsCommandTest extends TestCase
      * @scenario age=past_retention, owner_state=no_owner, protected=current_site_logo, source_owner=core
      *
      * @effects core_orphan_prune_protects_site_logo
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function the_current_site_logo_is_protected(): void
@@ -164,6 +199,8 @@ class PruneOrphanAttachmentsCommandTest extends TestCase
      * @scenario age=past_retention, owner_state=no_owner, protected=current_site_logo, source_owner=core
      *
      * @effects core_orphan_prune_protects_site_logo
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function the_site_logo_is_protected_even_when_the_service_is_called_directly(): void
@@ -190,6 +227,8 @@ class PruneOrphanAttachmentsCommandTest extends TestCase
      * @scenario age=past_retention, owner_state=no_owner, protected=not_protected, source_owner=core
      *
      * @effects core_orphan_prune_collects_replaced_site_logo
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function a_replaced_site_logo_is_collected_once_it_leaves_the_setting(): void
@@ -207,9 +246,13 @@ class PruneOrphanAttachmentsCommandTest extends TestCase
     }
 
     /**
+     * 보존기간 안의 첨부는 소유자가 없어도 남긴다(폼 작성 중 유예).
+     *
      * @scenario age=within_retention, owner_state=no_owner, protected=not_protected, source_owner=core
      *
      * @effects core_orphan_prune_keeps_within_retention
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function attachment_within_retention_is_kept(): void
@@ -222,7 +265,11 @@ class PruneOrphanAttachmentsCommandTest extends TestCase
     }
 
     /**
+     * 미리보기 실행은 대상만 세고 지우지 않는다.
+     *
      * @effects core_orphan_prune_dry_run
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function dry_run_reports_targets_without_deleting(): void
@@ -237,9 +284,13 @@ class PruneOrphanAttachmentsCommandTest extends TestCase
     }
 
     /**
+     * 정리는 기록뿐 아니라 저장소의 파일도 지운다.
+     *
      * @scenario age=past_retention, owner_state=no_owner, protected=not_protected, source_owner=core
      *
      * @effects core_orphan_prune_deletes_file
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function pruning_removes_the_physical_file_as_well(): void
@@ -263,6 +314,8 @@ class PruneOrphanAttachmentsCommandTest extends TestCase
      * @scenario age=past_retention, owner_state=no_owner, protected=not_protected, source_owner=core
      *
      * @effects core_orphan_prune_deletes_soft_deleted
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function soft_deleted_orphan_is_purged_too(): void
@@ -278,5 +331,75 @@ class PruneOrphanAttachmentsCommandTest extends TestCase
 
         $this->assertNull(Attachment::withTrashed()->find($attachment->id));
         $this->assertFalse($storage->exists('', $attachment->path));
+    }
+
+    /**
+     * 사이트 기본 공유 이미지(SEO 탭)도 설정이 직접 참조하는 첨부라 보호된다 (#434 결함 ①).
+     *
+     * 보호 목록이 사이트 로고 하나로 손으로 적혀 있어, 뒤에 생긴 같은 모양의 설정(og_image_default)이 빠졌다.
+     *
+     * @scenario age=past_retention, owner_state=no_owner, protected=current_og_image_default, source_owner=core
+     *
+     * @effects core_orphan_prune_protects_declared_attachment_settings
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function the_current_default_og_image_is_protected(): void
+    {
+        $image = $this->makeAttachment(['collection' => 'og_image_default']);
+
+        Config::set('g7_settings.core.seo.og_image_default', [$image->id]);
+
+        $this->artisan('attachments:prune-orphans --days=1')->assertSuccessful();
+
+        $this->assertDatabaseHas('attachments', ['id' => $image->id]);
+    }
+
+    /**
+     * 코어 일반 탭 파비콘도 보호된다 (#434).
+     *
+     * @scenario age=past_retention, owner_state=no_owner, protected=current_site_favicon, source_owner=core
+     *
+     * @effects core_orphan_prune_protects_declared_attachment_settings
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function the_current_site_favicon_is_protected(): void
+    {
+        $favicon = $this->makeAttachment(['collection' => 'site_favicon']);
+
+        Config::set('g7_settings.core.general.site_favicon', [$favicon->id]);
+
+        $this->artisan('attachments:prune-orphans --days=1')->assertSuccessful();
+
+        $this->assertDatabaseHas('attachments', ['id' => $favicon->id]);
+    }
+
+    /**
+     * 템플릿 설정이 참조하는 첨부(템플릿 파비콘)는 보호되고, 템플릿을 지웠어도 설정 파일이 남아 있으면 보호된다 (#434).
+     *
+     * 「데이터도 삭제」를 고르지 않은 삭제는 설정을 남겨 재설치 때 복원한다 — 그 사이에 첨부가 정리되면 복원된 설정이 사라진 첨부를 가리킨다.
+     *
+     * @scenario age=past_retention, owner_state=no_owner, protected=current_template_favicon, source_owner=core
+     *
+     * @effects core_orphan_prune_protects_template_setting_attachments
+     *
+     * @return void 반환값 없음
+     */
+    #[Test]
+    public function template_setting_attachments_are_protected_even_without_the_template(): void
+    {
+        $favicon = $this->makeAttachment(['collection' => 'template_settings.qa434-prune.branding.favicon']);
+        $orphan = $this->makeAttachment();
+
+        File::ensureDirectoryExists(ExtensionStoragePath::template('qa434-prune', 'settings'));
+        File::put(ExtensionStoragePath::template('qa434-prune', 'settings').'/branding.json', json_encode(['favicon' => [$favicon->id], 'accent' => 'blue']));
+
+        $this->artisan('attachments:prune-orphans --days=1')->assertSuccessful();
+
+        $this->assertDatabaseHas('attachments', ['id' => $favicon->id]);
+        $this->assertDatabaseMissing('attachments', ['id' => $orphan->id]);
     }
 }

@@ -94,12 +94,19 @@ effects:
   - condition_builder_preserves_advanced_handwritten_expr
   - spec_undeclared_event_hides_action_slot
   - condition_param_widget_dispatches_via_widget_registry
+  # 브라우저(e2e_files 의 spec)가 재는 효과
+  - visibility_builder_renders
+  - nested_onsuccess_picker_not_empty
+  - action_card_drag_handle_draggable
+  - action_tab_visible_when_events
+  - flex_section_for_container
 test_files:
   - resources/js/core/template-engine/layout-editor/__tests__/spec/actionRecipeEngine.test.ts
   - resources/js/core/template-engine/layout-editor/__tests__/spec/conditionRecipeEngine.test.ts
   - resources/js/core/template-engine/layout-editor/__tests__/spec/flexModel.test.ts
   - resources/js/core/template-engine/layout-editor/__tests__/components/s7-property-controls.test.tsx
   - resources/js/core/template-engine/layout-editor/__tests__/layouts/condition-toggle-render.test.tsx
+  - tests/Playwright/specs/layout-editor/action-flex-condition.spec.ts
 e2e_files:
   - tests/Playwright/specs/layout-editor/action-flex-condition.spec.ts
 notes: |

@@ -101,6 +101,42 @@ class InstallerCliOwnershipTest extends TestCase
     }
 
     /**
+     * 워커 생존 판정은 웹 잠금 획득과 같은 판정(installerActiveWorkerIsAlive)이다 — 워커가 선언한 유효 시간
+     * (`worker_stale_after`)을 존중하고, 미래 시각 심장박동은 stale 로 본다.
+     *
+     * 태스크 실행 중인 웹 워커는 심장박동을 갱신하지 못한다(600초 예산). 15초 고정 판정이면 1분 전 심장박동의
+     * 살아 있는 워커를 죽은 것으로 보고 --takeover 가 그 설치를 가로챈다.
+     *
+     * @effects cli_worker_liveness_follows_shared_judgment
+     *
+     * @return void 반환값 없음
+     */
+    public function test_worker_liveness_follows_the_shared_judgment(): void
+    {
+        $this->writeInstallerState([
+            'owner_hash' => str_repeat('b', 64), 'installation_status' => 'running', 'generation' => 5,
+            'active_worker_id' => 'w-1', 'last_heartbeat' => time() - 60, 'worker_stale_after' => 600,
+        ]);
+
+        $run = $this->runCli(['--output=json', '--no-interaction', '--accept-license', '--takeover']);
+
+        $this->assertSame(5, $run['exit'], '선언한 유효 시간 안의 웹 워커를 넘겨받았다');
+        $this->assertSame('cli_error_web_worker_active', $this->eventsNamed($run['events'], 'error')[0]['message_key'] ?? null);
+
+        $judged = $this->runCliCode(
+            '$now = time();'
+            .'echo "__RESULT__=".json_encode(['
+            .'installer_worker_recently_active(["active_worker_id" => "w", "last_heartbeat" => $now - 60]),'
+            .'installer_worker_recently_active(["active_worker_id" => "w", "last_heartbeat" => $now + 3600]),'
+            .'installer_worker_recently_active(["active_worker_id" => null, "last_heartbeat" => $now]),'
+            .'installer_worker_recently_active(["active_worker_id" => "w", "last_heartbeat" => $now]),'
+            .']);'
+        );
+
+        $this->assertSame([false, false, false, true], $judged['result'], '선언 없는 60초 전·미래 시각·점유자 없음은 stale, 방금 심장박동은 활동 중');
+    }
+
+    /**
      * 넘겨받으면 웹 세션의 비밀(runtime.php)·삭제 확인·설치 계획 서명을 폐기하고 터미널 소유로 각인한다.
      *
      * @effects cli_takeover_discards_web_runtime_and_drop_confirm
@@ -224,6 +260,53 @@ class InstallerCliOwnershipTest extends TestCase
         $this->assertSame(0, $run['exit'], $run['raw']);
         $log = (string) @file_get_contents($this->installerTempBase.'/storage/logs/installation.log');
         $this->assertStringContainsString('The terminal took over the web installation', $log, '넘겨받기 기록이 로그 초기화로 사라졌다');
+    }
+
+    /**
+     * 오래 걸린 단계 뒤에도 터미널 설치는 자기 잠금을 잃지 않는다.
+     *
+     * 설치 상태를 읽는 단일 지점은 「선언 예산을 넘긴 점유자」를 죽은 워커로 보고 실패로 승격한다. 그 판정은
+     * 자기 자신을 제외하는데, 터미널 설치는 잠금을 잡고도 자기 워커 ID 를 알리지 않아 자기 상태 읽기가 자기
+     * 잠금을 지웠다 — 심장박동 없이 15초를 넘긴 단계(템플릿 활성화 등)가 끝나는 순간 「다른 설치 작업이 잠금을
+     * 넘겨받아 이 설치를 멈춥니다」로 끝나고, 그 단계의 완료 표시가 남지 않았다. 알린 워커 ID 는 하위 명령
+     * 실행 직전 점유 시간 연장에도 쓰인다(다른 창의 상태 조회가 살아 있는 터미널 설치를 끊지 않게).
+     *
+     * @effects cli_worker_lock_survives_long_blocking_task
+     *
+     * @return void 반환값 없음
+     */
+    public function test_cli_worker_keeps_its_lock_after_a_long_blocking_task(): void
+    {
+        $this->writeInstallerState(['installation_status' => 'running', 'generation' => 1, 'current_step' => 5, 'owner_kind' => 'cli', 'owner_hash' => str_repeat('c', 64)]);
+
+        // 단계 하나가 심장박동 없이 오래 막힌 것을 시각으로 재현한다 — 잠금을 잡은 지 2분, 마지막 심장박동 1분 전.
+        $prelude = <<<'PHP'
+            function runInstallationTasks(): void {
+                $s = getInstallationState();
+                $GLOBALS['__declared'] = installerCurrentWorkerId();
+                $s['worker_started_at'] = time() - 120;
+                $s['last_heartbeat'] = time() - 60;
+                saveInstallationState($s);
+                getProgressEmitter()->emit('log', ['message' => 'after a long blocking task']);
+                $after = getInstallationState();
+                $GLOBALS['__lock_after'] = $after['active_worker_id'] ?? null;
+                $GLOBALS['__status_after'] = $after['installation_status'] ?? null;
+                $after['installation_status'] = 'failed';
+                saveInstallationState($after);
+            }
+            PHP;
+
+        $run = $this->runCliCode(
+            '$code = g7_cli_execute(new G7CliOutput(true), ["ok" => true, "warning" => null], null, null);'
+            .'echo "__RESULT__=".json_encode(["code" => $code, "declared" => $GLOBALS["__declared"] ?? null, "lock_after" => $GLOBALS["__lock_after"] ?? null, "status_after" => $GLOBALS["__status_after"] ?? null]);',
+            $prelude
+        );
+
+        $this->assertIsArray($run['result'], '잠금을 잃고 종료 5 로 끝났다: '.$run['raw']);
+        $this->assertSame(1, $run['result']['code'], $run['raw']);
+        $this->assertNotNull($run['result']['declared'], '터미널 설치가 자기 워커 ID 를 알리지 않았다');
+        $this->assertSame($run['result']['declared'], $run['result']['lock_after'], '자기 상태 읽기가 자기 잠금을 지웠다');
+        $this->assertSame('running', $run['result']['status_after'], '살아 있는 터미널 설치가 죽은 워커로 승격됐다');
     }
 
     /**

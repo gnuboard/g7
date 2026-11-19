@@ -45,6 +45,11 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
 
     private int $templateId;
 
+    /**
+     * 7.0.11 업그레이드 데이터 마이그레이션 파일을 수동으로 불러와 인스턴스와 업그레이드 컨텍스트를 만들고, 레이아웃이 매달릴 테스트 템플릿 행을 하나 심는다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -72,7 +77,12 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
         ]);
     }
 
-    /** 완전한 4키 이미지 값 객체 */
+    /**
+     * 이미지 위젯이 내보내는 완전한 4키(url, size, repeat, position) 이미지 값 객체를 만든다.
+     *
+     * @param  string  $url  객체에 담을 이미지 주소
+     * @return array<string, string> 4키 이미지 값 객체
+     */
     private function imageValue(string $url = '/api/attachment/X'): array
     {
         return ['url' => $url, 'size' => 'cover', 'repeat' => 'no-repeat', 'position' => 'center'];
@@ -102,12 +112,23 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
         ], $extra));
     }
 
-    /** 저장된 content 를 배열로 되읽는다 */
+    /**
+     * 지정 테이블의 행에 저장된 content JSON 을 배열로 되읽는다.
+     *
+     * @param  int  $id  되읽을 행 id
+     * @param  string  $table  읽을 테이블 이름(기본은 template_layouts)
+     * @return array<string, mixed> 디코드한 content 배열
+     */
     private function readContent(int $id, string $table = 'template_layouts'): array
     {
         return json_decode(DB::table($table)->where('id', $id)->value('content'), true);
     }
 
+    /**
+     * setUp 에서 만든 컨텍스트로 백필 마이그레이션을 한 번 실행한다.
+     *
+     * @return void 반환값 없음
+     */
     private function runMigration(): void
     {
         $this->migration->run($this->context);
@@ -141,7 +162,13 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
 
     // ── ① 기본 축약 ────────────────────────────────────────────────────────
 
-    /** @effects backfill_narrows_prop_slot_objects_in_layouts_and_extensions */
+    /**
+     * Header 의 logo prop 에 들어간 4키 이미지 값 객체가 url 문자열로 축약되고 나머지 props 는 그대로인지 확인한다.
+     *
+     * @effects backfill_narrows_prop_slot_objects_in_layouts_and_extensions
+     *
+     * @return void 반환값 없음
+     */
     public function test_1_prop_slot_image_object_is_narrowed_to_url(): void
     {
         $id = $this->seedLayout([
@@ -157,6 +184,13 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
         $this->assertSame('샘플', $content['components'][0]['props']['siteName'], '나머지 props 는 불변이어야 합니다.');
     }
 
+    /**
+     * 이미 문자열인 logo 값은 바뀌지 않고, 그 행은 content, updated_at, lock_version 모두 UPDATE 되지 않는지 확인한다.
+     *
+     * @effects backfill_strict_predicate_leaves_normal_props_untouched, backfill_is_idempotent_and_performs_no_update_on_unchanged_rows
+     *
+     * @return void 반환값 없음
+     */
     public function test_2_string_value_is_untouched_and_row_is_not_updated(): void
     {
         $id = $this->seedLayout([
@@ -172,6 +206,13 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
         $this->assertSame($before->lock_version, $after->lock_version);
     }
 
+    /**
+     * 바인딩 표현식 문자열 logo 값이 그대로 남고 행의 updated_at 도 바뀌지 않는지 확인한다.
+     *
+     * @effects backfill_strict_predicate_leaves_normal_props_untouched
+     *
+     * @return void 반환값 없음
+     */
     public function test_3_binding_expression_string_is_untouched(): void
     {
         $expr = '{{_global.settings?.general?.site_logo_url}}';
@@ -189,7 +230,13 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
 
     // ── ② style 자리는 대상이 아니다 ───────────────────────────────────────
 
-    /** @effects backfill_excludes_style_slot_where_background_decomposition_lives */
+    /**
+     * style 자리의 background 4속성 맵은 축약 대상이 아니어서 값과 updated_at 이 그대로인지 확인한다.
+     *
+     * @effects backfill_excludes_style_slot_where_background_decomposition_lives
+     *
+     * @return void 반환값 없음
+     */
     public function test_4_style_background_four_props_are_untouched(): void
     {
         $style = [
@@ -209,6 +256,13 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
         $this->assertSame($before->updated_at, DB::table('template_layouts')->where('id', $id)->first()->updated_at);
     }
 
+    /**
+     * style 자리 안에 이미지 값 객체가 손상돼 들어 있어도 백필이 건드리지 않는지 확인한다(그 복구는 엔진 소관).
+     *
+     * @effects backfill_excludes_style_slot_where_background_decomposition_lives
+     *
+     * @return void 반환값 없음
+     */
     public function test_5_corrupted_value_inside_style_slot_is_untouched(): void
     {
         // style 자리의 손상값 복구는 엔진 `sanitizeBgScalar` 소관 — 백필은 건드리지 않는다.
@@ -224,7 +278,13 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
 
     // ── ③ 순회 범위 ────────────────────────────────────────────────────────
 
-    /** @effects backfill_traverses_responsive_branches_nested_nodes_and_injections */
+    /**
+     * responsive.md 분기의 props 에 든 이미지 값 객체도 url 로 축약되는지 확인한다.
+     *
+     * @effects backfill_traverses_responsive_branches_nested_nodes_and_injections
+     *
+     * @return void 반환값 없음
+     */
     public function test_6_responsive_branch_props_are_narrowed(): void
     {
         $id = $this->seedLayout([
@@ -241,6 +301,13 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
         $this->assertSame('/md.png', $this->readContent($id)['components'][0]['responsive']['md']['props']['logo']);
     }
 
+    /**
+     * DataGrid props 안 cardColumns 의 cellChildren 처럼 props 속에 중첩된 노드의 이미지 값 객체도 축약되는지 확인한다.
+     *
+     * @effects backfill_traverses_responsive_branches_nested_nodes_and_injections
+     *
+     * @return void 반환값 없음
+     */
     public function test_7_nested_node_inside_props_is_narrowed(): void
     {
         $id = $this->seedLayout([
@@ -265,6 +332,13 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
         );
     }
 
+    /**
+     * props 속에 중첩된 노드라도 그 style 자리는 여전히 축약 대상에서 빠지는지 확인한다.
+     *
+     * @effects backfill_excludes_style_slot_where_background_decomposition_lives, backfill_traverses_responsive_branches_nested_nodes_and_injections
+     *
+     * @return void 반환값 없음
+     */
     public function test_8_style_inside_nested_node_is_still_excluded(): void
     {
         $style = ['backgroundImage' => 'url(/n.png)', 'backgroundSize' => 'cover'];
@@ -287,7 +361,13 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
 
     // ── ④ 판정식 엄격도 (느슨한 판정식이면 여기서 파괴된다) ───────────────
 
-    /** @effects backfill_strict_predicate_leaves_normal_props_untouched */
+    /**
+     * size 키를 가진 정상 props(className, name, size)가 이미지 값으로 오인되지 않아 값과 updated_at 이 그대로인지 확인한다.
+     *
+     * @effects backfill_strict_predicate_leaves_normal_props_untouched
+     *
+     * @return void 반환값 없음
+     */
     public function test_9_normal_props_with_size_key_are_untouched(): void
     {
         // 실측 674건 패턴. 코어 엔진의 느슨한 판정식(4키 중 하나라도)이면 이 props 가
@@ -302,6 +382,13 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
         $this->assertSame($before->updated_at, DB::table('template_layouts')->where('id', $id)->first()->updated_at);
     }
 
+    /**
+     * position 키를 가진 정상 props 가 이미지 값으로 오인되지 않고 그대로 남는지 확인한다.
+     *
+     * @effects backfill_strict_predicate_leaves_normal_props_untouched
+     *
+     * @return void 반환값 없음
+     */
     public function test_10_normal_props_with_position_key_are_untouched(): void
     {
         // 실측 26건 패턴.
@@ -313,6 +400,13 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
         $this->assertSame($props, $this->readContent($id)['components'][0]['props']);
     }
 
+    /**
+     * url 이 있어도 4키 밖의 키(label)를 함께 가진 객체는 이미지 값이 아니므로 그대로 남는지 확인한다.
+     *
+     * @effects backfill_strict_predicate_leaves_normal_props_untouched
+     *
+     * @return void 반환값 없음
+     */
     public function test_11_object_with_key_outside_the_four_is_untouched(): void
     {
         $value = ['url' => '/x', 'label' => 'y'];
@@ -323,6 +417,13 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
         $this->assertSame($value, $this->readContent($id)['components'][0]['props']['foo']);
     }
 
+    /**
+     * url 키 없이 size, repeat, position 만 가진 객체는 정상 props 와 구분할 수 없으므로 건드리지 않는지 확인한다.
+     *
+     * @effects backfill_strict_predicate_leaves_normal_props_untouched
+     *
+     * @return void 반환값 없음
+     */
     public function test_14_image_object_without_url_key_is_untouched(): void
     {
         // `{size,repeat,position}` 은 정상 props 와 정적으로 구분 불가 — 건드리면 오탐.
@@ -334,6 +435,13 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
         $this->assertSame($value, $this->readContent($id)['components'][0]['props']['bg']);
     }
 
+    /**
+     * url prop 을 받는 컴포넌트의 props 맵 자신이 4키 부분집합 형태여도 값으로 평가되지 않아 통째로 문자열로 붕괴하지 않는지 확인한다.
+     *
+     * @effects backfill_strict_predicate_leaves_normal_props_untouched
+     *
+     * @return void 반환값 없음
+     */
     public function test_27_props_container_itself_is_never_treated_as_an_image_value(): void
     {
         // `props` 는 값이 아니라 **컨테이너**다. `url` prop 을 받는 컴포넌트(임베드·영상 등)는
@@ -347,6 +455,13 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
         $this->assertSame($props, $this->readContent($id)['components'][0]['props']);
     }
 
+    /**
+     * props 맵 자신의 url 이 손상값이어도 손상 url 분기로 가서 props 키가 제거되지 않는지 확인한다.
+     *
+     * @effects backfill_strict_predicate_leaves_normal_props_untouched
+     *
+     * @return void 반환값 없음
+     */
     public function test_28_props_container_with_corrupted_url_is_never_dropped(): void
     {
         // 같은 오인이 손상 url 분기로 가면 props 키 자체가 unset 되어 노드가 빈 껍데기가 된다.
@@ -360,6 +475,13 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
         $this->assertSame($props, $node['props']);
     }
 
+    /**
+     * props 안의 style 컨테이너가 url, position 을 가져도 이미지 값으로 평가되지 않고 그대로인지 확인한다.
+     *
+     * @effects backfill_excludes_style_slot_where_background_decomposition_lives
+     *
+     * @return void 반환값 없음
+     */
     public function test_29_style_container_itself_is_never_treated_as_an_image_value(): void
     {
         // `style` 도 같은 컨테이너 키다 — prop 자리 안에 있어도 값으로 평가하지 않는다.
@@ -373,7 +495,13 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
 
     // ── ⑤ 손상 url ─────────────────────────────────────────────────────────
 
-    /** @effects backfill_drops_prop_key_on_corrupted_url_with_warning_log */
+    /**
+     * url 이 빈 문자열인 이미지 값 객체는 prop 키째 제거되고, 행 id, JSON 경로, 원본 값을 담은 warning 로그가 한 번 남는지 확인한다.
+     *
+     * @effects backfill_drops_prop_key_on_corrupted_url_with_warning_log
+     *
+     * @return void 반환값 없음
+     */
     public function test_12_empty_url_drops_the_prop_key(): void
     {
         $id = $this->seedLayout([
@@ -394,6 +522,13 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
             ->once();
     }
 
+    /**
+     * url 이 문자열이 아닌 이미지 값 객체도 prop 키째 제거되고, 원본 값을 담은 warning 로그가 한 번 남는지 확인한다.
+     *
+     * @effects backfill_drops_prop_key_on_corrupted_url_with_warning_log
+     *
+     * @return void 반환값 없음
+     */
     public function test_13_non_string_url_drops_the_prop_key(): void
     {
         $id = $this->seedLayout([
@@ -439,6 +574,13 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
         ]);
     }
 
+    /**
+     * 확장 레이아웃 injections 안 components 의 props 에 든 이미지 값 객체가 축약되는지 확인한다.
+     *
+     * @effects backfill_narrows_prop_slot_objects_in_layouts_and_extensions
+     *
+     * @return void 반환값 없음
+     */
     public function test_15_extension_injection_component_props_are_narrowed(): void
     {
         $id = $this->seedExtension([
@@ -453,6 +595,13 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
         $this->assertSame('/ext.png', $content['injections'][0]['components'][0]['props']['logo']);
     }
 
+    /**
+     * 확장 레이아웃 injections 항목의 props 슬롯에 직접 든 이미지 값 객체가 축약되는지 확인한다.
+     *
+     * @effects backfill_narrows_prop_slot_objects_in_layouts_and_extensions
+     *
+     * @return void 반환값 없음
+     */
     public function test_16_extension_inject_props_slot_is_narrowed(): void
     {
         $id = $this->seedExtension([
@@ -465,7 +614,13 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
         $this->assertSame('/inject.png', $content['injections'][0]['props']['logo']);
     }
 
-    /** @effects backfill_traverses_modals_in_both_list_and_map_shape */
+    /**
+     * modals 가 목록 형태든 이름 키 맵 형태든 그 안 컴포넌트 props 의 이미지 값 객체가 모두 축약되는지 확인한다.
+     *
+     * @effects backfill_traverses_modals_in_both_list_and_map_shape
+     *
+     * @return void 반환값 없음
+     */
     public function test_17_modals_in_both_list_and_map_shape_are_narrowed(): void
     {
         $listId = $this->seedLayout([
@@ -490,7 +645,13 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
 
     // ── ⑦ 안전성 ───────────────────────────────────────────────────────────
 
-    /** @effects backfill_is_idempotent_and_performs_no_update_on_unchanged_rows */
+    /**
+     * 백필을 두 번 돌려도 2회차에는 content, lock_version, updated_at 이 바뀌지 않는지(멱등, 무변경 UPDATE 없음) 확인한다.
+     *
+     * @effects backfill_is_idempotent_and_performs_no_update_on_unchanged_rows
+     *
+     * @return void 반환값 없음
+     */
     public function test_18_second_run_is_idempotent_and_performs_no_update(): void
     {
         $id = $this->seedLayout([
@@ -508,7 +669,13 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
         $this->assertSame($afterFirst->updated_at, $afterSecond->updated_at);
     }
 
-    /** @effects backfill_increments_lock_version_only_on_changed_rows */
+    /**
+     * 바뀐 행만 lock_version 이 1 오르고 바뀌지 않은 행은 그대로인지 확인한다.
+     *
+     * @effects backfill_increments_lock_version_only_on_changed_rows
+     *
+     * @return void 반환값 없음
+     */
     public function test_19_lock_version_is_incremented_only_on_changed_rows(): void
     {
         $dirty = $this->seedLayout(
@@ -526,7 +693,13 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
         $this->assertSame(3, (int) DB::table('template_layouts')->where('id', $clean)->value('lock_version'));
     }
 
-    /** @effects backfill_preserves_original_content_hash_so_modified_judgement_holds */
+    /**
+     * 백필 뒤에도 original_content_hash 와 original_content_size 가 재계산되지 않아 수정됨 판정이 유지되는지 확인한다.
+     *
+     * @effects backfill_preserves_original_content_hash_so_modified_judgement_holds
+     *
+     * @return void 반환값 없음
+     */
     public function test_20_original_content_hash_is_preserved(): void
     {
         $id = $this->seedLayout(
@@ -543,7 +716,13 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
         $this->assertNotSame(hash('sha256', $row->content), $row->original_content_hash);
     }
 
-    /** @effects backfill_uses_keyset_chunking_so_no_row_is_skipped_past_the_boundary */
+    /**
+     * 청크 크기를 넘는 250행을 시드해 청크 경계 뒤의 행까지 하나도 빠짐없이 축약되는지 확인한다.
+     *
+     * @effects backfill_uses_keyset_chunking_so_no_row_is_skipped_past_the_boundary
+     *
+     * @return void 반환값 없음
+     */
     public function test_21_all_rows_are_converted_beyond_the_chunk_boundary(): void
     {
         $ids = [];
@@ -569,7 +748,13 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
         $this->assertSame(0, $remaining, 'OFFSET 순회면 청크 경계 이후 행이 조용히 누락된다 (chunkById 필요).');
     }
 
-    /** @effects backfill_skips_broken_json_rows_without_aborting_the_run */
+    /**
+     * JSON 이 깨진 행은 그대로 두고 건너뛰되 실행은 계속돼 다른 행이 축약되고, 건너뛴 행 id 가 warning 로그에 남는지 확인한다.
+     *
+     * @effects backfill_skips_broken_json_rows_without_aborting_the_run
+     *
+     * @return void 반환값 없음
+     */
     public function test_22_broken_json_row_is_skipped_without_aborting_the_run(): void
     {
         $broken = $this->seedLayout(['components' => []]);
@@ -589,7 +774,13 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
             ->atLeast()->once();
     }
 
-    /** @effects backfill_leaves_version_and_preview_snapshots_untouched */
+    /**
+     * template_layout_versions 와 template_layout_previews 의 스냅샷 content 는 이미지 값 객체가 있어도 백필이 건드리지 않는지 확인한다.
+     *
+     * @effects backfill_leaves_version_and_preview_snapshots_untouched
+     *
+     * @return void 반환값 없음
+     */
     public function test_23_version_and_preview_snapshots_are_untouched(): void
     {
         $layoutId = $this->seedLayout(['components' => []]);
@@ -629,7 +820,13 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
         );
     }
 
-    /** @effects backfill_converts_soft_deleted_rows_for_restore_safety */
+    /**
+     * 소프트 삭제된 레이아웃도 복원 시 결함이 되살아나지 않도록 함께 축약되는지 확인한다.
+     *
+     * @effects backfill_converts_soft_deleted_rows_for_restore_safety
+     *
+     * @return void 반환값 없음
+     */
     public function test_24_soft_deleted_rows_are_converted(): void
     {
         $id = $this->seedLayout(
@@ -646,6 +843,13 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
         );
     }
 
+    /**
+     * 존재하지 않는 테이블명으로 processTable 을 직접 태워 Schema::hasTable 게이트가 예외 없이 건너뛰는지 확인한다.
+     *
+     * @effects backfill_skips_missing_table_without_error
+     *
+     * @return void 반환값 없음
+     */
     public function test_25_missing_table_is_skipped_without_error(): void
     {
         // 실제 `Schema::drop` 은 쓰지 않는다 — 이 테이블은 versions 테이블의 FK 대상이라
@@ -665,6 +869,13 @@ class Upgrade7011ImageObjectPropBackfillTest extends TestCase
 
     // ── ⑧ 변환 함수 직접 호출 (DB 없이 판정식만) ──────────────────────────
 
+    /**
+     * transform 을 DB 없이 직접 호출해 축약, style 자리 불변, 정상 props 불변 세 경우가 DB 경로와 같은 결과와 변경 수를 내는지 확인한다.
+     *
+     * @effects backfill_transform_is_callable_directly_and_matches_the_db_path
+     *
+     * @return void 반환값 없음
+     */
     public function test_26_transform_is_callable_directly_and_matches_db_path_results(): void
     {
         $ref = new ReflectionClass($this->migration);

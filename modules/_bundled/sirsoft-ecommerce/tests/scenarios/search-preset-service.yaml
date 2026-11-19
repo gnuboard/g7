@@ -1,0 +1,35 @@
+feature: 검색 프리셋 서비스 (목록, 생성, 수정, 삭제, 소유자 검사, 훅)
+
+description: |
+  SearchPresetService 는 로그인 사용자의 프리셋만 다룬다. 목록은 사용자와 대상 화면으로 조회하고,
+  생성은 사용자 ID, 대상 화면, 이름, 조건을 저장소에 넘긴다. 수정과 삭제는 프리셋 소유자가 아니면
+  UnauthorizedPresetAccessException 을 던진다. 생성과 수정은 before, filter, after 훅을,
+  삭제는 before, after 훅을 발행한다.
+
+axes:
+  case:
+    - list
+    - create
+    - create_hooks
+    - update
+    - update_hooks
+    - update_other_user    # 다른 사용자의 프리셋 수정 시도
+    - delete
+    - delete_hooks
+    - delete_other_user    # 다른 사용자의 프리셋 삭제 시도
+
+effects:
+  - search_preset_list_scoped_to_user_and_screen               # 로그인 사용자와 대상 화면으로 조회
+  - search_preset_create_stores_owner_screen_name_conditions   # 사용자 ID, 화면, 이름, 조건을 저장소에 전달
+  - search_preset_create_fires_before_filter_after_hooks       # before_create, filter_create_data, after_create 발행
+  - search_preset_update_returns_updated_preset                # 본인 프리셋 수정 결과 반환
+  - search_preset_update_fires_before_filter_after_hooks       # before_update, filter_update_data, after_update 발행
+  - search_preset_update_rejected_for_other_user               # 남의 프리셋 수정은 예외
+  - search_preset_delete_removes_own_preset                    # 본인 프리셋 삭제
+  - search_preset_delete_fires_before_after_hooks              # before_delete, after_delete 발행
+  - search_preset_delete_rejected_for_other_user               # 남의 프리셋 삭제는 예외
+
+# E2E axis 없음: 저장소를 모의한 서비스 단위 판정이고 레이아웃 JSON, 컴포넌트 변경이 없다.
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/SearchPresetServiceTest.php

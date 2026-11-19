@@ -7,6 +7,8 @@ description: |
   레이아웃 잠금 시험은 click 이동 navigate 노드가 `<a href>` 인지, rowActions·탭·페이지 번호가 주소를 갖는지 잠근다.
   쿼리를 합치는 링크(`mergeQuery`·`pageHrefMergeQuery`·`hrefMergeQuery`·`itemHrefMergeQuery`)는 같은 화면에서 쿼리만 바꾸는
   `navigate replace` 뒤에도 새 쿼리를 합친 href 로 다시 그려진다(엔진 `subscribeLocationSearch` 구독, props 가 같아도).
+  하위 폴더 설치(`G7Config.basePath`)에서는 그리는 href 의 루트 상대 경로에 사이트 마운트 접두사를 붙인다(`sitePath()`, #609 D2) —
+  새 탭·링크 복사가 사이트 밖(404)으로 가지 않게. 보통 클릭의 SPA 이동 값은 접두사 없는 앱 경로 그대로다.
 
 axes:
   component: [a, admin_sidebar, user_profile, notification_center, dropdown_menu_item, data_grid, action_menu, pagination, tab_navigation, card_grid, extension_card_grid, page_header, layout_lock, code_workspace, button_styles, breadcrumb, sortable_menu_list, file_tree, dropdown_button]
@@ -30,11 +32,13 @@ effects:
   - code_workspace_leave_guard_confirms_plain_link_click
   - code_workspace_leave_guard_passes_modified_link_click
   - code_workspace_leave_guard_passes_target_blank_link
+  - href_has_site_mount_prefix
 
 test_files:
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/NavigationLinks.test.tsx
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/NavigationLinks.menus.test.tsx
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/NavigationLinks.locationSync.test.tsx
+  - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/NavigationLinks.basePath.test.tsx
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/navigation-links.test.ts
   - templates/_bundled/sirsoft-admin_basic/__tests__/layouts/admin-base-notification-new-tab-read.test.ts
   - templates/_bundled/sirsoft-admin_basic/src/components/composite/__tests__/CodeWorkspace.leaveGuard.test.tsx

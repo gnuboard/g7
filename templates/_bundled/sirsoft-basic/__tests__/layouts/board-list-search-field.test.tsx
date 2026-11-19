@@ -103,17 +103,26 @@ describe('게시판 목록 검색 구분 (#524 WP-B)', () => {
      *
      * 모집단은 세 조각 파일에서 **직접 뽑는다**(손으로 적지 않는다). 조각이 늘거나 새 반응형
      * 클래스가 들어오면 그만큼 자동으로 검사 대상이 된다.
+     *
+     * 화면 폭 분기는 Tailwind 반응형 접두(`sm:` 등) 대신 엔진 `responsive` 로 적는다. 그래서
+     * 「특정 폭에서만 붙는 클래스」 는 `responsive.<구간>.props.className` 에 있는 토큰이다.
      */
-    const RESPONSIVE_PREFIX = /^(sm|md|lg|xl|2xl):/;
+    const TAILWIND_BREAKPOINT_PREFIX = /^(sm|md|lg|xl|2xl|max-[a-z0-9]+|min-\[[^\]]+\]|max-\[[^\]]+\]):/;
 
     /**
      * 이 검사가 만들어지기 전부터 빠져 있던 것들. #524 가 들인 것이 아니라(diff 에 없다) 고치면
      * 이 계획이 건드리지 않은 자리의 모양이 바뀌므로, 사유를 적어 두고 별건으로 남긴다.
      * 여기에 새 이름을 더하는 것은 «검사를 통과시키려는 것» 이므로 하지 않는다.
+     * (`min-w-48` 은 반응형 접두를 걷기 전 `sm:min-w-48` 로 적혀 있던 그 자리다.)
      */
-    const PRE_EXISTING_GAPS = new Set(['sm:min-w-48', 'sm:w-64']);
+    const PRE_EXISTING_GAPS = new Set(['min-w-48']);
 
-    /** 조각 `.json` 들이 쓰는 정적 className 토큰 전량. 식(`{{…}}`)은 건너뛴다. */
+    /** 정적 className 토큰(식 `{{…}}` 은 건너뛴다). */
+    function staticTokens(cls: unknown): string[] {
+        return typeof cls === 'string' && !cls.includes('{{') ? cls.split(/\s+/).filter(Boolean) : [];
+    }
+
+    /** 조각 `.json` 들의 `responsive` 구간 className 토큰 전량. */
     function responsiveClassTokens(): string[] {
         const found = new Set<string>();
         const visit = (value: any): void => {
@@ -122,11 +131,29 @@ describe('게시판 목록 검색 구분 (#524 WP-B)', () => {
                 value.forEach(visit);
                 return;
             }
-            const cls = value?.props?.className;
-            if (typeof cls === 'string' && !cls.includes('{{')) {
-                for (const token of cls.split(/\s+/)) {
-                    if (RESPONSIVE_PREFIX.test(token)) found.add(token);
+            if (value.responsive && typeof value.responsive === 'object') {
+                for (const override of Object.values<any>(value.responsive)) {
+                    staticTokens(override?.props?.className).forEach((token) => found.add(token));
                 }
+            }
+            for (const child of Object.values(value)) visit(child);
+        };
+        Object.values(types).forEach(visit);
+
+        return [...found].sort();
+    }
+
+    /** 조각 `.json` 어디든(기본 className·responsive 구간) 남은 Tailwind 반응형 접두 토큰. */
+    function tailwindBreakpointTokens(): string[] {
+        const found = new Set<string>();
+        const visit = (value: any): void => {
+            if (!value || typeof value !== 'object') return;
+            if (Array.isArray(value)) {
+                value.forEach(visit);
+                return;
+            }
+            for (const token of staticTokens(value?.props?.className)) {
+                if (TAILWIND_BREAKPOINT_PREFIX.test(token)) found.add(token);
             }
             for (const child of Object.values(value)) visit(child);
         };
@@ -149,9 +176,18 @@ describe('게시판 목록 검색 구분 (#524 WP-B)', () => {
         // 모집단이 비면 이 검사는 아무것도 재지 않는다 — 그 상태를 통과로 읽지 않는다.
         expect(tokens.length).toBeGreaterThan(0);
 
+        // 검색 줄을 오른쪽으로 미는 자리(#524 브라우저 실측)가 모집단에 들어 있다.
+        expect(tokens).toContain('ml-auto');
+
         const missing = tokens.filter((t) => !safelist.has(t) && !PRE_EXISTING_GAPS.has(t));
 
         expect(missing).toEqual([]);
+    });
+
+    // @scenario surface=board_list, board_type=basic
+    // @effects board_list_responsive_classes_are_safelisted
+    it('세 조각은 폭 분기를 Tailwind 반응형 접두 없이 responsive 로만 적는다', () => {
+        expect(tailwindBreakpointTokens()).toEqual([]);
     });
 
     // @scenario surface=board_list, search_field=content

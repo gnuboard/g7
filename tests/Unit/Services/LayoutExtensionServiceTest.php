@@ -9,6 +9,7 @@ use App\Enums\LayoutExtensionType;
 use App\Enums\LayoutSourceType;
 use App\Extension\ModuleManager;
 use App\Extension\PluginManager;
+use App\Extension\Traits\ValidatesLayoutFiles;
 use App\Models\LayoutExtension;
 use App\Models\Plugin;
 use App\Models\Template;
@@ -244,6 +245,728 @@ class LayoutExtensionServiceTest extends TestCase
 
         // 조각의 데이터 소스는 셀이 아니라 레이아웃에 병합된다 — 행마다 다시 부르지 않는다
         $this->assertContains('pay_test_map', array_column($result['data_sources'], 'id'));
+    }
+
+    /**
+     * 첨부 업로더 확장점에 업로더 플러그인을 replace 로 주입하는 조각 행을 만든다(#916).
+     *
+     * @return void 반환값 없음
+     */
+    private function createAttachmentUploaderReplacement(): void
+    {
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::ExtensionPoint,
+            'target_name' => 'attachment_uploader',
+            'source_type' => LayoutSourceType::Plugin,
+            'source_identifier' => 'sirsoft-test',
+            'content' => [
+                'extension_point' => 'attachment_uploader',
+                'mode' => 'replace',
+                'components' => [
+                    [
+                        'id' => 'vendor_uploader',
+                        'type' => 'composite',
+                        'name' => 'sirsoft-test.VendorUploader',
+                        'props' => [
+                            'contract' => '{{extensionPointProps.uploader}}',
+                            'onDone' => '{{extensionPointCallbacks.onUploadComplete}}',
+                        ],
+                    ],
+                ],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+    }
+
+    /**
+     * 첨부 업로더 확장점 노드 — 기본 업로더를 default 로, 계약을 props.uploader 로, 기본 업로더 이벤트와 같은 액션을 callbacks 로 둔다.
+     *
+     * @return array<string, mixed> 확장점 노드
+     */
+    private function attachmentUploaderSlot(): array
+    {
+        return [
+            'id' => 'file_uploader_slot',
+            'type' => 'extension_point',
+            'name' => 'attachment_uploader',
+            'props' => [
+                'className' => 'contents',
+                'uploader' => [
+                    'version' => 1,
+                    'mode' => 'upload',
+                    'endpoints' => ['upload' => '/api/x/attachments', 'delete' => '/api/x/attachments/:id', 'reorder' => null],
+                    'triggerEvent' => 'upload:x_attachments',
+                    'initialFiles' => '{{_local.form?.attachments ?? []}}',
+                ],
+            ],
+            'callbacks' => [
+                'onUploadComplete' => ['handler' => 'setState', 'params' => ['target' => 'local', 'form.attachments' => '{{$event}}']],
+            ],
+            'default' => [
+                [
+                    'id' => 'file_uploader',
+                    'type' => 'composite',
+                    'name' => 'FileUploader',
+                    'props' => ['uploadTriggerEvent' => 'upload:x_attachments'],
+                    'actions' => [
+                        ['event' => 'onUploadComplete', 'handler' => 'setState', 'params' => ['target' => 'local', 'form.attachments' => '{{$args[0]}}']],
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * 업로더 플러그인이 replace 로 주입하면 기본 업로더가 걷히고, 주입 노드가 계약과 콜백을 받는다(#916 ③).
+     *
+     * @scenario case=attachment_uploader_replace
+     *
+     * @effects attachment_uploader_replace_removes_default, attachment_uploader_injected_receives_contract_and_callbacks
+     *
+     * @return void 반환값 없음
+     */
+    public function test_attachment_uploader_replace_removes_default_and_passes_contract(): void
+    {
+        $this->createAttachmentUploaderReplacement();
+        $slot = $this->attachmentUploaderSlot();
+
+        $result = $this->service->applyExtensions(['layout_name' => 'admin_x_form', 'components' => [$slot], 'data_sources' => []], $this->template->id);
+        $children = $result['components'][0]['children'];
+
+        $this->assertCount(1, $children, 'replace 는 기본 업로더를 남기지 않는다');
+        $this->assertSame('vendor_uploader', $children[0]['id']);
+        $this->assertNotContains('FileUploader', array_column($children, 'name'));
+        $this->assertSame($slot['props']['uploader'], $children[0]['extensionPointProps']['uploader'], '계약 객체가 그대로 전달된다');
+        $this->assertSame($slot['callbacks'], $children[0]['extensionPointCallbacks'], '콜백 액션은 평가 없이 그대로 전달된다');
+    }
+
+    /**
+     * 주입이 없으면 기본 업로더(default)가 그대로 children 이 된다 — 저장 흐름의 업로드 신호도 그대로다(#916 ③).
+     *
+     * @scenario case=attachment_uploader_without_injection
+     *
+     * @effects attachment_uploader_default_kept_without_injection
+     *
+     * @return void 반환값 없음
+     */
+    public function test_attachment_uploader_keeps_default_without_injection(): void
+    {
+        $slot = $this->attachmentUploaderSlot();
+
+        $result = $this->service->applyExtensions(['layout_name' => 'admin_x_form', 'components' => [$slot], 'data_sources' => []], $this->template->id);
+        $children = $result['components'][0]['children'];
+
+        $this->assertSame($slot['default'], $children);
+        $this->assertSame('upload:x_attachments', $children[0]['props']['uploadTriggerEvent']);
+        $this->assertArrayNotHasKey('extensionPointProps', $children[0], 'default 노드는 확장점 props 를 받지 않는다(이중 기재 이유)');
+    }
+
+    /**
+     * 끌어 정렬 목록(`sortable`)의 행 템플릿(`itemTemplate`) 안 확장점도 채워진다(#916 ③).
+     *
+     * 게시판 설정의 반응 유형 표는 행마다 아이콘 업로더를 두는데, 그 행 템플릿은 `children`·props 가 아니라 노드의
+     * `itemTemplate` 에 실린다. 처리기가 그 자리를 따라가지 않으면 확장점에 default 도 안 채워져 업로더가 빈 칸이 된다.
+     *
+     * @scenario case=attachment_uploader_in_sortable_item_template
+     *
+     * @effects extension_point_inside_sortable_item_template_is_filled
+     *
+     * @return void 반환값 없음
+     */
+    public function test_extension_point_inside_sortable_item_template_is_filled(): void
+    {
+        $slot = $this->attachmentUploaderSlot();
+        $layout = [
+            'layout_name' => 'admin_board_settings',
+            'components' => [
+                [
+                    'id' => 'reaction_rows',
+                    'type' => 'basic',
+                    'name' => 'Div',
+                    'sortable' => ['source' => '{{_local.rows}}', 'itemVar' => 'row'],
+                    'itemTemplate' => ['type' => 'basic', 'name' => 'Div', 'children' => [$slot]],
+                ],
+            ],
+            'data_sources' => [],
+        ];
+
+        $kept = $this->service->applyExtensions($layout, $this->template->id);
+        $this->assertSame($slot['default'], $kept['components'][0]['itemTemplate']['children'][0]['children'] ?? null, '주입이 없으면 행 템플릿 안에서도 기본 업로더가 그려진다');
+
+        $this->createAttachmentUploaderReplacement();
+        $replaced = $this->service->applyExtensions($layout, $this->template->id);
+        $this->assertSame('vendor_uploader', $replaced['components'][0]['itemTemplate']['children'][0]['children'][0]['id'] ?? null);
+    }
+
+    /**
+     * 반응형 재정의(`responsive.{구간}.children`) 안 확장점도 채워진다(#916 ③ 브라우저 실측 회귀).
+     *
+     * 게시판 설정의 반응 유형은 좁은 화면에서 `<responsive on="portable">` 로 카드 목록을 그리고, 카드마다 아이콘 업로더
+     * 확장점을 둔다. 처리기가 `children`·props·`itemTemplate` 만 따라가면 이 확장점은 `default` 를 children 으로 받지 못해
+     * 좁은 화면에서 업로더가 빈 칸이 된다(2026-11-16 실측: 카드 2곳 file input 0, 넓은 표 2곳은 정상).
+     *
+     * @scenario case=attachment_uploader_in_responsive_override
+     *
+     * @effects extension_point_inside_responsive_override_is_filled
+     *
+     * @return void 반환값 없음
+     */
+    public function test_extension_point_inside_responsive_override_is_filled(): void
+    {
+        $slot = $this->attachmentUploaderSlot();
+        $layout = [
+            'layout_name' => 'admin_board_settings',
+            'components' => [
+                [
+                    'id' => 'reaction_list',
+                    'type' => 'basic',
+                    'name' => 'Div',
+                    'children' => [],
+                    'responsive' => [
+                        'portable' => [
+                            'children' => [
+                                ['type' => 'basic', 'name' => 'Div', 'children' => [$slot]],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'data_sources' => [],
+        ];
+
+        $kept = $this->service->applyExtensions($layout, $this->template->id);
+        $this->assertSame($slot['default'], $kept['components'][0]['responsive']['portable']['children'][0]['children'][0]['children'] ?? null, '주입이 없으면 반응형 재정의 안에서도 기본 업로더가 그려진다');
+
+        $this->createAttachmentUploaderReplacement();
+        $replaced = $this->service->applyExtensions($layout, $this->template->id);
+        $this->assertSame('vendor_uploader', $replaced['components'][0]['responsive']['portable']['children'][0]['children'][0]['children'][0]['id'] ?? null);
+    }
+
+    /**
+     * 번들 레이아웃의 첨부 업로더 확장점 전부가 서비스 단계에서 replace 를 받는다 — 기본 업로더가 걷히고 같은 업로드 신호 이름을 넘긴다(#916 ③).
+     *
+     * 모집단은 손으로 적지 않는다. 번들 템플릿·모듈·플러그인 레이아웃 JSON 을 모두 훑어 확장점을 가진 파일과 그 수를 먼저 세고,
+     * 서비스를 거친 결과에서 같은 수의 확장점이 주입 노드를 받았는지 본다. 처리기가 따라가지 않는 자리(모달 갈래·정렬 행 템플릿·
+     * 반응형 재정의 등)에 확장점이 놓이면 그 파일의 수가 줄어 red 가 된다.
+     *
+     * @scenario case=attachment_uploader_bundled_layouts
+     *
+     * @effects attachment_uploader_replace_removes_default, attachment_uploader_injected_receives_contract_and_callbacks, extension_point_inside_sortable_item_template_is_filled, extension_point_inside_responsive_override_is_filled
+     *
+     * @return void 반환값 없음
+     */
+    public function test_bundled_attachment_uploader_slots_accept_replacement(): void
+    {
+        $this->createAttachmentUploaderReplacement();
+
+        ['own' => $own, 'cases' => $cases] = $this->bundledAttachmentUploaderLayouts();
+        // #916 에서 21곳(14파일)을 감쌌다 — 훑기 경로가 틀려 모집단이 줄면 빈 통과가 되지 않게 하한을 둔다
+        $this->assertGreaterThanOrEqual(21, array_sum($own), '번들 레이아웃의 attachment_uploader 확장점이 21개보다 적다 — 훑기 경로가 틀렸다');
+        $this->assertGreaterThan(count($own), count($cases), '조각을 포함하는 레이아웃(반응형 재정의·탭 등)이 모집단에 없다 — partial 펼치기가 틀렸다');
+
+        foreach ($cases as $relative => ['json' => $json, 'slots' => $expectedSlots]) {
+            // 화면 레이아웃은 부모 슬롯(`slots.*`)·`components`·`modals` 에, 조각은 루트 노드 하나로 실린다 — 모두 서비스 입력으로 편다
+            $components = [];
+            foreach ($json['slots'] ?? [] as $list) {
+                $components = array_merge($components, $list);
+            }
+            $components = array_merge($components, $json['components'] ?? []);
+            if (! isset($json['slots']) && ! isset($json['components'])) {
+                $components = [$json];
+            }
+            $layout = ['layout_name' => 'bundled', 'components' => $components, 'modals' => $json['modals'] ?? [], 'data_sources' => []];
+            $result = $this->service->applyExtensions($layout, $this->template->id);
+
+            $slots = [];
+            $uploaders = 0;
+            $walk = function ($node) use (&$walk, &$slots, &$uploaders): void {
+                if (! is_array($node)) {
+                    return;
+                }
+                if (($node['name'] ?? null) === 'FileUploader') {
+                    $uploaders++;
+                }
+                if (($node['type'] ?? null) === 'extension_point' && ($node['name'] ?? null) === 'attachment_uploader') {
+                    $slots[] = $node;
+                }
+                foreach ($node as $key => $child) {
+                    if ($key !== 'default') {
+                        $walk($child);
+                    }
+                }
+            };
+            $walk([$result['components'], $result['modals'] ?? []]);
+
+            $this->assertCount($expectedSlots, $slots, "{$relative}: 서비스를 거친 결과의 확장점 수가 원본과 같다");
+            $this->assertSame(0, $uploaders, "{$relative}: replace 뒤 children 에 기본 업로더가 남지 않는다");
+            foreach ($slots as $slot) {
+                $where = $relative.'#'.($slot['id'] ?? '(id 없음)');
+                $this->assertSame('vendor_uploader', $slot['children'][0]['id'] ?? null, "{$where}: 주입 노드가 자리를 차지한다");
+                $this->assertSame($slot['props']['uploader'], $slot['children'][0]['extensionPointProps']['uploader'] ?? null, "{$where}: 계약 객체가 그대로 전달된다");
+                $this->assertSame(
+                    $slot['default'][0]['props']['uploadTriggerEvent'] ?? null,
+                    $slot['children'][0]['extensionPointProps']['uploader']['triggerEvent'] ?? null,
+                    "{$where}: 저장 흐름의 업로드 신호 이름이 계약에 같다"
+                );
+            }
+        }
+    }
+
+    /**
+     * 번들 템플릿·모듈·플러그인 레이아웃 중 attachment_uploader 확장점이 그려지는 문서와, partial 을 펼친 뒤의 확장점 수.
+     *
+     * 확장점을 직접 가진 JSON 과, 그런 조각을 `partial` 로 포함하는(직간접) JSON 을 모두 모은다. 포함 문서는 설치 때와 같은
+     * 해석기(`ValidatesLayoutFiles::resolveAllPartials`)로 펼쳐, 조각이 반응형 재정의·정렬 행 템플릿 같은 자리에 들어간 실제
+     * 모양으로 서비스에 넣는다 — 조각만 따로 넣으면 그 자리를 따라가지 않는 처리기도 통과한다.
+     * 조각(`resources/extensions`)은 다른 자리에 붙는 주입물이라 빼고, 시험·빌드 산출 디렉터리도 뺀다.
+     *
+     * @return array{own: array<string, int>, cases: array<string, array{json: array, slots: int}>} own = 확장점을 직접 가진 파일별 수, cases = 펼친 문서와 그 수
+     */
+    private function bundledAttachmentUploaderLayouts(): array
+    {
+        $roots = array_merge(
+            glob(base_path('templates/_bundled/*/layouts'), GLOB_ONLYDIR) ?: [],
+            glob(base_path('modules/_bundled/*/resources/layouts'), GLOB_ONLYDIR) ?: [],
+            glob(base_path('plugins/_bundled/*/resources/layouts'), GLOB_ONLYDIR) ?: [],
+        );
+        $count = function ($node) use (&$count): int {
+            if (! is_array($node)) {
+                return 0;
+            }
+            $n = (($node['type'] ?? null) === 'extension_point' && ($node['name'] ?? null) === 'attachment_uploader') ? 1 : 0;
+            foreach ($node as $child) {
+                $n += $count($child);
+            }
+
+            return $n;
+        };
+        $norm = fn (string $path): string => str_replace('\\', '/', realpath($path) ?: $path);
+        $relative = fn (string $path): string => ltrim(str_replace($norm(base_path()), '', $path), '/');
+
+        // 1) 레이아웃 JSON 전부와 각 문서의 partial 참조(문서 폴더 기준, 없으면 `partials/` 는 layouts 루트 기준)
+        $texts = [];
+        $refs = [];
+        foreach ($roots as $root) {
+            $rootPosix = $norm($root);
+            foreach (File::allFiles($root) as $file) {
+                $path = $norm($file->getPathname());
+                if ($file->getExtension() !== 'json' || preg_match('#/(node_modules|dist|__tests__)/#', $path)) {
+                    continue;
+                }
+                $texts[$path] = (string) file_get_contents($path);
+                preg_match_all('/"partial"\s*:\s*"([^"]+)"/', $texts[$path], $m);
+                $refs[$path] = array_map(function (string $ref) use ($path, $rootPosix, $norm): string {
+                    $local = dirname($path).'/'.$ref;
+
+                    return $norm((str_starts_with($ref, 'partials/') && ! is_file($local)) ? $rootPosix.'/'.$ref : $local);
+                }, $m[1]);
+            }
+        }
+
+        // 2) 확장점을 직접 가진 문서 → 그 문서를 포함하는 문서로 고정점까지 넓힌다
+        $own = [];
+        $reaching = [];
+        foreach ($texts as $path => $text) {
+            if (str_contains($text, '"attachment_uploader"') && ($n = $count(json_decode($text, true))) > 0) {
+                $own[$relative($path)] = $n;
+                $reaching[$path] = true;
+            }
+        }
+        do {
+            $grew = false;
+            foreach ($refs as $path => $targets) {
+                if (isset($reaching[$path])) {
+                    continue;
+                }
+                foreach ($targets as $target) {
+                    if (isset($reaching[$target])) {
+                        $reaching[$path] = $grew = true;
+                        break;
+                    }
+                }
+            }
+        } while ($grew);
+
+        // 3) 설치 때와 같은 해석기로 partial 을 펼치고 확장점 수를 센다
+        $resolver = new class
+        {
+            use ValidatesLayoutFiles;
+
+            /**
+             * JSON 문서 하나의 partial 참조를 펼칩니다.
+             *
+             * @param  array  $data  문서 내용
+             * @param  string  $basePath  문서 폴더
+             * @return array 펼친 문서
+             */
+            public function resolve(array $data, string $basePath): array
+            {
+                return $this->resolveAllPartials($data, $basePath, 0, [], true);
+            }
+        };
+        $cases = [];
+        foreach (array_keys($reaching) as $path) {
+            $json = $resolver->resolve(json_decode($texts[$path], true), dirname($path));
+            $cases[$relative($path)] = ['json' => $json, 'slots' => $count($json)];
+        }
+        ksort($own);
+        ksort($cases);
+
+        return ['own' => $own, 'cases' => $cases];
+    }
+
+    /**
+     * Modal 고정 하단(`props.footer`)과 제목 앞뒤 붙임(`titlePrefix`·`titleSuffix`) 안의 확장점도 채워지는지 검증한다(#869).
+     *
+     * 이 세 자리는 `children` 이 아니라 Modal 의 props 에 실린다. 알림 템플릿 편집 창은 바닥 단추 줄에
+     * `notification_template_form_footer_actions` 확장점을 두는데, 그 줄을 고정 하단으로 옮기면 서버가 확장점을
+     * 걷지 않아 확장이 넣는 단추(테스트 발송 등)가 사라졌다. 레이아웃 `modals` 갈래의 창도 같은 규칙이다.
+     *
+     * @scenario kind=extension_point, merge_target=components
+     *
+     * @effects applies_extension_points_inside_modal_footer
+     *
+     * @return void 반환값 없음
+     */
+    public function test_applies_extension_points_inside_modal_footer_and_title_affixes(): void
+    {
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::ExtensionPoint,
+            'target_name' => 'notification_template_form_footer_actions',
+            'source_type' => LayoutSourceType::Plugin,
+            'source_identifier' => 'sirsoft-payment',
+            'content' => [
+                'extension_point' => 'notification_template_form_footer_actions',
+                'components' => [
+                    ['type' => 'basic', 'name' => 'Button', 'text' => 'SEND_TEST'],
+                ],
+                'data_sources' => [
+                    ['id' => 'sms_quota', 'endpoint' => '/api/sms/quota'],
+                ],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        $slot = ['type' => 'extension_point', 'name' => 'notification_template_form_footer_actions'];
+        $modal = [
+            'id' => 'modal_notification_template_form',
+            'type' => 'composite',
+            'name' => 'Modal',
+            'props' => [
+                'title' => '알림 템플릿',
+                'titleSuffix' => [$slot],
+                'footer' => [
+                    ['type' => 'basic', 'name' => 'Button', 'text' => '$t:common.cancel'],
+                    $slot,
+                    ['type' => 'basic', 'name' => 'Button', 'text' => '$t:common.save'],
+                ],
+            ],
+            'children' => [['type' => 'basic', 'name' => 'Div']],
+        ];
+        $layout = [
+            'layout_name' => 'admin_settings',
+            'components' => [['id' => 'page', 'type' => 'basic', 'name' => 'Div', 'children' => [$modal]]],
+            'modals' => [$modal],
+            'data_sources' => [],
+        ];
+
+        $result = $this->service->applyExtensions($layout, $this->template->id);
+
+        foreach (['본문 트리' => $result['components'][0]['children'][0], 'modals 갈래' => $result['modals'][0]] as $where => $node) {
+            $footer = $node['props']['footer'];
+            $this->assertSame('extension_point', $footer[1]['type'], $where);
+            $this->assertSame('SEND_TEST', $footer[1]['children'][0]['text'] ?? null, "{$where}: 고정 하단 안 확장점에 조각이 주입되어야 한다");
+            $this->assertSame('$t:common.save', $footer[2]['text'], "{$where}: 확장점 밖 단추는 그대로");
+            $this->assertSame('SEND_TEST', $node['props']['titleSuffix'][0]['children'][0]['text'] ?? null, "{$where}: 제목 뒤 붙임 안 확장점");
+        }
+
+        // 조각의 데이터 소스는 레이아웃에 한 번 병합된다
+        $this->assertContains('sms_quota', array_column($result['data_sources'], 'id'));
+    }
+
+    /**
+     * 실제 번들 알림 템플릿 편집 창(관리자 환경설정)의 고정 하단 확장점에 확장 단추가 주입되는지 검증한다(#869).
+     *
+     * 창의 바닥 줄(미리보기, 취소, 확장 슬롯, 저장)을 Modal 고정 하단으로 옮겼다. 확장 슬롯
+     * `notification_template_form_footer_actions` 는 알림톡·SMS 채널이 「테스트 발송」 같은 단추를 넣는 자리라,
+     * 서버가 고정 하단을 걷지 않으면 그 단추가 사라진다. 배포 JSON 을 그대로 읽어 잰다.
+     *
+     * @scenario kind=extension_point, merge_target=components
+     *
+     * @effects applies_extension_points_inside_modal_footer
+     *
+     * @return void 반환값 없음
+     */
+    public function test_bundled_notification_template_modal_footer_slot_receives_extension_buttons(): void
+    {
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::ExtensionPoint,
+            'target_name' => 'notification_template_form_footer_actions',
+            'source_type' => LayoutSourceType::Plugin,
+            'source_identifier' => 'sirsoft-payment',
+            'content' => [
+                'extension_point' => 'notification_template_form_footer_actions',
+                'components' => [['id' => 'ext_send_test', 'type' => 'basic', 'name' => 'Button', 'text' => 'SEND_TEST']],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        $path = base_path('templates/_bundled/sirsoft-admin_basic/layouts/partials/admin_settings/_modal_notification_template_form.json');
+        $modal = json_decode((string) file_get_contents($path), true);
+        $this->assertSame('Modal', $modal['name'] ?? null);
+
+        $result = $this->service->applyExtensions([
+            'layout_name' => 'admin_settings',
+            'components' => [['id' => 'page', 'type' => 'basic', 'name' => 'Div']],
+            'modals' => [$modal],
+        ], $this->template->id);
+
+        $footer = $result['modals'][0]['props']['footer'] ?? [];
+        $slot = collect($footer)->firstWhere('type', 'extension_point');
+        $this->assertNotNull($slot, '고정 하단에 확장 슬롯이 없습니다');
+        $this->assertSame('notification_template_form_footer_actions', $slot['name']);
+        $this->assertSame('ext_send_test', $slot['children'][0]['id'] ?? null, '고정 하단 확장 슬롯에 확장 단추가 주입되지 않았습니다');
+        // 주입 단추는 확장점 props(정의·템플릿 등)를 받는다
+        $this->assertArrayHasKey('stateKey', $slot['children'][0]['extensionPointProps'] ?? []);
+    }
+
+    /**
+     * 오버레이(`target_id` 주입·`inject_props`)가 Modal 고정 하단(`props.footer`) 안의 노드도 찾는지 검증한다(#869).
+     *
+     * 확인 창 바닥 단추를 고정 하단으로 모으자 그 단추는 `children` 이 아니라 Modal props 아래에 놓였다. 대상 찾기가
+     * `children` 만 따라가면 「저장 단추 뒤에 단추 하나 더」 같은 오버레이가 조용히 빠진다.
+     *
+     * @scenario kind=overlay, merge_target=components
+     *
+     * @effects overlay_targets_nodes_inside_modal_footer
+     *
+     * @return void 반환값 없음
+     */
+    public function test_overlay_targets_nodes_inside_modal_footer(): void
+    {
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'admin_user_detail',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-marketing',
+            'content' => [
+                'target_layout' => 'admin_user_detail',
+                'injections' => [
+                    [
+                        'target_id' => 'confirm_save_button',
+                        'position' => 'append',
+                        'components' => [['id' => 'ext_extra_button', 'type' => 'basic', 'name' => 'Button', 'text' => 'EXTRA']],
+                    ],
+                    [
+                        'target_id' => 'confirm_cancel_button',
+                        'position' => 'inject_props',
+                        'props' => ['className' => 'btn btn-secondary ext-marked'],
+                    ],
+                ],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        // 본문 트리에 놓인 창으로 잰다(`modals` 갈래 창은 아래 test_overlay_targets_nodes_inside_modals_branch_and_its_footer 가 잰다)
+        $layout = [
+            'layout_name' => 'admin_user_detail',
+            'components' => [[
+                'id' => 'page',
+                'type' => 'basic',
+                'name' => 'Div',
+                'children' => [[
+                    'id' => 'confirm_modal',
+                    'type' => 'composite',
+                    'name' => 'Modal',
+                    'props' => [
+                        'footer' => [
+                            ['id' => 'confirm_cancel_button', 'type' => 'basic', 'name' => 'Button', 'props' => ['className' => 'btn btn-secondary']],
+                            ['id' => 'confirm_save_button', 'type' => 'basic', 'name' => 'Button'],
+                        ],
+                    ],
+                    'children' => [['type' => 'basic', 'name' => 'P', 'text' => '확인']],
+                ]],
+            ]],
+        ];
+
+        $result = $this->service->applyExtensions($layout, $this->template->id);
+        $footer = $result['components'][0]['children'][0]['props']['footer'];
+
+        $this->assertSame(['confirm_cancel_button', 'confirm_save_button', 'ext_extra_button'], array_column($footer, 'id'), '고정 하단 단추 뒤 주입이 빠졌습니다');
+        $this->assertStringContainsString('ext-marked', $footer[0]['props']['className'] ?? '', '고정 하단 단추의 props 주입이 빠졌습니다');
+    }
+
+    /**
+     * 오버레이가 레이아웃 `modals` 갈래 창의 노드(본문과 고정 하단)도 겨누는지 검증한다(#869 C2).
+     *
+     * 페이지 레이아웃의 확인 창은 대부분 `modals` 갈래에 있다. 대상 찾기가 `components` 트리만 걸으면 그 창의 단추
+     * 뒤에 붙이는 주입과 props 주입이 경고 로그만 남기고 빠진다. `components` 를 먼저 찾고, 없을 때만 `modals` 를 찾는다.
+     *
+     * @scenario kind=overlay, merge_target=modals
+     *
+     * @effects overlay_targets_nodes_inside_modals_branch
+     *
+     * @return void 반환값 없음
+     */
+    public function test_overlay_targets_nodes_inside_modals_branch_and_its_footer(): void
+    {
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'admin_user_list',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-marketing',
+            'content' => [
+                'target_layout' => 'admin_user_list',
+                'injections' => [
+                    [
+                        'target_id' => 'delete_confirm_message',
+                        'position' => 'append',
+                        'components' => [['id' => 'ext_notice', 'type' => 'basic', 'name' => 'P', 'text' => 'NOTICE']],
+                    ],
+                    [
+                        'target_id' => 'delete_confirm_button',
+                        'position' => 'append',
+                        'components' => [['id' => 'ext_footer_button', 'type' => 'basic', 'name' => 'Button', 'text' => 'EXTRA']],
+                    ],
+                    [
+                        'target_id' => 'delete_cancel_button',
+                        'position' => 'inject_props',
+                        'props' => ['className' => 'btn btn-secondary ext-marked'],
+                    ],
+                ],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        $layout = [
+            'layout_name' => 'admin_user_list',
+            'components' => [['id' => 'page', 'type' => 'basic', 'name' => 'Div', 'children' => []]],
+            'modals' => [[
+                'id' => 'delete_confirm_modal',
+                'type' => 'composite',
+                'name' => 'Modal',
+                'props' => [
+                    'footer' => [
+                        ['id' => 'delete_cancel_button', 'type' => 'basic', 'name' => 'Button', 'props' => ['className' => 'btn btn-secondary']],
+                        ['id' => 'delete_confirm_button', 'type' => 'basic', 'name' => 'Button'],
+                    ],
+                ],
+                'children' => [['id' => 'delete_confirm_message', 'type' => 'basic', 'name' => 'P', 'text' => '지울까요?']],
+            ]],
+        ];
+
+        $result = $this->service->applyExtensions($layout, $this->template->id);
+        $modal = $result['modals'][0];
+
+        $this->assertSame(['delete_confirm_message', 'ext_notice'], array_column($modal['children'], 'id'), 'modals 갈래 창 본문 주입이 빠졌습니다');
+        $this->assertSame(['delete_cancel_button', 'delete_confirm_button', 'ext_footer_button'], array_column($modal['props']['footer'], 'id'), 'modals 갈래 창 고정 하단 주입이 빠졌습니다');
+        $this->assertStringContainsString('ext-marked', $modal['props']['footer'][0]['props']['className'] ?? '', 'modals 갈래 창 단추 props 주입이 빠졌습니다');
+    }
+
+    /**
+     * 같은 id 가 `components` 와 `modals` 양쪽에 있으면 `components` 쪽 첫 노드 하나에만 주입하는지 검증한다(#869 C2).
+     *
+     * overlay 는 트리에서 `target_id` 가 일치하는 첫 노드 하나에만 들어간다(종전 규칙). `modals` 를 찾는 범위에 더해도
+     * 본문 트리가 먼저이고, 두 곳에 함께 들어가 같은 조각이 두 번 그려지지 않는다.
+     *
+     * @scenario kind=overlay, merge_target=modals
+     *
+     * @effects overlay_prefers_components_over_modals_once
+     *
+     * @return void 반환값 없음
+     */
+    public function test_overlay_prefers_components_when_same_id_also_in_modals(): void
+    {
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::Overlay,
+            'target_name' => 'admin_user_list',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-marketing',
+            'content' => [
+                'target_layout' => 'admin_user_list',
+                'injections' => [[
+                    'target_id' => 'shared_anchor',
+                    'position' => 'append',
+                    'components' => [['id' => 'ext_once', 'type' => 'basic', 'name' => 'Span']],
+                ]],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        $layout = [
+            'layout_name' => 'admin_user_list',
+            'components' => [['id' => 'page', 'type' => 'basic', 'name' => 'Div', 'children' => [['id' => 'shared_anchor', 'type' => 'basic', 'name' => 'Span']]]],
+            'modals' => [['id' => 'm', 'type' => 'composite', 'name' => 'Modal', 'children' => [['id' => 'shared_anchor', 'type' => 'basic', 'name' => 'Span']]]],
+        ];
+
+        $result = $this->service->applyExtensions($layout, $this->template->id);
+
+        $this->assertSame(['shared_anchor', 'ext_once'], array_column($result['components'][0]['children'], 'id'));
+        $this->assertSame(['shared_anchor'], array_column($result['modals'][0]['children'], 'id'), 'components 에서 찾았는데 modals 에도 들어갔습니다');
+    }
+
+    /**
+     * 편집 모드에서 확장이 주입한 Modal 의 고정 하단·제목 붙임 자식에도 출처 메타가 붙는지 검증한다(#869 C3).
+     *
+     * 출처 메타 부여가 `children` 만 걸으면 주입된 창의 바닥 단추에는 `__source` 가 없어, 편집기가 그 단추를
+     * 호스트 노드로 보고 호스트 레이아웃에 저장해 버린다.
+     *
+     * @scenario kind=extension_point, merge_target=components
+     *
+     * @effects source_meta_reaches_modal_surface_children
+     *
+     * @return void 반환값 없음
+     */
+    public function test_source_meta_reaches_injected_modal_footer_and_title_affix_children(): void
+    {
+        LayoutExtension::create([
+            'template_id' => $this->template->id,
+            'extension_type' => LayoutExtensionType::ExtensionPoint,
+            'target_name' => 'admin.dashboard.widgets',
+            'source_type' => LayoutSourceType::Module,
+            'source_identifier' => 'sirsoft-support',
+            'content' => [
+                'extension_point' => 'admin.dashboard.widgets',
+                'components' => [[
+                    'id' => 'support_modal',
+                    'type' => 'composite',
+                    'name' => 'Modal',
+                    'props' => [
+                        'titlePrefix' => [['id' => 'support_title_icon', 'type' => 'basic', 'name' => 'Icon']],
+                        'footer' => [['id' => 'support_footer_button', 'type' => 'basic', 'name' => 'Button', 'children' => [['id' => 'support_footer_label', 'type' => 'basic', 'name' => 'Span']]]],
+                    ],
+                    'children' => [['id' => 'support_body', 'type' => 'basic', 'name' => 'P']],
+                ]],
+            ],
+            'priority' => 100,
+            'is_active' => true,
+        ]);
+
+        $layout = [
+            'layout_name' => 'admin_dashboard',
+            'components' => [['id' => 'dashboard_widgets', 'type' => 'extension_point', 'name' => 'admin.dashboard.widgets', 'default' => []]],
+            'data_sources' => [],
+        ];
+
+        $result = $this->service->applyExtensions($layout, $this->template->id, true);
+        $modal = $result['components'][0]['children'][0];
+
+        $this->assertSame('sirsoft-support', $modal['children'][0]['__source']['extensionIdentifier'] ?? null);
+        $this->assertSame('sirsoft-support', $modal['props']['footer'][0]['__source']['extensionIdentifier'] ?? null, '고정 하단 단추에 출처 메타가 없습니다');
+        $this->assertSame('sirsoft-support', $modal['props']['footer'][0]['children'][0]['__source']['extensionIdentifier'] ?? null, '고정 하단 단추의 자식에 출처 메타가 없습니다');
+        $this->assertSame('sirsoft-support', $modal['props']['titlePrefix'][0]['__source']['extensionIdentifier'] ?? null, '제목 앞 붙임에 출처 메타가 없습니다');
     }
 
     /**

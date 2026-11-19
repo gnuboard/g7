@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 이슈 #139 큐 워커 등록·상태. 드라이버 × 등록 형태 × 하트비트 × 화면 상태의 곱 중 판정 함수별 대표값만 매핑한다 — 저장 검증(V1~V9)·배치 판정·하트비트·상태 보고·화면 분기가 서로 독립 함수다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#139 큐 워커 등록·상태. 드라이버 × 등록 형태 × 하트비트 × 화면 상태의 곱 중 판정 함수별 대표값만 매핑한다 — 저장 검증(V1~V9)·배치 판정·하트비트·상태 보고·화면 분기가 서로 독립 함수다.
 # audit:allow scenario-scale-axis-required reason: 연결·큐 수십 개 이하의 설정·상태 판정 — 처리 규모 경로 무변경
 
 feature: queue_worker_registry

@@ -15,6 +15,7 @@ use App\Models\TemplateLayout;
 use App\Rules\SafeCustomAssetPath;
 use App\Support\LayoutEmptyObjects;
 use App\Support\LayoutMarkup\PartialReferenceNotation;
+use App\Support\RuntimeRole;
 use Illuminate\Support\Collection;
 
 /**
@@ -62,6 +63,9 @@ class LayoutFileService
 
     /** 역변환 마크업 캐시 TTL (초) */
     private const MARKUP_CACHE_TTL = 86400;
+
+    /** 역변환 마크업 캐시 태그 접두사 — 뒤에 실행 역할(live|stage)이 붙는다 ({@see self::markupCacheTag()}) */
+    private const MARKUP_CACHE_TAG_PREFIX = 'layout_markup.';
 
     /**
      * @param  LayoutRepositoryInterface  $layoutRepository  레이아웃 행 조회·영속
@@ -134,6 +138,8 @@ class LayoutFileService
                 // 템플릿 갱신의 고아 오버라이드 정리가 운영자가 만든 이 레이아웃을 지우지 않는다 (#703).
                 'original_content_hash' => null,
                 'original_content_size' => null,
+                // 원본 본문도 비운다 — 남아 있으면 hasFileOrigin() 이 「파일 출신」으로 읽어 갱신의 고아 정리가 이 화면을 지운다(#888).
+                'original_content' => null,
                 'updated_by' => $userId,
                 'lock_version' => (int) ($trashed->lock_version ?? 0) + 1,
             ]);
@@ -433,7 +439,7 @@ class LayoutFileService
                 // 역변환이 실패해도 검색 전체를 세우지 않는다 — 그 파일만 내용 검색에서 빠진다.
                 return '';
             }
-        }, self::MARKUP_CACHE_TTL);
+        }, self::MARKUP_CACHE_TTL, [self::markupCacheTag()]);
     }
 
     /**
@@ -779,7 +785,22 @@ class LayoutFileService
             } catch (\Throwable) {
                 return '';
             }
-        }, self::MARKUP_CACHE_TTL);
+        }, self::MARKUP_CACHE_TTL, [self::markupCacheTag()]);
+    }
+
+    /**
+     * 역변환 마크업 캐시의 태그 — 실행 역할마다 다르다.
+     *
+     * 검수 서버의 `stage-layouts:reset-from-live` 는 운영 행을 ID·`lock_version` 그대로 복사하므로 마크업 캐시 키가 검수 서버
+     * 편집본의 키와 같을 수 있다. 그래서 리셋은 검수 서버의 마크업 캐시를 이 태그로 한꺼번에 지운다. 태그 색인은 역할과 무관하게
+     * 하나라 역할을 태그에 넣어야 운영 서버의 마크업 캐시를 함께 지우지 않는다.
+     *
+     * @param  string|null  $role  실행 역할 (null 이면 지금 역할)
+     * @return string 캐시 태그
+     */
+    public static function markupCacheTag(?string $role = null): string
+    {
+        return self::MARKUP_CACHE_TAG_PREFIX.($role ?? RuntimeRole::current());
     }
 
     /**

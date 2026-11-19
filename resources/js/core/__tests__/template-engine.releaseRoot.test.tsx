@@ -145,7 +145,14 @@ const showErrorScreen = (release: boolean) => {
   if (release) {
     releaseTemplateRoot();
   }
-  ErrorDisplay.render('app', { title: '페이지 로딩 실패', message: '이 화면을 볼 권한이 없습니다.', debug: false });
+  ErrorDisplay.render('app', {
+    title: '페이지 로딩 실패',
+    message: '이 화면을 볼 권한이 없습니다.',
+    icon: 'fas fa-lock',
+    showStack: false,
+    showReloadButton: false,
+    debug: false,
+  });
 };
 
 describe('[case:components-misc-error-screen-releases-react-root] template-engine releaseTemplateRoot — 오류 화면 뒤 토스트 갱신', () => {

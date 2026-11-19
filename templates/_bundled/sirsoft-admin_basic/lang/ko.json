@@ -28,5 +28,8 @@
   },
   "editor": {
     "$partial": "partial/ko/editor.json"
+  },
+  "settings": {
+    "$partial": "partial/ko/settings.json"
   }
 }

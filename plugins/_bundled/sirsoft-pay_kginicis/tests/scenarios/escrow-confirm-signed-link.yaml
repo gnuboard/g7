@@ -18,6 +18,8 @@ effects:
   - confirm_window_refuses_unsigned_or_tampered # 서명 없음·uid 바꿈 → 401
   - no_link_for_non_escrow                      # 에스크로 아님 → null
   - confirm_window_follows_screen_locale        # 확인창 문서 언어·제목·안내가 화면 언어(Accept-Language) — 한국어 고정 아님
+  - confirm_link_carries_the_mount_prefix_in_a_subfolder_install  # 하위 폴더 설치에서 서명 주소가 접두사를 싣고, 그 주소 그대로 새 창이 열린다(서명은 base 를 뺀 경로로 검증)
+  - link_uses_signed_url_from_receipt_api       # 주문 상세 [구매결정] 링크가 영수증 조회 응답의 서명 주소를 로컬 상태에 담아 그 주소로 연다
 
 test_files:
   - plugins/_bundled/sirsoft-pay_kginicis/tests/Feature/Controllers/EscrowConfirmSignedLinkTest.php

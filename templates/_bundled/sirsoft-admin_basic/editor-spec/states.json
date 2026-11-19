@@ -825,6 +825,34 @@
       ]
     },
     {
+      "comment": "신뢰 키 삭제 창 본문이 읽는 전역 상태(trustKeyDeleteTarget) — 「확장 신뢰 키」 카드의 키 행 [삭제] 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 확인 문구의 key_id 가 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "extension_trust_key_delete_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "trustKeyDeleteTarget": {
+                "id": 1,
+                "key_id": "glitter:0123456789abcdef",
+                "label": "glitter",
+                "vendor_scope": [
+                  "glitter"
+                ]
+              },
+              "trustKeyPassword": "",
+              "isDeletingTrustKey": false
+            }
+          }
+        }
+      ]
+    },
+    {
       "comment": "모달 본문이 읽는 전역 상태(isProcessing, selectedIds_admin_users) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",
@@ -1083,6 +1111,157 @@
           "initialState": {
             "global": {
               "isPurgingIdentityLogs": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "항목 추가·수정 창이 읽는 전역 상태(member_field_form_modal) — 표의 「항목 추가」나 행 단추가 담는 값이라, 편집기에서는 이 상태로 담아야 내용 입력 단계가 빈 채로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "member_field_form_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "member_field_form_modal": {
+                "step": "form",
+                "isNew": true,
+                "readOnly": false,
+                "loading": false,
+                "isSaving": false,
+                "dirty": false,
+                "confirmClose": false,
+                "pasteOpen": false,
+                "pasteText": "",
+                "dateMode": {},
+                "errors": null,
+                "fieldsVersion": "sample",
+                "form": {
+                  "id": null,
+                  "key": "job",
+                  "type": "choice",
+                  "name": {
+                    "ko": "직업",
+                    "en": "Job"
+                  },
+                  "description": {},
+                  "placeholder": {},
+                  "options": [
+                    {
+                      "value": "student",
+                      "label": {
+                        "ko": "학생",
+                        "en": "Student"
+                      }
+                    },
+                    {
+                      "value": "worker",
+                      "label": {
+                        "ko": "직장인",
+                        "en": "Worker"
+                      }
+                    }
+                  ],
+                  "constraints": {
+                    "display": "radio"
+                  },
+                  "enabled": true,
+                  "required": false,
+                  "show_on_signup": true,
+                  "edit_scope": "self",
+                  "require_existing_members": false,
+                  "public_profile": false,
+                  "admin_list_column": false,
+                  "admin_searchable": false,
+                  "display_name_usable": false,
+                  "idv_claim": "",
+                  "idv_lock": false
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "항목 삭제 창이 읽는 전역 상태(member_field_delete_modal) — 행의 「삭제」가 담는 항목 이름과 입력된 값 수라, 편집기에서는 이 상태로 담아야 안내 문구가 자리표시 원문으로 열리지 않는다. 기본(delete_confirm)은 삭제 확인 모습이고, 「채움」(modal_filled)은 표시 이름 종류로 쓰여 서버가 막은 모습(409 field_in_use 의 usages 목록, 확인 칸 대신 사용처 안내)이다.",
+      "scope": {
+        "kind": "modal",
+        "match": "member_field_delete_modal"
+      },
+      "items": [
+        {
+          "id": "delete_confirm",
+          "label": "$t:editor.state.delete_confirm",
+          "default": true,
+          "initialState": {
+            "global": {
+              "member_field_delete_modal": {
+                "id": 1,
+                "label": "직업",
+                "values_count": 128,
+                "confirmed": false,
+                "isDeleting": false,
+                "loading": false,
+                "fieldsVersion": "sample"
+              }
+            }
+          }
+        },
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "initialState": {
+            "global": {
+              "member_field_delete_modal": {
+                "id": 1,
+                "label": "직업",
+                "values_count": 128,
+                "confirmed": false,
+                "isDeleting": false,
+                "loading": false,
+                "fieldsVersion": "sample",
+                "usages": [
+                  {
+                    "label": "회원이 고를 수 있는 표시 이름 종류"
+                  },
+                  {
+                    "label": "게시판 영역의 표시 이름"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "필수로 바꾸기 확인 창이 읽는 전역 상태(member_field_required_modal) — 필수 스위치가 담는 항목 이름과 비어 있는 회원 수라, 편집기에서는 이 상태로 담아야 「0명」으로 열리지 않는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "member_field_required_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "member_field_required_modal": {
+                "id": 1,
+                "label": "휴대폰",
+                "missing_count": 367,
+                "mode": "on_edit",
+                "fieldsVersion": "sample",
+                "isSaving": false
+              }
             }
           }
         }
@@ -1530,6 +1709,7 @@
           "initialState": {
             "global": {
               "notification_template_form_modal": {
+                "warnings": [],
                 "isSaving": false,
                 "errors": null,
                 "editLang": "ko",
@@ -2339,7 +2519,7 @@
       ]
     },
     {
-      "comment": "모달 본문이 읽는 전역 상태(hasModifiedModuleLayouts, isModuleUpdating, modifiedModuleLayouts, modifiedModuleLayoutsCheckFailed, modifiedModuleLayoutsCount, moduleForceUpdate, moduleLayoutSource, moduleLayoutSourceOpen, moduleLayoutStrategy, moduleRebuildSearchIndex, moduleUpdateError, selectedModule, updateChangelog) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "comment": "모달 본문이 읽는 전역 상태(isModuleUpdating, moduleForceUpdate, moduleLayoutSource, moduleLayoutSourceOpen, moduleRebuildSearchIndex, moduleUpdateError, selectedModule, updateChangelog) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",
         "match": "module_update_modal"
@@ -2383,16 +2563,6 @@
                 }
               ],
               "moduleRebuildSearchIndex": false,
-              "hasModifiedModuleLayouts": true,
-              "modifiedModuleLayoutsCount": 1,
-              "modifiedModuleLayoutsCheckFailed": false,
-              "moduleLayoutStrategy": "keep",
-              "modifiedModuleLayouts": [
-                {
-                  "name": "admin_ecommerce_product_list",
-                  "updated_at": "2026-09-30 14:20:00"
-                }
-              ],
               "isModuleUpdating": false
             }
           }
@@ -3036,7 +3206,7 @@
       ]
     },
     {
-      "comment": "모달 본문이 읽는 전역 상태(hasModifiedPluginLayouts, isPluginUpdating, modifiedPluginLayouts, modifiedPluginLayoutsCheckFailed, modifiedPluginLayoutsCount, pluginForceUpdate, pluginLayoutSource, pluginLayoutSourceOpen, pluginLayoutStrategy, pluginRebuildSearchIndex, pluginUpdateError, selectedPlugin, updateChangelog) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "comment": "모달 본문이 읽는 전역 상태(isPluginUpdating, pluginForceUpdate, pluginLayoutSource, pluginLayoutSourceOpen, pluginRebuildSearchIndex, pluginUpdateError, selectedPlugin, updateChangelog) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",
         "match": "plugin_update_modal"
@@ -3080,16 +3250,6 @@
               "pluginForceUpdate": false,
               "pluginUpdateError": null,
               "pluginRebuildSearchIndex": false,
-              "hasModifiedPluginLayouts": true,
-              "modifiedPluginLayoutsCount": 1,
-              "modifiedPluginLayoutsCheckFailed": false,
-              "pluginLayoutStrategy": "keep",
-              "modifiedPluginLayouts": [
-                {
-                  "name": "gdpr_consent_log",
-                  "updated_at": "2026-09-30 14:20:00"
-                }
-              ],
               "isPluginUpdating": false
             }
           }
@@ -3111,7 +3271,76 @@
             "global": {
               "isDeleting": false,
               "deleteTargetId": 1,
+              "deleteTargetIds": null,
               "deleteTargetName": "샘플 제목"
+            }
+          }
+        },
+        {
+          "id": "modal_bulk",
+          "label": "$t:editor.state.modal_filled",
+          "initialState": {
+            "global": {
+              "isDeleting": false,
+              "deleteTargetId": null,
+              "deleteTargetIds": [1, 2],
+              "deleteTargetName": ""
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "상태 일괄 변경 확인 창이 읽는 전역 상태(selectedScheduleIds, bulkStatusAction) — 표 위 일괄 바가 고른 줄과 방향을 담고 연다.",
+      "scope": {
+        "kind": "modal",
+        "match": "schedule_bulk_status_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "selectedScheduleIds": [1, 2],
+              "bulkStatusAction": "inactive",
+              "isBulkStatusChanging": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "스케줄 보안 정책 창(읽기 전용)이 읽는 전역 상태 — 헤더 「보안 정책」 버튼이 GET /api/admin/schedules/security 응답(data)을 담는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "schedule_security_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "scheduleSecurityError": "",
+              "scheduleSecurity": {
+                "override_file": {"path": "storage/app/schedule_security.json", "exists": true, "valid": true, "error_code": null, "error": null},
+                "shell": {"enabled": false, "gate_enabled": false, "allowed_binaries": [], "source": "env"},
+                "artisan": {
+                  "allowlist": [
+                    {"command": "cache:clear", "options": [], "max_arguments": 0, "source": "core", "override_options": [], "denied": false},
+                    {"command": "queue:prune-records", "options": ["days"], "max_arguments": 0, "source": "core", "override_options": [], "denied": false},
+                    {"command": "app:report-daily", "options": ["date"], "max_arguments": 0, "source": "override", "override_options": [], "denied": false}
+                  ],
+                  "denylist": [{"command": "tinker", "source": "core"}, {"command": "db:wipe", "source": "core"}],
+                  "denylist_prefixes": [{"prefix": "make:", "source": "core"}],
+                  "allow_extension_commands": true
+                },
+                "job": {"allowed_classes": [{"class": "App\\Jobs\\GenerateSitemapJob", "source": "core"}]},
+                "url": {"block_private_hosts": true, "source": "settings"}
+              }
             }
           }
         }
@@ -3146,6 +3375,84 @@
       ]
     },
     {
+      "comment": "큐 Job 상세 창이 읽는 전역 상태 — 실패 작업 줄의 상세 버튼이 queueJobDetail(상세 응답)과 종류를 담는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "queue_job_detail_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "queueJobDetailKind": "failed",
+              "queueJobDetail": {
+                "uuid": "00000000-0000-0000-0000-000000000021",
+                "connection": "database",
+                "queue": "default",
+                "display_name": "schedule:3 외부 상태 점검",
+                "job_class": "App\\Jobs\\RunScheduledTaskJob",
+                "schedule_id": 3,
+                "attempts": 1,
+                "max_tries": 1,
+                "exception": "RuntimeException: HTTP 요청 실패 (상태: 503)\n#0 ...",
+                "failed_at": "2026-05-29T09:30:00+09:00",
+                "payload_meta": {
+                  "displayName": "schedule:3 외부 상태 점검",
+                  "maxTries": 1
+                },
+                "abilities": {
+                  "can_retry": true,
+                  "can_delete": true
+                }
+              },
+              "queueJobDetailLoading": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "큐 실패 작업 재시도·삭제 확인 창 — 대상(queueConfirm)과 건별 결과 목록(queueConfirmResults)을 채운다.",
+      "scope": {
+        "kind": "modal",
+        "match": "queue_confirm_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "queueConfirm": {
+                "action": "retry",
+                "uuids": [
+                  "00000000-0000-0000-0000-000000000021"
+                ],
+                "single": false,
+                "label": "선택한 작업 1개",
+                "names": {
+                  "00000000-0000-0000-0000-000000000021": "schedule:3 외부 상태 점검"
+                }
+              },
+              "queueConfirmResults": [
+                {
+                  "uuid": "00000000-0000-0000-0000-000000000021",
+                  "ok": true,
+                  "message": "다시 큐에 넣었습니다."
+                }
+              ],
+              "queueConfirmBusy": false,
+              "queueConfirmMessage": null
+            }
+          }
+        }
+      ]
+    },
+    {
       "comment": "모달 본문이 읽는 전역 상태(isEditMode, isSubmitting, scheduleForm, selectedSchedule) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",
@@ -3159,22 +3466,108 @@
           "initialState": {
             "global": {
               "selectedSchedule": {
-                "command": "샘플 값",
-                "description": "샘플 설명 문구입니다.",
-                "expression": "샘플 값",
                 "id": 1,
-                "name": "샘플 제목",
-                "timeout": 60,
-                "type_label": "샘플 제목"
+                "name": "sitemap-generate",
+                "label": {
+                  "ko": "사이트맵 생성",
+                  "en": "사이트맵 생성"
+                },
+                "label_localized": "사이트맵 생성",
+                "description": {
+                  "ko": "샘플 설명",
+                  "en": "Sample description"
+                },
+                "description_localized": "샘플 설명",
+                "command": "App\\Jobs\\GenerateSitemapJob",
+                "type": "job",
+                "frequency": "custom",
+                "frequency_label": "사용자 정의",
+                "expression": "0 2 * * *",
+                "owner": {
+                  "type": "core",
+                  "identifier": "core",
+                  "name": "코어"
+                },
+                "is_owned": true,
+                "locked_fields": [
+                  "command",
+                  "type",
+                  "name",
+                  "enabled_condition",
+                  "timezone"
+                ],
+                "overridden_fields": [
+                  "expression"
+                ],
+                "enabled_condition": [
+                  {
+                    "source": "core_setting",
+                    "key": "seo.sitemap_enabled",
+                    "operator": "truthy",
+                    "default": true
+                  },
+                  {
+                    "source": "config",
+                    "key": "app.sitemap_ready",
+                    "operator": "truthy",
+                    "default": true
+                  }
+                ],
+                "unmet_conditions": [
+                  {
+                    "source": "core_setting",
+                    "key": "seo.sitemap_enabled",
+                    "operator": "truthy"
+                  }
+                ],
+                "dispatch_mode": "queue",
+                "history_mode": "all",
+                "without_overlapping": 30,
+                "on_one_server": true,
+                "notify_on_failure": true,
+                "queue_connection": null,
+                "queue_name": null,
+                "timezone": "Asia/Seoul",
+                "run_in_maintenance": false,
+                "timeout": 600,
+                "is_active": true,
+                "last_result": "success",
+                "last_run_at": "2026-05-29T03:00:00+09:00",
+                "last_duration": "1.2초",
+                "next_run_at": "2026-05-30T03:00:00+09:00",
+                "created_at": "2026-05-01",
+                "abilities": {
+                  "can_create": true,
+                  "can_update": true,
+                  "can_delete": false,
+                  "can_run": true
+                },
+                "type_label": "Job 클래스"
               },
               "isEditMode": true,
               "scheduleForm": {
-                "frequency": "샘플 값",
-                "is_active": true,
+                "label": {
+                  "ko": "사이트맵 생성",
+                  "en": "Generate sitemap"
+                },
+                "description": {
+                  "ko": "샘플 설명",
+                  "en": "Sample description"
+                },
+                "type": "job",
+                "frequency": "custom",
+                "overlapEnabled": true,
+                "without_overlapping": 30,
+                "on_one_server": true,
+                "dispatch_mode": "queue",
+                "queue_connection": "database",
+                "queue_name": "long",
+                "history_mode": "all",
+                "notify_on_failure": true,
                 "run_in_maintenance": false,
-                "type": "sample",
-                "without_overlapping": true
+                "is_active": true
               },
+              "scheduleFormErrors": null,
               "isSubmitting": false
             }
           }
@@ -3329,6 +3722,111 @@
           "initialState": {
             "global": {
               "isRepublishingStaticCache": false
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "업로드 탭 「두 곳 모두 비우기」 확인 창(#869). 카드의 버튼이 `_global.thumbnailPurgeAll.locations` 에 두 저장 위치의 요약을 담고 연다 — 상태 없이는 위치 상자가 하나도 그려지지 않는다. 값은 표본 thumbnailStats 의 것.",
+      "scope": {
+        "kind": "modal",
+        "match": "settings_thumbnail_purge_all_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "thumbnailPurgeAll": {
+                "locations": [
+                  {
+                    "kind": "public",
+                    "current": "thumbnails",
+                    "disk_label": "비공개 썸네일 저장소",
+                    "remote": false,
+                    "loaded": true,
+                    "count": 128,
+                    "size": "5.6 MB"
+                  },
+                  {
+                    "kind": "gated",
+                    "current": "thumbnails",
+                    "disk_label": "비공개 썸네일 저장소",
+                    "remote": false,
+                    "loaded": true,
+                    "count": 42,
+                    "size": "1.1 MB"
+                  }
+                ],
+                "purging": false
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "업로드 탭 「기존 이미지 썸네일 만들기」 창(#869). 카드의 버튼이 `_global.thumbnailPregen` 에 소스·규격 선택지와 진행 계수를 담고 연다 — 상태 없이는 선택지가 비고 진행률 칸이 그려지지 않는다. 진행 중 한 걸음을 마친 모습(처리 40/170)을 담는다.",
+      "scope": {
+        "kind": "modal",
+        "match": "settings_thumbnail_pregenerate_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "global": {
+              "thumbnailPregen": {
+                "sourceOptions": [
+                  {
+                    "key": "core_attachment",
+                    "label": "첨부파일 이미지"
+                  },
+                  {
+                    "key": "layout_attachment",
+                    "label": "레이아웃 첨부 이미지"
+                  }
+                ],
+                "presetOptions": [
+                  "xs",
+                  "sm",
+                  "md",
+                  "lg",
+                  "xl",
+                  "sirsoft-hero_section.list"
+                ],
+                "presetLabels": {
+                  "xs": null,
+                  "sm": null,
+                  "md": null,
+                  "lg": null,
+                  "xl": null,
+                  "sirsoft-hero_section.list": "배너 목록"
+                },
+                "sources": [
+                  "core_attachment",
+                  "layout_attachment"
+                ],
+                "presets": [
+                  "sm",
+                  "md"
+                ],
+                "running": true,
+                "paused": false,
+                "inflight": false,
+                "done": false,
+                "cursor": "40",
+                "processed": 40,
+                "generated": 36,
+                "total": 170,
+                "steps": 2,
+                "error": null
+              }
             }
           }
         }
@@ -3862,7 +4360,7 @@
       ]
     },
     {
-      "comment": "모달 본문이 읽는 전역 상태(hasModifiedTemplateLayouts, isTemplateUpdating, modifiedTemplateLayouts, modifiedTemplateLayoutsCheckFailed, modifiedTemplateLayoutsCount, selectedTemplate, templateForceUpdate, templateLayoutSource, templateLayoutSourceOpen, templateLayoutStrategy, templateUpdateError, updateChangelog) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
+      "comment": "모달 본문이 읽는 전역 상태(isTemplateUpdating, selectedTemplate, templateForceUpdate, templateLayoutSource, templateLayoutSourceOpen, templateUpdateError, updateChangelog) — 목록 행의 클릭이 담는 값이라, 편집기에서는 이 상태로 담아야 본문이 빈 채로 열리지 않는다.",
       "scope": {
         "kind": "modal",
         "match": "template_update_modal"
@@ -3906,19 +4404,6 @@
               },
               "templateForceUpdate": false,
               "templateUpdateError": null,
-              "hasModifiedTemplateLayouts": true,
-              "modifiedTemplateLayoutsCount": 1,
-              "modifiedTemplateLayoutsCheckFailed": false,
-              "templateLayoutStrategy": "keep",
-              "modifiedTemplateLayouts": [
-                {
-                  "id": 1,
-                  "name": "home",
-                  "updated_at": "2026-09-30 14:20:00",
-                  "size_diff": 512,
-                  "kind": "layout"
-                }
-              ],
               "isTemplateUpdating": false
             }
           }
@@ -4585,6 +5070,46 @@
                 "hasMore": false,
                 "isLoadingMore": false,
                 "title": "$t:admin.settings.privacy.targets.title.withdrawn"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "comment": "코어 업데이트 확인 결과 창은 창을 연 화면(환경설정 정보 탭)의 _local.coreUpdateInfo 를 읽는다. 「업데이트 확인」 클릭이 담는 값이라 편집기에서는 이 표본으로 담아야 버전과 custom 사전 검사 중단 영역(번역 인자 count·version)이 빈 채로 그려지지 않는다 (#792).",
+      "scope": {
+        "kind": "modal",
+        "match": "core_update_result_modal"
+      },
+      "items": [
+        {
+          "id": "modal_filled",
+          "label": "$t:editor.state.modal_filled",
+          "default": true,
+          "initialState": {
+            "local": {
+              "coreUpdateInfo": {
+                "update_available": true,
+                "current_version": "7.2.0",
+                "latest_version": "7.3.0",
+                "github_url": "https://github.com/gnuboard/g7",
+                "custom_preflight": {
+                  "to_version": "7.3.0",
+                  "checked_at": "2026-10-17T09:00:00+09:00",
+                  "reserved_files": [],
+                  "conflicts": [
+                    {
+                      "package": "symfony/polyfill-ctype",
+                      "installed": "v1.31.0",
+                      "type": "duplicate",
+                      "requires": "symfony/polyfill-ctype",
+                      "constraint": "",
+                      "core_package": "symfony/polyfill-ctype",
+                      "core_version": "v1.37.0"
+                    }
+                  ]
+                }
               }
             }
           }

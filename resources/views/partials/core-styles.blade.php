@@ -7,9 +7,13 @@
 
     @param $sheet 'core'(사용자·관리자 셸 — 템플릿 CSS 와 함께 실린다, 전역 선택자 없음)
                 | 'standalone'(오류·점검·DB 계정 오류·템플릿 없음 화면 — 전역 리셋 포함)
+                | 'layers'(사용자 셸 — 확장 CSS 의미 칸 `@layer g7-extension;` 순서 선언, 템플릿 CSS 링크 **뒤**)
+                | 'layers-admin'(관리자 셸 — `@layer g7-preview, g7-extension;` 순서 선언, 템플릿 CSS 링크 **뒤**)
+                  층 순서는 그 층 이름이 문서에 처음 나온 자리로 정해지므로, 순서 선언만 담은 파일을 템플릿 CSS
+                  `<link>` 뒤에 두면 종전 인라인 `<style>` 선언과 같은 자리를 차지한다(#816 × #163).
 --}}
 @php
-    $g7CoreSheet = ($sheet ?? 'core') === 'standalone' ? 'standalone' : 'core';
+    $g7CoreSheet = in_array($sheet ?? 'core', ['standalone', 'layers', 'layers-admin'], true) ? $sheet : 'core';
     $g7CoreSheetFile = 'assets/core/css/g7-'.$g7CoreSheet.'.css';
     $g7CoreSheetPath = public_path($g7CoreSheetFile);
 @endphp

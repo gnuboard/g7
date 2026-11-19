@@ -1,0 +1,48 @@
+feature: 표시 통화 초기화(initPreferredCurrency) 우선순위 — 관리자 헤더는 관리자 화면 언어와 무관
+
+description: |
+  `sirsoft-ecommerce.initPreferredCurrency` 는 사용자와 관리자 기반 레이아웃의 init_actions 에서 표시 통화(`_global.preferredCurrency`)를
+  정한다. 우선순위는 계정 통화 → 브라우저 저장값 → 게스트 화면 언어 추정 → 기본 통화 → KRW 다.
+  관리자 화면 언어를 English 로 바꾼 직후 헤더 통화 단추가 「KR JPY」(배송국가 코드 + 표시 통화)로 바뀌었다(#869 브라우저 실측).
+  관리자 레이아웃은 current_user 를 전역으로 올리지 않아 핸들러가 계정 통화를 못 읽고, 게스트용 언어 추정으로 내려가 ko 는 KRW
+  하나에, en 은 여러 통화에 걸려 기본 통화로 떨어졌다. 관리자 인증 문맥에서는 추정을 돌리지 않고 「브라우저 저장값 → 기본 통화」만
+  쓴다(관리자 init 주석이 약속한 계약). 사용자 화면 게스트 추정은 그대로다.
+
+axes:
+  # 시험 하나가 시나리오 하나다. 앞 여덟은 우선순위 단계, locale_ 은 게스트 화면 언어 추정, 끝 셋은 관리자 화면(#869 S13)
+  case:
+    - stored
+    - account_user
+    - default
+    - invalid_stored
+    - final_fallback
+    - account_param
+    - account_param_invalid
+    - no_polling
+    - locale_single_match
+    - locale_stored_wins
+    - locale_region_suffix
+    - locale_multi_default
+    - locale_ambiguous
+    - locale_no_match
+    - locale_logged_in
+    - locale_unset
+    - admin_locale_switch
+    - admin_stored_choice
+    - user_guest
+
+effects:
+  - preferred_currency_restores_stored_choice       # 브라우저 저장값 복원, 언어 추정보다 우선
+  - preferred_currency_account_first                # 계정 통화(onSuccess 전달값, 현재 유저)가 1순위
+  - preferred_currency_falls_back_to_default        # 저장값 무효, 추정 실패 시 기본 통화, 마지막은 KRW
+  - preferred_currency_registers_no_timer           # 폴링 없이 이벤트(onSuccess)로만 재해석
+  - guest_currency_guessed_by_locale                # 게스트 화면 언어로 통화 추정(정확일치, 지역 정규화, 중복 시 기본)
+  - admin_header_currency_ignores_admin_locale      # 관리자 언어 ko → en 재초기화에도 기본 통화 그대로
+  - admin_header_currency_keeps_stored_choice       # 관리자 화면에서도 헤더에서 고른 저장값 우선
+  - guest_currency_still_guessed_by_locale          # 관리자 예외를 넣은 뒤에도 사용자 화면 게스트는 언어 추정
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/handlers/initPreferredCurrency.test.ts
+
+validation:
+  browser_check: 관리자 화면 언어 English 전환 직후와 한국어 복귀 뒤 헤더 통화 단추가 같은 통화(기본 통화 또는 헤더에서 고른 통화)

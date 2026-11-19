@@ -30,6 +30,17 @@ interface LayoutExtensionVersionRepositoryInterface
     public function getVersions(int $extensionId, int $limit = 100): Collection;
 
     /**
+     * 특정 확장의 최근 버전을 본문까지 조회 (최신순) — 영구 삭제 직전 스냅샷용.
+     *
+     * 목록(getVersions)은 경량 조회라 `content` 를 담지 않는다. 스냅샷은 버전 본문을 남겨야 하므로 이 전용 조회를 쓴다.
+     *
+     * @param  int  $extensionId  레이아웃 확장 ID
+     * @param  int  $limit  조회할 최대 버전 수
+     * @return Collection 버전 컬렉션 (본문 포함)
+     */
+    public function getRecentVersionsWithContent(int $extensionId, int $limit): Collection;
+
+    /**
      * 확장의 특정 버전 번호 조회 (본문 포함)
      *
      * 목록(getVersions)은 경량 조회라 `content` 를 담지 않고 건수 상한이 있다. 단건은 그

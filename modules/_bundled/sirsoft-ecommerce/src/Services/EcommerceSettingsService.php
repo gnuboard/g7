@@ -29,7 +29,10 @@ use Modules\Sirsoft\Ecommerce\Support\CurrencySettingsCache;
 class EcommerceSettingsService implements ModuleSettingsInterface
 {
     /**
-     * 사용자 화면 푸터에 싣는 법정 사업자 항목 (전자상거래법 사이버몰 표시 항목)
+     * 사용자 화면 푸터에 싣는 사업자 항목 — 푸터 사업자 정보 조각(user_global_footer)이 그리는 칸 전부
+     *
+     * 전자상거래법 사이버몰 표시 항목에 조각이 함께 보이는 팩스·부가통신사업 신고번호·개인정보 보호책임자를 더했다.
+     * 「사업자 정보 표시」(show_business_footer)를 끄면 이 칸들을 공개 설정에서 뺀다.
      *
      * @var array<int, string>
      */
@@ -40,9 +43,13 @@ class EcommerceSettingsService implements ModuleSettingsInterface
         'base_address',
         'detail_address',
         'phone',
+        'fax',
         'email',
         'business_number',
         'mail_order_number',
+        'telecom_number',
+        'privacy_officer',
+        'privacy_officer_email',
         'hosting_provider',
     ];
 
@@ -394,6 +401,9 @@ class EcommerceSettingsService implements ModuleSettingsInterface
             );
         }
 
+        // 기본 통화 행이 마일리지 통화 규칙의 첫 행이어야 한다 — 기본 통화를 바꾸거나 규칙을 저장할 때 맞춘다
+        $settings = $this->alignMileageRulesToBaseCurrency($settings);
+
         $success = true;
         $defaults = $this->getDefaults();
         $defaultValues = $defaults['defaults'] ?? [];
@@ -483,6 +493,114 @@ class EcommerceSettingsService implements ModuleSettingsInterface
         if (app()->resolved(CurrencyConversionService::class)) {
             app(CurrencyConversionService::class)->clearCache();
         }
+    }
+
+    /**
+     * 마일리지 통화 규칙의 첫 행을 기본 통화 행으로 맞춥니다.
+     *
+     * 마일리지는 기본 통화로 적립·정산되고, 마일리지 탭 저장 검증은 첫 행이 기본 통화여야 통과한다
+     * (`StoreEcommerceSettingsRequest::validateMileageCurrencyRules`). 종전에는 기본 통화를 바꾸는
+     * 언어/통화 저장이 규칙을 건드리지 않았고 화면은 첫 행의 통화 코드와 삭제를 잠가 두어, 기본 통화를
+     * 바꾼 상점은 마일리지 탭을 다시는 저장할 수 없었다.
+     *
+     * - 언어/통화 저장: 저장될 기본 통화로 저장된(또는 같은 요청의) 규칙을 맞춘다. 수정 전 버전이
+     *   어긋난 채 남긴 상태도 언어/통화 탭을 한 번 저장하면 복구된다.
+     * - 마일리지 저장: 저장된 기본 통화로 제출 규칙을 맞춘다. HTTP 경로는 검증이 먼저 422 로 막고
+     *   화면이 복구 단추를 주므로, 이 분기는 검증을 거치지 않는 서비스 직접 호출을 위한 것이다.
+     * - 기본 통화 행이 있으면 첫 행으로 옮기고, 없으면 화면 「통화 추가」와 같은 기본값 행을 만든다
+     *   (다른 통화의 금액 단위를 옮겨 오지 않는다). 다른 행은 순서대로 보존하고 중복을 만들지 않는다.
+     * - 규칙이 비어 있으면 그대로 둔다 — 행을 만들면 꺼져 있던 기본 통화 마일리지 사용이 몰래 켜진다.
+     *
+     * @param  array  $settings  저장할 설정 배열 (카테고리 => 값)
+     * @return array 마일리지 규칙이 맞춰진 설정 배열
+     */
+    private function alignMileageRulesToBaseCurrency(array $settings): array
+    {
+        $hasLanguageCurrency = is_array($settings['language_currency'] ?? null);
+        $submittedRules = $settings['mileage']['currency_rules'] ?? null;
+        if (! $hasLanguageCurrency && ! is_array($submittedRules)) {
+            return $settings;
+        }
+
+        $base = $hasLanguageCurrency ? ($settings['language_currency']['default_currency'] ?? null) : null;
+        if (! is_string($base) || trim($base) === '') {
+            $base = $this->loadCategorySettings('language_currency')['default_currency']
+                ?? ($this->getDefaults()['defaults']['language_currency']['default_currency'] ?? null);
+        }
+        if (! is_string($base) || trim($base) === '') {
+            return $settings;
+        }
+        $base = strtoupper(trim($base));
+
+        $savedMileage = null;
+        if (is_array($submittedRules)) {
+            $rules = $submittedRules;
+        } else {
+            $savedMileage = $this->loadCategorySettings('mileage');
+            $rules = $savedMileage['currency_rules']
+                ?? ($this->getDefaults()['defaults']['mileage']['currency_rules'] ?? []);
+        }
+
+        $aligned = $this->alignedMileageRules(is_array($rules) ? array_values($rules) : [], $base);
+        if ($aligned === null) {
+            return $settings;
+        }
+
+        if (is_array($submittedRules)) {
+            $settings['mileage']['currency_rules'] = $aligned;
+        } else {
+            $settings['mileage'] = array_merge($savedMileage ?? [], ['currency_rules' => $aligned]);
+        }
+
+        return $settings;
+    }
+
+    /**
+     * 기본 통화 행을 첫 행에 세운 규칙 목록을 만듭니다.
+     *
+     * @param  array<int, mixed>  $rules  마일리지 통화 규칙 목록
+     * @param  string  $base  기본 통화 코드 (대문자)
+     * @return array<int, mixed>|null 맞춘 목록 (이미 맞거나 규칙이 비어 고칠 것이 없으면 null)
+     */
+    private function alignedMileageRules(array $rules, string $base): ?array
+    {
+        if ($rules === []) {
+            return null;
+        }
+
+        $codeOf = fn ($rule) => is_array($rule) && is_string($rule['currency_code'] ?? null)
+            ? strtoupper(trim($rule['currency_code']))
+            : null;
+
+        if ($codeOf($rules[0]) === $base) {
+            return null;
+        }
+
+        $baseRule = null;
+        $others = [];
+        foreach ($rules as $rule) {
+            if ($codeOf($rule) === $base) {
+                // 같은 통화 행이 여럿이면 앞의 것만 살린다 — 검증이 중복을 막지만 직접 호출 경로도 정리한다
+                $baseRule ??= $rule;
+
+                continue;
+            }
+            $others[] = $rule;
+        }
+
+        $baseRule ??= [
+            'currency_code' => $base,
+            'point_value' => 1,
+            'min_use_amount' => 0,
+            'use_unit' => 1,
+            'max_use_type' => 'percent',
+            'max_use_percent' => 30,
+            'max_use_value' => 0,
+            'earn_rounding_unit' => '1',
+            'earn_rounding_method' => 'floor',
+        ];
+
+        return array_values([$baseRule, ...$others]);
     }
 
     /**

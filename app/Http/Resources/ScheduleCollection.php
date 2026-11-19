@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 
 class ScheduleCollection extends BaseApiCollection
 {
@@ -26,6 +27,23 @@ class ScheduleCollection extends BaseApiCollection
     }
 
     /**
+     * 행 배열을 만듭니다 — 소유자 이름 맵은 한 번만 만들어 모든 행에 넘긴다.
+     *
+     * @return Collection<int, array<string, mixed>> 목록용 행 배열
+     */
+    protected function listRows(): Collection
+    {
+        $ownerNames = $this->collection->isEmpty() ? [] : ScheduleResource::buildOwnerNameMap();
+
+        // 등록자 이름은 표시 이름으로 나간다. 추가 항목 값이 필요한 설정이면 여기서 한 번에 읽는다.
+        $this->preloadMemberDisplayNames($this->collection, ['creator']);
+
+        return $this->collection->map(function ($schedule) use ($ownerNames) {
+            return (new ScheduleResource($schedule))->withOwnerNames($ownerNames)->toListArray(request());
+        });
+    }
+
+    /**
      * 스케줄 컬렉션을 배열로 변환합니다.
      *
      * @param  Request  $request  HTTP 요청 객체
@@ -34,9 +52,7 @@ class ScheduleCollection extends BaseApiCollection
     public function toArray(Request $request): array
     {
         return [
-            'data' => $this->collection->map(function ($schedule) {
-                return (new ScheduleResource($schedule))->toListArray(request());
-            }),
+            'data' => $this->listRows(),
             'abilities' => $this->resolveCollectionAbilities($request),
             'pagination' => $this->when($this->resource instanceof LengthAwarePaginator, [
                 'current_page' => $this->resource->currentPage(),
@@ -59,9 +75,7 @@ class ScheduleCollection extends BaseApiCollection
     public function withStatistics(array $statistics = []): array
     {
         return [
-            'data' => $this->collection->map(function ($schedule) {
-                return (new ScheduleResource($schedule))->toListArray(request());
-            }),
+            'data' => $this->listRows(),
             'statistics' => $statistics,
             'abilities' => $this->resolveCollectionAbilities(request()),
             'pagination' => $this->when($this->resource instanceof LengthAwarePaginator, [

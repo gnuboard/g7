@@ -40,8 +40,15 @@
                         {
                             "type": "basic",
                             "name": "Div",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "grid grid-cols-2 gap-4"
+                                    }
+                                }
+                            },
                             "props": {
-                                "className": "grid-2col-responsive"
+                                "className": "grid grid-cols-1 gap-4"
                             },
                             "children": [
                                 {
@@ -269,8 +276,15 @@
                 {
                     "type": "basic",
                     "name": "Div",
+                    "responsive": {
+                        "768-": {
+                            "props": {
+                                "className": "grid grid-cols-3 gap-4"
+                            }
+                        }
+                    },
                     "props": {
-                        "className": "grid grid-cols-1 md:grid-cols-3 gap-4"
+                        "className": "grid grid-cols-1 gap-4"
                     },
                     "children": [
                         {
@@ -469,6 +483,2126 @@
             ]
         },
         {
+            "comment": "썸네일 (#869) — 설정과 캐시를 한 카드에 둔다(설계 확정 2026-11-04). 위쪽은 저장 버튼으로 반영되는 값(켬/끔·본문 이미지 규격·정리 스케줄),\n         아래 「저장 위치 · 캐시」는 원본이 공개인가 권한이 걸렸는가로 나뉜 두 저장 위치마다 디스크·사용량·비우기를 보인다.\n         디스크 select 는 저장 때 반영되지만 비우기는 즉시 실행이다 — 그래서 화면이 고친 디스크가 저장값과 다르면\n         그 줄은 사용량 대신 「저장 후 집계」를 보이고 비우기를 잠근다(저장 전 디스크를 비우는 사고 방지).\n         줄의 판정값은 부모 화면 계산값 `thumbnailLocations` 가 만든다(저장값은 받은 설정 원본 `settings` 에서 읽는다).",
+            "id": "card_thumbnail_settings",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:admin.settings.upload.thumbnail.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:admin.settings.upload.thumbnail.desc"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "comment": "엔진 없음 안내 — 서버에 GD·Imagick 이 모두 없으면 썸네일을 만들지 못하고 늘 원본을 보낸다. 켬/끔 값과 무관하게 알린다.",
+                            "id": "thumbnail_engine_missing_notice",
+                            "type": "basic",
+                            "name": "Div",
+                            "if": "{{_local.form?._meta?.thumbnail_engine_available === false}}",
+                            "props": {
+                                "className": "alert-warning",
+                                "data-testid": "thumbnail-engine-missing"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "triangle-exclamation",
+                                                "className": "text-xl text-yellow-700 dark:text-yellow-400 flex-shrink-0 mt-0.5"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-warning-soft"
+                                            },
+                                            "text": "$t:admin.settings.upload.thumbnail.engine_missing"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "responsive": {
+                                "768-": {
+                                    "props": {
+                                        "className": "grid grid-cols-2 gap-4"
+                                    }
+                                }
+                            },
+                            "props": {
+                                "className": "grid grid-cols-1 gap-4"
+                            },
+                            "children": [
+                                {
+                                    "id": "field_thumbnail_enabled",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:admin.settings.upload.thumbnail.enabled"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "props": {
+                                                "name": "upload.thumbnail_enabled",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:admin.settings.upload.thumbnail.enabled_hint"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "본문 이미지 규격 — 게시글·페이지 본문의 이미지를 표시할 때 붙일 규격. 선택지는 표에서 「사용」이 켜진 규격(og 제외)이라\n               표에서 규격을 끄거나 지우면 곧바로 선택지에서도 빠진다. 문구는 확장이 등록한 이름(label), 없으면 규격 이름이다.",
+                                    "id": "field_thumbnail_content_preset",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:admin.settings.upload.thumbnail.content_preset"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Select",
+                                            "props": {
+                                                "name": "upload.thumbnail_content_preset",
+                                                "disabled": "{{_computed.isReadOnly}}",
+                                                "className": "w-full",
+                                                "error": "{{_local.errors?.['upload.thumbnail_content_preset']?.[0] ?? ''}}",
+                                                "options": "{{(_local.form?.upload?.thumbnail_presets_rows ?? []).filter(r => r.kind !== 'og' && r.enabled !== false && !!r.name).map(r => ({value: r.name, label: ($localized(r.label) || r.name) + ' (' + (r.width ?? '-') + (r.height ? ' × ' + r.height : '') + ')'}))}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "if": "{{_local.errors?.['upload.thumbnail_content_preset']}}",
+                                            "props": {
+                                                "className": "form-error"
+                                            },
+                                            "text": "{{_local.errors?.['upload.thumbnail_content_preset']?.[0] ?? ''}}"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:admin.settings.upload.thumbnail.content_preset_hint"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "field_thumbnail_prune_enabled",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:admin.settings.upload.thumbnail.prune_enabled"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "props": {
+                                                "name": "upload.thumbnail_prune_enabled",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:admin.settings.upload.thumbnail.prune_enabled_hint"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "comment": "움직이는 이미지 원본 — 끄면 첫 프레임 썸네일. 확장은 core.thumbnail.filter_animated_original 로 형식·원본별로 바꾼다.",
+                                    "id": "field_thumbnail_animated_original",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Label",
+                                            "props": {
+                                                "className": "form-label"
+                                            },
+                                            "text": "$t:admin.settings.upload.thumbnail.animated_original"
+                                        },
+                                        {
+                                            "type": "composite",
+                                            "name": "Toggle",
+                                            "props": {
+                                                "name": "upload.thumbnail_animated_original",
+                                                "disabled": "{{_computed.isReadOnly}}"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "form-hint"
+                                            },
+                                            "text": "$t:admin.settings.upload.thumbnail.animated_original_hint"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "정리 스케줄 안내 — 고아 첨부 카드와 같은 방식으로 그 작업(thumbnails-prune)의 다음 실행 일시와 스케줄 관리 링크를 보인다.",
+                            "id": "thumbnail_prune_schedule_notice",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "alert-info"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "circle-info",
+                                                "className": "text-xl flex-shrink-0 mt-0.5"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "min-w-0 space-y-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-label-subtle"
+                                                    },
+                                                    "text": "$t:admin.settings.upload.thumbnail.prune_schedule_notice"
+                                                },
+                                                {
+                                                    "id": "thumbnail_prune_schedule_notice_next_run",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'thumbnails-prune')?.is_active !== false && !!(coreSchedules?.data?.data ?? []).find(r => r.name === 'thumbnails-prune')?.next_run_at}}",
+                                                    "props": {
+                                                        "className": "text-label-subtle flex-center flex-wrap gap-1"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:admin.settings.schedule_link.next_run"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "font-medium"
+                                                            },
+                                                            "text": "{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'thumbnails-prune')?.next_run_at | datetime}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "id": "thumbnail_prune_schedule_notice_inactive",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'thumbnails-prune')?.is_active === false}}",
+                                                    "props": {
+                                                        "className": "text-label-subtle"
+                                                    },
+                                                    "text": "$t:admin.settings.schedule_link.inactive"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-center flex-wrap gap-3"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "id": "thumbnail_prune_schedule_notice_link",
+                                                            "type": "basic",
+                                                            "name": "A",
+                                                            "if": "{{current_user !== undefined && (_computed.canReadSchedules !== false)}}",
+                                                            "props": {
+                                                                "href": "/admin/schedules?extension_type=core&search_field=identifier&search_keyword=thumbnails-prune",
+                                                                "className": "text-link"
+                                                            },
+                                                            "text": "$t:admin.settings.schedule_link.change"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "저장 위치 · 캐시 — 줄 둘(공개 이미지 썸네일 / 권한이 걸린 이미지 썸네일). 사용량은 thumbnailStats 소스(GET /api/admin/thumbnails/stats)의\n             locations 에서 그 분류 항목을 읽는다. 원격 디스크(S3·CDN)는 서버가 세지 않으므로 「집계 안 함」이다.",
+                            "id": "thumbnail_storage_section",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "row-stack pt-4 border-t border-gray-200 dark:border-gray-700"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "H4",
+                                            "props": {
+                                                "className": "text-sm font-semibold text-gray-800 dark:text-gray-200"
+                                            },
+                                            "text": "$t:admin.settings.upload.thumbnail.storage.title"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:admin.settings.upload.thumbnail.storage.desc"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "thumbnail_stats_failed",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{_global.thumbnailStatsFailed === true}}",
+                                    "props": {
+                                        "className": "alert-danger",
+                                        "data-testid": "thumbnail-stats-failed"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-sm"
+                                            },
+                                            "text": "$t:admin.settings.upload.thumbnail.storage.load_failed"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "iteration": {
+                                        "source": "{{_computed.thumbnailLocations ?? []}}",
+                                        "item_var": "loc"
+                                    },
+                                    "responsive": {
+                                        "desktop": {
+                                            "props": {
+                                                "className": "flex flex-row items-center gap-3 py-3 border-b border-gray-100 dark:border-gray-700"
+                                            }
+                                        }
+                                    },
+                                    "props": {
+                                        "data-testid": "{{'thumbnail-location-' + loc.kind}}",
+                                        "className": "flex flex-col gap-3 py-3 border-b border-gray-100 dark:border-gray-700"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "responsive": {
+                                                "desktop": {
+                                                    "props": {
+                                                        "className": "w-1/4 shrink-0 min-w-0"
+                                                    }
+                                                }
+                                            },
+                                            "props": {
+                                                "className": "shrink-0 min-w-0"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "text-sm font-medium text-gray-800 dark:text-gray-200"
+                                                    },
+                                                    "text": "{{$t('admin.settings.upload.thumbnail.storage.kinds.' + loc.kind)}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-hint break-words"
+                                                    },
+                                                    "text": "{{$t('admin.settings.upload.thumbnail.storage.kind_hints.' + loc.kind)}}"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "responsive": {
+                                                "desktop": {
+                                                    "props": {
+                                                        "className": "w-1/5 shrink-0"
+                                                    }
+                                                }
+                                            },
+                                            "props": {
+                                                "className": "w-full shrink-0"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Select",
+                                                    "props": {
+                                                        "name": "upload.thumbnail_disk_{{loc.kind}}",
+                                                        "aria-label": "$t:common.row_cell|row={{$t('admin.settings.upload.thumbnail.storage.kinds.' + loc.kind)}}|column={{$t('admin.settings.upload.thumbnail.storage.disk')}}",
+                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                        "className": "w-full",
+                                                        "error": "{{_local.errors?.['upload.thumbnail_disk_' + loc.kind]?.[0] ?? ''}}",
+                                                        "options": "{{(_local.form?._meta?.thumbnail_disk_options?.[loc.kind] ?? [{id: 'thumbnails', label: $t('admin.settings.upload.thumbnail.storage.private_disk')}]).map(o => ({value: o.id, label: $localized(o.label)}))}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{_local.errors?.['upload.thumbnail_disk_' + loc.kind]}}",
+                                                    "props": {
+                                                        "className": "form-error"
+                                                    },
+                                                    "text": "{{_local.errors?.['upload.thumbnail_disk_' + loc.kind]?.[0] ?? ''}}"
+                                                },
+                                                {
+                                                    "comment": "같은 버킷 경고 — 권한이 걸린 이미지 썸네일과 드라이버 탭 「공개 자산 디스크」가 둘 다 s3 일 때만. 저장은 막지 않는다(저장 응답 warnings 와 같은 조건).",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{loc.kind === 'gated' && (_local.form?.upload?.thumbnail_disk_gated ?? '') === 's3' && (_local.form?.drivers?.public_asset_disk ?? '') === 's3'}}",
+                                                    "props": {
+                                                        "className": "text-warning-soft mt-2",
+                                                        "data-testid": "{{'thumbnail-same-bucket-warning-' + loc.kind}}"
+                                                    },
+                                                    "text": "$t:admin.settings.upload.thumbnail.storage.same_bucket_warning"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "data-testid": "{{'thumbnail-usage-' + loc.kind}}",
+                                                "className": "flex-1 min-w-0 text-sm text-gray-700 dark:text-gray-300"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{loc.locked}}",
+                                                    "props": {
+                                                        "className": "text-warning-soft"
+                                                    },
+                                                    "text": "$t:admin.settings.upload.thumbnail.storage.after_save"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{!loc.locked && loc.remote}}",
+                                                    "props": {
+                                                        "className": "text-label-subtle"
+                                                    },
+                                                    "text": "$t:admin.settings.upload.thumbnail.storage.not_counted"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{!loc.locked && !loc.remote && loc.loaded}}",
+                                                    "props": {
+                                                        "className": "tabular-nums"
+                                                    },
+                                                    "text": "$t:admin.settings.upload.thumbnail.storage.usage|count={{loc.count ?? 0}}|size={{loc.size}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{!loc.locked && !loc.remote && !loc.loaded}}",
+                                                    "props": {
+                                                        "className": "text-label-subtle"
+                                                    },
+                                                    "text": "-"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "comment": "규격 select + 비우기 — 그 저장 위치의 썸네일만(규격을 고르면 그 규격만) 즉시 지운다. 저장 전 디스크(잠긴 줄)·진행 중에는 잠근다.\n                 진행 중 표시는 부모 화면의 걸음 액션 thumbnailPurgeStep 이 쓰는 `_global.thumbnailPurgeRun` 이다(비우기 한 번이 여러 요청일 수 있다).\n                 선택지 문구는 표 행의 이름(label)을 빌리고, 표에 없거나 이름이 없는 규격은 규격 이름 그대로다.",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "flex-center flex-wrap gap-2 shrink-0"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Select",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "고른 규격을 저장 위치별로 따로 기억한다 — 두 줄이 같은 select 를 공유하지 않도록 kind 를 키로 쓴다. 저장 버튼과 무관한 화면 상태다.",
+                                                            "type": "change",
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "local",
+                                                                "thumbnailPurgePreset": "{{({...(_local.thumbnailPurgePreset ?? {}), [loc.kind]: $event.target.value})}}"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "aria-label": "$t:common.row_cell|row={{$t('admin.settings.upload.thumbnail.storage.kinds.' + loc.kind)}}|column={{$t('admin.settings.upload.thumbnail.storage.purge_preset')}}",
+                                                        "value": "{{(_local.thumbnailPurgePreset ?? {})[loc.kind] ?? ''}}",
+                                                        "disabled": "{{_computed.isReadOnly || loc.locked || !!_global.thumbnailPurgeRun}}",
+                                                        "className": "w-36",
+                                                        "data-testid": "{{'thumbnail-purge-preset-' + loc.kind}}",
+                                                        "options": "{{[{value: '', label: $t('admin.settings.upload.thumbnail.storage.all_presets')}].concat((thumbnailStats?.data?.presets ?? []).map(p => ({value: p, label: $localized((_local.form?.upload?.thumbnail_presets_rows ?? []).find(r => r.name === p)?.label) || p})))}}"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Button",
+                                                    "actions": [
+                                                        {
+                                                            "comment": "이 저장 위치만 비운다(규격을 골랐으면 그 규격만). 저장 버튼과 무관한 즉시 실행이다. 진행 상태를 전역에 깔고 걸음 액션을\n                       부른다 — 서버가 다음 커서를 주는 동안 이어 부르고, 끝나면 알리고 사용량을 다시 센다. 진행 상태는 성공·실패 모두에서 걷힌다.",
+                                                            "type": "click",
+                                                            "handler": "sequence",
+                                                            "actions": [
+                                                                {
+                                                                    "handler": "setState",
+                                                                    "params": {
+                                                                        "target": "global",
+                                                                        "thumbnailPurgeRun": {
+                                                                            "origin": "row",
+                                                                            "location": "{{loc.kind}}",
+                                                                            "preset": "{{(_local.thumbnailPurgePreset ?? {})[loc.kind] || null}}",
+                                                                            "cursor": null,
+                                                                            "deleted": {}
+                                                                        }
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "actionRef": "thumbnailPurgeStep"
+                                                                }
+                                                            ]
+                                                        }
+                                                    ],
+                                                    "props": {
+                                                        "type": "button",
+                                                        "className": "btn btn-secondary btn-sm",
+                                                        "disabled": "{{_computed.isReadOnly || loc.locked || !!_global.thumbnailPurgeRun}}",
+                                                        "data-testid": "{{'thumbnail-purge-' + loc.kind}}"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Icon",
+                                                            "if": "{{_global.thumbnailPurgeRun?.origin === 'row' && _global.thumbnailPurgeRun?.location === loc.kind}}",
+                                                            "props": {
+                                                                "name": "spinner",
+                                                                "className": "spinner-sm"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:admin.settings.upload.thumbnail.storage.purge"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "id": "thumbnail_storage_locked_hint",
+                                    "type": "basic",
+                                    "name": "P",
+                                    "if": "{{(_computed.thumbnailLocations ?? []).some(l => l.locked)}}",
+                                    "props": {
+                                        "className": "text-warning-soft",
+                                        "data-testid": "thumbnail-storage-locked-hint"
+                                    },
+                                    "text": "$t:admin.settings.upload.thumbnail.storage.locked_hint"
+                                },
+                                {
+                                    "comment": "CDN 퍼지 안내 — 공개 위치를 공개 자산 디스크(public·s3·CDN)로 골랐을 때만 보인다. 비공개 thumbnails 디스크는 CDN 을 타지 않는다.",
+                                    "id": "thumbnail_cdn_purge_notice",
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "if": "{{(_local.form?.upload?.thumbnail_disk_public ?? 'thumbnails') !== 'thumbnails'}}",
+                                    "props": {
+                                        "className": "alert-info",
+                                        "data-testid": "thumbnail-cdn-purge-notice"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "circle-info",
+                                                "className": "text-base text-blue-500 dark:text-blue-400 flex-shrink-0 mt-0.5"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-info-soft"
+                                            },
+                                            "text": "$t:admin.settings.upload.thumbnail.storage.cdn_purge_notice"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex-center flex-wrap gap-2"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "두 곳 모두 비우기 — 바로 지우지 않고 확인 창을 연다. 창은 이 화면의 계산값을 못 읽으므로 두 위치의 요약을 전역에 담아 넘긴다\n                     (먼저 null 로 비워 앞 창의 값이 섞이지 않게 한다).",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "thumbnailPurgeAll": null
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "thumbnailPurgeAll": {
+                                                                    "locations": "{{_computed.thumbnailLocations ?? []}}",
+                                                                    "purging": false
+                                                                }
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "openModal",
+                                                            "target": "settings_thumbnail_purge_all_modal"
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "btn btn-danger btn-sm",
+                                                "disabled": "{{_computed.isReadOnly || (_computed.thumbnailLocations ?? []).some(l => l.locked) || !!_global.thumbnailPurgeRun}}",
+                                                "data-testid": "thumbnail-purge-all"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "trash",
+                                                        "className": "text-xs"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.settings.upload.thumbnail.storage.purge_all"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Button",
+                                            "actions": [
+                                                {
+                                                    "comment": "기존 이미지 썸네일 만들기 — 창을 열기 전에 소스·규격 선택지와 기본 선택을 전역에 담는다. 규격 기본 선택은\n                     「등록 시 생성」이 켜진 규격이고, 그런 규격이 없으면 사용 중인 규격 전부다. 진행 계수는 0 에서 시작한다.\n                     앞 실행의 요청이 아직 돌면(창을 닫아 멈춤만 남긴 상태) 이 버튼은 잠겨 있다 — 상태를 새로 깔면 inflight 가 풀려\n                     시작을 또 누를 수 있어 사슬이 둘이 된다. 실행 토큰(runId)도 비워, 혹시 늦게 온 응답은 걸음 액션이 버린다.",
+                                                    "type": "click",
+                                                    "handler": "sequence",
+                                                    "actions": [
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "thumbnailPregen": null
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "setState",
+                                                            "params": {
+                                                                "target": "global",
+                                                                "thumbnailPregen": {
+                                                                    "sourceOptions": "{{thumbnailStats?.data?.sources ?? []}}",
+                                                                    "presetOptions": "{{thumbnailStats?.data?.presets ?? []}}",
+                                                                    "presetLabels": "{{Object.fromEntries((_local.form?.upload?.thumbnail_presets_rows ?? []).filter(r => !!r.name).map(r => [r.name, r.label ?? null]))}}",
+                                                                    "sources": "{{(thumbnailStats?.data?.sources ?? []).map(s => s.key)}}",
+                                                                    "presets": "{{(function() { const all = thumbnailStats?.data?.presets ?? []; const picked = (_local.form?.upload?.thumbnail_presets_rows ?? []).filter(r => r.pregenerate === true).map(r => r.name).filter(n => all.includes(n)); return picked.length > 0 ? picked : all; })()}}",
+                                                                    "running": false,
+                                                                    "paused": false,
+                                                                    "inflight": false,
+                                                                    "runId": null,
+                                                                    "requestRun": null,
+                                                                    "done": false,
+                                                                    "cursor": null,
+                                                                    "processed": 0,
+                                                                    "generated": 0,
+                                                                    "total": null,
+                                                                    "steps": 0,
+                                                                    "error": null
+                                                                }
+                                                            }
+                                                        },
+                                                        {
+                                                            "handler": "openModal",
+                                                            "target": "settings_thumbnail_pregenerate_modal"
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "props": {
+                                                "type": "button",
+                                                "className": "btn btn-secondary btn-sm",
+                                                "disabled": "{{_computed.isReadOnly || (_computed.thumbnailLocations ?? []).some(l => l.locked) || _local.form?._meta?.thumbnail_engine_available === false || _global.thumbnailPregen?.inflight === true}}",
+                                                "data-testid": "thumbnail-pregenerate-open"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Icon",
+                                                    "props": {
+                                                        "name": "images",
+                                                        "className": "text-xs"
+                                                    }
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "text": "$t:admin.settings.upload.thumbnail.storage.pregenerate"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "고급 — 서버 보호 값 여섯(.env G7_THUMBNAIL_* 와 같은 값). 비운 칸은 서버 기본값(`_meta.thumbnail_server_defaults`, .env 가 있으면 그 값)을\n             placeholder 로 보이고 저장하면 null 이 된다. .env 우선 모드에서 .env 가 정한 칸은 다른 탭의 .env 칸과 같이 배지를 달고 잠긴다\n             (`_computed.envLocked`, 저장은 서버가 그 키를 버린다). 입력 범위는 `_meta.limits`(config core.settings_limits).",
+                            "id": "thumbnail_server_limits_section",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "row-stack pt-4 border-t border-gray-200 dark:border-gray-700",
+                                "data-testid": "thumbnail-server-limits"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "H4",
+                                            "props": {
+                                                "className": "text-sm font-semibold text-gray-800 dark:text-gray-200"
+                                            },
+                                            "text": "$t:admin.settings.upload.thumbnail.server_limits.title"
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "P",
+                                            "props": {
+                                                "className": "text-label-subtle"
+                                            },
+                                            "text": "$t:admin.settings.upload.thumbnail.server_limits.desc"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "responsive": {
+                                        "768-": {
+                                            "props": {
+                                                "className": "grid grid-cols-2 gap-4"
+                                            }
+                                        }
+                                    },
+                                    "props": {
+                                        "className": "grid grid-cols-1 gap-4"
+                                    },
+                                    "children": [
+                                        {
+                                            "id": "field_thumbnail_generate_per_minute",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "data-testid": "thumbnail-server-limit-field-generate_per_minute"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "className": "form-label"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:admin.settings.upload.thumbnail.server_limits.generate_per_minute"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{_computed.envLocked?.['upload.thumbnail_generate_per_minute'] === true}}",
+                                                            "props": {
+                                                                "text": "$t:admin.settings.env_locked_badge",
+                                                                "variant": "secondary",
+                                                                "size": "sm",
+                                                                "className": "ml-2"
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-center gap-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Input",
+                                                            "props": {
+                                                                "type": "number",
+                                                                "name": "upload.thumbnail_generate_per_minute",
+                                                                "min": "{{_local?.form?._meta?.limits?.upload_thumbnail_generate_per_minute_min ?? 1}}",
+                                                                "max": "{{_local?.form?._meta?.limits?.upload_thumbnail_generate_per_minute_max ?? 10000}}",
+                                                                "placeholder": "{{String(_local.form?._meta?.thumbnail_server_defaults?.generate_per_minute ?? 120)}}",
+                                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['upload.thumbnail_generate_per_minute'] === true}}",
+                                                                "className": "input flex-1 {{_local.errors?.['upload.thumbnail_generate_per_minute'] ? 'input-error' : ''}}",
+                                                                "data-testid": "thumbnail-server-limit-generate_per_minute"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-label-subtle"
+                                                            },
+                                                            "text": "$t:admin.settings.upload.thumbnail.server_limits.unit_count"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{_local.errors?.['upload.thumbnail_generate_per_minute']}}",
+                                                    "props": {
+                                                        "className": "form-error"
+                                                    },
+                                                    "text": "{{_local.errors?.['upload.thumbnail_generate_per_minute']?.[0] ?? ''}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "form-hint"
+                                                    },
+                                                    "text": "$t:admin.settings.upload.thumbnail.server_limits.generate_per_minute_hint"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "field_thumbnail_lock_wait_seconds",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "data-testid": "thumbnail-server-limit-field-lock_wait_seconds"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "className": "form-label"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:admin.settings.upload.thumbnail.server_limits.lock_wait_seconds"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{_computed.envLocked?.['upload.thumbnail_lock_wait_seconds'] === true}}",
+                                                            "props": {
+                                                                "text": "$t:admin.settings.env_locked_badge",
+                                                                "variant": "secondary",
+                                                                "size": "sm",
+                                                                "className": "ml-2"
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-center gap-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Input",
+                                                            "props": {
+                                                                "type": "number",
+                                                                "name": "upload.thumbnail_lock_wait_seconds",
+                                                                "min": "{{_local?.form?._meta?.limits?.upload_thumbnail_lock_wait_seconds_min ?? 1}}",
+                                                                "max": "{{_local?.form?._meta?.limits?.upload_thumbnail_lock_wait_seconds_max ?? 30}}",
+                                                                "placeholder": "{{String(_local.form?._meta?.thumbnail_server_defaults?.lock_wait_seconds ?? 10)}}",
+                                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['upload.thumbnail_lock_wait_seconds'] === true}}",
+                                                                "className": "input flex-1 {{_local.errors?.['upload.thumbnail_lock_wait_seconds'] ? 'input-error' : ''}}",
+                                                                "data-testid": "thumbnail-server-limit-lock_wait_seconds"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-label-subtle"
+                                                            },
+                                                            "text": "$t:admin.settings.upload.thumbnail.server_limits.unit_seconds"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{_local.errors?.['upload.thumbnail_lock_wait_seconds']}}",
+                                                    "props": {
+                                                        "className": "form-error"
+                                                    },
+                                                    "text": "{{_local.errors?.['upload.thumbnail_lock_wait_seconds']?.[0] ?? ''}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "form-hint"
+                                                    },
+                                                    "text": "$t:admin.settings.upload.thumbnail.server_limits.lock_wait_seconds_hint"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "field_thumbnail_max_source_pixels",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "data-testid": "thumbnail-server-limit-field-max_source_pixels"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "className": "form-label"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:admin.settings.upload.thumbnail.server_limits.max_source_pixels"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{_computed.envLocked?.['upload.thumbnail_max_source_pixels'] === true}}",
+                                                            "props": {
+                                                                "text": "$t:admin.settings.env_locked_badge",
+                                                                "variant": "secondary",
+                                                                "size": "sm",
+                                                                "className": "ml-2"
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-center gap-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Input",
+                                                            "props": {
+                                                                "type": "number",
+                                                                "name": "upload.thumbnail_max_source_pixels",
+                                                                "min": "{{_local?.form?._meta?.limits?.upload_thumbnail_max_source_pixels_min ?? 1000000}}",
+                                                                "max": "{{_local?.form?._meta?.limits?.upload_thumbnail_max_source_pixels_max ?? 100000000}}",
+                                                                "placeholder": "{{String(_local.form?._meta?.thumbnail_server_defaults?.max_source_pixels ?? 16000000)}}",
+                                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['upload.thumbnail_max_source_pixels'] === true}}",
+                                                                "className": "input flex-1 {{_local.errors?.['upload.thumbnail_max_source_pixels'] ? 'input-error' : ''}}",
+                                                                "data-testid": "thumbnail-server-limit-max_source_pixels"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-label-subtle"
+                                                            },
+                                                            "text": "$t:admin.settings.upload.thumbnail.server_limits.unit_pixels"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{_local.errors?.['upload.thumbnail_max_source_pixels']}}",
+                                                    "props": {
+                                                        "className": "form-error"
+                                                    },
+                                                    "text": "{{_local.errors?.['upload.thumbnail_max_source_pixels']?.[0] ?? ''}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "form-hint"
+                                                    },
+                                                    "text": "$t:admin.settings.upload.thumbnail.server_limits.max_source_pixels_hint"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "field_thumbnail_pregenerate_batch",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "data-testid": "thumbnail-server-limit-field-pregenerate_batch"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "className": "form-label"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:admin.settings.upload.thumbnail.server_limits.pregenerate_batch"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{_computed.envLocked?.['upload.thumbnail_pregenerate_batch'] === true}}",
+                                                            "props": {
+                                                                "text": "$t:admin.settings.env_locked_badge",
+                                                                "variant": "secondary",
+                                                                "size": "sm",
+                                                                "className": "ml-2"
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-center gap-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Input",
+                                                            "props": {
+                                                                "type": "number",
+                                                                "name": "upload.thumbnail_pregenerate_batch",
+                                                                "min": "{{_local?.form?._meta?.limits?.upload_thumbnail_pregenerate_batch_min ?? 1}}",
+                                                                "max": "{{_local?.form?._meta?.limits?.upload_thumbnail_pregenerate_batch_max ?? 500}}",
+                                                                "placeholder": "{{String(_local.form?._meta?.thumbnail_server_defaults?.pregenerate_batch ?? 20)}}",
+                                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['upload.thumbnail_pregenerate_batch'] === true}}",
+                                                                "className": "input flex-1 {{_local.errors?.['upload.thumbnail_pregenerate_batch'] ? 'input-error' : ''}}",
+                                                                "data-testid": "thumbnail-server-limit-pregenerate_batch"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-label-subtle"
+                                                            },
+                                                            "text": "$t:admin.settings.upload.thumbnail.server_limits.unit_count"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{_local.errors?.['upload.thumbnail_pregenerate_batch']}}",
+                                                    "props": {
+                                                        "className": "form-error"
+                                                    },
+                                                    "text": "{{_local.errors?.['upload.thumbnail_pregenerate_batch']?.[0] ?? ''}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "form-hint"
+                                                    },
+                                                    "text": "$t:admin.settings.upload.thumbnail.server_limits.pregenerate_batch_hint"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "field_thumbnail_pregenerate_time_budget",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "data-testid": "thumbnail-server-limit-field-pregenerate_time_budget"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "className": "form-label"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:admin.settings.upload.thumbnail.server_limits.pregenerate_time_budget"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{_computed.envLocked?.['upload.thumbnail_pregenerate_time_budget'] === true}}",
+                                                            "props": {
+                                                                "text": "$t:admin.settings.env_locked_badge",
+                                                                "variant": "secondary",
+                                                                "size": "sm",
+                                                                "className": "ml-2"
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-center gap-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Input",
+                                                            "props": {
+                                                                "type": "number",
+                                                                "name": "upload.thumbnail_pregenerate_time_budget",
+                                                                "min": "{{_local?.form?._meta?.limits?.upload_thumbnail_pregenerate_time_budget_min ?? 1}}",
+                                                                "max": "{{_local?.form?._meta?.limits?.upload_thumbnail_pregenerate_time_budget_max ?? 60}}",
+                                                                "placeholder": "{{String(_local.form?._meta?.thumbnail_server_defaults?.pregenerate_time_budget ?? 15)}}",
+                                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['upload.thumbnail_pregenerate_time_budget'] === true}}",
+                                                                "className": "input flex-1 {{_local.errors?.['upload.thumbnail_pregenerate_time_budget'] ? 'input-error' : ''}}",
+                                                                "data-testid": "thumbnail-server-limit-pregenerate_time_budget"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-label-subtle"
+                                                            },
+                                                            "text": "$t:admin.settings.upload.thumbnail.server_limits.unit_seconds"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{_local.errors?.['upload.thumbnail_pregenerate_time_budget']}}",
+                                                    "props": {
+                                                        "className": "form-error"
+                                                    },
+                                                    "text": "{{_local.errors?.['upload.thumbnail_pregenerate_time_budget']?.[0] ?? ''}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "form-hint"
+                                                    },
+                                                    "text": "$t:admin.settings.upload.thumbnail.server_limits.pregenerate_time_budget_hint"
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "id": "field_thumbnail_purge_time_budget",
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "data-testid": "thumbnail-server-limit-field-purge_time_budget"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Label",
+                                                    "props": {
+                                                        "className": "form-label"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:admin.settings.upload.thumbnail.server_limits.purge_time_budget"
+                                                        },
+                                                        {
+                                                            "type": "composite",
+                                                            "name": "Badge",
+                                                            "if": "{{_computed.envLocked?.['upload.thumbnail_purge_time_budget'] === true}}",
+                                                            "props": {
+                                                                "text": "$t:admin.settings.env_locked_badge",
+                                                                "variant": "secondary",
+                                                                "size": "sm",
+                                                                "className": "ml-2"
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-center gap-2"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Input",
+                                                            "props": {
+                                                                "type": "number",
+                                                                "name": "upload.thumbnail_purge_time_budget",
+                                                                "min": "{{_local?.form?._meta?.limits?.upload_thumbnail_purge_time_budget_min ?? 1}}",
+                                                                "max": "{{_local?.form?._meta?.limits?.upload_thumbnail_purge_time_budget_max ?? 60}}",
+                                                                "placeholder": "{{String(_local.form?._meta?.thumbnail_server_defaults?.purge_time_budget ?? 10)}}",
+                                                                "disabled": "{{_computed.isReadOnly || _computed.envLocked?.['upload.thumbnail_purge_time_budget'] === true}}",
+                                                                "className": "input flex-1 {{_local.errors?.['upload.thumbnail_purge_time_budget'] ? 'input-error' : ''}}",
+                                                                "data-testid": "thumbnail-server-limit-purge_time_budget"
+                                                            }
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "text-label-subtle"
+                                                            },
+                                                            "text": "$t:admin.settings.upload.thumbnail.server_limits.unit_seconds"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Span",
+                                                    "if": "{{_local.errors?.['upload.thumbnail_purge_time_budget']}}",
+                                                    "props": {
+                                                        "className": "form-error"
+                                                    },
+                                                    "text": "{{_local.errors?.['upload.thumbnail_purge_time_budget']?.[0] ?? ''}}"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "form-hint"
+                                                    },
+                                                    "text": "$t:admin.settings.upload.thumbnail.server_limits.purge_time_budget_hint"
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "comment": "썸네일 규격 표 (#869) — 행은 서버가 고정 슬롯·og·확장 규격·운영자 규격을 합쳐 내려 준 `upload.thumbnail_presets_rows`(행마다 kind).\n         고정·확장 행은 이름을 바꿀 수 없고 값만 고친다(확장 행은 「기본값으로」로 확장이 등록한 값으로 되돌린다). og 행은 크기를 SEO 탭이\n         소유하고 저장 대상도 아니라 값 칸을 모두 잠근다. 운영자 행만 이름을 정하고 지울 수 있다.\n         편집은 행 배열을 통째로 갈아 끼우고 「고친 것이 있다」를 켠다. 저장 버튼이 이 배열을 `upload.thumbnail_presets` 로 바꿔 보낸다(og 행 제외).\n         서버 422 의 `upload.thumbnail_presets.{번호}.{칸}` 은 부모 계산값 `thumbnailPresetErrors` 가 표의 행 번호로 옮겨 그 칸 아래에 단다.\n         이름 칸은 확장이 등록한 사람이 읽는 이름(행의 `label`, 로케일 맵)을 위에, 식별자(`?size=` 값)를 그 아래 작게 둔다. `label` 이\n         null 인 행(고정·og·운영자, 이름을 등록하지 않은 확장)은 지금처럼 식별자만 보인다. `label` 은 표시용이라 저장 본문에 싣지 않는다.",
+            "id": "card_thumbnail_presets",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:admin.settings.upload.thumbnail.presets.title"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:admin.settings.upload.thumbnail.presets.desc"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "row-stack"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Span",
+                            "if": "{{(_computed.thumbnailPresetErrors?.root ?? []).length > 0}}",
+                            "props": {
+                                "className": "form-error",
+                                "data-testid": "thumbnail-presets-error"
+                            },
+                            "text": "{{_computed.thumbnailPresetErrors?.root?.[0] ?? ''}}"
+                        },
+                        {
+                            "id": "thumbnail_presets_table",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "overflow-x-auto"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Table",
+                                    "props": {
+                                        "className": "w-full text-sm"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Thead",
+                                            "props": {
+                                                "className": "bg-gray-50 dark:bg-gray-700/50"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Tr",
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "px-2 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap"
+                                                            },
+                                                            "text": "$t:admin.settings.upload.thumbnail.presets.col.name"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "px-2 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap"
+                                                            },
+                                                            "text": "$t:admin.settings.upload.thumbnail.presets.col.source"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "px-2 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap"
+                                                            },
+                                                            "text": "$t:admin.settings.upload.thumbnail.presets.col.width"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "px-2 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap"
+                                                            },
+                                                            "text": "$t:admin.settings.upload.thumbnail.presets.col.height"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "px-2 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap"
+                                                            },
+                                                            "text": "$t:admin.settings.upload.thumbnail.presets.col.fit"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "px-2 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap"
+                                                            },
+                                                            "text": "$t:admin.settings.upload.thumbnail.presets.col.anchor"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "px-2 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap"
+                                                            },
+                                                            "text": "$t:admin.settings.upload.thumbnail.presets.col.format"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "px-2 py-2 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap"
+                                                            },
+                                                            "text": "$t:admin.settings.upload.thumbnail.presets.col.quality"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "px-2 py-2 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap"
+                                                            },
+                                                            "text": "$t:admin.settings.upload.thumbnail.presets.col.upscale"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "px-2 py-2 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap"
+                                                            },
+                                                            "text": "$t:admin.settings.upload.thumbnail.presets.col.pregenerate"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "px-2 py-2 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap"
+                                                            },
+                                                            "text": "$t:admin.settings.upload.thumbnail.presets.col.numeric"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "px-2 py-2 text-center text-xs font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap"
+                                                            },
+                                                            "text": "$t:admin.settings.upload.thumbnail.presets.col.enabled"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Th",
+                                                            "props": {
+                                                                "className": "px-2 py-2 text-right text-xs font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap"
+                                                            },
+                                                            "text": "$t:admin.settings.upload.thumbnail.presets.col.actions"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Tbody",
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Tr",
+                                                    "iteration": {
+                                                        "source": "{{_local.form?.upload?.thumbnail_presets_rows ?? []}}",
+                                                        "item_var": "row",
+                                                        "index_var": "rowIdx"
+                                                    },
+                                                    "props": {
+                                                        "data-testid": "{{'thumbnail-preset-row-' + (row.name || rowIdx)}}",
+                                                        "className": "border-t border-gray-200 dark:border-gray-700 align-top"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-2 py-2 min-w-[120px]"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{row.kind !== 'custom' && !!$localized(row.label)}}",
+                                                                    "props": {
+                                                                        "className": "block text-gray-800 dark:text-gray-200 break-words",
+                                                                        "data-testid": "{{'thumbnail-preset-label-' + rowIdx}}"
+                                                                    },
+                                                                    "text": "{{$localized(row.label)}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{row.kind !== 'custom'}}",
+                                                                    "props": {
+                                                                        "className": "{{$localized(row.label) ? 'block font-mono text-xs text-gray-500 dark:text-gray-400 break-all' : 'font-mono text-gray-800 dark:text-gray-200 break-all'}}",
+                                                                        "data-testid": "{{'thumbnail-preset-ident-' + rowIdx}}"
+                                                                    },
+                                                                    "text": "{{row.name}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Input",
+                                                                    "if": "{{row.kind === 'custom'}}",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "이름 칸 — 앞뒤 공백을 걷어 넣는다. 형식(영소문자 시작·32자 이하·예약어 금지) 검사는 저장 때 서버가 하고 오류는 이 칸 아래에 단다.",
+                                                                            "type": "change",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "form.upload.thumbnail_presets_rows": "{{(_local.form?.upload?.thumbnail_presets_rows ?? []).map((r, i) => i === rowIdx ? {...r, name: $event.target.value.trim()} : r)}}",
+                                                                                "hasChanges": true
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "type": "text",
+                                                                        "value": "{{row.name ?? ''}}",
+                                                                        "placeholder": "$t:admin.settings.upload.thumbnail.presets.placeholder.name",
+                                                                        "aria-label": "$t:common.row_cell|row={{row.name || $t('common.row_n', {n: rowIdx + 1})}}|column={{$t('admin.settings.upload.thumbnail.presets.col.name')}}",
+                                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                                        "className": "input font-mono {{_computed.thumbnailPresetErrors?.rows?.[rowIdx]?.name ? 'input-error' : ''}}",
+                                                                        "data-testid": "{{'thumbnail-preset-name-' + rowIdx}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{_computed.thumbnailPresetErrors?.rows?.[rowIdx]?.name}}",
+                                                                    "props": {
+                                                                        "className": "form-error"
+                                                                    },
+                                                                    "text": "{{_computed.thumbnailPresetErrors?.rows?.[rowIdx]?.name?.[0] ?? ''}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-2 py-2 whitespace-nowrap"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "composite",
+                                                                    "name": "Badge",
+                                                                    "props": {
+                                                                        "text": "{{row.kind === 'extension' ? row.source : $t('admin.settings.upload.thumbnail.presets.kinds.' + (row.kind ?? 'custom'))}}",
+                                                                        "variant": "{{row.kind === 'custom' ? 'primary' : 'secondary'}}",
+                                                                        "size": "sm"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-2 py-2 min-w-[80px]"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Input",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "가로 칸 — 입력값은 문자열이라 숫자로 바꿔 넣고, 비우면 null 로 넣어 서버의 「가로 필수」 검사가 그 칸을 가리키게 한다.",
+                                                                            "type": "change",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "form.upload.thumbnail_presets_rows": "{{(_local.form?.upload?.thumbnail_presets_rows ?? []).map((r, i) => i === rowIdx ? {...r, width: $event.target.value === '' ? null : Number($event.target.value)} : r)}}",
+                                                                                "hasChanges": true
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "type": "number",
+                                                                        "value": "{{row.width ?? ''}}",
+                                                                        "min": "{{_local?.form?._meta?.limits?.upload_thumbnail_width_min ?? 16}}",
+                                                                        "max": "{{_local?.form?._meta?.limits?.upload_thumbnail_width_max ?? 4096}}",
+                                                                        "aria-label": "$t:common.row_cell|row={{row.name || $t('common.row_n', {n: rowIdx + 1})}}|column={{$t('admin.settings.upload.thumbnail.presets.col.width')}}",
+                                                                        "disabled": "{{_computed.isReadOnly || row.kind === 'og'}}",
+                                                                        "className": "input w-24 disabled:opacity-50 {{_computed.thumbnailPresetErrors?.rows?.[rowIdx]?.width ? 'input-error' : ''}}",
+                                                                        "data-testid": "{{'thumbnail-preset-width-' + rowIdx}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{_computed.thumbnailPresetErrors?.rows?.[rowIdx]?.width}}",
+                                                                    "props": {
+                                                                        "className": "form-error"
+                                                                    },
+                                                                    "text": "{{_computed.thumbnailPresetErrors?.rows?.[rowIdx]?.width?.[0] ?? ''}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-2 py-2 min-w-[80px]"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Input",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "세로 칸 — 비우면 null 이다. 「가로만 맞춤」은 세로 없이 비율대로 줄이고, 다른 맞춤은 서버가 세로를 요구한다.",
+                                                                            "type": "change",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "form.upload.thumbnail_presets_rows": "{{(_local.form?.upload?.thumbnail_presets_rows ?? []).map((r, i) => i === rowIdx ? {...r, height: $event.target.value === '' ? null : Number($event.target.value)} : r)}}",
+                                                                                "hasChanges": true
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "type": "number",
+                                                                        "value": "{{row.height ?? ''}}",
+                                                                        "placeholder": "$t:admin.settings.upload.thumbnail.presets.placeholder.height",
+                                                                        "min": "{{_local?.form?._meta?.limits?.upload_thumbnail_height_min ?? 16}}",
+                                                                        "max": "{{_local?.form?._meta?.limits?.upload_thumbnail_height_max ?? 4096}}",
+                                                                        "aria-label": "$t:common.row_cell|row={{row.name || $t('common.row_n', {n: rowIdx + 1})}}|column={{$t('admin.settings.upload.thumbnail.presets.col.height')}}",
+                                                                        "disabled": "{{_computed.isReadOnly || row.kind === 'og'}}",
+                                                                        "className": "input w-24 disabled:opacity-50 {{_computed.thumbnailPresetErrors?.rows?.[rowIdx]?.height ? 'input-error' : ''}}",
+                                                                        "data-testid": "{{'thumbnail-preset-height-' + rowIdx}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{_computed.thumbnailPresetErrors?.rows?.[rowIdx]?.height}}",
+                                                                    "props": {
+                                                                        "className": "form-error"
+                                                                    },
+                                                                    "text": "{{_computed.thumbnailPresetErrors?.rows?.[rowIdx]?.height?.[0] ?? ''}}"
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "P",
+                                                                    "if": "{{row.kind === 'og'}}",
+                                                                    "props": {
+                                                                        "className": "text-hint mt-1 whitespace-nowrap",
+                                                                        "data-testid": "thumbnail-preset-og-notice"
+                                                                    },
+                                                                    "text": "$t:admin.settings.upload.thumbnail.presets.og_size_notice"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-2 py-2 min-w-[120px]"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Select",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "맞춤 방식 — 행 배열을 통째로 갈아 끼우고 「고친 것이 있다」를 켠다. 표의 모든 칸이 같은 방식이라 저장 버튼 하나로 반영된다.",
+                                                                            "type": "change",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "form.upload.thumbnail_presets_rows": "{{(_local.form?.upload?.thumbnail_presets_rows ?? []).map((r, i) => i === rowIdx ? {...r, fit: $event.target.value} : r)}}",
+                                                                                "hasChanges": true
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "value": "{{row.fit ?? 'width'}}",
+                                                                        "aria-label": "$t:common.row_cell|row={{row.name || $t('common.row_n', {n: rowIdx + 1})}}|column={{$t('admin.settings.upload.thumbnail.presets.col.fit')}}",
+                                                                        "disabled": "{{_computed.isReadOnly || row.kind === 'og'}}",
+                                                                        "className": "w-28",
+                                                                        "error": "{{_computed.thumbnailPresetErrors?.rows?.[rowIdx]?.fit?.[0] ?? ''}}",
+                                                                        "options": "{{['cover', 'contain', 'width'].map(v => ({value: v, label: $t('admin.settings.upload.thumbnail.presets.fit.' + v)}))}}"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-2 py-2 min-w-[120px]"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Select",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "기준 위치 — 「잘라서 채움」일 때 어느 쪽을 남길지 정한다. 다른 맞춤에서도 값은 보존해 맞춤을 다시 바꿔도 잃지 않는다.",
+                                                                            "type": "change",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "form.upload.thumbnail_presets_rows": "{{(_local.form?.upload?.thumbnail_presets_rows ?? []).map((r, i) => i === rowIdx ? {...r, anchor: $event.target.value} : r)}}",
+                                                                                "hasChanges": true
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "value": "{{row.anchor ?? 'center'}}",
+                                                                        "aria-label": "$t:common.row_cell|row={{row.name || $t('common.row_n', {n: rowIdx + 1})}}|column={{$t('admin.settings.upload.thumbnail.presets.col.anchor')}}",
+                                                                        "disabled": "{{_computed.isReadOnly || row.kind === 'og'}}",
+                                                                        "className": "w-28",
+                                                                        "error": "{{_computed.thumbnailPresetErrors?.rows?.[rowIdx]?.anchor?.[0] ?? ''}}",
+                                                                        "options": "{{['center', 'top', 'bottom', 'left', 'right'].map(v => ({value: v, label: $t('admin.settings.upload.thumbnail.presets.anchor.' + v)}))}}"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-2 py-2 min-w-[120px]"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Select",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "출력 형식 — webp·avif 를 서버 엔진이 못 만들면 생성 때 원본 형식으로 내려가므로 여기서는 막지 않는다.",
+                                                                            "type": "change",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "form.upload.thumbnail_presets_rows": "{{(_local.form?.upload?.thumbnail_presets_rows ?? []).map((r, i) => i === rowIdx ? {...r, format: $event.target.value} : r)}}",
+                                                                                "hasChanges": true
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "value": "{{row.format ?? 'original'}}",
+                                                                        "aria-label": "$t:common.row_cell|row={{row.name || $t('common.row_n', {n: rowIdx + 1})}}|column={{$t('admin.settings.upload.thumbnail.presets.col.format')}}",
+                                                                        "disabled": "{{_computed.isReadOnly || row.kind === 'og'}}",
+                                                                        "className": "w-28",
+                                                                        "error": "{{_computed.thumbnailPresetErrors?.rows?.[rowIdx]?.format?.[0] ?? ''}}",
+                                                                        "options": "{{['original', 'webp', 'avif'].map(v => ({value: v, label: $t('admin.settings.upload.thumbnail.presets.format.' + v)}))}}"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-2 py-2 min-w-[80px]"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Input",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "품질 칸 — 비우면 null 로 넣어 업로드 탭의 이미지 품질 값을 따르게 한다(placeholder 가 그 값을 보인다).",
+                                                                            "type": "change",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "form.upload.thumbnail_presets_rows": "{{(_local.form?.upload?.thumbnail_presets_rows ?? []).map((r, i) => i === rowIdx ? {...r, quality: $event.target.value === '' ? null : Number($event.target.value)} : r)}}",
+                                                                                "hasChanges": true
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "type": "number",
+                                                                        "value": "{{row.quality ?? ''}}",
+                                                                        "min": "1",
+                                                                        "max": "100",
+                                                                        "placeholder": "{{String(_local.form?.upload?.image_quality ?? 85)}}",
+                                                                        "aria-label": "$t:common.row_cell|row={{row.name || $t('common.row_n', {n: rowIdx + 1})}}|column={{$t('admin.settings.upload.thumbnail.presets.col.quality')}}",
+                                                                        "disabled": "{{_computed.isReadOnly || row.kind === 'og'}}",
+                                                                        "className": "input w-20 disabled:opacity-50 {{_computed.thumbnailPresetErrors?.rows?.[rowIdx]?.quality ? 'input-error' : ''}}"
+                                                                    }
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Span",
+                                                                    "if": "{{_computed.thumbnailPresetErrors?.rows?.[rowIdx]?.quality}}",
+                                                                    "props": {
+                                                                        "className": "form-error"
+                                                                    },
+                                                                    "text": "{{_computed.thumbnailPresetErrors?.rows?.[rowIdx]?.quality?.[0] ?? ''}}"
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-2 py-2 text-center"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "composite",
+                                                                    "name": "Toggle",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "확대 허용 — 이벤트 값을 읽지 않고 현재 행 값을 뒤집는다. 원본보다 큰 규격을 원본 크기 그대로 둘지 늘릴지를 정한다.",
+                                                                            "type": "change",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "form.upload.thumbnail_presets_rows": "{{(_local.form?.upload?.thumbnail_presets_rows ?? []).map((r, i) => i === rowIdx ? {...r, upscale: !r.upscale} : r)}}",
+                                                                                "hasChanges": true
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "size": "sm",
+                                                                        "checked": "{{row.upscale === true}}",
+                                                                        "ariaLabel": "$t:common.row_cell|row={{row.name || $t('common.row_n', {n: rowIdx + 1})}}|column={{$t('admin.settings.upload.thumbnail.presets.col.upscale')}}",
+                                                                        "disabled": "{{_computed.isReadOnly || row.kind === 'og'}}"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-2 py-2 text-center"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "composite",
+                                                                    "name": "Toggle",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "등록 시 생성 — 켠 규격은 업로드 직후 미리 만들고 「기존 이미지 썸네일 만들기」 창의 기본 선택이 된다.",
+                                                                            "type": "change",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "form.upload.thumbnail_presets_rows": "{{(_local.form?.upload?.thumbnail_presets_rows ?? []).map((r, i) => i === rowIdx ? {...r, pregenerate: !r.pregenerate} : r)}}",
+                                                                                "hasChanges": true
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "size": "sm",
+                                                                        "checked": "{{row.pregenerate === true}}",
+                                                                        "ariaLabel": "$t:common.row_cell|row={{row.name || $t('common.row_n', {n: rowIdx + 1})}}|column={{$t('admin.settings.upload.thumbnail.presets.col.pregenerate')}}",
+                                                                        "disabled": "{{_computed.isReadOnly || row.kind === 'og'}}"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-2 py-2 text-center"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "composite",
+                                                                    "name": "Toggle",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "숫자 요청 허용 — 켠 규격만 ?w= 숫자 요청이 이 규격으로 맞춰진다. 확대 허용과 같이 현재 행 값을 뒤집는다.",
+                                                                            "type": "change",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "form.upload.thumbnail_presets_rows": "{{(_local.form?.upload?.thumbnail_presets_rows ?? []).map((r, i) => i === rowIdx ? {...r, numeric: !r.numeric} : r)}}",
+                                                                                "hasChanges": true
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "size": "sm",
+                                                                        "checked": "{{row.numeric === true}}",
+                                                                        "ariaLabel": "$t:common.row_cell|row={{row.name || $t('common.row_n', {n: rowIdx + 1})}}|column={{$t('admin.settings.upload.thumbnail.presets.col.numeric')}}",
+                                                                        "disabled": "{{_computed.isReadOnly || row.kind === 'og'}}"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-2 py-2 text-center"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "composite",
+                                                                    "name": "Toggle",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "사용 — 기본값이 켜짐이라 enabled 가 없던 행(undefined)도 켜진 것으로 본다. 그래서 「false 였으면 true」로 뒤집는다.",
+                                                                            "type": "change",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "form.upload.thumbnail_presets_rows": "{{(_local.form?.upload?.thumbnail_presets_rows ?? []).map((r, i) => i === rowIdx ? {...r, enabled: r.enabled === false} : r)}}",
+                                                                                "hasChanges": true
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "size": "sm",
+                                                                        "checked": "{{row.enabled !== false}}",
+                                                                        "ariaLabel": "$t:common.row_cell|row={{row.name || $t('common.row_n', {n: rowIdx + 1})}}|column={{$t('admin.settings.upload.thumbnail.presets.col.enabled')}}",
+                                                                        "disabled": "{{_computed.isReadOnly || row.kind === 'og'}}"
+                                                                    }
+                                                                }
+                                                            ]
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Td",
+                                                            "props": {
+                                                                "className": "px-2 py-2 text-right whitespace-nowrap"
+                                                            },
+                                                            "children": [
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Button",
+                                                                    "if": "{{row.kind === 'extension'}}",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "기본값으로 — 확장이 등록한 값(row.defaults)으로 값 칸만 되돌린다. 이름·출처·kind 는 그대로 두고 저장 버튼으로 반영한다.",
+                                                                            "type": "click",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "form.upload.thumbnail_presets_rows": "{{(_local.form?.upload?.thumbnail_presets_rows ?? []).map((r, i) => i === rowIdx ? {...r, ...(r.defaults ?? {}), name: r.name, source: r.source, kind: r.kind, defaults: r.defaults} : r)}}",
+                                                                                "hasChanges": true
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "type": "button",
+                                                                        "className": "btn btn-secondary btn-sm",
+                                                                        "disabled": "{{_computed.isReadOnly || !row.defaults}}",
+                                                                        "data-testid": "{{'thumbnail-preset-reset-' + rowIdx}}"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "text": "$t:admin.settings.upload.thumbnail.presets.reset"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "type": "basic",
+                                                                    "name": "Button",
+                                                                    "if": "{{row.kind === 'custom'}}",
+                                                                    "actions": [
+                                                                        {
+                                                                            "comment": "운영자 규격 삭제 — 행을 표에서 빼고 저장 버튼으로 반영한다(저장 전에는 서버의 규격과 파생본이 그대로다).\n                           서버 422 의 번호 달린 규격 오류(upload.thumbnail_presets.{번호}.*)는 저장할 때의 행 순서 기준이라, 행이 빠지면\n                           뒤 행들의 번호가 한 칸씩 밀려 엉뚱한 칸에 붙는다. 그래서 번호 달린 오류만 지운다(다음 저장이 다시 판정한다).",
+                                                                            "type": "click",
+                                                                            "handler": "setState",
+                                                                            "params": {
+                                                                                "target": "local",
+                                                                                "form.upload.thumbnail_presets_rows": "{{(_local.form?.upload?.thumbnail_presets_rows ?? []).filter((r, i) => i !== rowIdx)}}",
+                                                                                "errors": "{{_local.errors ? Object.fromEntries(Object.entries(_local.errors).filter(([k]) => !k.startsWith('upload.thumbnail_presets.'))) : (_local.errors ?? null)}}",
+                                                                                "hasChanges": true
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "props": {
+                                                                        "type": "button",
+                                                                        "className": "btn btn-ghost btn-sm text-red-600 dark:text-red-400",
+                                                                        "aria-label": "$t:common.row_cell|row={{row.name || $t('common.row_n', {n: rowIdx + 1})}}|column={{$t('admin.settings.upload.thumbnail.presets.remove')}}",
+                                                                        "disabled": "{{_computed.isReadOnly}}",
+                                                                        "data-testid": "{{'thumbnail-preset-remove-' + rowIdx}}"
+                                                                    },
+                                                                    "children": [
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Icon",
+                                                                            "props": {
+                                                                                "name": "trash",
+                                                                                "className": "text-xs"
+                                                                            }
+                                                                        },
+                                                                        {
+                                                                            "type": "basic",
+                                                                            "name": "Span",
+                                                                            "text": "$t:admin.settings.upload.thumbnail.presets.remove"
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "flex-start flex-wrap justify-between gap-3"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-hint"
+                                    },
+                                    "text": "$t:admin.settings.upload.thumbnail.presets.name_rule"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Button",
+                                    "actions": [
+                                        {
+                                            "comment": "규격 추가 — 운영자 규격 빈 행을 끝에 붙인다(가로만 맞춤 320px). 이름은 운영자가 정하고 형식 검사는 저장 때 서버가 한다.\n                   번호 달린 규격 오류도 지운다 — 끝에 붙여 기존 행 번호는 그대로지만, 그 오류는 직전 저장 본문의 행 구성 기준이라\n                   표 구성이 바뀐 뒤에는 어느 칸 오류인지 보장하지 못한다(행 삭제와 같은 규칙, 다음 저장이 다시 판정한다).",
+                                            "type": "click",
+                                            "handler": "setState",
+                                            "params": {
+                                                "target": "local",
+                                                "form.upload.thumbnail_presets_rows": "{{[...(_local.form?.upload?.thumbnail_presets_rows ?? []), {name: '', source: 'custom', kind: 'custom', width: 320, height: null, fit: 'width', anchor: 'center', quality: null, format: 'original', upscale: false, pregenerate: false, numeric: false, enabled: true, locked: false}]}}",
+                                                "errors": "{{_local.errors ? Object.fromEntries(Object.entries(_local.errors).filter(([k]) => !k.startsWith('upload.thumbnail_presets.'))) : (_local.errors ?? null)}}",
+                                                "hasChanges": true
+                                            }
+                                        }
+                                    ],
+                                    "props": {
+                                        "type": "button",
+                                        "className": "btn btn-secondary btn-sm",
+                                        "disabled": "{{_computed.isReadOnly}}",
+                                        "data-testid": "thumbnail-preset-add"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "plus",
+                                                "className": "text-xs"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Span",
+                                            "text": "$t:admin.settings.upload.thumbnail.presets.add"
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             "id": "card_orphan_cleanup",
             "type": "basic",
             "name": "Div",
@@ -524,6 +2658,105 @@
                                         "className": "form-hint"
                                     },
                                     "text": "$t:admin.settings.upload.orphan_cleanup_enabled_hint"
+                                }
+                            ]
+                        },
+                        {
+                            "comment": "스케줄로 도는 작업 안내 — 고정 시각 대신 그 작업의 다음 실행 일시(조회 권한이 있을 때)와 스케줄 관리 링크를 보인다. 끈 스케줄이면 그 사실을 알린다.",
+                            "id": "orphan_cleanup_schedule_notice",
+                            "type": "basic",
+                            "name": "Div",
+                            "props": {
+                                "className": "alert-info"
+                            },
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Div",
+                                    "props": {
+                                        "className": "flex gap-3"
+                                    },
+                                    "children": [
+                                        {
+                                            "type": "basic",
+                                            "name": "Icon",
+                                            "props": {
+                                                "name": "circle-info",
+                                                "className": "text-xl flex-shrink-0 mt-0.5"
+                                            }
+                                        },
+                                        {
+                                            "type": "basic",
+                                            "name": "Div",
+                                            "props": {
+                                                "className": "min-w-0 space-y-1"
+                                            },
+                                            "children": [
+                                                {
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "props": {
+                                                        "className": "text-label-subtle"
+                                                    },
+                                                    "text": "$t:admin.settings.upload.orphan_cleanup_schedule_notice"
+                                                },
+                                                {
+                                                    "id": "orphan_cleanup_schedule_notice_next_run",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'attachments-prune-orphans')?.is_active !== false && !!(coreSchedules?.data?.data ?? []).find(r => r.name === 'attachments-prune-orphans')?.next_run_at}}",
+                                                    "props": {
+                                                        "className": "text-label-subtle flex-center flex-wrap gap-1"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "text": "$t:admin.settings.schedule_link.next_run"
+                                                        },
+                                                        {
+                                                            "type": "basic",
+                                                            "name": "Span",
+                                                            "props": {
+                                                                "className": "font-medium"
+                                                            },
+                                                            "text": "{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'attachments-prune-orphans')?.next_run_at | datetime}}"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "id": "orphan_cleanup_schedule_notice_inactive",
+                                                    "type": "basic",
+                                                    "name": "P",
+                                                    "if": "{{(coreSchedules?.data?.data ?? []).find(r => r.name === 'attachments-prune-orphans')?.is_active === false}}",
+                                                    "props": {
+                                                        "className": "text-label-subtle"
+                                                    },
+                                                    "text": "$t:admin.settings.schedule_link.inactive"
+                                                },
+                                                {
+                                                    "type": "basic",
+                                                    "name": "Div",
+                                                    "props": {
+                                                        "className": "flex-center flex-wrap gap-3"
+                                                    },
+                                                    "children": [
+                                                        {
+                                                            "id": "orphan_cleanup_schedule_notice_link",
+                                                            "type": "basic",
+                                                            "name": "A",
+                                                            "if": "{{current_user !== undefined && (_computed.canReadSchedules !== false)}}",
+                                                            "props": {
+                                                                "href": "/admin/schedules?extension_type=core&search_field=identifier&search_keyword=attachments-prune-orphans",
+                                                                "className": "text-link"
+                                                            },
+                                                            "text": "$t:admin.settings.schedule_link.change"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
                                 }
                             ]
                         },

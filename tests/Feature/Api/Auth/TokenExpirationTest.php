@@ -333,7 +333,6 @@ class TokenExpirationTest extends TestCase
     public function test_refresh_below_threshold_does_not_resurrect_old_token(): void
     {
         $user = User::factory()->create();
-        $this->grantUserPermissions($user, ['core.auth.refresh', 'core.auth.user']);
         $tokenData = $this->createTokenWithExpiration($user, now()->addMinutes(5));
         $tokenId = $tokenData['tokenModel']->id;
 
@@ -390,31 +389,6 @@ class TokenExpirationTest extends TestCase
 
         $this->app['auth']->forgetGuards();
         $this->authRequest($tokenData['token'])->getJson('/api/admin/auth/user')->assertUnauthorized();
-    }
-
-    /**
-     * 회원에게 user 타입 권한을 역할로 부여합니다.
-     *
-     * @param  User  $user  대상 회원
-     * @param  array<int, string>  $identifiers  권한 식별자
-     * @return void 반환값 없음
-     */
-    private function grantUserPermissions(User $user, array $identifiers): void
-    {
-        $role = Role::firstOrCreate(
-            ['identifier' => 'token-expiration-test-user'],
-            ['name' => ['ko' => '토큰 테스트', 'en' => 'Token test'], 'description' => ['ko' => '-', 'en' => '-']]
-        );
-
-        foreach ($identifiers as $identifier) {
-            $permission = Permission::firstOrCreate(
-                ['identifier' => $identifier],
-                ['name' => ['ko' => $identifier, 'en' => $identifier], 'description' => ['ko' => '-', 'en' => '-'], 'type' => 'user']
-            );
-            $role->permissions()->syncWithoutDetaching([$permission->id]);
-        }
-
-        $user->roles()->syncWithoutDetaching([$role->id => ['assigned_at' => now()]]);
     }
 
     /**

@@ -2,13 +2,17 @@
 
 namespace Tests;
 
+use App\Contracts\Extension\StorageInterface;
 use App\Contracts\Notifications\ChannelReadinessCheckerInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
+use App\Extension\Helpers\StorageLinkHelper;
 use App\Extension\HookListenerRegistrar;
 use App\Extension\HookManager;
 use App\Extension\Testing\ExtensionTestAllowlist;
 use App\Helpers\PermissionHelper;
 use App\Listeners\Identity\EnforceIdentityPolicyListener;
+use App\Seo\SitemapFileStore;
+use App\Seo\SitemapManager;
 use App\Support\AssetUrl;
 use Composer\Autoload\ClassLoader;
 use Illuminate\Contracts\Console\Kernel;
@@ -25,6 +29,7 @@ use Illuminate\Foundation\Testing\WithCachedConfig;
 use Illuminate\Foundation\Testing\WithCachedRoutes;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\IsolatedSitemapStorage;
 use Tests\Support\TestingDatabaseGuard;
 use Tests\Support\TestingSchema\TestingSchemaCache;
 
@@ -60,6 +65,7 @@ abstract class TestCase extends BaseTestCase
      * provider 자동 등록 가드가 올바른 시점에 적용됩니다.
      *
      * settings 디스크는 앱 부팅 직후 페이크로 대체합니다 (아래 fakeSettingsDisk).
+     * 사이트맵 저장소도 같은 시점에 테스트 전용 디스크로 돌립니다 (아래 isolateSitemapStorage).
      *
      * @return void 반환값 없음
      */
@@ -70,6 +76,7 @@ abstract class TestCase extends BaseTestCase
 
         $this->afterApplicationCreated(function () {
             $this->fakeSettingsDisk();
+            $this->isolateSitemapStorage();
             $this->pinEnvironmentDependentSettings();
 
             // 권한 스코프 캐시는 정적이라 프로세스 전체에 남는다 — 케이스마다 DB 는
@@ -147,6 +154,32 @@ abstract class TestCase extends BaseTestCase
     }
 
     /**
+     * 사이트맵 파일이 실제 storage 경로(storage/app/private/cache/sitemap)에 쓰이지 않게 합니다.
+     *
+     * 테스트 큐는 `sync` 라서 게시판·게시글·상품·페이지를 만들기만 해도 리스너가 사이트맵 재생성 잡을
+     * 즉시 실행하고, 그 잡이 테스트 DB 의 색인(테스트 주소)으로 실제 사이트맵 파일을 덮어씁니다.
+     * 같은 폴더에서 개발 서버를 띄우고 있으면 검색 로봇이 테스트 주소를 받아 갑니다.
+     *
+     * 제품의 사이트맵 소비자 바인딩(`local` 디스크)을 테스트용 저장소로 바꿉니다. 테스트가
+     * `Storage::fake('local')` 을 쓰면 그 페이크 `local` 을, 아니면 페이크 전용 디스크를 씁니다
+     * ({@see IsolatedSitemapStorage}). 부팅 중에 이미 만들어진 싱글톤은 버려 새 바인딩으로 다시 만듭니다.
+     *
+     * @return void 반환값 없음
+     */
+    private function isolateSitemapStorage(): void
+    {
+        IsolatedSitemapStorage::prepareFallbackDisk();
+
+        foreach ([SitemapManager::class, SitemapFileStore::class] as $sitemapConsumer) {
+            $this->app->when($sitemapConsumer)
+                ->needs(StorageInterface::class)
+                ->give(fn () => new IsolatedSitemapStorage);
+
+            $this->app->forgetInstance($sitemapConsumer);
+        }
+    }
+
+    /**
      * 개발 사이트 설정이 테스트 결과를 좌우하는 항목을 기본값으로 고정합니다.
      *
      * 설정 *읽기* 는 부팅 시 `g7_settings.*` Config 로 적재되므로 디스크 페이크보다 앞섭니다
@@ -157,14 +190,22 @@ abstract class TestCase extends BaseTestCase
      * 기본 모드를 전제한 테스트(자산 URL 생성·blade 렌더)가 그 환경에서만 무더기로 깨진다.
      * 실제로 이 환경에서 8건이 그렇게 실패했다.
      *
+     * 다른 모드를 검증해야 하는 테스트는 `AssetUrl::forceMode()` 로 자기 전제를 명시한다.
+     *
+     * `public/storage` 링크 가용 판정도 같은 계열이다. `StorageLinkHelper` 는 그 값을
+     * **프로세스 수명 static memo** 로 들고 있고 첫 호출에서 개발자 체크아웃의 실제
+     * `public/storage` 를 실측한다 — 링크가 있는 머신과 없는 머신에서 공개 디스크 URL 이
+     * `/storage/…` 와 `/api/system/public-storage/…` 로 갈린다. 즉 같은 코드가 머신에 따라
+     * 다른 결과를 낸다. 기본 전제는 「링크 있음」(표준 배치)으로 고정하고, 링크 부재 배치를
+     * 검증하는 테스트는 `StorageLinkHelper::forcePublicStorageLinkUsable(false)` 로 자기
+     * 전제를 명시한다.
+     *
      * `security.two_factor_auth` 도 같다. 켜 둔 사이트에서는 `/api/auth/login` 이 토큰이
      * 아니라 인증 요청(challenge)을 돌려주므로, 로그인 성공을 전제한 테스트가 그 환경에서만
      * 깨진다. 게다가 테스트 메일러로는 인증번호를 보낼 수 없어 503 이 되므로 실패 메시지가
-     * 원인을 가리키지도 않는다. 실제로 이 환경에서 3건이 그렇게 실패했다.
-     *
-     * 다른 모드를 검증해야 하는 테스트는 `AssetUrl::forceMode()` 로, 2단계 인증을 켜야 하는
-     * 테스트는 `config(['g7_settings.core.security.two_factor_auth' => true])` 로 자기 전제를
-     * 명시한다 (자식 `setUp()` 은 `parent::setUp()` 뒤에 실행되므로 그 지정이 이긴다).
+     * 원인을 가리키지도 않는다. 실제로 이 환경에서 3건이 그렇게 실패했다. 2단계 인증을 켜야
+     * 하는 테스트는 `config(['g7_settings.core.security.two_factor_auth' => true])` 로 자기
+     * 전제를 명시한다 (자식 `setUp()` 은 `parent::setUp()` 뒤에 실행되므로 그 지정이 이긴다).
      *
      * @return void 반환값 없음
      */
@@ -183,6 +224,22 @@ abstract class TestCase extends BaseTestCase
             'g7_settings.core.security.ip_restriction_enabled' => false,
             'g7_settings.core.security.admin_allowed_ips' => [],
             'g7_settings.core.security.ip_restriction_rules' => [],
+            // HTTPS 강제 이동(#888)도 꺼 둔다. 개발 사이트에서 켜 두면 web·api 그룹의 http 테스트 요청이 전부 301·308 로
+            // 이동해 원인을 가리키지 않는 실패가 무더기로 난다. 이동을 검증하는 테스트(ForceHttpsTest)는 자기 테스트에서 켠다.
+            'g7_settings.core.security.force_https' => false,
+            // 닉네임 정책(#490)도 꺼 둔다. 개발 사이트에서 중복 금지나 금지어를 켜 두면 회원을 만드는 테스트가
+            // 그 환경에서만 닉네임 검증 오류로 깨진다. 정책을 검증하는 테스트는 이 세 키를 자기 테스트에서 명시한다.
+            'g7_settings.core.member.nickname_unique' => false,
+            'g7_settings.core.member.nickname_banned_words' => [],
+            'g7_settings.core.member.nickname_change_interval_days' => 0,
+            // 표시 이름 설정(#490)도 기본값으로 고정한다. 개발 사이트에서 영역을 닉네임으로 바꿔 두면 닉네임 항목이 필수로 잠겨
+            // 회원을 만드는 테스트가 그 환경에서만 깨지고, 응답의 `display_name` 값도 달라진다. 표시 이름을 검증하는 테스트는 자기 테스트에서 명시한다.
+            'g7_settings.core.member.display_name_selectable_kinds' => ['name'],
+            'g7_settings.core.member.display_name_member_default_kind' => 'name',
+            'g7_settings.core.member.display_name_areas' => [
+                'core:site' => ['mode' => 'member'],
+                'core:admin' => ['mode' => 'fixed', 'kind' => 'name'],
+            ],
             // 사이트 주소도 고정한다. 부팅 시 개발 사이트의 `general.site_url` 이 `app.url` 을 덮어쓰는데,
             // 리다이렉트·콜백·링크·사이트맵 주소는 요청 Host 가 아니라 이 값으로 만들어지므로(SiteUrl)
             // 테스트 요청(http://localhost)과 다른 개발 사이트 주소가 결과에 섞인다. 다른 주소를 검증하는
@@ -217,6 +274,10 @@ abstract class TestCase extends BaseTestCase
             'g7_settings.core.security.activity_log_retention_days' => 365,
             'g7_settings.core.security.password_expiry_started_at' => null,
         ]);
+        StorageLinkHelper::forcePublicStorageLinkUsable(true);
+        // 마운트 접두사 강제값도 프로세스 수명 static 이다 — 앞 케이스가 `forceBasePrefix('/g7')`
+        // 를 남기면 뒤 케이스의 모든 주소가 `/g7/…` 로 나가 개별 통과 / 스위트 실패가 된다.
+        AssetUrl::forceBasePrefix(null);
     }
 
     /**

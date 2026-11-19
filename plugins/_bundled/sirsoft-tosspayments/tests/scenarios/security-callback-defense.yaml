@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage reason: 형제 결제 플러그인(nhnkcp·kginicis·nicepayments)의 security-callback-defense 와 같은 형태의 명세 SSoT. 조합 커버는 test_files 의 통과 테스트가 담당하고, 본 매니페스트는 "무엇을 반드시 담아야 하는가" 를 고정한다.
+# audit:allow test-scenario-coverage reason: issue:#632 형제 결제 플러그인(nhnkcp·kginicis·nicepayments)의 security-callback-defense 와 같은 형태의 명세 SSoT. 조합 커버는 test_files 의 통과 테스트가 담당하고, 본 매니페스트는 "무엇을 반드시 담아야 하는가" 를 고정한다.
 
 feature: 콜백 보안 방어 (비인증 브라우저 콜백의 주문 변조 / 소유권 검증 실패 기록)
 
@@ -69,6 +69,8 @@ effects:
   - close_report_returns_not_found_for_unknown_order
   - close_report_ignores_order_whose_payment_already_paid
   - close_report_ignores_order_that_is_no_longer_payable
+  - close_report_ignores_order_issued_by_another_pg
+  - close_report_ignores_own_issued_vbank_waiting_deposit
   - close_report_restores_mileage_and_option_state_through_fail_payment
   # KVE-2026-2434 — 결제창 닫힘 보고·재결제 준비·결제 인증 콜백의 주문 소유자 확인과 승인-주문 결속
   - close_report_rejects_request_without_ownership_proof
@@ -82,6 +84,10 @@ effects:
   - other_member_cannot_report_close_of_member_order
   - order_without_address_is_rejected_without_ownership
   - unauthenticated_request_with_matching_buyer_contact_is_rejected
+
+  # 성공 콜백 입력 검증과 결제 기기 기록 (PaymentCallbackControllerTest)
+  - success_rejects_invalid_callback_params            # paymentKey/orderId/amount 누락, 0 이하 금액, 빈 요청이면 서버 승인 없이 실패 주소(error=invalid_params)로 보냄
+  - success_records_mobile_payment_device              # 모바일 User-Agent 성공 콜백은 결제행 payment_device 를 mobile 로 기록
 
 test_files:
   - plugins/_bundled/sirsoft-tosspayments/tests/Feature/Controllers/PaymentCallbackControllerTest.php

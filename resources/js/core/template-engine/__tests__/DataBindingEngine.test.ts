@@ -1440,7 +1440,7 @@ describe('DataBindingEngine', () => {
    * 선행 구분자를 소비하도록 바꿨으므로 식별자는 match[1] 이 아니라 match[2] 에 있다.
    * 이 한 줄을 빠뜨리면 구분자 문자가 변수명으로 수집되어 표현식 평가가 조용히 깨진다.
    *
-   * @effects core_source_has_no_lookbehind, variable_extraction_contract_unchanged
+   * 재는 효과: 코어 소스에 lookbehind 가 없음, 변수 추출 계약 불변 — 어느 시험이 무엇을 재는지는 각 it 주석의 표식이 가리킨다.
    */
   describe('lookbehind 제거 회귀 (engine-v1.60.6, 공개 #121)', () => {
     /**
@@ -1509,7 +1509,7 @@ describe('DataBindingEngine', () => {
       expect(engine.evaluateExpression('$t:x', {})).toBe('$t:x');
     });
 
-    /** @effects variable_extraction_contract_unchanged */
+    /** @effects core_source_has_no_lookbehind, variable_extraction_contract_unchanged */
     it('소스에 lookbehind 가 남아 있지 않다', async () => {
       const fs = await import('node:fs');
       const path = await import('node:path');

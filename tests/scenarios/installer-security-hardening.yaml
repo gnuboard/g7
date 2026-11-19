@@ -1,4 +1,6 @@
-# audit:allow test-scenario-coverage reason: 본 매니페스트는 인스톨러 보안 패치의 시나리오 매트릭스 SSoT 로 기록. 회귀 가드는 test_files (InstallerSecurityHardening / ComposerPathValidation / BinaryPathPolicy) + manual_verification 의 양방향 PoC 로 커버하며, payload_class 19종 × vector 9종은 DataProvider 전수 전개라 조합별 docblock 마킹과 1:1 대응하지 않는다.
+# audit:allow test-scenario-coverage reason: issue:#609 본 매니페스트는 인스톨러 보안 패치의 시나리오 매트릭스 SSoT 로 기록. 회귀 가드는 test_files (InstallerSecurityHardening / ComposerPathValidation / BinaryPathPolicy) + manual_verification 의 양방향 PoC 로 커버하며, payload_class 19종 × vector 9종은 DataProvider 전수 전개라 조합별 docblock 마킹과 1:1 대응하지 않는다.
+# 원장: 이 매니페스트는 :cross-product 로 좁히면 effects 32건이 미검증으로 드러난다.
+#   그 짝 맞추기는 이 공정(인스톨러)의 몫이며, 좁히는 시점에 함께 처리한다.
 
 feature: 인스톨러 후속 보안 강화 (composer 명령 / 확장 ID / pending 경로 / .env 라인 주입 / DSN 파라미터)
 
@@ -30,9 +32,9 @@ description: |
       않는다 — #361 의 open_basedir 회귀를 재발시키지 않기 위함이다.
 
 axes:
-  vector: [getComposerCommand, getComposerCommandForDisplay, save_extensions_id, check_core_pending_path, escapeEnvValue, getDatabaseConnection, getPhpBinary, validatePhpPath, validateComposerPath, handleStep3Post]
-  payload_class: [empty, normal, shell_meta_space, shell_meta_semicolon, shell_meta_backtick, shell_meta_dollarparen, shell_meta_pipe, shell_meta_redirect, newline_lf, newline_crlf, parent_traversal, null_byte, dsn_semicolon, dsn_equals, argument_injection_dash_r, interpreter_plus_script, relative_path, hash_comment_phar, wrapper_script_name]
-  expected_outcome: [accept_normal, fall_back_to_default, return_invalid_message, throw_pdo_exception, strip_silently]
+  vector: [getComposerCommand, getComposerCommandForDisplay, save_extensions_id, check_core_pending_path, escapeEnvValue, getDatabaseConnection, getPhpBinary, validatePhpPath, validateComposerPath, handleStep3Post, serializeEnvValue, installer_env_value_is_single_line]
+  payload_class: [empty, normal, shell_meta_space, shell_meta_semicolon, shell_meta_backtick, shell_meta_dollarparen, shell_meta_pipe, shell_meta_redirect, newline_lf, newline_crlf, parent_traversal, null_byte, dsn_semicolon, dsn_equals, argument_injection_dash_r, interpreter_plus_script, relative_path, hash_comment_phar, wrapper_script_name, quote_and_backslash, unc_path, arbitrary_phar]
+  expected_outcome: [accept_normal, fall_back_to_default, return_invalid_message, throw_pdo_exception, strip_silently, throw_invalid_argument]
 
 exclusions:
   - { vector: getDatabaseConnection, payload_class: parent_traversal, reason: "DSN 검증은 traversal 과 무관" }
@@ -99,6 +101,40 @@ effects:
   - step3_post_rejects_disallowed_binary_paths_before_save
   - step3_post_accepts_legitimate_binary_paths
 
+  # 609 docblock 정리 — InstallerSecurityHardeningTest 의 메서드별 마킹이 쓰는 효과.
+  # 개행은 이제 지우지 않고 예외로 거부한다(KVE-2026-2042 정정), 그래서 strips 와 별개로 둔다.
+  - getComposerCommandForDisplay_shows_pair_without_escaping
+  - validatePhpPath_rejects_shell_metachars
+  - validatePhpPath_rejects_empty_input
+  - validateComposerPath_rejects_shell_metachars
+  - splitPhpComposerTokens_splits_only_two_token_input
+  - isInstallerSafePathArg_rejects_metachars_and_empty
+  - escapeEnvValue_rejects_lf_instead_of_stripping
+  - escapeEnvValue_rejects_crlf_instead_of_stripping
+
+  # 609 docblock 정리 (g1 묶음4) — InstallerStep3EnvValueGuardTest 의 메서드별 마킹이 쓰는 효과.
+  # 클래스 머리말에만 있던 표식을 메서드로 옮기며 payload_class 를 축 값(newline_lf, newline_crlf, null_byte)으로 맞췄다.
+  - step3_post_rejects_env_line_breaks_before_save
+  - step3_post_rejects_url_without_http_scheme
+  - step3_post_accepts_normal_env_values
+  - step3_post_skips_url_shape_check_for_empty_values
+
+  # 609 docblock 정리 (BinaryPathPolicyTest, EnvValueSerializationTest) — 메서드별 마킹이 쓰는 효과 중 이 원장에 없던 것.
+  # EnvValueSerializationTest 의 소유 매니페스트는 installer-env-value-serialization.yaml(case 축, 전개 검사 대상)이다.
+  # 이 매니페스트는 그 시험 메서드가 함께 싣는 serializeEnvValue_* 효과를 재려고 test_files 끝에 같이 등재한다. 조합 마킹은
+  # 소유 매니페스트의 case 축을 따르므로(한 docblock 의 @scenario 는 한 지문이다), vector 축의 serializeEnvValue·
+  # installer_env_value_is_single_line 과 payload_class 축의 quote_and_backslash 는 그 시험에서 마킹되지 않는다
+  # (이 매니페스트는 조합 전개를 면제받는다). UNC·임의 phar 값은 BinaryPathPolicyTest 가 쓴다.
+  - binary_path_policy_is_loaded_by_validation_and_execution_entrypoints
+  - pair_resolver_rejects_unc_and_arbitrary_phar
+  - serializeEnvValue_wraps_normal_value_in_quotes
+  - serializeEnvValue_returns_empty_quotes_for_empty_value
+  - serializeEnvValue_escapes_quotes_and_backslashes
+  - serializeEnvValue_rejects_line_breaks_and_nul
+  - serializeEnvValue_rejects_line_break_hidden_inside_quotes
+  - escapeEnvValue_aliases_delegate_to_serializeEnvValue
+  - env_value_single_line_checker_flags_line_breaks_and_nul
+
 # E2E axis 없음: 인스톨러는 템플릿 엔진(레이아웃 JSON / 컴포넌트 TSX / 핸들러 TS)을 쓰지
 # 않는 독립 PHP 화면이고, 이번 변경은 전부 서버측 판정(정책 함수 · API · 설치 워커 ·
 # 저장 시점)이다. Playwright 스위트는 설치가 끝난 애플리케이션을 대상으로 하며 설치
@@ -110,6 +146,13 @@ test_files:
   - tests/Unit/Installer/ComposerPathValidationTest.php
   - tests/Unit/Installer/BinaryPathPolicyTest.php
   - tests/Unit/Installer/InstallerStep3BinaryPathStoreGuardTest.php
+  # develop 합류분 — `vector: handleStep3Post` × `.env` 라인 주입의 **저장 시점** 사전
+  # 거부. 직렬화기(serializeEnvValue)를 재는 형제와 달리 이쪽은 그 앞단이다. 마커의
+  # payload_class 값(env_line_injection)은 위 축의 newline_lf/newline_crlf 를 아우르는
+  # 이름으로, 축 값 목록과 1:1 이 아니다 — 이 매니페스트는 전개를 표식으로 면제한다.
+  - tests/Unit/Installer/InstallerStep3EnvValueGuardTest.php
+  # 609 docblock 정리 — 소유 매니페스트가 없던 직렬화기 테스트 (KVE-2026-2042, vector serializeEnvValue).
+  - tests/Unit/Installer/EnvValueSerializationTest.php
 
 manual_verification:
   - description: "Critical-1 양방향 PoC — composer_binary 셸 페이로드"

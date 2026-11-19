@@ -47,6 +47,21 @@ final class SeoUrl
     }
 
     /**
+     * 화면 경로의 정본 절대 URL(canonical·og:url·hreflang 용)을 반환합니다.
+     *
+     * `absolute()` 와 같되 끝 슬래시를 정본 형태로 맞춘다 — 하위 폴더 설치의 마운트 루트는
+     * `https://example.com/g7/`(웹서버가 폴더 주소를 그 형태로 돌려보낸다), 그 밖은 끝 슬래시 없음.
+     * 루트 설치의 홈은 종전과 같이 `https://example.com` 이다. {@see SiteUrl::canonicalScreenForm()}
+     *
+     * @param  string  $path  화면 경로 (예: `/`, `/products/1`)
+     * @return string 정본 절대 URL
+     */
+    public static function canonical(string $path): string
+    {
+        return SiteUrl::canonicalScreenForm(SiteUrl::absolute($path));
+    }
+
+    /**
      * 사이트 주소의 origin(scheme://host[:port])을 반환합니다.
      *
      * 캐시 키의 이름공간으로 쓴다. 요청 origin 이 아니라 사이트 주소에서 뽑는 이유는

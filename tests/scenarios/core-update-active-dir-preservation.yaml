@@ -1,4 +1,5 @@
-# audit:allow test-scenario-coverage reason: 본 매니페스트는 활성 디렉토리 보존 + 단발성 복구 인프라의 시나리오 매트릭스 SSoT. 핵심 회귀 가드는 test_files 의 통과 테스트로 커버.
+# audit:allow test-scenario-coverage reason: issue:#609 본 매니페스트는 활성 디렉토리 보존 + 단발성 복구 인프라의 시나리오 매트릭스 SSoT. 핵심 회귀 가드는 test_files 의 통과 테스트로 커버.
+# audit:allow scenario-referenced-test-file-marked reason: issue:#609 형제 표식(test-scenario-coverage)의 유예를 명시 승계 — 표식 연쇄를 끊으며 이 룰의 유예를 자기 표식으로 옮겼다. 선언한 test_files 의 @scenario/@effects 마킹은 후속
 
 feature: 코어 업데이트 활성 확장 디렉토리 보존 + _bundled 사용자 추가 항목 보존 + beta.5 단발성 복구
 
@@ -29,6 +30,15 @@ description: |
        동등 fallback 을 무제한 깊이 재귀로 한 번 더 멱등 실행.
 
 axes:
+  # G3 회차 16 W6 — 종전 마킹이 쓰던 이름을 선언으로 올린다 (선언 = 마킹). 값은 실제 마킹에서 도출.
+  release_payload: [missing_tag_name]
+  api_message: [absent]
+  http_status: [401, 403, 404, 500]
+  write_outcome: [partial, complete]
+  recovery_slot: [occupied, free]
+  copy_outcome: [silently_failed, succeeded]
+  destination: [stale_file]
+  update_concurrency: [reentrant]
   source_structure: [bundled_only, bundled_plus_other, empty_top_level]   # source 의 templates/ 디렉토리 구조
   applied_targets_set: [bundled_targets, no_targets, mixed_targets]       # config('app.update.targets')
   active_subdir_state: [present, absent, empty]                            # base 의 활성 서브디렉토리 존재 여부
@@ -145,6 +155,8 @@ effects:
   - applyUpdate_prune_preserves_public_storage_symlink
   - applyUpdate_auto_discovers_new_top_level_directories_from_source
   - applyUpdate_auto_discovery_skips_protected_paths_and_excludes
+  # 2026-09-11 issue609 ← develop 병합: 유입 테스트가 실제로 재는 효과를 선언 (메서드 단위 마킹 규율)
+  - updateVersionInEnv_syncs_process_env_channels_so_config_cache_bakes_new_version
 
 test_files:
   - tests/Unit/Services/CoreUpdateServiceTest.php

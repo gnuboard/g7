@@ -9,7 +9,7 @@
 ```text
 1. MaxMind GeoLite2-City DB 기반 IP → 타임존 감지 (SetTimezone 미들웨어 3단계)
 2. 관리자 > 환경설정 > 고급 탭에서 마스터 토글 + 라이선스 키 관리
-3. geoip:update 커맨드로 DB 다운로드 (주 1회 자동 스케줄)
+3. geoip:update 커맨드로 DB 다운로드 (주 1회 자동 스케줄 — 7.2.0 부터 관리자 > 스케줄 관리의 코어 행 `geoip-update` 에서 주기 변경)
 4. 마스터 OFF 시 미들웨어 short-circuit — GeoIP 조회 완전 스킵
 5. MaxMind 라이선스: 재배포 금지 → 각 환경에서 직접 다운로드 필수
 ```
@@ -25,9 +25,9 @@
   ├── 자동 업데이트 토글 (geoip.auto_update_enabled)
   └── 수동 업데이트 버튼 → POST /api/admin/settings/geoip/update
 
-[스케줄러] routes/console.php
-  └── 주 1회(수요일 03:00) geoip:update 실행
-      └── 3개 조건 AND 게이트: 마스터 ON + 자동 업데이트 ON + 키 존재
+[스케줄러] 스케줄 관리의 코어 행 geoip-update (config/core.php schedules 카탈로그)
+  └── 기본 주 1회(수요일 03:00) geoip:update 실행 — 주기는 관리자 > 스케줄 관리에서 변경
+      └── 실행 조건(enabled_condition) 3개 AND: 마스터 ON + 자동 업데이트 ON + 키 존재
 
 [다운로드 흐름] GeoIpDatabaseService
   └── MaxMind API → tar.gz → PharData 추출 → 원자적 교체 → 메타데이터 갱신
@@ -57,7 +57,7 @@ GeoIP 기능 설정은 독립 카테고리 `geoip`로 관리됩니다 (`merge_in
 | `app/Services/GeoIpService.php` | IP → 타임존 조회 (Reader 사용) |
 | `app/Console/Commands/GeoIp/UpdateGeoLiteDatabaseCommand.php` | `geoip:update` Artisan 커맨드 |
 | `app/Http/Controllers/Api/Admin/GeoIpController.php` | 수동 업데이트 API 트리거 |
-| `config/geoip.php` | GeoIP 전체 설정 (활성화, 키, DB 경로, 다운로드, 스케줄, 캐시) |
+| `config/geoip.php` | GeoIP 전체 설정 (활성화, 키, DB 경로, 다운로드, 캐시). 7.2.0 부터 갱신 주기는 여기서 읽지 않는다 |
 | `config/settings/defaults.json` | `geoip` 카테고리 스키마 + 기본값 |
 | `storage/app/geoip/GeoLite2-City.mmdb` | MaxMind DB 파일 (`.gitignore` 제외) |
 
@@ -73,8 +73,8 @@ php artisan geoip:update --force
 # URL/키 검증만 (실제 다운로드 X)
 php artisan geoip:update --dry-run
 
-# 스케줄 등록 확인
-php artisan schedule:list | grep geoip
+# 스케줄 등록 확인 (이벤트 이름은 schedule:{행 ID})
+php artisan schedule:list
 ```
 
 ## 훅 시스템
@@ -121,7 +121,8 @@ https://download.maxmind.com/app/geoip_download
 
 - 파일 형식: `.tar.gz` 내부에 `GeoLite2-City_YYYYMMDD/GeoLite2-City.mmdb`
 - MaxMind 갱신 주기: 주 2회 (화/금)
-- G7 기본 스케줄: 주 1회 (수요일 03:00)
+- G7 기본 스케줄: 주 1회 (수요일 03:00) — 관리자 > 스케줄 관리에서 바꿀 수 있다
+- 7.2.0 이전의 환경 변수 `GEOIP_SCHEDULE_FREQUENCY`·`GEOIP_SCHEDULE_TIME` 은 더 이상 읽지 않는다. 코어 7.2.0 업그레이드가 설정돼 있던 값을 `geoip-update` 행으로 옮긴다. 자세한 동작은 [예약 작업(스케줄) 시스템](scheduling.md)
 
 ## 검증 규칙
 

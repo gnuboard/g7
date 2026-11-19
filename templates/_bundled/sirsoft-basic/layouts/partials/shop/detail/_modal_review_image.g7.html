@@ -35,6 +35,7 @@
       <div class="flex flex-col items-center gap-3">
         <!-- 이미지 + 좌우 버튼 -->
         <div class="relative flex items-center justify-center w-full px-16">
+          <!-- thumb-exempt: 확대 보기 원본 -->
           <img src="{{(_global.reviewForModal?.images ?? [])[Number(_global.reviewImageIndex)]?.download_url ?? ''}}" alt="" class="w-full max-w-full max-h-[55vh] object-contain rounded-lg"/>
           <button type="button" class="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-12 h-12 flex items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 leading-none disabled:opacity-20 disabled:cursor-not-allowed" disabled="{{Number(_global.reviewImageIndex) <= 0}}">
             <on type="click">

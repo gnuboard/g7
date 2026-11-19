@@ -4,6 +4,7 @@ return [
     'refund' => [
         'missing_tid' => '取引番号(tno)がないため返金を進めることができません。',
         'default_reason' => '購入者返金リクエスト',
+        'pg_failed' => '決済代行会社との通信中にエラーが発生しました。しばらくしてからもう一度お試しください。',
         'in_progress' => 'NHN KCP 返金はすでに処理中です。',
         'vbank_requires_bank_transfer' => '入金済みの仮想口座決済は NHN KCP で自動返金できません。返金方法を口座返金に変更し、お客様の口座へ直接送金してください。',
     ],
@@ -20,6 +21,9 @@ return [
         'mobile_payment_unavailable' => '現在モバイル決済をご利用いただけません。別の決済手段を選択するか、ショップにお問い合わせください。',
         'cli_binary_missing' => 'KCP CLIバイナリ不足: :path',
         'cli_binary_not_executable' => 'KCP CLIバイナリ実行権限不足 — 管理者の対応が必要です (sudo chmod 755 :path)',
+        'escrow_delivery_rejected' => 'NHN KCPがエスクロー配送登録を拒否しました。',
+        'cancel_rejected' => 'NHN KCPが決済キャンセルを拒否しました。',
+        'escrow_delivery_failed' => 'エラーが発生したため、エスクロー配送登録を完了できませんでした。しばらくしてからもう一度お試しください。失敗が続く場合はサーバーログを確認してください。',
     ],
     'claim' => [
         'invalid_callback' => 'クレーム決済承認に必要なコールバックパラメーターがありません。',
@@ -83,5 +87,25 @@ return [
     ],
     'kcp_frame' => [
         'sdk' => '決済ウィンドウ SDK の URL',
+    ],
+    'vbank_close_reason' => '入金前の注文キャンセル',
+    // 決済画面・決済代行会社連携 API のエラー応答メッセージ
+    'responses' => [
+        'amount_mismatch' => '決済金額が注文金額と一致しません。',
+        'claim_amount_mismatch' => '決済金額が請求決済の金額と一致しません。',
+        'claim_approval_forbidden' => 'この請求決済の NHN KCP 承認キーはリクエストできません。',
+        'order_approval_forbidden' => 'この注文の NHN KCP 承認キーはリクエストできません。',
+        'approval_key_failed' => 'NHN KCP の決済を準備できませんでした。:reason',
+        'claim_deposit_not_supported' => 'クレーム追加決済は入金待ち方式(仮想口座)に対応していません。',
+        'claim_payment_not_found' => '請求決済が見つかりません。',
+        'claim_payment_not_payable' => 'この請求決済は決済できません。',
+        'currency_not_chargeable' => '決済通貨で請求額を計算できません。',
+        'guest_verification_failed' => '非会員注文の確認に失敗しました。',
+        'krw_only' => 'NHN KCP はウォン建ての決済のみ対応しています。',
+        'order_not_found' => '注文が見つかりません。',
+        'order_not_retryable' => 'この注文は再決済できません。',
+        'ownership_verification_failed' => '注文の所有者確認に失敗しました。',
+        'too_many_requests' => 'リクエストが多すぎます。しばらくしてから再度お試しください。',
+        'vbank_session_failed' => '仮想口座決済を準備できませんでした。しばらくしてから再度お試しください。',
     ],
 ];

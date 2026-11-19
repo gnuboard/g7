@@ -1,0 +1,20 @@
+feature: pending_bundled_extension_class
+
+description: |
+  코어 업그레이드 스텝이 활성 모듈·플러그인 선언을 새 판(_bundled)으로 다시 동기화할 때, 새 판에만 있는 확장 클래스 때문에
+  실패한 확장은 실패가 아니라 「확장 갱신이 이어서 동기화」로 가른다(7.1.6 → 7.2.0 실측: 환율 플러그인
+  Services\UpdateScheduleResolver 로 업그레이드 로그에 「sync 실패」 오경보). 활성 폴더에도 있는 클래스·다른 오류·다른 이름공간·
+  새 판에도 없는 클래스의 실패는 그대로 실패로 남긴다.
+
+coverage_strategy: full
+
+axes:
+  case: [class_only_in_bundled, genuine_failure, manager_wiring]
+
+effects:
+  - pending_bundled_class_detected                   # 새 판에만 있는 클래스면 그 이름을 돌려준다
+  - genuine_failures_kept                            # 그 밖의 실패는 이연하지 않는다
+  - managers_defer_pending_bundled_class_failures    # 모듈·플러그인 매니저 일괄 재동기화가 결과의 deferred 로 가른다
+
+test_files:
+  - tests/Unit/Extension/PendingBundledExtensionClassTest.php

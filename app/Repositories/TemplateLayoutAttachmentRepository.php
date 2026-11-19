@@ -59,4 +59,25 @@ class TemplateLayoutAttachmentRepository implements TemplateLayoutAttachmentRepo
     {
         return (bool) $attachment->delete();
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function countByMimeTypes(array $mimeTypes): int
+    {
+        return TemplateLayoutAttachment::query()->whereIn('mime_type', $mimeTypes)->count();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function chunkByMimeTypes(array $mimeTypes, int $afterId, int $limit): Collection
+    {
+        return TemplateLayoutAttachment::query()
+            ->whereIn('mime_type', $mimeTypes)
+            ->where('id', '>', $afterId)
+            ->orderBy('id')
+            ->limit($limit)
+            ->get(['id', 'disk', 'path', 'mime_type']);
+    }
 }

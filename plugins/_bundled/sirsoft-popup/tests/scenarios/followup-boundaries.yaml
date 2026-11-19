@@ -1,0 +1,28 @@
+feature: 팝업 실패 보상·빈 본문·예약 갱신 경계
+axes:
+  surface:
+    - image_upload_lookup_failure
+    - image_upload_storage_failure
+    - pending_row_protected
+    - pending_journal_required
+    - pending_retry_exception
+    - image_cleanup_retry
+    - body_visually_empty
+    - body_visible_with_optional_locale
+    - public_refresh_timing
+    - refresh_boundary
+    - refresh_return
+    - refresh_hidden
+    - refresh_cleanup
+    - scheduled_refresh_e2e
+effects:
+  - files_created_or_removed
+  - refresh_keeps_dismissal
+  - test_data_cleaned_up
+test_files:
+  - plugins/_bundled/sirsoft-popup/tests/Unit/Services/PendingImageFilesTest.php
+  - plugins/_bundled/sirsoft-popup/tests/Feature/Admin/PopupImageControllerTest.php
+  - plugins/_bundled/sirsoft-popup/tests/Feature/Admin/PopupControllerTest.php
+  - plugins/_bundled/sirsoft-popup/tests/Feature/Public/PopupControllerTest.php
+  - plugins/_bundled/sirsoft-popup/resources/js/__tests__/components/PopupRefresh.test.tsx
+  - plugins/_bundled/sirsoft-popup/tests/Playwright/specs/popup-refresh.spec.ts

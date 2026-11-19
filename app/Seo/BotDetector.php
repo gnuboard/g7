@@ -3,6 +3,7 @@
 namespace App\Seo;
 
 use App\Extension\HookManager;
+use App\Support\RuntimeRole;
 use Illuminate\Http\Request;
 
 /**
@@ -24,6 +25,29 @@ use Illuminate\Http\Request;
 class BotDetector
 {
     /**
+     * 요청이 봇이면 요청 속성 `seo.is_bot` 에 표식을 남깁니다.
+     *
+     * 방문자 통계(봇 기록·서버 폴백)는 이 표식만 읽어 봇을 사람 방문에서 가른다. SEO 렌더를 거치지 않는
+     * 화면(custom 예약 자리의 개발자 화면, #792)도 같은 판정·같은 표식을 쓰도록 한곳에 둔다 —
+     * 판정이 두 벌이면 두 기능의 숫자가 갈린다.
+     *
+     * @param  Request  $request  HTTP 요청
+     * @return bool 봇이면 true (표식을 남김)
+     *
+     * @since 7.2.0
+     */
+    public function markBotRequest(Request $request): bool
+    {
+        if (! $this->isBot($request)) {
+            return false;
+        }
+
+        $request->attributes->set('seo.is_bot', true);
+
+        return true;
+    }
+
+    /**
      * 요청이 검색 봇인지 판별합니다.
      *
      * @param  Request  $request  HTTP 요청
@@ -31,6 +55,11 @@ class BotDetector
      */
     public function isBot(Request $request): bool
     {
+        // 검수 서버는 봇 렌더를 하지 않는다
+        if (RuntimeRole::isStage()) {
+            return false;
+        }
+
         if (! g7_core_settings('seo.bot_detection_enabled', true)) {
             return false;
         }

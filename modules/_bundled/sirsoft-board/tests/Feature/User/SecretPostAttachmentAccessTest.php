@@ -5,10 +5,16 @@ namespace Modules\Sirsoft\Board\Tests\Feature\User;
 // 테스트 베이스 클래스 수동 require (autoload 전에 로드 필요)
 require_once __DIR__.'/../../ModuleTestCase.php';
 
+use App\Extension\Storage\ModuleStorageDriver;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use App\Thumbnails\ThumbnailPresetRegistry;
+use App\Thumbnails\ThumbnailResponder;
+use App\Thumbnails\ThumbnailUrl;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Modules\Sirsoft\Board\Tests\BoardTestCase;
 
@@ -759,6 +765,135 @@ class SecretPostAttachmentAccessTest extends BoardTestCase
         $this->createAttachment($postId, 'secexpireAAA', image: true);
 
         $this->get($this->signedPreviewUrl('secexpireAAA', minutes: -1))->assertStatus(403);
+    }
+
+    // ==========================================
+    // 서명 preview URL + 썸네일 파라미터(size) 축 (#869)
+    //
+    // 화면은 서명 주소 뒤에 `size` 를 덧붙인다. 서명은 서버가 발급한 쿼리 전체에 걸려 있어
+    // `size` 를 빼고 검증해야 열람 권한자의 비밀글 썸네일이 403 이 되지 않는다. 반대로 서명
+    // 범위를 줄인 것이 변조·만료를 통과시키면 안 된다.
+    // ==========================================
+
+    /**
+     * 첨부 행이 가리키는 자리에 실제 JPEG 를 두고 원본·파생본 디스크를 가짜로 바꿉니다.
+     *
+     * @param  string  $hash  첨부 해시
+     * @return void 반환값 없음
+     */
+    private function placeRealImage(string $hash): void
+    {
+        Storage::fake('modules');
+        Storage::fake('thumbnails');
+        // 캐시 정책은 운영 환경에서만 public·private 로 갈린다 — 갈림을 재려고 운영 환경으로 둔다.
+        $this->app['env'] = 'production';
+        Config::set('core.thumbnail.enabled', true);
+        Config::set('core.thumbnail.disk_gated', 'thumbnails');
+        Config::set('core.image.driver', 'gd');
+        Config::set('core.thumbnail.presets', [
+            ['name' => 'xs', 'width' => 64, 'height' => 64, 'fit' => 'cover', 'anchor' => 'center', 'quality' => null, 'format' => 'original', 'upscale' => false, 'pregenerate' => false, 'numeric' => false, 'enabled' => true],
+        ]);
+        app(ThumbnailPresetRegistry::class)->flush();
+
+        $image = imagecreatetruecolor(300, 200);
+        ob_start();
+        imagejpeg($image);
+        $bytes = (string) ob_get_clean();
+        imagedestroy($image);
+
+        $path = "{$this->board->slug}/2026/11/05/{$hash}.jpg";
+        DB::table('board_attachments')->where('hash', $hash)->update(['path' => $path, 'disk' => 'modules', 'size' => strlen($bytes)]);
+        (new ModuleStorageDriver('sirsoft-board', 'modules'))->put('attachments', $path, $bytes);
+    }
+
+    /**
+     * 유효 서명 주소에 size 를 덧붙여도 비밀 게이트를 통과해 규격 썸네일을 받는다.
+     *
+     * @scenario viewer=guest
+     *
+     * @effects guest_with_valid_signature_and_size_passes_secret_preview_gate
+     *
+     * @return void 반환값 없음
+     */
+    public function test_guest_with_valid_signed_url_and_size_passes_secret_preview_gate(): void
+    {
+        $postId = $this->secretPost();
+        $this->createAttachment($postId, 'secsizeokAAA', image: true);
+        $this->placeRealImage('secsizeokAAA');
+
+        $response = $this->get(ThumbnailUrl::withSize($this->signedPreviewUrl('secsizeokAAA'), 'xs'));
+
+        $response->assertOk();
+        $this->assertSame('miss', $response->headers->get(ThumbnailResponder::HEADER));
+        $this->assertSame([64, 64], array_slice((array) getimagesizefromstring($response->streamedContent()), 0, 2));
+        $this->assertStringContainsString('private', (string) $response->headers->get('Cache-Control'));
+        $this->assertStringNotContainsString('public', (string) $response->headers->get('Cache-Control'));
+    }
+
+    /**
+     * 변조된 서명은 size 를 붙여도 403 이다 — 서명 범위를 줄인 것이 변조를 통과시키지 않는다.
+     *
+     * @scenario viewer=guest
+     *
+     * @effects guest_with_tampered_signature_and_size_still_blocked
+     *
+     * @return void 반환값 없음
+     */
+    public function test_guest_with_tampered_signature_and_size_still_blocked(): void
+    {
+        $postId = $this->secretPost();
+        $this->createAttachment($postId, 'secsizetmAAA', image: true);
+        $this->placeRealImage('secsizetmAAA');
+
+        $tampered = preg_replace_callback(
+            '/(signature=)([0-9a-f]+)/',
+            fn ($m) => $m[1].substr($m[2], 0, -8).strrev(substr($m[2], -8)),
+            $this->signedPreviewUrl('secsizetmAAA')
+        );
+
+        $this->get(ThumbnailUrl::withSize($tampered, 'xs'))->assertStatus(403);
+        $this->assertSame([], Storage::disk('thumbnails')->allFiles(), '게이트에 막힌 요청이 파생본을 만들었다');
+    }
+
+    /**
+     * 만료된 서명은 size 를 붙여도 403 이다.
+     *
+     * @scenario viewer=guest
+     *
+     * @effects guest_with_expired_signature_and_size_still_blocked
+     *
+     * @return void 반환값 없음
+     */
+    public function test_guest_with_expired_signature_and_size_still_blocked(): void
+    {
+        $postId = $this->secretPost();
+        $this->createAttachment($postId, 'secsizeexAAA', image: true);
+        $this->placeRealImage('secsizeexAAA');
+
+        $this->get(ThumbnailUrl::withSize($this->signedPreviewUrl('secsizeexAAA', minutes: -1), 'xs'))->assertStatus(403);
+    }
+
+    /**
+     * 배열 파라미터(`size[]=x`)는 서명 검증에서 빠지되 규격으로 해석되지 않는다 — 유효 서명이면
+     * 원본 200 에 `bypass:unknown-preset` 이다.
+     *
+     * @scenario viewer=guest
+     *
+     * @effects guest_with_array_size_and_valid_signature_gets_original_with_bypass
+     *
+     * @return void 반환값 없음
+     */
+    public function test_guest_with_array_size_and_valid_signature_gets_original_with_bypass(): void
+    {
+        $postId = $this->secretPost();
+        $this->createAttachment($postId, 'secsizearAAA', image: true);
+        $this->placeRealImage('secsizearAAA');
+
+        $response = $this->get($this->signedPreviewUrl('secsizearAAA').'&size[]=x');
+
+        $response->assertOk();
+        $this->assertSame('bypass:unknown-preset', $response->headers->get(ThumbnailResponder::HEADER));
+        $this->assertSame([300, 200], array_slice((array) getimagesizefromstring($response->streamedContent()), 0, 2));
     }
 
     /**

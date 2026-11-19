@@ -26,11 +26,19 @@ NHN KCP 표준결제(Standard Pay)를 `sirsoft-ecommerce` 에 연결하는 어�
 ```text
 Controller (PaymentCallbackController / EscrowCommonNotifyController / MobileApprovalController)
   → NhnKcpApiService (CLI 실행 · SOAP 호출 · 인자 사전검증)
-  → sirsoft-ecommerce 의 Order/OrderPayment 모델 (직접 참조 — 이 플러그인 소유 모델 없음)
+  → sirsoft-ecommerce 공개 결제 계약 PaymentGatewayBridge (조회 DTO · 쓰기 메서드 — 이 플러그인 소유 모델 없음)
 
 Listener (RegisterPgProviderListener 등)
   → sirsoft-ecommerce 의 필터 훅에 등록 (컴파일 타임 결합 없음)
+  → 필요한 것만 하위 계약으로 주입 (PaymentLookup · ClaimPaymentLookup · PriceFormatter)
 ```
+
+이커머스 내부 클래스(Model 정적 조회·Service·Repository·테이블 이름)는 쓰지 않습니다. 재시도 가능 판정
+(KCP 가 남긴 실패인지, 승인 흔적이 없는지)은 이 플러그인이 하고, 실패 주문을 결제대기로 되돌리는 일은 계약의
+`restoreForRetry` 가 합니다 — 결제완료·부분취소 이력이 있으면 거부하고, 정상 상태 전이(전이 훅·활동 로그)와
+함께 결제 실패 처리가 취소로 바꾼 주문 상품도 주문 대기로 되돌립니다. 주문 meta 의 `nhnkcp_retry_failures`
+(최근 5건)·`nhnkcp_retry_count`·`nhnkcp_retry_started_at` 과 결제 meta 의 `retry_count`·`retry_started_at` 은
+종전과 같은 값으로 남습니다.
 
 이 플러그인에는 FormRequest 계층이 얕습니다 — 결제 승인·통보 콜백은 사용자가 채운 폼이
 아니라 KCP 가 보내는 고정 스키마이므로, 검증의 대부분은 `NhnKcpApiService`의

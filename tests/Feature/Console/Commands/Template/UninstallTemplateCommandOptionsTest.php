@@ -37,7 +37,9 @@ class UninstallTemplateCommandOptionsTest extends TestCase
         );
         $this->app->instance(TemplateManager::class, $manager);
 
-        Template::factory()->create(['identifier' => 'acme-theme']);
+        // 상태를 고정한다 — 팩토리는 활성, 비활성을 무작위로 고르는데, 활성이면 유형의 마지막 활성 템플릿이라
+        // 제거 거절(TemplateLastActiveGuard)로 끝나 이 시험이 보려는 옵션 전달과 무관하게 절반 확률로 깨진다.
+        Template::factory()->create(['identifier' => 'acme-theme', 'status' => 'inactive']);
     }
 
     /**

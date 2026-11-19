@@ -110,6 +110,8 @@ return [
             'not_found' => '言語パックが見つかりません: :identifier',
             'confirm' => '言語パック \':identifier\' を削除しますか？',
             'cancelled' => 'キャンセルしました。',
+            'confirm_unavailable' => '確認の質問に答えられない実行（端末なし、または --no-interaction）のため、言語パック \':identifier\' を削除しませんでした。',
+            'confirm_unavailable_hint' => 'cron、CI、リモートコマンドのように確認なしで削除する必要がある場合は、--force オプションを付けて再実行してください。例: php artisan language-pack:uninstall :identifier --force',
             'done' => '言語パックの削除が完了しました: :identifier',
             'failed' => '言語パックの削除に失敗しました: :error',
         ],

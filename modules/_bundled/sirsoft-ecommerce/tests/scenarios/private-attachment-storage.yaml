@@ -1,0 +1,24 @@
+# 시나리오 매니페스트 — 이커머스 비공개 원본의 저장 디스크 (#916 ①, 공개 #83 후속)
+# 참조: docs/testing-guide.md "기능 단위 시나리오 매트릭스"
+
+feature: ecommerce_private_attachment_storage
+
+description: |
+  권한 게이트가 걸린 이커머스 비공개 원본(클레임 첨부·내보내기·본문 미디어)의 저장 디스크.
+  코어 해석 규칙은 `tests/scenarios/private-attachment-storage.yaml` 이 소유하고, 여기서는 이커머스 배선만 잰다.
+
+  - 클레임 첨부는 공개 자산 디스크가 켜져 있어도 그 디스크로 가지 않는다(직접 URL 로 게이트가 우회된다).
+    공개 자산 디스크가 비어 있어도 같은 기본 디스크를 쓴다(대조군).
+  - ClaimAttachmentService·ExportService·EcommerceContentMediaService 는 `private_attachments` 바인딩으로
+    비공개 첨부 저장소 선택을 따른다(「기본」이면 modules).
+
+axes:
+  case: [public_asset_disk_set, public_asset_disk_unset, private_attachment_selection]
+
+effects:
+  - claim_attachment_never_lands_on_public_asset_disk              # 공개 자산 디스크가 설정돼도 클레임 첨부 행·파일은 그 디스크에 없다
+  - claim_attachment_uses_base_disk_without_public_asset_disk      # 공개 자산 디스크 미설정이어도 같은 기본 디스크(modules)를 쓴다
+  - ecommerce_private_services_follow_private_attachment_selection # 클레임 첨부·내보내기·본문 미디어 서비스는 비공개 첨부 선택을 따르고 공개 자산 디스크는 따르지 않는다
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Unit/Services/ClaimAttachmentServiceDiskTest.php

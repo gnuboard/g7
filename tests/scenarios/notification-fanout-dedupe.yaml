@@ -1,4 +1,4 @@
-# audit:allow test-scenario-coverage[cross_product] reason: 이슈 #139 알림 분할 발송·중복 방지. 수신자 규모 × 재실행 유형 조합 중 의미 있는 대표 조합만 테스트별 @scenario 로 매핑하고, 나머지 조합은 같은 가드(리스 선점 + 보낸 뒤 표시)를 타므로 면제한다.
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#139 알림 분할 발송·중복 방지. 수신자 규모 × 재실행 유형 조합 중 의미 있는 대표 조합만 테스트별 @scenario 로 매핑하고, 나머지 조합은 같은 가드(리스 선점 + 보낸 뒤 표시)를 타므로 면제한다.
 
 feature: notification_fanout_dedupe
 

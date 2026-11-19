@@ -9,7 +9,7 @@
  *
  * 저장은 하지 않는다. 버퍼는 브라우저 안에서만 사는 값이라 서버를 건드리지 않고 잴 수 있다.
  *
- * @scenario surface=code_editor,entry=direct
+ * 소속 시나리오(마커 아님 — 평문): code-editor-multi-buffer
  * @effects code_editor_keeps_unsaved_edits_across_file_switches
  *
  * 실행: `code-editor-*.spec.ts` 는 `--workers=1` 로 돌린다 — 사유는
@@ -69,8 +69,6 @@ test.describe.configure({ mode: 'serial' });
 test.describe('@sirsoft-admin_basic 코드 편집기 — 파일별 버퍼', () => {
   // @scenario branch=layout, buffer_state=dirty, leave=reload
   /**
-   * @scenario promise=unsaved_edits_survive_file_switch, surface=browser
-   *
    * @effects code_editor_keeps_unsaved_edits_across_file_switches
    */
   test('A 를 고치고 B 를 열었다가 A 로 돌아와도 편집분이 남는다', async ({ page, layoutEditToken }) => {
@@ -102,8 +100,6 @@ test.describe('@sirsoft-admin_basic 코드 편집기 — 파일별 버퍼', () =
   // @scenario branch=layout, buffer_state=clean, leave=reload
   /**
    * 되돌리기 스택도 파일별이다 — 모델을 나누지 않으면 A 의 `Ctrl+Z` 가 B 의 편집을 되돌린다.
-   *
-   * @scenario promise=per_file_undo_stack, surface=browser
    *
    * @effects code_editor_keeps_one_monaco_model_per_file
    */
@@ -140,7 +136,7 @@ test.describe('@sirsoft-admin_basic 코드 편집기 — 파일별 버퍼', () =
   /**
    * 탭은 **열려 있는 것**을 보여 준다 — 편집기가 한 파일만 그리더라도.
    *
-   * @scenario promise=open_files_are_visible, surface=browser
+   * @scenario branch=layout, buffer_state=dirty, leave=file_switch
    *
    * @effects code_editor_shows_open_files_as_tabs
    */
@@ -166,7 +162,7 @@ test.describe('@sirsoft-admin_basic 코드 편집기 — 파일별 버퍼', () =
   /**
    * 새로고침·탭 닫기는 브라우저가 막아 세운다.
    *
-   * @scenario promise=reload_guard, surface=browser
+   * @scenario branch=layout, buffer_state=dirty, leave=reload
    *
    * @effects code_editor_guards_reload_with_unsaved_edits
    */
@@ -202,8 +198,6 @@ test.describe('@sirsoft-admin_basic 코드 편집기 — 파일을 여는 것은
    * 여기서 잠그는 명제는 둘이다 — **파일을 여는 것만으로는 서버 변환이 돌지 않는다**,
    * 그리고 **오류 배너가 서지 않는다**. 단위 테스트는 change 핸들러만 볼 수 있어
    * 「빈 값이 실제로 편집기에서 되돌아오는」 그 타이밍을 재현하지 못한다.
-   *
-   * @scenario promise=opening_a_file_is_not_an_edit, surface=browser
    *
    * @effects code_editor_keeps_unsaved_edits_across_file_switches
    */

@@ -1,0 +1,1195 @@
+{
+    "comment": "팝업 환경설정 화면 — 코어의 플러그인 설정 규약(경로·엔드포인트·저장 흐름)을 따른다. 여기서 정한 표시 방식(PC 위치·크기,\n  모바일 형태, 배경, 자동 넘김, 닫기 옵션)은 모든 팝업에 똑같이 적용된다. 오른쪽(좁은 화면은 저장 단추 위) 미리보기는 사용자 레이어와 같은\n  컴포넌트를 표본 팝업으로 그린다. 업로드 최대 용량·공개 캐시 시간은 #810 과 같은 운영 값이다.",
+    "version": "1.0.0",
+    "layout_name": "plugin_settings",
+    "extends": "_admin_base",
+    "meta": {
+        "title": "$t:sirsoft-popup.settings.title",
+        "description": "$t:sirsoft-popup.settings.description"
+    },
+    "data_sources": [
+        {
+            "id": "settings",
+            "label_key": "$t:sirsoft-popup.editor.data_source.settings",
+            "type": "api",
+            "endpoint": "/api/admin/plugins/{{route.identifier}}/settings",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "initLocal": "form",
+            "refetchOnMount": true,
+            "errorHandling": {
+                "default": {
+                    "comment": "처음 받기 실패는 빈 폼·기본값으로 저장되지 않게 본문 오류 화면, 다시 받기 실패는 보던 값을 그대로 두고 알린다",
+                    "handler": "conditions",
+                    "conditions": [
+                        {
+                            "if": "{{error.refetch}}",
+                            "then": {
+                                "handler": "toast",
+                                "params": {
+                                    "type": "error",
+                                    "message": "$t:core.errors.refresh_failed"
+                                }
+                            }
+                        },
+                        {
+                            "then": {
+                                "handler": "showErrorPage",
+                                "params": {
+                                    "errorCode": "{{error.status}}",
+                                    "target": "content"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            "comment": "현재 설정값. 화면에 들어올 때마다 다시 받아 폼 초기값으로 넣는다(initLocal=form) — 저장 후 되돌아왔을 때 낡은 값이 남지 않게"
+        },
+        {
+            "id": "upload_limit",
+            "label_key": "$t:sirsoft-popup.editor.data_source.upload_limit",
+            "type": "api",
+            "endpoint": "/api/plugins/sirsoft-popup/admin/display-settings",
+            "method": "GET",
+            "auto_fetch": true,
+            "auth_required": true,
+            "loading_strategy": "background",
+            "fallback": {
+                "data": null
+            },
+            "comment": "서버 PHP 업로드 한도 — 코어 설정 응답에는 없는 값이라 팝업 표시 방식 응답의 `upload` 를 함께 받는다. 팝업 조회 권한이 없어 실패하면 한도 안내만 숨긴다"
+        }
+    ],
+    "initLocal": {
+        "previewDevice": "pc"
+    },
+    "computed": {
+        "isPluginReadOnly": "{{settings?.data?.abilities?.can_update !== true}}"
+    },
+    "permissions": [
+        "core.plugins.read"
+    ],
+    "slots": {
+        "content": [
+            {
+                "id": "plugin_settings_content",
+                "type": "basic",
+                "name": "Div",
+                "dataKey": "form",
+                "trackChanges": true,
+                "responsive": {
+                    "640-1023": {
+                        "props": {
+                            "className": "gpp:p-6 gpp:min-h-screen gpp:bg-gray-50 gpp:dark:bg-gray-900"
+                        }
+                    },
+                    "1024-": {
+                        "props": {
+                            "className": "gpp:p-8 gpp:min-h-screen gpp:bg-gray-50 gpp:dark:bg-gray-900"
+                        }
+                    }
+                },
+                "props": {
+                    "className": "gpp:p-4 gpp:min-h-screen gpp:bg-gray-50 gpp:dark:bg-gray-900"
+                },
+                "children": [
+                    {
+                        "comment": "PageHeader 는 돌아가기 props 가 없다 — 목록으로 가는 링크를 머리 위에 따로 둔다",
+                        "id": "back_to_list_link",
+                        "type": "basic",
+                        "name": "A",
+                        "actions": [
+                            {
+                                "type": "click",
+                                "handler": "navigate"
+                            }
+                        ],
+                        "props": {
+                            "href": "/admin/plugins/sirsoft-popup/popups",
+                            "className": "gpp:inline-flex gpp:items-center gpp:gap-1 gpp:mb-2 gpp:text-sm gpp:font-semibold gpp:text-blue-600 gpp:dark:text-blue-400 gpp:hover:underline"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "aria-hidden": "true"
+                                },
+                                "text": "‹"
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "text": "$t:sirsoft-popup.settings.back_to_list"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "settings_breadcrumb",
+                        "type": "basic",
+                        "name": "P",
+                        "props": {
+                            "className": "gpp:text-xs gpp:text-gray-500 gpp:dark:text-gray-400 gpp:mb-1"
+                        },
+                        "text": "$t:sirsoft-popup.settings.breadcrumb"
+                    },
+                    {
+                        "id": "page_header",
+                        "type": "composite",
+                        "name": "PageHeader",
+                        "props": {
+                            "title": "$t:sirsoft-popup.settings.title",
+                            "description": "$t:sirsoft-popup.settings.description"
+                        }
+                    },
+                    {
+                        "id": "plugin_read_only_banner",
+                        "type": "basic",
+                        "name": "Div",
+                        "if": "{{_computed.isPluginReadOnly && !!settings?.data}}",
+                        "props": {
+                            "role": "status",
+                            "className": "g7pp-alert-warning gpp:mt-6"
+                        },
+                        "children": [
+                            {
+                                "type": "basic",
+                                "name": "Icon",
+                                "props": {
+                                    "name": "lock",
+                                    "className": "gpp:text-xl gpp:text-amber-600 gpp:dark:text-amber-400 gpp:flex-shrink-0"
+                                }
+                            },
+                            {
+                                "type": "basic",
+                                "name": "Span",
+                                "props": {
+                                    "className": "gpp:text-xs gpp:text-yellow-700 gpp:dark:text-yellow-300"
+                                },
+                                "text": "$t:sirsoft-popup.plugin_read_only"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "settings_columns",
+                        "type": "basic",
+                        "name": "Div",
+                        "responsive": {
+                            "desktop": {
+                                "props": {
+                                    "className": "gpp:mt-6 gpp:grid gpp:grid-cols-3 gpp:gap-6"
+                                }
+                            }
+                        },
+                        "props": {
+                            "className": "gpp:mt-6 gpp:grid gpp:grid-cols-1 gpp:gap-6"
+                        },
+                        "children": [
+                            {
+                                "id": "settings_cards",
+                                "type": "basic",
+                                "name": "Div",
+                                "responsive": {
+                                    "desktop": {
+                                        "props": {
+                                            "className": "gpp:col-span-2 gpp:flex gpp:flex-col gpp:gap-6"
+                                        }
+                                    }
+                                },
+                                "props": {
+                                    "className": "gpp:flex gpp:flex-col gpp:gap-6"
+                                },
+                                "children": [
+                                    {
+                                        "comment": "PC 표시 — 위치(중앙/좌상단 좌표)와 내용 영역 크기",
+                                        "id": "pc_card",
+                                        "type": "basic",
+                                        "name": "Section",
+                                        "props": {
+                                            "className": "g7pp-admin-card"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H2",
+                                                "props": {
+                                                    "className": "g7pp-card-title"
+                                                },
+                                                "text": "$t:sirsoft-popup.settings.pc.title"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "g7pp-row-stack"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "field_pc_position",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "role": "group",
+                                                            "aria-label": "$t:sirsoft-popup.settings.pc.position"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "props": {
+                                                                    "className": "g7pp-form-label gpp:block",
+                                                                    "aria-hidden": "true"
+                                                                },
+                                                                "text": "$t:sirsoft-popup.settings.pc.position"
+                                                            },
+                                                            {
+                                                                "type": "composite",
+                                                                "name": "RadioGroup",
+                                                                "props": {
+                                                                    "name": "pc_position",
+                                                                    "inline": true,
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}",
+                                                                    "options": [
+                                                                        {
+                                                                            "label": "$t:sirsoft-popup.settings.pc_position.center",
+                                                                            "value": "center"
+                                                                        },
+                                                                        {
+                                                                            "label": "$t:sirsoft-popup.settings.pc_position.coords",
+                                                                            "value": "coords"
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            },
+                                                            {
+                                                                "id": "pc_coords",
+                                                                "type": "basic",
+                                                                "name": "Div",
+                                                                "if": "{{_local.form?.pc_position === 'coords'}}",
+                                                                "props": {
+                                                                    "className": "gpp:mt-3 gpp:flex gpp:flex-wrap gpp:gap-4"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Label",
+                                                                        "props": {
+                                                                            "className": "gpp:flex gpp:flex-col gpp:gap-1 gpp:text-sm gpp:text-gray-700 gpp:dark:text-gray-300",
+                                                                            "htmlFor": "popup_pc_left"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "text": "$t:sirsoft-popup.settings.pc.left"
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Input",
+                                                                                "props": {
+                                                                                    "type": "number",
+                                                                                    "id": "popup_pc_left",
+                                                                                    "name": "pc_left",
+                                                                                    "min": 0,
+                                                                                    "max": 2000,
+                                                                                    "className": "g7pp-input gpp:w-32",
+                                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Label",
+                                                                        "props": {
+                                                                            "className": "gpp:flex gpp:flex-col gpp:gap-1 gpp:text-sm gpp:text-gray-700 gpp:dark:text-gray-300",
+                                                                            "htmlFor": "popup_pc_top"
+                                                                        },
+                                                                        "children": [
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Span",
+                                                                                "text": "$t:sirsoft-popup.settings.pc.top"
+                                                                            },
+                                                                            {
+                                                                                "type": "basic",
+                                                                                "name": "Input",
+                                                                                "props": {
+                                                                                    "type": "number",
+                                                                                    "id": "popup_pc_top",
+                                                                                    "name": "pc_top",
+                                                                                    "min": 0,
+                                                                                    "max": 2000,
+                                                                                    "className": "g7pp-input gpp:w-32",
+                                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
+                                                                                }
+                                                                            }
+                                                                        ]
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{_local.errors?.pc_left || _local.errors?.pc_top}}",
+                                                                "props": {
+                                                                    "className": "g7pp-form-error"
+                                                                },
+                                                                "text": "{{_local.errors?.pc_left?.[0] ?? _local.errors?.pc_top?.[0] ?? ''}}"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_pc_size",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "gpp:flex gpp:flex-wrap gpp:items-end gpp:gap-4"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "gpp:flex gpp:flex-col gpp:gap-1 gpp:text-sm gpp:text-gray-700 gpp:dark:text-gray-300",
+                                                                    "htmlFor": "popup_pc_width"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": "$t:sirsoft-popup.settings.pc.width"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Input",
+                                                                        "props": {
+                                                                            "type": "number",
+                                                                            "id": "popup_pc_width",
+                                                                            "name": "pc_width",
+                                                                            "min": 240,
+                                                                            "max": 1200,
+                                                                            "className": "g7pp-input gpp:w-32",
+                                                                            "disabled": "{{_computed.isPluginReadOnly}}"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "gpp:flex gpp:flex-col gpp:gap-1 gpp:text-sm gpp:text-gray-700 gpp:dark:text-gray-300",
+                                                                    "htmlFor": "popup_pc_height"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": "$t:sirsoft-popup.settings.pc.height"
+                                                                    },
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Input",
+                                                                        "props": {
+                                                                            "type": "number",
+                                                                            "id": "popup_pc_height",
+                                                                            "name": "pc_height",
+                                                                            "min": 200,
+                                                                            "max": 1000,
+                                                                            "className": "g7pp-input gpp:w-32",
+                                                                            "disabled": "{{_computed.isPluginReadOnly}}"
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "g7pp-form-hint"
+                                                                },
+                                                                "text": "$t:sirsoft-popup.settings.pc.size_hint"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{_local.errors?.pc_width || _local.errors?.pc_height}}",
+                                                        "props": {
+                                                            "className": "g7pp-form-error"
+                                                        },
+                                                        "text": "{{_local.errors?.pc_width?.[0] ?? _local.errors?.pc_height?.[0] ?? ''}}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "comment": "모바일 표시 — 화면 중앙 / 하단 시트형",
+                                        "id": "mobile_card",
+                                        "type": "basic",
+                                        "name": "Section",
+                                        "props": {
+                                            "className": "g7pp-admin-card"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H2",
+                                                "props": {
+                                                    "className": "g7pp-card-title"
+                                                },
+                                                "text": "$t:sirsoft-popup.settings.mobile.title"
+                                            },
+                                            {
+                                                "type": "composite",
+                                                "name": "RadioGroup",
+                                                "props": {
+                                                    "name": "mobile_style",
+                                                    "inline": true,
+                                                    "disabled": "{{_computed.isPluginReadOnly}}",
+                                                    "label": "$t:sirsoft-popup.settings.mobile.title",
+                                                    "options": [
+                                                        {
+                                                            "label": "$t:sirsoft-popup.settings.mobile_style.center",
+                                                            "value": "center"
+                                                        },
+                                                        {
+                                                            "label": "$t:sirsoft-popup.settings.mobile_style.sheet",
+                                                            "value": "sheet"
+                                                        }
+                                                    ]
+                                                }
+                                            },
+                                            {
+                                                "comment": "RadioGroup 선택지는 설명을 그리지 않는다 — 고른 방식의 설명을 아래에 둔다",
+                                                "id": "mobile_style_desc",
+                                                "type": "basic",
+                                                "name": "P",
+                                                "props": {
+                                                    "className": "g7pp-form-hint gpp:mt-2"
+                                                },
+                                                "text": "{{$t('sirsoft-popup.settings.mobile_style.' + (_local.form?.mobile_style === 'center' ? 'center' : 'sheet') + '_desc')}}"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "comment": "배경·캐러셀 — 자동 넘김을 끄면 간격을 잠근다",
+                                        "id": "behavior_card",
+                                        "type": "basic",
+                                        "name": "Section",
+                                        "props": {
+                                            "className": "g7pp-admin-card"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H2",
+                                                "props": {
+                                                    "className": "g7pp-card-title"
+                                                },
+                                                "text": "$t:sirsoft-popup.settings.behavior.title"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "g7pp-row-stack"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "composite",
+                                                        "name": "Toggle",
+                                                        "props": {
+                                                            "label": "$t:sirsoft-popup.settings.behavior.dim_background",
+                                                            "name": "dim_background",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "composite",
+                                                        "name": "Toggle",
+                                                        "props": {
+                                                            "label": "$t:sirsoft-popup.settings.behavior.close_on_backdrop",
+                                                            "name": "close_on_backdrop",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "props": {
+                                                            "className": "gpp:flex gpp:flex-wrap gpp:items-end gpp:gap-4"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "composite",
+                                                                "name": "Toggle",
+                                                                "props": {
+                                                                    "label": "$t:sirsoft-popup.settings.behavior.autoplay",
+                                                                    "name": "autoplay",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "gpp:flex gpp:flex-col gpp:gap-1 gpp:text-sm gpp:text-gray-700 gpp:dark:text-gray-300",
+                                                                    "htmlFor": "popup_autoplay_interval"
+                                                                },
+                                                                "children": [
+                                                                    {
+                                                                        "type": "basic",
+                                                                        "name": "Span",
+                                                                        "text": "$t:sirsoft-popup.settings.behavior.interval"
+                                                                    },
+                                                                    {
+                                                                        "id": "autoplay_interval_select",
+                                                                        "type": "basic",
+                                                                        "name": "Select",
+                                                                        "actions": [
+                                                                            {
+                                                                                "comment": "자동 넘김 간격 — 고른 초를 숫자로 담고 저장 버튼을 연다",
+                                                                                "type": "change",
+                                                                                "handler": "setState",
+                                                                                "params": {
+                                                                                    "target": "local",
+                                                                                    "form.autoplay_interval": "{{Number($event.target.value)}}",
+                                                                                    "hasChanges": true
+                                                                                }
+                                                                            }
+                                                                        ],
+                                                                        "props": {
+                                                                            "id": "popup_autoplay_interval",
+                                                                            "className": "gpp:w-32 gpp:px-3 gpp:py-2 gpp:bg-white gpp:dark:bg-gray-700 gpp:border gpp:border-gray-300 gpp:dark:border-gray-600 gpp:rounded-lg gpp:text-sm",
+                                                                            "value": "{{String(_local.form?.autoplay_interval ?? 6)}}",
+                                                                            "disabled": "{{_computed.isPluginReadOnly || _local.form?.autoplay === false}}",
+                                                                            "options": [
+                                                                                {
+                                                                                    "value": "4",
+                                                                                    "label": "$t:sirsoft-popup.settings.behavior.seconds|n=4"
+                                                                                },
+                                                                                {
+                                                                                    "value": "6",
+                                                                                    "label": "$t:sirsoft-popup.settings.behavior.seconds|n=6"
+                                                                                },
+                                                                                {
+                                                                                    "value": "8",
+                                                                                    "label": "$t:sirsoft-popup.settings.behavior.seconds|n=8"
+                                                                                }
+                                                                            ]
+                                                                        }
+                                                                    }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "comment": "닫기 옵션 — 「보지 않기」는 그때 보이던 팝업들을 그 기간 동안 숨기고, 그 뒤 새로 등록한 팝업은 바로 보인다(결정 D3)",
+                                        "id": "dismiss_card",
+                                        "type": "basic",
+                                        "name": "Section",
+                                        "props": {
+                                            "className": "g7pp-admin-card"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H2",
+                                                "props": {
+                                                    "className": "g7pp-card-title"
+                                                },
+                                                "text": "$t:sirsoft-popup.settings.dismiss.title"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "g7pp-row-stack"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "type": "composite",
+                                                        "name": "RadioGroup",
+                                                        "props": {
+                                                            "name": "dismiss_mode",
+                                                            "disabled": "{{_computed.isPluginReadOnly}}",
+                                                            "label": "$t:sirsoft-popup.settings.dismiss.title",
+                                                            "options": [
+                                                                {
+                                                                    "label": "$t:sirsoft-popup.settings.dismiss.today",
+                                                                    "value": "today"
+                                                                },
+                                                                {
+                                                                    "label": "$t:sirsoft-popup.settings.dismiss.days",
+                                                                    "value": "days"
+                                                                },
+                                                                {
+                                                                    "label": "$t:sirsoft-popup.settings.dismiss.close",
+                                                                    "value": "close"
+                                                                }
+                                                            ]
+                                                        }
+                                                    },
+                                                    {
+                                                        "id": "dismiss_days_field",
+                                                        "type": "basic",
+                                                        "name": "Label",
+                                                        "if": "{{_local.form?.dismiss_mode === 'days'}}",
+                                                        "props": {
+                                                            "className": "gpp:flex gpp:items-center gpp:gap-2 gpp:text-sm gpp:text-gray-700 gpp:dark:text-gray-300",
+                                                            "htmlFor": "popup_dismiss_days"
+                                                        },
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "number",
+                                                                    "id": "popup_dismiss_days",
+                                                                    "name": "dismiss_days",
+                                                                    "min": 1,
+                                                                    "max": 30,
+                                                                    "aria-label": "$t:sirsoft-popup.settings.dismiss.days_label",
+                                                                    "className": "g7pp-input gpp:w-24",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Span",
+                                                                "text": "$t:sirsoft-popup.settings.dismiss.days_unit"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "if": "{{_local.errors?.dismiss_days}}",
+                                                        "props": {
+                                                            "className": "g7pp-form-error"
+                                                        },
+                                                        "text": "{{_local.errors?.dismiss_days?.[0] ?? ''}}"
+                                                    },
+                                                    {
+                                                        "type": "basic",
+                                                        "name": "P",
+                                                        "props": {
+                                                            "className": "g7pp-form-hint"
+                                                        },
+                                                        "text": "$t:sirsoft-popup.settings.dismiss.hint"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "comment": "업로드·캐시 — 운영자가 서버 사정에 맞춰 바꾸는 값(#810 과 같은 안내)",
+                                        "id": "operation_card",
+                                        "type": "basic",
+                                        "name": "Section",
+                                        "props": {
+                                            "className": "g7pp-admin-card"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H2",
+                                                "props": {
+                                                    "className": "g7pp-card-title"
+                                                },
+                                                "text": "$t:sirsoft-popup.settings.operation.title"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "g7pp-row-stack"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "field_max_upload_mb",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "g7pp-form-label",
+                                                                    "htmlFor": "popup_max_upload_mb"
+                                                                },
+                                                                "text": "$t:sirsoft-popup.settings.fields.max_upload_mb.label"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "number",
+                                                                    "id": "popup_max_upload_mb",
+                                                                    "name": "max_upload_mb",
+                                                                    "min": 1,
+                                                                    "max": 10,
+                                                                    "className": "g7pp-input gpp:w-32",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "g7pp-form-hint"
+                                                                },
+                                                                "text": "$t:sirsoft-popup.settings.fields.max_upload_mb.hint"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{_local.errors?.max_upload_mb}}",
+                                                                "props": {
+                                                                    "className": "g7pp-form-error"
+                                                                },
+                                                                "text": "{{_local.errors?.max_upload_mb?.[0] ?? ''}}"
+                                                            },
+                                                            {
+                                                                "id": "server_upload_limit",
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{!!upload_limit?.data?.upload?.server_limit_mb}}",
+                                                                "props": {
+                                                                    "className": "g7pp-form-hint"
+                                                                },
+                                                                "text": "$t:sirsoft-popup.settings.fields.max_upload_mb.server_limit|mb={{upload_limit?.data?.upload?.server_limit_mb}}"
+                                                            },
+                                                            {
+                                                                "id": "server_upload_limit_warning",
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{!!upload_limit?.data?.upload?.server_limit_mb && Number(_local.form?.max_upload_mb ?? 0) > upload_limit.data.upload.server_limit_mb}}",
+                                                                "props": {
+                                                                    "role": "status",
+                                                                    "className": "gpp:text-sm gpp:text-amber-700 gpp:dark:text-amber-300"
+                                                                },
+                                                                "text": "$t:sirsoft-popup.settings.fields.max_upload_mb.over_server_limit|mb={{upload_limit?.data?.upload?.server_limit_mb}}"
+                                                            }
+                                                        ]
+                                                    },
+                                                    {
+                                                        "id": "field_public_cache_minutes",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "g7pp-form-label",
+                                                                    "htmlFor": "popup_public_cache_minutes"
+                                                                },
+                                                                "text": "$t:sirsoft-popup.settings.fields.public_cache_minutes.label"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Input",
+                                                                "props": {
+                                                                    "type": "number",
+                                                                    "id": "popup_public_cache_minutes",
+                                                                    "name": "public_cache_minutes",
+                                                                    "min": 0,
+                                                                    "max": 60,
+                                                                    "className": "g7pp-input gpp:w-32",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "g7pp-form-hint"
+                                                                },
+                                                                "text": "$t:sirsoft-popup.settings.fields.public_cache_minutes.hint"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{_local.errors?.public_cache_minutes}}",
+                                                                "props": {
+                                                                    "className": "g7pp-form-error"
+                                                                },
+                                                                "text": "{{_local.errors?.public_cache_minutes?.[0] ?? ''}}"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "comment": "저장소 — 팝업 이미지를 둘 공개 자산 디스크(#878). 선택지는 설정 응답에 서버가 붙인 카탈로그다(코어 설정 API 를 교차 조회하지 않는다)",
+                                        "id": "storage_card",
+                                        "type": "basic",
+                                        "name": "Section",
+                                        "props": {
+                                            "className": "g7pp-admin-card"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H2",
+                                                "props": {
+                                                    "className": "g7pp-card-title"
+                                                },
+                                                "text": "$t:sirsoft-popup.settings.storage.title"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "className": "g7pp-row-stack"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "field_public_asset_disk",
+                                                        "type": "basic",
+                                                        "name": "Div",
+                                                        "children": [
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Label",
+                                                                "props": {
+                                                                    "className": "g7pp-form-label",
+                                                                    "htmlFor": "popup_public_asset_disk"
+                                                                },
+                                                                "text": "$t:sirsoft-popup.settings.fields.public_asset_disk.label"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "Select",
+                                                                "props": {
+                                                                    "id": "popup_public_asset_disk",
+                                                                    "name": "public_asset_disk",
+                                                                    "className": "g7pp-input gpp:w-full",
+                                                                    "options": "{{[{value: '', label: $t('sirsoft-popup.settings.fields.public_asset_disk.follow_core')}].concat((_local.form?.available_public_asset_disks ?? []).map(d => ({value: d.id, label: $localized(d.label)})))}}",
+                                                                    "disabled": "{{_computed.isPluginReadOnly}}"
+                                                                }
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "props": {
+                                                                    "className": "g7pp-form-hint"
+                                                                },
+                                                                "text": "$t:sirsoft-popup.settings.fields.public_asset_disk.hint"
+                                                            },
+                                                            {
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{_local.errors?.public_asset_disk}}",
+                                                                "props": {
+                                                                    "className": "g7pp-form-error"
+                                                                },
+                                                                "text": "{{_local.errors?.public_asset_disk?.[0] ?? ''}}"
+                                                            },
+                                                            {
+                                                                "comment": "쓸 수 없게 된 디스크 안내 — 저장했던 디스크를 등록하던 확장이 꺼지면 서버가 값을 실제 동작(스트리밍)으로 바꿔 내려주고 옛 이름을 알린다",
+                                                                "id": "public_asset_disk_unavailable",
+                                                                "type": "basic",
+                                                                "name": "P",
+                                                                "if": "{{!!_local.form?.public_asset_disk_unavailable}}",
+                                                                "props": {
+                                                                    "role": "status",
+                                                                    "className": "gpp:text-sm gpp:text-amber-700 gpp:dark:text-amber-300"
+                                                                },
+                                                                "text": "$t:sirsoft-popup.settings.fields.public_asset_disk.unavailable|disk={{_local.form?.public_asset_disk_unavailable}}"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "comment": "미리보기 — 표본 팝업 3장을 지금 입력한 표시 방식으로 그린다(저장 전 값)",
+                                "id": "preview_card",
+                                "type": "basic",
+                                "name": "Section",
+                                "props": {
+                                    "aria-labelledby": "popup_settings_preview_heading",
+                                    "className": "g7pp-admin-card gpp:self-start"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Div",
+                                        "props": {
+                                            "className": "g7pp-flex-between gpp:flex-wrap gpp:gap-2 gpp:mb-3"
+                                        },
+                                        "children": [
+                                            {
+                                                "type": "basic",
+                                                "name": "H2",
+                                                "props": {
+                                                    "id": "popup_settings_preview_heading",
+                                                    "className": "g7pp-card-title gpp:mb-0"
+                                                },
+                                                "text": "$t:sirsoft-popup.admin.preview.title"
+                                            },
+                                            {
+                                                "type": "basic",
+                                                "name": "Div",
+                                                "props": {
+                                                    "role": "group",
+                                                    "aria-label": "$t:sirsoft-popup.admin.preview.device_label",
+                                                    "className": "gpp:flex gpp:gap-1"
+                                                },
+                                                "children": [
+                                                    {
+                                                        "id": "preview_device_pc",
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "actions": [
+                                                            {
+                                                                "comment": "미리보기를 PC 화면으로 — 화면 상태일 뿐 설정 값에는 들어가지 않는다",
+                                                                "type": "click",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "previewDevice": "pc"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "aria-pressed": "{{_local.previewDevice === 'pc'}}",
+                                                            "className": "gpp:px-3 gpp:py-1 gpp:text-xs gpp:rounded gpp:border {{_local.previewDevice === 'pc' ? 'gpp:bg-gray-900 gpp:text-white gpp:border-gray-900 gpp:dark:bg-gray-100 gpp:dark:text-gray-900' : 'gpp:bg-white gpp:text-gray-700 gpp:border-gray-300 gpp:dark:bg-gray-800 gpp:dark:text-gray-300 gpp:dark:border-gray-600'}}"
+                                                        },
+                                                        "text": "$t:sirsoft-popup.admin.preview.pc"
+                                                    },
+                                                    {
+                                                        "id": "preview_device_mobile",
+                                                        "type": "basic",
+                                                        "name": "Button",
+                                                        "actions": [
+                                                            {
+                                                                "comment": "미리보기를 모바일 화면으로 — 화면 상태일 뿐 설정 값에는 들어가지 않는다",
+                                                                "type": "click",
+                                                                "handler": "setState",
+                                                                "params": {
+                                                                    "target": "local",
+                                                                    "previewDevice": "mobile"
+                                                                }
+                                                            }
+                                                        ],
+                                                        "props": {
+                                                            "type": "button",
+                                                            "aria-pressed": "{{_local.previewDevice === 'mobile'}}",
+                                                            "className": "gpp:px-3 gpp:py-1 gpp:text-xs gpp:rounded gpp:border {{_local.previewDevice === 'mobile' ? 'gpp:bg-gray-900 gpp:text-white gpp:border-gray-900 gpp:dark:bg-gray-100 gpp:dark:text-gray-900' : 'gpp:bg-white gpp:text-gray-700 gpp:border-gray-300 gpp:dark:bg-gray-800 gpp:dark:text-gray-300 gpp:dark:border-gray-600'}}"
+                                                        },
+                                                        "text": "$t:sirsoft-popup.admin.preview.mobile"
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                "id": "preview_actual_button",
+                                                "type": "basic",
+                                                "name": "Button",
+                                                "actions": [
+                                                    {
+                                                        "comment": "줄인 틀로는 글자 크기를 판단하기 어려워, 지금 입력 값·기기를 배율 1 미리보기 큰 창으로 연다(저장 전 값)",
+                                                        "type": "click",
+                                                        "handler": "openModal",
+                                                        "target": "popup_actual_preview_modal"
+                                                    }
+                                                ],
+                                                "props": {
+                                                    "type": "button",
+                                                    "className": "gpp:px-3 gpp:py-1 gpp:text-xs gpp:rounded gpp:border gpp:bg-white gpp:text-gray-700 gpp:border-gray-300 gpp:dark:bg-gray-800 gpp:dark:text-gray-300 gpp:dark:border-gray-600"
+                                                },
+                                                "text": "$t:sirsoft-popup.admin.preview.actual_size"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "id": "settings_preview",
+                                        "type": "composite",
+                                        "name": "sirsoft-popup.PopupPreview",
+                                        "props": {
+                                            "settings": "{{({ ...(_local.form ?? {}), pc_left: Number(_local.form?.pc_left ?? 80), pc_top: Number(_local.form?.pc_top ?? 120), pc_width: Number(_local.form?.pc_width ?? 480), pc_height: Number(_local.form?.pc_height ?? 520), dismiss_days: Number(_local.form?.dismiss_days ?? 7) })}}",
+                                            "device": "{{_local.previewDevice}}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "id": "footer_buttons",
+                        "type": "basic",
+                        "name": "Div",
+                        "props": {
+                            "className": "g7pp-sticky-footer-buttons"
+                        },
+                        "children": [
+                            {
+                                "id": "cancel_button",
+                                "type": "basic",
+                                "name": "A",
+                                "actions": [
+                                    {
+                                        "type": "click",
+                                        "handler": "navigate"
+                                    }
+                                ],
+                                "props": {
+                                    "href": "/admin/plugins/sirsoft-popup/popups",
+                                    "className": "g7pp-button g7pp-btn g7pp-btn-secondary"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "text": "$t:common.cancel"
+                                    }
+                                ]
+                            },
+                            {
+                                "id": "save_button",
+                                "type": "basic",
+                                "name": "Button",
+                                "actions": [
+                                    {
+                                        "comment": "설정 저장. 저장 중 플래그로 버튼을 잠그고 직전 오류를 지운 뒤 보내며, 성공하면 설정을 다시 받아 화면을 서버 값에 맞춘다(공개 캐시는 서버가 비운다). 실패하면 필드 오류를 칸 아래에 보이고 사유를 알린다",
+                                        "type": "click",
+                                        "handler": "sequence",
+                                        "actions": [
+                                            {
+                                                "handler": "setState",
+                                                "params": {
+                                                    "target": "local",
+                                                    "isSaving": true,
+                                                    "errors": null
+                                                }
+                                            },
+                                            {
+                                                "handler": "apiCall",
+                                                "target": "/api/admin/plugins/{{route.identifier}}/settings",
+                                                "auth_required": true,
+                                                "params": {
+                                                    "method": "PUT",
+                                                    "body": "{{_local.form}}"
+                                                },
+                                                "onSuccess": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "isSaving": false,
+                                                            "hasChanges": false,
+                                                            "form.public_asset_disk_unavailable": "{{response.data?.public_asset_disk_unavailable ?? null}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "success",
+                                                            "message": "$t:admin.plugins.settings.save_success"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "refetchDataSource",
+                                                        "params": {
+                                                            "dataSourceId": "settings"
+                                                        }
+                                                    }
+                                                ],
+                                                "onError": [
+                                                    {
+                                                        "handler": "setState",
+                                                        "params": {
+                                                            "target": "local",
+                                                            "isSaving": false,
+                                                            "errors": "{{error.errors}}"
+                                                        }
+                                                    },
+                                                    {
+                                                        "handler": "toast",
+                                                        "params": {
+                                                            "type": "error",
+                                                            "message": "{{error.message ?? '$t:admin.plugins.settings.save_error'}}"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "props": {
+                                    "type": "button",
+                                    "disabled": "{{_computed.isPluginReadOnly || (!_local.hasChanges || _local.isSaving)}}",
+                                    "className": "g7pp-btn g7pp-btn-primary g7pp-flex-center gpp:gap-1.5"
+                                },
+                                "children": [
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{!_local.isSaving}}",
+                                        "text": "$t:common.save"
+                                    },
+                                    {
+                                        "type": "basic",
+                                        "name": "Span",
+                                        "if": "{{_local.isSaving}}",
+                                        "text": "$t:common.saving"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    "modals": [
+        {
+            "comment": "실제 크기 미리보기 — 모달이 열릴 때의 입력 값(부모 _local 스냅숏)을 배율 1 로 그린다. 편집기가 다시 그리기 없이 쓴 본문은 스냅숏에 없어 미리보기가 상태에서 최신 본문을 읽는다. 창보다 크면 미리보기 칸이 스크롤하고, 열릴 때 팝업 쪽으로 옮겨 둔다",
+            "id": "popup_actual_preview_modal",
+            "type": "composite",
+            "name": "Modal",
+            "props": {
+                "title": "$t:sirsoft-popup.admin.preview.actual_title",
+                "width": "min(1340px, 96vw)"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "P",
+                    "props": {
+                        "className": "g7pp-form-hint gpp:mb-3"
+                    },
+                    "text": "$t:sirsoft-popup.admin.preview.actual_hint|width={{$parent._local.previewDevice === 'mobile' ? 390 : 1280}}|height={{$parent._local.previewDevice === 'mobile' ? 780 : 800}}"
+                },
+                {
+                    "id": "actual_preview",
+                    "type": "composite",
+                    "name": "sirsoft-popup.PopupPreview",
+                    "props": {
+                        "actualSize": true,
+                        "settings": "{{$parent._local.form}}",
+                        "device": "{{$parent._local.previewDevice}}"
+                    }
+                }
+            ]
+        }
+    ]
+}

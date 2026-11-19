@@ -15,8 +15,8 @@
  * 대상 레코드는 관리자 목록 API 에서 첫 건을 읽어 쓴다 — 시드 id 를 박아 두면 다른 개발 DB 에서
  * 조용히 실패하거나 없는 화면을 열게 된다.
  *
- * // @scenario surface=admin_forms, transition=spa_navigate_edit_to_create, scope=page
- * // @effects spa_create_form_has_no_previous_record, spa_create_form_matches_direct_entry, copy_payload_survives_clear, no_page_errors
+ * 축 요약(마커 아님 — 평문): surface=admin_forms, transition=spa_navigate_edit_to_create, scope=page
+ * 효과 요약(마커 아님 — 평문): spa_create_form_has_no_previous_record, spa_create_form_matches_direct_entry, copy_payload_survives_clear, no_page_errors
  */
 import { test, expect, issueToken, authenticatePage, type Page } from '../../fixtures/auth';
 

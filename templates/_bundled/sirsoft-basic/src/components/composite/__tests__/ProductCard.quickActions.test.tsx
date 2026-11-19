@@ -7,7 +7,6 @@
  * @scenario-manifest tests/scenarios/product-card-quick-actions.yaml
  */
 
-import React from 'react';
 import { act, fireEvent, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ProductCard from '../ProductCard';

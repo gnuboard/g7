@@ -75,6 +75,9 @@
     "mileage_transactions": {
       "$partial": "partial/admin/mileage_transactions.json"
     },
+    "common": {
+      "real_name_sub": "実名 {{name}}"
+    },
     "user_mileage": {
       "tab_label": "マイレージ",
       "title": "マイレージ",
@@ -87,20 +90,6 @@
     },
     "dashboard": {
       "$partial": "partial/admin/dashboard.json"
-    },
-    "user_currency": {
-      "title": "決済通貨",
-      "description": "この会員の注文·決済時に使用する通貨を指定します。",
-      "save_button": "保存",
-      "saved": "会員決済通貨が変更されました。",
-      "save_failed": "会員決済通貨の変更に失敗しました。"
-    },
-    "user_shipping_country": {
-      "title": "配送国",
-      "description": "この会員の基本配送国を指定します。",
-      "save_button": "保存",
-      "saved": "会員の配送国が変更されました。",
-      "save_failed": "会員の配送国の変更に失敗しました。"
     },
     "user_filter": {
       "title": "ショップ条件",
@@ -397,6 +386,9 @@
     },
     "claim": {
       "$partial": "partial/admin/claim.json"
+    },
+    "export": {
+      "$partial": "partial/admin/export.json"
     }
   },
   "user": {
@@ -433,6 +425,7 @@
       "availableChannels": "利用可能チャネル",
       "brands": "ブランド一覧",
       "carriers": "配送業者一覧",
+      "checkoutFieldDefs": "注文書項目定義",
       "categories": "カテゴリー一覧",
       "commonInfos": "共通情報一覧",
       "common_infos": "共通情報一覧",
@@ -442,6 +435,7 @@
       "couponIssues": "クーポン発行履歴",
       "coupons": "クーポン一覧",
       "ecommerceIdentityPolicies": "ショッピングモール本人認証ポリシー",
+      "ecommerceSchedules": "ショッピングモールスケジュール",
       "ecommerceIdentityPurposes": "ショッピングモール本人認証目的",
       "ecommerceNotificationDefinitions": "ショッピングモール通知定義",
       "ecommerce_settings": "ショッピングモール設定",
@@ -480,7 +474,11 @@
       "claims": "キャンセル·返品·交換一覧",
       "orderClaims": "注文クレーム履歴",
       "claim_settings": "配送ポリシークレーム設定",
-      "claimRequestContext": "職権受付文脈"
+      "claimRequestContext": "職権受付文脈",
+      "exports": "エクスポート一覧",
+      "ecommerceExportCatalog": "エクスポート設定(カタログ)",
+      "exportDownloads": "エクスポートダウンロード履歴",
+      "ecommerceExportEstimateSource": "エクスポート予想件数"
     },
     "action": {
       "request_pg_payment": {
@@ -507,16 +505,6 @@
     "view_history": "マイレージ履歴",
     "disabled_notice": "マイレージ機能が無効化されています。",
     "withdraw_refund_credit_warning": "返金として受け取ったマイレージ {{amount}} P も退会すると失効し、元に戻せません。必要であれば退会前に使用するか、カスタマーセンターにお問い合わせください。"
-  },
-  "auth": {
-    "register_currency": {
-      "label": "決済通貨",
-      "hint": "注文·決済時に使用する通貨です。登録後、マイ情報で変更できます。"
-    },
-    "register_shipping_country": {
-      "label": "配送国",
-      "hint": "基本配送国です。登録後、マイ情報で変更できます。"
-    }
   },
   "checkout": {
     "cash_receipt": {

@@ -22,11 +22,7 @@ import type { NodeSource } from '../../utils/layoutTreeUtils';
 
 function makeWrapper(): React.FC<{ children: React.ReactNode }> {
   return ({ children }) =>
-    React.createElement(
-      LayoutEditorProvider,
-      { templateIdentifier: 'sirsoft-admin_basic', initialLocale: 'ko' },
-      children,
-    );
+    React.createElement(LayoutEditorProvider, { templateIdentifier: 'sirsoft-admin_basic', initialLocale: 'ko', children });
 }
 
 function combinedHook() {
@@ -56,9 +52,13 @@ function hostResponse(components: unknown[], dataSources?: unknown[]) {
 // 순수 헬퍼
 // ============================================================================
 describe('extractExtensionIdFromPath', () => {
+  // @scenario edit_mode=extension
+  // @effects extension_edit_route_path_yields_extension_id
   it('__extension__/{id} 에서 id 추출', () => {
     expect(extractExtensionIdFromPath('__extension__/42')).toBe('42');
   });
+  // @scenario edit_mode=extension
+  // @effects extension_edit_route_path_yields_extension_id
   it('형식 불일치 → null', () => {
     expect(extractExtensionIdFromPath('/about')).toBeNull();
     expect(extractExtensionIdFromPath('__modal__/x')).toBeNull();
@@ -69,6 +69,8 @@ describe('extractExtensionIdFromPath', () => {
 });
 
 describe('extractEditableComponents', () => {
+  // @scenario edit_mode=extension, extension_type=extension_point
+  // @effects extension_edit_extension_point_uses_content_components_tree
   it('extension_point — content.components 반환', () => {
     const content = {
       extension_point: 'header_ext',
@@ -79,6 +81,8 @@ describe('extractEditableComponents', () => {
     expect(roots.map((n: any) => n.id)).toEqual(['a', 'b']);
   });
 
+  // @scenario edit_mode=extension, extension_type=overlay, overlay_position=append_child
+  // @effects extension_edit_overlay_uses_injection_components_trees
   it('overlay — components 보유 injection 들을 평탄화 + __injectionIndex 부여', () => {
     const content = {
       target_layout: 'admin_user_detail',
@@ -95,12 +99,16 @@ describe('extractEditableComponents', () => {
     expect((roots[2] as any).__injectionIndex).toBe(2);
   });
 
+  // @scenario edit_mode=extension
+  // @effects extension_edit_extension_point_uses_content_components_tree
   it('components/injections 둘 다 없으면 빈 배열', () => {
     expect(extractEditableComponents({} as any)).toEqual([]);
   });
 });
 
 describe('reassembleContent', () => {
+  // @scenario edit_mode=extension, extension_type=extension_point, followup_action=save
+  // @effects extension_point_reassembly_replaces_components_keeping_other_keys_without_meta
   it('extension_point — components 교체 + 비편집 키 보존 + 합성 메타 제거', () => {
     const content = {
       extension_point: 'header_ext',
@@ -118,6 +126,8 @@ describe('reassembleContent', () => {
     expect((result as any).priority).toBe(100);
   });
 
+  // @scenario edit_mode=extension, extension_type=overlay, overlay_position=inject_props
+  // @effects extension_overlay_save_reassembles_nodes_into_their_original_injection
   it('overlay — __injectionIndex 로 각 injection 에 재분배 + inject_props 보존 + 메타 제거', () => {
     const content = {
       target_layout: 'admin_user_detail',
@@ -146,6 +156,8 @@ describe('reassembleContent', () => {
 //  호스트 병합 — 순수 헬퍼
 // ============================================================================
 describe('extractCurrentExtensionNodes ', () => {
+  // @scenario edit_mode=extension, extension_type=extension_point, lock_propagation=other_extension_locked
+  // @effects host_merge_extracts_only_current_extension_entry_nodes
   it('호스트 트리에서 현재 확장 진입점 노드만 수집(자식은 안 내려감)', () => {
     const host = [
       { id: 'header', __source: { kind: 'base' } },
@@ -161,9 +173,12 @@ describe('extractCurrentExtensionNodes ', () => {
     // 최상위 ext-root + content 자식의 nested-ext (호스트/타 확장은 건너뛰되 자식 재귀).
     expect(found.map((n: any) => n.id)).toEqual(['ext-root', 'nested-ext']);
     // 진입점 자식은 별도 수집되지 않음(통짜).
-    expect(found[0].children[0].id).toBe('ext-kid');
+    const entryKids = found[0].children as Array<{ id?: string }>;
+    expect(entryKids[0].id).toBe('ext-kid');
   });
 
+  // @scenario edit_mode=extension, extension_type=extension_point
+  // @effects host_merge_extracts_only_current_extension_entry_nodes
   it('현재 확장 노드 없으면 빈 배열', () => {
     const host = [{ id: 'a', __source: { kind: 'base' } }];
     expect(extractCurrentExtensionNodes(host as any, 7)).toEqual([]);
@@ -171,6 +186,8 @@ describe('extractCurrentExtensionNodes ', () => {
 });
 
 describe('mergeEditableIntoHost ', () => {
+  // @scenario edit_mode=extension, extension_type=extension_point, lock_propagation=current_extension_editable
+  // @effects host_merge_replaces_current_extension_run_with_edited_fragment
   it('호스트 내 현재 확장 노드 run 을 편집 조각으로 치환 + 메타 부여', () => {
     const host = [
       { id: 'header', __source: { kind: 'base' } },
@@ -188,6 +205,8 @@ describe('mergeEditableIntoHost ', () => {
     expect((merged.find((n: any) => n.id === 'header') as any).__source.kind).toBe('base');
   });
 
+  // @scenario edit_mode=extension, extension_type=extension_point, lock_propagation=current_extension_editable
+  // @effects host_merge_replaces_current_extension_run_with_edited_fragment
   it('확장이 호스트 깊은 곳에 주입되면 자식에서 치환', () => {
     const host = [
       {
@@ -202,6 +221,8 @@ describe('mergeEditableIntoHost ', () => {
 
   // 실제 extension_point 구조: 컨테이너(kind:'route', type:'extension_point')의
   // children 에 확장 노드(extId)가 깊이 중첩. 편집 조각이 그 자리에 합성되고 편집 가능해야 한다.
+  // @scenario edit_mode=extension, extension_type=extension_point, lock_propagation=current_extension_editable
+  // @effects host_merge_replaces_current_extension_run_with_edited_fragment
   it('extension_point 컨테이너(route) children 의 확장 노드 → 편집 조각 합성', () => {
     const host = [
       {
@@ -239,6 +260,8 @@ describe('mergeEditableIntoHost ', () => {
   });
 
   // extension_point 컨테이너 자체가 extension 출처로 태깅된 경우(overlay 등 변종).
+  // @scenario edit_mode=extension, extension_type=overlay, lock_propagation=current_extension_editable
+  // @effects host_merge_replaces_current_extension_run_with_edited_fragment
   it('컨테이너 자체가 확장 출처면 통째 치환', () => {
     const host = [
       { name: 'Header', __source: { kind: 'base' } },
@@ -272,6 +295,8 @@ describe('useExtensionDocument — 로드/저장', () => {
     });
   }
 
+  // @scenario edit_mode=extension, extension_type=extension_point
+  // @effects extension_edit_loads_via_layout_extensions_api
   it('extension 모드 진입 → layout-extensions/{id} GET, content(JSON 문자열) 파싱 (host 없음=조각)', async () => {
     fetchSpy.mockResolvedValue(
       extResponse({
@@ -301,6 +326,8 @@ describe('useExtensionDocument — 로드/저장', () => {
     expect(doc.components[0].id).toBe('root');
   });
 
+  // @scenario edit_mode=extension, extension_type=extension_point, host_layout_count=single_host
+  // @effects extension_edit_renders_host_tree_as_is_with_source_meta
   it('/D-41 호스트 병합 — 호스트 트리를 그대로 캔버스에 렌더(치환 안 함), 호스트 본체+확장 노드 보존', async () => {
     // 1차: 확장 GET, 2차: 호스트 레이아웃 GET.
     fetchSpy.mockImplementation((url: string) => {
@@ -351,6 +378,8 @@ describe('useExtensionDocument — 로드/저장', () => {
     expect(doc.editability).toBe('ok');
   });
 
+  // @scenario edit_mode=extension, extension_type=extension_point, host_layout_count=single_host
+  // @effects extension_edit_without_host_injection_reports_no_injection
   it(' 호스트에 확장 주입 노드가 없으면 no-injection (append 디그레이드 안 함)', async () => {
     fetchSpy.mockImplementation((url: string) => {
       if (url.includes('/layout-extensions/')) {
@@ -390,6 +419,8 @@ describe('useExtensionDocument — 로드/저장', () => {
     expect(ids).not.toContain('ext-frag');
   });
 
+  // @scenario edit_mode=extension, extension_type=extension_point, modal_form=inline_id_modal
+  // @effects extension_edit_appends_injected_modal_open_for_display
   it(' — 주입 노드가 modals 안에만 있으면 그 모달 노드를 isOpen=true 표시용 append (editability ok)', async () => {
     fetchSpy.mockImplementation((url: string) => {
       if (url.includes('/layout-extensions/')) {
@@ -458,6 +489,8 @@ describe('useExtensionDocument — 로드/저장', () => {
     expect(appended.children[0].id).toBe('terms-ext');
   });
 
+  // @scenario edit_mode=extension, extension_type=extension_point, host_layout_count=single_host
+  // @effects extension_edit_preserves_host_data_sources_in_host_raw
   it(' G3 — 호스트 data_sources 가 hostRaw 에 보존(캔버스 바인딩 샘플 해석)', async () => {
     fetchSpy.mockImplementation((url: string) => {
       if (url.includes('/layout-extensions/')) {
@@ -486,6 +519,8 @@ describe('useExtensionDocument — 로드/저장', () => {
     expect(hostRaw.data_sources[0].id).toBe('profile');
   });
 
+  // @scenario edit_mode=extension, extension_type=extension_point, followup_action=save
+  // @effects extension_edit_saves_via_put_layout_extensions_id
   it(' 저장 — 호스트 병합 트리에서 확장 조각만 추출해 PUT', async () => {
     fetchSpy.mockImplementation((url: string) => {
       if (url.includes('/layout-extensions/')) {
@@ -547,6 +582,8 @@ describe('useExtensionDocument — 로드/저장', () => {
     expect(body.expected_lock_version).toBe(2);
   });
 
+  // @scenario edit_mode=extension, extension_type=extension_point, followup_action=save
+  // @effects extension_edit_saves_via_put_layout_extensions_id
   it('저장(조각 단독 디그레이드) → PUT layout-extensions/{id}, 200 시 lockVersion 갱신', async () => {
     fetchSpy.mockResolvedValue(
       extResponse({
@@ -594,6 +631,8 @@ describe('useExtensionDocument — 로드/저장', () => {
     expect(result.current.document.isDirty).toBe(false);
   });
 
+  // @scenario edit_mode=extension, extension_type=extension_point, followup_action=save
+  // @effects extension_save_conflict_returns_concurrent_modification
   it('409 → concurrent_modification 반환', async () => {
     fetchSpy.mockResolvedValue(
       extResponse({
@@ -621,6 +660,8 @@ describe('useExtensionDocument — 로드/저장', () => {
   });
 
   // 호스트 레이아웃 후보 + 대표 호스트 picker.
+  // @scenario edit_mode=extension, extension_type=overlay, host_layout_count=single_host
+  // @effects extension_show_returns_host_layouts_candidates
   it('overlay — host_layouts 1개 → hostLayoutName 즉시 확정, picker 불필요', async () => {
     fetchSpy.mockImplementation((url: string) => {
       if (url.includes('/layout-extensions/')) {
@@ -645,6 +686,8 @@ describe('useExtensionDocument — 로드/저장', () => {
     expect(result.current.document.needsHostPicker).toBe(false);
   });
 
+  // @scenario edit_mode=extension, extension_type=extension_point, host_layout_count=multiple_hosts_requires_picker
+  // @effects extension_point_multiple_hosts_signals_needs_host_picker
   it('extension_point — host_layouts 복수 → needsHostPicker, selectHost 로 확정', async () => {
     fetchSpy.mockImplementation((url: string) => {
       if (url.includes('/layout-extensions/')) {
@@ -728,6 +771,7 @@ describe('[case:backend-35] overlay 확장 호스트 병합 저장 — injection
     });
   }
 
+  /** @effects extension_overlay_save_reassembles_nodes_into_their_original_injection */
   it('reassembleContent — __injectionIndex 없이 백엔드 __source.injectionIndex 만 있어도 원래 injection 으로 분배', () => {
     const roots = [
       { id: 'ext-sel', name: 'Div', __source: { kind: 'extension', extensionId: 7, injectionIndex: 0 } },
@@ -736,6 +780,7 @@ describe('[case:backend-35] overlay 확장 호스트 병합 저장 — injection
     expect(out.injections[0].components).toEqual([{ id: 'ext-sel', name: 'Div' }]);
   });
 
+  /** @effects extension_overlay_save_reassembles_nodes_into_their_original_injection, extension_edit_saves_via_put_layout_extensions_id */
   it('호스트 병합 모드 무변경 저장 — 주입 컴포넌트가 그대로 PUT 된다(비워지지 않음)', async () => {
     mockOverlay({
       id: 'ext-sel',
@@ -763,6 +808,7 @@ describe('[case:backend-35] overlay 확장 호스트 병합 저장 — injection
     expect(body.content.target_layout).toBe('_user_base');
   });
 
+  /** @effects extension_overlay_save_refuses_when_a_node_cannot_be_mapped_to_its_injection */
   it('injection 을 되찾을 수 없는 노드가 있으면 PUT 하지 않고 guard 를 돌려준다(손실 차단)', async () => {
     // 순번 메타도 없고 id 도 원본 injection 과 맞지 않는 노드 — 어느 injection 인지 알 수 없다.
     mockOverlay({ id: 'unknown-node', name: 'Div', __source: { kind: 'extension', extensionId: 7 } });
@@ -778,6 +824,7 @@ describe('[case:backend-35] overlay 확장 호스트 병합 저장 — injection
     expect(fetchSpy.mock.calls.find((c) => c[1]?.method === 'PUT')).toBeUndefined();
   });
 
+  /** @effects extension_overlay_save_reassembles_nodes_into_their_original_injection */
   it('순번 메타가 없어도 id 가 원본 injection 의 노드와 맞으면 그 injection 으로 되돌린다(구 백엔드 호환)', async () => {
     mockOverlay({ id: 'ext-sel', name: 'Div', __source: { kind: 'extension', extensionId: 7 } });
     const { result } = renderHook(() => combinedHook(), { wrapper: makeWrapper() });
@@ -797,6 +844,7 @@ describe('[case:backend-35] overlay 확장 호스트 병합 저장 — injection
     ]);
   });
 
+  /** @effects save_conflict_reads_versions_from_response_helper_errors_payload */
   it('409 — 서버가 errors 아래에 넣는 current_version/your_version 을 읽는다(종전 -1)', async () => {
     fetchSpy.mockResolvedValue(
       extResponse({

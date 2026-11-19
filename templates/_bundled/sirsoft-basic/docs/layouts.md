@@ -7,17 +7,17 @@
 회원·비회원 주문상세의 클레임 신청 버튼은 상품 목록 바로 아래에서 환불 빨강·반품 주황·교환 파랑으로 표시한다. 공통 클레임 목록의 탭·페이지는 로컬 상태와 `replaceUrl`을 갱신한 뒤 `claims` 데이터소스만 동기 재조회하여 스크롤을 유지한다. 탭 대기 중에는 스피너와 `aria-disabled`·액션 가드를 함께 사용해 포커스와 중복 클릭 방지를 유지한다. 다른 비동기 신청·저장 버튼은 기존 `Icon` 스피너와 `disabled` 패턴을 따른다.
 
 <!-- @generated:layouts START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
-레이아웃 196개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
+레이아웃 204개 (루트: `layouts` — 작성 지점은 `.g7.html`, 짝 `.json` 은 `php artisan layout:decompile <경로> --sync` 굽기 산출).
 
 | 그룹 | 개수 |
 |---|---|
 | `(root)` | 2개 |
 | `auth` | 6개 |
 | `board` | 5개 |
-| `errors` | 6개 |
-| `mypage` | 15개 |
+| `errors` | 7개 |
+| `mypage` | 16개 |
 | `page` | 1개 |
-| `partials` | 146개 |
+| `partials` | 152개 |
 | `search` | 1개 |
 | `shop` | 12개 |
 | `users` | 2개 |
@@ -41,6 +41,7 @@
 | `404` | `errors` | 화면 | `_user_base` |
 | `500` | `errors` | 화면 | `_user_base` |
 | `503` | `errors` | 화면 | `_user_base` |
+| `default` | `errors` | 화면 | `_user_base` |
 | `maintenance` | `errors` | 화면 | `_user_base` |
 | `home` | `(root)` | 화면 | `_user_base` |
 | `addresses` | `mypage` | 화면 | `_user_base` |
@@ -56,17 +57,21 @@
 | `show` | `mypage` | 화면 | `_user_base` |
 | `profile-edit` | `mypage` | 화면 | `_user_base` |
 | `profile` | `mypage` | 화면 | `_user_base` |
+| `required-info` | `mypage` | 화면 | `_user_base` |
 | `scrap` | `mypage` | 화면 | `_user_base` |
 | `wishlist` | `mypage` | 화면 | `_user_base` |
 | `show` | `page` | 화면 | `_user_base` |
 | `_identity_challenge_modal` | `partials` | partial | - |
 | `_modal_notification_delete_all_confirm` | `partials` | partial | - |
+| `_modal_required_info_pending` | `partials` | partial | - |
 | `_visitor_counter` | `partials` | partial | - |
 | `_login_form` | `partials` | partial | - |
 | `_modal_privacy` | `partials` | partial | - |
 | `_modal_terms` | `partials` | partial | - |
+| `_password_auth_blocked` | `partials` | partial | - |
 | `_redirect_if_logged_in` | `partials` | partial | - |
 | `_register_form` | `partials` | partial | - |
+| `_guest_fields` | `partials` | partial | - |
 | `_board_card` | `partials` | partial | - |
 | `_parent_post` | `partials` | partial | - |
 | `_password_verify_modal` | `partials` | partial | - |
@@ -105,6 +110,8 @@
 | `_stat_card_posts` | `partials` | partial | - |
 | `_stat_card_users` | `partials` | partial | - |
 | `_welcome_card` | `partials` | partial | - |
+| `_member_fields` | `partials` | partial | - |
+| `_member_fields_view` | `partials` | partial | - |
 | `_tab_navigation` | `partials` | partial | - |
 | `_list` | `partials` | partial | - |
 | `_modal_address` | `partials` | partial | - |
@@ -168,6 +175,7 @@
 | `_cart_list` | `partials` | partial | - |
 | `_cart_summary` | `partials` | partial | - |
 | `_checkout_discount` | `partials` | partial | - |
+| `_checkout_extra_fields` | `partials` | partial | - |
 | `_checkout_items` | `partials` | partial | - |
 | `_checkout_mileage` | `partials` | partial | - |
 | `_checkout_orderer` | `partials` | partial | - |
@@ -241,7 +249,9 @@
 비회원 기준 메뉴(회원용 게시판이 빠진 목록)가 나옵니다 — `_user_base` 의 `boards`(헤더·모바일 메뉴·마이페이지 게시판
 선택칸이 함께 읽는다)가 그 예입니다.
 
-`errors/` 6종(401·403·404·500·503·maintenance)은 코어가 오류 상황에서 직접 부릅니다. 401 은
+`errors/` 7종(401·403·404·500·503·maintenance·default)은 코어가 오류 상황에서 직접 부릅니다. `default` 는 코드별 레이아웃이 없는
+코드(400·422·429·502·504 등)를 맡는 공통 오류 화면으로 `template.json` 의 `error_config.layouts.default` 에 등록돼 있고, 코드를 박지 않고
+엔진이 넘기는 `{{errorCode}}` 와 일반 문구, 새로고침과 홈으로 단추를 보입니다(없으면 엔진 내장 오류 화면이 머리글과 바닥글까지 덮습니다). 401 은
 **로그인 리다이렉트를 여기서 구현하지 않습니다** — 코어 `TemplateApp.showRouteError` 가드가
 처리하므로, 이 레이아웃에서 다시 이동시키면 이중 리다이렉트가 됩니다.
 
@@ -324,6 +334,7 @@
 | `/mypage/profile` | `mypage/profile` | - |
 | `/mypage/profile/edit` | `mypage/profile-edit` | - |
 | `/mypage/change-password` | `mypage/change-password` | - |
+| `/mypage/required-info` | `mypage/required-info` | - |
 | `/mypage/orders` | `mypage/orders` | - |
 | `/mypage/orders/:order_number` | `mypage/orders/show` | - |
 | `/mypage/orders/:order_number/claims/apply/:type` | `mypage/claims/apply` | - |
@@ -391,6 +402,8 @@
 | 대상 | 설명 |
 |---|---|
 | `extensions/sirsoft-daum_postcode/user-address-search.g7.html` | 모듈/플러그인 확장 조각을 대체하는 오버라이드 — 확장점 `address_search_slot` |
+| `extensions/sirsoft-social_login/auth_register_social_modals.g7.html` | 모듈/플러그인 확장 조각을 대체하는 오버라이드 — 대상 레이아웃 `auth/register` |
+| `extensions/sirsoft-sso/auth-login-sso-modals.g7.html` | 모듈/플러그인 확장 조각을 대체하는 오버라이드 — 대상 레이아웃 `auth/login` |
 <!-- @generated:template-overrides END -->
 
 <!-- @intent START -->
@@ -482,6 +495,22 @@ API 를 부르지도, 갈 곳 없는 링크를 그리지도 않는다. 판정은
 - props 계약·`context` 의미는 코어 `docs/extension/layout-extensions.md` 「게시판 확장 자리 5종의 props」 와
   `modules/_bundled/sirsoft-board/docs/extension-points.md` 「사용자 화면 자리」 가 원문이다.
 
+### 히어로 배너 자리 (1.4.0)
+
+히어로섹션 플러그인이 배너 슬라이더를 붙이는 확장점이다. 모두 `_user_base` 의 본문 상자 밖 전폭 슬롯 `page_top` 에 두고, 붙인 확장이 없거나 배너가 없으면 빈 자리라 화면이 지금과 같다. 이름은 바꾸지 않는다 — 플러그인은 이름(위치 키)으로만 찾는다.
+
+| 확장점 | 레이아웃 | 넘기는 본문 상자 | 대상 |
+| --- | --- | --- | --- |
+| `home_hero` | `home` | `contentClass="px-8"` · `contentClassTablet="px-10"` · `contentClassDesktop="max-w-7xl mx-auto px-16"` | — |
+| `shop_hero` | `shop/index` | `contentClass="px-4"` · `contentClassDesktop="max-w-7xl mx-auto px-8"` | — |
+| `board_hero` | `board/index` | 쇼핑몰 메인과 같음 | 게시판마다 — 조각이 `route.slug` 를 읽는다 |
+| `product_hero` | `shop/show` | 쇼핑몰 메인과 같음 | 상품마다 — 조각이 `route.product_code` 를 읽는다 |
+| `category_hero` | `shop/category` | 쇼핑몰 메인과 같음 | 카테고리마다 — 조각이 `route.slug` 를 읽는다 |
+
+- 게시판 목록·상품 상세·카테고리 목록의 첫 본문 컨테이너는 세로 여백만 두므로 본문 상자 값이 쇼핑몰 메인과 같다. 컨테이너 여백을 바꾸면 이 값도 같이 바꾼다.
+- 동적 자리(게시판·상품·카테고리)는 확장점에 대상을 넘기지 않는다 — 플러그인 조각이 화면 주소 값을 직접 읽어야 SPA 로 다른 게시판·상품으로 옮겨도 다시 받는다. 경로 매개변수 이름(`:slug`·`:product_code`)을 바꾸면 그 조각을 템플릿이 덮어써 맞춰야 한다.
+- 메뉴 겹침·표시 폭 계약과 다른 템플릿에 자리를 두는 방법은 `plugins/_bundled/sirsoft-hero_section/docs/extension-points.md` 「레이아웃 확장」 이 원문이다.
+
 ## 이관 원문 상세
 
 > 아래는 코어 `docs/frontend/templates/sirsoft-basic/layouts.md` 에 있던 원문을 이 문서로 옮긴 것입니다(#601). 이관 시점 그대로
@@ -505,7 +534,7 @@ API 를 부르지도, 갈 곳 없는 링크를 그리지도 않는다. 판정은
 1. 베이스: _user_base.g7.html (헤더 + 푸터 + 모바일 네비 + 콘텐츠 슬롯)
 2. 코어 페이지 30개+: 인증, 게시판, 쇼핑몰, 마이페이지, 검색, 프로필
 3. Partial 100개+: 폼, 모달, 탭, 카드, 목록, 필터, 타입별 렌더러
-4. 에러 페이지 6개: 401, 403, 404, 500, 503, maintenance
+4. 에러 페이지 7개: 401, 403, 404, 500, 503, maintenance, default(코드별 레이아웃이 없는 코드)
 5. 패턴: 게시판(타입별 렌더러), 쇼핑몰(장바구니/결제 플로우), 마이페이지(탭 네비게이션)
 ```
 
@@ -555,6 +584,7 @@ _user_base.g7.html (베이스 레이아웃)
 │       ├── _login_form.g7.html (로그인 폼)
 │       ├── _register_form.g7.html (회원가입 폼)
 │       ├── _redirect_if_logged_in.g7.html (로그인 상태 리다이렉트)
+│       ├── _password_auth_blocked.g7.html (비밀번호 인증 거절 안내 — 회사 계정 로그인 강제. 비밀번호 찾기·재설정·마이페이지 비밀번호 변경이 함께 씀)
 │       ├── _modal_terms.g7.html (이용약관 모달)
 │       └── _modal_privacy.g7.html (개인정보 처리방침 모달)
 │
@@ -588,6 +618,7 @@ _user_base.g7.html (베이스 레이아웃)
 │   │       ├── _parent_post.g7.html (원글 표시)
 │   │       ├── _type_renderer.g7.html (타입별 렌더러 분기)
 │   │       └── _password_verify_modal.g7.html (비밀번호 확인)
+│   ├── partials/board/_guest_fields.g7.html (비회원 작성자 항목 반복 조각 — 운영자가 게시판 설정에서 켠 이메일, 추가 항목, 확장이 보탠 항목을 항목 계약대로 그림. 글쓰기 폼, 댓글, 답글 입력칸이 `data-each="boardGuestFieldGroup in …"` 안에서 부름, #490)
 │   ├── popular.g7.html (인기글)
 │   │   └── partials/board/popular/
 │   │       ├── _popular_list.g7.html (인기글 리스트)
@@ -647,6 +678,7 @@ _user_base.g7.html (베이스 레이아웃)
 │   │   └── partials/shop/
 │   │       ├── _checkout_orderer.g7.html (주문자 정보)
 │   │       ├── _checkout_shipping.g7.html (배송 정보)
+│   │       ├── _checkout_extra_fields.g7.html (운영자가 더한 주문서 추가 항목 — 주문자, 배송 정보 구획이 함께 쓴다)
 │   │       ├── _checkout_items.g7.html (주문 상품)
 │   │       ├── _checkout_discount.g7.html (할인/쿠폰)
 │   │       ├── _checkout_mileage.g7.html (마일리지)
@@ -666,6 +698,7 @@ _user_base.g7.html (베이스 레이아웃)
 │   ├── scrap.g7.html (스크랩 — 일괄 삭제 확인 조각 포함)
 │   ├── profile.g7.html (프로필 보기)
 │   ├── profile-edit.g7.html (프로필 수정)
+│   ├── required-info.g7.html (추가 정보 입력 — 기존 회원에게도 입력을 요구한 필수 항목이 비어 있는 회원이 로그인 뒤 거치는 화면, 저장하면 redirect 로, 없으면 홈으로, #490)
 │   │   └── partials/mypage/profile/
 │   │       ├── _view.g7.html (프로필 보기 섹션 — 국가는 응답의 country_name 으로 이름 표시)
 │   │       ├── _edit.g7.html (프로필 수정 섹션 — 국가 선택은 profile-edit 의 countryList define)
@@ -737,6 +770,9 @@ _user_base.g7.html (베이스 레이아웃)
 │   │   └── partials/mypage/scrap/
 │   │       ├── _modal_scrap_delete.g7.html (스크랩 삭제)
 │   │       └── _modal_scrap_bulk_delete.g7.html (스크랩 일괄 삭제)
+│   ├── partials/member/
+│   │   ├── _member_fields.g7.html (회원 항목 입력 반복 조각 — 가입, 내 정보 수정, 추가 정보 입력이 `data-each="memberFieldGroup in …"` 안에서 부름, #490)
+│   │   └── _member_fields_view.g7.html (회원 항목 보기 조각 — 내 정보 보기가 카드마다 부름, 값이 없으면 「-」, #490)
 │   └── partials/mypage/
 │       └── _tab_navigation.g7.html (마이페이지 공통 탭)
 │           hiddenTabIds: inquiries 탭은 sirsoft-ecommerce inquiry 설정 시에만 노출
@@ -769,6 +805,7 @@ _user_base.g7.html (베이스 레이아웃)
 │   ├── partials/common/
 │   │   └── _currency_selector.g7.html (통화 선택기)
 │   ├── partials/_identity_challenge_modal.g7.html (2단계 인증 재확인 모달 — #657)
+│   ├── partials/_modal_required_info_pending.g7.html (추가 정보 필요 안내 — 쓰기 요청이 403 `required_fields_pending` 으로 거절되면 템플릿 오류 처리가 열고 「입력하러 가기」로 추가 정보 입력 화면에 보냄, #490)
 │   └── partials/_modal_notification_delete_all_confirm.g7.html (알림 전체 삭제 확인)
 │
 └── 에러 페이지 (errors/)
@@ -777,8 +814,11 @@ _user_base.g7.html (베이스 레이아웃)
     ├── 404.g7.html (페이지 없음)
     ├── 500.g7.html (서버 오류)
     ├── 503.g7.html (서비스 불가)
-    └── maintenance.g7.html (점검 중)
+    ├── maintenance.g7.html (점검 중)
+    └── default.g7.html (공통 오류 화면 — 코드별 레이아웃이 없는 코드, `{{errorCode}}` 표시)
 ```
+
+관리자 화면의 이 템플릿 설정 화면은 레이아웃 트리 밖 `templates/_bundled/sirsoft-basic/settings/template_settings.g7.html` 이다 — 코어가 켜진 관리자 템플릿마다 `sirsoft-basic.template_settings` 로 교차 등록하고, 화면은 설정 묶음 부품 `sirsoft-basic.TemplateSettingsScreen` 이 그린다([components.md](components.md) 「템플릿 설정 화면 부품」).
 
 ---
 
@@ -802,8 +842,15 @@ slots.content:
 
 **특수사항**:
 - `_redirect_if_logged_in.g7.html`: 이미 로그인한 사용자를 홈으로 리다이렉트하는 partial
-- 로그인 폼은 `SocialLoginButtons` 포함 (소셜 로그인 지원)
-- 회원가입 폼은 `PasswordInput` 사용 (비밀번호 규칙 검증, 확인 일치)
+- 로그인 화면은 폼 아래에 확장점 `auth_login_extensions`, 회원가입 화면은 폼 위에 `auth_register_extensions` 를 둔다 — 소셜 로그인 버튼처럼 다른 로그인·가입 수단은 확장이 이 자리에 붙인다(템플릿은 소셜 로그인 부품을 갖지 않는다)
+- 마이페이지 정보 수정의 본인 확인 칸(`_password_verify_section`)과 비밀번호 변경 화면은 메일을 받을 수 없는 비밀번호 없는 회원(`has_password === false` · `email_deliverable === false` — 대체 이메일로 가입)에게 인증번호 대신 확장점 `mypage_reauth_methods`·`mypage_change_password_reauth` 를 보인다. 기본 내용은 관리자 문의 안내이고(비밀번호 변경 화면은 코어가 고를 재확인 수단 `reauth_provider` 가 있으면 「저장하면 그 방법으로 확인」 안내), 다른 확인 수단(예: 소셜 재로그인)을 가진 확장이 `mode="replace"` 로 바꾼다. 비밀번호 변경 화면은 회원 응답의 `can_set_password` 가 false 면(비밀번호 인증 정책이 막는 회원) 칸·처음 설정 안내·본인 확인 자리 대신 `password_set_blocked_message` 와 내 정보로 돌아가는 길을 보인다(7.2.0). 정보 수정 본인 확인은 그 확장점 위에 「본인 확인 계속하기」(`reauth_continue_button`)를 두어 메일 받는 칸과 같은 요청(`POST /api/identity/challenges`, 수단 비움)으로 서버가 그 회원에게 쓸 수 있는 수단을 고르게 한다(7.2.0) — 외부 수단이면 그 화면으로 이동, 인증번호 수단이면 인증번호 칸이 열린다
+- 같은 본인 확인 칸의 비밀번호 확인이 횟수 초과(429)·잠김(423)으로 실패하면 고정 문구(`mypage.profile.verify_password_error`) 대신 서버 문구(`verifyPasswordErrorMessage`, 남은 시간 포함)를 보인다. 게시판 비밀번호 확인 창 둘(`partials/board/form/_password_verify_modal`, `partials/board/show/modals/_password_verify_modal`)도 같은 규칙이다
+- 같은 본인 확인 칸의 제목과 안내는 비밀번호 없는 회원(`has_password === false`)에게 「본인 확인 / 내 정보를 수정하려면 본인 확인이 필요합니다」(`mypage.profile.verify_identity_*`), 비밀번호가 있는 회원에게 「비밀번호 확인」으로 갈린다
+- 로그인 화면은 `?login_handoff={코드}` 로 들어오면 진입 시 코드를 교환한다(`loginHandoff`) — 외부 인증 확장이 본인 확인을 마친 회원을 넘기는 통로이며, 응답 분기(2단계 인증·비밀번호 변경·로그인 완료)는 비밀번호 로그인과 같은 명명 액션 `applyLoginResult` 를 쓴다
+- 이메일 판정(`POST /api/auth/login/discover`)이 외부 수단이면 비밀번호 칸 대신 「… 계정으로 계속」과 함께 「… 계정으로 로그인하는 이메일입니다」 안내(`login_discovery_notice`)를 보인다. `?local=1`(비상 계정 진입로)로 들어오면 카드 맨 위에 비상 계정 로그인 화면 안내(`login_local_notice`)를 둔다. 비밀번호 변경 화면은 403 `auth.password_auth_disabled` 로 폼이 숨으면 「내 정보로 돌아가기」(`password_blocked_back`)를 따로 보인다(폼 안의 취소 링크가 함께 숨기 때문)
+- 가입을 받는지는 서버가 계산한 실효값 `_global.appConfig.auth.registration_open`(환경설정 「일반 회원가입 받기」 + 확장 필터 `core.auth.self_registration_open` — 예: 사이트 전체 회사 계정 강제)을 먼저 보고, 없을 때만 원 설정값 `_global.settings.security.registration_enabled` 를 본다. 닫히면 `/register` 는 안내 카드(`registration_closed_card`), 로그인 화면·모바일 드로어·홈 환영 카드의 가입 링크와 헤더 가입 버튼(`registrationEnabled` prop)이 숨는다
+- 회원가입 폼은 `PasswordInput` 사용 (비밀번호 규칙 검증, 확인 일치). 서버 칸 오류는 컴포넌트의 `error` 속성(text-sm) 대신 다른 칸과 같은 `text-xs` 줄로 칸 아래에 그린다
+- 가입 실패 처리: 칸 오류(`errors`)가 실린 응답이면 응답 요약 문구를 `registerError` 에 넣지 않는다 — 위쪽 상자(`register_error_box`)는 칸 오류가 없는 실패의 문구(본인 확인 필요 428, 요청 제한, 서버 오류)와 어느 칸에도 속하지 않는 오류(`$computed.registerOrphanErrors`)가 있을 때만 뜬다
 - 약관 동의 모달: `_modal_terms.g7.html`, `_modal_privacy.g7.html`
 - `blur_until_loaded`: 현재 사용자 정보 로드 전까지 폼 블러 처리
 
@@ -1057,6 +1104,7 @@ slots.content:
   └── Container
       ├── _checkout_orderer.g7.html (주문자 정보)
       ├── _checkout_shipping.g7.html (배송 정보)
+      ├── _checkout_extra_fields.g7.html (주문서 추가 항목 — 주문자, 배송 정보 구획 끝에 놓인다)
       ├── _checkout_items.g7.html (주문 상품 목록)
       ├── _checkout_discount.g7.html (할인/쿠폰)
       ├── _checkout_mileage.g7.html (마일리지)
@@ -1217,6 +1265,8 @@ slots.content:
 extends: _user_base
 data_sources: [stats, recent_posts, popular_boards, home_boards (게시판 가드), popularProducts, newProducts (쇼핑몰 가드), visitor_summary]
 meta.seo: { structured_data: WebSite }
+slots.page_top:
+  └── extension-point home_hero (본문 상자 밖 전폭 자리 — 히어로 배너)
 slots.content:
   └── Container
       ├── Grid home_top_row (게시판이 꺼지면 쇼핑몰 켜짐: 환영 2칸 + 쇼핑 홍보 1칸 / 둘 다 꺼짐: 1열)
@@ -1239,6 +1289,8 @@ slots.content:
       └── _visitor_counter.g7.html (방문자 수 — 설정으로 켬)
 ```
 
+히어로 자리 `home_hero` 는 본문 폭 기준으로 `contentClass="px-8"`·`contentClassTablet="px-10"`·`contentClassDesktop="max-w-7xl mx-auto px-16"` 를 넘깁니다(폭마다 다른 값은 Tailwind 폭 접두가 아니라 기기별 속성으로 넘기고 히어로 조각이 엔진 `responsive` 로 고릅니다). 홈 본문은 `_user_base` 본문 상자 여백 안에 컨테이너 여백(`px-4`·태블릿 `px-6`·데스크톱 `px-8`)을 한 번 더 두므로, 두 여백을 더한 값이어야 배너가 아래 카드 줄과 같은 폭이 됩니다. 컨테이너 여백을 바꾸면 이 값도 같이 바꿉니다. 쇼핑몰 메인(`shop/index`)의 `shop_hero` 는 안쪽 여백이 없어 본문 상자 값 그대로입니다.
+
 ---
 
 #### 에러 페이지 패턴
@@ -1247,17 +1299,18 @@ slots.content:
 
 **구성**:
 ```text
-(extends 없음 — 독립 레이아웃)
-components:
-  └── Div (전체 화면 중앙 정렬)
-      ├── Icon (에러 아이콘)
-      ├── H1 (에러 코드)
-      ├── P (에러 메시지)
-      └── Button (홈으로 이동)
+extends: _user_base (content 슬롯만 채운다 — 머리글·바닥글은 베이스가 그린다)
+slots.content:
+  └── Div (본문 중앙 정렬)
+      ├── Div (에러 코드 — 코드 레이아웃은 숫자를 박고, default 는 {{errorCode}})
+      ├── H1 (제목)
+      ├── P (설명)
+      └── A (홈으로 이동 — default 는 새로고침 Button 을 앞에 둔다)
 ```
 
 **핸들러 패턴**:
 - `navigate` — 홈으로 이동
+- `refresh` — 새로고침 (`errors/default`)
 
 ---
 

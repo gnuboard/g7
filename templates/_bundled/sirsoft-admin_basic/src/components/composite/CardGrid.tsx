@@ -6,6 +6,8 @@ import { ActionMenuItem } from './ActionMenu';
 import { Pagination } from './Pagination';
 import type { EditorAttrs } from '../../types';
 import { handleLinkClick, navigateTo, resolveLinkHref } from '../../support/navigationLink';
+import { useRenderWidth } from '../../hooks/useRenderWidth';
+import { gridColsClass, resolveGridCols } from '../layout/gridColumns';
 
 // Logger 설정 (G7Core 초기화 전에도 동작하도록 폴백 포함)
 const logger = ((window as any).G7Core?.createLogger?.('Comp:CardGrid')) ?? {
@@ -93,7 +95,19 @@ export interface CardGridProps {
   pageSize?: number;
   serverSidePagination?: boolean;
   serverCurrentPage?: number;
-  serverTotalPages?: number;
+  /**
+   * 서버가 알려준 마지막 페이지 번호
+   *
+   * 총 건수를 상한까지만 센 목록은 마지막 페이지를 계산할 수 없어 서버가 `null` 을 보낸다.
+   * 1 로 채우면 화면이 "1페이지뿐" 이라고 잘못 말하므로 null 을 그대로 흘려보낸다(DataGrid 와 같다).
+   */
+  serverTotalPages?: number | null;
+  /**
+   * 다음 페이지 존재 여부 (마지막 페이지를 모르는 목록에서 사용)
+   *
+   * 마지막 페이지를 알면 그 값이 먼저다. 모를 때만 이 값으로 "다음" 이동을 열어 둔다(DataGrid 와 같다).
+   */
+  serverHasMorePages?: boolean;
   alwaysShowPagination?: boolean;
   onPageChange?: (page: number) => void;
   /**
@@ -424,7 +438,7 @@ const generateSkeletonFromCellChildren = (
  *   "name": "CardGrid",
  *   "props": {
  *     "data": "{{boards.data.data}}",
- *     "columns": 3,
+ *     "gridColumns": 3,
  *     "gap": 4,
  *     "pagination": true,
  *     "pageSize": 12,
@@ -462,6 +476,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
   serverSidePagination = false,
   serverCurrentPage,
   serverTotalPages,
+  serverHasMorePages,
   alwaysShowPagination = false,
   onPageChange,
   pageHref,
@@ -497,6 +512,8 @@ export const CardGrid: React.FC<CardGridProps> = ({
   const G7Core = (window as any).G7Core;
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const responsive = G7Core?.useResponsive?.();
+  // 열 수를 고르는 렌더 폭 — Provider 폭 우선(편집기 미리보기에서는 기기 폭), 훅이 없으면 창 폭 + resize
+  const renderWidth = useRenderWidth();
 
   // 셀 렌더 환경 — 이 CardGrid 를 그린 렌더러의 환경에 자기 Provider 폭을 얹는다(#141)
   const renderEnv = {
@@ -506,8 +523,10 @@ export const CardGrid: React.FC<CardGridProps> = ({
 
   // 서버/클라이언트 페이지 정보
   const effectiveCurrentPage = serverSidePagination ? (serverCurrentPage ?? 1) : currentPage;
-  const effectiveTotalPages = serverSidePagination
-    ? (serverTotalPages ?? 1)
+  // 총 건수를 상한까지만 센 목록은 마지막 페이지가 null 로 온다. 1 로 채우면 페이저가
+  // "1페이지뿐" 으로 그려져 2페이지 밖 카드에 갈 수 없으므로 null 을 보존한다.
+  const effectiveTotalPages: number | null = serverSidePagination
+    ? (serverTotalPages ?? null)
     : Math.ceil((data?.length ?? 0) / pageSize);
 
   // 페이지 변경 핸들러
@@ -542,34 +561,24 @@ export const CardGrid: React.FC<CardGridProps> = ({
     return data.slice(startIndex, endIndex);
   }, [data, pagination, serverSidePagination, currentPage, pageSize]);
 
-  // 반응형 그리드 클래스 생성
-  const gridClasses = useMemo(() => {
-    const classes = [];
-
-    // 기본 (모바일)
-    const smCols = responsiveColumns?.sm ?? 1;
-    classes.push(`grid-cols-${smCols}`);
-
-    // sm (640px+)
-    if (responsiveColumns?.sm) {
-      classes.push(`sm:grid-cols-${responsiveColumns.sm}`);
-    }
-
-    // md (768px+)
-    const mdCols = responsiveColumns?.md ?? Math.min(gridColumns, 2);
-    classes.push(`md:grid-cols-${mdCols}`);
-
-    // lg (1024px+)
-    const lgCols = responsiveColumns?.lg ?? gridColumns;
-    classes.push(`lg:grid-cols-${lgCols}`);
-
-    // xl (1280px+)
-    if (responsiveColumns?.xl) {
-      classes.push(`xl:grid-cols-${responsiveColumns.xl}`);
-    }
-
-    return classes.join(' ');
-  }, [gridColumns, responsiveColumns]);
+  // 열 수 클래스 — 구간 열 수를 Tailwind 접두로 내지 않고 렌더 폭으로 골라 접두 없는 `grid-cols-N` 하나만 낸다.
+  // 경계와 이어받기는 종전 접두 클래스와 같다: 768 미만은 sm(없으면 1), 768 이상은 md(없으면 gridColumns 와 2 중
+  // 작은 값), 1024 이상은 lg(없으면 gridColumns), 1280 이상은 xl(있을 때만).
+  const gridClasses = useMemo(
+    () =>
+      gridColsClass(
+        resolveGridCols(
+          responsiveColumns?.sm ?? 1,
+          {
+            md: responsiveColumns?.md ?? Math.min(gridColumns, 2),
+            lg: responsiveColumns?.lg ?? gridColumns,
+            xl: responsiveColumns?.xl,
+          },
+          renderWidth
+        )
+      ),
+    [gridColumns, responsiveColumns, renderWidth]
+  );
 
   // 스켈레톤 UI 생성 (useMemo로 최적화)
   const skeletonUI = useMemo(() => {
@@ -627,10 +636,13 @@ export const CardGrid: React.FC<CardGridProps> = ({
     );
   }
 
-  // 페이지네이션 표시 여부
+  // 페이지네이션 표시 여부 — 마지막 페이지를 모르더라도 "다음" 이 열려 있거나 이미 2페이지 이상이면 페이저가 필요하다
   const showPagination =
     pagination &&
-    (alwaysShowPagination || effectiveTotalPages > 1);
+    (alwaysShowPagination ||
+      (effectiveTotalPages ?? 0) > 1 ||
+      (serverSidePagination && serverHasMorePages === true) ||
+      effectiveCurrentPage > 1);
 
   return (
     <Div className={className} style={style} id={id} {...editorAttrs}>
@@ -673,6 +685,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
           <Pagination
             currentPage={effectiveCurrentPage}
             totalPages={effectiveTotalPages}
+            hasMorePages={serverSidePagination ? serverHasMorePages : undefined}
             onPageChange={handlePageChange}
             pageHref={pageHref}
             pageHrefMergeQuery={pageHrefMergeQuery}

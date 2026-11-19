@@ -3,11 +3,11 @@
   <div data-if="{{posts?.data?.abilities?.can_access_admin}}" class="inline-flex items-center gap-2">
     <a href="/admin/board/{{route.slug}}" target="_blank" rel="noopener noreferrer" title="$t:board.admin_links.posts" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors no-underline">
       <icon name="external-link" size="sm"/>
-      <span class="hidden sm:inline">$t:board.admin_links.posts</span>
+      <span class="hidden"><responsive on="640-" class="inline"/>$t:board.admin_links.posts</span>
     </a>
     <a href="/admin/boards/{{route.slug}}/edit" target="_blank" rel="noopener noreferrer" title="$t:board.admin_links.manage" class="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors no-underline">
       <icon name="settings" size="sm"/>
-      <span class="hidden sm:inline">$t:board.admin_links.manage</span>
+      <span class="hidden"><responsive on="640-" class="inline"/>$t:board.admin_links.manage</span>
     </a>
   </div>
 </partial>

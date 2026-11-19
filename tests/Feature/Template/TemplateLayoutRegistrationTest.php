@@ -3,6 +3,7 @@
 namespace Tests\Feature\Template;
 
 use App\Enums\LayoutSourceType;
+use App\Extension\Template\TemplateSettingsSchema;
 use App\Extension\TemplateManager;
 use App\Models\Template;
 use App\Models\TemplateLayout;
@@ -19,6 +20,11 @@ class TemplateLayoutRegistrationTest extends TestCase
 
     protected TemplateManager $templateManager;
 
+    /**
+     * 시험용 레이아웃 파일을 만들고 확장 디렉터리 보호를 켠 뒤 TemplateManager 로 템플릿 목록을 읽는다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -33,6 +39,11 @@ class TemplateLayoutRegistrationTest extends TestCase
         $this->templateManager->loadTemplates();
     }
 
+    /**
+     * 캐시를 비우고 확장 디렉터리 보호를 끈 뒤 시험용 레이아웃 파일을 지운다.
+     *
+     * @return void 반환값 없음
+     */
     protected function tearDown(): void
     {
         // 캐시 부작용 방지: 테스트 중 생성/삭제된 캐시를 정리
@@ -50,6 +61,12 @@ class TemplateLayoutRegistrationTest extends TestCase
 
     /**
      * 템플릿 설치 시 레이아웃 JSON이 DB에 등록되는지 테스트
+     *
+     * @scenario lifecycle_step=install
+     *
+     * @effects install_template_registers_layout_json_into_template_layouts
+     *
+     * @return void 반환값 없음
      */
     public function test_install_template_registers_layouts(): void
     {
@@ -77,6 +94,12 @@ class TemplateLayoutRegistrationTest extends TestCase
 
     /**
      * 템플릿 제거 시 레이아웃이 DB에서 삭제되는지 테스트
+     *
+     * @scenario lifecycle_step=uninstall
+     *
+     * @effects uninstall_template_removes_its_layouts
+     *
+     * @return void 반환값 없음
      */
     public function test_uninstall_template_removes_layouts(): void
     {
@@ -102,26 +125,44 @@ class TemplateLayoutRegistrationTest extends TestCase
      *
      * activateTemplate()은 활성 모듈/플러그인 레이아웃을 해당 템플릿에 추가 등록하므로
      * 전체 레이아웃 수는 증가할 수 있지만, 템플릿 자체(source_type=template) 레이아웃은 변하지 않아야 합니다.
+     *
+     * @scenario lifecycle_step=activate_deactivate
+     *
+     * @effects activate_deactivate_keeps_template_own_layout_count, activate_cross_registers_template_settings_layout
+     *
+     * @return void 반환값 없음
      */
     public function test_activate_deactivate_template_does_not_affect_layouts(): void
     {
+        // 템플릿 설정 화면(`{id}.template_settings`, #434)은 활성 관리자 템플릿에 교차 등록되는 행이라 source_type 이
+        // template 이어도 템플릿 자체 레이아웃이 아니다. 꺼진 채 설치하면 등록할 관리자 템플릿이 없어 빠지고, 활성화하면
+        // 자기 자신에게 등록된다(TemplateManager::registerSettingsLayoutsForAllInstalled). 자체 레이아웃 수에서 빼고 따로 본다.
+        $settingsName = TemplateLayout::templateSettingsLayoutName('sirsoft-admin_basic');
+        $countOwnLayouts = fn (int $templateId): int => TemplateLayout::where('template_id', $templateId)
+            ->where('source_type', LayoutSourceType::Template)
+            ->where('name', 'not like', '%.'.TemplateLayout::TEMPLATE_SETTINGS_SUFFIX)
+            ->count();
+
         // Arrange
         $this->templateManager->installTemplate('sirsoft-admin_basic');
         $template = Template::where('identifier', 'sirsoft-admin_basic')->first();
 
-        $templateLayoutsBefore = TemplateLayout::where('template_id', $template->id)
-            ->where('source_type', LayoutSourceType::Template)
-            ->count();
+        $templateLayoutsBefore = $countOwnLayouts($template->id);
         $this->assertGreaterThan(0, $templateLayoutsBefore, '설치 후 템플릿 자체 레이아웃이 존재해야 합니다.');
 
         // Act - 활성화
         $this->templateManager->activateTemplate('sirsoft-admin_basic');
 
         // Assert - 템플릿 자체 레이아웃 수 불변
-        $templateLayoutsAfterActivate = TemplateLayout::where('template_id', $template->id)
-            ->where('source_type', LayoutSourceType::Template)
-            ->count();
+        $templateLayoutsAfterActivate = $countOwnLayouts($template->id);
         $this->assertEquals($templateLayoutsBefore, $templateLayoutsAfterActivate, '활성화 시 템플릿 자체 레이아웃 수는 변경되지 않아야 합니다.');
+
+        // Assert - 설정 화면을 공급하는 템플릿이면 활성화로 자기 설정 화면이 교차 등록된다
+        $this->assertSame(
+            TemplateSettingsSchema::layoutPath('sirsoft-admin_basic') !== null,
+            TemplateLayout::where('template_id', $template->id)->where('name', $settingsName)->exists(),
+            '활성 관리자 템플릿에는 설치된 템플릿의 설정 화면이 교차 등록되어야 합니다.'
+        );
 
         // Assert - 모듈/플러그인 레이아웃이 추가 등록될 수 있음 (정상 동작)
         $totalAfterActivate = TemplateLayout::where('template_id', $template->id)->count();
@@ -131,9 +172,7 @@ class TemplateLayoutRegistrationTest extends TestCase
         $this->templateManager->deactivateTemplate('sirsoft-admin_basic');
 
         // Assert - 템플릿 자체 레이아웃 수 불변
-        $templateLayoutsAfterDeactivate = TemplateLayout::where('template_id', $template->id)
-            ->where('source_type', LayoutSourceType::Template)
-            ->count();
+        $templateLayoutsAfterDeactivate = $countOwnLayouts($template->id);
         $this->assertEquals($templateLayoutsBefore, $templateLayoutsAfterDeactivate, '비활성화 시 템플릿 자체 레이아웃 수는 변경되지 않아야 합니다.');
     }
 
@@ -145,6 +184,12 @@ class TemplateLayoutRegistrationTest extends TestCase
      * 형식이어야 하며, DB 에도 동일 형식으로 시드되어야 routes.json 의
      * `"layout": "errors/404"` 참조와 정합한다. 이전 결함: layout_name="404" 만
      * 저장되어 라우트 35/36 (404/403 페이지) 가 Layout not found 로 떨어졌음.
+     *
+     * @scenario lifecycle_step=install
+     *
+     * @effects install_template_seeds_error_layouts_with_errors_directory_prefix
+     *
+     * @return void 반환값 없음
      */
     public function test_install_template_seeds_errors_layouts_with_directory_prefix(): void
     {
@@ -181,6 +226,12 @@ class TemplateLayoutRegistrationTest extends TestCase
 
     /**
      * 멱등성 테스트: 같은 템플릿 2번 설치 시 레이아웃 중복 생성 방지
+     *
+     * @scenario lifecycle_step=install_twice
+     *
+     * @effects install_template_twice_does_not_duplicate_layouts
+     *
+     * @return void 반환값 없음
      */
     public function test_install_template_twice_does_not_duplicate_layouts(): void
     {
@@ -207,6 +258,12 @@ class TemplateLayoutRegistrationTest extends TestCase
      *
      * 템플릿에는 error_config의 에러 레이아웃 파일이 필수이므로,
      * 레이아웃 디렉토리가 없으면 설치가 실패해야 합니다.
+     *
+     * @scenario lifecycle_step=install_without_layouts_dir
+     *
+     * @effects install_template_without_layouts_directory_throws
+     *
+     * @return void 반환값 없음
      */
     public function test_install_template_without_layouts_directory_fails(): void
     {
@@ -237,6 +294,8 @@ class TemplateLayoutRegistrationTest extends TestCase
      * 이 헬퍼가 `.json` 을 직접 쓰는 것은 작성 흐름을 흉내 내는 것이 아니라,
      * **컴파일 이후 상태**(등록이 보는 형태)를 곧바로 심어 레이아웃 등록 동작만 격리해
      * 검증하기 위함이다. 마크업 형식을 다루는 테스트는 `LayoutMarkup` 스위트가 맡는다.
+     *
+     * @return void 반환값 없음
      */
     protected function createTestLayoutFiles(): void
     {
@@ -274,6 +333,8 @@ class TemplateLayoutRegistrationTest extends TestCase
 
     /**
      * 테스트용 레이아웃 파일 정리
+     *
+     * @return void 반환값 없음
      */
     protected function cleanupTestLayoutFiles(): void
     {

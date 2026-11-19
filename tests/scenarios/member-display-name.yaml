@@ -1,0 +1,149 @@
+feature: member_display_name
+
+description: |
+  표시 이름(환경설정 > 회원 > 표시 이름). 종류(이름, 닉네임, 가린 이름, 아이디 가림, 이름(닉네임), 추가 항목 값)와
+  대체 순서, 영역 상속 사슬과 회원이 고른 값, 탈퇴 회원과 비회원, 설정에 없는 깊은 키의 기본값, 확장의 종류와 영역 등록,
+  작성자 검색과 정렬 헬퍼, 가입과 내 정보에서 종류 고르기와 권한, 응답의 새 키, 닉네임 항목 잠금,
+  회원 탭의 안내와 저장, 추가 항목 삭제 차단, 새 권한의 역할 부여.
+
+coverage_strategy: full
+
+axes:
+  case:
+    - masker
+    - core_kinds
+    - field_kind
+    - fallback_order
+    - area_inheritance
+    - member_mode
+    - withdrawn_and_guest
+    - deep_key_defaults
+    - extension_registration
+    - preload
+    - search_user
+    - search_member_mode
+    - search_admin
+    - sort_author
+    - default_site_unchanged
+    - choose_on_signup
+    - choose_on_profile
+    - no_permission
+    - not_selectable
+    - choice_no_longer_selectable
+    - nickname_locked_for_all
+    - nickname_locked_for_chosen
+    - settings_info_api
+    - settings_save
+    - delete_blocked
+    - role_permission_sync
+    - response_shapes
+    - public_settings
+
+effects:
+  - name_masked_keeps_first_and_last
+  - id_masked_keeps_first_three
+  - kind_name_shows_name
+  - kind_nickname_shows_nickname
+  - kind_masked_name_masks_name
+  - kind_masked_id_masks_email_local_part
+  - kind_name_nickname_combines_both
+  - kind_field_shows_custom_field_value
+  - field_kind_requires_display_name_usable_flag
+  - admin_only_field_is_not_a_kind
+  - name_falls_back_to_nickname_then_masked_id
+  - nickname_never_falls_back_to_name
+  - masked_name_falls_back_to_masked_id
+  - name_nickname_falls_back_to_name_chain
+  - field_falls_back_to_nickname_then_masked_id
+  - area_inherits_parent_setting
+  - area_own_setting_wins_over_parent
+  - instance_setting_wins_over_area
+  - notification_channel_inherits_notification
+  - unknown_area_uses_site_default
+  - member_mode_uses_chosen_kind
+  - member_mode_uses_default_when_not_chosen
+  - member_mode_uses_default_when_choice_no_longer_selectable
+  - withdrawn_member_shows_fixed_label
+  - guest_shows_given_name
+  - guest_without_name_is_null
+  - missing_area_setting_uses_declared_default
+  - unknown_kind_setting_falls_back_to_parent
+  - site_area_never_inherits
+  - site_area_default_follows_member_default_kind
+  - empty_selectable_kinds_fall_back_to_default_kind
+  - extension_kind_registered_through_filter
+  - extension_area_registered_through_filter
+  - resolved_name_passes_through_filter
+  - invalid_kind_key_is_rejected
+  - resolve_many_reads_field_values_in_one_query
+  - column_kinds_need_no_query
+  - display_columns_cover_core_kinds
+  - user_search_matches_only_shown_kind_columns
+  - masked_kind_area_finds_nothing
+  - withdrawn_member_excluded_from_search
+  - like_wildcards_are_literal
+  - member_mode_search_respects_each_members_kind
+  - member_mode_search_uses_default_kind_for_unchosen
+  - admin_search_matches_name_and_nickname
+  - guest_column_is_searched_for_guest_rows_only
+  - field_kind_value_is_searchable
+  - author_sort_follows_shown_kind
+  - author_sort_uses_fallback_for_empty_values
+  - author_sort_member_mode_uses_each_members_kind
+  - author_sort_keeps_model_columns
+  - default_settings_keep_name_values
+  - default_settings_display_name_equals_name
+  - default_settings_hide_choice
+  - default_settings_leave_nickname_unlocked
+  - signup_fields_offer_selectable_kinds_with_preview
+  - signup_saves_chosen_kind
+  - signup_requires_nickname_for_nickname_kind
+  - signup_preview_uses_typed_values
+  - profile_saves_chosen_kind
+  - profile_clears_kind_with_null
+  - profile_fields_report_current_name
+  - display_name_changed_action_fired
+  - admin_cannot_change_members_kind
+  - kind_choice_without_permission_is_422_on_profile
+  - kind_choice_without_permission_is_422_on_signup
+  - bundle_hides_options_without_permission
+  - kind_outside_selectable_is_422
+  - unknown_kind_is_422
+  - removed_choice_reports_value_unavailable_with_previous_label
+  - removed_choice_shows_default_kind
+  - removed_choice_does_not_block_other_edits
+  - removed_field_kind_reports_field_name
+  - fixed_nickname_kind_forces_nickname_enabled_and_required
+  - nickname_lock_reason_is_nickname_display
+  - locked_nickname_attributes_cannot_be_changed
+  - stored_nickname_settings_survive_lock
+  - selectable_nickname_kind_forces_nickname_enabled_only
+  - default_nickname_kind_requires_nickname_for_unchosen_members
+  - instance_fixed_nickname_kind_locks_for_all
+  - nickname_empty_count_excludes_withdrawn
+  - display_name_options_list_kinds_and_areas
+  - display_name_options_list_member_mode_instances
+  - settings_info_requires_settings_read_permission
+  - settings_save_validates_kinds_and_areas
+  - settings_save_turns_on_nickname_require_existing_members
+  - settings_save_drops_transient_key
+  - settings_save_preserves_unregistered_area_settings
+  - settings_save_clears_seo_cache
+  - field_used_as_display_name_cannot_be_deleted
+  - delete_conflict_lists_usages
+  - unused_field_is_deleted
+  - choose_permission_granted_to_user_role_by_default
+  - choose_permission_attached_on_resync_for_customized_user_role
+  - operator_removed_permission_stays_removed
+  - all_user_resource_shapes_carry_display_name
+  - self_and_admin_detail_carry_kind_and_can_choose
+  - admin_auth_uses_admin_area
+  - admin_member_status_reports_chosen_kind_and_shown_names
+  - list_rows_carry_display_name_without_per_row_queries
+  - public_config_exposes_selectable_kinds_only
+  - public_config_hides_area_settings
+
+test_files:
+  - tests/Unit/DisplayName/DisplayNameResolverTest.php
+  - tests/Unit/DisplayName/DisplayNameQueryTest.php
+  - tests/Feature/DisplayName/DisplayNameChoiceTest.php

@@ -4,7 +4,6 @@
  * - 사이드바 메뉴의 이동 폴백(엔진 dispatch 부재)은 같은 출처 경로로만 이동한다.
  * - 본인인증 모달을 열지 못해 인증 화면으로 넘어갈 때 `return_url=<경로>` 를 넘긴다(화면이 읽는 이름).
  */
-import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { AdminSidebar, MenuItem } from '../components/composite/AdminSidebar';

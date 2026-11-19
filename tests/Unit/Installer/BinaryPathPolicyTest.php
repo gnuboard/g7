@@ -5,6 +5,7 @@ namespace Tests\Unit\Installer;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
+use Tests\Concerns\ScansPhpSourceFunctions;
 
 /**
  * 인스톨러 실행 바이너리 경로 정책 테스트 (KVE-2026-1677).
@@ -20,6 +21,8 @@ use PHPUnit\Framework\TestCase;
  */
 class BinaryPathPolicyTest extends TestCase
 {
+    use ScansPhpSourceFunctions;
+
     /**
      * 클래스 공통 준비 — 검사 대상 파일을 한 번 로드한다.
      *
@@ -32,6 +35,8 @@ class BinaryPathPolicyTest extends TestCase
 
     /**
      * 형태 규칙을 통과해야 하는 토큰.
+     *
+     * bare 이름, POSIX 절대경로, 버전 붙은 이름, Windows 드라이브 경로가 형태 검사를 통과하는지 확인한다.
      *
      * @param  string  $token  경로 토큰
      * @param  string  $reason  통과 사유 (실패 메시지용)
@@ -54,6 +59,8 @@ class BinaryPathPolicyTest extends TestCase
 
     /**
      * 형태 규칙에 걸려야 하는 토큰.
+     *
+     * 하이픈 선두 옵션, 상대경로, 부모 참조, 셸 메타문자, 제어문자, UNC 경로, 스트림 래퍼가 모두 거부되는지 확인한다.
      *
      * @param  string  $token  경로 토큰
      * @param  string  $reason  거부 사유 (실패 메시지용)
@@ -78,6 +85,8 @@ class BinaryPathPolicyTest extends TestCase
 
     /**
      * Composer 자리는 이름 형태까지 제한한다.
+     *
+     * composer 계열 이름(버전 접미, phar, bat, exe)은 통과하고 임의 스크립트와 임의 이름 phar 는 거부되는지 확인한다.
      *
      * @param  string  $token  경로 토큰
      * @param  bool  $expected  기대 판정
@@ -127,6 +136,8 @@ class BinaryPathPolicyTest extends TestCase
 
     /**
      * 2토큰 입력은 자리별 규칙을 모두 만족할 때만 해석된다.
+     *
+     * 멀티 PHP 와 래퍼 조합은 (PHP, Composer) 쌍으로 풀리고, 인자 주입이나 인터프리터와 스크립트 조합은 null 이 되는지 확인한다.
      *
      * @param  string  $raw  원본 입력
      * @param  array{php: string, composer: string}|null  $expected  기대 해석 결과
@@ -180,7 +191,9 @@ class BinaryPathPolicyTest extends TestCase
      * "저장은 막히는데 실행은 통과" 같은 어긋난 상태가 남고, 그 어긋남은 오류를
      * 남기지 않는다. 그래서 파일 참조 자체를 계약으로 고정한다 (KVE-2026-2043).
      *
-     * @effects binary_path_policy_file_is_shared_by_all_entrypoints
+     * @scenario vector=validatePhpPath, vector=validateComposerPath, vector=getPhpBinary, vector=handleStep3Post
+     *
+     * @effects binary_path_policy_file_is_shared_by_all_entrypoints, binary_path_policy_is_loaded_by_validation_and_execution_entrypoints
      *
      * @return void 반환값 없음
      */
@@ -201,7 +214,7 @@ class BinaryPathPolicyTest extends TestCase
             $this->assertFileExists($path, "정책 소비 진입점이 사라졌다: {$label}");
             $this->assertStringContainsString(
                 'binary-path-policy.php',
-                (string) file_get_contents($path),
+                $this->sourceWithoutComments($path),
                 "{$label} 이 공용 정책을 로드하지 않는다 — 자체 판정으로 갈라지면 우회로가 된다"
             );
         }
@@ -213,7 +226,10 @@ class BinaryPathPolicyTest extends TestCase
      * 쌍 해석은 자리별 규칙을 재사용하므로 여기서도 같은 결론이 나와야 한다 —
      * 한쪽만 막히면 그 경로가 우회로가 된다.
      *
+     * @scenario vector=validateComposerPath, payload_class=unc_path, payload_class=arbitrary_phar, payload_class=normal, expected_outcome=return_invalid_message, expected_outcome=accept_normal
+     *
      * @effects pair_resolver_rejects_unc_and_arbitrary_phar
+     * @effects getComposerCommand_keeps_multi_php_pair_support
      *
      * @return void 반환값 없음
      */
@@ -243,7 +259,7 @@ class BinaryPathPolicyTest extends TestCase
     /**
      * 통과해야 하는 토큰 목록.
      *
-     * @return array<string, array{string, string}> 테스트 데이터 세트
+     * @return array<string, array{string, string}> 사례 이름을 키로 한 (토큰, 통과 사유) 목록
      */
     public static function shapeAllowedProvider(): array
     {
@@ -262,7 +278,7 @@ class BinaryPathPolicyTest extends TestCase
     /**
      * 거부해야 하는 토큰 목록.
      *
-     * @return array<string, array{string, string}> 테스트 데이터 세트
+     * @return array<string, array{string, string}> 사례 이름을 키로 한 (토큰, 거부 사유) 목록
      */
     public static function shapeRejectedProvider(): array
     {
@@ -295,7 +311,7 @@ class BinaryPathPolicyTest extends TestCase
     /**
      * Composer 자리 판정 목록.
      *
-     * @return array<string, array{string, bool, string}> 테스트 데이터 세트
+     * @return array<string, array{string, bool, string}> 사례 이름을 키로 한 (토큰, 기대 판정, 사유) 목록
      */
     public static function composerSlotProvider(): array
     {
@@ -320,7 +336,7 @@ class BinaryPathPolicyTest extends TestCase
     /**
      * PHP 자리에 허용되어야 하는 이름 목록.
      *
-     * @return array<string, array{string}> 테스트 데이터 세트
+     * @return array<string, array{string}> 사례 이름을 키로 한 PHP 실행 경로 목록
      */
     public static function phpSlotNameProvider(): array
     {
@@ -336,7 +352,7 @@ class BinaryPathPolicyTest extends TestCase
     /**
      * 2토큰 해석 목록.
      *
-     * @return array<string, array{string, array{php: string, composer: string}|null, string}> 테스트 데이터 세트
+     * @return array<string, array{string, array{php: string, composer: string}|null, string}> 사례 이름을 키로 한 (원본 입력, 기대 해석 결과, 사유) 목록
      */
     public static function pairProvider(): array
     {

@@ -8,7 +8,7 @@
     "type": "basic",
     "name": "Div",
     "props": {
-        "className": "admin-card"
+        "className": "board-admin-card"
     },
     "children": [
         {
@@ -16,7 +16,7 @@
             "type": "basic",
             "name": "H3",
             "props": {
-                "className": "card-title"
+                "className": "board-card-title"
             },
             "text": "$t:sirsoft-board.admin.form.tabs.permissions"
         },
@@ -25,7 +25,7 @@
             "type": "basic",
             "name": "Div",
             "props": {
-                "className": "row-stack"
+                "className": "board-row-stack"
             },
             "children": [
                 {
@@ -41,7 +41,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "text-heading"
+                                "className": "board-text-heading"
                             },
                             "children": [
                                 {
@@ -56,7 +56,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-tertiary mb-3"
+                                "className": "board-text-tertiary board:mb-3"
                             },
                             "text": "$t:sirsoft-board.admin.form.permissions.managers_description"
                         },
@@ -67,7 +67,7 @@
                             "name": "Div",
                             "if": "{{_local.form?._meta?.can_assign_board_members === false}}",
                             "props": {
-                                "className": "alert-warning mb-3"
+                                "className": "board-alert-warning board:mb-3"
                             },
                             "children": [
                                 {
@@ -75,14 +75,14 @@
                                     "name": "Icon",
                                     "props": {
                                         "name": "lock",
-                                        "className": "text-xl text-amber-600 dark:text-amber-400 flex-shrink-0"
+                                        "className": "board:text-xl board:text-amber-600 board:dark:text-amber-400 board:flex-shrink-0"
                                     }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "Span",
                                     "props": {
-                                        "className": "text-xs board-tone-warning"
+                                        "className": "board:text-xs board-tone-warning"
                                     },
                                     "text": "$t:sirsoft-board.admin.form.permissions.members_assign_denied"
                                 }
@@ -143,7 +143,7 @@
                                 "options": "{{ [...(_local.form?.board_managers ?? []), ...(_local.managerSearchResults ?? [])].filter((u, i, a) => a.findIndex(x => x.uuid === u.uuid) === i).map(u => ({ value: u.uuid, label: u.name + ' (' + u.email + ')' })) }}",
                                 "placeholder": "$t:sirsoft-board.admin.form.permissions.search_placeholder",
                                 "noOptionsMessage": "$t:sirsoft-board.admin.form.permissions.no_search_results",
-                                "className": "w-full",
+                                "className": "board:w-full",
                                 "defaultVariant": "blue",
                                 "isSearchable": true,
                                 "disabled": "{{_computed.isReadOnly || _local.form?._meta?.can_assign_board_members === false}}"
@@ -154,7 +154,7 @@
                             "name": "Span",
                             "if": "{{ !!_local.errors?.board_manager_ids }}",
                             "props": {
-                                "className": "form-error"
+                                "className": "board-form-error"
                             },
                             "text": "{{ _local.errors?.board_manager_ids?.[0] }}"
                         }
@@ -173,7 +173,7 @@
                             "type": "basic",
                             "name": "Label",
                             "props": {
-                                "className": "text-heading"
+                                "className": "board-text-heading"
                             },
                             "children": [
                                 {
@@ -188,7 +188,7 @@
                             "type": "basic",
                             "name": "P",
                             "props": {
-                                "className": "text-tertiary mb-3"
+                                "className": "board-text-tertiary board:mb-3"
                             },
                             "text": "$t:sirsoft-board.admin.form.permissions.steps_description"
                         },
@@ -247,7 +247,7 @@
                                 "options": "{{ [...(_local.form?.board_steps ?? []), ...(_local.stepSearchResults ?? [])].filter((u, i, a) => a.findIndex(x => x.uuid === u.uuid) === i).map(u => ({ value: u.uuid, label: u.name + ' (' + u.email + ')' })) }}",
                                 "placeholder": "$t:sirsoft-board.admin.form.permissions.search_placeholder",
                                 "noOptionsMessage": "$t:sirsoft-board.admin.form.permissions.no_search_results",
-                                "className": "w-full",
+                                "className": "board:w-full",
                                 "defaultVariant": "green",
                                 "isSearchable": true,
                                 "disabled": "{{_computed.isReadOnly || _local.form?._meta?.can_assign_board_members === false}}"
@@ -258,7 +258,7 @@
                             "name": "Span",
                             "if": "{{ !!_local.errors?.board_step_ids }}",
                             "props": {
-                                "className": "form-error"
+                                "className": "board-form-error"
                             },
                             "text": "{{ _local.errors?.board_step_ids?.[0] }}"
                         }
@@ -276,14 +276,14 @@
                             "type": "basic",
                             "name": "Div",
                             "props": {
-                                "className": "mb-4"
+                                "className": "board:mb-4"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "H4",
                                     "props": {
-                                        "className": "text-heading"
+                                        "className": "board-text-heading"
                                     },
                                     "text": "$t:sirsoft-board.admin.form.permissions.settings_title"
                                 },
@@ -291,7 +291,7 @@
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "form-hint"
+                                        "className": "board-form-hint"
                                     },
                                     "text": "$t:sirsoft-board.admin.form.permissions.settings_description"
                                 },
@@ -300,7 +300,7 @@
                                     "name": "P",
                                     "if": "{{ !!route?.slug }}",
                                     "props": {
-                                        "className": "flex-center text-xs text-blue-600 dark:text-blue-400 mt-2 gap-1"
+                                        "className": "board-flex-center board:text-xs board:text-blue-600 board:dark:text-blue-400 board:mt-2 board:gap-1"
                                     },
                                     "children": [
                                         {
@@ -309,7 +309,7 @@
                                             "props": {
                                                 "name": "info-circle",
                                                 "size": "sm",
-                                                "className": "text-blue-500 dark:text-blue-400"
+                                                "className": "board:text-blue-500 board:dark:text-blue-400"
                                             }
                                         },
                                         {
@@ -327,7 +327,7 @@
                             "name": "Div",
                             "if": "{{ !route?.slug }}",
                             "props": {
-                                "className": "alert-info"
+                                "className": "board-alert-info"
                             },
                             "children": [
                                 {
@@ -336,14 +336,14 @@
                                     "props": {
                                         "name": "info-circle",
                                         "size": "lg",
-                                        "className": "text-blue-500 dark:text-blue-400 flex-shrink-0"
+                                        "className": "board:text-blue-500 board:dark:text-blue-400 board:flex-shrink-0"
                                     }
                                 },
                                 {
                                     "type": "basic",
                                     "name": "P",
                                     "props": {
-                                        "className": "text-xs board-tone-info"
+                                        "className": "board:text-xs board-tone-info"
                                     },
                                     "text": "$t:sirsoft-board.admin.form.permissions.create_mode_permissions_notice"
                                 }
@@ -355,14 +355,14 @@
                             "name": "Div",
                             "if": "{{ !!route?.slug && (_local.errors?.permissions || Object.keys(_local.errors ?? {}).some(k => k.startsWith('permissions.'))) }}",
                             "props": {
-                                "className": "alert-danger items-start mb-6"
+                                "className": "board-alert-danger board:items-start board:mb-6"
                             },
                             "children": [
                                 {
                                     "type": "basic",
                                     "name": "Div",
                                     "props": {
-                                        "className": "flex-start gap-3"
+                                        "className": "board-flex-start board:gap-3"
                                     },
                                     "children": [
                                         {
@@ -370,7 +370,7 @@
                                             "name": "Icon",
                                             "props": {
                                                 "name": "exclamation-circle",
-                                                "className": "text-xl leading-5 text-red-500 dark:text-red-400 flex-shrink-0"
+                                                "className": "board:text-xl board:leading-5 board:text-red-500 board:dark:text-red-400 board:flex-shrink-0"
                                             }
                                         },
                                         {
@@ -381,7 +381,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-error-strong"
+                                                        "className": "board-text-error-strong"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.form.permissions.error_title"
                                                 },
@@ -389,7 +389,7 @@
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-error-soft mt-1"
+                                                        "className": "board-text-error-soft board:mt-1"
                                                     },
                                                     "text": "{{ _local.errors?.permissions?.[0] ?? '$t:sirsoft-board.admin.form.permissions.error_description' }}"
                                                 }
@@ -405,7 +405,7 @@
                             "name": "Div",
                             "if": "{{ !!route?.slug }}",
                             "props": {
-                                "className": "mb-4"
+                                "className": "board:mb-4"
                             },
                             "children": [
                                 {
@@ -413,7 +413,7 @@
                                     "name": "Accordion",
                                     "props": {
                                         "defaultOpen": true,
-                                        "className": "border border-gray-200 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
+                                        "className": "board:border board:border-gray-200 board:dark:border-gray-700 board:rounded-md board:bg-white board:dark:bg-gray-800"
                                     },
                                     "children": [
                                         {
@@ -421,7 +421,7 @@
                                             "name": "Div",
                                             "props": {
                                                 "slot": "trigger",
-                                                "className": "flex-center gap-2 w-full px-2 py-1"
+                                                "className": "board-flex-center board:gap-2 board:w-full board:px-2 board:py-1"
                                             },
                                             "children": [
                                                 {
@@ -430,14 +430,14 @@
                                                     "props": {
                                                         "name": "shield",
                                                         "size": "lg",
-                                                        "className": "text-purple-500 dark:text-purple-400"
+                                                        "className": "board:text-purple-500 board:dark:text-purple-400"
                                                     }
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "H4",
                                                     "props": {
-                                                        "className": "text-primary font-medium"
+                                                        "className": "board-text-primary board:font-medium"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.form.permissions.admin_permissions_title"
                                                 },
@@ -447,7 +447,7 @@
                                                     "props": {
                                                         "name": "chevron-down",
                                                         "size": "sm",
-                                                        "className": "text-gray-500 dark:text-gray-500 ml-auto"
+                                                        "className": "board:text-gray-500 board:dark:text-gray-500 board:ml-auto"
                                                     }
                                                 }
                                             ]
@@ -457,14 +457,14 @@
                                             "name": "Div",
                                             "props": {
                                                 "slot": "content",
-                                                "className": "px-4 py-4"
+                                                "className": "board:px-4 board:py-4"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-tertiary mb-3"
+                                                        "className": "board-text-tertiary board:mb-3"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.form.permissions.admin_permissions_description"
                                                 },
@@ -472,8 +472,15 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "if": "{{_local.form?.permissions !== undefined}}",
+                                                    "responsive": {
+                                                        "768-": {
+                                                            "props": {
+                                                                "className": "board:space-y-2 board:grid board:grid-cols-2 board:gap-4"
+                                                            }
+                                                        }
+                                                    },
                                                     "props": {
-                                                        "className": "space-y-2 grid-2col-responsive"
+                                                        "className": "board:space-y-2 board:grid board:grid-cols-1 board:gap-4"
                                                     },
                                                     "children": [
                                                         {
@@ -490,21 +497,21 @@
                                                                     "type": "basic",
                                                                     "name": "Div",
                                                                     "props": {
-                                                                        "className": "{{ _local.errors?.['permissions.' + perm?._key + '.roles'] ? 'bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2 border border-red-300 dark:border-red-700' : 'bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-600' }}"
+                                                                        "className": "{{ _local.errors?.['permissions.' + perm?._key + '.roles'] ? 'board:bg-red-50 board:dark:bg-red-900/20 board:rounded-lg board:px-3 board:py-2 board:border board:border-red-300 board:dark:border-red-700' : 'board:bg-gray-50 board:dark:bg-gray-700 board:rounded-lg board:px-3 board:py-2 board:border board:border-gray-200 board:dark:border-gray-600' }}"
                                                                     },
                                                                     "children": [
                                                                         {
                                                                             "type": "basic",
                                                                             "name": "Div",
                                                                             "props": {
-                                                                                "className": "mb-2"
+                                                                                "className": "board:mb-2"
                                                                             },
                                                                             "children": [
                                                                                 {
                                                                                     "type": "basic",
                                                                                     "name": "Span",
                                                                                     "props": {
-                                                                                        "className": "text-heading"
+                                                                                        "className": "board-text-heading"
                                                                                     },
                                                                                     "text": "$t:sirsoft-board.board.permissions.{{perm?.name}}"
                                                                                 },
@@ -512,7 +519,7 @@
                                                                                     "type": "basic",
                                                                                     "name": "P",
                                                                                     "props": {
-                                                                                        "className": "text-tertiary mt-0.5"
+                                                                                        "className": "board-text-tertiary board:mt-0.5"
                                                                                     },
                                                                                     "text": "$t:sirsoft-board.board.permissions.{{perm?.name}}_desc"
                                                                                 }
@@ -540,7 +547,7 @@
                                                                                 "value": "{{ _local.form?.permissions?.[perm?._key]?.roles ?? [] }}",
                                                                                 "options": "{{ (roles?.data?.data ?? []).map(r => ({ value: r?.identifier, label: r?.name })) }}",
                                                                                 "placeholder": "$t:sirsoft-board.admin.form.permissions.select_roles",
-                                                                                "className": "w-full",
+                                                                                "className": "board:w-full",
                                                                                 "defaultVariant": "purple",
                                                                                 "disabled": "{{_computed.isReadOnly}}"
                                                                             }
@@ -550,7 +557,7 @@
                                                                             "name": "Span",
                                                                             "if": "{{ _local.errors?.['permissions.' + perm?._key + '.roles'] }}",
                                                                             "props": {
-                                                                                "className": "form-error"
+                                                                                "className": "board-form-error"
                                                                             },
                                                                             "text": "{{ _local.errors?.['permissions.' + perm?._key + '.roles']?.[0] ?? '$t:sirsoft-board.admin.form.permissions.error_roles_required' }}"
                                                                         }
@@ -572,7 +579,7 @@
                             "name": "Div",
                             "if": "{{ !!route?.slug }}",
                             "props": {
-                                "className": "mt-4"
+                                "className": "board:mt-4"
                             },
                             "children": [
                                 {
@@ -580,7 +587,7 @@
                                     "name": "Accordion",
                                     "props": {
                                         "defaultOpen": true,
-                                        "className": "border border-gray-200 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
+                                        "className": "board:border board:border-gray-200 board:dark:border-gray-700 board:rounded-md board:bg-white board:dark:bg-gray-800"
                                     },
                                     "children": [
                                         {
@@ -588,7 +595,7 @@
                                             "name": "Div",
                                             "props": {
                                                 "slot": "trigger",
-                                                "className": "flex-center gap-2 w-full px-2 py-1"
+                                                "className": "board-flex-center board:gap-2 board:w-full board:px-2 board:py-1"
                                             },
                                             "children": [
                                                 {
@@ -597,14 +604,14 @@
                                                     "props": {
                                                         "name": "users",
                                                         "size": "lg",
-                                                        "className": "text-blue-500 dark:text-blue-400"
+                                                        "className": "board:text-blue-500 board:dark:text-blue-400"
                                                     }
                                                 },
                                                 {
                                                     "type": "basic",
                                                     "name": "H4",
                                                     "props": {
-                                                        "className": "text-primary font-medium"
+                                                        "className": "board-text-primary board:font-medium"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.form.permissions.user_permissions_title"
                                                 },
@@ -614,7 +621,7 @@
                                                     "props": {
                                                         "name": "chevron-down",
                                                         "size": "sm",
-                                                        "className": "text-gray-500 dark:text-gray-500 ml-auto"
+                                                        "className": "board:text-gray-500 board:dark:text-gray-500 board:ml-auto"
                                                     }
                                                 }
                                             ]
@@ -624,14 +631,14 @@
                                             "name": "Div",
                                             "props": {
                                                 "slot": "content",
-                                                "className": "px-4 py-4"
+                                                "className": "board:px-4 board:py-4"
                                             },
                                             "children": [
                                                 {
                                                     "type": "basic",
                                                     "name": "P",
                                                     "props": {
-                                                        "className": "text-tertiary mb-3"
+                                                        "className": "board-text-tertiary board:mb-3"
                                                     },
                                                     "text": "$t:sirsoft-board.admin.form.permissions.user_permissions_description"
                                                 },
@@ -639,8 +646,15 @@
                                                     "type": "basic",
                                                     "name": "Div",
                                                     "if": "{{_local.form?.permissions !== undefined}}",
+                                                    "responsive": {
+                                                        "768-": {
+                                                            "props": {
+                                                                "className": "board:space-y-2 board:grid board:grid-cols-2 board:gap-4"
+                                                            }
+                                                        }
+                                                    },
                                                     "props": {
-                                                        "className": "space-y-2 grid-2col-responsive"
+                                                        "className": "board:space-y-2 board:grid board:grid-cols-1 board:gap-4"
                                                     },
                                                     "children": [
                                                         {
@@ -657,21 +671,21 @@
                                                                     "type": "basic",
                                                                     "name": "Div",
                                                                     "props": {
-                                                                        "className": "{{ _local.errors?.['permissions.' + perm?._key + '.roles'] ? 'bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2 border border-red-300 dark:border-red-700' : 'bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-600' }}"
+                                                                        "className": "{{ _local.errors?.['permissions.' + perm?._key + '.roles'] ? 'board:bg-red-50 board:dark:bg-red-900/20 board:rounded-lg board:px-3 board:py-2 board:border board:border-red-300 board:dark:border-red-700' : 'board:bg-gray-50 board:dark:bg-gray-700 board:rounded-lg board:px-3 board:py-2 board:border board:border-gray-200 board:dark:border-gray-600' }}"
                                                                     },
                                                                     "children": [
                                                                         {
                                                                             "type": "basic",
                                                                             "name": "Div",
                                                                             "props": {
-                                                                                "className": "mb-2"
+                                                                                "className": "board:mb-2"
                                                                             },
                                                                             "children": [
                                                                                 {
                                                                                     "type": "basic",
                                                                                     "name": "Span",
                                                                                     "props": {
-                                                                                        "className": "text-heading"
+                                                                                        "className": "board-text-heading"
                                                                                     },
                                                                                     "text": "$t:sirsoft-board.board.permissions.{{perm?.name}}"
                                                                                 },
@@ -679,7 +693,7 @@
                                                                                     "type": "basic",
                                                                                     "name": "P",
                                                                                     "props": {
-                                                                                        "className": "text-tertiary mt-0.5"
+                                                                                        "className": "board-text-tertiary board:mt-0.5"
                                                                                     },
                                                                                     "text": "$t:sirsoft-board.board.permissions.{{perm?.name}}_desc"
                                                                                 }
@@ -707,7 +721,7 @@
                                                                                 "value": "{{ _local.form?.permissions?.[perm?._key]?.roles ?? [] }}",
                                                                                 "options": "{{ (roles?.data?.data ?? []).map(r => ({ value: r?.identifier, label: r?.name })) }}",
                                                                                 "placeholder": "$t:sirsoft-board.admin.form.permissions.select_roles",
-                                                                                "className": "w-full",
+                                                                                "className": "board:w-full",
                                                                                 "defaultVariant": "blue",
                                                                                 "disabled": "{{_computed.isReadOnly}}"
                                                                             }
@@ -717,7 +731,7 @@
                                                                             "name": "Span",
                                                                             "if": "{{ _local.errors?.['permissions.' + perm?._key + '.roles'] }}",
                                                                             "props": {
-                                                                                "className": "form-error"
+                                                                                "className": "board-form-error"
                                                                             },
                                                                             "text": "{{ _local.errors?.['permissions.' + perm?._key + '.roles']?.[0] ?? '$t:sirsoft-board.admin.form.permissions.error_roles_required' }}"
                                                                         }

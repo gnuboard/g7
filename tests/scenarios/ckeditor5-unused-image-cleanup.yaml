@@ -99,7 +99,7 @@ effects:
 sub_flows:
   - id: schedule_gate
     description: |
-      자동 정리는 사용자 파일을 지우므로 기본 꺼짐이다. 스케줄 등록부의 enabled_config 게이트는
+      자동 정리는 사용자 파일을 지우므로 기본 꺼짐이다. 스케줄 등록부의 실행 조건(enabled_condition) 게이트는
       설정 조회가 실패하면 true 로 폴백하므로, 커맨드가 `--scheduled` 에서 같은 설정을 false
       폴백으로 재확인한다. 인수 기준은 "설정을 만지지 않은 사이트에서 자동 삭제 0".
     effects:

@@ -93,7 +93,8 @@ async function submitAdminLogin(
 ): Promise<{ challenge_id: string; provider_id: string; token?: string }> {
   const [response] = await Promise.all([
     page.waitForResponse(
-      (r) => r.url().includes('/api/auth/admin/login') && r.request().method() === 'POST'
+      // 경로 정확 비교 — 이메일 칸 blur 의 `POST /api/auth/admin/login/discover` 응답이 먼저 오면 포함 판정이 그것을 잡는다.
+      (r) => new URL(r.url()).pathname === '/api/auth/admin/login' && r.request().method() === 'POST'
     ),
     (async () => {
       await page.fill('input[name="email"]', email);

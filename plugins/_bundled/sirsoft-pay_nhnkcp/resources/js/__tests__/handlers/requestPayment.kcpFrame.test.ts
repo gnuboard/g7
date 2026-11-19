@@ -38,7 +38,7 @@ function runBridge(parentBridge: unknown, sdk?: (form: HTMLFormElement) => void)
 
 describe('KCP PC 결제창 프레임 (#158)', () => {
     /**
-     * @scenario surface=kcp_pc_frame
+     * @scenario page=kcp_pc_frame
      * @effects kcp_pc_frame_without_inline_script
      */
     it('프레임 주소는 같은 출처 경로 + 인코딩된 SDK 주소다', () => {
@@ -49,7 +49,7 @@ describe('KCP PC 결제창 프레임 (#158)', () => {
     });
 
     /**
-     * @scenario surface=kcp_pc_frame
+     * @scenario page=kcp_pc_frame
      * @effects kcp_pc_frame_without_inline_script
      */
     it('핸들러는 iframe 에 document.write 로 스크립트를 써 넣지 않는다', () => {
@@ -59,7 +59,7 @@ describe('KCP PC 결제창 프레임 (#158)', () => {
     });
 
     /**
-     * @scenario surface=kcp_pc_frame
+     * @scenario page=kcp_pc_frame
      * @effects kcp_pc_frame_bridge_relays_fields_and_result
      */
     it('브리지가 부모 값으로 폼을 채우고 KCP_Pay_Execute 후 ready 를 부른다', () => {
@@ -81,7 +81,7 @@ describe('KCP PC 결제창 프레임 (#158)', () => {
     });
 
     /**
-     * @scenario surface=kcp_pc_frame
+     * @scenario page=kcp_pc_frame
      * @effects kcp_pc_frame_bridge_relays_fields_and_result
      */
     it('SDK 가 없으면 fail, 부모 객체가 없으면 아무 것도 하지 않는다', () => {

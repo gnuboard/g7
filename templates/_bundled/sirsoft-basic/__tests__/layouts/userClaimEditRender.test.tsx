@@ -14,7 +14,7 @@
  *  ⑤ 수정 거절(4xx) 사유가 요약 카드에 남는다
  *  ⑥ 환불 계좌는 편집할 수 있고, 왜 빈 칸으로 열리는지 화면이 말한다 (2026-09-01 확정)
  *
- * @scenario claim_type=exchange, charge_method=pay_on_request, refund_branch=none
+ * 축 요약(마커 아님 — 평문): claim_type=exchange, charge_method=pay_on_request, refund_branch=none
  * @effects claim_edit_locks_items_and_quantity,
  *   claim_edit_hides_charge_axes_and_shows_the_recorded_method,
  *   claim_edit_replaces_submit_with_save,

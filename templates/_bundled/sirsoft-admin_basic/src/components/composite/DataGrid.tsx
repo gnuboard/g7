@@ -1,3 +1,4 @@
+// e2e:allow 행 클래스 식에 선택 여부($selected)를 더한 표시 변경 — Vitest(DataGrid.rowClassName)와 게시판 글 목록 브라우저 계산값 실측(라이트·다크 선택·hover, #816)으로 잠근다.
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import type { EditorAttrs } from '../../types';
 import { Table } from '../basic/Table';
@@ -79,6 +80,23 @@ const readRowPath = (row: any, path: string): unknown =>
   path.split('.').reduce<any>((acc, key) => (acc == null ? undefined : acc[key]), row);
 
 /**
+ * 열의 `field` 로 행에서 셀 값을 읽습니다.
+ *
+ * 행에 그 이름의 키가 그대로 있으면 그 값을 쓰고, 없고 `field` 가 점 경로(`custom_fields.job`)면
+ * 경로를 따라 내려가 읽습니다. 응답의 하위 객체에 담긴 값을 열로 세울 때(회원 추가 항목 등)
+ * 셀 모양(`cellChildren`)을 따로 쓰지 않아도 값이 나오게 합니다.
+ *
+ * @param row 행 데이터
+ * @param field 열의 field(키 이름 또는 점 경로)
+ * @returns 셀 값
+ */
+const readCellValue = (row: any, field: string): any => {
+  const direct = row?.[field];
+  if (direct !== undefined || typeof field !== 'string' || !field.includes('.')) return direct;
+  return readRowPath(row, field);
+};
+
+/**
  * 반복 렌더 서브트리용 컴포넌트 맵 **폴백**.
  *
  * 정본은 템플릿 레지스트리(`G7Core.getComponentMap()`)다 — CardGrid 와 같은 출처를 쓴다.
@@ -157,6 +175,11 @@ export interface DataGridColumn {
   sortable?: boolean;
   hidden?: boolean;
   required?: boolean;
+  /**
+   * 값이 비었을 때(null, undefined, 빈 문자열) 대신 그릴 글자.
+   * `cellChildren`, `render` 가 없는 열에만 적용됩니다. 주지 않으면 빈 칸입니다.
+   */
+  emptyText?: string;
   render?: (value: any, row: any) => React.ReactNode;
   cellChildren?: DataGridCellChild[];
 }
@@ -457,7 +480,9 @@ export interface DataGridProps {
    * 엔진은 원문 그대로 넘기고(components.json skipBindingKeys) DataGrid 가 행마다 푼다.
    * 예: `rowClassName="{{row.row_type === 'notice' ? 'bg-blue-50 dark:bg-blue-900/20' : ''}}"`
    *
-   * 선택 행 강조(`bg-blue-50`)보다 먼저 놓여 선택 상태가 덮어쓴다.
+   * 선택 행 강조보다 먼저 놓여 선택 상태가 덮어쓴다. 다만 확장 앞글자가 붙은 배경 클래스는 층 밖이라
+   * 선택 강조를 늘 이기므로, 식 안의 `$selected`(그 행이 선택됐는지)로 선택 색을 직접 고른다
+   * (예: `{{row.row_type === 'notice' ? ($selected ? '<선택 배경>' : '<기본 배경>') : ''}}`, 실제 예는 docs/frontend/component-props.md).
    */
   rowClassName?: string;
 
@@ -560,6 +585,20 @@ const safeRenderValue = (value: any): React.ReactNode => {
 };
 
 /**
+ * 셀 모양이 없는 열의 값을 그립니다. 값이 비었고 열에 `emptyText` 가 있으면 그 글자를 씁니다.
+ *
+ * @param value 셀 값
+ * @param column 열 정의
+ * @returns 렌더링할 노드
+ */
+const renderPlainCellValue = (value: any, column: DataGridColumn): React.ReactNode => {
+  if (column.emptyText !== undefined && (value === null || value === undefined || value === '')) {
+    return column.emptyText;
+  }
+  return safeRenderValue(value);
+};
+
+/**
  * subRow 컨테이너의 표시 조건을 평가합니다.
  *
  * 판정은 엔진(`G7Core.evaluateCondition`)에 위임합니다. 종전에는 이 파일이
@@ -590,12 +629,14 @@ const evaluateSubRowCondition = (condition: string | undefined, row: any): boole
  * 엔진이 컴포넌트 props 를 그릴 때 이 식을 row 없이 미리 풀면 빈 문자열이 되므로, components.json 의
  * skipBindingKeys 로 원문을 받아 여기서 엔진의 바인딩 해석기(`G7Core.getDataBindingEngine`)로 푼다 —
  * subRowCondition 이 엔진 판정에 위임하는 것과 같은 방식이다. 식이 없는 고정 문자열은 그대로 쓴다.
+ * 식은 `$selected` 로 그 행의 선택 여부를 읽을 수 있다(확장 앞글자 배경이 선택 강조를 이기는 것을 피하려고, #816).
  *
  * @param rowClassName 행 클래스 문자열 또는 행 표현식
  * @param row 현재 행 데이터
+ * @param selected 그 행이 선택됐는지
  * @returns 그 행에 붙일 클래스
  */
-const resolveRowClassName = (rowClassName: string | undefined, row: any): string => {
+const resolveRowClassName = (rowClassName: string | undefined, row: any, selected = false): string => {
   if (!rowClassName) return '';
   if (!rowClassName.includes('{{')) return rowClassName;
 
@@ -606,7 +647,7 @@ const resolveRowClassName = (rowClassName: string | undefined, row: any): string
   }
 
   try {
-    const resolved = engine.resolveBindings(rowClassName, { row, item: row, $item: row }, { skipCache: true });
+    const resolved = engine.resolveBindings(rowClassName, { row, item: row, $item: row, $selected: selected }, { skipCache: true });
     return typeof resolved === 'string' ? resolved : '';
   } catch (error) {
     logger.warn('행 클래스 해석 실패:', error);
@@ -636,6 +677,37 @@ const resolveRowHref = (href: unknown, row: any): string | undefined => {
     return typeof resolved === 'string' && resolved !== '' ? resolved : undefined;
   } catch (error) {
     logger.warn('행 메뉴 주소 해석 실패:', error);
+    return undefined;
+  }
+};
+
+/**
+ * 행 메뉴 항목의 잠김 안내(`disabledReason`)를 그 행 문맥으로 평가합니다.
+ *
+ * 같은 「삭제」 항목이라도 행마다 막힌 까닭(권한 없음·코어/확장 소유 등)이 다를 수 있다 — 고정 문구 하나로는
+ * 사실과 다른 안내가 나온다. `href` 와 같이 `skipBindingKeys` 로 원문을 받아 행마다 푼다
+ * (예: `{{row.delete_blocked_reason === 'owned' ? $t('…owned') : $t('…permission')}}`). 식이 없는 고정 문구는
+ * 엔진이 이미 번역해 넘기므로 그대로 쓴다.
+ *
+ * @param reason 안내 문구 또는 행 표현식
+ * @param row 행 데이터
+ * @returns 그 행의 안내 (없거나 풀 수 없으면 undefined)
+ */
+const resolveRowDisabledReason = (reason: unknown, row: any): string | undefined => {
+  if (typeof reason !== 'string' || reason.trim() === '') return undefined;
+  if (!reason.includes('{{')) return reason;
+
+  const engine = (window as any).G7Core?.getDataBindingEngine?.();
+  if (!engine?.resolveBindings) {
+    logger.warn('G7Core.getDataBindingEngine 미노출 — 행 메뉴 안내를 풀 수 없습니다:', reason);
+    return undefined;
+  }
+
+  try {
+    const resolved = engine.resolveBindings(reason, { row, item: row, $item: row }, { skipCache: true });
+    return typeof resolved === 'string' && resolved !== '' ? resolved : undefined;
+  } catch (error) {
+    logger.warn('행 메뉴 안내 해석 실패:', error);
     return undefined;
   }
 };
@@ -1020,9 +1092,12 @@ export const DataGrid: React.FC<DataGridProps> = ({
         (field) => !prevDynamicFields.includes(field)
       );
 
-      // 새로운 동적 필드가 있을 때만 자동 추가
+      // 새로운 동적 필드가 있을 때만 자동 추가 (hidden 인 동적 열은 스스로 켜지 않는다)
       if (trulyNewFields.length > 0) {
-        const fieldsToAdd = trulyNewFields.filter((field) => !visibleColumns.includes(field));
+        const hiddenDynamicFields = dynamicColumns.filter((col) => col.hidden).map((col) => col.field);
+        const fieldsToAdd = trulyNewFields.filter(
+          (field) => !visibleColumns.includes(field) && !hiddenDynamicFields.includes(field)
+        );
         if (fieldsToAdd.length > 0) {
           const updatedVisible = [...visibleColumns, ...fieldsToAdd];
           setVisibleColumns(updatedVisible);
@@ -1315,6 +1390,8 @@ export const DataGrid: React.FC<DataGridProps> = ({
           // 해석을 마쳤으므로 지운다 — ActionMenu 는 남아 있는 disabledField 를 「해석 안 됨」으로 보고 잠근다
           disabledField: undefined,
           disabled: isDisabled,
+          // 잠김 안내는 행마다 다를 수 있다 — 잠긴 행만 푼다
+          disabledReason: isDisabled ? resolveRowDisabledReason(action.disabledReason, row) : undefined,
           // 주소가 있는 항목(보기·수정)은 행 메뉴에서 링크로 그려진다 — 행마다 평가(가운데 클릭·Ctrl+클릭 새 탭)
           href: resolveRowHref((action as ActionMenuItem).href, row),
           onClick: () => handleRowAction(action.id, row),
@@ -1409,6 +1486,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
     const expanded = isRowExpanded(rowId);
     // 표 보기의 tr 과 같은 행 클래스(rowClassName)를 카드에도 붙인다 — 좁은 화면 카드 보기에서 공지·답글 카드의
     // 배경 구분이 사라지던 것(7.1.0 실측). 행 클래스가 배경을 주면 기본 흰 배경을 빼 덮이지 않게 한다.
+    // 카드 보기는 선택 강조 색이 없으므로(선택은 체크박스로만 보인다) `$selected` 를 넘기지 않는다.
     const rowCls = resolveRowClassName(rowClassName, row);
     const cardBg = /(^|\s)bg-/.test(rowCls) ? '' : 'bg-white dark:bg-gray-800';
 
@@ -1447,10 +1525,10 @@ export const DataGrid: React.FC<DataGridProps> = ({
                   </Span>
                   <Div className="text-sm text-gray-900 dark:text-gray-200 mt-0.5 break-words">
                     {col.cellChildren && col.cellChildren.length > 0
-                      ? renderCellChildren(col.cellChildren, row, row[col.field], `card-${row[idField]}-${col.field}`, __componentContext, getRowContext(row, rowNumber, col))
+                      ? renderCellChildren(col.cellChildren, row, readCellValue(row, col.field), `card-${row[idField]}-${col.field}`, __componentContext, getRowContext(row, rowNumber, col))
                       : col.render
-                        ? col.render(row[col.field], row)
-                        : safeRenderValue(row[col.field])}
+                        ? col.render(readCellValue(row, col.field), row)
+                        : renderPlainCellValue(readCellValue(row, col.field), col)}
                   </Div>
                 </Div>
               ))}
@@ -1760,7 +1838,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                     <Tr
                       className={`${
                         onRowClick ? 'cursor-pointer' : ''
-                      } ${resolveRowClassName(rowClassName, row)} hover:bg-gray-50 dark:hover:bg-gray-700/30 ${
+                      } ${resolveRowClassName(rowClassName, row, selectedIds.includes(row[idField]))} hover:bg-gray-50 dark:hover:bg-gray-700/30 ${
                         selectedIds.includes(row[idField]) ? 'bg-blue-50/50 dark:bg-blue-900/20' : ''
                       } ${subRowClassName && rowIndex > 0 ? 'border-t border-gray-200 dark:border-gray-700' : ''}`}
                       onClick={() => onRowClick?.(row)}
@@ -1808,10 +1886,10 @@ export const DataGrid: React.FC<DataGridProps> = ({
                           style={{ width: column.width, minWidth: column.width }}
                         >
                           {column.cellChildren && column.cellChildren.length > 0
-                            ? renderCellChildren(column.cellChildren, row, row[column.field], `${row[idField]}-${column.field}`, __componentContext, getRowContext(row, rowIndex + 1, column))
+                            ? renderCellChildren(column.cellChildren, row, readCellValue(row, column.field), `${row[idField]}-${column.field}`, __componentContext, getRowContext(row, rowIndex + 1, column))
                             : column.render
-                              ? column.render(row[column.field], row)
-                              : safeRenderValue(row[column.field])}
+                              ? column.render(readCellValue(row, column.field), row)
+                              : renderPlainCellValue(readCellValue(row, column.field), column)}
                         </Td>
                       ))}
 

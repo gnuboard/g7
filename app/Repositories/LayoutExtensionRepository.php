@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Contracts\Repositories\LayoutExtensionRepositoryInterface;
 use App\Enums\LayoutSourceType;
 use App\Models\LayoutExtension;
+use App\Models\TemplateLayoutExtensionVersion;
 use App\Services\LayoutExtensionService;
 use Illuminate\Support\Collection;
 
@@ -134,10 +135,48 @@ class LayoutExtensionRepository implements LayoutExtensionRepositoryInterface
      */
     public function forceDeleteBySource(LayoutSourceType $sourceType, string $identifier): int
     {
-        return LayoutExtension::query()
-            ->withTrashed()
-            ->bySource($sourceType, $identifier)
-            ->forceDelete();
+        $query = LayoutExtension::query()->withTrashed()->bySource($sourceType, $identifier);
+        $this->deleteVersionsOf((clone $query)->pluck('id')->all());
+
+        return $query->forceDelete();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getWithTrashedBySource(LayoutSourceType $sourceType, string $identifier): Collection
+    {
+        return LayoutExtension::query()->withTrashed()->bySource($sourceType, $identifier)->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getWithTrashedByTemplateId(int $templateId): Collection
+    {
+        return LayoutExtension::query()->withTrashed()->where('template_id', $templateId)->get();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function forceDeleteRow(LayoutExtension $extension): void
+    {
+        $this->deleteVersionsOf([(int) $extension->id]);
+        $extension->forceDelete();
+    }
+
+    /**
+     * 조각 행들의 버전 이력을 지웁니다 — DB CASCADE 는 안전망일 뿐 삭제 경로가 기대지 않는다.
+     *
+     * @param  array<int, int>  $extensionIds  조각 ID 목록
+     * @return void 반환값 없음
+     */
+    private function deleteVersionsOf(array $extensionIds): void
+    {
+        foreach (array_chunk(array_values(array_filter($extensionIds)), 500) as $chunk) {
+            TemplateLayoutExtensionVersion::whereIn('extension_id', $chunk)->delete();
+        }
     }
 
     /**
@@ -310,10 +349,10 @@ class LayoutExtensionRepository implements LayoutExtensionRepositoryInterface
      */
     public function deleteByTemplateId(int $templateId): int
     {
-        return LayoutExtension::query()
-            ->withTrashed()
-            ->where('template_id', $templateId)
-            ->forceDelete();
+        $query = LayoutExtension::query()->withTrashed()->where('template_id', $templateId);
+        $this->deleteVersionsOf((clone $query)->pluck('id')->all());
+
+        return $query->forceDelete();
     }
 
     /**

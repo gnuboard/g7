@@ -72,7 +72,11 @@ export function issueScopedToken(...permissions: string[]): string {
 function runIssueToken(permissions: string[], noAdminRole: boolean): string {
   const args = permissions.map((p) => `--permissions=${p}`).join(' ');
   const scopeFlag = noAdminRole ? ' --no-admin-role' : '';
-  const command = `php artisan playwright:issue-token ${args}${scopeFlag}`.trim();
+  // 다른 작업자의 시험 계정을 지우지 않아야 할 때(공유 개발 DB) `G7_PLAYWRIGHT_GC_HOURS=0` 으로 발급 전 정리를 끈다.
+  // 지정하지 않으면 커맨드 기본값을 그대로 쓴다.
+  const gcHours = process.env.G7_PLAYWRIGHT_GC_HOURS;
+  const gcFlag = gcHours !== undefined && /^\d+$/.test(gcHours) ? ` --gc-hours=${gcHours}` : '';
+  const command = `php artisan playwright:issue-token ${args}${scopeFlag}${gcFlag}`.trim();
   // 다수 워커가 동시에 PHP 아티즌을 부팅하면 일시적 부팅 경합으로 커맨드가
   // 드물게 실패한다(테스트 정합성 문제 아님 — 토큰 발급 인프라의 병렬 부팅 경합).
   // 짧은 백오프로 최대 3회 재시도해 6 워커 병렬에서도 안정화한다.

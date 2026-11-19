@@ -19,9 +19,9 @@ use PHPUnit\Framework\TestCase;
  * 검증**한다 (test_every_call_site_is_mapped). 새 resolveSortSpec 호출처를 추가하고 매핑을
  * 등록하지 않으면 이 테스트가 실패한다.
  *
- * @scenario case=sortable_columns_gate_contract
+ * 축 요약(마커 아님 — 평문): case=sortable_columns_gate_contract
  *
- * @effects repo_whitelist_covers_gate, every_call_site_mapped
+ * 효과 요약(마커 아님 — 평문): repo_whitelist_covers_gate, every_call_site_mapped
  */
 class SortableColumnsGateContractTest extends TestCase
 {
@@ -45,6 +45,7 @@ class SortableColumnsGateContractTest extends TestCase
         'app/Repositories/UserRepository.php' => 'app/Http/Requests/User/UserListRequest.php',
         'modules/_bundled/sirsoft-board/src/Services/BoardService.php' => 'modules/_bundled/sirsoft-board/src/Http/Requests/Admin/IndexBoardRequest.php',
         'modules/_bundled/sirsoft-ecommerce/src/Repositories/CouponRepository.php' => 'modules/_bundled/sirsoft-ecommerce/src/Http/Requests/Admin/CouponListRequest.php',
+        'modules/_bundled/sirsoft-ecommerce/src/Repositories/ExportRepository.php' => 'modules/_bundled/sirsoft-ecommerce/src/Http/Requests/Admin/ExportListRequest.php',
         'modules/_bundled/sirsoft-ecommerce/src/Repositories/ExtraFeeTemplateRepository.php' => 'modules/_bundled/sirsoft-ecommerce/src/Http/Requests/Admin/ExtraFeeTemplateListRequest.php',
         'modules/_bundled/sirsoft-ecommerce/src/Repositories/OrderRepository.php' => 'modules/_bundled/sirsoft-ecommerce/src/Http/Requests/Admin/OrderListRequest.php',
         'modules/_bundled/sirsoft-ecommerce/src/Repositories/ProductRepository.php' => 'modules/_bundled/sirsoft-ecommerce/src/Http/Requests/Admin/ProductListRequest.php',
@@ -204,10 +205,15 @@ class SortableColumnsGateContractTest extends TestCase
     /**
      * FormRequest 에서 sort_by 허용 값을 추출합니다.
      *
+     * 게이트가 저장소 상수를 그대로 참조하는 형태(`Rule::in(ExportRepository::SORTABLE_COLUMNS)`)는
+     * 매핑된 저장소 파일에서 그 상수를 읽는다. 다른 클래스의 상수는 해석하지 않는다(빈 결과 → red).
+     *
      * @param  string  $content  파일 내용
+     * @param  string  $repositoryPath  매핑된 Repository 파일 (저장소 상대 경로)
+     * @param  string  $repositoryContent  매핑된 Repository 파일 내용
      * @return array<int, string> 허용 값 목록
      */
-    private function extractGateColumns(string $content): array
+    private function extractGateColumns(string $content, string $repositoryPath = '', string $repositoryContent = ''): array
     {
         // 'sort_by' => ... 한 줄(또는 Rule::in 블록) 안의 in: / Rule::in([...]) 를 읽는다
         if (! preg_match("/'sort_by'\s*=>\s*(.*?)(?:\],|\],\s*$|\n\s*'[a-z_]+'\s*=>)/s", $content, $match)) {
@@ -223,6 +229,11 @@ class SortableColumnsGateContractTest extends TestCase
         } elseif (preg_match('/Rule::in\(self::(\w+)\)/', $rule, $constMatch)) {
             // 허용 어휘를 상수로 둔 요청(`Rule::in(self::SORTABLE)`) — 저장소 쪽과 같은 상수 해석을 쓴다.
             $columns = $this->literalColumns($content, 'self::'.$constMatch[1], $constMatch[1], false);
+        } elseif (preg_match('/Rule::in\((\w+)::(\w+)\)/', $rule, $classConstMatch)
+            && $repositoryContent !== ''
+            && $classConstMatch[1] === pathinfo($repositoryPath, PATHINFO_FILENAME)) {
+            // 게이트와 저장소가 같은 상수를 공유 — 저장소 파일의 상수 본문을 읽는다.
+            $columns = $this->literalColumns($repositoryContent, 'self::'.$classConstMatch[2], $classConstMatch[2], false);
         } elseif (preg_match('/in:([a-zA-Z0-9_,]+)/', $rule, $inMatch)) {
             $columns = explode(',', $inMatch[1]);
         }
@@ -286,8 +297,9 @@ class SortableColumnsGateContractTest extends TestCase
         $this->assertFileExists($repositoryFile, "매핑된 Repository 파일이 없습니다: {$repositoryPath}");
         $this->assertFileExists($requestFile, "매핑된 FormRequest 파일이 없습니다: {$requestPath}");
 
-        $repositoryColumns = $this->extractRepositoryColumns((string) file_get_contents($repositoryFile));
-        $gateColumns = $this->extractGateColumns((string) file_get_contents($requestFile));
+        $repositoryContent = (string) file_get_contents($repositoryFile);
+        $repositoryColumns = $this->extractRepositoryColumns($repositoryContent);
+        $gateColumns = $this->extractGateColumns((string) file_get_contents($requestFile), $repositoryPath, $repositoryContent);
 
         $this->assertNotEmpty($repositoryColumns, "정렬 허용 컬럼을 추출하지 못했습니다: {$repositoryPath}");
         $this->assertNotEmpty($gateColumns, "sort_by 허용 값을 추출하지 못했습니다: {$requestPath}");

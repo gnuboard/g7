@@ -6,6 +6,7 @@ use App\Analytics\AnalyticsConfig;
 use App\Analytics\TrackingRequestFactory;
 use App\Enums\Analytics\VisitSource;
 use App\Extension\HookManager;
+use App\Support\RuntimeRole;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -42,6 +43,11 @@ class TrackServerVisit
      */
     public function terminate(Request $request, Response $response): void
     {
+        // 검수 서버의 방문은 운영 통계에 넣지 않는다
+        if (RuntimeRole::isStage()) {
+            return;
+        }
+
         try {
             if (! $this->shouldTrack($request, $response)) {
                 return;

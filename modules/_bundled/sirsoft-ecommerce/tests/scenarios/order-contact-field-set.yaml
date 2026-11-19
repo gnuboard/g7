@@ -1,0 +1,80 @@
+feature: 주문서 항목 집합 (#490 11단계)
+
+description: |
+  주문서에서 받는 주문자와 배송지 항목을 항목 집합 sirsoft-ecommerce.order_contact 으로 선언한다. 운영자는 이커머스 환경설정의
+  주문 설정 탭에서 코어 공용 항목 API 로 표를 보고 고친다(권한은 이커머스 설정 권한).
+
+  - 잠긴 항목(주문자 이름과 연락처, 수령인 이름과 연락처, 배송 주소)은 주문 요청의 고정 규칙이다. 표에는 잠긴 행으로 보이고
+    운영자도, 다른 확장의 기여나 필터도 사용과 필수를 바꿀 수 없다.
+  - 설정 가능한 기본 항목(주문자 이메일, 상세 주소, 배송 메모)은 기존 요청 키와 기존 저장 컬럼을 그대로 쓰고 사용과 필수만
+    운영자 설정을 따른다. 꺼진 항목은 규칙에서 빠지고 요청에 실려 와도 저장하지 않는다. 비회원의 주문자 이메일은 늘 필수다.
+  - 추가 항목(운영자가 추가한 항목, 다른 확장이 기여한 항목)의 요청 키는 extra_fields.{키}, 값은 주문과 같은 트랜잭션에서
+    공용 값 테이블(소유자 종류 ecommerce_order)에 저장하고 주문 응답의 extra_fields 로 내보낸다. 보유기간 처리와 주문 삭제가 함께 지운다.
+  - 주문서 조회와 다시 계산 응답은 같은 order_fields(정의 버전, 기본 항목의 사용과 필수, 구획별 추가 항목 계약)를 싣는다.
+  - 설정을 바꾸지 않은 사이트의 주문 생성 규칙은 수정 전과 키와 값까지 같다.
+  - 훅이 없던 요청 8개가 rules() 끝에서 자기 검증 필터를 부른다.
+
+# 축은 하나(case)로 편다 — 집합의 어느 계약을 재는지다. 계약끼리 교차하지 않는다.
+axes:
+  case: [declaration, table_permission, locked_update, rules_unchanged, orderer_email, address_detail, shipping_memo, extra_required, extra_values, deleted_field_keeps_order_value, anonymize_keeps_updated_at_with_snapshot, purge, contributed_field, order_fields, validation_hooks]
+
+effects:
+  - deleted_extra_field_value_stays_on_past_order
+  - anonymize_removes_extra_field_snapshot
+  - anonymize_keeps_order_updated_at
+  # 선언과 운영자 표
+  - order_contact_set_registered_with_settings_permissions
+  - eight_fields_synced_with_groups_and_locks
+  - module_declares_set_and_fields_together
+  - table_forbidden_without_settings_read
+  - table_lists_locked_rows_with_reason
+  - locked_field_update_ignored
+  - configurable_field_update_saved
+  # 설정을 바꾸지 않은 사이트
+  - create_order_rules_identical_to_legacy_for_member_and_guest
+  - create_order_rules_identical_to_legacy_before_declaration_sync
+  - legacy_create_filter_runs_after_field_rules
+  # 설정 가능한 기본 항목
+  - member_email_dropped_when_disabled
+  - member_email_required_when_required
+  - guest_email_always_required
+  - address_detail_required_by_default
+  - address_detail_optional_passes_when_empty
+  - address_detail_dropped_when_disabled
+  - shipping_memo_saved_by_default
+  - shipping_memo_required_when_required
+  - shipping_memo_dropped_when_disabled
+  # 추가 항목
+  - missing_required_extra_field_rejected_with_bundle_key
+  - disabled_extra_field_ignored
+  - extra_values_stored_with_order_owner_type
+  - extra_fields_in_guest_member_and_admin_order_responses
+  - empty_extra_fields_without_values
+  - no_value_query_without_extra_fields
+  - extra_values_purged_on_anonymize
+  - extra_values_purged_on_retention_delete
+  - extra_values_purged_on_order_delete
+  # 다른 확장이 기여한 항목
+  - contributed_field_in_checkout_contract
+  - contributed_field_in_admin_table_with_source
+  - contributed_field_delete_forbidden
+  - contributed_field_validated_and_stored
+  - locked_rules_not_affected_by_definition_filter
+  # 주문서 응답
+  - order_fields_in_checkout_show_and_update
+  - guest_email_builtin_always_required
+  - extra_contracts_grouped_by_section
+  - builtin_and_locked_fields_not_listed
+  - default_order_fields_match_legacy_screen
+  # 검증 필터
+  - eight_requests_fire_validation_rules_filter
+  - filter_added_rule_enforced_on_http_request
+
+test_files:
+  - modules/_bundled/sirsoft-ecommerce/tests/Feature/OrderContactFieldSetTest.php
+
+notes: |
+  E2E: 서버 계약(선언 동기화, 실제 HTTP 요청의 검증과 저장, 응답)은 PHPUnit 이 잰다. 화면은 따로 잰다 —
+  운영자 표는 adminCheckoutFieldsTable(Vitest), 주문서 입력과 주문 요청 본문은 사용자 템플릿의 checkout-order-fields(Vitest),
+  주문 상세의 값 표시는 order-detail-extra-fields 와 admin-order-detail-extra-fields(Vitest)다.
+  운영자가 표에서 항목을 켜고 끈 뒤 주문서에 반영되는 흐름은 브라우저 실측으로 확인한다.

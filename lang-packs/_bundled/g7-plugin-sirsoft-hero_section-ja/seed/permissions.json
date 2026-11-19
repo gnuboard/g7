@@ -1,0 +1,22 @@
+{
+  "sirsoft-hero_section": {
+    "name": "ヒーローセクション",
+    "description": "ヒーローセクション プラグインが提供する権限"
+  },
+  "sirsoft-hero_section.banners": {
+    "name": "バナー管理",
+    "description": "ヒーローセクション バナー管理"
+  },
+  "sirsoft-hero_section.banners.read": {
+    "name": "バナー閲覧",
+    "description": "バナーの一覧・詳細・プレビューを表示します。"
+  },
+  "sirsoft-hero_section.banners.update": {
+    "name": "バナー登録·編集",
+    "description": "バナーの登録·編集·順序変更·表示切り替え·画像アップロードとスライダー設定を行います。"
+  },
+  "sirsoft-hero_section.banners.delete": {
+    "name": "バナー削除",
+    "description": "バナーを完全削除します(画像ファイルを含む)。"
+  }
+}

@@ -2,6 +2,7 @@
 
 namespace Plugins\Sirsoft\Gdpr\Repositories;
 
+use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Plugins\Sirsoft\Gdpr\Models\GdprPolicyVersion;
 use Plugins\Sirsoft\Gdpr\Repositories\Contracts\GdprPolicyVersionRepositoryInterface;
@@ -36,7 +37,7 @@ class GdprPolicyVersionRepository implements GdprPolicyVersionRepositoryInterfac
     public function getByVersion(int $version): ?GdprPolicyVersion
     {
         return GdprPolicyVersion::query()
-            ->with('createdBy')
+            ->with('createdBy:'.User::displayColumns())
             ->where('version', $version)
             ->first();
     }
@@ -62,7 +63,8 @@ class GdprPolicyVersionRepository implements GdprPolicyVersionRepositoryInterfac
     public function paginate(int $perPage): LengthAwarePaginator
     {
         return GdprPolicyVersion::query()
-            ->with('createdBy')
+            // 발행자 이름은 관리자 영역 표시 이름이다 — 계산에 필요한 회원 컬럼을 함께 읽는다.
+            ->with('createdBy:'.User::displayColumns())
             ->orderByDesc('version')
             // 전순서 보장 — version 이 유니크하더라도 정렬 계약을 키로 닫아 둔다
             ->orderByDesc('id')

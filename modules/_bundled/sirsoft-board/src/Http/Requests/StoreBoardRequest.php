@@ -18,6 +18,7 @@ use Modules\Sirsoft\Board\Http\Requests\Concerns\NamesContentMediaPolicyFields;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ProvidesFallbackRuleMessages;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ReadsBoardLimits;
 use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesLengthRange;
+use Modules\Sirsoft\Board\Http\Requests\Concerns\ValidatesMemberFieldSettings;
 use Modules\Sirsoft\Board\Rules\BoardTypeValidationRule;
 use Modules\Sirsoft\Board\Rules\SlugUniqueRule;
 
@@ -28,6 +29,7 @@ class StoreBoardRequest extends FormRequest
     use ProvidesFallbackRuleMessages;
     use ReadsBoardLimits;
     use ValidatesLengthRange;
+    use ValidatesMemberFieldSettings;
 
     /**
      * 사용자가 이 요청을 수행할 권한이 있는지 확인
@@ -261,6 +263,9 @@ class StoreBoardRequest extends FormRequest
 
             // 본문 미디어 정책 (null: 첨부 정책을 따름, #883) — 형식은 코어가 정한다
             ...ContentMediaPolicyRules::settingsRules('content_media_policy'),
+
+            // 작성자 표시 이름(방식과 종류)과 비회원 작성자 항목의 게시판별 사용, 필수
+            ...$this->memberFieldSettingRules(),
         ];
 
         // 훅: 모듈/플러그인이 validation rules를 동적으로 추가할 수 있도록 필터 제공
@@ -302,6 +307,9 @@ class StoreBoardRequest extends FormRequest
 
         // 본문 미디어 정책 하위 칸 (#883) — 수정·일괄 적용 요청과 같은 이름
         $attributes = array_merge($attributes, $this->contentMediaPolicyAttributes('content_media_policy'));
+
+        // 작성자 표시 이름 칸과 비회원 작성자 항목 표
+        $attributes = array_merge($attributes, $this->memberFieldSettingAttributes());
 
         // 권한 필드에 대한 동적 속성 매핑
         $permissionDefinitions = config('sirsoft-board.board_permission_definitions', []);

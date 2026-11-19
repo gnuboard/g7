@@ -34,6 +34,8 @@ class PublicTemplateCacheAmplificationTest extends TestCase
         'api.public.templates.routes',
         'api.public.templates.config',
         'api.public.templates.editor_spec',
+        // 편집기 스펙 묶음 — 개별 editor_spec 과 같은 판정을 항목마다 돌린다(#869)
+        'api.public.templates.editor_spec_bundle',
         'api.public.templates.components',
         'api.public.templates.language',
         'api.public.layouts.preview.serve',
@@ -42,6 +44,8 @@ class PublicTemplateCacheAmplificationTest extends TestCase
         'api.public.modules.components',
         'api.public.plugins.editor_spec',
         'api.public.plugins.components',
+        // 외부 화면용 공개 설정 — 셸과 같은 값을 매 요청 조립한다
+        'api.public.frontend-config',
     ];
 
     /**
@@ -67,6 +71,10 @@ class PublicTemplateCacheAmplificationTest extends TestCase
         'api.public.locales.active',
         'api.public.extensions.icon',
         'api.public.system.asset-probe',
+        // 공개 스토리지 읽기 전용 파일 서빙 — public/storage 링크 대체 통로(정적 자산)
+        'api.public.system.public-storage',
+        // 웹 크론 — 자체 호출 간격 제한(WebCronPolicy::claimInvocation)이 있고 통과하면 언제나 200 이어야 한다
+        'api.public.system.cron.run',
     ];
 
     private CacheInterface $cache;

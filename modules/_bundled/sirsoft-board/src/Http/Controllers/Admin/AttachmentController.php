@@ -6,6 +6,7 @@ use App\Helpers\PermissionHelper;
 use App\Http\Controllers\Api\Base\AdminBaseController;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 use Modules\Sirsoft\Board\Exceptions\AttachmentLimitExceededException;
 use Modules\Sirsoft\Board\Exceptions\BoardNotFoundException;
 use Modules\Sirsoft\Board\Http\Requests\ReorderAttachmentsRequest;
@@ -196,9 +197,9 @@ class AttachmentController extends AdminBaseController
      *
      * @param  string  $slug  게시판 슬러그
      * @param  string  $hash  첨부파일 해시
-     * @return StreamedResponse|JsonResponse 파일 스트림 또는 오류 응답
+     * @return StreamedResponse|Response|JsonResponse 파일 스트림, 304 또는 오류 응답
      */
-    public function download(string $slug, string $hash): StreamedResponse|JsonResponse
+    public function download(string $slug, string $hash): StreamedResponse|Response|JsonResponse
     {
         try {
             // 게시판 존재 여부 확인
@@ -211,14 +212,29 @@ class AttachmentController extends AdminBaseController
                 return $this->error('sirsoft-board::messages.attachment.not_found', 404);
             }
 
-            // 다운로드 응답 생성
-            $response = $this->attachmentService->download($slug, $attachment->id);
+            // 다운로드 서빙 정보 (스트림 + 검증자 메타)
+            $info = $this->attachmentService->getDownloadInfo($slug, $attachment->id);
 
-            if (! $response) {
+            if (! $info) {
                 return $this->error('sirsoft-board::messages.attachment.file_not_found', 404);
             }
 
-            return $response;
+            // 캐시 계약(검증자 비교·304·200 헤더 동반)은 코어 단일 지점이 입힌다 — 미리보기
+            // 통로와 같은 형태다. 종전에는 다운로드에 검증자가 없었다.
+            // `immutable` 은 `false`(이 URL 에는 `?v=` 가 없다), 압축은 선언으로 제외한다
+            // (사용자 업로드물 — 형제 `PublicStorageController` 와 같은 선언).
+            // `Content-Disposition: attachment` 는 스토리지가 세운 것을 헬퍼가 그대로 승계한다.
+            // 키 검증도 그 지점(`streamedFileResponseFromMeta()`)이 한다.
+            return $this->streamedFileResponseFromMeta(
+                $info,
+                (int) g7_core_settings('cache.layout_ttl', 86400),
+                immutable: false,
+                skipCompression: true,
+                logContext: ['board_slug' => $slug, 'hash' => $hash],
+                errorMessageKey: 'sirsoft-board::messages.attachment.download_failed',
+                // 관리자 권한을 지난 응답이다 — 글 상태와 무관하게 공유 캐시에 남기지 않는다.
+                private: true
+            );
         } catch (AccessDeniedHttpException $e) {
             return $this->error('auth.scope_denied', 403);
         } catch (BoardNotFoundException $e) {

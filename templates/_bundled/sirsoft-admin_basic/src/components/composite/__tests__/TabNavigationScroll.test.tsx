@@ -1,14 +1,14 @@
-import React from 'react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { TabNavigationScroll, Tab } from '../TabNavigationScroll';
 import * as scrollHandler from '../../../handlers/scrollToSectionHandler';
+import type { ResponsiveContextValue } from '@core/template-engine/ResponsiveContext';
 
 /**
  * window.G7Core.useResponsive mock — 기본값은 데스크톱 (1024px).
  * 모바일 케이스는 setMobile() 호출.
  */
-const mockUseResponsive = vi.fn(() => ({
+const mockUseResponsive = vi.fn((): ResponsiveContextValue => ({
   width: 1024,
   isMobile: false,
   isTablet: false,
@@ -40,9 +40,9 @@ describe('TabNavigationScroll', () => {
   // IntersectionObserver Mock
   let observerCallback: IntersectionObserverCallback;
   let mockObserverInstance: {
-    observe: ReturnType<typeof vi.fn>;
-    unobserve: ReturnType<typeof vi.fn>;
-    disconnect: ReturnType<typeof vi.fn>;
+    observe: Mock<(target: Element) => void>;
+    unobserve: Mock<(target: Element) => void>;
+    disconnect: Mock<() => void>;
   };
 
   beforeEach(() => {
@@ -65,9 +65,9 @@ describe('TabNavigationScroll', () => {
 
     // IntersectionObserver mock (클래스 기반)
     mockObserverInstance = {
-      observe: vi.fn(),
-      unobserve: vi.fn(),
-      disconnect: vi.fn(),
+      observe: vi.fn<(target: Element) => void>(),
+      unobserve: vi.fn<(target: Element) => void>(),
+      disconnect: vi.fn<() => void>(),
     };
 
     class MockIntersectionObserver implements IntersectionObserver {
@@ -723,6 +723,39 @@ describe('TabNavigationScroll', () => {
     });
 
     /**
+     * @scenario case=c40
+     * @effects tab_navigation_scrolls, tab_nav_mobile_keeps_layout_padding
+     */
+    it('모바일 모양도 레이아웃이 준 className 의 여백을 따른다 (#869 P2)', () => {
+      // 게시판 설정 하위 탭 막대(`#sub_tab_navigation`)는 좌우 24px(px-6)를 준다. 종전 모바일 모양은
+      // 자기 클래스(px-4 py-3)로 감싸 16px 로 줄었다.
+      const { container } = render(
+        <TabNavigationScroll id="sub_tab_navigation" tabs={mockTabs} className="bg-white flex gap-1 px-6" />
+      );
+      const wrapper = container.querySelector('#sub_tab_navigation') as HTMLElement;
+
+      expect(wrapper).not.toBeNull();
+      expect(wrapper.className.split(/\s+/), '레이아웃 className 의 좌우 여백이 빠졌습니다').toContain('px-6');
+      expect(wrapper.className.split(/\s+/)).not.toContain('px-4');
+      // 위아래 여백은 선택 상자 둘레로 부품이 더한다
+      expect(wrapper.className.split(/\s+/)).toContain('py-3');
+    });
+
+    /**
+     * @scenario case=c41
+     * @effects tab_navigation_scrolls, tab_nav_mobile_select_fallback
+     */
+    it('모바일 판정은 렌더 폭(편집기 미리보기 폭 포함)으로 한다 — 767 은 모바일, 768 은 데스크톱', () => {
+      mockUseResponsive.mockReturnValue({ width: 767, isMobile: true, isTablet: false, isDesktop: false, matchedPreset: 'mobile' as const });
+      const { container, rerender } = render(<TabNavigationScroll tabs={mockTabs} />);
+      expect(container.querySelector('[role="tablist"]')).toBeNull();
+
+      mockUseResponsive.mockReturnValue({ width: 768, isMobile: false, isTablet: true, isDesktop: false, matchedPreset: 'tablet' as const });
+      rerender(<TabNavigationScroll tabs={[...mockTabs]} />);
+      expect(container.querySelector('[role="tablist"]')).not.toBeNull();
+    });
+
+    /**
      * @scenario case=c29
      * @effects tab_navigation_scrolls, tab_nav_mobile_select_fallback
      */
@@ -997,10 +1030,16 @@ describe('TabNavigationScroll', () => {
 
     /** 관찰 콜백에 섹션 교차를 흘린다 */
     const intersect = (id: string, ratio: number) => {
-      observerCallback(
-        [{ isIntersecting: true, target: { id: `tab_content_${id}` } as HTMLElement, intersectionRatio: ratio } as IntersectionObserverEntry],
-        {} as any
-      );
+      const entry: IntersectionObserverEntry = {
+        isIntersecting: true,
+        target: { id: `tab_content_${id}` } as HTMLElement,
+        intersectionRatio: ratio,
+        boundingClientRect: {} as DOMRectReadOnly,
+        intersectionRect: {} as DOMRectReadOnly,
+        rootBounds: null,
+        time: 0,
+      };
+      observerCallback([entry], {} as any);
     };
 
     // @scenario viewport=desktop
@@ -1046,6 +1085,54 @@ describe('TabNavigationScroll', () => {
       });
       expect(screen.getByRole('button', { name: /반응/ })).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /쇼핑 데이터/ })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('탭의 빨간 점 (errorDot)', () => {
+    const dotTabs: Tab[] = [
+      { id: 'basic', label: '기본정보', errorDot: true },
+      { id: 'list', label: '목록설정', errorDot: false },
+      { id: 'permissions', label: '권한설정' },
+    ];
+
+    // @scenario viewport=desktop
+    // @effects tab_nav_error_dot_marks_tab
+    it('errorDot 이 참인 탭 이름 옆에만 점을 그리고, 점의 읽기 이름은 errorDotLabel 이다', () => {
+      render(<TabNavigationScroll tabs={dotTabs} errorDotLabel="오류가 있는 칸이 있습니다" />);
+
+      const tabs = screen.getAllByRole('tab');
+      expect(tabs.map((tab) => tab.querySelector('[data-tab-error-dot]') !== null)).toEqual([true, false, false]);
+      const dot = tabs[0].querySelector('[data-tab-error-dot]') as HTMLElement;
+      expect(dot.getAttribute('role')).toBe('img');
+      expect(dot.getAttribute('aria-label')).toBe('오류가 있는 칸이 있습니다');
+      expect(dot.className).toContain('bg-red-500');
+      expect(dot.className).toContain('dark:bg-red-400');
+      // 탭 이름은 그대로다
+      expect(tabs[0].textContent).toBe('기본정보');
+    });
+
+    // @scenario viewport=desktop
+    // @effects tab_nav_error_dot_marks_tab
+    it('레이아웃 식이 글자 「true」로 풀려 와도 점을 그리고, 그 밖의 값은 그리지 않는다', () => {
+      const tabs: Tab[] = [
+        { id: 'a', label: '가', errorDot: 'true' },
+        { id: 'b', label: '나', errorDot: 'false' },
+        { id: 'c', label: '다', errorDot: '' },
+      ];
+      render(<TabNavigationScroll tabs={tabs} />);
+
+      expect(screen.getAllByRole('tab').map((tab) => tab.querySelector('[data-tab-error-dot]') !== null)).toEqual([true, false, false]);
+    });
+
+    // @scenario viewport=mobile
+    // @effects tab_nav_error_dot_marks_tab
+    it('모바일 선택 목록에서는 탭 이름 뒤에 표식을 붙인다', () => {
+      setMobile();
+      render(<TabNavigationScroll tabs={dotTabs} activeTabId="list" />);
+
+      fireEvent.click(screen.getByRole('button', { name: /목록설정/ }));
+      expect(screen.getByText('기본정보 ●')).toBeInTheDocument();
+      expect(screen.queryByText('목록설정 ●')).not.toBeInTheDocument();
     });
   });
 });

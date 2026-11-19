@@ -28,6 +28,13 @@ class DirectoryPermissionScanDepthTest extends TestCase
 
     private static string $skipReason = '';
 
+    /**
+     * 클래스당 한 번 임시 BASE_PATH 를 정하고, 지원 클래스와 설치기 설정, 실행 모드, 공용 함수 모듈을 적재한다.
+     *
+     * 이미 정의된 BASE_PATH 가 시스템 임시 폴더 밖이면 건너뛸 사유만 남기고 돌아간다.
+     *
+     * @return void 반환값 없음
+     */
     public static function setUpBeforeClass(): void
     {
         parent::setUpBeforeClass();
@@ -67,14 +74,29 @@ class DirectoryPermissionScanDepthTest extends TestCase
         }
 
         require_once $projectRoot.'/public/install/includes/config.php';
+        // `functions.php` 의 권한 스캔은 막힌 함수 판정을 인스톨러 SSoT
+        // (`installerHasFunction`)로 한다. 그 정의는 `execution-mode.php` 에 있으므로
+        // 먼저 싣지 않으면 스캔이 `Call to undefined function` 으로 죽는다 — 프로덕션은
+        // 진입점이 두 파일을 함께 싣지만 이 테스트는 `functions.php` 만 싣고 있었다.
+        require_once $projectRoot.'/public/install/includes/execution-mode.php';
         require_once $projectRoot.'/public/install/includes/functions.php';
     }
 
+    /**
+     * 부모 정리만 위임한다(임시 트리는 별도로 지우지 않는다).
+     *
+     * @return void 반환값 없음
+     */
     public static function tearDownAfterClass(): void
     {
         parent::tearDownAfterClass();
     }
 
+    /**
+     * 클래스 준비 단계에서 건너뛸 사유가 남았으면 테스트를 건너뛴다.
+     *
+     * @return void 반환값 없음
+     */
     protected function setUp(): void
     {
         parent::setUp();
@@ -89,6 +111,12 @@ class DirectoryPermissionScanDepthTest extends TestCase
      *
      * storage/deep/a/b/c/... 처럼 깊은 트리를 만들고, checkSubdirectoriesRecursive 를
      * 제한 깊이(2)로 호출하면 depth 3 이상 경로는 결과에 나타나지 않아야 한다.
+     *
+     * @scenario permission_failure_cause=normal_directory
+     *
+     * @effects directory_permission_scan_stops_at_max_depth
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function recursive_scan_respects_max_depth(): void
@@ -121,6 +149,12 @@ class DirectoryPermissionScanDepthTest extends TestCase
 
     /**
      * checkSubdirectoriesRecursive 가 maxDepth 파라미터를 받는 시그니처여야 한다.
+     *
+     * @scenario permission_failure_cause=normal_directory
+     *
+     * @effects directory_permission_scan_accepts_optional_depth_limit
+     *
+     * @return void 반환값 없음
      */
     #[Test]
     public function function_accepts_max_depth_parameter(): void

@@ -14,6 +14,9 @@ return [
         'vbank_refund_already_processing' => 'A virtual-account refund is already being processed.',
         'vbank_completed_requires_bank_info' => 'Refund account information is required for completed virtual account deposits. Please process the refund through the admin API.',
         'invalid_refund_amount' => 'The refund amount is invalid. (requested: :amount KRW)',
+        'escrow_delivery_rejected' => 'NicePayments rejected the escrow delivery registration.',
+        'cancel_rejected' => 'NicePayments rejected the payment cancellation.',
+        'escrow_delivery_failed' => 'An error occurred and the escrow delivery registration could not be completed. Please try again later, and check the server log if it keeps failing.',
     ],
     'claim' => [
         'invalid_callback' => 'The callback parameters required to approve the claim payment are missing.',
@@ -29,10 +32,13 @@ return [
     'refund' => [
         'missing_tid' => 'Cannot process refund: transaction ID (TID) is missing.',
         'default_reason' => 'Buyer refund request',
+        'pg_failed' => 'An error occurred while communicating with the payment gateway. Please try again later.',
     ],
     'defaults' => [
         'vbank_refund_msg' => 'Virtual account refund',
     ],
+    // Reason sent to the NicePayments cancel API when an unpaid virtual account is closed
+    'vbank_close_reason' => 'Order cancelled before deposit',
     'fields' => [
         'tid' => 'transaction ID (TID)',
         'moid' => 'order number',
@@ -44,5 +50,14 @@ return [
     ],
     'settings' => [
         'redirect_url_format' => 'The post-payment redirect address must start with {shopBase}, /, http:// or https:// and cannot contain spaces. Protocol-relative //addresses and javascript: are not allowed.',
+    ],
+    // Error messages of the payment screen and PG integration APIs
+    'responses' => [
+        'amount_mismatch' => 'Payment amount does not match the order amount.',
+        'currency_not_chargeable' => 'The charge cannot be calculated in the payment currency.',
+        'escrow_payment_not_found' => 'Escrow payment not found for the requested transaction ID.',
+        'order_not_found' => 'Order not found.',
+        'ownership_verification_failed' => 'Order ownership verification failed.',
+        'too_many_requests' => 'Too many requests. Please try again later.',
     ],
 ];

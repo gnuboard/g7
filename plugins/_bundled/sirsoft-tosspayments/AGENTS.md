@@ -112,8 +112,8 @@
 | 확장점 | 수 | 상세 |
 |---|---|---|
 | 발행 훅 | 4개 | [발행 훅](docs/extension-points.md#발행-훅) |
-| 구독 훅 | 15개 | [구독 훅](docs/extension-points.md#구독-훅) |
-| 훅 리스너 | 10개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
+| 구독 훅 | 16개 | [구독 훅](docs/extension-points.md#구독-훅) |
+| 훅 리스너 | 11개 | [훅 리스너](docs/extension-points.md#훅-리스너) |
 | 레이아웃 확장 | 3개 | [레이아웃 확장](docs/extension-points.md#레이아웃-확장) |
 | 미들웨어 | 0개 | [미들웨어](docs/extension-points.md#미들웨어) |
 | 브로드캐스트 채널 | 0개 | [브로드캐스트 채널](docs/extension-points.md#브로드캐스트-채널) |
@@ -136,21 +136,26 @@
 - [ ] manifest version 상향 시 `package.json` · `package-lock.json` · `composer.json` 동기화 + CHANGELOG 기재
 - [ ] 발행 훅 추가·이름 변경 시 `php artisan ext:docgen` 재실행 (구독하는 확장의 계약이 바뀝니다)
 - [ ] API 표면 변경 시 `php artisan api:docgen --scope=plugin:sirsoft-tosspayments` 재실행 + `docs/api/**` 갱신
-- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 빌드 없이 update 만, 신규 Tailwind 클래스는 빌드된 CSS 에 존재하는지 확인
+- [ ] 로그인한 회원이 부르는 쓰기 라우트(POST, PUT, PATCH, DELETE)를 더할 때 코어 필터 `core.required_fields.filter_exempt_routes` 에 보탤지 판단한다. 코어는 추가 정보를 아직 입력하지 않은 회원의 쓰기 요청을 403 `required_fields_pending` 으로 막는다. 그런 회원도 반드시 할 수 있어야 하는 요청(결제창 닫힘 보고처럼 이미 시작된 결제를 끝맺는 요청)이면 `src/Listeners/ExemptRequiredFieldsRoutesListener.php` 의 `ROUTES` 에 라우트 이름을 더하고, 사용자 콘텐츠를 만드는 요청이면 더하지 않는다
+- [ ] 레이아웃은 `.g7.html` 을 고치고 `php artisan layout:decompile <경로> --sync` 로 짝 `.json` 을 다시 굽는다 (짝을 굽지 않으면 화면에 반영되지 않음) — 클래스를 새로 쓰지 않았으면 빌드 없이 update 만, 새 클래스(`paytosspayments:` 유틸리티·`pay-tosspayments-*`)를 쓰면 `plugin:build` 로 자기 CSS 를 다시 만든다(「화면 클래스 규약」)
 - [ ] TSX/TS 변경 시 `--production` 재빌드 후 `dist/` 커밋 (sourceMappingURL 잔존 금지)
 - [ ] 다국어 키 추가 시 ko·en 동시 반영 + 번들 ja 언어팩 증분 동기화
+- [ ] 이커머스 주문·결제 행은 공개 결제 계약 `Modules\Sirsoft\Ecommerce\Contracts\Payment\PaymentGatewayBridge`(생성자 주입)로만 조회·변경한다 — 새로 필요한 조회·쓰기가 계약에 없으면 이 플러그인에서 우회하지 말고 이커머스 계약에 메서드를 더한다. 변경 뒤 `extension-internal-symbol-reference` 정적 검사가 위반 0 이어야 한다
 - [ ] 승인 확인에서 금액 대조(`amount_mismatch`) 로직을 우회하거나 완화하지 않는다
 - [ ] 가상계좌 웹훅의 secret 대조(`webhook_secret_verify`)를 기본값 `true` 이외로 바꾸지 않는다 — 끄면 토스 노티 위조를 막을 수단이 사라진다
 - [ ] `order_sheet_mode` 관련 로직을 고칠 때 `RegisterPgProviderListener`(enabled_methods)와 `RegisterTossPaymentMethodsListener`(builtin 결제수단 주입) 양쪽을 함께 갱신 — 한쪽만 고치면 설정과 노출 목록이 어긋난다
 - [ ] `ValidateTossSettingsListener`에 새 범위 검증을 추가하면 `core.plugin_settings.before_save` 의 `sync: true`를 유지
+- [ ] 브라우저가 만드는 주소는 `resources/js/apiUrl.ts` 의 `apiUrl()` · `sitePath()` · `routePath()` 만 쓴다 — 이 파일은 번들 확장 전체가 **바이트 동일한 사본**으로 갖는다. 한 곳을 고치면 전부 같이 고친다. 루트 상대(`/api/…`)로 직접 조립하면 하위 폴더 설치(`https://host/g7/`)에서 요청·복귀 주소가 사이트 밖을 가리키고, 오류 없이 결제만 완료되지 않는다
 - [ ] 레이아웃·컴포넌트·`data_source` 를 건드렸다면 [`docs/editor-spec.md`](docs/editor-spec.md) 를 확인 — 이 확장은 자기 전용 `data_source`(`settings`, 입금통보 웹훅 전체 URL 을 받는 `webhook_info`)를 쓰므로 `editor-spec.json` 의 `sampleData.byDataSourceId` 와 화면 상태(`initialState.local`)에 같은 ID·키로 샘플을 함께 추가한다
 - [ ] 토스페이먼츠가 SDK 호스트를 바꾸면 `plugin.json` 의 `trusted_script_hosts`(+`trusted_script_hosts_reason`)와 `resources/js/handlers/requestPayment.ts` 의 `KNOWN_SDK_HOSTS` 를 **함께** 갱신 — 두 목록이 어긋나면 테스트가 실패하며, 코드 상수에 없는 호스트는 주입 직전 확인에서 거부되어 결제가 진행되지 않는다(fail-closed). 변경 후 `php artisan ext:docgen --scope=plugin:sirsoft-tosspayments` 재실행
+- [ ] 서버가 주는 앱 내 복귀 경로(`claim_cancel_return_url` 등, 접두사 없음)로 전체 이동할 때도 `sitePath()` 를 거친다 — 그대로 `location.href` 에 넣으면 하위 폴더 설치에서 교환/반품 신청서로 돌아오지 못하고 사이트 밖으로 나간다
 
 ## 6. 금지 패턴
 
 <!-- @intent START -->
 | 금지 | 올바른 사용 | 이유 |
 |---|---|---|
+| 이커머스 Service·Repository 를 주입하거나 `app()` 으로 꺼내기, `Order::query()`·`ClaimPayment::isClaimPaymentNumber()` 같은 Model 정적 호출, 훅이 넘긴 Model 의 `update()`·`fresh()`·`load()`·관계 빌더 호출, `ecommerce_*` 테이블 직접 조회 | 생성자로 주입한 `PaymentGatewayBridge` 의 계약 메서드(`findOrderByNumber`·`completePayment`·`markPaymentWindowClosed`·`onVbankAccountIssued`·`mergePaymentMeta` 등)와 결과 객체(`OrderRecord`·`PaymentRecord`). 훅 Model 은 속성 읽기만 | 이커머스가 공개하지 않은 내부 구현은 예고 없이 바뀐다. 공개 계약은 조회 범위(자기 결제사 행)와 잠금 순서를 이커머스가 책임진다 |
 | 콜백 URL의 `amount` 쿼리 파라미터를 그대로 신뢰해 결제 완료 처리 | 서버가 주문 금액을 재계산해 PG 응답 금액과 대조, 불일치 시 실패 처리 | 콜백은 브라우저를 거치므로 사용자가 쿼리 파라미터를 조작해 실제 결제 금액보다 낮은 금액으로 완료 처리를 유도할 수 있다 |
 | 가상계좌 웹훅의 secret 대조를 생략하거나 항상 통과 | `payment_meta.toss_secret`과 웹훅 본문의 secret을 항상 대조 | 토스는 notify IP 목록·서명을 제공하지 않아 secret 대조가 유일한 위조 방지 수단이다 — 생략하면 제3자가 임의 주문에 대해 위조 입금통보를 보낼 수 있다 |
 | `core.plugin_settings.before_save` 리스너에 `sync: true` 없이 등록 | 저장을 막아야 하는 검증 훅은 반드시 `sync: true` | 기본값(비동기 큐)이면 `ValidationException`이 워커 안에서 죽고 저장이 그대로 진행되어 검증이 무력화된다 |
@@ -160,6 +165,7 @@
 | 결제 실패를 `fail()` 이 기록해 줄 것으로 가정 | 주문 소유자(회원 본인 로그인 / 비회원 `X-Guest-Order-Token`)를 확인하는 `POST /api/plugins/sirsoft-tosspayments/payment/close-report` 가 기록한다 — 주문자 연락처 대조는 소유 증명이 아니다 (KVE-2026-2434) | 결제 성립은 `success()` 의 서버 `confirmPayment`, 결제완료 후 취소는 secret 대조를 통과한 웹훅이 담당한다. 주문을 실패로 전이시키는 결제창 경로는 close-report 하나뿐이다 |
 | 결제창 컨텍스트(주문 정보)를 `window` 전역에만 보관 | `rememberPendingClose()` 로 sessionStorage 에 남긴다 | 결제창은 전체 페이지 이동으로 열리고 돌아와 JS 컨텍스트가 소실된다. 전역에만 두면 실패 화면에서 보고할 근거가 사라져 결제 실패가 어디에도 기록되지 않는다 |
 | 실패 화면에서 보고가 닿지 못한 주문을 방치 | 이커머스 모듈의 만료 주문 자동 정리가 최종 안전망 | 브라우저를 바로 닫으면 보고가 나가지 않는다. 두 경로가 함께 있어야 선차감 마일리지가 무기한 묶이지 않는다 |
+| 결제 환불·현금영수증 리스너 결과 `error_message` 에 예외 원문을 그대로 싣기 | `refundFailureReason()`·`cashReceiptFailureReason()` — 토스가 오류 코드와 함께 돌려준 거절(`TossPaymentsApiException::getPgCode() !== null`)만 그 message, 그 밖은 `refund.pg_failed`·`cash_receipt.pg_failed` + 서버 로그(디버그 모드만 원문) | 쇼핑몰이 환불 사유는 「PG 환불 처리에 실패했습니다. (…)」 안내에 끼워, 현금영수증 사유는 이력으로 회원·비회원·관리자 응답에 낸다 — 통신 예외의 API 주소·cURL 문구가 구매자 화면까지 간다(#858) |
 <!-- @intent END -->
 
 ## 7. 테스트 실행
@@ -167,10 +173,10 @@
 <!-- @generated:test-commands START — ext:docgen 이 갱신. 이 블록 안은 직접 수정하지 않는다 -->
 | 종류 | 개수 | 위치 |
 |---|---|---|
-| PHPUnit | 29개 | `plugins/_bundled/sirsoft-tosspayments/tests` |
-| Vitest | 16개 | `vitest.config.ts` |
+| PHPUnit | 33개 | `plugins/_bundled/sirsoft-tosspayments/tests` |
+| Vitest | 15개 | `vitest.config.ts` |
 | Playwright | 0개 | — |
-| 시나리오 매니페스트 | 24개 | `tests/scenarios` |
+| 시나리오 매니페스트 | 29개 | `tests/scenarios` |
 
 기저 TestCase: `tests/PluginTestCase.php` — 확장 테스트는 이 클래스를 상속합니다 (`Tests\TestCase` 직접 상속 금지).
 
@@ -202,26 +208,26 @@ cd plugins/_bundled/sirsoft-tosspayments && powershell -Command "npm run test:ru
 | [CHANGELOG.md](CHANGELOG.md) | 변경 이력 | ✅ |
 <!-- @generated:docs-index END -->
 
-## 확장 조각의 CSS 클래스 규약
+## 화면 클래스 규약 — 이 플러그인이 자기 CSS 를 싣는다
 
-resources/extensions/ 아래 의 조각은 **다른 패키지의 화면 안에서** 그려진다. 그래서 여기 쓰는
-클래스는 그 화면을 소유한 **템플릿의 CSS 에 실재해야** 한다.
+환경설정 레이아웃, `resources/extensions/` 조각(관리자 주문 목록·주문 상세, 마이페이지 주문 상세, 주문 완료 등 다른 패키지 화면 안에서 그려지는 것), 이커머스 결제수단 설정에 넣는 PHP 클래스 문자열은 **템플릿 CSS 에 기대지 않는다.** 모든 클래스는 이 플러그인 앞글자를 쓰고, 규칙은 이 플러그인의
+`dist/css/plugin.css` 에 실재한다(manifest `assets.css.namespace: pay-tosspayments`). 템플릿이 어떤 CSS 라이브러리를 쓰든 같은 모양으로 보인다.
 
-두 가지를 지킨다.
+1. **배치·색 유틸리티는 `paytosspayments:` 접두 Tailwind 로 쓴다**(`paytosspayments:flex paytosspayments:dark:text-gray-400`).
+   Tailwind 는 이 플러그인의 작성 도구일 뿐이고(preflight 없음), `resources/css/main.css` 맨 앞 생성 블록이
+   `resources/{layouts,extensions,js}` 와 `src`(PHP 가 내보내는 클래스)를 훑어 쓰인 클래스만 만든다. 새 클래스를 쓰면
+   `php artisan plugin:build sirsoft-tosspayments --production` 으로 CSS 를 다시 만들고 update 한다 — 빌드하지 않으면
+   그 스타일만 조용히 빠진다. 앞글자 없는 `flex` 를 쓰면 정적 검사가 막는다.
+2. **템플릿 의미 클래스는 `pay-tosspayments-*` 사본을 쓴다**(`pay-tosspayments-btn`·`pay-tosspayments-form-label`·`pay-tosspayments-section-heading-md`).
+   정의는 `resources/css/g7-extension.generated.css`(생성 파일, 손으로 고치지 않는다)의 가장 낮은 칸
+   `@layer g7-extension` 에 있어 템플릿이 같은 이름을 덮을 수 있다. 템플릿 의미 클래스를 새로 가져오려면
+   원래 이름으로 적은 뒤 `node scripts/extension-css/convert-layout-classes.mjs plugins/_bundled/sirsoft-tosspayments` 를
+   다시 돌린다(같은 입력이면 결과가 같다).
+3. **이 플러그인 고유의 의미 색과 상태 짝은 손 CSS 다** — `resources/css/main.css` 의 생성 블록 아래.
+   의미 글자색 `pay-tosspayments-tone-*·가상계좌 안내 글자색` 은 `@layer g7-extension` 안에 두고(색만 맡는다), 포커스·호버 같은 상태 짝은 층 없이 둔다. 일부 색을 16진수로 적은 것은 이전 판 빌드 산출과 화면 계산값을 같게 유지하려는 것이다.
+4. **다크 모드는 `paytosspayments:dark:` 변형이나 중립 표식(`[data-g7-color-scheme="dark"]`)으로 쓴다.** 템플릿 표지
+   `.dark` 를 손 CSS 선택자에 쓰지 않는다.
+5. **아이콘에 글자 크기 유틸리티(`paytosspayments:text-xl` 등)를 주면 `paytosspayments:leading-none` 을 함께 준다** — 아이콘 글꼴 CSS 의
+   줄 높이(1)와 같게 맞춘다. 입력칸(`<input>`)에는 글자색 의미 클래스를 주지 않는다 — 템플릿 입력 컴포넌트가 자기 색을 정한다.
 
-1. **템플릿의 의미 클래스를 쓰지 않는다.** `flex-start` · `text-heading` · `section-heading-md`
-   같은 이름의 규칙은 `templates/_bundled/sirsoft-admin_basic/src/styles/main.css` 의 `@layer components` 에만
-   있다. 사용자 템플릿(`sirsoft-basic`)에는 그 규칙이 없어 `display:flex` 같은 기본 배치까지
-   통째로 사라진다. 평범한 Tailwind 유틸로 쓴다(`flex items-start`).
-   슬롯 확장(`extension-point=`)은 한 조각이 관리자·사용자 양쪽에 들어가므로, 어느 한쪽의
-   어휘를 쓰면 **반드시** 다른 쪽이 깨진다.
-
-2. **새 유틸은 safelist 에 실린다.** 두 템플릿 모두 Tailwind 가 레이아웃을 스캔하지 않는다 —
-   `sirsoft-admin_basic` 은 `templates/_bundled/sirsoft-admin_basic/scripts/extract-safelist.cjs` 가(확장 조각 포함) 자동 생성하고,
-   `sirsoft-basic` 은 `templates/_bundled/sirsoft-basic/src/styles/safelist.txt` 를 손으로 단다. 새 클래스를 쓴 뒤에는
-   `php artisan template:build <템플릿>` 로 CSS 를 다시 만든다.
-
-이 규약을 어겨도 **빌드는 성공하고 경고도 없으며 테스트도 전부 초록이다** — 사람이 브라우저를
-열어야만 드러난다(2026-09-21, 마이페이지 「내 정보 수정」의 확장 카드에서 체크박스가 설명 위로
-떨어져 있었다). 그래서 확장 조각이 쓰는 클래스가 대상 템플릿의 CSS 에 실제로 만들어졌는지를
-정적 검사가 대조한다.
+규약 전체는 [확장 CSS 자기 공급 규약](../../../docs/extension/module-assets.md#확장-css-자기-공급-규약), 변환 도구는 `scripts/extension-css/README.md`.

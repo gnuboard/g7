@@ -4,6 +4,7 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 /**
  * 대시보드 최신 리뷰 리소스
@@ -25,8 +26,8 @@ class RecentReviewResource extends BaseApiResource
             'product_id' => $this->product_id,
             'product_name' => $this->product?->getLocalizedName() ?? '',
             'rating' => (int) $this->rating,
-            // 회원 후기는 회원 이름, 회원 없이 등록한 후기(다른 쇼핑몰에서 이관)는 저장된 작성자 이름
-            'author_name' => $this->resource->displayAuthorName(),
+            // 회원 후기는 이커머스 관리자 영역의 표시 이름, 회원 없이 등록한 후기(다른 쇼핑몰에서 이관)는 저장된 작성자 이름
+            'author_name' => $this->resource->displayAuthorName(MemberDisplayName::AREA_ADMIN),
             'created_at' => $this->formatDateTimeStringForUser($this->created_at),
         ];
     }

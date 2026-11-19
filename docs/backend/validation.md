@@ -41,6 +41,8 @@
 - [배열 항목의 상위 스코프](#배열-항목의-상위-스코프)
 - [관대한 기존 동작을 규칙으로 승격하지 않는다](#관대한-기존-동작을-규칙으로-승격하지-않는다)
 - [운영자가 지울 수 있는 어휘의 필터 게이트](#운영자가-지울-수-있는-어휘의-필터-게이트)
+- [금지어 규칙 (ForbiddenWords)](#금지어-규칙-forbiddenwords)
+- [서버 연결 대상 규칙 (ConnectionHost·ConnectionEndpointUrl)](#서버-연결-대상-규칙-connectionhostconnectionendpointurl)
 - [Custom Rule 개발 체크리스트](#custom-rule-개발-체크리스트)
 
 ---
@@ -1465,9 +1467,58 @@ seo.bot_user_agents.0 필드는 100자를 초과하면 안 됩니다.        ❌
 
 ### 자동 검사
 
-감사 룰 `formrequest-attribute-label-coverage` 가 파일별 잔량을 기준선과 대조해 **늘어나면 차단**한다.
+정적 검사가 파일별 잔량을 기준선과 대조해 **늘어나면 차단**한다.
 기존 부채는 기준선으로 고정돼 있어 무관한 파일을 건드릴 때 막히지 않는다. 기준선은 **낮추는
 방향으로만** 갱신한다 — 새 누락을 통과시키려고 올리지 않는다.
+
+---
+
+## 금지어 규칙 (ForbiddenWords)
+
+코어 공용 금지어 검증 규칙 `App\Rules\ForbiddenWords`(7.2.0)는 값에 금지어가 들어 있으면 실패한다. 확장은 자기 금지어 목록과 문구로 이 규칙을 쓴다 — 금지어 판정을 확장마다 따로 짜지 않는다.
+
+```php
+use App\Rules\ForbiddenWords;
+
+// 규칙 객체 — 목록이 비었거나 값이 문자열이 아니면 통과
+'title' => ['required', 'string', new ForbiddenWords($words)],
+
+// 확장 문구로 실패 — 걸린 금지어를 받아 문구를 만든다(생략하면 코어 `validation.forbidden_word`)
+new ForbiddenWords($words, fn (string $word) => __('vendor-module::validation.blocked_keyword', ['keyword' => $word])),
+
+// 정규화 비교 — 값과 금지어를 닉네임 정규화(전각·대소문자·공백 무시)한 뒤 견준다
+new ForbiddenWords($words, normalized: true),
+
+// 판정만 — 걸린 첫 금지어(없으면 null). 자기 Rule 클래스 안에서 판정을 맡길 때
+$word = ForbiddenWords::firstMatch($value, $words);
+```
+
+- 기본 판정은 대소문자만 무시하는 부분 일치다.
+- 번들 게시판의 금지 키워드 규칙(`BlockedKeywordsRule`)이 `firstMatch()` 로 판정을 맡기고 문구는 게시판 것을 쓴다.
+
+---
+
+## 서버 연결 대상 규칙 (ConnectionHost·ConnectionEndpointUrl)
+
+서버가 그 값으로 직접 연결하는 설정 칸(웹소켓·캐시·메일 서버 호스트, 객체 저장소 엔드포인트 등)은 코어 규칙 두 개로 검증한다(7.1.6). 확장 설정에도 같은 성격의 칸이 있으면 이 규칙을 쓴다. 두 규칙 모두 빈 값은 통과시킨다 — 필수 여부는 다른 규칙이 정한다.
+
+| 규칙 | 쓰는 칸 | 거부하는 것 |
+| --- | --- | --- |
+| `App\Rules\ConnectionHost` | 호스트 칸(호스트명·IPv4·대괄호 IPv6) | 경로·쿼리·프래그먼트·계정 정보·역슬래시·퍼센트 인코딩·공백·제어문자, 대괄호 밖의 `:`(포트·맨 IPv6), 숫자로 감춘 IP(`2852039166`·`0x…`), 링크로컬·클라우드 메타데이터 주소. 사설 대역·`localhost` 는 받는다 |
+| `App\Rules\ConnectionEndpointUrl` | 주소(URL) 칸 | 링크로컬·클라우드 메타데이터 호스트, 계정 정보(`user:pass@`), 경로 불허 모드에서 스킴·호스트·포트 뒤의 경로·쿼리·프래그먼트. URL 형식 자체는 `url` 규칙이 본다 |
+
+```php
+use App\Rules\ConnectionEndpointUrl;
+use App\Rules\ConnectionHost;
+
+'mail_host'      => ['nullable', 'string', new ConnectionHost()],
+'cache_host'     => ['nullable', 'string', new ConnectionHost(allowSocketAndTls: true)], // 유닉스 소켓 절대 경로·tls://·rediss://·대괄호 없는 IPv6 허용
+'s3_endpoint'    => ['nullable', 'url', new ConnectionEndpointUrl()],                  // 경로 불허 — 서버가 직접 연결
+'s3_public_url'  => ['nullable', 'url', new ConnectionEndpointUrl(allowPath: true)],   // 파일 주소 조립용 CDN 주소는 경로 허용
+```
+
+- 연결 직전에 한 번 더 확인할 때는 같은 판정을 쓴다 — 호스트는 `ConnectionHost::violation($value, $allowSocketAndTls)`(`format`·`blocked`·`null`), 주소는 `App\Support\OutboundUrlValidator::isRefusedConnectionUrl($url)`.
+- `OutboundUrlValidator` 의 판정 도구(7.1.6): `isMetadataHost($host)`·`isMetadataUrl($url)`(링크로컬·클라우드 메타데이터 주소 — 숫자 대역과 호스트명 목록만 보고 DNS 는 풀지 않는다), `isNumericDisguisedHost($host)`(10진·축약·16진·8진으로 감춘 IP 표기), `isRefusedConnectionUrl($url)`(앞의 둘 중 하나면 true).
 
 ---
 

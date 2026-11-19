@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Plugins\Sirsoft\PayNicepayments\Tests\Unit\Listeners;
 
+use Illuminate\Support\Arr;
 use Plugins\Sirsoft\PayNicepayments\Listeners\AdjustEcommercePaymentMethodsLayoutListener;
 use Plugins\Sirsoft\PayNicepayments\Listeners\RegisterEasyPayMethodsListener;
 use Plugins\Sirsoft\PayNicepayments\Plugin;
@@ -156,6 +157,45 @@ class RegisterEasyPayMethodsListenerTest extends PluginTestCase
     }
 
     /**
+     * 간편결제 이름·설명이 ko·en 두 언어로 고정되지 않고 지원 언어(활성 언어팩) 전부로 채워지는지 검증한다.
+     *
+     * 종전에는 두 언어만 실려 일본어 언어팩을 켠 사이트의 일본어 화면(쇼핑몰 환경설정 결제수단 목록·주문서)에
+     * 언어팩 번역이 있는데도 한국어 이름이 보였다.
+     *
+     * @scenario contract=display_labels
+     *
+     * @effects easy_pay_labels_cover_supported_locales
+     *
+     * @return void 반환값 없음
+     */
+    public function test_easy_pay_method_labels_cover_every_supported_locale(): void
+    {
+        config(['app.supported_locales' => ['ko', 'en', 'ja']]);
+        $this->app['translator']->addLines(
+            Arr::dot(['payment_methods' => require base_path('lang-packs/_bundled/g7-plugin-sirsoft-pay_nicepayments-ja/backend/ja/payment_methods.php')]),
+            'ja',
+            'sirsoft-pay_nicepayments',
+        );
+        $localeBefore = app()->getLocale();
+
+        $methods = collect((new RegisterEasyPayMethodsListener)->injectEasyPayMethods([
+            ['id' => 'phone'],
+            ['id' => 'point'],
+        ]))->filter(fn (array $method): bool => str_starts_with((string) $method['id'], 'nicepay_'));
+
+        $this->assertCount(8, $methods);
+        foreach ($methods as $method) {
+            $this->assertSame(['ko', 'en', 'ja'], array_keys($method['name']), $method['id']);
+            $this->assertSame(['ko', 'en', 'ja'], array_keys($method['description']), $method['id']);
+        }
+
+        $naverpay = $methods->firstWhere('id', 'nicepay_naverpay');
+        $this->assertSame('Naver Pay (ナイスペイメンツ)', $naverpay['name']['ja']);
+        $this->assertSame('Naver Payで決済 (ナイスペイメンツ)', $naverpay['description']['ja']);
+        $this->assertSame($localeBefore, app()->getLocale(), '번역하는 동안 바꾼 앱 언어는 되돌려야 한다');
+    }
+
+    /**
      * 간편결제 표시 문구가 다른 PG 의 브랜드명 매처에 걸리지 않도록 폭 없는 공백으로 끊겨 있는지 검증한다.
      *
      * @scenario contract=display_labels
@@ -216,11 +256,11 @@ class RegisterEasyPayMethodsListenerTest extends PluginTestCase
         ]))->keyBy('id');
 
         $this->assertSame(
-            ['text' => 'N', 'class' => 'bg-green-700 text-white'],
+            ['text' => 'N', 'class' => 'paynicepayments:bg-green-700 paynicepayments:text-white'],
             $methods->get('nicepay_naverpay')['brand_mark'] ?? null,
         );
         $this->assertSame(
-            ['text' => 'SSG', 'class' => 'bg-red-700 text-white'],
+            ['text' => 'SSG', 'class' => 'paynicepayments:bg-red-700 paynicepayments:text-white'],
             $methods->get('nicepay_ssgpay')['brand_mark'] ?? null,
         );
     }

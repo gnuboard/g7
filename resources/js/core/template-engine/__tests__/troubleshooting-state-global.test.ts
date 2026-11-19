@@ -18,7 +18,6 @@ import {
   resolveLocalInitAction,
 } from '../localInitSlot';
 import { deepMergeState, removeMatchingLeafKeys } from '../DynamicRenderer';
-import { Logger } from '../../utils/Logger';
 
 // AuthManager mock
 vi.mock('../../auth/AuthManager', () => ({
@@ -43,6 +42,8 @@ describe('트러블슈팅 회귀 테스트 - initGlobal 관련', () => {
      * 증상: blocking 데이터 소스의 initGlobal 값이 progressive 데이터 소스에서 undefined
      * 해결: API 응답 구조에 따라 path 설정 (actualData는 이미 data.data ?? data로 처리됨)
      */
+    // @scenario case=init_global_progressive_path
+    // @effects init_global_path_matches_response_shape
     it('API 응답이 { data: [...] } 형태일 때 path를 지정하지 않아야 함', () => {
       // API 응답
       const apiResponse = { success: true, data: [{ id: 1, name: 'Layout 1' }] };
@@ -57,6 +58,8 @@ describe('트러블슈팅 회귀 테스트 - initGlobal 관련', () => {
       expect(globalState.layoutFilesList).toEqual([{ id: 1, name: 'Layout 1' }]);
     });
 
+    // @scenario case=init_global_progressive_path
+    // @effects init_global_path_matches_response_shape
     it('path: "data"를 지정하면 배열에서 data 속성을 찾아 undefined 반환', () => {
       // API 응답
       const apiResponse = { success: true, data: [{ id: 1, name: 'Layout 1' }] };
@@ -84,6 +87,8 @@ describe('트러블슈팅 회귀 테스트 - initGlobal 관련', () => {
      * 증상: 초기 로드 시 initGlobal 정상 작동, refetchDataSource 후 미적용
      * 해결: refetchDataSource에서 processInitOptions 호출 추가
      */
+    // @scenario case=refetch_init_global
+    // @effects refetch_reapplies_init_global
     it('refetchDataSource 후에도 initGlobal이 재적용되어야 함', () => {
       // 초기 로드
       const globalState: Record<string, any> = {};
@@ -106,6 +111,8 @@ describe('트러블슈팅 회귀 테스트 - initGlobal 관련', () => {
      * 증상: path: "[0].name" 같이 배열 인덱스가 포함된 경로가 undefined
      * 해결: getNestedValue에서 배열 인덱스 지원
      */
+    // @scenario case=init_global_array_index
+    // @effects init_global_path_supports_array_index
     it('path에 배열 인덱스를 사용할 수 있어야 함', () => {
       const actualData = [
         { name: 'layout1.json', size: 100 },
@@ -155,6 +162,8 @@ describe('트러블슈팅 회귀 테스트 - initGlobal 관련', () => {
      * 증상: setState로 _global 변경 후 refetchDataSource 호출 시 이전 값으로 API 호출
      * 해결: handleSetState에서 global 상태 반환 + sequence에서 _global 추적
      */
+    // @scenario case=sequence_refetch_stale
+    // @effects global_setstate_returns_payload
     it('handleSetState가 global target일 때 payload를 반환해야 함', async () => {
       const mockGlobalStateUpdater = vi.fn();
       const dispatcher = new ActionDispatcher({
@@ -168,8 +177,9 @@ describe('트러블슈팅 회귀 테스트 - initGlobal 관련', () => {
         actionId: 'test-global-return',
       };
 
-      const result = await dispatcher.executeAction(
+      await dispatcher['executeAction'](
         {
+          type: 'click' as const,
           handler: 'setState' as const,
           params: {
             target: 'global',
@@ -188,6 +198,8 @@ describe('트러블슈팅 회귀 테스트 - initGlobal 관련', () => {
      * 증상: initGlobal이 this.globalState를 업데이트하지만 바인딩 엔진 캐시가 무효화되지 않음
      * 해결: initGlobal이 있으면 _global 키도 캐시에서 무효화
      */
+    // @scenario case=progressive_init_global_cache
+    // @effects init_global_invalidates_global_cache
     it('initGlobal이 있는 데이터소스 로드 시 _global 캐시가 무효화되어야 함', () => {
       // 바인딩 엔진 캐시 시뮬레이션
       const cache = new Map<string, any>();
@@ -224,6 +236,8 @@ describe('트러블슈팅 회귀 테스트 - initGlobal 관련', () => {
      * 증상: path: "data" 설정이 이중으로 적용되어 undefined 반환
      * 해결: actualData가 이미 추출된 상태이므로 path 제거
      */
+    // @scenario case=init_global_double_extract
+    // @effects init_global_without_path_for_object_data
     it('API 응답이 { data: {...} } 형태일 때 path 없이 initGlobal 사용', () => {
       // API 응답
       const apiResponse = {
@@ -253,6 +267,8 @@ describe('트러블슈팅 회귀 테스트 - iteration 관련', () => {
      * 증상: iteration으로 배열 반복 시 if 조건에서 item_var를 참조하면 undefined
      * 해결: if가 iteration보다 먼저 평가되므로 래퍼 컴포넌트 사용
      */
+    // @scenario case=iteration_if_item_var
+    // @effects item_var_available_only_in_children
     it('iteration의 item_var는 children에서만 접근 가능해야 함', () => {
       // DynamicRenderer 처리 순서 시뮬레이션
       const processingOrder = ['if', 'iteration', 'render'];
@@ -263,6 +279,8 @@ describe('트러블슈팅 회귀 테스트 - iteration 관련', () => {
       );
     });
 
+    // @scenario case=iteration_if_item_var
+    // @effects item_var_available_only_in_children
     it('래퍼 컴포넌트를 사용하면 if에서 item_var 접근 가능', () => {
       // 올바른 패턴: iteration children 내부에서 if 사용
       const layout = {
@@ -289,6 +307,8 @@ describe('트러블슈팅 회귀 테스트 - 데이터소스 업데이트 및 �
      * 증상: G7Core.dataSource.updateItem() 호출 후 화면 데이터 미변경
      * 해결: skipRender 옵션 확인, itemId 타입 일치, idField 옵션
      */
+    // @scenario case=custom_handler_rerender
+    // @effects datasource_update_rerenders_matching_item
     it('skipRender가 true면 UI 갱신되지 않아야 함', () => {
       const options = { skipRender: true };
       expect(options.skipRender).toBe(true);
@@ -298,8 +318,10 @@ describe('트러블슈팅 회귀 테스트 - 데이터소스 업데이트 및 �
       expect(defaultOptions.skipRender).toBe(false);
     });
 
+    // @scenario case=custom_handler_rerender
+    // @effects datasource_update_rerenders_matching_item
     it('itemId 타입이 데이터와 일치해야 함', () => {
-      const data = { id: 123, name: '상품' };
+      const data: { id: number | string; name: string } = { id: 123, name: '상품' };
 
       // 올바른 예: 타입 일치
       const correctId = 123;
@@ -310,6 +332,8 @@ describe('트러블슈팅 회귀 테스트 - 데이터소스 업데이트 및 �
       expect(data.id === wrongId).toBe(false);
     });
 
+    // @scenario case=custom_handler_rerender
+    // @effects datasource_update_rerenders_matching_item
     it('커스텀 ID 필드 사용 시 idField 옵션이 필요함', () => {
       const data = { uuid: 'abc-123', name: '상품' };
 
@@ -323,6 +347,8 @@ describe('트러블슈팅 회귀 테스트 - 데이터소스 업데이트 및 �
      * initGlobal: 데이터소스 응답을 전역 상태에 자동 매핑 (선언적)
      * G7Core.dataSource.set(): 프로그래매틱하게 데이터소스 수정
      */
+    // @scenario case=init_global_vs_datasource_set
+    // @effects init_global_runs_on_datasource_load
     it('initGlobal은 데이터소스 로드 시 자동 실행됨', () => {
       const dataSource = {
         id: 'products',
@@ -339,6 +365,8 @@ describe('트러블슈팅 회귀 테스트 - 데이터소스 업데이트 및 �
      * 증상: init_actions에서 refetchDataSource 호출 시 데이터 손실
      * 해결: defer 옵션 또는 setTimeout 래핑
      */
+    // @scenario case=init_refetch_before_render
+    // @effects defer_runs_after_render
     it('defer 옵션으로 렌더링 후 실행을 보장해야 함', () => {
       const action = {
         handler: 'refetchDataSource',
@@ -357,6 +385,8 @@ describe('트러블슈팅 회귀 테스트 - 데이터소스 업데이트 및 �
      * 증상: 뒤로가기로 페이지 재진입 시 init_actions로 로드한 데이터가 UI에 미표시
      * 해결: 페이지 키를 사용하여 컴포넌트 리마운트 강제
      */
+    // @scenario case=navigate_reentry_init
+    // @effects route_path_key_forces_remount
     it('route.path를 key로 사용하여 리마운트를 강제해야 함', () => {
       const key1 = 'page-/admin/products';
       const key2 = 'page-/admin/orders';
@@ -376,6 +406,8 @@ describe('트러블슈팅 회귀 테스트 - 데이터소스 업데이트 및 �
      *       레이아웃 레벨 initLocal이 없으면 cleanup 자체가 실행되지 않음
      * 해결: cleanup 로직을 if(layoutInitLocal) 블록 바깥으로 이동
      */
+    // @scenario case=layout_switch_global_local_reset
+    // @effects layout_switch_resets_global_local
     it('레이아웃 레벨 initLocal이 없어도 다른 레이아웃 전환 시 _global._local이 초기화되어야 함', () => {
       // 역할 수정 페이지에서 데이터소스 initLocal로 설정된 _global._local
       const globalState: Record<string, any> = {
@@ -422,6 +454,8 @@ describe('트러블슈팅 회귀 테스트 - 데이터소스 업데이트 및 �
       expect(globalState._local).toEqual({});
     });
 
+    // @scenario case=layout_switch_global_local_reset
+    // @effects layout_switch_resets_global_local
     it('currentLayoutName이 initLocal 유무와 관계없이 항상 갱신되어야 함', () => {
       let currentLayoutName = '';
 
@@ -442,6 +476,8 @@ describe('트러블슈팅 회귀 테스트 - 데이터소스 업데이트 및 �
       expect(currentLayoutName).toBe('admin_role_form');
     });
 
+    // @scenario case=layout_switch_global_local_reset
+    // @effects layout_switch_resets_global_local
     it('역할 수정 → 역할 목록 → 역할 추가 전체 흐름에서 폼 데이터가 잔존하지 않아야 함', () => {
       const globalState: Record<string, any> = { _local: {} };
       let currentLayoutName = '';
@@ -485,6 +521,8 @@ describe('트러블슈팅 회귀 테스트 - 데이터소스 업데이트 및 �
       expect(globalState._local).toEqual({});
     });
 
+    // @scenario case=layout_switch_global_local_reset
+    // @effects layout_switch_resets_global_local
     it('수정 전 코드 패턴 (cleanup이 if 블록 안에 있을 때)에서는 cleanup이 실행되지 않음', () => {
       // 수정 전 패턴 시뮬레이션: cleanup이 if(layoutInitLocal) 안에 있었음
       const globalState: Record<string, any> = {
@@ -528,6 +566,8 @@ describe('트러블슈팅 회귀 테스트 - 데이터소스 업데이트 및 �
      * 2. 데이터 해시 기반 전역 추적 (컴포넌트와 무관하게 같은 데이터는 한 번만 처리)
      * 3. 전역 상태도 함께 업데이트 (_globalSetState 호출)
      */
+    // @scenario case=extends_init_local
+    // @effects local_init_applies_to_both_stores_once
     it('_localInit 데이터가 컴포넌트 로컬 상태와 전역 상태 모두에 반영되어야 함', () => {
       // API 응답 데이터
       const apiData = {
@@ -560,6 +600,8 @@ describe('트러블슈팅 회귀 테스트 - 데이터소스 업데이트 및 �
       expect(globalState._local.form).toEqual(apiData);
     });
 
+    // @scenario case=extends_init_local
+    // @effects local_init_applies_to_both_stores_once
     it('데이터 해시 기반 추적으로 같은 데이터는 한 번만 처리되어야 함', () => {
       const data1 = { form: { id: 1, name: 'Test' } };
       const data2 = { form: { id: 1, name: 'Test' } }; // 같은 데이터
@@ -575,6 +617,8 @@ describe('트러블슈팅 회귀 테스트 - 데이터소스 업데이트 및 �
       expect(hash1).not.toBe(hash3);
     });
 
+    // @scenario case=extends_init_local
+    // @effects local_init_applies_to_both_stores_once
     it('refetchOnMount 시 _forceLocalInit 타임스탬프로 재적용 허용', () => {
       const data = { form: { id: 1, name: 'Test' } };
       const timestamp1 = Date.now();
@@ -614,6 +658,8 @@ describe('트러블슈팅 회귀 테스트 - 데이터소스 업데이트 및 �
       resetLocalInitTracking();
     });
 
+    // @scenario case=multi_progressive_local_init
+    // @effects local_init_slot_merges_until_consumed
     it('소비 전 슬롯은 후속 payload와 누적 병합되어 양쪽 키가 모두 남아야 함', () => {
       const settingsInit = { form: { name: 'shipping' } };
       const notificationInit = { notificationDefinitionCurrentPage: 1 };
@@ -624,6 +670,8 @@ describe('트러블슈팅 회귀 테스트 - 데이터소스 업데이트 및 �
       expect(merged.notificationDefinitionCurrentPage).toBe(1);
     });
 
+    // @scenario case=multi_progressive_local_init
+    // @effects local_init_slot_merges_until_consumed
     it('한쪽에만 있는 _forceLocalInit 타임스탬프가 보존되어야 함', () => {
       // settings만 refetchOnMount: true → _forceLocalInit 보유
       const settingsInit = { form: { name: 'shipping' }, _forceLocalInit: 1700000000000 };
@@ -634,6 +682,8 @@ describe('트러블슈팅 회귀 테스트 - 데이터소스 업데이트 및 �
       expect(merged._forceLocalInit).toBe(1700000000000);
     });
 
+    // @scenario case=multi_progressive_local_init
+    // @effects local_init_slot_merges_until_consumed
     it('양쪽 모두 _forceLocalInit을 가지면 최신 타임스탬프를 취해야 함', () => {
       const older = { a: 1, _forceLocalInit: 1700000000000 };
       const newer = { b: 2, _forceLocalInit: 1700000001000 };
@@ -643,6 +693,8 @@ describe('트러블슈팅 회귀 테스트 - 데이터소스 업데이트 및 �
       expect(merged._forceLocalInit).toBe(1700000001000);
     });
 
+    // @scenario case=multi_progressive_local_init
+    // @effects local_init_slot_merges_until_consumed
     it('이미 소비된 슬롯은 병합하지 않고 교체해야 함 (stale 재적용 방지)', () => {
       const settingsInit = { form: { name: 'shipping' } };
 
@@ -658,6 +710,8 @@ describe('트러블슈팅 회귀 테스트 - 데이터소스 업데이트 및 �
       expect(merged.notificationDefinitionCurrentPage).toBe(2);
     });
 
+    // @scenario case=multi_progressive_local_init
+    // @effects local_init_slot_merges_until_consumed
     it('새 payload가 없으면 기존 슬롯 참조를 그대로 유지해야 함 (소비부 effect 재발화 방지)', () => {
       const slot = { form: { name: 'shipping' } };
 
@@ -665,6 +719,8 @@ describe('트러블슈팅 회귀 테스트 - 데이터소스 업데이트 및 �
       expect(mergeLocalInitSlot(slot, undefined)).toBe(slot);
     });
 
+    // @scenario case=multi_progressive_local_init
+    // @effects local_init_slot_merges_until_consumed
     it('레이아웃 전환 시 추적 레지스트리가 초기화되어야 함', () => {
       const slot = { form: { name: 'shipping' } };
       markLocalInitConsumed(slot);
@@ -703,6 +759,8 @@ describe('트러블슈팅 회귀 테스트 - 데이터소스 업데이트 및 �
       resetLocalInitTracking();
     });
 
+    // @scenario case=refetch_input_stale
+    // @effects refetch_replaces_consumed_slot
     it('refetch 가 실어 온 정규화 값이 소비된 슬롯을 교체해 _local 에 도달해야 함', () => {
       // 최초 로드: 저장돼 있던 값
       const initial = { form: { live_site_cd: 'Z9Y8X' }, _forceLocalInit: 1700000000000 };
@@ -718,6 +776,8 @@ describe('트러블슈팅 회귀 테스트 - 데이터소스 업데이트 및 �
       expect(slot).toBe(afterSave);
     });
 
+    // @scenario case=refetch_input_stale
+    // @effects refetch_replaces_consumed_slot
     it('타임스탬프가 갱신되어 소비부 추적 키가 달라져야 함 (재적용 허용)', () => {
       const before = `${JSON.stringify({ form: { live_site_cd: 'Z9Y8X' } })}:1700000000000`;
       const after = `${JSON.stringify({ form: { live_site_cd: 'A1B2C' } })}:1700000001000`;
@@ -743,12 +803,14 @@ describe('트러블슈팅 회귀 테스트 - 데이터소스 업데이트 및 �
       snapshotBase: Record<string, any>,
       initData: Record<string, any>,
       useCanonicalBase: boolean
-    ) => {
+    ): Record<string, any> => {
       const base = useCanonicalBase ? store._local || {} : snapshotBase;
       // setGlobalState 의 얕은 펼침 계약 — `_local` 은 통째로 교체된다
       return { ...store, _local: { ...base, ...initData, hasChanges: false } };
     };
 
+    // @scenario case=init_local_sync_query_seed
+    // @effects init_local_sync_preserves_query_seed
     it('스냅샷 base 는 시드를 되돌린다 (수정 전 동작)', () => {
       const store = { _local: { filter: { issueStatus: 'issuing' }, sortBy: 'name_asc' } };
       const staleSnapshot = { filter: { issueStatus: 'all' }, sortBy: 'created_at_desc' };
@@ -759,6 +821,8 @@ describe('트러블슈팅 회귀 테스트 - 데이터소스 업데이트 및 �
       expect(next._local.sortBy).toBe('created_at_desc');
     });
 
+    // @scenario case=init_local_sync_query_seed
+    // @effects init_local_sync_preserves_query_seed
     it('canonical base 는 시드를 보존한다 (수정 후 동작)', () => {
       const store = { _local: { filter: { issueStatus: 'issuing' }, sortBy: 'name_asc' } };
       const staleSnapshot = { filter: { issueStatus: 'all' }, sortBy: 'created_at_desc' };
@@ -770,6 +834,8 @@ describe('트러블슈팅 회귀 테스트 - 데이터소스 업데이트 및 �
       expect(next._local.rows).toEqual([1]);
     });
 
+    // @scenario case=init_local_sync_query_seed
+    // @effects init_local_sync_preserves_query_seed
     it('_local 이외의 전역 키는 동기화로 소실되지 않아야 함', () => {
       const store = { _local: { filter: { issueStatus: 'issuing' } }, cartKey: 'ck-1' };
 
@@ -822,6 +888,7 @@ describe('[사례 9] 탭 왕복 후 먼저 편집한 입력칸만 옛 값이 남
   const TRACKING_KEY = '{"form":{"a":1}}:1700000000000';
 
   describe('[판정] resolveLocalInitAction', () => {
+    /** @effects earlier_edited_field_resets_to_server_value_after_tab_roundtrip */
     it('전역 추적에 없는 payload 는 적용한다 (apply)', () => {
       expect(resolveLocalInitAction({
         globalTrackedKey: '',
@@ -830,6 +897,7 @@ describe('[사례 9] 탭 왕복 후 먼저 편집한 입력칸만 옛 값이 남
       })).toBe('apply');
     });
 
+    /** @effects earlier_edited_field_resets_to_server_value_after_tab_roundtrip */
     it('다른 인스턴스가 이미 적용한 payload 는 이 인스턴스에서 제거한다 (prune)', () => {
       expect(resolveLocalInitAction({
         globalTrackedKey: TRACKING_KEY,
@@ -838,6 +906,7 @@ describe('[사례 9] 탭 왕복 후 먼저 편집한 입력칸만 옛 값이 남
       })).toBe('prune');
     });
 
+    /** @effects earlier_edited_field_resets_to_server_value_after_tab_roundtrip */
     it('같은 인스턴스가 이미 처리한 payload 는 아무것도 하지 않는다 (skip)', () => {
       expect(resolveLocalInitAction({
         globalTrackedKey: TRACKING_KEY,
@@ -846,6 +915,7 @@ describe('[사례 9] 탭 왕복 후 먼저 편집한 입력칸만 옛 값이 남
       })).toBe('skip');
     });
 
+    /** @effects earlier_edited_field_resets_to_server_value_after_tab_roundtrip */
     it('적용한 인스턴스가 재발화해도 재적용하지 않는다 (apply 후 skip)', () => {
       // 적용 인스턴스는 전역·인스턴스 양쪽에 같은 키를 기록한다
       expect(resolveLocalInitAction({
@@ -855,6 +925,7 @@ describe('[사례 9] 탭 왕복 후 먼저 편집한 입력칸만 옛 값이 남
       })).toBe('skip');
     });
 
+    /** @effects earlier_edited_field_resets_to_server_value_after_tab_roundtrip */
     it('payload 가 바뀌면 인스턴스 기록과 무관하게 다시 적용한다', () => {
       expect(resolveLocalInitAction({
         globalTrackedKey: TRACKING_KEY,
@@ -891,6 +962,7 @@ describe('[사례 9] 탭 왕복 후 먼저 편집한 입력칸만 옛 값이 남
       return storeA;
     };
 
+    /** @effects earlier_edited_field_resets_to_server_value_after_tab_roundtrip */
     it('저장소 A 에 직전 필드 사본이 남고 마지막 필드만 정리된다 (결함 전제)', () => {
       const storeA = buildStoreAAfterTypingTwoFields();
 
@@ -898,6 +970,7 @@ describe('[사례 9] 탭 왕복 후 먼저 편집한 입력칸만 옛 값이 남
       expect(storeA.form.order_settings.cart_expiry_days).toBeUndefined(); // 정리됨
     });
 
+    /** @effects earlier_edited_field_resets_to_server_value_after_tab_roundtrip */
     it('제거 없이 병합하면 신선한 저장소 B 가 stale 저장소 A 에 덮인다 (수정 전 동작)', () => {
       const storeA = buildStoreAAfterTypingTwoFields();
       // refetch 로 갱신된 저장소 B
@@ -909,6 +982,7 @@ describe('[사례 9] 탭 왕복 후 먼저 편집한 입력칸만 옛 값이 남
       expect(merged.form.order_settings.cart_expiry_days).toBe(30);  // ← 마지막 필드만 정상
     });
 
+    /** @effects earlier_edited_field_resets_to_server_value_after_tab_roundtrip */
     it('건너뛴 인스턴스가 payload 키 공간을 제거하면 두 필드 모두 서버값이 된다 (수정 후)', () => {
       const storeA = buildStoreAAfterTypingTwoFields();
       const payload = { form: { order_settings: { auto_cancel_days: 3, cart_expiry_days: 30 } } };
@@ -923,6 +997,7 @@ describe('[사례 9] 탭 왕복 후 먼저 편집한 입력칸만 옛 값이 남
   });
 
   describe('[안전성] 제거는 값을 도입하지 않는다', () => {
+    /** @effects prune_never_reintroduces_values */
     it('payload 에 없는 키는 저장소 A 에 그대로 남는다', () => {
       const storeA = {
         loadingActions: { save: true },
@@ -938,6 +1013,7 @@ describe('[사례 9] 탭 왕복 후 먼저 편집한 입력칸만 옛 값이 남
       expect(pruned.form).toBeUndefined();
     });
 
+    /** @effects prune_never_reintroduces_values */
     it('저장소 A 가 비어 있으면 제거는 no-op 이다 (늦게 마운트된 인스턴스)', () => {
       const storeA = { loadingActions: {} };
       const payload = { form: { name: '서버값' } };
@@ -945,6 +1021,7 @@ describe('[사례 9] 탭 왕복 후 먼저 편집한 입력칸만 옛 값이 남
       expect(removeMatchingLeafKeys(storeA, payload)).toEqual({ loadingActions: {} });
     });
 
+    /** @effects prune_never_reintroduces_values */
     it('제거는 저장소 B 를 건드리지 않는다 — 소비된 payload 재적용 회귀가 구조적으로 불가', () => {
       // 늦게 마운트된 인스턴스가 과거 payload 를 들고 있어도, 제거만 하므로
       // 그 사이 사용자가 편집한 저장소 B 의 값이 되돌아가지 않는다.
@@ -966,10 +1043,10 @@ describe('[사례 9] 탭 왕복 후 먼저 편집한 입력칸만 옛 값이 남
    * 판정은 `localDynamicState !== removeMatchingLeafKeys(...)` 참조 비교로 하므로,
    * 헬퍼가 **제거가 없을 때 원본 참조를 그대로 반환**해야 판정이 성립한다.
    * 중첩 경로에서 사본을 새로 만들면 내용이 같아도 참조가 달라져 거짓 양성이 된다.
-   *
-   * @effects prune_is_noop_when_nothing_to_remove, prune_never_reintroduces_values
+   * 효과 표식은 각 시험 앞에 있다.
    */
   describe('[no-op] 제거할 것이 없으면 참조가 보존된다 (거짓 양성 차단)', () => {
+    /** @effects prune_is_noop_when_nothing_to_remove */
     it('최상위에 겹치는 키가 없으면 원본 참조를 그대로 반환한다', () => {
       const storeA = { loadingActions: { save: true } };
       const payload = { form: { name: '서버값' } };
@@ -977,6 +1054,7 @@ describe('[사례 9] 탭 왕복 후 먼저 편집한 입력칸만 옛 값이 남
       expect(removeMatchingLeafKeys(storeA, payload)).toBe(storeA);
     });
 
+    /** @effects prune_is_noop_when_nothing_to_remove */
     it('중첩 경로가 겹쳐도 실제 제거가 없으면 원본 참조를 그대로 반환한다', () => {
       // 저장소 A 에는 theme 만, payload 에는 auto_cancel_days 만 → 제거 대상 0
       const storeA = { form: { theme: 'dark' } };
@@ -988,6 +1066,7 @@ describe('[사례 9] 탭 왕복 후 먼저 편집한 입력칸만 옛 값이 남
       expect(pruned.form).toBe(storeA.form);
     });
 
+    /** @effects prune_is_noop_when_nothing_to_remove */
     it('저장소 A 가 비어 있으면 원본 참조를 그대로 반환한다 (늦게 마운트된 인스턴스)', () => {
       const storeA = {};
       const payload = { form: { order_settings: { auto_cancel_days: 7 } } };
@@ -995,6 +1074,7 @@ describe('[사례 9] 탭 왕복 후 먼저 편집한 입력칸만 옛 값이 남
       expect(removeMatchingLeafKeys(storeA, payload)).toBe(storeA);
     });
 
+    /** @effects prune_is_noop_when_nothing_to_remove */
     it('실제로 제거되면 새 참조를 반환한다 (판정이 항상 false 가 되지 않음)', () => {
       const storeA = { form: { theme: 'dark', auto_cancel_days: 7 } };
       const payload = { form: { auto_cancel_days: 7 } };
@@ -1005,6 +1085,7 @@ describe('[사례 9] 탭 왕복 후 먼저 편집한 입력칸만 옛 값이 남
       expect(pruned.form).toEqual({ theme: 'dark' });
     });
 
+    /** @effects prune_is_noop_when_nothing_to_remove */
     it('깊은 중첩에서 한 리프만 제거돼도 새 참조를 반환한다', () => {
       const storeA = { form: { order_settings: { auto_cancel_days: 7, cart_expiry_days: 15 } } };
       const payload = { form: { order_settings: { auto_cancel_days: 7 } } };
@@ -1015,6 +1096,7 @@ describe('[사례 9] 탭 왕복 후 먼저 편집한 입력칸만 옛 값이 남
       expect(pruned.form.order_settings).toEqual({ cart_expiry_days: 15 });
     });
 
+    /** @effects prune_is_noop_when_nothing_to_remove */
     it('제거되지 않은 형제 가지는 참조까지 보존된다 (불필요한 하위 리렌더 차단)', () => {
       const storeA = {
         ui: { accordionOpen: true },

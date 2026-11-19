@@ -92,4 +92,18 @@ describe('마이페이지 비밀번호 변경 (#736)', () => {
     expect(success.some((a) => a.handler === 'refetchDataSource' && a.params?.dataSourceId === 'user')).toBe(true);
     expect(JSON.stringify(nodes)).toContain('password_status.other_devices_logged_out');
   });
+
+  /**
+   * @scenario password_auth=blocked
+   * @effects blocked_screen_has_back_link
+   */
+  it('비밀번호 인증이 막혀 폼이 숨으면 「내 정보로 돌아가기」 링크가 따로 보인다(디자인 ⑫, 7.2.0)', () => {
+    const back = nodes.find((n) => n.id === 'password_blocked_back');
+    expect(back, '차단 화면의 돌아가기 블록이 없다').toBeDefined();
+    expect(String(back.if)).toContain('passwordAuthBlocked');
+    const link = flatten(back).find((n) => n.name === 'A');
+    expect(link?.props?.href).toBe('/mypage/profile');
+    expect(JSON.stringify(link)).toContain('$t:mypage.profile.back_to_profile');
+    expect(String(form?.if)).toContain('!_local?.passwordAuthBlocked');
+  });
 });

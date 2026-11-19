@@ -1,14 +1,11 @@
 /**
  * sirsoft-basic — 복귀 주소·메뉴 이동 폴백의 출처 회귀
  *
- * - 소셜 로그인은 복귀 주소로 경로만 넘긴다(절대 주소는 접속한 Host 를 그대로 싣는다).
  * - 사용자 메뉴의 이동 폴백(엔진 navigate 부재)은 같은 출처 경로로만 이동한다.
  * - 본인인증 모달을 열지 못해 인증 화면으로 넘어갈 때 `return_url=<경로>` 를 넘긴다(화면이 읽는 이름).
  */
-import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import SocialLoginButtons from '../components/composite/SocialLoginButtons';
 import { UserInfo } from '../components/composite/UserInfo';
 import { sirsoftBasicIdentityLauncher } from '../handlers/identityLauncher';
 
@@ -34,17 +31,6 @@ describe('sirsoft-basic — 복귀 주소·이동 폴백', () => {
     delete (window as any).G7Core;
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
-  });
-
-  // @scenario host_header=forged, sink=template_return_path
-  // @effects template_passes_path_only_return
-  it('소셜 로그인 복귀 주소는 경로만 넘긴다', () => {
-    (window as any).G7Core = { t: (k: string) => k };
-    render(<SocialLoginButtons providers={['google']} />);
-
-    fireEvent.click(screen.getAllByRole('button')[0]);
-
-    expect(fakeLocation.href).toBe(`/api/auth/google?redirect=${encodeURIComponent('/login?x=1')}`);
   });
 
   // @scenario host_header=forged, sink=template_nav_fallback

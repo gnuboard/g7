@@ -17,7 +17,15 @@ use Illuminate\Support\Facades\Route;
 use Modules\Sirsoft\Board\Models\Board;
 use Modules\Sirsoft\Board\Providers\BoardServiceProvider;
 use Modules\Sirsoft\Board\Tests\Concerns\RestoresBoardSettingsStorage;
+use Tests\Concerns\RebuildsRouteNameLookups;
 use Tests\TestCase;
+
+// 이 파일은 PHPUnit 밖의 개발 환경 PHP 프로세스가 Composer 오토로더만 둔 채 읽기도 한다. 그때는 `tests/bootstrap.php` 가
+// 등록하는 `Modules\Sirsoft\Board\Tests\` 네임스페이스가 없어, 아래 `use RestoresBoardSettingsStorage` 가 잡을 수 없는
+// 「Trait not found」 Fatal 로 개발 로그에 쌓였다. 같은 디렉터리의 트레이트를 직접 읽어 둔다(이미 있으면 건너뛴다).
+if (! trait_exists(RestoresBoardSettingsStorage::class, false)) {
+    require_once __DIR__.'/Concerns/RestoresBoardSettingsStorage.php';
+}
 
 /**
  * Board 모듈 테스트 베이스 클래스
@@ -34,6 +42,7 @@ abstract class ModuleTestCase extends TestCase
     use DatabaseTransactions {
         beginDatabaseTransaction as protected beginTransactionAfterSchema;
     }
+    use RebuildsRouteNameLookups;
     use RestoresBoardSettingsStorage;
 
     /**
@@ -369,6 +378,10 @@ abstract class ModuleTestCase extends TestCase
             // 색인을 다시 만들지 않으면 route()·서명 URL 발급(첨부 미리보기 서명 주소)이 RouteNotFound 로 실패한다.
             Route::getRoutes()->refreshNameLookups();
         }
+
+        // 라우트 캐시가 있는 머신에서 fluent `->name()` 등록분의 이름 조회를 살린다 (공유 trait).
+        // 없으면 `route()`/`temporarySignedRoute()` 를 쓰는 테스트가 그 머신에서만 실패한다.
+        $this->rebuildRouteNameLookups();
     }
 
     /**

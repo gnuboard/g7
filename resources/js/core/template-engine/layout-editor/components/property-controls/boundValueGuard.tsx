@@ -22,6 +22,8 @@
 
 import React, { useCallback, useState } from 'react';
 import { hasInlineBinding, hasSettingsRef } from '../../spec/inlineBindingUtils';
+import { useOptionalLayoutEditor } from '../../LayoutEditorContext';
+import { withBasePrefix } from '../../../../support/assetUrl';
 
 /** 다국어 해석 함수 — `WidgetProps.t` 와 동일 시그니처 */
 export type TranslateFn = (key: string, params?: Record<string, string | number>) => string;
@@ -37,6 +39,19 @@ export type TranslateFn = (key: string, params?: Record<string, string | number>
  */
 export function isBoundValue(value: unknown): value is string {
   return typeof value === 'string' && (hasInlineBinding(value) || hasSettingsRef(value));
+}
+
+/**
+ * 템플릿 설정(`_global.templateSettings`)에 연결된 값인지 판정한다 (#434).
+ *
+ * 템플릿 설정은 그 값의 유일한 주인이다 — 편집기에서 직접 지정으로 바꾸면 운영자가 템플릿 설정 화면에서 바꾼 값이
+ * 화면에 반영되지 않는 두 주인 상태가 된다. 그래서 이 연결은 배지로만 보이고 해제 경로를 주지 않는다.
+ *
+ * @param expression 원문
+ * @return 템플릿 설정 연결이면 true
+ */
+export function isTemplateSettingsBinding(expression: unknown): boolean {
+  return typeof expression === 'string' && expression.includes('_global.templateSettings');
 }
 
 /** `useBoundValueGuard` 반환 계약 */
@@ -119,6 +134,38 @@ const noticeLink: React.CSSProperties = {
 };
 
 /**
+ * 템플릿 설정에 연결된 값의 주인 화면(편집 중인 템플릿의 「설정」)으로 가는 링크 (#434 S30).
+ *
+ * 편집 중인 내용을 잃지 않게 새 창으로 연다. 편집기 공급자 밖(속성 컨트롤 단독 렌더)에서는
+ * 어느 템플릿인지 알 수 없으므로 그리지 않는다.
+ *
+ * @param t            다국어 해석 함수
+ * @param testIdPrefix testid 접두사
+ */
+export function TemplateSettingsOpenLink({
+  t,
+  testIdPrefix,
+}: {
+  t: TranslateFn;
+  testIdPrefix: string;
+}): React.ReactElement | null {
+  const templateIdentifier = useOptionalLayoutEditor()?.state.templateIdentifier;
+  if (!templateIdentifier) return null;
+
+  return (
+    <a
+      data-testid={`${testIdPrefix}-template-settings-open`}
+      href={withBasePrefix(`/admin/templates/${encodeURIComponent(templateIdentifier)}/settings`)}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={noticeLink}
+    >
+      {t('layout_editor.control.bound_value.open_template_settings')}
+    </a>
+  );
+}
+
+/**
  * 보호 상태에서 원문과 해제 경로를 보여 주는 공용 배지.
  *
  * 미리보기·입력칸을 대신해 렌더한다 — 위젯이 해석하지 못하는 값을 흉내 내면 거짓
@@ -140,22 +187,30 @@ export function BoundValueNotice({
   onReplace: () => void;
   testIdPrefix: string;
 }): React.ReactElement {
+  // 템플릿 설정 연결은 그 화면이 유일한 주인이라 해제 단추를 두지 않는다 (#434)
+  const templateSettings = isTemplateSettingsBinding(expression);
+
   return (
     <div style={noticeWrap}>
       <code data-testid={`${testIdPrefix}-expression`} style={noticeCode}>
         {expression}
       </code>
-      <span style={{ fontSize: 11, color: '#64748b' }}>
-        {t('layout_editor.control.bound_value.notice')}
+      <span data-testid={templateSettings ? `${testIdPrefix}-template-settings-notice` : undefined} style={{ fontSize: 11, color: '#64748b' }}>
+        {templateSettings
+          ? t('layout_editor.control.bound_value.template_settings_notice')
+          : t('layout_editor.control.bound_value.notice')}
       </span>
-      <button
-        type="button"
-        data-testid={`${testIdPrefix}-expression-replace`}
-        onClick={onReplace}
-        style={noticeLink}
-      >
-        {t('layout_editor.control.bound_value.replace')}
-      </button>
+      {templateSettings && <TemplateSettingsOpenLink t={t} testIdPrefix={testIdPrefix} />}
+      {!templateSettings && (
+        <button
+          type="button"
+          data-testid={`${testIdPrefix}-expression-replace`}
+          onClick={onReplace}
+          style={noticeLink}
+        >
+          {t('layout_editor.control.bound_value.replace')}
+        </button>
+      )}
     </div>
   );
 }

@@ -18,6 +18,8 @@ effects:
   - quick_date_uses_local_calendar_day
   - filter_edit_checkboxes_have_accessible_name
   - tag_input_screen_reader_text_localized
+  - tag_input_default_texts_localized
+  - tag_input_create_label_follows_locale_word_order
   - tag_input_created_value_announced_by_name
 
 test_files:

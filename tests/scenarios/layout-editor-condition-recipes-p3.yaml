@@ -1,0 +1,33 @@
+# π3 (#869) 레이아웃 편집기 시험 표식 부채 채우기 — 이 매니페스트는 아래 test_files 의 각 시험이 재는 효과를
+# 시험 단위로 선언한다. 축 behavior 은 그 파일 안의 동작 묶음이다.
+
+feature: 레이아웃 편집기 조건 레시피 엔진 — 생성은 canonical, 역해석은 변종 흡수, 모호한 식은 고급 유지
+
+description: |
+  conditionRecipeEngine 의 정규화, 결합, 역해석, alias 흡수, 우선순위, path-shape 가드와 출고 recipes 게이트를 잰다.
+
+axes:
+  behavior: [shipped_recipes_gate_locked, comparison_presets_with_coalesce_alias, path_shape_guard, unmatched_expr_stays_advanced, specific_preset_wins_over_generic, explicit_bool_presets, numeric_and_list_presets, value_truthy_falsy_presets, alias_absorbed_canonical_generated, handwritten_expr_matches_preset, normalize_preserves_meaning, parse_roundtrip_restores_clauses, match_single_rejects_param_or_unknown, combine_empty_removes_if, combine_or_joined, combine_single_wrapped, build_unknown_operator_null, recipes_normalized]
+
+effects:
+  - cond_shipped_recipes_gate_locked
+  - cond_comparison_presets_with_coalesce_alias
+  - cond_path_shape_guard
+  - cond_unmatched_expr_stays_advanced
+  - cond_specific_preset_wins_over_generic
+  - cond_explicit_bool_presets
+  - cond_numeric_and_list_presets
+  - cond_value_truthy_falsy_presets
+  - cond_alias_absorbed_canonical_generated
+  - cond_handwritten_expr_matches_preset
+  - cond_normalize_preserves_meaning
+  - cond_parse_roundtrip_restores_clauses
+  - cond_match_single_rejects_param_or_unknown
+  - cond_combine_empty_removes_if
+  - cond_combine_or_joined
+  - cond_combine_single_wrapped
+  - cond_build_unknown_operator_null
+  - cond_recipes_normalized
+
+test_files:
+  - resources/js/core/template-engine/layout-editor/__tests__/spec/conditionRecipeEngine.test.ts

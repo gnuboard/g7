@@ -11,7 +11,7 @@
 1. setLocale: 앱 언어 변경 — 엔진 빌트인 (ActionDispatcher)
 2. setTheme/initTheme: 다크/라이트 모드 — 양쪽 템플릿 공통
 3. 각 템플릿별 전용 핸들러 → 아래 링크 참조
-4. sirsoft-admin_basic: scrollToSection, initMenuFromUrl, filterVisibility 4종, multilingualTag 3종
+4. sirsoft-admin_basic: scrollToSection, initMenuFromUrl, filterVisibility 4종, multilingualTag 3종, coreUpdate 5종
 5. sirsoft-basic: 장바구니 6종, 상품 옵션 2종, 다중 통화 5종, 스토리지 6종
 ```
 
@@ -46,6 +46,14 @@
 |--------|------|------|
 | `setTheme` | 테마 변경 (light/dark/auto) | setThemeHandler.ts |
 | `initTheme` | 저장된 테마 복원 | setThemeHandler.ts |
+
+---
+
+## 다른 템플릿 페이지에 실렸을 때
+
+레이아웃 편집기는 편집 대상 템플릿의 번들을 그 페이지의 활성 템플릿 번들과 함께 싣습니다(예: 다른 관리자 템플릿이 활성인 사이트에서 이 템플릿을 편집할 때). 이때 번들이 핸들러 등록, 본인인증 launcher, 사이드바 복원, `window.G7TemplateHandlers` 노출을 그대로 돌리면 활성 템플릿의 같은 이름 핸들러와 launcher 를 덮고, 그 탭의 언어 전환도 활성 템플릿 대신 이 번들의 핸들러를 다시 등록합니다.
+
+그래서 템플릿 번들은 `initTemplate()` 과 핸들러 맵 노출을 **페이지 루트 `#app[data-template-id]` 가 자기 식별자일 때만** 실행합니다. 표식이 없으면 종전대로 실행합니다. 편집기 위젯 등록처럼 편집기를 위한 등록은 표식과 무관하게 합니다. 번들 템플릿 두 종은 `templates/_bundled/sirsoft-admin_basic/src/support/pageTemplate.ts`(sirsoft-basic 도 같은 자리)의 `isPageTemplate()` 으로 이 판정을 합니다.
 
 ---
 

@@ -1,0 +1,58 @@
+# audit:allow test-scenario-coverage[cross_product] reason: issue:#40 상태 × 2단계 인증 × 비밀번호 × 경로를 곱하면 관문이 앞에서 끊는 조합(잠김·차단이면
+# 2단계 인증 축에 도달하지 않음 등)이 대부분이라 명목상이다. 회귀 가드는 effects 이며 전부 test_files 에 @effects 로 귀속.
+
+feature: 외부 인증 로그인 공개 API (AuthService::loginVerifiedUser) · 관리자 로그인 관문 순서
+
+description: |
+  비밀번호 대신 다른 수단으로 본인이 확인된 회원을 비밀번호 로그인과 같은 관문으로 로그인시킨다(#40 K1·K1-b·K11).
+    - 순서: 잠금 → 회원 상태 → 관리자 경로 판정 → 2단계 인증(로그인 수단 프로바이더 포함) → 비밀번호 변경(비밀번호 회원만) → 휴면 해제 + 토큰.
+    - 응답 모양은 `login()` 과 같다. 로그인 수단 이름(`login_method`)은 2단계 인증·비밀번호 변경을 거쳐도 로그인 완료 훅까지 이어진다(인증번호를 다시 받아도).
+    - 관리자 경로에 관리자가 아닌 회원은 휴면 해제·로그인 완료 훅·2단계 인증 메일 **전에** 403 이다(비밀번호 로그인 포함).
+
+axes:
+  status: [active, locked, blocked, withdrawn, inactive, dormant]
+  two_factor: [off, on]
+  provider: [mail, app]
+  skip_two_factor: [false, true]
+  email: [normal, placeholder, missing]
+  password: [set, none]
+  reason: [none, expired, admin_assigned]
+  guard: [user, admin]
+  role: [member, admin]
+  method: [password, social, missing]
+  step: [password_change_complete, password_change_postpone]
+  resend: [none, once]
+  # 아래 축은 시험별 입력 변종이다 — test_files 의 @scenario 가 쓰는 축이며 조합 곱 대상이 아니다
+  path: [two_factor_complete, two_factor_resend]
+
+effects:
+  - token_issued
+  - after_login_carries_login_method
+  - after_login_password_method_default
+  - locked_user_blocked
+  - status_rejected_with_core_message
+  - dormancy_restored
+  - two_factor_challenge_without_token
+  - login_method_survives_two_factor
+  - login_method_survives_two_factor_resend
+  - two_factor_uses_login_purpose_provider
+  - skip_two_factor_issues_token
+  - placeholder_email_skips_mail_two_factor
+  - missing_email_skips_mail_two_factor
+  - login_method_required
+  - password_change_gate_applies
+  - login_method_survives_password_change
+  - passwordless_skips_password_change_gate
+  - admin_guard_rejects_before_session
+  - admin_login_rejects_before_dormancy_restore
+  - admin_password_change_completion_rejects_before_session
+  - no_after_login_for_rejected_admin_login
+  - no_token_for_rejected_admin_login
+  - no_two_factor_mail_for_non_admin
+  - admin_two_factor_complete_rejects_before_session
+  - admin_two_factor_resend_rejects_before_mail
+  - admin_login_succeeds
+
+test_files:
+  - tests/Feature/Auth/LoginVerifiedUserTest.php
+  - tests/Feature/Auth/AdminLoginGuardOrderTest.php

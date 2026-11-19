@@ -6,9 +6,11 @@ description: |
   지운다(행 + 커밋 뒤 파일 — #887 G5, 버전이 참조하면 페이지에 붙인 채 둔다). 첨부
   연결(파일 이동)·첨부 목록·첨부 개수는 본문 미디어를 빼고 본다. 서빙 게이트는 「발행 또는 열람권 또는 서명」, 응답 본문은
   미발행일 때만 서명한다(발행 페이지는 정식 주소).
+  본문 이미지 서빙 주소에 `?size=`·`?w=` 를 붙이면 같은 게이트를 지난 뒤 줄인 이미지를 낸다(권한 원본 — private). 서명은 그 두
+  파라미터를 빼고 검증한다. 본문 미디어 이미지는 페이지 첨부 썸네일 원본 제공자가 함께 맡아 한 번만 센다(#869 와의 접합).
 
 axes:
-  case: [sync, serve_gate, reserved_collection, fallback_follows_core]
+  case: [sync, serve_gate, reserved_collection, fallback_follows_core, thumbnail]
 
 effects:
   - referenced_linked
@@ -21,6 +23,14 @@ effects:
   - content_media_not_counted_as_attachment
   - video_follows_core_switch_without_page_rule
   - serve_honours_range
+  - content_image_size_serves_thumbnail
+  - content_image_unknown_preset_bypasses
+  - cached_content_thumbnail_still_gated
+  - content_image_thumbnail_follows_gate
+  - signed_content_image_accepts_thumbnail_param
+  - content_media_route_is_thumbnail_pattern
+  - content_image_counted_once_by_attachment_provider
 
 test_files:
   - modules/_bundled/sirsoft-page/tests/Feature/PageContentMediaTest.php
+  - modules/_bundled/sirsoft-page/tests/Feature/PageContentMediaThumbnailTest.php

@@ -10,9 +10,9 @@
 | 훅 이름 | 유형 | 설명 | 발행 위치 |
 |---|---|---|---|
 | `sirsoft-tosspayments.payment.after_cancel` | action | 토스페이먼츠 결제 취소 완료 후 | `src/Services/TossPaymentsApiService.php:119` |
-| `sirsoft-tosspayments.payment.after_confirm` | action | 토스페이먼츠 결제 승인 완료 후 | `src/Controllers/PaymentCallbackController.php:175` |
+| `sirsoft-tosspayments.payment.after_confirm` | action | 토스페이먼츠 결제 승인 완료 후 | `src/Controllers/PaymentCallbackController.php:177` |
 | `sirsoft-tosspayments.payment.before_cancel` | action | 토스페이먼츠 결제 취소 API 호출 전 | `src/Services/TossPaymentsApiService.php:114` |
-| `sirsoft-tosspayments.payment.before_confirm` | action | 토스페이먼츠 결제 승인 API 호출 전 | `src/Controllers/PaymentCallbackController.php:168` |
+| `sirsoft-tosspayments.payment.before_confirm` | action | 토스페이먼츠 결제 승인 API 호출 전 | `src/Controllers/PaymentCallbackController.php:170` |
 <!-- @generated:hooks-published END -->
 
 <!-- @intent START -->
@@ -24,6 +24,10 @@
 주문 청구액입니다. `after_confirm`·`after_cancel` 이 넘기는 토스 응답에는 가상계좌 입금통보 검증값
 (`secret`)이 빠져 있습니다 — 큐로 실행되는 구독자의 작업 기록에 남지 않게 하기 위해서이고, 그 밖의
 응답 필드는 그대로입니다.
+
+`before_confirm`·`after_confirm` 의 첫 인자는 종전대로 이커머스 `Order` Model 입니다(시그니처 유지). 이 플러그인은
+이커머스 공개 결제 계약의 읽기 전용 조회(`OrderAccess::findOrderModel()`)로 그 Model 을 얻어 넘기며, 구독하는 확장도
+속성 읽기만 해야 합니다 — 주문이나 결제 행을 바꾸려면 이커머스 공개 계약(`Contracts\Payment\PaymentLifecycle`)을 쓰세요.
 <!-- @intent END -->
 
 ## 구독 훅
@@ -33,6 +37,7 @@
 |---|---|---|---|---|
 | `core.plugin_settings.before_save` | action (미선언) | `ValidateTossSettingsListener` | `validateBeforeSave` | 10 |
 | `core.plugin_settings.update_validation_rules` | filter | `ValidateRedirectUrlSettingsListener` | `rules` | 10 |
+| `core.required_fields.filter_exempt_routes` | filter | `ExemptRequiredFieldsRoutesListener` | `exemptRoutes` | 10 |
 | `sirsoft-ecommerce.cash_receipt.cancel` | filter | `RegisterCashReceiptProviderListener` | `cancel` | 10 |
 | `sirsoft-ecommerce.cash_receipt.issue` | filter | `RegisterCashReceiptProviderListener` | `issue` | 10 |
 | `sirsoft-ecommerce.cash_receipt.registered_providers` | filter | `RegisterCashReceiptProviderListener` | `registerProvider` | 10 |
@@ -53,7 +58,10 @@
 설정 저장 시점에 서버측 범위 검증(`vbank_valid_hours`, `use_escrow`)을 강제합니다
 (§AGENTS.md "핵심 흐름"). `RegisterTossPaymentMethodsListener`가 `order_sheet_mode`가
 꺼져 있으면 아무것도 주입하지 않는 것은 결제창형에서는 토스 결제수단 전부가 통합결제창
-카드 하나로 처리되기 때문입니다 — 개별 버튼을 만들 필요가 없습니다. 3종의 현금영수증 훅
+카드 하나로 처리되기 때문입니다 — 개별 버튼을 만들 필요가 없습니다. 주입하는 이름·설명은
+`LocalizedValue::translateAll()` 로 지원 언어(`app.supported_locales` = 활성 언어팩) 전부를 채웁니다 —
+ko·en 만 실으면 일본어 화면에 번역이 있는데도 한국어 이름이 보입니다(이커머스가 설정을 읽을 때마다
+`_cached_name` 을 이 정의로 새로 채우므로 다시 저장하지 않아도 반영됩니다). 3종의 현금영수증 훅
 (`cash_receipt.*`)은 카드/계좌이체 발급, 취소, 프로바이더 등록을 각각 담당하며 모두
 `RegisterCashReceiptProviderListener` 하나가 처리합니다 — PG 선택과 현금영수증 발급사
 선택이 이커머스에서 독립적인 개념이라 별도 등록입니다.
@@ -97,6 +105,7 @@
 |---|---|---|---|---|
 | `ClaimPaymentApproveListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/ClaimPaymentApproveListener.php` |
 | `ClaimPaymentRefundListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ClaimPaymentRefundListener.php` |
+| `ExemptRequiredFieldsRoutesListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ExemptRequiredFieldsRoutesListener.php` |
 | `PaymentRefundListener` | 2개 | 명시 등록 | ✅ | `src/Listeners/PaymentRefundListener.php` |
 | `ProvideNecessaryStorageKeysListener` | 1개 | 명시 등록 | ✅ | `src/Listeners/ProvideNecessaryStorageKeysListener.php` |
 | `RegisterCashReceiptProviderListener` | 3개 | 명시 등록 | ✅ | `src/Listeners/RegisterCashReceiptProviderListener.php` |

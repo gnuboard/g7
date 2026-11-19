@@ -114,16 +114,84 @@ function handleStep1Post(string $currentLang, ?string &$error = null): void
 }
 
 /**
+ * 웹 노출 점검 판정값을 로그에 실을 표시 문구로 바꿉니다.
+ *
+ * 값을 보내는 쪽은 무인증 화면이므로 **닫힌 집합**으로만 받는다 — 임의 문자열을 그대로
+ * 로그에 실으면 그 줄이 공격자의 받아쓰기가 된다. 집합 밖(부재 포함)은 「보고되지 않음」
+ * 으로 접는다: 그 사실 자체가 화면 배선이 끊겼다는 신호이므로 없애지 않고 남긴다.
+ *
+ * @param  mixed  $verdict  화면이 보낸 판정값
+ * @return string 로그에 실을 번역 문구
+ */
+function installerWebExposureVerdictLabel($verdict): string
+{
+    return match (installerNormalizeWebExposureVerdict($verdict)) {
+        'safe' => lang('web_exposure_safe'),
+        'exposed' => lang('web_exposure_exposed'),
+        'unknown' => lang('web_exposure_unknown'),
+        'confirmed' => lang('web_exposure_verdict_confirmed'),
+        'pending' => lang('web_exposure_verdict_pending'),
+        default => lang('web_exposure_verdict_unreported'),
+    };
+}
+
+/**
+ * 웹 노출 점검 판정값을 닫힌 집합으로 정규화합니다 — 로그 문구와 서버측 게이트가 같은 값을 본다.
+ *
+ * 화면(`installer.js`)이 보내는 값은 `safe`·`exposed`·`unknown`·`confirmed` 와 숨은 필드의
+ * 초기값 `pending`(프로브가 끝나기 전에 제출된 경우) 다섯이다. 그 밖(부재·비문자열·대소문자
+ * 변형 포함)은 `unreported` 로 접는다 — 게이트는 `exposed` 만 막으므로 이 접힘이 차단을
+ * 넓히지는 않는다. `pending` 을 집합에 두는 이유는 로그다: 접으면 「보고되지 않음」(배선 파손
+ * 신호)과 「판정 전 제출」이 같은 줄이 된다.
+ *
+ * @param  mixed  $verdict  화면이 보낸 판정값
+ * @return string `safe`|`exposed`|`unknown`|`confirmed`|`pending`|`unreported`
+ */
+function installerNormalizeWebExposureVerdict($verdict): string
+{
+    return match (is_string($verdict) ? $verdict : '') {
+        'safe', 'exposed', 'unknown', 'confirmed', 'pending' => $verdict,
+        default => 'unreported',
+    };
+}
+
+/**
  * Step 2 POST 처리 (요구사항 검증)
  *
  * 화면은 차단 항목이 있으면 다음 버튼을 숨기지만, POST 를 직접 보내면 그대로 넘어갔다.
  * 다음 단계로 가기 전에 서버가 요구사항을 다시 검사한다(터미널 설치와 같은 함수).
+ * 그 앞에서 웹 노출 점검 판정(화면 자기 신고, 웹 전용 게이트)을 먼저 본다 — 값 비교뿐이라
+ * 요구사항 전체 판정(CLI 버전 확인 등 외부 호출 포함)보다 싸고, 노출됨 차단 기록이 요구사항 결과에
+ * 가려지지 않는다. 판정 통과 기록은 두 게이트를 모두 지난 뒤 단계를 넘어가는 시점에 한 줄 남긴다.
  *
- * @param  string|null  &$error  화면에 표시할 오류 (참조)
+ * @param  string  $currentLang  현재 언어
+ * @param  string|null  &$error  화면에 표시할 오류 (참조) — 요구사항 미충족·노출됨 판정이면 여기 실리고 단계는 넘어가지 않는다
  */
-function handleStep2Post(?string &$error = null): void
+function handleStep2Post(string $currentLang, ?string &$error = null): void
 {
+    // lang() 은 전역 번역 테이블을 읽는다 — 싣지 않으면 화면 오류와 설치 기록(판정 기록 포함)이 번역 키 원문으로 남는다.
+    global $translations;
+    $translations = loadTranslations($currentLang);
+
     if (isset($_POST['proceed'])) {
+        // 1) 웹 노출 점검 게이트 (웹 전용)
+        $verdict = installerNormalizeWebExposureVerdict($_POST['web_exposure_verdict'] ?? null);
+
+        // 노출 점검(B-4)의 판정은 브라우저가 내리고 [다음 단계] 버튼도 화면이 잠근다(4차 제품
+        // 결정 — 차단은 화면이 한다). 서버는 그 값을 닫힌 집합으로 정규화하고 **자기 신고
+        // `exposed` 만** 막는다 — 실효 범위는 「노출됨으로 판정된 화면에서
+        // 버튼 비활성을 풀고 눌러도 넘어가지 않는다」까지다. 게이트의 목적은 경고 무시 방지이지
+        // 공격자 차단이 아니므로, 값 위조(`safe` 로 바꿔 전송)와 API 직접 호출은 설계상 열려
+        // 있다. `unknown`(판정 불능)과 `confirmed`(운영자 직접 확인, D21)는 종전대로 통과한다
+        // — 자동 판정이 불가능한 배치를 서버가 막을 근거는 없다.
+        if ($verdict === 'exposed') {
+            addLog(lang('log_web_exposure_blocked'));
+            $error = lang('error_web_exposure_blocked');
+
+            return;
+        }
+
+        // 2) 서버 요구사항 재검사 — 화면의 버튼 숨김을 건너뛴 직접 POST 를 막는다(터미널 설치와 같은 함수).
         require_once __DIR__.'/requirements.php';
 
         if (installer_collect_requirements()['blocking']) {
@@ -131,6 +199,13 @@ function handleStep2Post(?string &$error = null): void
 
             return;
         }
+
+        // 그 결과는 단계를 넘어가는 순간 사라졌다 — 「보호 확인됨으로 통과했는지 / 판정
+        // 불능에서 운영자가 직접 확인하고 넘어갔는지」를 되짚을 근거가 어디에도 없었다
+        // (잔여물 정리 실패조차 설치 로그에 남는데 정작 판정은 남지 않았다). 통과 시점에 한 줄 남긴다.
+        addLog(lang('log_web_exposure_verdict', [
+            'verdict' => installerWebExposureVerdictLabel($verdict),
+        ]));
 
         updateStepStatus(2, 3);
         redirectToStep(3);
@@ -174,7 +249,10 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
     $formData = array_merge($formData, $_POST);
     $formData['use_read_db'] = isset($_POST['use_read_db']) ? true : false;
 
-    // 입력 검증 본문은 웹·터미널 공유 함수가 소유한다 — 규칙을 바꿀 때는 config-validation.php 에서 바꾼다.
+    // 입력 검증은 웹·터미널 공유 함수가 소유한다 — 규칙을 바꿀 때는 config-validation.php 에서 바꾼다.
+    // 사이트명 길이, 직접 지정한 PHP 경로의 비-CLI 거부, 실행 방식 정규화·성립 검사와 vendor 방식 보정,
+    // 코어 업데이트 _pending 경로의 검사 버튼 동형 규칙(`..`/NUL 거부·Windows 절대경로·stat 진단 억제)도
+    // 그 함수 안에 있다. 터미널 설치가 같은 규칙을 거치도록 껍데기의 사본은 두지 않는다.
     $validated = installer_validate_config($formData, $currentLang);
     $formData = $validated['config'];
     $errors = array_merge($errors, $validated['errors']);
@@ -196,41 +274,65 @@ function handleStep3Post(string $currentLang, array &$formData, array &$errors):
 
     // 검증 통과 시 다음 단계로 이동
     if (empty($errors)) {
-        $state = getInstallationState();
-        $generation = (int) ($state['generation'] ?? 0);
-        $isFirstClaim = ! installer_state_is_claimed($state);
+        // 읽기-판정-쓰기 전체를 상태 잠금 안에서 수행한다 — 잠금 밖이면 읽기와
+        // 쓰기 사이에 워커가 running 으로 전이한 것을 이 저장이 되덮는 경합 창이 남는다.
+        // 같은 라운드의 reset(state-management)이 지킨 규율과 동일하다. 저장은 CAS 로 한다 —
+        // 소유권을 최초로 주장하는 상태변경이라 세대를 올려, 그 전의 설치 계획 서명을 무효로 만든다.
+        $saveOutcome = installerWithStateLock(static function () use ($formData): string {
+            $state = getInstallationState();
+            $generation = (int) ($state['generation'] ?? 0);
+            $isFirstClaim = ! installer_state_is_claimed($state);
 
-        // 이미 다른 세션이 소유한 설치면 덮어쓰지 않는다 (index.php 가 비소유 세션을 잠그는 것의 이중 방어).
-        if (! $isFirstClaim && ! installer_session_is_owner($state)) {
+            // 이미 다른 세션이 소유한 설치면 덮어쓰지 않는다 (index.php 가 비소유 세션을 잠그는 것의 이중 방어).
+            if (! $isFirstClaim && ! installer_session_is_owner($state)) {
+                return 'ownership';
+            }
+
+            // 진행 이력 상태(running/failed/aborted)는 되감지 않는다 (21차 #21-9 ①) — 다른 탭의
+            // 재저장이 failed 를 ready 로 덮으면 [다시 시도]가 신규 설치로 둔갑해 완료 마커·
+            // 롤백 기준선·실패 로그가 소거된다. 판정은 installerConfigSaveStatusPatch 가 소유한다.
+            $currentLifecycleStatus = $state['installation_status'] ?? null;
+
+            // state.json 에는 비밀(DB/관리자 비밀번호) 을 저장하지 않는다 (이슈 #465).
+            // read 필드 정리(이슈 #63 2단계 방어) 도 sanitizeConfigForState 가 함께 수행.
+            $state['config'] = sanitizeConfigForState($formData);
+            $state['current_step'] = 4;
+            $state['step_status'][3] = 'completed';
+            $state = array_merge(
+                $state,
+                installerConfigSaveStatusPatch(is_string($currentLifecycleStatus) ? $currentLifecycleStatus : null)
+            );
+            // 기존 테이블 삭제 확인은 이 세션의 DB 테스트가 발급한 것만 설치 계획에 싣는다.
+            $state['drop_confirm'] = is_array($_SESSION['drop_confirm'] ?? null) ? $_SESSION['drop_confirm'] : null;
+
+            if ($isFirstClaim) {
+                // 소유자가 없던 설치에 남은 runtime.php 는 이전 시도(다른 세션)의 비밀이다 —
+                // 새 소유자의 설치에 섞이지 않도록 폐기한다 (자격증명 혼합 차단).
+                require_once __DIR__.'/installer-runtime.php';
+                deleteInstallerRuntime();
+                $state = installer_claim_owner($state);
+            }
+
+            if (! saveInstallationStateCas($state, $generation)) {
+                return 'conflict';
+            }
+
+            return $isFirstClaim ? 'claimed' : 'saved';
+        });
+
+        if ($saveOutcome === 'ownership') {
             $errors['ownership'] = lang('error_ownership_conflict');
 
             return;
         }
 
-        // state.json 에는 비밀(DB/관리자 비밀번호) 을 저장하지 않는다 (이슈 #465).
-        // read 필드 정리(이슈 #63 2단계 방어) 도 sanitizeConfigForState 가 함께 수행.
-        $state['config'] = sanitizeConfigForState($formData);
-        $state['installation_status'] = 'ready';
-        $state['current_step'] = 4;
-        $state['step_status'][3] = 'completed';
-        // 기존 테이블 삭제 확인은 이 세션의 DB 테스트가 발급한 것만 설치 계획에 싣는다.
-        $state['drop_confirm'] = is_array($_SESSION['drop_confirm'] ?? null) ? $_SESSION['drop_confirm'] : null;
-
-        if ($isFirstClaim) {
-            // 소유자가 없던 설치에 남은 runtime.php 는 이전 시도(다른 세션)의 비밀이다 —
-            // 새 소유자의 설치에 섞이지 않도록 폐기한다 (자격증명 혼합 차단).
-            require_once __DIR__.'/installer-runtime.php';
-            deleteInstallerRuntime();
-            $state = installer_claim_owner($state);
-        }
-
-        if (! saveInstallationStateCas($state, $generation)) {
+        if ($saveOutcome === 'conflict') {
             $errors['state'] = lang('error_state_conflict');
 
             return;
         }
 
-        if ($isFirstClaim) {
+        if ($saveOutcome === 'claimed') {
             addLog(lang('log_ownership_claimed'));
         }
 
@@ -276,7 +378,7 @@ function handlePostRequest(int $currentStep, string $currentLang, array &$formDa
     match ($currentStep) {
         0 => handleStep0Post(),
         1 => handleStep1Post($currentLang, $error),
-        2 => handleStep2Post($error),
+        2 => handleStep2Post($currentLang, $error),
         3 => handleStep3Post($currentLang, $formData, $errors),
         default => null
     };

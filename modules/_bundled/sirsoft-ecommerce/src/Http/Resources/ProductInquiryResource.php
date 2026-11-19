@@ -5,6 +5,7 @@ namespace Modules\Sirsoft\Ecommerce\Http\Resources;
 use App\Http\Resources\BaseApiResource;
 use Illuminate\Http\Request;
 use Modules\Sirsoft\Ecommerce\Support\LocalizedText;
+use Modules\Sirsoft\Ecommerce\Support\MemberDisplayName;
 
 /**
  * 상품 1:1 문의 리소스
@@ -26,10 +27,11 @@ class ProductInquiryResource extends BaseApiResource
             'inquirable_id' => $this->inquirable_id,
             'user_id' => $this->user_id,
 
-            // 작성자 정보
+            // 작성자 정보 — 이름은 표시 이름이다(관리자 화면은 이커머스 관리자 영역, 그 밖은 상품 문의 영역).
+            // 실명은 회원 조회 권한이 있는 관리자에게만 `real_name` 으로 더해진다.
             'user' => $this->whenLoaded('user', fn () => $this->user ? [
                 'id' => $this->user->id,
-                'name' => $this->user->name,
+                ...MemberDisplayName::fields($this->user, $request, MemberDisplayName::areaFor($request, MemberDisplayName::AREA_INQUIRY)),
                 'email' => $this->canExposeMemberEmail($request, $this->user->id) ? $this->user->email : null,
             ] : null),
 

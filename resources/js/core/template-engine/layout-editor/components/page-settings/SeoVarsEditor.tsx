@@ -80,8 +80,7 @@ export function SeoVarsEditor({
   // 값 채우기(data) — 게이팅 충족 시.
   const dataVars = useMemo(() => (gatingMet ? cands.filter((c) => c.source === 'data') : []), [cands, gatingMet]);
 
-  // 자동 채움 이름 집합(직접 추가 차단·data 와 구분).
-  const autoNames = useMemo(() => new Set(autoVars.map((c) => c.name)), [autoVars]);
+  // data 후보 이름 집합(직접 추가 vars 와 구분). 자동 채움 이름 차단은 reservedNames 가 맡는다.
   const dataNames = useMemo(() => new Set(dataVars.map((c) => c.name)), [dataVars]);
   const reservedNames = useMemo(() => {
     // 게이팅 무관하게 모든 후보 이름 예약(자동 vars 동일 이름 차단은 후보가 자동이면 항상 적용).

@@ -134,9 +134,11 @@
   </init>
   <computed name="canReadAnalytics">{{(current_user?.data?.permissions ?? []).some(p =&gt; (p?.identifier ?? p) === 'core.analytics.read')}}</computed>
   <slot name="content">
-    <div data-ref="dashboard_content" class="admin-page-content-responsive-fluid">
+    <div data-ref="dashboard_content" class="p-4 bg-gray-50 dark:bg-gray-900">
+      <responsive on="640-1023" class="p-6 bg-gray-50 dark:bg-gray-900"/>
+      <responsive on="1024-" class="p-8 bg-gray-50 dark:bg-gray-900"/>
       <div data-ref="page_header" class="flex-between mb-6">
-        <h1 data-ref="page_title" class="text-primary text-xl sm:text-2xl font-semibold">$t:admin.dashboard.title</h1>
+        <h1 data-ref="page_title" class="text-primary text-xl font-semibold"><responsive on="640-" class="text-primary text-2xl font-semibold"/>$t:admin.dashboard.title</h1>
         <button type="button" data-ref="refresh_button" class="btn-icon" aria-label="$t:admin.dashboard.refresh">
           <on type="click">
             <!-- 새로고침 — 이 화면의 소스 7개를 모두 다시 부른다(웹소켓 소스는 받는 쪽이라 제외).
@@ -181,11 +183,14 @@
             <p data-ref="top_alert_time_{{$idx}}" data-if="{{alert.time}}" class="form-hint">{{alert.time ?? ''}}</p>
             <p data-ref="top_alert_permission_hint_{{$idx}}" data-if="{{(!!alert.recover_endpoint &amp;&amp; alert.abilities?.can_recover !== true) || (!!alert.extension_type &amp;&amp; !!alert.identifier &amp;&amp; alert.abilities?.can_dismiss !== true)}}" class="form-hint">$t:admin.dashboard.alert_action_no_permission</p>
             <div data-ref="top_alert_actions_{{$idx}}" class="flex-center gap-2 mt-2">
-              <button data-ref="top_alert_recover_button_{{$idx}}" data-if="{{!!alert.recover_endpoint}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{alert.abilities?.can_recover !== true}}">
+              <!-- 조치 화면으로 가는 링크. 리스너가 action_path 를 실어 보내는데 이것을 읽는 노드가 없으면 경고 문구만 뜨고 운영자가 갈 곳을 스스로 찾아야 한다. 경고(warning) 알림은 이 상단 구역에 그려지므로(예약 작업 정지 알림이 그렇다) 아래 목록과 같은 링크를 여기에도 둔다. -->
+              <a data-ref="top_alert_action_link_{{$idx}}" data-if="{{alert.action_path &amp;&amp; alert.action_label}}" href="{{alert.action_path ?? '#'}}" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-amber-600 dark:bg-amber-500 hover:bg-amber-700 dark:hover:bg-amber-600 text-white rounded hover:no-underline">{{alert.action_label}}</a>
+              <button data-ref="top_alert_recover_button_{{$idx}}" data-if="{{!!alert.recover_endpoint}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{alert.abilities?.can_recover !== true || _global.appConfig?.runtime_role === 'stage'}}" title="{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}">
                 <on type="click">
                   <!-- 복구 주소는 알림 자체가 싣고 온다(alert.recover_endpoint) — 확장 종류마다 복구 경로가 달라 화면이 주소를 조립하지 않는다. 끝나면 알림 목록을 다시 받아 처리된 알림이 사라지게 한다.
                        버튼이 뜨는 조건도 알림 종류(subtype)가 아니라 **복구 주소를 실어 왔는가**다 — 종류를 열거하면 새 알림이 복구를 붙일 때마다 이 화면을 고쳐야 한다.
-                       버튼 글자와 성공 안내도 알림이 실어 오면 그것을 쓰고, 없으면 공통 문구로 떨어진다. -->
+                       버튼 글자와 성공 안내도 알림이 실어 오면 그것을 쓰고, 없으면 공통 문구로 떨어진다.
+                       복구는 확장을 다시 켜는 수명주기 동작이라 검수 서버(runtime_role stage)에서는 서버가 409 로 막는다 — 단추도 미리 잠그고 안내를 단다. -->
                   <api-call :auth_required="true" target="{{alert.recover_endpoint}}" method="POST">
                     <success>
                       <toast type="success" message="{{alert.recover_success_message ?? $t('extensions.alerts.recovered_success')}}"/>
@@ -233,17 +238,28 @@
           </div>
         </div>
       </div>
-      <div data-ref="quick_menu" class="flex flex-wrap gap-2 md:gap-3 mb-4 md:mb-6 lg:mb-8">
-        <a data-ref="qm_users" href="/admin/users" class="flex-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200">
-          <icon name="users" class="text-lg md:text-xl"/>
+      <div data-ref="quick_menu" class="flex flex-wrap gap-2 mb-4">
+        <responsive on="tablet" class="flex flex-wrap gap-3 mb-6"/>
+        <responsive on="desktop" class="flex flex-wrap gap-3 mb-8"/>
+        <a data-ref="qm_users" href="/admin/users" class="flex-center flex-col justify-center gap-1 w-16 h-16 text-[10px] font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200">
+          <responsive on="768-" class="flex-center flex-col justify-center gap-1 w-20 h-20 text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200"/>
+          <icon name="users" class="text-lg">
+            <responsive on="768-" class="text-xl"/>
+          </icon>
           <span class="text-center leading-tight">$t:admin.dashboard.quick_menu.users</span>
         </a>
-        <a data-ref="qm_settings" href="/admin/settings" class="flex-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200">
-          <icon name="cog" class="text-lg md:text-xl"/>
+        <a data-ref="qm_settings" href="/admin/settings" class="flex-center flex-col justify-center gap-1 w-16 h-16 text-[10px] font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200">
+          <responsive on="768-" class="flex-center flex-col justify-center gap-1 w-20 h-20 text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200"/>
+          <icon name="cog" class="text-lg">
+            <responsive on="768-" class="text-xl"/>
+          </icon>
           <span class="text-center leading-tight">$t:admin.dashboard.quick_menu.settings</span>
         </a>
-        <a data-ref="qm_modules" href="/admin/modules" class="flex-center flex-col justify-center gap-1 w-16 h-16 md:w-20 md:h-20 text-[10px] md:text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200">
-          <icon name="puzzle-piece" class="text-lg md:text-xl"/>
+        <a data-ref="qm_modules" href="/admin/modules" class="flex-center flex-col justify-center gap-1 w-16 h-16 text-[10px] font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200">
+          <responsive on="768-" class="flex-center flex-col justify-center gap-1 w-20 h-20 text-xs font-medium rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-700 hover:text-white dark:hover:bg-slate-200 dark:hover:text-slate-800 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 transition-all duration-200"/>
+          <icon name="puzzle-piece" class="text-lg">
+            <responsive on="768-" class="text-xl"/>
+          </icon>
           <span class="text-center leading-tight">$t:admin.dashboard.quick_menu.modules</span>
         </a>
         <extension-point name="admin_dashboard_quick_menu" class="contents">
@@ -262,8 +278,11 @@
           <include src="partials/admin_dashboard/_analytics_widget.g7.html"/>
         </default>
       </extension-point>
-      <div data-ref="middle_section_grid" class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
-        <div data-ref="recent_notifications_card" class="bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6">
+      <div data-ref="middle_section_grid" class="grid grid-cols-1 gap-4 mb-6">
+        <responsive on="640-1023" class="grid grid-cols-1 gap-6 mb-6"/>
+        <responsive on="desktop" class="grid grid-cols-2 gap-6 mb-6"/>
+        <div data-ref="recent_notifications_card" class="bg-slate-100 dark:bg-slate-800 rounded-xl p-4">
+          <responsive on="768-" class="bg-slate-100 dark:bg-slate-800 rounded-2xl p-6"/>
           <blur-until-loaded sources="dashboard_recent_notifications"/>
           <permissions>
             <permission>core.notification-logs.read</permission>
@@ -292,7 +311,8 @@
             </div>
           </div>
         </div>
-        <div data-ref="recent_activity_card" class="bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6">
+        <div data-ref="recent_activity_card" class="bg-slate-100 dark:bg-slate-800 rounded-xl p-4">
+          <responsive on="768-" class="bg-slate-100 dark:bg-slate-800 rounded-2xl p-6"/>
           <blur-until-loaded sources="dashboard_activities"/>
           <permissions>
             <permission>core.dashboard.activities</permission>
@@ -324,7 +344,8 @@
       <!-- 설치 현황 칩 4개(모듈·플러그인·템플릿·언어팩)는 바로 아래 상태 카드 세 장이 세는 것과 같은 것을
         센다 — 화면 맨 위에 떼어 두면 「3/3」이 무엇의 3인지 알 수 없다. 카드 바로 위에 붙여 둔다
         (#682 라운드 4, 검수 지적 ⑧). 언어팩은 상태 카드가 없어 칩이 유일한 요약이다. -->
-      <div data-ref="secondary_stats_badges" class="flex-center flex-wrap gap-2 md:gap-3 mb-4">
+      <div data-ref="secondary_stats_badges" class="flex-center flex-wrap gap-2 mb-4">
+        <responsive on="768-" class="flex-center flex-wrap gap-3 mb-4"/>
         <blur-until-loaded sources="dashboard_stats"/>
         <a data-ref="modules_badge" href="/admin/modules" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white dark:bg-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors">
           <permissions>
@@ -371,8 +392,12 @@
           <span data-ref="language_packs_badge_value" class="font-bold">{{dashboard_stats?.data?.language_packs?.active ?? 0}}/{{dashboard_stats?.data?.language_packs?.total ?? 0}}</span>
         </a>
       </div>
-      <div data-ref="extension_status_grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-        <div data-ref="module_status_card" class="@container bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6">
+      <div data-ref="extension_status_grid" class="grid grid-cols-1 gap-4">
+        <responsive on="640-767" class="grid grid-cols-1 gap-6"/>
+        <responsive on="tablet" class="grid grid-cols-2 gap-6"/>
+        <responsive on="desktop" class="grid grid-cols-3 gap-6"/>
+        <div data-ref="module_status_card" class="@container bg-slate-100 dark:bg-slate-800 rounded-xl p-4">
+          <responsive on="768-" class="@container bg-slate-100 dark:bg-slate-800 rounded-2xl p-6"/>
           <blur-until-loaded sources="dashboard_modules"/>
           <permissions>
             <permission>core.modules.read</permission>
@@ -400,7 +425,7 @@
             <div data-ref="module_item_{{$idx}}" data-each="module, $idx in {{(dashboard_modules?.data?.data ?? []).slice(0, 6)}}" class="flex items-center gap-3 min-w-0 p-3 rounded-lg bg-white dark:bg-slate-700">
               <div data-ref="module_icon_{{$idx}}" class="relative flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-slate-600">
                 <icon name="cube" class="text-slate-500 dark:text-slate-300" aria-hidden="true"/>
-                <!-- 모듈 아이콘. 불러오지 못하면 깨진 목록에 넣어 이미지를 걷고 뒤의 기본 아이콘을 보인다 -->
+                <!-- thumb-exempt: 확장 아이콘은 업로드 이미지가 아니다(확장 패키지에 든 파일이고 SVG 도 받는다). 모듈 아이콘. 불러오지 못하면 깨진 목록에 넣어 이미지를 걷고 뒤의 기본 아이콘을 보인다 -->
                 <img data-ref="module_icon_img_{{$idx}}" data-if="{{module.icon_url &amp;&amp; !(_local.dashboardIconBroken ?? []).includes('module:' + module.identifier)}}" src="{{module.icon_url}}" alt="" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-contain rounded-lg p-1 bg-slate-100 dark:bg-slate-600">
                   <on event="onError">
                     <set-state target="local" dashboardIconBroken="{{[...(_local.dashboardIconBroken ?? []), 'module:' + module.identifier]}}"/>
@@ -418,7 +443,8 @@
           </div>
           <p data-ref="module_more_count" data-if="{{(dashboard_modules?.data?.data ?? []).length > 6}}" class="mt-3 text-center text-label-subtle">$t:admin.dashboard.extension_status.more_count|count={{(dashboard_modules?.data?.data ?? []).length - 6}}</p>
         </div>
-        <div data-ref="plugin_status_card" class="@container bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6">
+        <div data-ref="plugin_status_card" class="@container bg-slate-100 dark:bg-slate-800 rounded-xl p-4">
+          <responsive on="768-" class="@container bg-slate-100 dark:bg-slate-800 rounded-2xl p-6"/>
           <blur-until-loaded sources="dashboard_plugins"/>
           <permissions>
             <permission>core.plugins.read</permission>
@@ -442,7 +468,7 @@
             <div data-ref="plugin_item_{{$idx}}" data-each="plugin, $idx in {{(dashboard_plugins?.data?.data ?? []).slice(0, 6)}}" class="flex items-center gap-3 min-w-0 p-3 rounded-lg bg-white dark:bg-slate-700">
               <div data-ref="plugin_icon_{{$idx}}" class="relative flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-slate-600">
                 <icon name="puzzle-piece" class="text-slate-500 dark:text-slate-300" aria-hidden="true"/>
-                <!-- 플러그인 아이콘. 불러오지 못하면 깨진 목록에 넣어 이미지를 걷고 뒤의 기본 아이콘을 보인다 -->
+                <!-- thumb-exempt: 확장 아이콘은 업로드 이미지가 아니다(확장 패키지에 든 파일이고 SVG 도 받는다). 플러그인 아이콘. 불러오지 못하면 깨진 목록에 넣어 이미지를 걷고 뒤의 기본 아이콘을 보인다 -->
                 <img data-ref="plugin_icon_img_{{$idx}}" data-if="{{plugin.icon_url &amp;&amp; !(_local.dashboardIconBroken ?? []).includes('plugin:' + plugin.identifier)}}" src="{{plugin.icon_url}}" alt="" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-contain rounded-lg p-1 bg-slate-100 dark:bg-slate-600">
                   <on event="onError">
                     <set-state target="local" dashboardIconBroken="{{[...(_local.dashboardIconBroken ?? []), 'plugin:' + plugin.identifier]}}"/>
@@ -460,7 +486,8 @@
           </div>
           <p data-ref="plugin_more_count" data-if="{{(dashboard_plugins?.data?.data ?? []).length > 6}}" class="mt-3 text-center text-label-subtle">$t:admin.dashboard.extension_status.more_count|count={{(dashboard_plugins?.data?.data ?? []).length - 6}}</p>
         </div>
-        <div data-ref="template_status_card" class="@container bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6">
+        <div data-ref="template_status_card" class="@container bg-slate-100 dark:bg-slate-800 rounded-xl p-4">
+          <responsive on="768-" class="@container bg-slate-100 dark:bg-slate-800 rounded-2xl p-6"/>
           <blur-until-loaded sources="dashboard_templates"/>
           <permissions>
             <permission>core.templates.read</permission>
@@ -485,7 +512,7 @@
             <div data-ref="template_item_{{$idx}}" data-each="template, $idx in {{(dashboard_templates?.data?.data ?? []).slice(0, 6)}}" class="flex items-center gap-3 min-w-0 p-3 rounded-lg bg-white dark:bg-slate-700">
               <div data-ref="template_icon_{{$idx}}" class="relative flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center bg-slate-100 dark:bg-slate-600">
                 <icon name="palette" class="text-slate-500 dark:text-slate-300" aria-hidden="true"/>
-                <!-- 템플릿 아이콘. 불러오지 못하면 깨진 목록에 넣어 이미지를 걷고 뒤의 기본 아이콘을 보인다 -->
+                <!-- thumb-exempt: 확장 아이콘은 업로드 이미지가 아니다(확장 패키지에 든 파일이고 SVG 도 받는다). 템플릿 아이콘. 불러오지 못하면 깨진 목록에 넣어 이미지를 걷고 뒤의 기본 아이콘을 보인다 -->
                 <img data-ref="template_icon_img_{{$idx}}" data-if="{{template.icon_url &amp;&amp; !(_local.dashboardIconBroken ?? []).includes('template:' + template.identifier)}}" src="{{template.icon_url}}" alt="" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-contain rounded-lg p-1 bg-slate-100 dark:bg-slate-600">
                   <on event="onError">
                     <set-state target="local" dashboardIconBroken="{{[...(_local.dashboardIconBroken ?? []), 'template:' + template.identifier]}}"/>
@@ -504,8 +531,10 @@
           <p data-ref="template_more_count" data-if="{{(dashboard_templates?.data?.pagination?.total ?? 0) > 6}}" class="mt-3 text-center text-label-subtle">$t:admin.dashboard.extension_status.more_count|count={{(dashboard_templates?.data?.pagination?.total ?? 0) - 6}}</p>
         </div>
       </div>
-      <div data-ref="bottom_section_grid" class="mt-4 sm:mt-6">
-        <div data-ref="system_alerts_card" data-if="{{((dashboard_alerts?.data?.data ? dashboard_alerts.data.data : (dashboard_alerts?.data ?? [])).filter(a => a.type !== 'warning').length) > 0}}" class="bg-slate-100 dark:bg-slate-800 rounded-xl md:rounded-2xl p-4 md:p-6">
+      <div data-ref="bottom_section_grid" class="mt-4">
+        <responsive on="640-" class="mt-6"/>
+        <div data-ref="system_alerts_card" data-if="{{((dashboard_alerts?.data?.data ? dashboard_alerts.data.data : (dashboard_alerts?.data ?? [])).filter(a => a.type !== 'warning').length) > 0}}" class="bg-slate-100 dark:bg-slate-800 rounded-xl p-4">
+          <responsive on="768-" class="bg-slate-100 dark:bg-slate-800 rounded-2xl p-6"/>
           <blur-until-loaded sources="dashboard_alerts"/>
           <permissions>
             <permission>core.dashboard.alerts</permission>
@@ -523,7 +552,9 @@
                 <p data-ref="alert_time_{{$idx}}" data-if="{{alert.time}}" class="form-hint">{{alert.time ?? ''}}</p>
                 <p data-ref="alert_permission_hint_{{$idx}}" data-if="{{(!!alert.recover_endpoint &amp;&amp; alert.abilities?.can_recover !== true) || (!!alert.extension_type &amp;&amp; !!alert.identifier &amp;&amp; alert.abilities?.can_dismiss !== true)}}" class="form-hint">$t:admin.dashboard.alert_action_no_permission</p>
                 <div data-ref="alert_actions_{{$idx}}" class="flex-center gap-2 mt-2">
-                  <button data-ref="alert_recover_button_{{$idx}}" data-if="{{!!alert.recover_endpoint}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{alert.abilities?.can_recover !== true}}">
+                  <!-- 조치 화면으로 가는 링크. 리스너가 action_path 를 실어 보내는데 이것을 읽는 노드가 없으면 경고 문구만 뜨고 운영자가 갈 곳을 스스로 찾아야 한다. -->
+                  <a data-ref="alert_action_link_{{$idx}}" data-if="{{alert.action_path &amp;&amp; alert.action_label}}" href="{{alert.action_path ?? '#'}}" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-amber-600 dark:bg-amber-500 hover:bg-amber-700 dark:hover:bg-amber-600 text-white rounded hover:no-underline">{{alert.action_label}}</a>
+                  <button data-ref="alert_recover_button_{{$idx}}" data-if="{{!!alert.recover_endpoint}}" type="button" class="inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed" disabled="{{alert.abilities?.can_recover !== true || _global.appConfig?.runtime_role === 'stage'}}" title="{{_global.appConfig?.runtime_role === 'stage' ? '$t:admin.stage_role.locked_hint' : ''}}">
                     <on type="click">
                       <!-- 복구 실행. 호출 주소는 이 레이아웃이 조립하지 않고 **경고가 실어 온 값**을 쓴다 —
                            복구 대상이 모듈/플러그인/템플릿 중 무엇인지 화면이 알 필요가 없게 한 설계다.

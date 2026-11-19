@@ -3,12 +3,12 @@
   <modal>
     <!-- 결제가 오류로 끝났을 때 뜬다. 사유는 결제창이 돌려준 문구를 그대로 보여 주므로 여기서 문안을 정하지 않는다 -->
     <modal data-type="composite" data-ref="tosspayments_payment_error_modal" title="$t:sirsoft-tosspayments.payment_error_title" width="420px">
-      <div class="text-center py-4">
-        <icon name="exclamation-circle" class="text-red-500 text-4xl mb-4"/>
-        <p class="text-gray-700 dark:text-gray-300">{{_local.paymentErrorMessage ?? ''}}</p>
+      <div class="paytosspayments:text-center paytosspayments:py-4">
+        <icon name="exclamation-circle" class="paytosspayments:text-red-500 paytosspayments:text-4xl paytosspayments:leading-none paytosspayments:mb-4"/>
+        <p class="paytosspayments:text-gray-700 paytosspayments:dark:text-gray-300">{{_local.paymentErrorMessage ?? ''}}</p>
       </div>
-      <div class="flex justify-center mt-6">
-        <button type="button" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
+      <div class="paytosspayments:flex paytosspayments:justify-center paytosspayments:mt-6">
+        <button type="button" class="paytosspayments:px-6 paytosspayments:py-2 paytosspayments:bg-blue-600 paytosspayments:text-white paytosspayments:rounded-lg paytosspayments:font-medium paytosspayments:hover:bg-blue-700 paytosspayments:transition-colors">
           <on type="click">
             <!-- 닫기 전에 사유를 비운다. 남겨 두면 다음 결제 시도가 실패하기도 전에 지난 사유가 그려진 채 창이 열린다 -->
             <set-state target="local" :paymentErrorMessage="null"/>
@@ -24,12 +24,12 @@
   <modal>
     <!-- 구매자가 결제창을 스스로 닫았을 때 뜬다. 오류가 아니므로 사유를 받지 않고 고정 안내만 보여 준다 -->
     <modal data-type="composite" data-ref="tosspayments_payment_cancel_modal" title="$t:sirsoft-tosspayments.payment_cancel_title" width="420px">
-      <div class="text-center py-4">
-        <icon name="info-circle" class="text-yellow-700 dark:text-yellow-600 text-4xl mb-4"/>
-        <p class="text-gray-700 dark:text-gray-300">$t:sirsoft-tosspayments.payment_cancelled_message</p>
+      <div class="paytosspayments:text-center paytosspayments:py-4">
+        <icon name="info-circle" class="paytosspayments:text-yellow-700 paytosspayments:dark:text-yellow-600 paytosspayments:text-4xl paytosspayments:leading-none paytosspayments:mb-4"/>
+        <p class="paytosspayments:text-gray-700 paytosspayments:dark:text-gray-300">$t:sirsoft-tosspayments.payment_cancelled_message</p>
       </div>
-      <div class="flex justify-center mt-6">
-        <button type="button" class="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
+      <div class="paytosspayments:flex paytosspayments:justify-center paytosspayments:mt-6">
+        <button type="button" class="paytosspayments:px-6 paytosspayments:py-2 paytosspayments:bg-blue-600 paytosspayments:text-white paytosspayments:rounded-lg paytosspayments:font-medium paytosspayments:hover:bg-blue-700 paytosspayments:transition-colors">
           <on type="click">
             <close-modal id="tosspayments_payment_cancel_modal"/>
           </on>

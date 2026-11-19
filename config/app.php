@@ -238,7 +238,7 @@ return [
     |
     */
 
-    'version' => env('APP_VERSION', '7.1.6'),
+    'version' => env('APP_VERSION', '7.2.0'),
 
     /*
     |--------------------------------------------------------------------------
@@ -291,21 +291,58 @@ return [
         'github_url' => env('G7_UPDATE_GITHUB_URL', 'https://github.com/gnuboard/g7'),
         'github_token' => env('G7_UPDATE_GITHUB_TOKEN', ''),
         'pending_path' => env('G7_UPDATE_PENDING_PATH') ?: storage_path('app/core_pending'),
-        'targets' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_TARGETS', 'app,bootstrap,config,database,docs,lang,lang-packs/_bundled,resources,routes,public,tests,upgrades,scripts,artisan,g7-install,composer.json,composer.json.default,composer.lock,package.json,package-lock.json,vite.config.js,vite.config.core.js,vite.config.editor.js,vite.config.devtools.js,vite.config.devdashboard.js,vitest.config.ts,playwright.config.ts,tsconfig.json,phpunit.xml,pint.json,.editorconfig,.gitattributes,.gitignore,README.md,README.ko.md,CHANGELOG.md,modules/_bundled,plugins/_bundled,templates/_bundled')))),
         // build/ext: 부트스트랩 리소스 정적 게시본(#122) — 각 서버가 재생성하는 로컬 파생물이라
         // 릴리즈 소스에 없다. 제외하지 않으면 --prune 업데이트가 orphan 으로 삭제해
         // 업데이트 완료까지 정적 fast path 가 불필요하게 끊긴다 (백업 대상에서도 제외).
         'excludes' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_EXCLUDES', 'node_modules,.git,bootstrap/cache,build/ext')))),
+        // 루트 진입 파일 3종(`index.php`·`.htaccess`·`web.config`)은 배포 레이아웃 ②(문서 루트 =
+        // 프로젝트 루트)의 진입점으로 릴리즈 ZIP 최상위에 동봉되며, 코어 업데이트가 함께 갱신한다 (D25).
+        // `.htaccess` 는 통째로 덮어쓰지 않고 `# BEGIN G7 ~ # END G7` 블록만 교체해 운영자가
+        // 블록 밖에 추가한 규칙을 보존한다 — CoreUpdateService::applyUpdate 의 전용 분기 참조.
+        //
+        // `web.config`(IIS)도 **같은 마커 블록 규칙**을 쓴다 — 경계가 `#` 주석이 아니라
+        // `BEGIN G7`/`END G7` 을 담은 XML 주석 줄이고, 교체 대상은 그 블록(`system.webServer`
+        // 요소 전체)이다. 판정 로직은 `AbstractRootMarkerFileUpdater` 하나가 소유하고
+        // 자식(`RootHtaccessUpdater`·`RootWebConfigUpdater`)은 마커·문구 키만 정한다.
+        // 운영자는 `END G7` 뒤·`</configuration>` 앞에 `<configuration>` 의 다른 자식 요소로
+        // 규칙을 덧붙이며, 그 부분은 갱신에서 보존된다 — 안내는 파일 머리말과 INSTALL.md 에 있다.
+        // (종전 이 주석은 「통째 교체」로 적혀 있었으나 구현·공개 문서와 어긋난 폐기 규약이었다.
+        //  그대로 되돌리면 운영자 IIS 규칙이 업데이트마다 말없이 삭제된다.)
+        // 통째 교체되는 것은 루트 `index.php` 뿐이다 — 마커가 없고, 파일 주석이 수정 금지를 고지한다.
+        'targets' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_TARGETS', 'app,bootstrap,config,database,docs,lang,lang-packs/_bundled,resources,routes,public,tests,upgrades,deploy,scripts,artisan,g7-install,index.php,.htaccess,web.config,composer.json,composer.json.default,composer.lock,package.json,package-lock.json,vite.config.js,vite.config.core.js,vite.config.editor.js,vite.config.devtools.js,vite.config.devdashboard.js,vitest.config.ts,playwright.config.ts,tsconfig.json,tsconfig.app.json,tsconfig.test.json,phpunit.xml,pint.json,.editorconfig,.gitattributes,.gitignore,README.md,README.ko.md,CHANGELOG.md,modules/_bundled,plugins/_bundled,templates/_bundled')))),
         // applyUpdate 의 "신규 최상위 항목 자동 발견" 폴백이 절대 덮어쓰면 안 되는 경로 목록.
         // 런타임 데이터(`storage`), 로컬 환경(`.env*`), 별도 파이프라인 산출물(`vendor`),
         // 개발 도구 메타(`.git`, `.claude`, `.codex`, `.agents`, `.serena` 등) 를 보호한다.
         // 부모 프로세스의 stale `targets` 가 신버전 신규 디렉토리를 인식하지 못해
         // 자동 발견이 트리거될 때만 참조된다 (정상 경로의 targets 는 항상 처리됨).
+        // R30 검토 (P3/G3) — 루트 진입 파일 3종과 이 목록의 관계:
+        //   `index.php`·`.htaccess`·`web.config` 는 이 목록에 **없어야** 한다. 매칭은 정확
+        //   일치 또는 `<항목>/` 하위 일치(CoreBackupHelper::isProtectedPath)이므로 현재
+        //   기본값 중 세 파일에 걸리는 항목은 없다. 이 목록은 다섯 지점이 소비하는데
+        //   (3-way 적용 목록 산출 · 신규파일 manifest · 자동 발견 폴백 스킵 · 자동 롤백
+        //   prune 이중 가드 · stale 파일 정리 커맨드), 세 파일이 여기 들어가면 앞의 세 곳이
+        //   **로그 없이** 건너뛰어 D25 의 「함께 갱신」이 조용히 죽는다. 특히 자동 발견
+        //   폴백은 구버전 `targets` 로 도는 첫 업데이트에서 세 파일이 도달하는 유일한
+        //   경로다. 기본값 잠금은 RootEntrypointContractTest 가 고정한다 — 운영자가
+        //   `G7_UPDATE_PROTECTED_PATHS` 를 덮어쓰는 경우는 코드로 막지 않는다(그 설정의
+        //   존재 이유가 운영자 판단이므로). 롤백 prune 이 세 파일을 지우는 것은 의도된
+        //   동작이다 — 업데이트 이전 상태로 되돌리는 것이 목적이다.
+        // 압축 풀기 부트스트랩(`g7-setup.php`)은 **설치 시점 파일**이라 업데이트가 관리하지
+        // 않는다 (P7 · G4 산출물). 정상 설치는 그 파일이 스스로를 지우며 끝나고, 남아 있는
+        // 사본은 완료 표식 둘을 보고 410 을 내는 무해한 상태다. `targets` 에 넣으면 운영자가
+        // 지운 진입 파일이 업데이트마다 루트에 되살아나므로 여기에 둔다 — 만들지도 지우지도
+        // 않는다는 선언이다. (2026-09-01 결정. 미등재 상태는 정적 검사가 error 로 잡는다)
         // modules,plugins,templates,lang-packs 부모 디렉토리도 보호 대상에 포함.
         // targets 에 `{modules,plugins,templates,lang-packs}/_bundled` 가 명시되어 정상 흐름에서는
         // 처리되므로 영향 없음. 자동 발견 폴백이 부모 디렉토리 단위로 base 를 통째로 복사해
         // 활성 서브디렉토리(예: templates/sirsoft-basic) 를 잘못 삭제하는 회귀(#347) 차단용 방어 깊이.
-        'protected_paths' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_PROTECTED_PATHS', '.env,.env.local,.env.production,.env.testing,.env.testing.example,storage,vendor,node_modules,.git,.github,.idea,.vscode,.serena,.claude,.codex,.agents,CLAUDE.md,AGENTS.override.md,.mcp.json,.phpunit.result.cache,core_pending,modules,plugins,templates,lang-packs')))),
+        // `custom`: 개발자 전용 composer(custom/composer.json·vendor) — 코어 업데이트가 건드리지 않는다(#792).
+        'protected_paths' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_PROTECTED_PATHS', '.env,.env.local,.env.production,.env.testing,.env.testing.example,g7-setup.php,storage,vendor,node_modules,.git,.github,.idea,.vscode,.serena,.claude,.codex,.agents,CLAUDE.md,AGENTS.override.md,.mcp.json,.phpunit.result.cache,core_pending,modules,plugins,templates,lang-packs,custom')))),
+        // 「custom 예약 자리」(#792, 7.2.0) — 업데이트 대상 폴더 *안쪽*이라도 코어 업데이트가 덮지도 지우지도
+        // 않는 경로. 복사·orphan 정리(prune)·신규 파일 manifest·롤백 prune·자동 발견 폴백이 모두 건너뛴다.
+        // 코어 배포본은 이 자리에 파일을 싣지 않는다 — 실리면 업데이트를 시작하지 않는다(UpdateReservedPaths).
+        // 백업에는 targets 범위대로 포함되어 롤백 시 복원된다.
+        'reserved_paths' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_RESERVED_PATHS', 'routes/custom.php,app/Custom,resources/views/custom,public/custom,lang/custom,config/custom.php,database/migrations/custom,custom')))),
         'backup_only' => array_filter(array_map('trim', explode(',', env('G7_UPDATE_BACKUP_ONLY', 'vendor')))),
         'backup_extra' => ['storage/app/settings'],
         // 업데이트 종료 시 base_path() 소유자/그룹 기준으로 소유권을 재귀 복원할 경로 목록.

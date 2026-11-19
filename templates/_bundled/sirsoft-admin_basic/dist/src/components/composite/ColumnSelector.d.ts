@@ -1,24 +1,6 @@
 import { default as React } from 'react';
 import { IconName } from '../basic/IconTypes';
 import { EditorAttrs } from '../../types';
-/**
- * 전역 window 타입 확장
- * 그누보드7 Core의 AuthManager에 접근하기 위한 타입 선언
- */
-declare global {
-    interface Window {
-        G7Core?: {
-            AuthManager?: {
-                getInstance: () => {
-                    getUser: () => {
-                        uuid: string;
-                        [key: string]: any;
-                    } | null;
-                };
-            };
-        };
-    }
-}
 export interface ColumnItem {
     field: string;
     header: string;
@@ -77,6 +59,11 @@ export interface ColumnSelectorProps {
      * 기존 columns 배열에 동적으로 병합될 컬럼들입니다.
      * dynamicColumnsInsertAfter가 지정된 경우 해당 필드 뒤에 삽입되고,
      * 그렇지 않으면 columns 배열 끝에 추가됩니다.
+     *
+     * 처음 보는 동적 컬럼은 스스로 켜집니다(`visible: false` 인 것은 꺼진 채 선택지에만 나옵니다).
+     * 「이미 본 동적 컬럼」 목록을 표시 컬럼 저장값 옆에 따로 남기므로, 표시 컬럼 저장값이 있는
+     * 사용자에게도 그 뒤에 새로 생긴 동적 컬럼은 켜지고, 사용자가 끈 동적 컬럼은 새로고침 뒤에도
+     * 다시 켜지지 않습니다.
      */
     dynamicColumns?: ColumnItem[];
     /**

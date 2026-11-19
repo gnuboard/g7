@@ -25,8 +25,6 @@ use Tests\Support\UpgradeFiles;
  *   - 잠금 항목을 시드하지 않는다 (담기면 API 로 지울 수 있게 된다)
  *
  * @scenario scope=localStorage, notation=exact, locked=operator_item, settings_state=empty, request=key_absent
- *
- * @effects upgrade_seeds_allowlist_when_key_absent, upgrade_preserves_operator_edited_allowlist, upgrade_is_idempotent, upgrade_skips_when_settings_file_missing, upgrade_skips_when_settings_json_malformed, upgrade_does_not_seed_locked_items, allowlist_default_seeded_from_shipped_catalog
  */
 class SeedNecessaryStorageAllowlistTest extends PluginTestCase
 {

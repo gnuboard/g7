@@ -27,8 +27,8 @@ export class TemplateEngineError extends Error {
         this.icon = options.icon ?? 'fa-circle-exclamation';
         this.recoverable = options.recoverable ?? true;
 
-        // Maintains proper stack trace for where our error was thrown (only available on V8)
-        if (Error.captureStackTrace) {
+        // 던진 자리의 스택을 남긴다 — V8 에만 있는 비표준 함수라 브라우저 표준 타입에는 없다
+        if ('captureStackTrace' in Error && typeof Error.captureStackTrace === 'function') {
             Error.captureStackTrace(this, this.constructor);
         }
     }

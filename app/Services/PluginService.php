@@ -5,7 +5,9 @@ namespace App\Services;
 use App\Contracts\Extension\PluginManagerInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
 use App\Enums\ExtensionStatus;
+use App\Enums\LayoutSyncMode;
 use App\Exceptions\ExtensionOperationLockException;
+use App\Exceptions\PackageIntegrityException;
 use App\Exceptions\PluginOperationException;
 use App\Extension\Helpers\ChangelogParser;
 use App\Extension\Helpers\EditorSpecAssembler;
@@ -13,16 +15,28 @@ use App\Extension\Helpers\ExtensionOperationLock;
 use App\Extension\Helpers\GithubHelper;
 use App\Extension\Helpers\ZipInstallHelper;
 use App\Extension\HookManager;
+use App\Extension\Integrity\ExtensionIntegrityRecorder;
+use App\Extension\Integrity\PackageAcquirer;
+use App\Extension\Integrity\PackageExpectation;
+use App\Extension\Integrity\PackageIntegrityOptions;
+use App\Extension\Layout\LayoutSyncOptions;
 use App\Extension\Vendor\VendorMode;
+use App\Rules\AllowedPluginFileType;
+use App\Services\Concerns\ResolvesExtensionAssetType;
+use App\Services\Concerns\SecuresExtensionAssetPath;
 use App\Services\Extension\ExtensionIconResolver;
 use App\Support\LocalizedValue;
 use App\Support\SafeExceptionMessage;
+use App\Support\UploadedFileName;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Validation\ValidationException;
 
 class PluginService
 {
+    use ResolvesExtensionAssetType;
+    use SecuresExtensionAssetPath;
+
     /**
      * 검색 가능한 필드 목록
      */
@@ -47,6 +61,21 @@ class PluginService
     public function getActivePluginIdentifiers(): array
     {
         return $this->pluginRepository->getActivePluginIdentifiers();
+    }
+
+    /**
+     * 이 서버가 불러온(활성 디렉터리에 파일이 있어 로드된) 플러그인의 identifier 목록을 반환합니다.
+     *
+     * DB 상태와 무관하다 — 같은 DB 를 쓰는 다른 서버가 설치한 플러그인은 DB 에 활성으로 있어도 이 서버에 파일이 없으면 빠진다.
+     *
+     * @return array<int, string> 로드된 플러그인 identifier 배열
+     */
+    public function getLoadedPluginIdentifiers(): array
+    {
+        return array_values(array_map(
+            static fn ($plugin): string => (string) $plugin->getIdentifier(),
+            $this->pluginManager->getAllPlugins(),
+        ));
     }
 
     /**
@@ -559,6 +588,7 @@ class PluginService
      * @param  VendorMode  $vendorMode  Vendor 설치 모드
      * @param  string  $layoutStrategy  레이아웃 전략 (overwrite|keep)
      * @param  bool  $force  코어 버전 비호환 강제 우회 (위험 — 사용자 명시 필요)
+     * @param  PackageIntegrityOptions|null  $integrity  패키지 무결성 선택(미서명 계속, 7.2.0) — null 이면 미서명은 409
      * @return array 업데이트 결과 (identifier, from_version, to_version 등)
      *
      * @throws ValidationException 업데이트 실패 시
@@ -568,6 +598,7 @@ class PluginService
         VendorMode $vendorMode = VendorMode::Auto,
         string $layoutStrategy = 'overwrite',
         bool $force = false,
+        ?PackageIntegrityOptions $integrity = null,
     ): array {
         // 직전 훅은 Manager 가 발화한다 — CLI·어드민 UI 공통 단일 발화(#138 후속, Service 중복 발화 제거)
 
@@ -579,6 +610,7 @@ class PluginService
                 null,
                 $vendorMode,
                 $layoutStrategy,
+                integrity: $integrity,
             );
 
             $pluginInfo = $this->pluginManager->getPluginInfo($pluginName);
@@ -592,6 +624,9 @@ class PluginService
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
             // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            throw $e;
+        } catch (PackageIntegrityException $e) {
+            // 미서명 확인 필요(409)·서명 불일치·미신뢰 키(422) — 422 로 감싸지 않고 그대로 올린다(7.2.0)
             throw $e;
         } catch (\Exception $e) {
             // Manager의 RuntimeException은 이미 번역된 메시지를 포함하므로
@@ -628,17 +663,66 @@ class PluginService
     /**
      * 플러그인의 레이아웃을 파일에서 다시 읽어 DB에 갱신합니다.
      *
+     * 기본은 keep — 운영자가 고친 화면을 지킨다. 덮어쓰기는 `$mode = Overwrite` 로 명시할 때만이다.
+     *
      * @param  string  $pluginName  플러그인명
-     * @return array{success: bool, layouts_refreshed: int} 갱신 결과 및 갱신된 레이아웃 개수
+     * @param  LayoutSyncMode  $mode  갱신 전략 (기본 keep)
+     * @param  array<string, string>  $decisions  화면별 결정 ({@see LayoutSyncOptions})
+     * @return array{success: bool, layouts_refreshed: int, layout_sync?: array<string, mixed>, layout_preview?: array<string, mixed>} 갱신 결과
      *
      * @throws ValidationException 플러그인을 찾을 수 없거나 갱신 실패 시
      */
-    public function refreshPluginLayouts(string $pluginName): array
+    public function refreshPluginLayouts(string $pluginName, LayoutSyncMode $mode = LayoutSyncMode::Keep, array $decisions = []): array
+    {
+        return $this->refreshPluginLayoutsWith($pluginName, $mode, $decisions);
+    }
+
+    /**
+     * 레이아웃 갱신을 미리 봅니다 — 실제 갱신과 같은 코드로 판정만 계산하고 DB·캐시는 그대로 둡니다.
+     *
+     * @param  string  $pluginName  플러그인명
+     * @param  LayoutSyncMode  $mode  갱신 전략
+     * @param  array<string, string>  $decisions  화면별 결정
+     * @return array{strategy: string, entries: list<array<string, mixed>>, summary: array<string, int>, has_conflicts: bool, conflict_screens: list<string>} 미리보기
+     *
+     * @throws ValidationException 플러그인을 찾을 수 없거나 레이아웃을 읽지 못할 때
+     */
+    public function previewPluginLayoutRefresh(string $pluginName, LayoutSyncMode $mode = LayoutSyncMode::Keep, array $decisions = []): array
+    {
+        try {
+            $this->pluginManager->loadPlugins();
+            $result = LayoutSyncOptions::run(
+                new LayoutSyncOptions(true, $decisions, null, 'refresh'),
+                fn () => $this->pluginManager->refreshPluginLayouts($pluginName, $mode)
+            );
+
+            return $result['layout_preview'];
+        } catch (\Exception $e) {
+            throw ValidationException::withMessages([
+                'plugin_name' => [__('plugins.refresh_layouts_failed', ['error' => SafeExceptionMessage::for($e)])],
+            ]);
+        }
+    }
+
+    /**
+     * 레이아웃 갱신 본체 — 전략·결정을 실행 범위로 걸고 매니저를 부릅니다.
+     *
+     * @param  string  $pluginName  플러그인명
+     * @param  LayoutSyncMode  $mode  갱신 전략
+     * @param  array<string, string>  $decisions  화면별 결정
+     * @return array 갱신 결과
+     *
+     * @throws ValidationException 플러그인을 찾을 수 없거나 갱신 실패 시
+     */
+    private function refreshPluginLayoutsWith(string $pluginName, LayoutSyncMode $mode, array $decisions): array
     {
         try {
             $this->pluginManager->loadPlugins();
 
-            return $this->pluginManager->refreshPluginLayouts($pluginName);
+            return LayoutSyncOptions::run(
+                new LayoutSyncOptions(false, $decisions, null, 'refresh'),
+                fn () => $this->pluginManager->refreshPluginLayouts($pluginName, $mode)
+            );
         } catch (\Exception $e) {
             throw ValidationException::withMessages([
                 'plugin_name' => [__('plugins.refresh_layouts_failed', ['error' => SafeExceptionMessage::for($e)])],
@@ -667,10 +751,21 @@ class PluginService
             ];
         }
 
-        // 2. 파일 경로 구성 (플러그인 루트 기준)
-        $filePath = base_path("plugins/{$identifier}/{$path}");
+        // 2. Path Traversal 2차 봉쇄 — 요청 규칙이 1차이고 이것이 2차다.
+        //    형제 통로(템플릿)는 이 계층을 갖고 있었는데 여기만 없어, 규칙 한 줄이
+        //    무력해지면 이 통로에는 남는 방어선이 없었다.
+        $safePath = $this->sanitizeExtensionAssetPath($path);
 
-        // 3. 파일 존재 확인
+        // 3. 파일 경로 구성 (플러그인 루트 기준)
+        $basePath = base_path('plugins/'.$identifier);
+        // 구분자는 `/` 로 잇는다 — Windows 에서 `DIRECTORY_SEPARATOR` 로 이으면
+        // `base_path()` 가 돌려준 `/` 구간과 섞여 `modules/x\dist/js/a.js` 같은 혼합
+        // 경로가 되고, 그 값을 그대로 돌려받는 소비처·계약 테스트가 어긋난다.
+        // 봉쇄 판정(`extensionAssetPathIsContained`)은 `realpath()` 로 정규화한 뒤
+        // 비교하므로 이 자리의 구분자에 영향받지 않는다.
+        $filePath = $basePath.'/'.$safePath;
+
+        // 4. 파일 존재 확인
         if (! file_exists($filePath) || ! is_file($filePath)) {
             return [
                 'success' => false,
@@ -680,8 +775,34 @@ class PluginService
             ];
         }
 
-        // 4. MIME 타입 감지
-        $mimeType = $this->getMimeType($filePath);
+        // 정제만으로는 심볼릭 링크 경유 탈출을 걸러내지 못한다 — 해석된 절대 경로가
+        // 기준 안인지 재확인한다.
+        if (! $this->extensionAssetPathIsContained($filePath, $basePath)) {
+            return [
+                'success' => false,
+                'filePath' => null,
+                'mimeType' => null,
+                'error' => 'file_not_found',
+            ];
+        }
+
+        // 5. 보안 검증 (허용된 확장자만) — 요청 규칙이 1차이고 이것이 2차다.
+        //    형제 통로(템플릿)는 이 계층을 갖고 있었는데 여기만 없어, 세 컨트롤러가 공통으로
+        //    갖는 `file_type_not_allowed` 403 분기가 이 통로에서는 도달 불가였다. 「요청
+        //    규칙이 이미 막으니 무해하다」는 방어가 되지 않는다 — 서비스는 확장에 열려 있어
+        //    요청 규칙을 거치지 않는 호출부가 생기면 그 순간 남는 방어선이 없다.
+        //    목록은 규칙 클래스가 SSoT 다(운영에서 소스맵을 차단하는 환경 분기가 거기 있다).
+        if (! $this->extensionAssetExtensionIsAllowed($filePath, AllowedPluginFileType::getAllowedExtensions())) {
+            return [
+                'success' => false,
+                'filePath' => null,
+                'mimeType' => null,
+                'error' => 'file_type_not_allowed',
+            ];
+        }
+
+        // 6. MIME 타입 감지
+        $mimeType = $this->extensionAssetMimeType($filePath);
 
         return [
             'success' => true,
@@ -762,38 +883,6 @@ class PluginService
         $decoded = json_decode((string) file_get_contents($path), true);
 
         return is_array($decoded) ? $decoded : null;
-    }
-
-    /**
-     * MIME 타입 감지
-     *
-     * @param  string  $filePath  파일 경로
-     * @return string MIME 타입
-     */
-    private function getMimeType(string $filePath): string
-    {
-        $mimeTypes = [
-            'js' => 'application/javascript',
-            'mjs' => 'application/javascript',
-            'css' => 'text/css',
-            'json' => 'application/json',
-            'png' => 'image/png',
-            'jpg' => 'image/jpeg',
-            'jpeg' => 'image/jpeg',
-            'svg' => 'image/svg+xml',
-            'webp' => 'image/webp',
-            'gif' => 'image/gif',
-            'ico' => 'image/x-icon',
-            'woff' => 'font/woff',
-            'woff2' => 'font/woff2',
-            'ttf' => 'font/ttf',
-            'otf' => 'font/otf',
-            'eot' => 'application/vnd.ms-fontobject',
-        ];
-
-        $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
-
-        return $mimeTypes[$extension] ?? 'application/octet-stream';
     }
 
     /**
@@ -898,7 +987,7 @@ class PluginService
             File::ensureDirectoryExists($tempPath);
 
             $result = ZipInstallHelper::extractAndValidate(
-                $file->getRealPath(), $extractPath, 'plugin.json', 'plugins', $file->getClientOriginalName()
+                $file->getRealPath(), $extractPath, 'plugin.json', 'plugins', UploadedFileName::original($file)
             );
 
             $manifest = $result['config'];
@@ -937,19 +1026,28 @@ class PluginService
      * `plugin.json` 검증 → identifier 충돌 검사 → _pending 이동 → 설치 파이프라인 진입.
      *
      * @param  UploadedFile  $file  사용자가 업로드한 플러그인 ZIP 파일
+     * @param  PackageIntegrityOptions|null  $integrity  패키지 무결성 선택(미서명 계속·서명 파일 경로, 7.2.0) — null 이면 미서명은 409
      * @return array 설치 결과 (identifier/version/installed_at 포함)
      */
-    public function installFromZipFile(UploadedFile $file): array
+    public function installFromZipFile(UploadedFile $file, ?PackageIntegrityOptions $integrity = null): array
     {
+        $integrity ??= PackageIntegrityOptions::none();
         $tempPath = storage_path('app/temp/plugins');
         $extractPath = $tempPath.'/'.uniqid('plugin_');
 
         try {
             File::ensureDirectoryExists($tempPath);
 
+            // 서명 검증(해제 전 바이트) — 업로드 임시 파일은 옆 서명 파일을 자동으로 찾지 않는다(서명 파일 칸으로만, 7.2.0)
+            $acquirer = app(PackageAcquirer::class);
+            $verification = $acquirer->verifyLocalZip($file->getRealPath(), PackageExpectation::forExtension('plugin'), $integrity, autoSidecar: false);
+
             $result = ZipInstallHelper::extractAndValidate(
-                $file->getRealPath(), $extractPath, 'plugin.json', 'plugins', $file->getClientOriginalName()
+                $file->getRealPath(), $extractPath, 'plugin.json', 'plugins', UploadedFileName::original($file)
             );
+
+            // 해제 뒤·복사 전 manifest 대조 — 서명된 식별자·버전과 실제 manifest 가 같아야 한다
+            $verification = $acquirer->confirmManifest($verification, $result['config'], $integrity);
 
             // _pending 이동부터 설치까지 같은 확장의 다른 작업과 겹치지 않게 잠근다 — 동시 업로드가 `_pending/{id}` 를 덮거나,
             // 409 를 받은 쪽 정리가 남의 pending 을 지우지 않게 한다. 안쪽 매니저 설치는 이 잠금에 합류한다(#161).
@@ -962,7 +1060,11 @@ class PluginService
             );
 
             try {
-                return $this->executePluginInstall($result['identifier']);
+                $info = $this->executePluginInstall($result['identifier']);
+                // 검증 결과를 설치 행에 남긴다 — 확장 상세의 서명 배지
+                app(ExtensionIntegrityRecorder::class)->record('plugin', $result['identifier'], $verification);
+
+                return array_merge($info, $verification->toInstallColumns());
             } catch (\Throwable $e) {
                 $pendingPath = base_path('plugins/_pending/'.$result['identifier']);
                 if (File::exists($pendingPath)) {
@@ -973,6 +1075,9 @@ class PluginService
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
             // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            throw $e;
+        } catch (PackageIntegrityException $e) {
+            // 미서명 확인 필요(409)·서명 불일치·미신뢰 키(422) — 표지와 페이로드를 그대로 올려 컨트롤러가 싣는다(7.2.0)
             throw $e;
         } catch (PluginOperationException $e) {
             throw $e;
@@ -992,15 +1097,18 @@ class PluginService
      * GitHub 저장소에서 플러그인을 설치합니다.
      *
      * @param  string  $githubUrl  GitHub 저장소 URL
+     * @param  PackageIntegrityOptions|null  $integrity  패키지 무결성 선택(미서명 계속·서명 파일 경로, 7.2.0) — null 이면 미서명은 409
      * @return array 설치된 플러그인 정보
      *
      * @throws \RuntimeException 설치 실패 시
      */
-    public function installFromGithub(string $githubUrl): array
+    public function installFromGithub(string $githubUrl, ?PackageIntegrityOptions $integrity = null): array
     {
+        $integrity ??= PackageIntegrityOptions::none();
         $tempPath = storage_path('app/temp/plugins');
         $extractPath = $tempPath.'/'.uniqid('plugin_');
         $zipPath = null;
+        $downloadDir = $tempPath.'/'.uniqid('download_');
 
         try {
             File::ensureDirectoryExists($tempPath);
@@ -1013,11 +1121,19 @@ class PluginService
                 throw new PluginOperationException('plugins.errors.github_repo_not_found');
             }
 
-            $zipPath = GithubHelper::downloadZip($owner, $repo, $tempPath, $token);
+            // 태그 릴리스만 받는다(브랜치 폴백 없음) — 서명 자산이 있으면 검증하고, 없으면 미서명 정책(운영자 확인)을 거친다 (7.2.0)
+            $acquirer = app(PackageAcquirer::class);
+            $acquired = $acquirer->fromGithubRelease(
+                $owner, $repo, null, $token, PackageExpectation::forExtension('plugin'), $integrity, $downloadDir
+            );
+            $zipPath = $acquired->zipPath;
 
             $result = ZipInstallHelper::extractAndValidate(
                 $zipPath, $extractPath, 'plugin.json', 'plugins'
             );
+
+            // 해제 뒤·복사 전 manifest 대조 — 서명된 식별자·버전과 실제 manifest 가 같아야 한다
+            $verification = $acquirer->confirmManifest($acquired->verification, $result['config'], $integrity);
 
             // _pending 이동부터 설치까지 같은 확장의 다른 작업과 겹치지 않게 잠근다 — 동시 업로드가 `_pending/{id}` 를 덮거나,
             // 409 를 받은 쪽 정리가 남의 pending 을 지우지 않게 한다. 안쪽 매니저 설치는 이 잠금에 합류한다(#161).
@@ -1030,7 +1146,11 @@ class PluginService
             );
 
             try {
-                return $this->executePluginInstall($result['identifier']);
+                $info = $this->executePluginInstall($result['identifier']);
+                // 검증 결과를 설치 행에 남긴다 — 확장 상세의 서명 배지
+                app(ExtensionIntegrityRecorder::class)->record('plugin', $result['identifier'], $verification);
+
+                return array_merge($info, $verification->toInstallColumns());
             } catch (\Throwable $e) {
                 $pendingPath = base_path('plugins/_pending/'.$result['identifier']);
                 if (File::exists($pendingPath)) {
@@ -1041,6 +1161,9 @@ class PluginService
         } catch (ExtensionOperationLockException $e) {
             // 같은 확장의 다른 작업이 진행 중(409)이거나 잠금 저장소 오류(503) — 「실패」(422)로 감싸면 화면이 거절을 실패로
             // 보여 준다(#138 실측 ②, #161). 그대로 올려 컨트롤러가 상태 코드와 표지를 싣게 한다.
+            throw $e;
+        } catch (PackageIntegrityException $e) {
+            // 미서명 확인 필요(409)·서명 불일치·미신뢰 키(422) — 표지와 페이로드를 그대로 올려 컨트롤러가 싣는다(7.2.0)
             throw $e;
         } catch (PluginOperationException $e) {
             throw $e;
@@ -1054,6 +1177,9 @@ class PluginService
             }
             if ($zipPath && File::exists($zipPath)) {
                 File::delete($zipPath);
+            }
+            if (File::isDirectory($downloadDir)) {
+                File::deleteDirectory($downloadDir);
             }
         }
     }

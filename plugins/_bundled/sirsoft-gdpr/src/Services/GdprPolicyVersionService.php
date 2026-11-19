@@ -2,7 +2,10 @@
 
 namespace Plugins\Sirsoft\Gdpr\Services;
 
+use App\DisplayName\DisplayNameAreaRegistry;
+use App\DisplayName\MemberNamePresenter;
 use App\Extension\HookManager;
+use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Plugins\Sirsoft\Gdpr\Enums\GdprPolicyChangeType;
 use Plugins\Sirsoft\Gdpr\Models\GdprPolicyVersion;
@@ -92,7 +95,7 @@ class GdprPolicyVersionService
         $current = $this->repository->getCurrent();
 
         if ($current !== null && $loadCreatedBy) {
-            $current->load('createdBy');
+            $current->load('createdBy:'.User::displayColumns());
         }
 
         return $current;
@@ -130,12 +133,18 @@ class GdprPolicyVersionService
     /**
      * 정책 버전 이력을 페이지네이션 형태로 반환합니다 (version DESC).
      *
+     * 발행자 이름은 관리자 영역(`core:admin`) 표시 이름이다. 행마다 계산하기 전에 한 페이지의 발행자를 모아
+     * 표시 이름 계산에 필요한 값(추가 항목 종류의 값)을 한 번에 읽어 둔다.
+     *
      * @param  int  $perPage  페이지당 행 수 (Repository 단에서 1~100 clamp)
      * @return LengthAwarePaginator
      */
     public function paginate(int $perPage): LengthAwarePaginator
     {
-        return $this->repository->paginate($perPage);
+        $page = $this->repository->paginate($perPage);
+        app(MemberNamePresenter::class)->preloadRelations($page->items(), ['createdBy'], null, DisplayNameAreaRegistry::AREA_ADMIN);
+
+        return $page;
     }
 
     /**

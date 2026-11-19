@@ -6,7 +6,7 @@
  * `G7Core.api.post(url, formData)` 로 보내고 Bearer 는 코어가 싣는다.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createG7UploadAdapterPlugin, G7UploadAdapter } from '../handlers/uploadAdapter';
+import { createG7UploadAdapterPlugin, G7UploadAdapter, pickResponsiveUrls } from '../handlers/uploadAdapter';
 
 const UPLOAD_URL = '/api/plugins/sirsoft-ckeditor5/upload';
 
@@ -151,6 +151,64 @@ describe('CKEditor5 업로드 어댑터', () => {
         adapter.abort();
 
         expect(captured?.aborted).toBe(true);
+    });
+
+    /**
+     * 공개 자산 디스크(CDN) 행 — 서버가 반응형 후보를 내리면 CKEditor 가 본문에 srcset 으로 저장하도록 그대로 돌려준다(#878)
+     *
+     * @scenario outcome=uploaded
+     * @effects responsive_urls_returned_to_editor
+     */
+    it('응답에 urls 가 있으면 { default, 가로 후보 } 를 돌려준다', async () => {
+        apiPost.mockResolvedValue({
+            url: 'https://cdn.test/assets/sirsoft-ckeditor5/images/2026/11/12/a.jpg',
+            urls: {
+                '640': '/api/plugins/sirsoft-ckeditor5/images/aaaabbbbcccc?size=md',
+                '1280': '/api/plugins/sirsoft-ckeditor5/images/aaaabbbbcccc?size=lg',
+                default: 'https://cdn.test/assets/sirsoft-ckeditor5/images/2026/11/12/a.jpg',
+            },
+        });
+
+        const result = await new G7UploadAdapter(makeLoader(), UPLOAD_URL).upload();
+
+        expect(result).toEqual({
+            default: 'https://cdn.test/assets/sirsoft-ckeditor5/images/2026/11/12/a.jpg',
+            '640': '/api/plugins/sirsoft-ckeditor5/images/aaaabbbbcccc?size=md',
+            '1280': '/api/plugins/sirsoft-ckeditor5/images/aaaabbbbcccc?size=lg',
+        });
+    });
+
+    /**
+     * 직접 URL 이 없는 행(로컬 디스크)은 서버가 urls 를 싣지 않는다 — 종전 { default } 그대로
+     *
+     * @scenario outcome=uploaded
+     * @effects responsive_urls_returned_to_editor
+     */
+    it('urls 가 없으면 종전처럼 { default } 만 돌려준다', async () => {
+        apiPost.mockResolvedValue({ url: '/api/plugins/sirsoft-ckeditor5/images/aaaabbbbcccc' });
+
+        const result = await new G7UploadAdapter(makeLoader(), UPLOAD_URL).upload();
+
+        expect(result).toEqual({ default: '/api/plugins/sirsoft-ckeditor5/images/aaaabbbbcccc' });
+    });
+
+    /**
+     * @scenario outcome=uploaded
+     * @effects responsive_urls_returned_to_editor
+     */
+    it('urls 의 비문자열·빈 값·숫자 아닌 키는 버리고, default 가 없거나 후보가 없으면 쓰지 않는다', async () => {
+        expect(pickResponsiveUrls({ default: '/a.jpg', '640': 123, '1280': '', foo: '/x', '0640': '/y', '960': '/b?size=md' }))
+            .toEqual({ default: '/a.jpg', '960': '/b?size=md' });
+        expect(pickResponsiveUrls({ '640': '/b?size=md' })).toBeNull();
+        expect(pickResponsiveUrls({ default: '', '640': '/b?size=md' })).toBeNull();
+        expect(pickResponsiveUrls({ default: '/a.jpg' })).toBeNull();
+        expect(pickResponsiveUrls(['/a.jpg'])).toBeNull();
+        expect(pickResponsiveUrls(null)).toBeNull();
+
+        // urls 가 쓸 수 없는 모양이면 최상위 url 로 돌아간다
+        apiPost.mockResolvedValue({ url: '/storage/a.jpg', urls: { default: '/storage/a.jpg', '640': 1 } });
+        const result = await new G7UploadAdapter(makeLoader(), UPLOAD_URL).upload();
+        expect(result).toEqual({ default: '/storage/a.jpg' });
     });
 
     /**

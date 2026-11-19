@@ -7,33 +7,52 @@ use App\Contracts\Repositories\AttachmentRepositoryInterface;
 use App\Contracts\Repositories\ConfigRepositoryInterface;
 use App\Contracts\Repositories\ModuleRepositoryInterface;
 use App\Contracts\Repositories\PluginRepositoryInterface;
+use App\Exceptions\IdentityVerificationRequiredException;
 use App\Extension\ExtensionManager;
 use App\Extension\HookManager;
+use App\Extension\ModuleManager;
+use App\Extension\PluginManager;
 use App\Extension\Traits\ClearsTemplateCaches;
 use App\Helpers\TimezoneHelper;
 use App\Http\Resources\AttachmentResource;
+use App\Jobs\PurgeRetiredThumbnailDiskJob;
+use App\Jobs\PurgeThumbnailsOnReenableJob;
+use App\Models\User;
 use App\Rules\ConnectionHost;
 use App\Rules\EmbedCustomProviderRule;
 use App\Seo\Contracts\SeoCacheManagerInterface;
+use App\Services\Auth\ReauthenticationService;
 use App\Services\Queue\QueueWorkerRegistry;
 use App\Support\ConfigCacheHelper;
 use App\Support\Content\ContentHtmlPolicy;
 use App\Support\Content\EmbedProviderRegistry;
 use App\Support\EnvPriority;
+use App\Support\ExecutionEnvironment;
 use App\Support\ExtensionSettingsMirror;
+use App\Support\Favicon\FaviconPolicy;
 use App\Support\OpcacheStatus;
 use App\Support\PhpExtensionProbe;
 use App\Support\PhpExtensionRequirements;
+use App\Support\PrivateAttachmentDisk;
 use App\Support\ProcessOutputEncoding;
 use App\Support\RouteCacheHelper;
+use App\Support\RuntimeRole;
 use App\Support\SearchScopes;
 use App\Support\Settings\ComputedSettingFields;
 use App\Support\SettingsVersion;
+use App\Support\ThumbnailDiskOptions;
+use App\Support\TrustedProxyDiagnostic;
+use App\Support\TrustedProxySetting;
+use App\Thumbnails\ThumbnailConfig;
+use App\Thumbnails\ThumbnailPresetRegistry;
+use App\Thumbnails\ThumbnailPresetSettings;
+use App\Thumbnails\ThumbnailStore;
+use App\Thumbnails\ThumbnailUrl;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
@@ -105,6 +124,11 @@ class SettingsService
      */
     private function restartQueueWorkers(): void
     {
+        // 검수 서버의 재시작 신호는 공유 캐시를 거쳐 운영 서버 워커까지 재시작시킨다
+        if (RuntimeRole::isStage()) {
+            return;
+        }
+
         try {
             Artisan::call('queue:restart');
         } catch (\Throwable $e) {
@@ -193,6 +217,9 @@ class SettingsService
         // 첨부파일 정보 추가 (general 카테고리에)
         $settings['general']['site_logo'] = $this->getSiteLogoAttachment();
 
+        // 사이트 파비콘 첨부 정보 (#434 — site_logo 와 동형, 저장값이 없던 옛 설치는 빈 배열)
+        $settings['general']['site_favicon'] = $this->getAttachmentListSetting('general.site_favicon');
+
         // 사이트 기본 OG 이미지 첨부 정보 (seo 카테고리에 — site_logo 와 동형)
         $settings['seo']['og_image_default'] = $this->getAttachmentListSetting('seo.og_image_default');
 
@@ -204,7 +231,38 @@ class SettingsService
         // 저장 경로(saveAdvancedSettings)는 스키마에 없는 이 키를 버린다.
         $settings['advanced']['geoip_last_updated_at_formatted'] = $this->formatIsoForViewer($settings['advanced']['geoip_last_updated_at'] ?? null);
 
-        return $this->overlayEnvLockedValues($settings);
+        return $this->overlayEnvLockedValues($this->seedTrustedProxiesFromRuntime($settings));
+    }
+
+    /**
+     * 신뢰 프록시 저장값이 비어 있으면 **현재 적용 중인 값**으로 채웁니다.
+     *
+     * 저장값 null 은 "화면에서 한 번도 정한 적 없음" 이고, 그 설치의 실제 권위는
+     * `.env` 의 `TRUSTED_PROXIES` 입니다. 그 상태에서 화면이 「신뢰하지 않음」을 보여주면,
+     * 운영자가 고급 탭의 **무관한** 항목을 저장하는 순간 폼이 그 빈 값을 함께 제출해
+     * 프록시 설정이 사라집니다 — 오류도 로그도 없이 방문자 IP 만 전부 프록시 주소가 됩니다.
+     *
+     * 그래서 화면에는 적용 중인 값을 그대로 보여주고, 그대로 저장되면 값이 같아 동작도
+     * 바뀌지 않습니다. `.env` 로 잠긴 설치는 이 뒤에 도는 잠금 표시값 덮기가 다시 맡습니다.
+     *
+     * @param  array<string, mixed>  $settings  frontend 키 변환이 끝난 설정 배열
+     * @return array<string, mixed> 유효값이 채워진 설정 배열
+     */
+    private function seedTrustedProxiesFromRuntime(array $settings): array
+    {
+        foreach ($this->resolveFrontendKeyTargets('debug', 'trusted_proxies') as [$targetCategory, $outputKey]) {
+            if (! isset($settings[$targetCategory]) || ! is_array($settings[$targetCategory])) {
+                continue;
+            }
+
+            $stored = $settings[$targetCategory][$outputKey] ?? null;
+
+            $settings[$targetCategory][$outputKey] = $stored === null
+                ? TrustedProxySetting::toList(TrustedProxyDiagnostic::configuredProxies())
+                : TrustedProxySetting::toList($stored);
+        }
+
+        return $settings;
     }
 
     /**
@@ -356,6 +414,84 @@ class SettingsService
         }
 
         return $settings;
+    }
+
+    /**
+     * 환경설정 > 드라이버 「비공개 첨부 저장소」 카드가 읽는 메타를 만듭니다 (#916).
+     *
+     * - `pins`: `.env` 로 비공개 원본 디스크를 고정해 관리자 선택을 따르지 않는 주체(코어 `ATTACHMENT_DISK`, 확장별 env).
+     * - `orphaned`: 저장된 선택이 이 서버에 정의되지 않은 디스크(디스크를 등록한 플러그인이 꺼짐)라 「기본」으로 동작 중인지.
+     *
+     * @return array{pins: list<array{owner: string, env: string, disk: string}>, orphaned: bool} 메타
+     */
+    public function privateAttachmentMeta(): array
+    {
+        $pins = [];
+
+        $coreExplicit = config('attachment.disk_explicit');
+        if (is_string($coreExplicit) && $coreExplicit !== '') {
+            $pins[] = ['owner' => 'core', 'env' => 'ATTACHMENT_DISK', 'disk' => $coreExplicit];
+        }
+
+        $extensions = [];
+        try {
+            $extensions = [
+                ...array_values(app(ModuleManager::class)->getActiveModules()),
+                ...array_values(app(PluginManager::class)->getActivePlugins()),
+            ];
+        } catch (\Throwable) {
+            // 확장 목록을 못 읽어도 화면 메타 전체를 깨지 않는다 — 고정 안내만 빠진다
+        }
+
+        foreach ($extensions as $extension) {
+            if (! method_exists($extension, 'getPrivateAttachmentDiskPin')) {
+                continue;
+            }
+            $pin = $extension->getPrivateAttachmentDiskPin();
+            if (is_array($pin) && is_string($pin['env'] ?? null) && is_string($pin['disk'] ?? null)) {
+                $pins[] = ['owner' => $extension->getIdentifier(), 'env' => $pin['env'], 'disk' => $pin['disk']];
+            }
+        }
+
+        return ['pins' => $pins, 'orphaned' => PrivateAttachmentDisk::isOrphaned()];
+    }
+
+    /**
+     * 저장은 허용하지만 운영자에게 알려야 할 저장소 조합 경고를 만듭니다 (#916 D5).
+     *
+     * 비공개 첨부 저장소를 공개 자산 디스크와 같은 디스크로 고르면 같은 버킷의 공개 정책이 비공개 원본에도 걸릴 수 있다 —
+     * 서버 서빙 경로가 권한을 확인해도 버킷 주소로 직접 읽힐 수 있다.
+     *
+     * 권한이 걸린 이미지 썸네일 디스크도 같다 — 코어 `s3` 는 공개 자산 디스크로도 고를 수 있어 권한 썸네일 디스크로 허용하되,
+     * 공개 자산 디스크도 `s3` 이면 같은 버킷이라 경고한다(`ThumbnailDiskOptions::SHARED_BUCKET_DISK`).
+     *
+     * @param  array<string, mixed>  $drivers  저장된 drivers 카테고리 값
+     * @param  array<string, mixed>  $upload  저장된 upload 카테고리 값 (권한 썸네일 디스크 판정용)
+     * @return list<array{key: string, message: string}> 경고 목록(필드 키, 문구)
+     */
+    public function storageWarnings(array $drivers, array $upload = []): array
+    {
+        $warnings = [];
+        $private = (string) ($drivers['private_attachment_disk'] ?? '');
+        $public = (string) ($drivers['public_asset_disk'] ?? '');
+
+        if (! in_array($private, ['', PrivateAttachmentDisk::DEFAULT], true) && ! in_array($public, ['', 'none'], true) && $private === $public) {
+            $warnings[] = [
+                'key' => 'drivers.private_attachment_disk',
+                'message' => __('settings.warnings.private_attachment_same_as_public_asset', ['disk' => $private]),
+            ];
+        }
+
+        $gatedThumbnail = (string) ($upload['thumbnail_disk_gated'] ?? '');
+
+        if ($gatedThumbnail === ThumbnailDiskOptions::SHARED_BUCKET_DISK && $public === ThumbnailDiskOptions::SHARED_BUCKET_DISK) {
+            $warnings[] = [
+                'key' => 'upload.thumbnail_disk_gated',
+                'message' => __('settings.warnings.gated_thumbnail_same_as_public_asset', ['disk' => $gatedThumbnail]),
+            ];
+        }
+
+        return $warnings;
     }
 
     /**
@@ -626,6 +762,11 @@ class SettingsService
         return match ($transform) {
             'format_extensions' => $this->formatExtensions($sourceValue),
             'first_image_url' => $this->getFirstImageUrl($sourceValue),
+            'favicon_url' => $this->getFaviconUrl($sourceValue),
+            // 프론트 URL 유틸·편집기 규격 선택이 읽는 값 — 저장 행이 아니라 레지스트리가 합친 결과(고정·og·확장·운영자)다.
+            'thumbnail_presets' => app(ThumbnailPresetRegistry::class)->forFrontend(),
+            // `size` 를 붙여도 되는 서빙 경로 — 기능이 꺼져 있으면 빈 목록(프론트는 아무 주소도 바꾸지 않는다).
+            'thumbnail_url_patterns' => (bool) ($sourceValue ?? true) ? ThumbnailUrl::patterns() : [],
             // 본문 콘텐츠 규칙 — 표시기·편집기용 계산값(허용 태그·속성·미디어 출처·외부 영상 컴파일 정규식, #883)
             'content_render_policy' => ContentHtmlPolicy::fromSettings($settings)->toFrontendArray(),
             default => $sourceValue,
@@ -802,6 +943,29 @@ class SettingsService
     }
 
     /**
+     * 파비콘 첨부 ID 배열에서 첫 유효 첨부의 파비콘 경로를 반환합니다 (#434).
+     *
+     * 이미지 판정(`is_image`)은 ico·svg 를 이미지로 보지 않으므로 파비콘은 파비콘 컬렉션·MIME 목록으로 따로 고른다.
+     * 경로도 일반 다운로드가 아니라 파비콘 전용 경로(`/api/favicon/{hash}`)다.
+     *
+     * @param  mixed  $attachmentIds  첨부파일 ID 배열
+     * @return string|null 파비콘 경로 또는 null
+     */
+    private function getFaviconUrl(mixed $attachmentIds): ?string
+    {
+        if (empty($attachmentIds) || ! is_array($attachmentIds)) {
+            return null;
+        }
+
+        $attachment = $this->attachmentRepository->findByIds($this->extractAttachmentIds($attachmentIds))->first(
+            fn ($attachment) => $attachment->collection === FaviconPolicy::CORE_COLLECTION
+                && FaviconPolicy::responseMime($attachment->mime_type) !== null
+        );
+
+        return $attachment === null ? null : FaviconPolicy::url((string) $attachment->hash);
+    }
+
+    /**
      * 환경설정 값을 저장합니다.
      *
      * @param  array  $settings  카테고리별 설정 데이터
@@ -861,6 +1025,15 @@ class SettingsService
                 $tabSettings['site_logo'] = $this->resolveSiteLogoIds($tabSettings['site_logo']);
             }
 
+            // 사이트 파비콘(#434)도 site_logo 와 동형 — 제출하지 않은 저장은 기존값 유지, 뺀 첨부는 저장 성공 후 파기
+            $removedFaviconIds = [];
+
+            if ($tab === 'general' && is_array($tabSettings['site_favicon'] ?? null)) {
+                $removedFaviconIds = $this->resolveRemovedAttachmentIds('general', 'site_favicon', $tabSettings['site_favicon']);
+
+                $tabSettings['site_favicon'] = $this->resolveSubmittedAttachmentIds(FaviconPolicy::CORE_COLLECTION, $tabSettings['site_favicon']);
+            }
+
             // 사이트 기본 OG 이미지도 site_logo 와 동형으로 처리 (공개 이슈 #22)
             $removedOgImageIds = [];
 
@@ -886,6 +1059,12 @@ class SettingsService
             // 기존 설정과 병합 (탭별로 일부 필드만 전송되어도 기존 설정 유지)
             $existingSettings = $this->configRepository->getCategory($tab);
 
+            // 이미지 썸네일 규격 표(#869) — 저장소는 카테고리 1단계만 병합해 목록을 통째로 바꾸므로, 화면이 보낸 표를
+            // 그대로 두면 고정 슬롯이 빠지거나 꺼진 확장의 수정값이 사라진다. 저장 목록으로 바꿔 넣는다.
+            if ($tab === 'upload') {
+                $tabSettings = $this->prepareUploadThumbnailSettings($tabSettings, $existingSettings);
+            }
+
             // 최근 검색어 범위 행(7.1.5) — 화면에는 지금 선언된 범위만 나오므로, 끈 확장의 기존 행은 보존해 다시 켤 때
             // 운영자 값이 돌아오게 한다. 형식 검증은 FormRequest 가 마쳤다.
             if ($tab === 'privacy' && is_array($tabSettings[SearchScopes::SETTINGS_ROWS_KEY] ?? null)) {
@@ -902,6 +1081,10 @@ class SettingsService
                 && array_key_exists('asset_url_mode', $tabSettings)
                 && ($existingSettings['asset_url_mode'] ?? null) !== $tabSettings['asset_url_mode'];
 
+            // 썸네일 설정이 실제로 바뀌는지도 저장 전에 판정한다 — 바뀌었을 때만 큐 워커 재시작 신호를 보낸다.
+            $thumbnailSettingsChanged = $tab === 'upload'
+                && $this->thumbnailSettingsDiffer($existingSettings, $mergedSettings);
+
             // 해당 카테고리 설정 저장
             $result = $this->configRepository->saveCategory($tab, $mergedSettings);
 
@@ -910,6 +1093,7 @@ class SettingsService
 
                 // 저장이 확정된 뒤에야 파일을 파기한다 (위 판정 시점 주석 참조).
                 $this->purgeSiteLogoAttachments($removedSiteLogoIds);
+                $this->purgeRemovedAttachments($removedFaviconIds, '사이트 파비콘');
                 $this->purgeRemovedAttachments($removedOgImageIds, '기본 OG 이미지');
 
                 // SEO 프리렌더 캐시에는 생성 시점의 자산 URL 이 그대로 구워져 있다.
@@ -924,8 +1108,14 @@ class SettingsService
                 // drivers 탭은 queue/broadcasting/cache 등 long-running worker에 영향
                 // SettingsServiceProvider는 worker boot 시점에 한 번만 config 적용하므로
                 // 워커가 정상 종료 후 재시작되도록 신호 전송 (cache 기반, 즉시 종료 X)
-                if ($tab === 'drivers') {
+                // 썸네일 미리 만들기·옛 디스크 비우기는 큐 작업이다 — 썸네일 설정(업로드 탭)이 바뀌면 워커가 옛 값으로
+                // 계속 돌지 않게 같은 신호를 보낸다. 다른 업로드 키만 바뀌었거나 같은 값이면 보내지 않는다.
+                if ($tab === 'drivers' || $thumbnailSettingsChanged) {
                     $this->restartQueueWorkers();
+                }
+
+                if ($tab === 'upload' || $tab === 'drivers') {
+                    $this->applyThumbnailConfigInProcess($tab, $mergedSettings);
                 }
             }
 
@@ -938,6 +1128,116 @@ class SettingsService
                 'settings' => [__('settings.save_failed').': '.$e->getMessage()],
             ]);
         }
+    }
+
+    /**
+     * 두 업로드 설정의 썸네일 값이 다른지 — 워커가 실제로 읽는 config 값(`ThumbnailConfig::fromUploadSettings()`)으로 비교한다.
+     *
+     * 화면은 켜고 끄는 값을 '1'·'0' 문자열로, API 는 bool 로 보낸다. 저장 원형으로 비교하면 같은 값을 다시 저장해도 바뀐
+     * 것으로 보이므로 config 로 바꾼 뒤 비교한다. 썸네일 키가 아닌 업로드 키는 보지 않는다.
+     *
+     * @param  array<string, mixed>  $before  지금 저장된 업로드 설정
+     * @param  array<string, mixed>  $after  저장할 업로드 설정
+     * @return bool 썸네일 값이 하나라도 다르면 true
+     */
+    private function thumbnailSettingsDiffer(array $before, array $after): bool
+    {
+        return ThumbnailConfig::fromUploadSettings($before) != ThumbnailConfig::fromUploadSettings($after);
+    }
+
+    /**
+     * 업로드 탭 저장분의 썸네일 값을 저장 형태로 바꿉니다 (#869).
+     *
+     *  - 응답 전용 값(`thumbnail_presets_rows`, `thumbnail_presets_public`, `thumbnail_url_patterns`)은 저장하지 않는다.
+     *    화면은 응답으로 받은 업로드 탭 객체를 통째로 되돌려 보내므로, 거르지 않으면 계산 결과가 upload.json 에 쌓이고
+     *    다음 조회 때 계산 값 대신 그 낡은 값이 보인다.
+     *  - `thumbnail_presets` 는 `ThumbnailPresetSettings::mergeForSave()` 를 거친다. 고정 슬롯을 늘 보충하고, og 행은 빼고
+     *    (크기는 SEO 탭 소유), 지금 꺼진 확장의 수정값은 기존 저장본에서 이어 붙인다. null 은 「보내지 않음」으로 본다.
+     *
+     * @param  array<string, mixed>  $tabSettings  업로드 탭 저장분 (원본 키)
+     * @param  array<string, mixed>  $existingSettings  지금 저장된 업로드 설정
+     * @return array<string, mixed> 저장할 업로드 탭 값
+     */
+    private function prepareUploadThumbnailSettings(array $tabSettings, array $existingSettings): array
+    {
+        unset(
+            $tabSettings['thumbnail_presets_rows'],
+            $tabSettings['thumbnail_presets_public'],
+            $tabSettings['thumbnail_url_patterns'],
+        );
+
+        // 서버 보호 값(「고급」 칸)은 정수로 저장한다 — 화면은 숫자 칸 값을 문자열로 보내기도 한다. 빈 칸은 null(서버 기본값).
+        foreach (ThumbnailConfig::SERVER_LIMIT_KEYS as $limitKey) {
+            $settingKey = 'thumbnail_'.$limitKey;
+
+            if (array_key_exists($settingKey, $tabSettings)) {
+                $tabSettings[$settingKey] = is_numeric($tabSettings[$settingKey]) ? (int) $tabSettings[$settingKey] : null;
+            }
+        }
+
+        if (! array_key_exists('thumbnail_presets', $tabSettings)) {
+            return $tabSettings;
+        }
+
+        if (! is_array($tabSettings['thumbnail_presets'])) {
+            unset($tabSettings['thumbnail_presets']);
+
+            return $tabSettings;
+        }
+
+        $previous = is_array($existingSettings['thumbnail_presets'] ?? null) ? array_values($existingSettings['thumbnail_presets']) : [];
+
+        $tabSettings['thumbnail_presets'] = app(ThumbnailPresetSettings::class)->mergeForSave(
+            array_values($tabSettings['thumbnail_presets']),
+            $previous
+        );
+
+        return $tabSettings;
+    }
+
+    /**
+     * 저장한 썸네일 설정과 이미지 엔진 선택을 이 프로세스의 config 에도 반영합니다 (#869).
+     *
+     * `SettingsServiceProvider` 의 주입(applyUploadConfig, applyDriverConfig)은 다음 부팅에서야 일어난다.
+     * 그런데 저장 응답(`SettingsController::store`)이 같은 요청 안에서 규격 표(`presentRows`)와 엔진 유무를 다시 만들므로,
+     * 여기서 넣지 않으면 저장 직후 화면이 옛 표로 되돌아간다. 키 대응은 Provider 와 같게 둔다 — 업로드 탭의 서버 보호 값은
+     * `.env` 대응 키라 Provider 처럼 잠긴 키를 빼고 넣는다(저장본에 남은 옛 값이 `.env` 값을 덮지 않게). 레지스트리의 요청 안
+     * 캐시도 비운다.
+     *
+     * @param  string  $tab  저장한 탭 (upload 또는 drivers)
+     * @param  array<string, mixed>  $mergedSettings  저장한 카테고리 전체 값
+     * @return void 반환값 없음
+     */
+    private function applyThumbnailConfigInProcess(string $tab, array $mergedSettings): void
+    {
+        if ($tab === 'drivers') {
+            if (! empty($mergedSettings['image_driver'])) {
+                Config::set('core.image.driver', (string) $mergedSettings['image_driver']);
+            }
+        } else {
+            $store = app(ThumbnailStore::class);
+            $previousDisks = $store->disks();
+            $wasEnabled = (bool) config('core.thumbnail.enabled', true);
+
+            foreach (ThumbnailConfig::fromUploadSettings(EnvPriority::filterLocked('upload', $mergedSettings)) as $configKey => $value) {
+                Config::set($configKey, $value);
+            }
+
+            // 끈 동안 저장소 계층은 원본 put 의 파생본 무효화를 건너뛰었다(업로드마다 원격 확인 요청을 내지 않게).
+            // 그 사이 덮어쓴 원본의 옛 파생본이 다시 켜자마자 나가지 않도록 지금 쓰는 썸네일 디스크를 비운다(큐 또는 응답 뒤).
+            if (! $wasEnabled && (bool) config('core.thumbnail.enabled', true)) {
+                PurgeThumbnailsOnReenableJob::schedule();
+            }
+
+            // 저장 위치를 바꾸면 옛 디스크의 파생본은 어떤 경로로도 지워지지 않는다(원본 삭제·정리·비우기가 모두
+            // 「지금 설정된」 디스크만 본다). 썸네일은 캐시이므로 옛 디스크의 `thumbnails/` 를 비우되, 파일 수만큼
+            // 걸리는 삭제가 저장 요청을 붙잡지 않게 큐로 넘긴다(큐가 없으면 응답을 보낸 뒤).
+            foreach (array_diff($previousDisks, $store->disks()) as $retired) {
+                PurgeRetiredThumbnailDiskJob::schedule($retired);
+            }
+        }
+
+        app(ThumbnailPresetRegistry::class)->flush();
     }
 
     /**
@@ -1296,6 +1596,8 @@ class SettingsService
             $assetUrlModeChanged = $key === 'general.asset_url_mode'
                 && $this->configRepository->get($key) !== $value;
 
+            $thumbnailSettingsChanged = $this->singleKeyChangesThumbnailSettings($key, $value);
+
             $result = $this->configRepository->set($key, $value);
 
             if ($result) {
@@ -1308,7 +1610,7 @@ class SettingsService
                     $this->bumpExtensionCacheForAssetUrlMode();
                 }
 
-                if (str_starts_with($key, 'drivers.') || $key === 'drivers') {
+                if (str_starts_with($key, 'drivers.') || $key === 'drivers' || $thumbnailSettingsChanged) {
                     $this->restartQueueWorkers();
                 }
             }
@@ -1322,6 +1624,36 @@ class SettingsService
                 'setting' => [__('settings.save_individual_failed', ['error' => $e->getMessage()])],
             ]);
         }
+    }
+
+    /**
+     * 단건 저장이 썸네일 설정 값을 바꾸는지 — 큐 워커 재시작 신호 판정 (벌크 저장의 `thumbnailSettingsDiffer()` 와 같은 기준).
+     *
+     * `upload` 카테고리 통째, `upload.{썸네일 키}`, 그 아래 깊은 키(`upload.thumbnail_presets.0.width` 등)를 본다.
+     *
+     * @param  string  $key  설정 키 (예: 'upload.thumbnail_enabled')
+     * @param  mixed  $value  저장할 값
+     * @return bool 썸네일 값이 바뀌면 true
+     */
+    private function singleKeyChangesThumbnailSettings(string $key, mixed $value): bool
+    {
+        if ($key === 'upload') {
+            return is_array($value) && $this->thumbnailSettingsDiffer((array) $this->configRepository->getCategory('upload'), $value);
+        }
+
+        $segments = explode('.', $key, 3);
+
+        if ($segments[0] !== 'upload' || ! isset($segments[1]) || ! array_key_exists($segments[1], ThumbnailConfig::SETTING_KEYS)) {
+            return false;
+        }
+
+        $before = $this->configRepository->get($key);
+
+        if (isset($segments[2])) {
+            return $before != $value;
+        }
+
+        return $this->thumbnailSettingsDiffer([$segments[1] => $before], [$segments[1] => $value]);
     }
 
     /**
@@ -1528,6 +1860,10 @@ class SettingsService
      * 하드웨어/환경 정보는 1시간 캐시하며, 실시간성이 요구되는
      * server_time 은 매 호출마다 갱신합니다.
      *
+     * 확장이 필터 훅 `core.settings.filter_system_info_sections` 로 더한 카드(`extra_sections`)도 캐시 밖에서 매 요청
+     * 새로 모읍니다 — 확장 정보는 캐시 수명과 무관하게 최신이어야 합니다. 검증·리스너 예외 격리는
+     * {@see SystemInfoSectionService} 가 맡습니다 (#888).
+     *
      * @return array 시스템 정보 배열
      */
     public function getSystemInfo(): array
@@ -1544,6 +1880,9 @@ class SettingsService
         // audit:allow datetime-display-user-timezone reason: 서버 시각 진단값 — 의도된 서버 기준
         $info['server_time'] = now()->format('Y-m-d H:i:s');
 
+        // 확장 카드 — 캐시된 응답에서도 매 요청 새로 계산한다. 리스너 하나가 던져도 이 응답은 계속 200 이다.
+        $info['extra_sections'] = app(SystemInfoSectionService::class)->collect();
+
         return $info;
     }
 
@@ -1559,6 +1898,7 @@ class SettingsService
     {
         return [
             // php_uname / ini_get 은 disable_functions 로 차단될 수 있어 개별 격리한다.
+            // audit:allow hosting-blocked-function-requires-guard safeSystemProbe 가 Throwable 을 잡아 「확인 불가」로 접는다 — 룰은 try/catch 를 보지 못한다
             'os_info' => $this->safeSystemProbe('os_info', fn () => php_uname('s').' '.php_uname('r'), __('common.unknown')),
             'web_server' => $_SERVER['SERVER_SOFTWARE'] ?? __('common.unknown'),
             'php_version' => PHP_VERSION,
@@ -1570,6 +1910,7 @@ class SettingsService
             'cpu_info' => $this->safeSystemProbe('cpu_info', fn () => $this->getCpuInfo(), __('common.unknown')),
             'memory_usage' => $this->safeSystemProbe('memory_usage', fn () => $this->getMemoryUsage(), $this->unknownUsage()),
             'disk_usage' => $this->safeSystemProbe('disk_usage', fn () => $this->getDiskUsage(), $this->unknownUsage()),
+            // audit:allow hosting-blocked-function-requires-guard safeSystemProbe 가 Throwable 을 잡아 「확인 불가」로 떨어뜨린다 (아래 두 줄 동일)
             'php_memory_limit' => $this->safeSystemProbe('php_memory_limit', fn () => ini_get('memory_limit'), __('common.unknown')),
             'max_execution_time' => $this->safeSystemProbe('max_execution_time', fn () => ini_get('max_execution_time').__('settings.seconds'), __('common.unknown')),
             'upload_max_filesize' => $this->safeSystemProbe('upload_max_filesize', fn () => ini_get('upload_max_filesize'), __('common.unknown')),
@@ -1634,11 +1975,12 @@ class SettingsService
      */
     private function unknownUsage(): array
     {
+        // percentage null = 측정 불가 — 화면은 0% 가 아니라 "측정 불가" 로 표기한다 (A-8)
         return [
             'total' => __('common.unknown'),
             'used' => __('common.unknown'),
             'free' => __('common.unknown'),
-            'percentage' => 0,
+            'percentage' => null,
         ];
     }
 
@@ -1692,23 +2034,62 @@ class SettingsService
     /**
      * 어플리케이션 키를 재생성합니다.
      *
-     * @param  string  $password  최고 관리자 비밀번호
-     * @return array 결과 (success, app_key 또는 error)
+     * 실행 직전에 요청 관리자 본인을 다시 확인한다 — 비밀번호가 있으면 비밀번호, 없으면(외부 인증 전용) 이메일 인증번호로
+     * 받은 `verification_token`.
+     *
+     * @param  array{password?: string|null, verification_token?: string|null}  $credentials  재확인 입력
+     * @return array 결과 (success, app_key 또는 error·status)
+     *
+     * @throws IdentityVerificationRequiredException 비밀번호 없는 관리자가 비밀번호로 확인하려 할 때 (428)
      */
-    public function regenerateAppKey(string $password): array
+    public function regenerateAppKey(array $credentials): array
     {
         $admin = Auth::user();
-        if (! $admin || ! Hash::check($password, $admin->password)) {
-            return ['success' => false, 'error' => __('settings.invalid_password')];
+        $check = $admin instanceof User
+            ? app(ReauthenticationService::class)->verify($admin, $credentials)
+            : ReauthenticationService::MISSING;
+
+        // 비밀번호 없는 관리자가 비밀번호 칸으로 왔다 = 그 회원을 모르는 옛 화면(7.1.x)이다. 본인인증을 요구한다(428) —
+        // 엔진이 인증 창을 열고 확인이 끝나면 토큰을 붙여 이 요청을 다시 보낸다. \Error 계열이라 호출자 catch 를 지나친다.
+        if ($check === ReauthenticationService::PASSWORD_NOT_SET) {
+            throw app(ReauthenticationService::class)->challengeFor(request());
+        }
+
+        if ($check === ReauthenticationService::TOKEN_INVALID) {
+            return ['success' => false, 'error' => __('user.reauthentication_invalid'), 'status' => 422];
+        }
+
+        if ($check !== ReauthenticationService::PASSED) {
+            return ['success' => false, 'error' => __('settings.invalid_password'), 'status' => 401];
         }
 
         try {
             $newKey = 'base64:'.base64_encode(random_bytes(32));
 
             $envPath = base_path('.env');
-            $envContent = file_get_contents($envPath);
+            $envContent = @file_get_contents($envPath);
+
+            if ($envContent === false) {
+                return ['success' => false, 'error' => __('settings.app_key_env_write_failed')];
+            }
+
             $envContent = preg_replace('/^APP_KEY=.*/m', 'APP_KEY='.$newKey, $envContent);
-            file_put_contents($envPath, $envContent);
+
+            // PCRE 실패(백트랙 한계 등)는 `null` 이다 — 그것을 쓰면 `.env` 가 빈 파일이 된다.
+            if ($envContent === null) {
+                return ['success' => false, 'error' => __('settings.app_key_env_write_failed')];
+            }
+
+            // 부분 쓰기는 `false` 가 아니라 **쓴 바이트 수**다(디스크 full·quota). 반환값을
+            // 버리면 잘린 `.env` 가 「재생성 완료」로 보고되고, 그 파일에는 APP_KEY 도
+            // DB 자격증명도 온전히 남아 있지 않아 사이트가 다음 부팅에서 뜨지 않는다.
+            // 되돌릴 사본도 없다(제자리 쓰기). 형제 축(인스톨러 `installerWroteFully()` ·
+            // `AbstractRootMarkerFileUpdater` · `CoreUpdateService`)이 같은 규율을 쓴다.
+            $written = @file_put_contents($envPath, $envContent, LOCK_EX);
+
+            if ($written === false || $written !== strlen($envContent)) {
+                return ['success' => false, 'error' => __('settings.app_key_env_write_failed')];
+            }
 
             // .env 변경 반영 + config 캐시 재생성 (clear 만 하면 캐시 비활성 상태로 잔존).
             ConfigCacheHelper::rebuild();
@@ -1792,7 +2173,8 @@ class SettingsService
                     $free = (int) $m[1] * 1024;
                 }
             }
-        } elseif (PHP_OS_FAMILY === 'Windows') {
+        } elseif (PHP_OS_FAMILY === 'Windows' && ExecutionEnvironment::hasFunction('shell_exec')) {
+            // disable_functions 차단 시 호출 자체가 fatal Error — 가드 필수 (A-8)
             $script = '$os = Get-CimInstance Win32_OperatingSystem; '
                 .'Write-Output $os.TotalVisibleMemorySize; '
                 .'Write-Output $os.FreePhysicalMemory';
@@ -1831,6 +2213,9 @@ class SettingsService
 
         // open_basedir 제한 환경에서 disk_*_space 가 warning → ErrorException 이 되지 않도록
         // @ 억제 + numeric 체크 (공개#40, getMemoryUsage 폴백 패턴 재사용).
+        // `disable_functions` 축은 호출부의 `safeSystemProbe` 가 `\Throwable` 로 접는다
+        // (PHP 8 의 차단 함수 호출은 `Error`). audit 이관 원장의 「조치 불필요」 판정과 같다.
+        // audit:allow hosting-blocked-function-requires-guard reason: 차단 축은 호출부 safeSystemProbe 가 \Throwable 로 접는다 (위 주석 참조 — audit 이관 원장의 「조치 불필요」 판정)
         $totalRaw = @disk_total_space($path);
         $freeRaw = @disk_free_space($path);
         $total = is_numeric($totalRaw) ? (int) $totalRaw : 0;
@@ -1878,6 +2263,11 @@ class SettingsService
     protected function getCpuInfo(): string
     {
         if (PHP_OS_FAMILY === 'Windows') {
+            // disable_functions 차단 시 호출 자체가 fatal Error — 가드 필수 (A-8)
+            if (! ExecutionEnvironment::hasFunction('shell_exec')) {
+                return __('common.unknown');
+            }
+
             $output = @shell_exec('powershell -NoProfile -NonInteractive -Command "(Get-CimInstance Win32_Processor | Select-Object -First 1).Name" 2>&1');
             if ($output) {
                 // 2>&1 로 합쳐진 오류 문장은 시스템 코드페이지(한국어 Windows = CP949)로 출력된다.

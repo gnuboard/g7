@@ -9,7 +9,6 @@
  * 이제 두 모양을 다 읽고, 저장은 최상위 `actions` 로 하며 다른 키를 보존하고, 다루지 않는 동작은 읽기 전용 안내로 둔다.
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { ErrorHandlingForm } from '../../../components/page-settings/ErrorHandlingForm';

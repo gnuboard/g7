@@ -6,6 +6,7 @@
   },
   "alerts": {
     "language_pack_install_failed": "一緒に選択した言語パックをインストールできませんでした（{{names}}）：{{reason}}",
+    "check_updates_github_failed": "GitHub で最新バージョンを確認できなかった拡張機能 {{count}} 件（{{names}}）— 最新とは判定せず、アップデート情報もそのままにしました。理由：{{reason}}",
     "language_pack_awaiting_host": "一緒に選択した言語パック（{{names}}）は、この拡張機能がまだ無効のため無効の状態でインストールしました。拡張機能を有効にすると一緒に有効になります。",
     "incompatible_deactivated": "{{type}} \"{{name}}\" が自動的に無効化されました",
     "incompatible_message": "必要なバージョン: {{required}}、現在インストール済み: {{installed}}",
