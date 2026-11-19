@@ -185,6 +185,8 @@ ContentMediaRegistrar::register($this->app->make(NoteContentMediaStore::class));
 
 골격이 아래 규칙을 지키므로, 어댑터는 자기 판정(권한·제거 정책)만 맞게 답하면 됩니다.
 
+파일 저장소는 DB 트랜잭션에 참여하지 않습니다. 어댑터가 저장 트랜잭션 안에서 파일을 직접 옮기거나 복사·삭제한다면 코어 공용 도구 `App\Extension\Helpers\StorageTransaction`(7.1.5 — 커밋되면 반영하고 롤백되면 되돌림)과 큰 파일을 메모리에 올리지 않는 스트림 계약 `StreamingStorageInterface` 를 씁니다 — [storage-driver.md 「트랜잭션 파일 보상」](storage-driver.md#트랜잭션-파일-보상-storagetransaction-715).
+
 1. **파일은 처음부터 최종 경로**에 두고 행만 임시(소유자 없음 + 임시 키)로 둡니다. 저장 트랜잭션 안에서 본문이 참조한 것만 DB 갱신으로 잇습니다 —
    롤백되면 함께 되돌아가고 큰 동영상을 옮기지 않습니다. 끝내 잇지 않은 임시 행은 확장의 임시 정리 명령이 지웁니다.
 2. 잇는 대상은 **같은 임시 키 + 올린 사람**(비회원은 업로드 쿠키 등 소유 증명)인 것만. 남의 해시는 잇지 않습니다.

@@ -12,7 +12,7 @@
 | [백엔드](backend/) | 50개 | 정상 |
 | [프론트엔드](frontend/) | 50개 | 정상 |
 | [확장 시스템](extension/) | 46개 | 정상 |
-| 공통 | 22개 | 정상 |
+| 공통 | 23개 | 정상 |
 | [절대 금지 패턴](rules/) | 0개 | 정상 |
 | [AI 도구](ai-tools/) | - | 정상 |
 
@@ -29,6 +29,18 @@ G7 이 제공하는 REST API 의 엔드포인트별 요청 파라미터·응답 
 |------|------|
 | [backend/api/README.md](backend/api/README.md) | **API 레퍼런스 진입점** — 공통 규약(인증·응답 봉투·페이지네이션·에러) + 코어/확장 전체 목차 |
 | [backend/api-documentation.md](backend/api-documentation.md) | API 문서 작성·갱신 규정 (기여자용) |
+
+---
+
+## 설치·업그레이드·운영
+
+| 문서 | 설명 |
+|------|------|
+| [../INSTALL.md](../INSTALL.md) | 설치 가이드 — 웹 서버·로컬·ZIP·공유 호스팅·터미널·CLI 없는 호스팅·문서 루트 고정·FTP 전용 설치, 업그레이드, 프로덕션 설정 |
+| [requirements.md](requirements.md) | 시스템 요구사항 — PHP 확장·웹 서버·데몬·호스팅 제한 |
+| [upgrade/7.1.x-to-7.2.0.md](upgrade/7.1.x-to-7.2.0.md) | 7.1.x → 7.2.0 업그레이드 안내 |
+| [upgrade/7.0.x-to-7.1.0.md](upgrade/7.0.x-to-7.1.0.md) | 7.0.x → 7.1.0 업그레이드 안내 |
+| [cheatsheet.md](cheatsheet.md) | 자주 쓰는 명령어 — 업데이트·복구·운영 명령과 종료 코드 |
 
 ---
 
@@ -291,7 +303,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | [user-template-contract.md](extension/user-template-contract.md) | 사용자 템플릿 계약 |
 | [vendor-bundle.md](extension/vendor-bundle.md) | Vendor 번들 시스템 (Vendor Bundle System) |
 
-### 공통 (22개)
+### 공통 (23개)
 
 | 문서 | 제목 |
 |------|------|
@@ -317,6 +329,7 @@ sirsoft-admin_basic 컴포넌트 문서는 확장이 소유합니다 — [templa
 | [testing-guide.md](testing-guide.md) | 그누보드7 테스트 가이드 |
 | [e2e-testing.md](testing/e2e-testing.md) | 그누보드7 Playwright E2E 테스트 가이드 |
 | [7.0.x-to-7.1.0.md](upgrade/7.0.x-to-7.1.0.md) | 7.0.x → 7.1.0 업그레이드 안내 |
+| [7.1.x-to-7.2.0.md](upgrade/7.1.x-to-7.2.0.md) | 7.1.x → 7.2.0 업그레이드 안내 |
 
 ### AI 도구
 

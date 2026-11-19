@@ -246,8 +246,12 @@ public function cleanupStale(
     array $scopeFilter,        // ['extension_identifier' => 'x', 'type' => 'refund']
     string $keyField,          // 'code', 'slug', 'name'
     array $currentKeys,
+    string|array|null $entityLabel = null,   // 활동 로그에 적을 엔티티 이름 — 비우면 모델 이름
+    ?string $ownerIdentifier = null,         // 활동 로그에 적을 소유 확장 식별자 (범위 조건에 없을 때)
 ): int;
 ```
+
+운영자가 고친 행(`user_overrides`)을 지우기 직전에는 활동 로그에 남긴다. `$entityLabel` 에 언어별 묶음(`LocalizedValue::translateAll()` 결과, 7.2.0)을 넘기면 로그를 볼 때의 언어로 항목 이름이 나온다.
 
 > **운영자가 직접 행을 만드는 표는 운영자 행을 가르는 범위 조건 없이 `cleanupStale` 을 부르지 않는다.** 시더는 언어팩을 켜고 끌 때마다 다시 돌기 때문에, 조건 없이 부르면 운영자가 만든 행(선언에 없는 행)이 흔적 없이 지워진다(#727 — 게시판 유형·클레임 사유·배송유형·택배사). 시더가 만든 행만 정리하려면 `['created_by' => null]` 을 범위에 넣고, 시더가 새로 만드는 행에는 `created_by => null` 을 명시해 로그인한 요청 안에서 시더가 돌아도 시드 행이 운영자 행으로 보이지 않게 한다. 가를 표식이 없는 표(게시판 유형)는 정리하지 않는다 — 선언을 없앨 일이 생기면 그 버전의 업그레이드 스텝이 명시적으로 처리한다.
 

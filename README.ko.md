@@ -51,15 +51,19 @@
 | **해외 결제** | 로컬 비즈니스를 넘어 글로벌 커머스로 도약하기 위한 기반을 제공합니다. 결제 연동은 동일한 Extension Point 패턴으로 붙일 수 있으며, 해외 결제 수단은 별도 플러그인으로 제공됩니다 |
 | **권한 제어** | 역할별 메뉴와 기능, 데이터 범위까지 제어할 수 있습니다. 역할(Role) + 권한(Permission) + 스코프(Scope) 3단계 접근 제어로 조직 구조에 맞는 유연한 접근 관리를 제공합니다 |
 | **본인인증 (IDV)** | 회원가입·비밀번호 재설정·민감 작업 등 모든 본인인증 시점을 라우트/훅 단위 선언형 정책으로 통합 관리합니다. 코어가 메일 프로바이더를 기본 내장하고, 외부 KCP·이니시스·SMS·PortOne·Stripe Identity 등은 동일한 Provider 계약으로 붙일 수 있는 확장점을 제공합니다. 서버가 HTTP 428 응답을 반환하면 프론트엔드 인터셉터가 자동으로 인증 모달을 띄우고 인증 성공 시 원 요청을 재실행합니다 |
-| **보안** | 입력값 자동 검증과 토큰 기반 인증을 제공합니다. 설계부터 보안을 고려한 다층 방어 구조(CSRF/XSS/SQL Injection), 로그인 시도 제한·계정 잠금(HTTP 423) 실제 구현, 설치 완료 후 인스톨러 엔드포인트 자동 차단(HTTP 410) 까지 다층 방어를 구성합니다 |
+| **소셜·회사 계정 로그인** | 카카오·네이버·구글 등 소셜 로그인과 회사 계정 로그인(SAML·OIDC·LDAP)이 비밀번호 로그인과 같은 보안 관문(계정 잠금·2단계 인증·휴면 해제)을 거칩니다. 비밀번호 없이 외부 로그인만 쓰는 회원도 지원합니다 |
+| **보안** | 입력값 자동 검증과 토큰 기반 인증, 다층 방어 구조(CSRF/XSS/SQL Injection), 로그인 시도 제한·계정 잠금(HTTP 423), 설치 후 인스톨러 자동 차단(HTTP 410)을 기본으로 갖춥니다. 2단계 인증(인증 앱 OTP 포함), 비밀번호 정책, 관리자 IP 접근 제한, 콘텐츠 보안 정책(CSP)을 켤 수 있고, 확장·코어 패키지는 서명을 확인한 뒤 설치합니다 |
 | **유연한 화면 구성** | 화면 구조를 정의하면 즉시 반영할 수 있습니다. 프론트엔드 인프라 없이 마크업 소스(.g7.html)만으로 웹앱 수준의 동적 화면 구현이 가능합니다 |
 | **레이아웃 편집기** | 위지윅 기반 레이아웃 편집 기능으로 화면 블록을 직접 배치하고 수정 결과를 바로 확인할 수 있습니다 |
 | **검증된 기반** | Laravel + React 기반을 제공합니다. 글로벌 기업이 채택한 기술 스택으로 높은 확장성과 유연한 UI 구현이 가능합니다 |
 | **공통 캐시 시스템** | `CacheInterface` 와 코어/모듈/플러그인 3종 드라이버로 키 접두사(`g7:core:`, `g7:module.{id}:`, `g7:plugin.{id}:`) 를 자동 격리합니다. 태그 기반 자동 무효화와 `g7_core_settings('cache.*_ttl')` 중앙 관리로 하드코딩 없이 운영할 수 있습니다 |
-| **알림 시스템** | 알림 정의(Definition) × 템플릿(Template) × 수신자(Recipients) 3계층 구조로 메일/DB/실시간 브로드캐스트(Reverb) 다채널 독립 발송을 지원합니다. 작성자·역할·특정 사용자·권한 보유자 단위 타겟팅과 훅 기반 발송으로 모듈이 자체 알림을 자유롭게 등록할 수 있습니다 |
+| **알림 시스템** | 알림 정의(Definition) × 템플릿(Template) × 수신자(Recipients) 3계층 구조로 메일/DB/실시간 브로드캐스트(Reverb) 다채널 독립 발송을 지원하고, 플러그인으로 문자·카카오 알림톡을 더할 수 있습니다. 작성자·역할·특정 사용자·권한 보유자 단위 타겟팅과 훅 기반 발송으로 모듈이 자체 알림을 자유롭게 등록할 수 있습니다 |
 | **SEO** | `jaybizzle/crawler-detect` 기반으로 약 1,000종 봇(검색엔진·SNS unfurl·AI 검색)을 자동 감지하여 봇 요청에는 정적 HTML 을, 일반 사용자에게는 SPA 를 응답합니다. OG/Twitter 카드 메타와 모듈이 선언한 도메인 스키마(Article/Product/Offer/AggregateRating), Sitemap 자동·수동 생성, Generator 메타 태그까지 표준 SEO 표면을 코어에서 제공합니다 |
 | **활동 로그** | 관리자·사용자 활동 이력을 자동으로 기록하고 조회할 수 있습니다. Monolog 기반 구조로 확장이 용이하며, 액션 라벨이 모듈/플러그인 자체 다국어 파일에서 우선 해석되어 도메인별 자기설명이 가능합니다 |
 | **검색** | Laravel Scout 기반 전문 검색을 지원합니다. 상품, 게시글 등 주요 콘텐츠를 대상으로 검색 기능을 제공합니다 |
+| **방문자 통계** | 외부 분석 도구 없이 방문·페이지뷰·유입 경로·기기·지역·검색어를 사이트 안에서 모으고, 관리자 화면과 주간·월간 보고서 메일로 봅니다. 수집 수준은 IP 저장·동의 연동·익명 중에서 고릅니다 |
+| **개인정보 보호** | 보유기간이 지난 개인정보 파기·익명화와 휴면 계정 처리(사전 안내 → 휴면 → 자동 탈퇴)를 자동으로 돌립니다. 켜기 전에 대상 건수와 명단을 확인할 수 있습니다 |
+| **쉬운 설치·업데이트** | 공유 호스팅·FTP 전용·서버 명령(SSH)이 없는 호스팅에도 설치할 수 있고, 코어 업데이트는 관리자 화면의 버튼으로 진행합니다. 업데이트가 운영자가 고친 화면을 지키며, 실패하면 백업본으로 자동으로 되돌립니다 |
 
 ---
 
@@ -86,6 +90,8 @@ Gnuboard7
 │   ├── Identity Verification (Policy × Purpose × Provider × Message)
 │   ├── Language Pack (가상 보호 행 + ZIP/GitHub 설치 + sub-key 보존)
 │   ├── Notification (Definition × Template × Recipients)
+│   ├── Schedule & Queue (DB 기반 예약 작업 · 큐 관리 · 웹 크론)
+│   ├── Package Signing (SHA-256 + Ed25519 · 신뢰 키)
 │   └── SEO (Bot Detection → Static HTML → Cache → Sitemap)
 │
 ├── Extensions
@@ -108,6 +114,7 @@ Gnuboard7
 - 마크업 소스(.g7.html)만으로 React 기반 UI 구성 — React 전문 지식 없이도 화면 개발 가능
 - 모듈/플러그인이 프론트엔드 빌드 없이 UI를 동적으로 주입/확장
 - 고도화된 UI가 필요한 경우 커스텀 React 컴포넌트를 개발하여 등록 가능
+- 뒤로 가기 때의 스크롤 위치 복원, 저장하지 않은 변경이 있는 화면을 떠날 때의 확인(`leave_guard`), 링크처럼 새 탭으로 열 수 있는 이동을 선언만으로 제공
 - UI가 코드가 아닌 데이터(JSON)로 정의되는 구조를 활용한 **위지윅 레이아웃 편집기** — 비개발자도 화면 블록을 직접 배치·편집하고 결과를 바로 확인할 수 있습니다
 
 ```mermaid
@@ -261,7 +268,7 @@ flowchart TB
 
 ### 핵심 시스템
 
-플랫폼을 떠받치는 네 가지 시스템이 유기적으로 동작합니다.
+플랫폼을 떠받치는 아래 시스템들이 유기적으로 동작합니다.
 
 #### 1. 확장 시스템 — 3원칙
 
@@ -328,7 +335,7 @@ public function __construct(
 ```
 
 - **Definition** — 알림 종류(`type`), 지원 채널, 변수 메타데이터 정의
-- **Template** — 채널(`mail` / `database` / `broadcast`)마다 독립된 제목·본문·클릭 URL. 관리자가 다국어로 커스터마이징 가능
+- **Template** — 채널(`mail` / `database` / `broadcast`, 플러그인이 더한 문자·알림톡 등)마다 독립된 제목·본문·클릭 URL. 관리자가 다국어로 커스터마이징 가능. 확장이 템플릿을 준비하지 않은 채널을 켜면 꺼진 빈 템플릿이 만들어지고, 받는 사람과 본문을 채운 뒤에 켤 수 있습니다
 - **Recipients** — 템플릿별로 수신자 규칙을 JSON 으로 정의. 템플릿 단위 독립이므로 "메일은 주문자에게, DB 알림은 역할 보유자에게" 같은 분기 구성 가능
 
 ```php
@@ -343,7 +350,7 @@ HookManager::doAction('sirsoft-ecommerce.order.after_confirm', $order);
 // 5. notification_logs 에 발송 이력 기록
 ```
 
-- 코어 기본 알림 3종: `welcome`, `reset_password`, `password_changed`
+- 코어 기본 알림: 회원(`welcome`, `reset_password`, `password_changed`, 비밀번호 만료 안내·만료, 휴면 사전 안내·전환·탈퇴 예고), 운영(사이트맵 생성 완료·실패, 예약 작업 실패, 방문자 통계 주간·월간 보고서와 보관·한도 경고), 본인인증 메시지(목적별). 정본은 `config/core.php` 의 `notification_definitions`
 - 이커머스 모듈 알림: 주문·문의 축 7종(`order_confirmed`, `order_shipped`, `order_completed`, `order_cancelled`, `new_order_admin`, `inquiry_received`, `inquiry_replied`) + 클레임(교환·반품·환불) 상태별 알림 + 마일리지 소멸 예정 알림. 정본은 `module.php::getNotificationDefinitions()`, 클레임 알림의 목록과 훅 이름은 `ClaimStatusNotificationListener::notifiableStatuses()` — 유형 × 고객 가시 상태의 곱이라 여기에 옮겨 적으면 곧 낡음
 - 실시간 브로드캐스트는 Laravel Reverb (WebSocket) 기반. Reverb 미구성 환경에서는 graceful skip 으로 오류 없이 동작
 - `GenericNotification` 단일 클래스가 모든 알림을 처리 — 신규 알림 타입 추가 시 개별 Notification 클래스 작성 불필요
@@ -361,7 +368,7 @@ HookManager::doAction('sirsoft-ecommerce.order.after_confirm', $order);
 | 가상 보호 행 | 코어/번들 확장에 내장된 한국어/영어는 별도 설치 없이 항상 활성/보호 상태로 노출 (수정/제거 차단) |
 | 보안 | 언어 번역 외의 PHP 실행 코드 포함 시 설치 차단 |
 
-공식 일본어(ja) 번들 17종(코어 + 주요 모듈/플러그인/템플릿) 이 즉시 사용 가능하며, 인스톨러 4단계에서 모듈/플러그인/템플릿 선택과 종속된 언어팩 카드가 자동 연동되어 함께 설치할 수 있습니다.
+공식 일본어(ja) 번들 24종(코어 + 주요 모듈/플러그인/템플릿) 이 즉시 사용 가능하며, 인스톨러 4단계에서 모듈/플러그인/템플릿 선택과 종속된 언어팩 카드가 자동 연동되어 함께 설치할 수 있습니다.
 
 > 상세: [docs/extension/language-packs.md](docs/extension/language-packs.md)
 
@@ -376,7 +383,7 @@ HookManager::doAction('sirsoft-ecommerce.order.after_confirm', $order);
 │  ·단계·conditions) │ ◀▶ │  ·source 추적)      │ ◀▶ │  ·SMS·외부 IDV ...)  │
 └────────────────────┘    └─────────────────────┘    └──────────────────────┘
             │                                                  │
-            └──────────▶ Message Template (정책×목적 매핑) ◀───┘
+            └──────────▶ 알림 정의 (정책×목적 매핑) ◀──────────┘
                                     │
                               GenericNotification
 ```
@@ -412,7 +419,8 @@ HookManager::doAction('sirsoft-ecommerce.order.after_confirm', $order);
 - MySQL 8.0+ 또는 MariaDB 10.3+ (utf8mb4)
 - Composer 2.x
 - Node.js 20+ (프론트엔드 에셋을 직접 빌드할 때만 필요)
-- 웹 서버(Apache 또는 Nginx) — 문서 루트를 `public/` 으로 지정
+- 웹 서버(Apache·Nginx·Caddy·IIS) — 문서 루트를 `public/` 으로 지정하는 배치가 표준이며, 문서 루트를 바꿀 수 없는 호스팅·하위 주소 설치·FTP 만 쓸 수 있는 호스팅도 지원합니다([INSTALL.md](INSTALL.md) 방법 6~8)
+- PHP `sodium` 확장(권장 — 확장·코어 패키지 서명 검증. 없으면 서명 없는 패키지와 같이 다룹니다)
 - Redis 6.0+ (선택 — 프로덕션의 캐시·큐에 권장)
 
 ### 설치
@@ -428,7 +436,9 @@ cp .env.example .env
 # 3. 브라우저에서 /install 접속 → 설치 마법사 진행
 ```
 
-> Composer 의존성은 설치 마법사가 운영용 구성(`--no-dev`)으로 자동 설치합니다. 직접 설치하려면 `composer install --no-dev --optimize-autoloader` 를 사용하세요.
+> Composer 의존성은 설치 마법사가 운영용 구성(`--no-dev`)으로 자동 설치합니다. 직접 설치하려면 `composer install --no-dev --optimize-autoloader` 를 사용하세요. 운영 사이트에서 옵션 없는 `composer install` 은 개발용 패키지까지 받으므로 쓰지 않습니다.
+
+설치 마법사는 애플리케이션 키 생성, 데이터베이스 연결, 마이그레이션 실행을 처리하고 설치할 모듈·플러그인·템플릿·언어팩을 고르게 합니다. 설치가 끝나면 설치 경로는 자동으로 막힙니다(HTTP 410).
 
 브라우저 없이 서버 터미널에서도 같은 설치를 진행할 수 있습니다(대화형, 또는 옵션·환경변수만으로 끝나는 비대화형).
 
@@ -437,7 +447,9 @@ php g7-install                       # 대화형
 php g7-install --no-interaction ...  # 자동화 — INSTALL.md 「방법 5」
 ```
 
-> 상세 설치 가이드는 [INSTALL.md](INSTALL.md)를 참조하세요.
+서버 명령(SSH)을 쓸 수 없는 호스팅은 배포 ZIP 과 `g7-setup.php` 를 FTP 로 올려 브라우저에서 설치하고, 이후 업데이트도 관리자 화면에서 진행합니다.
+
+> 상세 설치 가이드는 [INSTALL.md](INSTALL.md), 이미 운영 중인 사이트의 업데이트는 [INSTALL.md 「업그레이드」](INSTALL.md#업그레이드)와 [7.1.x → 7.2.0 업그레이드 안내](docs/upgrade/7.1.x-to-7.2.0.md)를 참조하세요.
 
 ---
 
@@ -525,6 +537,8 @@ php g7-install --no-interaction ...  # 자동화 — INSTALL.md 「방법 5」
 | **gnuboard7-hello_admin_template** | Admin 템플릿 | Basic 컴포넌트 최소 셋 |
 | **gnuboard7-hello_user_template** | User 템플릿 | 홈 + Memo 리스트 연동 |
 
+> 샘플 확장마다 일본어 언어팩(`g7-module-gnuboard7-hello_module-ja` 등 4종)도 번들되어 있습니다.
+
 ---
 
 ## 비즈니스 모델
@@ -551,6 +565,9 @@ php g7-install --no-interaction ...  # 자동화 — INSTALL.md 「방법 5」
 | 설치 가이드 | [INSTALL.md](INSTALL.md) |
 | 전체 문서 | [docs/README.md](docs/README.md) |
 | 시스템 요구사항 | [docs/requirements.md](docs/requirements.md) |
+| 업그레이드 안내 | [docs/upgrade/7.1.x-to-7.2.0.md](docs/upgrade/7.1.x-to-7.2.0.md) |
+| 명령어 치트시트 | [docs/cheatsheet.md](docs/cheatsheet.md) |
+| 개발자 화면(custom) | [docs/custom-development.md](docs/custom-development.md) |
 | 백엔드 개발 | [docs/backend/README.md](docs/backend/README.md) |
 | 프론트엔드 개발 | [docs/frontend/README.md](docs/frontend/README.md) |
 | 데이터베이스 | [docs/database-guide.md](docs/database-guide.md) |

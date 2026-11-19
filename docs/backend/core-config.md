@@ -24,6 +24,7 @@
 - [menus — 메뉴 정의](#menus--메뉴-정의)
 - [schedules — 코어 스케줄 카탈로그 (7.2.0)](#schedules--코어-스케줄-카탈로그-720)
 - [사용처](#사용처)
+- [config/core.php 밖의 운영 스위치 (.env·config)](#configcorephp-밖의-운영-스위치-envconfig)
 - [관련 문서](#관련-문서)
 
 ---
@@ -362,6 +363,15 @@ $menuSyncHelper->cleanupStaleMenus(ExtensionOwnerType::Core, 'core', $currentSlu
 ```
 
 ---
+
+## config/core.php 밖의 운영 스위치 (.env·config)
+
+코어 선언과 함께 자주 찾는 서버 로컬 값이다. 두 값 모두 `config/core.php` 가 아닌 Laravel 설정 파일에 있다.
+
+| 키 | 위치 | 기본 | 동작 |
+| --- | --- | --- | --- |
+| `G7_CACHE_SELF_HEAL` (7.1.6) | `config/app.php` `cache_self_heal` | `true` | `bootstrap/cache` 의 캐시 파일이 **없을 때** 스스로 다시 만든다(`App\Support\CacheSelfHeal`). 확장 오토로드 캐시(`autoload-extensions.php`)는 다음 요청이, 훅(`hooks.php`)·설정(`config.php`)·라우트(`routes-v7.php`) 캐시는 운영 환경(`APP_ENV=production`, 디버그 꺼짐)의 웹 요청만 응답 뒤에 만든다(명령줄·개발 환경 제외). root 프로세스는 어떤 캐시도 만들지 않고, 실패하면 확장 오토로드·훅은 60초, 설정·라우트는 5분 동안 다시 시도하지 않는다. 캐시를 일부러 두지 않는 운영이면 `false` |
+| file 캐시 `lock_path` (7.1.5) | `config/cache.php` `stores.file.lock_path` | `storage/framework/cache/locks` | 캐시 잠금을 데이터(`path` = `storage/framework/cache/data`)와 다른 폴더에 둔다 — `cache:clear` 가 데이터를 비울 때 진행 중인 확장·코어 업데이트와 예약 작업의 잠금이 함께 지워지지 않게 한다. `config/cache.php` 를 직접 고쳐 쓰는 사이트는 이 값을 `path` 와 다른 폴더로 맞춘다 |
 
 ## 관련 문서
 

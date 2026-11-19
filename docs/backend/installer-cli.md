@@ -45,6 +45,18 @@
 - 같은 사이트의 터미널 설치 동시 실행은 `storage/installer/cli.lock`(flock)으로 막는다(종료 5). 워커 잠금은 웹과 같은 `acquireWorkerLock()`.
 - 잠금을 얻은 입구는 곧바로 `installerCurrentWorkerId($workerId)` 로 자기 워커 ID 를 알린다(웹 `run-task.php`·`install-worker.php`·`install-process.php`, 터미널 `cli/install-flow.php`). 알리지 않으면 상태를 읽을 때마다 도는 「예산을 넘긴 점유자 = 죽은 워커」 승격이 자기 잠금을 지워, 심장박동 없이 오래 걸린 단계가 끝나는 순간 「다른 설치 작업이 잠금을 넘겨받았다」로 멈춘다. 하위 명령 직전의 점유 시간 연장(`extendWorkerStaleWindow()`)도 이 값으로 자기 잠금을 찾는다. 새 입구를 만들면 같은 배선을 둔다.
 
+## 이어 하기·건너뛰기·테이블 삭제 동의 (7.1.4~)
+
+설치 완료 판정(`installer_is_completed()`)과 진행 상태(`owner_kind`)에 따라 `g7_cli_main()`·`g7_cli_run_install()` 이 갈린다. 사용자 안내는 INSTALL.md 방법 5 의 옵션 표.
+
+| 옵션 (환경변수) | 동작 | 종료 코드 |
+|------|------|------|
+| `--resume` (`G7_INSTALL_RESUME`) | 터미널 소유(`owner_kind=cli`) state 를 `g7_cli_resume()` 로 이어 간다 — 완료 작업은 건너뜀(웹 「이어서 설치」와 같은 의미). `runtime.php` 가 남아 있으면 비밀값을 다시 받지 않고, 없으면 환경변수·파일·숨김 입력으로 다시 받는다. 설치 작업은 끝났는데 `.env` 확정 전에 멈췄으면(완료 표식 + `runtime.php`) 확정만 한다 | 이어 갈 state 가 없으면 2. 워커가 아직 실행 중이거나 단계 5 전(`current_step` < 5·관리자 템플릿 미선택) state 면 5. 중단된 터미널 설치가 있는데 `--resume` 없이 실행하면 5 |
+| `--skip-if-installed` (`G7_INSTALL_SKIP_IF_INSTALLED`) | 이미 설치된 사이트면 아무것도 하지 않고 끝낸다 — JSON `summary` 에 `already_installed: true`. 컨테이너 재기동마다 같은 설치 명령을 부르는 배치용 | 0 (옵션이 없으면 3) |
+| `--drop-existing-tables` (`G7_INSTALL_DROP_EXISTING_TABLES`, config `drop_existing_tables`) | [3] DB 검사에서 같은 접두사의 기존 테이블이 있을 때의 삭제 동의 — 삭제 대상은 접두사 일치 테이블뿐(`installer_issue_drop_confirm`). 대화형은 묻고, 비대화형은 이 옵션이 있어야 진행. `--reinstall` 에는 필수 | 동의 없이 접두사 일치 테이블이 있으면 2. `--reinstall` 에 빠지면 2 |
+
+`--takeover`·`--reset-state` 의 소유 판정은 위 「소유권·동시성」.
+
 ## JSON 출력 (`--output=json`)
 
 `JsonLinesEmitter` 가 한 줄에 `{"event": 이름, …데이터}` 하나를 쓴다. 설치 단계 이벤트는 웹 SSE 와 같은 작업 실행기(`task-runner.php`)가 내므로 이름·필드가 SSE 와 같다(`InstallerCliEmitterTest` 가 잠금). 웹에서는 화면 전환인 [0]~[4] 단계·재설치 초기화·마무리는 터미널 전용 이벤트로 나온다.
@@ -82,7 +94,7 @@
 
 ## 테스트
 
-인스톨러 단위 테스트는 임시 `BASE_PATH` 서브프로세스(`tests/Unit/Installer/Concerns/RunsInstallerCli.php`)로만 돌린다. CLI 파일의 함수는 `function_exists` 로 감싸 있으므로, 환경에 묶인 단계(요구사항·DB 연결·설치 작업·root 판정)는 같은 이름의 함수를 먼저 정의해 주입한다. 실제 chown·root 실행·도커는 WSL 실측으로 본다.
+인스톨러 단위 테스트는 임시 `BASE_PATH` 서브프로세스(`tests/Unit/Installer/Concerns/RunsInstallerCli.php`)로만 돌린다. CLI 파일의 함수는 `function_exists` 로 감싸 있으므로, 환경에 묶인 단계(요구사항·DB 연결·설치 작업·root 판정)는 같은 이름의 함수를 먼저 정의해 주입한다. 실제 chown·root 실행·도커는 Linux 환경(WSL 등)에서 직접 실행해 확인한다.
 
 ## 관련 문서
 

@@ -572,6 +572,8 @@ AuthManager.getInstance().updateConfig('user', { loginPath: '/account/signin' })
 }
 ```
 
+토큰 없이 보낸 요청(비회원)의 401 은 세션 만료가 아니므로 로그인 화면으로 옮기지 않고 화면에 머문다(engine-v1.88.2). 호출자는 `G7Core.api.isAnonymousUnauthorized(error)` 로 가려 공용 문구 `core.errors.login_required_for_action` 같은 안내를 띄운다 — [g7core-api-advanced.md 「G7Core.api」](g7core-api-advanced.md#g7coreapi).
+
 리다이렉트 동작 자체는 **코어가 강제**하며 레이아웃이 끌 수 없다. 경로만 `updateConfig` 로 사이트 단위 커스터마이즈 가능 ("여부는 강제, 경로는 커스터마이즈" 분리 설계).
 
 ---

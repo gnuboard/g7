@@ -1890,6 +1890,8 @@ HookManager::doAction('...payment_completed', $claim, $payment);
 | `core.identity.message.after_send` | `core.notification.after_channel_send` | 있음 | 〃 |
 | `core.identity.message.send_failed` | `core.notification.channel_send_failed` | 있음 | 〃 |
 | `core.identity.message.resolve_failed` | — | 있음 | 〃 — 정책·목적·기본 문구가 모두 없을 때만 발화하며 알림 쪽 대응 훅은 없다 |
+| `core.templates.before_delete` | `core.templates.before_uninstall` | 있음 | 7.2.0 폐지 예정 — `TemplateService::deleteTemplate()` 안에서만 발화하는데 그 메서드도 폐지 예정이다(코어 안 호출처 없음). 템플릿 제거는 `TemplateManager::uninstallTemplate()` 를 쓰고, 제거 전후는 `core.templates.before_uninstall`·`after_uninstall` 로 구독한다(인자 모양이 다르다: 식별자·데이터 삭제 여부). 메서드와 함께 다음 메이저에서 지운다 |
+| `core.templates.after_delete` | `core.templates.after_uninstall` | 있음 | 〃 |
 
 **7.1.0 사용 중단 — 본인인증 메시지 관리 훅 23종** — 본인인증 메시지 전용 관리 기능이 알림 정의(`category = identity`)로 합쳐졌다.
 옛 이름은 **본인인증 분류의 정의·템플릿을 다룰 때만** 새 알림 훅과 같은 시점·같은 인자 개수로 계속 발화한다(공개 배포 발화 이력 있음,

@@ -208,9 +208,6 @@
 - 새 버전 배포본이 개발자 화면 자리(custom 예약 자리)에 파일을 싣거나 개발자 패키지가 새 코어와 맞지 않으면, 관리자 화면 업데이트도 아무 파일을 바꾸기 전에 멈추고 그 사유를 업데이트 화면에 남깁니다.
 - 업데이트 시작 요청의 선택 항목 값이 잘못되었을 때 오류 문구가 내부 필드 이름 대신 화면의 항목 이름(레이아웃 처리 방식, 직접 올린 ZIP 파일 등)으로 표시됩니다. 명령줄 업데이트가 확인 목록 앞에 내는 머리말도 사이트 언어로 표시됩니다.
 
-#### 명령줄 코어 업데이트
-
-
 #### 레이아웃 편집기
 
 - 미리보기 줌 도구에 「실제 크기」 토글을 더했습니다. 켜면 미리보기를 1:1 로 보고, 캔버스보다 넓으면 캔버스 안에서 가로로 스크롤합니다(engine-v1.95.0).
@@ -280,7 +277,7 @@
 - 본인인증 수단이 확인한 이름, 휴대폰, 생년월일, 성별을 회원 항목에 채우는 선택 계약 `App\Contracts\Extension\ProvidesVerifiedClaimsInterface` 와 값 객체 `VerifiedClaims` 를 추가했습니다. 본인인증 프로바이더가 이 계약을 구현하면, 항목의 「본인인증 연결」에 따라 가입 화면 항목이 인증 값으로 채워지고(`GET /api/auth/register/fields?verification_token=…` 의 `default`, `verified_claims`), 「인증 값으로 채우고 잠금」을 켠 항목은 가입 요청에서 서버가 인증 값으로 덮어쓰며 내 정보 수정에서 잠깁니다(`locked_reason: identity`). 잠금은 지금 값이 그 회원의 최근 인증 값과 같은 항목에만 걸립니다 — 인증 값이 채우지 못한 칸에 회원이 직접 쓴 값이나 운영자가 나중에 잠금을 켠 항목의 이전 값은 잠기지 않습니다. 로그인 회원이 다시 본인인증을 마치면 잠금 항목이 새 인증 값으로 맞춰집니다. 계약을 구현하지 않은 수단에서는 아무것도 달라지지 않습니다.
 - 본인인증 채움값 API `POST /api/identity/claims` 와 필터 `core.identity.filter_verified_claims` 를 추가했습니다. API 는 토큰의 인증 값과 회원 항목 키별 채움값, 잠글 항목 키를 돌려주고, 필터로 확장이 인증 값을 고치거나 대신 줄 수 있습니다. 가입 화면의 채움·잠금은 「가입 전 본인확인」 정책을 켠 사이트에서만 쓰입니다 — 정책이 꺼져 있으면 API 는 `status: disabled` 와 빈 값을 주고, 가입 요청의 인증 결과로 항목을 덮어쓰거나 본인인증을 기록하지 않습니다.
 - 가입 요청(`POST /api/auth/register`)이 `verification_token` 을 가입 전 본인인증 정책을 켜지 않은 사이트에서도 선택 값으로 받습니다. 정책을 켠 사이트는 입력 검증을 먼저 합니다 — 빈 칸이나 틀린 입력은 본인 확인 요구(428)보다 먼저 칸별 오류(422)로 알리고, 입력이 맞는데 인증 결과가 없을 때만 428 로 인증 창을 엽니다. 전에는 빈 칸으로 제출해도 428 이 먼저 와 칸 오류 없이 「본인 확인이 필요합니다.」만 뜨고 인증 창도 열리지 않았으며, 입력을 바르게 채운 경우에도 인증을 마친 뒤에야 입력 오류를 보았습니다. 실린 토큰이 만료됐거나 알 수 없으면 종전처럼 검증 오류(422)입니다. 확장 개발자용: 폼 요청에 `App\Contracts\Http\DefersIdentityPolicyUntilValidated` 를 달면 그 라우트의 본인확인 정책이 입력 검증 뒤에 강제됩니다. 문서: `docs/backend/identity-policies.md` 「입력 검증 먼저」
-- 첨부파일 저장소 계약(`AttachmentRepositoryInterface`)에 대상 여럿의 지정 컬렉션 첨부를 한 번에 읽는 `getByAttachmentablesAndCollections()` 와, 한 대상 유형의 지정 컬렉션 첨부를 모두 읽는 `getByAttachmentableTypeAndCollection()`(회원 파일 항목을 지울 때 그 항목 첨부를 함께 지우는 데 씀)를 추가했습니다. 이 계약을 직접 구현한 확장은 두 메서드를 구현해야 합니다.
+- 첨부파일 저장소 계약(`AttachmentRepositoryInterface`)에 대상 여럿의 지정 컬렉션 첨부를 한 번에 읽는 `getByAttachmentablesAndCollections()` , 한 대상 유형 전체에서 지정 컬렉션에 첨부를 가진 대상 수를 세는 `countAttachmentablesByTypeAndCollection()`, 그 첨부 ID 만 읽는 `idsByAttachmentableTypeAndCollection()`(회원 파일 항목을 지울 때 삭제 창의 건수와 함께 지울 첨부를 정하는 데 씀)를 추가했습니다. 이 계약을 직접 구현한 확장은 세 메서드를 구현해야 합니다.
 - 금지어 검증 규칙 `App\Rules\ForbiddenWords` 를 추가했습니다. 확장은 자기 금지어 목록과 문구로 이 규칙을 쓸 수 있습니다.
 - `AuthService::register()` 와 `UserService::updateUser()` 에 옵션 `nickname_policy => 'skip_field'` 를 추가했습니다. 화면 없이 회원을 만들거나 고치는 확장이 넘기면, 닉네임이 정책에 걸렸을 때 닉네임만 빼고 저장하고 액션 `core.user.nickname_rejected` 로 알립니다. 넘기지 않으면 닉네임 칸의 검증 오류가 납니다.
 

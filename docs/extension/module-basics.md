@@ -150,6 +150,8 @@
 연동 대상이 꺼진 사이트에서 이 모듈의 화면·응답이 그 대상으로 가는 링크·데이터를 내지 않게 하는 것은 이 모듈의 몫입니다 —
 서버는 활성 여부를 확인하고, 레이아웃은 `_global.activeModules` 로 가립니다([선택 연동](plugin-development.md#선택-연동-integrations)).
 
+반대 방향 — 어떤 확장을 연동으로 선언한 **활성** 확장을 찾을 때는 저장소 계약의 `findActiveByIntegration(string $type, string $identifier): Collection` 을 씁니다(코어 7.1.4+). `ModuleRepositoryInterface`·`PluginRepositoryInterface`·`TemplateRepositoryInterface` 에 같은 이름으로 있고, `$type` 은 연동 대상 유형(`module`·`plugin`·`template`), `$identifier` 는 대상 식별자입니다. 유형이 틀리면 빈 컬렉션입니다. 예: `app(PluginRepositoryInterface::class)->findActiveByIntegration('module', 'sirsoft-board')` — 게시판을 연동으로 선언한 활성 플러그인.
+
 ### public_api 필드 (선택)
 
 다른 확장이 PHP 로 이 모듈을 부를 때 써도 되는 표면을 선언합니다(코어 7.2.0+, `getPublicApi()` 로 자동 파싱, 플러그인 `plugin.json` 도 같은 모양).
@@ -913,7 +915,7 @@ protected function registerBundledModuleInstance(): void
 | 기존 데이터 변환 | ✅ | 데이터 형식 변환, 기본값 |
 | 권한/역할/메뉴 추가·수정 | ❌ (자동 동기화) | Module.php에서 정의 |
 | 정적 권한/메뉴 제거 | ✅ (cleanup 명시 호출) | 동적 메뉴/권한 보존 |
-| 레이아웃 JSON 변경 | ❌ (자동 갱신) | refresh-layout에서 처리 |
+| 레이아웃 JSON 변경 | ❌ (자동 갱신) | 업데이트·refresh-layout에서 처리. `module:refresh-layout` 은 7.2.0 부터 운영자가 고친 화면을 유지(keep)하는 것이 기본 — 덮으려면 `--layout-strategy=overwrite`, 미리보기는 `--dry-run`, 화면별 결정은 `--decisions=<파일>` |
 | PHP 코드만 변경 | ❌ | 버전만 올리면 됨 |
 
 > 상세: [extension-update-system.md](./extension-update-system.md) "개발자 버전 업데이트 가이드" 참조

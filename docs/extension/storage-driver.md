@@ -345,6 +345,16 @@ protected array $storageCategoryServices = [
 
 **「데이터까지 삭제」 때 다른 디스크의 정리** (7.2.0+): 확장을 데이터와 함께 제거하면 코어는 기본 디스크의 확장 폴더(`storage/app/modules/{identifier}` 또는 `storage/app/plugins/{identifier}`)뿐 아니라, 그 확장의 비공개 원본 디스크(관리자가 고른 「비공개 첨부 저장소」 또는 확장의 `.env` 고정 디스크)와 공개 자산 디스크(확장 개별 설정 또는 코어 전역 설정)가 기본 디스크와 다를 때 그 디스크의 `{identifier}/` 아래 객체도 같은 경로 규칙으로 지웁니다. 두 디스크가 같으면 한 번만 지우고, 현재 서버에 정의되지 않은 디스크는 건너뜁니다. 디스크 판정은 확장 설정이 지워지기 전에 하므로 `getStorageDiskFor()` 재정의도 그대로 반영됩니다. 원격 저장소 접속 실패 등으로 지우지 못한 디스크가 있어도 제거는 끝까지 진행되고, 제거 결과에 「정리(cleanup)」 경고가 디스크마다 한 건 남습니다. 경고가 보이면 해당 디스크의 `{identifier}/` 폴더를 직접 정리하세요.
 
+### 코어 첨부 저장소 계약에 더해진 메서드 (7.2.0)
+
+코어 첨부파일 저장소 계약(`App\Contracts\Repositories\AttachmentRepositoryInterface`)에 7.2.0 에서 다음 메서드가 더해졌습니다. 확장은 보통 주입받아 쓰기만 하므로 할 일이 없습니다. **이 계약을 직접 구현한 클래스를 바인딩한 확장은 아래 메서드를 구현해야** 합니다(구현하지 않으면 클래스를 불러올 때 오류가 납니다).
+
+| 메서드 | 하는 일 |
+| --- | --- |
+| `getByAttachmentablesAndCollections(string $type, array $ids, array $collections): Collection` | 첨부 대상 여럿의 지정 컬렉션 첨부를 한 번에 읽는다(대상·컬렉션·순서 순) |
+| `countAttachmentablesByTypeAndCollection(string $type, string $collection): int` | 한 대상 유형 전체에서 그 컬렉션에 첨부를 가진 대상 수를 센다(회원 파일 항목 삭제 창의 「값 N건」) |
+| `idsByAttachmentableTypeAndCollection(string $type, string $collection): array` | 한 대상 유형 전체에서 그 컬렉션의 첨부 ID 만 읽는다(회원 파일 항목을 지울 때 그 항목 첨부를 함께 지우는 데 씀, 오름차순) |
+
 ---
 
 ## 카테고리 네이밍 규칙
@@ -704,6 +714,17 @@ $storedFilename = Str::uuid() . '.' . $file->getClientOriginalExtension();
 참고:
 
 - 텍스트 계열(csv·md·log 등)은 내용이 일반 텍스트로 추론되어 `.txt` 로 저장됩니다. 내려받는 이름은 원본 이름입니다.
+- 허용 형식을 MIME 목록으로만 받는 업로드는 이름 확장자 목록을 `App\Support\AllowedExtensions` 로 같은 설정에서 만든다(7.1.6). `fromMimeTypes($mimes)` 는 MIME 목록을 알려진 이름 확장자 목록으로 바꾸고(와일드카드 `image/*` 는 그 대분류 전부, 모르는 MIME 은 만들지 않음), `coversEveryMimeType($mimes)` 는 목록의 모든 형식에서 확장자를 알 수 있는지 판정한다. 모르는 MIME 이나 `application/octet-stream` 이 섞여 있으면 `false` 이고, 그때는 정상 파일이 이름 때문에 거부되지 않도록 이름 검사를 생략하고 내용 검사만 한다.
+
+  ```php
+  $extensions = AllowedExtensions::coversEveryMimeType($allowedTypes) ? AllowedExtensions::fromMimeTypes($allowedTypes) : [];
+  if ($extensions !== []) {
+      $fileRules[] = 'extensions:'.implode(',', $extensions);
+  }
+  $fileRules[] = 'mimetypes:'.implode(',', $allowedTypes);
+  ```
+
+  번들 페이지 모듈의 첨부 업로드 요청(`UploadPageAttachmentRequest`)이 이 꼴이다.
 - 이름 확장자를 **허용 목록·내용과 교차 검증한 뒤** 저장에 쓰는 구현(코어 일반 첨부·본문 미디어·게시판 첨부)은 이 규칙의 예외입니다 — 검증이 이름과 내용의 짝을 이미 확인했기 때문입니다. 새 업로드 경로는 예외를 만들지 말고 `StoredFileExtension` 을 씁니다.
 
 ### 레이아웃 첨부 허용 확장자

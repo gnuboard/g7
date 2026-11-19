@@ -41,6 +41,20 @@
 - 권한/메뉴 등 연관 데이터 관리
 - 로그 기록
 
+### 종료 코드와 경고 표식 (7.1.3~)
+
+설치·활성화·비활성화·제거·업데이트·레이아웃 갱신 명령(`module:*`·`plugin:*`·`template:*`·`language-pack:*`)은 작업을 마쳤어도 일부 단계(레이아웃 등록, 언어팩 시더, 정리 단계 등)가 실패했으면 완료 줄을 ✅ 대신 ⚠️ 로 찍고 「단계·대상·내용」 표를 출력한다.
+
+| 결과 | 종료 코드 | 출력 |
+| --- | --- | --- |
+| 완료 | 0 | — |
+| 완료했지만 실패한 단계가 있음 | 1 | 경고 표 뒤에 `[g7-lifecycle-warnings] count=N` 한 줄 |
+| 실패 | 1 | 표식 없음 (경고가 있어도 명령이 실패로 끝났으면 표식을 내지 않는다) |
+
+- 배포 스크립트는 종료 코드 1 이면서 출력에 `[g7-lifecycle-warnings]` 가 있으면 「경고와 함께 완료」, 없으면 실패로 가른다.
+- 실패가 아닌 안내만 있으면 표만 보이고 종료 코드는 0 이다.
+- 코어 업데이트(`core:update`)와 그 자식 명령은 같은 표를 보이되 종료 코드를 바꾸지 않는다 — 끝난 업데이트를 자동화가 실패로 보지 않게 하기 위해서다.
+
 ### 확장이 만든 커맨드를 예약 작업으로 돌릴 때
 
 예약 작업은 확장이 `getSchedules()` 로 선언한다. 그 선언에 적힌 커맨드는 **서버 명령(SSH)을 쓸 수
@@ -113,8 +127,16 @@ php artisan module:list
 #### 모듈 설치
 
 ```bash
-php artisan module:install [identifier]
+php artisan module:install [identifier] [--vendor-mode=auto|composer|bundled] [--force] [--layout-source=auto|json] [--with-dependencies] [--with-language-packs=none|all|식별자,…] [--rebuild-search-index]
 ```
+
+**옵션**:
+- `--vendor-mode`: vendor 설치 방식 (`auto` 기본, `composer`, `bundled`)
+- `--force`: 이미 설치된 경우에도 `_bundled`/`_pending` 원본으로 활성 디렉토리를 덮어쓰고 재설치 (불완전 설치 복구)
+- `--layout-source`: 레이아웃 설치 소스 (`auto`·`json`, 생략하면 설정 `LAYOUT_INSTALL_SOURCE` 를 따름)
+- `--with-dependencies` (7.1.4): 필요한 의존 확장(의존의 의존 포함)을 같은 vendor 방식으로 먼저 설치·활성화한다. 이 옵션 없이 의존이 모자라면 무엇이 왜 모자란지와 이 옵션 안내를 출력하고 종료 코드 1. 본 확장 설치가 실패해도 앞서 설치·활성화한 의존 확장은 되돌리지 않고 그 사실을 알린다
+- `--with-language-packs` (7.1.4): 함께 설치할 번들 언어팩 — `none`(기본) · `all` · 쉼표로 나눈 식별자. 후보는 관리자 설치 창과 같다. `all` 은 지금 설치할 수 없는 언어팩(같은 언어의 코어 언어팩이 꺼져 있음, 대상 확장 버전이 언어팩 요구보다 낮음 등)을 사유와 함께 건너뛴다. 후보에 없는 식별자를 주면 설치 전에 실패한다. 고른 언어팩이 하나라도 설치에 실패하면 모듈 설치는 유지한 채 종료 코드 1
+- `--rebuild-search-index`: 완료 후 색인이 누락된 검색 인덱스를 재생성 (운영 중에는 유지보수 시간에)
 
 **수행 작업**:
 - `_pending/_bundled` 디렉토리에서 활성 디렉토리로 복사 (ExtensionPendingHelper)
@@ -129,7 +151,10 @@ php artisan module:install [identifier]
 **예시**:
 ```bash
 php artisan module:install sirsoft-ecommerce
+php artisan module:install sirsoft-ecommerce --with-dependencies --with-language-packs=all
 ```
+
+> `plugin:install` 도 같은 `--with-dependencies`·`--with-language-packs` 옵션을 받는다.
 
 #### 모듈 활성화
 
@@ -250,10 +275,11 @@ php artisan module:check-updates [identifier?]
 **기능**:
 
 - **전체 확인** (인수 없음): 설치된 모든 모듈의 업데이트 가용 여부를 테이블로 출력
-  - 감지: GitHub·`_bundled` 중 높은 버전(같으면 GitHub, GitHub 조회 실패·URL 없음이면 `_bundled`), `_pending` 미참여
+  - 감지: GitHub·`_bundled` 중 높은 버전(같으면 GitHub, 저장소 URL 이 없으면 `_bundled`), `_pending` 미참여
   - DB에 `update_available`, `latest_version`, `update_source` 갱신
 - **단일 확인** (인수 있음): 특정 모듈의 업데이트 가용 여부 확인
   - `checkModuleUpdate()`는 DB 갱신 안 함 → 커맨드에서 `updateByIdentifier()` 직접 호출
+- **GitHub 조회 실패** (7.2.0~): 연결 실패·요청 한도 초과(403)·5xx 등으로 조회하지 못한 모듈이 있으면 실패 표(식별자·사유)를 출력하고 **종료 코드 1**. 그 모듈의 DB 업데이트 정보(`update_available`·`latest_version`·`update_source`)는 덮지 않는다 — `_bundled` 에 더 새 판이 있어도 그 판은 출력에만 보인다. 릴리스가 아직 없는 저장소(404)는 실패가 아니라 「업데이트 없음」이다. 상세: [GitHub 조회 실패](extension-update-system.md#github-조회-실패-check_error-720)
 
 **예시**:
 ```bash
@@ -267,7 +293,7 @@ php artisan module:check-updates sirsoft-ecommerce
 #### 모듈 업데이트
 
 ```bash
-php artisan module:update [identifier] [--force] [--source=auto|bundled|github] [--zip=] [--signature=] [--allow-unsigned] [--layout-strategy=overwrite|keep] [--vendor-mode=auto|composer|bundled]
+php artisan module:update [identifier] [--force] [--yes] [--source=auto|bundled|github] [--zip=] [--signature=] [--allow-unsigned] [--layout-strategy=overwrite|keep] [--vendor-mode=auto|composer|bundled] [--layout-source=auto|json] [--dry-run [--json]] [--decisions=<파일>] [--rebuild-search-index]
 ```
 
 **인수**:
@@ -275,13 +301,17 @@ php artisan module:update [identifier] [--force] [--source=auto|bundled|github] 
 
 **옵션**:
 - `--force`: 강제 업데이트 — 확인 생략·같은 판 재적용·다운그레이드 허용·코어 호환 검사 생략·같은 판 업그레이드 스텝 재실행·멈춘 업데이트 정리 (파일 손상, 수동 수정 복원 시 사용)
-- `--yes`: 확인 질문만 생략 (7.2.0 — `--force` 의 다른 효과 없음, 자동화용)
-- `--source`: 업데이트 소스 강제 (`auto` 기본 = GitHub·`_bundled` 중 높은 버전(같으면 GitHub, GitHub 조회 실패·URL 없음이면 `_bundled`), `bundled` = `_bundled` 단독(GitHub 안 봄), `github` = GitHub 단독(`_bundled` 폴백 없음))
+- `--yes`(`-y`): 확인 질문만 생략 (`--force` 의 다른 효과 없음, 자동화용)
+- `--source`: 업데이트 소스 강제 (`auto` 기본 = GitHub·`_bundled` 중 높은 버전(같으면 GitHub, URL 없음이면 `_bundled`, GitHub 조회에 실패하면 `_bundled` 기준으로 판정하고 경고 한 줄), `bundled` = `_bundled` 단독(GitHub 안 봄), `github` = GitHub 단독(`_bundled` 폴백 없음 — 조회에 실패하면 「업데이트 없음」 대신 사유를 출력하고 **종료 코드 1**, 7.2.0~))
 - `--zip`: 외부 ZIP 파일을 소스로 사용 (GitHub·번들 우회, `--source` 와 함께 쓸 수 없음 — [extension-update-system.md](extension-update-system.md#외부-zip-직접-지정---zip))
 - `--signature` (7.2.0): `--zip` 의 서명 파일(`.sig.json`) 경로. 생략하면 ZIP 옆 `<zip>.sig.json` 을 자동으로 쓴다
 - `--allow-unsigned` (7.2.0): 미서명(또는 이 서버에서 검증할 수 없는) 패키지를 확인 없이 계속. 환경설정 「미서명 패키지 차단」이 켜져 있으면 무시
 - `--layout-strategy`: 운영자 수정 레이아웃·확장 조각 처리 (`overwrite` = 전체 덮어쓰기, `keep` = 고친 부분은 유지하고 손대지 않은 부분에 새 버전을 병합 — 결과 표 출력)
 - `--vendor-mode`: vendor 설치 방식 (`auto` 기본, `composer`, `bundled`)
+- `--layout-source`: 레이아웃 설치 소스 (`auto`·`json`, 생략하면 설정 `LAYOUT_INSTALL_SOURCE` 를 따름 — 문제 해결용)
+- `--dry-run` (7.2.0): 업데이트하지 않고 관리자 [업데이트] 창과 같은 판정만 출력 — 화면별 레이아웃 판정(유지·새 판 반영·충돌 등)과 새 판에서 빠져 지워질 선언 항목(메뉴·권한 등, 운영자 수정 여부 표시). DB·파일은 바꾸지 않는다. `--json` 을 함께 주면 JSON 한 줄(`dry_run: true`)로 출력
+- `--decisions=<파일>` (7.2.0): 화면별 결정 JSON — `{"<화면 키>": "take-theirs|keep-ours"}`. 화면 키는 `--dry-run` 출력의 키 칸(JSON 은 `entries[].key`). `take-theirs` 는 그 화면만 새 판으로 덮고(덮기 직전 운영자 판은 버전 기록에 남음), `keep-ours` 는 운영자 판을 그대로 둔다. 값 상세: [extension-update-system.md 「화면별 결정 값」](extension-update-system.md#keep--조각-단위-3자-병합)
+- `--rebuild-search-index`: 완료 후 색인이 누락된 검색 인덱스를 재생성 (인덱스가 잠기거나 재색인되므로 운영 중에는 유지보수 시간에)
 
 **수행 작업**:
 - 업데이트 가용 여부 확인 (없으면 info + SUCCESS, `--force` 시 무시하고 진행)
@@ -313,7 +343,39 @@ php artisan module:update sirsoft-ecommerce --source=bundled  # GitHub 장애/�
 php artisan module:update sirsoft-ecommerce --source=github --force  # 긴급 핫픽스 태그로만 강제 설치
 php artisan module:update acme-shop --zip=/tmp/acme-shop-1.2.0.zip  # ZIP 옆 acme-shop-1.2.0.zip.sig.json 으로 서명 검증
 php artisan module:update acme-shop --force --allow-unsigned --no-interaction  # 예약 실행 — 미서명 판도 받는다
+php artisan module:update sirsoft-ecommerce --layout-strategy=keep --dry-run  # 무엇이 바뀌고 지워지는지 먼저 확인
+php artisan module:update sirsoft-ecommerce --layout-strategy=keep --dry-run --json > preview.json  # 스크립트용 판정
+php artisan module:update sirsoft-ecommerce --layout-strategy=keep --decisions=decisions.json --yes  # 화면별 결정대로 실행
 ```
+
+#### 모듈 레이아웃 갱신
+
+```bash
+php artisan module:refresh-layout [identifier?] [--layout-strategy=keep|overwrite] [--dry-run [--json]] [--decisions=<파일>] [--layout-source=auto|json]
+```
+
+판 번호를 바꾸지 않고 모듈 파일의 레이아웃·확장 조각을 DB 에 다시 맞춥니다(파일만 교체한 뒤 등).
+
+**인수**:
+- `identifier` (선택): 특정 모듈만 갱신. 생략하면 모든 활성 모듈
+
+**옵션**:
+- `--layout-strategy` (7.2.0 기본 `keep`): `keep` 은 운영자가 고친 화면을 지키고 손대지 않은 부분에만 새 판을 병합, `overwrite` 는 파일 판으로 덮는다. 종전처럼 덮으려면 `--layout-strategy=overwrite` 를 준다
+- `--dry-run`: 판정만 출력하고 DB 는 바꾸지 않음 — 식별자 필수. 운영자 수정과 겹친 화면이 있어도 종료 코드 0 (`--json` 이면 `has_conflicts` 로 낸다)
+- `--json`: 결과를 JSON 한 줄로 출력
+- `--decisions=<파일>`: 화면별 결정 JSON (`take-theirs`·`keep-ours`, `module:update` 와 같은 형식)
+- `--layout-source`: 레이아웃 설치 소스 (`auto`·`json`)
+
+**출력**: 갱신한 모듈마다 판정별 화면 수와 운영자 수정과 겹친 화면 목록. 식별자 없이 전체를 갱신해도 모듈마다 같은 꼴로 보이며, 실패한 모듈이 하나라도 있으면 종료 코드 1.
+
+**예시**:
+```bash
+php artisan module:refresh-layout sirsoft-board --dry-run              # 판정 확인
+php artisan module:refresh-layout sirsoft-board                        # 운영자 수정 유지(keep)
+php artisan module:refresh-layout sirsoft-board --layout-strategy=overwrite  # 파일 판으로 덮기
+```
+
+> 플러그인은 `plugin:update`·`plugin:refresh-layout` 이 같은 옵션과 동작을 가진다. 플러그인 커맨드 목록: [plugin-development.md](plugin-development.md)
 
 #### 모듈 캐시 초기화
 
@@ -596,6 +658,9 @@ php artisan module:check-updates [identifier]  # 단일
 
 # 업데이트 실행
 php artisan module:update [identifier]
+
+# 미리보기 (DB·파일 무변경)
+php artisan module:update [identifier] --dry-run [--json]
 ```
 
 ### API 엔드포인트
@@ -605,7 +670,8 @@ POST /api/admin/modules/check-updates
 POST /api/admin/modules/{moduleName}/update
 ```
 
-- 감지: GitHub·`_bundled` 중 높은 버전(같으면 GitHub, GitHub 조회 실패·URL 없음이면 `_bundled`), `_pending` 미참여
+- 감지: GitHub·`_bundled` 중 높은 버전(같으면 GitHub, URL 없음이면 `_bundled`), `_pending` 미참여
+- GitHub 조회 실패(7.2.0~): `check-updates` 는 실패 표 + 종료 코드 1 이고 그 모듈의 DB 업데이트 정보를 덮지 않는다. `update --source=github` 도 종료 코드 1 — [GitHub 조회 실패](extension-update-system.md#github-조회-실패-check_error-720)
 - 상태 가드 확인 → 백업 → status: Updating → 파일 교체 → 마이그레이션 → 업그레이드 스텝 → 복원
 - 에러 발생 시 자동 롤백 (백업에서 복원)
 

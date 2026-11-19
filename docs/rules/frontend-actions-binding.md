@@ -22,6 +22,7 @@
 필수: 기본 컴포넌트만 사용 (Div, Button, H2 등 — HTML 태그 직접 사용 금지)
 필수: 집합 컴포넌트 재사용 우선
 필수: 다크 모드 light/dark variant 함께 지정 — 변형까지 맞춘다(`hover:bg-gray-50` 에는 `dark:hover:bg-gray-700`), 라이트 바탕 없는 `dark:bg-*` 단독 금지
+필수: 확장(모듈·플러그인) CSS 의 다크 규칙은 `<html data-g7-color-scheme>` 표식만 본다 — `.dark` 선택자 금지, 접두 빌드는 `{letters}:dark:…` ([dark-mode.md](../frontend/dark-mode.md#확장은-중립-표식을-쓴다))
 필수: 화면 글자는 `$t:` 키 — 레이아웃 글자·속성·식 안 표시 문자열·라우트 meta.title 에 한국어 금지(견본 화면 예시 값 포함)
 필수: HtmlEditor 사용 (RichTextEditor 미구현)
 ```
@@ -108,6 +109,7 @@
 | 금지 | 올바른 사용 |
 |------|------------|
 | `Icon className="w-4 h-4"` | `className="text-base"` (아래 등가표) 또는 `size` prop |
+| 레이아웃 클래스에 Tailwind 반응형 변형(`sm:`·`md:`·`lg:`·`xl:`·`2xl:`·`min-[..]:`·`max-[..]:`, 확장 접두 포함) 사용 | 화면 폭 분기는 엔진 `responsive` 구간 값(`<responsive on="768-" class="…"/>`)으로 폭마다 클래스 전체를 둔다. 폭 미디어를 품은 의미 클래스(`filter-row`·`page-title` 등)도 쓰지 않는다. 부품 소스는 `G7Core.useResponsive()` 폭으로 고른다. 정적 검사가 막는다 — [responsive-layout.md](../frontend/responsive-layout.md#2-tailwind-반응형-접두를-쓰지-않는다) |
 | `Select valueKey/labelKey` | `{ value, label }` 로 변환 — 두 곳 이상에서 쓰면 computed, 한 곳뿐이면 `options` 식에서 바로 `.map()` |
 | `Button` type 없음 (폼 안·밖 모두) | 누르기만 하는 단추는 `type="button"`, 제출은 `type="submit"` 명시 — 기본값이 submit 이고, 파셜·확장점 조각은 어느 화면의 폼 안에 포함될지 파일만 보고는 알 수 없다 |
 | 링크(`<a href>`) 안에 단추·다른 링크·입력·메뉴(`UserInfo` 등)·HTML 본문(`HtmlContent`)·click 액션 요소 | 카드·행 전체 링크는 덮는 링크(stretched link)로 그리고 안쪽 조작은 링크 밖에 형제로 둔다 — `<a>` 안 대화형 요소는 HTML 위반이고 낭독기 이름·키보드 초점·클릭이 겹친다 |
@@ -135,7 +137,7 @@ Icon 은 `<i>` 글리프라 박스 크기가 곧 `font-size` 다. `w-N h-N` 은 
 
 표준 스케일에 같은 px 이 없는 크기는 **임의값**(`text-[2rem]` 등)으로 둔다 — 근사한 표준 클래스로 바꾸면 화면이 조용히 달라진다. 임의값은 평문 safelist 파일에서 추출되지 않으므로 템플릿 `main.css` 의 `@source inline(...)` 에 있어야 한다.
 
-두 템플릿 모두 **모듈·플러그인 레이아웃을 Tailwind 스캔 대상에 넣지 않는다.** 그래서 모듈·플러그인 소스에 새 크기 클래스를 쓰면 **렌더 템플릿의 도달 범위에 그 클래스가 있는지 먼저 확인**해야 한다. 없으면 CSS 가 생성되지 않아 크기가 사라진다.
+템플릿 CSS 는 템플릿이 자기 소스만 훑어 만든다. 모듈·플러그인 화면(레이아웃·조각·컴포넌트)의 크기 클래스는 템플릿 CSS 에 기대지 않고 **자기 앞글자를 붙여**(`{letters}:text-sm`·`{namespace}-…`) **확장 자기 CSS 로 싣는다** — 확장 CSS 에 그 클래스가 없으면 크기가 사라진다. 규약: [module-assets.md 「확장 CSS 자기 공급 규약」](../extension/module-assets.md#확장-css-자기-공급-규약).
 
 `size` prop 은 Font Awesome `fa-*` 클래스로 매핑되며 등가가 아니다 — `size="sm"` → `fa-sm` → `font-size: 0.875em`(상대값) + `line-height` 붕괴로 16px 이 12.25×0.88px 이 된다. 새 아이콘에는 써도 되지만, 기존 `w-N h-N` 의 치환용으로는 쓰지 않는다.
 

@@ -55,15 +55,19 @@ Everything a modern web platform needs, built in.
 | **Payment gateways** | A foundation for growing beyond a local business into global commerce. Payment integrations attach through the same extension-point pattern, and international gateways ship as separate plugins |
 | **Access control** | Control menus, features, and even data scope per role. Role + Permission + Scope three-tier access control provides flexible management that mirrors your organization |
 | **Identity verification (IDV)** | Every verification point — signup, password reset, sensitive operations — is managed centrally through declarative route/hook-level policies. The core ships a mail provider built in, and external providers (Korean identity-verification services such as KG Inicis and NHN KCP, as well as SMS, PortOne, and Stripe Identity-style services) attach through the same provider contract. When the server returns HTTP 428, the frontend interceptor opens a verification modal automatically and replays the original request on success |
-| **Security** | Automatic input validation and token-based authentication. Layered defense designed in from the start (CSRF/XSS/SQL injection), a real implementation of login throttling and account lockout (HTTP 423), and automatic blocking of installer endpoints once setup completes (HTTP 410) |
+| **Social and company-account login** | Social login (Kakao, Naver, Google, and more) and company-account login (SAML, OIDC, LDAP) pass through the same security gates as password login (account lockout, two-factor authentication, dormant-account reactivation). Members who sign in only through an external provider, without a password, are supported |
+| **Security** | Automatic input validation, token-based authentication, layered defense (CSRF/XSS/SQL injection), login throttling and account lockout (HTTP 423), and automatic blocking of the installer after setup (HTTP 410) are built in. Turn on two-factor authentication (including authenticator-app OTP), a password policy, admin IP restrictions, and a Content Security Policy (CSP); extension and core packages are installed only after their signature is checked |
 | **Flexible screen composition** | Define a screen structure and see it applied immediately. Web-app-grade dynamic screens are achievable with markup authoring (`.g7.html`) alone, no frontend infrastructure required |
 | **Layout editor** | A WYSIWYG layout editor lets you place screen blocks directly and see the result right away |
 | **Proven foundation** | Built on Laravel + React — a stack adopted by companies worldwide, offering high extensibility and flexible UI implementation |
 | **Shared cache system** | `CacheInterface` plus three drivers (core/module/plugin) isolate key prefixes automatically (`g7:core:`, `g7:module.{id}:`, `g7:plugin.{id}:`). Tag-based automatic invalidation and central TTL management via `g7_core_settings('cache.*_ttl')` keep operations free of hardcoded values |
-| **Notification system** | A three-tier model — Definition × Template × Recipients — supports independent multi-channel delivery over mail, database, and real-time broadcast (Reverb). Targeting by author, role, specific users, or permission holders, plus hook-based dispatch, lets modules register their own notifications freely |
+| **Notification system** | A three-tier model — Definition × Template × Recipients — supports independent multi-channel delivery over mail, database, and real-time broadcast (Reverb), and plugins can add SMS and KakaoTalk messages. Targeting by author, role, specific users, or permission holders, plus hook-based dispatch, lets modules register their own notifications freely |
 | **SEO** | Powered by `jaybizzle/crawler-detect`, roughly 1,000 bot types (search engines, social unfurlers, AI search) are detected automatically: bots receive static HTML while regular users get the SPA. OG/Twitter card metadata, domain schemas declared by modules (Article/Product/Offer/AggregateRating), automatic and manual sitemap generation, and generator meta tags are all provided by the core |
 | **Activity log** | Administrator and user activity is recorded and searchable automatically. The Monolog-based structure is easy to extend, and action labels resolve from a module's or plugin's own translation files first, so each domain describes itself |
 | **Search** | Full-text search powered by Laravel Scout, covering key content such as products and posts |
+| **Visitor analytics** | Visits, page views, referrers, devices, regions, and search terms are collected on your own site — no external analytics tool — and reviewed on admin screens and in weekly or monthly report emails. Choose the collection level: store IP, consent-linked, or anonymous |
+| **Privacy protection** | Destruction or anonymization of personal data past its retention period and dormant-account handling (advance notice → dormant → automatic withdrawal) run automatically. Review target counts and lists before turning them on |
+| **Easy install and updates** | Install on shared hosting, FTP-only hosting, or hosting without server shell (SSH) access, and update the core with a button in the admin screen. Updates keep the screens an operator edited and roll back to the backup automatically if something fails |
 
 ---
 
@@ -90,6 +94,8 @@ Gnuboard7
 │   ├── Identity Verification (Policy × Purpose × Provider × Message)
 │   ├── Language Pack (virtual protected rows + ZIP/GitHub install + sub-key preservation)
 │   ├── Notification (Definition × Template × Recipients)
+│   ├── Schedule & Queue (DB-backed scheduled tasks · queue management · web cron)
+│   ├── Package Signing (SHA-256 + Ed25519 · trusted keys)
 │   └── SEO (Bot Detection → Static HTML → Cache → Sitemap)
 │
 ├── Extensions
@@ -112,6 +118,7 @@ In Gnuboard7 you **declare the UI structure in `.g7.html` markup**; the server c
 - Build React-based UI from markup authoring (`.g7.html`) alone — screen development without React expertise
 - Modules and plugins inject or extend UI dynamically, with no frontend build
 - Develop and register custom React components when a screen needs something more advanced
+- Scroll restoration on back navigation, a leave confirmation for screens with unsaved changes (`leave_guard`), and link-style navigation that opens in a new tab — all by declaration
 - Because the UI is defined as data (JSON) rather than code, a **WYSIWYG layout editor** lets non-developers place and edit screen blocks and see the result immediately
 
 ```mermaid
@@ -265,7 +272,7 @@ Developers add or change UI with markup authoring alone — no separate frontend
 
 ### Core systems
 
-Four systems work together to hold the platform up.
+The systems below work together to hold the platform up.
 
 #### 1. Extension system — three principles
 
@@ -348,8 +355,8 @@ HookManager::doAction('sirsoft-ecommerce.order.after_confirm', $order);
 // 5. Record the delivery in notification_logs
 ```
 
-- Three core notifications: `welcome`, `reset_password`, `password_changed`
-- Seven e-commerce module notifications: `order_confirmed`, `order_shipped`, `order_completed`, `order_cancelled`, `new_order_admin`, `inquiry_received`, `inquiry_replied`
+- Core notifications: members (`welcome`, `reset_password`, `password_changed`, password expiry notice and expiry, dormant-account pre-notice, conversion, and withdrawal notice), operations (sitemap generated or failed, scheduled task failed, visitor analytics weekly and monthly reports and storage-limit warnings), and identity verification messages per purpose. The source of truth is `notification_definitions` in `config/core.php`
+- E-commerce module notifications: seven for orders and inquiries (`order_confirmed`, `order_shipped`, `order_completed`, `order_cancelled`, `new_order_admin`, `inquiry_received`, `inquiry_replied`), plus per-status notifications for claims (exchanges, returns, refunds) and a mileage-expiry notice. The source of truth is `module.php::getNotificationDefinitions()`; claim notifications and their hook names come from `ClaimStatusNotificationListener::notifiableStatuses()` — they are the product of claim type × customer-visible status, so copying the list here would quickly go stale
 - Real-time broadcasting runs on Laravel Reverb (WebSocket). Where Reverb is not configured, it skips gracefully without errors
 - A single `GenericNotification` class handles every notification — adding a new notification type requires no new notification class
 
@@ -366,7 +373,7 @@ An operations tool for adding a new language without touching the core, with the
 | Virtual protected rows | Korean and English are built into the core and bundled extensions and are always exposed as active and protected (editing and removal are blocked) |
 | Security | Installation is blocked if a pack contains executable PHP beyond language translations |
 
-Sixteen official Japanese (ja) bundled packs — the core plus the main modules, plugins, and templates — are ready to use, and step 4 of the installer links language pack cards to your module, plugin, and template selection so they can be installed together.
+Twenty-four official Japanese (ja) bundled packs — the core plus the main modules, plugins, and templates — are ready to use, and step 4 of the installer links language pack cards to your module, plugin, and template selection so they can be installed together.
 
 > Details: [docs/extension/language-packs.md](docs/extension/language-packs.md) (Korean)
 
@@ -382,7 +389,7 @@ Every verification point — signup, password reset, sensitive operations, the m
 │  step, conditions) │    │  source tracking)   │    │                      │
 └────────────────────┘    └─────────────────────┘    └──────────────────────┘
             │                                                  │
-            └──────────▶ Message Template (policy × purpose) ◀──┘
+            └──────────▶ Notification (policy × purpose) ◀──────┘
                                     │
                               GenericNotification
 ```
@@ -418,7 +425,8 @@ Personal data whose retention period has ended is destroyed or anonymized per do
 - MySQL 8.0+ or MariaDB 10.3+ (utf8mb4)
 - Composer 2.x
 - Node.js 20+ (only needed when building frontend assets)
-- A web server (Apache or Nginx) with the document root pointed at `public/`
+- A web server (Apache, Nginx, Caddy, or IIS). Pointing the document root at `public/` is the standard layout; hosting where the document root cannot be changed, sub-path installs, and FTP-only hosting are also supported ([INSTALL.md](INSTALL.md) methods 6–8)
+- The PHP `sodium` extension (recommended — verifies extension and core package signatures; without it, packages are treated as unsigned)
 - Redis 6.0+ (optional — recommended for cache and queue in production)
 
 ### Installation
@@ -450,7 +458,9 @@ php g7-install                       # interactive
 php g7-install --no-interaction ...  # automation — see "방법 5" in INSTALL.md
 ```
 
-> Detailed installation guide (Korean): [INSTALL.md](INSTALL.md)
+On hosting without server shell (SSH) access, upload the release ZIP and `g7-setup.php` over FTP and install from the browser; later updates also run from the admin screen.
+
+> Detailed installation guide (Korean): [INSTALL.md](INSTALL.md). To update a running site, see the [upgrade section of INSTALL.md](INSTALL.md#업그레이드) and the [7.1.x → 7.2.0 upgrade notes](docs/upgrade/7.1.x-to-7.2.0.md) (Korean).
 
 ---
 
@@ -538,6 +548,8 @@ Minimal implementations for learning the extension system. They appear in the ad
 | **gnuboard7-hello_admin_template** | Admin template | A minimal set of basic components |
 | **gnuboard7-hello_user_template** | User template | Home page plus a memo list integration |
 
+> Each sample extension also ships a bundled Japanese language pack (four in all, such as `g7-module-gnuboard7-hello_module-ja`).
+
 ---
 
 ## Business Models
@@ -566,6 +578,9 @@ A migration tool from Gnuboard 5 is planned.
 | Installation guide | [INSTALL.md](INSTALL.md) |
 | Full documentation | [docs/README.md](docs/README.md) |
 | System requirements | [docs/requirements.md](docs/requirements.md) |
+| Upgrade notes | [docs/upgrade/7.1.x-to-7.2.0.md](docs/upgrade/7.1.x-to-7.2.0.md) |
+| Command cheat sheet | [docs/cheatsheet.md](docs/cheatsheet.md) |
+| Developer screens (custom) | [docs/custom-development.md](docs/custom-development.md) |
 | Backend development | [docs/backend/README.md](docs/backend/README.md) |
 | Frontend development | [docs/frontend/README.md](docs/frontend/README.md) |
 | Database | [docs/database-guide.md](docs/database-guide.md) |

@@ -31,6 +31,7 @@
 11. [세션 무효화 3단계](#세션-무효화-3단계)
 12. [완전한 로그아웃 구현 예시](#완전한-로그아웃-구현-예시)
 13. [안티 패턴](#안티-패턴)
+14. [운영 설정 (2단계 인증·IP 접근 제한·비밀번호 정책)](#운영-설정-2단계-인증ip-접근-제한비밀번호-정책)
 
 ---
 
@@ -133,7 +134,7 @@ Route::post('logout', ...)->middleware('start.api.session');
 | --- | --- |
 | 코드 | 32바이트 난수(base64url), **120초**, 한 번만 통한다. 캐시 키는 코드 원문이 아니라 해시다 |
 | 브라우저 묶기 | 코드는 **발급한 브라우저에서만** 교환된다. `issue()` 가 HTTP 요청 안에서 불리면 묶음 쿠키 `g7_login_bind`(HttpOnly, SameSite=Lax, Path `/api/auth`, 120초, HTTPS 면 Secure)를 쿠키 대기열에 넣고, 교환 때 그 쿠키를 대조한다. 다르거나 없으면 코드를 소비하고 같은 422 — 가로챈 코드를 다른 브라우저에서 쓸 수 없다 |
-| 발급 메서드 | web 라우트(콜백 → 302)는 `issue()`. **api 라우트에서 인계 코드를 응답으로 줄 때**는 `issueTicket()` 이 돌려주는 `HandoffTicket{code, cookie}` 를 받아 `->withCookie($ticket->cookie)` 로 직접 싣는다(api 그룹에는 쿠키 대기열 미들웨어가 없다). 묶지 않은 코드 `issueUnbound()` 는 실측 명령 `php artisan auth:handoff-issue {email} --guard=user\|admin`(운영 환경 거절)과 시험만 쓴다 |
+| 발급 메서드 | web 라우트(콜백 → 302)는 `issue()`. **api 라우트에서 인계 코드를 응답으로 줄 때**는 `issueTicket()` 이 돌려주는 `HandoffTicket{code, cookie}` 를 받아 `->withCookie($ticket->cookie)` 로 직접 싣는다(api 그룹에는 쿠키 대기열 미들웨어가 없다). 묶지 않은 코드 `issueUnbound()` 는 개발·확인용 명령 `php artisan auth:handoff-issue {email} --guard=user\|admin`(운영 환경 거절)과 시험만 쓴다 |
 | `context.login_method` | 로그인 수단 이름(**필수** — 예 `social:kakao`, 비면 `issue()`·`loginVerifiedUser()` 가 `InvalidArgumentException`). 로그인 완료 훅 `core.auth.after_login` 둘째 인자의 `login_method` 로 실린다 — 2단계 인증(인증번호 재발송 포함)·비밀번호 변경을 거쳐도 이어진다. 비밀번호 로그인은 `password` |
 | `context.skip_two_factor` | `true` 면 2단계 인증 단계만 건너뛴다(운영자가 그 수단에 2단계 인증을 끈 경우). 잠금·상태·비밀번호 변경·휴면은 그대로 |
 | `context.max_session_minutes` | 정수 1~10080. 이 로그인의 세션 수명 상한 — 토큰 만료가 상한을 넘지 않고, 사용 중 연장·토큰 갱신(`refresh`)도 넘지 못한다. 상한이 지난 토큰의 갱신은 401 |
@@ -534,6 +535,57 @@ request()->session()->invalidate(); // 토큰이 살아있으면 재인증 가�
 // ❌ DON'T: 전체 plainTextToken 해시 (DB 값과 불일치)
 $hashedToken = hash('sha256', $bearerToken); // 잘못됨
 ```
+
+---
+
+## 운영 설정 (2단계 인증·IP 접근 제한·비밀번호 정책)
+
+7.1.0 에서 추가된 로그인·접근 보안 설정이다. 모두 관리자 환경설정 > 보안(`security` 탭)에 있고 **기본 꺼짐**이다.
+
+### 2단계 인증 적용 범위
+
+| 설정 키 | 값 | 동작 |
+| --- | --- | --- |
+| `security.two_factor_auth` | boolean (기본 false) | 로그인 2단계 인증 사용 |
+| `security.two_factor_scope` | `all`(기본) · `admin` | 대상 — 전체 회원 / 관리자만. 7.1.0 전에 2단계 인증을 켠 사이트는 그대로 `all` 로 동작한다 |
+
+판정은 `AuthService::resolveTwoFactorProviderId()` — 범위 밖 회원은 2단계 인증 없이 로그인하고, 범위 안 회원은 쓸 수 있는 수단을 해석한다.
+
+### 인증 앱(OTP) 2단계 인증
+
+번들 플러그인 `sirsoft-totp`(인증 앱 2단계 인증)를 설치하면 인증 앱이 만드는 6자리 코드(RFC 6238 TOTP)로 2단계 인증을 받는다.
+
+- 앱을 등록한 회원은 앱 코드로, 등록하지 않은 회원은 종전처럼 메일 인증번호로 받는다 — 미등록이라는 이유로 로그인이 막히지 않는다.
+- 플러그인 설정에서 메일 폴백(`allow_mail_fallback`)을 끄면 미등록 회원은 `401 auth.two_factor_enrollment_required` 로 막힌다. 구제는 관리자의 등록 해제 또는 `php artisan totp:reset <이메일>`.
+- 인증 앱 수단은 코드를 보내지 않으므로 재발송이 없다(422 `auth.two_factor_resend_not_supported`).
+- 응답 모양·수단 선택: [api/auth.md](api/auth.md)
+
+### 관리자 IP 접근 제한
+
+`security.ip_restriction_enabled`(마스터 토글) · `admin_allowed_ips`(관리자 영역 허용 IP·CIDR) · `ip_restriction_rules`(경로별 규칙, 사용 중인 첫 매칭 규칙 하나만 적용).
+
+- 관리자 영역은 관리자 화면·코어 관리자 API·관리자 로그인 API·확장 관리자 API 다. 허용 범위 밖이면 접속 IP 를 보여 주는 403 을 받고 활동 로그에 남는다.
+- 결제 승인·입금 통보·웹훅·본인인증 콜백처럼 외부 서버가 보내는 요청은 경로 규칙에 걸리지 않는다. 확장은 `core.security.ip_restriction_exempt_paths` 필터 훅으로 자기 수신 경로를 더한다. 관리자 영역은 어떤 예외 경로로도 빠지지 않는다.
+- 저장하는 관리자 자신이 막히는 설정은 저장되지 않는다. 그래도 잠겼으면 서버에서 끈다 — 목록·규칙은 남는다.
+
+```bash
+php artisan security:ip-restriction            # 상태 보기 (--status 와 같음)
+php artisan security:ip-restriction --disable  # IP 접근 제한 끄기 (관리자 잠금 구제)
+```
+
+- 판정 IP 는 신뢰 프록시 해석 뒤의 값이다 — 리버스 프록시 뒤에서 `TRUSTED_PROXIES` 를 적지 않으면 모든 방문자가 프록시 주소 하나로 보인다([reverse-proxy.md](reverse-proxy.md)).
+- 판정 순서·키 형식: [api/settings.md 「IP 접근 제한」](api/settings.md#ip-접근-제한-security-탭) · 미들웨어 위치: [middleware.md](middleware.md)
+
+### 비밀번호 정책
+
+| 규칙 | 요약 |
+| --- | --- |
+| 작성 규칙 | 영문·숫자·특수문자 중 2종류 이상, 아이디(이메일 앞부분) 포함 금지, 같은 문자 연속 반복 금지, 연속 문자(1234·abcd·qwer) 금지 — 가입·재설정·변경·관리자 등록/수정에 똑같이 적용 |
+| 재사용 금지 | 최근 N개(1~10, 지금 비밀번호 포함) 재사용 불가 |
+| 만료 | 사용 기간(30~730일)이 지나면 로그인할 때 새 비밀번호를 정한다 — 「변경해야 로그인」(`force`) 또는 「다음에 변경 허용」(`remind`), 범위 `all`·`admin`·`selected`. 매일 사전 안내·만료 처리는 `auth:process-password-expiry` |
+| 로그인 변경 단계 | 비밀번호·2단계 인증을 통과한 뒤 바꿔야 하면 토큰 대신 변경 단계를 돌려준다 — `POST /api/auth/login/password-change`·`POST /api/auth/login/password-change/postpone` (관리자는 `/api/auth/admin/login/password-change`·`…/password-change/postpone`) |
+
+키·판정·배치 상세: [password-policy.md](password-policy.md) · 설정 API: [api/settings.md](api/settings.md)
 
 ---
 

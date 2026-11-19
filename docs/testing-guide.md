@@ -139,6 +139,8 @@ cd modules/_bundled/sirsoft-ecommerce
 powershell -Command "npm run test:run -- ShippingPolicy"
 ```
 
+**타입 검사** (7.2.0): 루트 `tsconfig.json` 은 두 설정을 잇기만 하고 직접 검사하는 파일이 없다 — 브라우저 코드는 `tsconfig.app.json`(시험 제외, Node 타입 없음), 시험 파일은 `tsconfig.test.json`(Node 타입과 Vitest 전역)이 맡는다. 둘 다 검사하려면 `npx tsc -b`, 하나만이면 `npx tsc -p tsconfig.app.json`·`npx tsc -p tsconfig.test.json` 을 쓴다(`npx tsc -p tsconfig.json` 은 아무것도 검사하지 않는다). 템플릿은 원본(`templates/_bundled`)만 검사하고 설치 사본(`templates/<식별자>`)은 넣지 않는다.
+
 ### 동작 원리
 
 `tests/bootstrap.php`가 `_bundled` 디렉토리의 코드를 활성 디렉토리보다 먼저 등록(prepend)합니다:

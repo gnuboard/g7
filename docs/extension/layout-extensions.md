@@ -417,9 +417,9 @@ overlay 를 슬롯으로 **전환**할 때는 기설치본을 함께 본다. 확
 ```html
 <extension target-layout="admin_user_form" priority="100">
   <inject target-id="section_marketing_consent" position="append">
-    <div data-ref="section_notification_settings" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">$t:sirsoft-board.admin.users.form.sections.notification_settings</h3>
+    <div data-ref="section_notification_settings" class="board:bg-white board:dark:bg-gray-800 board:border board:border-gray-200 board:dark:border-gray-700 board:rounded-lg board:p-6 board:mb-6">
+      <div class="board:flex board:items-center board:justify-between board:mb-4">
+        <h3 class="board:text-lg board:font-semibold board:text-gray-900 board:dark:text-white">$t:sirsoft-board.admin.users.form.sections.notification_settings</h3>
         <extension-badge type="module" identifier="sirsoft-board" installedModules="{{_global.installedModules}}"/>
       </div>
       <input type="checkbox" name="notify_post_complete" checked="{{_local.form?.notify_post_complete ?? false}}"/>
@@ -427,6 +427,8 @@ overlay 를 슬롯으로 **전환**할 때는 기설치본을 함께 본다. 확
   </inject>
 </extension>
 ```
+
+> 클래스는 게시판 모듈 앞글자(`assets.css.namespace: "board"`)를 붙인 접두 빌드 클래스(`board:…`)다. 확장이 주입하는 조각도 확장 화면이므로 템플릿 CSS 가 아니라 확장 자기 CSS 로 그린다 — [확장 CSS 자기 공급 규약](module-assets.md#확장-css-자기-공급-규약).
 
 > 위는 소스(`.g7.html`), 아래는 그 컴파일 결과인 런타임 계약 JSON 이다.
 
@@ -443,21 +445,21 @@ overlay 를 슬롯으로 **전환**할 때는 기설치본을 함께 본다. 확
           "type": "basic",
           "name": "Div",
           "props": {
-            "className": "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mb-6"
+            "className": "board:bg-white board:dark:bg-gray-800 board:border board:border-gray-200 board:dark:border-gray-700 board:rounded-lg board:p-6 board:mb-6"
           },
           "children": [
             {
               "type": "basic",
               "name": "Div",
               "props": {
-                "className": "flex items-center justify-between mb-4"
+                "className": "board:flex board:items-center board:justify-between board:mb-4"
               },
               "children": [
                 {
                   "type": "basic",
                   "name": "H3",
                   "props": {
-                    "className": "text-lg font-semibold text-gray-900 dark:text-white"
+                    "className": "board:text-lg board:font-semibold board:text-gray-900 board:dark:text-white"
                   },
                   "text": "$t:sirsoft-board.admin.users.form.sections.notification_settings"
                 },
@@ -621,7 +623,7 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 ```html
 <column field="payment_method" header="$t:sirsoft-ecommerce.admin.order.column.payment_method">
   <cell>
-    <div class="stack-flush">
+    <div class="ecommerce-stack-flush">
       <span>{{row.payment?.payment_method_label}}</span>
       <extension-point name="admin_order_list_payment_method_badges"/>
     </div>
@@ -761,16 +763,16 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 
 ```html
 <extension extension-point="admin_user_list_filters" mode="append" priority="200">
-  <div data-ref="ext_vendor_point_filter_row" class="flex flex-col gap-2">
-    <responsive on="768-" class="flex flex-row items-center gap-2"/>
+  <div data-ref="ext_vendor_point_filter_row" class="vendormodule:flex vendormodule:flex-col vendormodule:gap-2">
+    <responsive on="768-" class="vendormodule:flex vendormodule:flex-row vendormodule:items-center vendormodule:gap-2"/>
     <permissions>
       <permission>vendor-module.points.read</permission>
     </permissions>
-    <span class="block mb-2 w-32 text-sm text-gray-600 dark:text-gray-400 shrink-0">
-      <responsive on="768-" class="block mb-0 w-32 text-sm text-gray-600 dark:text-gray-400 shrink-0"/>
+    <span class="vendormodule:block vendormodule:mb-2 vendormodule:w-32 vendormodule:text-sm vendormodule:text-gray-600 vendormodule:dark:text-gray-400 vendormodule:shrink-0">
+      <responsive on="768-" class="vendormodule:block vendormodule:mb-0 vendormodule:w-32 vendormodule:text-sm vendormodule:text-gray-600 vendormodule:dark:text-gray-400 vendormodule:shrink-0"/>
       $t:vendor-module.admin.user_filter.points
     </span>
-    <input type="number" name="vendorPointMin" class="input w-32" value="{{((_local.userFilterExtraQuery || []).find(e => e.startsWith('vendor-module.point_min=')) || '').slice('vendor-module.point_min='.length)}}">
+    <input type="number" name="vendorPointMin" class="vendor-module-input vendormodule:w-32" value="{{((_local.userFilterExtraQuery || []).find(e => e.startsWith('vendor-module.point_min=')) || '').slice('vendor-module.point_min='.length)}}">
       <on type="change">
         <!-- 값은 URL 에 직접 싣지 않는다 — 이 모듈의 핸들러가 확장 값 배열을 갱신하고, 확장점을 연 관리자 템플릿의 검색 버튼이 ext_filters[] 로 보낸다. -->
         <sequence>
@@ -783,7 +785,7 @@ v1.17.0 이전: modals 내부의 extension_point는 처리되지 않았음
 </extension>
 ```
 
-- 행은 평범한 유틸 클래스로 편다. 화면 폭에 따른 배치는 Tailwind 반응형 접두(`md:flex-row` 등) 대신 `<responsive on="768-">` 구간에 그 폭의 클래스 전체를 둔다([반응형 레이아웃](../frontend/responsive-layout.md)). 관리자 템플릿의 필터 행 클래스(`filter-row`·`filter-field-label`)는 그 템플릿 CSS 에만 있어, 다른 관리자 템플릿에 주입되면 행 배치가 무너진다.
+- 클래스는 모두 이 모듈의 앞글자를 붙여 모듈 자기 CSS 로 싣는다 — 이 예는 `assets.css.namespace` 를 `vendor-module` 로 선언한 경우로, 접두 빌드 클래스는 `vendormodule:…`, 손으로 쓴 의미 클래스는 `vendor-module-input` 이다. 템플릿의 `input` 같은 의미 클래스나 앞글자 없는 Tailwind 클래스는 그 템플릿 CSS 에 있을 때만 그려진다([확장 CSS 자기 공급 규약](module-assets.md#확장-css-자기-공급-규약)). 화면 폭에 따른 배치는 Tailwind 반응형 접두(`md:flex-row` 등) 대신 `<responsive on="768-">` 구간에 그 폭의 클래스 전체를 둔다([반응형 레이아웃](../frontend/responsive-layout.md)). 관리자 템플릿의 필터 행 클래스(`filter-row`·`filter-field-label`)는 그 템플릿 CSS 에만 있어, 다른 관리자 템플릿에 주입되면 행 배치가 무너진다.
 - 값 조립 핸들러는 모듈이 자기 네임스페이스로 등록한다(`vendor-module.setUserFilterExt` — 같은 키 교체, 빈 값 제거, `{확장id}.{키}={값}` 원소). 관리자 템플릿의 `setUserFilterExt` 는 그 템플릿 화면용이라 다른 관리자 템플릿에는 없다 — 조각이 부르면 그 템플릿에서 값이 검색에 실리지 않는다. 구현 예: `modules/_bundled/sirsoft-ecommerce/resources/js/handlers/userListFilterExtHandlers.ts`.
 - 표시값은 같은 배열(`_local.userFilterExtraQuery`)에서 되읽는다 — 새로고침·뒤로가기에서 URL 의 `ext_filters[]` 로 복원된다.
 - 코어의 필터 초기화는 이 배열을 비운다.
@@ -1286,6 +1288,8 @@ Overlay 확장에서 `computed`, `state`, `modals` 섹션을 정의하면 호스
 ### 사용자 수정 감지 (`original_content_hash`)
 
 `template_layout_extensions` 의 `original_content`(원본 본문 — `keep` 병합의 기준, API 응답에서 숨김) / `original_content_hash` / `original_content_size` 컬럼은 모듈/플러그인이 등록한 원본 확장 콘텐츠의 정규화 해시를 보존한다. 관리자가 확장을 편집해도 이 원본 해시는 변경되지 않는다 — 현재 `content` 해시와 원본 해시를 비교하여 "사용자가 수정한 확장"을 판별한다.
+
+수정된 확장 목록이 필요하면 `ModuleManager::hasModifiedLayouts($identifier)`·`PluginManager::hasModifiedLayouts()` 결과의 `modified_layouts` 중 `kind === 'extension'` 항목을 쓴다. `LayoutExtensionService::getModifiedExtensionsBySource()` 는 7.1.0 부터 사용 중단 예정이며(코어 안 호출처 없음) 다음 메이저에서 제거한다.
 
 ### 모듈/플러그인 업데이트 시 충돌 전략
 

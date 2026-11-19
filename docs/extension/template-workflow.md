@@ -803,7 +803,7 @@ import { H1, H2, H3, Div, Span } from './components/basic';  // 실제 존재하
 | `php artisan template:activate [id]` | 템플릿 활성화 |
 | `php artisan template:deactivate [id]` | 템플릿 비활성화 |
 | `php artisan template:uninstall [id]` | 템플릿 삭제 |
-| `php artisan template:refresh-layout [id]` | 레이아웃 갱신 (빌드 없이) |
+| `php artisan template:refresh-layout [id]` | 레이아웃 갱신 (빌드 없이). 기본은 운영자가 고친 화면 유지(`--layout-strategy=keep`, 7.2.0) — 파일 판으로 덮으려면 `--layout-strategy=overwrite`. `--dry-run`(식별자 필수, `--json`)으로 화면별 판정만 미리 보고, `--decisions=<파일>` 로 화면별 「새 판 적용(take-theirs)·내 수정 유지(keep-ours)」를 정해 실행한다 |
 | `php artisan template:cache-clear` | 템플릿 캐시 초기화 |
 
 ---

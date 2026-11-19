@@ -1451,13 +1451,15 @@ HookManager::doAction('vendor-sample_plugin.export.after_complete', $export);
 | 커맨드 | 설명 |
 |--------|------|
 | `php artisan plugin:list` | 플러그인 목록 조회 |
-| `php artisan plugin:install [identifier]` | 플러그인 설치 (Composer 의존성 자동 설치 포함) |
+| `php artisan plugin:install [identifier]` | 플러그인 설치 (Composer 의존성 자동 설치 포함). `--with-dependencies`(필요한 의존 확장을 함께 설치·활성화)·`--with-language-packs=none\|all\|식별자,…`(번들 언어팩 함께 설치) — 7.1.4, `--force`(활성 디렉토리를 원본으로 덮고 재설치)·`--vendor-mode`·`--layout-source` |
+| `php artisan plugin:check-updates [identifier?]` | 플러그인 업데이트 확인 (GitHub 조회 실패 시 실패 표·종료 코드 1) |
+| `php artisan plugin:update [identifier]` | 플러그인 업데이트. `--yes`(확인만 생략)·`--source=auto\|bundled\|github`·`--zip=`·`--signature=`·`--allow-unsigned`(패키지 서명, 7.2.0)·`--layout-strategy=overwrite\|keep`·`--dry-run [--json]`·`--decisions=<파일>`(7.2.0) — 옵션 상세는 [module-commands.md 「모듈 업데이트」](module-commands.md#모듈-업데이트)(플러그인도 같다) |
 | `php artisan plugin:activate [identifier]` | 플러그인 활성화 (끌 때 함께 꺼진 언어팩도 함께 켬, `--without-language-packs` 로 생략). 필요한 의존 확장이 없거나 꺼져 있거나 버전이 모자라면 사유(미설치·비활성·버전 미달 설치 → 요구)를 출력하고 멈춘다 — `--force` 로 강제 활성화 |
 | `php artisan plugin:deactivate [identifier]` | 플러그인 비활성화 |
 | `php artisan plugin:uninstall [identifier]` | 플러그인 삭제 (--delete-data 시 vendor/ 삭제 포함). 확인에 답할 수 없는 실행(cron, CI, 원격 명령, `--no-interaction`)은 `--force` 가 없으면 사유를 출력하고 종료 코드 1 |
 | `php artisan plugin:composer-install [identifier]` | 플러그인 Composer 의존성 설치 |
 | `php artisan plugin:build [identifier]` | 플러그인 에셋 빌드 |
-| `php artisan plugin:refresh-layout [identifier?]` | 플러그인 레이아웃 갱신 |
+| `php artisan plugin:refresh-layout [identifier?]` | 플러그인 레이아웃 갱신. 기본은 운영자가 고친 화면 유지(`--layout-strategy=keep`, 7.2.0) — 파일 판으로 덮으려면 `--layout-strategy=overwrite`. `--dry-run`(식별자 필수, `--json`)으로 화면별 판정만 미리 보고, `--decisions=<파일>` 로 화면별 「새 판 적용(take-theirs)·내 수정 유지(keep-ours)」를 정해 실행한다 |
 | `php artisan plugin:cache-clear [identifier?]` | 플러그인 캐시 삭제 |
 | `php artisan plugin:seed [identifier]` | 플러그인 시더 실행 |
 
@@ -1597,7 +1599,7 @@ php artisan plugin:seed sirsoft-payment --force
 | DB 스키마 변경 | ✅ (+ 마이그레이션) | 컬럼/테이블 구조 변경 |
 | 환경설정 구조 변경 | ✅ (SettingsMigrator) | 설정 키 이름/구조 변경 |
 | 기존 데이터 변환 | ✅ | 데이터 형식 변환, 기본값 |
-| 레이아웃 JSON 변경 | ❌ (자동 갱신) | refresh-layout에서 처리 |
+| 레이아웃 JSON 변경 | ❌ (자동 갱신) | 업데이트·refresh-layout에서 처리. `plugin:refresh-layout` 은 7.2.0 부터 운영자 수정 유지(keep)가 기본 — 덮으려면 `--layout-strategy=overwrite` |
 | PHP 코드만 변경 | ❌ | 버전만 올리면 됨 |
 
 > 상세: [extension-update-system.md](extension-update-system.md) "개발자 버전 업데이트 가이드" 참조

@@ -217,6 +217,10 @@ challenge 요청에 `provider_id` 를 고정하지 않는다. 판정은 조회�
 알 수 없고, 고르면 그 회원과 무관한 사람의 본인확인으로 재확인이 통과할 수 있기 때문이다. 그런 제공자는 운영자가 목적별 제공자·정책·기본
 제공자로 지정했을 때만 쓰인다. 회원의 연결 계정이나 등록한 인증 수단으로 확인하는 제공자라면 이 계약을 구현해 폴백 후보가 된다.
 
+**명시한 수단을 쓸 수 없으면 바꾸지 않는다 (7.1.6)** — `$providerId` 로 수단을 명시했는데 그 수단이 등록되지 않았거나 그 목적을 지원하지 않으면, `resolveForPurpose()` 는 다른 수단으로 바꾸지 않고 `App\Exceptions\IdentityProviderUnavailableException` 을 던진다. 이 수단을 지정하는 확장은 예외를 받아 사유를 안내한다.
+
+**메일 재요청 대기 (7.1.6)** — 같은 수신 주소·같은 목적의 인증 메일을 다시 요청할 수 있는지는 `App\Services\IdentityVerificationService::cooldownRemaining($purpose, $target, $providerId = null)`(남은 초, 바로 요청할 수 있으면 0)로 판정한다. 메일 수단으로 이메일 대상에 보낼 때만 재고 그 밖은 0 이다. 대상 해시는 `MailIdentityProvider::targetHash($email)` 로 만든다 — 발행과 대기 판정이 같은 계산을 써야 대소문자만 바꾼 주소가 다른 대상으로 갈리지 않는다. 판정은 저장소의 `findLatestRequestedSince()`(발송이 실패로 끝난 challenge 는 제외)를 쓴다.
+
 외부 화면을 거치는 수단은 `getRenderHint()` 가 `external_redirect` 를 돌려주고 challenge 응답의 `redirect_url` 로 보낸다.
 
 화면 안내가 「이 회원의 재확인이 어느 수단으로 가는가」를 실제 시작과 같은 판정으로 알아야 하면

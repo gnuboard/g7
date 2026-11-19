@@ -84,7 +84,7 @@
 | 판정 | 적힌 확장이 **모두** 활성일 때만 라우트를 낸다. 하나라도 꺼져 있으면 그 라우트는 없는 것처럼 404 가 된다 |
 | 적용 범위 | 공개 routes 응답(`/api/templates/{id}/routes.json`) · 검색봇 화면(SEO) · 사이트맵 · 정적 사본이 같은 결과를 쓴다. 모듈이 선언한 routes(모듈의 `resources/routes/` 아래 user.json·admin.json)에도 같은 키를 쓸 수 있다 |
 | 적용 안 함 | 레이아웃 편집기(꺼진 모듈의 화면도 편집할 수 있다) · `php artisan layout:check-installed` 의 라우트 대조 |
-| 형식 오류 | 모르는 유형(`templates`·`module` 등)·배열이 아닌 값·문자열이 아닌 식별자는 그 조건을 무시하고 라우트를 **남긴 뒤** 서버 로그에 경고를 남긴다. `php artisan layout:check-installed` 는 이런 라우트를 「routes.json requires 형식 오류」 표로 알린다. 오타 하나로 라우트가 조용히 사라지지 않게 하기 위해서다. 식별자 철자가 틀린 경우(`sirsoft-bord`)는 형식이 맞으므로 「꺼진 모듈」로 판정돼 라우트가 빠진다 |
+| 형식 오류 | 모르는 유형(`templates`·`module` 등)·배열이 아닌 값·문자열이 아닌 식별자는 그 조건을 무시하고 라우트를 **남긴 뒤** 서버 로그에 경고를 남긴다. `php artisan layout:check-installed` 는 이런 라우트를 「routes.json requires 형식 오류」 표(템플릿·경로·출처·사유)로 알린다. `--json` 출력은 같은 목록을 `route_requires_warnings`(`template`·`path`·`source`·`code`·`type`·`reason`, `code` 는 `not_object`·`unknown_type`·`not_list`·`non_string_id`)로 싣는다 — 경고라서 `ok`·종료 코드에는 반영되지 않는다(7.1.4~). 오타 하나로 라우트가 조용히 사라지지 않게 하기 위해서다. 식별자 철자가 틀린 경우(`sirsoft-bord`)는 형식이 맞으므로 「꺼진 모듈」로 판정돼 라우트가 빠진다 |
 | 갱신 시점 | 모듈·플러그인을 켜고 끌 때 routes 캐시가 함께 갱신된다 |
 | 옛 코어 | 7.1.3 이하 코어는 이 키를 모르므로 모든 라우트를 낸다. 화면 안의 링크·데이터 호출은 레이아웃에서 `_global.activeModules` 로 따로 가린다 ([전역 상태 — 시스템 주입 속성](../frontend/state-management.md#시스템-주입-속성)) |
 

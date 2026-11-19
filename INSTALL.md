@@ -541,6 +541,21 @@ php artisan user:reset-password
 - 질문에 답할 수 없는 실행(`--no-interaction`, 콘솔 없는 원격 명령)은 아무것도 바꾸지 않고 최고관리자 이메일을 보여 줍니다. 그 이메일을 지정하고 비밀번호는 환경변수 `G7_RESET_PASSWORD` 나 `--password-file` 로 넘깁니다.
 - 인증 앱(2단계 인증)도 잃었다면 결과에 나오는 인증 앱 초기화 명령을 이어서 실행합니다.
 
+### 관리자 화면에 들어갈 수 없을 때
+
+보안 설정을 켠 뒤 관리자 화면이 막혔다면 서버 터미널에서 그 설정만 끕니다. 설정을 되돌린 뒤 관리자 화면에서 원인을 고치고 다시 켭니다.
+
+| 증상 | 원인이 된 설정 | 끄는 방법 |
+|------|----------------|-----------|
+| 관리자 화면이 접속 IP 를 보여 주는 403 화면으로 막힘 | 환경설정 > 보안 > 접근 제한(관리자 IP 제한) | `php artisan security:ip-restriction --disable` |
+| 관리자 화면이 깨지거나 단추가 동작하지 않음(스크립트 정책 강제) | 환경설정 > 보안 > 콘텐츠 보안 정책(CSP) — 스크립트 | `.env` 에 `G7_CSP_MODE=off` 를 적고 `php artisan config:clear` |
+| 관리자 화면 모양이 깨짐(스타일 정책 강제) | 같은 카드의 스타일 정책 | `.env` 에 `G7_CSP_STYLE_MODE=off` 를 적고 `php artisan config:clear` |
+| http↔https 이동이 끝없이 반복됨 | 환경설정 > 보안 > HTTPS 강제 적용 | `php artisan settings:set security.force_https false` |
+| 화면·파일이 비어 나옴(웹서버 파일 위임 설정 오류) | 환경설정 > 드라이버 > 웹서버 파일 위임 | `php artisan settings:set drivers.file_delegation none` |
+| 메일 인증번호·비밀번호 재설정 메일이 오지 않음(메일 채널을 끔) | 환경설정 > 알림의 메일 채널 | `storage/app/settings/notifications.json` 에서 `mail` 채널의 `is_active` 를 `true` 로 고치고 `php artisan cache:clear` |
+
+`G7_CSP_MODE`·`G7_CSP_STYLE_MODE` 를 `.env` 에 적어 두면 관리자 화면의 모드 선택이 잠깁니다. 원인을 고친 뒤에는 그 줄을 지우고 `php artisan config:clear` 를 다시 실행합니다.
+
 ### Docker Compose 로 설치
 
 컨테이너를 처음 띄울 때 터미널 설치를 한 번 실행하고, 다시 띄울 때는 설치를 건너뛰는 구성입니다. 설치 단계(`install`)는 끝나면 멈추고, 웹 서버(`web`)는 설치 단계가 성공한 뒤에 뜹니다. 아래처럼 폴더를 만들고 소스를 `g7` 에 받습니다.
@@ -754,8 +769,6 @@ SSH 가 없거나, 있어도 PHP 를 명령줄로 실행할 수 없는 계정(`e
 
 리버스 프록시가 하위 주소의 앞부분을 벗겨서 넘기는 배치(프록시는 `/g7/install/` 을 받고 서버는 `/install/` 을 보는 형태)에서는 설치 화면이 사이트 주소를 알 수 없어 웹 노출 점검이 「측정 불가」로 표시됩니다. 프록시가 `X-Forwarded-Prefix: /g7` 헤더로 벗긴 접두사를 알려 주도록 설정하면 설치 화면이 그 값을 앞에 붙여 점검합니다(값은 `/` 로 시작하는 경로만 인정합니다).
 
-> 위 두 형태와 문서 루트 바로 아래 배치는 Apache 로 실제 응답을 재어 확인했습니다. nginx · Caddy · IIS 에서의 하위 주소 배치는 아직 측정하지 못했습니다.
-
 ### 서버별 보호 설정
 
 압축을 풀기만 해도 보호가 켜지는 서버가 있고, 서버 설정을 직접 고쳐야 하는 서버가 있습니다. 후자는 **설정을 적용하고 서버를 재시작(reload)해야** 이 배치를 쓸 수 있습니다.
@@ -790,7 +803,7 @@ SSH 가 없거나, 있어도 PHP 를 명령줄로 실행할 수 없는 계정(`e
 
    다만 그 배치에도 **URL Rewrite 모듈은 여전히 필요합니다.** G7 은 모든 주소를 `public/index.php` 하나로 보내는 방식이라, 재작성 규칙이 없으면 첫 화면 말고는 전부 404 가 됩니다. 그리고 그 배치용 `web.config` 는 이 배포본에 들어 있지 않습니다 — `public` 폴더에 직접 만들어 넣어야 하며, 최소한 ㉠ 실제 파일이 아닌 요청을 `index.php` 로 보내는 재작성 규칙, ㉡ 기본 문서 `index.php`, ㉢ 응답 헤더 `X-Content-Type-Options: nosniff` 세 가지를 담습니다. Apache 는 같은 배치에서 `public/.htaccess` 가 동봉되어 이 작업이 필요 없지만, IIS 에는 그에 해당하는 파일이 없습니다.
 
-> IIS 환경은 아직 실제 서버에서 응답을 측정하지 못했습니다. 처음 올릴 때는 아래 「확인 목록」을 직접 확인해 주세요.
+> 처음 올릴 때는 아래 「확인 목록」을 직접 확인해 주세요.
 >
 > 아래 두 가지는 정적 검토로만 확인했고 실제 응답을 재지 못했습니다. 문제가 보이면 해당 규칙을 지우거나 좁혀서 쓰십시오.
 >
@@ -826,7 +839,7 @@ Caddy 는 조각을 Caddyfile 에 넣은 뒤 문법을 먼저 확인하고 reloa
 caddy validate --config /etc/caddy/Caddyfile && caddy reload --config /etc/caddy/Caddyfile
 ```
 
-> Caddy 조각은 아직 실제 서버에서 응답을 측정하지 못했습니다. 동봉된 nginx 조각은 실제 nginx 로 응답을 재어 확인했지만, Caddy 조각은 그 구조를 Caddy 문법으로 옮긴 것입니다. 처음 올릴 때는 아래 네 가지를 직접 확인해 주세요.
+> Caddy 조각은 동봉된 nginx 조각과 같은 구조를 Caddy 문법으로 옮긴 것입니다. 처음 올릴 때는 아래 네 가지를 직접 확인해 주세요.
 >
 > 1. `/.env` · `/composer.json` · `/artisan` · `/storage/logs/` 아래 로그 · `/.git/HEAD` 를 브라우저로 열어 **파일 내용이 보이지 않는지** 확인합니다. 판정 기준은 응답 코드가 아니라 내용입니다 — 이 조각에서는 같은 요청이 `403` 으로도 `404` 로도 끝날 수 있고(Caddy 가 설정에 적힌 순서가 아니라 자기 고정 순서로 규칙을 적용하므로, 차단 규칙과 위임 규칙 중 어느 쪽이 먼저 응답하는지가 갈립니다) **둘 다 보호가 켜진 상태**입니다. 내용이 한 줄이라도 보이면 그때가 실패입니다.
 > 2. `/.well-known/acme-challenge/` 아래 임의 주소가 `403` 이 **아닌지** 확인합니다. 여기가 막히면 SSL 인증서 자동 갱신이 조용히 실패하고, 인증서가 만료되기 전까지 아무 증상이 없습니다.
@@ -1088,15 +1101,17 @@ sudo chown -R www-data:www-data storage bootstrap/cache modules plugins template
     mysqldump -u DB사용자 -p DB이름 > backup-$(date +%Y%m%d).sql
     ```
 
-2. **활성 디렉토리 백업 권장** — 직접 수정한 코드나 외부 확장(`_bundled` 에 포함되지 않은 GitHub install 확장) 이 있다면 다음 4개 디렉토리를 별도 위치로 백업하세요.
+2. **`.env` 따옴표 짝 확인** — `.env` 를 직접 고친 적이 있다면 따옴표로 시작한 값(예: `MAIL_FROM_NAME="그누보드`)이 닫혀 있는지 확인합니다. 7.1.4 부터 닫는 따옴표가 빠진 `.env` 는 사이트가 시작되지 않고 「Encountered a missing closing quote」 오류를 냅니다(종전에는 그 줄 아래 설정이 조용히 무시됐습니다). `config/cache.php` 를 직접 고쳐 쓰는 사이트는 file 스토어의 `lock_path` 를 `path` 와 다른 폴더로 맞춥니다(7.1.5 부터 캐시 잠금을 `storage/framework/cache/locks` 에 따로 둡니다).
+
+3. **활성 디렉토리 백업 권장** — 직접 수정한 코드나 외부 확장(`_bundled` 에 포함되지 않은 GitHub install 확장) 이 있다면 다음 4개 디렉토리를 별도 위치로 백업하세요.
 
     ```bash
     tar -czf extensions-backup-$(date +%Y%m%d).tar.gz modules plugins templates lang-packs
     ```
 
-3. **실행 경로 결정** — 서버 터미널(SSH)을 쓸 수 있으면 명령줄 경로가 표준입니다. 쓸 수 없으면 관리자 화면 경로를 쓰며, 이때는 **바뀔 파일들에 웹 서버 계정의 쓰기 권한**이 있어야 합니다. 그 판정은 업데이트 시작 화면이 누르기 전에 보여 줍니다.
+4. **실행 경로 결정** — 서버 터미널(SSH)을 쓸 수 있으면 명령줄 경로가 표준입니다. 쓸 수 없으면 관리자 화면 경로를 쓰며, 이때는 **바뀔 파일들에 웹 서버 계정의 쓰기 권한**이 있어야 합니다. 그 판정은 업데이트 시작 화면이 누르기 전에 보여 줍니다.
 
-4. **백업 공간 확보** — 두 경로 모두 시작 전에 백업본을 만듭니다. 새 버전과 백업본을 함께 둘 여유 공간이 필요하며, 이 역시 시작 전에 확인해 부족하면 시작하지 않습니다.
+5. **백업 공간 확보** — 두 경로 모두 시작 전에 백업본을 만듭니다. 새 버전과 백업본을 함께 둘 여유 공간이 필요하며, 이 역시 시작 전에 확인해 부족하면 시작하지 않습니다.
 
 ### 방법 1: 관리자 화면에서 업데이트 (CLI 없는 환경 포함)
 
@@ -1134,7 +1149,7 @@ sudo chown -R www-data:www-data storage bootstrap/cache modules plugins template
 외부 접속이 막힌 서버를 위한 경로입니다. 「고급」 안에 있습니다.
 
 1. GitHub 릴리스 페이지에서 해당 버전의 ZIP 을 내려받습니다.
-2. FTP 로 `storage/app/core_pending` 에 그 파일을 올립니다.
+2. FTP 로 `storage/app/core_pending` 에 그 파일을 올립니다. 같은 릴리스의 서명 파일(`<ZIP 이름>.sig.json`)도 함께 내려받아 **ZIP 옆에** 올립니다. 서명 파일이 없으면 「서명 없는 패키지」 확인을 한 번 더 받고, 환경설정 > 보안의 「미서명 패키지 차단」이 켜져 있으면 거부됩니다([확장 패키지 서명](docs/extension/package-signing.md)).
 3. 업데이트 탭의 「고급」 → **직접 올린 ZIP 으로 업데이트** 에서 파일 이름을 고릅니다.
 4. 이후 과정은 자동 내려받기와 완전히 같습니다. 버전 비교도 똑같이 적용됩니다.
 
@@ -1151,6 +1166,8 @@ sudo chown -R www-data:www-data storage bootstrap/cache modules plugins template
 ```bash
 sudo php artisan core:update
 ```
+
+설치하지 않았고 이 프로젝트에도 없는 공식 번들 확장(새 판에 처음 들어온 플러그인 등)은 묻는 질문에서 배치하지 않음·모두·골라서 중 고릅니다. 답할 수 없는 실행은 배치하지 않으며, `--bundled-sources=none|all|식별자,…` 로 미리 정할 수 있습니다. 나중에 필요해지면 `php artisan core:bundled-sources list` 로 보고 `place <식별자>` 로 배치하고, 쓰지 않는 번들 원본은 `prune`(기본 미리보기, `--force` 로 실행)으로 정리합니다.
 
 #### `sudo` 가 권장되는 이유
 
@@ -1178,7 +1195,15 @@ sudo php artisan core:update
 sudo php artisan core:update --yes
 ```
 
-`--yes` 없이 실행하면 「확인이 필요한 작업이라 실행하지 않았습니다」 경고와 함께 종료 코드 1 로 끝납니다(7.1.6 이전 판은 아무 일도 하지 않고 종료 코드 0 으로 끝났습니다). `--force` 는 버전 비교를 건너뛰는 옵션이며 확인을 대신하지 않습니다. 확장 업데이트(`module:update`·`plugin:update`·`template:update`)와 삭제 명령도 같은 `--yes` 를 받습니다.
+`--yes` 없이 실행하면 「확인이 필요한 작업이라 실행하지 않았습니다」 경고와 함께 종료 코드 1 로 끝납니다(7.1.6 이전 판은 아무 일도 하지 않고 종료 코드 0 으로 끝났습니다). `--force` 는 버전 비교를 건너뛰는 옵션이며 확인을 대신하지 않습니다. 확장 업데이트(`module:update`·`plugin:update`·`template:update`·`language-pack:update`)와 삭제 명령도 같은 `--yes` 를 받습니다.
+
+7.2.0 부터는 패키지 서명도 확인합니다. 답할 수 없는 실행에서 서명 없는 배포본(또는 서버에 `sodium` 확장이 없어 검증할 수 없는 배포본)은 `--allow-unsigned` 를 붙여야 진행하며, `--yes`·`--force` 는 이 확인을 대신하지 않습니다. 환경설정 「미서명 패키지 차단」이 켜져 있으면 `--allow-unsigned` 도 무시됩니다.
+
+```bash
+sudo php artisan core:update --yes --allow-unsigned   # 서명 없는 배포본을 받아야 할 때만
+```
+
+배포 스크립트는 종료 코드로 결과를 판정합니다. `0` 성공, `1` 실패·확인 거절, **`75` 재개 필요**(업그레이드 스텝을 새 프로세스로 이어야 해 멈춤 — 출력된 `core:execute-upgrade-steps …` 명령을 이어서 실행)입니다. 전체 표는 [docs/cheatsheet.md](docs/cheatsheet.md) 를 봅니다.
 
 ### 방법 3: 수동 ZIP 업그레이드 (GitHub 에서 받기 어려운 환경)
 
@@ -1195,7 +1220,14 @@ unzip <파일명>.zip -d /tmp/g7-new
 sudo php artisan core:update --source=/tmp/g7-new
 ```
 
-`--source=` 옵션은 다운로드 단계를 건너뛰고 지정 경로의 파일을 신버전으로 간주합니다.
+`--source=` 옵션은 다운로드 단계를 건너뛰고 지정 경로의 파일을 신버전으로 간주합니다. 풀어 둔 디렉터리는 배포 패키지가 아니므로 서명 확인 대상이 아닙니다.
+
+압축을 풀지 않고 ZIP 그대로 지정하려면 `--zip=` 을 씁니다. 이때는 서명을 확인하므로 같은 릴리스의 `<ZIP 이름>.sig.json` 을 ZIP 옆에 두거나 `--signature=` 로 경로를 줍니다.
+
+```bash
+sudo php artisan core:update --zip=/tmp/g7-<버전>.zip                       # ZIP 옆 g7-<버전>.zip.sig.json 자동 사용
+sudo php artisan core:update --zip=/tmp/g7.zip --signature=/tmp/g7.zip.sig.json
+```
 
 ### 사용자군별 단계적 업그레이드
 
@@ -1210,7 +1242,11 @@ sudo php artisan core:update --source=/tmp/g7-new
 
 특정 베타 버전으로의 단계 업그레이드는 `--source=` 또는 `--zip=` 옵션으로 해당 버전 릴리스 ZIP 을 지정하여 진행합니다.
 
-> 사용자군별 상세 분기는 [CHANGELOG.md](CHANGELOG.md) 의 해당 버전 "Upgrade Notice" 섹션을 참고하세요.
+> 버전별로 업데이트 전후에 확인할 것은 업그레이드 안내 문서에 모아 둡니다 — [7.1.x → 7.2.0](docs/upgrade/7.1.x-to-7.2.0.md) · [7.0.x → 7.1.0](docs/upgrade/7.0.x-to-7.1.0.md). 베타 시절 판의 분기는 [CHANGELOG.md](CHANGELOG.md) 의 해당 버전 "Upgrade Notice" 섹션을 참고하세요.
+
+#### 개발자 화면 자리(custom)가 있는 사이트
+
+7.2.0 부터 개발자가 직접 만든 화면을 두는 예약 자리(`routes/custom.php`·`app/Custom`·`custom/` 등)를 코어 업데이트가 덮지도 지우지도 않습니다. 업데이트 패키지에 이 자리의 파일이 들어 있거나(목록은 `.env` 의 `G7_UPDATE_RESERVED_PATHS` 로 조정), `custom/composer.json` 의 개발자 패키지가 새 코어와 맞지 않으면 **아무 파일도 바꾸기 전에 멈추고** 표로 알립니다. 관리자 화면 업데이트도 같습니다. 해결 순서는 [개발자 화면 만들기](docs/custom-development.md) 를 봅니다.
 
 ### 권한/캐시 트러블슈팅
 
@@ -1243,6 +1279,14 @@ sudo chown -R www-data:www-data bootstrap/cache storage
 
 소유자를 웹 서버 사용자로 일괄 정렬한 뒤 업그레이드를 재실행합니다.
 
+#### 업데이트 뒤 아이콘·글꼴이 빠지거나 `/build/ext` 가 403
+
+업데이트 뒤 화면 위에 「항목을 불러오지 못했습니다. pretendard, fontawesome」 같은 안내가 뜨거나 `/build/ext/…` 요청이 403 이면, 웹서버 계정이 정적 게시 폴더를 읽지 못하는 것입니다. 확장 폴더를 `0770` 처럼 좁게 둔 사이트나 파일 기본 권한을 좁게 쓰는 서버(umask `0027`·`0077`)에서 7.1.5 이전 판의 업데이트가 이렇게 만들 수 있었습니다(7.1.6 에서 고침). 읽기 권한을 돌려줍니다.
+
+```bash
+sudo chmod o+rx public/build/ext
+```
+
 #### 업그레이드 도중 자동 롤백 후 부팅 실패
 
 beta.6 이상에서는 자동 롤백 후 잔존 파일을 추가 진단하는 `hotfix:rollback-stale-files` 커맨드가 제공됩니다.
@@ -1251,7 +1295,7 @@ beta.6 이상에서는 자동 롤백 후 잔존 파일을 추가 진단하는 `h
 # 진단 모드 (실제 삭제 없음)
 sudo php artisan hotfix:rollback-stale-files
 
-# 운영자 확인 후 실제 정리
+# 운영자 확인 후 실제 정리 (답할 수 없는 실행에서는 --yes 를 붙입니다)
 sudo php artisan hotfix:rollback-stale-files --prune
 ```
 
@@ -1291,6 +1335,21 @@ TRUSTED_PROXIES=*
 지정하지 않으면 화면이 표시되지 않거나(혼합 콘텐츠 차단), 결제 통보가 수신되지 않고, 모든
 방문자가 같은 IP 로 기록됩니다. 값 선택 기준과 도입 시 후속 조치는
 [docs/backend/reverse-proxy.md](docs/backend/reverse-proxy.md) 를 참고하세요.
+
+`.env` 를 고칠 수 없는 호스팅에서는 관리자 **환경설정 > 고급** 의 신뢰 프록시 설정으로 같은 값을
+고릅니다(7.2.0). 저장하기 전에 [이 값으로 지금 검사] 로 방문자 IP 와 HTTPS 인식이 어떻게 달라지는지
+확인할 수 있습니다. `.env` 에 이미 값을 적어 둔 사이트는 그 값이 화면에 그대로 보이며 업그레이드만으로
+바뀌지 않습니다.
+
+환경설정 > 보안의 **「HTTPS 강제 적용」** 을 켜면 http 요청을 https 로 이동시킵니다(GET 301, 그 밖 308).
+프록시 뒤에서는 위 신뢰 프록시 설정이 있어야 https 요청으로 인정되며, 없으면 이동이 끝없이 반복됩니다.
+관리자 화면에 들어갈 수 없게 되었다면 서버에서 끕니다.
+
+```bash
+php artisan settings:set security.force_https false
+```
+
+상세는 [docs/backend/middleware.md](docs/backend/middleware.md) 「HTTPS 강제 이동」.
 
 ### 사이트 주소(APP_URL)와 허용 도메인
 
@@ -1399,3 +1458,17 @@ cron에 아래 항목을 등록합니다.
 cron 을 걸 수 없거나 명령줄 자체를 쓸 수 없는 호스팅에서는 **환경설정 > 시스템 > 예약 작업** 에서 호출 주소를 발급받아 대신 등록합니다 — [방법 6](#방법-6-cli-없는-호스팅) 의 「설치 후 반드시 할 것」을 봅니다. 큐 워커도 상시 실행할 수 없는 환경에서는 설치 프로그램이 큐를 요청 안에서 즉시 처리하도록 설정하므로 별도 조치가 필요 없습니다.
 
 > 상세 내용은 [docs/requirements.md](docs/requirements.md)를 참조하세요.
+
+### 여러 서버가 같은 DB 를 쓸 때
+
+웹 서버를 여러 대 두거나 검수 서버를 같은 DB 에 붙이는 구성에서는 다음을 정합니다(7.2.0).
+
+| `.env` | 용도 |
+|--------|------|
+| `G7_SCHEDULER=off` | 그 서버의 예약 실행(서버 cron·웹 크론 주소·방문 트리거)을 끕니다. 스케줄은 한 대만 돌립니다. |
+| `G7_RUNTIME_ROLE=stage` | 같은 DB·캐시를 쓰는 검수 서버. 스케줄·큐 워커·사이트맵·방문 분석을 돌리지 않고, 확장 켜기·끄기·제거와 관리자 화면의 코어·확장 변경을 막습니다. |
+| `G7_PUBLIC_LINK_URL` | 메일·알림·문자에 넣을 링크 주소. 공개 주소와 다른 주소로 띄운 서버도 공개 주소로 링크를 보냅니다. |
+
+검수 서버를 먼저 올린 뒤 운영 서버에서는 `php artisan stage:apply-to-live` 로 파일·레이아웃·미뤄 둔 정리를
+맞춥니다. 순서와 범위는 [docs/backend/runtime-role.md](docs/backend/runtime-role.md), 백업·공유할 storage 경로는
+`php artisan storage:paths` 로 확인합니다.

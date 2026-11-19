@@ -171,6 +171,50 @@ class CoreServiceProvider extends ServiceProvider
 }
 ```
 
+### 코어 저장소 계약을 직접 구현한 확장 (7.1.0~7.2.0)
+
+코어 저장소 계약(`App\Contracts\Repositories\*`)은 확장이 주입받아 쓰는 공개 표면이다. 주입받아 쓰기만 하는 확장은 할 일이 없다. **코어 계약을 직접 구현한 클래스를 바인딩한 확장**은 7.2.0 에서 더해진 아래 메서드를 구현하고 시그니처를 맞춰야 한다(빠지면 클래스를 불러올 때 오류가 난다). 부모 행을 지우는 경로가 자식 행을 DB 연쇄 삭제에 맡기지 않고 명시적으로 지우도록 바뀌면서 더해진 것이 대부분이다.
+
+| 계약 | 7.2.0 변경 |
+| --- | --- |
+| `MenuRepositoryInterface` | `deleteMenuPermissions(Menu $menu): int` 추가. `getAccessibleNavigationMenus(User $user, ?array $loadedModuleIdentifiers = null, ?array $loadedPluginIdentifiers = null)` — 이 서버가 불러온 모듈·플러그인 식별자를 받는 선택 인자 두 개 추가 |
+| `RoleRepositoryInterface` | `deleteMenuPermissions(Role $role): int` 추가 |
+| `UserRepositoryInterface` | `deleteMenuPermissions(User $user): int` 추가 |
+| `LayoutRepositoryInterface` | 삭제된 행 포함 조회 `getWithTrashedBySource(string $identifier, LayoutSourceType $sourceType)`·`getWithTrashedByTemplateId(int $templateId)` 추가 |
+| `LayoutExtensionRepositoryInterface` | `getWithTrashedBySource(LayoutSourceType $sourceType, string $identifier)`·`getWithTrashedByTemplateId(int $templateId)`·`forceDeleteRow(LayoutExtension $extension): void` 추가 — 인자 순서가 `LayoutRepositoryInterface` 와 다르다 |
+| `LayoutExtensionVersionRepositoryInterface` | `getRecentVersionsWithContent(int $extensionId, int $limit)` 추가 |
+| `LayoutPreviewRepositoryInterface` | `deleteByTemplateId(int $templateId): int` 추가 |
+| `NotificationTemplateRepositoryInterface` | `delete(NotificationTemplate $template): bool` 추가 |
+| `PermissionRepositoryInterface` | `getChildrenByParent(int $parentId)` 추가 |
+| `ScheduleHistoryRepositoryInterface` | `deleteByScheduleIds(array $scheduleIds): int` 추가 |
+| `LayoutVersionRepositoryInterface` | `getVersions(int $layoutId, ?int $limit = null)` — 선택 인자 `$limit` 추가 |
+| `IdentityVerificationLogRepositoryInterface` | `purgeOlderThan(int $days, ?\Closure $beforeEachBatch = null)` — 배치마다 지우기 직전 그 배치의 로그 ID 목록으로 부르는 선택 콜백 추가 |
+| `AttachmentRepositoryInterface` | [storage-driver.md 「코어 첨부 저장소 계약에 더해진 메서드」](../extension/storage-driver.md#코어-첨부-저장소-계약에-더해진-메서드-720) |
+
+동작이 바뀐 메서드도 있다(시그니처는 같다).
+
+- `UserRepositoryInterface::findManyByIdsKeyed()` 는 표시 이름 계산에 필요한 칸(`User::DISPLAY_COLUMNS`)을 읽는다.
+- `UserRepositoryInterface::getNamesByIds()` 는 원본 이름을 돌려주고, 이름이 없는 회원은 빈 문자열이다. 화면에 보일 이름은 `findManyByIdsKeyed()` 로 회원을 읽어 표시 이름 계산기(`App\DisplayName\DisplayNameResolver::resolveMany()`)로 만든다.
+
+7.1.x 에서 더해진 메서드도 같은 의무다. 7.2.0 으로 한 번에 올리는 확장은 아래도 함께 확인한다.
+
+| 판 | 계약 | 변경 |
+| --- | --- | --- |
+| 7.1.6 | `IdentityVerificationLogRepositoryInterface` | `findLatestRequestedSince(string $providerId, string $targetHash, string $purpose, \DateTimeInterface $since)`(재요청 대기 판정 — 발송 실패로 끝난 challenge 는 제외), `findByIdForUpdate()`, 조건부 상태 전이 `incrementAttemptsIfAllowed()`·`markVerifiedIfPending()`·`markFailedIfPending()`·`markCancelledIfPending()`·`consumeIfUnconsumed()`·`releaseConsumption()` 추가. `findRecentVerified()` 에 선택 인자 `?string $providerId = null` 추가 |
+| 7.1.6 | `UserRepositoryInterface` | `extendTokenExpiration(int $tokenId, \DateTimeInterface $expiresAt): bool`, `deleteSessionsByUserIds(array $ids, ?string $exceptSessionId = null): int` 추가 |
+| 7.1.6 | `PasswordResetTokenRepositoryInterface` | `deleteMatching(PasswordResetToken $token): int` 추가 |
+| 7.1.4 | `ModuleRepositoryInterface`·`PluginRepositoryInterface`·`TemplateRepositoryInterface` | `findActiveByIntegration(string $type, string $identifier): Collection` 추가 — 그 확장을 선택 연동(`integrations`)으로 선언한 활성 확장 조회 |
+| 7.1.1 | `UserRepositoryInterface` | `findIdsByPermissionIdentifier()`·`findIdsByUuids()`·`findNotifiablesByIds()` 추가, `searchByKeyword()` 에 선택 인자 `bool $excludeWithdrawn = false` |
+| 7.1.1 | `MenuRepositoryInterface` | `getMenusByExtension()`·`getTopLevelMenus()` 에 선택 인자 `?string $scopePermission = null` |
+| 7.1.1 | `RoleRepositoryInterface`·`PermissionRepositoryInterface` | `getUserIdsByIdentifiers()`, `getScopedGrantsForRole()` 추가 |
+| 7.1.1 | `LayoutExtensionRepositoryInterface` | `getTrashedBySource()` 추가, 해석 메서드(`getResolvedByTemplateId()`·`getResolvedExtensionPoints()`·`getResolvedOverlays()`·`resolveOverrides()`)와 `restoreBySource()` 를 계약에서 뺐다 |
+| 7.1.0 | `UserRepositoryInterface` | `findManyByIdsKeyed()`·`passwordExpiryCandidateQuery()`·`queryByIds()` 추가, `getPaginatedUsers()`·`getStatistics()`·`incrementFailedAttempts()` 에 선택 인자 |
+| 7.1.0 | `LayoutRepositoryInterface`·`LayoutExtensionRepositoryInterface` | 소프트 삭제·복원·영구 삭제 계열(`softDelete*`·`restore*`·`forceDelete*`·`getTrashedBySource()`·`findWithTrashedBy*()`)과 `countBySource()`·`eachWithContent()`·`existsForOverlay()`·`saveAttributes()`·`saveFragmentKey()`·`saveModelAttributes()`·`getWithoutOriginalContentBySource()` 추가 |
+| 7.1.0 | `LayoutVersionRepositoryInterface`·`LayoutExtensionVersionRepositoryInterface` | `saveVersion()` 에 선택 인자 `array $summaryExtra = []` |
+| 7.1.0 | 그 밖 | `ActivityLogRepositoryInterface::deleteOlderThanForActions()`(그리고 `deleteOlderThan()` 선택 인자), `IdentityVerificationLogRepositoryInterface::chunkPendingPastDue()`·`expireIfPending()`, `MenuRepositoryInterface::getRoleIdsByMenuIds()`, `NotificationDefinitionRepositoryInterface::create()`·`delete()`, `NotificationLogRepositoryInterface::getRecent()` 선택 인자, `NotificationTemplateRepositoryInterface::hasNonDefaultByDefinitionId()`, `PermissionRepositoryInterface::getScopedGrantsWithoutOwnerMetadata()`, `RoleRepositoryInterface::getByIdentifiers()`·`getIdentifiersByIds()`·`getUsersByIdentifiers()`, `SitemapUrlRepositoryInterface::removeManyForResource()`·`replaceManyForResources()` |
+
+정확한 시그니처는 `app/Contracts/Repositories/` 의 각 인터페이스를 본다.
+
 ### 의존성 주입 패턴
 
 #### Service에서 사용 (권장)

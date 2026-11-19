@@ -27,7 +27,7 @@ _bundled에서 TSX/TS 파일 수정한 경우    → 빌드 후 확장 업데이
 | `modules/**/resources/js/**/*.ts` (핸들러) | `module:build` + `module:update {id} --force` |
 | `templates/**/src/**/*.tsx` (컴포넌트) | `template:build` + `template:update {id} --force` |
 
-> **확장 프론트엔드 번들**: 활성 모듈/플러그인 IIFE 는 서버측에서 종류별 1개 번들로 병합 서빙된다(`/api/{modules,plugins}/bundle.{js,css}`). `{type}:update` 후 확장 캐시 버전이 bump 되면 번들이 자동 재생성된다(prod 캐시, dev 매 요청 concat). 구버전 번들 파일은 `ext-bundles:cleanup` 또는 `{type}:cache-clear` 로 정리. 상세: [module-assets.md](extension/module-assets.md#서버측-번들-병합).
+> **확장 프론트엔드 번들**: 활성 모듈/플러그인 IIFE 는 서버측에서 종류별 1개 번들로 병합 서빙된다(`/api/{modules,plugins}/bundle.{js,css}`). `{type}:update` 후 확장 캐시 버전이 bump 되면 번들이 자동 재생성된다(prod 캐시, dev 매 요청 concat). 구버전 번들 파일은 `ext-bundles:cleanup` 또는 `{type}:cache-clear` 로 정리. 상세: [module-assets.md](extension/module-assets.md#서버측-번들-병합-server-side-bundle).
 
 ---
 
@@ -148,7 +148,9 @@ php artisan migrate:rollback
 ```bash
 # 코어 업데이트
 php artisan core:check-updates                                    # 코어 업데이트 확인
-php artisan core:update [--yes] [--force] [--no-backup] [--no-maintenance] [--vendor-mode=auto|composer|bundled] [--bundled-sources=none|all|id,…]
+php artisan core:update [--yes] [--force] [--no-backup] [--no-maintenance] [--prune] [--vendor-mode=auto|composer|bundled] [--bundled-sources=none|all|id,…] [--rebuild-search-index]
+php artisan core:update --zip=<파일> [--signature=<파일>] [--allow-unsigned]   # 수동 ZIP 업데이트 — 서명 파일 생략 시 ZIP 옆 <zip>.sig.json (7.2.0)
+php artisan core:update --source=<디렉토리>|--local                # 압축 푼 디렉토리·로컬 코드베이스를 소스로 (GitHub 다운로드 생략)
 php artisan core:bundled-sources list|place <id…>|prune [--force] [--include-modified] [--source=|--zip=]   # 공식 번들 소스 보고·배치·정리 (7.1.1+, prune 기본 미리보기)
 php artisan core:execute-upgrade-steps --from=X.Y.Z --to=A.B.C [--yes|--force]   # 업그레이드 스텝 단독 실행 (HANDOFF 안내 또는 수동 복구용 — 단독 호출 시 migration·resync·.env·캐시·번들 확장 일괄 업데이트 자동 수행. CoreUpdateCommand 내부 spawn 은 --skip-* 5개 옵션 자동 전달)
 php artisan core:deploy-ledger-seed                               # deploy/** 서버 설정 조각의 해시 원장을 지금 디스크 내용으로 씨앗 (이미 있는 항목은 유지)
@@ -168,6 +170,7 @@ php artisan module:cache-clear [identifier?]
 php artisan module:seed [identifier] [--sample] [--count=key=value]
 php artisan module:check-updates [identifier?]
 php artisan module:update [identifier] [--yes] [--force] [--vendor-mode=auto|composer|bundled] [--layout-strategy=overwrite|keep] [--source=auto|bundled|github] [--dry-run [--json]] [--decisions=<파일>]
+php artisan module:update [identifier] --zip=<파일> [--signature=<파일>] [--allow-unsigned]   # 외부 ZIP — 서명 파일 생략 시 ZIP 옆 <zip>.sig.json (7.2.0)
 php artisan module:refresh-layout [identifier?] [--layout-strategy=keep|overwrite] [--dry-run [--json]] [--decisions=<파일>]   # 기본 keep(운영자 수정 유지)
 
 # 플러그인
@@ -181,6 +184,7 @@ php artisan plugin:cache-clear [identifier?]
 php artisan plugin:seed [identifier] [--sample] [--count=key=value]
 php artisan plugin:check-updates [identifier?]
 php artisan plugin:update [identifier] [--yes] [--force] [--vendor-mode=auto|composer|bundled] [--layout-strategy=overwrite|keep] [--source=auto|bundled|github] [--dry-run [--json]] [--decisions=<파일>]
+php artisan plugin:update [identifier] --zip=<파일> [--signature=<파일>] [--allow-unsigned]
 php artisan plugin:refresh-layout [identifier?] [--layout-strategy=keep|overwrite] [--dry-run [--json]] [--decisions=<파일>]   # 기본 keep(운영자 수정 유지)
 
 # 템플릿
@@ -192,23 +196,27 @@ php artisan template:uninstall [identifier] [--yes] [--force] [--delete-data]
 php artisan template:cache-clear [identifier?]
 php artisan template:check-updates [identifier?]
 php artisan template:update [identifier] [--layout-strategy=overwrite|keep] [--yes] [--force] [--source=auto|bundled|github] [--dry-run [--json]] [--decisions=<파일>]
+php artisan template:update [identifier] --zip=<파일> [--signature=<파일>] [--allow-unsigned]
 php artisan template:refresh-layout [identifier?] [--layout-strategy=keep|overwrite] [--dry-run [--json]] [--decisions=<파일>]   # 기본 keep(운영자 수정 유지)
-# --dry-run: 화면별 판정(유지·새 판 적용·병합·삭제 예정)과 새 판에서 빠져 지워질 선언 항목을 무변경으로 출력. --decisions 는 화면별 take_theirs|keep_mine JSON
+# --dry-run: 화면별 판정(유지·새 판 적용·병합·삭제 예정)과 새 판에서 빠져 지워질 선언 항목을 무변경으로 출력. --decisions 는 화면별 {"<화면 키>": "take-theirs|keep-ours"} JSON (화면 키는 --dry-run 출력의 키 칸)
 # --yes(-y): 확인 질문만 생략. --force(같은 판 재적용·다운그레이드·호환 검사 생략·같은 판 스텝 재실행·멈춘 업데이트 정리)와 별개
 # 같은 판 스텝 재실행: 검수 서버(G7_RUNTIME_ROLE=stage)의 --force 는 같은 내용(지문)으로 이미 끝난 스텝을 건너뛰고 고친 스텝만 다시 돈다. 운영 서버는 늘 다시 돈다
 # 이 서버의 업데이트가 끝나지 않은 채 남았으면(DB 판 기록 뒤 프로세스 종료) --force 없는 update 는 「업데이트 없음」 대신 안내 후 종료 코드 1 — --force 로 이어받는다
 # --layout-strategy=keep: 운영자가 고친 부분은 유지하고 손대지 않은 조각·설정에 새 버전을 병합 + 결과 표 (3종 공통)
-# update, uninstall 은 진행 확인을 묻는다. 확인에 답할 수 없는 실행(--no-interaction, cron, CI, 원격 명령)은 --force 가 없으면 사유를 출력하고 종료 코드 1 (3종과 language-pack:uninstall 공통, --force 가 확인 생략을 겸함)
+# update, uninstall 은 진행 확인을 묻는다. 확인에 답할 수 없는 실행(--no-interaction, cron, CI, 원격 명령)은 --yes(-y) 가 없으면 사유를 출력하고 종료 코드 1 (3종과 language-pack:uninstall 공통)
+#   자동 실행에는 --yes 를 붙인다. --force 도 확인을 생략하지만 위 --force 효과가 함께 켜지므로 그 효과가 필요할 때만 쓴다 (core:update 의 --force 는 확인을 생략하지 않는다 — --yes)
+# 미서명 패키지(GitHub·--zip·URL 소스, 7.2.0): 터미널에서는 한 번 더 묻고, 답할 수 없는 실행은 --allow-unsigned 가 없으면 아무것도 바꾸지 않고 종료 코드 1
+#   --yes·--force 는 이 확인을 대신하지 않는다. 예약 실행에 넣는다면 --allow-unsigned 를 명시. 「미서명 패키지 차단」이 켜져 있으면 --allow-unsigned 도 무시 (core:update·3종 update·language-pack:install|update 공통)
 
 # 언어팩
 php artisan language-pack:list
-php artisan language-pack:install [identifier] [--source=bundled|github|url] [--no-activate]
+php artisan language-pack:install [identifier] [--source=bundled|github|url] [--no-activate] [--allow-unsigned] [--signature=<서명 파일 https 주소>]   # --signature 는 --source=url 일 때 (생략하면 서명 없이 받음)
 php artisan language-pack:activate [identifier] [--force]
 php artisan language-pack:deactivate [identifier]
 php artisan language-pack:uninstall [identifier] [--cascade] [--yes] [--force]
 php artisan language-pack:cache-clear
 php artisan language-pack:check-updates [identifier?]
-php artisan language-pack:update [identifier] [--force] [--source=auto|bundled|github] [--yes|-y]   # 확인 질문 없음 — -y 는 다른 {type}:update 와 같은 형태로 부르기 위해 받음(효과 없음)
+php artisan language-pack:update [identifier] [--force] [--source=auto|bundled|github] [--yes|-y] [--allow-unsigned]   # 확인 질문 없음 — -y 는 다른 {type}:update 와 같은 형태로 부르기 위해 받음(효과 없음). GitHub 새 판이 미서명이면 --allow-unsigned
 
 # 설치 상태 조회 (DB·캐시·파일 무변경, GitHub 조회 없음 — 스크립트는 --json, schema 1)
 php artisan extension:list [--type=all|module|plugin|template|language-pack] [--json]
@@ -248,11 +256,63 @@ cron·스크립트는 화면 문구가 아니라 종료 코드로 성공을 판�
 | 코드 | 뜻 | 예 |
 | --- | --- | --- |
 | 0 | 성공 | 업데이트 완료, 업데이트 없음(GitHub 조회 성공 또는 릴리스 없음) |
-| 1 | 실패 | 번들 확장 일괄 업데이트 중 하나라도 실패, 결과를 남기지 못한 일괄 업데이트 프로세스, `*:check-updates` 의 GitHub 조회 실패, `*:update --source=github` 의 GitHub 조회 실패, 답할 수 없는 확인 질문, `extension:list` 설치 전 |
+| 1 | 실패 | 번들 확장 일괄 업데이트 중 하나라도 실패, 결과를 남기지 못한 일괄 업데이트 프로세스, `*:check-updates` 의 GitHub 조회 실패, `*:update --source=github` 의 GitHub 조회 실패, 답할 수 없는 확인 질문, 답할 수 없는 실행에서 미서명 패키지인데 `--allow-unsigned` 없음([패키지 서명](extension/package-signing.md#artisan-명령)), `extension:list` 설치 전 |
 | 2 | 입력 오류 | 알 수 없는 옵션 값(`extension:list --type=…`·`extension:reset-files-from-bundled --type=…`) |
 | 75 | 재개 필요 | `core:update`·`core:execute-upgrade-steps` 가 업그레이드 스텝 새 프로세스 재진입으로 멈춤 — 출력된 재개 명령(`core:execute-upgrade-steps --from=… --to=… --force`)을 이어서 실행 |
 
 > 훅 캐시는 확장 install/update 및 코어 업데이트(`clearAllCaches` → `extension:update-autoload`) 시 자동 재생성됩니다. 코어 리스너 코드 배포 시(구독 훅·`sync` 옵션만 바뀐 경우 포함)에는 `hooks:cache` 수동 실행 — stale 캐시는 오류 없이 이전 구독으로 동작합니다. 상세: [extension/hooks.md "정적 훅 매핑 캐시"](extension/hooks.md).
+
+### 운영 명령 (7.2.0)
+
+```bash
+# 패키지 서명 — 제작자 (서명 키는 한 번, 서명은 판마다)
+php artisan extension:keygen --label=<서명자> [--out=<비밀키 파일>]            # 공개키(base64)·key_id 출력, 같은 경로에 파일이 있으면 실패
+php artisan extension:sign <ZIP|패키지 디렉터리> --key=<비밀키 파일> [--type=] [--out=<디렉터리>] [--signed-at=]   # → <zip>.sig.json
+
+# 패키지 서명 — 운영자 (다른 제작사의 공개키를 vendor 범위와 함께 신뢰)
+php artisan extension:trust-key add "<공개키 base64>" --label=<서명자> --vendor=<vendor> [--vendor=…]   # vendor 1개 이상 필수, sirsoft 불가
+php artisan extension:trust-key list
+php artisan extension:trust-key remove <key_id>
+php artisan settings:set security.extension_block_unsigned true   # 「미서명 패키지 차단」 — 쓰는 확장이 모두 서명된 판을 낸 뒤에 켠다
+
+# 이미지 썸네일
+php artisan thumbnails:prune [--days=N] [--dry-run]                  # 규격이 바뀐·원본이 사라진·N일 넘게 쓰이지 않은 썸네일 정리 (매일 05:20 자동)
+php artisan thumbnails:pregenerate [--source=…] [--preset=…] [--limit=N] [--dry-run]   # 기존 이미지 썸네일 미리 만들기 (있는 것은 건너뜀)
+
+# 큐 작업 기록 정리
+php artisan queue:prune-records [--days=N]                           # 처리 기록·실패 작업 정리 (생략 시 환경설정 값, 기본 7일, 1~90 — 매일 04:10 자동)
+
+# 예약 작업 러너 (서버 cron 에 걸 때 — 웹 크론과 같은 소급 규칙)
+php artisan g7:schedule-run                                          # crontab: * * * * * cd /path/to/site && php artisan g7:schedule-run >> /dev/null 2>&1
+
+# 개발자 화면 (custom 예약 자리)
+php artisan custom:check [--json]                                    # 등록 상태 — 충돌·거부 라우트가 있으면 종료 코드 1
+php artisan custom:example board                                     # 견본 파일 생성 (같은 이름 파일이 하나라도 있으면 아무것도 쓰지 않음)
+php artisan custom:vendor-bundle [--check] [--force]                 # Composer 없는 서버용 custom/vendor-bundle.zip 만들기
+php artisan custom:vendor-verify                                     # 묶음 무결성 확인
+
+# 검색 인덱스
+php artisan search:index [--json]                                    # 점검만 — 색인 누락이 남아 있으면 종료 코드 1
+php artisan search:index --repair [--yes|-y]                         # 누락 인덱스 재생성 (잠금·재색인 — 유지보수 시간에). 재생성 뒤에도 남으면 표 재구축 명령을 안내
+
+# 자산 주소 방식 (정적 최적화 블록이 .js·.css·.json 응답을 가로채 관리자 화면이 뜨지 않을 때)
+php artisan g7:asset-url-mode [extension|extensionless]              # 생략하면 현재 방식과 진단 안내
+
+# 점검 모드
+php artisan down --secret=<값>                                       # /<값> 을 열면 우회 쿠키를 받고 들어간다 (7.2.0)
+php artisan up
+
+# 설정 때문에 관리 화면에 들어갈 수 없을 때
+php artisan settings:set security.force_https false                  # 「HTTPS 강제 적용」 끄기 (프록시 뒤에서 이동이 끝없이 반복될 때)
+php artisan settings:set drivers.file_delegation none                # 「웹서버 파일 위임」 끄기
+php artisan security:ip-restriction --disable                        # 관리자 IP 접근 제한 끄기 (목록·규칙은 남음 — 아래 「IP 접근 제한」)
+# 콘텐츠 보안 정책 강제 모드로 화면이 깨졌을 때: .env 에 G7_CSP_MODE=off(스크립트) · G7_CSP_STYLE_MODE=off(스타일, 7.1.6) 를 적고
+php artisan config:clear                                             # 두 값은 서로 독립 — 관리자 설정보다 우선하고 카드의 모드 선택이 잠긴다
+```
+
+> 비대화형 실행(cron·CI·예약 작업·`--no-interaction`)의 확장·언어팩·코어 설치·업데이트는 미서명 패키지면 `--allow-unsigned` 가 있어야 진행합니다. `--force`·`--yes` 는 이 확인을 대신하지 않으며, 업그레이드 스텝 재진입으로 멈춘 코어 업데이트는 종료 코드 75 로 끝납니다([종료 코드](#종료-코드-비대화형-실행스크립트)).
+>
+> 상세: [패키지 서명](extension/package-signing.md) · [이미지 썸네일](backend/image-thumbnails.md#명령과-스케줄) · [큐 관리](backend/queue-management.md#3-보관-기간과-정리) · [스케줄 관리](backend/scheduling.md) · [개발자 화면](custom-development.md) · [검색 시스템](backend/search-system.md) · [점검 모드 통과 수단](backend/core-update-system.md#점검-모드-통과-수단과-해제-시점-720) · [HTTPS 강제 이동](backend/middleware.md#https-강제-이동-720) · [웹서버 파일 위임 복구](backend/file-serving-delegation.md#6-복구) · [CSP 탈출구](backend/content-security-policy.md#5-env-로-모드-고정-탈출구)
 
 ### 부트스트랩 리소스 정적 게시
 
@@ -276,7 +336,7 @@ php artisan ext-static:cleanup
 ```bash
 # 코어 자동 롤백 후 활성 디렉토리에 잔존한 신 파일 진단/정리 (7.0.0-beta.6 신설)
 php artisan hotfix:rollback-stale-files                              # 진단 모드 (실제 삭제 없음)
-php artisan hotfix:rollback-stale-files --prune                      # 정리 (확인 프롬프트 동반, 확인 생략 옵션 없음 — 답할 수 없는 실행은 정리하지 않고 종료 코드 1)
+php artisan hotfix:rollback-stale-files --prune [--yes|-y]           # 정리 (확인 프롬프트 동반 — --yes 는 확인에 「예」로 답함. 답할 수 없는 실행은 --yes 가 없으면 정리하지 않고 종료 코드 1)
 php artisan hotfix:rollback-stale-files --backup=<경로>              # 특정 백업 디렉토리 지정
 ```
 
@@ -375,6 +435,10 @@ php artisan layout:decompile --all                 # 번들 확장·템플릿의
 php artisan layout:decompile <path> --sync         # 컴파일 산출을 짝 .json 에 기록 (짝이 없으면 생성)
 php artisan layout:decompile --all --check         # 짝 .json 이 소스와 일치하는지 대조만 (불일치 시 non-zero)
 php artisan layout:decompile <path> --out=<file>   # 진단용 단일 JSON 덤프 (--out 지정 시에만 기록)
+
+# 설치된(DB) 레이아웃 점검
+php artisan layout:check-installed [--template=<id>] [--json]   # 왕복 대조·조각 등록·routes.json requires 형식 오류 — 오류가 있으면 종료 코드 1 (requires 형식 오류는 경고, --json 의 route_requires_warnings)
+php artisan layout:audit-expressions [--source=db|files|all] [--json] [--limit=50]   # 저장된 레이아웃·조각·버전 이력·미리보기와 레이아웃 파일을 강화된 보안 검사로 훑음 (값은 바꾸지 않음, 위반이 있으면 종료 코드 1, 7.1.0)
 ```
 
 설치 소스는 기본 `auto`(`.g7.html` 우선 → 설치 시점 인메모리 컴파일)이며, 컴파일러 회귀가 의심될 때

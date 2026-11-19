@@ -86,7 +86,7 @@ const message = G7Core.t('admin.users.pagination_info', {
 
 ### 컴포넌트에서 t 함수 선언 패턴
 
-> 상세 내용: [components.md](components.md#6-다국어-번역-g7coret)
+> 상세 내용: [components.md](components.md#다국어-처리-g7coret)
 
 ```tsx
 // 컴포넌트 파일 상단에 선언
@@ -584,6 +584,22 @@ const token = G7Core.api.isSameOriginUrl(endpoint) ? G7Core.api.getToken() : nul
 
 확장이 `fetch` 로 직접 요청하며 `getToken()` 을 실을 때도 같은 원칙을 따른다. 대상 주소가 레이아웃 prop 이나 응답 본문처럼 바깥에서 정해지는 값이면 먼저 `isSameOriginUrl(url)` 로 확인한다. 이 판정은 `apiCall` 이 토큰을 실을지 정할 때와 같은 기준이다(engine-v1.73.0).
 
+**비회원 401 — 화면에 머문다 (engine-v1.88.2, 코어 7.1.5)**: 토큰 없이 보낸 요청이 401 로 거부되면 세션 만료가 아니라 비회원이 권한 없는 기능을 누른 것이다. `G7Core.api` 는 이 경우 토큰 갱신·로그인 화면 이동을 하지 않고 오류를 그대로 reject 한다. 확장 핸들러는 `G7Core.api.isAnonymousUnauthorized(error)`(상태 401 이고 요청에 토큰을 싣지 않았으면 `true`)로 이 경우를 가려 안내만 띄우고 입력을 그대로 둔다. 공용 안내 문구 키는 `core.errors.login_required_for_action` 이다.
+
+```typescript
+try {
+  await G7Core.api.post('/api/modules/vendor-module/uploads', formData);
+} catch (error) {
+  if (G7Core.api.isAnonymousUnauthorized(error)) {
+    G7Core.toast.warning(G7Core.t('core.errors.login_required_for_action'));
+    return; // 쓰던 내용은 그대로 둔다
+  }
+  throw error;
+}
+```
+
+토큰을 실은 요청의 401(로그인한 사람의 세션 만료)은 종전처럼 토큰 갱신을 시도하고, 실패하면 로그인 화면으로 옮긴다.
+
 ---
 
 ## WebSocket (G7Core.websocket)
@@ -713,8 +729,18 @@ const unsubscribe = G7Core.TransitionManager.subscribe((isPending) => {
 ### G7Core.useTransitionState (React Hook)
 
 ```tsx
-const { isPending } = G7Core.useTransitionState();
+const { isTransitioning, refreshingSources } = G7Core.useTransitionState();
+
+// 값을 둔 채 다시 받는 중인 데이터 소스만 흐리게
+const isRefreshing = refreshingSources?.has('products') === true;
 ```
+
+| 값 | 타입 | 뜻 |
+|---|---|---|
+| `isTransitioning` | `boolean` | 페이지 전환 중(데이터 로딩 중)인지 |
+| `refreshingSources` | `ReadonlySet<string>` | 이미 받은 값을 그대로 둔 채 다시 받는 중인 데이터 소스 id(같은 화면 쿼리 갱신 등). 없으면 빈 집합 (engine-v1.82.0, 코어 7.1.1) |
+
+데이터 소스 오류 처리에서는 `{{error.refetch}}` 로 처음 불러오기 실패와 다시 받기 실패를 가른다([data-sources-advanced.md](data-sources-advanced.md)).
 
 ### G7Core.updateQueryParams
 
@@ -1125,7 +1151,7 @@ declare global {
       shallowArrayEqual: <T>(a: T[], b: T[]) => boolean;
       shallowObjectEqual: <T extends Record<string, any>>(a: T, b: T) => boolean;
       useResponsive: () => { width: number; isMobile: boolean; isTablet: boolean; isDesktop: boolean; matchedPreset: 'mobile' | 'tablet' | 'desktop' };
-      useTransitionState: () => TransitionState;
+      useTransitionState: () => { isTransitioning: boolean; refreshingSources?: ReadonlySet<string> };
       useTranslation: () => { t: TranslationFunction };
 
       // 방문자 동의 (engine-v1.78.0+) — 사용자 템플릿에서만 런타임이 있다

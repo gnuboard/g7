@@ -143,6 +143,8 @@
 
 `checkAll{Type}ForUpdates()` 결과에는 조회에 실패한 확장 목록 `failures`(`identifier`·`reason`)가 함께 실린다. 업데이트 미리보기(API `…/update/preview`, CLI `--dry-run --json`)는 같은 사유를 `check_error`(없으면 `null`)로 싣는다. GitHub 요청 한도(비인증 시간당 60회)에 걸리면 `.env` 의 `G7_UPDATE_GITHUB_TOKEN` 을 설정한다.
 
+확장이 `GithubHelper::fetchLatestRelease($owner, $repo, $token)` 를 직접 부르면 반환 배열의 `status`(7.2.0)로 같은 구분을 한다 — 응답을 받았을 때의 HTTP 상태 코드이고 연결 실패면 `null` 이다. `version` 이 `null` 일 때 `status` 가 404 면 「릴리스가 아직 없음」, 그 밖의 상태(403 요청 한도 초과·5xx 등)나 `null`(연결 실패, `error` 에 사유)은 조회 실패로 다룬다.
+
 `module:update` / `plugin:update` / `template:update` 는 실행 전에 확인을 묻습니다. cron, CI, 원격 명령, `--no-interaction` 처럼 확인에 답할 수 없는 실행에서 `--yes`·`--force` 가 없으면 업데이트를 시작하지 않은 사유와 안내를 출력하고 **종료 코드 1** 로 끝나므로(아무것도 바뀌지 않음, 7.1.6 부터 — 종전에는 종료 코드 0 이라 실행되지 않은 것을 알 수 없었습니다) 자동 실행에는 `--yes`(`-y`, 7.1.6)를 붙입니다 — 확인에만 「예」로 답하고 버전 비교는 그대로 합니다. 터미널에서 직접 「아니오」를 답한 취소는 종료 코드 0 입니다. 제거 명령(`module:uninstall` / `plugin:uninstall` / `template:uninstall` / `language-pack:uninstall`)도 같은 규칙입니다. `--force` 는 확인 생략에 더해 같은 판 재적용·다운그레이드 허용·코어 호환 검사 생략·같은 판 업그레이드 스텝 재실행·멈춘 업데이트 정리를 함께 켜므로, 그 효과가 필요한 경우에만 붙입니다. 언어팩 명령(`language-pack:update`)은 확인을 묻지 않지만, 확장 일괄 갱신 스크립트를 같은 형태로 돌릴 수 있도록 `--yes` 를 받습니다(효과 없음). `--yes` 를 가진 명령은 모두 `-y` 축약도 받습니다.
 
 **미서명 패키지 확인 (7.2.0~)**: GitHub·`--zip` 소스가 서명되지 않은 패키지(또는 이 서버에 sodium 이 없어 검증할 수 없는 패키지)면 업데이트 확인과 별도로 계속할지 한 번 더 묻습니다. 답할 수 없는 실행은 `--allow-unsigned` 가 없으면 아무것도 바꾸지 않고 **종료 코드 1** 로 끝나며, `--force`·`--yes` 는 이 확인을 대신하지 않습니다(`--yes` 를 준 대화형 실행도 이 확인은 묻습니다). 그래서 미서명 판을 받을 수 있는 자동 실행에는 `--force` 와 함께 `--allow-unsigned` 를 명시합니다. 환경설정 > 보안 「미서명 패키지 차단」이 켜져 있으면 `--allow-unsigned` 도 무시되고, 서명 불일치·신뢰하지 않는 키는 어떤 옵션으로도 진행하지 않습니다. `--source=bundled` 는 코어와 함께 배포된 원본이라 이 확인이 없습니다(기록 `bundled`). 상세: [패키지 서명](package-signing.md)
@@ -930,22 +932,23 @@ Body: { "layout_strategy": "keep" }
 
 | 커맨드 | 설명 |
 |--------|------|
-| `module:install [identifier] [--vendor-mode=auto] [--force]` | 모듈 설치 (`--force` 시 활성 디렉토리를 원본으로 덮어쓰고 재설치) |
+| `module:install [identifier] [--vendor-mode=auto] [--force] [--layout-source=auto\|json] [--with-dependencies] [--with-language-packs=none\|all\|식별자,…] [--rebuild-search-index]` | 모듈 설치 (`--force` 시 활성 디렉토리를 원본으로 덮어쓰고 재설치, `--with-dependencies`·`--with-language-packs` 는 7.1.4) |
 | `module:check-updates [identifier?]` | 모듈 업데이트 확인 (전체 또는 단일) |
-| `module:update [identifier] [--force] [--vendor-mode=auto] [--layout-strategy=overwrite]` | 모듈 업데이트 실행 |
-| `plugin:install [identifier] [--vendor-mode=auto] [--force]` | 플러그인 설치 (`--force` 동작은 모듈과 동일) |
+| `module:update [identifier] [--force] [--yes] [--source=auto\|bundled\|github] [--zip=] [--signature=] [--allow-unsigned] [--layout-strategy=overwrite\|keep] [--vendor-mode=auto] [--layout-source=auto\|json] [--dry-run [--json]] [--decisions=<파일>] [--rebuild-search-index]` | 모듈 업데이트 실행 |
+| `plugin:install [identifier] [--vendor-mode=auto] [--force] [--layout-source=auto\|json] [--with-dependencies] [--with-language-packs=none\|all\|식별자,…] [--rebuild-search-index]` | 플러그인 설치 (옵션 동작은 모듈과 동일) |
 | `plugin:check-updates [identifier?]` | 플러그인 업데이트 확인 (전체 또는 단일) |
-| `plugin:update [identifier] [--force] [--vendor-mode=auto] [--layout-strategy=overwrite]` | 플러그인 업데이트 실행 |
-| `template:install [identifier] [--force]` | 템플릿 설치 (`--force` 동작은 모듈과 동일) |
+| `plugin:update [identifier] [--force] [--yes] [--source=auto\|bundled\|github] [--zip=] [--signature=] [--allow-unsigned] [--layout-strategy=overwrite\|keep] [--vendor-mode=auto] [--layout-source=auto\|json] [--dry-run [--json]] [--decisions=<파일>] [--rebuild-search-index]` | 플러그인 업데이트 실행 |
+| `template:install [identifier] [--force] [--layout-source=auto\|json] [--with-dependencies] [--with-language-packs=none\|all\|식별자,…]` | 템플릿 설치 (옵션 동작은 모듈과 동일) |
 | `template:check-updates [identifier?]` | 템플릿 업데이트 확인 (전체 또는 단일) |
-| `template:update [identifier] [--force] [--layout-strategy=overwrite]` | 템플릿 업데이트 실행 |
+| `template:update [identifier] [--force] [--yes] [--source=auto\|bundled\|github] [--zip=] [--signature=] [--allow-unsigned] [--layout-strategy=overwrite\|keep] [--layout-source=auto\|json] [--dry-run [--json]] [--decisions=<파일>]` | 템플릿 업데이트 실행 |
 | `extension:list [--type=all\|module\|plugin\|template\|language-pack] [--json]` | 설치·번들 확장 상태 조회 (쓰기 없음, [형식](#설치-상태를-스크립트로-읽을-때--extensionlist-720)) |
 
 > 단일 `check-updates`는 `checkXxxUpdate()` 호출 후 커맨드에서 DB 갱신 (`updateByIdentifier()`). GitHub 조회에 실패한 확장이 있으면 실패 표 + 종료 코드 1 ([GitHub 조회 실패](#github-조회-실패-check_error-720))
-> `--layout-strategy`: 3종 공통. `overwrite` (기본) 또는 `keep` (운영자 수정본에 새 버전 3자 병합 + 결과 표 출력). 섹션 10 참조
+> `--layout-strategy`: 3종 공통. `overwrite` (기본) 또는 `keep` (운영자 수정본에 새 버전 3자 병합 + 결과 표 출력). 섹션 10 참조. 기본값은 `*:update` 기준이다 — `*:refresh-layout`(관리자 [레이아웃 갱신] 포함)은 7.2.0 부터 `keep` 이 기본이고 덮으려면 `--layout-strategy=overwrite`(API `layout_strategy=overwrite`)를 준다. 두 명령 모두 `--dry-run`(`--json`)으로 화면별 판정을 미리 보고 `--decisions=<파일>` 로 화면별 결정을 넘길 수 있다
 > `--layout-source`: 설치·업데이트·`refresh-layout` 9개 커맨드 공통. `auto`(`.g7.html` 우선) 또는 `json`(짝 `.json` 이 있으면 원본 JSON 으로 등록 — 문제 해결용). **생략하면 설정 `LAYOUT_INSTALL_SOURCE`(`template.layout_markup.install_source`, 기본 `auto`)를 따른다**(7.1.1~ — 그 전에는 생략 시 항상 `auto` 여서 `.env` 의 `json` 이 덮였다)
 > 관리자 화면: 확장(템플릿·모듈·플러그인) 설치·업데이트·레이아웃 갱신 창의 접힌 「고급 설정」에서 같은 값을 고른다(자동(권장) / 원본 JSON 우선(문제 해결용)). 창을 열 때마다 자동으로 돌아가며, 고른 값은 요청 본문 `layout_source` 로 가서 **그 요청 동안만** 적용된다
 > `--vendor-mode`: 모듈/플러그인 전용. `auto|composer|bundled` — Vendor 설치 방식 선택 (템플릿 미지원)
+> `--zip`·`--signature`·`--allow-unsigned`(서명 옵션 7.2.0)·`--source`·`--yes`·`--dry-run`·`--decisions`·`--rebuild-search-index` 의 뜻과 제약은 [module-commands.md 「모듈 업데이트」](module-commands.md#모듈-업데이트)에 있다 — 플러그인·템플릿도 같다(`--vendor-mode`·`--rebuild-search-index` 는 템플릿에 없다)
 > `--force` (update): 버전 비교를 건너뛰고 강제 재설치 (파일 손상, 수동 수정 복원 시 사용)
 > `--allow-unsigned`·`--signature=` (update, 7.2.0): 미서명 패키지 확인과 `--zip` 의 서명 파일 지정 — §2 「미서명 패키지 확인」, [패키지 서명](package-signing.md#artisan-명령). install 은 `_bundled`·`_pending` 원본만 설치하므로 이 옵션이 없다
 > `--force` (install): 이미 설치된 확장이라도 `_bundled`/`_pending` 원본으로 활성 디렉토리를 덮어쓰고 재설치 — 불완전 활성 디렉토리(manifest 누락 등) 복구 시 사용

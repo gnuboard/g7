@@ -61,6 +61,13 @@ G7은 **동적 로딩** 기반의 확장 시스템을 제공합니다:
 | [module-layouts.md](module-layouts.md) | 레이아웃 등록, 오버라이드, 상속 |
 | [module-commands.md](module-commands.md) | Artisan 커맨드 (install, activate, uninstall) |
 | [module-i18n.md](module-i18n.md) | 백엔드/프론트엔드 다국어 분리 |
+| [module-schedules.md](module-schedules.md) | 확장 스케줄 선언 `getSchedules()` — 항목 키, `schedules` 표 동기화, 옛 형식 호환 (코어 7.2.0~) |
+| [module-settings.md](module-settings.md) | 모듈 환경설정 — defaults.json, SettingsService, 설정 화면 |
+| [module-assets.md](module-assets.md) | 프론트엔드 에셋(js·css)과 빌드, 핸들러 등록 규칙, 확장 CSS 자기 공급 규약(`assets.css.namespace`) |
+| [extension-components.md](extension-components.md) | 확장 컴포넌트 등록 — `{확장식별자}.{이름}`, 템플릿 전용 판본, 대체 권한은 템플릿 전용 |
+| [storage-driver.md](storage-driver.md) | 파일 저장 `StorageInterface` — 카테고리·경로, 비공개 첨부 저장소, 저장 파일명 확장자, 트랜잭션 파일 보상 |
+| [cache-driver.md](cache-driver.md) | 캐시 `CacheInterface` — 키 접두 격리, TTL 중앙 관리, 쓰기 실패 fail-soft |
+| [module-identity-settings.md](module-identity-settings.md) | 모듈·플러그인 본인인증 정책·목적 선언과 설정 탭, 도메인 액션 가드 |
 
 ### 레이아웃 확장
 
@@ -68,6 +75,7 @@ G7은 **동적 로딩** 기반의 확장 시스템을 제공합니다:
 |------|------|
 | [layout-extensions.md](layout-extensions.md) | 동적 UI 주입 (Overlay, Extension Point), 템플릿 오버라이드 |
 | [attachment-uploader.md](attachment-uploader.md) | 첨부 업로더 확장점 `attachment_uploader` — 업로더 계약, 업로더 플러그인 규약, 놓인 자리와 제외 대상 |
+| [content-media.md](content-media.md) | 본문 미디어 업로드 계약 — 편집기 본문의 이미지·동영상·오디오를 확장이 자기 저장소·권한·정책으로 받는 계약(`ContentMediaRegistrar`·어댑터 `ContentMediaStore`) |
 
 ### 플러그인 개발
 
@@ -81,6 +89,9 @@ G7은 **동적 로딩** 기반의 확장 시스템을 제공합니다:
 |------|------|
 | [extension-manager.md](extension-manager.md) | Composer 오토로드, 서비스 등록, hidden 필터링 |
 | [extension-update-system.md](extension-update-system.md) | 업데이트 감지·실행·롤백, `_bundled`/`_pending`, GitHub·`--zip` 업데이트 |
+| [upgrade-step-guide.md](upgrade-step-guide.md) | 업그레이드 스텝 작성 — 실행 경로(A·B·C), 로그, 핸드오프 |
+| [vendor-bundle.md](vendor-bundle.md) | Composer 를 쓸 수 없는 환경용 vendor 묶음 — 빌드·검증 명령, VendorMode |
+| [language-packs.md](language-packs.md) | 언어팩 — 보호 행, 설치·활성화 규칙, 업데이트 출처, 패키지 서명 |
 | [package-signing.md](package-signing.md) | 패키지 서명과 무결성 검증 — 서명 파일 형식, 제작자 서명 절차, 운영자 신뢰 키·미서명 정책, 검증 상태·오류 응답 |
 | [extension-icons.md](extension-icons.md) | 확장 아이콘 — 파일 관례·manifest icon 필드·규격·언어팩 합성 |
 
@@ -102,6 +113,9 @@ G7은 **동적 로딩** 기반의 확장 시스템을 제공합니다:
 | [template-security.md](template-security.md) | API 서빙, 파일 확장자 화이트리스트 |
 | [template-caching.md](template-caching.md) | 캐시 계층, 무효화 전략 |
 | [template-commands.md](template-commands.md) | Artisan 커맨드 (install, activate) |
+| [template-workflow.md](template-workflow.md) | 템플릿 개발 순서 — 필수 파일, 빌드 설정, 검증 순서, 설치 명령 |
+| [template-idv-bootstrap.md](template-idv-bootstrap.md) | 템플릿 본인인증 launcher 등록(`G7Core.identity.setLauncher`)과 모달 파셜 |
+| [editor-spec.md](editor-spec.md) | 레이아웃 편집기 스펙 `editor-spec.json` — 팔레트·스타일 컨트롤·레시피, 편집기 확장점 |
 
 ### 권한 및 메뉴 시스템
 

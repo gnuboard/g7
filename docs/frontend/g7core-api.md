@@ -706,6 +706,7 @@ Tailwind CSS 클래스를 런타임에서 병합하는 헬퍼 API입니다.
 | `setRules(key, css, opts?)` | 런타임 CSS 규칙 묶음을 문서에 붙인다(같은 `key` 는 교체). `<style>` 요소를 만들지 않아 엄격한 스타일 정책에서도 적용된다 (engine-v1.91.0) | `{ key, mode, remove() }` |
 | `remove(key)` | 규칙 묶음 제거 (engine-v1.91.0) | `void` |
 | `has(key)` | 규칙 묶음이 붙어 있는지 (engine-v1.91.0) | `boolean` |
+| `splitExtensionClassPrefix(token)` | 확장 CSS 접두 빌드 앞글자(`ecommerce:`)를 떼어 나눈다 (engine-v1.94.0) | `{ prefix, rest }` |
 
 런타임 규칙 3종은 화면이 뜬 뒤에 정해지는 CSS 규칙(대상 id 가 실행 중에 정해지는 덮개 등)에만 씁니다. 고정된 규칙은 확장의 CSS
 자산(`assets.css`)에, 요소 하나의 값은 `el.style.x = …`·CSS 변수에 둡니다. 규칙은 생성형 스타일시트
@@ -717,6 +718,20 @@ Tailwind CSS 클래스를 런타임에서 병합하는 헬퍼 API입니다.
 const handle = G7Core.style.setRules('my-plugin-overlay', '#my-target::after{content:"";position:absolute;inset:0}');
 handle.remove();
 ```
+
+### splitExtensionClassPrefix
+
+클래스 토큰 하나에서 확장 앞글자(접두 빌드의 `{letters}:`)를 떼어 `{ prefix, rest }` 로 돌려줍니다. className 을 Tailwind 이름으로 읽는 템플릿 컴포넌트가 확장이 넘긴 클래스(`ecommerce:md:hidden`)를 앞글자 없는 클래스와 같은 뜻으로 다룰 때 씁니다. `mergeClasses` 도 이 함수로 앞글자를 떼고 충돌을 판정합니다.
+
+```typescript
+G7Core.style.splitExtensionClassPrefix('ecommerce:md:hidden') // { prefix: 'ecommerce:', rest: 'md:hidden' }
+G7Core.style.splitExtensionClassPrefix('md:w-44')             // { prefix: '', rest: 'md:w-44' }
+G7Core.style.splitExtensionClassPrefix('w-44')                // { prefix: '', rest: 'w-44' }
+```
+
+- 앞글자 목록은 서버가 활성 모듈·플러그인의 `assets.css.namespace` 에서 영문 소문자만 남긴 값으로 계산해 화면에 싣습니다(`window.G7Config.extensionClassPrefixes`). 목록에 없는 머리(`md:`·`dark:` 같은 변형, 비활성 확장의 앞글자)는 앞글자로 보지 않습니다.
+- 앞글자가 없거나 목록에 맞지 않으면 `{ prefix: '', rest: token }` — 토큰을 그대로 `rest` 에 둡니다.
+- 앞글자 규약: [module-assets.md 「확장 CSS 자기 공급 규약」](../extension/module-assets.md#확장-css-자기-공급-규약)
 
 ### mergeClasses
 

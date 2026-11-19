@@ -512,6 +512,16 @@ G7Core.renderItemChildren(cellChildren, { row }, G7Core.getComponentMap(), key, 
 
 번들 템플릿에 이미 있던 폭 의미 클래스(`filter-row`·`grid-2col-responsive`·`page-title` 등)와 빌드 CSS 의 반응형 접두 클래스 고정 목록은 사이트에서 직접 고친 레이아웃이 그대로 보이도록 이번 버전에 폐지 예정으로 남아 있고, 다음 출시 이후 빠진다. 번들 레이아웃·부품은 더 쓰지 않는다. 직접 고친 레이아웃이 이 클래스를 쓰고 있으면 위 예시처럼 구간 값으로 옮긴다.
 
+관리자 템플릿(`sirsoft-admin_basic`) 부품과 필터 줄은 7.2.0 부터 폭 미디어가 없는 새 이름을 붙이고, 폭에 따른 차이는 렌더 폭(부품)이나 `responsive` 구간 값(레이아웃)으로 더한다. 사이트 CSS 가 옛 이름을 꾸몄다면 새 이름에도 같은 규칙을 준다. 옛 이름은 폐지 예정으로 이번 출시까지 남는다.
+
+| 옛 이름(폭 미디어 포함, 폐지 예정) | 새 이름(폭과 무관) | 붙이는 곳 |
+| --- | --- | --- |
+| `page-title` | `page-heading` | `PageHeader` 제목 — 640px 이상 글자 크기는 렌더 폭으로 더한다 |
+| `page-actions` | `page-action-group` | `PageHeader` 머리 단추 묶음 |
+| `admin-footer-row` | `admin-footer-bar` | `AdminFooter` 하단 줄 — 768px 이상 가로 배치는 렌더 폭으로 더한다 |
+| `modal-footer-row` | `modal-footer-bar` | `Modal` 바닥 단추 줄 — 640px 이하 세로 쌓기는 렌더 폭으로 더한다 |
+| `filter-label` | `filter-field-label` | 관리자 필터 줄 라벨 — 768px 이상 모양은 레이아웃 `responsive` 구간 값으로 준다(곁 라벨 표식은 옛 이름도 계속 받는다) |
+
 정적 검사가 레이아웃 쪽(빌드 CSS 에서 정의가 폭 미디어 안에 있는 클래스를 쓰는 값)과 원본 CSS 쪽(의미 클래스의 반응형 `@apply`·폭 미디어)을 함께 막는다. 면제가 꼭 필요하면 레이아웃에는 그 요소 바로 앞(또는 같은 줄)의 주석에 `audit:allow layout-no-width-media-semantic-class reason: …`(위 접두 면제와 같은 자리 규칙), CSS 에는 그 줄이나 바로 윗줄 주석에 `audit:allow css-no-width-media-semantic-class <사유>` 를 남긴다.
 
 ### 전환 예시
