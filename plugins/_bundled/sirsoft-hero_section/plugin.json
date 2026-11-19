@@ -22,8 +22,8 @@
             "sirsoft-ecommerce": ">=1.4.0"
         }
     },
-    "github_url": null,
-    "github_changelog_url": null,
+    "github_url": "https://github.com/gnuboard/g7-plugin-sirsoft-hero_section",
+    "github_changelog_url": "https://github.com/gnuboard/g7-plugin-sirsoft-hero_section/blob/main/CHANGELOG.md",
     "assets": {
         "js": {
             "entry": "resources/js/index.ts",
