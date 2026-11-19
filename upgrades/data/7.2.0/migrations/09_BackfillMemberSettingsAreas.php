@@ -25,8 +25,9 @@ use Illuminate\Support\Facades\Storage;
  *
  * 멱등: 두 번째 실행에서는 빠진 영역이 없어 파일을 쓰지 않는다.
  *
- * V-1 안전 격리: Storage 파사드만 쓴다. 기본 영역 값은 7.2.0 값으로 동결한다(사이트와 관리자 화면은 「이름」 고정,
- * 이커머스 상품 문의는 「가린 이름」 고정 — 종전 표시와 같다).
+ * V-1 안전 격리: Storage 파사드만 쓴다. 기본 영역 값은 7.2.0 값으로 동결한다(사이트 기본은 「회원이 고른 값」,
+ * 관리자 화면은 「이름」 고정, 이커머스 상품 문의는 「가린 이름」 고정). 사이트 기본은 회원 기본 종류로 보이고 그 기본값이
+ * 「이름」이라, 회원 기본 종류를 바꾸지 않은 사이트는 종전 표시와 같다.
  */
 final class BackfillMemberSettingsAreas implements DataMigration
 {
@@ -39,10 +40,10 @@ final class BackfillMemberSettingsAreas implements DataMigration
     /**
      * 7.2.0 기본 영역 값 (동결).
      *
-     * @var array<string, array{mode: string, kind: string}>
+     * @var array<string, array{mode: string, kind?: string}>
      */
     private const DEFAULT_AREAS = [
-        'core:site' => ['mode' => 'fixed', 'kind' => 'name'],
+        'core:site' => ['mode' => 'member'],
         'core:admin' => ['mode' => 'fixed', 'kind' => 'name'],
         'sirsoft-ecommerce:inquiry' => ['mode' => 'fixed', 'kind' => 'masked_name'],
     ];

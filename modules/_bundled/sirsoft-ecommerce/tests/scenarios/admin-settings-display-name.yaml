@@ -16,6 +16,7 @@ axes:
   case:
     - placement
     - mode_inherit
+    - mode_inherit_member_e2e
     - mode_fixed
     - mode_change
     - effective_line
@@ -28,6 +29,9 @@ axes:
 effects:
   - display_name_fields_placed_in_review_tab_and_inquiry_card
   - inherit_mode_hides_kind_and_shows_effective_kind
+  - inherit_mode_shows_member_choice_when_parent_uses_member_mode
+  - effective_line_names_member_choice_in_browser
+  - effective_line_survives_tab_switch
   - fixed_mode_shows_kind_select_with_previews
   - mode_change_writes_form_marks_dirty_and_resets_kind
   - effective_line_only_for_saved_inherit
@@ -38,3 +42,4 @@ effects:
 
 test_files:
   - modules/_bundled/sirsoft-ecommerce/resources/js/__tests__/layouts/adminEcommerceDisplayNameSettings.test.tsx
+  - modules/_bundled/sirsoft-ecommerce/tests/Playwright/specs/admin/admin-settings-review-display-name.spec.ts

@@ -2581,6 +2581,9 @@
         "sample": "Preview member: name {{name}}, nickname {{nickname}}, ID {{id}}",
         "member_default_kind": "Member default kind",
         "member_default_kind_hint": "Used when a member has not chosen a kind. It must be one of the kinds members can choose.",
+        "member_default_kind_usage": "Areas using this value now: {{areas}}",
+        "member_default_kind_usage_more": "Areas using this value now: {{areas}} and {{count}} more",
+        "member_default_kind_unused": "No area uses this value now. It is used only in areas whose method is \"Member's choice\".",
         "areas_title": "Method by area",
         "areas_hint": "Set the method for each area a name appears in. An indented area can follow the area above it.",
         "col": {

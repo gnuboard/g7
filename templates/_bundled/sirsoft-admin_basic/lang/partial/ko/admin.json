@@ -2543,6 +2543,9 @@
         "sample": "미리보기 기준 회원: 이름 {{name}}, 닉네임 {{nickname}}, 아이디 {{id}}",
         "member_default_kind": "회원 기본 종류",
         "member_default_kind_hint": "회원이 종류를 고르지 않았을 때 쓰는 종류입니다. 회원이 고를 수 있는 종류 가운데 하나여야 합니다.",
+        "member_default_kind_usage": "지금 이 값을 쓰는 영역: {{areas}}",
+        "member_default_kind_usage_more": "지금 이 값을 쓰는 영역: {{areas}} 외 {{count}}곳",
+        "member_default_kind_unused": "지금은 이 값을 쓰는 영역이 없습니다. 이 값은 방식이 「회원이 고른 값」인 영역에서만 쓰입니다.",
         "areas_title": "영역별 방식",
         "areas_hint": "이름이 보이는 영역마다 방식을 정합니다. 들여 쓴 영역은 바로 위 영역을 따를 수 있습니다.",
         "col": {

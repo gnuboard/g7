@@ -8,6 +8,8 @@ description: |
 
   값은 설정 폼(_local.form.member.display_name_*)에 담고 화면 하단 「저장」이 회원 탭 몫을 한 번에 보낸다. 자리 설정은 객체를 통째로 담는다.
   회원 기본 종류의 선택지는 지금 체크한 종류뿐이고, 회원 기본 종류로 쓰는 종류는 뺄 수 없게 잠긴다.
+  회원 기본 종류 아래에는 이 값을 지금 쓰는 영역(계산값 memberDefaultKindUsage — 방식이 「회원이 고른 값」인 자리, 상위를 따라 그렇게 된 자리,
+  자리는 고정이어도 「회원이 고른 값」인 인스턴스)을 폼 값 기준으로 보이고, 하나도 없으면 바꿔도 변화가 없다고 알린다.
 
   고친 설정이 닉네임을 더 강하게 요구하게 되면(계산값 memberDisplayNamePending) 저장하기 전에 「닉네임 항목이 고정됩니다」와
   닉네임이 비어 있는 회원 수를 보이고, 전원 필수가 되는 경우에는 「로그인 시 닉네임 입력 요구」 체크칸을 함께 보인다(U12).
@@ -20,6 +22,7 @@ axes:
     - datasources
     - render_kinds
     - member_default
+    - default_kind_usage
     - toggle_kind
     - area_tree
     - area_modes
@@ -41,6 +44,9 @@ effects:
   - display_name_options_and_empty_count_fetched_only_on_member_tab
   - kinds_listed_with_preview_and_badges
   - member_default_offers_only_selectable_kinds
+  - default_kind_usage_follows_form_and_inheritance
+  - default_kind_usage_line_names_areas
+  - default_kind_unused_warning
   - selectable_kinds_written_to_member_form_in_kind_order
   - areas_drawn_as_indented_tree_with_owner_badge
   - area_mode_options_and_kind_select_follow_mode

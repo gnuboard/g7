@@ -201,6 +201,63 @@ test('④ 회원 화면 헤더가 실명 대신 닉네임을 보인다', async (
 });
 
 /**
+ * 회원 기본 종류 아래의 「이 값을 쓰는 영역」 안내. 사이트 기본과 관리자 화면을 「이름 고정」으로 맞춘 출발점에서는 「회원이 고른 값」
+ * 영역이 (게시판마다 같은 인스턴스 설정 말고는) 없다 → 사이트 기본을 「회원이 고른 값」으로 바꾸면 저장 전에 안내 줄에 「사이트 기본」이
+ * 들어온다 → 저장하고 다시 열어도 그대로다. 출발점의 탭 값은 afterAll 이 떠 둔 값으로 되돌린다.
+ *
+ * @scenario case=display_name_member_default_usage
+ * @effects member_default_kind_usage_follows_unsaved_mode, member_default_kind_usage_persists_after_save
+ */
+test('회원 기본 종류 아래에 이 값을 쓰는 영역을 보이고, 사이트 기본을 「회원이 고른 값」으로 바꾸면 바로 반영된다', async ({ page }) => {
+  const current = await readMember();
+  await patchSettingsTab(api, adminToken, 'member', {
+    display_name_areas: withDisplayNameAreas(current, {
+      [SITE_AREA]: { mode: 'fixed', kind: 'name' },
+      'core:admin': { mode: 'fixed', kind: 'name' },
+    }),
+  });
+
+  const options = await api.get('/api/admin/member-fields/display-name-options', { headers: bearer(adminToken) });
+  expect(options.status()).toBe(200);
+  const areas = ((await options.json())?.data?.areas ?? []) as Array<{ key: string; label: string; mode: string; member_instances?: string[] }>;
+  const siteLabel = areas.find((a) => a.key === SITE_AREA)?.label ?? '';
+  expect(siteLabel, '사이트 기본 영역 이름').toBeTruthy();
+  const memberAreasBefore = areas.filter((a) => a.mode === 'member').length + areas.reduce((n, a) => n + (a.member_instances ?? []).length, 0);
+
+  await authenticatePage(page, adminToken);
+  await gotoMemberSettingsTab(page);
+
+  const usage = page.getByTestId('member-display-name-default-kind-usage');
+  const unused = page.getByTestId('member-display-name-default-kind-unused');
+  if (memberAreasBefore === 0) {
+    // 출발점에 「회원이 고른 값」인 곳이 없으면 경고 줄만 보인다
+    await expect(unused).toBeVisible({ timeout: 30_000 });
+    await expect(usage).toHaveCount(0);
+  } else {
+    await expect(usage).toBeVisible({ timeout: 30_000 });
+    await expect(usage).not.toContainText(siteLabel);
+  }
+
+  // 사이트 기본의 방식을 「회원이 고른 값」으로 바꾼다(저장 전)
+  const modeSelect = page.locator(`[data-testid="member-display-name-area-mode-${SITE_AREA}"]`);
+  await modeSelect.scrollIntoViewIfNeeded();
+  await modeSelect.locator('button[aria-haspopup="listbox"]').click();
+  await page.getByRole('listbox').getByRole('option', { name: '회원이 고른 값', exact: true }).click();
+
+  await expect(usage).toBeVisible();
+  await expect(usage).toContainText(siteLabel);
+  await expect(unused).toHaveCount(0);
+
+  const response = await saveSettings(page);
+  expect(response.status(), (await response.text()).slice(0, 400)).toBe(200);
+  expect(response.request().postDataJSON()?.member?.display_name_areas?.[SITE_AREA]).toEqual(expect.objectContaining({ mode: 'member' }));
+
+  // 다시 열어도 그대로다
+  await gotoMemberSettingsTab(page);
+  await expect(page.getByTestId('member-display-name-default-kind-usage')).toContainText(siteLabel, { timeout: 30_000 });
+});
+
+/**
  * @scenario case=nickname_interval_notice
  * @effects nickname_interval_saved_from_member_tab
  */

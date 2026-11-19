@@ -507,9 +507,14 @@ class DisplayNameChoiceTest extends TestCase
         $nickname->update(['enabled' => false]);
         app(FieldDefinitionRepositoryInterface::class)->forgetMemo();
 
-        // 고를 수 있는 종류에 닉네임이 있어도 「회원이 고른 값」 영역이 없으면 요구하지 않는다
-        $this->settings(['display_name_selectable_kinds' => ['name', 'nickname']]);
+        // 고를 수 있는 종류에 닉네임이 있어도 「회원이 고른 값」 영역이 없으면 요구하지 않는다(사이트 기본을 「이름」 고정으로 바꾼 사이트)
+        $this->settings(['display_name_selectable_kinds' => ['name', 'nickname'], 'display_name_areas' => ['core:site' => ['mode' => 'fixed', 'kind' => 'name'], 'core:admin' => ['mode' => 'fixed', 'kind' => 'name']]]);
         $this->assertSame(NicknameRequirement::LEVEL_NONE, app(NicknameRequirement::class)->level());
+
+        // 사이트 기본의 처음 방식(「회원이 고른 값」) 그대로면 고를 수 있는 종류에 닉네임을 넣는 순간 닉네임 사용이 잠긴다
+        $this->settings(['display_name_areas' => ['core:admin' => ['mode' => 'fixed', 'kind' => 'name']]]);
+        app(NicknameRequirement::class)->flush();
+        $this->assertSame(NicknameRequirement::LEVEL_CHOSEN, app(NicknameRequirement::class)->level());
 
         $this->letMembersChoose(['name', 'nickname']);
         $this->assertSame(NicknameRequirement::LEVEL_CHOSEN, app(NicknameRequirement::class)->level());
@@ -543,7 +548,7 @@ class DisplayNameChoiceTest extends TestCase
      *
      * @scenario case=settings_info_api
      *
-     * @effects nickname_empty_count_excludes_withdrawn, display_name_options_list_kinds_and_areas, settings_info_requires_settings_read_permission
+     * @effects nickname_empty_count_excludes_withdrawn, display_name_options_list_kinds_and_areas, display_name_options_list_member_mode_instances, settings_info_requires_settings_read_permission
      *
      * @return void 반환값 없음
      */
@@ -561,6 +566,14 @@ class DisplayNameChoiceTest extends TestCase
         $this->assertSame('none', $count['nickname_requirement']);
 
         $this->displayField('alias');
+        // 게시판마다 같은 인스턴스 설정 가운데 「회원이 고른 값」인 것은 그 영역의 member_instances 로 온다(회원 기본 종류를 쓰는 곳 안내)
+        app(DisplayNameAreaRegistry::class)->register(new DisplayNameArea(
+            key: 'demo-board:posts',
+            label: ['ko' => '게시판 글'],
+            ownerType: 'module',
+            ownerIdentifier: 'demo-board',
+            usedKindsProvider: fn () => [['mode' => 'member', 'label' => '자유게시판'], ['mode' => 'fixed', 'kind' => 'name', 'label' => '공지']],
+        ));
         $options = $this->getJson('/api/admin/member-fields/display-name-options', $this->auth())->assertOk()->json('data');
         $kinds = collect($options['kinds'])->keyBy('key');
         $this->assertSame(['name', 'nickname', 'masked_name', 'masked_id', 'name_nickname', 'field:alias'], array_column($options['kinds'], 'key'));
@@ -570,11 +583,14 @@ class DisplayNameChoiceTest extends TestCase
 
         $areas = collect($options['areas'])->keyBy('key');
         $this->assertSame('core:site', $options['areas'][0]['key']);
-        $this->assertSame([0, false, 'fixed', 'name'], [$areas['core:site']['depth'], $areas['core:site']['can_inherit'], $areas['core:site']['mode'], $areas['core:site']['kind']]);
+        // 사이트 기본의 처음 방식은 「회원이 고른 값」이다
+        $this->assertSame([0, false, 'member', null], [$areas['core:site']['depth'], $areas['core:site']['can_inherit'], $areas['core:site']['mode'], $areas['core:site']['kind']]);
         $this->assertSame(['core:notification', 2, 'inherit', 'notification'], [
             $areas['core:notification:mail']['parent'], $areas['core:notification:mail']['depth'], $areas['core:notification:mail']['mode'], $areas['core:notification:mail']['audience'],
         ]);
-        $this->assertSame(['mode' => 'fixed', 'kind' => 'name', 'source' => 'core:site'], $areas['core:notification:mail']['effective']);
+        $this->assertSame(['mode' => 'member', 'kind' => null, 'source' => 'core:site'], $areas['core:notification:mail']['effective']);
+        $this->assertSame(['자유게시판'], $areas['demo-board:posts']['member_instances']);
+        $this->assertSame([], $areas['core:site']['member_instances']);
         $this->assertSame([['name'], 'name'], [$options['selectable_kinds'], $options['member_default_kind']]);
 
         $member = $this->member('e4');

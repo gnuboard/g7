@@ -102,6 +102,12 @@ class DisplayNameSettingsService
                 'default' => $area->defaultSetting(),
                 // 상속을 다 따라간 결과 — 「따름」인 영역이 지금 무엇으로 보이는지 화면이 곁들여 보인다.
                 'effective' => ['mode' => $rule['mode'], 'kind' => $rule['kind'], 'source' => $rule['source']],
+                // 이 영역의 인스턴스(게시판마다 등) 가운데 「회원이 고른 값」인 것의 이름 — 회원 기본 종류를 쓰는 곳 안내에 더한다.
+                // 인스턴스 설정은 이 화면이 아니라 그 확장의 설정 화면에서 바꾸므로 저장된 값을 그대로 보인다.
+                'member_instances' => array_values(array_map(
+                    fn (array $instance) => (string) ($instance['label'] ?? ''),
+                    array_filter($area->instanceUsages(), fn (array $instance) => $instance['mode'] === DisplayNameArea::MODE_MEMBER),
+                )),
             ];
         }
 

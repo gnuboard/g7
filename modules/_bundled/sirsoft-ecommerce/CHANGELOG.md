@@ -39,6 +39,7 @@
 - 운영자가 주문서 추가 항목을 지워도 그 항목으로 받은 지난 주문의 값은 주문 상세(마이페이지, 관리자)에 계속 보입니다. 주문 보유기간 처리와 주문 삭제는 그 값도 함께 지웁니다. 익명화가 그 값을 지울 때 주문의 수정 시각은 바뀌지 않습니다(보유기간 삭제 시점이 밀리지 않음).
 - 검증 규칙 필터 8개를 추가했습니다: `sirsoft-ecommerce.guest_order.verify_validation_rules`, `sirsoft-ecommerce.guest_order.shipping_address_validation_rules`, `sirsoft-ecommerce.exchange.store_validation_rules`, `sirsoft-ecommerce.claim.update_validation_rules`, `sirsoft-ecommerce.claim.preview_validation_rules`, `sirsoft-ecommerce.admin_exchange.store_validation_rules`, `sirsoft-ecommerce.admin_claim.update_on_behalf_validation_rules`, `sirsoft-ecommerce.order.update_validation_rules`.
 - 쇼핑몰 환경설정의 리뷰 설정과 기본 정보(상품 문의)에 「작성자 표시 이름」 칸을 추가했습니다. 상위 설정을 따르거나, 종류 하나로 고정하거나, 회원이 고른 값으로 보이게 할 수 있습니다. 이 값은 환경설정 > 회원의 같은 영역과 하나입니다.
+- 「작성자 표시 이름」이 상위 영역을 따르고 그 영역이 「회원이 고른 값」이면 「지금 적용: 회원이 고른 값 (사이트 기본 설정 기준)」으로 알립니다. 코어 7.2.0 에서 사이트 기본의 처음 방식이 「회원이 고른 값」이라 설정을 바꾸지 않은 사이트의 상품 후기 칸이 이렇게 보입니다.
 - 표시 이름 영역 3개(상품 후기, 상품 문의, 쇼핑몰 관리자 화면)를 등록했습니다.
 - 관리자 목록(장바구니, 위시리스트, 배송지, 상품 문의, 주문, 상품 후기, 쿠폰 발급 내역, 마일리지 내역)의 회원 이름 아래에 실명 보조 줄을 추가했습니다. 회원 조회 권한이 있고 실명이 표시 이름과 다를 때만 보입니다(응답의 `real_name` 계열 키).
 - 추가 정보를 입력하지 않은 회원도 결제 취소 기록, 클레임 추가 결제 승인, 결제 통화와 배송국가 전환은 할 수 있습니다.

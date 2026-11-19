@@ -345,6 +345,66 @@ describe('표시 이름 구획 — 자리별 방식', () => {
   });
 });
 
+/** 계산값 `memberDefaultKindUsage` 를 실제 엔진의 평가기로 계산한다(풀지 못하면 실패). */
+function usageOf(member: Json, source: Json = options()): string[] {
+  const failures: string[] = [];
+  const values = evaluateComputedDefinitions(
+    { memberDefaultKindUsage: settings.computed.memberDefaultKindUsage },
+    { _local: { form: { member } }, memberDisplayNameOptions: source },
+    new DataBindingEngine(),
+    { previous: {}, onError: 'undefined', failureLog: (name: string, error: unknown) => failures.push(`${name}: ${String(error)}`) } as any,
+  );
+  expect(failures).toEqual([]);
+
+  return values.memberDefaultKindUsage;
+}
+
+describe('표시 이름 구획 — 회원 기본 종류를 쓰는 곳', () => {
+  // @scenario case=default_kind_usage
+  // @effects default_kind_usage_follows_form_and_inheritance
+  it('방식이 「회원이 고른 값」인 자리와, 상위를 따라 그렇게 된 자리를 폼 값 기준으로 나무 순서대로 모은다', () => {
+    // 저장된 그대로: 게시판 글 자리만 「회원이 고른 값」
+    expect(usageOf(memberForm())).toEqual(['게시판 글과 댓글']);
+    // 사이트 기본을 「회원이 고른 값」으로 바꾸면 따르는 자리(알림, 메일)도 함께 들어가고 「이름」 고정인 관리자 쪽은 빠진다
+    expect(usageOf(memberForm({ display_name_areas: { 'core:site': { mode: 'member' }, 'core:admin': { mode: 'fixed', kind: 'name' } } })))
+      .toEqual(['사이트 기본', '알림', '알림: 메일', '게시판 글과 댓글']);
+    // 관리자 화면을 「따름」으로 바꾸면 게시판 관리까지 따라온다
+    expect(usageOf(memberForm({ display_name_areas: { 'core:site': { mode: 'member' }, 'core:admin': { mode: 'inherit' } } })))
+      .toEqual(['사이트 기본', '관리자 화면', '게시판 관리', '알림', '알림: 메일', '게시판 글과 댓글']);
+    // 자리는 고정이어도 그 자리의 인스턴스(게시판마다 설정)가 「회원이 고른 값」이면 「자리 · 인스턴스」로 든다
+    const withInstance = options({
+      areas: areas().map((a) => (a.key === 'sirsoft-board:posts' ? { ...a, mode: 'fixed', kind: 'name', member_instances: ['자유게시판'] } : a)),
+    });
+    expect(usageOf(memberForm(), withInstance)).toEqual(['게시판 글과 댓글 · 자유게시판']);
+    // 쓰는 곳이 없으면 빈 목록, 목록을 아직 못 받았어도 풀린다
+    expect(usageOf(memberForm(), options({ areas: areas().filter((a) => a.mode !== 'member') }))).toEqual([]);
+    expect(usageOf(memberForm(), { data: {} })).toEqual([]);
+  });
+
+  // @scenario case=default_kind_usage
+  // @effects default_kind_usage_line_names_areas
+  it('회원 기본 종류 아래에 이 값을 쓰는 영역을 보이고, 넷 이상이면 셋까지만 이름을 대고 나머지는 개수로 줄인다', async () => {
+    await renderSection();
+    expect(screen.getByTestId('member-display-name-default-kind-usage').textContent).toBe('지금 이 값을 쓰는 영역: 게시판 글과 댓글');
+    expect(screen.queryByTestId('member-display-name-default-kind-unused')).toBeNull();
+
+    // 사이트 기본을 「회원이 고른 값」으로 바꾸면 저장 전에 바로 늘어난다
+    fireEvent.change(select('member-display-name-area-mode-core:site'), { target: { value: 'member' } });
+    await settle();
+    expect(screen.getByTestId('member-display-name-default-kind-usage').textContent).toBe('지금 이 값을 쓰는 영역: 사이트 기본, 알림, 알림: 메일 외 1곳');
+  });
+
+  // @scenario case=default_kind_usage
+  // @effects default_kind_unused_warning
+  it('이 값을 쓰는 영역이 하나도 없으면 바꿔도 화면에 변화가 없다고 알린다', async () => {
+    await renderSection({ options: options({ areas: areas().filter((a) => a.mode !== 'member') }) });
+
+    expect(screen.queryByTestId('member-display-name-default-kind-usage')).toBeNull();
+    expect(screen.getByTestId('member-display-name-default-kind-unused').textContent)
+      .toBe('지금은 이 값을 쓰는 영역이 없습니다. 이 값은 방식이 「회원이 고른 값」인 영역에서만 쓰입니다.');
+  });
+});
+
 describe('표시 이름 구획 — 닉네임 안내(U12)', () => {
   // @scenario case=pending_level
   // @effects pending_nickname_requirement_computed_from_form

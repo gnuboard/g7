@@ -321,7 +321,7 @@
             "display_name_selectable_kinds": ["name"],
             "display_name_member_default_kind": "name",
             "display_name_areas": {
-                "core:site": { "mode": "fixed", "kind": "name" },
+                "core:site": { "mode": "member" },
                 "core:admin": { "mode": "fixed", "kind": "name" },
                 "sirsoft-ecommerce:inquiry": { "mode": "fixed", "kind": "masked_name" }
             }

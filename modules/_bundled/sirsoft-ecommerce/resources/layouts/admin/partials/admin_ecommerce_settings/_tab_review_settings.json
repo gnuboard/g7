@@ -368,11 +368,11 @@
                             "id": "review_display_name_effective",
                             "type": "basic",
                             "name": "P",
-                            "if": "{{settings !== undefined && ((_local.form?.display_name?.review?.mode ?? 'inherit') === 'inherit' && (settings?.data?.display_name?.review?.mode ?? 'inherit') === 'inherit' && !!_local.form?.display_name_options?.effective?.review?.kind_label)}}",
+                            "if": "{{settings !== undefined && ((_local.form?.display_name?.review?.mode ?? 'inherit') === 'inherit' && (settings?.data?.display_name?.review?.mode ?? 'inherit') === 'inherit' && (!!_local.form?.display_name_options?.effective?.review?.kind_label || _local.form?.display_name_options?.effective?.review?.mode === 'member'))}}",
                             "props": {
                                 "className": "ecommerce:w-full ecommerce-form-hint"
                             },
-                            "text": "{{_local.form?.display_name_options?.effective?.review?.source_label ? $t('sirsoft-ecommerce.admin.settings.display_name.effective_with_source', { kind: _local.form?.display_name_options?.effective?.review?.kind_label, source: _local.form?.display_name_options?.effective?.review?.source_label }) : $t('sirsoft-ecommerce.admin.settings.display_name.effective', { kind: _local.form?.display_name_options?.effective?.review?.kind_label })}}"
+                            "text": "{{_local.form?.display_name_options?.effective?.review?.source_label ? $t('sirsoft-ecommerce.admin.settings.display_name.effective_with_source', { kind: (_local.form?.display_name_options?.effective?.review?.mode === 'member' ? $t('sirsoft-ecommerce.admin.settings.display_name.mode.member') : _local.form?.display_name_options?.effective?.review?.kind_label), source: _local.form?.display_name_options?.effective?.review?.source_label }) : $t('sirsoft-ecommerce.admin.settings.display_name.effective', { kind: (_local.form?.display_name_options?.effective?.review?.mode === 'member' ? $t('sirsoft-ecommerce.admin.settings.display_name.mode.member') : _local.form?.display_name_options?.effective?.review?.kind_label) })}}"
                         },
                         {
                             "id": "review_display_name_nickname_hint",

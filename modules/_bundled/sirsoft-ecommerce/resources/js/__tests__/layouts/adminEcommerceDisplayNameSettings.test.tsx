@@ -160,6 +160,16 @@ describe('기능별 작성자 표시 이름 — 방식에 따른 종류 칸', ()
     expect(textOf(container.querySelector('#review_display_name_effective'))).toBe('지금 적용: 이름 (사이트 기본 설정 기준)');
   });
 
+  // @scenario case=mode_inherit
+  // @effects inherit_mode_shows_member_choice_when_parent_uses_member_mode
+  it('따르는 상위 영역이 「회원이 고른 값」이면(사이트 기본의 처음 방식) 종류 대신 그 방식을 알린다', async () => {
+    const data = settingsData();
+    data.display_name_options.effective.review = { mode: 'member', kind: null, kind_label: null, source_label: '사이트 기본' };
+    const { container } = await renderFields({ data });
+
+    expect(textOf(container.querySelector('#review_display_name_effective'))).toBe('지금 적용: 회원이 고른 값 (사이트 기본 설정 기준)');
+  });
+
   // @scenario case=mode_fixed
   // @effects fixed_mode_shows_kind_select_with_previews
   it('고정된 칸은 종류 칸을 보이고, 선택지는 종류 이름과 미리보기다', async () => {

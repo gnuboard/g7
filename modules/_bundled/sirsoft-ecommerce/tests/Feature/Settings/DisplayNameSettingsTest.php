@@ -100,7 +100,8 @@ class DisplayNameSettingsTest extends ModuleTestCase
         $this->assertSame([false, true], [$kinds['name']['requires_nickname'], $kinds['nickname']['requires_nickname']]);
 
         $effective = $data['display_name_options']['effective'];
-        $this->assertSame(['mode' => 'fixed', 'kind' => 'name', 'kind_label' => $kinds['name']['label']], array_intersect_key($effective['review'], ['mode' => 1, 'kind' => 1, 'kind_label' => 1]));
+        // 후기는 사이트 기본을 따르고, 사이트 기본의 처음 방식은 「회원이 고른 값」이라 종류가 없다
+        $this->assertSame(['mode' => 'member', 'kind' => null, 'kind_label' => null], array_intersect_key($effective['review'], ['mode' => 1, 'kind' => 1, 'kind_label' => 1]));
         $this->assertSame(app(DisplayNameAreaRegistry::class)->get('core:site')->label(), $effective['review']['source_label']);
         $this->assertSame(['fixed', 'masked_name', $kinds['masked_name']['label']], [$effective['inquiry']['mode'], $effective['inquiry']['kind'], $effective['inquiry']['kind_label']]);
         $this->assertSame(app(DisplayNameAreaRegistry::class)->get('sirsoft-ecommerce:inquiry')->label(), $effective['inquiry']['source_label']);

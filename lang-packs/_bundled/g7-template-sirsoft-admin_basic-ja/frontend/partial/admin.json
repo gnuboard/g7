@@ -2543,6 +2543,9 @@
         "sample": "プレビューの基準会員: 名前 {{name}}、ニックネーム {{nickname}}、ID {{id}}",
         "member_default_kind": "会員の既定の種類",
         "member_default_kind_hint": "会員が種類を選んでいないときに使う種類です。会員が選択できる種類のいずれかである必要があります。",
+        "member_default_kind_usage": "現在この値を使う領域: {{areas}}",
+        "member_default_kind_usage_more": "現在この値を使う領域: {{areas}} ほか{{count}}か所",
+        "member_default_kind_unused": "現在この値を使う領域はありません。この値は方式が「会員が選んだ値」の領域でのみ使われます。",
         "areas_title": "領域別の方式",
         "areas_hint": "名前が表示される領域ごとに方式を設定します。字下げされた領域は、すぐ上の領域に従うことができます。",
         "col": {

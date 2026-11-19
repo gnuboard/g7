@@ -237,7 +237,7 @@ abstract class TestCase extends BaseTestCase
             'g7_settings.core.member.display_name_selectable_kinds' => ['name'],
             'g7_settings.core.member.display_name_member_default_kind' => 'name',
             'g7_settings.core.member.display_name_areas' => [
-                'core:site' => ['mode' => 'fixed', 'kind' => 'name'],
+                'core:site' => ['mode' => 'member'],
                 'core:admin' => ['mode' => 'fixed', 'kind' => 'name'],
             ],
             // 사이트 주소도 고정한다. 부팅 시 개발 사이트의 `general.site_url` 이 `app.url` 을 덮어쓰는데,

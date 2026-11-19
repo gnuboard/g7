@@ -230,7 +230,8 @@ Authorization: Bearer {YOUR_TOKEN}
 | areas[].mode | string | `inherit` | 지금 방식 (`inherit`, `fixed`, `member`) |
 | areas[].kind | string\|null | `null` | 고정한 종류 (`mode` 가 `fixed` 일 때) |
 | areas[].default | object | `{"mode":"inherit","kind":null}` | 영역의 선언 기본값 |
-| areas[].effective | object | `{"mode":"fixed","kind":"name","source":"core:site"}` | 상속을 다 따라간 결과와 그 값을 정한 영역 |
+| areas[].effective | object | `{"mode":"member","kind":null,"source":"core:site"}` | 상속을 다 따라간 결과와 그 값을 정한 영역 |
+| areas[].member_instances | array | `["자유게시판"]` | 이 영역의 인스턴스(게시판마다 설정 등) 가운데 방식이 「회원이 고른 값」인 것의 이름. 회원 기본 종류를 쓰는 곳 안내에 쓴다 |
 | selectable_kinds | array | `["name"]` | 회원이 고를 수 있는 종류 |
 | member_default_kind | string | `name` | 회원 기본 종류 |
 | sample | object | `{"name":"홍길동","nickname":"길동이","id":"gildong"}` | 미리보기에 쓴 표본 회원 (이름, 닉네임, 아이디) |
@@ -275,17 +276,17 @@ Authorization: Bearer {YOUR_TOKEN}
                 "owner_type": "core",
                 "owner": "core",
                 "can_inherit": false,
-                "mode": "fixed",
-                "kind": "name",
+                "mode": "member",
+                "kind": null,
                 "default": {
-                    "mode": "fixed",
-                    "kind": "name"
+                    "mode": "member"
                 },
                 "effective": {
-                    "mode": "fixed",
-                    "kind": "name",
+                    "mode": "member",
+                    "kind": null,
                     "source": "core:site"
-                }
+                },
+                "member_instances": []
             }
         ],
         "selectable_kinds": [

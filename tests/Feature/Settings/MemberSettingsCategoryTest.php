@@ -66,7 +66,8 @@ class MemberSettingsCategoryTest extends TestCase
         $this->assertSame(0, $member['nickname_change_interval_days']);
         $this->assertSame(['name'], $member['display_name_selectable_kinds']);
         $this->assertSame('name', $member['display_name_member_default_kind']);
-        $this->assertSame(['mode' => 'fixed', 'kind' => 'name'], $member['display_name_areas']['core:site']);
+        // 사이트 기본은 「회원이 고른 값」이다. 회원 기본 종류가 「이름」이고 고를 수 있는 종류도 「이름」뿐이라 보이는 이름은 종전과 같다.
+        $this->assertSame(['mode' => 'member'], $member['display_name_areas']['core:site']);
         $this->assertSame(['mode' => 'fixed', 'kind' => 'name'], $member['display_name_areas']['core:admin']);
         $this->assertSame(['mode' => 'fixed', 'kind' => 'masked_name'], $member['display_name_areas']['sirsoft-ecommerce:inquiry']);
     }

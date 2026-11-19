@@ -99,12 +99,13 @@ describe('admin_settings — staticCacheStatus 데이터소스 배선', () => {
 describe('_tab_general — 초기 화면 정적 파일 카드 스키마', () => {
   // @scenario permission=granted, publishable=production_enabled, outcome=success
   // @effects card_renders_status_rows
-  it('카드가 에셋 서빙 방식 카드 바로 다음에 있다', () => {
+  it('카드가 에셋 서빙 방식 카드 뒤, 레이아웃 편집 단추 카드 바로 다음에 있다', () => {
     const ids = (generalPartial.children as AnyJson[]).map(c => c.id);
     const assetIdx = ids.indexOf('card_asset_serving');
     const cardIdx = ids.indexOf('card_static_cache');
     expect(assetIdx).toBeGreaterThanOrEqual(0);
-    expect(cardIdx).toBe(assetIdx + 1);
+    // 레이아웃 편집 단추 카드(환경설정 > 일반)가 에셋 서빙 방식 카드와 이 카드 사이에 들어왔다
+    expect(ids.slice(assetIdx, cardIdx + 1)).toEqual(['card_asset_serving', 'card_layout_edit_button', 'card_static_cache']);
   });
 
   // @scenario permission=granted, publishable=non_production, outcome=success

@@ -69,6 +69,7 @@ effects:
   - missing_area_setting_uses_declared_default
   - unknown_kind_setting_falls_back_to_parent
   - site_area_never_inherits
+  - site_area_default_follows_member_default_kind
   - empty_selectable_kinds_fall_back_to_default_kind
   - extension_kind_registered_through_filter
   - extension_area_registered_through_filter
@@ -121,6 +122,7 @@ effects:
   - instance_fixed_nickname_kind_locks_for_all
   - nickname_empty_count_excludes_withdrawn
   - display_name_options_list_kinds_and_areas
+  - display_name_options_list_member_mode_instances
   - settings_info_requires_settings_read_permission
   - settings_save_validates_kinds_and_areas
   - settings_save_turns_on_nickname_require_existing_members

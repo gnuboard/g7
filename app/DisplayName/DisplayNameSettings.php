@@ -113,7 +113,7 @@ class DisplayNameSettings
      * 영역의 설정을 반환합니다.
      *
      * 저장 값이 없으면 영역의 선언 기본값을 쓴다. 고정인데 종류가 지금 없으면 「따름」으로 읽고,
-     * 뿌리 영역(`core:site`)은 따를 부모가 없으므로 「이름」 고정으로 읽는다.
+     * 뿌리 영역(`core:site`)은 따를 부모가 없으므로 처음 방식인 「회원이 고른 값」으로 읽는다(회원 기본 종류로 보인다).
      *
      * @param  DisplayNameArea  $area  영역
      * @return array{mode: string, kind: string|null} 방식과 종류
@@ -124,7 +124,7 @@ class DisplayNameSettings
         $setting = $this->normalize(is_array($stored) ? $stored : $area->defaultSetting());
 
         if ($setting['mode'] === DisplayNameArea::MODE_INHERIT && $area->key === DisplayNameAreaRegistry::AREA_SITE) {
-            return ['mode' => DisplayNameArea::MODE_FIXED, 'kind' => self::FALLBACK_KIND];
+            return ['mode' => DisplayNameArea::MODE_MEMBER, 'kind' => null];
         }
 
         return $setting;

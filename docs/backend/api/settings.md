@@ -124,7 +124,7 @@ IP 는 신뢰 프록시 해석 뒤의 값이다 — 리버스 프록시 뒤에�
 | member.nickname_change_interval_days | integer | `0` | 닉네임 변경 주기(일). 0 이상 3650 이하. 0 이면 제한이 없다. 본인 수정에만 걸리고 관리자 수정은 제한을 받지 않는다 |
 | member.display_name_selectable_kinds | array | `["name"]` | 회원이 고를 수 있는 표시 이름 종류 키. 1개 이상, 지금 등록된 종류여야 한다 |
 | member.display_name_member_default_kind | string | `name` | 회원이 고르지 않았을 때의 종류. 함께 보낸 고를 수 있는 종류 가운데 하나여야 한다 |
-| member.display_name_areas | object | 사이트 기본과 관리자 화면이 `name` 고정 | `{영역 키: {mode, kind}}`. `mode` 는 `inherit`, `fixed`, `member`. `fixed` 면 `kind` 가 필수이고 사이트 기본 영역(`core:site`)은 `inherit` 일 수 없다 |
+| member.display_name_areas | object | 사이트 기본은 `member`, 관리자 화면은 `name` 고정 | `{영역 키: {mode, kind}}`. `mode` 는 `inherit`, `fixed`, `member`. `fixed` 면 `kind` 가 필수이고 사이트 기본 영역(`core:site`)은 `inherit` 일 수 없다 |
 | member.nickname_require_existing_members | boolean | — | 저장하지 않는 지시 값. true 로 보내면 닉네임 항목의 「기존 회원에게도 입력 요구」를 함께 켠다 |
 
 - 422 조건: 금지어가 500개를 넘거나 원소가 50자를 넘거나 겹침, 변경 주기가 0 미만이거나 3650 초과, 고를 수 있는 종류가 빈 배열이거나 등록되지 않은 종류, 회원 기본 종류가 등록되지 않았거나 함께 보낸 고를 수 있는 종류에 없음, 등록되지 않은 영역 키, 영역의 `mode` 가 세 값 밖, `fixed` 인데 `kind` 가 없거나 등록되지 않은 종류, 사이트 기본 영역(`core:site`)의 `mode` 가 `inherit`.

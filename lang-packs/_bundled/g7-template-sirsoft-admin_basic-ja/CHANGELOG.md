@@ -54,6 +54,7 @@
 - 공통 오류 화면(전용 오류 화면이 없는 400·422·429·502·504 등)의 제목·안내·새로고침 단추 일본어 번역을 추가했습니다(`errors.default.*`).
 - 환경설정 「회원」 탭의 일본어 번역을 추가했습니다 — 가입 항목 표와 항목 추가, 수정, 삭제, 필수 전환 확인 창(`admin.settings.member.fields.*`), 닉네임 정책(`admin.settings.member.nickname.*`), 창 이름 3건과 편집기 데이터 소스 이름 2건, 회원 폼과 회원 상세의 회원 항목 문구(`admin.users.member_fields.*` — 범위와 잠금 안내, 파일 추가와 삭제, 「추가 항목」과 「확장 항목」 구획, 닉네임 변경 정보, 비어 있는 필수 항목), 회원 목록의 「미입력」 열과 「필수 항목 미입력」, 「닉네임 중복」 필터(`admin.users.list_member_fields.*`), 편집기의 「회원 항목 입력칸」 이름 (#490)
 - 환경설정 「회원」 탭 「표시 이름」 설정의 일본어 번역을 추가했습니다 — 회원이 고를 수 있는 종류와 회원 기본 종류, 영역별 방식 표, 닉네임 고정 안내와 「로그인 시 닉네임 입력 요구」, 항목 삭제를 막는 사용처 안내(`admin.settings.member.display_name.*`), 회원 상세의 표시 이름 정보 7건(`admin.users.member_fields.status.display_name_*`), 회원 목록 「보이는 이름」 열, 「실명」 표기 2건(`admin.common.real_name.*`), 알림 템플릿 편집 창의 회원 항목 변수 안내와 없는 변수 경고 5건(`admin.settings.notification_definitions.edit_modal.*`) (#490)
+- 「표시 이름」 구획의 회원 기본 종류를 쓰는 영역 안내(`admin.settings.member.display_name.member_default_kind_usage`·`member_default_kind_usage_more`·`member_default_kind_unused`)의 일본어 번역을 추가했습니다.
 - 레이아웃 갱신·확장 업데이트 창의 미리보기·화면별 결정, 활동 로그의 삭제 직전 기록 펼쳐 보기, 정보 탭 확장 카드, 알림 받는 사람 「사이트 관리자 이메일」, HTTPS 강제 적용 주의 문구의 일본어 번역을 추가했습니다.
 - 검수 서버 안내 띠·편집기 「검수용 저장」 안내·잠긴 단추 안내(`stage_role.*`)와 예약 작업 카드의 스케줄 꺼짐 안내(`settings.system.scheduler_off_on_this_server`) 일본어 번역을 추가했습니다.
 - 업데이트 창의 판정 건너뜀 안내(꺼 둔 확장·활성 파일 없음)와 판정 요약 항목별 문구의 일본어 번역을 추가했습니다(옛 한 줄 요약 문구는 뺐습니다).

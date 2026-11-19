@@ -207,13 +207,14 @@ class DisplayNameAreaRegistry
     protected function coreAreas(): array
     {
         $areas = [
+            // 사이트 기본은 처음에 「회원이 고른 값」이다. 회원 기본 종류를 바꾸면 사이트 전체가 따라 바뀌고, 표시 이름을
+            // 고르는 역할 권한이 없는 동안은 모든 회원이 회원 기본 종류로 보인다.
             new DisplayNameArea(
                 key: self::AREA_SITE,
                 label: 'display_name.areas.site',
                 parent: null,
                 audience: DisplayNameArea::AUDIENCE_USER,
-                defaultMode: DisplayNameArea::MODE_FIXED,
-                defaultKind: 'name',
+                defaultMode: DisplayNameArea::MODE_MEMBER,
                 sortOrder: 0,
             ),
             new DisplayNameArea(

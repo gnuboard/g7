@@ -12,6 +12,8 @@ description: |
     회원 헤더가 닉네임을 보인다(게시글 작성자는 게시판 모듈 매니페스트 board-author-display-name-e2e 가 잰다).
   - admin_list_member_fields: 「회원 목록 열」, 「회원 검색」을 켠 항목이 관리자 회원 목록의 열과 검색 대상이 되고, 필수 미입력 회원만 남기는
     조건이 주소 인자로 실려 결과를 좁힌다.
+  - display_name_member_default_usage: 회원 기본 종류 아래에 이 값을 쓰는 영역이 보이고, 사이트 기본을 「회원이 고른 값」으로 바꾸면
+    저장 전에 「사이트 기본」이 들어오며 저장하고 다시 열어도 그대로다.
   - nickname_interval_notice: 운영자가 닉네임 변경 주기를 정하면 회원이 한 번 바꾼 뒤 수정 화면의 닉네임 칸이 잠기고 다음 변경 가능일이 칸 아래에 보인다.
   모든 스펙은 바꾼 사이트 설정, 만든 항목과 회원을 afterAll 에서 되돌린다(키 접두 e2e490_, 이메일 접두 e2e490.).
 
@@ -23,6 +25,7 @@ axes:
     - signup_order_drag
     - required_info_redirect
     - display_name_nickname
+    - display_name_member_default_usage
     - admin_list_member_fields
     - nickname_interval_notice
 
@@ -41,6 +44,8 @@ effects:
   - display_name_saved_from_member_tab
   - nickname_field_locked_in_member_table_without_reload
   - header_shows_nickname_after_display_name_change
+  - member_default_kind_usage_follows_unsaved_mode
+  - member_default_kind_usage_persists_after_save
   - admin_list_shows_member_field_column_and_value
   - admin_list_searches_by_member_field
   - admin_list_required_missing_filter_narrows_with_pending_badge

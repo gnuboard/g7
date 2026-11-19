@@ -311,7 +311,7 @@ class Upgrade720FieldsTest extends TestCase
     {
         $disk = Storage::disk('settings');
         $defaults = [
-            'core:site' => ['mode' => 'fixed', 'kind' => 'name'],
+            'core:site' => ['mode' => 'member'],
             'core:admin' => ['mode' => 'fixed', 'kind' => 'name'],
             'sirsoft-ecommerce:inquiry' => ['mode' => 'fixed', 'kind' => 'masked_name'],
         ];

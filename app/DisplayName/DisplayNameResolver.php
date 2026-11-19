@@ -169,7 +169,8 @@ class DisplayNameResolver
             }
         }
 
-        return ['mode' => DisplayNameArea::MODE_FIXED, 'kind' => DisplayNameSettings::FALLBACK_KIND, 'source' => DisplayNameAreaRegistry::AREA_SITE];
+        // 사슬 끝까지 정해진 값이 없으면 사이트 기본의 처음 방식(회원이 고른 값)으로 본다.
+        return ['mode' => DisplayNameArea::MODE_MEMBER, 'kind' => null, 'source' => DisplayNameAreaRegistry::AREA_SITE];
     }
 
     /**

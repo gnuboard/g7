@@ -8188,17 +8188,17 @@
             "owner_type": "core",
             "owner": "core",
             "can_inherit": false,
-            "mode": "fixed",
-            "kind": "name",
+            "mode": "member",
+            "kind": null,
             "default": {
-              "mode": "fixed",
-              "kind": "name"
+              "mode": "member"
             },
             "effective": {
-              "mode": "fixed",
-              "kind": "name",
+              "mode": "member",
+              "kind": null,
               "source": "core:site"
-            }
+            },
+            "member_instances": []
           },
           {
             "key": "core:admin",
@@ -8219,7 +8219,8 @@
               "mode": "fixed",
               "kind": "name",
               "source": "core:admin"
-            }
+            },
+            "member_instances": []
           },
           {
             "key": "core:notification",
@@ -8237,10 +8238,11 @@
               "kind": null
             },
             "effective": {
-              "mode": "fixed",
-              "kind": "name",
+              "mode": "member",
+              "kind": null,
               "source": "core:site"
-            }
+            },
+            "member_instances": []
           },
           {
             "key": "core:notification:mail",
@@ -8258,10 +8260,11 @@
               "kind": null
             },
             "effective": {
-              "mode": "fixed",
-              "kind": "name",
+              "mode": "member",
+              "kind": null,
               "source": "core:site"
-            }
+            },
+            "member_instances": []
           }
         ],
         "selectable_kinds": [

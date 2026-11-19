@@ -373,7 +373,7 @@ class DisplayNameResolverTest extends TestCase
      *
      * @scenario case=deep_key_defaults
      *
-     * @effects missing_area_setting_uses_declared_default, unknown_kind_setting_falls_back_to_parent, site_area_never_inherits, empty_selectable_kinds_fall_back_to_default_kind
+     * @effects missing_area_setting_uses_declared_default, unknown_kind_setting_falls_back_to_parent, site_area_never_inherits, site_area_default_follows_member_default_kind, empty_selectable_kinds_fall_back_to_default_kind
      *
      * @return void 반환값 없음
      */
@@ -404,11 +404,21 @@ class DisplayNameResolverTest extends TestCase
         ]]);
         $this->assertSame('길동이', $this->resolver->resolve($user, 'demo-shop:inquiry'));
 
-        // 사이트 기본 영역이 쓸 수 없는 값이면 「이름」
+        // 사이트 기본 영역이 쓸 수 없는 값이거나 저장된 값이 없으면 처음 방식인 「회원이 고른 값」 — 회원 기본 종류로 보인다
         $this->settings(['display_name_areas' => ['core:site' => ['mode' => 'inherit']]]);
+        $this->assertSame(['mode' => 'member', 'kind' => null], $settings->areaSetting($areas->get('core:site')));
         $this->assertSame('홍길동', $this->resolver->resolve($user));
         $this->settings(['display_name_areas' => null]);
         $this->assertSame('홍길동', $this->resolver->resolve($user));
+        $this->settings(['display_name_areas' => ['core:site' => ['mode' => 'fixed', 'kind' => 'gone-extension:grade']], 'display_name_member_default_kind' => 'nickname']);
+        $this->assertSame('길동이', $this->resolver->resolve($user), '사이트 기본의 고정 종류가 사라졌는데 회원 기본 종류로 보이지 않았다');
+
+        // 영역을 손대지 않은 사이트는 회원 기본 종류를 바꾸면 사이트 기본과 그것을 따르는 영역이 함께 바뀐다(관리자 화면은 「이름」 고정 그대로)
+        $this->settings(['display_name_areas' => null, 'display_name_member_default_kind' => 'nickname']);
+        $this->assertSame('길동이', $this->resolver->resolve($user));
+        $this->assertSame('길동이', $this->resolver->resolve($user, 'core:notification:mail'));
+        $this->assertSame('홍길동', $this->resolver->resolve($user, 'core:admin'));
+        $this->settings(['display_name_member_default_kind' => 'name']);
 
         // 회원이 고를 수 있는 종류가 전부 사라졌으면 회원 기본 종류 하나
         $this->settings(['display_name_selectable_kinds' => ['field:deleted'], 'display_name_member_default_kind' => 'field:deleted']);
