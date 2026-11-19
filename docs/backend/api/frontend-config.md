@@ -72,7 +72,8 @@ HTTP/1.1 200
                 "timezone": "Asia/Seoul",
                 "site_logo": [],
                 "site_logo_url": null,
-                "asset_url_mode": "extensionless"
+                "asset_url_mode": "extensionless",
+                "layout_edit_button_enabled": true
             }
         },
         "modules": {

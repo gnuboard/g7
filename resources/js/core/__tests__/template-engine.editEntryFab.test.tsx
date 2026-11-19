@@ -206,20 +206,55 @@ describe('template-engine — 운영 화면 편집 진입 단추', () => {
 
   // @scenario case=ops_screen_floating_fab_mobile
   // @effects ops_screen_fab_compact_has_accessible_name
-  it('좁은 폭(엔진 responsive)에서는 아이콘만 보이고 보이는 이름은 aria-label 로 준다, 인쇄에서는 숨는다', async () => {
+  it('폭과 관계없이 글자 없는 아이콘 원형 단추이고 보이는 이름은 aria-label 로 준다, 오른쪽 아래에 있고 인쇄에서는 숨는다 (7.2.0)', async () => {
     vi.mocked(useResponsive).mockReturnValue({ width: 375, isMobile: true, isTablet: false, isDesktop: false, matchedPreset: 'mobile' });
     setAuth({ uuid: 'u1', name: 'a', email: 'a@x', can_edit_layouts: true });
     await renderAt('/admin/users');
     const button = fab()!;
-    expect(button.getAttribute('data-compact')).toBe('true');
     expect(button.getAttribute('aria-label')).toBe('layout_editor.chrome.fab.label');
+    expect(button.textContent).toBe('');
+    expect(button.querySelector('svg')).not.toBeNull();
     expect(button.tagName).toBe('BUTTON');
+    expect(button.style.right).toBe('16px');
+    expect(button.style.left).toBe('');
     // 규칙은 JSX <style> 자식이 아니라 런타임 시트(RuntimeStyleSheet)로 붙는다 — 엄격한 스타일 정책에서 <style> 이 막힌다(#163)
     expect(document.querySelector('style[data-g7le-edit-entry-fab-style]')).toBeNull();
     const style = getCssText(EDIT_ENTRY_FAB_STYLE_KEY) ?? '';
     expect(style).toContain('@media print');
     expect(style).toContain('data-g7-color-scheme="dark"');
     expect(style).toContain(':focus-visible');
+    expect(style).toContain('width:44px');
+  });
+
+  // @scenario case=setting_toggle_live
+  // @effects ops_screen_fab_hidden_when_setting_off, ops_screen_fab_follows_setting_save
+  it('환경설정 「레이아웃 편집 단추」가 꺼지면 권한 보유자에게도 숨고, 설정 저장(_global.settings 갱신)을 새로고침 없이 따라간다 (7.2.0)', async () => {
+    setAuth({ uuid: 'u1', name: 'a', email: 'a@x', can_edit_layouts: true });
+    await renderAt('/admin/users');
+    expect(fab()).not.toBeNull();
+
+    // 환경설정 저장 성공 갈래가 하는 일 — set-state global settings={{frontend_settings}}
+    await act(async () => {
+      updateTemplateData({ _global: { settings: { general: { layout_edit_button_enabled: false } } } });
+    });
+    await flush();
+    expect(fab(), '설정을 끄면 바로 사라져야 한다').toBeNull();
+
+    await act(async () => {
+      updateTemplateData({ _global: { settings: { general: { layout_edit_button_enabled: true } } } });
+    });
+    await flush();
+    expect(fab(), '다시 켜면 바로 보여야 한다').not.toBeNull();
+  });
+
+  // @scenario case=setting_toggle_shell
+  // @effects ops_screen_fab_hidden_when_setting_off
+  it('첫 화면에서 셸 설정(G7Config.settings)이 꺼져 있으면 처음부터 그리지 않는다 (7.2.0)', async () => {
+    (window as any).G7Config = { ...((window as any).G7Config ?? {}), settings: { general: { layout_edit_button_enabled: false } } };
+    setAuth({ uuid: 'u1', name: 'a', email: 'a@x', can_edit_layouts: true });
+    await renderAt('/admin/users');
+    expect(fab()).toBeNull();
+    delete (window as any).G7Config.settings;
   });
 
   // @scenario case=ops_screen_floating_fab_normal_render_logout

@@ -795,6 +795,8 @@ class SaveSettingsRequest extends FormRequest
             // 저장 단계에서 막아 설정 파일에 뜻 모를 값이 남지 않게 한다.
             // 허용값은 단건 저장(UpdateSettingRequest)과 같은 표(EnumeratedSettingValues)를 쓴다.
             'general.asset_url_mode' => ['nullable', 'string', EnumeratedSettingValues::ruleFor('general.asset_url_mode')],
+            // 운영 화면 오른쪽 아래 「레이아웃 편집」 단추 표시 여부 (7.2.0). 끄면 편집 권한이 있어도 단추가 보이지 않는다
+            'general.layout_edit_button_enabled' => ['nullable', 'boolean'],
 
             // 실행 모드 — 웹 요청 안의 커맨드 실행 방식 (#609).
             'system.execution_mode' => ['nullable', 'string', EnumeratedSettingValues::ruleFor('system.execution_mode')],
@@ -2421,6 +2423,7 @@ class SaveSettingsRequest extends FormRequest
             // general
             'general.currency' => __('validation.attributes.default_currency'),
             'general.asset_url_mode' => __('validation.attributes.asset_url_mode'),
+            'general.layout_edit_button_enabled' => __('validation.attributes.layout_edit_button_enabled'),
             'general.site_logo' => __('validation.attributes.site_logo'),
             'general.site_favicon' => __('validation.attributes.site_favicon'),
             'seo.og_image_default' => __('validation.attributes.og_image_default'),

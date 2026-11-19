@@ -1611,6 +1611,7 @@ return [
         'currency' => '통화',
         'default_currency' => '기본 통화',
         'asset_url_mode' => '자산 주소 방식',
+        'layout_edit_button_enabled' => '레이아웃 편집 단추',
         'site_logo' => '사이트 로고',
         'site_favicon' => '사이트 파비콘',
         'og_image_default' => '기본 공유 이미지',

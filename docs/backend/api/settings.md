@@ -320,6 +320,7 @@ HTTP/1.1 200
 | general.language | body | string | 예 | — | 언어 코드 |
 | general.currency | body | string | 아니오 | max 10 | 통화 코드 (ISO 4217 — 예: KRW) |
 | general.asset_url_mode | body | string | 아니오 | — | 자산 URL 형태 — `auto` / `extension`(확장자 형태) / `extensionless`(확장자 없는 형태). 확장자로 끝나는 동적 응답을 서버의 정적 최적화 블록이 가로채는 환경에서 후자를 쓴다 |
+| general.layout_edit_button_enabled | body | boolean | 아니오 | `true` | 운영 화면 오른쪽 아래 「레이아웃 편집」 단추 표시(7.2.0). 끄면 레이아웃 편집 권한이 있어도 단추가 보이지 않는다. 공개 설정(`G7Config.settings.general`)에도 실린다 |
 | system.execution_mode | body | string | 아니오 | — | 웹 요청 안의 커맨드 실행 방식 — `auto`(환경 감지) / `subprocess`(별도 프로세스) / `inprocess`(같은 요청 안) |
 | system.cron_mode | body | string | 아니오 | — | 예약 작업 실행 방식 — `auto` / `web`(주소 호출만) / `cron`(서버 크론만) / `both` |
 | system.cron_allowed_ips | body | string | 아니오 | max 1000 | 웹 크론 호출을 허용할 IP·CIDR 목록 (줄바꿈 또는 쉼표 구분). 비우면 제한하지 않는다 |

@@ -326,6 +326,21 @@
         <p data-ref="asset_url_mode_msg_unavailable" data-if="{{_local.asset_url_mode_detect_status === 'unavailable'}}" class="mt-2 text-sm text-red-600 dark:text-red-400">$t:admin.settings.general.asset_url_mode_detect_unavailable</p>
       </div>
     </div>
+    <!-- 레이아웃 편집 단추(7.2.0) — 편집 권한이 있는 로그인 사용자에게 운영 화면 오른쪽 아래에 뜨는 「레이아웃 편집」 단추를
+      켜고 끈다. 값은 공개 설정 `general.layout_edit_button_enabled` 로 화면에 내려가고, 저장 성공 갈래가 `_global.settings` 를
+      바꾸므로 단추는 새로고침 없이 바로 사라지거나 나타난다. -->
+    <div data-ref="card_layout_edit_button" class="admin-card">
+      <h3 class="card-title">$t:admin.settings.general.layout_edit_button</h3>
+      <div class="card-description">$t:admin.settings.general.layout_edit_button_description</div>
+      <div data-ref="toggle_layout_edit_button_enabled" class="flex-between">
+        <div>
+          <span class="text-heading">$t:admin.settings.general.layout_edit_button_enabled</span>
+          <p class="text-label-subtle">$t:admin.settings.general.layout_edit_button_enabled_desc</p>
+          <span data-if="{{_local.errors?.['general.layout_edit_button_enabled']}}" class="form-error">{{_local.errors?.['general.layout_edit_button_enabled']?.[0] ?? ''}}</span>
+        </div>
+        <toggle data-type="composite" name="general.layout_edit_button_enabled" size="md" disabled="{{_computed.isReadOnly}}"/>
+      </div>
+    </div>
     <!-- 초기 화면 정적 파일 — 이 탭에서 **유일하게 저장 대상이 아닌 카드**다. `name=` 입력이 하나도 없고,
       상태를 보여 주고 재게시를 실행할 뿐이라 저장 버튼과 무관하다.
       상태 배지는 네 갈래를 classMap 하나로 가른다 — 꺼짐(G7_STATIC_CACHE=false) · 개발 모드(운영 모드가

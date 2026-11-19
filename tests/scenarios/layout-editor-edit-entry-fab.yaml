@@ -8,6 +8,8 @@ description: |
   편집기 쪽은 그 값으로 라우트를 선택해야 하고, 첫 복원이 주소와 기록을 건드리지 않아야 하며,
   기반 레이아웃과 확장 편집 주소는 새로고침 뒤에도 복귀 라우트를 지켜야 하고, 사람이 붙여 넣은
   사이트 주소도 정의 path 로 찾아야 한다.
+  7.2.0: 단추를 오른쪽 아래로 옮기고 글자 없는 아이콘 원형 단추로 바꿨다. 환경설정 > 일반 「레이아웃 편집 단추」
+  (`general.layout_edit_button_enabled`, 기본 켜짐)로 끌 수 있고, 저장하면 새로고침 없이 바로 따라간다.
 
 axes:
   case:
@@ -26,6 +28,7 @@ axes:
     - url_restore_noop_then_edit_entry
     - placement_desktop_none
     - placement_desktop_admin_sidebar
+    - placement_desktop_right_panel
     - placement_mobile_bottom_bar
     - placement_mobile_toast
     - placement_mobile_floating_banner
@@ -45,6 +48,11 @@ axes:
     - url_restore_browser_pathname
     - url_restore_definition_path
     - url_restore_unknown
+    - setting_toggle
+    - setting_toggle_shell_fallback
+    - setting_toggle_live
+    - setting_toggle_shell
+    - setting_default_and_exposed
 
 effects:
   - auth_user_exposes_layout_edit_ability
@@ -59,7 +67,8 @@ effects:
   - ops_screen_fab_resolves_ability_after_spa_login
   - ops_screen_fab_refetches_ability_after_relogin
   - editor_noop_restore_does_not_swallow_next_history_entry
-  - ops_screen_fab_default_bottom_left
+  - ops_screen_fab_default_bottom_right
+  - ops_screen_fab_ignores_left_sidebar
   - ops_screen_fab_avoids_side_panel
   - ops_screen_fab_avoids_bottom_bar
   - ops_screen_fab_avoids_bottom_toast
@@ -77,9 +86,14 @@ effects:
   - pasted_site_path_selects_route_definition
   - pasted_site_path_prefers_exact_route
   - pasted_unknown_path_leaves_tree_unselected
+  - ops_screen_fab_hidden_when_setting_off
+  - ops_screen_fab_follows_setting_save
+  - layout_edit_button_setting_defaults_on_and_is_public
 
 test_files:
   - tests/Feature/Api/Auth/AuthUserCanEditLayoutsTest.php
+  - tests/Feature/Settings/LayoutEditButtonSettingTest.php
+  - resources/js/core/template-engine/layout-editor/__tests__/components/EditEntryFab.test.tsx
   - resources/js/core/__tests__/template-engine.editEntryFab.test.tsx
   - resources/js/core/template-engine/layout-editor/__tests__/hooks/useEditEntryFab.placement.test.ts
   - resources/js/core/template-engine/layout-editor/__tests__/hooks/useEditorUrlSync.initialRestoreHistory.test.tsx

@@ -1618,6 +1618,7 @@ return [
         'currency' => 'currency',
         'default_currency' => 'default currency',
         'asset_url_mode' => 'asset URL mode',
+        'layout_edit_button_enabled' => 'layout edit button',
         'site_logo' => 'site logo',
         'site_favicon' => 'site favicon',
         'og_image_default' => 'default share image',

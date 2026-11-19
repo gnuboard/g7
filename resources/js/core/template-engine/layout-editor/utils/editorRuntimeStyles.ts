@@ -52,9 +52,10 @@ export const EDIT_ENTRY_FAB_CLASS = 'g7le-edit-entry-fab';
  * 다크 선택자는 ColorSchemeSignal 규격(다크 안의 라이트 제외)을 따른다.
  */
 export const EDIT_ENTRY_FAB_STYLE_CSS =
-  `.${EDIT_ENTRY_FAB_CLASS}{position:fixed;z-index:39;display:inline-flex;align-items:center;justify-content:center;gap:6px;` +
+  `.${EDIT_ENTRY_FAB_CLASS}{position:fixed;z-index:39;display:inline-flex;align-items:center;justify-content:center;` +
+  'width:44px;height:44px;padding:0;' +
   'border:1px solid transparent;border-radius:999px;background:#0f172a;color:#ffffff;' +
-  'box-shadow:0 2px 12px rgba(15,23,42,.25);cursor:pointer;font-size:13px;font-weight:600;line-height:1;' +
+  'box-shadow:0 2px 12px rgba(15,23,42,.25);cursor:pointer;line-height:0;' +
   'font-family:inherit;transition:transform .12s ease,box-shadow .12s ease}' +
   `.${EDIT_ENTRY_FAB_CLASS}:hover{box-shadow:0 4px 16px rgba(15,23,42,.35)}` +
   `.${EDIT_ENTRY_FAB_CLASS}:active{transform:translateY(1px)}` +

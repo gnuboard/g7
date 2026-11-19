@@ -1,7 +1,7 @@
 /**
  * EditEntryFab.tsx
  *
- * 운영 화면 좌측 하단 편집 진입 플로팅 액션 버튼 — 8.2.2.
+ * 운영 화면 우측 하단 편집 진입 플로팅 액션 버튼 — 8.2.2.
  *
  * 본 컴포넌트는 다른 layout-editor/ 자산과 달리 **일반 렌더 모드** 에 마운트
  * 된다 (편집기 셸 외부). 진입 권한 보유자에게만 노출. 마운트와 입력 수집은
@@ -11,8 +11,9 @@
  * 이동해 보던 화면이 트리에서 선택된 채 편집기 진입 (새 탭 진입 금지,
  * 로그인 풀려 재로그인 후 진입할 때도 같은 탭 유지).
  *
- * 모양: 넓은 폭은 아이콘 + 글자, 좁은 폭(`compact`, 엔진 responsive 판정)은 아이콘만 둔 원형 단추이며
- * 보이는 이름은 `aria-label` 로 준다. 다크 모드는 코어 중립 표식 `data-g7-color-scheme`, 인쇄에서는 숨는다.
+ * 모양: 글자 없이 레이아웃 편집 아이콘(화면 구획 + 연필)만 둔 원형 단추다(7.2.0 — 그전에는 넓은 폭에서 「✎ 레이아웃 편집」
+ * 글자 단추, 좁은 폭에서 원형이었다). 보이는 이름은 `aria-label`, 설명은 `title` 로 준다.
+ * 다크 모드는 코어 중립 표식 `data-g7-color-scheme`, 인쇄에서는 숨는다.
  * 층(z-index)은 39 다 — 템플릿 오버레이(모바일 덮개 z-40, 모달·드로어·토스트 z-50)보다 아래라 단추가 오버레이를 가리지 않는다.
  *
  * `translate` prop 받지 않음 — 코어 TranslationEngine 자동 해석.
@@ -47,14 +48,14 @@ export interface EditEntryFabProps {
   hasLayoutEditPermission: boolean;
   /** 현재 보고 있는 라우트의 정의 path (편집기 진입 시 ?route= 로 전달) */
   currentRoutePath: string;
+  /** 환경설정 「레이아웃 편집 단추」 — false 면 그리지 않는다(생략하면 켜짐, 7.2.0) */
+  enabled?: boolean;
   /**
    * 진입 함수 — 기본값은 같은 탭 이동 (`window.location.assign`). 테스트 주입 가능.
    *
    */
   openWindow?: (url: string) => void;
-  /** 좁은 폭 — 아이콘만 둔 원형 단추 (엔진 responsive 판정을 호스트가 넘긴다) */
-  compact?: boolean;
-  /** 고정 요소를 피한 위치 — 없으면 왼쪽·아래 16px */
+  /** 고정 요소를 피한 위치 — 없으면 오른쪽·아래 16px */
   offset?: FabOffset;
   /** 단추 요소 ref — 호스트가 자리 계산에서 자기 자신을 빼는 데 쓴다 */
   buttonRef?: React.Ref<HTMLButtonElement>;
@@ -63,6 +64,34 @@ export interface EditEntryFabProps {
 /** 단추 클래스 — 인쇄·다크·포커스 규칙이 이 이름을 쓴다 */
 const FAB_CLASS = EDIT_ENTRY_FAB_CLASS;
 
+/**
+ * 레이아웃 편집 아이콘 — 화면 구획(머리글·옆 패널·본문)과 오른쪽 아래 연필.
+ *
+ * 코어 엔진은 템플릿의 아이콘 글꼴에 기대지 않으므로 SVG 를 직접 둔다. 색은 `currentColor` 라 다크 규칙을 그대로 따른다.
+ */
+function LayoutEditIcon(): React.ReactElement {
+  return (
+    <svg
+      data-testid="g7le-edit-entry-fab-icon"
+      width={20}
+      height={20}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M11 20H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6" />
+      <path d="M3 8.5h18" />
+      <path d="M8.5 8.5V20" />
+      <path d="M19.4 13.6l2 2-5.6 5.6H13.8v-2z" />
+    </svg>
+  );
+}
+
 export function EditEntryFab(props: EditEntryFabProps): React.ReactElement | null {
   const { t } = useTranslation();
 
@@ -70,6 +99,7 @@ export function EditEntryFab(props: EditEntryFabProps): React.ReactElement | nul
     pathname: props.pathname,
     isAuthenticated: props.isAuthenticated,
     hasLayoutEditPermission: props.hasLayoutEditPermission,
+    enabled: props.enabled,
   });
 
   // 인라인 style 로 줄 수 없는 규칙(인쇄, 다크, 포커스 표시, 눌림)은 단추가 보이는 동안만 런타임 시트로 붙인다.
@@ -95,32 +125,23 @@ export function EditEntryFab(props: EditEntryFabProps): React.ReactElement | nul
   };
 
   const label = t('layout_editor.chrome.fab.label');
-  const compact = props.compact === true;
-  const offset = props.offset ?? { left: EDIT_ENTRY_FAB_GAP, bottom: EDIT_ENTRY_FAB_GAP };
+  const offset = props.offset ?? { right: EDIT_ENTRY_FAB_GAP, bottom: EDIT_ENTRY_FAB_GAP };
 
   return (
-    <>
-      <button
-        ref={props.buttonRef}
-        type="button"
-        className={FAB_CLASS}
-        data-testid="g7le-edit-entry-fab"
-        data-compact={compact ? 'true' : 'false'}
-        // 진입 주소 — 실측·시험이 클릭 없이 읽는다(이동은 클릭 때만)
-        data-entry-url={url}
-        onClick={onClick}
-        title={t('layout_editor.chrome.fab.tooltip')}
-        // 아이콘만 보일 때도 보이는 이름이 있어야 한다 — 글자가 보이면 그 글자가 이름이다
-        aria-label={compact ? label : undefined}
-        style={{
-          left: offset.left,
-          bottom: offset.bottom,
-          ...(compact ? { width: 44, height: 44, padding: 0, fontSize: 18 } : { padding: '9px 14px', minHeight: 36 }),
-        }}
-      >
-        <span aria-hidden="true">✎</span>
-        {compact ? null : <span>{label}</span>}
-      </button>
-    </>
+    <button
+      ref={props.buttonRef}
+      type="button"
+      className={FAB_CLASS}
+      data-testid="g7le-edit-entry-fab"
+      // 진입 주소 — 실측·시험이 클릭 없이 읽는다(이동은 클릭 때만)
+      data-entry-url={url}
+      onClick={onClick}
+      title={t('layout_editor.chrome.fab.tooltip')}
+      // 글자가 없으므로 보이는 이름은 aria-label 로 준다
+      aria-label={label}
+      style={{ right: offset.right, bottom: offset.bottom }}
+    >
+      <LayoutEditIcon />
+    </button>
   );
 }

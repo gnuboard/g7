@@ -8,6 +8,7 @@
 
 ### Added
 
+- 환경설정 > 일반 「레이아웃 편집 단추」 카드(제목·설명·켜기 칸 이름과 도움말, `admin.settings.general.layout_edit_button*`)의 일본어 번역을 추가했습니다.
 - [업데이트 확인]에서 GitHub 최신 판을 확인하지 못한 확장·언어팩을 알리는 경고 문구(`extensions.alerts.check_updates_github_failed`·`admin.language_packs.messages.check_updates_github_failed`)를 일본어로 추가했습니다.
 - 확장 설치와 업데이트의 패키지 무결성 안내 패널(`package_integrity.*`), 환경설정 > 보안 탭 「신뢰 키」 구획과 키 추가 및 삭제 창(`settings.security.extension_trust.*`, `settings.extension_trust_key_modal.*`, `modal_label.admin_settings.extension_trust_key_*`), 언어팩 설치 창의 URL 탭(`language_packs.install_modal.*`), 스케줄 편집 창의 `--allow-unsigned` 도움말(`schedules.form.allow_unsigned_hint`), 편집기 데이터 소스 이름(`data_source.extensionTrustKeys`)의 일본어 번역을 추가했습니다.
 - 확장 상세 창 「공개 API」 칸(`extension_public_api.*`)과 환경설정 > 드라이버 「비공개 첨부 저장소」 카드(`settings.drivers.private_attachment.*`)의 일본어 번역을 추가했습니다.

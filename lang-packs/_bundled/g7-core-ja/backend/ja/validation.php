@@ -1351,6 +1351,7 @@ return [
         'currency' => '通貨',
         'default_currency' => 'デフォルト通貨',
         'asset_url_mode' => 'アセットURL方式',
+        'layout_edit_button_enabled' => 'レイアウト編集ボタン',
         'site_logo' => 'サイトロゴ',
         'site_favicon' => 'サイトファビコン',
         'og_image_default' => '既定の共有画像',

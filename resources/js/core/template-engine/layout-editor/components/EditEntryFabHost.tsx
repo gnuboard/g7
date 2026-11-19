@@ -10,10 +10,11 @@
  * - 로그인·권한: AuthManager 상태 + 로그인 사용자 응답의 `can_edit_layouts`(서버가 편집기 API 가드와 같은 판정으로 싣는다).
  *   로그인 응답처럼 판정이 없는 사용자면 로그인 사용자 조회로 한 번 받아 온다(인증 상태는 바꾸지 않는다)
  * - 라우트: 코어 라우터 `match()` 로 찾은 **라우트 정의 path** — 편집기 트리가 그 값과 정확히 견준다
- * - 폭: 엔진 `useResponsive()` (Tailwind 폭 접두 금지)
- * - 위치: 단추 자리에 걸친 옆 패널(관리자 사이드바)과 하단 고정 요소(하단 바, 토스트)를 찾아 비킨다
+ * - 켜기/끄기: 환경설정 > 일반 「레이아웃 편집 단추」(`general.layout_edit_button_enabled`) — 렌더 트리가 `_global.settings`
+ *   에서 읽어 `enabled` 로 넘긴다(7.2.0). 설정 저장이 `_global.settings` 를 바꾸면 루트 재렌더로 바로 따라간다
+ * - 위치: 오른쪽 아래(7.2.0). 단추 자리에 걸친 오른쪽 옆 패널과 하단 고정 요소(하단 바, 토스트, 맨 위로 단추)를 찾아 비킨다
  *
- * 숨김: 비로그인·권한 없음·편집기 주소·iframe 안(미리보기·임베드)·인쇄.
+ * 숨김: 설정 꺼짐·비로그인·권한 없음·편집기 주소·iframe 안(미리보기·임베드)·인쇄.
  *
  * 렌더 사이클 영향: 자체 useState 만 쓰고 전역 상태(_global·_local)를 읽거나 쓰지 않는다. 루트 재렌더에 따라 함께 다시 그려질 뿐
  * 루트 렌더를 일으키지 않는다.
@@ -25,7 +26,6 @@ import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from
 import { AuthManager } from '../../../auth/AuthManager';
 import { stripBasePrefix } from '../../../support/assetUrl';
 import { getApiClient } from '../../../api/ApiClient';
-import { useResponsive } from '../../ResponsiveContext';
 import { EditEntryFab } from './EditEntryFab';
 import {
   computeEditEntryFabOffset,
@@ -36,6 +36,7 @@ import {
   readLayoutEditAbility,
   resolveCurrentRouteDefinitionPath,
   EDIT_ENTRY_FAB_GAP,
+  EDIT_ENTRY_FAB_SIZE,
   type FabOffset,
   type FabRect,
   type RouteMatcherLike,
@@ -44,6 +45,8 @@ import {
 export interface EditEntryFabHostProps {
   /** 지금 부팅된 템플릿 식별자 — 편집기를 이 템플릿으로 연다 */
   templateIdentifier: string;
+  /** 환경설정 「레이아웃 편집 단추」 — false 면 그리지 않는다(생략하면 켜짐, 7.2.0) */
+  enabled?: boolean;
   /** 라우터 주입 — 시험용. 없으면 `window.__templateApp.getRouter()` */
   getRouter?: () => RouteMatcherLike | null | undefined;
   /** 인증 관리자 주입 — 시험용. 없으면 `AuthManager.getInstance()` */
@@ -78,7 +81,7 @@ function defaultRouter(): RouteMatcherLike | null {
 }
 
 /**
- * 요소에서 위로 올라가며 피할 상자를 찾는다 — 고정(fixed·sticky) 상자, 또는 옆 패널 모양 상자(관리자 사이드바).
+ * 요소에서 위로 올라가며 피할 상자를 찾는다 — 고정(fixed·sticky) 상자, 또는 오른쪽 옆 패널 모양 상자.
  * 단추 자신과 그 안은 뺀다.
  */
 function findObstacleAncestor(el: Element | null, self: Element | null, viewport: { width: number; height: number }): FabRect | null {
@@ -98,9 +101,20 @@ function findObstacleAncestor(el: Element | null, self: Element | null, viewport
 /**
  * 단추 자리 몇 점에서 겹친 상자를 모은다. `elementsFromPoint` 라 화면 전체를 훑지 않는다.
  */
+/**
+ * 고정 단추의 `right` 기준이 되는 뷰포트 크기 — 세로 스크롤 막대를 뺀 폭이다(`innerWidth` 는 막대를 포함해 막대 위를 찍는다).
+ */
+function layoutViewport(): { width: number; height: number } {
+  const doc = document.documentElement;
+  return {
+    width: doc?.clientWidth || window.innerWidth,
+    height: window.innerHeight,
+  };
+}
+
 function collectObstacles(probes: Array<[number, number]>, self: Element | null): FabRect[] {
   if (typeof document === 'undefined' || typeof document.elementsFromPoint !== 'function') return [];
-  const viewport = { width: window.innerWidth, height: window.innerHeight };
+  const viewport = layoutViewport();
   const seen = new Set<string>();
   const rects: FabRect[] = [];
   for (const [x, y] of probes) {
@@ -119,9 +133,7 @@ function collectObstacles(probes: Array<[number, number]>, self: Element | null)
 export function EditEntryFabHost(props: EditEntryFabHostProps): React.ReactElement | null {
   const manager = props.authManager ?? AuthManager.getInstance();
   const [auth, setAuth] = useState<AuthSnapshot>(() => readAuth(manager));
-  const { isDesktop } = useResponsive();
-  const compact = !isDesktop;
-  const [offset, setOffset] = useState<FabOffset>({ left: EDIT_ENTRY_FAB_GAP, bottom: EDIT_ENTRY_FAB_GAP });
+  const [offset, setOffset] = useState<FabOffset>({ right: EDIT_ENTRY_FAB_GAP, bottom: EDIT_ENTRY_FAB_GAP });
   const buttonRef = useRef<HTMLButtonElement | null>(null);
 
   // 로그인·로그아웃·부팅 확인(checkAuth) 결과를 따라간다
@@ -174,37 +186,36 @@ export function EditEntryFabHost(props: EditEntryFabHostProps): React.ReactEleme
     ? auth.canEditLayouts
     : fetchedAbility !== null && fetchedAbility.uuid === auth.uuid && fetchedAbility.can;
   const embedded = typeof window !== 'undefined' && isEmbeddedFrame(window);
-  const visible = !embedded && auth.isAuthenticated && canEdit;
+  const visible = props.enabled !== false && !embedded && auth.isAuthenticated && canEdit;
 
   const relocate = useCallback((): void => {
     const btn = buttonRef.current;
     if (!btn || typeof window === 'undefined') return;
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const size = { width: btn.offsetWidth || 44, height: btn.offsetHeight || 44 };
-    // 기본 자리(왼쪽 아래)와 그 위·옆 몇 점 — 사이드바와 하단 바를 찾는다
+    const { width: vw, height: vh } = layoutViewport();
+    const size = { width: btn.offsetWidth || EDIT_ENTRY_FAB_SIZE, height: btn.offsetHeight || EDIT_ENTRY_FAB_SIZE };
+    // 기본 자리(오른쪽 아래)와 그 위·옆 몇 점 — 오른쪽 옆 패널과 하단 바를 찾는다
     const g = EDIT_ENTRY_FAB_GAP;
     const first = collectObstacles(
       [
-        [g + 1, vh - g - 1],
-        [g + size.width / 2, vh - g - size.height / 2],
-        [g + size.width - 1, vh - 2],
+        [vw - g - 1, vh - g - 1],
+        [vw - g - size.width / 2, vh - g - size.height / 2],
+        [vw - g - size.width + 1, vh - 2],
       ],
       btn,
     );
     let next = computeEditEntryFabOffset(first, { width: vw, height: vh }, size);
-    if (next.left !== g) {
+    if (next.right !== g) {
       // 옆으로 비킨 자리에서 하단 바를 한 번 더 찾는다
       const second = collectObstacles(
         [
-          [next.left + 1, vh - 2],
-          [next.left + size.width - 1, vh - 2],
+          [vw - next.right - 1, vh - 2],
+          [vw - next.right - size.width + 1, vh - 2],
         ],
         btn,
       );
       next = computeEditEntryFabOffset([...first, ...second], { width: vw, height: vh }, size);
     }
-    setOffset((prev) => (prev.left === next.left && prev.bottom === next.bottom ? prev : next));
+    setOffset((prev) => (prev.right === next.right && prev.bottom === next.bottom ? prev : next));
   }, []);
 
   // 루트가 다시 그려질 때(화면 전환·데이터 갱신)마다 다음 프레임에 자리를 다시 본다
@@ -255,8 +266,8 @@ export function EditEntryFabHost(props: EditEntryFabHostProps): React.ReactEleme
       isAuthenticated={auth.isAuthenticated}
       hasLayoutEditPermission={canEdit}
       currentRoutePath={routePath}
+      enabled={props.enabled}
       openWindow={props.openWindow}
-      compact={compact}
       offset={offset}
       buttonRef={buttonRef}
     />

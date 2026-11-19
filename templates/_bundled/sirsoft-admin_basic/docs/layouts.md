@@ -1017,6 +1017,11 @@ slots.content:
 - `apiCall` — 설정 저장
 - `openModal` — 확인 다이얼로그
 
+**일반 탭 「레이아웃 편집 단추」 카드** (코어 7.2.0): `general.layout_edit_button_enabled` 토글 하나. 끄면 운영 화면 오른쪽 아래의
+레이아웃 편집 단추(코어 엔진이 그린다)가 숨는다. 저장 성공 갈래의 `set-state target="global" settings="{{result.data.frontend_settings}}"`
+가 `_global.settings` 를 바꾸고 엔진이 그 값을 읽으므로 새로고침 없이 바로 반영된다 — 이 저장 갈래에서 `_global.settings` 갱신을 빼면 단추가
+새로고침 전까지 남는다.
+
 **상태 배지 색**: 정적 파일 상태(일반 탭)·사이트맵 진행(SEO 탭) 배지처럼 값에 따라 색을 바꾸는 배지는 `<class-map key="{{…}}">` 안에
 `<variant when="값">클래스</variant>` 로 적는다. 굽기 결과는 노드 최상위 `classMap` 이고 엔진은 그 자리만 읽는다 — 컴포넌트 속성으로
 `classMap` 을 넘기면 색이 적용되지 않고 DOM 에 `classmap="[object Object]"` 로 샌다(#703 에서 두 배지를 이렇게 바로잡음).

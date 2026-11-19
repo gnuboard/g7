@@ -5,6 +5,16 @@
 >
 > 형식: [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/)
 
+## [engine-v1.97.0] - 2026-11-19
+
+### Changed
+
+- (engine-v1.97.0) 운영 화면의 레이아웃 편집 진입 단추(`EditEntryFab`)를 왼쪽 아래에서 오른쪽 아래로 옮기고, 「✎ 레이아웃 편집」 글자 단추 대신 글자 없는 원형 아이콘 단추(화면 구획 + 연필 SVG, 지름 44px)로 바꿨습니다. 보이는 이름은 `aria-label`, 설명은 `title` 로 줍니다. 자리 계산(`computeEditEntryFabOffset`)은 `{ right, bottom }` 을 돌려주고, 왼쪽 관리자 사이드바 대신 오른쪽 옆 패널을 비키며, 뷰포트 폭은 세로 스크롤 막대를 뺀 `documentElement.clientWidth` 로 잽니다. 호스트는 더 이상 `useResponsive()` 를 읽지 않습니다(폭에 따른 모양 차이가 없어짐).
+
+### Added
+
+- (engine-v1.97.0) 환경설정 > 일반 「레이아웃 편집 단추」(`general.layout_edit_button_enabled`, 기본 켜짐)로 단추를 끌 수 있습니다. 렌더 트리(renderTemplate·updateTemplateData)가 `isEditEntryButtonEnabled(_global)` 로 `_global.settings.general` 을 먼저, 없으면 셸 `G7Config.settings.general` 을 읽어 호스트에 `enabled` 로 넘깁니다 — 환경설정 저장 성공 갈래가 `_global.settings` 를 바꾸므로 새로고침 없이 바로 사라지거나 나타납니다. 값이 없는 옛 서버에서는 켜진 것으로 봅니다. 회귀 잠금: `template-engine.editEntryFab.test.tsx`(설정 저장 즉시 반영·셸 설정 꺼짐), `useEditEntryFab.placement.test.ts`, `EditEntryFab.test.tsx`.
+
 ## [engine-v1.96.5] - 2026-11-18
 
 ### Fixed

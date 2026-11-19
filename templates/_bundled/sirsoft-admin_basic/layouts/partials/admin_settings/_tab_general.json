@@ -1166,6 +1166,83 @@
             ]
         },
         {
+            "comment": "레이아웃 편집 단추(7.2.0) — 편집 권한이 있는 로그인 사용자에게 운영 화면 오른쪽 아래에 뜨는 「레이아웃 편집」 단추를\n      켜고 끈다. 값은 공개 설정 `general.layout_edit_button_enabled` 로 화면에 내려가고, 저장 성공 갈래가 `_global.settings` 를\n      바꾸므로 단추는 새로고침 없이 바로 사라지거나 나타난다.",
+            "id": "card_layout_edit_button",
+            "type": "basic",
+            "name": "Div",
+            "props": {
+                "className": "admin-card"
+            },
+            "children": [
+                {
+                    "type": "basic",
+                    "name": "H3",
+                    "props": {
+                        "className": "card-title"
+                    },
+                    "text": "$t:admin.settings.general.layout_edit_button"
+                },
+                {
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "card-description"
+                    },
+                    "text": "$t:admin.settings.general.layout_edit_button_description"
+                },
+                {
+                    "id": "toggle_layout_edit_button_enabled",
+                    "type": "basic",
+                    "name": "Div",
+                    "props": {
+                        "className": "flex-between"
+                    },
+                    "children": [
+                        {
+                            "type": "basic",
+                            "name": "Div",
+                            "children": [
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "props": {
+                                        "className": "text-heading"
+                                    },
+                                    "text": "$t:admin.settings.general.layout_edit_button_enabled"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "P",
+                                    "props": {
+                                        "className": "text-label-subtle"
+                                    },
+                                    "text": "$t:admin.settings.general.layout_edit_button_enabled_desc"
+                                },
+                                {
+                                    "type": "basic",
+                                    "name": "Span",
+                                    "if": "{{_local.errors?.['general.layout_edit_button_enabled']}}",
+                                    "props": {
+                                        "className": "form-error"
+                                    },
+                                    "text": "{{_local.errors?.['general.layout_edit_button_enabled']?.[0] ?? ''}}"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "composite",
+                            "name": "Toggle",
+                            "props": {
+                                "name": "general.layout_edit_button_enabled",
+                                "size": "md",
+                                "disabled": "{{_computed.isReadOnly}}"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
             "comment": "초기 화면 정적 파일 — 이 탭에서 **유일하게 저장 대상이 아닌 카드**다. `name=` 입력이 하나도 없고,\n      상태를 보여 주고 재게시를 실행할 뿐이라 저장 버튼과 무관하다.\n      상태 배지는 네 갈래를 classMap 하나로 가른다 — 꺼짐(G7_STATIC_CACHE=false) · 개발 모드(운영 모드가\n      아니라 게시 자체를 하지 않는다) · 게시됨 · 미게시. 앞 둘은 `publishable=false` 로 묶여\n      「지금 다시 만들기」가 잠기고, 왜 잠겼는지는 카드 아래 힌트가 갈라 말한다.\n      실행 계정을 함께 보여 주는 이유는 이 기능의 실패가 대개 소유권이기 때문이다 — 명령줄에서 root 로\n      게시하면 그 폴더가 root 소유가 되어 다음번 웹 서버 계정의 게시가 조용히 실패한다.\n      실패는 연속 횟수와 사유(쓰기 불가 · 잠금 실패 · 그 외)로 나뉘어 표시되고, 사유가 셋 중 무엇도\n      아니면 마지막 갈래가 받는다 — 사유를 모른다고 아무 안내도 없이 두지 않기 위해서다.",
             "id": "card_static_cache",
             "type": "basic",

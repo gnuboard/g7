@@ -1,88 +1,130 @@
 /**
- * useEditEntryFab — 편집 진입 단추 자리 계산, iframe 판정, 라우트 정의 path, 권한 판정 (#869)
+ * useEditEntryFab — 편집 진입 단추 자리 계산, iframe 판정, 라우트 정의 path, 권한 판정, 환경설정 켜기/끄기 (#869, 7.2.0)
  *
- * 단추는 왼쪽 아래 16px 이 기본이고, 그 자리에 걸친 옆 패널(관리자 사이드바)과 하단 고정 바(모바일 구매 바,
- * 하단 탭, 토스트)를 비킨다. 화면 전체 덮개(모달 배경, 드로어 덮개)는 비키지 않는다 — 단추가 그 아래 층이다.
+ * 단추는 오른쪽 아래 16px 이 기본이고(7.2.0 — 그전에는 왼쪽 아래), 그 자리에 걸친 오른쪽 옆 패널과 하단 고정 바(모바일 구매 바,
+ * 하단 탭, 토스트, 맨 위로 단추)를 비킨다. 화면 전체 덮개(모달 배경, 드로어 덮개)는 비키지 않는다 — 단추가 그 아래 층이다.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import {
   computeEditEntryFabOffset,
+  isEditEntryButtonEnabled,
   isEmbeddedFrame,
   readLayoutEditAbility,
   resolveCurrentRouteDefinitionPath,
+  shouldRenderEditEntryFab,
 } from '../../hooks/useEditEntryFab';
 
 const DESKTOP = { width: 1280, height: 800 };
 const MOBILE = { width: 375, height: 667 };
-const PILL = { width: 130, height: 36 };
 const ROUND = { width: 44, height: 44 };
 
 describe('computeEditEntryFabOffset — 고정 요소 회피', () => {
   // @scenario case=placement_desktop_none
-  // @effects ops_screen_fab_default_bottom_left
-  it('걸친 요소가 없으면 왼쪽 아래 16px', () => {
-    expect(computeEditEntryFabOffset([], DESKTOP, PILL)).toEqual({ left: 16, bottom: 16 });
+  // @effects ops_screen_fab_default_bottom_right
+  it('걸친 요소가 없으면 오른쪽 아래 16px', () => {
+    expect(computeEditEntryFabOffset([], DESKTOP, ROUND)).toEqual({ right: 16, bottom: 16 });
   });
 
   // @scenario case=placement_desktop_admin_sidebar
-  // @effects ops_screen_fab_avoids_side_panel
-  it('관리자 사이드바(왼쪽 0, 너비 256, 화면 높이)는 오른쪽으로 비킨다 — 고정 요소가 아니어도', () => {
+  // @effects ops_screen_fab_ignores_left_sidebar
+  it('왼쪽 관리자 사이드바(왼쪽 0, 너비 256, 화면 높이)는 단추 자리와 겹치지 않아 비키지 않는다', () => {
     const sidebar = { left: 0, top: 0, right: 256, bottom: 800, pinned: false };
-    expect(computeEditEntryFabOffset([sidebar], DESKTOP, PILL)).toEqual({ left: 272, bottom: 16 });
+    expect(computeEditEntryFabOffset([sidebar], DESKTOP, ROUND)).toEqual({ right: 16, bottom: 16 });
+  });
+
+  // @scenario case=placement_desktop_right_panel
+  // @effects ops_screen_fab_avoids_side_panel
+  it('오른쪽 옆 패널(오른쪽 끝, 너비 256, 화면 높이)은 왼쪽으로 비킨다 — 고정 요소가 아니어도', () => {
+    const panel = { left: 1024, top: 0, right: 1280, bottom: 800, pinned: false };
+    expect(computeEditEntryFabOffset([panel], DESKTOP, ROUND)).toEqual({ right: 272, bottom: 16 });
   });
 
   // @scenario case=placement_mobile_bottom_bar
   // @effects ops_screen_fab_avoids_bottom_bar
   it('모바일 하단 고정 바(높이 64) 위로 올라간다', () => {
     const bar = { left: 0, top: 603, right: 375, bottom: 667, pinned: true };
-    expect(computeEditEntryFabOffset([bar], MOBILE, ROUND)).toEqual({ left: 16, bottom: 80 });
+    expect(computeEditEntryFabOffset([bar], MOBILE, ROUND)).toEqual({ right: 16, bottom: 80 });
   });
 
   // @scenario case=placement_mobile_toast
   // @effects ops_screen_fab_avoids_bottom_toast
-  it('단추 띠에 걸친 하단 토스트 위로 올라가고, 띠 밖(오른쪽 아래) 토스트는 무시한다', () => {
+  it('단추 띠에 걸친 하단 토스트·맨 위로 단추 위로 올라가고, 띠 밖(왼쪽 아래) 요소는 무시한다', () => {
     const toastOver = { left: 8, top: 600, right: 367, bottom: 667, pinned: true };
     expect(computeEditEntryFabOffset([toastOver], MOBILE, ROUND).bottom).toBe(83);
-    const toastRight = { left: 900, top: 720, right: 1264, bottom: 800, pinned: true };
-    expect(computeEditEntryFabOffset([toastRight], DESKTOP, PILL)).toEqual({ left: 16, bottom: 16 });
+    const scrollTop = { left: 1220, top: 740, right: 1264, bottom: 784, pinned: true };
+    expect(computeEditEntryFabOffset([scrollTop], DESKTOP, ROUND)).toEqual({ right: 16, bottom: 76 });
+    const toastLeft = { left: 16, top: 720, right: 380, bottom: 800, pinned: true };
+    expect(computeEditEntryFabOffset([toastLeft], DESKTOP, ROUND)).toEqual({ right: 16, bottom: 16 });
   });
 
   // @scenario case=placement_mobile_floating_banner
   // @effects ops_screen_fab_avoids_floating_bottom_panel
   it('아래에서 떠 있는(bottom-4) 쿠키 동의 배너와 토스트 묶음 위로도 올라간다 — 실측 375x667 상품 상세', () => {
     const consent = { left: 16, top: 443, right: 359, bottom: 651, pinned: true };
-    expect(computeEditEntryFabOffset([consent], MOBILE, ROUND)).toEqual({ left: 16, bottom: 240 });
+    expect(computeEditEntryFabOffset([consent], MOBILE, ROUND)).toEqual({ right: 16, bottom: 240 });
     const toastStack = { left: 4, top: 577, right: 371, bottom: 651, pinned: true };
     expect(computeEditEntryFabOffset([toastStack], MOBILE, ROUND).bottom).toBe(106);
     // 아래에서 48px 넘게 떠 있으면(본문 중간 고정 요소) 하단 요소로 보지 않는다
     const midFloating = { left: 0, top: 400, right: 375, bottom: 600, pinned: true };
-    expect(computeEditEntryFabOffset([midFloating], MOBILE, ROUND)).toEqual({ left: 16, bottom: 16 });
+    expect(computeEditEntryFabOffset([midFloating], MOBILE, ROUND)).toEqual({ right: 16, bottom: 16 });
   });
 
   // @scenario case=placement_mobile_overlay
   // @effects ops_screen_fab_ignores_full_overlay
   it('화면 전체 덮개와 넓은 모바일 드로어(너비 68%)는 비키지 않는다', () => {
     const overlay = { left: 0, top: 0, right: 375, bottom: 667, pinned: true };
-    const drawer = { left: 0, top: 64, right: 256, bottom: 667, pinned: true };
-    expect(computeEditEntryFabOffset([overlay, drawer], MOBILE, ROUND)).toEqual({ left: 16, bottom: 16 });
+    const drawer = { left: 119, top: 64, right: 375, bottom: 667, pinned: true };
+    expect(computeEditEntryFabOffset([overlay, drawer], MOBILE, ROUND)).toEqual({ right: 16, bottom: 16 });
   });
 
   // @scenario case=placement_desktop_in_flow_footer
   // @effects ops_screen_fab_ignores_in_flow_footer
   it('흐름 안의 꼬리말(pinned=false)은 하단 바로 보지 않는다 — 스크롤하면 비켜난다', () => {
     const footer = { left: 0, top: 700, right: 1280, bottom: 800, pinned: false };
-    expect(computeEditEntryFabOffset([footer], DESKTOP, PILL)).toEqual({ left: 16, bottom: 16 });
+    expect(computeEditEntryFabOffset([footer], DESKTOP, ROUND)).toEqual({ right: 16, bottom: 16 });
   });
 
   // @scenario case=placement_desktop_sidebar_and_bar
   // @effects ops_screen_fab_stays_inside_viewport
-  it('사이드바 옆으로 비킨 띠의 하단 바만 보고, 화면 밖으로 나가지 않는다', () => {
-    const sidebar = { left: 0, top: 0, right: 256, bottom: 800, pinned: false };
-    const barUnderSidebar = { left: 0, top: 740, right: 200, bottom: 800, pinned: true };
-    expect(computeEditEntryFabOffset([sidebar, barUnderSidebar], DESKTOP, PILL)).toEqual({ left: 272, bottom: 16 });
+  it('옆 패널 옆으로 비킨 띠의 하단 바만 보고, 화면 밖으로 나가지 않는다', () => {
+    const panel = { left: 1024, top: 0, right: 1280, bottom: 800, pinned: false };
+    const barUnderPanel = { left: 1080, top: 740, right: 1280, bottom: 800, pinned: true };
+    expect(computeEditEntryFabOffset([panel, barUnderPanel], DESKTOP, ROUND)).toEqual({ right: 272, bottom: 16 });
     const tall = { left: 0, top: 410, right: 375, bottom: 667, pinned: true };
     expect(computeEditEntryFabOffset([tall], MOBILE, ROUND).bottom).toBe(273);
+  });
+});
+
+describe('isEditEntryButtonEnabled / shouldRenderEditEntryFab — 환경설정 「레이아웃 편집 단추」 (7.2.0)', () => {
+  afterEach(() => {
+    delete (window as any).G7Config;
+  });
+
+  // @scenario case=setting_toggle
+  // @effects ops_screen_fab_hidden_when_setting_off
+  it('전역 설정이 false 일 때만 끄고, 값이 없으면(옛 서버) 켜진 것으로 본다', () => {
+    expect(isEditEntryButtonEnabled({ settings: { general: { layout_edit_button_enabled: false } } })).toBe(false);
+    expect(isEditEntryButtonEnabled({ settings: { general: { layout_edit_button_enabled: true } } })).toBe(true);
+    expect(isEditEntryButtonEnabled({ settings: { general: {} } })).toBe(true);
+    expect(isEditEntryButtonEnabled(undefined)).toBe(true);
+  });
+
+  // @scenario case=setting_toggle_shell_fallback
+  // @effects ops_screen_fab_hidden_when_setting_off
+  it('전역 상태에 설정이 아직 없으면 셸 G7Config.settings 를 보고, 전역 상태가 있으면 그쪽이 이긴다', () => {
+    (window as any).G7Config = { settings: { general: { layout_edit_button_enabled: false } } };
+    expect(isEditEntryButtonEnabled({})).toBe(false);
+    expect(isEditEntryButtonEnabled({ settings: { general: { layout_edit_button_enabled: true } } })).toBe(true);
+  });
+
+  // @scenario case=setting_toggle
+  // @effects ops_screen_fab_hidden_when_setting_off
+  it('권한이 있어도 enabled=false 면 그리지 않는다', () => {
+    const base = { pathname: '/admin', isAuthenticated: true, hasLayoutEditPermission: true };
+    expect(shouldRenderEditEntryFab(base)).toBe(true);
+    expect(shouldRenderEditEntryFab({ ...base, enabled: true })).toBe(true);
+    expect(shouldRenderEditEntryFab({ ...base, enabled: false })).toBe(false);
   });
 });
 

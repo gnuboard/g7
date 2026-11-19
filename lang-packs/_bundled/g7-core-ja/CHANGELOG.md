@@ -8,6 +8,7 @@
 
 ### Added
 
+- 환경설정 > 일반 「레이아웃 편집 단추」 저장 검증 항목 이름(`validation.attributes.layout_edit_button_enabled`)의 일본어 번역을 추가했습니다.
 - 검수 서버에서 시각 레이아웃 편집기 머리에 보이는 「검수용 저장」 안내 문구(`layout_editor.chrome.stage_banner`)를 일본어로 추가했습니다.
 - 옛 확장 선언을 쥔 프로세스가 훅 캐시 쓰기를 건너뛸 때의 로그 문구(`hooks.cache_write_skipped_stale_declaration`)를 일본어로 추가했습니다.
 - 업데이트 잔존물 정리 명령의 「확장 교체가 남긴 옛 클래스 파일」 대상군 이름(`common.console.storage_prune_leftovers.groups.carried_class_files`)을 일본어로 추가했습니다.
